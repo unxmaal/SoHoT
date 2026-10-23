@@ -52,7 +52,7 @@ class RepoGrading:
         return json.dumps({"case": case.id, "diff": diff, "reply": reply,
                            "grade": {"resolved": got.resolved, "patch_applied": got.patch_applied,
                                      "detail": got.detail, "failed": got.failed, "limit": got.limit,
-                                     "skipped": got.skipped},
+                                     "skipped": got.skipped, "failures": got.failures},
                            "metrics": metrics}), 0
 
     def run(self, case: Case):

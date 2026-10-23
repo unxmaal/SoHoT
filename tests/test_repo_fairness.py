@@ -62,7 +62,7 @@ def test_unfair_cases_stay_committed_and_only_validity_failures_are_dropped():
     assert all(why.startswith("validation") for why in history.DROPPED.values())
     fair = fairness.fair(labels, cases)
     assert not fair & (set(got["flagged"]) | set(got["disputed"]))
-    assert "sohot-858-spec" in got["disputed"] and "sohot-858-spec" not in fair
+    assert "sohot-642-symptom" in got["disputed"] and "sohot-642-symptom" not in fair
 
 
 def test_a_disputed_axis_is_unfair_until_settled():

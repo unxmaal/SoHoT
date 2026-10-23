@@ -70,6 +70,8 @@ class Grade:
     limit: str = ""
     #: {"path", "why"} of each documentation file left out because its hunks did not apply. #1107.
     skipped: list = field(default_factory=list)
+    #: Failing id -> the tail of pytest's failure text for it, so a grade can be audited without a rerun. #1141.
+    failures: dict = field(default_factory=dict)
 
 
 #: The grader's own directory in a task: sandbox profile, HOME, TMPDIR, junit report. #899.
@@ -533,12 +535,16 @@ def grade(task: Path, python: Path, fail_to_pass, pass_to_pass, args=()) -> Grad
     """Run the named tests sandboxed, with the source's own pytest `args`; resolved when every one passed."""
     timeout = TEST_TIMEOUT_S
     ids = [*fail_to_pass, *pass_to_pass]
-    report = task / HARNESS_DIR / "junit.xml"
+    report, want = task / HARNESS_DIR / "junit.xml", task / HARNESS_DIR / "grade.json"
     report.parent.mkdir(parents=True, exist_ok=True)
     report.unlink(missing_ok=True)
+    want.write_text(json.dumps(sorted(ids)), encoding="utf-8")
     started = time.perf_counter()
-    rc, tail, late = run_sandboxed([str(python), "-m", "pytest", "-p", "no:cacheprovider", "-q",
-                                    "-o", "addopts=", *args, f"--junitxml={report}", *ids], task, timeout)
+    # Whole files, keeping the named ids: one id that does not collect must not stop the rest from running. #1141.
+    rc, tail, late = run_sandboxed([str(python), "-c", _ONLY, str(want), "-p", "no:cacheprovider", "-q",
+                                    "-o", "addopts=", *args, "--continue-on-collection-errors",
+                                    f"--junitxml={report}", *sorted({i.partition("::")[0] for i in ids})],
+                                   task, timeout)
     took = round(time.perf_counter() - started, 3)
     if late:
         return Grade(False, True, f"tests timed out after {timeout:g}s", took, ids,
@@ -552,8 +558,23 @@ def grade(task: Path, python: Path, fail_to_pass, pass_to_pass, args=()) -> Grad
         p2p = [i for i in pass_to_pass if i in failed]
         why = "; ".join(x for x in (f"fail_to_pass still failing: {', '.join(f2p)}" if f2p else "",
                                     f"pass_to_pass broken: {', '.join(p2p)}" if p2p else "") if x)
-        return Grade(False, True, why or f"pytest exited {rc}: {tail[-300:]}", took, failed)
+        return Grade(False, True, why or f"pytest exited {rc}: {tail[-300:]}", took, failed,
+                     failures=failure_text(report, failed))
     return Grade(True, True, "", took, [])
+
+
+FAILURE_CHARS = 1500
+
+
+def failure_text(xml: Path, ids) -> dict:
+    """Each of `ids`' failure or error text from a junit report, its last FAILURE_CHARS; "missing" when it never ran."""
+    got = {}
+    for case in ET.parse(xml).getroot().iter("testcase"):
+        bad = next((child for child in case if child.tag in ("failure", "error")), None)
+        if bad is not None:
+            text = f"{bad.get('message') or ''}\n{bad.text or ''}".strip()
+            got[f"{case.get('classname') or ''}::{case.get('name') or ''}"] = text[-FAILURE_CHARS:]
+    return {i: got.get(junit_key(i), "missing: the test did not run") for i in ids}
 
 
 @dataclass

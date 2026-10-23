@@ -137,7 +137,10 @@
     "infovore.wiki.build.load_claims(conn: sqlite3.Connection, tech_only: bool=False, salt: str | None=None, runs: Sequence[int] | None=None, tag_runs: Sequence[int] | None=None, verdicts: frozenset[str] | None=None, background: float | None=None, corrections: Mapping[tuple[int, str], Correction] | None=None) -> tuple[list[WikiClaim], Excluded]",
     "infovore.wiki.corrections.Correction.key(self) -> tuple[int, str]",
     "infovore.wiki.corrections.load_corrections(text: str | None=None) -> dict[tuple[int, str], Correction]"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "infovore-353",
@@ -234,7 +237,10 @@
     "infovore.wiki.build.load_claims(conn: sqlite3.Connection, tech_only: bool=False, salt: str | None=None, runs: Sequence[int] | None=None, tag_runs: Sequence[int] | None=None, verdicts: frozenset[str] | None=None, background: float | None=None) -> tuple[list[WikiClaim], Excluded]",
     "infovore.wiki.build.render_page(name: str, claims: Collection[WikiClaim], files: Mapping[str, str], article: Article | None=None, min_section: int=1, grouper: 'Grouper | None'=None, background: float | None=None) -> str",
     "CLI option: --background"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "infovore-352",
@@ -315,7 +321,10 @@
     "infovore.wiki.canon.merge_map(spellings: Spellings) -> dict[str, str]",
     "infovore.wiki.canon.spelling_counts(tags: Iterable[str]) -> dict[str, Counter[str]]",
     "infovore.wiki.canon.summarise_merge(spellings: Spellings, merge: Mapping[str, str]) -> Merged"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "infovore-349",
@@ -382,7 +391,11 @@
     "infovore.wiki.build.page_files(names: Iterable[str], weights: Mapping[str, int] | None=None) -> dict[str, str]",
     "infovore.wiki.build.render_index(pages: Mapping[str, int], files: Mapping[str, str]) -> str",
     "infovore.wiki.build.render_page(name: str, claims: Collection[WikiClaim], files: Mapping[str, str], article: Article | None=None, min_section: int=1, grouper: 'Grouper | None'=None) -> str"
-   ]
+   ],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "infovore-348",
@@ -441,7 +454,11 @@
    "interface": [
     "infovore.db.wiki_articles.latest_article_run(conn: sqlite3.Connection, model_id: str, prompt_hash: str, tag_run_id: int) -> int | None",
     "infovore.db.wiki_articles.run_sections(conn: sqlite3.Connection, article_run_id: int) -> set[tuple[str, str]]"
-   ]
+   ],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "infovore-340",
@@ -504,7 +521,10 @@
     "CLI option: --json",
     "CLI option: --run",
     "CLI option: --sample"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "infovore-339",
@@ -587,7 +607,11 @@
     "infovore.wiki.build._by_topic(claims: Iterable[WikiClaim], unsorted: str | None=None) -> dict[str, list[WikiClaim]]",
     "infovore.wiki.build.article_parts(article: Article, key: str) -> list[tuple[str, Sequence[int]]]",
     "infovore.wiki.build.part_key(section: str, part: int) -> str"
-   ]
+   ],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "infovore-338",
@@ -668,7 +692,11 @@
     "infovore.wiki.groups.make_grouper_for(grouping: str, claims: Sequence[WikiClaim]) -> Grouper",
     "infovore.wiki.groups.summarise(groups_by_page: Sequence[Sequence[ClaimGroup]]) -> Corroboration",
     "CLI option: --grouping"
-   ]
+   ],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "infovore-327",
@@ -730,7 +758,10 @@
     "CLI option: --ranks",
     "CLI option: --sample",
     "CLI option: --seed"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "infovore-286",
@@ -794,7 +825,11 @@
     "area": "infovore/claims",
     "size": "small"
    },
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "infovore-260",
@@ -845,7 +880,10 @@
    "variant_drops": {
     "symptom": "no_fix_section"
    },
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "infovore-257",
@@ -890,7 +928,10 @@
    "variant_drops": {
     "symptom": "no_fix_section"
    },
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "infovore-256",
@@ -934,7 +975,12 @@
    "interface": [
     "CLI option: --include-excluded-channels",
     "CLI option: --jsonl"
-   ]
+   ],
+   "unlisted": {
+    "spec": [
+     "run"
+    ]
+   }
   },
   {
    "id": "infovore-252",
@@ -1045,7 +1091,12 @@
     "infovore.triage.short_report.bucket_table(rows: Sequence[Row], labels: dict[int, Label], held: Collection[int]) -> list[BucketLine]",
     "infovore.triage.short_report.cutoff_line(cutoff: Cutoff | None) -> str",
     "infovore.triage.short_report.short_limit(conn: sqlite3.Connection, lexicon: Lexicon, t_high: float, exclude: frozenset[str]) -> int | None"
-   ]
+   ],
+   "unlisted": {
+    "spec": [
+     "percent_irrelevant"
+    ]
+   }
   },
   {
    "id": "infovore-250",
@@ -1122,7 +1173,10 @@
     "infovore.triage.embed_stage.fit_embed_stage(conn: sqlite3.Connection, embedder: Embedder, cache: EmbeddingCache, exclude_channels: frozenset[str], max_chars: int=MAX_CHARS, folds: int=FOLDS, relevant_precision: float=RELEVANT_PRECISION) -> EmbedStage",
     "infovore.triage.embed_stage.threshold_stats(samples: Sequence[tuple[float, bool]], t_irrelevant: float, t_relevant: float) -> dict[str, dict[str, float]]",
     "CLI option: --relevant-precision"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "infovore-235",
@@ -1202,7 +1256,10 @@
    "interface": [
     "async infovore.run.run_forever(conn: sqlite3.Connection, source: DiscordSource, clock: Clock, sleeper: Sleeper, settings: Settings, *, interval_seconds: float, stop: asyncio.Event, progress: RunProgress=_ignore_run_progress) -> RunReport",
     "async infovore.run.run_once(conn: sqlite3.Connection, source: DiscordSource, clock: Clock, sleeper: Sleeper, settings: Settings, progress: RunProgress=_ignore_run_progress) -> RunReport"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "infovore-219",
@@ -1244,7 +1301,10 @@
    "interface": [
     "CLI option: --by-channel",
     "CLI option: --min-labels"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "infovore-217",
@@ -1329,7 +1389,10 @@
    "admitted_by": "base_collect_repo_symbol",
    "interface": [
     "infovore.eval.judge.MIN_TEXT_MESSAGES"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   }
  ],
  "split": {

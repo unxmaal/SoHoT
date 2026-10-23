@@ -92,6 +92,7 @@ def _repo_regrade(root: Path, run: Path, only: list[str], reextract: bool = Fals
                      "was_resolved": bool(was.get("resolved")), "was_applied": bool(was.get("patch_applied")),
                      "resolved": g.resolved,
                      "patch_applied": g.patch_applied, "detail": g.detail, "skipped": g.skipped,
+                     "failures": g.failures,
                      **({"stored_lines": len(stored["diff"].splitlines()), "lines": len(diff.splitlines())}
                         if reextract else {})})
         note(f"  {path.name}: {'resolved' if g.resolved else 'applied, unresolved' if g.patch_applied else 'invalid_patch'}"

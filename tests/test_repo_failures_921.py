@@ -238,5 +238,5 @@ def test_every_committed_label_that_cites_a_regrade_has_one():
     cited = [x for x in F.load_labels() + F.load_labels(F.LABELS.with_name("repo_failure_labels_blind.jsonl"))
              if x.get("regrade")]
     assert cited and all((x["run"], x["case"]) in regrades for x in cited)
-    assert not any(g["resolved"] and (r, c) in {(x["run"], x["case"]) for x in F.load_labels()}
-                   for (r, c), g in regrades.items())
+    model = {(x["run"], x["case"]) for x in F.load_labels() if F.GRADINGS.get(x.get("grading")) in (None, "model")}
+    assert not any(g["resolved"] and (r, c) in model for (r, c), g in regrades.items())

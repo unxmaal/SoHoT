@@ -32,7 +32,21 @@ prompt: '# attempts metric has no METRIC_DIRECTION; the warning leaks into soh m
 
   The hidden tests call these names from the repository (signatures as a correct fix defines them):
 
-  - `harness.commands.screen.screen_detail(why: str, stderr: str, summary) -> str`'
+  - `harness.commands.screen.screen_detail(why: str, stderr: str, summary) -> str`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - METRIC_DIRECTION[''attempts''] is ''lower''.
+
+  - The evals also emit retries (evals/runners/claude_code.py), stages (evals/runners/chain.py) and thinking_disabled
+  (evals/runners/text.py) with no METRIC_DIRECTION entry; each must be declared ''neutral'' in evals/core.py.
+
+  - screen_detail(why, stderr, summary): when summary is not None (the run left a receipt) it returns
+  why alone. When summary is None it returns f"{why} || {evidence}", where evidence is the stderr with
+  each Python warning line (''<path>:<line>: UserWarning: ...'') and the indented source line after it
+  removed, then whitespace collapsed to single spaces; with nothing left it returns why alone. Example:
+  ''the screen exited 1 || Traceback ValueError: bad config''.'
 params:
   source_repo: https://github.com/unxmaal/SoHoT.git
   base: 396b2a3e9f5158666a97e6cc2ff858bf65390f2b
@@ -44,6 +58,17 @@ params:
   - harness/commands/screen.py
   interface:
   - 'harness.commands.screen.screen_detail(why: str, stderr: str, summary) -> str'
+  stated: '- METRIC_DIRECTION[''attempts''] is ''lower''.
+
+    - The evals also emit retries (evals/runners/claude_code.py), stages (evals/runners/chain.py) and
+    thinking_disabled (evals/runners/text.py) with no METRIC_DIRECTION entry; each must be declared ''neutral''
+    in evals/core.py.
+
+    - screen_detail(why, stderr, summary): when summary is not None (the run left a receipt) it returns
+    why alone. When summary is None it returns f"{why} || {evidence}", where evidence is the stderr with
+    each Python warning line (''<path>:<line>: UserWarning: ...'') and the indented source line after
+    it removed, then whitespace collapsed to single spaces; with nothing left it returns why alone. Example:
+    ''the screen exited 1 || Traceback ValueError: bad config''.'
   fail_to_pass:
   - tests/test_harness_screen.py::test_a_screen_with_a_receipt_records_no_stderr_in_its_detail
   - tests/test_harness_screen.py::test_a_screen_without_a_receipt_keeps_its_stderr_less_warnings
@@ -96,5 +121,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history

@@ -8,8 +8,8 @@
   "B"
  ],
  "who": {
-  "A": "claude-opus-5-5 subagent, 2026-10-17, read only soh cases labels repo --packets output; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1103 cases with the tests-call interface shown: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1105 cases with tools, CLI options and env vars shown: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1095 session-cut cases: claude-opus-5-5 subagents, 2026-10-22, packets only, ascending order; #1136 repaired session-cut cases (interface and stated change shown): claude-opus-5-5 subagents, 2026-10-23, packets only, ascending order; #1138 re-surveyed session-cut cases: claude-opus-5-5 subagents, 2026-10-23, packets only, ascending order",
-  "B": "claude-opus-5-5 subagent, 2026-10-17, separate context, same packets, reverse order; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1103 cases with the tests-call interface shown: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1105 cases with tools, CLI options and env vars shown: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1095 session-cut cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1136 repaired session-cut cases (interface and stated change shown): claude-opus-5-5 subagents, 2026-10-23, packets only, descending order; #1138 re-surveyed session-cut cases: claude-opus-5-5 subagents, 2026-10-23, packets only, descending order"
+  "A": "claude-opus-5-5 subagent, 2026-10-17, read only soh cases labels repo --packets output; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1103 cases with the tests-call interface shown: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1105 cases with tools, CLI options and env vars shown: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1095 session-cut cases: claude-opus-5-5 subagents, 2026-10-22, packets only, ascending order; #1136 repaired session-cut cases (interface and stated change shown): claude-opus-5-5 subagents, 2026-10-23, packets only, ascending order; #1138 re-surveyed session-cut cases: claude-opus-5-5 subagents, 2026-10-23, packets only, ascending order; #1141 history cases with the hidden tests' details stated: claude-opus-5-5 subagents, 2026-10-23, packets only, ascending order",
+  "B": "claude-opus-5-5 subagent, 2026-10-17, separate context, same packets, reverse order; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1103 cases with the tests-call interface shown: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1105 cases with tools, CLI options and env vars shown: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1095 session-cut cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1136 repaired session-cut cases (interface and stated change shown): claude-opus-5-5 subagents, 2026-10-23, packets only, descending order; #1138 re-surveyed session-cut cases: claude-opus-5-5 subagents, 2026-10-23, packets only, descending order; #1141 history cases with the hidden tests' details stated: claude-opus-5-5 subagents, 2026-10-23, separate contexts, descending order"
  },
  "settled": {},
  "labels": {
@@ -26,64 +26,46 @@
   "sohot-363-spec": {
    "A": {
     "spec": 0,
-    "tests": 2,
-    "why": {
-     "tests": "pytest.raises(match='one argument') demands error wording the prompt never gives; any other message naming the cause fails"
-    }
+    "tests": 0
    },
    "B": {
     "spec": 0,
-    "tests": 2,
-    "why": {
-     "tests": "Error messages must match the regexes 'one argument' and 'did not recognise'; the prompt gives no wording."
-    }
+    "tests": 0
    }
   },
   "sohot-363-symptom": {
    "A": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "error text must contain 'one argument' and 'did not recognise', neither suggested by the prompt; refusal of a leading '-' is only implied"
-    }
+    "tests": 0
    },
    "B": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "Requires refusing at add() with specific message wording; symptom asks no refusal, and auto-splitting the command would fail."
-    }
+    "tests": 0
    }
   },
   "sohot-368-spec": {
    "A": {
     "spec": 0,
-    "tests": 3,
-    "why": {
-     "tests": "test_the_pipe_is_utf8_whatever_the_locale requires encoding='utf-8' passed to execute, which the prompt never mentions"
-    }
+    "tests": 0
    },
    "B": {
     "spec": 0,
-    "tests": 2,
-    "why": {
-     "tests": "Second graded test requires encoding='utf-8' passed to execute, which the prompt never mentions."
-    }
+    "tests": 0
    }
   },
   "sohot-368-symptom": {
    "A": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "requires the prompt via the input= kwarg (rejects a '--' end-of-options fix) and an encoding='utf-8' kwarg never asked for"
+     "tests": "The prompt never says to move the message to stdin, yet the tests require it in the execute call's input= keyword and absent from argv, so the standard fix of putting '--' before the positional prompt fails."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Requires stdin delivery (a '--' end-of-options fix fails) and an unrequested utf-8 encoding kwarg."
+     "tests": "test_case_text_never_reaches_the_argument_parser requires the user message to arrive through execute's input= keyword (stdin), which the prompt never states, so the common end-of-options fix ('--' before the prompt in argv) fails."
     }
    }
   },
@@ -150,17 +132,11 @@
   "sohot-396-spec": {
    "A": {
     "spec": 0,
-    "tests": 2,
-    "why": {
-     "tests": "The full-backlog test asserts the exact output phrase 'already on disk wait for a screen', which the issue never specifies, so a correct skip with any other message fails."
-    }
+    "tests": 0
    },
    "B": {
     "spec": 0,
-    "tests": 2,
-    "why": {
-     "tests": "The full-backlog test asserts the exact printed phrase 'already on disk wait for a screen', a message the issue never specifies."
-    }
+    "tests": 0
    }
   },
   "sohot-396-symptom": {
@@ -183,34 +159,22 @@
   },
   "sohot-399-spec": {
    "A": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "A graded test is parametrized on the private migration helper name _requeue_screens_of_missing_weights, which the issue never names, so a correct schema-20 migration under any other name fails."
-    }
+    "spec": 0,
+    "tests": 1
    },
    "B": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "The graded parametrized ids depend on the migration helper being named exactly _requeue_screens_of_missing_weights, a name the prompt never gives."
-    }
+    "spec": 0,
+    "tests": 0
    }
   },
   "sohot-399-symptom": {
    "A": {
-    "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "The tests require a schema-20 migration that requeues existing broken verdicts, under a specific private helper name, and the symptom-only issue never asks for any retroactive repair."
-    }
+    "spec": 0,
+    "tests": 1
    },
    "B": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "The graded tests check a schema 20 migration that requeues broken verdicts through a function named _requeue_screens_of_missing_weights, and they block re-queue after a 'screened' verdict, none of which the issue asks for."
-    }
+    "tests": 0
    }
   },
   "sohot-404-spec": {
@@ -249,34 +213,22 @@
   },
   "sohot-438-spec": {
    "A": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "The tests require incomplete split sets to be excluded entirely (shard_sets == {} and smallest == 0), a rule the issue never states, so a fix that sums whatever parts are listed fails."
-    }
+    "spec": 0,
+    "tests": 0
    },
    "B": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "The issue offers shard-set sizing or ignoring a stray small file as alternatives, but the tests require both, and also require an incomplete split set to give 0."
-    }
+    "spec": 0,
+    "tests": 0
    }
   },
   "sohot-438-symptom": {
    "A": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "The tests fix unstated details such as dropping incomplete split sets and a stray-file threshold relative to the smallest split variant, rejecting reasonable sizing fixes that differ on those points."
-    }
+    "spec": 0,
+    "tests": 0
    },
    "B": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "A fix must both sum complete shard sets and drop a stray small single file, and it must treat an incomplete split set as no variant, a combination the issue never pins down."
-    }
+    "tests": 0
    }
   },
   "sohot-455-spec": {
@@ -345,8 +297,8 @@
   },
   "sohot-598-symptom": {
    "A": {
-    "spec": 0,
-    "tests": 1
+    "spec": 1,
+    "tests": 0
    },
    "B": {
     "spec": 1,
@@ -371,20 +323,15 @@
   },
   "sohot-632-symptom": {
    "A": {
-    "spec": 2,
-    "tests": 3,
+    "spec": 1,
+    "tests": 2,
     "why": {
-     "spec": "The issue says only that nothing acts on the harness_error, leaving open whether to fetch the base, decline, park the candidate, or stop re-screening it.",
-     "tests": "The tests check budget enforcement, unknown-size refusal, a specific waiting verdict reason and on-disk base backfill, none of which the symptom-only issue asks for."
+     "tests": "Four of six graded tests require fetching.run() itself to fetch the missing base for a candidate already on disk and queued at the screen tier, and one requires snapshot order [OMNI, BASE]; neither is stated, so a fix that fetches the base first or handles on-disk candidates outside run() fails."
     }
    },
    "B": {
-    "spec": 2,
-    "tests": 3,
-    "why": {
-     "spec": "The issue says only that nothing acts on the harness_error, so it is unclear whether to fetch the base, park the candidate, or decline it.",
-     "tests": "The tests require fetching the base inside fetching.run, refusing a base of unknown size, a LIMIT reason for a budget overrun, and an 8B size mapping, none of which the issue asks for."
-    }
+    "spec": 1,
+    "tests": 1
    }
   },
   "sohot-642-spec": {
@@ -416,18 +363,12 @@
   },
   "sohot-647-spec": {
    "A": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "requires split actions/cache/restore and actions/cache/save steps, a key from a steps. output, Dir::Cache::archives in the apt run, and job timeout > apt+20"
-    }
+    "spec": 0,
+    "tests": 0
    },
    "B": {
     "spec": 0,
-    "tests": 2,
-    "why": {
-     "tests": "Requires split actions/cache/restore+save steps, a key built from a step output ('steps.' in key), and Dir::Cache::archives in the apt run; actions/cache@v4 with hashFiles fails."
-    }
+    "tests": 0
    }
   },
   "sohot-647-symptom": {
@@ -495,28 +436,22 @@
   },
   "sohot-858-spec": {
    "A": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "test requires the proposal state to become 'screened' after migration, while the prompt says 'requeue', which most would read as queued"
-    }
+    "spec": 0,
+    "tests": 0
    },
    "B": {
-    "spec": 1,
-    "tests": 1
+    "spec": 0,
+    "tests": 0
    }
   },
   "sohot-858-symptom": {
    "A": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "requires a schema migration restoring state 'screened' specifically; re-queueing or changing the sweep fails"
-    }
+    "spec": 0,
+    "tests": 0
    },
    "B": {
     "spec": 1,
-    "tests": 1
+    "tests": 0
    }
   },
   "sohot-859-spec": {
@@ -553,50 +488,32 @@
   },
   "sohot-879-spec": {
    "A": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "The issue says to keep subprocess stderr out of verdict detail, yet the test demands that non-warning stderr be kept in an exact 'why || Traceback ...' format when there is no receipt, and the hidden scanner requires directions for retries, stages and thinking_disabled under its own detection rules."
-    }
+    "spec": 0,
+    "tests": 0
    },
    "B": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "The tests need one exact split, all stderr dropped when a receipt exists and only warnings stripped when there is none, so the literal reading 'keep subprocess stderr out' fails, and so does warning-only filtering."
-    }
+    "spec": 0,
+    "tests": 0
    }
   },
   "sohot-879-symptom": {
    "A": {
-    "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "The repo-wide scanner test requires METRIC_DIRECTION entries for metrics other than attempts (retries, stages, thinking_disabled), which the symptom-only issue never mentions, and the detail format is pinned exactly."
-    }
+    "spec": 0,
+    "tests": 0
    },
    "B": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "The direction test needs entries for retries, stages and thinking_disabled, which the issue never mentions, and the receipt test drops non-warning stderr like 'loading weights' when the issue only complains about warnings."
-    }
+    "tests": 0
    }
   },
   "infovore-219-spec": {
    "A": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "The tests pin an exact header line, '100.0%' formatting, yes/no markers, thread rows inheriting a parent's exclusion, and an exact empty-result message, none of which the issue specifies."
-    }
+    "spec": 0,
+    "tests": 0
    },
    "B": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "Tests pin an exact header and row layout ('100.0%', 'yes'/'no'), threads kept as separate rows but excluded through their parent, and an exact empty-result message the issue never asks for."
-    }
+    "spec": 0,
+    "tests": 0
    }
   },
   "infovore-235-spec": {
@@ -619,19 +536,12 @@
   },
   "infovore-256-spec": {
    "A": {
-    "spec": 2,
-    "tests": 2,
-    "why": {
-     "spec": "label_source and cascade_stage are never defined, and neither is which slice to pick when an exchange is in several, so the correct values are guesswork.",
-     "tests": "The tests assert a specific source_ref parsing, a held-out-first slice choice, parent-channel names for threads and exact count line formats such as 'held_out true: 2' that the issue never states."
-    }
+    "spec": 0,
+    "tests": 0
    },
    "B": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "Tests pin unspecified semantics: label_source parsed from source_ref ('judge:x:n' to 'x'), thread channels reported under their parent, slice choice for multi-slice exchanges, and exact count line formats."
-    }
+    "tests": 1
    }
   },
   "infovore-257-spec": {
@@ -701,35 +611,21 @@
   "mcm-engine-116-spec": {
    "A": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "Three graded tests pin exact SQL execute-site counts per file (67/69/71), which the issue never mentions and which an issue-requested index or a differently structured query would break."
-    }
+    "tests": 1
    },
    "B": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "Tests pin exact SQL execute-site counts per file, so a fix that adds the index the issue proposes or structures the scoped query differently fails."
-    }
+    "spec": 0,
+    "tests": 0
    }
   },
   "mcm-engine-116-symptom": {
    "A": {
-    "spec": 2,
-    "tests": 3,
-    "why": {
-     "spec": "Without the proposed-fix section the NULL-scope fallback, unscoped global-latest behavior and migration shape are left open, and the workspace default is an explicit open question.",
-     "tests": "The tests pin exact SQL execute-site counts per file and require a NULL-scope fallback ordering that this version of the issue never describes."
-    }
+    "spec": 1,
+    "tests": 1
    },
    "B": {
-    "spec": 2,
-    "tests": 3,
-    "why": {
-     "spec": "The issue ends with an unresolved open question about how workspace and unauthenticated scoping should behave.",
-     "tests": "Tests pin a NULL-scope fallback rule, a schema bump to exactly v17 and exact SQL execute-site counts per file, none of which the symptom prompt asks for."
-    }
+    "spec": 1,
+    "tests": 0
    }
   },
   "mcm-engine-135-spec": {
@@ -791,17 +687,11 @@
   "mcm-engine-171-spec": {
    "A": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "Tests require the pointer text \"get_entry('negative',\" where the issue specifies \"(get_entry for full)\", and they cap NEGATIVE hits at 3 in the all-scope path while a scoped query returns 6, contradicting the issue's 8-10 overall hit ceiling."
-    }
+    "tests": 0
    },
    "B": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "Tests demand an \"get_entry('negative',\" pointer where the spec says '(get_entry for full)', and a per-kind NEGATIVE cap of 3 where the spec proposes an overall ~8-10 hit ceiling that would let all 6 test negatives through."
-    }
+    "tests": 0
    }
   },
   "mcm-engine-171-symptom": {
@@ -824,33 +714,21 @@
   "mcm-engine-47-spec": {
    "A": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "Tests require the id inside the type tag in the exact form [RULE #id], [NEGATIVE #, [ERROR #, a layout the issue never specifies, so other reasonable id renderings fail."
-    }
+    "tests": 0
    },
    "B": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "Most graded tests require ids rendered in the exact form '[RULE #id]', '[NEGATIVE #', '[ERROR #', a layout the issue never specifies, so any other id format fails."
-    }
+    "tests": 1
    }
   },
   "mcm-engine-47-symptom": {
    "A": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "Tests pin the unstated [TYPE #id] tag format across all entity types, rejecting other reasonable ways to surface ids in search output."
-    }
+    "tests": 0
    },
    "B": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "Most graded tests require ids rendered in the exact form '[RULE #id]', '[NEGATIVE #', '[ERROR #', a layout the issue never specifies, so any other id format fails."
-    }
+    "tests": 1
    }
   },
   "mcm-engine-79-spec": {
@@ -885,17 +763,11 @@
   "mcm-engine-80-symptom": {
    "A": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "Without the proposed-fix section, the tests still require is_substantive to reject 'Args:/Returns:/Raises:' boilerplate, the strict key to be omitted from the default payload, and 'loose' on stderr, none of which this issue asks for."
-    }
+    "tests": 0
    },
    "B": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "Tests pin details the issue never asks for: boilerplate-only spans like 'Args:/Returns:/Raises:' must be rejected (fails a fix reusing the 3-token floor), the payload must omit 'strict' in default mode, and stderr must mention 'loose'."
-    }
+    "tests": 1
    }
   },
   "mcm-engine-92-spec": {
@@ -926,36 +798,22 @@
   },
   "infovore-250-spec": {
    "A": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "The tests require the recipe key 'cv', the side keys irrelevant/relevant with n/precision/recall, zero-on-empty values and the literal 'cv irrelevant: n=' output text, all unstated layout choices."
-    }
+    "spec": 0,
+    "tests": 0
    },
    "B": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "Tests require a recipe['cv'] key, an exact 'cv irrelevant: n=' print layout and specific dict shapes, none of which the issue names."
-    }
+    "spec": 0,
+    "tests": 0
    }
   },
   "infovore-252-spec": {
    "A": {
-    "spec": 2,
-    "tests": 3,
-    "why": {
-     "spec": "The issue gives no bucket edges, cutoff semantics, output format or stage placement, leaving most of the design open beyond the signature list.",
-     "tests": "Tests check exact bucket labels, a chars+1 cutoff limit, an exact cutoff_line string, and a new 'short no tech' status line the issue never requests."
-    }
+    "spec": 1,
+    "tests": 1
    },
    "B": {
-    "spec": 2,
-    "tests": 3,
-    "why": {
-     "spec": "The two-sentence issue does not define the length buckets, the length unit, the cutoff semantics or the report layout.",
-     "tests": "The tests pin exact bucket labels and edges, the cutoff_line format, a new 'short no tech' field in the status output, the short_limit key in recipe_json and the stage order, none of which the issue asks for."
-    }
+    "spec": 1,
+    "tests": 1
    }
   },
   "infovore-327-spec": {
@@ -974,17 +832,11 @@
   "infovore-338-spec": {
    "A": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "The tests require exact page-entry text '1 speaker(s), 1 conversation(s))', an exact Corroboration __str__ string, a golden file, a 'one vector per claim' error message and make_grouper_for returning group_claims by identity, none of which the issue asks for."
-    }
+    "tests": 1
    },
    "B": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "The issue asks pages to show 'N people, M conversations, first/last seen', but tests require the exact 'speaker(s)/conversation(s)' format, a golden file, a specific summarise string and specific sort tie-breaks."
-    }
+    "tests": 0
    }
   },
   "infovore-338-symptom": {
@@ -1110,100 +962,61 @@
   "infovore-352-spec": {
    "A": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "Tests pin exact merge_map outputs for -es/-ies plurals, en-dash and backtick stripping, chain/cycle handling and a 'merged: 3 keys, 3 claim-tags' format that go beyond the issue's stated rules."
-    }
+    "tests": 1
    },
    "B": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "The tests pin exact merge_map output for es/ies plurals, en-dash and backtick stripping, the 'the' prefix, and the exact 'merged: K keys, T claim-tags' wording, so many reasonable implementations of the stated guards would fail."
-    }
+    "spec": 0,
+    "tests": 1
    }
   },
   "infovore-353-spec": {
    "A": {
-    "spec": 2,
-    "tests": 3,
-    "why": {
-     "spec": "The issue specifies --novelty-floor F with novelty = 1 - cosine, while the signatures expose --background and a 'novelty' field that actually holds the cosine, so the intended semantics conflict.",
-     "tests": "The tests require a 'novelty' field that holds the raw cosine, exact Background entry text with a Wikipedia URL and a 'reference' fallback, a 'background: 1 (cosine >= 0.8)' stats line, and sorting where an unscored claim leads, none of which the issue describes."
-    }
+    "spec": 1,
+    "tests": 0
    },
    "B": {
-    "spec": 2,
-    "tests": 3,
-    "why": {
-     "spec": "The issue specifies a --novelty-floor with novelty = 1 minus cosine, while the names block exposes --background and a novelty field, so which semantics and which design to build is unclear.",
-     "tests": "Tests treat WikiClaim.novelty as the raw max cosine, the reverse of the issue's definition, sort lower-cosine leads first, and pin exact Background entry and stats line text."
-    }
+    "spec": 1,
+    "tests": 0
    }
   },
   "infovore-373-spec": {
    "A": {
-    "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "Tests check indented-code to <pre> rendering in the HTML body, ValueError validation for ambiguous or duplicate entries, and exact nav and footer HTML placement, none of which the issue asks for."
-    }
+    "spec": 0,
+    "tests": 0
    },
    "B": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "The tests require body() to render four-space-indented lines as escaped <pre> code blocks, and they also pin the exact nav and footer HTML, whitespace normalisation of statements, and ValueError messages containing 'correction'; the issue asks for none of these."
-    }
+    "tests": 1
    }
   },
   "mcm-engine-142-spec": {
    "A": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "The issue allows add_knowledge to reject or strip, but the tests require it to strip and re-split, and they check report text such as 'scanned 2', '1 polluted', '#id' and 'updated 1'."
-    }
+    "spec": 0,
+    "tests": 0
    },
    "B": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "The issue leaves prevention optional and allows reject or strip, but tests require add_knowledge to strip and salvage detail, and they pin the tool's exact output wording."
-    }
+    "spec": 0,
+    "tests": 0
    }
   },
   "mcm-engine-142-symptom": {
    "A": {
-    "spec": 2,
-    "tests": 3,
-    "why": {
-     "spec": "This version has no fix section, so whether a cleanup tool, a store-time guard or both is wanted, and how detail should be salvaged, is left to inference from the signature block.",
-     "tests": "The tests require add_knowledge to clean content at store time, which this version of the issue never asks for, and they check exact report wording."
-    }
+    "spec": 1,
+    "tests": 0
    },
    "B": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "The symptom report asks for no store-time change, yet a test requires add_knowledge to strip and re-split polluted input, and other tests pin exact report strings such as 'scanned 2', '1 polluted' and 'updated 1'."
-    }
+    "tests": 0
    }
   },
   "mcm-engine-145-spec": {
    "A": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "The tests pin save_snapshot as the tool (the issue allows session_handoff), `progress`/`open_questions` argument mapping, an \"auto\" default, and the word \"compacted\" in the SessionStart directive, none of which the issue states."
-    }
+    "tests": 1
    },
    "B": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "The issue asks to call get_resume_context and inject its result (via mcp_tool hooks), but tests require a directive string containing 'compacted' and save_snapshot args with open_questions, which a fix following the issue would not produce."
-    }
+    "tests": 0
    }
   },
   "mcm-engine-145-symptom": {
@@ -1243,17 +1056,11 @@
   "mcm-engine-157-spec": {
    "A": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "The tests check a hook-side coverage store with a 24-hour TTL and staleness pruning that the issue never asks for, plus exact keyword-picking heuristics and the state-file layout."
-    }
+    "tests": 1
    },
    "B": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "Tests check a hook-side coverage module with a 24h TTL, compaction residency and pruning that the issue never mentions, plus exact keyword-picking outcomes and recording coverage even on empty search."
-    }
+    "tests": 1
    }
   },
   "mcm-engine-160-spec": {
@@ -1277,33 +1084,30 @@
   "mcm-engine-170-spec": {
    "A": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Graded seam-inventory tests pin the exact count of SQL execute sites in each storage adapter and the dry-run output must contain the literal '2 polluted across 3 table(s)', neither of which the issue asks for."
+     "tests": "The error tests need the headline cut at a `</error_text>` close tag (POLLUTED_PAT/POLLUTED_ERR expect pattern to drop it), but the prompt never mentions error_text; it names only pattern/context/root_cause/fix and says to reuse the existing marker regexes, which do not match that tag."
     }
    },
    "B": {
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "Tests pin the exact sanitize_corpus output string '2 polluted across 3 table(s)' and exact per-file SQL execute-site counts, details the issue never specifies."
+     "tests": "The ERROR fixtures close the headline with `</error_text>`, a tag the prompt never names (it only shows `</what_failed>` and says to reuse the existing marker regexes, which do not match it), so a fix that cuts at known column-name close tags or at the first `<parameter>` leaves `</error_text>` in pattern and fails the exact-equality asserts."
     }
    }
   },
   "mcm-engine-170-symptom": {
    "A": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Graded tests pin the per-file SQL execute-site counts and an exact '2 polluted across 3 table(s)' output string, and require a report_error store guard that the acceptance list never mentions."
+     "tests": "test_report_error_guard_cleans_on_store requires a store-time guard on report_error (salvaging context out of the blob) although the acceptance names only add_negative, and the ERROR tests need the headline cut at a serialized </error_text> close tag that the issue never mentions."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "Tests pin the exact sanitize_corpus output string '2 polluted across 3 table(s)' and per-file SQL execute-site counts in the seam inventory, so a fix that formats the report differently or adds storage SQL differently fails."
-    }
+    "tests": 1
    }
   },
   "mcm-engine-177-spec": {
@@ -1344,17 +1148,11 @@
   "mcm-engine-199-spec": {
    "A": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "The tests pin `kind_bytes` per-hit-kind attribution and `wire_bytes` as a compact {\"result\":...} JSON envelope (neither is described), plus a -1 sentinel, the `report.sizes` layout and exact output strings."
-    }
+    "tests": 0
    },
    "B": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "Tests require kind_bytes semantics (hit-block attribution by [KIND headers and ---/=/( section lines) and a compact {\"result\": ...} wire envelope that the issue never asks for, plus exact report.sizes keys and format strings."
-    }
+    "tests": 1
    }
   },
   "mcm-engine-199-symptom": {
@@ -1393,33 +1191,21 @@
   "mcm-engine-22-symptom": {
    "A": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "Tests pin an unspecified rules/<category>/<slug>.md layout, a markdown body format, a hard-coded commit author email and the 'written'/'committed' return keys, none of which the issue states."
-    }
+    "tests": 0
    },
    "B": {
-    "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "Tests pin the exact committer email 'mcm-engine-mirror@localhost', a rules/<category>/<slug>.md layout, a {written, committed} return dict and the rendered markdown shape, none of which the issue states."
-    }
+    "spec": 0,
+    "tests": 0
    }
   },
   "mcm-engine-25-spec": {
    "A": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "Weights are left open by the issue, yet tests assume reinforcement is bounded near 0.3, relevance outweighs all maxed counters, pinned is a flat additive term and pinned_only equals W_RELEVANCE times normalize_relevance."
-    }
+    "tests": 1
    },
    "B": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "Tests require compose_rank_pinned_only to change to W_RELEVANCE times normalized relevance though the issue says to keep it intact, cap the reinforcement contribution below 0.31, and require relevance to outweigh maxed counters, none of which the issue specifies."
-    }
+    "tests": 1
    }
   },
   "mcm-engine-27-spec": {
@@ -1465,20 +1251,12 @@
   },
   "mcm-engine-32-spec": {
    "A": {
-    "spec": 2,
-    "tests": 3,
-    "why": {
-     "spec": "The issue asks for automatic contradiction detection that feeds supersession, but leaves open whether to auto-supersede, the heuristic to use and the input shape, while the reference only surfaces candidates.",
-     "tests": "Tests assume an unstated (id, topic, body) item shape, assert that add_rule output contains a surfacing note naming 'supersede_rule', and expect read-only surfacing where the issue describes automatic supersession."
-    }
+    "spec": 1,
+    "tests": 0
    },
    "B": {
-    "spec": 2,
-    "tests": 2,
-    "why": {
-     "spec": "A one-paragraph roadmap note that offers a keyword heuristic or an LLM and says to feed supersede_rule automatically, so it is unclear whether to auto-supersede or only surface candidates, and what counts as a contradiction.",
-     "tests": "Tests require a (id, topic, body) item layout and a specific topic-similar/body-divergent definition, and they check add_rule output for 'conflict' and 'supersede_rule', none of which the issue specifies."
-    }
+    "spec": 1,
+    "tests": 1
    }
   },
   "mcm-engine-63-spec": {
@@ -1518,50 +1296,32 @@
   },
   "mcm-engine-78-spec": {
    "A": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "Tests require an unspecified JSON envelope with total/returned/has_more/limit keys, and a client paging loop that consumes exactly those keys, so fixes using a bare list or a next_offset cursor fail."
-    }
+    "spec": 0,
+    "tests": 0
    },
    "B": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "Tests pin an unspecified JSON envelope for export_rules (keys rules/total/returned/limit/has_more) and the client paging loop depends on it, so fixes with any other page shape fail."
-    }
+    "spec": 0,
+    "tests": 0
    }
   },
   "mcm-engine-83-spec": {
    "A": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "Tests check the private _trackers mapping evicting on garbage collection, which a TTL or close-hook design (both allowed by the issue) fails, and they pin the watermark-bump mechanism of the optional read-only hardening."
-    }
+    "tests": 0
    },
    "B": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "The issue proposes a dict keyed by session id with close or TTL eviction, but the tests require GC-driven eviction visible through the private _trackers WeakKeyDictionary and also grade the secondary hardening the issue marks optional."
-    }
+    "tests": 1
    }
   },
   "mcm-engine-83-symptom": {
    "A": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "Tests check GC eviction through a private _trackers attribute that this version of the issue never mentions, and they pin a specific implementation of the optional read-only hardening."
-    }
+    "tests": 0
    },
    "B": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "Tests reach into the private _trackers attribute and require WeakKeyDictionary garbage-collection eviction, attribute-level delegation, and the exact read-only watermark behaviour of the section the issue calls optional, so many valid per-session designs fail."
-    }
+    "tests": 1
    }
   },
   "mcm-engine-pr139-request": {

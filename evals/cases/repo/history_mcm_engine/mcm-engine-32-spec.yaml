@@ -16,7 +16,26 @@ prompt: '# Phase 2: automatic contradiction detection -> supersession (gap 3)
   - `mcm_engine.dedup.find_conflicts(items: Iterable[tuple], *, topic_threshold: float=TOPIC_THRESHOLD,
   body_threshold: float=BODY_THRESHOLD, min_entropy: float=MIN_ENTROPY) -> list[tuple]`
 
-  - MCP tool: `find_conflicting_rules(topic_threshold: float=0.5, body_threshold: float=0.4) -> str`'
+  - MCP tool: `find_conflicting_rules(topic_threshold: float=0.5, body_threshold: float=0.4) -> str`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - find_conflicts takes (id, topic_text, body_text) tuples and returns a sorted list of bare (id_a, id_b)
+  pairs with id_a < id_b, no scores.
+
+  - A pair is a candidate when topic similarity >= topic_threshold and body similarity <= body_threshold,
+  using the module''s MinHash signature similarity. TOPIC_THRESHOLD = 0.5 and BODY_THRESHOLD = 0.4 are
+  new constants in mcm_engine.dedup. Rows with an empty body, or a topic below min_entropy, are skipped.
+
+  - For a rule, topic_text is its title plus keywords and body_text is its content; only active rules
+  (not archived, not superseded) are compared.
+
+  - add_rule never supersedes. When the new rule conflicts with an existing active rule, its reply gains
+  a note containing the word "conflict" and the text "supersede_rule"; otherwise the reply must not contain
+  the word "conflict".
+
+  - find_conflicting_rules is read-only and writes both ids of each pair as "#<id>".'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 0b0e41f26cc07d2d674d74d25278fb0987ce361e
@@ -35,6 +54,21 @@ params:
   - 'mcm_engine.dedup.find_conflicts(items: Iterable[tuple], *, topic_threshold: float=TOPIC_THRESHOLD,
     body_threshold: float=BODY_THRESHOLD, min_entropy: float=MIN_ENTROPY) -> list[tuple]'
   - 'MCP tool: find_conflicting_rules(topic_threshold: float=0.5, body_threshold: float=0.4) -> str'
+  stated: '- find_conflicts takes (id, topic_text, body_text) tuples and returns a sorted list of bare
+    (id_a, id_b) pairs with id_a < id_b, no scores.
+
+    - A pair is a candidate when topic similarity >= topic_threshold and body similarity <= body_threshold,
+    using the module''s MinHash signature similarity. TOPIC_THRESHOLD = 0.5 and BODY_THRESHOLD = 0.4 are
+    new constants in mcm_engine.dedup. Rows with an empty body, or a topic below min_entropy, are skipped.
+
+    - For a rule, topic_text is its title plus keywords and body_text is its content; only active rules
+    (not archived, not superseded) are compared.
+
+    - add_rule never supersedes. When the new rule conflicts with an existing active rule, its reply gains
+    a note containing the word "conflict" and the text "supersede_rule"; otherwise the reply must not
+    contain the word "conflict".
+
+    - find_conflicting_rules is read-only and writes both ids of each pair as "#<id>".'
   fail_to_pass:
   - tests/test_conflict.py::test_add_rule_no_conflict_note_when_unrelated
   - tests/test_conflict.py::test_add_rule_surfaces_conflict_note
@@ -58,5 +92,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history_mcm_engine

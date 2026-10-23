@@ -15,7 +15,23 @@ prompt: '# Candidates the #803 length cap declined stay declined after #813 made
 
 
   Fix: a migration that requeues `declined`/`limit` verdicts written by the length refusal (screened but
-  never measured), plus a test that a pre-#815 length refusal comes back as measurable.'
+  never measured), plus a test that a pre-#815 length refusal comes back as measurable.
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - The step is a new harness/memory_store/migrations/v71.py with a module-level VERSION = 71 and a data(conn)
+  function, which is the phase the step loader calls (it calls no migrate/up/apply). SCHEMA_VERSION in
+  harness/memory_store/schema.py becomes 71.
+
+  - data(conn) calls a new _requeue_length_refusals(conn) in harness/memory_store/migrations/retractions.py.
+
+  - The length refusals are tier ''adopt'', reason ''limit'', with a detail like ''code: not run: 135
+  case(s) x repeat 1 x 2 call(s) projected at 3h 26m, over the 2h 00m budget; ...''. Only a proposal whose
+  state verdict is such a refusal with an empty until, and whose verdict just before it (by id) is ''screened'',
+  is requeued; it goes back to state ''screened'' so ms.survivors() lists it. Other adopt/limit declines
+  (for example an ''underpowered'' one), screen-tier limit declines, a refusal that carries an until,
+  and a refusal superseded by a later verdict stay as they are.'
 params:
   source_repo: https://github.com/unxmaal/SoHoT.git
   base: 784795a99048efa3ce0c8bc729d68a8973e20cda
@@ -27,6 +43,18 @@ params:
   - harness/memory_store/schema.py
   new_files:
   - harness/memory_store/migrations/v71.py
+  stated: '- The step is a new harness/memory_store/migrations/v71.py with a module-level VERSION = 71
+    and a data(conn) function, which is the phase the step loader calls (it calls no migrate/up/apply).
+    SCHEMA_VERSION in harness/memory_store/schema.py becomes 71.
+
+    - data(conn) calls a new _requeue_length_refusals(conn) in harness/memory_store/migrations/retractions.py.
+
+    - The length refusals are tier ''adopt'', reason ''limit'', with a detail like ''code: not run: 135
+    case(s) x repeat 1 x 2 call(s) projected at 3h 26m, over the 2h 00m budget; ...''. Only a proposal
+    whose state verdict is such a refusal with an empty until, and whose verdict just before it (by id)
+    is ''screened'', is requeued; it goes back to state ''screened'' so ms.survivors() lists it. Other
+    adopt/limit declines (for example an ''underpowered'' one), screen-tier limit declines, a refusal
+    that carries an until, and a refusal superseded by a later verdict stay as they are.'
   fail_to_pass:
   - tests/test_length_refusal_reopen_858.py::test_a_pre_815_length_refusal_is_requeued_for_measurement
   pass_to_pass:
@@ -46,5 +74,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history

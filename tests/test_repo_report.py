@@ -145,12 +145,14 @@ def _repo_cases():
     """The 41 cases the pilot ran on, the ones #920 dropped afterwards included."""
     from evals.core import Case, load_cases
     from evals.importers import CASES, history
-    held = dict(history.DROPPED)
+    held, retired = dict(history.DROPPED), dict(history.RETIRED)
     history.DROPPED.clear()
+    history.RETIRED.clear()
     try:
         made = [history.convert(r).case for r in history.fetch()]
     finally:
         history.DROPPED.update(held)
+        history.RETIRED.update(retired)
     own = [c for c in load_cases(CASES / "repo") if "history" not in c.source.parts]
     return own + [Case(id=c["id"], modality=c["modality"], prompt=c["prompt"], params=c["params"]) for c in made]
 
@@ -162,9 +164,10 @@ def test_the_pilot_reads_as_the_store_does():
     assert (v["rates"][OPUS_SIDE]["all"]["resolved"], v["rates"][OPUS_SIDE]["all"]["n"]) == (12, 37)
     assert (v["rates"][ORNITH_SIDE]["all"]["resolved"], v["rates"][ORNITH_SIDE]["all"]["n"]) == (4, 37)
     f = rep["fair"]["views"]["limits as losses"]
-    assert (f["cases"], f["tasks"]) == (13, 8) and "sohot-858-spec" in rep["fair"]["unfair"]
-    assert (f["rates"][OPUS_SIDE]["all"]["resolved"], f["rates"][ORNITH_SIDE]["all"]["resolved"]) == (10, 4)
-    assert "limits as losses, fair subset: 13 cases from 8 tasks" in R.text(rep)
+    # #1141 stated what the tests need in 45 history prompts and relabelled them, so 858 left the unfair set.
+    assert (f["cases"], f["tasks"]) == (24, 15) and "sohot-642-symptom" in rep["fair"]["unfair"]
+    assert (f["rates"][OPUS_SIDE]["all"]["resolved"], f["rates"][ORNITH_SIDE]["all"]["resolved"]) == (11, 4)
+    assert "limits as losses, fair subset: 24 cases from 15 tasks" in R.text(rep)
     assert v["rates"][OPUS_SIDE]["all"]["ci95"] == [0.1963, 0.4854] and v["rates"][ORNITH_SIDE]["all"]["ci95"] == [0.0429, 0.2471]
     named = {rep["labels"][t] for t in v["only"][OPUS_SIDE]}
     assert named == {"sohot-363", "sohot-374", "sohot-376", "sohot-788"} and v["only"][ORNITH_SIDE] == []

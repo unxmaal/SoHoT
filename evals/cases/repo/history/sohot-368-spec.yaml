@@ -9,7 +9,9 @@ prompt: "# claude-code runner passes the prompt as an argument, so a prompt star
   \ in argv after \\`-p\\` as a positional. Extract cases embed material that can start with \\`-\\` (a\
   \ unified diff), and the CLI parses it as options. One case's text even turned into \\`--resume\\`.\n\
   \nFix: pass the user message on stdin (\\`claude -p\\` reads its prompt from stdin when none is given),\
-  \ so no case content can reach the argument parser. Then re-run extract."
+  \ so no case content can reach the argument parser. Then re-run extract.\n\nThe hidden tests also hold\
+  \ a fix to these details (stated for this exam):\nThe execute call passes the user message as its input=\
+  \ keyword and adds encoding=\"utf-8\" alongside text=True, so the pipe is UTF-8 whatever the locale."
 params:
   source_repo: https://github.com/unxmaal/SoHoT.git
   base: 7cf18e0eeff12182cebd3fb66415b8d62fca4e70
@@ -18,6 +20,8 @@ params:
   context: oracle
   context_files:
   - evals/runners/claude_code.py
+  stated: The execute call passes the user message as its input= keyword and adds encoding="utf-8" alongside
+    text=True, so the pipe is UTF-8 whatever the locale.
   fail_to_pass:
   - tests/test_claude_code_runner.py::test_case_text_never_reaches_the_argument_parser
   - tests/test_claude_code_runner.py::test_the_pipe_is_utf8_whatever_the_locale
@@ -46,5 +50,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history

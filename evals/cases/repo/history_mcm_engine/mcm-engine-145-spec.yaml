@@ -45,7 +45,25 @@ prompt: '# Save and restore session state automatically at compaction (PreCompac
   - `mcm_engine.hooks.pre_compact.main(argv: Optional[list[str]]=None) -> int`
 
   - `mcm_engine.hooks.pre_compact.mcp_http_call_tool(url: str, name: str, arguments: dict, *, headers:
-  Optional[dict]=None, timeout: Optional[float]=None) -> str`'
+  Optional[dict]=None, timeout: Optional[float]=None) -> str`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - `_build_arguments` returns the `save_snapshot` keyword arguments: key "progress" is a text that contains
+  the trigger (an empty trigger becomes "auto"); key "open_questions" holds the custom instructions and
+  is present only when they are non-empty.
+
+  - `main` reads `trigger` and `custom_instructions` from the stdin event. When `_mcp_http_endpoint(cwd)`
+  returns a URL it calls `mcp_http_call_tool(url, "save_snapshot", args, headers=..., timeout=...)` and
+  never calls `_write_local`; when the URL is None it calls `_write_local(cwd, args)`. It returns 0 always,
+  including on invalid stdin JSON and when the write raises.
+
+  - `mcp_http_call_tool` and `_mcp_http_endpoint` exist in `mcm_engine.hooks.mcp_enforcement` and must
+  be importable as attributes of `pre_compact` (the tests patch them there).
+
+  - In `hooks/session_start.py`, an event with "source": "compact" gets a different directive whose text
+  contains "compacted" (any case), "get_resume_context" and "MCP"; other sources keep the existing directive.'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: bc061e331199ad711feda432fab458274a04ff35
@@ -71,6 +89,21 @@ params:
   - 'mcm_engine.hooks.pre_compact.main(argv: Optional[list[str]]=None) -> int'
   - 'mcm_engine.hooks.pre_compact.mcp_http_call_tool(url: str, name: str, arguments: dict, *, headers:
     Optional[dict]=None, timeout: Optional[float]=None) -> str'
+  stated: '- `_build_arguments` returns the `save_snapshot` keyword arguments: key "progress" is a text
+    that contains the trigger (an empty trigger becomes "auto"); key "open_questions" holds the custom
+    instructions and is present only when they are non-empty.
+
+    - `main` reads `trigger` and `custom_instructions` from the stdin event. When `_mcp_http_endpoint(cwd)`
+    returns a URL it calls `mcp_http_call_tool(url, "save_snapshot", args, headers=..., timeout=...)`
+    and never calls `_write_local`; when the URL is None it calls `_write_local(cwd, args)`. It returns
+    0 always, including on invalid stdin JSON and when the write raises.
+
+    - `mcp_http_call_tool` and `_mcp_http_endpoint` exist in `mcm_engine.hooks.mcp_enforcement` and must
+    be importable as attributes of `pre_compact` (the tests patch them there).
+
+    - In `hooks/session_start.py`, an event with "source": "compact" gets a different directive whose
+    text contains "compacted" (any case), "get_resume_context" and "MCP"; other sources keep the existing
+    directive.'
   fail_to_pass:
   - tests/test_hook_pre_compact.py::test_auto_trigger_has_no_open_questions
   - tests/test_hook_pre_compact.py::test_hook_does_not_read_a_shadow_store_on_the_remote_path
@@ -100,5 +133,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history_mcm_engine

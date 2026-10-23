@@ -58,6 +58,37 @@ DROPPED: dict[str, str] = {
     "sohot-455-symptom": "validation error: tests/test_live_store_guard.py does not collect at base",
 }
 
+#: Cases the #1141 audit found graded on a design their prompt hides or contradicts, which no sentence repairs.
+RETIRED: dict[str, str] = {
+    "infovore-338-symptom": "the tests need the clustering, ordering, --grouping and output design the symptom hides",
+    "infovore-340-spec": "the gold departs from the controls the issue specifies and invents every shape and line",
+    "mcm-engine-145-symptom": "the tests need save_snapshot and a SessionStart(compact) restore, not the PostCompact "
+                              "hook the title names",
+    "mcm-engine-160-spec": "the labelling rules, policies, interval phase and classifier the tests pin are invented "
+                           "in the fix",
+    "mcm-engine-171-symptom": "the tests need a per-type hit cap and an inline pointer the symptom hides",
+    "mcm-engine-199-symptom": "the tests need the size report design of the hidden Build section",
+    "mcm-engine-31-spec": "the tests need a conflict-candidates report the issue never asks for",
+    "sohot-396-symptom": "the tests need the backpressure threshold design the symptom hides",
+    "sohot-647-symptom": "the tests need a per-step timeout and a .deb cache the symptom never mentions",
+}
+#: What the hidden tests hold a fix to that the prompt did not say, stated after its tests-call block. #1141.
+STATED: dict[str, str] = json.loads(Path(__file__).with_name("history_stated.json").read_text(encoding="utf-8"))
+STATED_HEAD = "The hidden tests also hold a fix to these details (stated for this exam):"
+#: Per task, fail_to_pass ids (or id prefixes) that check the gold fix's mechanism, not behaviour, left ungraded. #1141.
+LOOSENED: dict[str, dict[str, str]] = {
+    "mcm-engine-116": {"tests/test_seam_inventory.py::test_sql_site_count_per_file[":
+                       "the count of .execute call sites per file the fix edits is the gold's layout"},
+    "mcm-engine-170": {"tests/test_seam_inventory.py::test_sql_site_count_per_file[":
+                       "the count of .execute call sites per file the fix edits is the gold's layout"},
+}
+
+
+def graded(task: str, ids) -> list:
+    """`ids` less the ones LOOSENED leaves ungraded for `task`."""
+    off = LOOSENED.get(task, {})
+    return [i for i in ids if not any(i.startswith(x) for x in off)]
+
 _HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
 _LABEL = re.compile(r"^(?:\*\*([^*\n]{1,60}?)[:.]?\*\*:?|([A-Z][A-Za-z ]{0,40}?):(?=\s|$))")
 _LIST = re.compile(r"^(\s+|[-*+] |\d+[.)] )")
@@ -201,14 +232,22 @@ def refresh(got: dict, mirror) -> dict:
     for t in got["tasks"]:
         source = sorted({*t["context_files"], *t.get("new_files", [])})
         context, new = split_new(mirror, t["base"], t["fix"], source)
-        tasks.append({**t, "context_files": context, "new_files": new,
-                      "interface": tests_call(mirror, t["base"], t["fix"])})
+        calls = tests_call(mirror, t["base"], t["fix"])
+        tasks.append({**t, "context_files": context, "new_files": new, "interface": calls,
+                      "unlisted": unlisted(mirror, t, calls)})
     return {**got, "tasks": tasks}
 
 
 def tests_call(mirror, base: str, fix: str) -> list[str]:
     """The interface lines a task's prompts show, with home paths and LAN hosts masked as in the prompt. #1103."""
     return [_HOST.sub("<host>", _HOME.sub("~/", line)) for line in interface.tests_call(mirror, base, fix)]
+
+
+def unlisted(mirror, t: dict, calls) -> dict:
+    """Per variant, the fix's new names the hidden tests or graded ids spell that its prompt never does. #1141."""
+    block = interface.block(calls)
+    return {v: interface.unlisted(mirror, t["base"], t["fix"], f"{text}\n\n{block}", t["fail_to_pass"])
+            for v, text in (t.get("prompts") or {}).items() if text}
 
 
 def _test_module(path: str) -> bool:
@@ -541,7 +580,7 @@ def fetch_rows(got: dict, dropped=None) -> list[dict]:
     """One row per task and variant a manifest holds a prompt for, less the cases dropped after the survey."""
     dropped = DROPPED if dropped is None else dropped
     return [{**t, "variant": v} for t in got["tasks"] for v in VARIANTS
-            if t["prompts"].get(v) and f"{t['id']}-{v}" not in dropped]
+            if t["prompts"].get(v) and f"{t['id']}-{v}" not in dropped and f"{t['id']}-{v}" not in RETIRED]
 
 
 def fetch(path: Path | None = None, src: Repo = SOHOT) -> list[dict]:
@@ -557,8 +596,11 @@ def convert(row: dict, src: Repo = SOHOT, mod=None, transform: str = TRANSFORM) 
     """A manifest row as a repo case; `mod` is the importer module its provenance names (this one by default)."""
     calls = row.get("interface") or []
     shown = interface.block(calls)
-    case = {"id": f"{row['id']}-{row['variant']}", "modality": LANE,
-            "prompt": row["prompts"][row["variant"]] + (f"\n\n{shown}" if shown else ""),
+    cid = f"{row['id']}-{row['variant']}"
+    stated = STATED.get(cid, "")
+    case = {"id": cid, "modality": LANE,
+            "prompt": row["prompts"][row["variant"]] + (f"\n\n{shown}" if shown else "")
+            + (f"\n\n{STATED_HEAD}\n{stated}" if stated else ""),
             "params": {"source_repo": src.url, "base": row["base"], "fix": row["fix"],
                        "variant": row["variant"], "context": "oracle",
                        "context_files": row["context_files"],
@@ -566,9 +608,11 @@ def convert(row: dict, src: Repo = SOHOT, mod=None, transform: str = TRANSFORM) 
                        **({"pytest_args": list(src.pytest_args)} if src.pytest_args else {}),
                        **({"extras": list(src.extras)} if src.extras else {}),
                        **({"interface": list(calls)} if calls else {}),
-                       "fail_to_pass": row["fail_to_pass"], "pass_to_pass": row["pass_to_pass"]},
+                       **({"stated": stated} if stated else {}),
+                       "fail_to_pass": graded(row["id"], row["fail_to_pass"]), "pass_to_pass": row["pass_to_pass"]},
             "attribution": provenance(mod or sys.modules[__name__], f"#{row['issue']} (PR #{row['pr']})",
-                                      transform, row["date"])}
+                                      transform + ("; what the hidden tests also require, stated after it (#1141)"
+                                                   if stated else ""), row["date"])}
     return Imported(case)
 
 

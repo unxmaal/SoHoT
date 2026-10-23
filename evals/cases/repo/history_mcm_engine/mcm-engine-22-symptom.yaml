@@ -55,7 +55,27 @@ prompt: '# Piece C: one-way DB→git review mirror (gap 5, reviewability)
 
   - CLI option: `--from`
 
-  - CLI option: `--out`'
+  - CLI option: `--out`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - `export_mirror` enumerates rules with `storage.iter_entries(EntityType.RULE)` (from `mcm_engine.backends`;
+  the entity type argument is required). Rows have `title`, `keywords`, `category`, `content`, `archived`
+  and `status` ("superseded" for a superseded rule).
+
+  - Each active rule is written to `<out_dir>/rules/<category>/<slug>.md`, slug from `mcm_engine.tools.rules._slugify(title)`,
+  body from `mcm_engine.tools.rules._generate_rule_content(title, keywords, category, content)` (it starts
+  "# <title>" and has "**Keywords:** <keywords>"). A rule no longer active must have no file after the
+  next run.
+
+  - It returns `{"written": <number of active rules written>, "committed": <bool>}`; `committed` is False
+  when the run changed nothing.
+
+  - Commits use `-c user.email=mcm-engine-mirror@localhost`.
+
+  - The CLI subcommand is `export-mirror`, with `--from <dsn>` opened through `open_storage` and `--out
+  <dir>`.'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 94708d68ff0a29b5300cda5923401ac98676d234
@@ -75,6 +95,22 @@ params:
   - 'mcm_engine.mirror.export_mirror(storage: Any, out_dir: str | Path) -> dict'
   - 'CLI option: --from'
   - 'CLI option: --out'
+  stated: '- `export_mirror` enumerates rules with `storage.iter_entries(EntityType.RULE)` (from `mcm_engine.backends`;
+    the entity type argument is required). Rows have `title`, `keywords`, `category`, `content`, `archived`
+    and `status` ("superseded" for a superseded rule).
+
+    - Each active rule is written to `<out_dir>/rules/<category>/<slug>.md`, slug from `mcm_engine.tools.rules._slugify(title)`,
+    body from `mcm_engine.tools.rules._generate_rule_content(title, keywords, category, content)` (it
+    starts "# <title>" and has "**Keywords:** <keywords>"). A rule no longer active must have no file
+    after the next run.
+
+    - It returns `{"written": <number of active rules written>, "committed": <bool>}`; `committed` is
+    False when the run changed nothing.
+
+    - Commits use `-c user.email=mcm-engine-mirror@localhost`.
+
+    - The CLI subcommand is `export-mirror`, with `--from <dsn>` opened through `open_storage` and `--out
+    <dir>`.'
   fail_to_pass:
   - tests/test_export_mirror.py::test_cli_export_mirror_dispatch
   - tests/test_export_mirror.py::test_mirror_is_read_only_on_source
@@ -96,5 +132,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history_mcm_engine

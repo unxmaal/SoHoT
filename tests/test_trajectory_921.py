@@ -28,7 +28,7 @@ class Attempt:
 
     def submit(self, diff):
         return SimpleNamespace(resolved=False, patch_applied=bool(diff), test_s=0.0,
-                               detail="graded", failed=[], limit="", skipped=[])
+                               detail="graded", failed=[], limit="", skipped=[], failures={})
 
     def close(self):
         pass

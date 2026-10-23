@@ -65,7 +65,22 @@ prompt: '# KB data pollution: some knowledge summaries contain the whole seriali
 
   - `mcm_engine.sanitize.strip_tool_call_fragments(text: str | None) -> str`
 
-  - MCP tool: `sanitize_knowledge(dry_run: bool=True, limit: int=0) -> str`'
+  - MCP tool: `sanitize_knowledge(dry_run: bool=True, limit: int=0) -> str`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - `clean_summary_detail` returns the text before the first field or tool-call tag as the summary. When
+  that text is empty it uses the `<summary>...</summary>` body instead. It fills detail from the `<detail>...</detail>`
+  body only when detail is empty. A clean summary comes back unchanged with `changed` False. `strip_tool_call_fragments`
+  removes `<invoke>`/`<parameter>` tags and trailing whitespace, and returns `""` for empty input.
+
+  - `sanitize_knowledge` updates the polluted rows in place only when dry_run is False. Its report contains
+  `scanned N` (every knowledge entry examined) and `M polluted`. A dry run also lists each polluted id
+  as `#<id>`. After apply it contains `updated K`, in lower case, where K is the number of rows written.
+
+  - `add_knowledge` applies `clean_summary_detail` at store time, so a polluted summary is stored clean,
+  with its detail salvaged.'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 36d74ae24174597fd57d190cef2a82612890319d
@@ -89,6 +104,18 @@ params:
   - 'mcm_engine.sanitize.is_polluted(text: str | None) -> bool'
   - 'mcm_engine.sanitize.strip_tool_call_fragments(text: str | None) -> str'
   - 'MCP tool: sanitize_knowledge(dry_run: bool=True, limit: int=0) -> str'
+  stated: '- `clean_summary_detail` returns the text before the first field or tool-call tag as the summary.
+    When that text is empty it uses the `<summary>...</summary>` body instead. It fills detail from the
+    `<detail>...</detail>` body only when detail is empty. A clean summary comes back unchanged with `changed`
+    False. `strip_tool_call_fragments` removes `<invoke>`/`<parameter>` tags and trailing whitespace,
+    and returns `""` for empty input.
+
+    - `sanitize_knowledge` updates the polluted rows in place only when dry_run is False. Its report contains
+    `scanned N` (every knowledge entry examined) and `M polluted`. A dry run also lists each polluted
+    id as `#<id>`. After apply it contains `updated K`, in lower case, where K is the number of rows written.
+
+    - `add_knowledge` applies `clean_summary_detail` at store time, so a polluted summary is stored clean,
+    with its detail salvaged.'
   fail_to_pass:
   - tests/test_sanitize_knowledge_tool.py::test_add_knowledge_guard_cleans_on_store
   - tests/test_sanitize_knowledge_tool.py::test_sanitize_knowledge_apply_cleans_in_place
@@ -113,5 +140,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history_mcm_engine

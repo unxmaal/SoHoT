@@ -39,6 +39,26 @@ DEFINITIONS = {
     "wrong_fix": "the patch applied and at least one fail_to_pass test still fails",
     "regression": "the patch applied, every fail_to_pass test passes, and a pass_to_pass test now fails",
 }
+#: Why a wrong_fix row failed, in #1141's hypothesis order, and whose fault that is.
+GRADINGS = {
+    "pinned_detail": "case",
+    "gold_internals": "case",
+    "environment": "harness",
+    "apply_mangled": "harness",
+    "genuine": "model",
+}
+GRADING_DEFINITIONS = {
+    "pinned_detail": "the change does what the prompt asks, but a hidden test requires a detail the prompt, its "
+                     "tests-call block and the context files do not state: a name, signature, location, message, "
+                     "return shape, key, constant or threshold",
+    "gold_internals": "the fix behaves as the gold fix does, but a test inspects the gold fix's mechanism (a mocked "
+                      "private helper, call counts, a private attribute) rather than behaviour",
+    "environment": "the test fails for a reason no fix could change: a missing fixture, ordering, the network, the "
+                   "sandbox, an id that does not collect; the gold fix fails the same way",
+    "apply_mangled": "the tree the tests ran on is not what the stored diff says",
+    "genuine": "the fix is wrong or incomplete on behaviour the prompt states or clearly implies; a row with any "
+               "such failing test is genuine whatever else it fails on",
+}
 #: The first class that fits wins: a row is labelled by the earliest step it failed at.
 PRECEDENCE = ("budget_exhausted", "tool_call", "no_diff", "malformed_hunk", "recount_header", "context_mismatch",
               "wrong_fix", "regression")
@@ -128,6 +148,9 @@ def load_labels(path=LABELS) -> list[dict]:
             raise ValueError(f"{path.name}:{n}: class {got['class']!r} is not in the codebook")
         if got["class"] == "budget_exhausted" and got.get("at_cut") not in AT_CUT:
             raise ValueError(f"{path.name}:{n}: budget_exhausted needs at_cut, one of {', '.join(AT_CUT)}")
+        if "grading" in got and (got["class"] != "wrong_fix" or got["grading"] not in GRADINGS):
+            raise ValueError(f"{path.name}:{n}: grading {got['grading']!r} needs class wrong_fix and one of "
+                             f"{', '.join(GRADINGS)}")
         out.append(got)
     return out
 
@@ -154,8 +177,13 @@ def check_excerpt(run_dir, label: dict, regrades=None) -> str:
         if again is None:
             return "no regrade of this row"
         want, at = label["excerpt"].encode("utf-8"), int(label["offset"])
-        got = again["detail"].encode("utf-8")[at:at + len(want)]
-        return "" if got == want else f"regrade detail@{at} reads {got[:60]!r}, not the cited excerpt"
+        # A label citing a test is checked in that test's kept failure text, else in the detail. #1141.
+        where = (again.get("failures") or {}).get(label["test"]) if label.get("test") else again["detail"]
+        if where is None:
+            return f"the regrade kept no failure text for {label['test']}"
+        got = where.encode("utf-8")[at:at + len(want)]
+        name = label.get("test") or "detail"
+        return "" if got == want else f"regrade {name}@{at} reads {got[:60]!r}, not the cited excerpt"
     root = Path(run_dir).resolve()
     f = (root / label["file"]).resolve()
     if root not in f.parents:
@@ -177,10 +205,10 @@ def unlabelled(run: Run, labels: list[dict], regrades=None) -> list[str]:
                   and r["case_id"] not in have | fixed)
 
 
-def kappa(a: list[dict], b: list[dict]) -> tuple[float | None, int]:
-    """Cohen's kappa of two labellers over the (run, case) rows both labelled, and how many that is."""
-    mine = {(x["run"], x["case"]): x["class"] for x in a}
-    theirs = {(x["run"], x["case"]): x["class"] for x in b}
+def kappa(a: list[dict], b: list[dict], key: str = "class") -> tuple[float | None, int]:
+    """Cohen's kappa of two labellers over the (run, case) rows both labelled with `key`, and how many that is."""
+    mine = {(x["run"], x["case"]): x[key] for x in a if key in x}
+    theirs = {(x["run"], x["case"]): x[key] for x in b if key in x}
     shared = sorted(set(mine) & set(theirs))
     if not shared:
         return None, 0
@@ -211,10 +239,10 @@ def sample(runs: list[Run], n: int, seed: int, stratify: bool = False, skip=()) 
     return sorted(x for k in pools for x in pools[k][:take[k]])
 
 
-def disagreements(a: list[dict], b: list[dict]) -> list[tuple[str, str, str, str]]:
-    """(run, case, a's class, b's class) for each row both labelled differently."""
-    mine = {(x["run"], x["case"]): x["class"] for x in a}
-    theirs = {(x["run"], x["case"]): x["class"] for x in b}
+def disagreements(a: list[dict], b: list[dict], key: str = "class") -> list[tuple[str, str, str, str]]:
+    """(run, case, a's `key`, b's `key`) for each row both labelled differently."""
+    mine = {(x["run"], x["case"]): x[key] for x in a if key in x}
+    theirs = {(x["run"], x["case"]): x[key] for x in b if key in x}
     return [(*k, mine[k], theirs[k]) for k in sorted(set(mine) & set(theirs)) if mine[k] != theirs[k]]
 
 
@@ -362,8 +390,10 @@ def _tally(args) -> int:
         mine = [lab for lab in labels if lab["run"] == run.name]
         bad += [f"{run.name} {lab['case']}: {why}" for lab in mine
                 if (why := check_excerpt(run.path, lab, regrades))]
+        # A resolved regrade may keep a label only to say why the grade was unfair. #1141.
         bad += [f"{run.name} {case}: labelled, but its regrade resolved" for lab in mine
-                if (g := regrades.get((run.name, case := lab["case"]))) and g["resolved"]]
+                if (g := regrades.get((run.name, case := lab["case"]))) and g["resolved"]
+                and GRADINGS.get(lab.get("grading")) in (None, "model")]
         again = [g for (r, _), g in sorted(regrades.items()) if r == run.name]
         if again:
             print(f"\n{run.name} regraded: {len(again)}, now resolved: "
@@ -375,6 +405,10 @@ def _tally(args) -> int:
             cuts = Counter(lab.get("at_cut") for lab in mine if lab["class"] == "budget_exhausted")
             if cuts:
                 print("  at the cut: " + ", ".join(f"{c} {n}" for c, n in sorted(cuts.items())))
+            graded = Counter(lab["grading"] for lab in mine if "grading" in lab)
+            if graded:
+                print("  wrong_fix graded: " + ", ".join(
+                    f"{g} {graded[g]} ({GRADINGS[g]})" for g in GRADINGS if graded[g]))
         missing[run.name] = unlabelled(run, labels, regrades)
     for name, cases in missing.items():
         if cases:
@@ -418,6 +452,9 @@ def _codebook(args) -> int:
     for cls in PRECEDENCE:
         print(f"{cls} ({CODEBOOK[cls]}): {DEFINITIONS[cls]}")
     print(f"\nThe first class that fits wins, in the order above. at_cut is one of {', '.join(AT_CUT)}.")
+    print("\nA wrong_fix row may carry a grading, why it failed (#1141):")
+    for g in GRADINGS:
+        print(f"{g} ({GRADINGS[g]}): {GRADING_DEFINITIONS[g]}")
     return 0
 
 
@@ -428,9 +465,10 @@ def _sample(args) -> int:
 
 
 def _kappa(args) -> int:
-    value, n = kappa(load_labels(args.a), load_labels(args.b))
+    a, b = load_labels(args.a), load_labels(args.b)
+    value, n = kappa(a, b, args.key)
     print("no rows labelled by both" if value is None else f"Cohen's kappa {value:.3f} over {n} rows")
-    for run, case, x, y in disagreements(load_labels(args.a), load_labels(args.b)):
+    for run, case, x, y in disagreements(a, b, args.key):
         print(f"  {run} {case}: {x} / {y}")
     return 0
 
@@ -475,6 +513,7 @@ def main(argv: list[str] | None = None) -> int:
     k = sub.add_parser("kappa", help="Cohen's kappa of two label files over the rows both labelled")
     k.add_argument("a")
     k.add_argument("b")
+    k.add_argument("--key", default="class", choices=("class", "grading"), help="the field compared (#1141)")
     k.set_defaults(fn=_kappa)
     lo = sub.add_parser("locate", help="the byte offsets a text starts at in a run file")
     lo.add_argument("run")

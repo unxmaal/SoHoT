@@ -67,7 +67,42 @@ prompt: '# Corroboration score per claim cluster: distinct speakers and exchange
 
   - `infovore.wiki.groups.summarise(groups_by_page: Sequence[Sequence[ClaimGroup]]) -> Corroboration`
 
-  - CLI option: `--grouping`'
+  - CLI option: `--grouping`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - Existing repo pieces not in context: `infovore.triage.embed` has `Embedder` (method `embed(texts:
+  list[str]) -> list of vectors`), `EMBED_BATCH`, `DEFAULT_MODEL` and `DEFAULT_REVISION`; `infovore.triage.embed_backend.load_embedder(model_id,
+  revision)` loads the real one. groups.py imports `load_embedder` into its own namespace, and the embed
+  path calls it through that name.
+
+  - `ClaimGroup.speakers`, `exchanges`, `span` and `corroboration` are properties. span is (earliest date,
+  latest date) and corroboration is the number of distinct speakers.
+
+  - group_claims orders groups by corroboration desc, then distinct exchanges desc, then member count
+  desc, then lead date, then lead claim_id.
+
+  - With `vectors`, a claim joins the first group whose lead''s vector has cosine >= vector_threshold
+  (`VECTOR_THRESHOLD` 0.85) instead of using tokens. If the vector count differs from the claim count
+  it raises ValueError containing `one vector per claim`. `cosine` returns 0.0 when either vector is all
+  zeros.
+
+  - `make_grouper` embeds every claim once up front, in chunks of EMBED_BATCH statements, and returns
+  a callable that groups any subset of those claims by their stored vectors. `make_grouper_for("jaccard",
+  ...)` returns `group_claims` itself; `"embed"` uses `load_embedder(DEFAULT_MODEL, DEFAULT_REVISION)`.
+
+  - `summarise` returns an object with `groups`, `by_speakers` (keys `"1"`, `"2"`, `"3+"`), `corroborated_claims`
+  (members of groups with 2+ speakers), `claims` (all members) and a `share` property (0.0 when there
+  are no claims). Its str is e.g. `groups 3 (1 speaker(s) 1, 2 speaker(s) 1, 3+ speaker(s) 1); claims
+  in 2+ speaker groups 5/6 (83.3%)`.
+
+  - `--grouping` takes `jaccard` (default) or `embed` on `wiki build`, `wiki stats` and `wiki write`.
+  Both build and stats print `corroboration: <that summary>` over the groups of every page that is built.
+
+  - Each fallback page entry keeps its current text but ends `; N speaker(s), M conversation(s))` in place
+  of the closing `)`, e.g. `- Indigo2 has an R4400 cpu (+1 similar) (user-1, exchange 11, 2026-02-01;
+  2 speaker(s), 2 conversation(s))`, on every entry including singletons.'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 2f7f164a4fea0cb3a61ac2699fa4848bc92df265
@@ -98,6 +133,37 @@ params:
   - 'infovore.wiki.groups.make_grouper_for(grouping: str, claims: Sequence[WikiClaim]) -> Grouper'
   - 'infovore.wiki.groups.summarise(groups_by_page: Sequence[Sequence[ClaimGroup]]) -> Corroboration'
   - 'CLI option: --grouping'
+  stated: '- Existing repo pieces not in context: `infovore.triage.embed` has `Embedder` (method `embed(texts:
+    list[str]) -> list of vectors`), `EMBED_BATCH`, `DEFAULT_MODEL` and `DEFAULT_REVISION`; `infovore.triage.embed_backend.load_embedder(model_id,
+    revision)` loads the real one. groups.py imports `load_embedder` into its own namespace, and the embed
+    path calls it through that name.
+
+    - `ClaimGroup.speakers`, `exchanges`, `span` and `corroboration` are properties. span is (earliest
+    date, latest date) and corroboration is the number of distinct speakers.
+
+    - group_claims orders groups by corroboration desc, then distinct exchanges desc, then member count
+    desc, then lead date, then lead claim_id.
+
+    - With `vectors`, a claim joins the first group whose lead''s vector has cosine >= vector_threshold
+    (`VECTOR_THRESHOLD` 0.85) instead of using tokens. If the vector count differs from the claim count
+    it raises ValueError containing `one vector per claim`. `cosine` returns 0.0 when either vector is
+    all zeros.
+
+    - `make_grouper` embeds every claim once up front, in chunks of EMBED_BATCH statements, and returns
+    a callable that groups any subset of those claims by their stored vectors. `make_grouper_for("jaccard",
+    ...)` returns `group_claims` itself; `"embed"` uses `load_embedder(DEFAULT_MODEL, DEFAULT_REVISION)`.
+
+    - `summarise` returns an object with `groups`, `by_speakers` (keys `"1"`, `"2"`, `"3+"`), `corroborated_claims`
+    (members of groups with 2+ speakers), `claims` (all members) and a `share` property (0.0 when there
+    are no claims). Its str is e.g. `groups 3 (1 speaker(s) 1, 2 speaker(s) 1, 3+ speaker(s) 1); claims
+    in 2+ speaker groups 5/6 (83.3%)`.
+
+    - `--grouping` takes `jaccard` (default) or `embed` on `wiki build`, `wiki stats` and `wiki write`.
+    Both build and stats print `corroboration: <that summary>` over the groups of every page that is built.
+
+    - Each fallback page entry keeps its current text but ends `; N speaker(s), M conversation(s))` in
+    place of the closing `)`, e.g. `- Indigo2 has an R4400 cpu (+1 similar) (user-1, exchange 11, 2026-02-01;
+    2 speaker(s), 2 conversation(s))`, on every entry including singletons.'
   fail_to_pass:
   - tests/wiki/test_command.py::test_grouping_embed_uses_the_embedder_and_stats_report_corroboration
   - tests/wiki/test_groups.py::test_a_claim_joins_the_first_matching_group
@@ -141,5 +207,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history_infovore

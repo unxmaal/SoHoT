@@ -97,7 +97,17 @@ prompt: '# get_last_session returns the global latest handoff — no per-caller/
   Optional[str] = None)`
 
   - `mcm_engine.adapters.sqlite.storage.SqliteStorage.get_last_session(self, *, caller: Optional[str]=None,
-  principal: Optional[str]=None, workspace: Optional[str]=None) -> Optional[SessionRow]`'
+  principal: Optional[str]=None, workspace: Optional[str]=None) -> Optional[SessionRow]`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - `sessions` gains nullable `principal` and `workspace` columns, in the fresh-install schema and through
+  a v16 to v17 migration; CORE_VERSION becomes 17.
+
+  - `get_last_session()` with no scope key still returns the global latest row. With principal and/or
+  workspace it returns the newest row matching them. When the caller has no matching row, it falls back
+  to the newest row whose scope is NULL (pre-migration handoffs).'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: c217b88e3875930a8466f6bd888bc3a48d3db39e
@@ -125,10 +135,13 @@ params:
     Optional[str] = None)'
   - 'mcm_engine.adapters.sqlite.storage.SqliteStorage.get_last_session(self, *, caller: Optional[str]=None,
     principal: Optional[str]=None, workspace: Optional[str]=None) -> Optional[SessionRow]'
+  stated: '- `sessions` gains nullable `principal` and `workspace` columns, in the fresh-install schema
+    and through a v16 to v17 migration; CORE_VERSION becomes 17.
+
+    - `get_last_session()` with no scope key still returns the global latest row. With principal and/or
+    workspace it returns the newest row matching them. When the caller has no matching row, it falls back
+    to the newest row whose scope is NULL (pre-migration handoffs).'
   fail_to_pass:
-  - tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/postgres/storage.py-71]
-  - tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/sqlite/storage.py-69]
-  - tests/test_seam_inventory.py::test_sql_site_count_per_file[schema.py-67]
   - tests/test_session_scoping.py::test_fresh_install_has_sessions_scope_columns
   - tests/test_session_scoping.py::test_null_scope_is_a_fallback_only_when_no_scoped_row
   - tests/test_session_scoping.py::test_scope_round_trips_through_hydration
@@ -167,5 +180,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history_mcm_engine

@@ -72,7 +72,31 @@ prompt: '# Net-new check: rank and label claims by novelty against a reference c
   article: Article | None=None, min_section: int=1, grouper: ''Grouper | None''=None, background: float
   | None=None) -> str`
 
-  - CLI option: `--background`'
+  - CLI option: `--background`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - `claims novelty` and `claim_novelty` already exist. This task is the wiki use step, and the floor
+  flag is `--background C` on `wiki build`, `wiki stats` and `wiki write`, in place of `--novelty-floor`.
+
+  - `WikiClaim.novelty` holds the claim''s stored reference max cosine as-is (not 1 minus it), and `reference`
+  holds its reference title. Both are filled only when load_claims gets a background value; claims without
+  a row keep None.
+
+  - `established(claim, background)` is true when background is not None, novelty is not None, and novelty
+  >= background.
+
+  - Within a corroboration level, groups sort by the lead''s novelty ascending, with None counted as 0.0,
+  ahead of the existing keys.
+
+  - render_page with background moves established claims out of the sections into a `## Background` heading
+  after them. Each entry reads `- <statement> ([<title>](https://en.wikipedia.org/wiki/<title with spaces
+  as _, URL-quoted>), cosine 0.93; <speaker>, <date>)`, with the bare word `reference` in place of the
+  link when there is no title.
+
+  - `wiki stats` always prints `background: N` (established claims), followed by ` (cosine >= C)` when
+  --background is given. `wiki write` drops established claims from its input.'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 6cd771b2a76088d5147821a1ac6129f004868a97
@@ -106,6 +130,26 @@ params:
     article: Article | None=None, min_section: int=1, grouper: ''Grouper | None''=None, background: float
     | None=None) -> str'
   - 'CLI option: --background'
+  stated: '- `claims novelty` and `claim_novelty` already exist. This task is the wiki use step, and the
+    floor flag is `--background C` on `wiki build`, `wiki stats` and `wiki write`, in place of `--novelty-floor`.
+
+    - `WikiClaim.novelty` holds the claim''s stored reference max cosine as-is (not 1 minus it), and `reference`
+    holds its reference title. Both are filled only when load_claims gets a background value; claims without
+    a row keep None.
+
+    - `established(claim, background)` is true when background is not None, novelty is not None, and novelty
+    >= background.
+
+    - Within a corroboration level, groups sort by the lead''s novelty ascending, with None counted as
+    0.0, ahead of the existing keys.
+
+    - render_page with background moves established claims out of the sections into a `## Background`
+    heading after them. Each entry reads `- <statement> ([<title>](https://en.wikipedia.org/wiki/<title
+    with spaces as _, URL-quoted>), cosine 0.93; <speaker>, <date>)`, with the bare word `reference` in
+    place of the link when there is no title.
+
+    - `wiki stats` always prints `background: N` (established claims), followed by ` (cosine >= C)` when
+    --background is given. `wiki write` drops established claims from its input.'
   fail_to_pass:
   - tests/wiki/test_build.py::test_article_parts_follow_numbered_continuations_without_gaps
   - tests/wiki/test_build.py::test_background_claims_leave_the_sections_and_list_their_reference
@@ -166,5 +210,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history_infovore
