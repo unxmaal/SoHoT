@@ -100,7 +100,11 @@
    "new_files": [],
    "interface": [
     "harness.commands.screen.screen_detail(why: str, stderr: str, summary) -> str"
-   ]
+   ],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "sohot-859",
@@ -198,7 +202,11 @@
     "area": "harness,harness/commands"
    },
    "new_files": [],
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "sohot-858",
@@ -243,7 +251,15 @@
    "new_files": [
     "harness/memory_store/migrations/v71.py"
    ],
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": [
+     "_requeue_length_refusals"
+    ],
+    "symptom": [
+     "_requeue_length_refusals"
+    ]
+   }
   },
   {
    "id": "sohot-788",
@@ -293,7 +309,11 @@
     "area": "harness"
    },
    "new_files": [],
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "sohot-720",
@@ -337,7 +357,11 @@
     "area": ".github/workflows"
    },
    "new_files": [],
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "sohot-647",
@@ -380,7 +404,11 @@
     "area": ".github/workflows"
    },
    "new_files": [],
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "sohot-642",
@@ -412,7 +440,11 @@
     "area": "harness/commands"
    },
    "new_files": [],
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "sohot-632",
@@ -453,7 +485,11 @@
    "interface": [
     "harness.fetching.run(conn, sizes: dict[str, int] | None=None, *, limit: int=1, snapshot=None, free: int | None=None, lane: str='', budget: int | None=None, listing=None, hf_download=None, floor: int=DISK_FLOOR, sizer=None) -> list[dict]",
     "harness.fetching.runner_bases(model_id: str) -> list[str]"
-   ]
+   ],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "sohot-598",
@@ -513,7 +549,11 @@
    ],
    "interface": [
     "harness.memory_store.migrations.v58.data(conn) -> None"
-   ]
+   ],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "sohot-570",
@@ -553,7 +593,11 @@
     "area": ".github/workflows"
    },
    "new_files": [],
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "sohot-455",
@@ -601,7 +645,11 @@
     "harness.paths.deploy_checkout() -> Path | None",
     "harness.paths.is_live(path: Path) -> bool",
     "harness.paths.runs_elsewhere() -> Path | None"
-   ]
+   ],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "sohot-438",
@@ -671,7 +719,11 @@
    "new_files": [],
    "interface": [
     "harness.gguf.shard_sets(siblings) -> dict[str, int]"
-   ]
+   ],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "sohot-404",
@@ -771,7 +823,11 @@
     "area": "harness"
    },
    "new_files": [],
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "sohot-399",
@@ -928,7 +984,15 @@
    "new_files": [],
    "interface": [
     "harness.memory_store.latest(conn, name: str) -> dict | None"
-   ]
+   ],
+   "unlisted": {
+    "spec": [
+     "_requeue_screens_of_missing_weights"
+    ],
+    "symptom": [
+     "_requeue_screens_of_missing_weights"
+    ]
+   }
   },
   {
    "id": "sohot-396",
@@ -963,7 +1027,11 @@
    "new_files": [],
    "interface": [
     "harness.cli.screenable_backlog(want: str='', plan=None, room=None) -> list[str]"
-   ]
+   ],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "sohot-376",
@@ -1000,7 +1068,11 @@
     "area": "harness"
    },
    "new_files": [],
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "sohot-374",
@@ -1037,7 +1109,11 @@
     "area": "harness"
    },
    "new_files": [],
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "sohot-371",
@@ -1089,7 +1165,11 @@
     "area": ".,harness"
    },
    "new_files": [],
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "sohot-368",
@@ -1132,7 +1212,11 @@
     "area": "evals/runners"
    },
    "new_files": [],
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "sohot-363",
@@ -1183,7 +1267,11 @@
     "area": "harness"
    },
    "new_files": [],
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   }
  ],
  "split": {

@@ -248,3 +248,36 @@ def block(lines) -> str:
 def _row(line: str) -> str:
     kind = next((k for k in KINDS if line.startswith(k)), "")
     return f"- {kind}`{line[len(kind):]}`"
+
+
+_WORD = re.compile(r"[A-Za-z_]\w*")
+
+
+def _defined(node, top: bool = True) -> set:
+    """Names a module defines: top-level defs, classes and assigned names, and its classes' methods."""
+    out = set()
+    for stmt in getattr(node, "body", []):
+        if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            out.add(stmt.name)
+            if isinstance(stmt, ast.ClassDef):
+                out |= _defined(stmt, top=False)
+        elif top and isinstance(stmt, (ast.Assign, ast.AnnAssign)):
+            for target in stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]:
+                out |= {n.id for n in ast.walk(target) if isinstance(n, ast.Name)}
+    return out
+
+
+def unlisted(mirror: Path, base: str, fix: str, prompt: str, ids=()) -> list[str]:
+    """Names the fix's source adds that the hidden tests or graded ids spell and the prompt never does. #1141."""
+    new, old = Tree(mirror, fix), Tree(mirror, base)
+    got = repo._git(["-C", str(mirror), "diff", "--name-status", "--no-renames", base, fix]).stdout.decode()
+    rows = [line.split("\t", 1) for line in got.splitlines() if "\t" in line]
+    added = set()
+    for path in (p for s, p in rows if s != "D" and p.endswith(".py") and not repo.is_test_path(p)):
+        was = _defined(old.parse(path)) if path in old.files else set()
+        added |= _defined(new.parse(path)) - was
+    text = [repo._git(["-C", str(mirror), "show", f"{fix}:{p}"]).stdout.decode("utf-8", "replace")
+            for s, p in rows if s != "D" and p.endswith(".py") and repo.is_test_path(p)]
+    spelled = {w for t in [*text, *ids] for w in _WORD.findall(t)}
+    shown = set(_WORD.findall(prompt))
+    return sorted(n for n in added & spelled if n not in shown and not n.startswith("__"))

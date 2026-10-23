@@ -20,7 +20,25 @@ prompt: '# A neighbor sighting reopens a decided candidate, and a README-only sn
 
   The hidden tests call these names from the repository (signatures as a correct fix defines them):
 
-  - `harness.memory_store.latest(conn, name: str) -> dict | None`'
+  - `harness.memory_store.latest(conn, name: str) -> dict | None`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - latest(conn, name) returns a dict with keys ''outcome'' and ''tier'' for the newest verdict.
+
+  - The inspect tier''s neighbor path writes no ''queued'' over a name whose latest verdict is terminal
+  or is ''screened''.
+
+  - fetching.have() counts a hub snapshot (hub/models--<org>--<name>/snapshots/<rev>/) as downloaded when
+  it holds config.json or model_index.json (a config alone is enough) or a weights file such as *.safetensors;
+  LICENSE and README.md alone are not.
+
+  - memory_store needs SCHEMA_VERSION = 20 and a migration step, run from _migrate for stores below 20,
+  named _requeue_screens_of_missing_weights(conn). It adds a ''queued'' verdict for each name whose latest
+  verdict is ''broken'' with a detail containing ''No such file or directory'' (any case) and for which
+  fetching.have(name) is false. It looks the function up as harness.fetching.have at call time, and leaves
+  every name whose latest verdict is anything else untouched.'
 params:
   source_repo: https://github.com/unxmaal/SoHoT.git
   base: 644f52812413a7d9849ff21e5aad0bcf32764175
@@ -33,6 +51,20 @@ params:
   - harness/memory_store.py
   interface:
   - 'harness.memory_store.latest(conn, name: str) -> dict | None'
+  stated: '- latest(conn, name) returns a dict with keys ''outcome'' and ''tier'' for the newest verdict.
+
+    - The inspect tier''s neighbor path writes no ''queued'' over a name whose latest verdict is terminal
+    or is ''screened''.
+
+    - fetching.have() counts a hub snapshot (hub/models--<org>--<name>/snapshots/<rev>/) as downloaded
+    when it holds config.json or model_index.json (a config alone is enough) or a weights file such as
+    *.safetensors; LICENSE and README.md alone are not.
+
+    - memory_store needs SCHEMA_VERSION = 20 and a migration step, run from _migrate for stores below
+    20, named _requeue_screens_of_missing_weights(conn). It adds a ''queued'' verdict for each name whose
+    latest verdict is ''broken'' with a detail containing ''No such file or directory'' (any case) and
+    for which fetching.have(name) is false. It looks the function up as harness.fetching.have at call
+    time, and leaves every name whose latest verdict is anything else untouched.'
   fail_to_pass:
   - tests/test_harness_registry.py::test_a_neighbor_sighting_does_not_reopen_a_decided_name[None-None-queued]
   - tests/test_harness_registry.py::test_a_neighbor_sighting_does_not_reopen_a_decided_name[declined-adopt-declined]
@@ -188,5 +220,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history

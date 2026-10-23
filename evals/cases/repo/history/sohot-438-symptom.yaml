@@ -20,7 +20,22 @@ prompt: '# inspect: a stray small top-level .gguf sizes a huge split GGUF repo a
 
   The hidden tests call these names from the repository (signatures as a correct fix defines them):
 
-  - `harness.gguf.shard_sets(siblings) -> dict[str, int]`'
+  - `harness.gguf.shard_sets(siblings) -> dict[str, int]`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - shard_sets(siblings) maps each complete split variant (keyed by its filename stem before -NNNNN-of-MMMMM.gguf)
+  to the sum of its part sizes. A set counts only when all M of its parts are listed with a nonzero size;
+  an incomplete set is no variant and adds nothing to smallest(). mmproj and imatrix files are never parts.
+
+  - smallest() returns the bytes of the cheapest variant, single file or complete split set, or 0.
+
+  - A single servable file is a stray, ignored by both smallest() and choose(), only when it is under
+  1/16 of the smallest complete split set; a single quant about a quarter the size of a split set is still
+  a variant and can be chosen.
+
+  - choose() still never returns a shard, so a repo whose only variants are split sets gives None.'
 params:
   source_repo: https://github.com/unxmaal/SoHoT.git
   base: 209de7482e29e9da65cea2b4af847aebc261bfee
@@ -31,6 +46,18 @@ params:
   - harness/gguf.py
   interface:
   - harness.gguf.shard_sets(siblings) -> dict[str, int]
+  stated: '- shard_sets(siblings) maps each complete split variant (keyed by its filename stem before
+    -NNNNN-of-MMMMM.gguf) to the sum of its part sizes. A set counts only when all M of its parts are
+    listed with a nonzero size; an incomplete set is no variant and adds nothing to smallest(). mmproj
+    and imatrix files are never parts.
+
+    - smallest() returns the bytes of the cheapest variant, single file or complete split set, or 0.
+
+    - A single servable file is a stray, ignored by both smallest() and choose(), only when it is under
+    1/16 of the smallest complete split set; a single quant about a quarter the size of a split set is
+    still a variant and can be chosen.
+
+    - choose() still never returns a shard, so a repo whose only variants are split sets gives None.'
   fail_to_pass:
   - tests/test_gguf_route.py::test_a_split_repo_is_sized_by_its_cheapest_whole_variant
   - tests/test_gguf_route.py::test_a_stray_small_gguf_beside_a_split_model_is_not_the_model
@@ -83,5 +110,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history

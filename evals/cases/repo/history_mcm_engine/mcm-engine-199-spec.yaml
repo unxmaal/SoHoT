@@ -73,7 +73,30 @@ prompt: '# Measure retrieval bloat before/after 4.0: recorded transcript bytes v
 
   - `mcm_engine.replay_queries.kind_bytes(text: str) -> dict[str, int]`
 
-  - `mcm_engine.replay_queries.wire_bytes(text: str) -> int`'
+  - `mcm_engine.replay_queries.wire_bytes(text: str) -> int`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - `ReplayQuery` gains `recorded_bytes: int = -1`: the UTF-8 byte length of the tool_result paired by
+  tool_use id (its string content, or the joined "text" of its text blocks); -1 when the transcript holds
+  no result for it.
+
+  - `wire_bytes(text)` is the UTF-8 byte length of the compact JSON `{"result": text}` (separators ","
+  and ":", non-ASCII not escaped).
+
+  - `kind_bytes(text)` walks the lines: a line starting "[KNOWLEDGE", "[NEGATIVE", "[ERROR" or "[RULE"
+  opens a block of that kind (key lowercased), a line starting "(", "---" or "===" opens an "other" block,
+  and every other line (blank, indented or not) stays with the current block; lines before any hit count
+  as "other". Each line adds its UTF-8 length plus 1. Only kinds seen appear as keys.
+
+  - `ReplayReport` gains `sizes: dict` keyed by tool ("search", "report_error"). `sizes[tool]["legacy"]`
+  and `["unified"]` hold "n", "total", "median", "p90" over the wire_bytes of every replayed result plus
+  "by_kind" (summed kind_bytes). `sizes[tool]["recorded"]` holds `{"n", "total", "median", "p90"}` over
+  paired queries only, median and p90 as floats. `legacy_ratio` and `unified_ratio` are that side''s wire_bytes
+  summed over the paired queries divided by the recorded total.
+
+  - `format_report` prints a "bytes/<tool>:" line per tool, and each ratio with the text "of recorded".'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 459fb2cfa5979bad52179f5febf7988cd7493cf9
@@ -90,6 +113,25 @@ params:
   interface:
   - 'mcm_engine.replay_queries.kind_bytes(text: str) -> dict[str, int]'
   - 'mcm_engine.replay_queries.wire_bytes(text: str) -> int'
+  stated: '- `ReplayQuery` gains `recorded_bytes: int = -1`: the UTF-8 byte length of the tool_result
+    paired by tool_use id (its string content, or the joined "text" of its text blocks); -1 when the transcript
+    holds no result for it.
+
+    - `wire_bytes(text)` is the UTF-8 byte length of the compact JSON `{"result": text}` (separators ","
+    and ":", non-ASCII not escaped).
+
+    - `kind_bytes(text)` walks the lines: a line starting "[KNOWLEDGE", "[NEGATIVE", "[ERROR" or "[RULE"
+    opens a block of that kind (key lowercased), a line starting "(", "---" or "===" opens an "other"
+    block, and every other line (blank, indented or not) stays with the current block; lines before any
+    hit count as "other". Each line adds its UTF-8 length plus 1. Only kinds seen appear as keys.
+
+    - `ReplayReport` gains `sizes: dict` keyed by tool ("search", "report_error"). `sizes[tool]["legacy"]`
+    and `["unified"]` hold "n", "total", "median", "p90" over the wire_bytes of every replayed result
+    plus "by_kind" (summed kind_bytes). `sizes[tool]["recorded"]` holds `{"n", "total", "median", "p90"}`
+    over paired queries only, median and p90 as floats. `legacy_ratio` and `unified_ratio` are that side''s
+    wire_bytes summed over the paired queries divided by the recorded total.
+
+    - `format_report` prints a "bytes/<tool>:" line per tool, and each ratio with the text "of recorded".'
   fail_to_pass:
   - tests/test_replay_queries.py::test_cli_writes_a_json_report
   - tests/test_replay_queries.py::test_extract_queries_keeps_only_replayable_tool_uses
@@ -113,5 +155,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history_mcm_engine

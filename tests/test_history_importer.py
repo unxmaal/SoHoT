@@ -217,9 +217,9 @@ def test_the_committed_manifest_converts_to_both_variants_of_every_task():
     cases = [history.convert(r).case for r in rows]
     variants = {f"{t['id']}-{v}" for t in history.manifest()["tasks"] for v in history.VARIANTS if t["prompts"].get(v)}
     assert set(history.DROPPED) <= variants
-    assert len(cases) == len(variants) - len(history.DROPPED)
+    assert len(cases) == len(variants) - len(history.DROPPED) - len(set(history.RETIRED) & variants)
     for c in cases:
-        assert set(c["params"]) - {"new_files", "interface"} == PARAMS and len(c["params"]["base"]) == 40
+        assert set(c["params"]) - {"new_files", "interface", "stated"} == PARAMS and len(c["params"]["base"]) == 40
         assert c["prompt"].startswith("# ")
 
 
@@ -293,7 +293,7 @@ def _row_digest(task) -> str:
     import hashlib
     import json
     # interface is derived from the fix commit (#1103); the rest of the row must not move.
-    rest = {k: v for k, v in task.items() if k != "interface"}
+    rest = {k: v for k, v in task.items() if k not in ("interface", "unlisted")}
     return hashlib.sha256(json.dumps(rest, sort_keys=True).encode()).hexdigest()[:12]
 
 

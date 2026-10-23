@@ -45,7 +45,44 @@ prompt: '# Cascade: measure short conversations with no tech words (short-report
   - `infovore.triage.short_report.cutoff_line(cutoff: Cutoff | None) -> str`
 
   - `infovore.triage.short_report.short_limit(conn: sqlite3.Connection, lexicon: Lexicon, t_high: float,
-  exclude: frozenset[str]) -> int | None`'
+  exclude: frozenset[str]) -> int | None`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - The stage name is `short_no_tech`. It goes in the STAGES tuple in infovore/db/archived.py between
+  `lexicon` and `embed`, so its scorer is `relevance_short_no_tech` and stage_reports returns it in that
+  position. Its outcomes count as ruled out, like denylist and no_text. Its decision is `irrelevant`,
+  and write_outcomes stores `short_limit` in that annotation''s recipe_json.
+
+  - An exchange takes this stage when short_limit is not None, the lexicon did not decide it, it has zero
+  word-list hits, and its text length (sum of each message''s stripped content length) is < short_limit.
+  When short_limit is None the stage is off.
+
+  - `Row` is a NamedTuple `(exchange_id, chars, hits)`.
+
+  - `bucket_of` returns one of `<100`, `100-200`, `200-500`, `500-1000`, `1000+` (lower edges inclusive).
+
+  - `bucket_table` returns one line for every bucket x tech (tech = hits > 0) pair, 10 in all, including
+  empty ones. Each line has fields `bucket`, `tech`, `corpus`, `relevant`, `irrelevant` (build labels
+  only), `held_relevant`, `held_irrelevant`, plus a property `percent_irrelevant` = 100 * irrelevant /
+  (relevant + irrelevant), or None when nothing is labelled.
+
+  - `best_cutoff` uses only zero-hit, labelled, non-held-out rows. `Cutoff.limit` is exclusive (chars
+  < limit). It returns the largest limit whose rows below it number at least `minimum` and reach `precision`
+  irrelevant, or None. `PRECISION` is 0.95 and `MIN_LABELLED` is 20.
+
+  - `cutoff_line` returns `cutoff L=<limit> precision=<3 decimals> n=<n>\n`, e.g. `cutoff L=120 precision=0.970
+  n=33\n`, and for None a line containing `no cutoff qualifies`.
+
+  - `relevance short-report` prints the table with tech column values `tech words` / `no tech words`,
+  the bucket labels, and the cutoff_line.
+
+  - `relevance cascade` calls `short_limit` through its name imported into relevance_command, and prints
+  `short_no_tech limit=<n>` when it is set.
+
+  - `infovore status` prints `irrelevant: N (denylist a, short no tech b, embed c)`, with N the sum of
+  the three.'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 5076274638cd268161abe428fd445a39adefdf27
@@ -87,6 +124,39 @@ params:
   - 'infovore.triage.short_report.cutoff_line(cutoff: Cutoff | None) -> str'
   - 'infovore.triage.short_report.short_limit(conn: sqlite3.Connection, lexicon: Lexicon, t_high: float,
     exclude: frozenset[str]) -> int | None'
+  stated: '- The stage name is `short_no_tech`. It goes in the STAGES tuple in infovore/db/archived.py
+    between `lexicon` and `embed`, so its scorer is `relevance_short_no_tech` and stage_reports returns
+    it in that position. Its outcomes count as ruled out, like denylist and no_text. Its decision is `irrelevant`,
+    and write_outcomes stores `short_limit` in that annotation''s recipe_json.
+
+    - An exchange takes this stage when short_limit is not None, the lexicon did not decide it, it has
+    zero word-list hits, and its text length (sum of each message''s stripped content length) is < short_limit.
+    When short_limit is None the stage is off.
+
+    - `Row` is a NamedTuple `(exchange_id, chars, hits)`.
+
+    - `bucket_of` returns one of `<100`, `100-200`, `200-500`, `500-1000`, `1000+` (lower edges inclusive).
+
+    - `bucket_table` returns one line for every bucket x tech (tech = hits > 0) pair, 10 in all, including
+    empty ones. Each line has fields `bucket`, `tech`, `corpus`, `relevant`, `irrelevant` (build labels
+    only), `held_relevant`, `held_irrelevant`, plus a property `percent_irrelevant` = 100 * irrelevant
+    / (relevant + irrelevant), or None when nothing is labelled.
+
+    - `best_cutoff` uses only zero-hit, labelled, non-held-out rows. `Cutoff.limit` is exclusive (chars
+    < limit). It returns the largest limit whose rows below it number at least `minimum` and reach `precision`
+    irrelevant, or None. `PRECISION` is 0.95 and `MIN_LABELLED` is 20.
+
+    - `cutoff_line` returns `cutoff L=<limit> precision=<3 decimals> n=<n>\n`, e.g. `cutoff L=120 precision=0.970
+    n=33\n`, and for None a line containing `no cutoff qualifies`.
+
+    - `relevance short-report` prints the table with tech column values `tech words` / `no tech words`,
+    the bucket labels, and the cutoff_line.
+
+    - `relevance cascade` calls `short_limit` through its name imported into relevance_command, and prints
+    `short_no_tech limit=<n>` when it is set.
+
+    - `infovore status` prints `irrelevant: N (denylist a, short no tech b, embed c)`, with N the sum
+    of the three.'
   fail_to_pass:
   - tests/test_cli.py::test_status_on_a_fresh_database_reports_zeros
   - tests/test_cli.py::test_status_reports_cascade_outcomes_on_current_exchanges_only
@@ -153,5 +223,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history_infovore

@@ -39,7 +39,17 @@ prompt: '# Sanitize NEGATIVE/ERROR serialized-blob pollution + store-time guard 
   - `mcm_engine.sanitize.clean_negative(what_failed: str | None, why_failed: str | None, correct_approach:
   str | None) -> tuple[str | None, str | None, str | None, bool]`
 
-  - MCP tool: `sanitize_corpus(entity_type: str=''all'', dry_run: bool=True, limit: int=0) -> str`'
+  - MCP tool: `sanitize_corpus(entity_type: str=''all'', dry_run: bool=True, limit: int=0) -> str`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - Add `update_negative(negative_id, **fields) -> None` and `update_error(error_id, **fields) -> None`
+  to the Storage protocol in `backends/__init__.py` and to both the SQLite and Postgres storage adapters.
+
+  - The `sanitize_corpus` report contains "<N> polluted across <T> table(s)", where N is the total polluted
+  rows and T the number of tables swept (3 for "all"), and lists each polluted id as "#<id>". The report
+  of a run with `dry_run=False` contains "applied".'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: d9241414233fc054f0f626043e12619271210a4f
@@ -65,6 +75,13 @@ params:
   - 'mcm_engine.sanitize.clean_negative(what_failed: str | None, why_failed: str | None, correct_approach:
     str | None) -> tuple[str | None, str | None, str | None, bool]'
   - 'MCP tool: sanitize_corpus(entity_type: str=''all'', dry_run: bool=True, limit: int=0) -> str'
+  stated: '- Add `update_negative(negative_id, **fields) -> None` and `update_error(error_id, **fields)
+    -> None` to the Storage protocol in `backends/__init__.py` and to both the SQLite and Postgres storage
+    adapters.
+
+    - The `sanitize_corpus` report contains "<N> polluted across <T> table(s)", where N is the total polluted
+    rows and T the number of tables swept (3 for "all"), and lists each polluted id as "#<id>". The report
+    of a run with `dry_run=False` contains "applied".'
   fail_to_pass:
   - tests/test_sanitize_knowledge_tool.py::test_add_negative_guard_cleans_on_store
   - tests/test_sanitize_knowledge_tool.py::test_report_error_guard_cleans_on_store
@@ -80,8 +97,6 @@ params:
   - tests/test_sanitize_pollution.py::test_clean_summary_detail_resplits
   - tests/test_sanitize_pollution.py::test_is_polluted_detects_blob_and_passes_clean_text
   - tests/test_sanitize_pollution.py::test_strip_tool_call_fragments
-  - tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/postgres/storage.py-73]
-  - tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/sqlite/storage.py-71]
   pass_to_pass:
   - tests/test_sanitize_knowledge_tool.py::test_add_knowledge_guard_cleans_on_store
   - tests/test_sanitize_knowledge_tool.py::test_sanitize_knowledge_apply_cleans_in_place
@@ -117,5 +132,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history_mcm_engine

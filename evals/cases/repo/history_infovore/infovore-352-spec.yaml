@@ -64,7 +64,24 @@ prompt: '# Topic merge: fold symbol, script, plural and generic-suffix variants 
 
   - `infovore.wiki.canon.spelling_counts(tags: Iterable[str]) -> dict[str, Counter[str]]`
 
-  - `infovore.wiki.canon.summarise_merge(spellings: Spellings, merge: Mapping[str, str]) -> Merged`'
+  - `infovore.wiki.canon.summarise_merge(spellings: Spellings, merge: Mapping[str, str]) -> Merged`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - canonical() also strips the en dash and em dash (`N–brick` gives `nbrick`) and backticks along with
+  the other quotes.
+
+  - The plural rule applies only to a spelling of at least 3 characters, so `as` never folds onto `a`.
+  It tries dropping the final `s`, and also `ies` to `y` and dropping `es`.
+
+  - The generic nouns are machine, system, computer and workstation, singular or plural.
+
+  - merge_map resolves chains to their final target (`Indys systems` to `indy`) and stops when it meets
+  a cycle.
+
+  - `Merged(keys, tags)` counts the folded keys and the claim-tags on them. Its str is `N keys, M claim-tags`,
+  and `wiki stats` with a tag run prints the line `merged: N keys, M claim-tags`.'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 0bd7a59b15fc0b9784046b466f867f90a4d0abb7
@@ -85,6 +102,19 @@ params:
   - 'infovore.wiki.canon.merge_map(spellings: Spellings) -> dict[str, str]'
   - 'infovore.wiki.canon.spelling_counts(tags: Iterable[str]) -> dict[str, Counter[str]]'
   - 'infovore.wiki.canon.summarise_merge(spellings: Spellings, merge: Mapping[str, str]) -> Merged'
+  stated: '- canonical() also strips the en dash and em dash (`N–brick` gives `nbrick`) and backticks
+    along with the other quotes.
+
+    - The plural rule applies only to a spelling of at least 3 characters, so `as` never folds onto `a`.
+    It tries dropping the final `s`, and also `ies` to `y` and dropping `es`.
+
+    - The generic nouns are machine, system, computer and workstation, singular or plural.
+
+    - merge_map resolves chains to their final target (`Indys systems` to `indy`) and stops when it meets
+    a cycle.
+
+    - `Merged(keys, tags)` counts the folded keys and the claim-tags on them. Its str is `N keys, M claim-tags`,
+    and `wiki stats` with a tag run prints the line `merged: N keys, M claim-tags`.'
   fail_to_pass:
   - tests/wiki/test_canon.py::test_alias_names_maps_every_alias_to_its_topic
   - tests/wiki/test_canon.py::test_canonical[  -]
@@ -135,5 +165,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history_infovore

@@ -20,7 +20,15 @@ prompt: '# The loop''s cleanup stamps downloads removed but leaves them complete
 
   The hidden tests call these names from the repository (signatures as a correct fix defines them):
 
-  - `harness.memory_store.migrations.v58.data(conn) -> None`'
+  - `harness.memory_store.migrations.v58.data(conn) -> None`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - The step is harness/memory_store/migrations/v58.py and must set a module-level VERSION = 58 beside
+  data(conn); the step loader sorts steps on VERSION.
+
+  - SCHEMA_VERSION in harness/memory_store/schema.py becomes 58.'
 params:
   source_repo: https://github.com/unxmaal/SoHoT.git
   base: c8ee78916ef58d2906457d8545edff78ec4e422e
@@ -34,6 +42,10 @@ params:
   - harness/memory_store/migrations/v58.py
   interface:
   - harness.memory_store.migrations.v58.data(conn) -> None
+  stated: '- The step is harness/memory_store/migrations/v58.py and must set a module-level VERSION =
+    58 beside data(conn); the step loader sorts steps on VERSION.
+
+    - SCHEMA_VERSION in harness/memory_store/schema.py becomes 58.'
   fail_to_pass:
   - tests/test_store_downloads.py::test_a_deleted_download_is_no_longer_complete
   - tests/test_store_downloads.py::test_the_migration_repairs_rows_removed_while_complete
@@ -66,5 +78,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history

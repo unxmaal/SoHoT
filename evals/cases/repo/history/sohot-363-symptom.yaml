@@ -12,7 +12,13 @@ prompt: '# lh jobs add accepts a whole command line as one argument, and the job
 
 
   A second batch was queued with \`--priority\` through a deployed CLI that predated #362. That CLI did
-  not know the option, so it stored \`--priority 5 --title ...\` as the command.'
+  not know the option, so it stored \`--priority 5 --title ...\` as the command.
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  workqueue.add refuses with ValueError. For a whole command line held in argv[0] the message contains
+  "one argument"; for an argv[0] starting with ''-'' it contains "did not recognise".'
 params:
   source_repo: https://github.com/unxmaal/SoHoT.git
   base: 933cc7418cf9144e063d7845a7f9b8944c43006b
@@ -21,6 +27,8 @@ params:
   context: oracle
   context_files:
   - harness/workqueue.py
+  stated: workqueue.add refuses with ValueError. For a whole command line held in argv[0] the message
+    contains "one argument"; for an argv[0] starting with '-' it contains "did not recognise".
   fail_to_pass:
   - tests/test_workqueue.py::test_a_command_that_cannot_run_is_refused_when_queued[argv0-one argument]
   - tests/test_workqueue.py::test_a_command_that_cannot_run_is_refused_when_queued[argv1-did not recognise]
@@ -56,5 +64,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history

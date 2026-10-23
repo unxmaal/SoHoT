@@ -14,7 +14,23 @@ prompt: '# judge report --by-channel: per-channel label breakdown
 
   - CLI option: `--by-channel`
 
-  - CLI option: `--min-labels`'
+  - CLI option: `--min-labels`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - Output is a header line whose whitespace-separated tokens are `channel labelled relevant irrelevant
+  %irrelevant exchanges excluded`, then one whitespace-separated row per channel in that order.
+
+  - The channel name prints bare, with no leading `#`. labelled is relevant + irrelevant (bad_grouping
+  not counted); exchanges is every exchange in that channel, labelled or not; % irrelevant prints with
+  one decimal and a `%` sign, e.g. `33.3%`, `100.0%`; the excluded column is `yes` or `no`.
+
+  - A thread gets its own row and is not rolled into its parent channel. A row is excluded (per INFOVORE_EXCLUDE_CHANNELS)
+  when its own name or its parent channel''s name is denylisted.
+
+  - When no channel reaches --min-labels, print exactly `no channels with at least N labels` (N the --min-labels
+  value) and exit OK.'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 93cdcc9b8bb3d5595073e027256a4b185f8f34bf
@@ -31,6 +47,19 @@ params:
   interface:
   - 'CLI option: --by-channel'
   - 'CLI option: --min-labels'
+  stated: '- Output is a header line whose whitespace-separated tokens are `channel labelled relevant
+    irrelevant %irrelevant exchanges excluded`, then one whitespace-separated row per channel in that
+    order.
+
+    - The channel name prints bare, with no leading `#`. labelled is relevant + irrelevant (bad_grouping
+    not counted); exchanges is every exchange in that channel, labelled or not; % irrelevant prints with
+    one decimal and a `%` sign, e.g. `33.3%`, `100.0%`; the excluded column is `yes` or `no`.
+
+    - A thread gets its own row and is not rolled into its parent channel. A row is excluded (per INFOVORE_EXCLUDE_CHANNELS)
+    when its own name or its parent channel''s name is denylisted.
+
+    - When no channel reaches --min-labels, print exactly `no channels with at least N labels` (N the
+    --min-labels value) and exit OK.'
   fail_to_pass:
   - tests/eval/test_channel_report.py::test_by_channel_sorted_with_latest_label_and_excluded_marked
   - tests/eval/test_channel_report.py::test_min_labels_filters_and_empty_says_so
@@ -48,5 +77,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history_infovore

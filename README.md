@@ -1709,6 +1709,20 @@ labellers score under 2 on both axes (a disputed axis is unfair until
 `settled`). A case that fails validation goes in
 `evals/importers/history.py:DROPPED` with its reason (#920).
 
+The grader runs whole test files keeping only the named ids, so one id that
+does not collect fails alone, and it keeps each failing test's pytest output in
+the grade (`failures`, also in `soh cases regrade repo` rows) (#1141). A history
+case whose hidden tests need a detail its prompt never gives carries it in
+`evals/importers/history_stated.json`, shown after the tests-call block; a case
+whose tests need a design its prompt hides or contradicts is in `RETIRED`, and
+`LOOSENED` leaves ungraded the fail_to_pass ids that count the gold fix's own
+layout. `refresh` records per task the names a fix adds that the hidden tests
+or graded ids spell (`unlisted`), and a test fails while a committed prompt
+lacks one. A `wrong_fix` label in `repo_failure_labels.jsonl` may carry a
+`grading` (`pinned_detail`, `gold_internals`, `environment`, `apply_mangled`,
+`genuine`) citing a test's kept output in its regrade; `kappa --key grading`
+compares two labellers on it.
+
 A fail_to_pass file that does not collect at base counts as failing there
 (SWE-bench's convention) only when its error is an ImportError or
 AttributeError naming a module the reference checkout holds (at its root or

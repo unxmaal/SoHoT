@@ -72,7 +72,13 @@ prompt: '# link_knowledge requires entry ids that no tool surfaces, and its esca
   mandatory_stop_turns: int = 50, hyper_focus_threshold: int = 3, rules_check_interval: int = 15, mandatory_stop_blocking:
   bool = False, mandatory_stop_grace: int = 5, nudge_escalation_threshold: int = 3, periodic_tools: dict[str,
   int] = field(default_factory=lambda: {''link_knowledge'': 25, ''add_negative'': 40}), advisory_periodic_tools:
-  list[str] = field(default_factory=lambda: [''add_negative'', ''link_knowledge'']))`'
+  list[str] = field(default_factory=lambda: [''add_negative'', ''link_knowledge'']))`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  search shows each hit''s id inside its type tag: "[KNOWLEDGE/<KIND> #<id>]", "[RULE #<id>]", "[NEGATIVE
+  #<id>]", "[ERROR #<id>]".'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: a99691d60aac91e6fc66ba9b5524f4187cb09486
@@ -98,6 +104,8 @@ params:
     bool = False, mandatory_stop_grace: int = 5, nudge_escalation_threshold: int = 3, periodic_tools:
     dict[str, int] = field(default_factory=lambda: {''link_knowledge'': 25, ''add_negative'': 40}), advisory_periodic_tools:
     list[str] = field(default_factory=lambda: [''add_negative'', ''link_knowledge'']))'
+  stated: 'search shows each hit''s id inside its type tag: "[KNOWLEDGE/<KIND> #<id>]", "[RULE #<id>]",
+    "[NEGATIVE #<id>]", "[ERROR #<id>]".'
   fail_to_pass:
   - tests/test_search_scope_and_archived.py::test_scope_all_returns_every_entity_type
   - tests/test_search_scope_and_archived.py::test_scope_errors_returns_only_errors
@@ -170,5 +178,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history_mcm_engine

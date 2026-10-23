@@ -44,7 +44,40 @@ prompt: '# Fix a mistake: reader-facing corrections page, claim corrections file
 
   - `infovore.wiki.corrections.Correction.key(self) -> tuple[int, str]`
 
-  - `infovore.wiki.corrections.load_corrections(text: str | None=None) -> dict[tuple[int, str], Correction]`'
+  - `infovore.wiki.corrections.load_corrections(text: str | None=None) -> dict[tuple[int, str], Correction]`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - corrections.toml entries are `[[claim]]` tables with `exchange`, `statement`, and `drop = true` or
+  `replace`. The shipped file has no active entry. `load_corrections(None)` reads the corrections.toml
+  beside the module.
+
+  - A statement''s whitespace is collapsed (`" ".join(s.split())`), and `key` is a property `(exchange,
+  statement)`.
+
+  - load_corrections raises ValueError with `correction` in the message when an entry has neither drop
+  = true nor replace, has both, or repeats a key.
+
+  - `Excluded` gains `unmatched`: a tuple of the Correction objects that matched no claim, sorted by key,
+  defaulting to `()`.
+
+  - A claim matched by a drop counts as `corrected` only when it has no other exclusion reason. An entry
+  that matches a claim excluded for another reason still counts as matched.
+
+  - `wiki stats` and `wiki build` always print `corrections unmatched: N`, including when N is 0.
+
+  - Every build writes `fix.md` beginning `# Fix a mistake\n`, and `fix` is a reserved file name, so a
+  topic named Fix gets `fix-2.md`.
+
+  - The HTML nav reads `... All topics</a> | <a href="fix.html">Fix a mistake</a> | <a ...>Guestbook</a>
+  ]`, and the footer contains `Spotted a mistake? <a href="fix.html">Fix it</a>.`
+
+  - html `body()` renders consecutive lines indented four spaces (outside a list) as one `<pre>` block:
+  the indent is removed, the lines are joined with `\n`, and the text is HTML-escaped without quote escaping.
+  A preceding paragraph is closed first. E.g. `Add this:\n    [[claim]]\n    x = "<b>"\n\nText\n    more\n##
+  H\n` gives `<p>Add this:</p>\n<pre>[[claim]]\nx = "&lt;b&gt;"</pre>\n<p>Text</p>\n<pre>more</pre>\n<h2
+  id="h">H</h2>\n`.'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 2e5c25803ebb204df597319e81fd0d00f8a69b2d
@@ -69,6 +102,35 @@ params:
     Excluded]'
   - infovore.wiki.corrections.Correction.key(self) -> tuple[int, str]
   - 'infovore.wiki.corrections.load_corrections(text: str | None=None) -> dict[tuple[int, str], Correction]'
+  stated: '- corrections.toml entries are `[[claim]]` tables with `exchange`, `statement`, and `drop =
+    true` or `replace`. The shipped file has no active entry. `load_corrections(None)` reads the corrections.toml
+    beside the module.
+
+    - A statement''s whitespace is collapsed (`" ".join(s.split())`), and `key` is a property `(exchange,
+    statement)`.
+
+    - load_corrections raises ValueError with `correction` in the message when an entry has neither drop
+    = true nor replace, has both, or repeats a key.
+
+    - `Excluded` gains `unmatched`: a tuple of the Correction objects that matched no claim, sorted by
+    key, defaulting to `()`.
+
+    - A claim matched by a drop counts as `corrected` only when it has no other exclusion reason. An entry
+    that matches a claim excluded for another reason still counts as matched.
+
+    - `wiki stats` and `wiki build` always print `corrections unmatched: N`, including when N is 0.
+
+    - Every build writes `fix.md` beginning `# Fix a mistake\n`, and `fix` is a reserved file name, so
+    a topic named Fix gets `fix-2.md`.
+
+    - The HTML nav reads `... All topics</a> | <a href="fix.html">Fix a mistake</a> | <a ...>Guestbook</a>
+    ]`, and the footer contains `Spotted a mistake? <a href="fix.html">Fix it</a>.`
+
+    - html `body()` renders consecutive lines indented four spaces (outside a list) as one `<pre>` block:
+    the indent is removed, the lines are joined with `\n`, and the text is HTML-escaped without quote
+    escaping. A preceding paragraph is closed first. E.g. `Add this:\n    [[claim]]\n    x = "<b>"\n\nText\n    more\n##
+    H\n` gives `<p>Add this:</p>\n<pre>[[claim]]\nx = "&lt;b&gt;"</pre>\n<p>Text</p>\n<pre>more</pre>\n<h2
+    id="h">H</h2>\n`.'
   fail_to_pass:
   - tests/wiki/test_build.py::test_article_parts_follow_numbered_continuations_without_gaps
   - tests/wiki/test_build.py::test_background_claims_leave_the_page_with_one_line_naming_their_reference
@@ -135,5 +197,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history_infovore

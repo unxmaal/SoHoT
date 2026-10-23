@@ -42,7 +42,7 @@ def _pre_1129(monkeypatch):
 
 
 def test_every_case_is_told_it_has_no_tools():
-    assert len(CASES) == 117 and _sha(OLD_SYSTEM) == OLD_SYSTEM_SHA
+    assert len(CASES) == 108 and _sha(OLD_SYSTEM) == OLD_SYSTEM_SHA
     for c in CASES:
         system = repo.as_asked(c).params["system"]
         assert "no tools" in system and "one unified diff" in system

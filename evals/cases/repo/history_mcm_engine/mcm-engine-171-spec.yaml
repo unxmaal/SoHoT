@@ -32,7 +32,18 @@ prompt: '# Cap retrieval output in summary search: inline Why/Fix length, hit bu
   - `search("deploy guard")` and `search("sweep-check")` each return under ~3 KB, with RULE #756 and #868
   still present for "deploy guard".
 
-  - `detail="full"` is unchanged (still returns whole bodies).'
+  - `detail="full"` is unchanged (still returns whole bodies).
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - In summary mode each inline NEGATIVE Why/Fix and ERROR Root cause/Fix field longer than 320 characters
+  is cut to 320 and followed by "… (get_entry(''negative'', <id>) for full)" or "… (get_entry(''error'',
+  <id>) for full)". detail="full" output carries no such pointer.
+
+  - In the multi-scope "all" summary path at most 3 NEGATIVE and at most 3 ERROR hits are returned (the
+  top by rank), whatever `limit` is. A scoped query (scope="negative" or "errors") and detail="full" keep
+  the caller''s `limit`, and KNOWLEDGE/RULE hits are not cut by this cap.'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 5c3e61f92a7c6f6f868e1dc5dcb4e0c88df4b6e3
@@ -46,6 +57,13 @@ params:
   - pythonpath=src
   extras:
   - dev
+  stated: '- In summary mode each inline NEGATIVE Why/Fix and ERROR Root cause/Fix field longer than 320
+    characters is cut to 320 and followed by "… (get_entry(''negative'', <id>) for full)" or "… (get_entry(''error'',
+    <id>) for full)". detail="full" output carries no such pointer.
+
+    - In the multi-scope "all" summary path at most 3 NEGATIVE and at most 3 ERROR hits are returned (the
+    top by rank), whatever `limit` is. A scoped query (scope="negative" or "errors") and detail="full"
+    keep the caller''s `limit`, and KNOWLEDGE/RULE hits are not cut by this cap.'
   fail_to_pass:
   - tests/test_search_output_caps.py::test_error_inline_fields_capped_in_summary
   - tests/test_search_output_caps.py::test_neg_err_count_capped_in_all_summary_but_not_scoped
@@ -65,5 +83,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history_mcm_engine

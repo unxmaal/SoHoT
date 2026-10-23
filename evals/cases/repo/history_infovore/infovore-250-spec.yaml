@@ -23,7 +23,22 @@ prompt: '# Embed stage: choose relevant threshold by precision target (0.90), re
   - `infovore.triage.embed_stage.threshold_stats(samples: Sequence[tuple[float, bool]], t_irrelevant:
   float, t_relevant: float) -> dict[str, dict[str, float]]`
 
-  - CLI option: `--relevant-precision`'
+  - CLI option: `--relevant-precision`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - `threshold_stats` returns `{"irrelevant": {"n", "precision", "recall"}, "relevant": {"n", "precision",
+  "recall"}}`. The irrelevant side covers samples with score < t_irrelevant: precision is the share of
+  them not relevant, recall is that count over all non-relevant samples. The relevant side covers samples
+  with score >= t_relevant: precision is the share relevant, recall is that count over all relevant samples.
+  Any zero denominator gives 0.0.
+
+  - The fitted recipe stores that dict under a top-level `recipe["cv"]` key, and `recipe["thresholds"]["relevant_precision_target"]`
+  holds the precision target actually used (default 0.90).
+
+  - `relevance cascade` prints one line per side beginning `cv irrelevant: n=` and `cv relevant: n=`,
+  each followed by `precision=` and `recall=` values.'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 640fab4912a9c9c8949d5ba89147ceabd183061e
@@ -45,6 +60,17 @@ params:
   - 'infovore.triage.embed_stage.threshold_stats(samples: Sequence[tuple[float, bool]], t_irrelevant:
     float, t_relevant: float) -> dict[str, dict[str, float]]'
   - 'CLI option: --relevant-precision'
+  stated: '- `threshold_stats` returns `{"irrelevant": {"n", "precision", "recall"}, "relevant": {"n",
+    "precision", "recall"}}`. The irrelevant side covers samples with score < t_irrelevant: precision
+    is the share of them not relevant, recall is that count over all non-relevant samples. The relevant
+    side covers samples with score >= t_relevant: precision is the share relevant, recall is that count
+    over all relevant samples. Any zero denominator gives 0.0.
+
+    - The fitted recipe stores that dict under a top-level `recipe["cv"]` key, and `recipe["thresholds"]["relevant_precision_target"]`
+    holds the precision target actually used (default 0.90).
+
+    - `relevance cascade` prints one line per side beginning `cv irrelevant: n=` and `cv relevant: n=`,
+    each followed by `precision=` and `recall=` values.'
   fail_to_pass:
   - tests/triage/test_cascade.py::test_the_embed_stage_scores_what_the_lexicon_abstained_on
   - tests/triage/test_cascade.py::test_the_relevant_precision_flag_reaches_the_recorded_recipe
@@ -94,5 +120,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history_infovore

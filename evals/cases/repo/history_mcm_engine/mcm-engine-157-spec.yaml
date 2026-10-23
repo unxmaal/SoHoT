@@ -51,7 +51,34 @@ prompt: '# #137b: UserPromptSubmit task-aware retrieval + inject
   - `mcm_engine.hooks.user_prompt_submit.classify(prompt: str) -> tuple[bool, str]`
 
   - `mcm_engine.hooks.user_prompt_submit.main(argv: Optional[list[str]]=None, *, search: Optional[Callable[[str,
-  Path], str]]=None) -> int`'
+  Path], str]]=None) -> int`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - `coverage.record_topic` stores `entry["covered_topics"][topic] = now` (a float), the topic lowercased
+  and stripped; an empty or blank topic is a no-op. `is_covered` matches the topic case-insensitively,
+  is False when `now - recorded > ttl`, and with `require_resident=True` is False when `note_compaction`
+  has stamped a boundary on the entry and the topic was recorded at or before it (no boundary means resident).
+  `prune_topics` deletes topics older than `ttl` and does nothing when `covered_topics` is absent.
+
+  - `classify` returns `(False, "")` for a non-historical prompt and `(True, keyword)` for a historical
+  one, where keyword is `_pick_keyword(prompt)`. History signals match on word boundaries ("distill" does
+  not match "still").
+
+  - `_pick_keyword` returns one lowercased token: the longest identifier-shaped word (contains "_", a
+  digit, or an interior capital) if any, else the longest word of 4+ letters that is not a stopword; history
+  signal words such as "again" are stopwords. It returns "" when nothing qualifies.
+
+  - `main` calls `search(keyword, cwd)` only for a historical prompt with a non-empty keyword. A non-empty
+  result prints `{"hookSpecificOutput": {"hookEventName": "UserPromptSubmit", "additionalContext": ...}}`
+  where the context contains the keyword and the result; an empty result or a raising search prints nothing.
+  Exit code is always 0.
+
+  - Coverage is recorded even when the search returns empty: in the existing hook state file of `mcm_engine.hooks.mcp_enforcement`
+  (path from `_state_path(cwd)`, read with `_read_state(path)`, written with `_write_state(path, state)`),
+  under the key `_agent_key(event)` (the event''s session_id), by calling `coverage.record_topic` on that
+  entry dict.'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 725cad479181736743fc7ba01da27d2530a1b4a1
@@ -81,6 +108,30 @@ params:
   - 'mcm_engine.hooks.user_prompt_submit.classify(prompt: str) -> tuple[bool, str]'
   - 'mcm_engine.hooks.user_prompt_submit.main(argv: Optional[list[str]]=None, *, search: Optional[Callable[[str,
     Path], str]]=None) -> int'
+  stated: '- `coverage.record_topic` stores `entry["covered_topics"][topic] = now` (a float), the topic
+    lowercased and stripped; an empty or blank topic is a no-op. `is_covered` matches the topic case-insensitively,
+    is False when `now - recorded > ttl`, and with `require_resident=True` is False when `note_compaction`
+    has stamped a boundary on the entry and the topic was recorded at or before it (no boundary means
+    resident). `prune_topics` deletes topics older than `ttl` and does nothing when `covered_topics` is
+    absent.
+
+    - `classify` returns `(False, "")` for a non-historical prompt and `(True, keyword)` for a historical
+    one, where keyword is `_pick_keyword(prompt)`. History signals match on word boundaries ("distill"
+    does not match "still").
+
+    - `_pick_keyword` returns one lowercased token: the longest identifier-shaped word (contains "_",
+    a digit, or an interior capital) if any, else the longest word of 4+ letters that is not a stopword;
+    history signal words such as "again" are stopwords. It returns "" when nothing qualifies.
+
+    - `main` calls `search(keyword, cwd)` only for a historical prompt with a non-empty keyword. A non-empty
+    result prints `{"hookSpecificOutput": {"hookEventName": "UserPromptSubmit", "additionalContext": ...}}`
+    where the context contains the keyword and the result; an empty result or a raising search prints
+    nothing. Exit code is always 0.
+
+    - Coverage is recorded even when the search returns empty: in the existing hook state file of `mcm_engine.hooks.mcp_enforcement`
+    (path from `_state_path(cwd)`, read with `_read_state(path)`, written with `_write_state(path, state)`),
+    under the key `_agent_key(event)` (the event''s session_id), by calling `coverage.record_topic` on
+    that entry dict.'
   fail_to_pass:
   - tests/test_hook_coverage.py::test_compaction_makes_prior_coverage_non_resident
   - tests/test_hook_coverage.py::test_prune_drops_stale_topics
@@ -130,5 +181,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history_mcm_engine

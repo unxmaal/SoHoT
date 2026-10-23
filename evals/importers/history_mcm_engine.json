@@ -87,7 +87,11 @@
    "interface": [
     "mcm_engine.replay_queries.kind_bytes(text: str) -> dict[str, int]",
     "mcm_engine.replay_queries.wire_bytes(text: str) -> int"
-   ]
+   ],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "mcm-engine-182",
@@ -140,7 +144,10 @@
     "mcm_engine.replay_queries.replay(ctx: Context, queries: list[ReplayQuery], *, store: str='', project_name: str='', jaccard_threshold: float=0.9) -> ReplayReport",
     "CLI option: --out",
     "CLI option: --store"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "mcm-engine-177",
@@ -190,7 +197,10 @@
     "mcm_engine.corpus_snapshot.census(storage, etypes: Iterable[EntityType]=tuple(EntityType)) -> dict",
     "mcm_engine.corpus_snapshot.parse_scroll_page(text: str) -> list[ParsedEntry]",
     "mcm_engine.corpus_snapshot.snapshot(call_tool: Callable[[str, dict], str], out_path: str | Path, *, page: int=100) -> SnapshotReport"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "mcm-engine-171",
@@ -226,7 +236,11 @@
     "area": "src/mcm_engine/tools",
     "size": "small"
    },
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "mcm-engine-170",
@@ -308,7 +322,17 @@
     "mcm_engine.sanitize.clean_error(pattern: str | None, context: str | None, root_cause: str | None, fix: str | None) -> tuple[str | None, str | None, str | None, str | None, bool]",
     "mcm_engine.sanitize.clean_negative(what_failed: str | None, why_failed: str | None, correct_approach: str | None) -> tuple[str | None, str | None, str | None, bool]",
     "MCP tool: sanitize_corpus(entity_type: str='all', dry_run: bool=True, limit: int=0) -> str"
-   ]
+   ],
+   "unlisted": {
+    "spec": [
+     "update_error",
+     "update_negative"
+    ],
+    "symptom": [
+     "update_error",
+     "update_negative"
+    ]
+   }
   },
   {
    "id": "mcm-engine-160",
@@ -388,7 +412,14 @@
     "mcm_engine.eval.replay.score_policy(trace: list[TraceEvent], policy: Policy, *, fn_weight: float=DEFAULT_FN_WEIGHT, fp_weight: float=DEFAULT_FP_WEIGHT, failure_multiplier: float=DEFAULT_FAILURE_MULTIPLIER) -> PolicyScore",
     "mcm_engine.eval.replay.should_retrieve(ev: TraceEvent) -> Optional[bool]",
     "mcm_engine.eval.trace_transcript.load_transcript(path: str | Path) -> list[TraceEvent]"
-   ]
+   ],
+   "unlisted": {
+    "spec": [
+     "as_dict",
+     "recall",
+     "weighted_cost"
+    ]
+   }
   },
   {
    "id": "mcm-engine-157",
@@ -464,7 +495,10 @@
     "mcm_engine.hooks.user_prompt_submit._pick_keyword(prompt: str) -> str",
     "mcm_engine.hooks.user_prompt_submit.classify(prompt: str) -> tuple[bool, str]",
     "mcm_engine.hooks.user_prompt_submit.main(argv: Optional[list[str]]=None, *, search: Optional[Callable[[str, Path], str]]=None) -> int"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "mcm-engine-156",
@@ -526,7 +560,10 @@
     "mcm_engine.tracker.SessionTracker.reconcile_coverage(self, *, resident: bool=False) -> None",
     "mcm_engine.tracker.SessionTracker.record_coverage(self, topic: str, query: str, result_ids=None, *, resident: bool=True) -> None",
     "MCP tool: save_snapshot(goal: str='', progress: str='', open_questions: str='', blockers: str='', next_steps: str='', active_files: str='', key_decisions: str='', compaction: bool=False) -> str"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "mcm-engine-142",
@@ -577,7 +614,11 @@
     "mcm_engine.sanitize.is_polluted(text: str | None) -> bool",
     "mcm_engine.sanitize.strip_tool_call_fragments(text: str | None) -> str",
     "MCP tool: sanitize_knowledge(dry_run: bool=True, limit: int=0) -> str"
-   ]
+   ],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "mcm-engine-149",
@@ -635,7 +676,10 @@
     "environment variable: MCM_SCORE_W_RELEVANCE",
     "environment variable: MCM_SEARCH_RANK_THRESHOLD",
     "environment variable: MCM_SEARCH_STALE_DAYS"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "mcm-engine-145",
@@ -693,7 +737,11 @@
     "mcm_engine.hooks.pre_compact._write_local(cwd: Path, args: dict[str, Any]) -> None",
     "mcm_engine.hooks.pre_compact.main(argv: Optional[list[str]]=None) -> int",
     "mcm_engine.hooks.pre_compact.mcp_http_call_tool(url: str, name: str, arguments: dict, *, headers: Optional[dict]=None, timeout: Optional[float]=None) -> str"
-   ]
+   ],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "mcm-engine-135",
@@ -734,7 +782,11 @@
     "area": ".,src/mcm_engine/adapters/opensearch,src/mcm_engine/adapters/postgres,src/mcm_engine/adapters/sqlite,src/mcm_engine/backends,src/mcm_engine/testing,src/mcm_engine/tools",
     "size": "large"
    },
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "mcm-engine-136",
@@ -775,7 +827,11 @@
     "area": ".,src/mcm_engine/tools",
     "size": "small"
    },
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "mcm-engine-78",
@@ -828,7 +884,10 @@
     "mcm_engine.mirror.render_rules_to_tree(rows: Iterable[Any], out_dir: str | Path) -> int",
     "MCP tool: export_rules(offset: int=0, limit: int=100) -> str",
     "environment variable: MCM_EXPORT_PAGE_MAX"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "mcm-engine-63",
@@ -872,7 +931,11 @@
    "interface": [
     "mcm_engine.style.VOICE_EXEMPLAR",
     "mcm_engine.style.count_style_tics(text: str) -> dict[str, int]"
-   ]
+   ],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "mcm-engine-116",
@@ -942,7 +1005,11 @@
    "interface": [
     "class mcm_engine.backends.SessionRow(id: int, status: str, current_task: Optional[str] = None, findings_summary: Optional[str] = None, next_steps: Optional[str] = None, blockers: Optional[str] = None, context_snapshot: Optional[str] = None, created_at: Optional[datetime] = None, principal: Optional[str] = None, workspace: Optional[str] = None)",
     "mcm_engine.adapters.sqlite.storage.SqliteStorage.get_last_session(self, *, caller: Optional[str]=None, principal: Optional[str]=None, workspace: Optional[str]=None) -> Optional[SessionRow]"
-   ]
+   ],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "mcm-engine-109",
@@ -995,7 +1062,10 @@
    },
    "interface": [
     "class mcm_engine.wiring.Context(storage: StorageBackend, counters: CounterStore, search: SearchBackend, session: SessionStore, stale_index_warning: Optional[str] = None)"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "mcm-engine-92",
@@ -1050,7 +1120,10 @@
    "variant_drops": {
     "symptom": "no_fix_section"
    },
-   "interface": []
+   "interface": [],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "mcm-engine-83",
@@ -1100,7 +1173,11 @@
     "mcm_engine.tracker.ScopedTracker.record_call(self, *args, **kwargs)",
     "mcm_engine.tracker.ScopedTracker.register_plugin_nudge(self, fn) -> None",
     "mcm_engine.tracker.ScopedTracker.reset_all(self, *args, **kwargs)"
-   ]
+   ],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "mcm-engine-79",
@@ -1152,7 +1229,10 @@
     "mcm_engine.server.build_verified_context(config: MCMConfig, *, registry: Optional[AdapterRegistry]=None, shared_db: Any=None) -> Context",
     "mcm_engine.wiring.build_context(config: MCMConfig, *, registry: Optional[AdapterRegistry]=None, shared_db: Any=None) -> Context",
     "mcm_engine.wiring.build_verified_context(config: MCMConfig, *, registry: Optional[AdapterRegistry]=None, shared_db: Any=None) -> Context"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "mcm-engine-80",
@@ -1232,7 +1312,11 @@
     "mcm_engine.ingest.rulesift.sift_spans(spans: Iterable[tuple[str, str]], existing_rules: Iterable[tuple[int, str]], *, strict: bool=True) -> list[RuleCandidate]",
     "MCP tool: sift_candidates(candidates: list[dict], strict: bool=True) -> str",
     "CLI option: --remote-loose"
-   ]
+   ],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "mcm-engine-47",
@@ -1327,7 +1411,11 @@
    "interface": [
     "class mcm_engine.config.NudgeConfig(store_reminder_turns: int = 10, checkpoint_turns: int = 25, mandatory_stop_turns: int = 50, hyper_focus_threshold: int = 3, rules_check_interval: int = 15, mandatory_stop_blocking: bool = False, mandatory_stop_grace: int = 5, nudge_escalation_threshold: int = 3, periodic_tools: dict[str, int] = field(default_factory=lambda: {'link_knowledge': 25, 'add_negative': 40}), advisory_periodic_tools: list[str] = field(default_factory=lambda: ['add_negative', 'link_knowledge']))",
     "class mcm_engine.tracker.NudgeConfig(store_reminder_turns: int = 10, checkpoint_turns: int = 25, mandatory_stop_turns: int = 50, hyper_focus_threshold: int = 3, rules_check_interval: int = 15, mandatory_stop_blocking: bool = False, mandatory_stop_grace: int = 5, nudge_escalation_threshold: int = 3, periodic_tools: dict[str, int] = field(default_factory=lambda: {'link_knowledge': 25, 'add_negative': 40}), advisory_periodic_tools: list[str] = field(default_factory=lambda: ['add_negative', 'link_knowledge']))"
-   ]
+   ],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "mcm-engine-31",
@@ -1374,7 +1462,10 @@
    "interface": [
     "mcm_engine.consolidate.consolidation_report(storage: Any, *, max_age_days: int=90, now: Optional[datetime]=None) -> dict",
     "CLI option: --from"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "mcm-engine-32",
@@ -1421,7 +1512,10 @@
    "interface": [
     "mcm_engine.dedup.find_conflicts(items: Iterable[tuple], *, topic_threshold: float=TOPIC_THRESHOLD, body_threshold: float=BODY_THRESHOLD, min_entropy: float=MIN_ENTROPY) -> list[tuple]",
     "MCP tool: find_conflicting_rules(topic_threshold: float=0.5, body_threshold: float=0.4) -> str"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "mcm-engine-30",
@@ -1474,7 +1568,10 @@
     "mcm_engine.dedup.normalize(text: str) -> str",
     "mcm_engine.dedup.shannon_entropy(text: str) -> float",
     "MCP tool: find_duplicate_rules(threshold: float=0.9) -> str"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "mcm-engine-22",
@@ -1518,7 +1615,11 @@
     "mcm_engine.mirror.export_mirror(storage: Any, out_dir: str | Path) -> dict",
     "CLI option: --from",
     "CLI option: --out"
-   ]
+   ],
+   "unlisted": {
+    "spec": [],
+    "symptom": []
+   }
   },
   {
    "id": "mcm-engine-27",
@@ -1587,7 +1688,10 @@
     "mcm_engine.scoring.compose_rank(*, relevance: float, hit_count: Optional[int], reinforcement_count: Optional[int], pinned: bool, age_days: Optional[float], correct_count: Optional[int]=None, incorrect_count: Optional[int]=None) -> float",
     "mcm_engine.scoring.compose_rank_pinned_only(*, relevance: float, pinned: bool) -> float",
     "mcm_engine.scoring.minmax_normalize(value: float, lo: float, hi: float) -> float"
-   ]
+   ],
+   "unlisted": {
+    "spec": []
+   }
   },
   {
    "id": "mcm-engine-25",
@@ -1658,7 +1762,12 @@
     "mcm_engine.scoring.compose_rank(*, raw_rank: float, hit_count: Optional[int], reinforcement_count: Optional[int], pinned: bool, age_days: Optional[float], correct_count: Optional[int]=None, incorrect_count: Optional[int]=None, query_terms: Optional[int]=None) -> float",
     "mcm_engine.scoring.compose_rank_pinned_only(*, raw_rank: float, pinned: bool, query_terms: Optional[int]=None) -> float",
     "mcm_engine.scoring.normalize_relevance(raw_rank: float, query_terms: Optional[int]=None) -> float"
-   ]
+   ],
+   "unlisted": {
+    "spec": [
+     "W_REINFORCEMENT"
+    ]
+   }
   }
  ],
  "split": {

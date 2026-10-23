@@ -115,7 +115,22 @@ prompt: '# SessionTracker is process-global: concurrent clients corrupt each oth
 
   - `mcm_engine.tracker.ScopedTracker.register_plugin_nudge(self, fn) -> None`
 
-  - `mcm_engine.tracker.ScopedTracker.reset_all(self, *args, **kwargs)`'
+  - `mcm_engine.tracker.ScopedTracker.reset_all(self, *args, **kwargs)`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - The read-only gate hardening is required, not optional: for sift_candidates, find_duplicate_rules,
+  find_conflicting_rules, consolidation_report, list_rules and get_related, SessionTracker.record_call
+  still increments turn_count but leaves turn_count - last_store_turn and turn_count - last_checkpoint_turn
+  unchanged, adds nothing to ignored_counts for pending nudges, and never raises. search is still counted.
+
+  - ScopedTracker keeps its per-session trackers in an attribute named _trackers, a weakref.WeakKeyDictionary
+  keyed on the object key_provider returns (the session object), so a session''s tracker is dropped when
+  that object is garbage-collected. A None key uses one shared default tracker that is not stored in _trackers.
+
+  - Public attribute reads and writes on ScopedTracker (turn_count, last_checkpoint_turn, ...) go to the
+  calling session''s tracker; register_plugin_nudge applies to existing and later sessions.'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: ec43e8935cf5cae3aaef79ad2d28a7bd07f82765
@@ -137,6 +152,18 @@ params:
   - mcm_engine.tracker.ScopedTracker.record_call(self, *args, **kwargs)
   - mcm_engine.tracker.ScopedTracker.register_plugin_nudge(self, fn) -> None
   - mcm_engine.tracker.ScopedTracker.reset_all(self, *args, **kwargs)
+  stated: '- The read-only gate hardening is required, not optional: for sift_candidates, find_duplicate_rules,
+    find_conflicting_rules, consolidation_report, list_rules and get_related, SessionTracker.record_call
+    still increments turn_count but leaves turn_count - last_store_turn and turn_count - last_checkpoint_turn
+    unchanged, adds nothing to ignored_counts for pending nudges, and never raises. search is still counted.
+
+    - ScopedTracker keeps its per-session trackers in an attribute named _trackers, a weakref.WeakKeyDictionary
+    keyed on the object key_provider returns (the session object), so a session''s tracker is dropped
+    when that object is garbage-collected. A None key uses one shared default tracker that is not stored
+    in _trackers.
+
+    - Public attribute reads and writes on ScopedTracker (turn_count, last_checkpoint_turn, ...) go to
+    the calling session''s tracker; register_plugin_nudge applies to existing and later sessions.'
   fail_to_pass:
   - tests/test_session_tracker_isolation.py::test_attribute_write_delegates_to_calling_session
   - tests/test_session_tracker_isolation.py::test_escalation_block_in_one_session_does_not_block_another
@@ -162,5 +189,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history_mcm_engine

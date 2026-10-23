@@ -25,7 +25,21 @@ prompt: '# A neighbor sighting reopens a decided candidate, and a README-only sn
 
   The hidden tests call these names from the repository (signatures as a correct fix defines them):
 
-  - `harness.memory_store.latest(conn, name: str) -> dict | None`'
+  - `harness.memory_store.latest(conn, name: str) -> dict | None`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - memory_store.latest returns a dict with keys "outcome" and "tier" for the newest verdict.
+
+  - SCHEMA_VERSION becomes 20. Migrating a store below 20 calls a new function memory_store._requeue_screens_of_missing_weights(conn).
+  It looks only at a proposal whose latest verdict is ''broken'', with a detail containing "No such file
+  or directory" (case-insensitive), and for which fetching.have(name), called with the name alone, is
+  false, whether or not a hub dir exists. For such a proposal it inserts a new ''queued'' verdict. A proposal
+  whose latest verdict is anything else is left alone.
+
+  - fetching.have counts a snapshot under hub/models--<org>--<name>/snapshots/ only if it holds config.json,
+  model_index.json or a weight file such as *.safetensors.'
 params:
   source_repo: https://github.com/unxmaal/SoHoT.git
   base: 644f52812413a7d9849ff21e5aad0bcf32764175
@@ -38,6 +52,16 @@ params:
   - harness/memory_store.py
   interface:
   - 'harness.memory_store.latest(conn, name: str) -> dict | None'
+  stated: '- memory_store.latest returns a dict with keys "outcome" and "tier" for the newest verdict.
+
+    - SCHEMA_VERSION becomes 20. Migrating a store below 20 calls a new function memory_store._requeue_screens_of_missing_weights(conn).
+    It looks only at a proposal whose latest verdict is ''broken'', with a detail containing "No such
+    file or directory" (case-insensitive), and for which fetching.have(name), called with the name alone,
+    is false, whether or not a hub dir exists. For such a proposal it inserts a new ''queued'' verdict.
+    A proposal whose latest verdict is anything else is left alone.
+
+    - fetching.have counts a snapshot under hub/models--<org>--<name>/snapshots/ only if it holds config.json,
+    model_index.json or a weight file such as *.safetensors.'
   fail_to_pass:
   - tests/test_harness_registry.py::test_a_neighbor_sighting_does_not_reopen_a_decided_name[None-None-queued]
   - tests/test_harness_registry.py::test_a_neighbor_sighting_does_not_reopen_a_decided_name[declined-adopt-declined]
@@ -193,5 +217,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history

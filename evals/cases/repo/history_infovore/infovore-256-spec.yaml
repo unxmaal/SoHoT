@@ -15,7 +15,26 @@ prompt: '# labels export: JSONL of human relevance labels with cascade stage
 
   - CLI option: `--include-excluded-channels`
 
-  - CLI option: `--jsonl`'
+  - CLI option: `--jsonl`
+
+
+  The hidden tests also hold a fix to these details (stated for this exam):
+
+  - The `labels` command is a new Command registered in builtin_commands, with `configure(parser)` and
+  `async run(context, args)`; `export` is its subcommand. It writes one JSON object per line to the --jsonl
+  path, creating parent directories as needed.
+
+  - Field values: `label` is `relevant` or `irrelevant`. `text` is the llm-score render''s lines joined
+  with `\n`. `channel` is the parent channel''s name for a thread, otherwise the channel''s own name.
+  `slice` is the alphabetically first current slice the exchange belongs to, or null. `cascade_stage`
+  is the stage name (e.g. `lexicon`, `embed`, `short_no_tech`) of the latest relevance_* annotation with
+  a non-null label, or null. `label_source` comes from the latest human_exchange annotation''s source_ref:
+  the second `:` part for `judge:<x>:<n>`, otherwise the part before the first `:`, and null when there
+  is no ref.
+
+  - Printed counts: `labels: N`, then one line per value as `<field> <value>: <count>` for label, held_out
+  and cascade_stage, with values lowercased and null printed as `none` (e.g. `held_out true: 2`, `cascade_stage
+  none: 2`).'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 733d7498f580a11b792df1e889bfbe33bf253984
@@ -32,6 +51,21 @@ params:
   interface:
   - 'CLI option: --include-excluded-channels'
   - 'CLI option: --jsonl'
+  stated: '- The `labels` command is a new Command registered in builtin_commands, with `configure(parser)`
+    and `async run(context, args)`; `export` is its subcommand. It writes one JSON object per line to
+    the --jsonl path, creating parent directories as needed.
+
+    - Field values: `label` is `relevant` or `irrelevant`. `text` is the llm-score render''s lines joined
+    with `\n`. `channel` is the parent channel''s name for a thread, otherwise the channel''s own name.
+    `slice` is the alphabetically first current slice the exchange belongs to, or null. `cascade_stage`
+    is the stage name (e.g. `lexicon`, `embed`, `short_no_tech`) of the latest relevance_* annotation
+    with a non-null label, or null. `label_source` comes from the latest human_exchange annotation''s
+    source_ref: the second `:` part for `judge:<x>:<n>`, otherwise the part before the first `:`, and
+    null when there is no ref.
+
+    - Printed counts: `labels: N`, then one line per value as `<field> <value>: <count>` for label, held_out
+    and cascade_stage, with values lowercased and null printed as `none` (e.g. `held_out true: 2`, `cascade_stage
+    none: 2`).'
   fail_to_pass:
   - tests/triage/test_labels_export.py::test_counts_are_printed
   - tests/triage/test_labels_export.py::test_excluded_channels_are_omitted_unless_included
@@ -51,5 +85,6 @@ attribution:
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
     and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
-    fix's signatures, appended to both variants (evals/interface.py)
+    fix's signatures, appended to both variants (evals/interface.py); what the hidden tests also require,
+    stated after it (#1141)
   importer: evals.importers.history_infovore
