@@ -686,6 +686,8 @@ def build_parser() -> argparse.ArgumentParser:
     cas.add_argument("--out", default="", help="cases root (default: evals/cases)")
     cas.add_argument("--run", default="", help="regrade: a repo run directory whose stored diffs to grade again")
     cas.add_argument("--case", action="append", help="regrade: only this case id (repeatable)")
+    cas.add_argument("--reextract", action="store_true",
+                     help="regrade: the diff today's extract_diff takes from each stored reply, where it differs (#1131)")
     cas.add_argument("--packets", default="", help="with `labels repo`, write one labeller packet per case here")
     cas.set_defaults(func=cases_cmd.cmd_cases)
     aud = sub.add_parser("audit", help="check the live store and what the gateway serves, "

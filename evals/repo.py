@@ -36,7 +36,9 @@ PROFILE = """(version 1)
 (allow file-write* (subpath (param "TASK")) (literal "/dev/null") (literal "/dev/zero")
        (regex #"^/dev/tty") (regex #"^/dev/fd/"))
 """
-_FENCE = re.compile(r"```[ \t]*(?:diff|patch|udiff)?[ \t]*\n(.*?)```", re.S)
+#: Fence info strings whose block may hold the diff.
+_DIFF_INFO = ("", "diff", "patch", "udiff")
+_HUNK = re.compile(r"^@@ -\d+(?:,(\d+))? \+\d+(?:,(\d+))? @@")
 #: SWE-Llama's trained reply shape (#922); an unclosed tag is a reply cut off mid-patch.
 _TAG = re.compile(r"<(patch|diff)>(.*?)(?:</\1>|\Z)", re.S)
 REPLY = ("Reply with one unified diff (as `git diff` prints it, paths a/ and b/ from the "
@@ -281,6 +283,32 @@ def calls_tools(reply: str, diff: str) -> bool:
     return not (diff or "").strip() and bool(_TOOL_CALL.search(str(reply or "")))
 
 
+def _fenced(text: str):
+    """(info, body) of each fenced block; in a diff block a ``` line closes it only outside a hunk's counted lines. #1131."""
+    lines, i = text.splitlines(keepends=True), 0
+    while i < len(lines):
+        head = lines[i].strip()
+        i += 1
+        if not head.startswith("```"):
+            continue
+        info, body, old, new = head[3:].strip(), [], 0, 0
+        while i < len(lines):
+            bare = lines[i].rstrip("\r\n")
+            tag = bare[:1]
+            if (old > 0 or new > 0) and tag in (" ", "+", "-", "\\", ""):
+                old -= tag in (" ", "", "-")
+                new -= tag in (" ", "", "+")
+            elif bare.strip() == "```":
+                break
+            else:
+                hunk = _HUNK.match(bare) if info in _DIFF_INFO else None
+                old, new = (int(hunk.group(1) or 1), int(hunk.group(2) or 1)) if hunk else (0, 0)
+            body.append(lines[i])
+            i += 1
+        i += 1
+        yield info, "".join(body)
+
+
 def extract_diff(reply: str) -> str:
     """The diff in a reply: a <patch>/<diff> body, else a fenced block that looks like one, else from the first header on."""
     text = str(reply or "")
@@ -288,8 +316,8 @@ def extract_diff(reply: str) -> str:
         block = block.lstrip("\r\n")
         if re.search(r"^(diff --git |--- |@@ )", block, re.M):
             return block if block.endswith("\n") else block + "\n"
-    for block in _FENCE.findall(text):
-        if re.search(r"^(diff --git |--- |@@ )", block, re.M):
+    for info, block in _fenced(text):
+        if info in _DIFF_INFO and re.search(r"^(diff --git |--- |@@ )", block, re.M):
             return block if block.endswith("\n") else block + "\n"
     m = re.search(r"^(diff --git |--- a/|--- )", text, re.M)
     if not m:
