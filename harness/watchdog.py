@@ -45,6 +45,10 @@ DAY_END_HOUR = 21
 DAYTIME_GPU_S = 3600.0
 #: The eval lock held this long with no SoHoT job running is a stuck holder.
 IDLE_HOLD_S = 1800.0
+#: Inside the day hours, a served model with no request this long is given back; at night the router's own sleep applies (#1157).
+IDLE_UNLOAD_DAY_S = 600.0
+#: The router's own --sleep-idle-seconds on a Mac, the night limit.
+IDLE_UNLOAD_SITE = "scripts/router-sleep-idle.sh:SERVE_IDLE_UNLOAD_S"
 #: Swapouts per minute while a job runs that read as memory trouble.
 SWAPOUT_MAX_PER_MIN = 2000.0
 #: Requests a serving node handed back to this machine in live_audit's window that read as a spike.
@@ -134,6 +138,15 @@ class World:
     lanes: list | None = None
     #: The day clearance in force (soh day clear), or None. #1112.
     clearance: dict | None = None
+    #: The mcp unit's pid and how long it has run; None when no unit is loaded or launchd cannot be asked.
+    mcp_live: int | None = None
+    mcp_live_s: float | None = None
+    #: harness.mcp_server processes on the live one's port that are not it (#1155).
+    mcp_stale: list = field(default_factory=list)
+    #: Each loaded model either server could give back: {"server", "model", "in_flight": bool or None}. #1157.
+    served: list = field(default_factory=list)
+    #: "server:model" -> when it was last asked, seen first, or last named by a running eval. #1157.
+    idle_since: dict = field(default_factory=dict)
     #: observation -> why it could not be made.
     gaps: dict = field(default_factory=dict)
 
@@ -297,6 +310,40 @@ class Probes:
         from harness import mlx_server, serving
         return mlx_server.generating(serving.MLX_URL, timeout=PROBE_TIMEOUT_S)
 
+    def served(self) -> list[dict]:
+        """Router models loaded now and a held mlx model other than its boot one, each with whether a request is in flight."""
+        from harness import router, slot_probe
+        out = []
+        for stem, status in (router.statuses() or {}).items():
+            if status != "loaded":
+                continue
+            try:
+                busy = slot_probe.idle(router._get(f"/slots?model={stem}"))
+            except Exception:  # noqa: BLE001 - unknown slots are an unknown in-flight request
+                busy = None
+            out.append({"server": "router", "model": stem, "in_flight": None if busy is None else not busy})
+        if self.launchd_loaded("mlx"):
+            from harness import mlx_server, serving
+            got = mlx_server.activity(serving.MLX_URL, timeout=PROBE_TIMEOUT_S) or {}
+            n = got.get("in_flight")
+            if got.get("model") and got.get("model") != got.get("boot"):
+                out.append({"server": "mlx", "model": got["model"],
+                            "in_flight": None if not isinstance(n, int) or not got.get("boot") else n > 0})
+        return out
+
+    def last_use(self, conn, since: float) -> dict:
+        """Served model -> its latest request since `since` that the watchdog or a smoke test did not send."""
+        if conn is None:
+            return {}
+        from harness import gateway, purpose
+        out: dict = {}
+        for served, at in conn.execute(
+                "SELECT served, MAX(at) FROM gateway_requests WHERE at >= ? AND purpose NOT IN (?, ?) GROUP BY served",
+                (since, purpose.WATCHDOG, purpose.SMOKE)):
+            model = gateway.strip_provider(str(served or ""))
+            out[model] = max(float(at), out.get(model, 0.0))
+        return out
+
     def lanes(self, conn, now: float) -> list[dict] | None:
         """One known-answer completion per resident text lane, each recorded in lane_probes (#924); None without a store."""
         if conn is None:
@@ -453,6 +500,14 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
         else:
             world.top.append(s)
 
+    world.mcp_live = probes.launchd_pid("mcp")
+    if world.mcp_live in procs:
+        from harness import mcp_peers
+        world.mcp_live_s = procs[world.mcp_live].elapsed_s
+        for p in mcp_peers.stale(listed, world.mcp_live):
+            world.mcp_stale.append(Subject("mcp", f"mcp pid {p.pid}", "a harness.mcp_server the mcp unit is not",
+                                           pid=p.pid, elapsed_s=p.elapsed_s, command=p.command,
+                                           orphan=p.ppid == 1, detail={"live_pid": world.mcp_live}))
     world.lock = probes.lock()
     world.cloud = probes.cloud()
     world.resident = probes.resident()
@@ -464,6 +519,11 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
     world.mlx_generating = probes.mlx_generating()
     world.fallbacks = probes.fallbacks(conn)
     try:
+        world.served = probes.served()
+        world.idle_since = _idle_since(probes, world, probes.last_use(conn, now - unload_after(now)), now)
+    except Exception as exc:  # noqa: BLE001 - an unreadable server or store gives nothing back this wake
+        world.gaps["served"] = f"the served models could not be read: {type(exc).__name__}: {exc}"[:300]
+    try:
         world.clearance = probes.clearance(conn, now)
     except Exception as exc:  # noqa: BLE001 - an unreadable clearance is none: the day limits stand
         world.gaps["clearance"] = f"the day clearance could not be read: {type(exc).__name__}: {exc}"[:300]
@@ -472,6 +532,23 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
     except Exception as exc:  # noqa: BLE001 - a probe that cannot run is a gap, never a lost wake
         world.gaps["lanes"] = f"the lane probes failed: {type(exc).__name__}: {exc}"[:300]
     return world
+
+
+def _idle_since(probes: Probes, w: World, asked: dict, now: float) -> dict:
+    """"server:model" -> the latest of its last request, when this residency was first seen, when a run last named it."""
+    path = probes.state() / "idle.json"
+    try:
+        before = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        before = {}
+    used, kept, out = _in_use(w), {}, {}
+    for m in w.served:
+        key, was = f"{m['server']}:{m['model']}", before.get(f"{m['server']}:{m['model']}") or {}
+        named = used is None or m["in_flight"] is True or any(m["model"] in u for u in used)
+        kept[key] = {"seen": was.get("seen", now), "pinned": now if named else was.get("pinned")}
+        out[key] = max(t for t in (kept[key]["seen"], kept[key]["pinned"], asked.get(m["model"])) if t is not None)
+    path.write_text(json.dumps(kept), encoding="utf-8")
+    return out
 
 
 def _swap_rate(probes: Probes, sample, now: float) -> float | None:
@@ -611,6 +688,14 @@ def _orphan(w: World) -> list[Finding]:
             for s in w.top if s.orphan and (s.elapsed_s or 0) >= ORPHAN_GRACE_S]
 
 
+def _stale_mcp(w: World) -> list[Finding]:
+    from harness import mcp_peers
+    if (w.mcp_live_s or 0) < ORPHAN_GRACE_S:
+        return []
+    return [Finding("stale_mcp", s, {"elapsed_s": round(s.elapsed_s or 0), "live_pid": w.mcp_live,
+                                     "stop": mcp_peers.stop_command([s.pid])}) for s in w.mcp_stale]
+
+
 def _daytime_gpu(w: World) -> list[Finding]:
     if not daytime(w.now) or _cleared(w):
         return []
@@ -700,6 +785,29 @@ def idle(w: World) -> list[dict]:
     return out
 
 
+def unload_after(now: float) -> float:
+    """Seconds without a request after which a served model is given back: the day limit in Eric's hours, else the router's own."""
+    if daytime(now):
+        return IDLE_UNLOAD_DAY_S
+    from harness import knobs
+    return float(knobs.resolve(IDLE_UNLOAD_SITE))
+
+
+def _idle_unload(w: World) -> list[Finding]:
+    limit, out = unload_after(w.now), []
+    for m in w.served:
+        since = w.idle_since.get(f"{m['server']}:{m['model']}")
+        if m["in_flight"] is not False or since is None or w.now - since < limit:
+            continue
+        # The spell's start is in the key, so only an unload that did not take repeats and escalates.
+        spell = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(since))
+        out.append(Finding("idle_unload", Subject("model", f"{m['server']} {m['model']} idle since {spell}",
+                                                  "loaded, no request in flight, named by no running eval", detail=m),
+                           {"server": m["server"], "model": m["model"], "idle_s": round(w.now - since),
+                            "limit_s": limit, "day": daytime(w.now)}))
+    return out
+
+
 def _memory_warn(w: World) -> list[Finding]:
     ev, _, warn = _memory_state(w)
     if not warn:
@@ -752,6 +860,8 @@ CRITERIA = (
               _no_progress, "no case finished for too long: wedged"),
     Criterion("orphan", ("watchdog_orphan_grace",), REAP, FILE, ("processes",), _orphan,
               "an eval or job whose sweep, worker or queue row is gone"),
+    Criterion("stale_mcp", ("watchdog_orphan_grace",), NOTIFY, FILE, ("processes", "mcp_unit"), _stale_mcp,
+              "an old MCP server kept alive by a client's open stream, serving the tool list it started with"),
     Criterion("daytime_gpu", ("watchdog_day_start_hour", "watchdog_day_end_hour", "watchdog_daytime_gpu"), PAUSE,
               STOP, ("processes",), _daytime_gpu, "a long GPU job inside Eric's day hours"),
     Criterion("day_clear", ("watchdog_day_end_hour", "watchdog_daytime_gpu", "watchdog_long_run_day"), NOTE, NOTIFY,
@@ -761,6 +871,9 @@ CRITERIA = (
               "the eval lock held with nothing running"),
     Criterion("idle_model", (), NOTE, UNLOAD, ("processes", "resident"), _idle_model,
               "a router model resident with nothing running and nothing serving it"),
+    Criterion("idle_unload", ("serve_idle_unload_s", "serve_idle_unload_day_s", "watchdog_day_start_hour",
+                              "watchdog_day_end_hour"), UNLOAD, NOTIFY, ("processes", "served"),
+              _idle_unload, "a loaded model with no request for longer than the day or night limit"),
     Criterion("memory", ("watchdog_swapout_max",), NOTIFY, PAUSE, ("processes", "pressure"), _memory,
               "swapping or critical memory pressure while a job runs"),
     Criterion("memory_warn", ("watchdog_swapout_max",), NOTIFY, UNLOAD, ("processes", "pressure"), _memory_warn,
@@ -781,13 +894,15 @@ def _gap(w: World, need: str) -> str:
     if need == "progress" and not any(s.progress for s in w.evals):
         return "no running eval has written a progress file"
     value = {"lock": w.lock, "resident": w.resident, "pressure": w.pressure,
-             "gateway": w.gateway_up, "mlx": w.mlx_generating, "fallbacks": w.fallbacks}.get(need, True)
+             "gateway": w.gateway_up, "mlx": w.mlx_generating, "fallbacks": w.fallbacks,
+             "mcp_unit": w.mcp_live}.get(need, True)
     if value is None:
         return {"lock": "the eval lock could not be read", "resident": "the router or its defaults could not be read",
                 "pressure": "memory pressure could not be sampled",
                 "gateway": "no gateway unit is loaded here, or launchd cannot be asked",
                 "mlx": "no mlx unit is loaded here, or its /health did not answer",
-                "fallbacks": "the store or the served config could not be read"}[need]
+                "fallbacks": "the store or the served config could not be read",
+                "mcp_unit": "no mcp unit is loaded here, or launchd cannot be asked"}[need]
     return ""
 
 
@@ -902,22 +1017,27 @@ class Hands:
         from harness import router
         if f.criterion == "memory_warn":
             return self._unload_idle(f.evidence.get("idle") or [])
+        if f.criterion == "idle_unload":
+            # A lane's own model is given back too: the limit is what keeps it, not its adoption. #1157.
+            return self._unload_idle([f.evidence], keep=set(),
+                                     why=f"watchdog: no request for {f.evidence['idle_s']}s, "
+                                         f"past {f.evidence['limit_s']:.0f}s")
         stem = f.subject.detail.get("stem", "")
         gone = router.release([stem], "watchdog: resident with nothing running", say=self.say)
         return f"unloaded {stem}" if gone else f"kept {stem}: protected, gone, or a run is in flight"
 
-    def _unload_idle(self, idle: list) -> str:
-        """Give back each idle model the memory_warn finding named. #1082."""
+    def _unload_idle(self, idle: list, keep=None,
+                     why: str = "watchdog: memory at warn, resident with no running eval using it") -> str:
+        """Give back each idle model a memory_warn or idle_unload finding named. #1082, #1157."""
         from harness import mlx_server, router
         if not idle:
             return "nothing idle to unload: every resident model is in use or served"
-        why = "watchdog: memory at warn, resident with no running eval using it"
         out = []
         for m in idle:
             if m.get("server") == "mlx":
-                gone = mlx_server.release(m["model"], why, say=self.say)
+                gone = mlx_server.release(m["model"], why, keep=keep, say=self.say)
             else:
-                gone = bool(router.release([m["model"]], why, say=self.say, proven_idle=True))
+                gone = bool(router.release([m["model"]], why, keep=keep, say=self.say, proven_idle=True))
             out.append(f"{'unloaded' if gone else 'kept'} {m['server']} {m['model']}")
         return "; ".join(out)
 

@@ -1,4 +1,5 @@
 """A cold load or an idle sleep is never graded as the candidate being slow (#694)."""
+import os
 import subprocess
 from pathlib import Path
 
@@ -100,18 +101,34 @@ def test_a_model_held_across_the_whole_run_records_no_swap():
     assert w.swaps == []
 
 
-def _sleep_idle(gib, os_name):
+def _sleep_idle(tmp_path, gib, os_name, **env):
+    """What router-sleep-idle.sh prints on a machine whose uname and sysctl say `os_name` and `gib`."""
     if not shells.BASH:
         pytest.skip("no bash that runs a POSIX script")
-    out = subprocess.run([shells.BASH, str(REPO / "scripts" / "router-sleep-idle.sh"), str(gib * 1024 ** 3), os_name],
-                         capture_output=True, text=True, check=True)
+    bin_ = tmp_path / "bin"
+    bin_.mkdir(exist_ok=True)
+    for name, out in (("uname", os_name), ("sysctl", str(gib * 1024 ** 3))):
+        (bin_ / name).write_text(f"#!/bin/sh\necho {out}\n", encoding="utf-8")
+        (bin_ / name).chmod(0o755)
+    out = subprocess.run([shells.BASH, str(REPO / "scripts" / "router-sleep-idle.sh")],
+                         env={"PATH": f"{bin_}{os.pathsep}/usr/bin:/bin", **env}, capture_output=True, text=True, check=True)
     return int(out.stdout.strip())
 
 
-def test_a_dedicated_server_never_sleeps_and_a_shared_desktop_gives_the_card_back():
-    assert _sleep_idle(96, "Darwin") == -1 and _sleep_idle(64, "Darwin") == -1
-    assert _sleep_idle(32, "Darwin") > 0
-    assert _sleep_idle(64, "MINGW64_NT-10.0") > 0 and _sleep_idle(128, "Linux") > 0
+def test_a_mac_sleeps_after_the_knob_whatever_its_ram_and_a_desktop_gives_the_card_back(tmp_path):
+    mac = knobs.KNOBS["serve_idle_unload_s"]
+    assert _sleep_idle(tmp_path, 96, "Darwin", SERVE_IDLE_UNLOAD_S="1234") == 1234
+    assert _sleep_idle(tmp_path, 96, "Darwin") == _sleep_idle(tmp_path, 32, "Darwin") == mac.default() > 0
+    assert _sleep_idle(tmp_path, 64, "MINGW64_NT-10.0") == _sleep_idle(tmp_path, 128, "Linux") == \
+        knobs.KNOBS["serve_idle_unload_node_s"].default() > 0
+    text = (REPO / "scripts" / "router-sleep-idle.sh").read_text(encoding="utf-8")
+    assert "memsize" not in text and "MemTotal" not in text and "1024" not in text
+
+
+def test_a_mac_router_outlasts_the_longest_request_a_paired_turn_leaves_the_other_model_idle_through():
+    longest = completion.timeout_for(max(knobs.KNOBS["reply_budget"].values))
+    assert min(knobs.KNOBS["serve_idle_unload_s"].values) > longest
+    assert knobs.KNOBS["serve_idle_unload_s"].default() > longest
 
 
 def test_the_router_sleeps_as_this_machine_should_and_outlasts_the_longest_request(tmp_path, monkeypatch):
@@ -203,7 +220,7 @@ def test_the_desktop_idle_sleep_is_a_site_the_knob_inventory_sees():
     assert "scripts/router-sleep-idle.sh:LLAMACPP_SLEEP_IDLE" in found
     if not shells.BASH:
         pytest.skip("no bash that runs a POSIX script")
-    assert subprocess.run([shells.BASH, str(REPO / "scripts" / "router-sleep-idle.sh"), "0", "Linux"],
+    assert subprocess.run([shells.BASH, str(REPO / "scripts" / "router-sleep-idle.sh"), "Linux"],
                           env={"PATH": "/usr/bin:/bin", "LLAMACPP_SLEEP_IDLE": "120"},
                           capture_output=True, text=True, check=True).stdout.strip() == "120"
 

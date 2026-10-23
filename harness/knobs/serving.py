@@ -31,6 +31,17 @@ KNOBS = [
        note="context each Ornith-1.5-35B-Q4_K_M slot is sized for; never under context.MIN_LONG_SLOT_CTX (#682)"),
     _k("ornith_slots", ["harness/context.py:ORNITH_SLOTS"], [1, 2, 4, 8],
        note="llama-server slots Ornith-1.5-35B-Q4_K_M batches across; sets code and agent lane throughput, not a grade (#682)"),
+    _k("serve_idle_unload_day_s", ["harness/watchdog.py:IDLE_UNLOAD_DAY_S"], [300.0, 600.0, 900.0, 1800.0],
+       note="seconds a Mac's watchdog leaves a loaded model with no request in the day hours before it gives it back; "
+            "14 days of gateway requests: 600 s costs Ornith 0.8 cold loads a day (median 8.9 s, p90 80 s each) "
+            "against 0.17 idle-but-loaded h, where never unloading held it all day (soh load-log --idle) (#1157)"),
+    _k("serve_idle_unload_node_s", ["scripts/router-sleep-idle.sh:LLAMACPP_SLEEP_IDLE"], [60, 300, 900],
+       note="llama-server's own idle sleep off a Mac, where no watchdog gives models back; on the 4070 VRAM read "
+            "2473 MiB again fifteen seconds after a request (#694)"),
+    _k("serve_idle_unload_s", ["scripts/router-sleep-idle.sh:SERVE_IDLE_UNLOAD_S"], [3600, 5400, 7200],
+       note="llama-server's own idle sleep on a Mac and its watchdog's night limit; it outlasts the longest request "
+            "a paired turn leaves the other model idle through, completion.timeout_for(65536) = 2621 s, and the "
+            "longest stored local case, 1599 s (#694, #1157)"),
     _k("served_ctx", ["harness/context.py:environ(LLAMACPP_CTX)", "harness/ds4.py:DEFAULT_CTX",
                       "harness/vllm.py:METAL_MAX_MODEL_LEN",
                       "scripts/serve-llamacpp.sh:LLAMACPP_CTX", "scripts/serve-llamacpp.sh:LLAMACPP_CTX#2"],
@@ -46,6 +57,7 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    "harness/idle_unload.py:WINDOW_DAYS": "how far back soh load-log --idle reads requests; evidence for a knob, never a limit (#1157)",
     "harness/slot_probe.py:POLL_S": "how often the slot probe asks /slots while it waits; slot_probe_settle bounds the wait (#1127)",
     "harness/commands/loop.py:LEASE_S": "how long a discover loop's store lease outlives a holder that died; "
                                         "it picks which machine sweeps, never a result (#703)",
@@ -63,6 +75,7 @@ NOT_GATING = {
                                             "on a request in flight is DRAIN_S, derived from completion.timeout_for "
                                             "over every LADDER rung (#703)",
     "harness/mcp_server.py:MAX_INLINE_BYTES": "how a result is returned, inline or as a path; never what it is",
+    "harness/mcp_server.py:SHUTDOWN_GRACE_S": "how long a stopping MCP server waits on open clients; never what a tool answers (#1155)",
     "harness/context.py:MIN_SLOT_CTX": "the floor the eval7b_slot_ctx range is held to; a preset under it is refused (#665)",
     "harness/context.py:MIN_LONG_SLOT_CTX": "the floor the ornith_slot_ctx range is held to; a preset under it is refused (#682)",
     "harness/context.py:Choice.slot_ctx": "a planned result's value before it is planned (#699)",
@@ -110,7 +123,6 @@ NOT_GATING = {
     "scripts/env.sh:HF_HUB_OFFLINE": "a switch, offline or not; never a threshold (#706)",
     "scripts/h3-weights-status.sh:BYTES": "the fallback of a measured size when none was measured (#706)",
     "scripts/router-max-models.sh:bytes": "the fallback of a measured RAM size when none was measured (#706)",
-    "scripts/router-sleep-idle.sh:bytes": "the fallback of a measured RAM size when none was measured (#694)",
     **{site: "a ceiling held above the slowest load_timeout plus the longest reply_budget by a test, so the "
        "server or gateway never ends a request before the eval's own limit does (#694)" for site in (
         "scripts/serve-llamacpp.sh:LLAMACPP_TIMEOUT",
