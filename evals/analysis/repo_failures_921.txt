@@ -1,15 +1,15 @@
 $ python -m evals.analysis.repo_failures tally <run 466> <run 467> <run 470> --complete
-run                                      rows         pass token_budget invalid_patc content_fail environment_  other
-20261016-210012-526-0000-repo              41            4           19           10            4            4  0
-20261016-225321-316-0000-repo              41           12            0            7           18            4  0
-20261016-230724-857-0000-repo              41            0            0           28            9            4  0
+run                                      rows         pass token_budget    tool_call invalid_patc content_fail environment_  other
+20261016-210012-526-0000-repo              41            4           19            0           10            4            4  0
+20261016-225321-316-0000-repo              41           12            0            0            7           18            4  0
+20261016-230724-857-0000-repo              41            0            0            0           28            9            4  0
 
 20261016-210012-526-0000-repo labels: budget_exhausted 19 (harness), context_mismatch 5 (model), malformed_hunk 2 (model), regression 1 (model), tool_call 3 (protocol), wrong_fix 3 (model)
   at the cut: unrecorded 19
 
-20261016-225321-316-0000-repo regraded: 4, now resolved: sohot-404-spec
+20261016-225321-316-0000-repo regraded: 6, now resolved: sohot-371-spec, sohot-371-symptom, sohot-404-spec
 
-20261016-225321-316-0000-repo labels: context_mismatch 3 (model), wrong_fix 21 (model)
+20261016-225321-316-0000-repo labels: context_mismatch 1 (model), wrong_fix 21 (model)
 
 20261016-230724-857-0000-repo labels: context_mismatch 28 (model), wrong_fix 9 (model)
 

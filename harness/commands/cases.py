@@ -14,7 +14,8 @@ def cmd_cases(a) -> int:
     if a.action == "regrade":
         if a.source != "repo" or not a.run:
             return err("regrade takes `repo --run <run dir>`")
-        return _repo_regrade(Path(a.out) if a.out else importers.CASES, Path(a.run), a.case or [])
+        return _repo_regrade(Path(a.out) if a.out else importers.CASES, Path(a.run), a.case or [],
+                             getattr(a, "reextract", False))
     if a.action == "labels":
         if a.source != "repo":
             return err("only the repo lane has fairness labels")
@@ -60,39 +61,50 @@ def _repo_controls(root: Path) -> int:
     return 0 if sound else 1
 
 
-def _repo_regrade(root: Path, run: Path, only: list[str]) -> int:
-    """Each stored diff of a repo run through today's apply and grader; the run and the store are not touched."""
+def _repo_regrade(root: Path, run: Path, only: list[str], reextract: bool = False) -> int:
+    """Each stored diff of a repo run (or, reextracting, each one today's extract_diff changes) through today's apply
+    and grader; the run and the store are not touched."""
     import json
     from evals import repo
     from evals.core import load_cases
     cases = {c.id: c for c in load_cases(root / "repo")}
-    rows = []
+    rows, seen, same = [], set(), 0
     for path in sorted(run.glob("*--*.json")):
         stored = json.loads(path.read_text(encoding="utf-8"))
         cid = stored.get("case") if isinstance(stored, dict) else None
         if cid not in cases or (only and cid not in only) or "diff" not in stored:
+            continue
+        seen.add(cid)
+        diff = repo.extract_diff(stored.get("reply")) if reextract else stored["diff"]
+        if reextract and diff == stored["diff"]:
+            same += 1
             continue
         try:
             a = repo.Attempt.open(cases[cid].params)
         except repo.RepoEnvError as exc:
             return err(f"{cid}: environment: {exc}")
         try:
-            g = a.submit(stored["diff"])
+            g = a.submit(diff)
         finally:
             a.close()
         was = stored.get("grade") or {}
         rows.append({"run": run.name, "file": path.name, "case": cid,
                      "was_resolved": bool(was.get("resolved")), "was_applied": bool(was.get("patch_applied")),
                      "resolved": g.resolved,
-                     "patch_applied": g.patch_applied, "detail": g.detail, "skipped": g.skipped})
+                     "patch_applied": g.patch_applied, "detail": g.detail, "skipped": g.skipped,
+                     **({"stored_lines": len(stored["diff"].splitlines()), "lines": len(diff.splitlines())}
+                        if reextract else {})})
         note(f"  {path.name}: {'resolved' if g.resolved else 'applied, unresolved' if g.patch_applied else 'invalid_patch'}"
              f" (was {'resolved' if was.get('resolved') else 'applied' if was.get('patch_applied') else 'invalid_patch'})"
              f"{'' if g.resolved else ': ' + g.detail[:200]}"
              f"{''.join(f'; {repo.DOC_HUNK_SKIPPED}: ' + s['path'] for s in g.skipped)}")
-    if only and not {r["case"] for r in rows} >= set(only):
-        return err(f"no stored diff in {run} for {', '.join(sorted(set(only) - {r['case'] for r in rows}))}")
-    emit(bool(rows), regraded=rows)
-    return 0 if rows else 1
+    if only and not seen >= set(only):
+        return err(f"no stored diff in {run} for {', '.join(sorted(set(only) - seen))}")
+    if reextract:
+        note(f"  {same} stored diffs extract the same today")
+    ok = bool(rows) or (reextract and bool(seen))
+    emit(ok, regraded=rows, **({"unchanged": same} if reextract else {}))
+    return 0 if ok else 1
 
 
 def _repo_labels(root: Path, packets: str) -> int:
