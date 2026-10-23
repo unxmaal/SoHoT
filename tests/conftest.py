@@ -105,6 +105,9 @@ def _no_real_launchd_units(monkeypatch):
     held = mlx_server.held
     monkeypatch.setattr(mlx_server, "held",
                         lambda base, *a, **kw: None if base.rstrip("/") in live else held(base, *a, **kw))
+    activity = mlx_server.activity
+    monkeypatch.setattr(mlx_server, "activity",
+                        lambda base, *a, **kw: None if base.rstrip("/") in live else activity(base, *a, **kw))
 
 
 @pytest.fixture(autouse=True)
