@@ -1,6 +1,8 @@
 """The smoke slot probe: a stream closed after its first token must free the llama-server slot (#1127)."""
 import http.server
 import json
+import select
+import socket
 import threading
 import time
 
@@ -33,22 +35,30 @@ class Fake:
                 self.end_headers()
                 self.wfile.write(body)
 
+            def _gone(self) -> bool:
+                """The client closed: its socket reads as EOF, whatever a write to it would say on this OS."""
+                ready, _, _ = select.select([self.connection], [], [], 0)
+                return bool(ready) and self.connection.recv(1, socket.MSG_PEEK) == b""
+
             def do_POST(self):
                 asked = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-                self.send_response(200)
-                self.send_header("Content-Type", "text/event-stream")
-                self.end_headers()
                 fake.busy = not fake.invisible
                 try:
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/event-stream")
+                    self.end_headers()
                     for _ in range(asked["max_tokens"]):
                         chunk = {"choices": [{"delta": {"content": "1\n"}}]}
                         self.wfile.write(f"data: {json.dumps(chunk)}\n\n".encode())
                         self.wfile.flush()
                         time.sleep(0.01)
-                except (BrokenPipeError, ConnectionResetError):
+                        if self._gone():
+                            raise ConnectionResetError
+                except OSError:
                     if not fake.frees:
                         time.sleep(asked["max_tokens"] * 0.01)
-                fake.busy = False
+                finally:
+                    fake.busy = False
 
         self.server = loopback.ThreadingHTTPServer(("127.0.0.1", 0), H)
         self.server.daemon_threads = True
