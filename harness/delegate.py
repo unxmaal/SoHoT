@@ -335,7 +335,8 @@ def _tag(delegated: bool) -> str:
 
 def complete(lane: str, prompt: str, system: str | None = None,
              max_tokens: int = 2048, temperature: float | None = None,
-             timeout: float | None = None, thinking: bool | None = None, delegated: bool = False) -> dict:
+             timeout: float | None = None, thinking: bool | None = None, delegated: bool = False,
+             model: str | None = None) -> dict:
     """The lane's adopted model or method, timed; `method` is a method's cost. Raises Refused or CompletionError.
 
     `thinking` None serves the lane as it was measured; False sends enable_thinking false.
@@ -345,7 +346,7 @@ def complete(lane: str, prompt: str, system: str | None = None,
     if not (prompt or "").strip():
         raise Refused("empty prompt")
     _preflight(prompt, system or "", max_tokens=max_tokens)
-    spec, where = route(lane)
+    spec, where = route(lane, model)
     from harness import methods
     base = methods.base_of(spec) or spec
     _budget(base, max_tokens, prompt, system or completion.SYSTEM.get(lane, ""))

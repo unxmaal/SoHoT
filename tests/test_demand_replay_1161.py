@@ -169,7 +169,7 @@ def test_local_replies_resume_and_a_refusal_is_the_rows_error(world):
     ps = list(_packets(world).values())
     asked = []
 
-    def ask(lane, prompt):
+    def ask(lane, prompt, model):
         asked.append(lane)
         if lane == "decide":
             raise delegate.Refused("the prompt fills the context")
@@ -240,7 +240,7 @@ def test_calibration_resumes_without_asking_again(world):
 
 def test_grading_takes_the_check_then_the_judge_and_a_failed_reply_is_not_usable(world):
     ps = _packets(world)
-    rp._write_jsonl(world["out"] / "replies-1.jsonl", [
+    rp._write_jsonl(world["out"] / "replies-adopted-1.jsonl", [
         {"id": "P002", "text": GOOD_DIFF, "seconds": 3.0}, {"id": "P001", "text": "a summary", "seconds": 1.0},
         {"id": "P004", "error": "refused", "failure_class": "refused"}])
     asked = []
@@ -298,14 +298,17 @@ def test_a_control_with_usable_answers_is_not_near_zero():
 def test_the_command_runs_every_step_end_to_end(world, monkeypatch, capsys):
     monkeypatch.setattr(redact, "known_here", lambda *a: KNOWN)
     monkeypatch.setattr(rp, "claude", lambda prompt, system, model=rp.JUDGE_MODEL: _judges(True)(prompt, system))
-    monkeypatch.setattr(rp, "ask_local", lambda lane, prompt: {"text": GOOD_DIFF if "off-by-one" in prompt else "x",
-                                                                "seconds": 4.0, "model": "local-m"})
+    monkeypatch.setattr(rp, "ask_local", lambda lane, prompt, model: {
+        "text": GOOD_DIFF if "off-by-one" in prompt and model else "x", "seconds": 4.0, "model": model or "lane-m"})
     rc = cli.main(["replay", "--out", str(world["out"]), "--root", str(world["root"]), "--manifest",
                    str(world["manifest"]), "--now", str(NOW), "--controls", "1",
-                   "--steps", "prepare,calibrate,local,grade,report"])
+                   "--candidates", "adopted,llamacpp:Big-Q4", "--steps", "prepare,calibrate,local,grade,report"])
     out = capsys.readouterr().out
     assert rc == 0 and "prepared 4 of 5 units" in out and "planted wrong answers rejected" in out
-    assert "replays 1 and 2 grade alike on 4/4" in out
+    assert "candidate adopted" in out and "candidate llamacpp:Big-Q4" in out
+    assert out.count("replays 1 and 2 grade alike on 4/4") == 2 and out.count("judge calibration") == 1
+    assert "graded by {'check': 1, 'judge': 2}" in out and "graded by {'judge': 3}" in out
+    assert (world["out"] / "replies-llamacpp_Big-Q4-2.jsonl").exists()
     assert (world["out"] / "report.txt").read_text(encoding="utf-8") in out
     assert cli.main(["replay", "--out", str(world["out"]), "--steps", "nope"]) == 2
 
@@ -334,3 +337,48 @@ def test_every_census_shape_routes_to_a_served_text_lane_or_is_named_as_not_text
     assert set(rp.GROUP) | set(rp.NOT_TEXT) == set(d.SHAPES) and not set(rp.GROUP) & set(rp.NOT_TEXT)
     assert set(rp.LANE) == set(rp.GROUP.values())
     assert set(rp.LANE.values()) <= set(gateway.TEXT_LANES)
+
+
+def test_each_candidate_replays_every_unit_into_its_own_files_and_reports_alone(world):
+    ps = list(_packets(world).values())
+    asked = []
+
+    def ask(lane, prompt, model):
+        asked.append(model)
+        return {"text": "x", "seconds": 1.0 if model else 9.0, "model": model or "lane"}
+    for cand in (rp.ADOPTED, "llamacpp:Big-Q4"):
+        rows = rp.run_local(world["out"], ps, 1, ask, candidate=cand)
+        assert len(rows) == len(ps) and {r["candidate"] for r in rows} == {cand}
+    assert asked == [None] * len(ps) + ["llamacpp:Big-Q4"] * len(ps)
+    judge_ = lambda prompt, system: '{"grade": "usable_as_is", "reason": "r"}'  # noqa: E731
+    rp.grade(world["out"], ps, 1, judge_, candidate="llamacpp:Big-Q4")
+    assert rp.results(world["out"], 1, rp.ADOPTED)[1] == {}
+    big = rp.report(ps, *rp.results(world["out"], 1, "llamacpp:Big-Q4"), [], candidate="llamacpp:Big-Q4")
+    assert big["candidate"] == "llamacpp:Big-Q4" and big["fit"]["gpu_s"] == 3.0
+    assert big["models"] == {"llamacpp:Big-Q4": len(ps)}
+
+
+def test_a_named_model_reaches_the_route_a_delegated_call_takes(monkeypatch):
+    seen = []
+
+    def route(lane, chosen=None, via=""):
+        seen.append((lane, chosen))
+        raise delegate.Refused("stop here")
+    monkeypatch.setattr(delegate, "route", route)
+    for model in (None, "llamacpp:Big-Q4"):
+        with pytest.raises(delegate.Refused):
+            delegate.complete("code", "hi", model=model)
+        with pytest.raises(delegate.Refused):
+            rp.ask_local("code", "hi", model)
+    assert seen == [("code", None), ("code", None), ("code", "llamacpp:Big-Q4"), ("code", "llamacpp:Big-Q4")]
+
+
+def test_ask_local_hands_the_named_model_and_temperature_zero_to_the_call(monkeypatch):
+    from harness import context
+    got = {}
+    monkeypatch.setattr(delegate, "route", lambda lane, chosen=None, via="": (chosen or "lane-default", None))
+    monkeypatch.setattr(context, "served_ctx", lambda spec: None)
+    monkeypatch.setattr(delegate, "complete", lambda lane, prompt, **kw: got.update(kw, lane=lane) or {"text": "x"})
+    rp.ask_local("code", "hi", "llamacpp:Big-Q4")
+    assert (got["model"], got["temperature"], got["system"]) == ("llamacpp:Big-Q4", 0.0, rp.SYSTEM)
+    assert got["max_tokens"] == delegate.MAX_TOKENS

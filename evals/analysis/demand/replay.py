@@ -44,6 +44,8 @@ AGREE_MIN = 0.95
 #: The does-not-fit control's as-is rate at or below which it reads as near zero.
 CONTROL_MAX = 0.1
 PLANTS = ("swap", "corrupt", "wrong")
+#: The candidate that is each lane's adopted model at call time.
+ADOPTED = "adopted"
 #: A known-good candidate: the session's own record, which the judge must not reject.
 SELF = "self"
 
@@ -305,24 +307,31 @@ def prepare(out: Path, manifest: Path, root: Path, now: float, controls: int = C
     return meta
 
 
-def ask_local(lane: str, prompt: str, system: str = SYSTEM) -> dict:
-    """The lane's adopted model at temperature 0, its reply budget cut to what the served context leaves."""
+def ask_local(lane: str, prompt: str, model: str | None = None, system: str = SYSTEM) -> dict:
+    """`model`, or the lane's adopted model, at temperature 0, its reply budget cut to what the served context
+    leaves."""
     from harness import completion, context, delegate, methods
-    spec, _ = delegate.route(lane)
+    spec, _ = delegate.route(lane, model)
     base = methods.base_of(spec) or spec
     ctx = context.served_ctx(base)
     most = delegate.cap(ctx, prompt, system, count=delegate.counter(base) if ctx else None)
     budget = min(completion.BUDGET.get(lane, completion.MAX_TOKENS), most)
     if budget < 1:
         raise delegate.Refused(f"the prompt fills the {ctx}-token context {base} is served at")
-    return delegate.complete(lane, prompt, system=system, max_tokens=budget, temperature=0.0)
+    return delegate.complete(lane, prompt, system=system, max_tokens=budget, temperature=0.0, model=model)
 
 
-def run_local(out: Path, packets: list[dict], repeat: int, ask=None) -> list[dict]:
-    """Replay every packet not yet in replies-<repeat>.jsonl on its lane; a refusal or failure is its row's error."""
+def slug(candidate: str) -> str:
+    return re.sub(r"[^\w.-]+", "_", candidate)
+
+
+def run_local(out: Path, packets: list[dict], repeat: int, ask=None, candidate: str = ADOPTED) -> list[dict]:
+    """Replay every packet not yet in replies-<candidate>-<repeat>.jsonl on its lane, served by `candidate` or the
+    lane's adopted model; a refusal or failure is its row's error."""
     from harness import completion, delegate
     ask = ask or ask_local
-    path = out / f"replies-{repeat}.jsonl"
+    model = None if candidate == ADOPTED else candidate
+    path = out / f"replies-{slug(candidate)}-{repeat}.jsonl"
     done = {r["id"] for r in _jsonl(path)}
     add = Appender(path)
     for p in packets:
@@ -332,13 +341,13 @@ def run_local(out: Path, packets: list[dict], repeat: int, ask=None) -> list[dic
             add({"id": p["id"], "repeat": repeat, "lane": "", "error": f"no text lane serves shape {p['shape']}"})
             continue
         try:
-            got = ask(p["lane"], p["prompt"])
+            got = ask(p["lane"], p["prompt"], model)
             row = {"text": got.get("text") or "", "model": got.get("model"), "spec": got.get("spec"),
                    "seconds": got.get("seconds"), "ttft_s": got.get("ttft_s"),
                    "prompt_tokens": got.get("prompt_tokens"), "completion_tokens": got.get("completion_tokens")}
         except (delegate.Refused, completion.CompletionError) as exc:
             row = {"error": str(exc)[:400], "failure_class": getattr(exc, "failure_class", "refused")}
-        add({"id": p["id"], "repeat": repeat, "lane": p["lane"], "temperature": 0.0, **row})
+        add({"id": p["id"], "repeat": repeat, "candidate": candidate, "lane": p["lane"], "temperature": 0.0, **row})
     return _jsonl(path)
 
 
@@ -491,14 +500,16 @@ def check(p: dict, reply: str) -> dict | None:
     return None
 
 
-def grade(out: Path, packets: list[dict], repeat: int, ask=None, jobs: int = JUDGE_JOBS) -> list[dict]:
-    """Grade every reply of `repeat` not yet in grades-<repeat>.jsonl: a failed reply not usable, then a check where
-    one applies, else the blind judge."""
+def grade(out: Path, packets: list[dict], repeat: int, ask=None, jobs: int = JUDGE_JOBS,
+          candidate: str = ADOPTED) -> list[dict]:
+    """Grade every reply of `candidate`'s `repeat` not yet graded: a failed reply not usable, then a check where one
+    applies, else the blind judge."""
     by = {p["id"]: p for p in packets}
-    path = out / f"grades-{repeat}.jsonl"
+    path = out / f"grades-{slug(candidate)}-{repeat}.jsonl"
     done = {r["id"] for r in _jsonl(path)}
     add = Appender(path)
-    replies = [r for r in _jsonl(out / f"replies-{repeat}.jsonl") if r["id"] in by and r["id"] not in done]
+    replies = [r for r in _jsonl(out / f"replies-{slug(candidate)}-{repeat}.jsonl")
+               if r["id"] in by and r["id"] not in done]
 
     def one(r):
         p = by[r["id"]]
@@ -506,7 +517,7 @@ def grade(out: Path, packets: list[dict], repeat: int, ask=None, jobs: int = JUD
             got = {"grade": "not_usable", "reason": r.get("error") or "empty reply", "grader": "error"}
         else:
             got = check(p, r["text"]) or judge(p, r["text"], ask)
-        add({"id": r["id"], "repeat": repeat, **got})
+        add({"id": r["id"], "repeat": repeat, "candidate": candidate, **got})
     _pool(jobs, one, replies)
     return _jsonl(path)
 
@@ -547,11 +558,12 @@ def _cell(rows: list[dict]) -> dict:
     secs = [r.get("seconds") for r in rows]
     return {"n": n, "as_is": _rate(as_is, n), "usable": _rate(usable, n), "p50_s": _pctl(secs, 0.5),
             "p90_s": _pctl(secs, 0.9), "gpu_s": round(sum(s for s in secs if s), 1),
-            "graders": dict(Counter(r.get("grader") for r in rows))}
+            "graders": dict(sorted(Counter(str(r.get("grader")) for r in rows).items()))}
 
 
-def report(packets: list[dict], replies: dict, grades: dict, calibration: list[dict], meta: dict | None = None) -> dict:
-    """Per shape x lane usable rates with Wilson intervals, latency, GPU seconds and correct answers per GPU-hour
+def report(packets: list[dict], replies: dict, grades: dict, calibration: list[dict], meta: dict | None = None,
+           candidate: str = ADOPTED) -> dict:
+    """One candidate's per shape x lane usable rates with Wilson intervals, latency, GPU seconds and correct answers per GPU-hour
     for the fitting units; the control's rate; agreement between repeats; the judge's calibration."""
     by = {p["id"]: p for p in packets}
     joined = {}
@@ -565,7 +577,7 @@ def report(packets: list[dict], replies: dict, grades: dict, calibration: list[d
     for r in fit:
         cells[(r["shape"], r["lane"])].append(r)
     weighted = sum(r["weight"] for r in fit)
-    out = {"meta": meta or {}, "units": len(packets), "fit_units": sum(not p["control"] for p in packets),
+    out = {"meta": meta or {}, "candidate": candidate, "units": len(packets), "fit_units": sum(not p["control"] for p in packets),
            "control_units": sum(p["control"] for p in packets),
            "cells": {f"{s} x {lane}": _cell(rows) for (s, lane), rows in sorted(cells.items())},
            "fit": _cell(fit), "control": _cell([r for r in first if r["control"]]),
@@ -600,18 +612,19 @@ def _s(v) -> str:
     return "-" if v is None else f"{v:.1f}s"
 
 
-def text(got: dict) -> str:
-    """The replay report as plain text."""
+def text(got: dict, head: bool = True) -> str:
+    """One candidate's replay report as plain text, led by the judge's calibration when `head`."""
     m, cal = got["meta"], got["calibration"]
-    out = [f"shadow replay (#1161): {got['units']} units, {got['fit_units']} fitting and {got['control_units']} "
+    out = [] if not head else [f"shadow replay (#1161): {got['units']} units, {got['fit_units']} fitting and {got['control_units']} "
            f"does-not-fit controls; missing from the transcripts {len(m.get('missing', []))}",
            f"judge calibration ({JUDGE_MODEL}, blind): planted wrong answers rejected {_r(cal['planted'])} "
            f"(needs {100 * REJECT_MIN:.0f}%: {'PASS' if cal['passes'] else 'FAIL'})",
            "  " + ", ".join(f"{k} {_r(cal[k])}" for k in PLANTS)
            + f"; the session's own record accepted {_r(cal[SELF])}; skipped {cal['skipped']}, ungraded "
              f"{cal['ungraded']}"]
+    out += ["", f"candidate {got['candidate']}"]
     if got["fit"]["n"]:
-        out += ["", "fitting units, first replay: shape x lane, n, usable as is, usable with edits too "
+        out += ["fitting units, first replay: shape x lane, n, usable as is, usable with edits too "
                     "(95% Wilson), latency p50 p90, GPU seconds"]
         for name, c in got["cells"].items():
             out.append(f"  {name:<32} {c['n']:>3}  as is {_r(c['as_is'])}  usable {_r(c['usable'])}  "
@@ -633,6 +646,11 @@ def text(got: dict) -> str:
     return "\n".join(out) + "\n"
 
 
+def text_all(reports: list[dict]) -> str:
+    """Every candidate's report, the calibration said once."""
+    return "".join(text(r, head=not i) for i, r in enumerate(reports))
+
+
 STEPS = ("prepare", "calibrate", "local", "grade", "report")
 
 
@@ -644,7 +662,7 @@ def load(out: Path) -> tuple[list[dict], dict]:
     return _jsonl(path), meta
 
 
-def results(out: Path, repeats: int) -> tuple[dict, dict]:
-    reps = range(1, repeats + 1)
-    return ({r: _jsonl(out / f"replies-{r}.jsonl") for r in reps},
-            {r: g for r in reps if (g := _jsonl(out / f"grades-{r}.jsonl"))})
+def results(out: Path, repeats: int, candidate: str = ADOPTED) -> tuple[dict, dict]:
+    reps, s = range(1, repeats + 1), slug(candidate)
+    return ({r: _jsonl(out / f"replies-{s}-{r}.jsonl") for r in reps},
+            {r: g for r in reps if (g := _jsonl(out / f"grades-{s}-{r}.jsonl"))})

@@ -73,6 +73,7 @@ def _replay(args) -> int:
     packets, meta = rp.load(out)
     if args.limit:
         packets = packets[:args.limit]
+    cands = [c.strip() for c in args.candidates.split(",") if c.strip()] or [rp.ADOPTED]
     ask = (lambda prompt, system: rp.claude(prompt, system, args.judge_model))
     if "calibrate" in steps:
         rows = rp.calibrate(out, packets, ask, args.jobs)
@@ -80,15 +81,18 @@ def _replay(args) -> int:
     if "local" in steps:
         from harness import exclusive
         with exclusive.held("eval", announce=lambda m: print(m, flush=True)):
-            for r in range(1, args.repeats + 1):
-                rows = rp.run_local(out, packets, r)
-                print(f"replay {r}: {len(rows)} replies, {sum(1 for x in rows if x.get('error'))} failed", flush=True)
+            for cand in cands:
+                for r in range(1, args.repeats + 1):
+                    rows = rp.run_local(out, packets, r, candidate=cand)
+                    print(f"{cand} replay {r}: {len(rows)} replies, {sum(1 for x in rows if x.get('error'))} failed",
+                          flush=True)
     if "grade" in steps:
-        for r in range(1, args.repeats + 1):
-            print(f"grades {r}: {len(rp.grade(out, packets, r, ask, args.jobs))}", flush=True)
+        for cand in cands:
+            for r in range(1, args.repeats + 1):
+                print(f"{cand} grades {r}: {len(rp.grade(out, packets, r, ask, args.jobs, cand))}", flush=True)
     if "report" in steps:
-        replies, grades = rp.results(out, args.repeats)
-        body = rp.text(rp.report(packets, replies, grades, rp._jsonl(out / "calibration.jsonl"), meta))
+        cal = rp._jsonl(out / "calibration.jsonl")
+        body = rp.text_all([rp.report(packets, *rp.results(out, args.repeats, c), cal, meta, c) for c in cands])
         (out / "report.txt").write_text(body, encoding="utf-8")
         print(body, end="")
     return 0
@@ -126,6 +130,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--controls", type=int, default=rp.CONTROLS, help="does-not-fit units drawn as the control")
     p.add_argument("--seed", type=int, default=rp.SEED)
     p.add_argument("--repeats", type=int, default=rp.REPEATS, help="replays at temperature 0, for grade agreement")
+    p.add_argument("--candidates", default=rp.ADOPTED,
+                   help=f"comma-separated model specs to replay every unit on; {rp.ADOPTED} is each lane's adopted model")
     p.add_argument("--judge-model", default=rp.JUDGE_MODEL)
     p.add_argument("--jobs", type=int, default=rp.JUDGE_JOBS, help="judge calls at once (cloud, no GPU)")
     p.add_argument("--limit", type=int, default=0, help="only the first N packets")

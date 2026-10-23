@@ -1821,7 +1821,8 @@ does-not-fit control, on the adopted local lanes (#1161). `prepare` finds each
 unit by its key in the transcripts as of the census's `now` and rebuilds its prompt
 read-only: the session cut up to the unit's request, quoted and redacted, with a
 record of what the session did as the reference. `local` asks each unit's lane at
-temperature 0, `--repeats` times, under the eval lock. `grade` takes a command
+temperature 0, `--repeats` times, under the eval lock, once per model in
+`--candidates` (default `adopted`, each lane's adopted model; the report is per model). `grade` takes a command
 check where one applies (a diff that `git apply`s to the files the unit edited and
 leaves them as the session did), else a blind `claude -p` Opus judge (usable as is,
 with edits, or not). `calibrate` plants three wrong answers per unit (another
