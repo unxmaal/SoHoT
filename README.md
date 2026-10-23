@@ -1770,7 +1770,15 @@ of a source file the fix changes (`evals/session_cut.py`): the request, the
 assistant's text and its tool calls, reads and searches kept to
 `OUTPUT_CAP_BYTES`, other outputs to `COMMAND_CAP_BYTES`, the whole to
 `BUDGET_BYTES`, so nothing the fix wrote is shown; a cut that already holds one
-of the fix's new lines is dropped as `leak`. `evals/redact.py` then replaces
+of the fix's new lines is dropped as `leak`. When the fix's PR URL or commit was
+printed in a subagent, that subagent is the one cut, opening with the request and
+the subagent's own prompt; a shell command is an edit only when it writes a fix
+file (a redirect, `sed -i`, `cp`, or a heredoc script that names the file and
+writes). A `gh issue view` of the case's own repo keeps its whole output, ahead of
+other entries in the budget. A cut is dropped as `mismatch` unless a user turn
+or an issue view names the issue the fix closes, or, for a fix that names none, a
+user turn names or a call reads a file it changes (#1138). A re-survey keeps the
+rows already in the manifest byte for byte. `evals/redact.py` then replaces
 secrets, ids, emails, home and volume paths, hosts, IPs, pasted chat, handles,
 and account and person names with typed placeholders (`<EMAIL_1>`,
 `<PATH_HOME>`). A cut that still holds a capitalized word or `@handle` that is

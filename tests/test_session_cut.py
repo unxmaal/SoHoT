@@ -78,3 +78,59 @@ def test_a_truncated_read_ends_on_a_word_boundary():
     out = sc.render([E(1, "user", body="go"), E(2, "call", "Read", input={"file_path": "a.py"}),
                      E(2, "result", "Read", "alpha beta gamma delta " * 40)], cap=50)
     assert "a.py\nalpha beta gamma delta alpha beta gamma delta\n[... " in out
+
+
+def _bash(cmd, cwd=""):
+    return E(1, "call", "Bash", input={"command": cmd}, cwd=cwd)
+
+
+def test_a_heredoc_script_that_writes_a_fix_file_is_an_edit_and_a_command_that_only_names_it_is_not():
+    edit = "cd ~/w/sohot-9 && python3 - <<'EOF'\nfrom pathlib import Path\np = Path(\"harness/widget.py\")\n" \
+           "p.write_text(p.read_text().replace('a', 'b'))\nEOF"
+    assert sc.edits(_bash(edit), FILES)
+    assert sc.edits(_bash("bash <<'EOF'\nsed -i '' 's/a/b/' harness/widget.py\nEOF"), FILES)
+    assert sc.edits(_bash("python3 -c \"open('harness/widget.py', 'w').write('x')\""), FILES)
+    for cmd in ("git checkout main -q && git pull && grep -n def harness/widget.py",
+                "cat > notes.md <<'EOF'\nPath('harness/widget.py').write_text(s)\nEOF",
+                "cat > notes.md <<'EOF'\nsed -i 's/a/b/' harness/widget.py\nEOF",
+                "python3 - <<'EOF'\nprint(open('harness/widget.py').read())\nEOF",
+                "grep -c x harness/widget.py > /tmp/count.txt", "echo 'a > harness/widget.py'"):
+        assert not sc.edits(_bash(cmd), FILES), cmd
+
+
+def test_results_pair_with_their_own_call_when_calls_run_in_parallel():
+    evs = [E(1, "user", body="go"), E(2, "call", "Read", input={"file_path": "a.py"}, ref="r1"),
+           E(2, "call", "Bash", input={"command": "make check"}, ref="r2"),
+           E(3, "result", "Read", "the file body", ref="r1"), E(3, "result", "Bash", "x" * 3000, ref="r2")]
+    out = sc.render(evs, cap=1500)
+    assert "## tool Read a.py\nthe file body" in out and "$ make check\n[3000 bytes of output not shown]" in out
+
+
+def test_the_opening_turns_and_a_pinned_issue_view_survive_the_budget_whole():
+    issue = "the spec " * 400
+    evs = [E(0, "user", body="the request"), E(0, "user", body="Implement issue #9"),
+           E(1, "call", "Bash", input={"command": "gh issue view 9"}, ref="v"), E(1, "result", "Bash", issue, ref="v"),
+           *[E(i, "text", body=f"step {i} " + "x" * 80) for i in range(2, 60)]]
+    out = sc.render(evs, budget=6000, cap=300, pin=lambda e: "issue view" in str(e.input))
+    assert out.startswith("## user\nthe request\n\n## user\nImplement issue #9\n\n## tool Bash\n$ gh issue view 9\n")
+    assert issue in out and "step 59" in out and "step 2 " not in out and "earlier entries not shown" in out
+    assert sc.render(evs, budget=6000, cap=300).count("the spec") < 10
+
+
+def test_an_issue_view_of_the_cases_own_repo_is_named_by_flag_url_or_directory():
+    own = lambda cmd, cwd="": sc.views_issue(_bash(cmd, cwd), "acme", "Widget")  # noqa: E731
+    assert own("gh issue view 9 -R acme/widget") and own("gh issue view https://github.com/acme/widget/issues/9")
+    assert own("cd ~/w/widget-9 && gh issue view 9") and own("gh issue view 9", cwd="/w/widget")
+    assert not own("gh issue view 9 -R acme/other") and not own("gh issue view 9", cwd="/w/private-repo")
+    assert not own("gh issue view 9 --comments", cwd="/w/widget") and not own("gh pr view 9", cwd="/w/widget")
+
+
+def test_a_cut_is_on_task_when_a_user_turn_or_an_issue_view_names_the_fixs_issue():
+    asked = "## user\nImplement issue #1037 please\n\n## assistant\nok"
+    assert sc.on_task(asked, [1037], FILES) and not sc.on_task(asked, [1045], FILES)
+    assert not sc.on_task("## user\ngo\n\n## assistant\nnext is #1045", [1045], FILES)
+    assert sc.on_task("## user\ngo\n\n## tool Bash\n$ gh issue view 1045\nthe body", [1045], FILES)
+    assert not sc.on_task("## user\ngo\n\n## tool Read /w/harness/widget.py\nx", [1045], FILES)
+    assert sc.on_task("## user\ngo\n\n## tool Read /w/harness/widget.py\nx", [], FILES)
+    assert sc.on_task("## user\ngo\n\n## tool Bash\n$ sed -n 1,9p harness/widget.py\nx", [], FILES)
+    assert not sc.on_task("## user\ngo\n\n## tool Read /w/harness/other.py\nx", [], FILES)

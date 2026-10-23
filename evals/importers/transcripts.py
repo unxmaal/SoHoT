@@ -200,6 +200,7 @@ class Evidence:
     anchor: float
     kind: str
     value: str
+    stream: str = ""
 
 
 def default_root() -> Path:
@@ -299,9 +300,10 @@ def scan_session(session: str, project: str, main: Path, subs) -> tuple[list[Req
             requests.append(Request(session, project, pid or str(rec.get("uuid")), at, text))
     for i, recs in enumerate([main_recs] + [list(records(s)) for s in subs]):
         spawned = next((r.get("promptId") for r in recs if r.get("promptId")), None) if i else None
+        stream = subs[i - 1].stem if i else "main"
         for pid, at, cmd, output in _tool_outputs(recs):
             anchor = started.get(spawned or pid) or at
-            found += [Evidence(session, at, anchor, k, v) for k, v in evidence_in(cmd, output)]
+            found += [Evidence(session, at, anchor, k, v, stream) for k, v in evidence_in(cmd, output)]
     return sorted(requests, key=lambda r: r.at), found, urls
 
 
@@ -365,25 +367,29 @@ def _stream(path: Path, main: bool) -> tuple[list, dict, str | None]:
     return _STREAMS[key]
 
 
-def cut(main: Path, subs, requests: list[Request], req: Request, files) -> tuple[str, dict] | str:
+def cut(main: Path, subs, requests: list[Request], req: Request, files, stream: str = "", repo=None) -> tuple[str, dict] | str:
     """The session cut just before the first edit of `files` made under `req`, as a prompt; or why there is none.
 
     The main stream counts from `req` to the next request; a subagent counts whole when `req` spawned it, and its
-    cut opens with `req` itself.
+    cut opens with `req` itself. A subagent `stream` that printed the fix's evidence is the only one cut; main is cut
+    when it made an edit. `repo` (owner, name) keeps its `gh issue view` outputs whole.
     """
     main_evs, started, _ = _stream(main, True)
     after = next((r.at for r in requests if r.at > req.at), float("inf"))
-    streams = [("main", [e for e in main_evs if req.at <= e.at < after])]
+    streams = [("main", "main", [e for e in main_evs if req.at <= e.at < after])]
     for sub in subs:
         evs, _, spawned = _stream(sub, False)
         if request_for(requests, started.get(spawned) or 0.0) is req:
-            streams.append(("subagent", [session_cut.Event(req.at, "user", body=req.text), *evs]))
-    hits = [(evs[i].at, kind, evs, i) for kind, evs in streams
+            streams.append(("subagent", sub.stem, [session_cut.Event(req.at, "user", body=req.text), *evs]))
+    hits = [(evs[i].at, kind, name, evs, i) for kind, name, evs in streams
             if (i := session_cut.first_edit(evs, files)) is not None]
+    if stream != "main" and stream in {name for _, name, _ in streams} or any(h[2] == stream == "main" for h in hits):
+        hits = [h for h in hits if h[2] == stream]
     if not hits:
         return "no_edit"
-    _, kind, evs, i = min(hits, key=lambda h: h[0])
-    text = session_cut.render(evs[:i])
+    _, kind, _, evs, i = min(hits, key=lambda h: h[0])
+    pin = (lambda e: session_cut.views_issue(e, *repo)) if repo else None
+    text = session_cut.render(evs[:i], pin=pin)
     return session_cut.HEAD + text, {"stream": kind, "events": i, "bytes": len(text.encode("utf-8"))}
 
 
@@ -504,11 +510,29 @@ def describe(mirror: Path, fix: str) -> dict | str:
         files[path] = 10 ** 6 if added == "-" else int(added) + int(deleted)
     source = sorted(p for p in files if not repo.is_test_path(p))
     context, new = history.split_new(mirror, base, fix, source)
-    date, subject = history.git(mirror, "show", "-s", "--format=%cI%x00%s", fix).strip().split("\0", 1)
-    return {"fix": fix, "base": base, "date": date[:10], "subject": subject, "source_files": source,
+    date, subject, body = history.git(mirror, "show", "-s", "--format=%cI%x00%s%x00%b", fix).split("\0", 2)
+    return {"fix": fix, "base": base, "date": date[:10], "subject": subject, "issues": fix_issues(subject, body),
+            "source_files": source,
             "context_files": context, "new_files": new,
             "test_files": sorted(p for p in files if repo.is_test_path(p)),
             "lines": sum(files[p] for p in source)}
+
+
+_CLOSES = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)", re.I)
+_TAIL = re.compile(r"(?:\s*\((#\d+(?:,\s*#\d+)*)\))+\s*$")
+_MERGE = re.compile(r"^Merge pull request #\d+ from [\w.-]+/(?:[\w.-]+/)?(\d+)-")
+
+
+def fix_issues(subject: str, body: str = "") -> list[int]:
+    """Issue numbers a fix commit says it resolves: Closes lines, the (#n) groups ending its title, a merged branch's
+    number; the PR's own number is among them when the title ends with it."""
+    titles = [subject] + ([body.strip().splitlines()[0]] if _MERGE.match(subject) and body.strip() else [])
+    found = [int(n) for n in _CLOSES.findall(body)]
+    for t in titles:
+        m = _TAIL.search(t)
+        found += [int(n) for n in re.findall(r"#(\d+)", m.group(0))] if m else []
+    found += [int(m.group(1))] if (m := _MERGE.match(subject)) else []
+    return sorted(set(found))
 
 
 def source_for(url: str, slug: str) -> history.Repo:
@@ -563,7 +587,7 @@ def link(scanned, repos, index_of, mirror_of) -> tuple[list[dict], dict]:
             if req is None:
                 _unit(stats, r.slug, None, "no_request")
                 continue
-            units.setdefault((req.session, req.prompt_id, r.slug), (req, r, []))[2].append((e.kind, sha, pr))
+            units.setdefault((req.session, req.prompt_id, r.slug), (req, r, []))[2].append((e.kind, sha, pr, e.stream))
     out, per_request = [], Counter()
     for (_, _, slug), (req, r, items) in units.items():
         if not r.owner:
@@ -579,7 +603,7 @@ def link(scanned, repos, index_of, mirror_of) -> tuple[list[dict], dict]:
             continue
         mirror = mirror_of(r)
         fixes, why = {}, Counter()
-        for kind, sha, pr in sorted(items, key=lambda i: EVIDENCE.index(i[0])):
+        for kind, sha, pr, stream in sorted(items, key=lambda i: EVIDENCE.index(i[0])):
             if pr is not None and sha is None:
                 state, merge = index["prs"].get(pr, ("", ""))
                 got = (pr, merge, None) if state == "MERGED" and merge else (pr, None, "pr_not_merged")
@@ -588,13 +612,13 @@ def link(scanned, repos, index_of, mirror_of) -> tuple[list[dict], dict]:
             if got[2]:
                 why[got[2]] += 1
             else:
-                fixes.setdefault(got[1], (got[0], kind))
+                fixes.setdefault(got[1], (got[0], kind, stream))
         if not fixes:
             _unit(stats, slug, req, why.most_common(1)[0][0] if why else "not_landed")
             continue
-        for fix, (pr, kind) in fixes.items():
+        for fix, (pr, kind, stream) in fixes.items():
             per_request[(req.session, req.prompt_id)] += 1
-            out.append({"request": req, "repo": r, "fix": fix, "pr": pr, "evidence": kind})
+            out.append({"request": req, "repo": r, "fix": fix, "pr": pr, "evidence": kind, "stream": stream})
     for c in out:
         _unit(stats, c["repo"].slug, c["request"])
     return out, stats
@@ -634,6 +658,11 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
     for c in order:
         req, r, fix = c["request"], c["repo"], c["fix"]
         s = _unit(stats, r.slug, req)
+        if fix in old and fix not in seen and old[fix]["id"] not in RETIRED:
+            seen.add(fix)
+            s["tasks"] += 1
+            kept.append(old[fix])
+            continue
         why = ("duplicate_task" if fix in seen else "third_party_data" if r.slug in THIRD_PARTY_DATA
                else "excluded" if task_id(r.slug, c["pr"], fix) in EXCLUDED
                else "retired" if task_id(r.slug, c["pr"], fix) in RETIRED else None)
@@ -643,11 +672,14 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
             why = cand if isinstance(cand, str) else history.screen(cand)
         if why is None and not _has_path(mirror_of(r), cand["base"], "uv.lock"):
             why = "no_uv_lock"
-        got = cut(*files_of[req.session], requests_of[req.session], req, cand["source_files"]) if why is None else None
+        got = cut(*files_of[req.session], requests_of[req.session], req, cand["source_files"], c.get("stream", ""),
+                  (r.owner, r.name)) if why is None else None
         if isinstance(got, str):
             why = got
         elif got is not None and got[1]["bytes"] < MIN_CUT_BYTES:
             why = "cut_too_short"
+        elif got is not None and not session_cut.on_task(got[0], set(cand["issues"]) - {c["pr"]}, cand["source_files"]):
+            why = "mismatch"
         red = redact.redact(got[0], known) if why is None else None
         if why is None and session_cut.leaks(red.text, leak_lines(mirror_of(r), cand)):
             why = "leak"
@@ -666,11 +698,9 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
                             "size": history.size_of({"files": len(cand["source_files"]), "lines": cand["lines"]})})
             seen.add(fix)
             continue
-        res = ({k: old[fix][k] for k in ("fail_to_pass", "pass_to_pass")} | {"test_s": old[fix]["strata"]["test_s"]}
-               if why is None and fix in old else None)
-        if why is None and res is None and probes is not None and ran >= probes:
+        if why is None and probes is not None and ran >= probes:
             why = "not_probed"
-        if why is None and res is None:
+        if why is None:
             t0, ran = time.monotonic(), ran + 1
             res = history.probe(mirror_of(r), cand, log, timeout, env=env, src=source_for(r.url, r.slug))
             why = res.get("drop")
@@ -687,8 +717,7 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
                      **({"extras": list(src.extras)} if src.extras else {}),
                      "fail_to_pass": res["fail_to_pass"],
                      "pass_to_pass": res["pass_to_pass"], "prompt": red.text,
-                     "interface": old[fix]["interface"] if fix in old and "interface" in old[fix]
-                     else history.tests_call(mirror_of(r), cand["base"], fix),
+                     "interface": history.tests_call(mirror_of(r), cand["base"], fix),
                      "strata": {"files": len(cand["source_files"]), "lines": cand["lines"], "test_s": res["test_s"],
                                 "area": history.area(cand["source_files"]),
                                 "size": history.size_of({"files": len(cand["source_files"]), "lines": cand["lines"]})},
@@ -701,7 +730,7 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
             s["dropped"]["refused"] += 1
             refused[row["id"]] = str(exc).split("still matches ", 1)[-1]
             continue
-        why = None if fix in old else admit(made.case, env)
+        why = admit(made.case, env)
         if why:
             s["dropped"][why] += 1
             continue

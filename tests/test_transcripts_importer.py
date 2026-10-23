@@ -327,6 +327,7 @@ def test_a_claude_session_trailer_links_a_commit_no_tool_printed(world):
     recs = [json.loads(line) for line in world["main"].read_text(encoding="utf-8").splitlines()]
     recs.append({"type": "attachment", "attachment": {"type": "remote_session_change", "url": url}})
     recs.append(_human("now make f return four and keep its test honest about it please", T0 + 1900, "p3"))
+    recs += _tool("Read", {"file_path": str(w / "pkg" / "mod.py")}, "def f():\n    return 1\n", T0 + 1940, "p3", 29)
     recs += _tool("Edit", {"file_path": str(w / "pkg" / "mod.py"), "old_string": "1", "new_string": "4"}, "ok",
                   T0 + 1950, "p3", 30)
     _write(world["main"], recs)
@@ -410,3 +411,94 @@ def test_a_case_excluded_by_hand_is_dropped(world, monkeypatch):
     monkeypatch.setattr(tr, "EXCLUDED", {"widget-pr7-request": "private"})
     got = _survey(world, run=False)
     assert got["projects"]["widget"]["dropped"] == {"excluded": 1} and not got["pending"]
+
+
+def test_a_fix_names_the_issues_its_title_ends_with_or_its_body_closes():
+    assert tr.fix_issues("Pin the venvs when a pin moves (#1037) (#1042)") == [1037, 1042]
+    assert tr.fix_issues("Size the listing (#1079, #1080) (#1081)", "See #947 too.") == [1079, 1080, 1081]
+    assert tr.fix_issues("Interleave case by case (#862)", "body\n\nCloses #816\n") == [816, 862]
+    assert tr.fix_issues("Merge pull request #138 from acme/fix/136-bodies",
+                         "fix(search): keep bodies inline (#136)\n\nmore about #120") == [136]
+    assert tr.fix_issues("unrelated") == []
+
+
+def _sub(world, n, spawn, recs, at):
+    path = world["main"].parent / "s1" / "subagents" / f"agent-{n}.jsonl"
+    _write(path, [{"type": "user", "promptId": "p1", "timestamp": _iso(at), "isSidechain": True,
+                   "message": {"content": spawn}}, *recs])
+    return path
+
+
+def _two_tasks(world, fixed_by_sub: bool):
+    """One request that spawns two subagents: #9's edits pkg/mod.py first through a heredoc; #6's is the merged fix."""
+    w = world["repo"]
+    fix = _commit(w, {"pkg/mod.py": 'def f():\n    return "the widget answer is three now"\n',
+                      "tests/test_mod.py": "from pkg.mod import f\ndef test_f():\n    assert f()\n"}, "Fix f (#6) (#7)",
+                  T0 + 500)
+    world["index"]["prs"][7] = ("MERGED", fix)
+    keep = [r for r in _recs(world) if not any(b.get("name") in ("Edit", "Bash") for b in
+                                               (r.get("message") or {}).get("content") or [] if isinstance(b, dict))]
+    pr_url = "https://github.com/acme/widget/pull/7"
+    if not fixed_by_sub:
+        keep[-1:-1] = _bash("gh pr create --fill", pr_url, T0 + 400, "p1", 40)
+    _write(world["main"], keep)
+    heredoc = "python3 - <<'EOF'\nfrom pathlib import Path\np = Path('pkg/mod.py')\np.write_text('x')\nEOF"
+    _sub(world, 1, "Implement issue #9: rename f's helper", [
+        *_tool("Read", {"file_path": str(w / "pkg" / "mod.py")}, "def f():\n    return 1\n", T0 + 12, None, 50),
+        *_bash(heredoc, "", T0 + 14, None, 51)], T0 + 10)
+    _sub(world, 2, "Implement issue #6: make f answer two" if fixed_by_sub else "Tidy the docs", [
+        *_tool("Read", {"file_path": str(w / "pkg" / "mod.py")}, "def f():\n    return 1\n", T0 + 30, None, 60),
+        *_tool("Edit", {"file_path": str(w / "pkg" / "mod.py"), "old_string": "    return 1", "new_string": FIX_LINE},
+               "ok", T0 + 40, None, 61),
+        *([*_bash("gh pr create --fill", pr_url, T0 + 300, None, 62)] if fixed_by_sub else [])], T0 + 20)
+
+
+def test_a_request_that_spawns_two_tasks_cuts_the_one_that_opened_the_fixs_pr(world, monkeypatch):
+    _two_tasks(world, fixed_by_sub=True)
+    monkeypatch.setattr(history, "probe", lambda *a, **k: {
+        "fail_to_pass": ["tests/test_mod.py::test_f"], "pass_to_pass": [], "test_s": 0.1})
+    (task,) = _survey(world)["tasks"]
+    assert task["provenance"]["cut"] == {"stream": "subagent", "events": 4, "bytes": task["provenance"]["cut"]["bytes"]}
+    assert "Implement issue #6" in task["prompt"] and "issue #9" not in task["prompt"]
+
+
+def test_a_cut_that_heads_toward_another_task_is_dropped_as_a_mismatch(world):
+    _two_tasks(world, fixed_by_sub=False)
+    got = _survey(world, run=False)
+    assert got["projects"]["widget"]["dropped"] == {"mismatch": 1} and not got["pending"]
+
+
+def test_a_task_already_in_the_manifest_keeps_its_bytes_when_a_screen_would_now_drop_it(world, monkeypatch):
+    monkeypatch.setattr(history, "probe", lambda *a, **k: {
+        "fail_to_pass": ["tests/test_mod.py::test_f"], "pass_to_pass": [], "test_s": 0.1})
+    first = _survey(world)
+    monkeypatch.setattr(tr, "MIN_CUT_BYTES", 10 ** 6)
+    stale = {"tasks": [{**first["tasks"][0], "prompt": "the audited prompt"}]}
+    assert _survey(world, keep=stale)["tasks"] == stale["tasks"]
+
+
+#: The 13 cases #1136 retired as request/fix mismatches, with the issue each fix closes.
+MISMATCHED = {"mcm-engine-pr138-request": [136], "mcm-engine-pr184-request": [177], "sohot-pr1029-request": [1025],
+              "sohot-pr1033-request": [1027], "sohot-pr1035-request": [1030], "sohot-pr1038-request": [1032],
+              "sohot-pr1042-request": [1037], "sohot-pr1046-request": [1045], "sohot-pr1051-request": [1049],
+              "sohot-pr1054-request": [1053], "sohot-pr933-request": [928], "sohot-pr957-request": [954],
+              "sohot-pr966-request": [964]}
+#: The manifest as committed before #1136 retired them.
+BEFORE_1136 = "a31a032b"
+
+
+def test_the_mismatch_screen_drops_every_case_1136_retired_as_one_and_keeps_named_ones():
+    try:
+        rows = {t["id"]: t for t in json.loads(_git(ROOT, "show", f"{BEFORE_1136}:evals/importers/transcripts.json"))["tasks"]}
+    except subprocess.CalledProcessError:
+        pytest.skip("a shallow checkout lacks the commits")
+    files = lambda t: [*t["context_files"], *t["new_files"]]  # noqa: E731
+    for tid, issues in MISMATCHED.items():
+        t = rows[tid]
+        if t["slug"] == "sohot":
+            subject, body = _git(ROOT, "show", "-s", "--format=%s%x00%b", t["fix"]).split("\0", 1)
+            assert set(tr.fix_issues(subject, body)) - {t["pr"]} == set(issues), tid
+        assert not session_cut.on_task(t["prompt"], issues, files(t)), tid
+    for tid, issues in {"sohot-pr1081-request": [1079, 1080], "sohot-pr1101-request": [1099],
+                        "sohot-pr1003-request": [1002], "mcm-engine-pr162-request": [156]}.items():
+        assert session_cut.on_task(rows[tid]["prompt"], issues, files(rows[tid])), tid
