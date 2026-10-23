@@ -1815,6 +1815,23 @@ table weighted back to the population, and writes `manifest.jsonl` (keys,
 strata, sizes and labels only), `strata.json` and `census.txt`; a private repo's
 name is masked and a file holding any `redact.detect` finding is refused.
 
+`python -m evals.analysis.demand replay --out tmp/<dir> --steps prepare,local,grade,report`
+replays the manifest's fits-now and fits-with-harness-work units, plus a seeded
+does-not-fit control, on the adopted local lanes (#1161). `prepare` finds each
+unit by its key in the transcripts as of the census's `now` and rebuilds its prompt
+read-only: the session cut up to the unit's request, quoted and redacted, with a
+record of what the session did as the reference. `local` asks each unit's lane at
+temperature 0, `--repeats` times, under the eval lock, once per model in
+`--candidates` (default `adopted`, each lane's adopted model; the report is per model). `grade` takes a command
+check where one applies (a diff that `git apply`s to the files the unit edited and
+leaves them as the session did), else a blind `claude -p` Opus judge (usable as is,
+with edits, or not). `calibrate` plants three wrong answers per unit (another
+unit's answer, a corrupted one, one Opus writes to be plausibly wrong) and the
+session's own record, and grades them blind. `report` prints the usable rate per
+shape and lane with Wilson intervals, latency p50/p90, GPU seconds, correct answers
+per GPU-hour, the control's rate, grade agreement between replays and the
+calibration. Every step resumes where a stopped run left off.
+
 The repo system prompt says the model has no tools and replies with one diff
 (#1129). A `request` case is asked as a quotation: `evals.repo.quoted` replaces
 the session cut's lead with one saying the session is over and not to be
