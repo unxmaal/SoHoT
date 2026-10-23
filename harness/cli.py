@@ -52,6 +52,7 @@ from harness.commands import headless as headless_cmd
 from harness.commands import knobs as knobs_cmd
 from harness.commands import climb as climb_cmd
 from harness.commands import availability as availability_cmd
+from harness.commands import inventory as inventory_cmd
 from harness.commands import ledger as ledger_cmd
 from harness.commands import families as families_cmd
 from harness.commands import funnel as funnel_cmd
@@ -572,6 +573,17 @@ def build_parser() -> argparse.ArgumentParser:
     led.add_argument("--sample-power", action="store_true",
                      help="append one macmon reading to the power log and exit (the energy unit)")
     led.set_defaults(func=ledger_cmd.cmd_ledger)
+    inv = sub.add_parser("inventory", help="read-only accounts of what the machine and the project spent")
+    invsub = inv.add_subparsers(dest="inventory", required=True)
+    itm = invsub.add_parser("time", help="the machine's hours by category, hours Eric was blocked, local work "
+                            "and engineering effort by area; the store read with mode=ro (#1152)")
+    itm.add_argument("--since", default="", help="window start: 14d, or a date (default: this machine's first day)")
+    itm.add_argument("--no-effort", action="store_true", help="skip the GitHub effort account")
+    itm.add_argument("--effort-from", default="", metavar="FILE",
+                     help="read PRs and issues from this JSON ({prs, issues}) instead of gh")
+    itm.add_argument("--hours", action="store_true", help="with --json, include every hour's row")
+    itm.add_argument("--json", action="store_true", help="machine-readable result on stdout, including on failure")
+    itm.set_defaults(func=inventory_cmd.cmd_time)
     mor = sub.add_parser("morning", help="last night in one report: sweep, watchdog, nightly CI, ledger row, "
                          "stale lanes and deploy; --notify only when something needs a person")
     mor.add_argument("--since", default="18h", help="window: 18h, or a date such as 2026-10-14T20:00")
