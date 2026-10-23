@@ -1,5 +1,5 @@
 # Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
-# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+# Imported by evals/importers from claude-code:transcripts@1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab; re-import, do not edit.
 id: sohot-pr861-request
 modality: repo
 prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
@@ -235,10 +235,18 @@ params:
   variant: request
   context: oracle
   context_files:
+  - harness/memory_store/migrations/__init__.py
   - harness/memory_store/migrations/retractions.py
   - harness/memory_store/schema.py
   new_files:
   - harness/memory_store/migrations/v71.py
+  stated: 'This is schema 71: `SCHEMA_VERSION` becomes 71, and the new step module `harness/memory_store/migrations/v71.py`
+    sets `VERSION = 71` and does the requeue in its `data(conn)` phase (the loader sorts step modules
+    by `VERSION` and calls each phase function by name). The requeue sends a proposal back to `screened`
+    only when its current state verdict is a `declined` adopt-tier verdict with reason `limit`, no run
+    id, an empty until and a not-run budget-projection detail, and the verdict just before it for that
+    proposal (by id) has outcome `screened`. A candidate with any other verdict between the screen and
+    the refusal stays declined, as does any limit decline that fails one of these conditions.'
   fail_to_pass:
   - tests/test_length_refusal_reopen_858.py::test_a_pre_815_length_refusal_is_requeued_for_measurement
   pass_to_pass:
@@ -250,7 +258,7 @@ attribution:
   url: https://github.com/unxmaal/SoHoT/issues/1095
   license: generated
   source: claude-code:transcripts
-  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  revision: 1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab
   item: 'sohot PR #861'
   date: '2026-10-14'
   transform: 'a Claude Code session from the person''s request to just before the agent''s first edit

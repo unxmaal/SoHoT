@@ -1,5 +1,5 @@
 # Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
-# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+# Imported by evals/importers from claude-code:transcripts@1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab; re-import, do not edit.
 id: mcm-engine-pr162-request
 modality: repo
 prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
@@ -143,6 +143,26 @@ params:
   - pythonpath=src
   extras:
   - dev
+  interface:
+  - mcm_engine.tracker.ScopedTracker.is_covered(self, *args, **kwargs)
+  - mcm_engine.tracker.ScopedTracker.reconcile_coverage(self, *args, **kwargs)
+  - mcm_engine.tracker.ScopedTracker.record_coverage(self, *args, **kwargs)
+  - 'mcm_engine.tracker.SessionTracker.is_covered(self, topic: str, *, require_resident: bool=True) ->
+    bool'
+  - 'mcm_engine.tracker.SessionTracker.reconcile_coverage(self, *, resident: bool=False) -> None'
+  - 'mcm_engine.tracker.SessionTracker.record_coverage(self, topic: str, query: str, result_ids=None,
+    *, resident: bool=True) -> None'
+  - 'MCP tool: save_snapshot(goal: str='''', progress: str='''', open_questions: str='''', blockers: str='''',
+    next_steps: str='''', active_files: str='''', key_decisions: str='''', compaction: bool=False) ->
+    str'
+  stated: '`SessionTracker.coverage` is a dict keyed by the topic lowercased and stripped; each value
+    is a dict with `topic` (that key), `query`, `result_ids` (a list, `[]` for `None`), `searched_at`
+    (epoch seconds) and `resident`. The same topic recorded again replaces its entry; a blank topic records
+    nothing. `reconcile_coverage` changes only `resident`, and `reset_all` empties `coverage`. The `search`
+    tool records its query as both topic and query, with the hits it returned as `(entity_type_name, id)`
+    tuples such as `("KNOWLEDGE", 1)`, even when nothing matched. `report_error` records its auto-search
+    under the first 50 characters of `error_text`. `session_start` always marks coverage non-resident;
+    `save_snapshot` does so only when `compaction=True`, and the pre-compact hook passes `compaction=True`.'
   fail_to_pass:
   - tests/test_coverage_ledger.py::test_coverage_is_per_session
   - tests/test_coverage_ledger.py::test_is_covered_requires_resident_by_default
@@ -166,7 +186,7 @@ attribution:
   url: https://github.com/unxmaal/SoHoT/issues/1095
   license: generated
   source: claude-code:transcripts
-  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  revision: 1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab
   item: 'mcm-engine PR #162'
   date: '2026-10-16'
   transform: 'a Claude Code session from the person''s request to just before the agent''s first edit

@@ -247,7 +247,10 @@ def locate(path, text: str) -> list[int]:
 CASES = Path(__file__).resolve().parents[1] / "cases" / "repo"
 #: What `causes` reads off a row with no labeller: the codebook's classes, the budget split by whether an answer began.
 CAUSES = ("pass", "budget_no_answer", "budget_cut_answer", "tool_call", "no_diff", "malformed_hunk",
-          "context_mismatch", "wrong_fix", "regression", "environment_error", "unclassed")
+          "context_mismatch", "wrong_fix", "regression", "environment_error", "provider_refused", "crashed",
+          "unclassed")
+#: A crashed row whose provider's usage-policy screen refused the prompt: no reply exists to grade. #1136.
+_REFUSED = re.compile(r"safeguards flagged|anthropic\.com/legal/aup|usage polic", re.I)
 _TOOL = re.compile(r"<tool_call>|<function=")
 _RANGED = re.compile(r"^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@")
 _MALFORMED = ("garbage", "corrupt patch", "No valid patches", "without header")
@@ -282,6 +285,8 @@ def cause(row: dict, stored: dict) -> str:
         return "context_mismatch" if "patch failed" in detail else "unclassed"
     if fc == "content_failed":
         return "wrong_fix" if "fail_to_pass still failing" in detail else "regression"
+    if fc == "crashed":
+        return "provider_refused" if _REFUSED.search(detail) else "crashed"
     return "unclassed"
 
 

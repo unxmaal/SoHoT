@@ -542,7 +542,9 @@ PARAM_KEYS = {"width", "height", "steps", "seed", "guidance", "frames", "check_t
               "source_repo", "base", "fix", "context_files", "fail_to_pass", "pass_to_pass",
               "variant", "context", "new_files", "pytest_args", "extras",
               # repo: the hidden tests' names and signatures the prompt shows. #1103.
-              "interface"}
+              "interface",
+              # repo: what a session case's finished change does, shown after the quoted session. #1136.
+              "stated"}
 # Assertions that need text to search. Declaring one on an image case can only
 # pass vacuously until the suite can OCR, so it is rejected rather than ignored.
 TEXT_ASSERTIONS = {"min_shapes", "must_contain", "must_not_contain"}

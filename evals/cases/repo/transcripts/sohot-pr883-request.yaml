@@ -1,5 +1,5 @@
 # Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
-# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+# Imported by evals/importers from claude-code:transcripts@1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab; re-import, do not edit.
 id: sohot-pr883-request
 modality: repo
 prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
@@ -244,6 +244,15 @@ params:
   context_files:
   - evals/core.py
   - harness/commands/screen.py
+  interface:
+  - 'harness.commands.screen.screen_detail(why: str, stderr: str, summary) -> str'
+  stated: '`screen_detail` builds the detail `_report_screen` records for a screen verdict. When a receipt
+    exists (`summary is not None`) it returns `why` alone, with no stderr. When there is none it drops
+    each python warning line (`<path>:<line>: <Name>Warning: ...`) and the indented source line printed
+    under it, collapses the remaining stderr whitespace to single spaces, keeps its last 300 characters,
+    and returns `why || <tail>`, or just `why` when nothing is left; the result is capped at 600 characters.
+    `METRIC_DIRECTION` also declares `attempts` as `lower` and `retries`, `stages` and `thinking_disabled`
+    as `neutral`, so every metric a runner emits has a direction.'
   fail_to_pass:
   - tests/test_harness_screen.py::test_a_screen_with_a_receipt_records_no_stderr_in_its_detail
   - tests/test_harness_screen.py::test_a_screen_without_a_receipt_keeps_its_stderr_less_warnings
@@ -288,7 +297,7 @@ attribution:
   url: https://github.com/unxmaal/SoHoT/issues/1095
   license: generated
   source: claude-code:transcripts
-  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  revision: 1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab
   item: 'sohot PR #883'
   date: '2026-10-16'
   transform: 'a Claude Code session from the person''s request to just before the agent''s first edit

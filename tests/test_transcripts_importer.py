@@ -67,6 +67,7 @@ def _commit(path, files: dict, msg: str, at: float) -> str:
 def world(tmp_path, monkeypatch):
     """A checkout of acme/widget with a feature commit, its squash on main, and a session that printed the first."""
     monkeypatch.setattr(tr, "MIN_CUT_BYTES", 0)
+    monkeypatch.setattr(tr, "admit", lambda case, env=None: None)
     repos = tmp_path / "github"
     w = repos / "acme" / "widget"
     w.mkdir(parents=True)

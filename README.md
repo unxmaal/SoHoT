@@ -1790,6 +1790,16 @@ reply with no diff that holds `<tool_call>` or `<function=` markup is classed
 `tool_call`, not `invalid_patch`; the runner sets it, so the grader digest does
 not change.
 
+After the quotation a `request` case shows the names its hidden tests call
+(`params.interface`, as history cases do) and, where the cut stops before the
+design, a paragraph of what the finished change does (`params.stated`, kept in
+`STATED` in the importer). The #1136 audit retired 14 of the first 25 cases
+(`RETIRED`: 13 quote a session heading toward another change) and repaired 10.
+A new task enters the manifest only when `repo.controls` finds its gold patch
+valid as the grader runs it; otherwise it is dropped as `gold_patch_<verdict>`.
+`repo_failures causes` classes a crashed row `provider_refused` when the
+provider's usage-policy screen refused the prompt, and `crashed` otherwise.
+
 Prompts and skills are measured as arms (#995): `claude-code:<model>,context=<spec>`
 with `none`, `skill:<name>` (the SKILL.md body without frontmatter, from
 `harness/arm_contexts.yaml` first, then `~/.claude/skills`), `prompt:<template>`
