@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import io
 import json
 import sys
 import time
@@ -1121,6 +1122,22 @@ def lock_kind(args, config=None) -> str:
         return "eval"
     candidates = split_candidates(getattr(args, "candidates", "") or "")
     return "cloud-eval" if candidates and all(hosted(c, config) for c in candidates) else "eval"
+
+
+def argv_lock_kind(argv, config=None) -> str | None:
+    """The lock_kind a queued `-m evals.run ...` command will take; None for any other command. #1153."""
+    argv = [str(a) for a in argv]
+    at = next((i + 2 for i in range(len(argv) - 1) if argv[i] == "-m" and argv[i + 1] == "evals.run"), None)
+    if at is None:
+        at = next((i + 1 for i, a in enumerate(argv) if a.replace("\\", "/").endswith("evals/run.py")), None)
+    if at is None:
+        return None
+    try:
+        with contextlib.redirect_stderr(io.StringIO()):
+            args = parse_args(argv[at:])
+    except SystemExit:
+        return None
+    return None if args.compare else lock_kind(args, config)
 
 
 def deadline_s(args) -> float | None:
