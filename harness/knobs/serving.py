@@ -48,6 +48,9 @@ KNOBS = [
        [8192, 16384, 32768, 65536, 131072], lanes=TEXT_LANES, limit="served_ctx", predicate=MACHINE,
        note="tokens a model is served at: llama-server's unplanned default, ds4 --ctx, vllm-metal --max-model-len; "
             "a planned llama-server context is set by kv_cap; the receipt records it as served ctx (#692)"),
+    _k("slot_probe_busy_wait", ["harness/slot_probe.py:BUSY_WAIT_S"], [1.0, 5.0, 10.0],
+       note="seconds the smoke slot probe waits, its stream open, to see the slot busy before it closes the stream; "
+            "the first poll usually sees it, so the bound only matters on a loaded machine (#1168)"),
     _k("slot_probe_max_tokens", ["harness/slot_probe.py:MAX_TOKENS"], [2048, 4096, 8192],
        note="tokens the smoke slot probe asks for; at the fastest stored llama-server decode (LFM2.5-350M, 310 tok/s "
             "on 2026-10-22) 4096 runs 13 s, past slot_probe_settle, so a natural finish cannot pass for a freed slot (#1127)"),
