@@ -42,6 +42,12 @@ jobs:
             exit 1
           }
 
+      - name: Which runner this is
+        # make check takes 5 or 13 minutes depending on the runner it lands on (#1146).
+        run: |
+          echo "JOB_STARTED_S=$(date +%s)" >> "$GITHUB_ENV"
+          sysctl -n machdep.cpu.brand_string hw.ncpu hw.perflevel0.physicalcpu hw.memsize || true
+
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
@@ -85,6 +91,20 @@ jobs:
             grep -E '^SKIPPED' /tmp/check.log || echo 'nothing skipped'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the per-test times
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-macos
+          path: /tmp/junit.xml
+          retention-days: 30
+
+      - name: How much of the timeout this job used
+        # Warns past 80%, so a growing suite is seen before it is cancelled (#1146).
+        if: always()
+        run: uv run python -m harness.ci_budget
 
   check-linux:
     # Deferred to the nightly run; a PR labelled full-ci runs it now.
