@@ -45,7 +45,7 @@ PRECEDENCE = ("budget_exhausted", "tool_call", "no_diff", "malformed_hunk", "rec
 #: What a budget-exhausted reply's reasoning was doing when the budget cut it; unrecorded when the run kept none.
 AT_CUT = ("looping", "rereading", "drafting_diff", "other", "unrecorded")
 #: The runner's own classes, in the order the issue's table reports them.
-TALLY = ("pass", "token_budget_exhausted", "invalid_patch", "content_failed", "environment_error")
+TALLY = ("pass", "token_budget_exhausted", "tool_call", "invalid_patch", "content_failed", "environment_error")
 UNLABELLED = ("environment_error",)
 
 #: The rerun arms as evals.run arguments: A redraws run 466, B is thinking off, C the vendor sampler on the ladder.
@@ -271,6 +271,8 @@ def cause(row: dict, stored: dict) -> str:
         return fc
     if fc == "token_budget_exhausted":
         return "budget_cut_answer" if reply.strip() else "budget_no_answer"
+    if fc == "tool_call":
+        return fc
     if fc == "invalid_patch":
         if not diff.strip():
             return "tool_call" if _TOOL.search(reply) else "no_diff"

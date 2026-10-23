@@ -131,3 +131,10 @@ def test_claude_code_is_given_the_same_system_prompt_per_case(upstream, claude):
         _runner(claude, "no diff").run(case)
         argv = json.loads((claude / "argv.json").read_text(encoding="utf-8"))
         assert argv[argv.index("--system-prompt") + 1] == system
+
+
+def test_the_cause_table_reads_the_runners_tool_call_class():
+    from evals.analysis import repo_failures as F
+    row = {"passed": False, "failure_class": reasons.TOOL_CALL, "detail": "the reply holds no diff"}
+    assert F.cause(row, {"reply": TOOL_REPLY, "diff": ""}) == "tool_call"
+    assert reasons.TOOL_CALL in F.TALLY

@@ -42,7 +42,7 @@ def _write(path, labels):
 
 def test_the_tally_counts_each_runner_class(run_dir):
     got = F.tally(F.load_run(run_dir))
-    assert [got[c] for c in F.TALLY] == [1, 1, 2, 1, 1]
+    assert [got[c] for c in F.TALLY] == [1, 1, 0, 2, 1, 1]
 
 
 def test_a_paused_run_is_tallied_from_its_checkpoint(tmp_path):
