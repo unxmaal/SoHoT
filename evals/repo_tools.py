@@ -222,7 +222,10 @@ class Workspace(sandbox.Sandbox):
         if got.returncode:
             raise Refused("git apply: " + got.stderr.decode(errors="replace").strip()[-1500:])
         self.touched |= {rel for rel, _ in chunks}
-        return f"applied to {', '.join(rel for rel, _ in chunks)}"
+        names = [rel for rel, _ in chunks]
+        if not repo._git(["status", "--porcelain", "--", *names], cwd=self.root).stdout.strip():
+            return f"applied to {', '.join(names)}, but they are unchanged from base: each - line equals its + line"
+        return f"applied to {', '.join(names)}"
 
     def _targets(self, path) -> list[str]:
         if path:

@@ -70,6 +70,13 @@ def test_a_patch_without_git_s_a_and_b_prefixes_applies(upstream):
     assert repo_tools._prefixed("--- /dev/null\n+++ b/x\n") == "--- /dev/null\n+++ b/x\n"
 
 
+def test_a_patch_that_changes_nothing_says_so(upstream):
+    same = _diff(BUGGY, BUGGY.replace("return a - b", "return a - b ", 1)).replace("return a - b \n", "return a - b\n")
+    seen = []
+    _runner([_call("apply_patch", patch=same), _call("finish")], seen).run(upstream)
+    assert "unchanged from base" in [m["content"] for m in seen[-1] if m["role"] == "tool"][0]
+
+
 def test_a_bad_patch_returns_the_apply_error_to_the_model(upstream):
     seen = []
     bad = _diff("def nope():\n    pass\n", "def nope():\n    return 1\n")
@@ -162,6 +169,20 @@ def test_each_turn_s_reply_budget_fits_what_the_served_context_leaves(upstream):
 def test_fewer_than_four_cases_print_as_one_group_not_a_quartile():
     table = repo_size.quartiles([{"case_id": "a", "candidate": "x", "passed": True}], {"a": 2})
     assert table[0]["quartile"] == 0 and "all    2-2" in repo_size.text(table)
+
+
+def test_calls_past_the_per_turn_cap_are_not_run_and_the_model_is_told(upstream, monkeypatch):
+    monkeypatch.setattr(repo_repair, "CALLS_PER_TURN", 2)
+    many = {"tool_calls": [_call("list_files")["tool_calls"][0] | {"id": f"c{i}"} for i in range(5)]}
+    seen = []
+    row = _runner([many, _call("finish")], seen).run(upstream)
+    got = _record(row)
+    first = got["steps"][0]
+    assert len(first["calls"]) == 2 and first["calls_cut"] == 3 and row.metrics["repair_calls_cut"] == 3
+    sent = seen[1]
+    assert len(sent[2]["tool_calls"]) == 2 and [m["role"] for m in sent[3:]] == ["tool", "tool"]
+    assert "3 more tool calls" in sent[-1]["content"] and "at most 2" in sent[-1]["content"]
+    assert got["caps"]["repair_calls_per_turn"] == 2
 
 
 def test_a_long_tool_result_is_cut_to_the_output_cap(upstream, monkeypatch):

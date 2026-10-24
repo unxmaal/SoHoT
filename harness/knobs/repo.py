@@ -8,6 +8,10 @@ KNOBS = [
     _k("history_max_source_files", ["evals/importers/history.py:MAX_SOURCE_FILES"], [3, 8],
        note="source files a fix may change and still be surveyed as a history task; 3 was the #888 pilot's "
             "local-model cap, 8 takes the bigger fixes Claude Code arms can do (#997)"),
+    _k("repair_calls_per_turn", ["evals/runners/repo_repair.py:CALLS_PER_TURN"], [4, 8, 16],
+       lanes=("repo",), limit="repair_calls_per_turn", unit="calls", receipt="knobs", unrecorded=8,
+       note="tool calls one repair-harness turn may make, the rest not run and the model told; the #890 smoke's "
+            "Qwen2.5-7B emitted 357 apply_patch calls in one 30k-token turn (#890)"),
     _k("repair_case_timeout", ["evals/runners/repo_repair.py:CASE_TIMEOUT_S"], [600.0, 1200.0, 1800.0, 3600.0],
        lanes=("repo",), limit="repair_case_timeout_s", unit="s", receipt="knobs", unrecorded=1800.0,
        note="seconds of a repair-harness case's turns and test runs, checkout and env build excluded; Ornith's "
@@ -56,7 +60,7 @@ KNOBS = [
 ]
 
 #: Knobs only the repair harness reads; a patch-harness identity leaves them out so its stored draws stay reusable.
-REPAIR = ("repair_case_timeout", "repair_max_steps", "repair_max_tokens", "repair_output_cap")
+REPAIR = ("repair_calls_per_turn", "repair_case_timeout", "repair_max_steps", "repair_max_tokens", "repair_output_cap")
 
 NOT_GATING = {
     "evals/importers/history.py:SMALL[files]": "labels a surveyed task small or large; it admits or drops nothing, "

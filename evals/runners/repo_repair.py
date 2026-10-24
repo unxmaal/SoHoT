@@ -21,6 +21,8 @@ ASK = ("Change the repository with apply_patch until the issue is fixed, check i
 MAX_STEPS = 30
 #: Tokens the model may generate over a case's turns, reasoning included.
 MAX_TOKENS = 60000
+#: Tool calls one turn may make; the rest are not run and the model is told so.
+CALLS_PER_TURN = 8
 #: Seconds a case's turns and tool runs may take; building its checkout and environment is not counted.
 CASE_TIMEOUT_S = 1800.0
 
@@ -70,7 +72,7 @@ class RepoRepairRunner(AgentRunner):
         messages = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": first}]
         steps: list[dict] = []
         final, stopped, error, cut = "", "step cap", None, ""
-        made = 0
+        made = dropped = 0
         cold = not self.answered
         budget = self.max_tokens
         try:
@@ -105,8 +107,15 @@ class RepoRepairRunner(AgentRunner):
                         continue
                     final, stopped = text, "answered"
                     break
+                cut_calls = max(0, len(calls) - int(CALLS_PER_TURN))
+                calls = calls[:int(CALLS_PER_TURN)]
                 had = len(messages)
                 self._act(box, calls, message, messages, rec)
+                if cut_calls:
+                    rec["calls_cut"] = cut_calls
+                    dropped += cut_calls
+                    messages[-1]["content"] += (f"\n\n[{cut_calls} more tool calls in this turn were not run: "
+                                                f"at most {int(CALLS_PER_TURN)} calls per turn]")
                 for call, sent, asked in zip(rec["calls"], messages[had + 1:], messages[had]["tool_calls"]):
                     call["out_bytes"] = len(str(sent.get("content") or "").encode("utf-8"))
                     call["args"] = repo_tools.cut(asked["function"]["arguments"])
@@ -129,11 +138,11 @@ class RepoRepairRunner(AgentRunner):
         self.last_stop = self._stop(stopped, cut, error, allowed)
         metrics = {"resolved": int(got.resolved), "patch_applied": int(got.patch_applied), "wall_s": wall,
                    "test_s": got.test_s, **rollup(steps, wall), "repair_generated_tokens": made,
-                   "repair_test_runs": box.test_runs}
+                   "repair_test_runs": box.test_runs, "repair_calls_cut": dropped}
         self.last_grade = metrics
         return json.dumps({"case": case.id, "harness": HARNESS, "diff": diff, "reply": final,
                            "stopped": stopped, "error": str(error or ""),
-                           "caps": {"repair_max_steps": MAX_STEPS, "repair_max_tokens": MAX_TOKENS,
+                           "caps": {"repair_max_steps": MAX_STEPS, "repair_calls_per_turn": CALLS_PER_TURN, "repair_max_tokens": MAX_TOKENS,
                                     "repair_case_timeout_s": allowed, "repair_output_cap": repo_tools.OUTPUT_CAP},
                            "grade": {"resolved": got.resolved, "patch_applied": got.patch_applied,
                                      "detail": got.detail, "failed": got.failed, "limit": got.limit,

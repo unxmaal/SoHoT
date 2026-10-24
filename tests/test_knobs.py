@@ -315,7 +315,7 @@ def test_the_legacy_values_old_receipts_ran_at_are_exactly_these():
         "svg_render_timeout": 30.0, "claude_code_timeout": 600.0, "needle_serve_start": 60.0,
         "agent_steps_scale": 1.0, "agent_case_timeout": 900.0, "agent_step_timeout": 300.0,
         "tts_token_floor": 8.0, "ocr_max_new_tokens": 512, "repo_screen_cases": 24,
-            "repair_case_timeout": 1800.0, "repair_max_steps": 30, "repair_max_tokens": 60000, "repair_output_cap": 8000}
+            "repair_calls_per_turn": 8, "repair_case_timeout": 1800.0, "repair_max_steps": 30, "repair_max_tokens": 60000, "repair_output_cap": 8000}
     assert all(knobs.KNOBS[n].unrecorded == v and knobs.KNOBS[n].receipt == "knobs"
                for n, v in knobs.UNRECORDED.items())
 

@@ -462,6 +462,7 @@ METRIC_DIRECTION = {
     # repo repair harness (#890): reported beside resolved, never ranked on.
     "repair_generated_tokens": "neutral",
     "repair_test_runs": "neutral",
+    "repair_calls_cut": "neutral",
     "prompt_tokens": "neutral",
     # claude -p usage token counts; reported, never ranked on. #907.
     "cache_read_tokens": "neutral",
