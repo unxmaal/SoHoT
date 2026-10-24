@@ -210,9 +210,11 @@ def pending(lane: str, pairs: list[dict], conn=None) -> list[dict]:
     out = []
     with _store(conn) as c:
         counts_by = [tally(lane, p["case"], p["a"], p["b"], c) for p in pairs]
+    done = 0
     for p, counts in zip(pairs, counts_by):
         asked = sum(counts.values())
         if asked >= ENOUGH:
+            done += 1
             continue
         left, right = ((p["a"], p["b"]) if random.random() < 0.5
                        else (p["b"], p["a"]))
@@ -222,4 +224,7 @@ def pending(lane: str, pairs: list[dict], conn=None) -> list[dict]:
                     "right_file": p["b_file"] if right == p["b"] else p["a_file"],
                     "left_text": p.get("a_text", "") if left == p["a"] else p.get("b_text", ""),
                     "right_text": p.get("b_text", "") if right == p["b"] else p.get("a_text", "")})
+    if done:
+        from harness import cuts
+        cuts.cut("human_enough", f"{lane} pairings with enough answers, no longer asked", dropped=done)
     return out

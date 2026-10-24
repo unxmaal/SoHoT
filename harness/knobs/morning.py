@@ -17,6 +17,8 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    f"{M}:HEADLINE_CHARS": "characters of the condensed headline shown; presentation only (#867)",
+    f"{M}:HEADLINE_LINES": "lines of what needs a person the headline shows; the rest are counted (#867)",
     f"{M}:GH_TIMEOUT_S": "how long gh may take; a timeout reports nightly CI unavailable (#867)",
     f"{M}:GIT_TIMEOUT_S": "how long a git fetch or rev-parse of the deploy checkout may take; a timeout reports it unavailable (#867)",
     f"{M}:MODEL_TIMEOUT_S": "how long the local model may take to condense the headline; past it the deterministic one is used (#867)",

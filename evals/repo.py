@@ -591,12 +591,16 @@ FAILURE_CHARS = 1500
 
 def failure_text(xml: Path, ids) -> dict:
     """Each of `ids`' failure or error text from a junit report, its last FAILURE_CHARS; "missing" when it never ran."""
-    got = {}
+    from harness import cuts
+    got, long = {}, 0
     for case in ET.parse(xml).getroot().iter("testcase"):
         bad = next((child for child in case if child.tag in ("failure", "error")), None)
         if bad is not None:
             text = f"{bad.get('message') or ''}\n{bad.text or ''}".strip()
+            long += len(text) > FAILURE_CHARS
             got[f"{case.get('classname') or ''}::{case.get('name') or ''}"] = text[-FAILURE_CHARS:]
+    if long:
+        cuts.cut("repo_failure_chars", "junit failure texts kept by their tail only", dropped=long)
     return {i: got.get(junit_key(i), "missing: the test did not run") for i in ids}
 
 

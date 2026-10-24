@@ -381,7 +381,9 @@ def _classify(units: list[Unit]) -> None:
     for u in units:
         u.repo = u.repos.most_common(1)[0][0] if u.repos else ""
         volume[u.repo] += u.tokens_out_recorded
-    keep = set(sorted((r for r in volume if r), key=lambda r: (-volume[r], r))[:TOP_PROJECTS])
+    from harness import cuts
+    ranked = sorted((r for r in volume if r), key=lambda r: (-volume[r], r))
+    keep = set(cuts.take(ranked, TOP_PROJECTS, "demand_top_projects", "census projects pooled as other"))
     for u in units:
         u.project = u.repo.split("/", 1)[1] if u.repo in keep else "other"
         u.candidate, u.size = candidate(u), size_of(u.tokens_out_recorded)

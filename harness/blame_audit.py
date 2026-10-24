@@ -196,6 +196,10 @@ def build(conn, seed: int) -> dict:
     order = [k["verdict_id"] for k in key]
     random.Random(seed + 2).shuffle(order)
     sampled = [k["verdict_id"] for k in key if k["role"] == "sample"]
+    if len(sampled) > SECOND_N:
+        from harness import cuts
+        cuts.cut("blame_second_n", "sampled verdicts left out of the second labeller's set",
+                 kept=SECOND_N, dropped=len(sampled) - SECOND_N, conn=conn)
     second = sorted(random.Random(seed + 3).sample(sampled, min(SECOND_N, len(sampled))))
     return {"header": {"seed": seed, "max_verdict_id": max_verdict(conn), "population": sizes},
             "queue": [{"verdict_id": v, "name": names[v] or ""} for v in order],

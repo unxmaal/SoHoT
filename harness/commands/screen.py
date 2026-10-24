@@ -152,6 +152,11 @@ def _screen_plan(want: str) -> list[dict]:
 #: Consecutive same-need memory deferrals after which the screen stops recording another one. #910.
 MEMORY_DEFERRALS = 3
 
+
+def _deferred(store, name: str) -> None:
+    cuts.cut("screen_memory_deferrals", f"{name} deferral left unrecorded", conn=store)
+
+
 _NEEDS = re.compile(r"needs (\d+(?:\.\d+)?) GB")
 
 
@@ -326,6 +331,7 @@ def _report_screen(a) -> int:
                 streak, need = memory_deferrals(store, r["name"])
                 got = _NEEDS.search(why_not)
                 if streak >= MEMORY_DEFERRALS and got and got.group(1) == need:
+                    _deferred(store, r["name"])
                     print(f"   deferred {streak} times for {need} GB; left queued "
                           f"and out of the fetch's wait")
                     continue

@@ -323,7 +323,12 @@ def plan(rates, effect: float | None = None, *, stochastic: bool = True,
     best = max(powers)
     r = next(i for i, got in enumerate(powers, 1)
              if got >= best * PLATEAU or best - got <= PLATEAU_ABS)
-    if not measured:
+    if r < cap:
+        from harness import cuts
+        cuts.cut("power_plateau", "repeats past the power plateau", kept=r, dropped=cap - r)
+    if not measured and r < min(MEASURING_REPEAT, cap):
+        from harness import cuts
+        cuts.cut("power_measuring_repeat", "repeat raised so the run measures its correlation", kept=r)
         r = max(r, min(MEASURING_REPEAT, cap))
     if r < cap and rho > 0:
         why = (f"repeats of a case are correlated (rho {rho:.2f}"
@@ -425,6 +430,9 @@ def within_budget(chosen: Plan, rates, *, cases_run: int, median_s: float | None
                        needed_repeat=chosen.repeat, **run)
     if median_s is None:
         r = min(chosen.repeat, FALLBACK_REPEAT)
+        if r < chosen.repeat:
+            from harness import cuts
+            cuts.cut("power_fallback_repeat", "repeat of an unpriced lane", kept=r, dropped=chosen.repeat - r)
         note = (f"no measured seconds per case in this lane, so the cost of "
                 f"repeat {chosen.repeat} is unknown; ran repeat {r}")
     elif cost(chosen.repeat) <= budget_s:

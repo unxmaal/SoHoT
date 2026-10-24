@@ -19,6 +19,8 @@ KNOBS = [
        [8 * GIB, 16 * GIB, 22 * GIB, 32 * GIB, 96 * GIB], limit="ceiling_gb", unit="GiB", predicate=MACHINE,
        scale=GIB, probe="memory_ceiling",
        note="the largest weight this machine can hold; measured on 32 GB and scaled by RAM (#96)"),
+    _k("quants_tries", ["harness/quants.py:TRIES"], [2, 4, 8],
+       note="quantized descendants inspected per too-big or unloadable base before giving up; each is one registry call (#882)"),
     _k("size_limit", ["harness/inspect.py:SIZE_LIMIT"], [2, 4, 12, 24, 64], probe="size_limit",
        note="how many named weights get sized per repo"),
 ]

@@ -59,6 +59,9 @@ def root(name: str, parents_of: dict, parents=()) -> str:
         cur = ups[0]
         seen.add(cur)
         ups = parents_of.get(cur) or []
+    if ups and ups[0] not in seen and len(seen) > HOPS and _same_size(cur, ups[0]):
+        from harness import cuts
+        cuts.cut("family_hops", f"lineage of {name} past the hops")
     return cur
 
 

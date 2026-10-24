@@ -53,6 +53,8 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    f"{P}:ERROR_CHARS": "characters of a server's reason and error kept on the lane_probes row; the outcome is "
+                        "classed before the cut (#924)",
     "harness/workqueue.py:WATCH_S": "how soon a worker with jobs running sees a job it may start beside them; "
                                     "it decides when, never whether (#1153)",
     "harness/workqueue.py:at_clock->timedelta(days)": "one calendar day: a clock time already past today means tomorrow (#900)",

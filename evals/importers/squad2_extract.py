@@ -22,16 +22,18 @@ def _usable(q, context: str) -> bool:
 
 
 def select(data: dict, n: int = N) -> list[dict]:
+    from harness import cuts
     rows = []
     for para in squad2.shuffled(squad2.paragraphs(data), lambda p: p.pid):
+        if len(rows) >= n:
+            cuts.cut("squad2_cases", "SQuAD extract paragraphs past the case count", value=n, kept=len(rows))
+            break
         q = next((q for q in squad2.shuffled(para.qas, lambda q: q.qid)
                   if _usable(q, para.context)), None)
         if q is None:
             continue
         rows.append({"pid": para.pid, "context": para.context, "qid": q.qid,
                      "question": q.question, "answers": list(q.answers)})
-        if len(rows) >= n:
-            break
     return rows
 
 

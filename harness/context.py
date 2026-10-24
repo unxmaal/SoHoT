@@ -47,6 +47,10 @@ def _value(fh, kind: int):
 #: Below this a served model fails ordinary agent work; refuse rather than serve it.
 FLOOR = 8192
 STEP = 1024
+
+
+def _stepped(tokens: int) -> int:
+    return tokens // STEP * STEP
 #: Default ceiling on one model's KV cache, which llama-server allocates whole at load; set on a 32 GB machine.
 KV_MAX_GIB = 8
 #: The unified memory KV_MAX_GIB was set on; other machines scale it by their RAM, as inspect.MEMORY_CEILING does. #692.
@@ -139,7 +143,7 @@ def shared_pool(meta: dict, weights: int, budget: int, slots: int, slot_ctx: int
     if got.ctx or not got.kv_per_token or got.why.startswith("refused: one slot"):
         return got
     per = got.kv_per_token
-    pool = min(slots * slot_ctx, max(budget - weights, 0) // per // STEP * STEP)
+    pool = min(slots * slot_ctx, _stepped(max(budget - weights, 0) // per))
     if pool < slot_ctx or slot_ctx > got.trained:
         return got
     return Choice(pool, got.trained, per, f"shared pool: {slots} slots over {pool} tokens, "
@@ -281,8 +285,8 @@ def choose(meta: dict, weights: int, budget: int, slots: int = 1,
     room = min(room, kv_cap) if kv_cap is not None else room
     slots = max(slots, 1)
     room = max(room - swa_bytes(meta, cache_type) * slots, 0)
-    fits = room // per // slots // STEP * STEP
-    ctx = min(full // STEP * STEP or full, fits)
+    fits = _stepped(room // per // slots)
+    ctx = min(_stepped(full) or full, fits)
     if ctx < floor:
         limit = (f"trained for {full}" if full < floor else
                  f"{room / 1024 ** 3:.1f} GiB of KV room "
@@ -311,6 +315,9 @@ def read_meta(path) -> dict:
         for _ in range(count):
             key = _string(fh)
             meta[key] = _value(fh, _read(fh, "<I"))
+            if meta[key] is None and not key.startswith("tokenizer."):
+                from harness import cuts
+                cuts.cut("gguf_keep_array", f"GGUF array {key} skipped unread")
         return meta
 
 

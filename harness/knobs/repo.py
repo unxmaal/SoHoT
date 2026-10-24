@@ -28,15 +28,23 @@ KNOBS = [
        lanes=("repo",), limit="repair_output_cap", unit="bytes", receipt="knobs", unrecorded=8000,
        note="bytes of one repair-harness tool result the model is sent, the rest cut with a note; 8000 is ~2k "
             "tokens, so 30 turns of full results stay inside a 64k context (#890)"),
+    _k("repair_search_file_bytes", ["evals/repo_tools.py:_SEARCH_FILE_BYTES"], [250_000, 1_000_000, 4_000_000],
+       note="bytes over which the repair harness's search tool skips a file unread (#890)"),
     _k("repo_doc_patterns", ["evals/repo.py:DOC_PATTERNS"], [(), ("*.md", "*.rst", "docs/**", "CHANGELOG*")],
        note="files whose hunks may fail to apply and be left out, the rest graded, when no test names them; "
             "() grades every failed hunk invalid_patch as before #1107"),
     _k("repo_env_timeout", ["evals/repo.py:ENV_TIMEOUT_S"], [600.0, 1800.0, 3600.0],
        note="seconds `uv sync --frozen` may take to build a base commit's environment; a miss is environment_error (#887)"),
+    _k("repo_failure_chars", ["evals/repo.py:FAILURE_CHARS"], [500, 1500, 4000],
+       note="characters at the end of each failed test's junit text a grade keeps for the wrong_fix audit (#1141)"),
+    _k("repo_fairness_flag", ["evals/fairness.py:FLAG"], [1, 2, 3],
+       note="fairness score on either axis at or above which a repo case is dropped or its prompt rewritten (#920)"),
     _k("repo_gate_min_tasks", ["harness/repo_gate.py:MIN_TASKS"], [20, 30, 50],
        note="repo tasks valid on this machine before a code adoption must first win the repo lane (#889)"),
     _k("repo_git_timeout", ["evals/repo.py:GIT_TIMEOUT_S"], [120.0, 600.0, 1800.0],
        note="seconds one git clone, fetch or worktree step may take; a miss is environment_error (#887)"),
+    _k("repo_interface_follow", ["evals/interface.py:_FOLLOW"], [1, 3, 5],
+       note="import depth followed from a test file when the repo prompt names what the hidden tests call (#1103)"),
     _k("repo_max_fix_lines", ["evals/repo_size.py:MAX_FIX_LINES"], [0, 20, 56, 115],
        note="largest reference fix (non-test lines base..fix) --max-fix-lines keeps, 0 all; 20/56/115 are the "
             "upper quartile edges of the 108-case exam, where Ornith passes 11/27, 1/27, 0/27 (FINDING #709, #890)"),
@@ -72,4 +80,8 @@ NOT_GATING = {
     "evals/repo.py:Grade.test_s": "how long the graded tests took, as reported (#887)",
     "evals/importers/history.py:HOLDOUT_FRACTION": "share of history tasks frozen into the held-out split by "
     "SPLIT_SEED and pinned in history.json; moving it reshuffles which tasks are quoted, so it is never swept (#995)",
+}
+
+NEVER_CUTS = {
+    "evals/fairness.py:FLAG": "flags a case in the fairness report; dropping or rewriting it is a later commit (#920)",
 }

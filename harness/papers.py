@@ -73,6 +73,9 @@ def proposal(entry: dict):
     title = " ".join(str(paper.get("title") or entry.get("title") or "").split())
     summary = " ".join(str(paper.get("summary") or entry.get("summary") or "").split())
     lane = lane_of(title, summary)
+    if len(f"{title}. {summary}") > DESCRIPTION_CHARS:
+        from harness import cuts
+        cuts.cut("papers_description_chars", f"arxiv:{pid} abstract kept to its head")
     return ms.Seen(name=f"arxiv:{pid}", source=SOURCE, url=PAGE.format(id=pid),
                    why=title[:160], relevance=feeds.relevance(f"{title} {summary}"),
                    lane=lane, lane_source="prose" if lane else "",

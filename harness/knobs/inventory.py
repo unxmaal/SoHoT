@@ -15,6 +15,7 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    "harness/inventory_time.py:HOUR": "seconds in an hour (#1152)",
     "harness/inventory_time.py:gh_items(limit)": "how many PRs and issues gh lists; above the repo's count, "
                                                  "so every item is read (#1152)",
     "harness/inventory_time.py:gh_items.ask->run(timeout)": "how long one gh list may take; a timeout reports "

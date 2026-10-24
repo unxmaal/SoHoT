@@ -157,7 +157,7 @@ def _fence_openers(lines: list[str]) -> dict[int, int]:
 
 
 def scan(text: str, path: Path, origin: str) -> list[Claim]:
-    out = []
+    out, missed = [], 0
     lines = text.splitlines()
     openers = _fence_openers(lines) if path.suffix == ".md" else {}
     for n, line in enumerate(lines, 1):
@@ -173,9 +173,14 @@ def scan(text: str, path: Path, origin: str) -> list[Claim]:
         opener = openers.get(n - 1)
         if opener is not None:
             window += lines[max(0, opener - QUALIFIER_WINDOW - 1):opener]
-        out.append(Claim(origin, n, kinds, line.strip()[:160],
-                         bool(QUALIFIER.search("\n".join(window))),
-                         bool(COMMAND.search(line))))
+        qualified = bool(QUALIFIER.search("\n".join(window)))
+        wider = lines[max(0, lo - QUALIFIER_WINDOW):hi + QUALIFIER_WINDOW]
+        missed += not qualified and bool(QUALIFIER.search("\n".join(wider)))
+        out.append(Claim(origin, n, kinds, line.strip()[:160], qualified, bool(COMMAND.search(line))))
+    if missed:
+        from harness import cuts
+        cuts.cut("assertions_qualifier_window", f"{origin}: numbers whose qualifier sits just past the window",
+                 dropped=missed)
     return out
 
 
