@@ -157,9 +157,32 @@ def test_a_resweep_updates_a_source_rather_than_duplicating_it():
     assert len(ms.benchmarks(conn)) == n
 
 
-def test_every_lane_the_issue_names_has_queries():
-    for lane in ("code", "decide", "svg", "web", "extract", "tts", "image"):
-        assert bm.LANE_QUERIES[lane], lane
+def test_every_lane_has_benchmark_queries_or_is_argued_out():
+    from harness import lanes
+    missing = set(lanes.ALL) - set(bm.LANE_QUERIES) - set(bm.UNQUERIED)
+    assert not missing, (f"{sorted(missing)} would never be swept for benchmarks: give each "
+                         "LANE_QUERIES or name it in benchmarks.UNQUERIED")
+
+
+def test_every_lane_with_queries_asks_both_registries_something():
+    for lane, q in bm.LANE_QUERIES.items():
+        assert q["hf"] and all(x.get("search") for x in q["hf"]) and q["gh"].strip(), lane
+
+
+def test_a_lane_argued_out_has_no_queries_and_is_a_real_lane():
+    from harness import lanes
+    assert not set(bm.UNQUERIED) & set(bm.LANE_QUERIES)
+    assert set(bm.UNQUERIED) <= set(lanes.ALL)
+
+
+@pytest.mark.parametrize("lane", ["ocr", "retrieval", "pii"])
+def test_a_lane_added_after_the_sweep_reads_both_registries(lane):
+    conn = ms.connect()
+    found = bm.sweep(conn, lanes=[lane], get=registry(), now=1000.0, force=True)
+    rows = {r["name"]: r["last_status"] for r in conn.execute(
+        "SELECT name, last_status FROM sources WHERE kind = ?", (bm.KIND,))}
+    assert rows == {f"benchmarks:huggingface:{lane}": "ok", f"benchmarks:github:{lane}": "ok"}
+    assert found and {b.lane for b in found} == {lane}
 
 
 # ---- cutoffs and declared training data (#414, #470) ----------------------------

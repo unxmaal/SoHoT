@@ -46,7 +46,29 @@ LANE_QUERIES: dict[str, dict] = {
     "tts": {"hf": [{"search": "bench", "filter": "task_categories:text-to-speech"},
                    {"search": "tts eval"}],
             "gh": "text-to-speech benchmark evaluation"},
+    "ocr": {"hf": [{"search": "ocr bench"}, {"search": "olmocr"}],
+            "gh": "ocr benchmark document"},
+    "retrieval": {"hf": [{"search": "beir"},
+                         {"search": "bench", "filter": "task_categories:text-retrieval"}],
+                  "gh": "retrieval benchmark embedding"},
+    "pii": {"hf": [{"search": "pii"}], "gh": "pii detection benchmark"},
+    "agent": {"hf": [{"search": "terminal-bench"}, {"search": "bfcl"}, {"search": "tau-bench"}],
+              "gh": "agent benchmark tool calling llm"},
+    "repo": {"hf": [{"search": "swe-bench"}, {"search": "swe-gym"}], "gh": "swe-bench"},
+    "claims": {"hf": [{"search": "fever"}, {"search": "claim"}],
+               "gh": "fact checking benchmark llm"},
+    "stt": {"hf": [{"search": "librispeech"},
+                   {"search": "bench", "filter": "task_categories:automatic-speech-recognition"}],
+            "gh": "speech recognition benchmark wer"},
+    "music": {"hf": [{"search": "musiccaps"},
+                     {"search": "bench", "filter": "task_categories:text-to-audio"}],
+              "gh": "music generation benchmark"},
+    "video": {"hf": [{"search": "vbench"},
+                     {"search": "bench", "filter": "task_categories:text-to-video"}],
+              "gh": "text-to-video generation benchmark"},
 }
+#: Lanes argued out of the benchmark sweep: no registry publishes their yardsticks. #626.
+UNQUERIED: tuple[str, ...] = ()
 
 
 @dataclass
