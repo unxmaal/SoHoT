@@ -529,9 +529,11 @@ def climb(runner, case: Case, rungs: tuple[int, ...]) -> core.Result:
 
 def build_runner(candidate: str, gateway: str, outdir: Path | None,
                  adherence: str | None = None, modality: str = "",
-                 max_tokens: int = 0):
+                 max_tokens: int = 0, harness: str = "patch"):
     if modality in AGENT_MODALITIES:
         runner = _agent_runner(candidate, gateway, max_tokens)
+    elif modality in REPO_MODALITIES and harness == "repair":
+        runner = _repo_repair_runner(candidate, gateway, max_tokens)
     elif modality in REPO_MODALITIES:
         runner = _repo_runner(candidate, gateway, max_tokens)
     else:
@@ -616,6 +618,67 @@ def context_receipts(planned: list) -> dict:
         if ctx is not None and ctx.kind != "none":
             out[runner.candidate] = ctx.as_receipt()
     return out
+
+
+def _repo_repair_runner(candidate: str, gateway: str, max_tokens: int):
+    """The agent lane's tool loop over a repo attempt for a text candidate through the gateway. #890."""
+    if kind_of(candidate) not in TEXT_KINDS:
+        raise SystemExit(f"{candidate}: the repair harness drives a text candidate's tool calls through the "
+                         f"gateway; for Opus name its gateway alias (cloud-opus), not claude-code:")
+    from evals.runners.agent import served_counter
+    from evals.runners.repo_repair import RepoRepairRunner
+    from harness import context, serving
+    try:
+        where = serving.route(candidate, gateway)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from None
+    if getattr(where, "template", None):
+        raise SystemExit(f"{candidate}: the repair harness sends no chat-template kwargs, so "
+                         f"{', '.join(where.template)} would be recorded and not run (#921)")
+    return RepoRepairRunner(where.base, candidate.partition(",")[0].strip(), model=where.model,
+                            sampling=where.sampling or None, served_ctx=context.served_ctx(candidate),
+                            max_tokens=max_tokens, count=served_counter(where.base, where.model))
+
+
+def harness_of(args) -> str:
+    """The repo lane's harness a run names; any other lane refuses one. #890."""
+    got = getattr(args, "harness", "patch") or "patch"
+    if got != "patch" and getattr(args, "modality", "") not in REPO_MODALITIES:
+        raise SystemExit("--harness repair is the repo lane's; pass --modality repo")
+    return got
+
+
+def fix_sized(chosen: list[Case], args) -> list[Case]:
+    """The chosen cases whose reference fix changes at most --max-fix-lines non-test lines. #890."""
+    from evals import repo_size
+    limit = getattr(args, "max_fix_lines", None)
+    limit = repo_size.MAX_FIX_LINES if limit is None else int(limit)
+    if not limit:
+        return chosen
+    if args.modality not in REPO_MODALITIES:
+        raise SystemExit("--max-fix-lines selects repo cases; pass --modality repo")
+    from evals.repo import RepoEnvError
+    try:
+        got = repo_size.at_most(chosen, limit)
+    except RepoEnvError as exc:
+        raise SystemExit(f"--max-fix-lines: {exc}") from None
+    if not got:
+        raise SystemExit(f"no repo case has a reference fix of {limit} lines or fewer")
+    return got
+
+
+def size_report(cases, results) -> str:
+    """The run's passes per candidate by reference-fix size quartile; "" when sizes cannot be read. #890."""
+    from evals import repo_size
+    from evals.repo import RepoEnvError
+    from harness import holdout
+    try:
+        by = repo_size.sizes([c for c in cases if c.modality in REPO_MODALITIES])
+    except (RepoEnvError, KeyError):
+        return ""
+    rows = [{"case_id": holdout.base_id(r.case_id), "candidate": r.candidate, "passed": r.passed} for r in results]
+    by = {holdout.base_id(k): v for k, v in by.items()}
+    return repo_size.text(repo_size.quartiles(rows, by))
 
 
 def _repo_runner(candidate: str, gateway: str, max_tokens: int):
@@ -1072,6 +1135,12 @@ def _parser():
     ap.add_argument("--repo-screen", action="store_true",
                     help="repo lane: only the screening subset, repo_screen_cases cases stratified by group "
                          "and variant (evals/repo_screen.py, #1176)")
+    ap.add_argument("--harness", choices=("patch", "repair"), default="patch",
+                    help="repo lane: patch asks for one diff; repair runs a bounded tool loop (list, search, "
+                         "read, apply_patch, visible run_tests, finish) graded the same way (#890)")
+    ap.add_argument("--max-fix-lines", type=int, default=None, metavar="N",
+                    help="repo lane: only cases whose reference fix changes at most N non-test lines "
+                         "(knob repo_max_fix_lines, default 0 = all) (#890)")
     ap.add_argument("--knob", action="append", default=[], metavar="NAME=VALUE",
                     help="run at this setting of a registered exam knob, recorded on the "
                          "receipt; repeatable (harness/knobs/, #636)")
@@ -1200,7 +1269,8 @@ def _execute_at(args, overrides: dict) -> int:
         args.adherence = ""
     from harness import holdout
     side = "dev" if args.screen else (getattr(args, "split", "") or "all")
-    chosen = screen_subset(sized(load_selected(args), args), args)
+    harness = harness_of(args)
+    chosen = fix_sized(screen_subset(sized(load_selected(args), args), args), args)
     cases = expand_cases(screen_pool(chosen) if args.screen
                          else holdout.only(chosen, side), args.repeat)
     # An engine spec contains commas, which are also the candidate separator.
@@ -1230,13 +1300,15 @@ def _execute_at(args, overrides: dict) -> int:
         outdir.mkdir(parents=True, exist_ok=True)
     running = {holdout.base_id(c.id) for c in cases}
     idents = {c: content_identity(args.modality, c, budget, ladder, overrides,
-                                  [x for x in chosen if x.id in running]) for c in candidates}
+                                  [x for x in chosen if x.id in running], harness) for c in candidates}
     taken = reused_cells(getattr(args, "reuse", None), idents, cases)
     identity = {"modality": args.modality, "candidates": candidates, "repeat": args.repeat,
                 "split": side, "split_version": holdout.version(args.modality), "cases_digest": cases_digest(cases),
                 "max_tokens": budget, "budget_ladder": list(ladder),
                 "knobs": knobs.settings(args.modality, overrides),
                 "identities": {c: combined_identity(idents[c]) for c in candidates}}
+    if harness != "patch":
+        identity["harness"] = harness
     if taken:
         identity["reuse"] = {k: v for k, v in taken.items() if k != "runs"}
     had = watch.read(outdir) if getattr(args, "resume", False) else None
@@ -1273,7 +1345,7 @@ def _execute_at(args, overrides: dict) -> int:
             continue
         runner = build_runner(candidate, args.gateway, outdir,
                               adherence=args.adherence, modality=args.modality,
-                              max_tokens=budget)
+                              max_tokens=budget, **({"harness": harness} if harness != "patch" else {}))
         knobs.apply(runner, overrides)
         if runner.candidate in specs:
             # One key, one row set and one artifact name: the second would overwrite the first. #429.
@@ -1331,6 +1403,10 @@ def _execute_at(args, overrides: dict) -> int:
         raise SystemExit("nothing ran: no candidate matched any case")
 
     report(summarize(results), resolved)
+    if args.modality in REPO_MODALITIES:
+        sized_text = size_report(cases, results)
+        if sized_text:
+            print(f"\n{sized_text}")
     from harness import memory_store as ms
     validation = case_validation(args.modality, cases, results, ms.this_machine()["fingerprint"])
     client = environment.capture()
@@ -1373,7 +1449,8 @@ def _execute_at(args, overrides: dict) -> int:
             requests=sent_requests(planned),
             contexts=context_receipts(planned),
             server_sampling=server_sampling(specs),
-            validation=validation)
+            validation=validation,
+            harness="" if harness == "patch" else harness)
         now = time.time()
         ids = candidate_ids(specs, args.modality)
         for r in results:
@@ -1480,11 +1557,12 @@ def warn_unfiled(serving: str) -> None:
     print(f"\nwarning: the host that served this run is unknown ({serving}), {tail}.", file=sys.stderr)
 
 
-def content_identity(lane: str, spec: str, budget: int, ladder, overrides, cases) -> dict:
+def content_identity(lane: str, spec: str, budget: int, ladder, overrides, cases, harness: str = "patch") -> dict:
     """The candidate's content identity; a failure to read it leaves the digest empty, never the run. #1094."""
     from harness import identity
     try:
-        return identity.of(lane, spec, budget=budget, ladder=ladder, overrides=overrides, cases=cases)
+        return identity.of(lane, spec, budget=budget, ladder=ladder, overrides=overrides, cases=cases,
+                           repo_harness=harness)
     except Exception as exc:  # noqa: BLE001 - an unreadable identity only disables reuse
         return {"digest": "", "cases": {}, "parts": {}, "timing": {}, "unresolved": [f"{type(exc).__name__}: {exc}"]}
 

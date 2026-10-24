@@ -244,16 +244,19 @@ def lane_cases(lane: str) -> list:
     return run.load_selected(run.parse_args(["--modality", lane]))
 
 
-def settings(lane: str, spec: str, budget: int, ladder=(), overrides=None) -> dict:
+def settings(lane: str, spec: str, budget: int, ladder=(), overrides=None, repo_harness: str = "patch") -> dict:
     """The reply settings and sampling this spec is sent in this lane, and a method's template digest."""
     from evals import run
     from harness import knobs
+    from harness.knobs.repo import REPAIR
     text = run.text_candidate(spec)
+    exam = {k: v for k, v in knobs.settings(lane, overrides or {}).items()
+            if repo_harness != "patch" or k not in REPAIR}
     return {"spec": spec, "max_tokens": int(budget), "budget_ladder": list(ladder),
             "sampling": run.effective_sampling(lane, [spec]).get(lane, {}) if text else {},
             "template": run.effective_template(lane, [spec]).get(lane, {}) if text else {},
             "method": run.method_receipts({"spec": spec}).get("spec", {}),
-            "knobs": knobs.settings(lane, overrides or {})}
+            "knobs": exam}
 
 
 def digest_of(parts) -> str:
@@ -542,7 +545,7 @@ def case_digests(spec: str, cases, budget: int) -> dict:
 
 
 def of(lane: str, spec: str, *, budget: int, ladder=(), overrides=None, cases=None,
-       machine=None, harness=None) -> dict:
+       machine=None, harness=None, repo_harness: str = "patch") -> dict:
     """{"digest", "cases", "parts", "recorded", "timing", "unresolved"}; the digest is "" when any part has no bytes to read.
 
     The digest matches a run; "cases" matches each case. The harness commit is recorded, never matched.
@@ -554,9 +557,11 @@ def of(lane: str, spec: str, *, budget: int, ladder=(), overrides=None, cases=No
     target = run.text_spec(spec) if run.text_candidate(spec) else ""
     serving_part = served(target) if target else {"unresolved": [f"runtime: {spec} is not a text spec"]}
     unresolved = list(serving_part.pop("unresolved", []))
-    parts = {"served": serving_part, "settings": settings(lane, spec, budget, ladder, overrides),
+    parts = {"served": serving_part, "settings": settings(lane, spec, budget, ladder, overrides, repo_harness),
              "exam": {"lane": lane, "split_version": holdout.version(lane), **_grader_part(lane)},
              "machine": matched}
+    if repo_harness != "patch":
+        parts["exam"]["harness"] = repo_harness
     return {"digest": "" if unresolved else digest_of(parts), "cases": case_digests(spec, cases, budget),
             "parts": parts, "recorded": {"harness": harness if harness is not None else harness_state()},
             "timing": timing, "unresolved": unresolved}

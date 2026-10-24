@@ -299,7 +299,7 @@ def fair_cases(case_ids, labels=None) -> set:
 
 
 def report(runs: list[dict], rows: list[dict], cases, *, resamples: int = compare.DEFAULT_RESAMPLES,
-           seed: int = 1, fair=None, sizes=None) -> dict:
+           seed: int = 1, fair=None, sizes=None, fix_lines=None) -> dict:
     """Everything the text prints, as data, over the valid cases and their fair subset. The first run's candidate is the baseline."""
     alpha = _alpha()
     if len(runs) == 2:
@@ -333,7 +333,9 @@ def report(runs: list[dict], rows: list[dict], cases, *, resamples: int = compar
     origin = {c.id: history.source_of(c.params) for c in cases if (c.params or {}).get("source_repo")}
     limits = {c: sum(fc in LIMIT_CLASSES for k in suite if k not in never_ran for _, fc in suite[k][c])
               for c in order}
-    return {"baseline": order[0], "candidate": order[1], "alpha": alpha, "sides": sides,
+    from evals import repo_size
+    quartiles = repo_size.quartiles([r for r in rows if r["case_id"] in suite], fix_lines) if fix_lines else []
+    return {"baseline": order[0], "candidate": order[1], "alpha": alpha, "sides": sides, "fix_quartiles": quartiles,
             "runs": [{**_config(r), "candidates": sorted({v["spec"] for v in sides.values() if v["run"] == r["id"]}
                                                          if len(runs) == 2 else order)} for r in runs],
             "labels": labels({k: task[k] for k in suite}),
@@ -394,6 +396,9 @@ def text(rep: dict) -> str:
         out += _block(rep, f"limits as losses, {s} tasks (source, #889)", v, False)
     for which, views in (("valid set", rep["views"]), ("fair subset", rep["fair"]["views"])):
         out += _power_lines(rep, which, views["limits as losses"])
+    if rep.get("fix_quartiles"):
+        from evals import repo_size
+        out.append(repo_size.text(rep["fix_quartiles"]))
     return "\n".join(out)
 
 
@@ -478,8 +483,14 @@ def stored(run_ids, *, store=None, cases_dir=None, match: bool = True) -> tuple[
 
 def run(run_ids, *, store=None, cases_dir=None, resamples: int = compare.DEFAULT_RESAMPLES, seed: int = 1) -> dict:
     """The report for stored runs, read with SQLite mode=ro."""
+    from evals import repo, repo_size
     runs, rows, cases, source = stored(run_ids, store=store, cases_dir=cases_dir)
-    return {**report(runs, rows, cases, resamples=resamples, seed=seed), "cases_from": source}
+    ran = {r["case_id"] for r in rows}
+    try:
+        lines = repo_size.sizes([c for c in cases if c.id in ran])
+    except repo.RepoEnvError:
+        lines = None
+    return {**report(runs, rows, cases, resamples=resamples, seed=seed, fix_lines=lines), "cases_from": source}
 
 
 def _matches(runs, cases) -> bool:

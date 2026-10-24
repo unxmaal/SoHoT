@@ -53,7 +53,7 @@ def sat(run: dict, rows, candidate: str, exam_of=None, memo=None) -> bool:
                 memo["suite"] = core.load_suite(core.SHIPPED, core.local_root())
             memo[key] = exam(*key, suite=memo["suite"])
     ids, digest = memo[key]
-    if not digest or (run.get("cases_digest") or "") != digest:
+    if not digest or (run.get("cases_digest") or "") != digest or (receipt.get("harness") or "patch") != "patch":
         return False
     return {r["case_id"] for r in rows if r.get("candidate") == candidate} >= ids
 
@@ -67,11 +67,12 @@ def measured(conn, lane: str, ids, digest: str, machines, skip=()) -> list[dict]
     marks = ",".join("?" * len(machines))
     got: dict[str, dict] = {}
     for r in conn.execute(
-            "SELECT x.candidate, x.case_id, x.passed, x.seconds, x.peak_kb, x.metrics, x.failure_class, r.id AS run_id, r.specs "
+            "SELECT x.candidate, x.case_id, x.passed, x.seconds, x.peak_kb, x.metrics, x.failure_class, r.id AS run_id, r.specs, "
+            "r.receipt "
             "FROM results x JOIN runs r ON r.id = x.run_id WHERE r.lane = ? AND r.tier = 'measure' "
             f"AND r.cases_digest = ? AND r.machine_id IN ({marks}) ORDER BY r.id, x.seq",
             (_lane(lane), digest, *machines)):
-        if r["case_id"] not in ids:
+        if r["case_id"] not in ids or (json.loads(r["receipt"] or "{}").get("harness") or "patch") != "patch":
             continue
         spec = (json.loads(r["specs"] or "{}") or {}).get(r["candidate"]) or r["candidate"]
         if spec in skip or adopt.is_reference(spec) or methods.is_control(spec):
