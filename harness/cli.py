@@ -45,6 +45,7 @@ from harness.commands import coherence as coherence_cmd
 from harness.commands import load_log as load_log_cmd
 from harness.commands import measure as measure_cmd
 from harness.commands import report as report_cmd
+from harness.commands import repo_screen as repo_screen_cmd
 from harness.commands import reverify as reverify_cmd
 from harness.commands import screen as screen_cmd
 from harness.commands import store as store_cmd
@@ -480,6 +481,20 @@ def build_parser() -> argparse.ArgumentParser:
     rr.add_argument("--resamples", type=int, default=3000, help="task bootstrap resamples")
     rr.add_argument("--seed", type=int, default=1)
     rr.set_defaults(func=report_cmd.cmd_repo_report)
+    rs = sub.add_parser("repo-screen", help="the repo exam's screening subset: pick prints it, anchors writes "
+                        "its base/reference outcomes from two stored runs, verdict judges screen runs (#1176)")
+    rs.add_argument("action", choices=("pick", "anchors", "verdict"))
+    rs.add_argument("runs", nargs="*", type=int, metavar="RUN", help="anchors: base then reference run; "
+                    "verdict: the candidate's screen runs, pooled")
+    rs.add_argument("--base", type=int, default=0, help="verdict: the base run (default: the anchors' base run)")
+    rs.add_argument("--outside-votes", type=int, default=0, help="verdict: independent third-party benchmarks "
+                    "that rank the candidate above the base")
+    rs.add_argument("--n", type=int, default=0, help="pick: draw this many cases instead of repo_screen_cases")
+    rs.add_argument("--write", action="store_true", help="anchors: write the anchors file instead of printing it")
+    rs.add_argument("--anchors", default="", help="the anchors file (default: evals/cases/repo/screen_anchors.json)")
+    rs.add_argument("--store", default="", help="the store to read, read-only (default: this home's discovery.db)")
+    rs.add_argument("--cases", default="", help="the repo cases (default: evals/cases/repo)")
+    rs.set_defaults(func=repo_screen_cmd.cmd_repo_screen)
 
     rub = sub.add_parser(
         "rubric",
