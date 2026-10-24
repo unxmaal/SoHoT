@@ -134,16 +134,19 @@ def test_apt_packages_are_cached_on_the_package_list():
     assert "cache-hit" in steps[save]["if"]
 
 
-#: The slowest full check-macos push job on each runner class macos-latest hands out, 2026-10-23 (#1146).
-MACOS_FULL_RUN_MINUTES = 5.8
-MACOS_3_VCPU_RUN_MINUTES = 11.5
+#: The slowest normal full check-macos push job on the 3-vCPU M1 class, 2026-10-23 (run 40005198738, #1146).
+MACOS_3_VCPU_RUN_MINUTES = 12.7
+#: How much slower a slow M1 host ran the same code: run 40020366592 attempt 1 against attempt 2 (#1146).
+MACOS_SLOW_HOST = 2.0
 
 
-def test_macos_leaves_room_over_the_measured_make_check():
-    """Headroom over the slow runner, and still a hang detector on the fast one: 35 min hid a regression (#720, #724, #1146)."""
+def test_macos_leaves_room_for_a_slow_host_and_is_still_a_hang_detector():
+    """A slow host on the slow class passes; 35 min hid a regression (#720, #724, #1146)."""
+    from harness import ci_budget
     doc, _ = _ci()
     limit = doc["jobs"]["check-macos"]["timeout-minutes"]
-    assert 1.25 * MACOS_3_VCPU_RUN_MINUTES <= limit <= 3 * MACOS_FULL_RUN_MINUTES
+    assert limit == ci_budget.MACOS_TIMEOUT_MIN
+    assert MACOS_SLOW_HOST * MACOS_3_VCPU_RUN_MINUTES <= limit <= 3 * MACOS_3_VCPU_RUN_MINUTES
 
 
 FAST = "SOHOT_FAST_PATH"
@@ -176,8 +179,19 @@ def test_check_macos_reports_where_the_test_time_went():
     steps = doc["jobs"]["check-macos"]["steps"]
     check = next(s for s in steps if s.get("name") == "make check")
     assert "--junitxml=/tmp/junit.xml" in check["env"]["PYTEST_ADDOPTS"]
+    assert check["env"]["SOHOT_TEST_LOG"] == "/tmp/test-times.tsv"
     report = next(s for s in steps if "harness.suite_time" in s.get("run", ""))
     assert report.get("if") == "always()" and "/tmp/junit.xml" in report["run"]
+    assert "--log /tmp/test-times.tsv" in report["run"] and "--against /tmp/prev/junit.xml" in report["run"]
+    assert "gh run download" in report["run"] and "-n junit-macos -D /tmp/prev" in report["run"]
+    assert doc["jobs"]["check-macos"]["permissions"]["actions"] == "read"
+
+
+def test_the_test_log_variable_is_the_one_conftest_reads():
+    from tests import conftest
+    doc, _ = _ci()
+    check = next(s for s in doc["jobs"]["check-macos"]["steps"] if s.get("name") == "make check")
+    assert conftest.TEST_LOG_ENV in check["env"]
 
 
 def test_a_hung_test_names_itself_before_the_job_timeout():

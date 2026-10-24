@@ -42,6 +42,59 @@ def _no_reverse_dns(monkeypatch):
 FAST_PATH_ENV = "SOHOT_FAST_PATH"
 
 
+#: Each test's start and end are appended here as they happen, so a cancelled run says where its time went. #1146.
+TEST_LOG_ENV = "SOHOT_TEST_LOG"
+_test_log: dict = {}
+
+
+def _without_junitxml(addopts: str) -> str:
+    import shlex
+    out, words = [], iter(shlex.split(addopts))
+    for w in words:
+        if w == "--junitxml" or w == "--junit-xml":
+            next(words, None)
+        elif not w.startswith(("--junitxml=", "--junit-xml=")):
+            out.append(w)
+    return shlex.join(out)
+
+
+def pytest_configure(config):
+    import os
+    path = os.environ.pop(TEST_LOG_ENV, "")
+    # A pytest a test starts inherits PYTEST_ADDOPTS and overwrote CI's JUnit XML with its own 2 tests (#1146).
+    if "--junit" in os.environ.get("PYTEST_ADDOPTS", ""):
+        os.environ["PYTEST_ADDOPTS"] = _without_junitxml(os.environ["PYTEST_ADDOPTS"])
+    if path and not hasattr(config, "workerinput"):
+        _test_log["file"] = open(path, "a", encoding="utf-8", buffering=1)
+        _test_log["spent"] = {}
+
+
+def pytest_unconfigure(config):
+    f = _test_log.pop("file", None)
+    if f is not None:
+        f.close()
+
+
+def _log_line(event: str, nodeid: str, seconds: str = "") -> None:
+    import time
+    f = _test_log.get("file")
+    if f is not None:
+        f.write(f"{time.time():.3f}\t{event}\t{seconds}\t{nodeid}\n")
+
+
+def pytest_runtest_logstart(nodeid, location):
+    _log_line("start", nodeid)
+
+
+def pytest_runtest_logreport(report):
+    spent = _test_log.get("spent")
+    if spent is None:
+        return
+    spent[report.nodeid] = spent.get(report.nodeid, 0.0) + report.duration
+    if report.when == "teardown":
+        _log_line("end", report.nodeid, f"{spent.pop(report.nodeid):.3f}")
+
+
 def pytest_collection_modifyitems(config, items):
     import os
     if os.environ.get(FAST_PATH_ENV) != "1":
@@ -138,6 +191,19 @@ def _no_real_router(monkeypatch):
     monkeypatch.setattr(router, "_post",
                         lambda path, body: posts.append((path, body)) or {})
     return posts
+
+
+@pytest.fixture(autouse=True)
+def _no_gateway_down_wait(monkeypatch):
+    """A refused warm-up fails on its second refusal, not after GATEWAY_DOWN_WAIT_S; a test wanting the wait restores run.warm.real (#1146)."""
+    from evals import run
+    real = run.warm
+
+    def warm(runner, clock=None, sleep=None):
+        ticks = iter((0.0,))
+        return real(runner, clock=clock or (lambda: next(ticks, float("inf"))), sleep=sleep or (lambda s: None))
+    warm.real = real
+    monkeypatch.setattr(run, "warm", warm)
 
 
 @pytest.fixture(autouse=True)

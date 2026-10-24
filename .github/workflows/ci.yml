@@ -19,7 +19,12 @@ jobs:
     # Apple Silicon, and standard runners are free for public repos. Larger
     # runners are NOT free, so this label must stay standard.
     runs-on: macos-latest
-    timeout-minutes: 15
+    # harness/ci_budget.MACOS_TIMEOUT_MIN, knob ci_macos_timeout: 2x the slowest normal run on the slow runner class (#1146).
+    timeout-minutes: 26
+    permissions:
+      contents: read
+      # Where the time went downloads the last main run's per-test times (#1146).
+      actions: read
     env:
       # An unlabelled pull request skips the `long` tests; push to main, nightly and full-ci run all of them (#720).
       SOHOT_FAST_PATH: ${{ (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'full-ci')) && '1' || '0' }}
@@ -67,18 +72,24 @@ jobs:
         # how a repo gets a green badge and a broken checkout.
         env:
           PYTEST_ADDOPTS: --durations=60 --durations-min=0.5 --junitxml=/tmp/junit.xml
+          # Each test's start and end as it happens, so a cancelled run still says where its time went (#1146).
+          SOHOT_TEST_LOG: /tmp/test-times.tsv
         # user+sys over real x cores says whether the runner's cores were busy or waiting (#1146).
         run: set -o pipefail && /usr/bin/time -p make check 2>&1 | tee /tmp/check.log
 
       - name: Where the time went
         if: always()
         continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          prev=$(gh run list --workflow ci.yml --branch main --event push --status success -L 1 --json databaseId -q '.[0].databaseId' || true)
+          [ -z "$prev" ] || gh run download "$prev" -n junit-macos -D /tmp/prev || true
           {
             echo "### Test time (fast path: $SOHOT_FAST_PATH)"
             echo
             echo '```'
-            uv run python -m harness.suite_time /tmp/junit.xml 2>&1 || true
+            uv run python -m harness.suite_time /tmp/junit.xml --log /tmp/test-times.tsv --against /tmp/prev/junit.xml 2>&1 || true
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
@@ -101,7 +112,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: junit-macos
-          path: /tmp/junit.xml
+          path: |
+            /tmp/junit.xml
+            /tmp/test-times.tsv
           retention-days: 30
 
       - name: How much of the timeout this job used

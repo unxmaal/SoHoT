@@ -10,7 +10,10 @@ from pathlib import Path
 import yaml
 
 WORKFLOW = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "ci.yml"
+#: Share of its timeout a job may use before it warns. #1146.
 WARN_SHARE = 0.8
+#: check-macos's timeout-minutes in ci.yml, which a test holds equal to this. #1146.
+MACOS_TIMEOUT_MIN = 26
 
 
 def limit_minutes(job: str, workflow: Path = WORKFLOW) -> float:
