@@ -25,6 +25,8 @@ NOT_BINDING = "not_binding"
 NOT_BINDING_LANE = "not_binding_lane"
 #: Cuts the lane's stored runs must have given more room, none passing, before a model with no ladder of its own is not swept.
 LANE_MIN_CUTS = 20
+#: Measured cases a fallback model's newest run needs before its pass rate outranks a smaller run's. #1179.
+FALLBACK_MIN_CASES = 20
 
 
 def _flag(k, value) -> list[str]:
@@ -118,6 +120,12 @@ def below(conn, lane: str, spec: str, incumbents, machines) -> str:
     return ""
 
 
+def _rank(m: dict) -> tuple:
+    """Runs of at least FALLBACK_MIN_CASES first, then by the Wilson lower bound of the pass rate. #1179."""
+    from harness import intervals
+    return (m["n"] < FALLBACK_MIN_CASES, -intervals.wilson(m["passed"], m["n"])[0], -m["passed"] / m["n"], -m["passed"])
+
+
 def model(conn, item: dict, machines) -> tuple[dict | None, str]:
     """The model a lane's sweep runs: the served one when it passes a case here and no paired run shows it below its incumbent, else the lane's best such one, else None and why. #1009, #1177."""
     from harness import adopt
@@ -135,7 +143,7 @@ def model(conn, item: dict, machines) -> tuple[dict | None, str]:
     best = sorted((m for m in seen.values() if m["passed"] and not adopt.is_reference(m["spec"])
                    and m["spec"] != item["spec"] and not _failed(conn, lane, m["candidate_id"])
                    and not below(conn, lane, m["spec"], above, machines)),
-                  key=lambda m: (-m["passed"] / m["n"], -m["passed"]))
+                  key=_rank)
     if not best:
         return None, f"{why}, and no model passes a case in {lane} here, so a sweep could see nothing"
     m = best[0]
