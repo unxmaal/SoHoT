@@ -2,6 +2,8 @@
 name = "localharness"
 version = "0.1.0"
 description = "Local LLM serving + evaluation harness"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11,<3.14"
 dependencies = [
     "mlx-lm>=0.32.0; sys_platform == 'darwin'",
