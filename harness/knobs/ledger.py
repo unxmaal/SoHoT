@@ -14,6 +14,8 @@ KNOBS = [
        note="seconds between two power samples beyond which the time between is uncovered, not integrated (#826)"),
     _k("ledger_power_window", ["harness/ledger.py:POWER_WINDOW_MS"], [1000, 5000, 15000],
        note="milliseconds one macmon reading averages over (#826)"),
+    _k("ledger_span_slack", ["harness/ledger.py:SPAN_SLACK_S"], [0.0, 60.0, 600.0],
+       note="seconds either side of a session's exported requests a transcript record still counts as exported (#1160)"),
     _k("ledger_tariff", ["harness/ledger.py:TARIFF_USD_PER_KWH"], [0.10, 0.15, 0.30],
        note="USD per kWh the energy figure is priced at; --tariff overrides per run (#826)"),
     _k("statusline_min_gap", ["harness/statusline.py:MIN_GAP_S"], [60.0, 300.0, 900.0],

@@ -345,8 +345,8 @@ def from_ccusage(day: dict | None) -> dict | None:
             "models": {k: sum(int(n or 0) for n in v.values()) for k, v in sorted((day.get("models") or {}).items())}}
 
 
-def from_transcripts(rows: list[dict]) -> dict:
-    return {"tool_results": len(rows), "tool_tokens": sum(r["tokens"] for r in rows)}
+def from_transcripts(rows: list[dict], usage: dict | None = None) -> dict:
+    return {**(usage or {}), "tool_results": len(rows), "tool_tokens": sum(r["tokens"] for r in rows)}
 
 
 #: (row, label) in the comparison table, and which sources measure each.
@@ -355,16 +355,17 @@ COMPARE_ROWS = (("input", "input tokens"), ("output", "output tokens"),
                 ("cache_write_5m", "  of which 5m"), ("cache_write_1h", "  of which 1h"),
                 ("requests", "API requests"), ("tool_results", "tool results"),
                 ("tool_tokens", "tool result tokens (est)"), ("sessions", "sessions"))
-SOURCES = ("otel_events", "otel_metrics", "ccusage", "transcripts")
+SOURCES = ("otel_events", "otel_metrics", "ccusage", "transcripts", "ledger")
 
 
 def compare(day: str, ev: list[dict], mt: list[dict], cc_day: dict | None, ctx_rows: list[dict],
-            ccusage_available: bool = True) -> dict:
-    """One day side by side: OTel events, OTel metrics, ccusage, and `soh context`'s transcripts."""
+            ccusage_available: bool = True, usage: dict | None = None, chosen: dict | None = None) -> dict:
+    """One day side by side: OTel events, OTel metrics, ccusage, transcripts, and what the ledger counts (#1160)."""
     cols = {"otel_events": from_events(ev) if ev else None,
             "otel_metrics": from_metrics(mt) if mt else None,
             "ccusage": from_ccusage(cc_day) if ccusage_available else None,
-            "transcripts": from_transcripts(ctx_rows)}
+            "transcripts": from_transcripts(ctx_rows, usage),
+            "ledger": (chosen or {}).get("tokens")}
     rows = []
     for k, label in COMPARE_ROWS:
         rows.append({"row": k, "label": label,

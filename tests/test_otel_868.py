@@ -183,16 +183,16 @@ def test_one_day_side_by_side_matches_the_hand_totals(monkeypatch, tmp_path):
     C = ledger_cmd.gather_compare(DAY, tz=UTC)
     rows = {r["row"]: r for r in C["rows"]}
     want = {  # by hand from tests/fixtures/otel: two api_requests, two tool_results on the day
-        "input": (150, 150, 150, None),
-        "output": (50, 50, 50, None),
-        "cache_read": (1000, 1000, 1000, None),
-        "cache_write": (400, 400, 400, None),
-        "cache_write_5m": (300, None, None, None),
-        "cache_write_1h": (100, None, None, None),
-        "requests": (2, None, None, None),
-        "tool_results": (2, None, None, 2),
-        "tool_tokens": (100 + 250, None, None, 100 + 250),
-        "sessions": (2, None, None, None),
+        "input": (150, 150, 150, None, 150),
+        "output": (50, 50, 50, None, 50),
+        "cache_read": (1000, 1000, 1000, None, 1000),
+        "cache_write": (400, 400, 400, None, 400),
+        "cache_write_5m": (300, None, None, None, None),
+        "cache_write_1h": (100, None, None, None, None),
+        "requests": (2, None, None, None, None),
+        "tool_results": (2, None, None, 2, None),
+        "tool_tokens": (100 + 250, None, None, 100 + 250, None),
+        "sessions": (2, None, None, None, None),
     }
     for k, w in want.items():
         assert tuple(rows[k][s] for s in otel.SOURCES) == w, k
