@@ -26,7 +26,7 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from harness import lanes, ratelimit
+from harness import cuts, lanes, ratelimit
 from harness import memory_store as ms
 
 GIB = 1024 ** 3
@@ -455,6 +455,8 @@ def _run(argv: list[str], cwd: Path | None = None, timeout: float = 180.0) -> st
     except subprocess.TimeoutExpired:
         # A TimeoutExpired is not an InspectError, so it escaped the caller's
         # per-candidate guard and took the whole batch down with it. Issue #181.
+        cuts.cut("harness/inspect.py:_run(timeout)", f"{argv[0]}: no answer in {timeout:.0f}s", value=timeout,
+                 kept=0, dropped=1)
         raise InspectError(f"{argv[0]}: no answer in {timeout:.0f}s") from None
     if proc.returncode != 0:
         raise InspectError(f"{argv[0]}: {proc.stderr.strip()[:200]}")
@@ -687,7 +689,7 @@ def hf_get(url: str) -> str:
         raise feeds.RateLimitedFeed(f"{url}: not asked ({PACE.stopped})")
     PACE.before()
     try:
-        return feeds.fetch(url, retries=SIZE_RETRIES, delay=SIZE_DELAY,
+        return feeds.fetch(url, retries=SIZE_RETRIES, delay=SIZE_DELAY, retries_knob="harness/inspect.py:SIZE_RETRIES",
                            sleep=lambda s: ratelimit.sleep(s),
                            headers=ratelimit.hf_headers(url), on_limit=PACE.limited)
     except feeds.RateLimitedFeed:

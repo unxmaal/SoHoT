@@ -518,7 +518,15 @@ def check_model(repo: str, resident_gb: float = 0.0,
         return True, need
     if reserve_gb is None:
         reserve_gb = measured_reserve_gb()
-    return fits(need, available_gb(), ceiling_gb(), resident_gb, reserve_gb)
+    free, ceiling = available_gb(), ceiling_gb()
+    ok, why = fits(need, free, ceiling, resident_gb, reserve_gb)
+    # The reserve decided it only when the weights fit without it. #1087.
+    reserve_knob = ("harness/memory.py:DEFAULT_RESERVE_GB" if reserve_gb == DEFAULT_RESERVE_GB else
+                    "harness/memory.py:DISCRETE_RESERVE_GB" if reserve_gb == DISCRETE_RESERVE_GB else "")
+    if not ok and reserve_knob and need <= budget_gb(free, ceiling, resident_gb, 0.0):
+        from harness import cuts
+        cuts.cut(reserve_knob, f"{repo}: {why}", value=reserve_gb, kept=0, dropped=1)
+    return ok, why
 
 
 def need_gb(repo: str, quantize: int | None = None, spec: str = "",

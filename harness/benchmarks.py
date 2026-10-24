@@ -7,7 +7,7 @@ import time
 import urllib.parse
 from dataclasses import asdict, dataclass
 
-from harness import feeds
+from harness import cuts, feeds
 
 HF_DATASETS = "https://huggingface.co/api/datasets"
 HF_MODELS = "https://huggingface.co/api/models"
@@ -192,7 +192,9 @@ def _read_hf(lane: str, get) -> list[Benchmark]:
     for q in LANE_QUERIES[lane]["hf"]:
         for sort in HF_SORTS:
             params = {**q, "sort": sort, "direction": -1, "limit": HF_LIMIT, "full": "true"}
-            for entry in get(HF_DATASETS, params) or []:
+            page = cuts.filled(get(HF_DATASETS, params) or [], HF_LIMIT, "harness/benchmarks.py:HF_LIMIT",
+                               f"huggingface {lane} datasets by {sort}: a full page, the rest unread")
+            for entry in page:
                 if entry.get("id") and _popular(entry):
                     found.setdefault(entry["id"], from_hf(entry, lane))
     return list(found.values())
@@ -201,7 +203,8 @@ def _read_hf(lane: str, get) -> list[Benchmark]:
 def _read_gh(lane: str, get) -> list[Benchmark]:
     params = {"q": LANE_QUERIES[lane]["gh"], "sort": "updated", "order": "desc",
               "per_page": GH_LIMIT}
-    items = (get(GH_SEARCH, params) or {}).get("items") or []
+    items = cuts.filled((get(GH_SEARCH, params) or {}).get("items") or [], GH_LIMIT, "harness/benchmarks.py:GH_LIMIT",
+                        f"github {lane} benchmark repos: a full page, the rest unread")
     return [from_github(i, lane) for i in items if i.get("full_name") and _benchmark_repo(i)]
 
 

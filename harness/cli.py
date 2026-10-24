@@ -441,6 +441,10 @@ def build_parser() -> argparse.ArgumentParser:
                         "machine holds one working set")
     f.add_argument("--budget-gib", type=float, default=None, dest="budget_gib",
                    help="GiB this fetch may download in all; default: the download_budget knob")
+    f.add_argument("--limit-knob", default="harness/fetching.py:run(limit)", dest="limit_knob",
+                   help="the knob or site a cut at --limit is recorded under (#1087)")
+    f.add_argument("--budget-knob", default="download_budget", dest="budget_knob",
+                   help="the knob a cut at --budget-gib is recorded under (#1087)")
     f.add_argument("--hold-router", action="store_true",
                    help="leave the llama-server router as it is; the next sweep restarts it once (#1084)")
     f.add_argument("--until", type=float, default=None,

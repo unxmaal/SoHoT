@@ -190,11 +190,12 @@ def cmd_reuse_replay(a) -> int:
     return 0 if same else 1
 
 
-def measurable(store, top: int, want: str = "") -> list[dict]:
-    """Survivors in the scoped lane, filtered before the limit. #386."""
+def measurable(store, top: int, want: str = "", top_knob: str = "discover_top") -> list[dict]:
+    """Survivors in the scoped lane, filtered before the limit; a limit that drops one is a cut. #386, #1087."""
+    from harness import cuts
     from harness import memory_store as ms
     rows = [r for r in ms.survivors(store, limit=1_000_000) if takes(r, want)]
-    return rows[:top]
+    return cuts.take(rows, top, top_knob, "measurable survivors past --top", conn=store)
 
 
 def takes(row: dict, want: str = "") -> bool:

@@ -35,7 +35,7 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import BaseModel
 
-from harness import completion, delegate, delegations, env, exclusive, paths, workqueue
+from harness import completion, cuts, delegate, delegations, env, exclusive, paths, workqueue
 
 
 class JobInfo(BaseModel):
@@ -95,6 +95,7 @@ def run_lh(argv: list[str], timeout: float = DEFAULT_TIMEOUT) -> str:
         r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout,
                            env=_child_env())
     except subprocess.TimeoutExpired as exc:
+        cuts.cut("harness/mcp_server.py:DEFAULT_TIMEOUT", f"soh {_verb(argv)} timed out", value=timeout, kept=0, dropped=1)
         raise ToolError(f"soh {_verb(argv)} timed out after {timeout:g}s; a cold model load "
                         f"or a long reasoning reply can take longer") from exc
     if r.returncode != 0:

@@ -11,6 +11,7 @@ from pathlib import Path
 
 from evals import repo, sandbox
 from evals.sandbox import Refused
+from harness import cuts
 
 #: Bytes of one tool result the model is sent; the rest is cut with a note saying so.
 OUTPUT_CAP = 8000
@@ -63,6 +64,8 @@ def cut(text: str) -> str:
     data = text.encode("utf-8", errors="replace")
     if len(data) <= OUTPUT_CAP:
         return text
+    cuts.cut("repair_output_cap", "a repair tool's output kept its first bytes", value=OUTPUT_CAP,
+             kept=OUTPUT_CAP, dropped=len(data) - OUTPUT_CAP)
     return (data[:OUTPUT_CAP].decode("utf-8", errors="ignore")
             + f"\n... [cut: {len(data)} bytes, the first {OUTPUT_CAP} shown]")
 

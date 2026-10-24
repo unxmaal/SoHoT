@@ -17,9 +17,9 @@ PASSED = ("measured", "screened")
 LITERAL_LETTERS = 8
 
 
-def sites(root=knobs.REPO) -> list[str]:
+def sites(root=knobs.REPO, directory: str = DIR) -> list[str]:
     """Every backlog line under `root`'s working tree, file by file."""
-    return [line for path in sorted((Path(root) / DIR).glob("*.txt"))
+    return [line for path in sorted((Path(root) / directory).glob("*.txt"))
             for line in path.read_text(encoding="utf-8").splitlines()]
 
 
@@ -33,23 +33,23 @@ def merge_base(root=knobs.REPO, base: str = BASE) -> str:
     return got.stdout.strip() if got.returncode == 0 else ""
 
 
-def at(root, ref: str) -> list[str]:
+def at(root, ref: str, directory: str = DIR) -> list[str]:
     """The backlog lines committed at `ref`."""
-    listed = _git(root, "ls-tree", "--name-only", f"{ref}:{DIR}")
+    listed = _git(root, "ls-tree", "--name-only", f"{ref}:{directory}")
     if listed.returncode != 0:
         return []
     out = []
     for name in sorted(n for n in listed.stdout.splitlines() if n.endswith(".txt")):
-        out += _git(root, "show", f"{ref}:{DIR}/{name}").stdout.splitlines()
+        out += _git(root, "show", f"{ref}:{directory}/{name}").stdout.splitlines()
     return out
 
 
-def added(root=knobs.REPO, base: str = BASE) -> list[str] | None:
-    """Backlog sites the working tree holds and the merge base with `base` does not; None without a merge base."""
+def added(root=knobs.REPO, base: str = BASE, directory: str = DIR) -> list[str] | None:
+    """Backlog sites the working tree holds and the merge base with `base` does not; None without a merge base or a list there."""
     fork = merge_base(root, base)
-    if not fork:
+    if not fork or _git(root, "ls-tree", "--name-only", f"{fork}:{directory}").returncode != 0:
         return None
-    return sorted(set(sites(root)) - set(at(root, fork)))
+    return sorted(set(sites(root, directory)) - set(at(root, fork, directory)))
 
 
 @dataclass(frozen=True)
@@ -213,7 +213,7 @@ def all_quotes(root=knobs.REPO) -> list[Quote]:
 
 
 def by_binding(conn, root=knobs.REPO, *, since: float | None = None) -> list[dict]:
-    """Per backlog site, the waiting, skipped or declined verdicts whose detail or until a reason quoting it wrote."""
+    """Per backlog site, its limit_cuts rows and the waiting, skipped or declined verdicts a reason quoting it wrote."""
     backlog = sites(root)
     among = set(backlog)
     found = [(q, q.sites(among), q.pattern()) for q in all_quotes(root)]
@@ -227,6 +227,11 @@ def by_binding(conn, root=knobs.REPO, *, since: float | None = None) -> list[dic
     if since is not None:
         sql += " AND decided_at >= ?"
         params.append(since)
+    from harness import cuts
+    for site, n in cuts.count(conn, since or 0.0).items():
+        if site in rows:
+            rows[site]["hits"] += n
+            rows[site]["tiers"]["cut"] = rows[site]["tiers"].get("cut", 0) + n
     for tier, detail, until in conn.execute(sql, params):
         hit = set()
         for _, quoted, pat, word in found:

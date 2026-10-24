@@ -16,7 +16,7 @@ import urllib.request
 
 import httpx
 
-from harness import completion, context, exclusive, gateway, purpose, reasons, serving
+from harness import completion, context, cuts, exclusive, gateway, purpose, reasons, serving
 
 #: Lanes a delegated completion may name: the ones the gateway aliases as sohot-<lane>.
 LANES = gateway.TEXT_LANES
@@ -93,6 +93,7 @@ def busy() -> str:
 def _preflight(*texts: str, max_tokens: int = 1) -> None:
     size = sum(len(t or "") for t in texts)
     if size > MAX_PROMPT_CHARS:
+        cuts.cut("harness/delegate.py:MAX_PROMPT_CHARS", f"a {size}-character prompt refused", kept=0, dropped=1)
         raise Refused(f"prompt is {size} characters, over the {MAX_PROMPT_CHARS} "
                       f"cap; pass less material or summarise it first")
     if int(max_tokens) < 1:
@@ -207,8 +208,9 @@ def running_job(conn=None) -> str:
 
 
 def _get_json(url: str) -> dict:
-    with urllib.request.urlopen(url, timeout=RESIDENCY_TIMEOUT_S) as r:
-        return json.loads(r.read() or b"{}")
+    with cuts.timeout("harness/delegate.py:RESIDENCY_TIMEOUT_S", f"{url}: residency unknown"):
+        with urllib.request.urlopen(url, timeout=RESIDENCY_TIMEOUT_S) as r:
+            return json.loads(r.read() or b"{}")
 
 
 def upstream(where: serving.Route, config=None) -> tuple[str, str]:

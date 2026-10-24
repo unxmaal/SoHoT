@@ -21,7 +21,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from harness import paths
+from harness import cuts, paths
 
 ATOM = {"a": "http://www.w3.org/2005/Atom"}
 
@@ -396,7 +396,7 @@ def staleness(sources: list[Source] | None = None, now: float | None = None,
 
 def fetch(url: str, timeout: float = 30.0, retries: int = RETRIES,
           delay: float = RETRY_DELAY, sleep=time.sleep, headers: dict | None = None,
-          on_limit=None) -> str:
+          on_limit=None, retries_knob: str = "harness/feeds.py:RETRIES") -> str:
     """GET `url` as text, retrying on the rate limit with ratelimit's backoff; an unreachable host is retried once."""
     from harness import ratelimit
     last = ""
@@ -418,6 +418,9 @@ def fetch(url: str, timeout: float = 30.0, retries: int = RETRIES,
         except (urllib.error.URLError, OSError) as exc:
             last = str(exc)
             unreachable += 1
+            if cuts.timed_out(exc):
+                cuts.cut("harness/feeds.py:fetch(timeout)", f"{url}: no answer in time", value=timeout,
+                         kept=0, dropped=1)
             if unreachable > UNREACHABLE_RETRIES:
                 break
         except ValueError as exc:
@@ -426,6 +429,9 @@ def fetch(url: str, timeout: float = 30.0, retries: int = RETRIES,
         if attempt < retries:
             sleep(ratelimit.wait_s(retry_after, attempt, delay))
     error = RateLimitedFeed if last == "HTTP 429" else FeedError
+    if unreachable <= UNREACHABLE_RETRIES:
+        cuts.cut(retries_knob, f"{url}: gave up after {attempt + 1} attempts ({last})",
+                 value=retries, kept=0, dropped=1)
     raise error(f"{url}: gave up after {attempt + 1} attempts ({last})")
 
 
@@ -684,7 +690,7 @@ def find_feed(url: str, fetcher=fetch, probe=probe) -> tuple[str, str]:
         # 20s apart, which is right for a source we committed to reading and
         # wrong for a guess: seven misses cost nine minutes and timed out the
         # sources report. A 404 on /feed is an answer, not a flaky network.
-        ok, why = probe(cand, retries=0)
+        ok, why = probe(cand, retries=0, retries_knob="harness/feeds.py:find_feed->probe(retries)")
         if ok:
             return cand, why
     # CARRY WHY THE PAGE ITSELF FAILED. "no feed at 8 paths" says a search

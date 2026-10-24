@@ -210,7 +210,8 @@ def plan(conn, *, now: float | None = None) -> list[dict]:
     for row in binding.binding(binding.count(conn, now=now, machines=machines)):
         k = knobs.KNOBS[row["knob"]]
         item = served.get(row["lane"])
-        if not k.receipt or item is None:
+        # A cut names no lane an eval can sweep it on. #1087.
+        if not k.receipt or item is None or row.get("source") == "cut":
             continue
         swept, note = model(conn, item, machines)
         trigger = {"limit": row["limit"], "hits": row["hits"], "of": row["of"]}

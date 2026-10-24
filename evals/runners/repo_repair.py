@@ -8,7 +8,7 @@ from evals import agent_pad, repo, repo_tools
 from evals.core import Case
 from evals.runners.agent import _TEXT_CALL, AgentRunner, rollup, step_timing
 from evals.runners.base import RunnerError
-from harness import completion, reasons
+from harness import completion, cuts, reasons
 
 HARNESS = "repair"
 SYSTEM = ("You are fixing an issue in a Python repository checked out at the commit before the fix. Use the "
@@ -112,6 +112,8 @@ class RepoRepairRunner(AgentRunner):
                 had = len(messages)
                 self._act(box, calls, message, messages, rec)
                 if cut_calls:
+                    cuts.cut("repair_calls_per_turn", "tool calls past the per-turn cap were not run",
+                             value=CALLS_PER_TURN, kept=int(CALLS_PER_TURN), dropped=cut_calls)
                     rec["calls_cut"] = cut_calls
                     dropped += cut_calls
                     messages[-1]["content"] += (f"\n\n[{cut_calls} more tool calls in this turn were not run: "

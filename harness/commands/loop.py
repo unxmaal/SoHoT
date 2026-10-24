@@ -411,7 +411,8 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
     else:
         from harness.commands import common
         sub = common.parsed("fetch", "--run", limit=plan["screens"] - backlog, lane=getattr(a, "lane", ""),
-                            budget_gib=getattr(a, "budget_gib", None))
+                            budget_gib=getattr(a, "budget_gib", None),
+                            limit_knob="discover_top" if top else "screen_fraction")
         rc = _step("fetch", screen_cmd.cmd_fetch(sub), failed) or rc
 
     print(f"\n=== screen ===")
@@ -423,7 +424,8 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
     import time
     until = None if top or sweep is None else time.time() + sweep.remaining() * ceiling.SCREEN_FRACTION
     sub = _ap.Namespace(**{**vars(a), "loop": False, "screen": True, "run": True, "json": False,
-                           "limit": top or EVERY, "screen_until": until, "screen_s": plan["per_s"]})
+                           "limit": top or EVERY, "limit_knob": "discover_top",
+                           "screen_until": until, "screen_s": plan["per_s"]})
     rc = _step("screen", discover_cmd.cmd_discover(sub), failed) or rc
 
     print(f"\n=== measure and adopt ===")
@@ -511,6 +513,9 @@ def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=No
         if held:
             sweep.lines.append(held)
             sweep.stopped, sweep.waiting = held, len(queue)
+            if not sweep.halted:
+                from harness import cuts
+                cuts.cut("sweep_ceiling_h", held, value=sweep.ceiling_s / 3600, kept=total - len(queue), dropped=len(queue))
             break
         if tight:
             row, why = _next_fitting(queue, room)
@@ -812,7 +817,8 @@ def _methods_lines(crossed) -> list[str]:
 
 def _report_binding(store, now: float | None = None) -> None:
     """The knobs whose limits this machine's recent runs keep hitting. #636."""
-    from harness import binding, runs
+    from harness import binding, cuts, runs
+    cuts.flush(store)
     print("\n=== binding knobs ===")
     print(binding.render(binding.count(store, now=now, machines=runs.here(store))))
 

@@ -78,12 +78,12 @@ def collect(lists: dict) -> tuple[dict, dict]:
     return dict(sorted(found.items())), where
 
 
-def _not_gating(modules: dict) -> dict[str, str]:
+def _not_gating(modules: dict, table: str = "NOT_GATING") -> dict[str, str]:
     out, where = {}, {}
     for area, mod in modules.items():
-        for site, why in getattr(mod, "NOT_GATING", {}).items():
+        for site, why in getattr(mod, table, {}).items():
             if site in where:
-                raise ValueError(f"NOT_GATING site {site!r} is in both {where[site]} and {area}")
+                raise ValueError(f"{table} site {site!r} is in both {where[site]} and {area}")
             out[site], where[site] = why, area
     return out
 
@@ -96,6 +96,9 @@ UNRECORDED = {k.name: k.unrecorded for k in KNOBS.values() if k.unrecorded is no
 
 #: Constants the inventory finds whose name says gate and whose value does not, each with why.
 NOT_GATING: dict[str, str] = _not_gating(_AREAS)
+
+#: Limits that pace work and can never cut it (a poll interval, a delay, a grace period), each with why. #1087.
+NEVER_CUTS: dict[str, str] = _not_gating(_AREAS, "NEVER_CUTS")
 
 
 def _static(site: str):

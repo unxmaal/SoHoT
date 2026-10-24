@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 import time
 
-from harness import memory, paths, reasons
+from harness import cuts, memory, paths, reasons
 from harness.commands.common import emit, err, note
 from harness.commands import loop as loop_cmd
 from harness.commands import measure as measure_cmd
@@ -72,7 +72,9 @@ def cmd_fetch(a) -> int:
         budget = int(fetching.budget_gib(getattr(a, "budget_gib", None)) * fetching.GIB)
         fetched = []
         for got in fetching.run(store, limit=a.limit, lane=want, budget=budget,
-                                refresh=not getattr(a, "hold_router", False), stop_at=getattr(a, "until", None)):
+                                refresh=not getattr(a, "hold_router", False), stop_at=getattr(a, "until", None),
+                                limit_knob=getattr(a, "limit_knob", None) or "harness/fetching.py:run(limit)",
+                                budget_knob=getattr(a, "budget_knob", None) or "download_budget"):
             fetched.append(got)
             note(f"  {'OK  ' if got['ok'] else 'skip'} {got['repo']}: {got['why']}")
         spent = sum(g.get("bytes") or 0 for g in fetched if g["ok"])
@@ -294,12 +296,18 @@ def _report_screen(a) -> int:
         until, per = getattr(a, "screen_until", None), float(getattr(a, "screen_s", 0) or 0)
         for r in ready:
             if taken >= limit:
+                cuts.cut(getattr(a, "limit_knob", None) or "discover_top",
+                         f"the screen count is reached; {r['name']} and the rest of the ready rows wait",
+                         value=limit, kept=taken, dropped=len(ready) - ready.index(r), conn=store)
                 break
             # The sweep ceiling's screen share, not a count, ends the step. #1084.
             if out_of_time(until, per, time.time()):
                 left = len(ready) - ready.index(r)
                 print(f"\n   the screen share of the sweep ceiling is spent: {left} ready candidate(s) "
                       f"wait for the next sweep", flush=True)
+                cuts.cut("screen_fraction",
+                         f"the screen share of the sweep ceiling is spent; {r['name']} and the rest wait",
+                         kept=taken, dropped=left, conn=store)
                 break
             print(f"\n── {r['name']}", flush=True)
             # Weights an offline load cannot open go back to fetch, never to a verdict. #799.

@@ -41,7 +41,7 @@ from dataclasses import dataclass, field
 
 from pathlib import Path
 
-from harness import lanes, paths, stages
+from harness import cuts, lanes, paths, stages
 from harness.stages import ENTRY_POINT_STAGES, STAGE_ENTRY_POINTS
 
 REPO = Path(__file__).resolve().parent.parent
@@ -577,15 +577,16 @@ def how_to_measure(lane: str, machine=None) -> str:
 def _hf_models(query: str, limit: int) -> list[dict]:
     """Ask the HuggingFace registry. Returns [] on any network trouble."""
     try:
-        r = httpx.get("https://huggingface.co/api/models",
-                      params={"search": query, "limit": limit,
-                              "sort": "downloads", "direction": -1,
-                              # The list endpoint omits lastModified unless
-                              # asked, and every proposal printed a blank date.
-                              # An undated proposal is what this exists to
-                              # avoid.
-                              "full": "true"},
-                      timeout=20)
+        with cuts.timeout("harness/discover.py:_hf_models->httpx.get(timeout)", f"huggingface search {query!r}"):
+            r = httpx.get("https://huggingface.co/api/models",
+                          params={"search": query, "limit": limit,
+                                  "sort": "downloads", "direction": -1,
+                                  # The list endpoint omits lastModified unless
+                                  # asked, and every proposal printed a blank date.
+                                  # An undated proposal is what this exists to
+                                  # avoid.
+                                  "full": "true"},
+                          timeout=20)
         r.raise_for_status()
         return r.json()
     except Exception:  # noqa: BLE001
@@ -626,7 +627,7 @@ def external(lane: str, limit: int = 8) -> list[Capability]:
                      f"{m.get('downloads', 0):,} downloads"))
     if conn is not None:
         conn.close()
-    return out[:limit]
+    return cuts.take(out, limit, "harness/discover.py:external(limit)", f"{lane} registry proposals past the limit")
 
 
 def _hf_exists(name: str) -> str:
@@ -835,7 +836,7 @@ def from_feeds(sources=None, reader=None, verify=True,
     # the machine asking: see feeds.relevance().
     # and was previously ranked identically to a native-MLX one.
     out.sort(key=lambda c: -getattr(c, "relevance", 0))
-    out = out[:limit]
+    out = cuts.take(out, limit, "harness/discover.py:from_feeds(limit)", "feed proposals past the limit", conn=store)
     if suppressed:
         out.append(Capability(
             "note", f"{suppressed} already answered", "all", "discovery.db",

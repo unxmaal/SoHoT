@@ -22,6 +22,10 @@ def wait_s(retry_after, attempt: int, base: float = 1.0) -> float:
         wait = _until_date(retry_after)
         if wait is None:
             wait = base * 2 ** attempt
+    if wait > MAX_WAIT_S:
+        from harness import cuts
+        cuts.cut("harness/ratelimit.py:MAX_WAIT_S", f"a {wait:.0f} s wait before attempt {attempt + 2} was cut short",
+                 kept=0, dropped=1)
     return min(max(wait, 0.0), MAX_WAIT_S)
 
 
@@ -92,14 +96,20 @@ def _wait(response, attempt: int) -> float:
 def get_json(url: str, params: dict | None = None, timeout: float = 60):
     """GET `url` as JSON, waiting and retrying while it answers 429 or 5xx."""
     import httpx
+
+    from harness import cuts
     for attempt in range(ATTEMPTS):
-        r = httpx.get(url, params=params, timeout=timeout, follow_redirects=True,
-                      headers=hf_headers(url))
+        with cuts.timeout("harness/ratelimit.py:get_json(timeout)", f"{urlparse(url).netloc}: no answer in time",
+                          value=timeout):
+            r = httpx.get(url, params=params, timeout=timeout, follow_redirects=True,
+                          headers=hf_headers(url))
         if r.status_code != 429 and r.status_code < 500:
             r.raise_for_status()
             return r.json()
         if attempt < ATTEMPTS - 1:
             sleep(_wait(r, attempt))
+    cuts.cut("ratelimit_attempts", f"{urlparse(url).netloc}: HTTP {r.status_code} after {ATTEMPTS} attempts",
+             kept=0, dropped=1)
     if r.status_code == 429:
         raise RateLimited(f"{url}: HTTP 429 after {ATTEMPTS} attempts")
     r.raise_for_status()

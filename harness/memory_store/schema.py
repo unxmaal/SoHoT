@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 80
+SCHEMA_VERSION = 81
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -596,6 +596,19 @@ CREATE TABLE IF NOT EXISTS otel_events (
     attrs                 TEXT NOT NULL DEFAULT '{}'
 );
 
+-- A limit that bound: what it cut and how much; knob is a registered knob or a backlog site. #1087.
+CREATE TABLE IF NOT EXISTS limit_cuts (
+    id          INTEGER PRIMARY KEY,
+    at          REAL NOT NULL,
+    machine_id  INTEGER REFERENCES machines(id),
+    knob        TEXT NOT NULL,
+    value       REAL,
+    what        TEXT NOT NULL DEFAULT '',
+    kept        INTEGER,
+    -- NULL when the limit cannot know how much it left: a full LIMIT page.
+    dropped     INTEGER
+);
+
 -- Weights on disk, one row per fetched or found path on one machine. #411.
 CREATE TABLE IF NOT EXISTS downloads (
     id           INTEGER PRIMARY KEY,
@@ -766,6 +779,7 @@ CREATE INDEX IF NOT EXISTS ix_downloads_path ON downloads(path);
 CREATE INDEX IF NOT EXISTS ix_edges_dst ON edges(dst);
 CREATE INDEX IF NOT EXISTS ix_jobs_state ON jobs(state, priority);
 CREATE INDEX IF NOT EXISTS ix_probes_model ON contamination_probes(model, lane);
+CREATE INDEX IF NOT EXISTS ix_limit_cuts_knob ON limit_cuts(knob, at);
 """
 
 

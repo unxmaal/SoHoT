@@ -85,7 +85,8 @@ def budget_gib() -> float:
 
 def child_argv(limit: int, budget: float, until: float) -> list[str]:
     return [sys.executable, "-m", "harness.cli", "fetch", "--run", "--limit", str(limit),
-            "--budget-gib", f"{budget:g}", "--hold-router", "--until", f"{until:.0f}"]
+            "--budget-gib", f"{budget:g}", "--hold-router", "--until", f"{until:.0f}",
+            "--limit-knob", "screen_fraction", "--budget-knob", "day_fetch_budget"]
 
 
 def terminated(signum, _frame):
