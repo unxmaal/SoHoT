@@ -81,8 +81,7 @@ FLIPS = (("yes", "no"), ("true", "false"), ("pass", "fail"), ("passes", "fails")
          ("can", "cannot"), ("should", "should not"), ("does", "does not"), ("is", "is not"), ("add", "remove"),
          ("added", "removed"), ("before", "after"), ("enable", "disable"), ("increase", "decrease"),
          ("correct", "wrong"), ("merged", "closed"), ("open", "closed"), ("first", "last"), ("left", "right"))
-#: Tools a subagent hands its final report back through; the report is its reply.
-REPORT_TOOLS = ("SubagentHandback",)
+REPORT_TOOLS = d.REPORT_TOOLS
 _NUMBER = re.compile(r"(?<![\w.])\d+(?:\.\d+)?(?![\w.])")
 _GRADE = re.compile(r"\{.*\}", re.S)
 _CAT_N = re.compile(r"^\s*\d+\t", re.M)
