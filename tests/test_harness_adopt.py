@@ -266,3 +266,23 @@ def test_a_loss_is_the_candidate_s_unless_its_class_says_the_gate_could_not_tell
     assert adopt.outcome_of(v) == expected
     assert adopt.outcome_of(adopt.Verdict("tts", "old", "org/new", True, "won", failure_class=failure_class)) == (
         "measured", expected[1])
+
+
+def test_a_summary_over_stored_rows_carries_every_field_summarize_reads():
+    """adopt._summary rebuilds Results from stored rows: each field, and each missing one, reaches the gate (#1116, #909)."""
+    never = "refused_by_gateway"
+    rows = [{"case_id": "a", "candidate": "c", "passed": True, "seconds": 2.0, "peak_kb": 7, "detail": "",
+             "metrics": {"wer": 1.0}, "warnings": ["w1", "w2"]},
+            {"case_id": "b", "candidate": "c", "passed": False, "seconds": 4.0, "peak_kb": 9,
+             "detail": "wrong answer", "metrics": {"wer": 0.0}, "warnings": [], "failure_class": never},
+            {"case_id": "e", "candidate": "other", "passed": True, "seconds": 50.0}]
+    got = adopt._summary(rows, "c")
+    assert got["candidate"] == "c" and (got["total"], got["passed"], got["judged"]) == (2, 1, 1)
+    assert got["failure_classes"] == {never: 1} and got["failures"] == ["b: wrong answer"]
+    assert (got["warnings"], got["peak_kb"], got["total_s"]) == (2, 9, 6.0)
+    assert got["metrics"]["wer"] == pytest.approx(0.5)
+    bare = adopt._summary([{"case_id": "d", "candidate": "z", "passed": False}], "z")
+    assert (bare["total"], bare["passed"], bare["judged"]) == (1, 0, 1)
+    assert bare["failures"] == ["d: "] and bare["failure_classes"] == {}
+    assert (bare["warnings"], bare["peak_kb"], bare["total_s"], bare["metrics"]) == (0, 0, 0.0, {})
+    assert adopt._summary(rows, "nobody") is None
