@@ -2,8 +2,8 @@
 from harness.knobs.base import _k
 
 KNOBS = [
-    _k("repo_screen_cases", ["evals/repo_screen.py:CASES"], [12, 24, 36, 54],
-       note="repo exam cases a candidate's screen runs, stratified by group x variant; 24 is ~2.8 h for a 27B "
+    _k("repo_screen_cases", ["evals/repo_screen.py:CASES"], [12, 24, 36, 54], lanes=("repo",), receipt="knobs",
+       limit="repo_screen_cases", unrecorded=24, note="repo exam cases a candidate's screen runs, stratified by group x variant; 24 is ~2.8 h for a 27B "
             "at ~3x Ornith's 142 s median case (run 571), under a night, and leaves every one of the 8 strata "
             "two or more cases bar the 1-case pilot and infovore symptom ones (#1176)"),
     _k("screen_cases", ["evals/run.py:SCREEN_CASES"], [1, 3, 6, 10], limit="screen_cases",

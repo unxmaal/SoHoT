@@ -90,7 +90,7 @@ def _ordered(cases, anchors: dict) -> list:
 
 def pick(cases, n: int | None = None, anchors: dict | None = None) -> list:
     """The screening subset: every stratum (group x variant) covered, a systematic draw over class-sorted cases within each, one case per task where the stratum allows."""
-    n = CASES if n is None else int(n)
+    n = int(CASES if n is None else n)
     anchors = load_anchors() if anchors is None else anchors
     by: dict = {}
     for c in cases:

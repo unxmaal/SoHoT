@@ -209,3 +209,53 @@ def test_evals_run_cuts_a_repo_run_to_the_subset_and_refuses_other_lanes(repo_ca
     with pytest.raises(SystemExit, match="--modality repo"):
         R.screen_subset([], SimpleNamespace(repo_screen=True, modality="code"))
     assert R.parse_args(["--modality", "repo", "--repo-screen"]).repo_screen
+
+
+def test_a_knob_override_changes_the_pick_and_the_receipt_carries_it(repo_cases):
+    from evals import run as R
+    from evals.core import Receipt
+    overrides = R.knob_overrides(["repo_screen_cases=12"])
+    with knobs.rebind(overrides):
+        got = R.screen_subset(list(repo_cases), SimpleNamespace(repo_screen=True, modality="repo"))
+    assert len(got) == 12 and {S.stratum_of(c) for c in got} == {S.stratum_of(c) for c in repo_cases}
+    assert knobs.settings("repo", overrides)["repo_screen_cases"] == 12
+    assert knobs.settings("repo")["repo_screen_cases"] == 24
+    legacy = Receipt.from_dict({"modality": "repo", "case_ids": [], "repeat": 1, "knobs": {}})
+    assert legacy.knobs["repo_screen_cases"] == 24
+
+
+def _sized_store(path, cases, runs):
+    conn = sqlite3.connect(path)
+    conn.execute("CREATE TABLE runs (id INTEGER, lane TEXT, repeat_count INTEGER, cases_digest TEXT, receipt TEXT, "
+                 "environment TEXT, generated_at REAL)")
+    conn.execute("CREATE TABLE results (run_id INTEGER, seq INTEGER, candidate TEXT, case_id TEXT, repeat_index "
+                 "INTEGER, passed INTEGER, failure_class TEXT, hit_limit TEXT, seconds REAL, metrics TEXT)")
+    for rid, cand, ids, size in [(1, "base", [c.id for c in cases], None), *runs]:
+        receipt = {"modality": "repo", "case_ids": ids, "knobs": {} if size is None else {"repo_screen_cases": size}}
+        conn.execute("INSERT INTO runs VALUES (?, 'repo', 1, 'd', ?, '{}', 0)", (rid, json.dumps(receipt)))
+        for i, cid in enumerate(ids):
+            conn.execute("INSERT INTO results VALUES (?, ?, ?, ?, 1, ?, '', '', 5.0, '{}')",
+                         (rid, i, cand, cid, int(rid != 1)))
+    conn.commit()
+    conn.close()
+
+
+def test_the_verdict_judges_at_the_recorded_size_and_refuses_a_size_mismatch(repo_cases, tmp_path, capsys):
+    from harness.commands import repo_screen as cmd
+    twelve = [c.id for c in S.pick(repo_cases, 12)]
+    default = [c.id for c in S.pick(repo_cases)]
+    store = tmp_path / "store.db"
+    _sized_store(store, repo_cases, [(2, "cand", twelve, 12), (3, "cand", twelve, 24), (4, "cand", default, 24),
+                                    (5, "cand", twelve, 12)])
+
+    def run(*runs):
+        a = SimpleNamespace(action="verdict", runs=list(runs), base=1, outside_votes=0, n=0, write=False,
+                            anchors="", store=str(store), cases="")
+        return cmd.cmd_repo_screen(a)
+
+    assert run(2, 5) == 0
+    assert "SURVIVES" in capsys.readouterr().out
+    assert run(3) == 1
+    assert "did not run the current screen subset" in capsys.readouterr().err
+    assert run(2, 4) == 1
+    assert "different screen sizes" in capsys.readouterr().err

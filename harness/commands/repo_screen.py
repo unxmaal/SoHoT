@@ -71,7 +71,11 @@ def cmd_repo_screen(a) -> int:
         if not base:
             return err("no base run: pass --base or commit the anchors")
         runs, rows, _, _ = repo_report.stored([base, *a.runs], store=a.store or None, match=False)
-        want = repo_screen.describe(cases, repo_screen.pick(cases, None, anchors), anchors)
+        sizes = {(r["receipt"].get("knobs") or {}).get("repo_screen_cases", repo_screen.CASES) for r in runs[1:]}
+        if len(sizes) > 1:
+            return err(f"the runs were drawn at different screen sizes ({', '.join(str(x) for x in sorted(sizes))}); "
+                       f"pool runs of one size")
+        want = repo_screen.describe(cases, repo_screen.pick(cases, int(next(iter(sizes))), anchors), anchors)
         for r in runs[1:]:
             ids = sorted(r["receipt"].get("case_ids") or [])
             if ids != want["case_ids"]:
