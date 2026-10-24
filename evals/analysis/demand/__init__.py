@@ -35,6 +35,8 @@ COST_SLACK_S = 5
 BOOTSTRAP = 2000
 REQUEST_CAP = 1500
 RESULT_CAP = 600
+#: Tools a subagent hands its final report back through; the report is its reply.
+REPORT_TOOLS = ("SubagentHandback",)
 STEP_CAP = 100
 STEPS = 15
 
@@ -248,6 +250,8 @@ def _add(unit: Unit, rec: dict, usage: dict, counted: set) -> None:
             unit.result = session_cut._clean(b.get("text"))
         elif b.get("type") == "tool_use":
             name, args = str(b.get("name") or ""), dict(b.get("input") or {})
+            if name in REPORT_TOOLS and (report := session_cut._clean(str(args.get("message") or ""))):
+                unit.result = report
             unit.calls += 1
             unit.tools[_tool(name)] += 1
             if len(unit.steps) < STEPS:
