@@ -347,28 +347,51 @@ def _headed(lines: list[str], i: int) -> bool:
     return j >= 0 and lines[j].startswith("diff --git ")
 
 
-def with_git_headers(diff: str) -> str:
-    """A `diff --git` line before each ---/+++/@@ file header lacking one, so --recount stops at it. #940."""
+def _header_at(lines: list[str], i: int) -> bool:
+    return lines[i].startswith("--- ") and i + 2 < len(lines) and lines[i + 1].startswith("+++ ") \
+        and lines[i + 2].startswith("@@ ")
+
+
+def _creates(lines: list[str], i: int) -> bool:
+    """Whether every hunk of the file headed at line i has an empty old side (`@@ -0,0 `). #1174."""
+    j, hunks = i + 2, []
+    while j < len(lines) and not lines[j].startswith("diff --git ") and not (j > i + 2 and _header_at(lines, j)):
+        if lines[j].startswith("@@ "):
+            hunks.append(lines[j])
+        j += 1
+    return bool(hunks) and all(h.startswith("@@ -0,0 ") for h in hunks)
+
+
+def with_git_headers(diff: str, exists=None) -> str:
+    """A `diff --git` line before each ---/+++/@@ file header lacking one, so --recount stops at it (#940); with
+    `exists(path)`, an `a/` side whose hunks are all -0,0 on a path absent at base becomes a creation (#1174)."""
     lines = diff.splitlines(keepends=True)
     out = []
     for i, line in enumerate(lines):
-        if line.startswith("--- ") and i + 2 < len(lines) and lines[i + 1].startswith("+++ ") \
-                and lines[i + 2].startswith("@@ ") and not _headed(lines, i):
+        if _header_at(lines, i) and not _headed(lines, i):
             old, new = _SIDE.match(line), _SIDE.match(lines[i + 1])
             path = old and new and (new.group(1) or old.group(1))
             if path:
                 out.append(f"diff --git a/{path} b/{path}\n")
-                if old.group(2):
+                created = (exists is not None and old.group(1) and new.group(1) and _creates(lines, i)
+                           and not exists(old.group(1)))
+                if old.group(2) or created:
                     out.append("new file mode 100644\n")
+                if created:
+                    line = "--- /dev/null" + line[len(line.rstrip("\r\n")):]
         out.append(line)
     return "".join(out)
+
+
+def _at_base(task: Path):
+    return lambda path: (task / path).exists()
 
 
 def apply(task: Path, diff: str) -> tuple[bool, str]:
     """git apply, then git apply --3way; (applied, plain apply's error). git refuses paths that leave the tree."""
     if not diff.strip():
         return False, "the reply holds no diff"
-    diff = with_git_headers(diff)
+    diff = with_git_headers(diff, _at_base(task))
     tries = (["apply", "--recount", "--whitespace=nowarn"],
              ["apply", "--3way", "--recount", "--whitespace=nowarn"])
     why = ""
@@ -419,7 +442,7 @@ def apply_docs_aside(task: Path, diff: str, named) -> tuple[bool, str, list]:
     applied, why = apply(task, diff)
     if applied or not diff.strip():
         return applied, why, []
-    chunks = file_chunks(with_git_headers(diff))
+    chunks = file_chunks(with_git_headers(diff, _at_base(task)))
     failed = {}
     for path, text in chunks:
         got = _git(["apply", "--check", "--recount", "--whitespace=nowarn", "-"], cwd=task, check=False,
