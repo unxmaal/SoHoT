@@ -127,7 +127,8 @@ def test_schema_59_requeues_the_screen_a_missing_backend_settled(tmp_path):
 
 # --- 2. the loop's exit status ----------------------------------------------
 
-def test_a_lane_with_no_benchmark_queries_is_not_a_failed_source():
+def test_a_lane_with_no_benchmark_queries_is_not_a_failed_source(monkeypatch):
+    monkeypatch.delitem(bm.LANE_QUERIES, "ocr")
     conn = ms.connect()
     asked = []
     found = bm.sweep(conn, lanes=["ocr"], get=lambda *a, **k: asked.append(a) or [], now=1.0)
@@ -153,6 +154,7 @@ def test_a_scoped_sweep_reports_only_its_own_lanes_failures(monkeypatch, capsys)
 def test_the_leftover_failure_of_a_lane_with_no_queries_does_not_fail_the_loop(monkeypatch):
     """Jobs 0034-0036 left benchmarks:*:ocr|retrieval|pii failed with KeyError text."""
     from harness.commands import benchmarks as benchmarks_cmd
+    monkeypatch.delitem(bm.LANE_QUERIES, "pii")
     conn = ms.connect()
     ms.record_source(conn, "benchmarks:huggingface:pii", kind=bm.KIND, ok=False,
                      error="'pii'", at=1.0)
