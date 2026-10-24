@@ -145,6 +145,9 @@ def _absolute(path: str) -> bool:
 
 
 class Sandbox:
+    #: name -> {description, parameters} of the tools this sandbox serves.
+    SCHEMAS = TOOLS
+
     def __init__(self, root: Path, tools=tuple(TOOLS), test_timeout: float = TEST_TIMEOUT_S):
         self.root = Path(os.path.realpath(root))
         self.tools = tuple(tools)
@@ -299,7 +302,7 @@ class Sandbox:
             call.why = "arguments must be a JSON object"
             return call, f"error: {call.why}"
         call.parsed = True
-        problem = schema_problem(TOOLS[name]["parameters"], args)
+        problem = schema_problem(self.SCHEMAS[name]["parameters"], args)
         if problem:
             call.why = problem
             return call, f"error: {problem}"
@@ -330,8 +333,9 @@ def schema_problem(schema: dict, args: dict) -> str:
     return ""
 
 
-def openai_tools(names) -> list[dict]:
-    return [{"type": "function", "function": {"name": n, **TOOLS[n]}} for n in names]
+def openai_tools(names, schemas=None) -> list[dict]:
+    schemas = TOOLS if schemas is None else schemas
+    return [{"type": "function", "function": {"name": n, **schemas[n]}} for n in names]
 
 
 def _refuse_links(source: Path) -> None:

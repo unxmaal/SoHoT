@@ -89,6 +89,7 @@ LEFT_OUT = {
                                             "test_lane_until_1053.py", "test_loop_revisit_1055.py",
                                             "test_revisit_tier_1060.py"),
     "harness/reasons.py": (
+        "test_repo_repair_890.py",
         "test_adopt_retest_1001.py", "test_attachment_tags_949.py", "test_canary_919.py",
         "test_chaos.py", "test_claims_lane.py", "test_gateway_key.py", "test_harness_checks_ocr.py",
         "test_harness_paired.py", "test_harness_screen.py", "test_harness_screen_spec.py",

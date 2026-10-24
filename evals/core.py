@@ -459,6 +459,9 @@ METRIC_DIRECTION = {
     "patch_applied": "higher",
     "wall_s": "neutral",
     "test_s": "neutral",
+    # repo repair harness (#890): reported beside resolved, never ranked on.
+    "repair_generated_tokens": "neutral",
+    "repair_test_runs": "neutral",
     "prompt_tokens": "neutral",
     # claude -p usage token counts; reported, never ranked on. #907.
     "cache_read_tokens": "neutral",
@@ -784,6 +787,8 @@ class Receipt:
     contexts: dict = field(default_factory=dict)
     #: receipt key -> the yield stop point its replies were stopped at and the stored curve it came from. Not an axis. #1127.
     yield_stop: dict = field(default_factory=dict)
+    #: The repo lane's harness, "repair" for the tool loop; "" is the single-diff patch harness. #890.
+    harness: str = ""
 
     def as_dict(self) -> dict:
         return {"modality": self.modality, "case_ids": list(self.case_ids),
@@ -812,7 +817,8 @@ class Receipt:
                 "server_sampling": {k: dict(v) for k, v in self.server_sampling.items()},
                 "validation": dict(self.validation),
                 "contexts": {k: dict(v) for k, v in self.contexts.items()},
-                "yield_stop": {k: dict(v) for k, v in self.yield_stop.items()}}
+                "yield_stop": {k: dict(v) for k, v in self.yield_stop.items()},
+                **({"harness": self.harness} if self.harness else {})}
 
     @classmethod
     def from_dict(cls, raw: dict) -> "Receipt":
@@ -841,7 +847,8 @@ class Receipt:
                    server_sampling=raw.get("server_sampling") or {},
                    validation=raw.get("validation") or {},
                    contexts=raw.get("contexts") or {},
-                   yield_stop=raw.get("yield_stop") or {})
+                   yield_stop=raw.get("yield_stop") or {},
+                   harness=raw.get("harness") or "")
 
 
 def legacy_knobs(raw: dict) -> dict:
@@ -970,6 +977,8 @@ def comparable(a: Receipt, b: Receipt) -> tuple[bool, str]:
         return False, (f"same case ids, different cases: {a.cases_digest} vs "
                        f"{b.cases_digest}. A prompt, a param or an assertion "
                        f"was edited in place")
+    if (a.harness or "patch") != (b.harness or "patch"):
+        return False, f"different harness: {a.harness or 'patch'} vs {b.harness or 'patch'} (#890)"
     if a.split and b.split and (a.split, a.split_version) != (b.split, b.split_version):
         return False, (f"different split: {a.split} v{a.split_version} vs "
                        f"{b.split} v{b.split_version}")
