@@ -102,7 +102,16 @@ def count(conn, *, now: float | None = None, machines=None, days: float | None =
             if lane and hits and k.receipt == "max_tokens":
                 row.update(_conversions(conn, lane, name, row["value"], since, machines))
             out.append(row)
-    return out
+    return out + _cut_rows(conn, since, machines)
+
+
+def _cut_rows(conn, since: float, machines) -> list[dict]:
+    """One row per registered knob a limit_cuts row names, at the largest value it cut at: each cut is the knob deciding something. #1087."""
+    from harness import cuts
+    top = cuts.highest(conn, since, machines)
+    return [{"knob": name, "lane": "", "limit": f"cut:{name}", "value": top.get(name), "hits": hits, "of": hits,
+             "binding": binds(hits, hits), "source": "cut"}
+            for name, hits in sorted(cuts.count(conn, since, machines).items()) if name in knobs.KNOBS]
 
 
 def binding(rows: list[dict]) -> list[dict]:
@@ -114,8 +123,16 @@ def render(rows: list[dict]) -> str:
     found = binding(rows)
     if not found:
         return "  no knob is binding"
-    return "\n".join(f"  {r['knob']:16} {r['lane'] or 'any lane':9} {r['limit']} at {r['value']:g}: "
-                     f"{_converted(r)}{r['hits']} of {r['of']} hit it" for r in found)
+    return "\n".join(f"  {r['knob']:16} {r['lane'] or 'any lane':9} {r['limit']} at {_value(r['value'])}: "
+                     f"{_converted(r)}{_hits(r)}" for r in found)
+
+
+def _value(v) -> str:
+    return f"{v:g}" if isinstance(v, (int, float)) else str(v)
+
+
+def _hits(r: dict) -> str:
+    return f"{r['hits']} cut(s)" if r.get("source") == "cut" else f"{r['hits']} of {r['of']} hit it"
 
 
 def _converted(r: dict) -> str:

@@ -664,6 +664,10 @@ def fix_sized(chosen: list[Case], args) -> list[Case]:
         raise SystemExit(f"--max-fix-lines: {exc}") from None
     if not got:
         raise SystemExit(f"no repo case has a reference fix of {limit} lines or fewer")
+    if len(got) < len(chosen):
+        from harness import cuts
+        cuts.cut("repo_max_fix_lines", "repo cases with a larger reference fix left out of the run", value=limit,
+                 kept=len(got), dropped=len(chosen) - len(got))
     return got
 
 

@@ -61,15 +61,17 @@ table lane_probes [('id', 'INTEGER', 0, None, 1), ('at', 'REAL', 1, None, 0), ('
   index ix_lane_probes_lane unique=0 ['lane', 'machine_id', 'at']
 table ledger_days [('day', 'TEXT', 0, None, 1), ('recorded_at', 'REAL', 1, None, 0), ('energy_kwh', 'REAL', 0, None, 0), ('detail', 'TEXT', 1, "'{}'", 0)]
   index sqlite_autoindex_ledger_days_1 unique=1 ['day']
+table limit_cuts [('id', 'INTEGER', 0, None, 1), ('at', 'REAL', 1, None, 0), ('machine_id', 'INTEGER', 0, None, 0), ('knob', 'TEXT', 1, None, 0), ('value', 'REAL', 0, None, 0), ('what', 'TEXT', 1, "''", 0), ('kept', 'INTEGER', 0, None, 0), ('dropped', 'INTEGER', 0, None, 0)]
+  index ix_limit_cuts_knob unique=0 ['knob', 'at']
 table lineage [('id', 'INTEGER', 0, None, 1), ('proposal_id', 'INTEGER', 1, None, 0), ('parent', 'TEXT', 1, None, 0), ('kind', 'TEXT', 1, "''", 0)]
   index sqlite_autoindex_lineage_1 unique=1 ['proposal_id', 'parent', 'kind']
   (1, 4, 'org-z/base-xl', 'adapter')
 table machine_merges [('id', 'INTEGER', 0, None, 1), ('from_id', 'INTEGER', 1, None, 0), ('from_fingerprint', 'TEXT', 1, None, 0), ('into_id', 'INTEGER', 1, None, 0), ('repointed', 'TEXT', 1, "'{}'", 0), ('merged_at', 'REAL', 1, None, 0)]
-  (1, 2, 'Mac14,12/macOS-26.0-arm64-arm-64bit-Mach-O/arm64', 1, '{"adoptions": 0, "day_clearances": 0, "downloads": 0, "human_votes": 0, "jobs": 0, "knob_sweeps": 0, "lane_probes": 0, "memory_limits": 0, "paused_runs": 0, "reverifications": 0, "runs": 0, "sightings": 0, "verdicts": 0, "watchdog_actions": 0}', '<now>')
-  (2, 3, 'Mac14,12//arm64', 1, '{"adoptions": 0, "day_clearances": 0, "downloads": 0, "human_votes": 0, "jobs": 0, "knob_sweeps": 0, "lane_probes": 0, "memory_limits": 0, "paused_runs": 0, "reverifications": 0, "runs": 0, "sightings": 0, "verdicts": 0, "watchdog_actions": 0}', '<now>')
-  (3, 7, 'Mac14,12/macOS/arm64', 1, '{"adoptions": 0, "day_clearances": 0, "downloads": 4, "human_votes": 0, "jobs": 0, "knob_sweeps": 0, "lane_probes": 0, "memory_limits": 0, "paused_runs": 0, "reverifications": 0, "runs": 1, "sightings": 0, "verdicts": 0, "watchdog_actions": 0}', '<now>')
-  (4, 8, 'Mac14,12/arm64', 1, '{"adoptions": 0, "day_clearances": 0, "downloads": 0, "human_votes": 0, "jobs": 0, "knob_sweeps": 0, "lane_probes": 0, "memory_limits": 0, "paused_runs": 0, "reverifications": 0, "runs": 1, "sightings": 0, "verdicts": 0, "watchdog_actions": 0}', '<now>')
-  (5, 9, 'Mac17,15/macOS/arm64', 4, '{"adoptions": 0, "day_clearances": 0, "downloads": 0, "human_votes": 0, "jobs": 0, "knob_sweeps": 0, "lane_probes": 0, "memory_limits": 0, "paused_runs": 0, "reverifications": 0, "runs": 1, "sightings": 0, "verdicts": 0, "watchdog_actions": 0}', '<now>')
+  (1, 2, 'Mac14,12/macOS-26.0-arm64-arm-64bit-Mach-O/arm64', 1, '{"adoptions": 0, "day_clearances": 0, "downloads": 0, "human_votes": 0, "jobs": 0, "knob_sweeps": 0, "lane_probes": 0, "limit_cuts": 0, "memory_limits": 0, "paused_runs": 0, "reverifications": 0, "runs": 0, "sightings": 0, "verdicts": 0, "watchdog_actions": 0}', '<now>')
+  (2, 3, 'Mac14,12//arm64', 1, '{"adoptions": 0, "day_clearances": 0, "downloads": 0, "human_votes": 0, "jobs": 0, "knob_sweeps": 0, "lane_probes": 0, "limit_cuts": 0, "memory_limits": 0, "paused_runs": 0, "reverifications": 0, "runs": 0, "sightings": 0, "verdicts": 0, "watchdog_actions": 0}', '<now>')
+  (3, 7, 'Mac14,12/macOS/arm64', 1, '{"adoptions": 0, "day_clearances": 0, "downloads": 4, "human_votes": 0, "jobs": 0, "knob_sweeps": 0, "lane_probes": 0, "limit_cuts": 0, "memory_limits": 0, "paused_runs": 0, "reverifications": 0, "runs": 1, "sightings": 0, "verdicts": 0, "watchdog_actions": 0}', '<now>')
+  (4, 8, 'Mac14,12/arm64', 1, '{"adoptions": 0, "day_clearances": 0, "downloads": 0, "human_votes": 0, "jobs": 0, "knob_sweeps": 0, "lane_probes": 0, "limit_cuts": 0, "memory_limits": 0, "paused_runs": 0, "reverifications": 0, "runs": 1, "sightings": 0, "verdicts": 0, "watchdog_actions": 0}', '<now>')
+  (5, 9, 'Mac17,15/macOS/arm64', 4, '{"adoptions": 0, "day_clearances": 0, "downloads": 0, "human_votes": 0, "jobs": 0, "knob_sweeps": 0, "lane_probes": 0, "limit_cuts": 0, "memory_limits": 0, "paused_runs": 0, "reverifications": 0, "runs": 1, "sightings": 0, "verdicts": 0, "watchdog_actions": 0}', '<now>')
 table machines [('id', 'INTEGER', 0, None, 1), ('fingerprint', 'TEXT', 1, None, 0), ('hw_model', 'TEXT', 1, "''", 0), ('os', 'TEXT', 1, "''", 0), ('arch', 'TEXT', 1, "''", 0), ('memory_gb', 'REAL', 1, '0', 0), ('accelerator', 'TEXT', 1, "''", 0), ('runtimes', 'TEXT', 1, "''", 0), ('ceiling_gb', 'REAL', 1, '0', 0), ('first_seen', 'REAL', 1, None, 0), ('last_seen', 'REAL', 1, None, 0), ('versions', 'TEXT', 1, "'{}'", 0)]
   index sqlite_autoindex_machines_1 unique=1 ['fingerprint']
   (1, 'Mac14,12/macOS/arm64', 'Mac14,12', 'macOS-26.0-arm64-arm-64bit-Mach-O', 'arm64', 32.0, 'metal 32GB', 'llamacpp,mlx', 23.0, 1788600000.0, '<now>', '{}')
@@ -82,7 +84,7 @@ table meta [('key', 'TEXT', 0, None, 1), ('value', 'TEXT', 0, None, 0)]
   index sqlite_autoindex_meta_1 unique=1 ['key']
   ('artifact_split', '{}')
   ('candidate_guesses', '[{"adoption": 2, "from": "the adopt verdict/'s machine; no vote or judged run names one", "lane": "svg", "machine": 4, "proposal": "org-l/svg-thing", "spec": "mlx:org-l/svg-thing"}]')
-  ('schema', '80')
+  ('schema', '81')
 table otel_events [('id', 'INTEGER', 0, None, 1), ('key', 'TEXT', 1, None, 0), ('received_at', 'REAL', 1, None, 0), ('at', 'REAL', 1, None, 0), ('session_id', 'TEXT', 1, "''", 0), ('prompt_id', 'TEXT', 1, "''", 0), ('name', 'TEXT', 1, None, 0), ('tool', 'TEXT', 1, "''", 0), ('model', 'TEXT', 1, "''", 0), ('query_source', 'TEXT', 1, "''", 0), ('success', 'INTEGER', 0, None, 0), ('duration_ms', 'REAL', 0, None, 0), ('input_tokens', 'REAL', 0, None, 0), ('output_tokens', 'REAL', 0, None, 0), ('cache_read_tokens', 'REAL', 0, None, 0), ('cache_creation_tokens', 'REAL', 0, None, 0), ('cache_creation_5m_tokens', 'REAL', 0, None, 0), ('cache_creation_1h_tokens', 'REAL', 0, None, 0), ('cost_usd', 'REAL', 0, None, 0), ('result_bytes', 'REAL', 0, None, 0), ('attrs', 'TEXT', 1, "'{}'", 0)]
   index ix_otel_events_at unique=0 ['at', 'name']
   index ix_otel_events_session unique=0 ['session_id', 'at']

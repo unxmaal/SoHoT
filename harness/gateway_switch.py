@@ -22,6 +22,8 @@ import subprocess
 import sys
 import time
 
+from harness import cuts
+
 IDLE_S = 60.0
 MAX_WAIT_S = 20 * 60.0
 
@@ -57,7 +59,10 @@ def in_flight(base: str) -> int | None:
                       timeout=5.0)
     except httpx.ConnectError:
         return 0
-    except httpx.HTTPError:
+    except httpx.HTTPError as exc:
+        if cuts.timed_out(exc):
+            cuts.cut("harness/gateway_switch.py:in_flight->httpx.get(timeout)", "/health/backlog gave no answer in time",
+                     kept=0, dropped=1)
         return None
     if r.status_code != 200:
         return None
@@ -210,6 +215,9 @@ def not_serving(base: str, want: dict) -> str:
     try:
         r = httpx.get(f"{base.rstrip('/')}/model/info", headers=headers(), timeout=5.0)
     except httpx.HTTPError as exc:
+        if cuts.timed_out(exc):
+            cuts.cut("harness/gateway_switch.py:not_serving->httpx.get(timeout)", "/model/info gave no answer in time",
+                     kept=0, dropped=1)
         return f"the gateway did not answer /model/info: {exc}"
     if r.status_code != 200:
         return f"/model/info answered HTTP {r.status_code}"
@@ -227,7 +235,11 @@ def _await_serving(base, want, clock, sleep, poll_s) -> str:
     deadline = clock() + SERVE_WAIT_S
     while True:
         why = not_serving(base, want)
-        if not why or clock() >= deadline:
+        late = clock() >= deadline
+        if why and late:
+            cuts.cut("harness/gateway_switch.py:SERVE_WAIT_S", f"the restarted gateway still did not serve: {why}",
+                     kept=0, dropped=1)
+        if not why or late:
             return why
         sleep(poll_s)
 
@@ -281,6 +293,8 @@ def switch(base: str | None = None, restart=restart_service, requested_at=None,
         if not why:
             return _record(moved, old, got, requested_at, SWITCHED, "", log)
         _record(moved, old, {**got, "switched_at": clock()}, requested_at, FAILED, why, log)
+    cuts.cut("harness/gateway_switch.py:RETRIES", f"the switch gave up after {RETRIES} attempts and restores the old config",
+             kept=0, dropped=len(moved))
     if before is not None:
         path.write_text(before, encoding="utf-8")
         try:

@@ -25,7 +25,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from harness import downloads
+from harness import cuts, downloads
 from harness import memory_store as ms
 from harness import rank
 from harness import lanes, reasons, screen, variants
@@ -555,7 +555,8 @@ def _reason(exc: Exception) -> str:
 
 
 def _fetch_needs(name: str, needs: list[str], *, bases: list[str], sizes: dict, sizer,
-                 budget: int | None, spent: int, free: int | None, floor: int, fetch):
+                 budget: int | None, spent: int, free: int | None, floor: int, fetch,
+                 budget_knob: str = "download_budget", conn=None):
     """Download what `name` needs beside itself, each under the budget and floor: (done, bytes spent, first wait). #1091."""
     done: list[dict] = []
     spent_now = 0
@@ -568,6 +569,7 @@ def _fetch_needs(name: str, needs: list[str], *, bases: list[str], sizes: dict, 
                    f"{budget / GIB:.0f} GiB budget ({(spent + spent_now) / GIB:.1f} GiB already fetched)")
             done.append({"repo": dep, "ok": False, "why": why})
             waiting = waiting or (reasons.LIMIT, why)
+            cuts.cut(budget_knob, why, value=budget / GIB, kept=len(done) - 1, dropped=1, conn=conn)
             continue
         p = plan(dep, size, free=free, floor=floor)
         if not p.ok:
@@ -607,8 +609,9 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         free: int | None = None, lane: str = "",
         budget: int | None = None, listing=None,
         hf_download=None, floor: int = DISK_FLOOR, sizer=None,
-        refresh: bool = True, stop_at: float | None = None, clock=time.time) -> list[dict]:
-    """Fetch up to `limit` queued candidates, recording what happened.
+        refresh: bool = True, stop_at: float | None = None, clock=time.time,
+        limit_knob: str = "harness/fetching.py:run(limit)", budget_knob: str = "download_budget") -> list[dict]:
+    """Fetch up to `limit` queued candidates, recording what happened; a limit or budget that stops one is a cut (#1087).
 
     `budget` caps what ONE INVOCATION downloads in total, which is the job
     --budget-gib was documented as doing and never did: it was printed in the
@@ -639,7 +642,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         got, cost, waiting = _fetch_needs(
             name, [m for m in requires(name, conn) if not have(m, conn)],
             bases=runner_bases(name), sizes=sizes or {}, sizer=sizer, budget=budget,
-            spent=spent, free=free, floor=floor,
+            spent=spent, free=free, floor=floor, budget_knob=budget_knob, conn=conn,
             fetch=lambda dep: download(dep, snapshot=snapshot, conn=conn, refresh=refresh))
         done.extend(got)
         if waiting:
@@ -654,7 +657,8 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         if cost is None:
             return done
         spent += cost
-    for row in queued(conn, lane=lane):
+    rows = queued(conn, lane=lane)
+    for at, row in enumerate(rows):
         # Budget (#704), format (#798), no lane, and a reopen inspect has not answered (#798).
         why = why_not(row, budget=budget)
         if why and why[0] in SILENT:
@@ -731,6 +735,8 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         # let one unsized entry at the head of the queue consume the whole
         # budget, so nothing was ever fetched.
         if fetched >= limit:
+            cuts.cut(limit_knob, f"the download count is reached; {row['resolved'] or row['name']} "
+                     f"and the rest of the fetch order wait", value=limit, kept=fetched, dropped=len(rows) - at, conn=conn)
             break
         if stop_at is not None and clock() >= stop_at:
             done.append({"repo": row["resolved"] or row["name"], "ok": False,
@@ -748,6 +754,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             until = f"limit:download_budget_gib>{budget / GIB:g}" if size > budget else ""
             ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=why,
                               reason=reasons.LIMIT, until=until)
+            cuts.cut(budget_knob, f"{name}: {why}", value=budget / GIB, kept=fetched, dropped=1, conn=conn)
             done.append({"repo": name, "ok": False, "why": why})
             continue
         p = plan(name, size, free=free, floor=floor)

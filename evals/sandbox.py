@@ -18,6 +18,8 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
+from harness import cuts
+
 READ_CAP = 200_000
 WRITE_CAP = 256_000
 TEST_TIMEOUT_S = 60.0
@@ -203,6 +205,7 @@ class Sandbox:
         if not p.is_file():
             raise Refused(f"no such file: {path}")
         if p.stat().st_size > READ_CAP:
+            cuts.cut("evals/sandbox.py:READ_CAP", f"an agent read of {p.stat().st_size} bytes refused", kept=0, dropped=1)
             raise Refused(f"file is larger than {READ_CAP} bytes: {path}")
         try:
             return p.read_text(encoding="utf-8")
@@ -214,6 +217,7 @@ class Sandbox:
             raise Refused("content must be a string")
         data = content.encode("utf-8")
         if len(data) > WRITE_CAP:
+            cuts.cut("evals/sandbox.py:WRITE_CAP", f"an agent write of {len(data)} bytes refused", kept=0, dropped=1)
             raise Refused(f"content is larger than {WRITE_CAP} bytes")
         p = self.resolve(path)
         if p == self.root or p.is_dir():
@@ -276,9 +280,13 @@ class Sandbox:
                                   encoding="utf-8", errors="replace",
                                   timeout=self.test_timeout, shell=False)
         except subprocess.TimeoutExpired:
+            cuts.cut("evals/sandbox.py:TEST_TIMEOUT_S", f"agent {command} timed out", value=self.test_timeout,
+                     kept=0, dropped=1)
             return 124, f"timed out after {self.test_timeout:g}s"
         out = (done.stdout or "") + (done.stderr or "")
         if len(out) > OUTPUT_CAP:
+            cuts.cut("evals/sandbox.py:OUTPUT_CAP", f"agent {command} output kept its last {OUTPUT_CAP} characters",
+                     kept=OUTPUT_CAP, dropped=len(out) - OUTPUT_CAP)
             out = "...\n" + out[-OUTPUT_CAP:]
         return done.returncode, out
 

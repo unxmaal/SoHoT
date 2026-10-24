@@ -112,6 +112,9 @@ def served(cmd: list[str], port: int, log, env=None, timeout: float = 600.0,
                 raise RuntimeError(f"{cmd[0]} exited {proc.returncode} before serving:\n"
                                    f"{_tail(log)}")
             if time.monotonic() > deadline:
+                from harness import cuts
+                cuts.cut("harness/vllm.py:served(timeout)", f"{cmd[0]} did not serve in time", value=timeout,
+                         kept=0, dropped=1)
                 raise RuntimeError(f"{cmd[0]} did not serve within {timeout:.0f}s "
                                    f"(last probe: {why}):\n{_tail(log)}")
             time.sleep(poll)

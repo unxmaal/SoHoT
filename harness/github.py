@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-from harness import paths
+from harness import cuts, paths
 
 #: Fallback for an endpoint not named in TTL_BY_ENDPOINT.
 DEFAULT_TTL_HOURS = 24 * 7
@@ -133,6 +133,9 @@ class Client:
             if age < ttl * 3600:
                 return payload["data"]
         if self.spent >= self.budget:
+            cuts.cut("harness/github.py:Client.budget", f"{api_path}: request budget spent, "
+                     + ("the cached answer served stale" if payload is not None else "refused"),
+                     value=self.budget, kept=self.spent, dropped=1)
             if payload is not None:
                 self.stale.append(api_path)
                 return payload["data"]
