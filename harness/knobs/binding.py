@@ -8,4 +8,9 @@ KNOBS = [
        note="fewer hits than this is never binding"),
     _k("binding_window", ["harness/binding.py:BINDING_WINDOW_DAYS"], [7, 14, 30, 90],
        note="days of runs and verdicts a binding count reads"),
+    _k("lane_min_cuts", ["harness/sweeps.py:LANE_MIN_CUTS"], [5, 10, 20, 40],
+       note="cuts given more room on a lane's other models, none passing, before a model with no ladder of its own "
+            "is not swept on the reply budget. 2026-10-24 store, repo at 32768: 0 of 22 (runs 557 and 474, 484 and "
+            "485); the Qwopus3.6 sweep it would have stopped (jobs 0141-0145) then converted 0 of 9 cut at 8000 and "
+            "0 of 5 cut at 16384. 0 of 20 bounds the lane's conversion rate under 15% at 95% (#1177)"),
 ]
