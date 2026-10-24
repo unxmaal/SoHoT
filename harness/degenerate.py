@@ -48,7 +48,12 @@ def entropy_bits(tail: str) -> float:
 
 def measure(text: str) -> dict:
     """{"tail_repeat", "tail_entropy"} over the reply's tail; {} when the visible reply is under MIN_CHARS."""
-    tail = (text or "")[-TAIL_CHARS:]
+    text = text or ""
+    if len(text) > TAIL_CHARS:
+        from harness import cuts
+        cuts.cut("degenerate_tail_chars", "budget-cut reply measured on its tail only",
+                 kept=TAIL_CHARS, dropped=len(text) - TAIL_CHARS)
+    tail = text[-TAIL_CHARS:]
     if len(tail) < MIN_CHARS:
         return {}
     return {"tail_repeat": round(repeat_share(tail), 4), "tail_entropy": round(entropy_bits(tail), 4)}

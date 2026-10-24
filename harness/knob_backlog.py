@@ -217,6 +217,11 @@ def by_binding(conn, root=knobs.REPO, *, since: float | None = None) -> list[dic
     backlog = sites(root)
     among = set(backlog)
     found = [(q, q.sites(among), q.pattern()) for q in all_quotes(root)]
+    short = sum(1 for _, s, p in found if s and p is None)
+    if short:
+        from harness import cuts
+        cuts.cut("knob_backlog_literal_letters", "reason templates too short to match a stored reason",
+                 dropped=short, conn=conn)
     found = [(q, s, p, max(q.text.split("{}"), key=len)) for q, s, p in found if s and p is not None]
     rows = {s: {"site": s, "hits": 0, "tiers": {}, "quotes": [], "example": ""} for s in backlog}
     for q, quoted, _, _ in found:

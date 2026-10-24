@@ -125,7 +125,8 @@ def pick_route(ids: list[str], rows: dict[str, dict], n: int = PER_FAMILY) -> li
         if i not in chosen and rows[i]["scenario"] not in domains:
             chosen.append(i)
             domains.add(rows[i]["scenario"])
-    return chosen[:n]
+    from harness import cuts
+    return cuts.take(chosen, n, "decide_per_family", "decide route cases past the family size")
 
 
 def route_case(row: dict) -> dict:
@@ -148,14 +149,18 @@ def pick_check(ids: list[str], questions: dict[str, dict], n: int = PER_FAMILY) 
         q = questions.get(i)
         if q:
             groups.setdefault(q["context"], []).append(i)
-    out = []
+    from harness import cuts
+    out, trimmed = [], 0
     for group in groups.values():
         head = group[:QUESTIONS]
         answerable = sum(1 for i in head if questions[i]["answerable"])
         if len(head) == QUESTIONS and 0 < answerable < QUESTIONS:
             out.append(head)
+            trimmed += len(group) > QUESTIONS
         if len(out) == n:
             break
+    if trimmed:
+        cuts.cut("decide_check_questions", "decide check paragraphs asked only their first questions", dropped=trimmed)
     return out
 
 

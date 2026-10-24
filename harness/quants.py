@@ -99,7 +99,11 @@ def descendants(base: str, get=None, machine=None) -> list[str]:
 def best(base: str, *, get=None, ceiling: int | None = None, machine=None,
          skip=frozenset()) -> ins.Fit | None:
     """The first ranked descendant whose card fits this machine, or None."""
-    for rid in [d for d in descendants(base, get, machine) if d not in skip][:TRIES]:
+    found = [d for d in descendants(base, get, machine) if d not in skip]
+    if len(found) > TRIES:
+        from harness import cuts
+        cuts.cut("quants_tries", f"descendants of {base} past the tries", kept=TRIES, dropped=len(found) - TRIES)
+    for rid in found[:TRIES]:
         try:
             fit = ins.inspect_model(rid, fetch=get, ceiling=ceiling, machine=machine)
         except (ins.Gone, ins.InspectError):

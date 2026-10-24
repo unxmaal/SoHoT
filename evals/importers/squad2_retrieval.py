@@ -28,9 +28,11 @@ def select(data: dict, n: int = N) -> list[dict]:
     by: dict[str, list] = {}
     for para in squad2.paragraphs(data):
         by.setdefault(para.article, []).append(para)
+    from harness import cuts
     rows = []
     for article in squad2.shuffled(by, lambda a: a):
         if len(rows) >= n:
+            cuts.cut("squad2_retrieval_cases", "SQuAD retrieval articles past the case count", value=n, kept=len(rows))
             break
         corpus = [{"id": f"{slug(article)}-{p.index:02d}", "text": p.context} for p in by[article]]
         for para in squad2.shuffled(by[article], lambda p: p.pid):

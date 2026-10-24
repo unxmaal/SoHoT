@@ -181,15 +181,19 @@ class Workspace(sandbox.Sandbox):
         top = self.resolve(path or ".")
         if not top.exists():
             raise Refused(f"no such path: {path}")
-        hits = []
+        hits, big = [], 0
         for p in self._files(top):
             if p.stat().st_size > _SEARCH_FILE_BYTES:
+                big += 1
                 continue
             try:
                 lines = p.read_text(encoding="utf-8").splitlines()
             except (UnicodeDecodeError, OSError):
                 continue
             hits += [f"{self.rel(p)}:{i}: {line[:300]}" for i, line in enumerate(lines, 1) if rx.search(line)]
+        if big:
+            from harness import cuts
+            cuts.cut("repair_search_file_bytes", "files too big for the repair search to read", dropped=big)
         return "\n".join(hits) or "no match"
 
     def read_file(self, path, start_line=1, end_line=0) -> str:

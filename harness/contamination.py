@@ -44,6 +44,8 @@ def split_prefix(text: str):
     """(the shown prefix, the hidden continuation) on word boundaries; None if too short."""
     words = (text or "").split()
     if len(words) < PREFIX_WORDS + TARGET_WORDS:
+        from harness import cuts
+        cuts.cut("contamination_probe_words", "source item too short to probe", kept=0, dropped=1)
         return None
     return (" ".join(words[:PREFIX_WORDS]),
             " ".join(words[PREFIX_WORDS:PREFIX_WORDS + TARGET_WORDS]))

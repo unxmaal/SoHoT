@@ -145,3 +145,8 @@ NOT_GATING = {
     **{f"gateway/{name}:litellm_settings.num_retries": "pinned at 0 by a test, so no retry hides a failed "
        "upstream or folds two attempts into one timing (#694)" for name in ("config.yaml", "config.cuda.yaml")},
 }
+
+NEVER_CUTS = {
+    "harness/context.py:STEP": "the granularity a context is rounded down to; the KV room or trained context that binds "
+                               "records under its own knob (#498)",
+}

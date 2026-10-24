@@ -753,7 +753,9 @@ def _reread_runtime_declines(a) -> list[str]:
     began = heartbeat.clock()
     store = ms.connect()
     try:
-        names = ms.cards_to_reread(store)[:REREAD_PER_LOOP]
+        from harness import cuts
+        names = cuts.take(ms.cards_to_reread(store), REREAD_PER_LOOP, "screen_reread_per_loop",
+                          "runtime decline cards left for the next loop", conn=store)
     finally:
         store.close()
     if names:

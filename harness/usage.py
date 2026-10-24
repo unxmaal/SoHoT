@@ -243,7 +243,11 @@ def insert(conn, rows: list[tuple[dict, dict | None]]) -> None:
 def record_dropped(conn, rows: int, at: float | None = None) -> None:
     """Note that `rows` usage rows were lost at `at`, keeping DROP_HISTORY of such notes."""
     at = time.time() if at is None else float(at)
-    kept = [d for d in _drops(conn) if d[0] >= at - DROP_HISTORY] + [[at, int(rows)]]
+    history = _drops(conn)
+    kept = [d for d in history if d[0] >= at - DROP_HISTORY] + [[at, int(rows)]]
+    if len(kept) <= len(history):
+        from harness import cuts
+        cuts.cut("usage_drop_history", "usage-drop notes older than the history", dropped=len(history) + 1 - len(kept))
     conn.execute("INSERT OR REPLACE INTO meta VALUES (?, ?)", (DROPS_KEY, json.dumps(kept)))
     conn.commit()
 

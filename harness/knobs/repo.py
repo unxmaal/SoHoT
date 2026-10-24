@@ -81,3 +81,7 @@ NOT_GATING = {
     "evals/importers/history.py:HOLDOUT_FRACTION": "share of history tasks frozen into the held-out split by "
     "SPLIT_SEED and pinned in history.json; moving it reshuffles which tasks are quoted, so it is never swept (#995)",
 }
+
+NEVER_CUTS = {
+    "evals/fairness.py:FLAG": "flags a case in the fairness report; dropping or rewriting it is a later commit (#920)",
+}

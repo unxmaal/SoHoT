@@ -28,3 +28,7 @@ NOT_GATING = {
     "evals/importers/svg_synth.py:ATTEMPTS": "redraws of one row before the generator refuses a kind too small "
                                              "for its share; it raises, it never changes a case (#1050)",
 }
+
+NEVER_CUTS = {
+    "evals/importers/pii_synth.py:NO_PII_SHARE": "the mix of generated pii cases; every case drawn is written (#610)",
+}

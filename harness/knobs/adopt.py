@@ -26,10 +26,8 @@ KNOBS = [
        note="repeat a paired run takes when the powered one does not fit its budget (#591)"),
     _k("power_measuring_repeat", ["harness/power.py:MEASURING_REPEAT"], [2, 3, 4],
        note="least repeat of a stochastic lane whose within-case correlation is unmeasured, so the run measures it (#591)"),
-    _k("power_plateau", ["harness/power.py:PLATEAU"], [0.9, 0.95, 0.99],
-       note="share of the best power past whose first repeat more repeats buy nothing (#591)"),
-    _k("power_plateau_abs", ["harness/power.py:PLATEAU_ABS"], [0.005, 0.01, 0.02],
-       note="or power within this much of the best (#591)"),
+    _k("power_plateau", ["harness/power.py:PLATEAU", "harness/power.py:PLATEAU_ABS"], [0.9, 0.95, 0.99],
+       note="share of the best power, or within PLATEAU_ABS of it, past whose first repeat more repeats buy nothing (#591)"),
     _k("retests", ["harness/memory_store/transitions.py:RETESTS"], [1, 3, 5],
        note="times a screen or measure rejection is asked again, one retest_after apart, before it stands (#431)"),
     _k("retests_at_adopt", ["harness/memory_store/transitions.py:RETESTS_AT_ADOPT"], [0, 1, 2],
@@ -46,3 +44,7 @@ KNOBS = [
             "4% of the time (0.9**30); repo's Qwen3-4B passed 0 of 41 (run 470) and 0 of 39 six times (480-485), "
             "Ornith 2-5 of 39 (472-474) (#1110)"),
 ]
+
+NEVER_CUTS = {
+    "harness/holdout.py:SATURATED": "labels an incumbent's holdout saturated in the report; nothing is skipped (#479)",
+}

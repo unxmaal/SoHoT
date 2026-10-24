@@ -35,3 +35,7 @@ NOT_GATING = {
     "harness/checks/ocr.py:OcrResult.cer": "a measured result's value before it is measured (#706)",
     "harness/checks/ocr.py:check->OcrResult(cer)": "a measured result's value, as reported (#706)",
 }
+
+NEVER_CUTS = {
+    "evals/claims_report.py:CONTROL_RECALL": "labels the claims report's matcher suspect; every claim is still scored (#661)",
+}

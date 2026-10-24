@@ -71,7 +71,11 @@ def definition(tree: Tree, module: str, name: str, depth: int = 0):
             found = stmt
         elif isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name) and stmt.target.id == name:
             found = stmt
-        elif isinstance(stmt, ast.ImportFrom) and depth < _FOLLOW:
+        elif isinstance(stmt, ast.ImportFrom) and depth >= _FOLLOW:
+            if any((alias.asname or alias.name) == name for alias in stmt.names):
+                from harness import cuts
+                cuts.cut("repo_interface_follow", f"re-export of {name} past the import depth")
+        elif isinstance(stmt, ast.ImportFrom):
             for alias in stmt.names:
                 if (alias.asname or alias.name) == name:
                     src = _relative(path, stmt.level, stmt.module) if stmt.level else stmt.module or ""

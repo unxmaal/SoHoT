@@ -19,3 +19,8 @@ NOT_GATING = {
     "harness/funnel.py:OLDEST": "how many of a stage's longest waiters `soh funnel` names; every row is counted (#925)",
     "harness/migration_check.py:SHOWN": "failing rows a migration check's detail lists; the rest are counted (#478)",
 }
+
+NEVER_CUTS = {
+    "harness/context_report.py:BIG": "which results the share-over-2k column counts; every result is counted (#828)",
+    "harness/dora.py:THIN": "marks a DORA figure thin; the figure is still computed and shown (#5bb56d5a)",
+}

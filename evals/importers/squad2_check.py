@@ -30,18 +30,23 @@ def taken(root: Path = CASES) -> set[str]:
 
 def select(data: dict, n: int = N, exclude=frozenset()) -> list[dict]:
     """Rows: qualifying paragraphs in sha256(pid) order, each with its five questions."""
-    rows = []
+    from harness import cuts
+    rows, trimmed = [], 0
     for para in squad2.shuffled(squad2.paragraphs(data), lambda p: p.pid):
+        if len(rows) >= n:
+            cuts.cut("squad2_cases", "SQuAD check paragraphs past the case count", value=n, kept=len(rows))
+            break
         if any(f"squad2-{q.qid}" in exclude for q in para.qas):
             continue
         head = squad2.shuffled(para.qas, lambda q: q.qid)[:QUESTIONS]
         if len(head) < QUESTIONS or not 0 < sum(q.answerable for q in head) < QUESTIONS:
             continue
+        trimmed += len(para.qas) > QUESTIONS
         rows.append({"pid": para.pid, "context": para.context,
                      "questions": [{"qid": q.qid, "question": q.question,
                                     "answerable": q.answerable} for q in head]})
-        if len(rows) >= n:
-            break
+    if trimmed:
+        cuts.cut("squad2_check_questions", "SQuAD check paragraphs asked only their first questions", dropped=trimmed)
     return rows
 
 

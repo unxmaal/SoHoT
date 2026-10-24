@@ -18,3 +18,7 @@ NOT_GATING = {
     f"{S}:STOP_GRACE_S": "how long an overridden sweep has between TERM and KILL; the same role as "
                          "watchdog.STOP_GRACE_S (#1000)",
 }
+
+NEVER_CUTS = {
+    "harness/lanprobe.py:INSTANT_MS": "classes a failed connect as a denial or no route; the probe ran either way (#739)",
+}

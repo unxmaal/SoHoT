@@ -184,14 +184,19 @@ def _select(imp: Importer, n: int, rows, revision: str) -> list:
                 if len(picked) >= n:
                     break
         return picked
+    from harness import cuts
     half = GROUP // 2
     pools: dict = {True: [], False: []}
+    long = 0
     for idx, row in _each_row(rows):
         one = labelled_page(row, imp)
+        long += one is None and len((row.get(imp.text) or "").strip()) > PAGE_CHARS
         if one is not None and len(pools[one[1]]) < n * half:
             pools[one[1]].append((idx, one[0], one[1]))
         if min(len(pools[True]), len(pools[False])) >= n * half:
             break
+    if long:
+        cuts.cut("benchmark_page_chars", "labelled pages too long to group into a benchmark case", dropped=long)
     groups = min(n, len(pools[True]) // half, len(pools[False]) // half)
     return [convert_labelled(pools[True][i * half:(i + 1) * half]
                              + pools[False][i * half:(i + 1) * half], imp, revision)
