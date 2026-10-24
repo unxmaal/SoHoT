@@ -106,6 +106,144 @@ def cloud(since_day: str, runner=subprocess.run, which=shutil.which, versions: P
     return {**out, "available": True, **parse_ccusage(doc)}
 
 
+# --- cloud: which source counts each day (#1160) --------------------------------------------------
+
+#: Transcript usage fields and the ledger's names.
+USAGE_KEYS = (("input_tokens", "input"), ("output_tokens", "output"), ("cache_read_input_tokens", "cache_read"),
+              ("cache_creation_input_tokens", "cache_write"))
+#: Seconds either side of a session's exported requests within which a transcript record counts as exported.
+SPAN_SLACK_S = 60.0
+LOWER_BOUND = ("transcripts and ccusage miss Claude Code's final usage record for most messages and some requests "
+               "entirely (#1160), so a day they count is a lower bound")
+
+
+def _zero() -> dict:
+    return {name: 0 for _, name in TOKEN_KEYS}
+
+
+def _plus(a: dict, b: dict) -> dict:
+    return {k: (a.get(k) or 0) + (b.get(k) or 0) for k in _zero()}
+
+
+def _stamp(text) -> float | None:
+    try:
+        t = _dt.datetime.fromisoformat(str(text).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return (t if t.tzinfo else t.replace(tzinfo=_dt.timezone.utc)).timestamp()
+
+
+def usage_messages(files, since: float, until: float | None = None) -> list[dict]:
+    """Claude Code usage per API message, once over every file by (message.id, requestId): the final record, else the largest."""
+    got: dict = {}
+    for path in files:
+        with open(path, encoding="utf-8", errors="ignore") as fh:
+            for line in fh:
+                if '"usage"' not in line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+                msg = rec.get("message") if isinstance(rec, dict) else None
+                if rec.get("type") != "assistant" or not isinstance(msg, dict) or not isinstance(msg.get("usage"), dict):
+                    continue
+                at = _stamp(rec.get("timestamp"))
+                if at is None or at < since or (until is not None and at >= until):
+                    continue
+                key = (msg.get("id"), rec.get("requestId")) if msg.get("id") and rec.get("requestId") else rec.get("uuid")
+                m = got.setdefault(key, {"at": at, "session": str(rec.get("sessionId") or ""),
+                                         "model": str(msg.get("model") or "?"), "final": False, **_zero()})
+                final = bool(msg.get("stop_reason"))
+                if m["final"] and not final:
+                    continue
+                for src, name in USAGE_KEYS:
+                    n = int(msg["usage"].get(src) or 0)
+                    m[name] = n if final and not m["final"] else max(m[name], n)
+                m["final"] = m["final"] or final
+    return list(got.values())
+
+
+def spans(events) -> dict:
+    """session -> (start, end) its exported api_request events cover, each request's duration included."""
+    out: dict = {}
+    for e in events:
+        if e.get("name") != "api_request" or not e.get("session_id"):
+            continue
+        lo = e["at"] - (e.get("duration_ms") or 0) / 1000
+        a, b = out.get(e["session_id"], (lo, e["at"]))
+        out[e["session_id"]] = (min(a, lo), max(b, e["at"]))
+    return out
+
+
+def exported(m: dict, sp: dict, slack: float | None = None) -> bool:
+    slack = SPAN_SLACK_S if slack is None else slack
+    s = sp.get(m["session"])
+    return s is not None and s[0] - slack <= m["at"] <= s[1] + slack
+
+
+def _by_model(rows, get) -> tuple[dict, dict]:
+    total, models = _zero(), {}
+    for r in rows:
+        t = get(r)
+        total = _plus(total, t)
+        models[r["model"] or "?"] = _plus(models.get(r["model"] or "?", _zero()), t)
+    return total, {k: v for k, v in sorted(models.items()) if any(v.values())}
+
+
+def _event_tokens(e: dict) -> dict:
+    return {"input": int(e.get("input_tokens") or 0), "output": int(e.get("output_tokens") or 0),
+            "cache_read": int(e.get("cache_read_tokens") or 0), "cache_write": int(e.get("cache_creation_tokens") or 0)}
+
+
+def _msg_tokens(m: dict) -> dict:
+    return {k: m[k] for k in _zero()}
+
+
+def gap(events, messages) -> dict:
+    """OTel's output against the transcripts' for the same exported requests: the under-count #1160 measures."""
+    sp = spans(events)
+    api = [e for e in events if e.get("name") == "api_request"]
+    mine = [m for m in messages if exported(m, sp)]
+    o, t = sum(_event_tokens(e)["output"] for e in api), sum(m["output"] for m in mine)
+    return {"otel_requests": len(api), "transcript_messages": len(mine), "otel_output": o, "transcript_output": t,
+            "ratio": round(o / t, 2) if t else None}
+
+
+def cloud_days(days: list[str], cloud_doc: dict, events=(), messages=(), tz=None) -> dict:
+    """Per day: Claude Code tokens from OTel where it exported, else transcripts or ccusage as a lower bound."""
+    cdays = cloud_doc.get("days", {}) if cloud_doc.get("available") else {}
+    sp = spans(events)
+    api, msgs = {}, {}
+    for e in events:
+        if e.get("name") == "api_request":
+            api.setdefault(day_of(e["at"], tz), []).append(e)
+    for m in messages:
+        msgs.setdefault(day_of(m["at"], tz), []).append(m)
+    out = {}
+    for day in days:
+        cc = cdays.get(day)
+        tr_total, _ = _by_model(msgs.get(day, ()), _msg_tokens)
+        d = {"ccusage": cc["tokens"] if cc else None, "transcripts": tr_total if msgs.get(day) else None,
+             "otel": None, "outside": None}
+        if api.get(day):
+            ot, om = _by_model(api[day], _event_tokens)
+            rest = [m for m in msgs.get(day, ()) if not exported(m, sp)]
+            rt, rm = _by_model(rest, _msg_tokens)
+            models = {k: _plus(om.get(k, _zero()), rm.get(k, _zero())) for k in sorted(set(om) | set(rm))}
+            d.update(tokens=_plus(ot, rt), models=models, otel=ot, outside=rt if rest else None,
+                     source="otel+transcripts" if rest else "otel", lower_bound=bool(rest), outside_messages=len(rest))
+        elif cc:
+            d.update(tokens=cc["tokens"], models=cc["models"], source="ccusage", lower_bound=True)
+        elif msgs.get(day):
+            d.update(tokens=tr_total, models=_by_model(msgs[day], _msg_tokens)[1], source="transcripts",
+                     lower_bound=True)
+        else:
+            d.update(tokens=None, models={}, source=None, lower_bound=False)
+        out[day] = d
+    return out
+
+
 # --- plan headroom: the statusline's readings -----------------------------------------------------
 
 def read_jsonl(path: Path) -> list[dict]:
@@ -408,28 +546,43 @@ def _cloud_sum(days) -> dict:
     return out
 
 
+def cloud_summary(cloud_doc: dict, cdays: list[dict], available: bool) -> dict:
+    """The window's Claude Code tokens, the days each source counted, and ccusage's own total as the cross-check."""
+    sources: dict = {}
+    for c in cdays:
+        if c["source"]:
+            sources[c["source"]] = sources.get(c["source"], 0) + 1
+    cc = {k: v for k, v in cloud_doc.items() if k != "days"}
+    cc["tokens"] = _cloud_sum({"tokens": c["ccusage"]} for c in cdays) if cloud_doc.get("available") else None
+    lower = any(c["lower_bound"] for c in cdays)
+    return {"available": available, "tokens": _cloud_sum(cdays) if available else None, "sources": sources,
+            "lower_bound": lower, "why": None if available else cloud_doc.get("why"),
+            "note": LOWER_BOUND if lower else None, "ccusage": cc}
+
+
 def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limits: list[dict],
           power: list[dict], tariff: float | None = None, macmon: bool = False, tz=None, mapping=None,
-          delegations=(), context=(), macmon_version: str | None = None, census_doc: dict | None = None) -> dict:
+          delegations=(), context=(), macmon_version: str | None = None, census_doc: dict | None = None,
+          events=(), messages=()) -> dict:
     """The ledger: aggregates only, no prompts, paths or keys; Claude usage in tokens, never dollars (#976)."""
     tariff = TARIFF_USD_PER_KWH if tariff is None else tariff
     days = days_between(since, now, tz)
     loc = local(rows, tz, mapping, delegations)
     hr = headroom(limits, since, tz)
     en = energy(power, since, tariff, macmon, tz, macmon_version)
-    available = bool(cloud_doc.get("available"))
-    cdays = cloud_doc.get("days", {}) if available else {}
+    cdays = cloud_days(days, cloud_doc, events, messages, tz)
+    available = any(c["tokens"] is not None for c in cdays.values())
     ctx = context_days(context, tz)
     out_days = []
     for day in days:
-        c = cdays.get(day)
+        c = cdays[day]
         lday = loc.get(day) or _day({}, day)
         displaced = [{"lane": lane, **b} for lane, b in sorted(lday["work_lanes"].items())]
         mapped_rows = [{"mapping": key, **b} for key, b in sorted(lday["mapped"].items())]
         e = en.get("days", {}).get(day) if en.get("available") else None
         out_days.append({
             "day": day,
-            "cloud": {"tokens": c["tokens"] if c else None, "models": c["models"] if c else {}},
+            "cloud": c,
             "context": ctx.get(day, {}),
             "local": lday["purposes"],
             "delegated": lday["delegated"],
@@ -452,8 +605,7 @@ def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limit
             "mapping": [{"alias": a, "first_day": f, "last_day": l, "purpose": p, "why": w}
                         for a, f, l, p, w in (ALIAS_PURPOSE if mapping is None else mapping)],
         },
-        "cloud": {k: v for k, v in cloud_doc.items() if k != "days"}
-        | {"tokens": _cloud_sum(d["cloud"] for d in out_days) if available else None},
+        "cloud": cloud_summary(cloud_doc, [d["cloud"] for d in out_days], available),
         "headroom": {k: v for k, v in hr.items() if k != "days"},
         "local": {p: _sum(bs) for p, bs in sorted(purposes.items())},
         "delegated": _delegated(out_days),

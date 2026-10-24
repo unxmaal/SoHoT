@@ -19,7 +19,9 @@ def ledger_line(led: dict) -> str:
         f"PARTIAL, at least {pe.get('lower_bound_kwh') or 0:.2f} kWh without the CPU ({(pe.get('why') or '').split(';')[0]})"
     plan = ", ".join(f"{lab} {led['plan'][k]:.0f}%" for k, lab in (("five_hour", "5h"), ("seven_day", "7d"))
                      if led["plan"].get(k) is not None) or "no readings"
-    return (f"ledger    {led['day']}: cloud {tokens(led['cloud'])}; plan peak {plan}; "
+    src = led.get("cloud_source")
+    src = f" ({'at least, ' if led.get('cloud_lower_bound') else ''}{src})" if src else ""
+    return (f"ledger    {led['day']}: cloud {tokens(led['cloud'])}{src}; plan peak {plan}; "
             f"displaced {local_tokens(led['displaced'])}, energy {kwh} (recorded {_hm(led['recorded_at'])})")
 
 

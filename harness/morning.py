@@ -177,7 +177,8 @@ def ledger_row(conn, now: float) -> dict | None:
     e = (d.get("energy") or {})
     return {"day": r["day"], "recorded_at": r["recorded_at"], "energy_kwh": r["energy_kwh"],
             "energy": {k: e.get(k) for k in ("partial", "lower_bound_kwh", "why")} if e.get("partial") else {},
-            "cloud": (d.get("cloud") or {}).get("tokens"), "plan": d.get("headroom") or {}, "displaced": displaced}
+            "cloud": (d.get("cloud") or {}).get("tokens"), "cloud_source": (d.get("cloud") or {}).get("source"),
+            "cloud_lower_bound": bool((d.get("cloud") or {}).get("lower_bound")), "plan": d.get("headroom") or {}, "displaced": displaced}
 
 
 def stale_lanes(conn) -> list[dict]:

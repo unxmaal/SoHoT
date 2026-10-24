@@ -46,13 +46,15 @@ def gather(a, now: float) -> dict:
         finally:
             conn.close()
     root = cr.default_root()
-    ctx = cr.scan(cr.transcripts(root, newer_than=start), since=start) if root.is_dir() else []
+    files = list(cr.transcripts(root, newer_than=start)) if root.is_dir() else []
+    ctx = cr.scan(files, since=start)
     out = ledger.build(
         since=start, now=now, cloud_doc=ledger.cloud(first_day), rows=rows,
         limits=ledger.read_jsonl(ledger.ledger_dir() / "ratelimits.jsonl"),
         power=ledger.read_jsonl(ledger.ledger_dir() / "power.jsonl"),
         tariff=a.tariff, macmon=bool(shutil.which("macmon")), delegations=dels, context=ctx,
-        macmon_version=ledger.macmon_version(), census_doc=ledger.census())
+        macmon_version=ledger.macmon_version(), census_doc=ledger.census(), events=ev,
+        messages=ledger.usage_messages(files, start))
     out["recorded"] = history
     out["otel"] = otel_days(ev)
     return out
@@ -70,11 +72,8 @@ def otel_days(ev: list[dict], tz=None) -> dict:
 def show(L: dict) -> None:
     w, s = L["window"], L["assumptions"]
     note(f"ledger {w['first_day']} .. {w['last_day']}")
-    c = L["cloud"]
-    if c.get("available"):
-        note(f"cloud     {tokens(c['tokens'])} ({c['source']})")
-    else:
-        note(f"cloud     unavailable: {c.get('why')}")
+    for line in cloud_lines(L["cloud"]):
+        note(line)
     od = L.get("otel") or {}
     if od:
         note(f"otel      {tokens(_otel_sum(od))} over {sum(d['requests'] for d in od.values()):,} "
@@ -117,7 +116,7 @@ def show(L: dict) -> None:
     if e.get("available"):
         note(f"          {energy_scope(e)}")
     note("")
-    note(f"{'day':<10} {'cloud in':>9} {'cloud out':>9} {'cache rd':>9} {'displaced':>9} "
+    note(f"{'day':<10} {'source':<18} {'cloud in':>9} {'cloud out':>9} {'cache rd':>9} {'displaced':>9} "
          f"{'eval out':>9} {'unknown out':>11} {'kWh':>7} {'5h peak':>7} {'7d peak':>7}")
     for d in L["days"]:
         loc = d["local"]
@@ -126,11 +125,26 @@ def show(L: dict) -> None:
         cell = (lambda k: "n/a" if ct is None else _tok(ct.get(k) or 0))  # noqa: E731
         peaks = ["" if d["headroom"].get(k) is None else f"{d['headroom'][k]:.0f}%" for k in ("five_hour", "seven_day")]
         dt = d["displaced"]["tokens"]
-        note(f"{d['day']:<10} {cell('input'):>9} {cell('output'):>9} {cell('cache_read'):>9} "
+        note(f"{d['day']:<10} {source_cell(d['cloud']):<18} {cell('input'):>9} {cell('output'):>9} {cell('cache_read'):>9} "
              f"{_tok(dt['input'] + dt['output']):>9} "
              f"{_tok(loc.get('eval', {}).get('output', 0)):>9} {_tok(loc.get('unknown', {}).get('output', 0)):>11} "
              f"{kwh_cell(en):>7} {peaks[0]:>7} {peaks[1]:>7}")
     note("\nClaude Code on a subscription is counted in tokens and plan-window use, not priced (#976)")
+
+
+def cloud_lines(c: dict) -> list[str]:
+    """The cloud total with the days each source counted, then ccusage's total as the cross-check. #1160."""
+    if not c.get("available"):
+        return [f"cloud     unavailable: {c.get('why')}"]
+    cc = c.get("ccusage") or {}
+    name = {"ccusage": cc.get("source") or "ccusage"}
+    by = ", ".join(f"{name.get(s, s)} {n} day{'s' if n != 1 else ''}" for s, n in sorted(c["sources"].items()))
+    out = [f"cloud     {tokens(c['tokens'])} ({by})"]
+    if c.get("lower_bound"):
+        out.append(f"          lower bound: {c['note']}")
+    out.append(f"          {cc.get('source', 'ccusage')}: " + (tokens(cc["tokens"]) if cc.get("available")
+                                                              else f"unavailable: {cc.get('why')}"))
+    return out
 
 
 def accepted_lines(A: dict) -> list[str]:
@@ -149,6 +163,13 @@ def accepted_lines(A: dict) -> list[str]:
                   f"{b['local_share']:.1%}" if b["local_share"] is not None else "no tasks of that shape")
         out.append(f"          {lane:<8} {b['accepted']} accepted, {b['per_day']:.2f}/day; {vs}")
     return out
+
+
+def source_cell(c: dict) -> str:
+    """Which source counted a day's cloud tokens, with '>=' when that is a lower bound. #1160."""
+    if not c.get("source"):
+        return "-"
+    return (">=" if c.get("lower_bound") else "") + c["source"]
 
 
 def kwh_cell(en: dict) -> str:
@@ -186,9 +207,22 @@ def gather_compare(day: str, tz=None) -> dict:
             conn.close()
     cc = ledger.cloud(day)
     root = cr.default_root()
-    ctx = cr.scan(cr.transcripts(root, newer_than=start), since=start, until=end) if root.is_dir() else []
-    return otel.compare(day, ev, mt, (cc.get("days") or {}).get(day), ctx,
-                        ccusage_available=bool(cc.get("available")))
+    files = list(cr.transcripts(root, newer_than=start)) if root.is_dir() else []
+    ctx = cr.scan(files, since=start, until=end)
+    msgs = ledger.usage_messages(files, start, end)
+    chosen = ledger.cloud_days([day], cc, ev, msgs, tz)[day]
+    usage = {**ledger._by_model(msgs, ledger._msg_tokens)[0], "requests": len(msgs)} if msgs else None
+    C = otel.compare(day, ev, mt, (cc.get("days") or {}).get(day), ctx,
+                     ccusage_available=bool(cc.get("available")), usage=usage, chosen=chosen)
+    g = ledger.gap(ev, msgs)
+    C["gap"], C["source"] = g, {k: chosen.get(k) for k in ("source", "lower_bound", "outside_messages")}
+    C["notes"]["ledger"] = (f"counts {chosen['source'] or 'nothing'}"
+                            + (" (a lower bound)" if chosen["lower_bound"] else ""))
+    if g["ratio"] is not None:
+        C["notes"]["gap"] = (f"OTel output {g['otel_output']:,} over {g['otel_requests']:,} requests is "
+                             f"{g['ratio']:.2f}x the transcripts' {g['transcript_output']:,} over the "
+                             f"{g['transcript_messages']:,} messages they kept of the same requests")
+    return C
 
 
 def _cell(v) -> str:

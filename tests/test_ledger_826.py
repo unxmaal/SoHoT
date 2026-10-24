@@ -334,7 +334,7 @@ def test_the_text_report_counts_claude_in_tokens(monkeypatch, capsys):
         "available": True, "source": "ccusage@x", **ledger.parse_ccusage(ccusage_doc())})
     assert cli.main(["ledger", "--since", "2026-10-08"]) == 0
     out = capsys.readouterr().out
-    assert "cloud     1,015 in, 2,027 out, 4,000 cache read, 3,000 cache write (ccusage@x)" in out
+    assert "cloud     1,015 in, 2,027 out, 4,000 cache read, 3,000 cache write (ccusage@x 3 days)" in out
     assert "energy unavailable" in out or "no power samples" in out
 
 
