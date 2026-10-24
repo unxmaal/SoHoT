@@ -1,0 +1,54 @@
+--- a/harness/memory_store/migrations/retractions.py
++++ b/harness/memory_store/migrations/retractions.py
+@@ -133,6 +133,32 @@ def _requeue_disk_floor_declines(conn) -> None:
+                               f"not a verdict on {row['name']}")
+ 
+ 
++def _requeue_length_refusals(conn) -> None:
++    """A #803 length refusal declined a screened candidate #813 now pauses instead; back to screened. #815."""
++    rows = conn.execute(
++        "SELECT p.id, p.name FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
++        "WHERE p.state = 'declined' AND v.outcome = 'declined' AND v.tier = 'adopt' "
++        "AND v.reason = 'limit' AND COALESCE(v.until, '') = '' "
++        "AND v.detail LIKE '%not run:%projected at%over the%budget%' "
++        "AND v.detail NOT LIKE '%underpowered%' "
++        "AND COALESCE(v.failure_class, '') <> 'underpowered' "
++        "AND NOT EXISTS (SELECT 1 FROM verdicts l WHERE l.proposal_id = p.id "
++        " AND l.id > v.id) "
++        "AND (SELECT w.outcome FROM verdicts w WHERE w.proposal_id = p.id "
++        " AND w.id < v.id ORDER BY w.id DESC LIMIT 1) = 'screened'").fetchall()
++    for row in rows:
++        _migration_retraction(conn, row["id"], row["name"], "screened", SCREEN,
++                              f"retracted: the #803 length cap refused {row['name']} "
++                              f"before it was measured; #813 pauses and resumes a long "
++                              f"run instead, so it is measurable again")
++
++
+ def _retract_verdicts_with_no_control(conn) -> None:
+     """Undo an adoption verdict drawn from a run where the CONTROL scored zero.
+ 
+--- a/harness/memory_store/migrations/v71.py
++++ b/harness/memory_store/migrations/v71.py
+@@ -0,0 +1,11 @@
++"""Schema 71: requeue candidates the #803 length cap declined, now that #813 pauses instead."""
++from __future__ import annotations
++
++from harness.memory_store.migrations.retractions import _requeue_length_refusals
++
++VERSION = 71
++
++
++def data(conn) -> None:
++    """Reopen screened candidates a pre-#815 length refusal declined."""
++    _requeue_length_refusals(conn)
+--- a/harness/memory_store/schema.py
++++ b/harness/memory_store/schema.py
+@@ -4,7 +4,7 @@ from __future__ import annotations
+ from harness import store
+ 
+ 
+-SCHEMA_VERSION = 70
++SCHEMA_VERSION = 71
+ 
+ 
+ #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.

@@ -474,8 +474,9 @@ def _apply(files: dict, diff: str) -> dict | None:
         for rel, pair in files.items():
             (root / rel).parent.mkdir(parents=True, exist_ok=True)
             (root / rel).write_text(pair["base"], encoding="utf-8")
+        headed = repo.with_git_headers(diff, lambda rel: (root / rel).exists())
         got = subprocess.run(["git", "apply", "--recount", "--whitespace=nowarn", "-"], cwd=root,
-                             input=repo.with_git_headers(diff).encode("utf-8"), capture_output=True, check=False)
+                             input=headed.encode("utf-8"), capture_output=True, check=False)
         if got.returncode:
             return None
         return {rel: (root / rel).read_text(encoding="utf-8") if (root / rel).exists() else "" for rel in files}
