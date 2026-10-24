@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import time
 
-from harness import binding, knobs
+from harness import binding, knobs, reasons
 
 REQUESTED_BY = binding.SWEEP
 #: Below a person's jobs and beside reverify's.
@@ -21,6 +21,10 @@ PRIORITY = -10
 CHOSEN, UNRUN, CANCELLED, UNINFORMATIVE = "chosen", "unrun", "cancelled", "uninformative"
 #: The stored runs show no reply cut at the budget passes with more room, so nothing was queued. #1020.
 NOT_BINDING = "not_binding"
+#: The swept model has no stored run giving its cuts more room, and the lane's other models' cuts do not convert. #1177.
+NOT_BINDING_LANE = "not_binding_lane"
+#: Cuts the lane's stored runs must have given more room, none passing, before a model with no ladder of its own is not swept.
+LANE_MIN_CUTS = 20
 
 
 def _flag(k, value) -> list[str]:
@@ -45,7 +49,7 @@ def _key(conn, knob: str, lane: str, spec: str, mid) -> dict | None:
 def _skip(conn, last: dict | None, now: float) -> str:
     """Why a sweep is not queued: one is waiting, one decided, or one the harness could not run is still recent."""
     from harness import reverify
-    if last is None or last["outcome"] == NOT_BINDING:
+    if last is None or last["outcome"] in (NOT_BINDING, NOT_BINDING_LANE):
         return ""
     if not last["outcome"]:
         return f"already queued as sweep {last['id']}"
@@ -87,20 +91,50 @@ def _failed(conn, lane: str, cid) -> str:
     return last["detail"] if last and last["outcome"] in (reverify.FAILED, reverify.REGRESSED) else ""
 
 
+def below(conn, lane: str, spec: str, incumbents, machines) -> str:
+    """Why the newest run here pairing `spec` with one of `incumbents` shows it passing fewer of their shared cases; '' if none does. #1177."""
+    from harness import adopt, reverify, runs
+    flagged = reverify._flagged_runs(conn)
+    others = [i for i in incumbents if i and i != spec and not adopt.is_reference(i)]
+    sql = ("SELECT runs.id AS run_id, COALESCE(c.spec, res.candidate) AS spec, res.case_id, res.repeat_index, "
+           "res.passed FROM results res JOIN runs ON res.run_id = runs.id LEFT JOIN jobs ON jobs.id = runs.job_id "
+           "LEFT JOIN candidates c ON c.id = res.candidate_id WHERE runs.lane = ? AND runs.tier = ? "
+           f"AND COALESCE(jobs.requested_by, '') != '{REQUESTED_BY}'")
+    clause, ids = runs._in("runs.machine_id", machines) if machines is not None else ("", ())
+    by: dict = {}
+    for r in conn.execute(sql + clause + " ORDER BY COALESCE(runs.generated_at, runs.recorded_at) DESC, runs.id DESC",
+                          (lane, runs.MEASURE, *ids)):
+        if r["run_id"] not in flagged and r["spec"] in (spec, *others):
+            by.setdefault(r["run_id"], {}).setdefault(r["spec"], {})[(r["case_id"], r["repeat_index"])] = bool(r["passed"])
+    for inc in others:
+        for rid, got in by.items():
+            shared = got.get(spec, {}).keys() & got.get(inc, {}).keys()
+            if not shared:
+                continue
+            mine, theirs = sum(got[spec][k] for k in shared), sum(got[inc][k] for k in shared)
+            if mine < theirs:
+                return f"{spec} passed {mine} of {len(shared)} beside {inc}'s {theirs} in run {rid}"
+            break
+    return ""
+
+
 def model(conn, item: dict, machines) -> tuple[dict | None, str]:
-    """The model a lane's sweep runs: the served one when it passes a case here, else the lane's best passing one, else None and why. #1009."""
+    """The model a lane's sweep runs: the served one when it passes a case here and no paired run shows it below its incumbent, else the lane's best such one, else None and why. #1009, #1177."""
     from harness import adopt
     lane = item["lane"]
     seen = passing(conn, lane, machines)
     own = (seen.get(item["candidate_id"]) if item["candidate_id"] is not None
            else next((m for m in seen.values() if m["spec"] == item["spec"]), None))
     why = _failed(conn, lane, item["candidate_id"])
-    if own and own["passed"] and not why:
+    lost = below(conn, lane, item["spec"], [item.get("incumbent")], machines) if own and own["passed"] and not why else ""
+    if own and own["passed"] and not why and not lost:
         return item, ""
-    why = why or (f"{item['spec']} passed 0 of {own['n']} in run {own['run_id']}" if own
-                  else f"{item['spec']} has no measured run in {lane} here")
+    why = why or lost or (f"{item['spec']} passed 0 of {own['n']} in run {own['run_id']}" if own
+                          else f"{item['spec']} has no measured run in {lane} here")
+    above = [item["spec"], item.get("incumbent")]
     best = sorted((m for m in seen.values() if m["passed"] and not adopt.is_reference(m["spec"])
-                   and not _failed(conn, lane, m["candidate_id"])),
+                   and m["spec"] != item["spec"] and not _failed(conn, lane, m["candidate_id"])
+                   and not below(conn, lane, m["spec"], above, machines)),
                   key=lambda m: (-m["passed"] / m["n"], -m["passed"]))
     if not best:
         return None, f"{why}, and no model passes a case in {lane} here, so a sweep could see nothing"
@@ -147,6 +181,16 @@ def _night(conn, entry: dict, k, swept: dict, machines, now: float) -> str:
             f"{time.strftime('%H:%M', time.localtime(end))})")
 
 
+def lane_evidence(row: dict, spec: str) -> dict | None:
+    """Not binding for a model with no ladder of its own when at least LANE_MIN_CUTS of the lane's cuts were given more room and none passed. #1177."""
+    if row.get("converted") or row.get("cuts", 0) < LANE_MIN_CUTS:
+        return None
+    where = ", ".join(row["where"])
+    return {"binding": False, "lane": True, "cut": row["cuts"], "passed": 0, "where": row["where"],
+            "detail": f"not binding on the lane: 0 of {row['cuts']} cut replies pass with more room ({where}), "
+                      f"and no stored run of {spec} gave its cuts more room"}
+
+
 def plan(conn, *, now: float | None = None) -> list[dict]:
     """Every binding knob an eval can set, on a lane this machine serves, with the commands that would sweep it."""
     from harness import binding, convertible, memory_store as ms, reverify, runs
@@ -171,7 +215,11 @@ def plan(conn, *, now: float | None = None) -> list[dict]:
                  "machine_id": mid, "trigger": trigger, "model": note, "evidence": None}
         if k.receipt == "max_tokens":
             ev = entry["evidence"] = convertible.evidence(conn, row["lane"], swept["spec"], row["value"], machines)
-            if ev["binding"] is not None:
+            if ev["binding"] is None and "cut" not in ev:
+                ev = entry["evidence"] = lane_evidence(row, swept["spec"]) or ev
+            if ev.get("lane"):
+                trigger.update(cut=ev["cut"], convertible=ev["passed"], runs=ev["where"])
+            elif ev["binding"] is not None:
                 trigger.update(cut=ev["cut"], convertible=ev["passed"], at=ev["top"])
             if ev["binding"] is False:
                 out.append({**entry, "argv": {}, "skip": ev["detail"]})
@@ -186,15 +234,18 @@ def plan(conn, *, now: float | None = None) -> list[dict]:
 def _not_binding(conn, entry: dict, now: float) -> dict | None:
     """Record a knob the stored runs show is not binding, once per distinct finding. #1020."""
     last = _key(conn, entry["knob"], entry["lane"], entry["spec"], entry["machine_id"])
-    if last and last["outcome"] == NOT_BINDING and last["detail"] == entry["skip"][:500]:
+    if last and last["outcome"] in (NOT_BINDING, NOT_BINDING_LANE) and last["detail"] == entry["skip"][:500]:
         return None
     ev = entry["evidence"]
-    cost = {k: ev[k] for k in ("cut", "passed", "wrong", "again", "top", "low", "high", "clean", "confounded")}
+    keys = ("cut", "passed", "where") if ev.get("lane") else (
+        "cut", "passed", "wrong", "again", "top", "low", "high", "clean", "confounded")
+    cost = {k: ev[k] for k in keys}
     cur = conn.execute(
         "INSERT INTO knob_sweeps (knob, lane, spec, candidate_id, machine_id, jobs, trigger, queued_at, settled_at, "
         "outcome, cost, detail) VALUES (?,?,?,?,?,'[]',?,?,?,?,?,?)",
         (entry["knob"], entry["lane"], entry["spec"], entry["candidate_id"], entry["machine_id"],
-         json.dumps(entry["trigger"]), now, now, NOT_BINDING, json.dumps(cost), entry["skip"][:500]))
+         json.dumps(entry["trigger"]), now, now, NOT_BINDING_LANE if ev.get("lane") else NOT_BINDING,
+         json.dumps(cost), entry["skip"][:500]))
     conn.commit()
     return {**entry, "sweep": cur.lastrowid}
 
@@ -217,9 +268,10 @@ def _queue(conn, entry: dict, now: float, add) -> dict:
 
 
 def _power_to_see_a_loss(best_rows, cell, alpha: float, effect: float) -> float:
-    """Power of the paired test to see this value lose `effect` per cell against the best. #690."""
+    """Power of the paired test to see this value lose `effect` per cell against the best; unjudged draws left out. #690, #1178."""
     from harness import paired, power
-    got = paired.draws(best_rows)
+    got = {k: j for k, v in paired.draws(best_rows, unjudged=paired.UNJUDGED_ON_A_TIMEOUT_AXIS).items()
+           if (j := [x for x in v if x is not None])}
     if not got:
         return 0.0
     repeat = sum(map(len, got.values())) / len(got)
@@ -301,9 +353,11 @@ def judge(conn, sw: dict) -> tuple[str, object, dict, str]:
         rid = _run_of(conn, job_id)
         if rid is None:
             continue
+        rows = runs.rows(conn, rid, sw["candidate_id"]) if sw["candidate_id"] is not None else runs.rows(conn, rid)
+        if rows and all(not r["passed"] and r["failure_class"] in reasons.NEVER_RAN for r in rows):
+            continue
         ran[value] = rid
-        outcomes[value] = (runs.rows(conn, rid, sw["candidate_id"]) if sw["candidate_id"] is not None
-                           else runs.rows(conn, rid))
+        outcomes[value] = rows
     chosen, cost = decide(k.values_for(sw["lane"]), outcomes, adopt.ALPHA, power.effect_for(sw["lane"]))
     if not cost:
         return UNRUN, None, {}, f"none of the {len(json.loads(sw['jobs']))} jobs stored a run"
