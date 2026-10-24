@@ -63,6 +63,9 @@ class Fake(wd.Probes):
     def fallbacks(self, conn):
         return self._fallbacks if self._fallbacks is not None else []
 
+    def mcp_connections(self, port):
+        return getattr(self, "connections", None)
+
     def state(self):
         d = self.tmp / "wd"
         d.mkdir(exist_ok=True)

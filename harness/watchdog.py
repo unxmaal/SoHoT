@@ -62,6 +62,8 @@ STOP_GRACE_S = 30.0
 RESTART_TIMEOUT_S = 180.0
 #: Each outside probe (ps, launchctl, gh, the gateway) gets this long.
 PROBE_TIMEOUT_S = 10.0
+STALE_MCP_REMEDY = ("stopping it ends these clients' stream; Claude Code then refetches tools/list from the live "
+                    "server, though a description it already loaded only changes in a new session")
 GH_TIMEOUT_S = 30.0
 #: One desktop notification per criterion and subject this often at most; a repeating trip is recorded, not re-shown.
 NOTIFY_EVERY_S = 3600.0
@@ -212,6 +214,18 @@ class Probes:
         got = self._launchctl(service)
         m = re.search(r"^\tpid = (\d+)", got.stdout, re.M) if got is not None and got.returncode == 0 else None
         return int(m.group(1)) if m else None
+
+    def mcp_connections(self, port: int) -> str | None:
+        """`lsof -F pn` of every established TCP connection on `port`; None when lsof cannot be asked."""
+        if sys.platform == "win32":
+            return None
+        try:
+            got = subprocess.run(["lsof", "-nP", f"-iTCP:{port}", "-sTCP:ESTABLISHED", "-Fpn"], capture_output=True,
+                                 text=True, timeout=PROBE_TIMEOUT_S)
+        except (OSError, subprocess.SubprocessError):
+            return None
+        # lsof exits 1 when it matched nothing
+        return got.stdout if got.returncode == 0 or (got.returncode == 1 and not got.stdout) else None
 
     def launchd_loaded(self, service: str) -> bool | None:
         got = self._launchctl(service)
@@ -508,6 +522,8 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
             world.mcp_stale.append(Subject("mcp", f"mcp pid {p.pid}", "a harness.mcp_server the mcp unit is not",
                                            pid=p.pid, elapsed_s=p.elapsed_s, command=p.command,
                                            orphan=p.ppid == 1, detail={"live_pid": world.mcp_live}))
+        if world.mcp_stale:
+            _mcp_clients(probes, world, listed)
     world.lock = probes.lock()
     world.cloud = probes.cloud()
     world.resident = probes.resident()
@@ -688,12 +704,27 @@ def _orphan(w: World) -> list[Finding]:
             for s in w.top if s.orphan and (s.elapsed_s or 0) >= ORPHAN_GRACE_S]
 
 
+def _mcp_clients(probes: Probes, world: World, procs: list) -> None:
+    """Name the sessions each stale server holds: they keep its tool list until it stops, then refetch. #1166."""
+    from harness import mcp_peers
+    port = mcp_peers.port_of(world.mcp_stale[0].command)
+    listing = probes.mcp_connections(port)
+    if listing is None:
+        world.gaps["mcp_clients"] = "lsof cannot be asked which clients hold the stale servers' streams"
+        return
+    held = mcp_peers.clients(listing, port)
+    for s in world.mcp_stale:
+        s.detail["clients"] = [mcp_peers.describe(c, procs) for c in held.get(s.pid, [])]
+
+
 def _stale_mcp(w: World) -> list[Finding]:
     from harness import mcp_peers
     if (w.mcp_live_s or 0) < ORPHAN_GRACE_S:
         return []
     return [Finding("stale_mcp", s, {"elapsed_s": round(s.elapsed_s or 0), "live_pid": w.mcp_live,
-                                     "stop": mcp_peers.stop_command([s.pid])}) for s in w.mcp_stale]
+                                     "stop": mcp_peers.stop_command([s.pid]),
+                                     "clients": s.detail.get("clients", w.gaps.get("mcp_clients")),
+                                     "remedy": STALE_MCP_REMEDY}) for s in w.mcp_stale]
 
 
 def _daytime_gpu(w: World) -> list[Finding]:
