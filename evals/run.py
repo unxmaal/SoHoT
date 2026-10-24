@@ -1633,7 +1633,7 @@ def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None,
         # A cold load is not the case's to pay for in any tier; a failed one is every case's. #406, #694.
         kept["cold"] = None
         try:
-            runner.warm()
+            warm(runner)
         except RunnerError as exc:
             kept["cold"] = exc
     if first:
@@ -1662,6 +1662,32 @@ def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None,
             evicted[runner.candidate] = kept["lost"]
             print(f"  router evicted {model} {len(kept['lost'])} time(s) during this run; "
                   f"it will not be ranked", file=sys.stderr)
+
+
+#: Seconds a warm-up waits for a gateway that refuses connections (a router restarting) before every case fails. #1181.
+GATEWAY_DOWN_WAIT_S = 120.0
+#: How often a warm-up asks a refusing gateway again. #1181.
+GATEWAY_DOWN_POLL_S = 1.0
+
+
+def warm(runner, clock=None, sleep=None) -> None:
+    """runner.warm(), asking again for up to GATEWAY_DOWN_WAIT_S while nothing listens at the gateway. #1181."""
+    clock, sleep = clock or time.monotonic, sleep or time.sleep
+    end = None
+    while True:
+        try:
+            return runner.warm()
+        except RunnerError as exc:
+            if not completion.unreachable(exc):
+                raise
+            now = clock()
+            if end is None:
+                end = now + GATEWAY_DOWN_WAIT_S
+                print(f"  {exc}; waiting up to {GATEWAY_DOWN_WAIT_S:g} s for it to answer",
+                      file=sys.stderr, flush=True)
+            if now >= end:
+                raise
+            sleep(GATEWAY_DOWN_POLL_S)
 
 
 def _traced(runner):

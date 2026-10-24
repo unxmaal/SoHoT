@@ -182,6 +182,17 @@ def timeout_for(max_tokens: int) -> float:
     return max(TIMEOUT_S, float(max_tokens) / MIN_DECODE_TOK_S)
 
 
+def unreachable(exc: BaseException | None) -> bool:
+    """True when `exc`, or anything it was raised from, is a refused connection: nothing listens there yet. #1181."""
+    seen = set()
+    while exc is not None and id(exc) not in seen:
+        if isinstance(exc, httpx.ConnectError):
+            return True
+        seen.add(id(exc))
+        exc = exc.__cause__ or exc.__context__
+    return False
+
+
 class CompletionError(RuntimeError):
     """The gateway did not return usable text."""
 

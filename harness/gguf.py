@@ -238,8 +238,11 @@ def refresh_router(expect=(), run=None, wait=None) -> str:
     """Restart the eval server so its router sees a new file, then wait until it answers. #319, #1012."""
     import subprocess
     import sys
-    (run or subprocess.run)(router_restart_argv(sys.platform), check=False)
-    why = (wait or wait_router)(tuple(expect))
+    from harness import exclusive
+    # The restart's own with-gpu-lock lets go when kickstart returns; held to here, no queued eval meets it down. #1181.
+    with exclusive.held("external", announce=lambda m: print(f"  router restart: {m}", flush=True)):
+        (run or subprocess.run)(router_restart_argv(sys.platform), check=False)
+        why = (wait or wait_router)(tuple(expect))
     if why:
         print(f"  router restart: {why}; a screen now would be refused_by_gateway", file=sys.stderr)
     return why

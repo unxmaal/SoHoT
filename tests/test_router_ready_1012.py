@@ -158,6 +158,11 @@ def test_a_router_still_loading_is_not_ready():
 @pytest.mark.parametrize("platform", ["darwin", "linux", "win32"])
 def test_every_platform_waits_after_its_restart(platform, monkeypatch):
     """Read at call time: services.sh restart backgrounds the server as kickstart -k does."""
+    import contextlib
+
+    from harness import exclusive
+    # The real lock reads sys.platform too, and msvcrt is not on this machine.
+    monkeypatch.setattr(exclusive, "held", lambda *a, **k: contextlib.nullcontext(False))
     monkeypatch.setattr(sys, "platform", platform)
     order = []
     REFRESH(expect=(STEM,), run=lambda cmd, check=False: order.append(("run", cmd)),

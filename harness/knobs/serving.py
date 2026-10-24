@@ -9,6 +9,10 @@ KNOBS = [
        note="context each Qwen2.5-7B-Instruct-Q4_K_M slot is sized for; never under context.MIN_SLOT_CTX (#665)"),
     _k("eval7b_slots", ["harness/context.py:EVAL_7B_SLOTS"], [1, 4, 8, 16, 32],
        note="llama-server slots Qwen2.5-7B-Instruct-Q4_K_M batches across; sets claims throughput, not a grade (#665)"),
+    _k("gateway_down_wait", ["evals/run.py:GATEWAY_DOWN_WAIT_S"], [30.0, 120.0, 300.0],
+       note="seconds a warm-up asks again while nothing listens at the gateway before every case is refused_by_gateway; "
+            "jobs 0141/0142 met a router restart that bound :8082 within 5 s (0143 warmed at 21:07:32), and a "
+            "restart is given gguf.READY_TIMEOUT_S 120 s to answer (#1012, #1181)"),
     _k("gpu_fraction", ["harness/memory.py:GPU_FRACTION"], [0.65, 0.75, 0.85],
        note="share of RAM Metal hands out when sysctl iogpu.wired_limit_mb is unset; measured on 32 GB (#699)"),
     _k("kv_cap", ["harness/context.py:KV_MAX_GIB", "harness/context.py:KV_MAX_RAM_GB"], [4, 8, 16, 24, 32],
@@ -60,6 +64,7 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    "evals/run.py:GATEWAY_DOWN_POLL_S": "how often a warm-up asks a refusing gateway again; gateway_down_wait bounds the wait (#1181)",
     "harness/idle_unload.py:WINDOW_DAYS": "how far back soh load-log --idle reads requests; evidence for a knob, never a limit (#1157)",
     "harness/slot_probe.py:POLL_S": "how often the slot probe asks /slots while it waits; slot_probe_settle bounds the wait (#1127)",
     "harness/commands/loop.py:LEASE_S": "how long a discover loop's store lease outlives a holder that died; "
