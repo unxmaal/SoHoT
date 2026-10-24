@@ -87,6 +87,7 @@ def render(r: dict) -> list[str]:
         flags = ("escalated " if w["escalated"] else "") + ("dry-run" if w["dry_run"] else "acted")
         out.append(f"          {_hm(w['at'])} {w['action']:<6} {w['criterion']} on {w['subject']} [{flags}]: "
                    f"{w['outcome']}")
+        out.extend(f"            client {c}" for c in w.get("clients") or [])
     c = r["ci"]
     if not c.get("available"):
         out.append(f"nightly   unavailable: {c.get('why')}")

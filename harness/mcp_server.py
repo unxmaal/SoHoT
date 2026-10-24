@@ -477,19 +477,26 @@ def serve(host: str, port: int, allow=(), grace: float = SHUTDOWN_GRACE_S) -> No
     uvicorn.Server(config).run(sockets=[sock])
 
 
-def stale_report(port: int, pid: int, procs=None) -> list[str]:
-    """With the port bound here, every other server for it is draining an old client's stream. #1155."""
+def stale_report(port: int, pid: int, procs=None, probes=None) -> list[str]:
+    """With the port bound here, every other server for it is draining an old client's stream. #1155, #1166."""
     from harness import mcp_peers, watchdog
     if mcp_peers.port_of(f"-m harness.mcp_server --port {port}") is None:
         return []
-    procs = watchdog.Probes().processes() if procs is None else procs
+    probes = watchdog.Probes() if probes is None else probes
+    procs = probes.processes() if procs is None else procs
     if procs is None:
         return ["mcp   stale check skipped: the process table cannot be read here"]
     found = mcp_peers.stale(procs, pid, port)
-    lines = [f"mcp   STALE server pid {p.pid} (up {p.elapsed_s:.0f}s) holds no listener on :{port} "
-             "and still serves the tool list it started with" for p in found]
+    listing = probes.mcp_connections(port) if found else None
+    held = mcp_peers.clients(listing, port) if listing is not None else {}
+    lines = []
+    for p in found:
+        lines.append(f"mcp   STALE server pid {p.pid} (up {p.elapsed_s:.0f}s) holds no listener on :{port} "
+                     "and still serves the tool list it started with")
+        lines += [f"mcp     its client {mcp_peers.describe(c, procs)}" for c in held.get(p.pid, [])]
     if found:
-        lines.append(f"mcp   stop them with: {mcp_peers.stop_command([p.pid for p in found])}")
+        lines.append(f"mcp   stop them with: {mcp_peers.stop_command([p.pid for p in found])}; "
+                     f"{watchdog.STALE_MCP_REMEDY}")
     return lines
 
 

@@ -51,3 +51,31 @@ def stale(procs, live: int, port: int | None = None) -> list:
 def stop_command(pids) -> str:
     """What Eric runs: SIGINT is uvicorn's force-quit while it drains; SIGTERM is not."""
     return "kill -INT " + " ".join(str(p) for p in pids)
+
+
+def _port_in(name: str) -> int | None:
+    tail = name.rsplit(":", 1)[-1]
+    return int(tail) if tail.isdigit() else None
+
+
+def clients(listing: str, port: int) -> dict:
+    """Server pid -> what holds each of its established connections on `port`: a local pid, else the peer's address."""
+    held, owner, pid = {}, {}, None
+    for line in listing.splitlines():
+        if line[:1] == "p":
+            pid = int(line[1:]) if line[1:].isdigit() else None
+        elif line[:1] == "n" and pid is not None and "->" in line:
+            local, remote = line[1:].split("->", 1)
+            if _port_in(local) == port:
+                held.setdefault(pid, []).append(remote)
+            elif _port_in(remote) == port:
+                owner[local] = pid
+    return {s: list(dict.fromkeys(owner.get(r, r) for r in remotes)) for s, remotes in held.items()}
+
+
+def describe(peer, procs) -> str:
+    """A client as Eric would find it: its pid, age and command line."""
+    p = {q.pid: q for q in procs}.get(peer) if isinstance(peer, int) else None
+    if p is None:
+        return f"pid {peer}" if isinstance(peer, int) else peer
+    return f"pid {p.pid} (up {p.elapsed_s / 3600:.0f}h) {p.command[:100]}"

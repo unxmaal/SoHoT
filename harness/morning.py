@@ -124,9 +124,19 @@ def watchdog(conn, since: float) -> list[dict]:
     from harness import sweep_check
     if not _has(conn, "watchdog_actions"):
         return []
-    return [dict(r) for r in conn.execute(
-        "SELECT id, at, criterion, subject, action, escalated, dry_run, outcome FROM watchdog_actions "
-        "WHERE at >= ? AND criterion NOT IN (?, ?) ORDER BY at", (since, sweep_check.CRITERION, CLEARED))]
+    rows = conn.execute(
+        "SELECT id, at, criterion, subject, action, escalated, dry_run, outcome, evidence FROM watchdog_actions "
+        "WHERE at >= ? AND criterion NOT IN (?, ?) ORDER BY at", (since, sweep_check.CRITERION, CLEARED))
+    return [{**{k: r[k] for k in r.keys() if k != "evidence"}, "clients": _clients(r["evidence"])} for r in rows]
+
+
+def _clients(evidence: str) -> list:
+    """The sessions a stale MCP server held when the watchdog saw it. #1166."""
+    try:
+        got = json.loads(evidence or "{}").get("clients")
+    except (ValueError, AttributeError):
+        return []
+    return got if isinstance(got, list) else []
 
 
 def clearances(conn, since: float, now: float) -> list[dict]:
@@ -300,8 +310,9 @@ def needs(r: dict) -> list[str]:
     for w in r["watchdog"]:
         if w["action"] == "stop" or w["escalated"]:
             dry = " (dry run)" if w["dry_run"] else ""
+            held = f"; its clients keep the old tool list: {', '.join(w['clients'])}" if w.get("clients") else ""
             out.append(f"watchdog {w['action']}{dry}: {w['criterion']} on {w['subject']} at "
-                       f"{datetime.fromtimestamp(w['at']).strftime('%H:%M')}")
+                       f"{datetime.fromtimestamp(w['at']).strftime('%H:%M')}{held}")
     c = r["ci"]
     if c.get("available") and c["fresh"]:
         bad = [j["name"] for j in c["jobs"] if j["conclusion"] in FAILED]
