@@ -997,6 +997,19 @@ def sized(chosen: list[Case], args) -> list[Case]:
     return got
 
 
+def screen_subset(chosen: list[Case], args) -> list[Case]:
+    """The chosen cases cut to the repo screening subset when --repo-screen asks for it. #1176."""
+    if not getattr(args, "repo_screen", False):
+        return chosen
+    if args.modality != "repo":
+        raise SystemExit("--repo-screen draws from the repo lane; pass --modality repo")
+    from evals import repo_screen
+    try:
+        return repo_screen.pick(chosen)
+    except repo_screen.Refused as exc:
+        raise SystemExit(f"--repo-screen: {exc}")
+
+
 def parse_args(argv: list[str] | None = None):
     return _parser().parse_args(argv)
 
@@ -1056,6 +1069,9 @@ def _parser():
     ap.add_argument("--size", choices=("all", "small", "large"), default="all",
                     help="repo lane: only history tasks of this size stratum; small is the #888 "
                          "pilot cap the local models were sized for (#997)")
+    ap.add_argument("--repo-screen", action="store_true",
+                    help="repo lane: only the screening subset, repo_screen_cases cases stratified by group "
+                         "and variant (evals/repo_screen.py, #1176)")
     ap.add_argument("--knob", action="append", default=[], metavar="NAME=VALUE",
                     help="run at this setting of a registered exam knob, recorded on the "
                          "receipt; repeatable (harness/knobs/, #636)")
@@ -1184,7 +1200,7 @@ def _execute_at(args, overrides: dict) -> int:
         args.adherence = ""
     from harness import holdout
     side = "dev" if args.screen else (getattr(args, "split", "") or "all")
-    chosen = sized(load_selected(args), args)
+    chosen = screen_subset(sized(load_selected(args), args), args)
     cases = expand_cases(screen_pool(chosen) if args.screen
                          else holdout.only(chosen, side), args.repeat)
     # An engine spec contains commas, which are also the candidate separator.
