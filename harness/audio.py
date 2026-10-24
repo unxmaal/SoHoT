@@ -211,15 +211,17 @@ class AudioTimeout(AudioError):
 
     def __init__(self, what: str, timeout: float):
         super().__init__(f"{what} timed out after {timeout:g}s")
-        self.limit = ("audio_timeout_s", timeout)
+        from harness import knobs
+        self.limit = knobs.hit("audio_timeout_s", timeout, "s")
 
 
 class TokenCap(AudioError):
-    """A clip as long as the token budget allows: cut by our cap, not judged on its speech. #700."""
+    """A clip as long as the token budget allows; `limit` is the seconds of speech that budget bought. #700, #752."""
 
-    def __init__(self, seconds: float, budget: int):
-        super().__init__(f"tts filled its token budget: {seconds:.2f}s of audio at max_tokens {budget}")
-        self.limit = ("tts_tokens", budget)
+    def __init__(self, seconds: float, budget: int, hz: float):
+        from harness import knobs
+        super().__init__(f"tts filled its token budget: {seconds:.2f}s of audio at max_tokens {budget} ({hz:g} tokens/s)")
+        self.limit = knobs.hit("tts_budget_s", budget / hz, "s")
 
 
 class StreamDropped(AudioError):
@@ -240,7 +242,8 @@ class Runaway(AudioError):
 
     def __init__(self, why: str, ceiling: float):
         super().__init__(f"tts ran away: {why}")
-        self.limit = ("seconds_per_word", ceiling)
+        from harness import knobs
+        self.limit = knobs.hit("seconds_per_word", ceiling, "s/word")
 
 
 def speak(text: str, out: str | Path, voice: str = DEFAULT_KOKORO_VOICE,
@@ -322,7 +325,7 @@ def speak(text: str, out: str | Path, voice: str = DEFAULT_KOKORO_VOICE,
     if "max_tokens" in payload:
         seconds = audio_seconds(out)
         if seconds >= TOKEN_CAP_FILL * payload["max_tokens"] / hz:
-            raise TokenCap(seconds, payload["max_tokens"])
+            raise TokenCap(seconds, payload["max_tokens"], hz)
     return out
 
 

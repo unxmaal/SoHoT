@@ -10,6 +10,9 @@ GIB = 1024 ** 3
 #: The until-predicate family a knob's limit is written in: `limit:name>N` or a machine fact `name:>N`.
 LIMIT, MACHINE = "limit", "machine"
 
+#: The units a knob's limit value is in; a recorded limit must be in its knob's unit (#752).
+UNITS = frozenset({"s", "tokens", "GiB", "share", "factor", "turns", "cases", "pixels", "s/word"})
+
 #: The lanes an eval asks for a text reply, the ones a reply budget is set for.
 TEXT_LANES = tuple(completion.BUDGET)
 #: The lanes whose replies go through the text runner's request and load timeouts; agent steps have their own.
@@ -45,8 +48,16 @@ class Knob:
     unrecorded: object = None
     #: What a dict first site is keyed by: "lane", or "machine" (power.machine_key()).
     keyed: str = "lane"
+    #: The unit of limit_value(), one of UNITS; required with a limit (#752).
+    unit: str = ""
+    #: The knob whose limit shows this one binding and sets that limit's value, for a knob with no limit of its own (#752).
+    binds_via: str = ""
 
     def __post_init__(self):
+        if self.limit and self.binds_via:
+            raise ValueError(f"knob {self.name!r} has limit {self.limit!r} and binds via {self.binds_via!r}; one or the other")
+        if self.limit and self.unit not in UNITS:
+            raise ValueError(f"knob {self.name!r} records limit {self.limit!r} in unit {self.unit!r}, not one of UNITS")
         for field in ("sites", "values", "lanes"):
             object.__setattr__(self, field, tuple(getattr(self, field)))
         object.__setattr__(self, "lane_values", _lane_values(self.lane_values))

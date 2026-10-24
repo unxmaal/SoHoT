@@ -17,6 +17,6 @@ KNOBS = [
     _k("mention_chunk_chars", ["harness/judge.py:MENTION_CHUNK_CHARS"], [2000, 4000, 8000],
        note="characters of a thread asked about in one mention call; the whole thread is read, one call per piece (#700)"),
     _k("ocr_max_new_tokens", ["harness/hf_task.py:MAX_NEW_TOKENS"], [256, 512, 1024, 2048, 4096],
-       lanes=("ocr",), limit="hf_max_new_tokens", receipt="knobs",
+       lanes=("ocr",), limit="hf_max_new_tokens", unit="tokens", receipt="knobs",
        note="new tokens an hf-task ocr reply may take (#700)", unrecorded=512),
 ]

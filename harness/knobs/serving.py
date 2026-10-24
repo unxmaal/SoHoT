@@ -49,7 +49,7 @@ KNOBS = [
     _k("served_ctx", ["harness/context.py:environ(LLAMACPP_CTX)", "harness/ds4.py:DEFAULT_CTX",
                       "harness/vllm.py:METAL_MAX_MODEL_LEN",
                       "scripts/serve-llamacpp.sh:LLAMACPP_CTX", "scripts/serve-llamacpp.sh:LLAMACPP_CTX#2"],
-       [8192, 16384, 32768, 65536, 131072], lanes=TEXT_LANES, limit="served_ctx", predicate=MACHINE,
+       [8192, 16384, 32768, 65536, 131072], lanes=TEXT_LANES, limit="served_ctx", unit="tokens", predicate=MACHINE,
        note="tokens a model is served at: llama-server's unplanned default, ds4 --ctx, vllm-metal --max-model-len; "
             "a planned llama-server context is set by kv_cap; the receipt records it as served ctx (#692)"),
     _k("slot_probe_busy_wait", ["harness/slot_probe.py:BUSY_WAIT_S"], [1.0, 5.0, 10.0],
