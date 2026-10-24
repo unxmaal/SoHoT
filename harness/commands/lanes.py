@@ -447,7 +447,7 @@ def cmd_sensitivity(a) -> int:
         print("\nknobs (probe: swept offline; limit: what an eval records when it binds):")
         for k in knobs.KNOBS.values():
             how = ", ".join(x for x in (f"probe {k.probe}" if k.probe else "",
-                                        f"limit {k.limit}" if k.limit else "") if x)
+                                        f"limit {k.limit} ({k.unit})" if k.limit else "") if x)
             print(f"  {k.name:<16} {k.sites[0]}  {list(k.values)}  {how}")
             if k.lanes:
                 print(f"      lanes: {', '.join(k.lanes)}")
@@ -481,7 +481,7 @@ def cmd_sensitivity(a) -> int:
 
 def _knob_row(k) -> dict:
     return {"name": k.name, "sites": list(k.sites), "values": list(k.values), "lanes": list(k.lanes),
-            "limit": k.limit, "probe": k.probe, "note": k.note}
+            "limit": k.limit, "unit": k.unit, "probe": k.probe, "note": k.note}
 
 
 def _knob_sweeps(a) -> int:

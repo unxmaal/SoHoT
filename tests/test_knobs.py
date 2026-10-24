@@ -196,7 +196,7 @@ def test_every_knob_s_lanes_are_lanes():
 def test_a_knob_that_gates_an_eval_names_the_limit_that_shows_it_binding():
     for k in knobs.KNOBS.values():
         if k.lanes:
-            assert k.limit, f"{k.name} declares no binding signal"
+            assert k.limit or knobs.KNOBS[k.binds_via].limit, f"{k.name} declares no binding signal"
 
 
 def test_the_knobs_that_have_bitten_are_registered():
@@ -438,13 +438,10 @@ def test_a_new_entry_in_a_table_named_as_gating_nothing_is_not_exempt():
     assert not knobs.not_gating("harness/usage.py:_UNITS[w]")
 
 
-def test_a_limit_two_knobs_share_takes_the_value_of_the_first_by_name_whatever_the_registration_order(monkeypatch):
-    shared = [k for k in knobs.KNOBS.values() if k.limit == "tts_tokens"]
-    assert [k.name for k in shared] == ["tts_cap_fill", "tts_token_floor"]
-    want = knobs.limits()["tts_tokens"]
-    assert want == shared[0].limit_value("")
+def test_limits_do_not_depend_on_the_registration_order(monkeypatch):
+    want = knobs.limits()
     monkeypatch.setattr(knobs, "KNOBS", dict(reversed(list(knobs.KNOBS.items()))))
-    assert knobs.limits()["tts_tokens"] == want
+    assert knobs.limits() == want
 
 
 def test_each_area_lists_its_knobs_in_name_order_so_two_prs_insert_at_different_lines():

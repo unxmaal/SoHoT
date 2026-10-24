@@ -19,7 +19,7 @@ import pkgutil
 import re
 from pathlib import Path
 
-from harness.knobs.base import GIB, LIMIT, MACHINE, REQUEST_LANES, TEXT_LANES, Knob, _k  # noqa: F401
+from harness.knobs.base import GIB, LIMIT, MACHINE, REQUEST_LANES, TEXT_LANES, UNITS, Knob, _k  # noqa: F401
 
 REPO = Path(__file__).resolve().parent.parent.parent
 
@@ -52,6 +52,13 @@ def entries(module) -> list[str]:
     return [e[0] if isinstance(e, tuple) else e.name for e in module.KNOBS]
 
 
+def _limit_names(k) -> list[str]:
+    """Every predicate name a knob's limit is recorded under: the bare name and each lane's."""
+    if not k.limit:
+        return []
+    return [k.limit_name("")] + [k.limit_name(lane) for lane in k.lanes if "{lane}" in k.limit]
+
+
 def collect(lists: dict) -> tuple[dict, dict]:
     """(knobs by name, area by knob name) from each area's entries; a name in two places is refused."""
     found, where = {}, {}
@@ -61,6 +68,13 @@ def collect(lists: dict) -> tuple[dict, dict]:
             if k.name in where:
                 raise ValueError(f"knob {k.name!r} is registered in both {where[k.name]} and {area}")
             found[k.name], where[k.name] = k, area
+    owner = {}
+    for k in found.values():
+        if k.binds_via and not getattr(found.get(k.binds_via), "limit", ""):
+            raise ValueError(f"knob {k.name!r} binds via {k.binds_via!r}, which is no knob with a limit")
+        for name in _limit_names(k):
+            if owner.setdefault(name, k.name) != k.name:
+                raise ValueError(f"knobs {owner[name]!r} and {k.name!r} both record limit {name!r}; a limit has one value and one unit (#752)")
     return dict(sorted(found.items())), where
 
 
@@ -379,17 +393,31 @@ def census(root) -> dict:
 
 
 def limits() -> dict:
-    """The `limit:` values this harness currently chooses, by predicate name."""
+    """The `limit:` values this harness currently chooses, by predicate name; collect() gives each name one knob."""
     out = {}
-    # A limit several knobs share takes the first by name, so registration order never changes it (#751).
-    for k in sorted(KNOBS.values(), key=lambda k: k.name):
+    for k in KNOBS.values():
         if not k.limit or k.predicate != LIMIT:
             continue
-        out.setdefault(k.limit_name(""), k.limit_value(""))
+        out[k.limit_name("")] = k.limit_value("")
         if "{lane}" in k.limit:
             for lane in k.lanes:
-                out.setdefault(k.limit_name(lane), k.limit_value(lane))
+                out[k.limit_name(lane)] = k.limit_value(lane)
     return out
+
+
+def limit_units() -> dict:
+    """The unit each recorded limit name is in, lane-scoped names included (#752)."""
+    return {name: k.unit for k in KNOBS.values() for name in _limit_names(k)}
+
+
+def hit(name: str, value, unit: str) -> tuple:
+    """(name, value) for an exception's `limit`, refused unless a knob records `name` in `unit` (#752)."""
+    have = limit_units().get(name)
+    if have is None:
+        raise ValueError(f"{name!r} is no knob's limit")
+    if have != unit:
+        raise ValueError(f"limit {name!r} is in {have}, not {unit}")
+    return name, value
 
 
 def settings(lane: str, overrides: dict | None = None) -> dict:

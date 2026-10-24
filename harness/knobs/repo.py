@@ -18,7 +18,7 @@ KNOBS = [
     _k("repo_git_timeout", ["evals/repo.py:GIT_TIMEOUT_S"], [120.0, 600.0, 1800.0],
        note="seconds one git clone, fetch or worktree step may take; a miss is environment_error (#887)"),
     _k("repo_test_timeout", ["evals/repo.py:TEST_TIMEOUT_S"], [120.0, 300.0, 600.0, 1200.0],
-       lanes=("repo",), limit="repo_test_timeout_s", receipt="knobs",
+       lanes=("repo",), limit="repo_test_timeout_s", unit="s", receipt="knobs",
        note="seconds the sandboxed pytest run of a repo case may take before it is killed (#887)"),
     _k("transcripts_commit_after", ["evals/importers/transcripts.py:COMMIT_AFTER_S"], [30, 120, 600],
        note="seconds a printed commit's committer date may follow the tool output and still be its evidence (#1095)"),

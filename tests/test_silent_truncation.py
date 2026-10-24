@@ -171,10 +171,10 @@ def test_a_short_clip_that_filled_its_token_budget_names_the_limit(tmp_path, mon
     with pytest.raises(audio.TokenCap):
         audio.speak(text, tmp_path / "o.wav", model="chatterbox", ref_audio=ref)
     monkeypatch.setattr(audio, "speak", lambda *a, **k: (_ for _ in ()).throw(
-        audio.TokenCap(3.0, 200)))
+        audio.TokenCap(3.0, 200, 25.0)))
     got = runner.run(Case("say-it", "tts", text))
     assert got.failure_class == reasons.TOKEN_BUDGET_EXHAUSTED
-    assert got.limit.startswith("tts_tokens>")
+    assert got.limit == "tts_budget_s>8"
 
 
 # ---- hf_task --------------------------------------------------------------
