@@ -58,7 +58,7 @@ def test_check_macos_stamps_its_start_and_reports_its_budget_on_every_outcome():
     assert stamp < check < budget
     assert steps[budget].get("if") == "always()"
     upload = next(s for s in steps if "upload-artifact" in s.get("uses", ""))
-    assert upload["with"]["path"] == "/tmp/junit.xml" and upload.get("if") == "always()"
+    assert upload["with"]["path"].split() == ["/tmp/junit.xml", "/tmp/test-times.tsv"] and upload.get("if") == "always()"
 
 
 def test_check_macos_runs_one_worker_more_than_its_cores_through_the_variable_xdist_reads():

@@ -106,6 +106,7 @@ class Warming:
 
 def test_a_job_that_starts_while_the_router_restarts_waits_for_it(port, monkeypatch, tmp_path):
     free, servers = port
+    monkeypatch.setattr(run, "warm", run.warm.real)
     monkeypatch.setattr(run, "GATEWAY_DOWN_POLL_S", 0.05)
     _bind_later(free, servers, 0.5)
     rows = []
