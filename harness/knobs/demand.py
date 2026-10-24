@@ -23,6 +23,8 @@ KNOBS = [
        note="characters of one tool step a labeller's packet keeps (#1151)"),
     _k("demand_steps", [f"{_SRC}:STEPS"], [5, 15, 30],
        note="tool steps a labeller's packet lists (#1151)"),
+    _k("demand_top_projects", [f"{_SRC}:TOP_PROJECTS"], [2, 4, 8],
+       note="projects the census strata keep by name; the rest pool as other (#1151)"),
     _k("replay_agree_min", [f"{_REPLAY}:AGREE_MIN"], [0.9, 0.95, 0.99],
        note="share of units two temperature-0 replays must grade alike (#1161)"),
     _k("replay_control_max", [f"{_REPLAY}:CONTROL_MAX"], [0.05, 0.1, 0.2],

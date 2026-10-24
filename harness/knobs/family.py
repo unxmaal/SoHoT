@@ -14,6 +14,8 @@ KNOBS = [
     _k("family_demotion", [f"{F}:DEMOTION"], [-1.5, -3.0, -4.5],
        note="rank.value a demoted family's other members lose; 2026-10-22 code queue head 30 spans +7.85..+5.85: the "
             "head sibling (Swift-Qwen3.8-27b-GGUF) drops to #21 at -1.5, #60 at -3.0, #94 at -4.5 (#1100)"),
+    _k("family_hops", [f"{F}:HOPS"], [4, 8, 16],
+       note="lineage hops followed to a root; a cycle or a longer chain stops there (#1100)"),
     _k("family_losses_to_demote", [f"{F}:LOSSES_TO_DEMOTE"], [2, 3, 5],
        note="distinct members of a lineage root lost at the paired gate in a lane since its last win before the "
             "rest rank lower; 2026-10-22 store: 29 of 31 code comparisons of models lost, roots with 2 losers are "
@@ -22,3 +24,7 @@ KNOBS = [
        note="a lineage parent this many times larger or smaller than its child ends the chain to the root; of 293 "
             "lineage edges 6 change size by up to 2x (VL towers, merges), Holo-3.1-35B-A3B -> Qwen3.5-0.8B by 44x (#1100)"),
 ]
+
+NOT_GATING = {
+    "harness/commands/families.py:DAY": "seconds in a day (#1100)",
+}

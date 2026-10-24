@@ -5,7 +5,7 @@ swept offline against cached data; a knob with a `limit` is one an eval can hit,
 and the limit is the predicate name a result row or a verdict records when it
 does (`timeout_s>180`, `max_tokens.code>32768`, `ceiling_gb:>66`).
 
-`inventory()` finds the numeric values whose names say they gate something:
+`inventory()` finds the numeric values whose names, or whose module's use of them, say they gate something:
 constants, table entries, argument and field defaults, call literals and environment defaults, whatever their name. Every one is either registered in an area module of this package, named in
 its NOT_GATING with a reason, or in the shrinking backlog the tier-1 test holds.
 """
@@ -301,11 +301,52 @@ def _numbered(pairs) -> dict:
     return out
 
 
+#: Calls whose numeric argument bounds an outcome: a clamp, a count of tries or items, a wait.
+_GATE_CALLS = frozenset({"min", "max", "range", "sleep", "islice"})
+_ORDER = (ast.Lt, ast.LtE, ast.Gt, ast.GtE)
+
+
+def _reads(node) -> set[str]:
+    return {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
+
+
+def _gate_reads(tree) -> set[str]:
+    """Names read as a threshold (an ordering comparison), a slice bound or a min/max/range/sleep argument."""
+    out = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Compare) and any(isinstance(op, _ORDER) for op in node.ops):
+            out |= _reads(node)
+        elif isinstance(node, ast.Slice):
+            out |= _reads(node)
+        elif isinstance(node, ast.Call) and _dotted(node.func).rsplit(".", 1)[-1] in _GATE_CALLS:
+            for arg in node.args + [k.value for k in node.keywords]:
+                out |= _reads(arg)
+    return out
+
+
+def gated_by_use(tree) -> set[str]:
+    """Module names the module uses as a gate, directly or through one module function's parameter (#734)."""
+    out = _gate_reads(tree)
+    funcs = {n.name: n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
+    gated = {name: _gate_reads(f) for name, f in funcs.items()}
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in funcs):
+            continue
+        a = funcs[node.func.id].args
+        params = [p.arg for p in a.posonlyargs + a.args]
+        passed = list(zip(params, node.args)) + [(k.arg, k.value) for k in node.keywords if k.arg]
+        out |= {arg.id for p, arg in passed if isinstance(arg, ast.Name) and p in gated[node.func.id]}
+    return out
+
+
 def _sites(text: str, rel: str) -> dict:
     out = []
-    for stmt in ast.parse(text).body:
+    tree = ast.parse(text)
+    used = gated_by_use(tree)
+    for stmt in tree.body:
         name, value = _field(stmt) or (None, None)
-        if name and _UPPER.fullmatch(name) and named_gating(name) and _numeric(value):
+        if (name and _UPPER.fullmatch(name) and _numeric(value)
+                and (named_gating(name) or (name in used and not isinstance(value, ast.Dict)))):
             out.append((f"{rel}:{name}", value))
         elif name and isinstance(value, ast.Dict):
             out += _table(rel, name, value)

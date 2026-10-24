@@ -70,6 +70,52 @@ def test_the_inventory_finds_the_time_and_retry_words_a_gate_is_named_with():
     assert knobs.gating(src, "harness/m.py") == [f"harness/m.py:{n}" for n in names]
 
 
+def test_a_constant_the_module_uses_as_a_gate_is_found_whatever_its_name():
+    src = ("MENTION_CHUNK_CHARS = 4000\n"
+           "TOKEN_FILL = 0.95\n"
+           "TAIL_CHARS = 4000\n"
+           "HEAD = 3\n"
+           "CLAMP = 8\n"
+           "TRIES = 4\n"
+           "PAUSE = 2.0\n"
+           "CODEC_HZ = {'chatterbox': 25.0}\n"
+           "def _chunks(body, size):\n    while len(body) > size:\n        body = body[size:]\n    return body\n"
+           "def read(body, seconds, n, hz):\n"
+           "    if seconds >= TOKEN_FILL * n / hz:\n        return _chunks(body, MENTION_CHUNK_CHARS)\n"
+           "    tail = body[-TAIL_CHARS:]\n    rows = sorted(tail)[:HEAD]\n"
+           "    for _ in range(TRIES):\n        time.sleep(PAUSE)\n"
+           "    return min(n, CLAMP), CODEC_HZ.get('chatterbox')\n")
+    assert knobs.gating(src, "harness/m.py") == [
+        f"harness/m.py:{n}" for n in ("MENTION_CHUNK_CHARS", "TOKEN_FILL", "TAIL_CHARS", "HEAD", "CLAMP", "TRIES",
+                                      "PAUSE", "CODEC_HZ[chatterbox]")]
+
+
+def test_a_constant_compared_for_identity_or_used_as_a_value_is_not_a_gate():
+    innocent = ("SCHEMA_VERSION = 3\n"
+                "EHOSTUNREACH = 65\n"
+                "PORT = 8080\n"
+                "SEED = 603\n"
+                "GIB = 1024 ** 3\n"
+                "WIDTH = 256\n"
+                "def serve(port, seed):\n    return f'{port}:{seed}'\n"
+                "def check(row, err):\n"
+                "    if row['version'] != SCHEMA_VERSION or err.errno == EHOSTUNREACH:\n        return None\n"
+                "    size = row['bytes'] / GIB\n"
+                "    return serve(PORT, SEED), size, WIDTH in row['widths']\n"
+                "def other():\n    LOCAL = 9\n    return [LOCAL][:LOCAL]\n")
+    assert knobs.gating(innocent, "harness/m.py") == []
+    assert knobs.gating(innocent + "def cut(text):\n    return text[:WIDTH]\n", "harness/m.py") == [
+        "harness/m.py:WIDTH"]
+
+
+def test_the_issue_734_sites_are_in_the_inventory_by_use():
+    found = set(knobs.inventory(REPO))
+    for site in ("harness/judge.py:MENTION_CHUNK_CHARS", "harness/audio.py:TOKEN_CAP_FILL",
+                 "harness/audio.py:CODEC_HZ[chatterbox]", "harness/degenerate.py:TAIL_CHARS",
+                 "harness/papers.py:DESCRIPTION_CHARS", "harness/holdout.py:SATURATED"):
+        assert site in found, site
+
+
 def test_the_inventory_finds_defaults_call_literals_table_entries_and_environment_defaults():
     src = ("import os\n"
            "SCREEN = {'width': 256, 'steps': 2, 'inner': {'temperature': 0.2}}\n"

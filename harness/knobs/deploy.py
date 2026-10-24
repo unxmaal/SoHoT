@@ -1,8 +1,13 @@
 """Knobs of the deploy guards in scripts/launchd.sh (#870, #1000, #1058)."""
+from harness.knobs.base import _k
+
 M = "harness/deploy_guard.py"
 S = "harness/sweep_guard.py"
 
-KNOBS = []
+KNOBS = [
+    _k("lanprobe_instant_ms", ["harness/lanprobe.py:INSTANT_MS"], [100, 500, 2000],
+       note="milliseconds under which a failed LAN connect reads as a denial, not a real no-route, which waits on ARP (#739)"),
+]
 
 NOT_GATING = {
     "scripts/launchd.sh:LH_DEFER_WAIT_S": "how long install waits for a live periodic run to end before reloading "

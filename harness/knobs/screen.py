@@ -10,12 +10,16 @@ KNOBS = [
        note="most cases a screen draws per lane and language; a zero-pass screen it capped waits on it (#691)"),
     _k("screen_confidence", ["harness/screen.py:SCREEN_CONFIDENCE"], [0.8, 0.9, 0.95, 0.99], limit="screen_confidence", unit="share",
        note="chance a model as good as the incumbent passes one screen case; sets how many it draws (#691)"),
+    _k("screen_memory_deferrals", ["harness/commands/screen.py:MEMORY_DEFERRALS"], [1, 3, 5],
+       note="consecutive same-need memory deferrals after which a screen stops recording another (#910)"),
     _k("screen_outside_votes", ["evals/repo_screen.py:OUTSIDE_VOTES"], [2, 3, 4],
        note="independent third-party benchmarks ranking a candidate above Ornith before its failed repo screen "
             "is rerun rather than declined; Eric's rule on #1176, unmeasured"),
     _k("screen_repeats", ["evals/repo_screen.py:REPEATS"], [2, 3, 5],
        note="extra draws of a failed repo screen the outside votes disagree with, pooled before declining; "
             "same-config Ornith runs 466/472 differ on 4 of 39 cases (FINDING #597), so one draw is noisy (#1176)"),
+    _k("screen_reread_per_loop", ["harness/commands/loop.py:REREAD_PER_LOOP"], [10, 25, 100],
+       note="runtime screen declines one loop re-reads the cards of; the rest wait for the next loop (#950)"),
     _k("screen_size", ["evals/run.py:SCREEN_PARAMS[width]", "evals/run.py:SCREEN_PARAMS[height]"], [256, 512, 1024],
        limit="screen_size", unit="pixels", note="pixels an image or video screen is shrunk to; a zero-pass media screen waits on it (#691)"),
     _k("stt_screen_max_wer", ["harness/screen.py:SCREEN_MAX_WER"], [0.3, 0.5, 0.8],
@@ -23,6 +27,8 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    "evals/run.py:FREE_PCT_WARN": "free memory share under which a run prints that its wall clock is not comparable; "
+                                  "the run and its receipt are the same either way (#283)",
     "evals/repo_screen.py:verdict(outside_votes)": "how many outside benchmarks favour the candidate, an input; "
     "OUTSIDE_VOTES is the gate it is held to (#1176)",
     **{f"harness/image_diffusers.py:FAMILY_SAMPLING[{f}][{k}]": "the value the family's own model card names (#691)"

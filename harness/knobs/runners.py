@@ -9,6 +9,8 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    "evals/runners/process.py:STDERR_TAIL": "lines of a failed child's stderr kept beside its artifact for a person; "
+                                            "no check reads them (#601)",
     "evals/runners/base.py:BaseRunner.failed(seconds)": "how long a failed case took, as reported (#706)",
     "evals/runners/agent.py:AgentRunner.failed(seconds)": "how long a failed case took, as reported (#706)",
     **{f"evals/runners/chain.py:STAGE_SCALE[{s}]": "the factor a chain stage multiplies the image size by, a fact of "
