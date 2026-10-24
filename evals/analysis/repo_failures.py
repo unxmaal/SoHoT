@@ -283,8 +283,8 @@ AS_RUN = (reasons.STOPPED_LOW_YIELD, reasons.TOOL_CALL, reasons.ENVIRONMENT_ERRO
           reasons.REFUSED_BY_GATEWAY, reasons.HARNESS_ERROR, reasons.LOAD_LOG_UNREAD, reasons.SHORT_COPY,
           reasons.INCOMPLETE_COPY, reasons.ATTACHMENT, reasons.MISSING_PACKAGE, reasons.LOAD_FAILED_RUNTIME,
           reasons.LOAD_FAILED_FILE, reasons.LOAD_FAILED_LAYOUT, reasons.MISSING_FILE_IN_SNAPSHOT)
-CAUSES = ("pass", "budget_no_answer", "budget_cut_answer", "no_diff", "malformed_hunk", "context_mismatch",
-          "wrong_fix", "regression", "provider_refused", "crashed", *AS_RUN, "unclassed")
+CAUSES = ("pass", "budget_no_answer", "budget_cut_answer", "no_diff", "malformed_hunk", "missing_file",
+          "context_mismatch", "wrong_fix", "regression", "provider_refused", "crashed", *AS_RUN, "unclassed")
 #: Causes of a reply cut before the grader saw it.
 CUT = ("budget_no_answer", "budget_cut_answer", reasons.STOPPED_LOW_YIELD, reasons.DEGENERATE)
 #: A crashed row whose provider's usage-policy screen refused the prompt: no reply exists to grade. #1136.
@@ -318,6 +318,8 @@ def cause(row: dict, stored: dict) -> str:
         hunks = [x for x in diff.splitlines() if x.startswith("@@")]
         if any(m in detail for m in _MALFORMED) or any(not _RANGED.match(h) for h in hunks):
             return "malformed_hunk"
+        if "No such file or directory" in detail:
+            return "missing_file"
         return "context_mismatch" if "patch failed" in detail else "unclassed"
     if fc == "content_failed":
         return "wrong_fix" if "fail_to_pass still failing" in detail else "regression"
