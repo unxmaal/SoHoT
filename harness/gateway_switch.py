@@ -358,6 +358,12 @@ def spawn(requested_at: float | None = None, popen=None) -> None:
         log.close()
 
 
+def deadline_s(max_wait_s: float, drain_s: float) -> float:
+    """The longest a switch may hold the machine: every attempt's wait, drain and serve check, and the backoffs between. #775."""
+    return (RETRIES * (max_wait_s + drain_s + SERVE_WAIT_S)
+            + sum(BACKOFF_S * 2 ** (attempt - 1) for attempt in range(1, RETRIES)))
+
+
 def main(argv=None) -> int:
     from harness import exclusive
     p = argparse.ArgumentParser(prog="python -m harness.gateway_switch")
@@ -371,7 +377,7 @@ def main(argv=None) -> int:
               file=sys.stderr, flush=True)
 
     # After any run that loads models, so a restart never lands mid-measurement. #319.
-    with exclusive.held("external", announce=log):
+    with exclusive.held("external", announce=log, deadline_s=deadline_s(a.max_wait_s, DRAIN_S)):
         switch(requested_at=a.requested_at, idle_s=a.idle_s,
                max_wait_s=a.max_wait_s, log=log)
     return 0

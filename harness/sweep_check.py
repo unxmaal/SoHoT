@@ -113,7 +113,8 @@ def verdict(unit: dict | None, beat: dict | None, now: float, start: float, aliv
     if not alive(pid):
         return {"verdict": EXITED, "line": f"the sweep's loop (pid {pid}) died without finishing, at {where} "
                                           f"({told})"}
-    age = now - float(b.get("updated") or b["started"])
+    # A loop waiting behind a holder that still beats is not stalled. #775.
+    age = now - heartbeat.progress_at(b)
     limit = max(STALL_S, float(b.get("deadline_s") or 0))
     outside = "" if live else f" (pid {pid}, not under the launchd unit)"
     if age > limit:

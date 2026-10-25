@@ -191,6 +191,12 @@ def evaluate(rubric: Rubric, text: str, model: str, gateway: str,
                        time.monotonic() - t0)
 
 
+def deadline_s(candidates, items: int) -> float:
+    """The longest a rubric run may hold the machine: every decided item, for every candidate, at evaluate's timeout. #775."""
+    from harness import knobs
+    return len(candidates) * items * float(knobs.resolve("harness/rubric_eval.py:evaluate(timeout)"))
+
+
 def run(evalset: EvalSet, candidates, gateway: str, post=httpx.post) -> dict:
     gold_labels = gold(evalset.root)
     if not gold_labels:

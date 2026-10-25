@@ -89,7 +89,7 @@ def cmd_throughput(a) -> int:
     """How much faster a text spec goes with several requests in flight. #310."""
     import contextlib
     import json as _json
-    from harness import exclusive, serving, throughput, vllm
+    from harness import exclusive, knobs, serving, throughput, vllm
     code = getattr(a, "code", None)
     if not a.texts and not a.claims and not code:
         return err("throughput needs --texts, --claims or --code")
@@ -123,7 +123,11 @@ def cmd_throughput(a) -> int:
     note(f"{models.display(a.model)} on {engine}: {len(texts)} texts at {levels} in flight, "
          f"max_tokens {a.max_tokens}", flush=True)
     pid = getattr(a, "server_pid", None)
-    with exclusive.held("eval"), contextlib.ExitStack() as stack:
+    timeout = getattr(a, "timeout", 300.0)
+    # The sweep's own bound, plus the vLLM start it waits for first. #775.
+    bound = throughput.deadline_s(len(texts), levels, timeout) + (
+        knobs.resolve("harness/vllm.py:served(timeout)") if serve else 0.0)
+    with exclusive.held("eval", deadline_s=bound), contextlib.ExitStack() as stack:
         if serve:
             port = int(where.base.rsplit(":", 1)[1])
             note(f"  starting {serve} on port {port}", flush=True)
@@ -133,7 +137,7 @@ def cmd_throughput(a) -> int:
             pid = srv.proc.pid
         got = throughput.sweep(
             where.model, texts, levels=levels, max_tokens=a.max_tokens,
-            gateway=where.base, timeout=getattr(a, "timeout", 300.0),
+            gateway=where.base, timeout=timeout,
             footprint=(lambda: throughput.footprint_tree(pid)) if pid else None)
     if got and "warmup_s" in got[0]:
         note(f"  warm-up {got[0]['warmup_s']:.2f}s, not counted"
