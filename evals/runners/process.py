@@ -10,10 +10,12 @@ eval measures the exact command the product runs.
 """
 from __future__ import annotations
 
+import math
 import subprocess
+import time
 from pathlib import Path
 
-from harness import knobs, proc, reasons
+from harness import completion, engine_timeout, knobs, proc, reasons
 from harness.engines import Engine
 from harness.hf_task import runtime_path
 
@@ -63,10 +65,8 @@ class ProcessRunner(BaseRunner):
             raise RunnerError(str(exc), failure_class=reasons.HARNESS_ERROR) from exc
 
         try:
-            r = proc.run(argv, timeout=self.timeout, stream=self.engine.stream,
-                         cwd=self.engine.cwd)
-        except subprocess.TimeoutExpired as exc:
-            raise timed_out(case.modality, self.timeout) from exc
+            r = clocked(self, case.modality, lambda t: proc.run(argv, timeout=t, stream=self.engine.stream,
+                                                                cwd=self.engine.cwd))
         except FileNotFoundError as exc:
             raise RunnerError(f"{argv[0]} not installed or not on PATH",
                               failure_class=reasons.HARNESS_ERROR) from exc
@@ -100,6 +100,37 @@ def timed_out(lane: str, timeout: float, what: str = "") -> RunnerError:
     """An engine past the wall clock we chose: TIMEOUT, naming the engine_timeout knob for its lane. #693."""
     return RunnerError(f"{what}timed out after {timeout:g}s", failure_class=reasons.TIMEOUT,
                        limit=knobs.limit(f"engine_timeout_s.{lane}", timeout, "s"))
+
+
+def clocked(runner, lane: str, fn, what: str = ""):
+    """fn(seconds) under runner.timeout; a cut under a clock engine_timeout derived reruns once at runner.ceiling (#1256)."""
+    started = time.perf_counter()
+    try:
+        return fn(runner.timeout)
+    except subprocess.TimeoutExpired as exc:
+        cut_at, ceiling = float(runner.timeout), getattr(runner, "ceiling", None)
+        spent = getattr(runner, "reran", None) or []
+        if (not getattr(runner, "derived", False) or ceiling is None or cut_at >= ceiling
+                or len(spent) >= engine_timeout.RERUNS):
+            raise timed_out(lane, cut_at, what) from exc
+    if (waits := completion._WAITS.get()) is not None:
+        # The cut attempt is not this case's time; the rerun is. #1256.
+        waits.add(started, time.perf_counter(), completion.ENGINE_RERUN_WAIT)
+    entry = {"what": what.rstrip(": "), "cut_at": cut_at}
+    runner.reran = [*spent, entry]
+    print(f"  engine timeout: {what}cut at {cut_at:g}s under a derived clock; rerun once at its ceiling, "
+          f"{ceiling:g}s", flush=True)
+    again = time.perf_counter()
+    try:
+        got = fn(ceiling)
+    except subprocess.TimeoutExpired as exc:
+        entry["timed_out"] = True
+        raise timed_out(lane, ceiling, what) from exc
+    took = time.perf_counter() - again
+    entry["seconds"] = round(took, 3)
+    # Its own time is the basis for the rest of this run. #1256.
+    runner.timeout = min(float(ceiling), max(cut_at, float(math.ceil(engine_timeout.MARGIN * took))))
+    return got
 
 
 def sidecar(out) -> Path:

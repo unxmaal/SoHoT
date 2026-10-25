@@ -17,7 +17,6 @@ against a one-stage candidate in the same table otherwise looks free.
 from __future__ import annotations
 
 import shutil
-import subprocess
 from pathlib import Path
 
 from harness import memory, proc, reasons
@@ -26,7 +25,7 @@ from harness import stages
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
-from evals.runners.process import timed_out
+from evals.runners.process import clocked
 
 MFLUX_BIN = Path.home() / ".local/share/uv/tools/mflux/bin"
 
@@ -197,9 +196,7 @@ class ChainRunner(BaseRunner):
 
     def _run(self, argv: list[str], what: str, lane: str = "image"):
         try:
-            r = proc.run(argv, timeout=self.timeout, cwd=self.engine.cwd)
-        except subprocess.TimeoutExpired as exc:
-            raise timed_out(lane, self.timeout, f"{what}: ") from exc
+            r = clocked(self, lane, lambda t: proc.run(argv, timeout=t, cwd=self.engine.cwd), f"{what}: ")
         except FileNotFoundError as exc:
             raise RunnerError(f"{what}: {exc} is not installed",
                               failure_class=reasons.HARNESS_ERROR) from exc

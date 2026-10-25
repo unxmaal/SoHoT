@@ -341,14 +341,18 @@ def _timed(fn):
 
 #: The span kind a pool-full retry's lost attempt and lock wait carry. #1235.
 POOL_FULL_WAIT = "pool_full"
+#: The span kind an engine attempt cut under a derived clock carries, before its rerun at the ceiling. #1256.
+ENGINE_RERUN_WAIT = "engine_rerun"
 
 
 def waited(waits) -> dict:
-    """{"busy_wait_s": every hidden wait, "pool_full_wait_s": the pool-full part}, each only when nonzero. #776, #1235."""
+    """{"busy_wait_s": every hidden wait, then the pool-full and engine-rerun parts}, each only when nonzero. #776, #1235, #1256."""
     if not waits.spans:
         return {}
     pool = waits.within(kind=POOL_FULL_WAIT)
-    return {"busy_wait_s": round(waits.within(), 3), **({"pool_full_wait_s": round(pool, 3)} if pool else {})}
+    rerun = waits.within(kind=ENGINE_RERUN_WAIT)
+    return {"busy_wait_s": round(waits.within(), 3), **({"pool_full_wait_s": round(pool, 3)} if pool else {}),
+            **({"engine_rerun_wait_s": round(rerun, 3)} if rerun else {})}
 
 
 @dataclass

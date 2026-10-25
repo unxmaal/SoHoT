@@ -122,7 +122,7 @@ def test_a_screen_deadline_follows_the_derived_engine_timeout(conn):
     from evals.run import SCREEN_CASES
     assert screen.deadline_s("mflux:z-image-turbo") == SCREEN_CASES * 900.0
     record(conn, "image", "mflux/z-image-turbo-q8", [30.0] * et.MIN_CASES)
-    assert screen.deadline_s("mflux:z-image-turbo") == SCREEN_CASES * et.MARGIN * 30.0
+    assert screen.deadline_s("mflux:z-image-turbo") == SCREEN_CASES * et.MARGIN * 30.0 + et.RERUNS * 900.0
 
 
 def test_the_backtest_counts_the_cases_a_margin_would_have_cut(conn):

@@ -516,6 +516,16 @@ def engine_timeouts(lane: str, planned) -> dict:
             if (got := engine_timeout.for_runner(runner, lane))}
 
 
+def engine_reruns(clocks: dict, planned) -> dict:
+    """`clocks` with each runner's reruns at its ceiling and the clock it ended on. #1256."""
+    from harness import engine_timeout
+    out = {k: dict(v) for k, v in clocks.items()}
+    for _, runner, _ in planned:
+        if runner.candidate in out and (got := engine_timeout.reran(runner)):
+            out[runner.candidate].update(got)
+    return out
+
+
 def climb(runner, case: Case, rungs: tuple[int, ...]) -> core.Result:
     """Run `case` at each rung while its reply is cut off at the budget; the last row, with every attempt. #668."""
     attempts = []
@@ -1537,7 +1547,7 @@ def _execute_at(args, overrides: dict) -> int:
             pool_full=pooled,
             budget_ladder=ladder,
             yield_stop={todo[i][1].candidate: k["stop"] for i, k in enumerate(kept) if k.get("stop")},
-            engine_timeout=clocks,
+            engine_timeout=engine_reruns(clocks, planned),
             resolved=resolved,
             machine=serving,
             served=served_shapes(specs, resolved, completion.served(), away, args.gateway),
