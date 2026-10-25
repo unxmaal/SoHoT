@@ -39,6 +39,6 @@ def cmd_api_spend(a) -> int:
     note(f"api spend  {api_spend.line(s)}")
     for c in s["callers"]:
         note(f"           {c['caller'][:40]:<40} {c['requests']:>5} req  "
-             f"{c['prompt_tokens']:>9}/{c['completion_tokens']:<8} tok  ${c['cost_usd']:.2f}")
+             f"{c['prompt_tokens']:>9}/{c['completion_tokens']:<8} tok  {api_spend.usd(c['cost_usd'])}")
     emit(**s)
     return 0
