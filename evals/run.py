@@ -509,6 +509,13 @@ def yield_point(lane: str, spec: str) -> dict:
     return got
 
 
+def engine_timeouts(lane: str, planned) -> dict:
+    """Set each engine runner's clock from this machine's stored cases; receipt key -> its basis. #708."""
+    from harness import engine_timeout
+    return {runner.candidate: got for _, runner, _ in planned
+            if (got := engine_timeout.for_runner(runner, lane))}
+
+
 def climb(runner, case: Case, rungs: tuple[int, ...]) -> core.Result:
     """Run `case` at each rung while its reply is cut off at the budget; the last row, with every attempt. #668."""
     attempts = []
@@ -1444,6 +1451,7 @@ def _execute_at(args, overrides: dict) -> int:
         planned.append((candidate, runner, mine))
         models.warn(candidate)
     resolved = resolved_models(specs)
+    clocks = engine_timeouts(args.modality, planned)
     total = sum(len(mine) for _, _, mine in planned)
     eye = watch.Watch(planned=planned_seconds(args, planned, budget, ladder, total, candidates),
                       stop_at=getattr(args, "stop_at", None), outdir=outdir)
@@ -1529,6 +1537,7 @@ def _execute_at(args, overrides: dict) -> int:
             pool_full=pooled,
             budget_ladder=ladder,
             yield_stop={todo[i][1].candidate: k["stop"] for i, k in enumerate(kept) if k.get("stop")},
+            engine_timeout=clocks,
             resolved=resolved,
             machine=serving,
             served=served_shapes(specs, resolved, completion.served(), away, args.gateway),

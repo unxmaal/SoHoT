@@ -814,6 +814,8 @@ class Receipt:
     contexts: dict = field(default_factory=dict)
     #: receipt key -> the yield stop point its replies were stopped at and the stored curve it came from. Not an axis. #1127.
     yield_stop: dict = field(default_factory=dict)
+    #: receipt key -> the seconds its engine ran each case under and what they came from. Not an axis. #708.
+    engine_timeout: dict = field(default_factory=dict)
     #: The repo lane's harness, "repair" for the tool loop; "" is the single-diff patch harness. #890.
     harness: str = ""
     #: receipt key -> {"retried", "lost"} requests a full shared llama-server pool failed. Not an axis. #755.
@@ -847,6 +849,7 @@ class Receipt:
                 "validation": dict(self.validation),
                 "contexts": {k: dict(v) for k, v in self.contexts.items()},
                 "yield_stop": {k: dict(v) for k, v in self.yield_stop.items()},
+                "engine_timeout": {k: dict(v) for k, v in self.engine_timeout.items()},
                 **({"harness": self.harness} if self.harness else {}),
                 **({"pool_full": {k: dict(v) for k, v in self.pool_full.items()}} if self.pool_full else {})}
 
@@ -878,6 +881,7 @@ class Receipt:
                    validation=raw.get("validation") or {},
                    contexts=raw.get("contexts") or {},
                    yield_stop=raw.get("yield_stop") or {},
+                   engine_timeout=raw.get("engine_timeout") or {},
                    harness=raw.get("harness") or "",
                    pool_full=raw.get("pool_full") or {})
 

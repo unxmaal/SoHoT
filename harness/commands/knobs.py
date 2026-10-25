@@ -11,7 +11,9 @@ DAY = 86400.0
 def add_parser(sub) -> None:
     p = sub.add_parser("knobs", help="the knob backlog: unregistered gating sites, the ones this branch added, "
                        "and with --by-binding how often a stored reason quotes each one's limit")
-    p.add_argument("action", choices=("backlog",))
+    p.add_argument("action", choices=("backlog", "engine-timeouts"),
+                   help="backlog, or engine-timeouts: each engine's slowest finished case per machine, the clock "
+                        "derived from it and how many stored cases each margin would have cut (#708)")
     p.add_argument("--by-binding", action="store_true",
                    help="rank the sites by waiting, skipped and declined verdicts a reason quoting them wrote")
     p.add_argument("--store", default="", help="a discovery.db to read read-only (default: a copy of this home's)")
@@ -31,7 +33,33 @@ def _connect(store: str):
     return ledger.open_ro(Path(store))
 
 
+def cmd_engine_timeouts(a) -> int:
+    from harness import engine_timeout as et
+    try:
+        conn = _connect(a.store)
+    except (OSError, FileNotFoundError) as exc:
+        return err(str(exc))
+    try:
+        rows = et.backtest(conn)
+        boards = {r[0]: r[1] for r in conn.execute("SELECT id, hw_model FROM machines")}
+    finally:
+        conn.close()
+    note(f"margin {et.MARGIN:g}, floor {et.FLOOR_S:g}s, {et.MIN_CASES} finished cases needed; cut = stored cases a "
+         f"clock set from the cases before them would have stopped")
+    note(f"\n{'lane':<10} {'engine':<18} {'machine':<12} {'cases':>6} {'slowest':>9} {'clock':>8}  "
+         + "  ".join(f"cut@{m:g}" for m in et.MARGINS))
+    for r in rows:
+        clock = f"{r['seconds']:g}" if r["seconds"] else "ceiling"
+        note(f"{r['lane']:<10} {r['engine']:<18} {str(boards.get(r['machine_id'], r['machine_id'])):<12} "
+             f"{r['cases']:>6} {r['slowest']:>9.1f} {clock:>8}  " + "  ".join(f"{r['cut'][m]:>6}" for m in et.MARGINS))
+    emit(margin=et.MARGIN, floor_s=et.FLOOR_S, min_cases=et.MIN_CASES,
+         engines=[{**r, "cut": {f"{m:g}": n for m, n in r["cut"].items()}} for r in rows])
+    return 0
+
+
 def cmd_knobs(a) -> int:
+    if a.action == "engine-timeouts":
+        return cmd_engine_timeouts(a)
     from harness import knob_backlog as kb
     base = a.base or kb.BASE
     sites = kb.sites()

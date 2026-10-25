@@ -101,7 +101,7 @@ LEFT_OUT = {
         "test_power_budget.py", "test_quants_882.py", "test_repo_claude_905.py", "test_repo_doc_hunk_1107.py", "test_repo_lane.py", "test_repo_no_tools_1129.py", "test_runner_base_weights.py", "test_schema_lanes.py",
         "test_fetch_needs_1091.py", "test_planted_919.py", "test_trajectory_921.py", "test_unranked_weight_954.py", "test_inventory_heartbeat_972.py",
         "test_silent_truncation.py", "test_slots_memory.py", "test_store_downloads.py", "test_sweep_settle_1178.py", "test_sweep_lane_metric_1219.py", "test_sweep_fallback_metric_1230.py", "test_yield_stop_1127.py",
-        "test_repo_causes_1170.py", "test_pool_full_retry_755.py",
+        "test_repo_causes_1170.py", "test_pool_full_retry_755.py", "test_engine_timeout_708.py",
         "test_trocr_tokenizer_1025.py", "test_fetch_files_1040.py", "test_lane_too_small_1049.py",
         "test_lane_until_1053.py", "test_loop_revisit_1055.py", "test_revisit_tier_1060.py"),
     "harness/screen.py": (
@@ -110,7 +110,8 @@ LEFT_OUT = {
         "test_harness_report.py", "test_incumbent_lookup.py", "test_lane_metric_validity.py", "test_loop_backpressure.py",
         "test_canary_919.py", "test_mps_backend_abort.py", "test_new_lane_loop_faults.py", "test_rank_881.py",
         "test_remote_upstreams.py", "test_router_unload.py", "test_slots_memory.py", "test_store_card_facts.py",
-        "test_store_state.py", "test_until_keys_928.py", "test_fetch_files_1040.py", "test_lane_heads_1084.py"),
+        "test_store_state.py", "test_until_keys_928.py", "test_fetch_files_1040.py", "test_lane_heads_1084.py",
+        "test_engine_timeout_708.py"),
     "harness/adopt.py": (
         "test_harness_paired.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
         "test_over_budget_796.py", "test_planted_919.py", "test_projection_696.py", "test_rank_893.py", "test_router_unload.py",
