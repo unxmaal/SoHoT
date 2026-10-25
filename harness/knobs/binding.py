@@ -13,7 +13,10 @@ KNOBS = [
             "run's; below it a run ranks after every run at or above it, each tier by the Wilson 95% lower bound. "
             "2026-10-23 repo: Qwopus3.6 3 of 6 (run 570) outranked Ornith 12 of 108 (run 571) and took about 9 "
             "GPU-h; on those 6 cases Ornith passed 2, a one-case gap. The Wilson lower bound alone still inverts "
-            "(3 of 6 0.19 vs 12 of 108 0.06); at 20 cases its half-width at p=0.5 is 0.2, at 6 it is 0.31 (#1179)"),
+            "(3 of 6 0.19 vs 12 of 108 0.06); at 20 cases its half-width at p=0.5 is 0.2, at 6 it is 0.31 (#1179). "
+            "It also picks which run stands for a model, served or fallback, and which paired run judges it: the "
+            "newest of at least this many cases, else the newest. 2026-10-25 repo: a 1-row hand run (run 585, "
+            "Ornith 0 of 1) stood for Ornith over its 108-case run 571 and swept Qwen3.6 instead (#1239)"),
     _k("lane_min_cuts", ["harness/sweeps.py:LANE_MIN_CUTS"], [5, 10, 20, 40],
        note="cuts given more room on a lane's other models, none passing, before a model with no ladder of its own "
             "is not swept on the reply budget. 2026-10-24 store, repo at 32768: 0 of 22 (runs 557 and 474, 484 and "
