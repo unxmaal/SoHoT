@@ -665,23 +665,9 @@ def _term_raises():
 
 
 def _stop_group(proc, grace_s: float) -> None:
-    """SIGTERM the group, reap the leader, then SIGKILL what is left; an unreaped leader makes killpg say EPERM on macOS. #673."""
-    import contextlib
-    import os
-    import signal
-    import subprocess
-    import sys
-
+    """Stop the eval's group, reaping its leader as it goes; an unreaped leader makes killpg say EPERM on macOS. #673, #677."""
     from harness import workqueue
-    if sys.platform == "win32":
-        workqueue.stop_group(proc.pid, grace=grace_s)
-        return
-    with contextlib.suppress(ProcessLookupError, PermissionError):
-        os.killpg(proc.pid, signal.SIGTERM)
-    with contextlib.suppress(subprocess.TimeoutExpired):
-        proc.wait(timeout=grace_s)
-    with contextlib.suppress(ProcessLookupError, PermissionError):
-        os.killpg(proc.pid, signal.SIGKILL)
+    workqueue.stop_group(proc.pid, grace=grace_s, proc=proc)
 
 
 def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False) -> list[str]:

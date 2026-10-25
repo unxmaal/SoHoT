@@ -429,41 +429,66 @@ def alive(pid: int) -> bool:
     return True
 
 
-def _group_alive(pid: int) -> bool:
+def _group_alive(pid: int, proc=None) -> bool:
+    """Whether a member of pid's group can still take a signal; reaps proc, the caller's own leader, first. #677."""
+    if proc is not None:
+        proc.poll()
     if sys.platform == "win32":
         return alive(pid)
     try:
         os.killpg(int(pid), 0)
-    except ProcessLookupError:
+    except (ProcessLookupError, PermissionError):  # EPERM on macOS: only zombies are left
         return False
-    except PermissionError:
-        return True
+    if sys.platform.startswith("linux"):
+        return _live_member(int(pid))
     return True
 
 
-def stop_group(pid: int, grace: float = CANCEL_GRACE_S, sleep=time.sleep) -> str:
-    """Signal the process group led by pid, wait up to `grace`, then kill it: "term", "kill" or "gone". #628."""
-    if not _group_alive(pid):
+def _live_member(pgid: int, proc_root="/proc") -> bool:
+    """Linux answers killpg for a group of zombies, so read each member's state; unreadable counts as live. #677."""
+    try:
+        names = os.listdir(proc_root)
+    except OSError:
+        return True
+    seen = False
+    for name in names:
+        if not name.isdigit():
+            continue
+        try:
+            stat = Path(proc_root, name, "stat").read_text(encoding="utf-8")
+        except OSError:
+            continue
+        state, _, group = (stat.rpartition(")")[2].split() + ["", "", ""])[:3]
+        if group == str(pgid):
+            seen = True
+            if state not in ("Z", "X"):
+                return True
+    return not seen
+
+
+def stop_group(pid: int, grace: float = CANCEL_GRACE_S, sleep=time.sleep, proc=None) -> str:
+    """Signal the process group led by pid, wait up to `grace`, then kill it: "term", "kill" or "gone". #628, #677."""
+    if not _group_alive(pid, proc):
         return "gone"
     if sys.platform == "win32":
         # The tree is walked from a live leader, and a console child has no SIGTERM to catch.
         subprocess.run(["taskkill", "/T", "/F", "/PID", str(int(pid))], capture_output=True)
         deadline = time.monotonic() + grace
-        while _group_alive(pid) and time.monotonic() < deadline:
+        while _group_alive(pid, proc) and time.monotonic() < deadline:
             sleep(0.1)
         return "kill"
     try:
         os.killpg(int(pid), signal.SIGTERM)
-    except ProcessLookupError:
+    except (ProcessLookupError, PermissionError):
         return "gone"
     deadline = time.monotonic() + grace
     while time.monotonic() < deadline:
-        if not _group_alive(pid):
+        if not _group_alive(pid, proc):
             return "term"
         sleep(0.1)
     try:
         os.killpg(int(pid), signal.SIGKILL)
-    except ProcessLookupError:
+    except (ProcessLookupError, PermissionError):
         return "term"
     return "kill"
 
@@ -543,6 +568,9 @@ def _in_group(job: dict):
         pid_file.write_text(str(child.pid), encoding="utf-8")
         try:
             child.wait()
+            left = stop_group(child.pid)
+            if left != "gone" and stdout is not None:
+                stdout.write(f"stopped processes the job left running: {left}\n")
         finally:
             pid_file.unlink(missing_ok=True)
         return child
