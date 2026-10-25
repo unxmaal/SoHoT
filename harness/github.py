@@ -117,15 +117,19 @@ class Client:
         d.mkdir(parents=True, exist_ok=True)
         return d / f"{_slug(api_path)}.json"
 
+    def _cached(self, api_path: str) -> dict | None:
+        cached = self._path(api_path)
+        if not cached.exists():
+            return None
+        try:
+            return json.loads(cached.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+
     def get(self, api_path: str) -> Any:
         """Cached JSON. Fresh cache wins; a failed fetch falls back to stale."""
         cached = self._path(api_path)
-        payload = None
-        if cached.exists():
-            try:
-                payload = json.loads(cached.read_text(encoding="utf-8"))
-            except (OSError, ValueError):
-                payload = None
+        payload = self._cached(api_path)
         if payload is not None:
             age = time.time() - float(payload.get("fetched", 0))
             ttl = (self.ttl_hours if self.ttl_hours is not None
@@ -207,3 +211,14 @@ class Client:
             out += [r["login"] for r in rows
                     if isinstance(r, dict) and r.get("login")]
         return out
+
+
+@dataclass
+class CacheOnly(Client):
+    """Answers from the cache whatever its age; never fetches and records no cut. A miss is a GitHubError. #764."""
+
+    def get(self, api_path: str) -> Any:
+        payload = self._cached(api_path)
+        if payload is None:
+            raise GitHubError(f"{api_path}: not cached")
+        return payload["data"]

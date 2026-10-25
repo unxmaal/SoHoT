@@ -123,6 +123,16 @@ def probe_population() -> Finding:
                    note="the world's star count, the denominator of enrichment")
 
 
+def probe_star_pages() -> Finding:
+    client = offline()
+    people = _people(client)
+    return measure("STAR_PAGES", *_range("crowd_star_pages"),
+                   lambda v: ranking(client, people, pages=v),
+                   quality=lambda v: verdict_of_control(client, people, pages=v),
+                   note="pages of stars read per crowd member; offline, a page not cached reads as the "
+                        "pages before it, so a value no sweep has read yet measures nothing (#764)")
+
+
 def probe_half_life() -> Finding:
     client = offline()
     people = _people(client)
@@ -251,6 +261,7 @@ PROBES = {
     "per_repo": probe_per_repo,
     "hops": probe_hops,
     "crowd_limit": probe_crowd_limit,
+    "star_pages": probe_star_pages,
     "memory_ceiling": probe_memory_ceiling,
     "size_limit": probe_size_limit,
     "dead_days": probe_dead_days,

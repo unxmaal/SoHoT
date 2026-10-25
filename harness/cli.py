@@ -30,6 +30,7 @@ from harness.commands import adopt as adopt_cmd
 from harness.commands import api_spend as api_spend_cmd
 from harness.commands import benchmarks as benchmarks_cmd
 from harness.commands import blame as blame_cmd
+from harness.commands import discover_why as discover_why_cmd
 from harness.commands import cases as cases_cmd
 from harness.commands import chaos as chaos_cmd
 from harness.commands import common
@@ -750,6 +751,14 @@ def build_parser() -> argparse.ArgumentParser:
     bla.add_argument("--labels", default="", help="first labeller's file (default: <dir>/labels.csv)")
     bla.add_argument("--second", default="", help="second labeller's file (default: <dir>/labels-second.csv)")
     bla.set_defaults(func=blame_cmd.cmd_blame)
+    why = sub.add_parser("discover-why", help="which sources sighted a repo and where the crowd tier lets it "
+                         "fall out, from the GitHub cache and the store read-only. #764")
+    why.add_argument("repo", help="owner/name")
+    why.add_argument("--depths", default="1,2,3,5,10", help="star pages per crowd member to count at")
+    why.add_argument("--budget", type=int, default=0,
+                     help="live GitHub requests allowed for pages not cached (default 0: the cache only)")
+    why.add_argument("--db", default="", help="the store (default: this home's discovery.db)")
+    why.set_defaults(func=discover_why_cmd.cmd_discover_why)
     deg = sub.add_parser("degenerate", help="fit the looping-reply threshold on labelled rows, or re-decide "
                          "screens a max_tokens limit decided from their stored rows. #955")
     deg.add_argument("action", choices=("fit", "redecide"))
