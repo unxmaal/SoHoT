@@ -444,6 +444,8 @@ METRIC_DIRECTION = {
     "busy_wait_s": "neutral",
     # NEUTRAL: the part of busy_wait_s a pool-full retry lost, attempt and retry lock. #1235.
     "pool_full_wait_s": "neutral",
+    # NEUTRAL: the part of busy_wait_s an engine attempt cut under a derived clock lost before its rerun. #1256.
+    "engine_rerun_wait_s": "neutral",
     "code_pass": "higher",  # fraction of a code case's assertions that ran green
     # NEUTRAL: a traced illustration is legitimately large and a UI glyph is
     # legitimately small, so ranking on it would crown the blank document.

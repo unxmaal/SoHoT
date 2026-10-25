@@ -12,8 +12,12 @@ MARGIN = 3.0
 MIN_CASES = 10
 #: Seconds no derived timeout goes below: a process start on a loaded machine, whatever the engine measured.
 FLOOR_S = 60.0
+#: Cases per candidate per run that, cut under a derived clock, are rerun once at the engine's ceiling (#1256).
+RERUNS = 1
 #: The margins `soh knobs engine-timeouts` backtests.
 MARGINS = (2.0, 3.0, 5.0, 10.0)
+#: Failure classes of a case the engine generated an output for; a load failure or a crash measured no generation (#1256).
+GENERATED = ("", reasons.CONTENT_FAILED, *reasons.CUT)
 
 
 def key(candidate: str) -> str:
@@ -26,10 +30,10 @@ def _like(text: str) -> str:
 
 
 def _rows(conn, lane: str = "", engine: str = "", machines=None) -> list[tuple]:
-    """(lane, engine key, machine_id, seconds) of finished cases, oldest first; a timed-out case measured our clock."""
+    """(lane, engine key, machine_id, seconds) of generated cases, oldest first; a timed-out case measured our clock."""
     sql = ("SELECT r.lane, x.candidate, r.machine_id, x.seconds FROM results x JOIN runs r ON r.id = x.run_id "
-           "WHERE x.seconds > 0 AND COALESCE(x.failure_class, '') != ?")
-    args: list = [reasons.TIMEOUT]
+           f"WHERE x.seconds > 0 AND COALESCE(x.failure_class, '') IN ({','.join('?' * len(GENERATED))})")
+    args: list = list(GENERATED)
     if lane:
         sql += " AND r.lane = ?"
         args.append(lane)
@@ -82,6 +86,7 @@ def apply(conn, runner, lane: str) -> dict:
             continue
         got = basis(conn, lane, r.candidate, ceiling)
         r.timeout = got["seconds"]
+        r.derived = got["from"] == "measured"
     return got
 
 
@@ -114,6 +119,22 @@ def for_engine(engine, lane: str = "") -> float:
             conn.close()
     except Exception:  # noqa: BLE001 - no measurement means the engine's own ceiling
         return float(engine.timeout)
+
+
+def for_cases(engine, cases: int, lane: str = "") -> float:
+    """The longest `cases` of `engine` should take here: each at its clock, plus RERUNS of them rerun at its ceiling (#1256)."""
+    clock = for_engine(engine, lane)
+    if clock >= float(engine.timeout):
+        return cases * clock
+    return cases * clock + min(RERUNS, cases) * float(engine.timeout)
+
+
+def reran(runner) -> dict:
+    """{"reran": each rerun at the ceiling, "ended_at": the clock the run ended on} for the receipt; {} if none ran (#1256)."""
+    for r in runners(runner):
+        if getattr(r, "reran", None):
+            return {"reran": [dict(e) for e in r.reran], "ended_at": float(r.timeout)}
+    return {}
 
 
 def said(b: dict) -> str:
