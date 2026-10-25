@@ -1413,8 +1413,9 @@ def _execute_at(args, overrides: dict) -> int:
     if skipped:
         print(f"\nnot run, no candidate for them -- {skipped}", file=sys.stderr)
 
-    results, specs, planned, launches, evicted = [], {}, [], {}, {}
+    results, specs, planned, launches, evicted, pooled = [], {}, [], {}, {}, {}
     completion.SERVED.clear()
+    completion.POOL_FULL.clear()
     for candidate in candidates:
         mine = cases_for(candidate, cases)
         if args.screen:
@@ -1474,7 +1475,7 @@ def _execute_at(args, overrides: dict) -> int:
                     if launched:
                         launches[runner.candidate] = ds4.launch_text(launched["launch"])
                     _run_candidate(args, candidate, runner, mine, results, outdir, evicted, ladder,
-                                   eye, ckpt, progress, kept[i], block != 1)
+                                   eye, ckpt, progress, kept[i], block != 1, pooled)
     except watch.Stop as exc:
         stopped = exc
         print(f"\n{exc.why}", file=sys.stderr, flush=True)
@@ -1525,6 +1526,7 @@ def _execute_at(args, overrides: dict) -> int:
             max_tokens=budget,
             knobs=knobs.settings(args.modality, overrides),
             router_swaps=evicted,
+            pool_full=pooled,
             budget_ladder=ladder,
             yield_stop={todo[i][1].candidate: k["stop"] for i, k in enumerate(kept) if k.get("stop")},
             resolved=resolved,
@@ -1791,12 +1793,27 @@ def paired_segments(order, rest, block, key=lambda c: c) -> list[tuple[int, list
 
 
 def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None,
-                   ladder=(), eye=None, ckpt=None, progress=None, kept=None, reload=True) -> None:
+                   ladder=(), eye=None, ckpt=None, progress=None, kept=None, reload=True, pooled=None) -> None:
     """Run `mine`; `kept` carries the candidate's warm-up and router watch between turns of a paired run. #816."""
-    kept = {} if kept is None else kept
-    eye = eye or watch.Watch()
     if not mine:
         return
+    before = completion.pool_full_counts()
+    try:
+        _run_turn(args, candidate, runner, mine, results, outdir, evicted, ladder, eye, ckpt, progress,
+                  {} if kept is None else kept, reload)
+    finally:
+        retried, lost = (a - b for a, b in zip(completion.pool_full_counts(), before))
+        if (retried or lost) and pooled is not None:
+            seen = pooled.setdefault(runner.candidate, {"retried": 0, "lost": 0})
+            seen["retried"] += retried
+            seen["lost"] += lost
+            print(f"  a full llama-server pool failed requests of {runner.candidate}: {seen['retried']} "
+                  f"retry(ies) sent, {seen['lost']} request(s) lost so far (#755)", file=sys.stderr)
+
+
+def _run_turn(args, candidate, runner, mine, results, outdir, evicted, ladder, eye, ckpt, progress,
+              kept, reload) -> None:
+    eye = eye or watch.Watch()
     # A pause due now is taken before a warm-up loads the model for nothing.
     eye.before(runner.candidate)
     runner.screening = bool(args.screen)

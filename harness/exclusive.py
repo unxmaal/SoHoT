@@ -168,6 +168,25 @@ def _release(fd: int) -> None:
             fcntl.flock(fd, fcntl.LOCK_UN)
 
 
+@contextlib.contextmanager
+def alone(name: str, wait_s: float, poll_s: float = POLL_SECONDS):
+    """Hold the lock file `name` across processes and threads, waiting up to wait_s; yields whether it was taken. #755."""
+    fd = os.open(_dir() / name, os.O_RDWR | os.O_CREAT, 0o644)
+    try:
+        end = time.monotonic() + wait_s
+        got = _take(fd)
+        while not got and time.monotonic() < end:
+            time.sleep(poll_s)
+            got = _take(fd)
+        try:
+            yield got
+        finally:
+            if got:
+                _release(fd)
+    finally:
+        os.close(fd)
+
+
 def remote(kind: str, environ=None) -> bool:
     """Whether `kind` loads another machine: a gateway batch whose gateway is not this machine. #769."""
     if kind not in GATEWAY_BATCH:

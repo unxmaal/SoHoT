@@ -814,6 +814,8 @@ class Receipt:
     yield_stop: dict = field(default_factory=dict)
     #: The repo lane's harness, "repair" for the tool loop; "" is the single-diff patch harness. #890.
     harness: str = ""
+    #: receipt key -> {"retried", "lost"} requests a full shared llama-server pool failed. Not an axis. #755.
+    pool_full: dict = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         return {"modality": self.modality, "case_ids": list(self.case_ids),
@@ -843,7 +845,8 @@ class Receipt:
                 "validation": dict(self.validation),
                 "contexts": {k: dict(v) for k, v in self.contexts.items()},
                 "yield_stop": {k: dict(v) for k, v in self.yield_stop.items()},
-                **({"harness": self.harness} if self.harness else {})}
+                **({"harness": self.harness} if self.harness else {}),
+                **({"pool_full": {k: dict(v) for k, v in self.pool_full.items()}} if self.pool_full else {})}
 
     @classmethod
     def from_dict(cls, raw: dict) -> "Receipt":
@@ -873,7 +876,8 @@ class Receipt:
                    validation=raw.get("validation") or {},
                    contexts=raw.get("contexts") or {},
                    yield_stop=raw.get("yield_stop") or {},
-                   harness=raw.get("harness") or "")
+                   harness=raw.get("harness") or "",
+                   pool_full=raw.get("pool_full") or {})
 
 
 def legacy_knobs(raw: dict) -> dict:
