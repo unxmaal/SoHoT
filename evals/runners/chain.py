@@ -129,7 +129,7 @@ class ChainRunner(BaseRunner):
                 f"unknown stage {stage!r}; known: {', '.join(sorted(STAGES))}")
         self.engine = engine
         self.stage = stage
-        self.timeout = timeout
+        self.ceiling = self.timeout = timeout
         self.outdir = Path(outdir)
         self.outdir.mkdir(parents=True, exist_ok=True)
         self.candidate = f"{stage}/{engine.name}"

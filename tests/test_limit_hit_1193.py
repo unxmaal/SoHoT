@@ -5,7 +5,7 @@ from harness import contamination, knobs, limit_trace, yield_stop
 from harness.memory_store import revisit
 
 #: Hand-built limits waiting on another issue; this may only shrink.
-AWAITING = {"evals/runners/process.py": "engine_timeout_s.<lane> is no knob's limit until #708 registers it"}
+AWAITING: dict[str, str] = {}
 #: Hand-built limits in code that cannot import harness.knobs; their reader checks them.
 OUTSIDE = {"harness/hf_task.py": "runs in the hf-task venv; ProcessRunner reads its limit through knobs.limit_read",
            "harness/knobs/__init__.py": "limit_text is the one place a limit body is formatted",

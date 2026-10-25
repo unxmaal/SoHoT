@@ -39,7 +39,7 @@ def test_the_settings_a_lane_records_are_its_knobs_defaults():
                                      "audio_timeout": knobs.KNOBS["audio_timeout"].default("tts"),
                                      "tts_token_floor": knobs.KNOBS["tts_token_floor"].default("tts"),
                                      "tts_cap_fill": knobs.KNOBS["tts_cap_fill"].default("tts")}
-    assert knobs.settings("image") == {}
+    assert knobs.settings("image") == {"engine_timeout": knobs.KNOBS["engine_timeout"].default("image")}
 
 
 def test_an_override_replaces_only_the_knob_it_names():
@@ -57,7 +57,7 @@ def test_a_receipt_from_before_knobs_were_recorded_ran_at_the_constants_of_the_t
     raw = _receipt().as_dict()
     raw.pop("knobs")
     assert Receipt.from_dict(raw).knobs == knobs.settings("code")
-    assert Receipt.from_dict({**raw, "modality": "image"}).knobs == {}
+    assert Receipt.from_dict({**raw, "modality": "image"}).knobs == knobs.settings("image")
 
 
 @pytest.mark.parametrize("name", [k.name for k in knobs.KNOBS.values() if k.receipt == "knobs"])

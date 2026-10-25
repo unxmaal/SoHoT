@@ -46,6 +46,8 @@ class TraceRunner(BaseRunner):
         self.outdir.mkdir(parents=True, exist_ok=True)
         name = "trace" if preset == "illustration" else f"trace-{preset}"
         self.candidate = f"{name}/{engine.name}"
+        # The engine's own clock until an eval sets the derived one (#708).
+        self.ceiling = self.timeout = engine.timeout
 
     def generate(self, case: Case):
         png = (self.outdir / self.artifact(case, ".png")).resolve()
@@ -60,10 +62,10 @@ class TraceRunner(BaseRunner):
             raise RunnerError(str(exc), failure_class=reasons.HARNESS_ERROR) from exc
 
         try:
-            r = proc.run(argv, timeout=self.engine.timeout,
+            r = proc.run(argv, timeout=self.timeout,
                          stream=self.engine.stream, cwd=self.engine.cwd)
         except subprocess.TimeoutExpired as exc:
-            raise timed_out(case.modality, self.engine.timeout, f"{self.engine.name}: ") from exc
+            raise timed_out(case.modality, self.timeout, f"{self.engine.name}: ") from exc
         except FileNotFoundError as exc:
             raise RunnerError(f"{exc} is not installed",
                               failure_class=reasons.HARNESS_ERROR) from exc

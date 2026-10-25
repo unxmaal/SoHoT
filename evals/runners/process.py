@@ -34,6 +34,7 @@ class ProcessRunner(BaseRunner):
         self.candidate = engine.name
         self.outdir = Path(outdir)
         self.outdir.mkdir(parents=True, exist_ok=True)
+        self.ceiling = engine.timeout
         self.timeout = timeout if timeout is not None else engine.timeout
 
     def score_kwargs(self) -> dict:
@@ -98,7 +99,7 @@ class ProcessRunner(BaseRunner):
 def timed_out(lane: str, timeout: float, what: str = "") -> RunnerError:
     """An engine past the wall clock we chose: TIMEOUT, naming the engine_timeout knob for its lane. #693."""
     return RunnerError(f"{what}timed out after {timeout:g}s", failure_class=reasons.TIMEOUT,
-                       limit=f"engine_timeout_s.{lane}>{timeout:g}")
+                       limit=knobs.limit(f"engine_timeout_s.{lane}", timeout, "s"))
 
 
 def sidecar(out) -> Path:
