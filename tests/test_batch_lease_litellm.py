@@ -43,18 +43,22 @@ def ev(kind, data=None, **more):
     with open(EVENTS, "a") as f:
         f.write(json.dumps(more) + "\\n")
 
-_claim, _renew = sm._claim, sm._renew_inflight
-def claim(deployment, batch_id):
-    got = _claim(deployment, batch_id)
+_claim, _keep, _renew = sm._claim, sm._keep, sm._renew_inflight
+def claim(deployment, batch_id, *more):
+    got = _claim(deployment, batch_id, *more)
     ev("claim", held_by=got.get("batch", ""), claimed=batch_id)
     return got
+def keep(deployment, batch_id):
+    kept = _keep(deployment, batch_id)
+    ev("claim", held_by="" if kept else "lost", claimed=batch_id, renew_only=True)
+    return kept
 async def renew():
     ev("renewer-start")
     try:
         await _renew()
     finally:
         ev("renewer-stop")
-sm._claim, sm._renew_inflight = claim, renew
+sm._claim, sm._keep, sm._renew_inflight = claim, keep, renew
 
 class Recording(sm.ServedModel):
     async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
@@ -260,3 +264,15 @@ def test_a_second_batch_is_refused_while_the_first_holds_the_lease_through_a_lon
     starts = [e for e in seen if e["kind"] == "renewer-start"]
     stops = [e for e in seen if e["kind"] == "renewer-stop"]
     assert len(starts) == len(stops) == 2
+
+
+def test_the_next_batch_is_not_refused_once_a_local_batch_has_exited(proxy):
+    """#1231: through the real proxy, the Host header tells the hook its client is on this machine."""
+    base, events, hold, db = proxy
+    gone = subprocess.Popen([sys.executable, "-c", "pass"])
+    gone.wait()
+    ended = f"{socket.gethostname()}-{gone.pid}-abc123"
+    assert _ask(base, ended, False)[0] == 200
+    assert any(lease.get("local_pid") == gone.pid for lease in _leases(db))
+    code, text = _ask(base, "the-next", False)
+    assert code == 200, text

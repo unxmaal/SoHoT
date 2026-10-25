@@ -236,7 +236,7 @@ def _let_go(mine: str) -> None:
     with contextlib.suppress(Exception):
         conn = ms.connect()
         try:
-            batch.let_go(conn, batch.here(), mine)
+            batch.let_go_all(conn, mine)
         finally:
             conn.close()
 

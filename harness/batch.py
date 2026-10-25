@@ -43,9 +43,25 @@ def here() -> str:
         return ""
 
 
-def from_gateway(batch: str) -> dict:
-    """The holder a gateway records for a batch it saw only as a header."""
-    return {"batch": batch, "machine_id": PREFIX + batch, "pid": None}
+def origin(batch: str) -> int | None:
+    """The pid a batch id of this host names (new_id's host-pid-token), else None. #1231."""
+    host, _, rest = (batch or "").rpartition("-")[0].rpartition("-")
+    if not host or host != socket.gethostname() or not rest.isdigit():
+        return None
+    return int(rest)
+
+
+def from_gateway(batch: str, local: bool = False) -> dict:
+    """The holder a gateway records for a batch it saw only as a header; a local one names its pid. #1231."""
+    pid = origin(batch) if local else None
+    return {"batch": batch, "machine_id": PREFIX + batch, "pid": None,
+            **({"local_pid": pid} if pid else {})}
+
+
+def ended(holder: dict, alive) -> bool:
+    """Whether a gateway-recorded local batch's process has exited. #1231."""
+    pid = holder.get("local_pid")
+    return bool(pid) and not alive(int(pid))
 
 
 def claim(conn, deployment: str, batch: str, who: dict | None = None, ttl_s: float | None = None,
@@ -54,13 +70,32 @@ def claim(conn, deployment: str, batch: str, who: dict | None = None, ttl_s: flo
     from harness import lease
     ttl_s = TTL_S if ttl_s is None else ttl_s
     who = {**(who or from_gateway(batch)), "batch": batch}
-    got = lease.take(conn, name(deployment), who, ttl_s, now=now, alive=alive)
+    stale = (lambda holder: ended(holder, alive)) if alive else None
+    got = lease.take(conn, name(deployment), who, ttl_s, now=now, alive=alive, stale=stale)
     if not got or got.get("batch") != batch:
         return got
+    return {} if keep(conn, deployment, batch, ttl_s, now=now, holder=got) else lease.holder(
+        conn, name(deployment))
+
+
+def keep(conn, deployment: str, batch: str, ttl_s: float | None = None, now: float | None = None,
+         holder: dict | None = None) -> bool:
+    """Renew `deployment` for `batch` only while it still holds it; never takes a free one. #1231."""
+    from harness import lease
+    got = lease.holder(conn, name(deployment)) if holder is None else holder
+    if got.get("batch") != batch:
+        conn.commit()
+        return False
     kept = {k: v for k, v in got.items() if k not in ("since", "expires")}
-    if lease.renew(conn, name(deployment), kept, ttl_s, now=now):
-        return {}
-    return lease.holder(conn, name(deployment))
+    return lease.renew(conn, name(deployment), kept, TTL_S if ttl_s is None else ttl_s, now=now)
+
+
+def let_go_all(conn, batch: str) -> int:
+    """Drop every deployment's lease `batch` holds, the gateway's node and upstream keys too. #1231."""
+    from harness import lease
+    rows = conn.execute("SELECT key FROM meta WHERE key LIKE ?", (lease.PREFIX + PREFIX + "%",)).fetchall()
+    conn.commit()
+    return sum(let_go(conn, row["key"][len(lease.PREFIX + PREFIX):], batch) for row in rows)
 
 
 def let_go(conn, deployment: str, batch: str) -> bool:

@@ -42,8 +42,8 @@ def owner(conn) -> dict:
 
 
 def take(conn, name: str, who: dict, ttl_s: float, now: float | None = None,
-         alive=None) -> dict:
-    """{} once `who` holds the lease for ttl_s, else the holder that kept it."""
+         alive=None, stale=None) -> dict:
+    """{} once `who` holds the lease for ttl_s, else the holder that kept it; `stale(holder)` true frees it too."""
     now = time.time() if now is None else now
     alive = alive or (lambda pid: True)
     mine = _encode(who, now, ttl_s)
@@ -59,7 +59,7 @@ def take(conn, name: str, who: dict, ttl_s: float, now: float | None = None,
         expired = float(current.get("expires") or 0) <= now
         orphaned = (current.get("machine_id") == who.get("machine_id")
                     and current.get("pid") is not None and not alive(current["pid"]))
-        if not (expired or orphaned):
+        if not (expired or orphaned or (stale is not None and stale(current))):
             conn.commit()
             return current
         # Compare-and-set on the value read, so two takers of a stale lease cannot both win.
