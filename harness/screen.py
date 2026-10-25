@@ -751,7 +751,7 @@ def screen_limit(candidate: str = "") -> str:
     from harness import knobs
     name = "screen_size" if candidate.partition(":")[0] in MEDIA_ENGINES else "screen_cases"
     value = knobs.limits().get(name)
-    return f"limit:{name}>{value:g}" if value is not None else ""
+    return f"limit:{knobs.limit(name, value, 'pixels' if name == 'screen_size' else 'cases')}" if value is not None else ""
 
 
 #: The note a degenerate screen carries, since a loop may be the sampler this harness sent. #955.

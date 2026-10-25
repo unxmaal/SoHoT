@@ -20,7 +20,7 @@ from pathlib import Path
 import jiwer
 from num2words import num2words
 
-from harness import reasons
+from harness import knobs, reasons
 from harness.audio import AudioError, AudioTimeout
 
 # A WAV header is 44 bytes. Anything near it holds no speech, and transcribing
@@ -77,7 +77,7 @@ class SpeechResult:
 
 def timed_out(exc: AudioTimeout) -> dict:
     """The class and limit a read-back past the audio timeout puts on a row. #693."""
-    return {"failure_class": reasons.TIMEOUT, "limit": f"{exc.limit[0]}>{exc.limit[1]:g}"}
+    return {"failure_class": reasons.TIMEOUT, "limit": knobs.limit_text(exc.limit)}
 
 
 def _en_number(m: re.Match) -> str:

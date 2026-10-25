@@ -5,7 +5,7 @@ KNOBS = [
     _k("contamination_hit", ["harness/contamination.py:HIT"], [0.25, 0.5, 0.75, 1.0],
        note="leading-word overlap counted as reproducing a source; not calibrated on known-clean text (#700)"),
     _k("contamination_max_tokens", ["harness/contamination.py:MAX_TOKENS"], [256, 1024, 4096],
-       note="reply budget of a contamination probe; a probe that ends there is an error naming it, never a miss (#700)"),
+       limit="contamination_max_tokens", unit="tokens", note="reply budget of a contamination probe; a probe that ends there is an error naming it, never a miss (#700)"),
     _k("contamination_probe_words", ["harness/contamination.py:PREFIX_WORDS", "harness/contamination.py:TARGET_WORDS"],
        [16, 32, 64], note="leading words of a source item a contamination probe sends, then the words its reply is scored "
                           "against for contamination_hit; a shorter item is skipped (#491)"),

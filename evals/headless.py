@@ -12,7 +12,7 @@ from pathlib import Path
 
 import yaml
 
-from harness import headless
+from harness import headless, knobs
 
 TASKS_DIR = Path(__file__).resolve().parent / "headless_tasks"
 #: Built-in tools offered; the same set for the local model and the control.
@@ -164,14 +164,14 @@ def run_task(task: Task, model: str, env: dict, local: bool, execute=subprocess.
                            capture_output=True, text=True, encoding="utf-8", timeout=timeout)
             rc, stdout = proc.returncode, proc.stdout or ""
         except subprocess.TimeoutExpired as exc:
-            limit = f"headless_task_timeout_s>{timeout:g}"
+            limit = knobs.limit("headless_task_timeout_s", timeout, "s")
             out = exc.stdout or ""
             stdout = out.decode("utf-8", "replace") if isinstance(out, bytes) else out
         end = clock()
         stream = parse_stream(stdout)
         res = stream["result"]
         if not limit and res.get("subtype") == "error_max_turns":
-            limit = f"headless_max_turns>{MAX_TURNS}"
+            limit = knobs.limit("headless_max_turns", MAX_TURNS, "turns")
         passed, whys = grade(task, work)
     return {"task": task.name, "job": task.job, "model": model, "local": local,
             "passed": passed, "why": whys, "limit": limit, "exit": rc,

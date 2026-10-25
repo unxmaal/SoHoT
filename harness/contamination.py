@@ -21,7 +21,8 @@ class Cut(RuntimeError):
     """The probe's reply ended at our token budget or held no answer; a limit, never a miss. #700."""
 
     def __init__(self, why: str, max_tokens: int):
-        self.limit = f"{LIMIT}>{max_tokens}"
+        from harness import knobs
+        self.limit = knobs.limit(LIMIT, max_tokens, "tokens")
         super().__init__(f"limit {self.limit}: {why}")
 
 

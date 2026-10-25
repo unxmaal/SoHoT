@@ -19,7 +19,7 @@ import httpx
 import jsonschema
 import yaml
 
-from harness import completion, gateway_key
+from harness import completion, gateway_key, knobs
 
 CANT_TELL = "cant-tell"
 TEMPERATURE = 0
@@ -173,7 +173,7 @@ def evaluate(rubric: Rubric, text: str, model: str, gateway: str,
         choice = r.json()["choices"][0]
         raw = choice["message"].get("content") or ""
         if choice.get("finish_reason") == "length":
-            cap = f"max_tokens.extract>{completion.budget('extract')}"
+            cap = knobs.limit("max_tokens.extract", completion.budget("extract"), "tokens")
             return Verdict(False, None, raw, f"reply ended at the token budget ({cap})",
                            time.monotonic() - t0, cap)
         value = json.loads(raw)

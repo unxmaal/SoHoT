@@ -14,6 +14,7 @@ from __future__ import annotations
 import ast
 import importlib
 import inspect as _inspect
+import numbers
 import os
 import pkgutil
 import re
@@ -440,7 +441,7 @@ def limits() -> dict:
     """The `limit:` values this harness currently chooses, by predicate name; collect() gives each name one knob."""
     out = {}
     for k in KNOBS.values():
-        if not k.limit or k.predicate != LIMIT:
+        if not k.limit or k.predicate != LIMIT or k.derived:
             continue
         out[k.limit_name("")] = k.limit_value("")
         if "{lane}" in k.limit:
@@ -462,6 +463,34 @@ def hit(name: str, value, unit: str) -> tuple:
     if have != unit:
         raise ValueError(f"limit {name!r} is in {have}, not {unit}")
     return name, value
+
+
+def limit_text(pair) -> str:
+    """`name>N` for a pair hit() returned, "" for none; an int prints exactly (#1193)."""
+    if not pair:
+        return ""
+    name, value = pair
+    return f"{name}>{value}" if isinstance(value, numbers.Integral) else f"{name}>{value:g}"
+
+
+def limit(name: str, value, unit: str) -> str:
+    """`name>N` for a row's limit or a `limit:` until, refused as hit() refuses it (#1193)."""
+    return limit_text(hit(name, value, unit))
+
+
+def limit_read(body: str, unit: str) -> str:
+    """A `name>N` another process wrote, refused as hit() refuses it; "" stays "" (#1193)."""
+    if not body:
+        return ""
+    name, sep, value = body.rpartition(">")
+    if not sep:
+        raise ValueError(f"limit {body!r} is not name>N")
+    return limit(name, number(value), unit)
+
+
+def number(text: str):
+    """The N of a written `name>N`: an int when it has no fraction (#1193)."""
+    return int(text) if text.isdigit() else float(text)
 
 
 def settings(lane: str, overrides: dict | None = None) -> dict:

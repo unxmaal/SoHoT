@@ -10,7 +10,7 @@ import time
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
-from harness import arms, completion, reasons
+from harness import arms, completion, knobs, reasons
 
 PREFIX = "claude-code"
 #: Seconds one `claude -p` reference answer may take; a knob (#693), read at call time.
@@ -172,7 +172,7 @@ class ClaudeCodeRunner(BaseRunner):
             except subprocess.TimeoutExpired as exc:
                 raise RunnerError(f"claude -p timed out after {timeout:g}s",
                                   failure_class=reasons.TIMEOUT,
-                                  limit=f"claude_code_timeout_s>{timeout:g}") from exc
+                                  limit=knobs.limit("claude_code_timeout_s", timeout, "s")) from exc
             except OSError as exc:
                 raise RunnerError(f"could not run {self.binary}: {exc}") from exc
         elapsed = time.perf_counter() - started

@@ -45,7 +45,6 @@ harness/completion.py:SAMPLING[web][repetition_penalty]
 harness/completion.py:SAMPLING[web][temperature]
 harness/completion.py:_answers_as_gateway->httpx.get(timeout)
 harness/contamination.py:HIT
-harness/contamination.py:MAX_TOKENS
 harness/contamination.py:gateway_ask.ask->post(timeout)
 harness/context.py:EVAL_7B_SLOTS
 harness/context.py:EVAL_7B_SLOT_CTX
@@ -239,4 +238,3 @@ harness/watchdog.py:SWAPOUT_MAX_PER_MIN
 harness/workqueue.py:_git->subprocess.run(timeout)
 harness/workqueue.py:quiesce(wait)
 harness/yield_stop.py:EXPLORE_SHARE
-harness/yield_stop.py:STOP_RATIO

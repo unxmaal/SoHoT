@@ -16,6 +16,8 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from harness import knobs
+
 SANDBOX_EXEC = "/usr/bin/sandbox-exec"
 TEST_TIMEOUT_S = 600.0
 ENV_TIMEOUT_S = 1800.0
@@ -571,7 +573,7 @@ def grade(task: Path, python: Path, fail_to_pass, pass_to_pass, args=()) -> Grad
     took = round(time.perf_counter() - started, 3)
     if late:
         return Grade(False, True, f"tests timed out after {timeout:g}s", took, ids,
-                     f"repo_test_timeout_s>{timeout:g}")
+                     knobs.limit("repo_test_timeout_s", timeout, "s"))
     if not report.is_file():
         return Grade(False, True, f"pytest wrote no report (exit {rc}): {tail[-300:]}", took, ids)
     ok, _ = _junit_ids(report)

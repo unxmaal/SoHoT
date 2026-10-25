@@ -11,6 +11,7 @@ import statistics
 from collections import Counter
 from pathlib import Path
 
+from harness import knobs
 from harness.checks.base import CheckResult
 
 VERDICTS = ("good", "not_useful", "made_up", "wrong")
@@ -316,8 +317,8 @@ def _score(emitted: list, reviews: list[dict], weight) -> tuple[dict, str, str]:
         reason = f"emitted claims a reviewer rejected: {named}"
     if not reason and good_total and recall < MIN_RECALL:
         reason = f"recall {recall:.2f} of {good_total} good claims, under {MIN_RECALL}"
-        limit = (f"claims_match_threshold>{MATCH_THRESHOLD:g}"
-                 if near else f"claims_min_recall>{MIN_RECALL:g}")
+        limit = (knobs.limit("claims_match_threshold", MATCH_THRESHOLD, "share")
+                 if near else knobs.limit("claims_min_recall", MIN_RECALL, "share"))
     return ({"reviewed_matched": len(pairs), "unreviewed": len(emitted) - len(pairs),
              "good_found": good, "good_total": good_total, "bad_matched": bad,
              "recall": round(recall, 4), "precision": round(good / len(pairs), 4) if pairs else 0.0,

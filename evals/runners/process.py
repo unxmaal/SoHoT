@@ -13,7 +13,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from harness import proc, reasons
+from harness import knobs, proc, reasons
 from harness.engines import Engine
 from harness.hf_task import runtime_path
 
@@ -86,7 +86,7 @@ class ProcessRunner(BaseRunner):
             raise RunnerError(detail, peak_kb=r.peak_kb)
 
         got = _runtime_of(out)
-        self.last_limit = got.pop("limit", "")
+        self.last_limit = knobs.limit_read(got.pop("limit", ""), "tokens")
         self.last_runtime = got
         return out, r.peak_kb
 

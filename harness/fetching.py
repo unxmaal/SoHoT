@@ -25,7 +25,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from harness import cuts, downloads
+from harness import cuts, downloads, knobs
 from harness import memory_store as ms
 from harness import rank
 from harness import lanes, reasons, screen, variants
@@ -216,7 +216,7 @@ def plan(repo: str, size: int, *, free: int | None = None,
     if size > cap:
         return Plan(repo, size, False,
                     f"{size / GIB:.1f} GiB is over the {cap / GIB:.0f} GiB cap",
-                    reasons.LIMIT, f"limit:download_gib>{cap / GIB:g}")
+                    reasons.LIMIT, f"limit:{knobs.limit('download_gib', cap / GIB, 'GiB')}")
     have = free_bytes() if free is None else free
     if have - size < floor:
         return Plan(repo, size, False,
@@ -751,7 +751,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
                    f"{budget / GIB:.0f} GiB budget ({spent / GIB:.1f} GiB "
                    f"already fetched)")
             # Bigger than the whole budget, no sweep at this budget ever takes it. #704.
-            until = f"limit:download_budget_gib>{budget / GIB:g}" if size > budget else ""
+            until = f"limit:{knobs.limit('download_budget_gib', budget / GIB, 'GiB')}" if size > budget else ""
             ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=why,
                               reason=reasons.LIMIT, until=until)
             cuts.cut(budget_knob, f"{name}: {why}", value=budget / GIB, kept=fetched, dropped=1, conn=conn)

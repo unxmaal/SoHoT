@@ -20,6 +20,7 @@ KNOBS = [
             "stop and 1 of them passed, so at 0.1 a 128-case run explores about 5 tail tasks and gives back about a tenth "
             "of the 41% saving; code Ornith 159 of 1000 ran past 21164 and 31 passed (#1127)"),
     _k("yield_stop_ratio", ["harness/yield_stop.py:STOP_RATIO"], [0.1, 0.25, 0.5],
+       limit="yield_stop", unit="tokens", derived="harness/yield_stop.py:point",
        note="a measured reply stops once tasks still running at its generated-token count pass below this share of "
             "its lane-model's base pass rate. 2026-10-22 store, Ornith: repo 0.1 stops at 21969 tokens (0 of 15 passes "
             "lost, 32% of 8.0 GPU-h saved), 0.25 at 18160 (1 lost, 41%), 0.5 at 9821 (3 lost, 64%); code 0.1 at 28873 "

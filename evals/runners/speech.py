@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from harness import audio, audio_log, reasons
+from harness import audio, audio_log, knobs, reasons
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
@@ -74,13 +74,13 @@ class SpeechRunner(BaseRunner):
                         ref_audio=self.ref_audio, lang_code=self.lang_code)
         except audio.Runaway as exc:
             raise RunnerError(str(exc), failure_class=reasons.RUNAWAY,
-                              limit=f"{exc.limit[0]}>{exc.limit[1]:g}") from exc
+                              limit=knobs.limit_text(exc.limit)) from exc
         except audio.AudioTimeout as exc:
             raise RunnerError(str(exc), failure_class=reasons.TIMEOUT,
-                              limit=f"{exc.limit[0]}>{exc.limit[1]:g}") from exc
+                              limit=knobs.limit_text(exc.limit)) from exc
         except audio.TokenCap as exc:
             raise RunnerError(str(exc), failure_class=reasons.TOKEN_BUDGET_EXHAUSTED,
-                              limit=f"{exc.limit[0]}>{exc.limit[1]:g}") from exc
+                              limit=knobs.limit_text(exc.limit)) from exc
         except audio.StreamDropped as exc:
             if exc.excerpt is not None:
                 audio_log.write(self.outdir, exc.excerpt)
