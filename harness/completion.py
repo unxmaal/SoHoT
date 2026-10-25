@@ -542,7 +542,66 @@ def _busy(response) -> bool:
     return getattr(response, "status_code", 200) == 503 and batch.BUSY in (getattr(response, "text", "") or "")
 
 
+#: Times a request is sent again after llama-server failed it, and every other one in flight, on a full shared KV pool. #755.
+POOL_FULL_RETRIES = 1
+#: How often a pool-full retry asks again for the gateway's retry lock; the request's own timeout bounds the wait. #755.
+POOL_FULL_POLL_S = 0.5
+#: (gateway, model) -> {"retried", "lost"} pool-full requests since the last clear; an eval's receipt reads it. #755.
+POOL_FULL: dict = {}
+
+
+def _pool_full(got) -> bool:
+    if isinstance(got, CompletionError):
+        text = str(got)
+    elif getattr(got, "status_code", 200) >= 500:
+        text = getattr(got, "text", "") or ""
+    else:
+        return False
+    return reasons.classify(text) == reasons.POOL_FULL
+
+
+def _count(gateway: str, payload: dict, kind: str) -> None:
+    seen = POOL_FULL.setdefault((gateway.rstrip("/"), str(payload.get("model") or "")), {"retried": 0, "lost": 0})
+    seen[kind] += 1
+
+
+def pool_full_counts() -> tuple[int, int]:
+    """(retried, lost) pool-full requests across every gateway and model since POOL_FULL was cleared. #755."""
+    return (sum(v["retried"] for v in POOL_FULL.values()), sum(v["lost"] for v in POOL_FULL.values()))
+
+
 def _post(gateway: str, payload: dict, timeout: float):
+    """One request; a pool-full reply is sent again up to POOL_FULL_RETRIES times, one retry per gateway at a time. #755."""
+    import hashlib
+
+    from harness import exclusive
+    got, sent = _attempt(gateway, payload, timeout), 0
+    while _pool_full(got) and sent < POOL_FULL_RETRIES:
+        sent += 1
+        _count(gateway, payload, "retried")
+        name = f"pool-retry.{hashlib.sha256(gateway.rstrip('/').encode()).hexdigest()[:12]}.lock"
+        with exclusive.alone(name, timeout, POOL_FULL_POLL_S):
+            got = _attempt(gateway, payload, timeout)
+    if _pool_full(got):
+        from harness import knobs
+        _count(gateway, payload, "lost")
+        text = str(got) if isinstance(got, CompletionError) else getattr(got, "text", "")
+        raise CompletionError(f"llama-server's shared KV pool was full, sent {sent + 1} time(s): {text[:400]}",
+                              reasons.POOL_FULL, knobs.hit("pool_full_retries", POOL_FULL_RETRIES, "calls"))
+    return got
+
+
+def _attempt(gateway: str, payload: dict, timeout: float):
+    """The reply, or the CompletionError a stream raised; a pool-full one is returned for _post to retry. #755."""
+    try:
+        return _busy_post(gateway, payload, timeout)
+    except CompletionError as exc:
+        if _pool_full(exc):
+            return exc
+        raise
+
+
+def _busy_post(gateway: str, payload: dict, timeout: float):
     """One request, waited out while the serving machine is busy with another batch, up to batch.BUSY_WAIT_S. #769."""
     from harness import batch
     deadline = time.monotonic() + batch.BUSY_WAIT_S

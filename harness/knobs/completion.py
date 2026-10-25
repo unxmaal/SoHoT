@@ -7,6 +7,11 @@ KNOBS = [
     _k("load_timeout", ["harness/completion.py:LOAD_TIMEOUT_S"],
        [600.0, 1200.0, 1800.0, 3600.0], lanes=REQUEST_LANES, limit="load_timeout_s", unit="s", receipt="knobs", runner_attr="load_timeout",
        note="seconds the untimed first request may spend loading weights"),
+    _k("pool_full_retries", ["harness/completion.py:POOL_FULL_RETRIES"], [0, 1, 2], limit="pool_full_retries", unit="calls",
+       note="times a request is sent again after llama-server 0.5.0 failed every task in flight on a full --kv-unified "
+            "pool (#748 probe: 3 x 2500-word prompts over -c 8192 all got HTTP 500 'Context size has been exceeded.' "
+            "after 4 s); retries hold one lock per gateway, so each runs with the pool free. Store 2026-10-25: no "
+            "pool_full among 29,700 results rows, so 1 costs nothing until a pool fills (#755)"),
     _k("reply_budget", ["harness/completion.py:BUDGET", "harness/completion.py:MAX_TOKENS"],
        [2000, 4000, 8000, 16384, 32768, 65536], lanes=TEXT_LANES,
        lane_values={"claims": (200, 400, 800, 1600)}, limit="max_tokens.{lane}", unit="tokens",
@@ -28,6 +33,8 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    "harness/completion.py:POOL_FULL_POLL_S": "how often a pool-full retry asks for the retry lock; the request's own "
+                                              "timeout bounds the wait, never a result (#755)",
     "evals/core.py:Receipt.max_tokens": "what a receipt records a run asked for; the budget itself is reply_budget (#706)",
     "evals/core.py:GRADED_FAILURE[repo][resolved]": "what the repo grader records on a failed reply, given to a cut one; a fact, not a setting (#1113)",
     "evals/core.py:GRADED_FAILURE[repo][patch_applied]": "what the repo grader records on an empty diff, given to a cut reply; a fact, not a setting (#1113)",
