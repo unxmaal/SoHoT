@@ -289,7 +289,7 @@ def test_no_code_adds_up_a_listing_outside_variants():
 
 # Inventories: reported, never grown. Lower a pin when a fix lands.
 SWALLOWED_PIN = 60
-CONFIG_LESS_PIN = 151
+CONFIG_LESS_PIN = 150
 
 
 def test_swallowed_errors_are_an_inventory_that_only_shrinks():

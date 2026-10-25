@@ -91,6 +91,8 @@ class RepoRepairRunner(AgentRunner):
                 self.max_tokens = int(max(1, min(budget, MAX_TOKENS - made, room)))
                 rec, message, ended = self._step(n, messages, tools, min(self.step_seconds(), left))
                 steps.append(rec)
+                # A wait for another batch on the serving machine is not the case's to pay. #776.
+                deadline += rec.get("busy_wait_s") or 0.0
                 made += rec.get("completion_tokens") or round(agent_pad.estimate(json.dumps(message)))
                 rec["generated_total"] = made
                 if ended == "length":
@@ -135,7 +137,7 @@ class RepoRepairRunner(AgentRunner):
             raise RunnerError(f"step {len(steps) + 1}: {error}", failure_class=error.failure_class, limit=limit)
         diff = box.diff()
         got = attempt.submit(diff)
-        wall = round(time.perf_counter() - started, 3)
+        wall = round(time.perf_counter() - started - sum(s.get("busy_wait_s") or 0.0 for s in steps), 3)
         self.last_timing = {**step_timing(steps), "cold": cold}
         self.last_stop = self._stop(stopped, cut, error, allowed)
         metrics = {"resolved": int(got.resolved), "patch_applied": int(got.patch_applied), "wall_s": wall,

@@ -187,8 +187,9 @@ def sample(n: int, slots, draw, rank, errors: tuple) -> tuple[list, list, int]:
         if len(wave) == 1:
             outs = [attempt(wave[0])]
         else:
+            from harness import completion
             with ThreadPoolExecutor(len(wave)) as pool:
-                outs = list(pool.map(attempt, wave))
+                outs = list(pool.map(completion.carrying(attempt), wave))
         made += len(wave)
         for i, (ok, val) in zip(wave, outs):
             if ok:
@@ -303,14 +304,16 @@ def _serve_best_of(parsed: Parsed, lane: str, prompt: str, ask, slots=None) -> t
     from harness import completion
     n = parsed.args[0]
     started = time.perf_counter()
-    got, failed, made = sample(n, slots if slots is not None else (lambda: slots_of(parsed.base)),
-                               lambda i: ask(prompt, lane), lambda text: _rank(lane, text),
-                               (completion.CompletionError,))
+    with completion.measuring():
+        got, failed, made = sample(n, slots if slots is not None else (lambda: slots_of(parsed.base)),
+                                   lambda i: ask(prompt, lane), lambda text: _rank(lane, text),
+                                   (completion.CompletionError,))
+        wall = completion.since(started)
     if not got:
         raise (failed[0] if failed else completion.CompletionError("no sample came back"))
     i, _, best = max(got, key=lambda g: (g[1], -g[0]))
     return best, {"method": parsed.method.name, "base": parsed.base, "calls": made,
-                  "samples": n, "chosen": i + 1, "wall_s": round(time.perf_counter() - started, 2)}
+                  "samples": n, "chosen": i + 1, "wall_s": round(wall, 2)}
 
 
 def cost(incumbent: dict, challenger: dict, spec: str) -> dict:

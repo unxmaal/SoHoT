@@ -297,10 +297,12 @@ def _timing(got: completion.Completion, started: float, replies=()) -> dict:
     def total(key):
         counts = [(r.usage or {}).get(key) for r in replies]
         return sum(counts) if all(c is not None for c in counts) else counts[-1]
+    waited = completion.busy_s(started)
     return {"ttft_s": (replies[0].timing or {}).get("ttft_s"),
-            "seconds": round(time.perf_counter() - started, 4),
+            "seconds": round(completion.since(started), 4),
             "prompt_tokens": total("prompt_tokens"),
-            "completion_tokens": total("completion_tokens")}
+            "completion_tokens": total("completion_tokens"),
+            **({"busy_wait_s": round(waited, 3)} if waited else {})}
 
 
 @contextlib.contextmanager
@@ -383,7 +385,8 @@ def complete(lane: str, prompt: str, system: str | None = None,
             raise completion.CompletionError(
                 f"{label + ': ' if label else ''}{exc}{hint}",
                 exc.failure_class, exc.limit) from exc
-    with as_work(lane, spec, where, stream=True, delegation=delegated, tag=_tag(delegated)) as out:
+    with (as_work(lane, spec, where, stream=True, delegation=delegated, tag=_tag(delegated)) as out,
+          completion.measuring()):
         text, cost, replies = generate(spec, where, lane, prompt, call)
         got = replies[-1]
         out.update({"text": text, "lane": lane, "spec": spec,
@@ -445,7 +448,8 @@ def decide(question: str, schema: dict, context: str = "",
     timeout = _allowance(where, 0, timeout)
     started = time.perf_counter()
     # Whole, not streamed: the gateway drops logprobs from a stream, and they are the answer.
-    with as_work("decide", spec, where, stream=False, delegation=delegated, tag=_tag(delegated)) as out:
+    with (as_work("decide", spec, where, stream=False, delegation=delegated, tag=_tag(delegated)) as out,
+          completion.measuring()):
         body, got = ask(question, schema, where, context=context, timeout=timeout)
         out.update({**body, "lane": "decide", "spec": spec,
                     "model": got.model or where.model, "call_id": got.call_id,

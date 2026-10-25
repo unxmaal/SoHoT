@@ -17,7 +17,12 @@ from pathlib import Path
 
 from evals import core
 from evals.core import Case, Result, artifact_name
-from harness import degenerate, reasons
+from harness import completion, degenerate, reasons
+
+
+def _waited(waits) -> dict:
+    """{"busy_wait_s": seconds} when a request of the row waited out a busy serving machine, else {}. #776."""
+    return {"busy_wait_s": round(waits.within(), 3)} if waits.spans else {}
 
 
 class RunnerError(RuntimeError):
@@ -100,13 +105,16 @@ class BaseRunner:
         # 0.14 in 75 of 200 tries. This number is reported as a result and
         # divided into token counts, so its resolution is the measurement.
         started = time.perf_counter()
-        try:
-            artifact, peak_kb = self.generate(case)
-        except RunnerError as exc:
-            row = self.failed(case, exc, time.perf_counter() - started)
-            row.metrics = core.as_graded(case.modality, row.failure_class, row.metrics)
-            return row
-        elapsed = time.perf_counter() - started
+        # A wait for another batch on the serving machine is not the candidate's time. #776.
+        with completion.measuring() as waits:
+            try:
+                artifact, peak_kb = self.generate(case)
+            except RunnerError as exc:
+                row = self.failed(case, exc, completion.since(started))
+                row.metrics = core.as_graded(case.modality, row.failure_class,
+                                             {**(row.metrics or {}), **_waited(waits)})
+                return row
+            elapsed = completion.since(started)
 
         row = core.score(case, artifact, **self.score_kwargs())
         row.candidate = self.candidate
@@ -125,7 +133,8 @@ class BaseRunner:
         row.seconds = round(elapsed, 3)
         # A runner may have measured something the checker cannot see,
         # such as tokens/sec from the server's usage block.
-        row.metrics = core.as_graded(case.modality, row.failure_class, {**row.metrics, **self.extra_metrics(), **tail})
+        row.metrics = core.as_graded(case.modality, row.failure_class,
+                                     {**row.metrics, **self.extra_metrics(), **tail, **_waited(waits)})
         row.peak_kb = peak_kb
         if isinstance(artifact, str):
             row.output = artifact

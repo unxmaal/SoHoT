@@ -106,7 +106,7 @@ class CraftRunner(AgentRunner):
             shutil.rmtree(root, ignore_errors=True)
             shutil.rmtree(ref_root, ignore_errors=True)
         self.last_stop = self._stop(stopped, cut, session)
-        wall = round(time.perf_counter() - started, 3)
+        wall = round(time.perf_counter() - started - sum(s.get("busy_wait_s") or 0.0 for s in steps), 3)
         invalid = sum(1 for s in steps for c in s.get("calls", []) if not c.get("ok"))
         return json.dumps({"case": case.id, "app": case.params["app"], "release": case.params["release"],
                            "tools": len(session.tools), "stopped": stopped, "final": final, "grade": got,
@@ -133,6 +133,8 @@ class CraftRunner(AgentRunner):
                 raise RunnerError(f"step {len(steps) + 1}: {exc}", failure_class=exc.failure_class,
                                   limit=limit) from exc
             steps.append(rec)
+            # A wait for another batch on the serving machine is not the case's to pay. #776.
+            deadline += rec.get("busy_wait_s") or 0.0
             if ended == "length":
                 rec["cut"] = True
                 cut = knobs.limit("max_tokens.agent", self.max_tokens, "tokens")
