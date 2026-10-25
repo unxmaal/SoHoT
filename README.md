@@ -99,10 +99,12 @@ practitioners talk, on a schedule, and tells you what is new. See below.
 uv tool install --python 3.12 --editable .
 ```
 
-Then start the engine your machine has. On Apple Silicon:
+Then start the engines your machine has. On Apple Silicon, `./scripts/launchd.sh install`
+installs them all as launchd agents (see "Keeping the services up"), or by hand:
 
 ```bash
-./scripts/serve-mlx.sh &        # inference engine
+./scripts/serve-mlx.sh &        # MLX text models
+./scripts/serve-eval.sh &       # llama.cpp: GGUF models, and decide and claims
 ./scripts/serve-gateway.sh &    # the address clients use
 ```
 

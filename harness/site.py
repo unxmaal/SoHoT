@@ -5,6 +5,8 @@ printed beside the machine and date it came from.
 """
 from __future__ import annotations
 
+import ast
+import re
 import time
 from pathlib import Path
 
@@ -262,13 +264,15 @@ def stats(machines: list[dict]) -> list[dict]:
     compared_docs = [d for d in machines if any(l.get("comparison") for l in d.get("lanes") or [])]
     compared = sum(len(l.get("comparison") or []) for d in machines
                    for l in d.get("lanes") or [])
+    compared_lanes = {l["lane"] for d in machines for l in d.get("lanes") or [] if l.get("comparison")}
     newest = max(machines, key=lambda d: d.get("generated_at") or "", default=None)
     return [
         {"key": "adopted", "value": str(len(adopted)),
-         "label": "lanes with an adopted winner",
+         "label": f"lanes of {len(lane_names(machines))} with an adopted winner",
          "where": _where(adopted_docs or machines)},
         {"key": "compared", "value": str(compared),
-         "label": "candidates compared in each lane's latest run",
+         "label": f"candidates in each lane's latest run, summed over {len(compared_lanes)} lanes, "
+                  "incumbents included",
          "where": _where(compared_docs or machines,
                          {id(d): _runs_span(d) for d in compared_docs})},
         {"key": "machines", "value": str(len(machines)),
@@ -294,24 +298,128 @@ def ticker_items(machines: list[dict]) -> list[str]:
     """What each adopted lane serves and where, then when each machine last published."""
     items = [f"{l['lane']} serves {l.get('serves_model') or l.get('serves')} on {d['machine'].get('label')}"
              for d in machines for l in d.get("lanes") or [] if l.get("adopted")]
+    names = lane_names(machines)
+    for d in machines:
+        label, here = d["machine"].get("label"), {l.get("lane"): l for l in d.get("lanes") or []}
+        default = [n for n in names if n in here and not here[n].get("adopted") and here[n].get("serves")]
+        empty = [n for n in names if n in here and not here[n].get("adopted") and not here[n].get("serves")]
+        missing = [n for n in names if n not in here]
+        if default:
+            items.append(f"no winner adopted yet on {label}, so these serve their starting default: "
+                         f"{', '.join(default)}")
+        if empty:
+            items.append(f"nothing serves {', '.join(empty)} on {label} yet")
+        if missing:
+            items.append(f"not in {label}'s export: {', '.join(missing)}")
     items += [f"{d['machine'].get('label')} last published {_date(d.get('generated_at'))}"
               for d in machines]
     return items or ["no machine has published yet"]
 
 
+# --- facts read from the code ----------------------------------------------
+
+ROOT = Path(__file__).resolve().parent.parent
+_ARITH = (ast.Expression, ast.BinOp, ast.UnaryOp, ast.Constant, ast.Add, ast.Sub, ast.Mult,
+          ast.Div, ast.USub)
+
+
+def _source(rel: str) -> str:
+    return (ROOT / rel).read_text(encoding="utf-8")
+
+
+def constant(rel: str, name: str) -> float:
+    """A module's numeric constant read from its source, for a module bare Python cannot import."""
+    for node in ast.parse(_source(rel)).body:
+        if isinstance(node, ast.Assign) and any(getattr(t, "id", "") == name for t in node.targets):
+            expr = ast.Expression(node.value)
+            if not all(isinstance(n, _ARITH) for n in ast.walk(expr)):
+                raise ValueError(f"{rel}:{name} is not plain arithmetic")
+            return float(eval(compile(expr, rel, "eval"), {"__builtins__": {}}))
+    raise KeyError(f"{rel} defines no {name}")
+
+
+def shell_default(rel: str, var: str) -> str:
+    """The default in a script's ${VAR:-default}."""
+    m = re.search(rf"\$\{{{var}:-([^}}]+)\}}", _source(rel))
+    if not m:
+        raise KeyError(f"{rel} has no default for {var}")
+    return m.group(1)
+
+
+MCP_SERVER = "harness/mcp_server.py"
+
+
+def _registered(kind: str) -> list[tuple[str, ast.FunctionDef, ast.Call]]:
+    out = []
+    for node in ast.parse(_source(MCP_SERVER)).body:
+        for dec in getattr(node, "decorator_list", []):
+            f = getattr(dec, "func", None)
+            if isinstance(f, ast.Attribute) and f.attr == kind and getattr(f.value, "id", "") == "SERVER":
+                named = {k.arg: k.value.value for k in dec.keywords if isinstance(k.value, ast.Constant)}
+                out.append((named.get("name") or node.name, node, dec))
+    return out
+
+
+def mcp_tools() -> list[str]:
+    """The soh MCP server's tool names, from its decorators: Pages renders without the mcp package."""
+    return [name for name, _, _ in _registered("tool")]
+
+
+def mcp_queued() -> list[str]:
+    """The tools whose work goes on the work queue rather than answering directly."""
+    return [name for name, fn, _ in _registered("tool")
+            if any(isinstance(n, ast.Call) and getattr(n.func, "id", "") == "_queue" for n in ast.walk(fn))]
+
+
+def mcp_resources() -> list[str]:
+    return [dec.args[0].value for _, _, dec in _registered("resource")]
+
+
+def _and(words) -> str:
+    words = list(words)
+    return words[0] if len(words) == 1 else f"{', '.join(words[:-1])} and {words[-1]}"
+
+
+#: What each lane does, in the words the intro uses; a lane missing here fails tests/test_site.py.
+LANE_GROUPS = (
+    ("It makes", {"image": "images", "video": "video", "music": "music", "tts": "speech",
+                  "svg": "SVG", "web": "web pages"}),
+    ("It", {"code": "writes code", "agent": "edits a repository through tools as an agent",
+            "repo": "fixes real bugs in real repositories"}),
+    ("And it does the reading:", {
+        "stt": "transcribing speech", "ocr": "reading the text in an image",
+        "extract": "pulling answers out of logs and listings",
+        "claims": "extracting the claims a text makes", "pii": "finding personal data",
+        "retrieval": "ranking the passages that answer a query",
+        "decide": "checking which questions a passage answers"}),
+)
+LANE_WORDS = {lane: words for _, group in LANE_GROUPS for lane, words in group.items()}
+
+
+def intro_lanes() -> str:
+    from harness import lanes
+    said = " ".join(f"{lead} {_and(group.values())}." for lead, group in LANE_GROUPS)
+    return f"Models on your own machine, doing {len(lanes.ALL)} jobs. {said}"
+
+
 # --- the front page --------------------------------------------------------
 
-LOOP = (
-    ("sweep", "Reads the model registries, the places practitioners talk, and what the "
-              "people who build your tools star on GitHub."),
-    ("inspect", "Reads each candidate's source or model card with nothing downloaded, and "
-                "drops what cannot run on this machine."),
-    ("fetch", "Downloads only what is queued, inside its own disk budget, and nothing "
-              "more until you say so."),
-    ("screen", "One minimal run that answers one question: did it run and emit anything."),
-    ("measure", "The lane's full set of cases, paired against the model it would replace."),
-    ("adopt", "Replaces the incumbent only on a significant paired win on held-out cases."),
-)
+def loop_steps() -> tuple[tuple[str, str], ...]:
+    from harness import adopt
+    budget = shell_default("scripts/serve-discover.sh", "DISCOVER_BUDGET_GIB")
+    return (
+        ("sweep", "Reads the model registries, the places practitioners talk, and what the "
+                  "people who build your tools star on GitHub."),
+        ("inspect", "Reads each candidate's source or model card, without downloading weights "
+                    "or running anything, and drops what cannot run on this machine."),
+        ("fetch", "Downloads what inspect queued, inside its own disk budget: "
+                  f"{budget} GiB a night unless you set another."),
+        ("screen", "One minimal run that answers one question: did it run and emit anything."),
+        ("measure", "The lane's cases, paired against the model it would replace. When dev and "
+                    "held-out cases will not both fit the time budget, it runs the held-out ones."),
+        ("adopt", "Replaces the incumbent on a significant paired win on held-out cases, or by "
+                  f"hand on at least {adopt.MIN_VOTES} votes from people comparing the two."),
+    )
 
 
 def _stat_card(s: dict, tint: str) -> str:
@@ -326,8 +434,16 @@ def _ticker(machines: list[dict]) -> str:
     return f'<div class="ticker" aria-label="live from the exports"><div class="tape">{spans}</div></div>'
 
 
+def _commands(rows: list[tuple[str, str]]) -> str:
+    """A shell block, each command's comment lined up after it."""
+    width = max(len(c) for c, _ in rows) + 2
+    lines = (f"{c.ljust(width)}# {why}" if why else c for c, why in rows)
+    return f"<pre><code>{_esc(chr(10).join(lines))}</code></pre>"
+
+
 def front(machines: list[dict], now: float | None = None, model: dict | None = None) -> str:
     from harness import gateway, lanes, publish
+    from harness.memory_store import transitions
     tints = ("pink", "teal", "butter", "sky")
     scene = ('<div class="scene" aria-hidden="true"><div class="rays"></div><div class="sun"></div>'
              f'{PALM.format(side="l")}{PALM.format(side="r")}{WAVE}</div>')
@@ -336,7 +452,7 @@ def front(machines: list[dict], now: float | None = None, model: dict | None = N
         '<p class="pun">So hot right now.</p>'
         '<p class="expand">Self-optimizing Harness of Theseus</p></div>'
         '<p class="lead">It keeps swapping in better local models for each job, '
-        'and only on measured evidence.</p>'
+        'and only on evidence.</p>'
         '<div class="buttons"><a class="btn" href="benchmarks/">See the benchmarks</a>'
         '<a class="btn alt" href="reports/">Read the lane report</a></div>'),
         "butter", "hero")
@@ -348,15 +464,16 @@ def front(machines: list[dict], now: float | None = None, model: dict | None = N
         f"{diagram(model)}"), "pink", attrs=' id="how-it-works"')
     cards = "".join(_stat_card(s, tints[i % len(tints)]) for i, s in enumerate(stats(machines)))
     what = window("What is SoHoT?", (
-        "<p>Images, video, speech, music, SVG and code, made by models on your own machine. "
-        "Like the ship of Theseus, every part of this harness gets replaced over time while "
+        f"<p>{_esc(intro_lanes())}</p>"
+        "<p>Like the ship of Theseus, every part of this harness gets replaced over time while "
         "the harness stays itself. The parts are the models serving each lane. SoHoT goes "
         "looking for challengers on its own, measures each one against the model it would "
         "replace on identical cases on your hardware, and swaps it in only on evidence. "
         "Nothing here was adopted because it was popular.</p>"
-        "<p>No account, no API key, no per-token bill, and no model retired out from under "
-        "you.</p>"), "sky")
-    steps = "".join(f"<li><b>{name}</b><br>{_esc(text)}</li>" for name, text in LOOP)
+        "<p>No cloud account, no provider API key, no per-token bill, and no model retired out "
+        "from under you. The one key is the gateway's own, which SoHoT makes on first use and "
+        "keeps on the machine that serves.</p>"), "sky")
+    steps = "".join(f"<li><b>{name}</b><br>{_esc(text)}</li>" for name, text in loop_steps())
     loop = window("The loop", (
         "<p>Each tier costs more than the last and only sees what survived the one "
         "before, so measurement is spent where it counts.</p>"
@@ -367,11 +484,15 @@ def front(machines: list[dict], now: float | None = None, model: dict | None = N
     judged = ", ".join(lanes.HUMAN_JUDGED)
     aliases = ", ".join(f"<code>{gateway.LANE_ALIAS.format(n)}</code>"
                         for n in gateway.TEXT_LANES)
+    switch = "harness/gateway_switch.py"
+    idle_s, wait_s = constant(switch, "IDLE_S"), constant(switch, "MAX_WAIT_S")
+    tools = ", ".join(f"<code>{_esc(t)}</code>" for t in mcp_tools())
+    feeds = ", ".join(f"<code>{_esc(r)}</code>" for r in mcp_resources())
     features = [
         ("The paired adopt gate", "pink",
          "<p>A challenger and the incumbent run the same held-out cases. The harness works "
-         "out how many repeats the paired test needs to see a real gain, and a loss with "
-         "too little power is recorded as underpowered, not as no better. Cases are split "
+         "out how many repeats the paired test needs to see a real gain, and a null result "
+         "with too little power is recorded as underpowered, not as no better. Cases are split "
          "by content digest so nothing tunes itself on the cases that decide.</p>"),
         ("Lanes", "butter",
          "<p>A lane is one job with its own cases and checks, and each serves its own "
@@ -381,8 +502,10 @@ def front(machines: list[dict], now: float | None = None, model: dict | None = N
         ("One gateway, stable names", "teal",
          "<p>An OpenAI-compatible gateway serves one alias per text lane: "
          f"{aliases}. An adoption re-points the alias to the winner without anyone "
-         "editing a config, and without dropping a session in flight. Claude Code can "
-         "use it through the Anthropic messages route.</p>"),
+         "editing a config. The gateway restarts to take it once it has been idle for "
+         f"{idle_s:.0f} seconds; after {wait_s / 60:.0f} minutes it stops taking new requests "
+         "and lets the ones in flight finish first. Claude Code can use it through the "
+         "Anthropic messages route.</p>"),
         ("A report per machine", "sky",
          "<p>Every machine keeps its own receipts and publishes its own slice, keyed by a "
          "hardware label and never a hostname. Paths are cut, and a privacy scan refuses "
@@ -392,30 +515,48 @@ def front(machines: list[dict], now: float | None = None, model: dict | None = N
          "<p>Every missed defect is traced to the logical failing behind it, which becomes "
          "a generic class with a test shape. Later code is tested against every class "
          "that has bitten, and CI fails new code that trips a detector until it has a "
-         "test of its own.</p>"),
+         "test of its own or a waiver that says why.</p>"),
         ("It remembers", "pink",
          "<p>Every proposal, sighting and verdict goes into a small database, so a "
-         "candidate already answered is not offered again, and one that lost stays "
-         "lost until something about it changes.</p>"),
+         "candidate already answered is not offered again. A rejection reopens when the "
+         "thing that failed it changes, and a screen or measure loss is tried again after "
+         f"{transitions.RETEST_AFTER_SECONDS / 86400:.0f} days, up to {transitions.RETESTS} "
+         "times.</p>"),
+        ("Other tools can use it", "butter",
+         "<p>An MCP server, <code>scripts/serve-mcp.sh</code>, gives an agent these tools: "
+         f"{tools}. {_esc(_and(mcp_queued()).capitalize())} go on a work queue that runs one "
+         "GPU job at a time, and a job can be held for the night. Each lane's state, from what "
+         "it serves to every candidate's verdict, is one document: <code>soh lane-feed "
+         f"&lt;lane&gt;</code>, or the MCP resource {feeds}.</p>"),
     ]
     feat = "".join(window(_esc(t), b, tint) for t, tint, b in features)
+    port = shell_default("scripts/serve-gateway.sh", "GATEWAY_PORT")
     quick = window("Quick start", (
         "<p>Install the command, <code>soh</code>, into its own environment:</p>"
         f"<pre><code>git clone {REPO_URL}\ncd SoHoT\n"
         "uv tool install --python 3.12 --editable .</code></pre>"
-        "<p>Start the engine your machine has. On Apple Silicon:</p>"
-        "<pre><code>./scripts/serve-mlx.sh &amp;        # inference engine\n"
-        "./scripts/serve-gateway.sh &amp;    # the address clients use</code></pre>"
-        "<p>On a machine with an NVIDIA card, one command starts all three:</p>"
-        "<pre><code>./scripts/services.sh start     # gateway, text, audio</code></pre>"
-        "<p>Then make something, and look for something better:</p>"
-        "<pre><code>soh svg \"a settings gear icon\"\n"
-        "soh discover --sweep            # read every source family\n"
-        "soh discover --queue            # what a screen would teach, best first\n"
-        "soh report                      # what each lane serves here, and why</code></pre>"
-        "<p>Point Claude Code at the gateway:</p>"
-        "<pre><code>ANTHROPIC_BASE_URL=http://&lt;host&gt;:4000 "
-        "ANTHROPIC_AUTH_TOKEN=\"$SOHOT_GATEWAY_KEY\" \\\n  claude --model sohot-code</code></pre>"
+        "<p>On Apple Silicon, install the services as launchd agents, which also schedule "
+        "the nightly loop:</p>"
+        + _commands([("./scripts/launchd.sh install", "every service, kept up across reboots")])
+        + "<p>or start them by hand:</p>"
+        + _commands([("./scripts/serve-mlx.sh &", "MLX text models"),
+                     ("./scripts/serve-eval.sh &",
+                      f"llama.cpp: GGUF models, and {_and(gateway.SCHEMA_LANES)}"),
+                     ("./scripts/serve-tts.sh &", "speech in and out"),
+                     ("./scripts/serve-gateway.sh &", f"the address clients use, port {port}")])
+        + "<p>On a machine with an NVIDIA card, one command starts all three:</p>"
+        + _commands([("./scripts/services.sh start", "gateway, text, audio")])
+        + "<p>Then make something, and look for something better:</p>"
+        + _commands([('soh svg "a settings gear icon"', ""),
+                     ("soh discover --sweep", "read every source family"),
+                     ("soh discover --queue", "what a screen would teach, best first"),
+                     ("soh report", "a page of where each lane stands here"),
+                     ("soh lane-feed code", "one lane's served model and verdicts")])
+        + "<p>Point Claude Code at the gateway. The key comes from the machine that serves:</p>"
+        f"<pre><code>export SOHOT_GATEWAY_KEY=\"$(soh gateway key)\"\n"
+        f"ANTHROPIC_BASE_URL=http://&lt;host&gt;:{_esc(port)} "
+        "ANTHROPIC_AUTH_TOKEN=\"$SOHOT_GATEWAY_KEY\" \\\n"
+        f"  claude --model {gateway.LANE_ALIAS.format('code')}</code></pre>"
         f'<p class="note">Everything else is in the <a href="{REPO_URL}#readme">README</a>.</p>'),
         "teal")
     body = (f'{hero}{how}<div class="stats">{cards}</div>{empty}{what}{loop}'
