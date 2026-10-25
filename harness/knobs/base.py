@@ -54,6 +54,8 @@ class Knob:
     binds_via: str = ""
     #: The site whose function sets this limit's value per lane-model, for a limit no single default sets (#1193).
     derived: str = ""
+    #: Sets what counts as a pass, so it is calibrated against labels and never swept by the grade it produces (#1228).
+    grades: bool = False
 
     def __post_init__(self):
         if self.derived and not self.limit:

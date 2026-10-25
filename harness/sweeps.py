@@ -259,8 +259,15 @@ def plan(conn, *, now: float | None = None) -> list[dict]:
         # A cut names no lane an eval can sweep it on. #1087.
         if not k.receipt or item is None or row.get("source") == "cut":
             continue
-        swept, note = model(conn, item, machines)
         trigger = {"limit": row["limit"], "hits": row["hits"], "of": row["of"]}
+        if k.grades:
+            why = (f"{k.name} sets the grade, not the run: a sweep would choose the laxest value by the passes "
+                   f"it grades, so it is calibrated against labelled cases instead (#1228)")
+            out.append({"knob": k.name, "lane": row["lane"], "spec": item["spec"],
+                        "candidate_id": item["candidate_id"], "machine_id": mid, "trigger": trigger,
+                        "argv": {}, "model": "", "skip": why})
+            continue
+        swept, note = model(conn, item, machines)
         if swept is None:
             out.append({"knob": k.name, "lane": row["lane"], "spec": item["spec"],
                         "candidate_id": item["candidate_id"], "machine_id": mid, "trigger": trigger,
