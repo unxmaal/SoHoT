@@ -21,8 +21,9 @@ from harness import completion, degenerate, reasons
 
 
 def _waited(waits) -> dict:
-    """{"busy_wait_s": seconds} when a request of the row waited out a busy serving machine, else {}. #776."""
-    return {"busy_wait_s": round(waits.within(), 3)} if waits.spans else {}
+    """{"busy_wait_s", "pool_full_wait_s"} when a request of the row waited, else {}. #776, #1235."""
+    from harness import completion
+    return completion.waited(waits)
 
 
 class RunnerError(RuntimeError):
