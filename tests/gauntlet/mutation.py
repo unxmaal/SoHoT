@@ -80,7 +80,7 @@ MODULES = {
     "harness/router.py": [
         "tests/test_router_unload.py", "tests/test_lane_routes.py", "tests/test_router_swaps.py",
         "tests/test_cold_load.py", "tests/test_remote_upstreams.py", "tests/test_gguf_route.py",
-        "tests/test_cut_sites_1202.py"],
+        "tests/test_cut_sites_1202.py", "tests/test_router_phantoms_780.py"],
 }
 
 # Test files that import a mutated module and are deliberately not run against its mutants:
