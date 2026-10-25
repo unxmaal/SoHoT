@@ -26,7 +26,7 @@ NOT_BINDING = "not_binding"
 NOT_BINDING_LANE = "not_binding_lane"
 #: Cuts the lane's stored runs must have given more room, none passing, before a model with no ladder of its own is not swept.
 LANE_MIN_CUTS = 20
-#: Measured cases a fallback model's newest run needs before its pass rate outranks a smaller run's. #1179.
+#: Measured cases a run needs to stand for its model over a newer, smaller one, and to rank above a smaller run. #1179, #1239.
 FALLBACK_MIN_CASES = 20
 
 
@@ -65,7 +65,7 @@ def _skip(conn, last: dict | None, now: float) -> str:
 
 
 def passing(conn, lane: str, machines) -> dict:
-    """(candidate_id or spec) -> {spec, candidate_id, passed, n, run_id} from each model's newest measured run here that no flag or sweep marks. #1009."""
+    """(candidate_id or spec) -> {spec, candidate_id, passed, n, run_id} from each model's newest measured run here that no flag or sweep marks, of at least FALLBACK_MIN_CASES cases when it has one. #1009, #1239."""
     from harness import reverify, runs
     flagged = reverify._flagged_runs(conn)
     sql = ("SELECT runs.id AS run_id, res.candidate_id, res.candidate, c.spec, res.passed, res.metrics, res.failure_class "
@@ -74,23 +74,26 @@ def passing(conn, lane: str, machines) -> dict:
            "WHERE runs.lane = ? AND runs.tier = ? "
            f"AND COALESCE(jobs.requested_by, '') != '{REQUESTED_BY}'")
     clause, ids = runs._in("runs.machine_id", machines) if machines is not None else ("", ())
-    out: dict = {}
-    rows: dict = {}
+    by: dict = {}
     for r in conn.execute(sql + clause + " ORDER BY COALESCE(runs.generated_at, runs.recorded_at) DESC, "
                           "runs.id DESC", (lane, runs.MEASURE, *ids)).fetchall():
         if r["run_id"] in flagged:
             continue
         key = r["candidate_id"] if r["candidate_id"] is not None else r["candidate"]
-        got = out.setdefault(key, {"spec": r["spec"] or r["candidate"], "candidate_id": r["candidate_id"],
-                                   "passed": 0, "n": 0, "run_id": r["run_id"]})
-        if got["run_id"] == r["run_id"]:
-            got["passed"] += int(bool(r["passed"]))
-            got["n"] += 1
-            rows.setdefault(key, []).append({"passed": bool(r["passed"]), "metrics": json.loads(r["metrics"] or "{}"),
-                                             "failure_class": r["failure_class"] or ""})
-    for key, got in out.items():
+        got = by.setdefault(key, {}).setdefault(r["run_id"], {
+            "spec": r["spec"] or r["candidate"], "candidate_id": r["candidate_id"], "passed": 0, "n": 0,
+            "run_id": r["run_id"], "rows": []})
+        got["passed"] += int(bool(r["passed"]))
+        got["n"] += 1
+        got["rows"].append({"passed": bool(r["passed"]), "metrics": json.loads(r["metrics"] or "{}"),
+                            "failure_class": r["failure_class"] or ""})
+    out: dict = {}
+    for key, seen in by.items():
+        # A newer smoke run does not stand for a model over a run of enough cases. #1239.
+        got = out[key] = next((m for m in seen.values() if m["n"] >= FALLBACK_MIN_CASES), next(iter(seen.values())))
+        rows = got.pop("rows")
         got["working"] = bool(got["passed"]) or _working(conn, lane, got)
-        got.update(_bound(rows[key], lane))
+        got.update(_bound(rows, lane))
     return out
 
 
@@ -135,7 +138,7 @@ def _failed(conn, lane: str, cid) -> str:
 
 
 def below(conn, lane: str, spec: str, incumbents, machines) -> str:
-    """Why the newest run here pairing `spec` with one of `incumbents` shows it losing more shared cases than it gains on what the lane pairs on; '' if none does. #1177, #1219."""
+    """Why the newest run here pairing `spec` with one of `incumbents` (on at least FALLBACK_MIN_CASES shared cases when one does) shows it losing more shared cases than it gains on what the lane pairs on; '' if none does. #1177, #1219, #1239."""
     from harness import adopt, reverify, runs
     flagged = reverify._flagged_runs(conn)
     others = [i for i in incumbents if i and i != spec and not adopt.is_reference(i)]
@@ -152,17 +155,17 @@ def below(conn, lane: str, spec: str, incumbents, machines) -> str:
                 "candidate": r["spec"], "case_id": f"{r['case_id']}#{r['repeat_index']}", "passed": bool(r["passed"]),
                 "metrics": json.loads(r["metrics"] or "{}"), "failure_class": r["failure_class"] or ""}
     for inc in others:
-        for rid, got in by.items():
-            shared = got.get(spec, {}).keys() & got.get(inc, {}).keys()
-            if not shared:
-                continue
-            cell = adopt.lane_cell([got[who][k] for who in (inc, spec) for k in shared], inc, spec, lane, "challenger")
-            if cell.lost > cell.gained:
-                mine, theirs = (sum(got[who][k]["passed"] for k in shared) for who in (spec, inc))
-                on = reverify._compared_on(lane)
-                return (f"{spec} passed {mine} of {len(shared)} beside {inc}'s {theirs} in run {rid}"
-                        + (f", {cell.lost} lost against {cell.gained} gained on {on}" if on and mine >= theirs else ""))
-            break
+        pairs = [(rid, got, shared) for rid, got in by.items()
+                 if (shared := got.get(spec, {}).keys() & got.get(inc, {}).keys())]
+        if not pairs:
+            continue
+        rid, got, shared = next((p for p in pairs if len(p[2]) >= FALLBACK_MIN_CASES), pairs[0])
+        cell = adopt.lane_cell([got[who][k] for who in (inc, spec) for k in shared], inc, spec, lane, "challenger")
+        if cell.lost > cell.gained:
+            mine, theirs = (sum(got[who][k]["passed"] for k in shared) for who in (spec, inc))
+            on = reverify._compared_on(lane)
+            return (f"{spec} passed {mine} of {len(shared)} beside {inc}'s {theirs} in run {rid}"
+                    + (f", {cell.lost} lost against {cell.gained} gained on {on}" if on and mine >= theirs else ""))
     return ""
 
 
@@ -206,7 +209,7 @@ def _base_run(conn, swept: dict, machines) -> int | None:
 
 
 def projected(conn, swept: dict, k, values, machines) -> float | None:
-    """Seconds the sweep's jobs take one after another: the swept model's newest run, its cut rows scaled to each value. #1020."""
+    """Seconds the sweep's jobs take one after another: the run passing() keeps for the swept model, its cut rows scaled to each value. #1020."""
     from harness import runs
     rid = _base_run(conn, swept, machines)
     if rid is None:
