@@ -25,6 +25,8 @@ MLX_AUDIO_PIN="mlx-audio==0.5.3"
 MISAKI_PIN="misaki[en]==0.9.4"
 # misaki's English G2P downloads en_core_web_sm from GitHub per request when the env lacks it; spaCy pinned to the model's minor. #1045
 SPACY_PIN="spacy==3.8.16"
+# preshed 3.0.14 breaks spaCy 3.8.16 loading en_core_web_sm: OverflowError in Tokenizer._flush_specials. #1203
+PRESHED_PIN="preshed==3.0.13"
 EN_CORE_WEB_SM_PIN="en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl"
 WEBRTCVAD_PIN="webrtcvad==2.0.10"
 FASTAPI_PIN="fastapi==0.141.1"
