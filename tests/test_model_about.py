@@ -50,14 +50,14 @@ def test_an_mlx_repo_id_is_its_own_source(conn):
     assert got["source"] == "https://huggingface.co/mlx-community/Qwen3-4B-Instruct-2507-4bit"
 
 
-def test_a_model_the_store_knows_nothing_about_is_unknown(conn):
-    assert models.about_text(models.about(conn, "")) == "unknown"
-    assert models.about_text(models.about(conn, "osocr:auto")) == "unknown"
+def test_a_model_the_store_knows_nothing_about_has_no_line(conn):
+    assert models.about_text(models.about(conn, "")) == ""
+    assert models.about_text(models.about(conn, "osocr:auto")) == ""
 
 
-def test_the_line_lists_what_is_known_and_says_unknown_for_the_rest(conn):
+def test_the_line_lists_only_what_is_known(conn):
     line = models.about_text(models.about(conn, f"llamacpp:{ORNITH}"))
-    assert line.startswith("family unknown, 35B (3B active) params, Q4_K_M, by ornith-ai")
+    assert line == "35B (3B active) params, Q4_K_M, by ornith-ai"
 
 
 def _record(conn, path, lane, rows, when, receipt=None):
@@ -85,7 +85,7 @@ def test_no_benchmark_row_names_only_an_alias_and_every_row_says_what_it_is(conn
     rows = [r for e in lane["exams"] for r in e["rows"]]
     assert {r["candidate"] for r in rows} == {"eval-7b", "sohot-code", "sohot-web", f"llamacpp:{ORNITH}"}
     for r in rows:
-        assert r["about"], r
+        assert bool(r["about"]) == (r["candidate"] != "sohot-web"), r
         if r["model"]:
             assert not models.is_alias(r["model"]), r
         else:
@@ -100,6 +100,6 @@ def test_no_benchmark_row_names_only_an_alias_and_every_row_says_what_it_is(conn
     for cell in cells:
         assert ("Qwen2.5-7B-Instruct-Q4_K_M" in cell or ORNITH in cell
                 or "model unknown" in cell), cell
-        assert 'class="about"' in cell, cell
+        assert ('class="about"' in cell) == ("model unknown" not in cell), cell
     assert "served as eval-7b" in page and "sohot-web (model unknown)" in page
     assert f"https://huggingface.co/{ORNITH_REPO}" in page

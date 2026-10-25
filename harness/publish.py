@@ -175,10 +175,11 @@ def model_html(row: dict) -> str:
         shown += f' (served as {named["served_as"]})'
     if key not in (named["model"], named["served_as"]):
         shown = f"{key}: {shown}"
-    about = row.get("about") or models.UNKNOWN_FACT
+    about = models.known_only(row.get("about") or "")
     link = row.get("source") or ""
-    src = f' <a href="{_esc(link)}">source</a>' if link else ""
-    return f'{_esc(shown)}<div class="about">{_esc(about)}{src}</div>'
+    src = f'{" " if about else ""}<a href="{_esc(link)}">source</a>' if link else ""
+    line = f'<div class="about">{_esc(about)}{src}</div>' if about or link else ""
+    return f'{_esc(shown)}{line}'
 
 
 def not_run_text(row: dict) -> str:
@@ -257,8 +258,7 @@ def exam_receipt(conn, run: dict):
         "SELECT DISTINCT case_id FROM results WHERE run_id = ? ORDER BY case_id",
         (run["id"],)).fetchall()]
     sampling = raw.get("sampling") or {}
-    if lane in sampling:
-        sampling = {lane: sampling[lane]}
+    sampling = {lane: sampling[lane]} if lane in sampling else {}
     instruments = {k: v for k, v in (raw.get("instruments") or {}).items()
                    if k != "serving"}
     return Receipt(modality=lane, case_ids=tuple(ids),
@@ -273,6 +273,62 @@ def exam_receipt(conn, run: dict):
                    knobs=Receipt.from_dict({**raw, "modality": lane}).knobs,
                    router_swaps=raw.get("router_swaps") or {},
                    machine=raw.get("machine", ""), served=raw.get("served") or {})
+
+
+def _short(value) -> str:
+    import hashlib
+    return hashlib.sha256(json.dumps(value, sort_keys=True, default=str).encode()).hexdigest()[:8]
+
+
+def _said(value) -> str:
+    if isinstance(value, dict):
+        return ", ".join(f"{k} {_said(v)}" for k, v in sorted(value.items()))
+    if isinstance(value, (list, tuple)):
+        return ",".join(map(str, value))
+    return str(value)
+
+
+def exam_conditions(rec) -> tuple[dict, dict]:
+    """What comparable() compares on an exam receipt as ({label: value} every run states, {label: value} compared only where both say). #1210."""
+    strict = {"case set": _short(list(rec.case_ids)), "reply budget": f"{rec.max_tokens} tokens"}
+    strict.update({k: _said(v) for k, v in sorted((rec.sampling.get(rec.modality) or {}).items())})
+    strict.update({f"knob {k}": _said(v) for k, v in sorted(rec.knobs.items())})
+    strict.update({"harness": rec.harness or "patch", "adherence": rec.adherence or "none",
+                   "budget ladder": _said(rec.budget_ladder) or "none"})
+    if rec.template is not None:
+        strict["chat template"] = _said(rec.template)
+    lax = {"case text": rec.cases_digest[:8], "accelerator": rec.accelerator,
+           "split": f"{rec.split} v{rec.split_version}" if rec.split else "",
+           "place": _short(rec.where) if rec.where else "",
+           "serving machine": _short(rec.machine) if rec.machine else ""}
+    for key, parts in sorted(rec.served.items()):
+        lax.update({f"{key} {part}": _said(v) for part, v in sorted(parts.items()) if v})
+    for name, kind in (("device", rec.devices), ("launch", rec.launch), ("", rec.instruments)):
+        lax.update({f"{name} {k}".strip(): _said(v) for k, v in sorted(kind.items()) if v})
+    return strict, {k: v for k, v in lax.items() if v}
+
+
+def _merged(recs: list) -> tuple[dict, dict]:
+    """One exam's conditions from its runs: they agree wherever two of them both say, so take the first that says."""
+    strict, lax = exam_conditions(recs[0])
+    for rec in recs[1:]:
+        for k, v in exam_conditions(rec)[1].items():
+            lax.setdefault(k, v)
+    return strict, lax
+
+
+def _differs(conds: list[tuple[dict, dict]]) -> list[list]:
+    """For exams that read alike, each one's [label, value] pairs on the fields that set them apart."""
+    out: list[list] = [[] for _ in conds]
+    for which, missing in ((0, "default"), (1, "not recorded")):
+        labels = list(dict.fromkeys(k for c in conds for k in c[which]))
+        for label in labels:
+            said = {c[which][label] for c in conds if label in c[which]}
+            if len(said) > 1 or (which == 0 and any(label not in c[which] for c in conds)):
+                for i, c in enumerate(conds):
+                    out[i].append([label, c[which].get(label, missing)])
+    # An unset field is named only when nothing else tells the exam apart; the exam that set it names it.
+    return [[p for p in said if p[1] != "default"] or said for said in out]
 
 
 def _resolved(run: dict | None) -> dict:
@@ -297,8 +353,9 @@ def exams(conn, mid: int, lane: str) -> list[dict]:
     found = [(run, rec) for run, rec in found if not contaminated(rec)]
     same = (lambda a, b: a[0]["machine_id"] == b[0]["machine_id"]
             and comparable(a[1], b[1])[0])
-    out = []
+    out, conds = [], []
     for group in mutual_groups(found, same):
+        conds.append(_merged([rec for _, rec in group]))
         rows: dict[str, dict] = {}
         for run, _ in group:
             resolved = _resolved(run)
@@ -313,6 +370,12 @@ def exams(conn, mid: int, lane: str) -> list[dict]:
                     "run_at": _iso(group[0][0]["generated_at"]),
                     "first_run_at": _iso(group[-1][0]["generated_at"]),
                     "rows": sorted(rows.values(), key=_rank)})
+    alike: dict[tuple, list[int]] = {}
+    for i, e in enumerate(out):
+        alike.setdefault((e["cases"], e["repeat"]), []).append(i)
+    for idx in alike.values():
+        for i, said in zip(idx, _differs([conds[i] for i in idx])):
+            out[i]["differs"] = said
     return out
 
 
@@ -361,7 +424,8 @@ def _serves_model(spec: str, conn) -> str:
     from harness import models
     if not spec:
         return ""
-    return f"{models.display(spec)}; {models.about_text(models.about(conn, models.resolve(spec)))}"
+    about = models.about_text(models.about(conn, models.resolve(spec)))
+    return f"{models.display(spec)}; {about}" if about else models.display(spec)
 
 
 def _adoptions(conn, mid: int) -> list[dict]:
