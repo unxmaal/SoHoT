@@ -411,6 +411,22 @@ def try_held(kind: str):
         os.close(fd)
 
 
+def beat(now: float | None = None) -> None:
+    """Stamp the GPU lock's holder record with a moment of progress, when this process or an ancestor holds it. #775."""
+    if os.environ.get(HELD_ENV) != "1":
+        return
+    import threading
+    path = holder_path()
+    record = _read(path)
+    if not record:
+        return
+    record["beat"] = time.time() if now is None else float(now)
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    with contextlib.suppress(OSError):
+        tmp.write_text(json.dumps(record), encoding="utf-8")
+        os.replace(tmp, path)
+
+
 def _write_holder(kind: str, deadline_s: float | None = None, path: Path | None = None) -> None:
     from harness import workqueue
     record = {"kind": kind, "pid": os.getpid(), "since": time.time()}

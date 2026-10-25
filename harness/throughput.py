@@ -195,6 +195,14 @@ def default_levels() -> tuple[int, ...]:
     return tuple(out)
 
 
+def deadline_s(n: int, levels, timeout: float) -> float:
+    """The longest a sweep may hold the machine: the warm-up, then each level's waves at that level's timeout. #775."""
+    import math
+
+    from harness import completion
+    return max(timeout, completion.LOAD_TIMEOUT_S) + sum(math.ceil(n / level) * timeout * level for level in levels)
+
+
 def sweep(model: str, texts: list[str], levels=None, max_tokens: int | None = None,
           gateway: str = "", timeout: float = 300.0,
           post=None, clock=time.perf_counter, footprint=None,
@@ -232,11 +240,12 @@ def sweep(model: str, texts: list[str], levels=None, max_tokens: int | None = No
                 tokens, ok, body = 0, False, {}
                 valid = False if schema_valid({}, request) is not None else None
                 why = f"{type(exc).__name__}: {str(exc).splitlines()[0] if str(exc) else ''}"[:160]
+            exclusive.beat()
         # A wait for another batch on the serving machine is not this request's latency. #776.
         return clock() - t - mine.within(), tokens, ok, ttft, why, prompt, valid, body, request
 
     out = []
-    with exclusive.held("eval"):
+    with exclusive.held("eval", deadline_s=deadline_s(len(texts), levels, timeout)):
         # Untimed: a model that is not resident loads on the first request,
         # and every ratio is taken against the first level. #333.
         warm_s, _, warm_ok, *_ = one(texts[0]) if texts else (0.0, 0, True, None, "")

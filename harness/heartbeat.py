@@ -225,6 +225,17 @@ def reopened_too_big(data=None) -> float | None:
     return marked(REOPENED_TOO_BIG, data)
 
 
+def progress_at(data: dict, holder: dict | None = None) -> float:
+    """When the loop last moved: its own update, or while it waits on the lock, the holder's later beat. #775."""
+    at = float(data.get("updated") or data.get("started") or 0)
+    if not data.get("waiting"):
+        return at
+    if holder is None:
+        from harness import exclusive
+        holder = exclusive.holder()
+    return max(at, float((holder or {}).get("beat") or 0))
+
+
 def stall_after(data: dict) -> float:
     """Seconds without a beat before this loop reads as stalled: the step's own deadline when it set one."""
     return max(STALL_S, float(data.get("deadline_s") or 0))
@@ -246,7 +257,7 @@ def status(data: dict | None, alive=alive) -> str:
         return "finished"
     if not alive(data.get("pid") or 0):
         return "stalled"
-    if clock() - float(data.get("updated") or 0) > stall_after(data):
+    if clock() - progress_at(data) > stall_after(data):
         return "stalled"
     return "running"
 
@@ -269,7 +280,7 @@ def summary(alive=alive) -> dict | None:
         return None
     st = status(d, alive=alive)
     now = clock()
-    age = now - float(d.get("updated") or now)
+    age = now - (progress_at(d) if d.get("updated") else now)
     lane = f" ({d['lane']} lane)" if d.get("lane") else ""
     if st == "finished":
         rc = d.get("rc")

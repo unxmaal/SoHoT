@@ -28,9 +28,10 @@ def _mlx():
 
 def run(step_gb: float = 1.0, settle_s: float = 3.0, floor_pct: int = 10,
         cap_gb: float | None = None, allocate=None, release=None, sample=None,
-        sleep=time.sleep, available=None) -> dict:
+        sleep=time.sleep, available=None, beat=None) -> dict:
     """Grow GPU-resident memory until the first sign of pressure, then free it."""
-    from harness import memory
+    from harness import exclusive, memory
+    beat = beat or exclusive.beat
     if allocate is None or release is None:
         allocate, release = _mlx()
     sample = sample or pr.sample
@@ -61,6 +62,7 @@ def run(step_gb: float = 1.0, settle_s: float = 3.0, floor_pct: int = 10,
             sleep(settle_s)
             now = row(held)
             steps.append(now)
+            beat()
             why = _stop(now, base, floor_pct)
             if why:
                 stopped, warn_at = why, held

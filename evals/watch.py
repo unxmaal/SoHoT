@@ -161,9 +161,12 @@ class Progress:
         return got
 
     def case_done(self) -> None:
+        from harness import exclusive
         self.done += 1
         self.at = clock()
         self.write()
+        # A run's length is not known when it takes the lock; a waiter behind it reads these beats. #775.
+        exclusive.beat()
 
 
 def read_progress(outdir) -> dict:

@@ -143,7 +143,9 @@ def resolve(site: str):
     for key in re.findall(r"\[([\w.-]+)\]", m["keys"] or ""):
         got = got[key]
     if m["param"]:
-        return _inspect.signature(got).parameters[m["param"]].default
+        params = _inspect.signature(got).parameters
+        # A stand-in that lacks the parameter (a test double) leaves the source's own default. #775.
+        return params[m["param"]].default if m["param"] in params else _static(site)
     return got
 
 

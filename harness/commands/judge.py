@@ -45,7 +45,8 @@ def cmd_rubric(a) -> int:
         return err("--candidates is required for run")
     try:
         from harness import exclusive
-        with exclusive.held("eval", announce=lambda m: note(m, flush=True)):
+        with exclusive.held("eval", announce=lambda m: note(m, flush=True),
+                            deadline_s=rv.deadline_s(candidates, len(rv.gold(root)))):
             report = rv.run(s, candidates, a.gateway)
     except ValueError as exc:
         return err(str(exc))
