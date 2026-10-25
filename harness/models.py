@@ -156,12 +156,28 @@ _ENGINE_PREFIXES = ("llamacpp:", "vllm:", "ds4:")
 _REPO_ID = re.compile(r"^[A-Za-z0-9][\w.-]*/[\w.-]+$")
 
 
+_BEST_OF = re.compile(r"^best-of-\d+$")
+
+
+def _bare(model: str) -> str:
+    """A receipt key minus the engine, method and router heads in front of the model it ran. #1210."""
+    from harness import engines, methods
+    heads = engines.names() | frozenset(methods.REGISTRY) | {"repair"}
+    name = model
+    while True:
+        prefix = next((p for p in _ENGINE_PREFIXES if name.startswith(p)), "")
+        head, sep, rest = name.partition("/")
+        if prefix:
+            name = name[len(prefix):]
+        elif sep and rest and (head in heads or _BEST_OF.match(head)):
+            name = rest
+        else:
+            return name
+
+
 def _source(conn, model: str, config=None) -> tuple[str, str]:
     """(repo, weights file) behind a model id, from the config and the downloads table."""
-    name = model
-    for prefix in _ENGINE_PREFIXES:
-        if name.startswith(prefix):
-            name = name[len(prefix):]
+    name = _bare(model)
     if not name or ":" in name:
         return "", ""
     e = _entry(name, config)
@@ -215,10 +231,18 @@ def about(conn, model: str, config=None) -> dict:
 
 
 def about_text(facts: dict | None) -> str:
-    """One line for a row: "family X, 7B params, Q4_K_M, by org"; "unknown" when nothing is known."""
+    """One line of the facts the store holds, in order: "family X, 7B params, Q4_K_M, by org"; "" when it holds none. #1210."""
     facts = facts or {}
-    keys = ("family", "params", "quant", "publisher")
-    if all(facts.get(k, UNKNOWN_FACT) == UNKNOWN_FACT for k in keys) and not facts.get("source"):
-        return UNKNOWN_FACT
-    return (f"family {facts.get('family', UNKNOWN_FACT)}, {facts.get('params', UNKNOWN_FACT)} params, "
-            f"{facts.get('quant', UNKNOWN_FACT)}, by {facts.get('publisher', UNKNOWN_FACT)}")
+    got = {k: facts.get(k) for k in ("family", "params", "quant", "publisher")
+           if facts.get(k) and facts.get(k) != UNKNOWN_FACT}
+    return ", ".join(form.format(got[k]) for k, form in (
+        ("family", "family {}"), ("params", "{} params"), ("quant", "{}"), ("publisher", "by {}")) if k in got)
+
+
+#: The placeholders an export written before #1210 put in its description lines.
+_STALE_UNKNOWNS = {UNKNOWN_FACT, f"family {UNKNOWN_FACT}", f"{UNKNOWN_FACT} params", f"by {UNKNOWN_FACT}"}
+
+
+def known_only(text: str) -> str:
+    """A stored description line without the placeholders an older export wrote for missing facts."""
+    return ", ".join(p for p in (text or "").split(", ") if p.strip() and p.strip() not in _STALE_UNKNOWNS)

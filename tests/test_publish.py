@@ -484,7 +484,9 @@ def test_each_exam_is_captioned_with_its_case_count_and_date(store):
     store.commit()
     doc, _ = _exams(store)
     html = site.benchmarks([doc], now=1.79e9)
-    new = html.index("3 cases &middot; 2 runs, latest 2026-10-07")
+    # The store fixture's own 3-case run is a second exam of that size, so the caption says what splits them. #1210.
+    new = html.index("3 cases &middot; temperature 0.2 &middot; 2 runs, latest 2026-10-07")
+    assert "3 cases &middot; temperature default &middot; 1 run, 2026-10-05" in html
     old = html.index("2 cases &middot; 1 run, 2026-10-05")
     assert new < old
 

@@ -152,6 +152,8 @@ td.num { display:table-cell; font-family:inherit; font-size:inherit; color:inher
 .bad { background:var(--badbg); color:var(--bad) }
 .good { background:var(--goodbg); color:var(--good) }
 tr.changed td, tr.serving td { background:var(--goodbg) }
+details.earlier { margin-top:1rem }
+details.earlier > summary { cursor:pointer; color:var(--dim) }
 footer { text-align:center; color:#fff4da; font-size:.85rem; padding:0 16px 2.5rem }
 .calm footer { color:var(--dim) }
 @media (prefers-reduced-motion: no-preference) {
@@ -466,16 +468,21 @@ def _exam_caption(label: str, exam: dict) -> str:
     n_cases = exam.get("cases")
     cases = (f'{n_cases} case{"" if n_cases == 1 else "s"}'
              + (f" x {reps} repeats" if reps > 1 else ""))
-    return f'<h3>{_esc(label)} &middot; {cases} &middot; {when}</h3>'
+    apart = ", ".join(f"{k} {v}" for k, v in exam.get("differs") or [])
+    return (f'<h3>{_esc(label)} &middot; {cases} &middot; '
+            + (f'{_esc(apart)} &middot; ' if apart else "") + f'{when}</h3>')
 
 
 def _lane_tables(label: str, lane: dict) -> str:
-    """One table per comparable exam, newest first; an export from before #621 has only its latest run."""
+    """The newest exam open, older ones newest first under one fold; an export from before #621 has only its latest run."""
     if "exams" not in lane:
         return (f'<h3>{_esc(label)} &middot; run {_date(lane.get("last_run_at"))}</h3>'
                 f'{_bench_table(lane)}')
-    return "".join(_exam_caption(label, e) + _bench_table(lane, e.get("rows") or [], True)
-                   for e in lane["exams"])
+    tables = [_exam_caption(label, e) + _bench_table(lane, e.get("rows") or [], True)
+              for e in lane["exams"]]
+    earlier = (f'<details class="earlier"><summary>Earlier exams ({len(tables) - 1})</summary>'
+               f'{"".join(tables[1:])}</details>' if len(tables) > 1 else "")
+    return "".join(tables[:1]) + earlier
 
 
 def _has_tables(lane: dict | None) -> bool:
