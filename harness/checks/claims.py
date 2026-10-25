@@ -42,6 +42,9 @@ MIN_RECALL = 0.5
 RECALL_WEIGHT = 0.5
 #: The row metric naming its case's stratum: 1 expects no claims, 0 expects some. #791.
 STRATUM = "claims_expect_empty"
+def empty_missed() -> dict:
+    """An expect-empty case whose reply did not validate: in claims_empty_rate's denominator, never kept. #792."""
+    return {"claims_empty_kept": 0, "claims_empty_cases": 1, "claims_empty_rate": 0.0}
 
 
 def balanced(recall: float, specificity: float) -> float:
@@ -273,7 +276,7 @@ def check(artifact, schema: dict, reviews: list[dict], expect_empty: bool = Fals
     if emitted is None:
         out = CheckResult(False, "reply does not validate against the case's schema")
         out.metrics = {"claims_schema_valid": 0, "claims_judge_calibrated": 0,
-                       "claims_matcher_version": MATCHER_VERSION}
+                       "claims_matcher_version": MATCHER_VERSION, **(empty_missed() if expect_empty else {})}
         return out
     if expect_empty:
         kept = int(not emitted)
