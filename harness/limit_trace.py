@@ -166,7 +166,22 @@ def _function(tree, qual: str):
     return walk(tree.body, "")
 
 
-def cutting_uses(texts: dict[str, str], site: str) -> list[str]:
+def _index(tree) -> tuple[set, list]:
+    """The names a tree imports by `from`, and the nodes that could bound work: slices, bounding calls, stopping tests."""
+    imported, nodes = set(), []
+    for n in ast.walk(tree):
+        if isinstance(n, ast.ImportFrom):
+            imported |= {a.name for a in n.names}
+        elif isinstance(n, ast.Slice) or (isinstance(n, ast.Call) and knobs._dotted(n.func).split(".")[-1] in BOUNDING):
+            nodes.append(n)
+        elif (isinstance(n, (ast.If, ast.While)) and isinstance(n.test, ast.Compare)
+              and any(isinstance(b, _STOPS) for b in n.body)):
+            nodes.append(n)
+    return imported, nodes
+
+
+def cutting_uses(texts: dict[str, str], site: str, trees: dict | None = None,
+                 indexes: dict | None = None) -> list[str]:
     """rel:line of each place the site's value bounds work: a slice, a min/max/range bound, a test that stops a loop."""
     got = _read(site)
     if got is None:
@@ -174,25 +189,28 @@ def cutting_uses(texts: dict[str, str], site: str) -> list[str]:
     rel, name, func = got
     out = []
     for where, text in texts.items():
-        tree = ast.parse(text)
+        if func and where != rel:
+            continue
+        tree = trees[where] if trees is not None else ast.parse(text)
         if func:
-            if where != rel:
-                continue
             tree = _function(tree, func)
             if tree is None:
                 continue
-        bare = where == rel or any(isinstance(n, ast.ImportFrom) and any(a.name == name for a in n.names)
-                                   for n in ast.walk(tree))
+            imported, nodes = _index(tree)
+        elif indexes is not None:
+            imported, nodes = indexes[where] if where in indexes else indexes.setdefault(where, _index(tree))
+        else:
+            imported, nodes = _index(tree)
+        bare = where == rel or name in imported
         # A parameter is read by its bare name; `proc.poll` is not the parameter `poll`.
         attr = not func
-        for node in ast.walk(tree):
-            hit = None
+        for node in nodes:
             if isinstance(node, ast.Slice):
                 hit = any(_uses(p, name, bare, attr) for p in (node.lower, node.upper, node.step) if p is not None)
-            elif isinstance(node, ast.Call) and knobs._dotted(node.func).split(".")[-1] in BOUNDING:
+            elif isinstance(node, ast.Call):
                 hit = any(_uses(a, name, bare, attr) for a in [*node.args, *(k.value for k in node.keywords)])
-            elif isinstance(node, (ast.If, ast.While)) and isinstance(node.test, ast.Compare):
-                hit = _uses(node.test, name, bare, attr) and any(isinstance(b, _STOPS) for b in node.body)
+            else:
+                hit = _uses(node.test, name, bare, attr)
             if hit:
                 out.append(f"{where}:{node.lineno}")
     return out
@@ -203,6 +221,7 @@ def exemption_problems(exempt: dict[str, str], root=knobs.REPO, texts: dict[str,
     texts = dict(_modules(root)) if texts is None else texts
     sites = limits(root) if root is not None else {}
     names = named(root) if root is not None else {}
+    trees, indexes = {where: ast.parse(text) for where, text in texts.items()}, {}
     out = []
     for site, why in sorted(exempt.items()):
         if not (why or "").strip():
@@ -211,7 +230,7 @@ def exemption_problems(exempt: dict[str, str], root=knobs.REPO, texts: dict[str,
             out.append(f"{site}: not a gating site the registry or the knob backlog holds")
         elif root is not None and traced(site, sites[site], names):
             out.append(f"{site}: already records its cuts")
-        out += [f"{site}: cuts work at {w}" for w in cutting_uses(texts, site)]
+        out += [f"{site}: cuts work at {w}" for w in cutting_uses(texts, site, trees, indexes)]
     return out
 
 
