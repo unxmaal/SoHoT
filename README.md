@@ -327,6 +327,21 @@ dispatches `.github/workflows/pages.yml` on main. The workflow renders the site,
 fails if the privacy scanner matches anything in any file under `site/`, and
 deploys to Pages.
 
+The same step writes `lanes/<slug>/<lane>.json` beside it, one lane feed per
+lane, committed only when it changed. A feed is one lane's findings for an
+outside consumer: the served and adopted model, every candidate's verdict and
+reason, the latest exams, settled knob decisions, and events with a rising id.
+A lane feed that fails the privacy scan is skipped and named; the rest publish.
+It is read-only and the same document on every surface:
+
+```bash
+soh lane-feed video --json             # the whole document
+soh lane-feed video --since N --json   # only events after a previous read's `cursor`
+```
+
+Over MCP it is the resource `soh://lanes/{lane}` or the `lane_feed(lane, since)`
+tool. `schema_version` changes whenever the shape does.
+
 Two one-time steps: in the repository's Settings, Pages, set Source to "GitHub
 Actions"; then on each machine that should appear, run `soh report
 --auto-publish on` (it is off on a fresh machine).

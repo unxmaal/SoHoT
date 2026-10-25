@@ -396,6 +396,16 @@ def _trends(conn, now: float) -> dict:
         return {"error": f"trends unavailable: {type(exc).__name__}"}
 
 
+def identity(conn, mid: int, here: bool) -> tuple[dict, str, str]:
+    """(machines row, accelerator name, label); `here` asks this machine's card when no run named it."""
+    row = dict(conn.execute("SELECT * FROM machines WHERE id = ?", (mid,)).fetchone())
+    acc = _accelerator_name(conn, mid)
+    if not acc and here:
+        from harness import memory
+        acc = memory.detect().name if row["accelerator"].startswith("discrete") else ""
+    return row, acc, machine_label(row, acc)
+
+
 def export(conn=None, machine_id: int | None = None,
            now: float | None = None) -> dict:
     """One machine's report as plain, scrubbed data. This machine by default; trends only for this machine."""
@@ -409,13 +419,7 @@ def export(conn=None, machine_id: int | None = None,
         if mid is None:
             mid = ms.remember_machine(c)
             c.commit()
-        row = dict(c.execute("SELECT * FROM machines WHERE id = ?",
-                             (mid,)).fetchone())
-        acc = _accelerator_name(c, mid)
-        if not acc and machine_id is None:
-            from harness import memory
-            acc = memory.detect().name if row["accelerator"].startswith("discrete") else ""
-        label = machine_label(row, acc)
+        row, acc, label = identity(c, mid, machine_id is None)
         real = _real_use(c, now)
         held = adopt.current(c, mid)
         typed = winners.typed()
@@ -541,28 +545,85 @@ def publish(doc: dict, repo: str | None = None, gh=_gh, dispatch: bool = True) -
             raise
         _create_branch(repo, path, content, message, gh)
     else:
-        for attempt in range(3):
-            sha = None
-            try:
-                sha = gh([f"repos/{repo}/contents/{path}?ref={BRANCH}"]).get("sha")
-            except GhError as exc:
-                if "404" not in str(exc) and "Not Found" not in str(exc):
-                    raise
-            body = {"message": message, "branch": BRANCH,
-                    "content": base64.b64encode(content.encode()).decode()}
-            if sha:
-                body["sha"] = sha
-            try:
-                gh([f"repos/{repo}/contents/{path}", "-X", "PUT"], body)
-                break
-            except GhError as exc:
-                # 409: another machine moved the branch between the read and the write.
-                if "409" not in str(exc) or attempt == 2:
-                    raise
+        _put(repo, path, content, message, gh)
     if dispatch:
         gh([f"repos/{repo}/actions/workflows/{WORKFLOW}/dispatches", "-X", "POST"],
            {"ref": "main"})
     return path
+
+
+def _missing(exc: GhError) -> bool:
+    return "404" in str(exc) or "Not Found" in str(exc)
+
+
+def _put(repo: str, path: str, content: str, message: str, gh, same=None) -> bool:
+    """One contents-API commit of `path`; False, writing nothing, when `same(old text)` says it is unchanged."""
+    for attempt in range(3):
+        got = {}
+        try:
+            got = gh([f"repos/{repo}/contents/{path}?ref={BRANCH}"])
+        except GhError as exc:
+            if not _missing(exc):
+                raise
+        if same is not None and got.get("content"):
+            try:
+                unchanged = same(base64.b64decode(got["content"]).decode("utf-8"))
+            except ValueError:
+                unchanged = False
+            if unchanged:
+                return False
+        body = {"message": message, "branch": BRANCH,
+                "content": base64.b64encode(content.encode()).decode()}
+        if got.get("sha"):
+            body["sha"] = got["sha"]
+        try:
+            gh([f"repos/{repo}/contents/{path}", "-X", "PUT"], body)
+            return True
+        except GhError as exc:
+            # 409: another machine moved the branch between the read and the write.
+            if "409" not in str(exc) or attempt == 2:
+                raise
+    return False
+
+
+def lane_path(slug_: str, lane: str) -> str:
+    return f"lanes/{slug_}/{lane}.json"
+
+
+def _unchanged(doc: dict):
+    """Whether a published lane file says what `doc` says, apart from when it was generated."""
+    def same(old: str) -> bool:
+        try:
+            was = json.loads(old)
+        except ValueError:
+            return False
+        return isinstance(was, dict) and ({**was, "generated_at": ""} == {**doc, "generated_at": ""})
+    return same
+
+
+def lane_docs(conn=None, machine_id: int | None = None, now: float | None = None) -> dict[str, dict]:
+    """Every lane's feed for one machine, this one by default, as lane_feed builds it. #1200."""
+    from harness import lane_feed, lanes as L, runs
+    with runs.store(conn) as c:
+        return {lane: lane_feed.lane_feed(c, lane, machine_id=machine_id, now=now) for lane in L.ALL}
+
+
+def publish_lanes(docs: dict[str, dict], slug_: str, repo: str | None = None, gh=_gh) -> dict:
+    """lanes/<slug>/<lane>.json for each lane that passes the scan and changed; a lane that fails is skipped and named."""
+    repo = repo or repo_name()
+    out = {"written": [], "unchanged": [], "refused": {}}
+    for lane, doc in docs.items():
+        try:
+            checked(doc)
+        except ExportRefused as exc:
+            out["refused"][lane] = str(exc)
+            continue
+        path = lane_path(slug_, lane)
+        content = json.dumps(doc, indent=1, sort_keys=True) + "\n"
+        message = f"lane feed: {lane} on {slug_} at {doc.get('generated_at', '')}"
+        wrote = _put(repo, path, content, message, gh, same=_unchanged(doc))
+        out["written" if wrote else "unchanged"].append(path)
+    return out
 
 
 def settings_path() -> Path:
@@ -585,8 +646,21 @@ def set_enabled(on: bool) -> Path:
     return p
 
 
-def publish_here(conn=None) -> str:
-    return publish(export(conn))
+def publish_here(conn=None, gh=_gh, repo: str | None = None) -> str:
+    """This machine's report and every lane's feed beside it, then one page build."""
+    from harness import runs
+    with runs.store(conn) as c:
+        doc = export(c)
+        docs = lane_docs(c, now=None)
+    repo = repo or repo_name()
+    path = publish(doc, repo=repo, gh=gh, dispatch=False)
+    got = publish_lanes(docs, doc["machine"]["slug"], repo=repo, gh=gh)
+    gh([f"repos/{repo}/actions/workflows/{WORKFLOW}/dispatches", "-X", "POST"], {"ref": "main"})
+    said = (f"{path} and lanes/{doc['machine']['slug']}/ ({len(got['written'])} lane file(s) written, "
+            f"{len(got['unchanged'])} unchanged")
+    if got["refused"]:
+        said += f", refused by the privacy scan: {', '.join(sorted(got['refused']))}"
+    return said + ")"
 
 
 # --- the page --------------------------------------------------------------

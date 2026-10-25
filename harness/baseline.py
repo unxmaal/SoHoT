@@ -25,17 +25,23 @@ def zero_pass(conn, lane: str, spec: str) -> dict | None:
     return {"spec": spec, "cases": len(draws), "draws": sum(len(d) for d in draws.values())}
 
 
-def exam(lane: str, split: str = "all", repeat: int = 1, suite=None) -> tuple[frozenset, str]:
-    """(case ids, cases digest) of the lane's exam on one split at one repeat, as evals.run loads it now."""
+def exam_cases(lane: str, split: str = "all", repeat: int = 1, suite=None) -> list | None:
+    """The lane's exam cases on one split at one repeat, as evals.run loads them now; None if it cannot load."""
     from evals import core
     from evals.run import expand_cases, select_cases
     from harness import holdout
     try:
         cases = select_cases(core.load_suite(core.SHIPPED, core.local_root()) if suite is None else suite, _lane(lane))
-        cases = expand_cases(holdout.only(cases, split or "all"), max(1, int(repeat or 1)))
+        return list(expand_cases(holdout.only(cases, split or "all"), max(1, int(repeat or 1))))
     except (SystemExit, ValueError):
-        return frozenset(), ""
-    return frozenset(c.id for c in cases), core.cases_digest(cases)
+        return None
+
+
+def exam(lane: str, split: str = "all", repeat: int = 1, suite=None) -> tuple[frozenset, str]:
+    """(case ids, cases digest) of the lane's exam on one split at one repeat, as evals.run loads it now."""
+    from evals import core
+    cases = exam_cases(lane, split, repeat, suite)
+    return (frozenset(), "") if cases is None else (frozenset(c.id for c in cases), core.cases_digest(cases))
 
 
 def sat(run: dict, rows, candidate: str, exam_of=None, memo=None) -> bool:
