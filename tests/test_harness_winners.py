@@ -141,7 +141,8 @@ def test_a_higher_is_better_metric_runs_the_other_way(store_run, conn):
         "mflux/a": {"pass_rate": 1.0, "median_s": 1.0,
                     "metrics": {"adherence": 0.9}},
         "mflux/flux2-klein-4b-q8": {"pass_rate": 1.0, "median_s": 1.0,
-                                    "metrics": {"adherence": 0.4}}}, specs={"mflux/a": "mflux:a"})
+                                    "metrics": {"adherence": 0.4}}},
+              specs={"mflux/a": "mflux:a", "mflux/flux2-klein-4b-q8": "mflux:flux2-klein-4b"})
     assert winners.beaten_in(conn)["image"]["candidate"] == "mflux/a"
 
 
