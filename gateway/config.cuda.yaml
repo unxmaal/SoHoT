@@ -109,8 +109,9 @@ litellm_settings:
   request_timeout: 7200
   # usage_log records each request's shape, never its text, to the store (#481).
   # served_model names the model that answered in the reply and its headers (#670).
+  # spend_guard records a metered alias's dollars and refuses it past api_budget (#1214).
   callbacks: ["usage_log.proxy_handler_instance",
-              "served_model.proxy_handler_instance"]
+              "served_model.proxy_handler_instance", "spend_guard.proxy_handler_instance"]
   # llama-server implements /v1/chat/completions and not /v1/responses, so the
   # same routing workaround the Mac config needs applies unchanged.
   use_chat_completions_url_for_anthropic_messages: true

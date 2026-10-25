@@ -1002,6 +1002,21 @@ requests (or tool calls) on each side, it prints a WARNING naming the switch.
 Nothing is reverted automatically. `soh report` and the published page carry the
 per-lane figures under "Real use", without clients.
 
+A metered alias (an `anthropic/` provider such as `cloud-opus`, or any entry
+that declares a per-token price) spends prepaid API credit, unlike Claude Code
+on the Max plan. `gateway/spend_guard.py` records each such request's price in
+the `api_spend` table, apart from `gateway_requests`, and refuses the next one
+with HTTP 402 once the spend since the recorded start reaches the `api_budget`
+knob. A metered entry must declare `input_cost_per_token` and
+`output_cost_per_token` in its `litellm_params`, or it is refused. An eval or a
+queued job that names a metered candidate prints its estimate and is refused
+when the estimate exceeds what is left (#1214).
+
+```bash
+soh api-spend                      # budget, spent, left, top callers
+soh api-spend --start 2026-10-25   # count from this day
+```
+
 `soh context` measures the other side: how much tool output entered Claude
 Code's context (#828). It reads `~/.claude/projects/**/*.jsonl` (subagents
 included, `--main-only` leaves them out), pairs each tool_result with its

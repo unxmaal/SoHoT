@@ -11,7 +11,7 @@ GIB = 1024 ** 3
 LIMIT, MACHINE = "limit", "machine"
 
 #: The units a knob's limit value is in; a recorded limit must be in its knob's unit (#752).
-UNITS = frozenset({"s", "tokens", "GiB", "share", "factor", "turns", "cases", "pixels", "s/word", "bytes", "calls"})
+UNITS = frozenset({"s", "tokens", "GiB", "share", "factor", "turns", "cases", "pixels", "s/word", "bytes", "calls", "usd"})
 
 #: The lanes an eval asks for a text reply, the ones a reply budget is set for.
 TEXT_LANES = tuple(completion.BUDGET)

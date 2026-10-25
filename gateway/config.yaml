@@ -115,6 +115,11 @@ model_list:
       model: anthropic/claude-opus-5-5
       api_key: os.environ/ANTHROPIC_API_KEY
       additional_drop_params: ["temperature", "top_p", "repetition_penalty"]
+      # Published USD per token; spend_guard prices each request and refuses past api_budget. #1214.
+      input_cost_per_token: 4.0e-06
+      output_cost_per_token: 2.0e-05
+      cache_read_input_token_cost: 2.0e-07
+      cache_creation_input_token_cost: 5.0e-06
 
   # Old nicknames, kept one release so queued jobs and clients keep working; `soh` warns. #670.
   - model_name: local-small
@@ -165,8 +170,9 @@ litellm_settings:
   # Refuse response_format on aliases whose server would silently ignore it (#315).
   # usage_log records each request's shape, never its text, to the store (#481).
   # served_model names the model that answered in the reply and its headers (#670).
+  # spend_guard records a metered alias's dollars and refuses it past api_budget (#1214).
   callbacks: ["schema_guard.proxy_handler_instance", "usage_log.proxy_handler_instance",
-              "served_model.proxy_handler_instance"]
+              "served_model.proxy_handler_instance", "spend_guard.proxy_handler_instance"]
   # mlx_lm.server implements /v1/chat/completions but NOT /v1/responses.
   # Without this, LiteLLM routes /v1/messages through its Responses adapter
   # and every Anthropic-shaped request 404s upstream.

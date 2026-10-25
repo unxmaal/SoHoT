@@ -45,6 +45,11 @@ def _entry(name: str, config=None) -> dict | None:
     return None
 
 
+def entry(spec: str, config=None) -> dict | None:
+    """The gateway config entry `spec` names, or None."""
+    return _entry(_name(spec), config)
+
+
 def is_lane_alias(name: str) -> bool:
     return bool(LANE_ALIAS_RE.match(_name(name)))
 

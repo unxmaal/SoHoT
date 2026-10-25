@@ -95,7 +95,9 @@ def test_morning_shows_last_nights_ledger_in_tokens_and_no_dollar(monkeypatch, c
         conn.close()
     text = "\n".join(morning_cmd.render(r))
     line = next(ln for ln in text.splitlines() if ln.startswith("ledger"))
-    assert "$" not in text, line
+    # The API credit ledger is the one line in dollars (#1214); Max-plan use never is.
+    assert "$" not in "\n".join(ln for ln in text.splitlines() if not ln.startswith("api spend ")), line
+    assert any(ln.startswith("api spend $0.00 of $") for ln in text.splitlines()), text
     assert line.startswith("ledger    2026-10-08: cloud 1,000 in, 2,000 out, 4,000 cache read, 3,000 cache write (at least, ccusage); "
                            "plan peak 5h 80%, 7d 44%; displaced 1.00M in, 100,000 out"), line
 

@@ -14,6 +14,9 @@ UNKNOWN = "unknown"
 ENV = "SOHOT_PURPOSE"
 HEADER = "x-litellm-tags"
 TAG_PREFIX = "purpose:"
+JOB_PREFIX = "job:"
+#: workqueue.JOB_ENV, named here so purpose stays free of the queue's imports.
+JOB_ENV = "LH_JOB_ID"
 
 _CURRENT: contextvars.ContextVar[str] = contextvars.ContextVar("sohot_purpose", default="")
 
@@ -28,8 +31,11 @@ def current(environ=None) -> str:
 
 
 def headers(environ=None) -> dict:
+    """The request tags: purpose:<p>, and job:<id> inside a queued job so a metered request names its caller (#1214)."""
     p = current(environ)
-    return {HEADER: TAG_PREFIX + p} if p else {}
+    job = str((os.environ if environ is None else environ).get(JOB_ENV) or "").strip()
+    tags = ([TAG_PREFIX + p] if p else []) + ([JOB_PREFIX + job] if job else [])
+    return {HEADER: ",".join(tags)} if tags else {}
 
 
 @contextlib.contextmanager

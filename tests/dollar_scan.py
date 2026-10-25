@@ -11,7 +11,8 @@ CLAUDE = re.compile(r"cloud|claude|ccusage|otel|cost_usd|displaced|mapped|token|
                     r"|list price|opus|sonnet|haiku|per M\b", re.I)
 MONEY_WORDS = re.compile(r"dollar|\bUSD\b|API-equivalent|list price", re.I)
 MONEY_FORMAT = re.compile(r"\$\{[^}]*:[^}]*[dfg]\}|\$%[-+ #,.\d]*[dfg]|\$\{\}")
-SKIP = ("evals.cases",)
+#: The API credit ledger is real prepaid money, the one place dollars are reported (#1214).
+SKIP = ("evals.cases", "harness.api_spend", "harness.commands.api_spend")
 
 
 @dataclass(frozen=True)
