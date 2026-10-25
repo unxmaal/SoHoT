@@ -60,4 +60,4 @@ def test_the_power_to_see_a_loss_reads_a_timeout_as_decide_pairs_it():
     timed = _rows(30, 40, reasons.TIMEOUT)
     failed = _rows(30, 40)
     cell = paired.pair(failed, _rows(29, 40), same_repeat=True, unjudged=paired.UNJUDGED_ON_A_TIMEOUT_AXIS)
-    assert sweeps._power_to_see_a_loss(timed, cell, 0.05, 0.1) == sweeps._power_to_see_a_loss(failed, cell, 0.05, 0.1)
+    assert sweeps._power_to_see_a_loss(timed, cell, 0.05, 0.1, "", 0.0) == sweeps._power_to_see_a_loss(failed, cell, 0.05, 0.1, "", 0.0)
