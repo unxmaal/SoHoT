@@ -219,19 +219,21 @@ def sweep(model: str, texts: list[str], levels=None, max_tokens: int | None = No
         payload = {"temperature": 0, **sent, "model": model, "max_tokens": max_tokens}
         t = clock()
         ttft, why, prompt, valid = None, "", 0, None
-        try:
-            body = (send or warm_post)(payload) or {}
-            usage = body.get("usage") or {}
-            tokens = int(usage.get("completion_tokens") or 0)
-            prompt = int(usage.get("prompt_tokens") or 0)
-            ttft = body.get("_ttft_s")
-            valid = schema_valid(body, request)
-            ok = True
-        except Exception as exc:  # noqa: BLE001 - a failed request is a result
-            tokens, ok, body = 0, False, {}
-            valid = False if schema_valid({}, request) is not None else None
-            why = f"{type(exc).__name__}: {str(exc).splitlines()[0] if str(exc) else ''}"[:160]
-        return clock() - t, tokens, ok, ttft, why, prompt, valid, body, request
+        with completion.measuring() as mine:
+            try:
+                body = (send or warm_post)(payload) or {}
+                usage = body.get("usage") or {}
+                tokens = int(usage.get("completion_tokens") or 0)
+                prompt = int(usage.get("prompt_tokens") or 0)
+                ttft = body.get("_ttft_s")
+                valid = schema_valid(body, request)
+                ok = True
+            except Exception as exc:  # noqa: BLE001 - a failed request is a result
+                tokens, ok, body = 0, False, {}
+                valid = False if schema_valid({}, request) is not None else None
+                why = f"{type(exc).__name__}: {str(exc).splitlines()[0] if str(exc) else ''}"[:160]
+        # A wait for another batch on the serving machine is not this request's latency. #776.
+        return clock() - t - mine.within(), tokens, ok, ttft, why, prompt, valid, body, request
 
     out = []
     with exclusive.held("eval"):
@@ -241,11 +243,12 @@ def sweep(model: str, texts: list[str], levels=None, max_tokens: int | None = No
         for level in levels:
             send = post_for(timeout * level)
             before = load()[0] if load else None
-            with _Peak(footprint, sample_s) as peak:
+            with _Peak(footprint, sample_s) as peak, completion.measuring() as waits:
                 t0 = clock()
                 with ThreadPoolExecutor(max_workers=level) as pool:
-                    got = list(pool.map(lambda t: one(t, send), texts))
-                wall = clock() - t0
+                    got = list(pool.map(completion.carrying(lambda t: one(t, send)), texts))
+                busy = waits.within()
+                wall = clock() - t0 - busy
             after = load()[0] if load else None
             # Graded after the clock stops: running a check must not hold back the next request.
             graded = [(code_passed(r[7], r[8]), r[8].get("_id")) for r in got]
@@ -292,5 +295,6 @@ def sweep(model: str, texts: list[str], levels=None, max_tokens: int | None = No
                 "load_avg": [before, after],
                 "peak_bytes": peak.peak,
                 "warmup_s": round(warm_s, 2), "warmup_ok": warm_ok,
+                "busy_wait_s": round(busy, 2),
             })
     return out

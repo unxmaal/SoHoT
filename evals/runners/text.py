@@ -185,6 +185,27 @@ class CompletionRunner(BaseRunner):
         self.last_metrics = {}
         self.last_timing = {}
         self.last_cut = ""
+        # Its own scope: a best-of sample is timed without its siblings' busy waits. #776.
+        with completion.measuring():
+            text, usage = self._generate(case)
+            elapsed = completion.since(started)
+        # THROUGHPUT, not just latency. Two candidates can share a median while
+        # one of them wrote three times as much, and a median alone cannot tell
+        # a terse model from a fast one. Absent when the server reports no
+        # usage -- MISSING rather than zero, because a zero would rank as the
+        # slowest candidate rather than as an unknown.
+        out = int(usage.get("completion_tokens") or 0)
+        if out and elapsed > 0:
+            self.last_metrics = {
+                **self.last_metrics,
+                "completion_tokens": out,
+                "tokens_per_s": round(out / elapsed, 1),
+            }
+        # Peak memory is not observable through an HTTP boundary; the server
+        # holds the model. Reporting 0 is honest, and summarize() takes a max.
+        return text, 0
+
+    def _generate(self, case: Case):
         try:
             try:
                 text, usage = self._ask(case)
@@ -200,22 +221,7 @@ class CompletionRunner(BaseRunner):
         except completion.CompletionError as exc:
             # One dud must never abort a fifty-case run: every failure is a row.
             raise _runner_error(exc) from exc
-        # THROUGHPUT, not just latency. Two candidates can share a median while
-        # one of them wrote three times as much, and a median alone cannot tell
-        # a terse model from a fast one. Absent when the server reports no
-        # usage -- MISSING rather than zero, because a zero would rank as the
-        # slowest candidate rather than as an unknown.
-        elapsed = time.perf_counter() - started
-        out = int(usage.get("completion_tokens") or 0)
-        if out and elapsed > 0:
-            self.last_metrics = {
-                **self.last_metrics,
-                "completion_tokens": out,
-                "tokens_per_s": round(out / elapsed, 1),
-            }
-        # Peak memory is not observable through an HTTP boundary; the server
-        # holds the model. Reporting 0 is honest, and summarize() takes a max.
-        return text, 0
+        return text, usage
 
     def extra_metrics(self) -> dict:
         return getattr(self, "last_metrics", {})

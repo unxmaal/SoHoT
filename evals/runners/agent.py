@@ -192,7 +192,7 @@ class AgentRunner(BaseRunner):
         steps: list[dict] = []
         final, stopped = "", "step cap"
         cut = ""
-        prefill = 0.0
+        prefill = waited = 0.0
         cold = not self.answered
         try:
             for n in range(cap):
@@ -215,7 +215,9 @@ class AgentRunner(BaseRunner):
                 # Prefill grows with the context, not with the agent's work, so it is not the case's to pay. #695.
                 # The prompt only grows, so the largest prefill yet is this step's floor.
                 prefill = max(prefill, _prefill(rec))
-                deadline += _prefill(rec)
+                # A wait for another batch on the serving machine is not the case's to pay either. #776.
+                waited += rec.get("busy_wait_s") or 0.0
+                deadline += _prefill(rec) + (rec.get("busy_wait_s") or 0.0)
                 if ended == "length":
                     rec["cut"] = True
                     cut = knobs.limit("max_tokens.agent", self.max_tokens, "tokens")
@@ -249,7 +251,7 @@ class AgentRunner(BaseRunner):
             self.last_stop = (reasons.TIMEOUT, case_limit)
         elif stopped == "step cap":
             self.last_stop = (reasons.STEP_CAP, knobs.limit("agent_steps_scale", MAX_STEPS_SCALE, "factor"))
-        return finish(case, box, steps, final, stopped, started), 0
+        return finish(case, box, steps, final, stopped, started + waited), 0
 
     def stopped_by(self) -> tuple[str, str]:
         return self.last_stop
@@ -270,13 +272,16 @@ class AgentRunner(BaseRunner):
         self.answered = True
         firsts = [v for v in (got.timing.get("ttft_s"), got.timing.get("first_tool_s"))
                   if v is not None]
-        rec = {"step": n + 1, "seconds": round(time.perf_counter() - t0, 4),
+        waited = got.timing.get("busy_wait_s") or 0.0
+        rec = {"step": n + 1, "seconds": round(time.perf_counter() - t0 - waited, 4),
                "ttft_s": min(firsts) if firsts else None,
                "first_reasoning_s": got.timing.get("first_reasoning_s"),
                "prefill_s": got.timing.get("prefill_s"), "calls": []}
         for key in ("prompt_tokens", "completion_tokens"):
             if isinstance(got.usage.get(key), int):
                 rec[key] = got.usage[key]
+        if waited:
+            rec["busy_wait_s"] = waited
         return rec, got.message or {"content": got.text}, got.finish
 
     def _act(self, box, calls, message, messages, rec) -> None:

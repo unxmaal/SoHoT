@@ -266,6 +266,80 @@ def complete_with_logprobs(prompt: str, model: str,
     return got.text, got.usage, got.tokens
 
 
+class _Waits:
+    """Busy-wait spans (perf_counter start, end) of the requests made inside one measuring() scope. #776."""
+
+    def __init__(self, parent=None):
+        import threading
+        self.spans: list = []
+        self.parent = parent
+        self._lock = threading.Lock()
+
+    def add(self, start: float, end: float) -> None:
+        with self._lock:
+            self.spans.append((start, end))
+        if self.parent is not None:
+            self.parent.add(start, end)
+
+    def within(self, start: float = float("-inf"), end: float = float("inf")) -> float:
+        """Seconds of [start, end] some request in this scope spent waiting; overlapping waits count once."""
+        with self._lock:
+            spans = sorted((max(a, start), min(b, end)) for a, b in self.spans)
+        total, reach = 0.0, start
+        for a, b in spans:
+            a = max(a, reach)
+            if b > a:
+                total += b - a
+                reach = b
+        return total
+
+
+_WAITS: contextvars.ContextVar = contextvars.ContextVar("busy_waits", default=None)
+
+
+@contextlib.contextmanager
+def measuring():
+    """A scope whose requests' busy waits since() leaves out; a nested scope also reports to the one around it. #776."""
+    waits = _Waits(_WAITS.get())
+    held = _WAITS.set(waits)
+    try:
+        yield waits
+    finally:
+        _WAITS.reset(held)
+
+
+def busy_s(started: float, now: float | None = None) -> float:
+    """Seconds since `started` that this scope's requests spent waiting out a busy serving machine. #776."""
+    waits = _WAITS.get()
+    return waits.within(started, time.perf_counter() if now is None else now) if waits else 0.0
+
+
+def since(started: float) -> float:
+    """perf_counter seconds since `started`, less the busy waits of this scope's requests. #776."""
+    now = time.perf_counter()
+    return now - started - busy_s(started, now)
+
+
+def carrying(fn):
+    """`fn` run in a copy of the caller's context, so a pool worker's busy waits reach the caller's scope. #776."""
+    ctx = contextvars.copy_context()
+    return lambda *a, **k: ctx.copy().run(fn, *a, **k)
+
+
+def _timed(fn):
+    """Stamp timing["busy_wait_s"] on the Completion `fn` returns when its requests waited. #776."""
+    import functools
+
+    @functools.wraps(fn)
+    def call(*a, **k):
+        with measuring() as waits:
+            got = fn(*a, **k)
+        if waits.spans:
+            got.timing["busy_wait_s"] = round(waits.within(), 3)
+        return got
+    return call
+
+
 @dataclass
 class Completion:
     text: str
@@ -287,6 +361,7 @@ class Completion:
     request: dict = field(default_factory=dict)
 
 
+@_timed
 def complete_full(prompt: str, model: str, gateway: str = "",
                   modality: str = "", context: str = "",
                   timeout: float = TIMEOUT_S,
@@ -605,10 +680,15 @@ def _busy_post(gateway: str, payload: dict, timeout: float):
     """One request, waited out while the serving machine is busy with another batch, up to batch.BUSY_WAIT_S. #769."""
     from harness import batch
     deadline = time.monotonic() + batch.BUSY_WAIT_S
+    refused = None
     while True:
+        sent = time.perf_counter()
         r = _send(gateway, payload, timeout)
         if not _busy(r) or time.monotonic() + batch.BUSY_POLL_S > deadline:
+            if refused is not None and (waits := _WAITS.get()) is not None:
+                waits.add(refused, time.perf_counter() if _busy(r) else sent)
             return r
+        refused = sent if refused is None else refused
         time.sleep(batch.BUSY_POLL_S)
 
 
@@ -724,6 +804,7 @@ def _merge_call(calls: dict, part: dict) -> None:
         got["function"]["arguments"] = json.dumps(fn["arguments"])
 
 
+@_timed
 def chat(messages: list, model: str, gateway: str = "",
          tools: list | None = None, timeout: float = TIMEOUT_S,
          max_tokens: int = MAX_TOKENS, sampling: dict | None = None,

@@ -50,6 +50,11 @@ class RepairRunner(BaseRunner):
         self.last_metrics: dict = {}
 
     def generate(self, case: Case):
+        # Its own scope, so a sample beside it does not lend it its busy waits. #776.
+        with completion.measuring():
+            return self._generate(case)
+
+    def _generate(self, case: Case):
         import time
 
         # perf_counter, not monotonic: `monotonic` is GetTickCount64 on
@@ -90,10 +95,8 @@ class RepairRunner(BaseRunner):
         return artifact, 0
 
     def _metrics(self, attempts: int, spent: int, started: float) -> dict:
-        import time
-
         out: dict = {"attempts": attempts}
-        elapsed = time.perf_counter() - started
+        elapsed = completion.since(started)
         if spent and elapsed > 0:
             out["completion_tokens"] = spent
             out["tokens_per_s"] = round(spent / elapsed, 1)
