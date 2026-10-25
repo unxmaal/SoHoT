@@ -2355,6 +2355,33 @@ never reached the server.
     uv run python -m evals.run --modality agent --candidates \
       sohot-code,mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit,claude-code:claude-opus-5-5
 
+The craft lane is the agent lane pointed at a real application. The candidate
+is an MCP client of `vectorcraft-cli mcp` or `figcraft-cli mcp`
+([storytold](https://github.com/storytold), Apache-2.0), started per case with
+its automation read and write roots set to a fresh working folder, and the tools
+it sees are the ones that server lists. Each run book under `evals/cases/craft/`
+names the app, the release it was validated on (tag, CLI asset and the sha256
+from that release's `SHA256SUMS.txt`), the app's own command script that builds
+the target (`runbooks/*.json`), any frozen asset, and named requirements. After
+the model stops, the runner reads the document with `document.inspect` and
+checks node types, counts, names, text, geometry within
+`craft_geometry_tolerance`, fills, alignment, spacing, grouping, auto layout and
+the exported file; the row carries each requirement's pass. The render beside
+the reference script's render is reported as `craft_render_difference`, never
+the pass. A different installed release is refused before any model call,
+naming the pin, because command ids change between releases.
+`craft-reference` is a candidate that replays the reference script headless and
+should score 1.0. `soh craft validate` builds each run book's reference, an empty
+document and each planted near-miss (`params.controls`) headless and checks that
+only the reference passes and each near-miss fails the requirement it names;
+`--revalidate` runs on whatever release is installed and prints the block to pin
+it, and `--record DIR` keeps each control's inspect JSON. The image run book's
+photo is the image lane's Z-Image output for `fox-snow`, frozen in
+`evals/cases/craft/assets/`. `--modality all` leaves the lane out.
+
+    soh craft validate
+    uv run python -m evals.run --modality craft --candidates craft-reference,sohot-agent
+
 The ocr lane reads text out of an image. Its eight cases under
 `evals/cases/ocr/` are PNGs rendered by `uv run python -m evals.ocr_corpus`
 (Pillow's bundled font, fixed sizes, one seeded noisy background, one tilted

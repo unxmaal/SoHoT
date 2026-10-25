@@ -1,0 +1,145 @@
+{
+ "name": "Untitled",
+ "kind": "figcraft",
+ "path": null,
+ "dirty": true,
+ "currentPage": 1,
+ "selection": [],
+ "pages": [
+  {
+   "id": 1,
+   "name": "Page 1",
+   "type": "page",
+   "background": "#F5F5F5",
+   "children": [
+    {
+     "id": 3,
+     "name": "Card",
+     "type": "frame",
+     "x": 0,
+     "y": 0,
+     "width": 360,
+     "height": 420,
+     "absoluteBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 360,
+      "height": 420
+     },
+     "fills": [
+      {
+       "type": "solid",
+       "color": "#FFFFFF"
+      }
+     ],
+     "cornerRadius": 12,
+     "clip": true,
+     "layout": {
+      "mode": "vertical",
+      "gap": 12,
+      "padding": 16
+     },
+     "sizing": {
+      "horizontal": "fixed",
+      "vertical": "fixed"
+     },
+     "children": [
+      {
+       "id": 4,
+       "name": "Photo",
+       "type": "rectangle",
+       "x": 16,
+       "y": 16,
+       "width": 328,
+       "height": 246,
+       "absoluteBounds": {
+        "x": 16,
+        "y": 16,
+        "width": 328,
+        "height": 246
+       },
+       "fills": [
+        {
+         "type": "image",
+         "image": "9f2c",
+         "scale_mode": "fill",
+         "scale": 1,
+         "rotation": 0,
+         "crop": null,
+         "opacity": 1,
+         "visible": true,
+         "blend": "normal"
+        }
+       ]
+      },
+      {
+       "id": 5,
+       "name": "Heading",
+       "type": "text",
+       "x": 16,
+       "y": 274,
+       "width": 328,
+       "height": 29,
+       "absoluteBounds": {
+        "x": 16,
+        "y": 274,
+        "width": 328,
+        "height": 29
+       },
+       "characters": "Red fox in snow",
+       "fontFamily": "Inter",
+       "fontStyle": "Bold",
+       "fontSize": 24,
+       "lineHeight": "auto",
+       "textAlign": "left",
+       "textAutoResize": "height",
+       "fills": [
+        {
+         "type": "solid",
+         "color": "#000000"
+        }
+       ]
+      },
+      {
+       "id": 6,
+       "name": "Caption",
+       "type": "text",
+       "x": 16,
+       "y": 315,
+       "width": 328,
+       "height": 17,
+       "absoluteBounds": {
+        "x": 16,
+        "y": 315,
+        "width": 328,
+        "height": 17
+       },
+       "characters": "Made once by the image lane and frozen for this exam.",
+       "fontFamily": "Inter",
+       "fontStyle": "Regular",
+       "fontSize": 14,
+       "lineHeight": "auto",
+       "textAlign": "left",
+       "textAutoResize": "height",
+       "fills": [
+        {
+         "type": "solid",
+         "color": "#000000"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "styles": [],
+ "variables": 0,
+ "images": 1,
+ "colorProfile": "sRGB",
+ "textEdit": null,
+ "history": {
+  "undo": [],
+  "redo": []
+ }
+}

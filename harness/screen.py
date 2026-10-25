@@ -71,6 +71,8 @@ LANE_CANDIDATES = {
     "pii": ("hf-pii:{model}",),
     # A GGUF instruct model on llama-server, which enforces the reply schema. #654.
     "claims": ("{model}",),
+    # A text candidate as an MCP client of the run book's pinned app. #1209.
+    "craft": ("{model}",),
     "stt": ("stt:{model}",),
     "tts": ("tts:{model}",),
     **{lane: ("{model}",) for lane in lanes.TEXT_SERVED},

@@ -1,0 +1,9 @@
+[
+  {"command": "node.create", "params": {"type": "frame", "x": 0, "y": 0, "width": 360, "height": 420, "name": "Card", "props": {"fill": "#FFFFFF", "cornerRadius": 12}}},
+  {"command": "layout.add", "params": {"ids": [{"$step": 0}], "direction": "vertical"}},
+  {"command": "node.set", "params": {"ids": [{"$step": 0}], "props": {"gap": 12, "padding": 16}}},
+  {"command": "image.place", "params": {"path": "fox-snow.png", "parent": {"$step": 0}, "width": 328, "height": 246, "mode": "fill", "name": "Photo"}},
+  {"command": "node.create", "params": {"type": "text", "parent": {"$step": 0}, "name": "Heading", "text": "Red fox in snow", "props": {"fontSize": 24, "fontStyle": "Bold"}}},
+  {"command": "node.create", "params": {"type": "text", "parent": {"$step": 0}, "name": "Caption", "text": "Made once by the image lane and frozen for this exam.", "props": {"fontSize": 14, "fontStyle": "Regular"}}},
+  {"command": "file.export", "params": {"ids": [{"$step": 0}], "format": "png", "path": "card.png"}}
+]
