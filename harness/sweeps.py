@@ -68,13 +68,14 @@ def passing(conn, lane: str, machines) -> dict:
     """(candidate_id or spec) -> {spec, candidate_id, passed, n, run_id} from each model's newest measured run here that no flag or sweep marks. #1009."""
     from harness import reverify, runs
     flagged = reverify._flagged_runs(conn)
-    sql = ("SELECT runs.id AS run_id, res.candidate_id, res.candidate, c.spec, res.passed "
+    sql = ("SELECT runs.id AS run_id, res.candidate_id, res.candidate, c.spec, res.passed, res.metrics, res.failure_class "
            "FROM results res JOIN runs ON res.run_id = runs.id LEFT JOIN jobs ON jobs.id = runs.job_id "
            "LEFT JOIN candidates c ON c.id = res.candidate_id "
            "WHERE runs.lane = ? AND runs.tier = ? "
            f"AND COALESCE(jobs.requested_by, '') != '{REQUESTED_BY}'")
     clause, ids = runs._in("runs.machine_id", machines) if machines is not None else ("", ())
     out: dict = {}
+    rows: dict = {}
     for r in conn.execute(sql + clause + " ORDER BY COALESCE(runs.generated_at, runs.recorded_at) DESC, "
                           "runs.id DESC", (lane, runs.MEASURE, *ids)).fetchall():
         if r["run_id"] in flagged:
@@ -85,9 +86,38 @@ def passing(conn, lane: str, machines) -> dict:
         if got["run_id"] == r["run_id"]:
             got["passed"] += int(bool(r["passed"]))
             got["n"] += 1
-    for got in out.values():
+            rows.setdefault(key, []).append({"passed": bool(r["passed"]), "metrics": json.loads(r["metrics"] or "{}"),
+                                             "failure_class": r["failure_class"] or ""})
+    for key, got in out.items():
         got["working"] = bool(got["passed"]) or _working(conn, lane, got)
+        got.update(_bound(rows[key], lane))
     return out
+
+
+def _bound(rows: list[dict], lane: str) -> dict:
+    """The lane metric ranked on ('' for none), its pooled value, the share of judged rows it covers, and a 95% Wilson bound signed so larger is better: the pass rate's where the rows carry no lane metric. #1230."""
+    from evals import core
+    from harness import intervals, reasons, winners
+    from harness.checks import claims
+    name = winners.PRIMARY.get(lane, "")
+    judged = max(1, sum(r["failure_class"] not in reasons.NEVER_RAN for r in rows))
+    if name in core.RATIO_METRICS:
+        num, den = core.RATIO_METRICS[name]
+        have = [r["metrics"] for r in rows if r["metrics"].get(den)]
+        k, n = sum(float(m.get(num) or 0.0) for m in have), sum(float(m[den]) for m in have)
+        if n:
+            lower = core.direction_of(name) == "lower"
+            bound = -intervals.wilson(min(k, n), n)[1] if lower else intervals.wilson(k, n)[0]
+            return {"metric": name, "value": k / n, "covered": min(1.0, len(have) / judged), "bound": bound}
+    elif lane in winners.STRATIFIED:
+        by = {want: [r["passed"] for r in rows if r["metrics"].get(claims.STRATUM) == want] for want in (0, 1)}
+        if by[0] and by[1]:
+            def lo(bits):
+                return intervals.wilson(sum(bits), len(bits))[0]
+            return {"metric": name, "value": claims.balanced(sum(by[0]) / len(by[0]), sum(by[1]) / len(by[1])),
+                    "covered": min(1.0, (len(by[0]) + len(by[1])) / judged), "bound": claims.balanced(lo(by[0]), lo(by[1]))}
+    return {"metric": "", "value": None, "covered": 0.0,
+            "bound": intervals.wilson(sum(r["passed"] for r in rows), len(rows))[0]}
 
 
 def _working(conn, lane: str, got: dict) -> bool:
@@ -137,9 +167,8 @@ def below(conn, lane: str, spec: str, incumbents, machines) -> str:
 
 
 def _rank(m: dict) -> tuple:
-    """Runs of at least FALLBACK_MIN_CASES first, then by the Wilson lower bound of the pass rate. #1179."""
-    from harness import intervals
-    return (m["n"] < FALLBACK_MIN_CASES, -intervals.wilson(m["passed"], m["n"])[0], -m["passed"] / m["n"], -m["passed"])
+    """Runs of at least FALLBACK_MIN_CASES first, then by how much of the run the lane metric covers, then its Wilson bound (the pass rate's where there is none). #1179, #1230."""
+    return (m["n"] < FALLBACK_MIN_CASES, -round(m["covered"], 3), -m["bound"], -m["passed"] / m["n"], -m["passed"])
 
 
 def model(conn, item: dict, machines) -> tuple[dict | None, str]:
@@ -165,7 +194,8 @@ def model(conn, item: dict, machines) -> tuple[dict | None, str]:
     m = best[0]
     return ({"lane": lane, "spec": m["spec"], "candidate_id": m["candidate_id"], "incumbent": "",
              "incumbent_id": None},
-            f"{why}; sweeping {m['spec']}, the best passing ({m['passed']} of {m['n']} in run {m['run_id']})")
+            f"{why}; sweeping {m['spec']}, the best passing ({m['passed']} of {m['n']} in run {m['run_id']}"
+            + (f", {m['metric']} {m['value']:.3f}" if m["metric"] else "") + ")")
 
 
 def _base_run(conn, swept: dict, machines) -> int | None:
