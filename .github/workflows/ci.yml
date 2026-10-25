@@ -264,6 +264,12 @@ jobs:
           PYTEST_ADDOPTS: --durations=30 --cov=harness --cov=evals --cov-report=term --cov-report=json
         run: set -o pipefail && make check 2>&1 | tee /tmp/check.log
 
+      - name: make test-litellm
+        # The whole suite collected under the LiteLLM overlay and its mcp 1; no other job runs it (#1221).
+        if: always()
+        timeout-minutes: 8
+        run: make test-litellm
+
       - name: Coverage, reported and never gated
         # LINUX ONLY, on purpose. Platform skips differ, so running this on
         # three runners yields three different numbers for one commit and

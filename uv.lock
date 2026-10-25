@@ -872,7 +872,7 @@ dev = [
     { name = "respx", specifier = ">=0.21" },
     { name = "uvicorn", specifier = ">=0.30" },
 ]
-mcp = [{ name = "mcp", specifier = ">=1.2" }]
+mcp = [{ name = "mcp", specifier = ">=2" }]
 metrics = [
     { name = "open-clip-torch", specifier = ">=2.24" },
     { name = "resemblyzer", specifier = ">=0.1.4" },
