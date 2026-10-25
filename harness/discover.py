@@ -175,8 +175,6 @@ def generator_engines(machine=None) -> list[Capability]:
     Availability is asked as a runtime rather than a platform, so a Linux box
     with the same card answers identically.
     """
-    from harness import engines
-
     if machine is None:
         from harness import machine as _machine
         machine = _machine.detect()
@@ -184,8 +182,6 @@ def generator_engines(machine=None) -> list[Capability]:
     out = []
     for name in sorted(_ENGINE_RUNTIME):
         lane, runtime, example = _ENGINE_RUNTIME[name]
-        if name not in engines._BUILDERS:
-            continue
         refused = machine.refuses(runtime)
         if refused:
             continue

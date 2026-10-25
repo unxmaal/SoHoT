@@ -72,7 +72,8 @@ def test_it_still_answers_without_being_given_a_machine():
     assert isinstance(feeds.relevance(NEUTRAL), int)
 
 
-@pytest.mark.parametrize("runtime", sorted(mach._RUNTIME_PROBES))
+@pytest.mark.gauntlet("a-closed-table-fronting-an-open-set", site="harness/feeds.py:RUNTIME_TERMS")
+@pytest.mark.parametrize("runtime", sorted({*mach._RUNTIME_PROBES, mach.ALWAYS}))
 def test_every_runtime_has_terms_to_recognise_it(runtime):
     """A runtime with no vocabulary scores every mention of itself at zero, so
     a machine detecting it would rank its own techniques as though they named

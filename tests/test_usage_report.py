@@ -48,9 +48,12 @@ def test_since_reads_days_hours_minutes_and_seconds(text, seconds):
     assert usage.parse_since(text) == seconds
 
 
+@pytest.mark.gauntlet("a-closed-table-fronting-an-open-set", site="harness/usage.py:_UNITS")
 def test_since_refuses_what_it_cannot_read():
     with pytest.raises(ValueError):
         usage.parse_since("last week")
+    with pytest.raises(ValueError):
+        usage.parse_since("2w")
 
 
 def test_summary_is_per_alias_and_served_model(conn):

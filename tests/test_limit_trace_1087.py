@@ -370,3 +370,13 @@ def test_repo_cases_the_fix_size_selector_leaves_out_are_a_cut(monkeypatch):
     monkeypatch.setattr(repo_size, "at_most", lambda chosen, limit: chosen)
     run.fix_sized(["a"], args)
     assert len(_spooled_knobs()) == 1
+
+
+@pytest.mark.gauntlet("a-closed-table-fronting-an-open-set", site="harness/limit_trace.py:CALLS")
+def test_every_cuts_call_that_records_a_knob_is_one_the_scanner_reads():
+    import inspect
+    recorders = {name for name, fn in vars(cuts).items() if inspect.isfunction(fn) and fn.__module__ == cuts.__name__
+                 and not name.startswith("_") and "knob" in inspect.signature(fn).parameters}
+    assert recorders - {"value_of"} == set(limit_trace.CALLS)
+    for name, at in limit_trace.CALLS.items():
+        assert list(inspect.signature(getattr(cuts, name)).parameters)[at] == "knob", name

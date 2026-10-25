@@ -39,6 +39,36 @@ def test_a_closed_table_looked_up_by_a_constant_or_refusing_is_left_alone():
     quiet_then_fires(detectors.closed_tables, innocent, bad)
 
 
+_TABLES = "LANES = {\"text\": 1, \"image\": 2, \"tts\": 3}\n"
+
+
+def test_a_membership_test_that_drops_or_defaults_an_unlisted_key_is_found():
+    """#1189: #626 was `[x for x in lanes if x in LANE_QUERIES]`, which no .get scan sees."""
+    for body in ("    return [x for x in xs if x in LANES]\n",
+                 "    for x in xs:\n        if x not in LANES:\n            continue\n",
+                 "    return 1 if xs in LANES else 0\n",
+                 "    return 0 if xs not in LANES else 1\n",
+                 "    if xs in LANES:\n        return 1\n    return 0\n"):
+        got = sites(detectors.closed_tables, {"harness/t.py": _TABLES + "def f(xs):\n" + body})
+        assert got == ["harness/t.py:LANES"], body
+    other = "from harness import t\ndef g(k):\n    return sum(1 for x in k if x in t.LANES)\n"
+    assert sites(detectors.closed_tables, {"harness/t.py": _TABLES, "harness/u.py": other}) == ["harness/t.py:LANES"]
+
+
+def test_a_membership_test_that_refuses_or_keeps_an_unlisted_key_is_left_alone():
+    innocent = {"harness/t.py": _TABLES + (
+        "def f(k, xs, ok):\n"
+        "    if k not in LANES:\n        raise ValueError(k)\n"
+        "    if ok and k not in LANES:\n        raise ValueError(k)\n"
+        "    if k in LANES:\n        pass\n    else:\n        raise ValueError(k)\n"
+        "    unknown = [x for x in xs if x not in LANES]\n"
+        "    return \"text\" in LANES, unknown, k not in LANES\n"),
+                "harness/s.py": "LANES = (\"text\",)\n",
+                "harness/v.py": "from harness import s\ndef h(k):\n    return k in s.LANES\n"}
+    bad = {"harness/u.py": "from harness import t\ndef g(k):\n    if k not in t.LANES:\n        return None\n"}
+    quiet_then_fires(detectors.closed_tables, innocent, bad)
+
+
 def test_state_read_from_the_newest_row_is_found():
     src = ("def latest(conn, n):\n"
            "    return conn.execute(\"SELECT v FROM verdicts WHERE n = ? \"\n"

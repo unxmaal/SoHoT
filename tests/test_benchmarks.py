@@ -157,6 +157,7 @@ def test_a_resweep_updates_a_source_rather_than_duplicating_it():
     assert len(ms.benchmarks(conn)) == n
 
 
+@pytest.mark.gauntlet("a-closed-table-fronting-an-open-set", site="harness/benchmarks.py:LANE_QUERIES")
 def test_every_lane_has_benchmark_queries_or_is_argued_out():
     from harness import lanes
     missing = set(lanes.ALL) - set(bm.LANE_QUERIES) - set(bm.UNQUERIED)

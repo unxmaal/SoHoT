@@ -331,6 +331,7 @@ def test_an_mflux_preset_winner_keeps_the_weights_it_loads_and_cleanup_runs(worl
     assert entry(i, "black-forest-labs/FLUX.1-dev").group == disk.KEEP
 
 
+@pytest.mark.gauntlet("a-closed-table-fronting-an-open-set", site="harness/disk.py:MFLUX_REPOS")
 @pytest.mark.parametrize("model", sorted(__import__(
     "harness.engines", fromlist=["FLUX1_MODELS"]).FLUX1_MODELS))
 def test_every_flux1_preset_resolves_to_a_repo(model):
