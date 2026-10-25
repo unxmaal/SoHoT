@@ -41,6 +41,7 @@ from harness.commands import gauntlet as gauntlet_cmd
 from harness.commands import jobs as jobs_cmd
 from harness.commands import judge as judge_cmd
 from harness.commands import lanes as lanes_cmd
+from harness.commands import lane_feed as lane_feed_cmd
 from harness.commands import coherence as coherence_cmd
 from harness.commands import load_log as load_log_cmd
 from harness.commands import measure as measure_cmd
@@ -644,6 +645,7 @@ def build_parser() -> argparse.ArgumentParser:
     avl.set_defaults(func=availability_cmd.cmd_availability)
     headless_cmd.add_parser(sub)
     knobs_cmd.add_parser(sub)
+    lane_feed_cmd.add_parser(sub)
     climb_cmd.add_parser(sub)
     otel_cmd.add_parser(sub)
     dlg = sub.add_parser("delegated", help="record what became of a local_complete or "

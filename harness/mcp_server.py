@@ -30,6 +30,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
@@ -81,7 +82,8 @@ SERVER = MCPServer(
         "machine is short of memory. Poll job_status; when it is "
         "done, job_result returns the file itself. local_complete and "
         "local_decide hand a text subtask to this machine's adopted local "
-        "model and answer directly."),
+        "model and answer directly. lane_feed, or the resource "
+        "soh://lanes/{lane}, reads one lane's discovery findings."),
 )
 
 
@@ -278,6 +280,35 @@ def delegated(call_id: str, outcome: str, why: str = "") -> DelegationOutcome:
         raise ToolError(str(exc)) from exc
     finally:
         conn.close()
+
+
+# ---------------------------------------------------------------------------
+# A lane's findings for an outside consumer, read-only. #1200.
+# ---------------------------------------------------------------------------
+
+def _lane_feed(lane: str, since: int | None = None) -> dict:
+    from harness import lane_feed as feed
+    try:
+        return feed.read(lane, since)
+    except (feed.UnknownLane, FileNotFoundError) as exc:
+        raise ToolError(str(exc)) from exc
+
+
+@SERVER.resource("soh://lanes/{lane}", name="lane_feed", mime_type="application/json",
+                 description="One lane's served model, every candidate's verdict and reason, the latest "
+                             "exams, settled knob decisions and its events, as soh lane-feed --json prints it.")
+def lane_resource(lane: str) -> str:
+    import json
+    return json.dumps(_lane_feed(lane), indent=1, sort_keys=True)
+
+
+@SERVER.tool(description=(
+    "One lane's discovery findings as a versioned document: served and adopted model, every "
+    "candidate's current verdict with its reason, the latest exams, settled knob decisions, and "
+    "events with a rising id. Pass `since` the `cursor` of your last read to get only newer events. "
+    "Read-only; the same document as the resource soh://lanes/{lane}."))
+def lane_feed(lane: str, since: int | None = None) -> dict[str, Any]:
+    return _lane_feed(lane, since)
 
 
 # ---------------------------------------------------------------------------
