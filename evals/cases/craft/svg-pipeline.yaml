@@ -1,0 +1,55 @@
+id: craft-svg-pipeline
+modality: craft
+prompt: |-
+  Build this diagram in VectorCraft, using its tools.
+
+  1. Start a new document 640 wide and 280 high.
+  2. Draw three rectangles, each 160 wide and 80 high, with their tops at y=100 and their left edges at
+     x=40, x=240 and x=440. Fill all three with #E8F0FE. Name them "Box A", "Box B" and "Box C", left to right.
+  3. Put one 20-point text label inside each box: "Ingest" in Box A, "Transform" in Box B, "Publish" in Box C.
+     Name the labels "Label A", "Label B" and "Label C".
+  4. Connect the boxes with two straight lines at y=140: from the right edge of Box A to the left edge of Box B,
+     named "A to B", and from the right edge of Box B to the left edge of Box C, named "B to C".
+  5. Group the three boxes, three labels and two lines together and name the group "Pipeline".
+  6. Export the document as SVG to diagram.svg in the working folder.
+
+  When the diagram is finished, reply with a short message and no tool call.
+params:
+  app: vectorcraft
+  release:
+    version: 0.17.0
+    tag: v0.17.0
+    asset: vectorcraft-cli-0.17.0-macos-universal.zip
+    sha256: dee6d447c42615662ea81a612fedd0c221b14ac51dbe72e45f3d435fdc511641
+  reference: runbooks/svg-pipeline.json
+  max_steps: 44
+  controls:
+    wrong-label:
+      step: 10
+      set: {text: Transfrom}
+      fails: [label-b]
+    box-misaligned:
+      step: 2
+      set: {y: 112}
+      fails: [tops-aligned]
+assert:
+  craft:
+    requirements:
+    - {id: three-boxes, count: {type: rect}, equals: 3}
+    - {id: three-labels, count: {type: text}, equals: 3}
+    - {id: two-connectors, count: {type: line}, equals: 2}
+    - {id: box-a, node: {name: Box A}, expect: {type: rect, x: 40, y: 100, w: 160, h: 80, fill: "#E8F0FE"}}
+    - {id: box-b, node: {name: Box B}, expect: {type: rect, w: 160, h: 80, fill: "#E8F0FE"}}
+    - {id: box-c, node: {name: Box C}, expect: {type: rect, x: 440, w: 160, h: 80, fill: "#E8F0FE"}}
+    - {id: label-a, node: {name: Label A}, expect: {type: text, text: Ingest}}
+    - {id: label-b, node: {name: Label B}, expect: {type: text, text: Transform}}
+    - {id: label-c, node: {name: Label C}, expect: {type: text, text: Publish}}
+    - {id: tops-aligned, aligned: {names: [Box A, Box B, Box C], edge: top}}
+    - {id: evenly-spaced, distributed: {names: [Box A, Box B, Box C], axis: x}}
+    - {id: labels-in-boxes-a, inside: {inner: Label A, outer: Box A}}
+    - {id: labels-in-boxes-b, inside: {inner: Label B, outer: Box B}}
+    - {id: labels-in-boxes-c, inside: {inner: Label C, outer: Box C}}
+    - {id: a-to-b, connects: {line: A to B, from: Box A, to: Box B}}
+    - {id: b-to-c, connects: {line: B to C, from: Box B, to: Box C}}
+    - {id: grouped, grouped: {group: Pipeline, members: [Box A, Box B, Box C, Label A, Label B, Label C, A to B, B to C]}}
+    - {id: exported-svg, file: {path: diagram.svg, magic: "<svg"}}

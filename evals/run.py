@@ -31,7 +31,7 @@ from harness.engines import Engine, names as engine_names, parse_options, resolv
 
 from dataclasses import replace
 
-from evals.core import (AGENT_MODALITIES, MODALITIES, REPO_MODALITIES, TEXT_MODALITIES,
+from evals.core import (AGENT_MODALITIES, CRAFT_MODALITIES, MODALITIES, REPO_MODALITIES, TEXT_MODALITIES,
                         TEXT_SUFFIX, TRAJECTORY_SUFFIX, Case,
                         Receipt, cases_digest, comparable, direction_of,
                         summarize)
@@ -532,6 +532,8 @@ def build_runner(candidate: str, gateway: str, outdir: Path | None,
                  max_tokens: int = 0, harness: str = "patch"):
     if modality in AGENT_MODALITIES:
         runner = _agent_runner(candidate, gateway, max_tokens)
+    elif modality in CRAFT_MODALITIES:
+        runner = _craft_runner(candidate, gateway, max_tokens)
     elif modality in REPO_MODALITIES and harness == "repair":
         runner = _repo_repair_runner(candidate, gateway, max_tokens)
     elif modality in REPO_MODALITIES:
@@ -574,6 +576,28 @@ def _agent_runner(candidate: str, gateway: str, max_tokens: int = 0):
                        model=where.model, sampling=where.sampling or None,
                        served_ctx=context.served_ctx(candidate), max_tokens=max_tokens,
                        count=served_counter(where.base, where.model))
+
+
+def _craft_runner(candidate: str, gateway: str, max_tokens: int):
+    """The reference script replayed, or a text candidate as an MCP client of the run book's app. #1209."""
+    from evals.runners import craft
+    if candidate.strip() == craft.REFERENCE:
+        return craft.ReplayRunner()
+    if kind_of(candidate) not in TEXT_KINDS:
+        raise SystemExit(f"{candidate} cannot drive a craft app; the craft lane takes a text candidate (Opus as "
+                         f"the gateway's cloud alias) or {craft.REFERENCE}")
+    from harness import context, serving
+    try:
+        where = serving.route(candidate, gateway)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from None
+    if getattr(where, "template", None):
+        raise SystemExit(f"{candidate}: the craft lane sends no chat-template kwargs, so "
+                         f"{', '.join(where.template)} would be recorded and not run (#921)")
+    from evals.runners.agent import served_counter
+    return craft.CraftRunner(where.base, candidate.partition(",")[0].strip(), model=where.model,
+                             sampling=where.sampling or None, served_ctx=context.served_ctx(candidate),
+                             max_tokens=max_tokens, count=served_counter(where.base, where.model))
 
 
 def claude_code_parts(candidate: str) -> tuple[str, str]:
@@ -844,7 +868,7 @@ def cases_for(candidate: str, cases: list[Case]) -> list[Case]:
     if kind_of(candidate) == NEEDLE_KIND:
         return [c for c in cases if c.modality in NEEDLE_LANES]
     if modality is None:
-        text = [c for c in cases if c.modality in TEXT_MODALITIES | AGENT_MODALITIES | REPO_MODALITIES]
+        text = [c for c in cases if c.modality in TEXT_MODALITIES | AGENT_MODALITIES | REPO_MODALITIES | CRAFT_MODALITIES]
         return _fair(candidate, text) if kind_of(candidate) in methods.REGISTRY else text
     picked = [c for c in cases if c.modality == modality]
     return _fair(candidate, picked)
@@ -1036,8 +1060,8 @@ def select_cases(cases: list[Case], modality: str) -> list[Case]:
     if modality != "all" and modality not in MODALITIES:
         raise SystemExit(f"unknown modality '{modality}'; known: "
                          f"{', '.join(ALL_MODALITIES)}")
-    # The agent and repo lanes take minutes per case and build environments, so `all` leaves them out. #474, #887.
-    chosen = ([c for c in cases if c.modality not in AGENT_MODALITIES | REPO_MODALITIES]
+    # The agent, repo and craft lanes take minutes per case or an installed app, so `all` leaves them out. #474, #887, #1209.
+    chosen = ([c for c in cases if c.modality not in AGENT_MODALITIES | REPO_MODALITIES | CRAFT_MODALITIES]
               if modality == "all" else [c for c in cases if c.modality == modality])
     if not chosen:
         raise SystemExit(f"no cases for modality '{modality}'")

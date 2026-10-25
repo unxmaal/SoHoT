@@ -1,0 +1,189 @@
+{
+ "uid": "doc-1",
+ "title": "Untitled-1",
+ "fileInfoTitle": "",
+ "path": null,
+ "dirty": true,
+ "revision": 22,
+ "units": "pt",
+ "colorMode": "RGB",
+ "artboards": [
+  {
+   "name": "Artboard 1",
+   "x": 0,
+   "y": 0,
+   "width": 640,
+   "height": 280
+  }
+ ],
+ "currentLayer": 1,
+ "selection": [],
+ "history": [],
+ "redo": [],
+ "objects": 1,
+ "layers": [
+  {
+   "id": 1,
+   "name": "Layer 1",
+   "kind": "Layer",
+   "visible": true,
+   "locked": false,
+   "bounds": {
+    "x": 0,
+    "y": 0,
+    "width": 640,
+    "height": 280
+   },
+   "color": "#4f80ff",
+   "children": [
+    {
+     "id": 20,
+     "name": "Pipeline",
+     "kind": "Group",
+     "visible": true,
+     "locked": false,
+     "bounds": {
+      "x": 40,
+      "y": 100,
+      "width": 560,
+      "height": 80
+     },
+     "children": [
+      {
+       "id": 2,
+       "name": "Box A",
+       "kind": "Rectangle",
+       "visible": true,
+       "locked": false,
+       "bounds": {
+        "x": 40,
+        "y": 100,
+        "width": 160,
+        "height": 80
+       },
+       "fill": "#e8f0fe",
+       "stroke": "#000000",
+       "strokeWidth": 1
+      },
+      {
+       "id": 3,
+       "name": "Box B",
+       "kind": "Rectangle",
+       "visible": true,
+       "locked": false,
+       "bounds": {
+        "x": 240,
+        "y": 100,
+        "width": 160,
+        "height": 80
+       },
+       "fill": "#e8f0fe",
+       "stroke": "#000000",
+       "strokeWidth": 1
+      },
+      {
+       "id": 4,
+       "name": "Box C",
+       "kind": "Rectangle",
+       "visible": true,
+       "locked": false,
+       "bounds": {
+        "x": 440,
+        "y": 100,
+        "width": 160,
+        "height": 80
+       },
+       "fill": "#e8f0fe",
+       "stroke": "#000000",
+       "strokeWidth": 1
+      },
+      {
+       "id": 11,
+       "name": "Label A",
+       "kind": "Type",
+       "visible": true,
+       "locked": false,
+       "bounds": {
+        "x": 60,
+        "y": 130,
+        "width": 58,
+        "height": 24
+       },
+       "fill": "#000000",
+       "stroke": "none",
+       "text": "Ingest"
+      },
+      {
+       "id": 12,
+       "name": "Label B",
+       "kind": "Type",
+       "visible": true,
+       "locked": false,
+       "bounds": {
+        "x": 260,
+        "y": 130,
+        "width": 92,
+        "height": 24
+       },
+       "fill": "#000000",
+       "stroke": "none",
+       "text": "Transform"
+      },
+      {
+       "id": 13,
+       "name": "Label C",
+       "kind": "Type",
+       "visible": true,
+       "locked": false,
+       "bounds": {
+        "x": 460,
+        "y": 130,
+        "width": 70,
+        "height": 24
+       },
+       "fill": "#000000",
+       "stroke": "none",
+       "text": "Publish"
+      },
+      {
+       "id": 16,
+       "name": "A to B",
+       "kind": "Path",
+       "visible": true,
+       "locked": false,
+       "bounds": {
+        "x": 200,
+        "y": 140,
+        "width": 40,
+        "height": 0
+       },
+       "fill": "none",
+       "stroke": "#000000",
+       "strokeWidth": 1,
+       "anchors": 2,
+       "closed": false
+      },
+      {
+       "id": 17,
+       "name": "B to C",
+       "kind": "Path",
+       "visible": true,
+       "locked": false,
+       "bounds": {
+        "x": 400,
+        "y": 140,
+        "width": 40,
+        "height": 0
+       },
+       "fill": "none",
+       "stroke": "#000000",
+       "strokeWidth": 1,
+       "anchors": 2,
+       "closed": false
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

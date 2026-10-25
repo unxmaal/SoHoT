@@ -43,6 +43,9 @@ WANTED = ("image", "code", "web", "svg", "video", "music", "decide", "agent", "o
 #: ranked ahead of the five above.
 UNWANTED = ("extract", "stt", "tts")
 
+#: Eval lanes discovery never searches or screens for: their cases need an app installed by hand. #1209.
+BY_HAND = ("craft",)
+
 ALL = WANTED + UNWANTED
 
 #: Old name -> the name that survives. `text` and `code` were the same lane:

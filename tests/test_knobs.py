@@ -236,7 +236,7 @@ def test_every_knob_s_range_holds_its_default_for_every_lane_it_affects():
 
 def test_every_knob_s_lanes_are_lanes():
     for k in knobs.KNOBS.values():
-        assert set(k.lanes) <= set(lanes.ALL), k.name
+        assert set(k.lanes) <= set(lanes.ALL) | set(lanes.BY_HAND), k.name
 
 
 def test_a_knob_that_gates_an_eval_names_the_limit_that_shows_it_binding():

@@ -57,9 +57,14 @@ def published() -> set[str]:
 def test_every_measurable_modality_is_a_named_lane():
     """A directory of cases with no lane name cannot be discovered for."""
     on_disk = published()
-    assert on_disk <= set(lanes.ALL), (
-        f"evals/cases has {sorted(on_disk - set(lanes.ALL))}, "
-        f"which lanes.ALL does not name")
+    named = set(lanes.ALL) | set(lanes.BY_HAND)
+    assert on_disk <= named, (
+        f"evals/cases has {sorted(on_disk - named)}, "
+        f"which neither lanes.ALL nor lanes.BY_HAND names")
+
+
+def test_a_by_hand_lane_is_never_one_discovery_searches_for():
+    assert not set(lanes.BY_HAND) & set(lanes.ALL)
 
 
 def test_every_named_lane_has_cases_to_measure_it():

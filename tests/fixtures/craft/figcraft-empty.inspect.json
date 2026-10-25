@@ -1,0 +1,26 @@
+{
+ "name": "Untitled",
+ "kind": "figcraft",
+ "path": null,
+ "dirty": true,
+ "currentPage": 1,
+ "selection": [],
+ "pages": [
+  {
+   "id": 1,
+   "name": "Page 1",
+   "type": "page",
+   "background": "#F5F5F5",
+   "children": []
+  }
+ ],
+ "styles": [],
+ "variables": 0,
+ "images": 0,
+ "colorProfile": "sRGB",
+ "textEdit": null,
+ "history": {
+  "undo": [],
+  "redo": []
+ }
+}

@@ -1,0 +1,41 @@
+{
+ "uid": "doc-1",
+ "title": "Untitled-1",
+ "fileInfoTitle": "",
+ "path": null,
+ "dirty": true,
+ "revision": 22,
+ "units": "pt",
+ "colorMode": "RGB",
+ "artboards": [
+  {
+   "name": "Artboard 1",
+   "x": 0,
+   "y": 0,
+   "width": 612,
+   "height": 792
+  }
+ ],
+ "currentLayer": 1,
+ "selection": [],
+ "history": [],
+ "redo": [],
+ "objects": 0,
+ "layers": [
+  {
+   "id": 1,
+   "name": "Layer 1",
+   "kind": "Layer",
+   "visible": true,
+   "locked": false,
+   "bounds": {
+    "x": 0,
+    "y": 0,
+    "width": 612,
+    "height": 792
+   },
+   "color": "#4f80ff",
+   "children": []
+  }
+ ]
+}

@@ -369,8 +369,21 @@ def _check_agent(artifact, case: Case) -> CheckResult:
     return out
 
 
+def _check_craft(artifact, case: Case) -> CheckResult:
+    """The runner read the app's document before closing it; this reads its per-requirement verdict. #1209."""
+    try:
+        record = json.loads(artifact) if isinstance(artifact, str) else {}
+    except ValueError:
+        return CheckResult(False, "craft record is not JSON")
+    grade = record.get("grade") or {}
+    out = CheckResult(bool(grade.get("passed")), grade.get("detail") or "")
+    out.metrics = dict(record.get("metrics") or {})
+    return out
+
+
 CHECKERS = {
     "agent": lambda a, c, **kw: _check_agent(a, c),
+    "craft": lambda a, c, **kw: _check_craft(a, c),
     "repo": lambda a, c, **kw: _check_repo(a, c),
     "decide": lambda a, c, **kw: _check_decide(a, c),
     "claims": lambda a, c, **kw: _check_claims(a, c),
@@ -454,6 +467,12 @@ METRIC_DIRECTION = {
     "agent_no_tool_steps": "neutral",
     # The per-slot context the candidate was served at. #498.
     "agent_ctx": "neutral",
+    # craft (#1209): every requirement met decides; met requirements break ties; invalid calls and render drift are reported.
+    "craft_requirement_rate": "higher",
+    "craft_requirements_met": "neutral",
+    "craft_requirements_total": "neutral",
+    "craft_invalid_calls": "lower",
+    "craft_render_difference": "lower",
     # repo (#887): resolved decides; an applied patch that fails is nearer than one git refused.
     "resolved": "higher",
     "patch_applied": "higher",
@@ -549,7 +568,9 @@ PARAM_KEYS = {"width", "height", "steps", "seed", "guidance", "frames", "check_t
               # repo: the hidden tests' names and signatures the prompt shows. #1103.
               "interface",
               # repo: what a session case's finished change does, shown after the quoted session. #1136.
-              "stated"}
+              "stated",
+              # craft: the app, its pinned release, the reference script, the frozen assets, the planted near-misses. #1209.
+              "app", "release", "reference", "assets", "controls"}
 # Assertions that need text to search. Declaring one on an image case can only
 # pass vacuously until the suite can OCR, so it is rejected rather than ignored.
 TEXT_ASSERTIONS = {"min_shapes", "must_contain", "must_not_contain"}
@@ -588,6 +609,7 @@ ASSERTION_KEYS = {"svg": TEXT_ASSERTIONS | {"structure"}, "web": TEXT_ASSERTIONS
                   "music": {"max_wer", "expect_vocals", "duration_s"},
                   "decide": {"answers"},
                   "agent": {"answer", "hidden"},
+                  "craft": {"craft"},
                   "repo": set(),
                   "ocr": {"text", "max_cer"},
                   "retrieval": {"relevant", "k"},
@@ -603,11 +625,13 @@ MEDIA_MODALITIES = {"image", "video", "tts", "music"}
 #: The file beside a text row's artifact holding each request's reasoning, finish and tokens. #921.
 TRAJECTORY_SUFFIX = ".trajectory.json"
 TEXT_SUFFIX = {"svg": ".svg", "web": ".html", "code": ".py", "decide": ".json", "claims": ".json",
-               "agent": ".json", "repo": ".json"}
+               "agent": ".json", "repo": ".json", "craft": ".json"}
 #: Lanes whose case hands the candidate a file to read through input_file. #562.
 INPUT_MODALITIES = {"ocr", "retrieval"}
 #: Lanes whose runner drives a tool loop over a sandboxed repo. #474.
 AGENT_MODALITIES = {"agent"}
+#: Lanes whose runner drives a craft app over the app's own MCP server. #1209.
+CRAFT_MODALITIES = {"craft"}
 #: Lanes whose runner restores a real repository at a commit and grades a diff in it. #887.
 REPO_MODALITIES = {"repo"}
 
@@ -1139,6 +1163,9 @@ def load_case(path: Path, private: bool = False) -> Case:
             raise ValueError(f"{path.name}: {exc}") from exc
     if modality == "agent":
         params = {**params, **_agent_params(path, params, assertions)}
+    if modality == "craft":
+        from evals import craft
+        params = {**params, **craft.validate_case(path, params, assertions)}
     if modality == "repo":
         from evals import repo
         repo.validate(path.name, params)
@@ -1564,6 +1591,7 @@ def _gather_metrics(rows: list[Result]) -> dict[str, list[float]]:
 #: weigh as much as a forty-word one; the correct total is sum(errors) over
 #: sum(words), which is what every ASR benchmark means by "WER".
 RATIO_METRICS = {"wer": ("wer_errors", "wer_words"),
+                 "craft_requirement_rate": ("craft_requirements_met", "craft_requirements_total"),
                  "agent_valid_call_rate": ("agent_valid_calls", "agent_tool_calls"),
                  "decide_accuracy": ("decide_correct", "decide_fields"),
                  "decide_brier": ("decide_brier_sum", "decide_fields"),

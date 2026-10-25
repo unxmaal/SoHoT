@@ -1,0 +1,48 @@
+id: craft-image-card
+modality: craft
+prompt: |-
+  Build this card in FigCraft, using its tools. The working folder holds fox-snow.png.
+
+  1. Create a frame named "Card", 360 wide and 420 high, filled #FFFFFF, with corner radius 12.
+  2. Give Card a vertical auto layout with a gap of 12 and padding of 16.
+  3. Inside Card, place fox-snow.png as an image named "Photo", 328 wide and 246 high (4:3), filled so the
+     picture is cropped to that shape rather than stretched.
+  4. Below it, inside Card, add a text layer named "Heading" reading "Red fox in snow", 24 point, Bold.
+  5. Below that, inside Card, add a text layer named "Caption" reading
+     "Made once by the image lane and frozen for this exam.", 14 point, Regular.
+  6. Export Card as PNG to card.png in the working folder.
+
+  When the card is finished, reply with a short message and no tool call.
+params:
+  app: figcraft
+  release:
+    version: 0.11.2
+    tag: v0.11.2
+    asset: figcraft-cli-0.11.2-macos-universal.zip
+    sha256: 13bad5a9464b9560036598715c7ae34d5ad0b0adcb2c67ba25798af86f774029
+  reference: runbooks/image-card.json
+  assets: [assets/fox-snow.png]
+  max_steps: 16
+  controls:
+    wrong-heading:
+      step: 4
+      set: {text: Red fox in sand}
+      fails: [heading]
+    photo-wrong-aspect:
+      step: 3
+      set: {height: 185}
+      fails: [photo-4x3]
+assert:
+  craft:
+    requirements:
+    - {id: one-frame, count: {type: frame}, equals: 1}
+    - {id: one-image, count: {type: image}, equals: 1}
+    - {id: card, node: {name: Card}, expect: {type: frame, w: 360, fill: "#FFFFFF", corner_radius: 12}}
+    - {id: card-layout, node: {name: Card}, expect: {layout.mode: vertical, layout.gap: 12, layout.padding: 16}}
+    - {id: photo-4x3, node: {name: Photo}, expect: {type: image, w: 328, image.fit: fill}, aspect: [4, 3]}
+    - {id: heading, node: {name: Heading}, expect: {type: text, text: Red fox in snow, font_size: 24, font_style: Bold}}
+    - {id: caption, node: {name: Caption}, expect: {type: text, text: Made once by the image lane and frozen for this exam., font_size: 14}}
+    - {id: photo-in-card, grouped: {group: Card, members: [Photo, Heading, Caption]}}
+    - {id: stacked, ordered: {names: [Photo, Heading, Caption], axis: y}}
+    - {id: heading-inside, inside: {inner: Heading, outer: Card}}
+    - {id: exported-png, file: {path: card.png, magic: PNG}}
