@@ -18,6 +18,9 @@ KNOBS = [
        note="local hour a daytime fetch stops starting downloads and is ended, before the 21:00 sweep (#1084)"),
     _k("discover_top", ["scripts/serve-discover.sh:DISCOVER_TOP"], [0, 1, 3, 10],
        note="a count that overrides the sweep ceiling sizing the night's fetch, screen and measure; 0 is none (#1084)"),
+    _k("fetch_progress_poll", ["harness/downloads.py:PROGRESS_POLL_S"], [10.0, 60.0, 300.0], unit="s",
+       note="seconds between looks at the bytes a download wrote, each growth a heartbeat beat; 60 s is 1/60 of "
+            "sweep_check_stall and 2.3 GiB at the slowest night rate, 39.6 MiB/s (#771)"),
     _k("screen_days", [f"{C}:SCREEN_DAYS"], [7, 30, 90],
        note="days of screen verdicts the seconds-per-screen estimate reads (#1084)"),
     _k("screen_estimate", [f"{C}:SCREEN_S"], [120.0, 300.0, 600.0, 1200.0],
@@ -30,4 +33,8 @@ NOT_GATING = {
     f"{D}:_release->proc.wait(timeout)": "how long an ended fetch child gets to exit before SIGKILL; no download gates on it",
     f"{D}:next_at->timedelta(days)": "one calendar day, to reach tomorrow's hour; arithmetic, not a choice",
     "harness/throttle.py:Received.close->self._proc.wait(timeout)": "how long nettop gets to exit before SIGKILL",
+}
+
+NEVER_CUTS = {
+    "harness/downloads.py:PROGRESS_POLL_S": "seconds between looks at a download's bytes; it paces heartbeat beats and stops nothing",
 }

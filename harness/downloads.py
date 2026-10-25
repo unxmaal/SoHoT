@@ -48,6 +48,78 @@ _REPO = re.compile(r"^[A-Za-z0-9][\w.-]*/[\w.-]+$")
 IN_FLIGHT_SECONDS = 24 * 3600
 #: Row id -> the open lock file the fetching process holds while it writes. #704.
 _HELD: dict[int, object] = {}
+#: Seconds between looks at the bytes a download has written; each growth beats the loop's heartbeat. #771.
+PROGRESS_POLL_S = 60.0
+
+
+def _allocated(st) -> int:
+    blocks = getattr(st, "st_blocks", None)
+    return blocks * 512 if blocks is not None else st.st_size
+
+
+def landed_bytes(*roots) -> int:
+    """Bytes allocated under these files and trees, symlinks not followed: data written, not a preallocated size. #771."""
+    total = 0
+    for root in roots:
+        try:
+            st = os.lstat(root)
+        except OSError:
+            continue
+        if not os.path.isdir(root):
+            total += _allocated(st) if os.path.isfile(root) and not os.path.islink(root) else 0
+            continue
+        for d, _dirs, files in os.walk(root):
+            for name in files:
+                try:
+                    st = os.lstat(os.path.join(d, name))
+                except OSError:
+                    continue
+                if not os.path.islink(os.path.join(d, name)):
+                    total += _allocated(st)
+    return total
+
+
+class Landing:
+    """Beats the loop's heartbeat each time the bytes under `roots` grew past what they held at the start. #771."""
+
+    def __init__(self, roots, what: str = ""):
+        self.roots, self.what = tuple(roots), what
+        self.base = self.last = landed_bytes(*self.roots)
+        self._stop = None
+        self._thread = None
+
+    def tick(self) -> bool:
+        from harness import heartbeat
+        now = landed_bytes(*self.roots)
+        if now <= self.last:
+            return False
+        self.last = now
+        heartbeat.landed(now - self.base, self.what)
+        return True
+
+    def _run(self) -> None:
+        while not self._stop.wait(PROGRESS_POLL_S):
+            self.tick()
+
+    def __enter__(self) -> "Landing":
+        import threading
+
+        from harness import heartbeat
+        if heartbeat._mine() is not None:
+            self._stop = threading.Event()
+            self._thread = threading.Thread(target=self._run, name="download-landing", daemon=True)
+            self._thread.start()
+        return self
+
+    def __exit__(self, *exc) -> None:
+        if self._thread is not None:
+            self._stop.set()
+            self._thread.join()
+            self.tick()
+
+
+def landing(*roots, what: str = "") -> Landing:
+    return Landing(roots, what)
 
 
 def lock_path(path_key: str) -> Path:

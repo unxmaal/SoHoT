@@ -153,9 +153,20 @@ def beat(tier: str, step: int, total: int | None = None, candidate: str = "",
     if data is None or data.get("state") != RUNNING:
         return
     data.update(tier=tier, step=int(step), candidate=candidate, item=int(item),
-                items=int(items), updated=clock(), deadline_s=None, waiting="")
+                items=int(items), updated=clock(), deadline_s=None, waiting="", landed=0)
     if total is not None:
         data["total"] = int(total)
+    _write(data)
+
+
+def landed(nbytes: int, candidate: str = "") -> None:
+    """Record that a download has written `nbytes` since it began; a no-op unless this process started the heartbeat. #771."""
+    data = _mine()
+    if data is None or data.get("state") != RUNNING:
+        return
+    data.update(landed=int(nbytes), updated=clock())
+    if candidate:
+        data["candidate"] = candidate
     _write(data)
 
 
@@ -262,12 +273,19 @@ def status(data: dict | None, alive=alive) -> str:
     return "running"
 
 
+def _size(n) -> str:
+    n = float(n)
+    return f"{n / 1024 ** 3:.1f} GiB" if n >= 1024 ** 3 else f"{n / 1024 ** 2:.0f} MiB"
+
+
 def _where(d: dict) -> str:
     out = f"{d.get('tier') or 'starting'}, step {d.get('step', 0)} of {d.get('total', 0)}"
     if d.get("candidate"):
         out += f", {d['candidate']}"
         if d.get("items"):
             out += f" ({d.get('item', 0)} of {d['items']})"
+    if d.get("landed"):
+        out += f", {_size(d['landed'])} landed"
     if d.get("waiting"):
         out += f", {d['waiting']}"
     return out
