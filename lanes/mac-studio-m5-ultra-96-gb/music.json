@@ -1,0 +1,342 @@
+{
+ "candidates": [
+  {
+   "candidate": "acestep:acestep-v15-turbo,steps=8",
+   "decided_at": "2026-09-23T00:05:10Z",
+   "detail": "music: preferred by hand: won 2 of 4 case(s) (cover: steps=8, instrumental: no preference, lyrics-dense: steps=16, lyrics-plain: steps=8), 1 with no preference",
+   "exam": {
+    "about": "",
+    "candidate": "acestep/acestep-v15-turbo@steps=8",
+    "cases": 4,
+    "first_s": 38.967,
+    "median_s": 53.045,
+    "metrics": {
+     "duration_error_s": 0.0,
+     "seconds": 30.0,
+     "wer": 0.6147
+    },
+    "model": "acestep/acestep-v15-turbo@steps=8",
+    "not_run": "",
+    "pass_rate": 0.75,
+    "passed": 3,
+    "peak_gb": 46.01,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-10-05T20:29:28Z",
+    "served_as": "",
+    "source": "",
+    "total": 4,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "measured",
+   "proposal": "",
+   "reason": "candidate",
+   "receipt_key": "acestep/acestep-v15-turbo@steps=8",
+   "run_id": null,
+   "serves": false,
+   "status": "adopted",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
+   "candidate": "acestep:acestep-v15-turbo,steps=16",
+   "decided_at": "2026-09-23T00:05:10Z",
+   "detail": "music: the incumbent was preferred: won 2 of 4 case(s) (cover: steps=8, instrumental: no preference, lyrics-dense: steps=16, lyrics-plain: steps=8), 1 with no preference",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "",
+   "reason": "candidate",
+   "receipt_key": "acestep/acestep-v15-turbo@steps=16",
+   "run_id": null,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
+   "candidate": "acestep:m-a-p/YuE2-3B",
+   "decided_at": "2026-10-18T00:42:26Z",
+   "detail": "retracted: acestep:m-a-p/YuE2-3B's runner could not open the repo's layout, a runner gap rather than a verdict on m-a-p/YuE2-3B: it ran and passed nothing: cover: exit 3",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "m-a-p/YuE2-3B",
+   "reason": "reopened",
+   "receipt_key": "acestep/YuE2-3B",
+   "run_id": null,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "policy:trust_remote_code@yue2"
+  },
+  {
+   "candidate": "acestep:terminusresearch/minimax-music3-latent-refiner-v0.10",
+   "decided_at": "2026-10-22T01:39:51Z",
+   "detail": "needs its own runner: the stock loader could not assemble it: cover: exit 3",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "terminusresearch/minimax-music3-latent-refiner-v0.10",
+   "reason": "runtime",
+   "receipt_key": "acestep/minimax-music3-latent-refiner-v0.10",
+   "run_id": 530,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "runner:acestep/layout"
+  },
+  {
+   "candidate": "acestep:acestep-v15-turbo",
+   "decided_at": "",
+   "detail": "",
+   "exam": {
+    "about": "",
+    "candidate": "acestep/acestep-v15-turbo",
+    "cases": 4,
+    "first_s": 54.683,
+    "median_s": 45.815,
+    "metrics": {
+     "duration_error_s": 0.0,
+     "seconds": 30.0,
+     "wer": 0.3211
+    },
+    "model": "acestep/acestep-v15-turbo",
+    "not_run": "",
+    "pass_rate": 1.0,
+    "passed": 4,
+    "peak_gb": 45.6,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-10-22T01:59:23Z",
+    "served_as": "",
+    "source": "",
+    "total": 4,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "",
+   "proposal": "",
+   "reason": "",
+   "receipt_key": "acestep/acestep-v15-turbo",
+   "run_id": null,
+   "serves": false,
+   "status": "pending",
+   "tier": "",
+   "until": ""
+  }
+ ],
+ "cursor": 1792633191042097,
+ "events": [
+  {
+   "at": "2026-09-23T00:05:10Z",
+   "candidate": "acestep:acestep-v15-turbo,steps=16",
+   "chosen": null,
+   "detail": "music: the incumbent was preferred: won 2 of 4 case(s) (cover: steps=8, instrumental: no preference, lyrics-dense: steps=16, lyrics-plain: steps=8), 1 with no preference",
+   "how": "",
+   "id": 1790121910552182,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": null,
+   "tier": "adopt"
+  },
+  {
+   "at": "2026-09-23T00:05:10Z",
+   "candidate": "acestep:acestep-v15-turbo,steps=8",
+   "chosen": null,
+   "detail": "music: preferred by hand: won 2 of 4 case(s) (cover: steps=8, instrumental: no preference, lyrics-dense: steps=16, lyrics-plain: steps=8), 1 with no preference",
+   "how": "",
+   "id": 1790121910552964,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "measured",
+   "reason": "candidate",
+   "run_id": null,
+   "tier": "adopt"
+  },
+  {
+   "at": "2026-10-06T12:56:20Z",
+   "candidate": "tts:m-a-p/YuE2-3B",
+   "chosen": null,
+   "detail": "it ran and passed nothing: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'm-a-p/YuE2-3B': Could not determine model type for m-a-p/YuE2-3B\"} || not run, no candidate for them -- tts: fr-liaison",
+   "how": "",
+   "id": 1791291380979067,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 346,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-06T19:46:38Z",
+   "candidate": "m-a-p/YuE2-3B",
+   "chosen": null,
+   "detail": "retracted: settled in the tts lane, which came from the source rather than from m-a-p/YuE2-3B's own card (music)",
+   "how": "",
+   "id": 1791315998726150,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "reopened",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-06T19:49:55Z",
+   "candidate": "acestep:m-a-p/YuE2-3B",
+   "chosen": null,
+   "detail": "it ran and passed nothing: cover: exit 3",
+   "how": "",
+   "id": 1791316195549338,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 362,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-18T00:42:26Z",
+   "candidate": "m-a-p/YuE2-3B",
+   "chosen": null,
+   "detail": "retracted: acestep:m-a-p/YuE2-3B's runner could not open the repo's layout, a runner gap rather than a verdict on m-a-p/YuE2-3B: it ran and passed nothing: cover: exit 3",
+   "how": "",
+   "id": 1792284146607647,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "reopened",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-22T01:39:51Z",
+   "candidate": "acestep:terminusresearch/minimax-music3-latent-refiner-v0.10",
+   "chosen": null,
+   "detail": "needs its own runner: the stock loader could not assemble it: cover: exit 3",
+   "how": "",
+   "id": 1792633191042097,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "runtime",
+   "run_id": 530,
+   "tier": "screen"
+  }
+ ],
+ "exams": [
+  {
+   "cases": 4,
+   "differs": [],
+   "first_run_at": "2026-10-05T20:16:51Z",
+   "repeat": 1,
+   "rows": [
+    {
+     "about": "",
+     "candidate": "acestep/acestep-v15-turbo",
+     "first_s": 54.683,
+     "median_s": 45.815,
+     "metrics": {
+      "duration_error_s": 0.0,
+      "seconds": 30.0,
+      "wer": 0.3211
+     },
+     "model": "acestep/acestep-v15-turbo",
+     "not_run": "",
+     "pass_rate": 1.0,
+     "passed": 4,
+     "peak_gb": 45.6,
+     "reference": false,
+     "run_at": "2026-10-22T01:59:23Z",
+     "served_as": "",
+     "source": "",
+     "total": 4,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "about": "",
+     "candidate": "acestep/acestep-v15-turbo@steps=8",
+     "first_s": 38.967,
+     "median_s": 53.045,
+     "metrics": {
+      "duration_error_s": 0.0,
+      "seconds": 30.0,
+      "wer": 0.6147
+     },
+     "model": "acestep/acestep-v15-turbo@steps=8",
+     "not_run": "",
+     "pass_rate": 0.75,
+     "passed": 3,
+     "peak_gb": 46.01,
+     "reference": false,
+     "run_at": "2026-10-05T20:29:28Z",
+     "served_as": "",
+     "source": "",
+     "total": 4,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    }
+   ],
+   "run_at": "2026-10-22T01:59:23Z",
+   "runs": 6
+  }
+ ],
+ "generated_at": "2026-10-25T18:04:03Z",
+ "knobs": [],
+ "lane": {
+  "cases": 4,
+  "cases_digest": "075e676ae1b1b1e3",
+  "name": "music",
+  "params": {
+   "bpm": [
+    90,
+    120
+   ],
+   "cover_strength": [
+    0.2
+   ],
+   "duration": [
+    30
+   ],
+   "seed": [
+    42
+   ]
+  },
+  "wanted": true
+ },
+ "machine": {
+  "label": "Mac Studio M5 Ultra 96 GB",
+  "slug": "mac-studio-m5-ultra-96-gb"
+ },
+ "schema_version": 1,
+ "served": {
+  "adopted": false,
+  "adopted_at": "",
+  "adopted_how": "",
+  "incumbent": "",
+  "measured_at": "2026-10-22T01:59:23Z",
+  "median_s": 45.815,
+  "metrics": {
+   "duration_error_s": 0.0,
+   "seconds": 30.0,
+   "wer": 0.3211
+  },
+  "not_run": "",
+  "parked": "",
+  "parked_until": "",
+  "pass_rate": 1.0,
+  "serves": "acestep:acestep-v15-turbo",
+  "serves_model": "acestep:acestep-v15-turbo",
+  "stale": false
+ },
+ "since": 0
+}
