@@ -104,23 +104,24 @@ def repeat_index(case_id) -> int:
     return int(tail) if tail.isdigit() else 1
 
 
-def draws(rows: list[dict], candidate: str | None = None, unjudged=UNJUDGED) -> dict[str, list]:
-    """base case id -> verdict per draw in repeat order, whatever order the rows came in; None is unjudged."""
+def draws(rows: list[dict], candidate: str | None = None, unjudged=UNJUDGED,
+          metric: str = "") -> dict[str, list]:
+    """base case id -> verdict (or signed `metric`, see _score) per draw in repeat order, whatever order the rows came in; None is unjudged."""
     from harness import holdout
     got: dict[str, list] = {}
     for r in rows:
         if candidate is not None and r.get("candidate") != candidate:
             continue
         got.setdefault(holdout.base_id(r.get("case_id")), []).append(
-            (repeat_index(r.get("case_id")), _verdict(r, unjudged)))
+            (repeat_index(r.get("case_id")), _score(r, metric, unjudged)))
     return {k: [ok for _, ok in sorted(v, key=lambda d: d[0])] for k, v in got.items()}
 
 
 def pair(before: list[dict], after: list[dict], candidate: str | None = None, *,
-         same_repeat: bool = False, name: str = "", unjudged=UNJUDGED) -> Cell:
-    """One candidate across two runs, paired on base case and repeat index; refuses unequal case sets (or draws, with same_repeat). #690."""
+         same_repeat: bool = False, name: str = "", unjudged=UNJUDGED, metric: str = "") -> Cell:
+    """One candidate across two runs, paired on base case and repeat index, on pass bits or the named `metric`; refuses unequal case sets (or draws, with same_repeat). #690, #733."""
     from harness import power
-    a, b = draws(before, candidate, unjudged), draws(after, candidate, unjudged)
+    a, b = draws(before, candidate, unjudged, metric), draws(after, candidate, unjudged, metric)
     label = name or candidate or ""
     if not a.keys() & b.keys():
         return Cell(label, 0, 0, 0, refused="the two runs share no case")
@@ -143,14 +144,16 @@ def pair(before: list[dict], after: list[dict], candidate: str | None = None, *,
                 off += 1
                 continue
             judged.append((x, y))
-            lost += x and not y
-            gained += y and not x
+            lost += x > y
+            gained += y > x
             same += x == y
         if judged:
             used[k] = judged
     if not used:
         return Cell(label, lost, gained, same, off)
-    rho = power.icc([[[x for x, _ in d] for d in used.values()], [[y for _, y in d] for d in used.values()]])
+    finite = lambda vals: [v for v in vals if math.isfinite(v)]  # noqa: E731
+    rho = power.icc([[finite(x for x, _ in d) for d in used.values()],
+                     [finite(y for _, y in d) for d in used.values()]])
     repeat = sum(len(d) for d in used.values()) / len(used)
     deff = power.design_effect(repeat, power.DEFAULT_RHO if rho is None else rho)
     return Cell(label, lost, gained, same, off, deff=deff)
@@ -199,9 +202,9 @@ def value(receipt, axis: str):
     return getattr(receipt, axis, None)
 
 
-def _score(row: dict, metric: str = ""):
+def _score(row: dict, metric: str = "", unjudged=UNJUDGED):
     """A judged row's verdict, or its signed `metric` when one is named (missing ranks last); None is unjudged. #701."""
-    got = _verdict(row)
+    got = _verdict(row, unjudged)
     if got is None or not metric:
         return got
     from evals.core import direction_of
