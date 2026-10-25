@@ -450,7 +450,7 @@ def _bench_table(lane: dict, table: list[dict] | None = None, dated: bool = Fals
             f'<td class="num">{_num(r.get("median_s"))}</td>'
             f'<td class="num">{_num(r.get("first_s"))}</td>'
             f'<td class="num">{_num(r.get("peak_gb"), "{:.1f}")}</td>'
-            f'<td>{_esc(publish._metric_text(r.get("metrics")))}</td>'
+            f'<td>{publish.metric_html(r.get("metrics"))}</td>'
             + (f'<td>{_date(r.get("run_at"))}</td>' if dated else "") + '</tr>')
     return ('<div class="wide"><table><tr><th>candidate</th><th>pass</th><th>median s</th>'
             '<th>first s</th><th>peak GB</th><th>metrics</th>'
