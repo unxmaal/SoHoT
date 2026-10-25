@@ -4,6 +4,7 @@ This ledger is apart from gateway_requests and the Max-plan token ledger, so the
 """
 from __future__ import annotations
 
+import math
 import sqlite3
 import sys
 import time
@@ -25,6 +26,15 @@ PRICE_KEYS = ("input_cost_per_token", "output_cost_per_token", "cache_read_input
 CALLER_PREFIXES = ("job:", "purpose:", "run:")
 COLUMNS = ("at", "alias", "model", "call_id", "caller", "client", "prompt_tokens", "completion_tokens",
            "cache_read_tokens", "cache_write_tokens", "cost_usd", "cost_source")
+
+
+def usd(x: float) -> str:
+    """Dollars to the cent, or to two significant digits below a cent so a real charge never reads $0.00."""
+    x = float(x)
+    sign, a = ("-" if x < 0 else ""), abs(x)
+    places = 2 if a == 0 or a >= 0.01 else 1 - math.floor(math.log10(a))
+    text = f"{a:.{places}f}"
+    return sign + "$" + (text if places == 2 else text.rstrip("0"))
 
 
 def _num(x, kind=float):
@@ -156,10 +166,10 @@ def status(conn, budget: float | None = None) -> dict:
 def line(s: dict) -> str:
     since = time.strftime("%Y-%m-%d", time.localtime(s["start"])) if s.get("start") else "the first row"
     top = s["callers"][0] if s.get("callers") else None
-    tail = f"; top caller {top['caller']} ${top['cost_usd']:.2f}" if top else ""
+    tail = f"; top caller {top['caller']} {usd(top['cost_usd'])}" if top else ""
     warn = f"; {s['unpriced']} request(s) unpriced" if s.get("unpriced") else ""
-    return (f"${s['spent']:.2f} of ${s['budget']:.2f} ({KNOB}) since {since}, "
-            f"${s['remaining']:.2f} left{tail}{warn}")
+    return (f"{usd(s['spent'])} of {usd(s['budget'])} ({KNOB}) since {since}, "
+            f"{usd(s['remaining'])} left{tail}{warn}")
 
 
 def _open():
@@ -206,12 +216,12 @@ def gate(alias: str, config=None, budget: float | None = None) -> str:
         if used < budget:
             return ""
         from harness import cuts
-        cuts.cut("api_budget", f"{alias} request refused at ${used:.2f} spent", value=budget, conn=conn)
+        cuts.cut("api_budget", f"{alias} request refused at {usd(used)} spent", value=budget, conn=conn)
     except Exception as exc:  # noqa: BLE001
         return f"{alias} is refused: the gateway cannot read its spend ledger ({exc}), so {KNOB} cannot be checked"
     finally:
         conn.close()
-    return (f"{alias} is refused: ${used:.2f} of the ${budget:.2f} {KNOB} is spent (soh api-spend); "
+    return (f"{alias} is refused: {usd(used)} of the {usd(budget)} {KNOB} is spent (soh api-spend); "
             f"raise the {KNOB} knob or record a new start with soh api-spend --start DAY (#1214)")
 
 
@@ -280,14 +290,14 @@ def check_run(plan: dict, config=None, budget: float | None = None) -> dict | No
     remaining = budget - used
     refuse = ""
     if total is not None and total > remaining:
-        refuse = (f"the estimate ${total:.2f} for {', '.join(sorted(metered_))} on "
-                  f"{', '.join(sorted({lane for _, lane in each}))} exceeds the ${remaining:.2f} left of the "
-                  f"${budget:.2f} {KNOB} (soh api-spend) (#1214)")
+        refuse = (f"the estimate {usd(total)} for {', '.join(sorted(metered_))} on "
+                  f"{', '.join(sorted({lane for _, lane in each}))} exceeds the {usd(remaining)} left of the "
+                  f"{usd(budget)} {KNOB} (soh api-spend) (#1214)")
     return {"estimate": total, "remaining": remaining, "refuse": refuse,
             "unmeasured": sorted(lane for (_, lane), v in each.items() if v is None)}
 
 
 def describe(got: dict) -> str:
     est = (f"unknown (no measured tokens per case on {', '.join(got['unmeasured'])})" if got["estimate"] is None
-           else f"${got['estimate']:.2f}")
-    return f"api spend estimate {est}, ${got['remaining']:.2f} left of {KNOB}"
+           else f"{usd(got['estimate'])}")
+    return f"api spend estimate {est}, {usd(got['remaining'])} left of {KNOB}"
