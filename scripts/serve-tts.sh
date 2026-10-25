@@ -42,5 +42,5 @@ fi
 exec uv run --no-project \
   --with "$MLX_AUDIO_PIN" --with "$UVICORN_PIN" --with "$WEBRTCVAD_PIN" \
   --with "$FASTAPI_PIN" --with "$MULTIPART_PIN" --with "$SETUPTOOLS_PIN" \
-  --with "$MISAKI_PIN" --with "$SOUNDFILE_PIN" --with "$SPACY_PIN" --with "$EN_CORE_WEB_SM_PIN" \
+  --with "$MISAKI_PIN" --with "$SOUNDFILE_PIN" --with "$SPACY_PIN" --with "$PRESHED_PIN" --with "$EN_CORE_WEB_SM_PIN" \
   python "${RUN[@]}"
