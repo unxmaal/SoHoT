@@ -1237,8 +1237,8 @@ def lock_kind(args, config=None) -> str:
     return "cloud-eval" if candidates and all(hosted(c, config) for c in candidates) else "eval"
 
 
-def argv_lock_kind(argv, config=None) -> str | None:
-    """The lock_kind a queued `-m evals.run ...` command will take; None for any other command. #1153."""
+def queued_args(argv):
+    """The parsed arguments of a queued `-m evals.run ...` command; None for any other command or a bad one."""
     argv = [str(a) for a in argv]
     at = next((i + 2 for i in range(len(argv) - 1) if argv[i] == "-m" and argv[i + 1] == "evals.run"), None)
     if at is None:
@@ -1247,10 +1247,15 @@ def argv_lock_kind(argv, config=None) -> str | None:
         return None
     try:
         with contextlib.redirect_stderr(io.StringIO()):
-            args = parse_args(argv[at:])
+            return parse_args(argv[at:])
     except SystemExit:
         return None
-    return None if args.compare else lock_kind(args, config)
+
+
+def argv_lock_kind(argv, config=None) -> str | None:
+    """The lock_kind a queued `-m evals.run ...` command will take; None for any other command. #1153."""
+    args = queued_args(argv)
+    return None if args is None or args.compare else lock_kind(args, config)
 
 
 def deadline_s(args) -> float | None:
@@ -1286,7 +1291,8 @@ def _execute(args) -> int:
         return _execute_at(args, overrides)
 
 
-def _execute_at(args, overrides: dict) -> int:
+def _plan(args) -> tuple[str, list, list]:
+    """(split side, chosen cases, the cases the run expands them to), before a screen narrows them."""
     if args.repeat is None:
         args.repeat = default_repeat(args.candidates or "")
     if args.screen:
@@ -1297,10 +1303,55 @@ def _execute_at(args, overrides: dict) -> int:
         args.adherence = ""
     from harness import holdout
     side = "dev" if args.screen else (getattr(args, "split", "") or "all")
-    harness = harness_of(args)
     chosen = fix_sized(screen_subset(sized(load_selected(args), args), args), args)
-    cases = expand_cases(screen_pool(chosen) if args.screen
-                         else holdout.only(chosen, side), args.repeat)
+    return side, chosen, expand_cases(screen_pool(chosen) if args.screen
+                                      else holdout.only(chosen, side), args.repeat)
+
+
+def _gateway_name(candidate: str) -> str:
+    """The gateway alias a candidate's requests go to: a repair harness's inner model, else itself."""
+    if kind_of(candidate) == REPAIR_PREFIX:
+        return candidate.partition(":")[2].partition(",")[0].strip()
+    return candidate
+
+
+def spend_check(candidates: list[str], cases: list) -> dict | None:
+    """The API spend estimate for the metered candidates, {candidate: {lane: cases}}, and its refusal. #1214."""
+    from harness import api_spend
+    plan: dict = {}
+    for c in candidates:
+        if kind_of(_gateway_name(c)) != "gateway":
+            continue
+        lanes = plan.setdefault(_gateway_name(c), {})
+        for case in cases_for(c, cases):
+            lanes[case.modality] = lanes.get(case.modality, 0) + 1
+    return api_spend.check_run(plan)
+
+
+def argv_spend_refusal(argv) -> str:
+    """Why a queued `-m evals.run ...` command must not be queued for the API budget, or "". #1214."""
+    args = queued_args(argv)
+    if args is None or args.compare or not args.modality or not args.candidates:
+        return ""
+    from harness import api_spend
+    candidates = split_candidates(args.candidates)
+    if not any(kind_of(_gateway_name(c)) == "gateway" and api_spend.metered(api_spend.entry(_gateway_name(c)))
+               for c in candidates):
+        return ""
+    try:
+        with contextlib.redirect_stdout(io.StringIO()):
+            _, _, cases = _plan(args)
+    except SystemExit:
+        # A bad case selection is the run's own error to report when it starts; the gateway refusal still holds.
+        return ""
+    got = spend_check(candidates, cases)
+    return got["refuse"] if got else ""
+
+
+def _execute_at(args, overrides: dict) -> int:
+    from harness import holdout
+    side, chosen, cases = _plan(args)
+    harness = harness_of(args)
     # An engine spec contains commas, which are also the candidate separator.
     # Split on commas that start a new candidate, i.e. those followed by a
     # known engine prefix or by something with no '=' in it.
@@ -1311,6 +1362,12 @@ def _execute_at(args, overrides: dict) -> int:
         args.candidates = winner_for(args.modality)
         print(f"── winner for {args.modality}: {args.candidates}", flush=True)
     candidates = split_candidates(args.candidates)
+    spend = spend_check(candidates, cases)
+    if spend is not None:
+        from harness import api_spend
+        print(f"── {api_spend.describe(spend)}", flush=True)
+        if spend["refuse"]:
+            raise SystemExit(f"evals.run: {spend['refuse']}")
     effective_template(args.modality, candidates)
     ladder = run_ladder(args.modality, getattr(args, "budget_ladder", None))
     if ladder and getattr(args, "max_tokens", None) is not None:

@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 82
+SCHEMA_VERSION = 83
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -609,6 +609,26 @@ CREATE TABLE IF NOT EXISTS limit_cuts (
     dropped     INTEGER
 );
 
+-- One request to a metered gateway alias and its price; never summed with gateway_requests. #1214.
+CREATE TABLE IF NOT EXISTS api_spend (
+    id                 INTEGER PRIMARY KEY,
+    at                 REAL NOT NULL,
+    alias              TEXT NOT NULL DEFAULT '',
+    model              TEXT NOT NULL DEFAULT '',
+    call_id            TEXT NOT NULL DEFAULT '',
+    -- The request's job:, purpose: and run: tags, sorted and comma-joined.
+    caller             TEXT NOT NULL DEFAULT '',
+    client             TEXT NOT NULL DEFAULT '',
+    prompt_tokens      INTEGER,
+    completion_tokens  INTEGER,
+    cache_read_tokens  INTEGER NOT NULL DEFAULT 0,
+    cache_write_tokens INTEGER NOT NULL DEFAULT 0,
+    -- NULL when neither LiteLLM nor the declared price could price it.
+    cost_usd           REAL,
+    -- 'litellm' (its response_cost) or 'tokens' (tokens times the declared price).
+    cost_source        TEXT NOT NULL DEFAULT ''
+);
+
 -- Weights on disk, one row per fetched or found path on one machine. #411.
 CREATE TABLE IF NOT EXISTS downloads (
     id           INTEGER PRIMARY KEY,
@@ -780,6 +800,7 @@ CREATE INDEX IF NOT EXISTS ix_edges_dst ON edges(dst);
 CREATE INDEX IF NOT EXISTS ix_jobs_state ON jobs(state, priority);
 CREATE INDEX IF NOT EXISTS ix_probes_model ON contamination_probes(model, lane);
 CREATE INDEX IF NOT EXISTS ix_limit_cuts_knob ON limit_cuts(knob, at);
+CREATE INDEX IF NOT EXISTS ix_api_spend_at ON api_spend(at);
 """
 
 

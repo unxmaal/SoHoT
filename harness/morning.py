@@ -181,6 +181,14 @@ def ledger_row(conn, now: float) -> dict | None:
             "cloud_lower_bound": bool((d.get("cloud") or {}).get("lower_bound")), "plan": d.get("headroom") or {}, "displaced": displaced}
 
 
+def api_spend(conn) -> dict | None:
+    """The API credit ledger in dollars, the only one reported in dollars (#1214); None before schema 83."""
+    if not _has(conn, "api_spend"):
+        return None
+    from harness import api_spend as spend
+    return spend.status(conn)
+
+
 def stale_lanes(conn) -> list[dict]:
     """What `soh verify` would run: lanes with no recent receipt here."""
     from harness import report, verify
@@ -349,7 +357,7 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "canary": canary(now) if canary else "", "incidents": incidents(conn, since, now),
          "parked": parked() if parked else [], "checks": sweep_checks(conn, since),
          "incumbent": incumbent(conn) if incumbent else None, "clearances": clearances(conn, since, now),
-         "families": families(conn), "yield": yield_stops(conn)}
+         "families": families(conn), "yield": yield_stops(conn), "api_spend": api_spend(conn)}
     if r["sweep"]["loop"] is not None:
         from harness import heartbeat
         r["sweep"]["loop"]["code_moved"] = heartbeat.code_moved(beat, r["deploy"].get("head", ""))

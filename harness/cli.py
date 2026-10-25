@@ -27,6 +27,7 @@ import sys
 
 from harness import adopt, audio, completion, env, power, proc, throughput, vector  # noqa: F401
 from harness.commands import adopt as adopt_cmd
+from harness.commands import api_spend as api_spend_cmd
 from harness.commands import benchmarks as benchmarks_cmd
 from harness.commands import blame as blame_cmd
 from harness.commands import cases as cases_cmd
@@ -549,6 +550,11 @@ def build_parser() -> argparse.ArgumentParser:
     use.add_argument("--text", choices=("on", "off"), default="",
                      help="keep bounded prompt and completion text samples (off by default)")
     use.set_defaults(func=usage_cmd.cmd_usage)
+    spend = sub.add_parser("api-spend", help="dollars the metered gateway aliases spent of the API credit, "
+                           "what is left of the api_budget knob, and the top callers (#1214)")
+    spend.add_argument("--start", default="", metavar="DAY",
+                       help="count spending from this day, such as 2026-10-25 (recorded in the store)")
+    spend.set_defaults(func=api_spend_cmd.cmd_api_spend)
     can = sub.add_parser("canary", help="planted candidates with known verdicts, run for real under an "
                          "isolated home; one receipt per run under the canary directory (#919)")
     can.add_argument("canary_cmd", nargs="?", choices=("run", "check", "spend"), default="run",

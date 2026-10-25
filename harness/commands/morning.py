@@ -25,6 +25,14 @@ def ledger_line(led: dict) -> str:
             f"displaced {local_tokens(led['displaced'])}, energy {kwh} (recorded {_hm(led['recorded_at'])})")
 
 
+def api_spend_line(s: dict | None) -> str:
+    """The API credit ledger, the one ledger reported in dollars (#1214); "" before schema 83."""
+    if s is None:
+        return ""
+    from harness import api_spend
+    return f"api spend {api_spend.line(s)}"
+
+
 def _tally(d: dict) -> str:
     return ", ".join(f"{k} {v}" for k, v in sorted(d.items())) or "none"
 
@@ -106,6 +114,8 @@ def render(r: dict) -> list[str]:
         out.append(f"ledger    no row for {led['day']}")
     else:
         out.append(ledger_line(led))
+    if api_spend_line(r.get("api_spend")):
+        out.append(api_spend_line(r.get("api_spend")))
     fams = r.get("families") or []
     out.append(f"families  {len(fams)} demoted in a lane by paired losses")
     out.extend(f"          {f['lane']:<9} {f['family']}: {f['losses']} member(s) lost since its last win "

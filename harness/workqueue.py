@@ -212,6 +212,11 @@ def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
     if any(c.isspace() for c in first) and not os.path.exists(first):
         raise ValueError(f"{first!r} is a whole command line in one argument; "
                          f"split it into words (zsh does not word-split $VAR). #363")
+    if "evals.run" in [str(a) for a in argv]:
+        from evals import run
+        spend = run.argv_spend_refusal(argv)
+        if spend:
+            raise ValueError(f"not queued: {spend}")
     with _store(conn) as c:
         machine = _machine(c)
         # The store assigns the id inside the insert, so two writers cannot collide. #418.
