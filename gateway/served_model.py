@@ -172,12 +172,44 @@ def batch_of(data: dict) -> str:
     return ""
 
 
-def _claim(deployment: str, batch_id: str) -> dict:
+def _addressed_here(data: dict) -> bool:
+    """Whether the request reached this gateway by a loopback name, so its client runs on this host. #1231."""
+    import ipaddress
+    from urllib.parse import urlsplit
+    host = ""
+    for key, value in ((data.get("proxy_server_request") or {}).get("headers") or {}).items():
+        if str(key).lower() == "host":
+            host = str(value or "").strip()
+    try:
+        name = urlsplit("//" + host).hostname or ""
+    except ValueError:
+        return False
+    if name in LOOPBACK:
+        return True
+    try:
+        return ipaddress.ip_address(name).is_loopback
+    except ValueError:
+        return False
+
+
+def _claim(deployment: str, batch_id: str, local: bool = False) -> dict:
+    from harness import batch
+    from harness import memory_store as ms
+    from harness import workqueue as wq
+    conn = ms.connect()
+    try:
+        return batch.claim(conn, deployment, batch_id, who=batch.from_gateway(batch_id, local=local),
+                           alive=wq.alive)
+    finally:
+        conn.close()
+
+
+def _keep(deployment: str, batch_id: str) -> bool:
     from harness import batch
     from harness import memory_store as ms
     conn = ms.connect()
     try:
-        return batch.claim(conn, deployment, batch_id)
+        return batch.keep(conn, deployment, batch_id)
     finally:
         conn.close()
 
@@ -203,7 +235,7 @@ async def _renew_inflight() -> None:
                 _INFLIGHT.pop(call, None)
         for deployment, batch_id in {(d, b) for d, b, _ in list(_INFLIGHT.values())}:
             try:
-                await asyncio.to_thread(_claim, deployment, batch_id)
+                await asyncio.to_thread(_keep, deployment, batch_id)
             except Exception as exc:  # noqa: BLE001 - the next pass tries again
                 print(f"served_model: batch lease renew for {batch_id} failed: {exc}", file=sys.stderr)
 
@@ -222,7 +254,8 @@ async def _finished(call) -> None:
     got = _INFLIGHT.pop(str(call or ""), None)
     if got:
         try:
-            await asyncio.to_thread(_claim, got[0], got[1])
+            # Renew only: the client may have let the lease go already, and an ended batch must not take it back. #1231.
+            await asyncio.to_thread(_keep, got[0], got[1])
         except Exception as exc:  # noqa: BLE001 - the lease still expires on its own
             print(f"served_model: batch lease renew for {got[1]} failed: {exc}", file=sys.stderr)
 
@@ -234,9 +267,9 @@ async def hold_for_batch(data: dict) -> None:
     if not batch_id:
         return
     deployment = serving_machine(str(data.get("model") or ""))
-    got = await asyncio.to_thread(_claim, deployment, batch_id)
+    got = await asyncio.to_thread(_claim, deployment, batch_id, _addressed_here(data))
     if got:
-        _refuse(f"{batch.BUSY} ({batch.describe(got)}); retry once it finishes")
+        _refuse(f"{batch.BUSY} ({batch.describe(got)}); retry once it finishes (refused batch {batch_id})")
     _track(str(data.get("litellm_call_id") or ""), deployment, batch_id)
 
 
