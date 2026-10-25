@@ -140,6 +140,17 @@ class OrderKey(tuple):
 PRIMARY = {"decide": "decide_accuracy", "stt": "wer", "claims": "claims_balanced", "repo": "resolved"}
 #: Lanes whose primary metric is a summary of strata, paired per stratum rather than per row. #791.
 STRATIFIED = {"claims"}
+#: Each lane's metrics in rank order after its first key and pass rate; shared names not listed follow by name. #717.
+ORDER = {
+    "claims": ("claims_balanced", "claims_case_recall", "claims_case_specificity", "claims_empty_rate",
+               "claims_schema_valid"),
+    "decide": ("decide_accuracy", "decide_brier", "decide_ece"),
+    "music": ("wer", "duration_error_s"),
+    "pii": ("pii_f1", "pii_recall", "pii_precision"),
+    "repo": ("resolved", "patch_applied", "agent_valid_call_rate"),
+    "retrieval": ("retrieval_ndcg", "retrieval_recall"),
+    "tts": ("wer", "speaker_similarity"),
+}
 #: Metrics that measure probabilities, meaningless on a row whose answers were one-hot. #701.
 CALIBRATION = frozenset({"decide_brier", "decide_ece"})
 
@@ -183,7 +194,7 @@ def primary(row: dict, lane: str = "") -> tuple:
 
 
 def shared_metrics(rows, lane: str = "") -> tuple[str, ...]:
-    """Metric names shared by the top rows that report any, so a crashed row cannot erase the lane's metric. #690."""
+    """Metric names shared by the top rows that report any, so a crashed row cannot erase the lane's metric (#690), in the lane's ORDER (#717)."""
     rows = list(rows)
     top = max((primary(r, lane) for r in rows), default=(True, 0.0))
     names = None
@@ -192,7 +203,8 @@ def shared_metrics(rows, lane: str = "") -> tuple[str, ...]:
         if not mine or primary(row, lane) < top:
             continue
         names = mine if names is None else names & mine
-    return tuple(sorted(names or ()))
+    want = ORDER.get(lane, ())
+    return tuple(sorted(names or (), key=lambda n: (want.index(n) if n in want else len(want), n)))
 
 
 def _pick(entries: list[dict], prefer=lambda e: False, lane: str = "") -> dict:
