@@ -20,6 +20,7 @@ httpx = pytest.importorskip("httpx")
 from harness import memory_store as ms  # noqa: E402
 from harness import paths  # noqa: E402
 from harness.loopback import ThreadingHTTPServer  # noqa: E402
+from tests.usage_rows import wait_rows  # noqa: E402
 
 pytestmark = pytest.mark.litellm
 REPO = Path(__file__).resolve().parents[1]
@@ -128,17 +129,12 @@ general_settings:
     up.shutdown()
 
 
-def _wait_rows(n, timeout=20.0):
-    deadline = time.time() + timeout
-    while True:
-        conn = ms.connect()
-        try:
-            rows = [dict(r) for r in conn.execute("SELECT * FROM gateway_requests ORDER BY id")]
-        finally:
-            conn.close()
-        if len(rows) >= n or time.time() > deadline:
-            return rows
-        time.sleep(0.25)
+def _shape(r):
+    return (r["alias"], r["stream"], r["call_type"])
+
+
+def _wait_rows(want, key=_shape):
+    return wait_rows(want, key)
 
 
 def test_real_requests_through_a_real_proxy_become_rows_without_text(gateway):
@@ -161,8 +157,9 @@ def test_real_requests_through_a_real_proxy_become_rows_without_text(gateway):
               "tools": [{"name": "read", "input_schema": {"type": "object"}}]}
     ).status_code == 200
 
-    rows = _wait_rows(4)
-    by = {(r["alias"], r["stream"], r["call_type"]): r for r in rows}
+    rows = _wait_rows({("sohot-code", 0, "acompletion"), ("sohot-code", 1, "acompletion"),
+                       ("boom", 0, "acompletion"), ("sohot-code", 0, "anthropic_messages")})
+    by = {_shape(r): r for r in rows}
     plain = by[("sohot-code", 0, "acompletion")]
     assert plain["lane"] == "code" and plain["client"] == "opencode/9.9"
     assert (plain["prompt_tokens"], plain["completion_tokens"]) == (9, 4)
@@ -222,14 +219,14 @@ def test_a_tagged_request_lands_with_its_purpose_on_every_route(gateway, monkeyp
     with purpose.using(purpose.WATCHDOG):
         assert completion._send(gateway, {"model": "sohot-code", "messages": msgs},
                                 30).status_code == 200
-    rows = _wait_rows(6)
-    by = {(r["alias"], r["stream"], r["call_type"], r["purpose"]) for r in rows}
-    assert by == {("sohot-code", 0, "acompletion", "eval"),
-                  ("sohot-code", 1, "acompletion", "smoke"),
-                  ("sohot-code", 0, "anthropic_messages", "work"),
-                  ("boom", 0, "acompletion", "discover"),
-                  ("sohot-code", 0, "acompletion", "unknown"),
-                  ("sohot-code", 0, "acompletion", "watchdog")}
+    want = {("sohot-code", 0, "acompletion", "eval"),
+            ("sohot-code", 1, "acompletion", "smoke"),
+            ("sohot-code", 0, "anthropic_messages", "work"),
+            ("boom", 0, "acompletion", "discover"),
+            ("sohot-code", 0, "acompletion", "unknown"),
+            ("sohot-code", 0, "acompletion", "watchdog")}
+    by = {(*_shape(r), r["purpose"]) for r in _wait_rows(want, lambda r: (*_shape(r), r["purpose"]))}
+    assert by == want
 
 
 def test_a_delegation_s_call_id_is_the_gateway_row_s_call_id(gateway, monkeypatch):
@@ -242,7 +239,8 @@ def test_a_delegation_s_call_id_is_the_gateway_row_s_call_id(gateway, monkeypatc
         f"{gateway}/v1/chat/completions", headers={"Authorization": f"Bearer {KEY}"},
         timeout=30, json={"model": "sohot-code", "messages": [{"role": "user", "content": "hi"}]}))
     assert streamed and whole and streamed != whole
-    assert sorted(r["call_id"] for r in _wait_rows(2)) == sorted([streamed, whole])
+    rows = _wait_rows({streamed, whole}, lambda r: r["call_id"])
+    assert sorted(r["call_id"] for r in rows) == sorted([streamed, whole])
 
 
 def test_a_delegation_through_the_real_gateway_joins_its_request_row(gateway, monkeypatch):
@@ -254,7 +252,7 @@ def test_a_delegation_through_the_real_gateway_joins_its_request_row(gateway, mo
         "sohot-code", serving.Route(gateway, "sohot-code", {})))
     monkeypatch.setattr(context, "served_ctx", lambda spec: None)
     got = delegate.complete("code", "hi", max_tokens=20, delegated=True)
-    (row,) = _wait_rows(1)
+    (row,) = _wait_rows({got["call_id"]}, lambda r: r["call_id"])
     assert row["call_id"] == got["call_id"] and row["client"] != "soh-delegate"
     conn = ms.connect()
     try:
