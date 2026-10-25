@@ -52,8 +52,12 @@ class Knob:
     unit: str = ""
     #: The knob whose limit shows this one binding and sets that limit's value, for a knob with no limit of its own (#752).
     binds_via: str = ""
+    #: The site whose function sets this limit's value per lane-model, for a limit no single default sets (#1193).
+    derived: str = ""
 
     def __post_init__(self):
+        if self.derived and not self.limit:
+            raise ValueError(f"knob {self.name!r} derives a limit it does not name")
         if self.limit and self.binds_via:
             raise ValueError(f"knob {self.name!r} has limit {self.limit!r} and binds via {self.binds_via!r}; one or the other")
         if self.limit and self.unit not in UNITS:
@@ -84,6 +88,8 @@ class Knob:
         return self.limit.format(lane=lane) if lane else self.limit.split(".{lane}")[0]
 
     def limit_value(self, lane: str = ""):
+        if self.derived:
+            return None
         got = self.default(lane)
         return got / self.scale if self.scale != 1.0 else got
 

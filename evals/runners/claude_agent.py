@@ -16,7 +16,7 @@ import time
 from pathlib import Path
 
 from evals.core import Case
-from harness import reasons
+from harness import knobs, reasons
 from evals.runners import agent
 from evals.runners.base import BaseRunner, RunnerError
 from evals.runners.claude_code import PREFIX, result_of, stream_run
@@ -132,7 +132,7 @@ class ClaudeAgentRunner(BaseRunner):
                 except subprocess.TimeoutExpired as exc:
                     raise RunnerError(f"claude -p timed out after {timeout:g}s",
                                       failure_class=reasons.TIMEOUT,
-                                      limit=f"agent_case_timeout_s>{timeout:g}") from exc
+                                      limit=knobs.limit("agent_case_timeout_s", timeout, "s")) from exc
                 except OSError as exc:
                     raise RunnerError(f"could not run {self.binary[0]}: {exc}") from exc
                 calls = [json.loads(x) for x in log.read_text(encoding="utf-8").splitlines()

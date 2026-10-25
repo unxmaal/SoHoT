@@ -376,6 +376,7 @@ def payload_for(prompt, model, modality, context, temperature, max_tokens, sampl
 def _complete_full(sent: dict, prompt, model, gateway, modality, context, timeout, temperature,
                    max_tokens, sampling, template, top_logprobs, stream, system,
                    response_format) -> Completion:
+    from harness import knobs
     gateway = gateway or gateway_url()
     payload = payload_for(prompt, model, modality, context, temperature, max_tokens, sampling, template,
                           top_logprobs, stream, system, response_format)
@@ -413,7 +414,7 @@ def _complete_full(sent: dict, prompt, model, gateway, modality, context, timeou
                   "prefill_s": prefill_s(body.get("timings"))}
     except httpx.TimeoutException as exc:
         raise CompletionError(f"timed out after {timeout}s", reasons.TIMEOUT,
-                              ("timeout_s", timeout)) from exc
+                              knobs.hit("timeout_s", timeout, "s")) from exc
     except httpx.HTTPStatusError as exc:
         from harness import gateway_key
         status = exc.response.status_code
@@ -436,7 +437,7 @@ def _complete_full(sent: dict, prompt, model, gateway, modality, context, timeou
     if finish == reasons.STOPPED_LOW_YIELD:
         stop = _STOP_AFTER.get()
         raise CompletionError(f"stopped after {stop} generated tokens, its yield stop point: tasks still running "
-                              f"there rarely pass", reasons.STOPPED_LOW_YIELD, ("yield_stop", stop),
+                              f"there rarely pass", reasons.STOPPED_LOW_YIELD, knobs.hit("yield_stop", stop, "tokens"),
                               usage=usage, reasoning=reasoning, finish=finish)
     if text is None or not text.strip():
         # A THINKING MODEL that spent its whole budget reasoning returns null
@@ -453,7 +454,7 @@ def _complete_full(sent: dict, prompt, model, gateway, modality, context, timeou
                 + f"{len(reasoning)} characters). This is a hybrid "
                 f"thinking model; use a non-thinking one for this lane, or "
                 f"raise max_tokens.", reasons.TOKEN_BUDGET_EXHAUSTED,
-                ("max_tokens", max_tokens), usage=usage, reasoning=reasoning, finish=finish)
+                knobs.hit("max_tokens", max_tokens, "tokens"), usage=usage, reasoning=reasoning, finish=finish)
         raise CompletionError("empty completion", reasons.CONTENT_FAILED,
                               usage=usage, finish=finish)
     return Completion(text, usage,
@@ -674,6 +675,7 @@ def chat(messages: list, model: str, gateway: str = "",
     assistant message, tool_calls included. timing["first_tool_s"] is the
     first tool-call fragment.
     """
+    import harness.knobs
     gateway = gateway or gateway_url()
     knobs = {"temperature": DEFAULT_TEMPERATURE, **(sampling or {})}
     payload = {"model": model, "max_tokens": max_tokens,
@@ -701,7 +703,7 @@ def chat(messages: list, model: str, gateway: str = "",
                   "prefill_s": prefill_s(body.get("timings"))}
     except httpx.TimeoutException as exc:
         raise CompletionError(f"timed out after {timeout}s", reasons.TIMEOUT,
-                              ("timeout_s", timeout)) from exc
+                              harness.knobs.hit("timeout_s", timeout, "s")) from exc
     except httpx.HTTPStatusError as exc:
         raise CompletionError(
             f"gateway returned HTTP {exc.response.status_code}: "

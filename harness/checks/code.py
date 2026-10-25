@@ -28,7 +28,7 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from harness import reasons
+from harness import knobs, reasons
 from harness.checks.base import extract
 
 DEFAULT_TIMEOUT = 15.0
@@ -173,7 +173,7 @@ def check(source: str, checks: list[str],
         except subprocess.TimeoutExpired:
             return CodeResult(False, f"timed out after {timeout:g}s", total=len(checks),
                               failure_class=reasons.TIMEOUT,
-                              limit=f"code_check_timeout_s>{timeout:g}")
+                              limit=knobs.limit("code_check_timeout_s", timeout, "s"))
 
     marker = "__RESULTS__"
     line = next((ln for ln in (proc.stderr or "").splitlines()

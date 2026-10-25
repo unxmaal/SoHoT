@@ -96,12 +96,14 @@ def _reclassed(conn, r: dict, logs=None, root=None) -> dict:
 
 def scoped(until: str, lane: str) -> str:
     """`limit:name>N` as the lane-scoped `limit:name.<lane>>N` when that limit exists; #628 scoped them."""
-    from harness import reasons
+    from harness import knobs, reasons
     head, sep, want = (until or "").partition(">")
     name = head.removeprefix("limit:")
     if not sep or head == name or "." in name or not lane:
         return until or ""
-    return f"limit:{name}.{lane}>{want}" if f"{name}.{lane}" in reasons.limits() else until
+    if f"{name}.{lane}" not in reasons.limits():
+        return until
+    return f"limit:{knobs.limit(f'{name}.{lane}', knobs.number(want), knobs.limit_units().get(name, ''))}"
 
 
 def changes(conn, logs=None, root=None) -> list[dict]:

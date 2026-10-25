@@ -16,7 +16,7 @@ weights.npz and config.json without one -- so it is called in-process instead.
 """
 from __future__ import annotations
 
-from harness import audio, reasons
+from harness import audio, knobs, reasons
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
@@ -49,7 +49,7 @@ class TranscriptionRunner(BaseRunner):
             text = self._transcribe(case.audio)
         except audio.AudioTimeout as exc:
             raise RunnerError(str(exc), failure_class=reasons.TIMEOUT,
-                              limit=f"{exc.limit[0]}>{exc.limit[1]:g}") from exc
+                              limit=knobs.limit_text(exc.limit)) from exc
         except audio.AudioError as exc:
             raise RunnerError(str(exc)) from exc
         # Peak memory is not observable across HTTP; the server holds the model.

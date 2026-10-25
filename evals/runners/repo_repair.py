@@ -8,7 +8,7 @@ from evals import agent_pad, repo, repo_tools
 from evals.core import Case
 from evals.runners.agent import _TEXT_CALL, AgentRunner, rollup, step_timing
 from evals.runners.base import RunnerError
-from harness import completion, cuts, reasons
+from harness import completion, cuts, knobs, reasons
 
 HARNESS = "repair"
 SYSTEM = ("You are fixing an issue in a Python repository checked out at the commit before the fix. Use the "
@@ -95,7 +95,7 @@ class RepoRepairRunner(AgentRunner):
                 rec["generated_total"] = made
                 if ended == "length":
                     rec["cut"] = True
-                    cut = f"max_tokens.repo>{budget}" if self.max_tokens == budget else ""
+                    cut = knobs.limit("max_tokens.repo", budget, "tokens") if self.max_tokens == budget else ""
                 calls = message.get("tool_calls") or []
                 if not calls:
                     text = message.get("content") or ""
@@ -131,7 +131,7 @@ class RepoRepairRunner(AgentRunner):
         finally:
             self.max_tokens = budget
         if error is not None and not box.touched:
-            limit = f"{error.limit[0]}>{error.limit[1]:g}" if error.limit else ""
+            limit = knobs.limit_text(error.limit)
             raise RunnerError(f"step {len(steps) + 1}: {error}", failure_class=error.failure_class, limit=limit)
         diff = box.diff()
         got = attempt.submit(diff)
@@ -161,15 +161,15 @@ class RepoRepairRunner(AgentRunner):
     def _stop(self, stopped: str, cut: str, error, allowed: float) -> tuple[str, str]:
         """(failure class, limit) a failing row is put down to: the cap that ended its loop, else ""."""
         if stopped == "step cap":
-            return reasons.STEP_CAP, f"repair_max_steps>{MAX_STEPS:g}"
+            return reasons.STEP_CAP, knobs.limit("repair_max_steps", MAX_STEPS, "turns")
         if stopped == "token cap":
-            return reasons.TOKEN_BUDGET_EXHAUSTED, f"repair_max_tokens>{MAX_TOKENS:g}"
+            return reasons.TOKEN_BUDGET_EXHAUSTED, knobs.limit("repair_max_tokens", MAX_TOKENS, "tokens")
         if stopped == "time cap":
-            return reasons.TIMEOUT, f"repair_case_timeout_s>{allowed:g}"
+            return reasons.TIMEOUT, knobs.limit("repair_case_timeout_s", allowed, "s")
         if stopped == "context":
-            return reasons.CONTEXT_EXCEEDED, f"served_ctx>{self.served_ctx}"
+            return reasons.CONTEXT_EXCEEDED, knobs.limit("served_ctx", self.served_ctx, "tokens")
         if error is not None:
-            limit = f"{error.limit[0]}>{error.limit[1]:g}" if error.limit else ""
+            limit = knobs.limit_text(error.limit)
             return error.failure_class or reasons.CRASHED, limit
         if cut:
             return reasons.TOKEN_BUDGET_EXHAUSTED, cut

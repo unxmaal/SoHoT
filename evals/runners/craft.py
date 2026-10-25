@@ -10,7 +10,7 @@ from evals.core import Case
 from evals.runners.agent import _TEXT_CALL, AgentRunner, rollup, step_timing
 from evals.runners import agent
 from evals.runners.base import BaseRunner, RunnerError
-from harness import completion, cuts, reasons
+from harness import completion, cuts, knobs, reasons
 
 #: The candidate that replays a run book's reference script headless; it should score 1.0.
 REFERENCE = "craft-reference"
@@ -129,13 +129,13 @@ class CraftRunner(AgentRunner):
             try:
                 rec, message, ended = self._step(n, messages, tools, min(self.step_seconds(), left))
             except completion.CompletionError as exc:
-                limit = f"{exc.limit[0]}>{exc.limit[1]:g}" if exc.limit else ""
+                limit = knobs.limit_text(exc.limit)
                 raise RunnerError(f"step {len(steps) + 1}: {exc}", failure_class=exc.failure_class,
                                   limit=limit) from exc
             steps.append(rec)
             if ended == "length":
                 rec["cut"] = True
-                cut = f"max_tokens.agent>{self.max_tokens}"
+                cut = knobs.limit("max_tokens.agent", self.max_tokens, "tokens")
             calls = message.get("tool_calls") or []
             if not calls:
                 text = message.get("content") or ""
@@ -158,11 +158,11 @@ class CraftRunner(AgentRunner):
 
     def _stop(self, stopped: str, cut: str, session) -> tuple[str, str]:
         if stopped == "step cap":
-            return reasons.STEP_CAP, f"craft_steps_scale>{MAX_STEPS_SCALE:g}"
+            return reasons.STEP_CAP, knobs.limit("craft_steps_scale", MAX_STEPS_SCALE, "factor")
         if stopped == "call cap":
-            return reasons.STEP_CAP, f"craft_max_tool_calls>{session.cap:g}"
+            return reasons.STEP_CAP, knobs.limit("craft_max_tool_calls", session.cap, "calls")
         if stopped == "time cap":
-            return reasons.TIMEOUT, f"agent_case_timeout_s>{self._allowed:g}"
+            return reasons.TIMEOUT, knobs.limit("agent_case_timeout_s", self._allowed, "s")
         if cut:
             return reasons.TOKEN_BUDGET_EXHAUSTED, cut
         return "", ""

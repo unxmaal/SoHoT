@@ -4,7 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 
-from harness import convertible, reasons
+from harness import convertible, knobs, reasons
 
 #: Stop once the tasks still running at a point pass at less than this share of the lane-model's base pass rate. #1127.
 STOP_RATIO = 0.25
@@ -131,7 +131,7 @@ def rescore(rows, tokens: int | None) -> dict:
             lost += bool(row.get("passed"))
             saved += secs * (1 - tokens / n)
             row.update(passed=False, failure_class=reasons.STOPPED_LOW_YIELD)
-            row["hit_limit" if "hit_limit" in row else "limit"] = f"{LIMIT}>{tokens}"
+            row["hit_limit" if "hit_limit" in row else "limit"] = knobs.limit(LIMIT, tokens, "tokens")
         else:
             kept += bool(row.get("passed"))
         out.append(row)

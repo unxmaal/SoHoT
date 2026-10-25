@@ -11,7 +11,7 @@ ship.
 """
 from __future__ import annotations
 
-from harness import completion, delegate, reasons
+from harness import completion, delegate, knobs, reasons
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
@@ -24,7 +24,7 @@ NO_THINKING = {"enable_thinking": False}
 
 
 def _runner_error(exc: completion.CompletionError, prefix: str = "") -> RunnerError:
-    limit = f"{exc.limit[0]}>{exc.limit[1]:g}" if exc.limit else ""
+    limit = knobs.limit_text(exc.limit)
     return RunnerError(f"{prefix}{exc}", failure_class=exc.failure_class,
                        limit=limit)
 
@@ -78,7 +78,7 @@ class CompletionRunner(BaseRunner):
                 self.answered = True
                 return
             if exc.failure_class == reasons.TIMEOUT:
-                exc.limit = ("load_timeout_s", self.load_timeout)
+                exc.limit = knobs.hit("load_timeout_s", self.load_timeout, "s")
             raise _runner_error(exc, "warm-up: ") from exc
         self.answered = True
 
@@ -98,10 +98,10 @@ class CompletionRunner(BaseRunner):
         if budget < 1:
             raise completion.CompletionError(
                 f"unrunnable here: the prompt fills the {self.served_ctx}-token served context",
-                reasons.CONTEXT_EXCEEDED, ("served_ctx", self.served_ctx))
+                reasons.CONTEXT_EXCEEDED, knobs.hit("served_ctx", self.served_ctx, "tokens"))
         # The served context, not the reply budget, is what stops a reply the room was clamped to. #692.
-        limit = (f"served_ctx>{self.served_ctx}" if budget < asked
-                 else f"max_tokens.{case.modality}>{budget}")
+        limit = (knobs.limit("served_ctx", self.served_ctx, "tokens") if budget < asked
+                 else knobs.limit(f"max_tokens.{case.modality}", budget, "tokens"))
         timeout = max(self.timeout, completion.timeout_for(budget))
         stop = self.stop_tokens if self.stop_tokens is not None and self.stop_tokens < budget else None
         try:
@@ -121,10 +121,10 @@ class CompletionRunner(BaseRunner):
                 exc.failure_class, exc.limit = self._cut(self._stopped_at(limit, exc.usage))
             elif exc.failure_class == reasons.TIMEOUT and cold:
                 # Nothing has answered yet, so the request was given the load's allowance and the load is what ran out. #694.
-                exc.limit = ("load_timeout_s", self.load_timeout)
+                exc.limit = knobs.hit("load_timeout_s", self.load_timeout, "s")
             elif not exc.failure_class and reasons.OVER_CONTEXT.search(str(exc)):
                 exc.failure_class = reasons.CONTEXT_EXCEEDED
-                exc.limit = ("served_ctx", self.served_ctx) if self.served_ctx else ()
+                exc.limit = knobs.hit("served_ctx", self.served_ctx, "tokens") if self.served_ctx else ()
             raise
         self._keep(got.request, got.reasoning, got.finish, got.usage)
         self.answered = True
@@ -234,13 +234,13 @@ class CompletionRunner(BaseRunner):
     def _stopped_at(self, limit: str, usage: dict) -> str:
         """The served context when the server's own count of prompt plus reply reached it, else `limit`. #692."""
         used = int(usage.get("completion_tokens") or 0) + int(usage.get("prompt_tokens") or 0)
-        return f"served_ctx>{self.served_ctx}" if self.served_ctx and used >= self.served_ctx else limit
+        return knobs.limit("served_ctx", self.served_ctx, "tokens") if self.served_ctx and used >= self.served_ctx else limit
 
     def _cut(self, limit: str) -> tuple[str, tuple]:
         """(failure class, limit) for a reply stopped at `limit`, a "name>value" body."""
         name, _, value = limit.rpartition(">")
         cls = reasons.CONTEXT_EXCEEDED if name == "served_ctx" else reasons.TOKEN_BUDGET_EXHAUSTED
-        return cls, (name, float(value))
+        return cls, knobs.hit(name, knobs.number(value), "tokens")
 
     def cut_off(self) -> str:
         return self.last_cut

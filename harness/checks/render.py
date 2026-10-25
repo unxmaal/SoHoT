@@ -28,6 +28,7 @@ import time
 from functools import lru_cache
 from pathlib import Path
 
+from harness import knobs
 from harness.checks.base import CheckResult
 
 RASTERIZER = "rsvg-convert"
@@ -89,7 +90,7 @@ class RenderTimeout(RenderError):
 
     def __init__(self, what: str, name: str, timeout: float):
         super().__init__(f"{what} did not finish in {timeout:g}s")
-        self.limit = f"{name}>{timeout:g}"
+        self.limit = knobs.limit(name, timeout, "s")
 
     def result(self) -> CheckResult:
         from harness import reasons

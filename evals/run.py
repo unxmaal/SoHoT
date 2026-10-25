@@ -965,17 +965,17 @@ def screen_until(pool: list[Case], picked: list[Case], counts: dict, chosen: lis
     from harness import screen
     native = {c.id: c.params for c in pool}
     if any(native.get(c.id, {}).get(k) != c.params.get(k) for c in picked for k in ("width", "height")):
-        return f"limit:screen_size>{SCREEN_PARAMS['width']}"
+        return f"limit:{knobs.limit('screen_size', SCREEN_PARAMS['width'], 'pixels')}"
     groups = {(c.modality, c.language) for c in picked}
     have = {g: sum(1 for c in pool if (c.modality, c.language) == g) for g in groups}
     need = {g: counts.get(g, SCREEN_CASES) for g in groups}
     if any(need[g] > SCREEN_CASES and have[g] > SCREEN_CASES for g in groups):
-        return f"limit:screen_cases>{SCREEN_CASES}"
+        return f"limit:{knobs.limit('screen_cases', SCREEN_CASES, 'cases')}"
     short = sorted(g for g in groups if have[g] < need[g])
     if short:
         lane = short[0][0]
         return f"cases:{lane}>{sum(1 for c in chosen if c.modality == lane)}"
-    return f"limit:screen_confidence>{screen.SCREEN_CONFIDENCE:g}"
+    return f"limit:{knobs.limit('screen_confidence', screen.SCREEN_CONFIDENCE, 'share')}"
 
 
 def screen_cases(cases: list[Case], candidates=(), counts: dict | None = None) -> list[Case]:

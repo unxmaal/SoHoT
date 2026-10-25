@@ -15,7 +15,7 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
-from harness import reasons
+from harness import knobs, reasons
 
 PREFIX = "needle"
 REPO = "Cactus-Compute/needle3"
@@ -405,11 +405,11 @@ class Chat:
             self.sent = len(convo)
         except ServeStartTimeout as exc:
             raise completion.CompletionError(f"needle: {exc}", reasons.TIMEOUT,
-                                             ("needle_serve_start_s", SERVE_START_S)) from exc
+                                             knobs.hit("needle_serve_start_s", SERVE_START_S, "s")) from exc
         except (OSError, RuntimeError, ValueError) as exc:
             if isinstance(exc, TimeoutError) or isinstance(getattr(exc, "reason", None), TimeoutError):
                 raise completion.CompletionError(f"needle: timed out after {timeout:g}s", reasons.TIMEOUT,
-                                                 ("timeout_s", timeout)) from exc
+                                                 knobs.hit("timeout_s", timeout, "s")) from exc
             raise completion.CompletionError(f"needle: {exc}") from exc
         if body.get("success") is False and body.get("error"):
             raise completion.CompletionError(f"needle: {body['error']}")

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import ast
+import re
 from pathlib import Path
 
 from harness import knobs
@@ -218,3 +219,73 @@ def unknown(root=knobs.REPO) -> list[str]:
     """Names handed to a cut that are neither a registered knob nor a gating site, with where."""
     names, sites = named(root), set(limits(root))
     return sorted(f"{n} ({', '.join(w)})" for n, w in names.items() if n not in knobs.KNOBS and n not in sites)
+
+
+#: Until families that name no knob's limit: a lane's case count, a package version.
+_OTHER_UNTILS = ("cases:", "version:")
+_HEAD = re.compile(r"(?:^|[\s:(])[A-Za-z_][\w.]*$")
+_LIMIT_NAME = re.compile(r"^[a-z][a-z0-9_]*(\.[a-z0-9_{}]+)?$")
+
+
+def _hand_fstring(node: ast.JoinedStr) -> bool:
+    parts = node.values
+    if any(isinstance(p, ast.Constant) and "<" in str(p.value) for p in parts):
+        return False
+    if isinstance(parts[0], ast.Constant) and str(parts[0].value).startswith(_OTHER_UNTILS):
+        return False
+    for i, p in enumerate(parts[:-1]):
+        if not (isinstance(p, ast.Constant) and str(p.value).endswith(">") and isinstance(parts[i + 1], ast.FormattedValue)):
+            continue
+        head = str(p.value)[:-1]
+        if (not head and i and isinstance(parts[i - 1], ast.FormattedValue)) or _HEAD.search(head):
+            return True
+    return False
+
+
+def _arms(node) -> list:
+    return _arms(node.body) + _arms(node.orelse) if isinstance(node, ast.IfExp) else [node]
+
+
+def _limit_slots(tree) -> set[int]:
+    """ids of the expressions written into a limit: an assignment to *limit, a limit= argument, an *Error or Cut argument."""
+    out = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and any(knobs._dotted(t).split(".")[-1].endswith("limit") for t in node.targets):
+            out += _arms(node.value)
+        if isinstance(node, ast.Call):
+            out += [a for kw in node.keywords if kw.arg == "limit" for a in _arms(kw.value)]
+            if knobs._dotted(node.func).split(".")[-1].endswith(("Error", "Cut")):
+                out += [a for x in node.args for a in _arms(x)]
+    return {id(n) for n in out}
+
+
+def hand_built_in(text: str, rel: str) -> list[str]:
+    """rel:line of each limit body built without knobs.hit: a `name>{N}` f-string or a (name, N) pair (#1193)."""
+    tree, units, found = ast.parse(text), set(knobs.limit_units()), set()
+    slots = _limit_slots(tree)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.JoinedStr) and _hand_fstring(node):
+            found.add(node.lineno)
+        if isinstance(node, ast.Tuple) and len(node.elts) == 2 and _text(node.elts[0]) \
+                and not isinstance(node.elts[1], ast.Constant) and _LIMIT_NAME.match(_text(node.elts[0])) \
+                and (_text(node.elts[0]) in units or id(node) in slots):
+            found.add(node.lineno)
+    return [f"{rel}:{n}" for n in sorted(found)]
+
+
+def hand_built(root=knobs.REPO) -> list[str]:
+    return [w for rel, text in _modules(root) for w in hand_built_in(text, rel)]
+
+
+def unit_calls_in(text: str, rel: str) -> list[tuple[str, str, str]]:
+    """(name, unit, rel:line) of each knobs.hit or knobs.limit call naming both as literals (#1193)."""
+    out = []
+    for node in ast.walk(ast.parse(text)):
+        if isinstance(node, ast.Call) and knobs._dotted(node.func).endswith(("knobs.hit", "knobs.limit")) \
+                and len(node.args) == 3 and _text(node.args[0]) and _text(node.args[2]):
+            out.append((_text(node.args[0]), _text(node.args[2]), f"{rel}:{node.lineno}"))
+    return out
+
+
+def unit_calls(root=knobs.REPO) -> list[tuple[str, str, str]]:
+    return [c for rel, text in _modules(root) for c in unit_calls_in(text, rel)]
