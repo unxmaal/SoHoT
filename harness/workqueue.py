@@ -437,11 +437,35 @@ def _group_alive(pid: int, proc=None) -> bool:
         return alive(pid)
     try:
         os.killpg(int(pid), 0)
-    except (ProcessLookupError, PermissionError):  # EPERM on macOS: only zombies are left
-        return False
+    except (ProcessLookupError, PermissionError):  # EPERM on macOS: every member is a zombie or inside exit
+        return sys.platform == "darwin" and _exiting_member(int(pid))
     if sys.platform.startswith("linux"):
         return _live_member(int(pid))
     return True
+
+
+_KINFO_SIZE, _KINFO_P_STAT, _SZOMB = 648, 36, 5
+
+
+def _pgrp_states(pgid: int):
+    """The p_stat of each process in pgid, from macOS sysctl KERN_PROC_PGRP; None if unreadable. #1237."""
+    import ctypes
+    libc = ctypes.CDLL(None, use_errno=True)
+    mib = (ctypes.c_int * 4)(1, 14, 2, int(pgid))  # CTL_KERN, KERN_PROC, KERN_PROC_PGRP
+    size = ctypes.c_size_t(0)
+    if libc.sysctl(mib, 4, None, ctypes.byref(size), None, 0):
+        return None
+    buf = ctypes.create_string_buffer(size.value + _KINFO_SIZE * 8)
+    size = ctypes.c_size_t(len(buf))
+    if libc.sysctl(mib, 4, buf, ctypes.byref(size), None, 0) or size.value % _KINFO_SIZE:
+        return None
+    return [buf.raw[off + _KINFO_P_STAT] for off in range(0, size.value, _KINFO_SIZE)]
+
+
+def _exiting_member(pgid: int, read=_pgrp_states) -> bool:
+    """macOS will not signal a member inside exit, which keeps its files until it is a zombie; unreadable counts. #1237."""
+    states = read(pgid)
+    return states is None or any(state != _SZOMB for state in states)
 
 
 def _live_member(pgid: int, proc_root="/proc") -> bool:
@@ -480,7 +504,8 @@ def stop_group(pid: int, grace: float = CANCEL_GRACE_S, sleep=time.sleep, proc=N
     try:
         os.killpg(int(pid), signal.SIGTERM)
     except (ProcessLookupError, PermissionError):
-        return "gone"
+        if not _group_alive(pid, proc):
+            return "gone"
     deadline = time.monotonic() + grace
     while time.monotonic() < deadline:
         if not _group_alive(pid, proc):
