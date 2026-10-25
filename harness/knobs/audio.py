@@ -6,7 +6,7 @@ KNOBS = [
        lanes=("tts", "stt"), limit="audio_timeout_s", unit="s", receipt="knobs", note="seconds one tts or stt request may take (#693)", unrecorded=120.0),
     _k("runaway_rate", ["harness/audio.py:SECONDS_PER_WORD_CEILING", "harness/audio.py:RUNAWAY_MIN_WORDS"],
        [0.6, 0.8, 0.95, 1.2, 2.0], lanes=("tts",), limit="seconds_per_word", unit="s/word", receipt="knobs",
-       note="seconds of speech per word above which tts ran away (#91)"),
+       note="seconds of speech per word above which tts ran away (#91)", grades=True),
     _k("tts_calibration_tokens", ["harness/audio.py:CALIBRATION_TOKENS"], [50, 100, 200],
        note="cap on the clip that measures an unlisted cloning model's codec rate; the clip must end at it (#700)"),
     _k("tts_cap_fill", ["harness/audio.py:TOKEN_CAP_FILL"], [0.9, 0.95, 0.99],
