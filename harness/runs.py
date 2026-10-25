@@ -323,6 +323,31 @@ def grade_cut_rows(conn) -> int:
     return changed
 
 
+def stamp_claims_strata(conn) -> int:
+    """Stamp a stored claims row's stratum from a row of its own run on its case, and count a bad reply as a missed empty; the rows changed. #792."""
+    from evals.core import claims_stratum
+    from harness.checks import claims as claims_check
+    got = [(r["id"], (r["run_id"], r["case_id"]), json.loads(r["metrics"] or "{}")) for r in conn.execute(
+        "SELECT x.id, x.run_id, x.case_id, x.metrics FROM results x JOIN runs r ON r.id = x.run_id "
+        "WHERE r.lane = 'claims' ORDER BY x.id").fetchall()]
+    known: dict[tuple, set] = {}
+    for _, key, metrics in got:
+        if (s := claims_stratum(metrics)) is not None:
+            known.setdefault(key, set()).add(s)
+    changed = 0
+    for rid, key, before in got:
+        after = dict(before)
+        if claims_stratum(after) is None and len(known.get(key, ())) == 1:
+            after[claims_check.STRATUM] = next(iter(known[key]))
+        if claims_stratum(after) == 1 and after.get("claims_schema_valid") == 0 and "claims_empty_cases" not in after:
+            after.update(claims_check.empty_missed())
+        if after != before:
+            conn.execute("UPDATE results SET metrics = ? WHERE id = ?", (json.dumps(after), rid))
+            changed += 1
+    conn.commit()
+    return changed
+
+
 def client_machine_id(conn, run_id: int) -> int | None:
     """The machine that ran evals.run when another one served the run; None when they were one. #697."""
     got = conn.execute("SELECT environment FROM runs WHERE id = ?", (run_id,)).fetchone()
