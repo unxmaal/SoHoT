@@ -50,6 +50,59 @@ def statuses(get=None, base: str = "") -> dict | None:
     return out
 
 
+def _arg(args: list, flag: str) -> str:
+    at = args.index(flag) + 1 if flag in args else len(args)
+    return args[at] if at < len(args) else ""
+
+
+def _cached(ref: str) -> bool:
+    """Whether the hub cache holds a GGUF for a router cache id `org/name[:QUANT]`."""
+    from harness import downloads
+    repo, _, quant = ref.partition(":")
+    return any(quant.lower() in p.name.lower() for p in downloads.hub_dir(repo).rglob("*.gguf"))
+
+
+def phantoms(get=None) -> dict[str, str] | None:
+    """Advertised id -> why no file backs it; None when the router cannot be asked. #780."""
+    from pathlib import Path
+    try:
+        data = (get or _get)("/models")
+    except Exception:  # noqa: BLE001
+        return None
+    out = {}
+    for m in data.get("data") or []:
+        status = m.get("status")
+        args = [str(a) for a in status.get("args") or []] if isinstance(status, dict) else []
+        if not args:
+            continue
+        model, repo, where = _arg(args, "--model"), _arg(args, "--hf-repo"), m.get("source")
+        if model:
+            why = "" if Path(model).exists() else f"{where}: {model} is not on disk"
+        elif repo:
+            why = "" if _cached(repo) else f"{where}: no {repo} GGUF in the hub cache"
+        else:
+            why = f"{where}: no --model, a preset section with no file"
+        if why:
+            out[str(m.get("id"))] = why
+    return out
+
+
+def main(argv=None) -> int:
+    """`python -m harness.router phantoms`: exit 1 naming each advertised id with no file, 2 when unasked. #780."""
+    import sys
+    argv = sys.argv[1:] if argv is None else argv
+    if argv != ["phantoms"]:
+        print("usage: python -m harness.router phantoms", file=sys.stderr)
+        return 2
+    got = phantoms()
+    if got is None:
+        print(f"router at {url()} did not answer GET /models", file=sys.stderr)
+        return 2
+    for name, why in sorted(got.items()):
+        print(f"phantom: {name}: {why}")
+    return 1 if got else 0
+
+
 def resident(get=None, base: str = "") -> list[str]:
     """Stems the router holds in memory, [] when it cannot be asked."""
     return [k for k, v in (statuses(get, base) or {}).items() if v in RESIDENT]
@@ -204,3 +257,7 @@ def release_spec(spec: str, why: str, **kw) -> list[str]:
 def settle(why: str, **kw) -> list[str]:
     """Leave only protected models resident."""
     return release(resident(kw.get("get"), kw.get("base", "")), why, **kw)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

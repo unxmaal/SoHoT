@@ -56,6 +56,13 @@ LOCAL=0
 case "$H" in 127.0.0.1|localhost) LOCAL=1 ;; esac
 if [ "$LOCAL" -eq 1 ]; then
   grep -q . <<<"$(curl -sf "$E/v1/models")" && ok "engine /v1/models" || no "engine /v1/models"
+  # The router lists its startup snapshot; an id with no file hangs whoever asks for it (#780).
+  PHANTOMS="$(uv run python -m harness.router phantoms 2>&1)"
+  case $? in
+    0) ok "router advertises only models with a file" ;;
+    1) no "router advertises models with no file (restart the router):"; printf '%s\n' "$PHANTOMS" ;;
+    *) printf 'SKIP  router phantoms: %s\n' "$PHANTOMS" ;;
+  esac
 else
   printf 'SKIP  engine checks: the engine listens on the serving machine only\n'
 fi

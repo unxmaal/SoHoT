@@ -184,14 +184,46 @@ def note_unlisted(stems) -> None:
     path.write_text(json.dumps(got), encoding="utf-8")
 
 
+#: GGUF stems and hub repos deleted under a running router, which lists them until it restarts. #780.
+REMOVED = "router-removed.json"
+
+
+def _removed_path() -> Path:
+    from harness import paths
+    return paths.home() / REMOVED
+
+
+def removed() -> list[str]:
+    import json
+    try:
+        got = json.loads(_removed_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    return [str(s) for s in got] if isinstance(got, list) else []
+
+
+def note_removed(names) -> None:
+    """Remember what a delete took from under the router, for the next relist to restart it once. #780."""
+    import json
+    got = sorted(set(removed()) | {s for s in names if s})
+    path = _removed_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(got), encoding="utf-8")
+
+
+def pending() -> list[str]:
+    """What the router's listing is stale for: stems it does not list yet and names it still lists. #1084, #780."""
+    return unlisted() + removed()
+
+
 def relist() -> str:
-    """Restart the router once for what day fetches left unlisted; '' when there was nothing or it answered. #1084."""
-    stems = tuple(unlisted())
-    if not stems:
+    """Restart the router once for what day fetches left unlisted or deletes removed; '' when there was nothing or it answered. #1084, #780."""
+    if not pending():
         return ""
-    why = refresh_router(expect=stems)
+    why = refresh_router(expect=tuple(unlisted()))
     if not why:
         _unlisted_path().unlink(missing_ok=True)
+        _removed_path().unlink(missing_ok=True)
     return why or ""
 
 
@@ -243,6 +275,8 @@ def refresh_router(expect=(), run=None, wait=None) -> str:
     with exclusive.held("external", announce=lambda m: print(f"  router restart: {m}", flush=True)):
         (run or subprocess.run)(router_restart_argv(sys.platform), check=False)
         why = (wait or wait_router)(tuple(expect))
+    if not why:
+        _removed_path().unlink(missing_ok=True)
     if why:
         print(f"  router restart: {why}; a screen now would be refused_by_gateway", file=sys.stderr)
     return why

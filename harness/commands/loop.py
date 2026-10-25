@@ -418,8 +418,8 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
     print(f"\n=== screen ===")
     _beat("screen")
     from harness import gguf
-    if gguf.unlisted():
-        print("  restarting the router once for the GGUF files day fetches downloaded")
+    if gguf.pending():
+        print("  restarting the router once for the GGUF files day fetches downloaded or the disk sweep removed")
         gguf.relist()
     import time
     until = None if top or sweep is None else time.time() + sweep.remaining() * ceiling.SCREEN_FRACTION

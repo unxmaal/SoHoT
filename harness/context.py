@@ -381,13 +381,20 @@ def _ram_models_max() -> int:
     return 2 if memory.total_gb() >= 64 else 1
 
 
+def router_rows(conn) -> list[dict]:
+    """Live GGUF rows whose file is in the dir the router reads, the only stems it can load. #780."""
+    from harness import downloads, gguf
+    where = gguf.models_dir().resolve()
+    return [r for r in downloads.live(conn, kind=downloads.GGUF)
+            if Path(r["path"]).exists() and Path(r["path"]).parent.resolve() == where]
+
+
 def router_bytes(conn) -> int:
     """Weights plus planned KV of the heaviest router models that may be resident at once on this machine. #699."""
-    from harness import downloads
     held = []
-    for row in downloads.live(conn, kind=downloads.GGUF):
+    for row in router_rows(conn):
         path = Path(row["path"])
-        if row.get("ctx_at") and row.get("ctx") and path.exists():
+        if row.get("ctx_at") and row.get("ctx"):
             held.append(_weights(path) + int(row["ctx"]) * int(row.get("kv_bytes_token") or 0))
     return sum(sorted(held, reverse=True)[:recorded_models_max()])
 
@@ -416,7 +423,6 @@ def plan(conn, budget: int | None = None, slots: int = 1,
     `models_max` of them resident at once fit the budget together. #699."""
     import time
 
-    from harness import downloads
     budget = budget_bytes(conn) if budget is None else budget
     kv_cap = kv_cap_bytes() if kv_cap is None else kv_cap
     from harness import serving
@@ -426,7 +432,7 @@ def plan(conn, budget: int | None = None, slots: int = 1,
         raise
     except Exception:  # noqa: BLE001
         beside = 0
-    rows = [r for r in downloads.live(conn, kind=downloads.GGUF) if Path(r["path"]).exists()]
+    rows = router_rows(conn)
     sizes = [_weights(r["path"]) for r in rows]
     k = max(min(models_max, len(sizes)), 1)
     heaviest = sum(sorted(sizes, reverse=True)[:k])

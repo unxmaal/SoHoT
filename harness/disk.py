@@ -500,6 +500,7 @@ def delete(inv: Inventory, now: float, wanted: str = REJECTED, conn=None,
     hub, ggufs = Path(inv.hub), Path(inv.gguf)
     removed = []
     for e in plan(inv, now, wanted):
+        hub_gguf = e.kind == "hub" and bool(e.repo) and any(Path(e.path).rglob("*.gguf"))
         try:
             links = _remove(e, hub, ggufs)
         except OSError as exc:
@@ -507,9 +508,22 @@ def delete(inv: Inventory, now: float, wanted: str = REJECTED, conn=None,
             continue
         removed.append({"path": e.path, "repo": e.repo, "group": e.group,
                         "bytes": e.size, "verdict_id": e.verdict_id,
-                        "links": links, "at": time.time()})
-    record(conn, [r for r in removed if "error" not in r], source)
+                        "links": links, "at": time.time(), "hub_gguf": hub_gguf})
+    gone = [r for r in removed if "error" not in r]
+    record(conn, gone, source)
+    _tell_router(gone, ggufs)
     return removed
+
+
+def _tell_router(gone: list[dict], ggufs: Path) -> None:
+    """The router lists what it saw at startup, so note each GGUF stem and GGUF hub repo deleted from under it. #780."""
+    from harness import gguf
+    names = [r["repo"] for r in gone if r.get("hub_gguf")]
+    for r in gone:
+        names += [Path(p).stem for p in [r["path"]] + list(r.get("links") or [])
+                  if Path(p).suffix.lower() == ".gguf" and _inside(Path(p), ggufs)]
+    if names:
+        gguf.note_removed(names)
 
 
 def clear_incomplete(inv: Inventory, conn=None, source: str = "discover",
