@@ -36,7 +36,8 @@ def _row(spec, case, outcome, top, ladder=(), seconds=1.0):
                       "failure_class": convertible.CUT if cut else ("" if outcome == "pass" else "content_failed")})
     return {"candidate": spec, "case_id": case, "passed": outcome == "pass", "seconds": seconds,
             "failure_class": convertible.CUT if cut else ("" if outcome == "pass" else "content_failed"),
-            "limit": f"max_tokens.repo>{top}" if cut else "", "attempts": tries}
+            "limit": f"max_tokens.repo>{top}" if cut else "", "attempts": tries,
+            "metrics": {"resolved": float(outcome == "pass")}}
 
 
 def record(conn, spec, outcomes, *, top, sampling, ladder=(), at=DAY_AT - 3600, seconds=1.0):

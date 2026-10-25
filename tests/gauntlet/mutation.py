@@ -100,7 +100,7 @@ LEFT_OUT = {
         "test_method_serving.py", "test_pii_lane.py",
         "test_power_budget.py", "test_quants_882.py", "test_repo_claude_905.py", "test_repo_doc_hunk_1107.py", "test_repo_lane.py", "test_repo_no_tools_1129.py", "test_runner_base_weights.py", "test_schema_lanes.py",
         "test_fetch_needs_1091.py", "test_planted_919.py", "test_trajectory_921.py", "test_unranked_weight_954.py", "test_inventory_heartbeat_972.py",
-        "test_silent_truncation.py", "test_slots_memory.py", "test_store_downloads.py", "test_sweep_settle_1178.py", "test_yield_stop_1127.py",
+        "test_silent_truncation.py", "test_slots_memory.py", "test_store_downloads.py", "test_sweep_settle_1178.py", "test_sweep_lane_metric_1219.py", "test_yield_stop_1127.py",
         "test_repo_causes_1170.py", "test_pool_full_retry_755.py",
         "test_trocr_tokenizer_1025.py", "test_fetch_files_1040.py", "test_lane_too_small_1049.py",
         "test_lane_until_1053.py", "test_loop_revisit_1055.py", "test_revisit_tier_1060.py"),
