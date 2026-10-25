@@ -275,16 +275,16 @@ class _Waits:
         self.parent = parent
         self._lock = threading.Lock()
 
-    def add(self, start: float, end: float) -> None:
+    def add(self, start: float, end: float, kind: str = "busy") -> None:
         with self._lock:
-            self.spans.append((start, end))
+            self.spans.append((start, end, kind))
         if self.parent is not None:
-            self.parent.add(start, end)
+            self.parent.add(start, end, kind)
 
-    def within(self, start: float = float("-inf"), end: float = float("inf")) -> float:
-        """Seconds of [start, end] some request in this scope spent waiting; overlapping waits count once."""
+    def within(self, start: float = float("-inf"), end: float = float("inf"), kind: str | None = None) -> float:
+        """Seconds of [start, end] some request in this scope spent waiting (of `kind`, else any); overlaps count once."""
         with self._lock:
-            spans = sorted((max(a, start), min(b, end)) for a, b in self.spans)
+            spans = sorted((max(a, start), min(b, end)) for a, b, k in self.spans if kind in (None, k))
         total, reach = 0.0, start
         for a, b in spans:
             a = max(a, reach)
@@ -334,10 +334,21 @@ def _timed(fn):
     def call(*a, **k):
         with measuring() as waits:
             got = fn(*a, **k)
-        if waits.spans:
-            got.timing["busy_wait_s"] = round(waits.within(), 3)
+        got.timing.update(waited(waits))
         return got
     return call
+
+
+#: The span kind a pool-full retry's lost attempt and lock wait carry. #1235.
+POOL_FULL_WAIT = "pool_full"
+
+
+def waited(waits) -> dict:
+    """{"busy_wait_s": every hidden wait, "pool_full_wait_s": the pool-full part}, each only when nonzero. #776, #1235."""
+    if not waits.spans:
+        return {}
+    pool = waits.within(kind=POOL_FULL_WAIT)
+    return {"busy_wait_s": round(waits.within(), 3), **({"pool_full_wait_s": round(pool, 3)} if pool else {})}
 
 
 @dataclass
@@ -650,12 +661,16 @@ def _post(gateway: str, payload: dict, timeout: float):
     import hashlib
 
     from harness import exclusive
+    first = time.perf_counter()
     got, sent = _attempt(gateway, payload, timeout), 0
     while _pool_full(got) and sent < POOL_FULL_RETRIES:
         sent += 1
         _count(gateway, payload, "retried")
         name = f"pool-retry.{hashlib.sha256(gateway.rstrip('/').encode()).hexdigest()[:12]}.lock"
         with exclusive.alone(name, timeout, POOL_FULL_POLL_S):
+            if (waits := _WAITS.get()) is not None:
+                # The lost attempt and the lock wait are not this request's model time. #1235.
+                waits.add(first, time.perf_counter(), POOL_FULL_WAIT)
             got = _attempt(gateway, payload, timeout)
     if _pool_full(got):
         from harness import knobs

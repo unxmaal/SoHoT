@@ -442,6 +442,8 @@ METRIC_DIRECTION = {
     "completion_tokens": "neutral",
     # NEUTRAL: time a request waited out another batch on the serving machine, left out of seconds. #776.
     "busy_wait_s": "neutral",
+    # NEUTRAL: the part of busy_wait_s a pool-full retry lost, attempt and retry lock. #1235.
+    "pool_full_wait_s": "neutral",
     "code_pass": "higher",  # fraction of a code case's assertions that ran green
     # NEUTRAL: a traced illustration is legitimately large and a UI glyph is
     # legitimately small, so ranking on it would crown the blank document.
