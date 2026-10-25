@@ -46,6 +46,8 @@ HALF_LIFE_DAYS = 365.0
 #: that actually leaked (openclaw, opencode, hermes-agent) and named repos this
 #: crowd does not star.
 POPULAR_STARS = 100_000
+#: Pages of PER_PAGE stars read per crowd member, newest first; one page reads 13% of the crowd's stars (#764).
+STAR_PAGES = 1
 
 
 @dataclass
@@ -203,29 +205,84 @@ def cohort(seeds=DEFAULT_SEEDS, client: github.Client | None = None, *,
     return people[:limit]
 
 
-def crowd(people, client: github.Client | None = None) -> tuple[Counter, int]:
+def stars_of(client: github.Client, login: str, pages: int) -> tuple[list[str], bool, bool]:
+    """(repos newest first over up to `pages` pages, the cap cut them short, a deeper page could not be read)."""
+    out: list[str] = []
+    for page in range(1, pages + 1):
+        try:
+            got = client.starred(login, pages=(page,))
+        except github.GitHubError:
+            if page == 1:
+                raise
+            # A deeper page lost to the budget or the network keeps what was read. #764.
+            return out, False, True
+        out += got
+        if len(got) < github.PER_PAGE:
+            return out, False, False
+    return out, True, False
+
+
+def crowd(people, client: github.Client | None = None, *, pages: int | None = None) -> tuple[Counter, int]:
     """What the crowd starred, and how many of them actually answered."""
+    from harness import cuts
     client = client or github.Client()
+    pages = STAR_PAGES if pages is None else pages
     counts: Counter = Counter()
-    asked = 0
+    asked = short = 0
     for login in people:
         try:
-            starred = client.starred(login)
+            starred, capped, _ = stars_of(client, login, pages)
         except github.GitHubError:
             continue
         asked += 1
+        short += capped
         counts.update(set(starred))
+    if short:
+        cuts.cut("crowd_star_pages", f"{short} of {asked} crowd members starred more than {pages} page(s); "
+                 "their older stars were not read", value=pages, kept=asked - short, dropped=short)
     return counts, asked
+
+
+def why(repo: str, people, client: github.Client, *, depths=(1, 2, 3, 5, 10),
+        min_shared: int = MIN_SHARED) -> dict:
+    """Where `repo` stands in the crowd at each page depth, by star position only, never by member. #764."""
+    deepest = max(depths)
+    asked = unread = 0
+    positions = []
+    for login in people:
+        try:
+            starred, _, lost = stars_of(client, login, deepest)
+        except github.GitHubError:
+            continue
+        asked += 1
+        unread += lost
+        if repo in starred:
+            positions.append(starred.index(repo) + 1)
+    positions.sort()
+    by_depth = {d: sum(p <= d * github.PER_PAGE for p in positions) for d in depths}
+    reached = next((d for d in sorted(depths) if by_depth[d] >= min_shared), None)
+    sweep = sum(p <= STAR_PAGES * github.PER_PAGE for p in positions)
+    if sweep >= min_shared:
+        verdict = f"the crowd reaches it at the sweep's {STAR_PAGES} page(s): {sweep} of {asked} starred it"
+    elif reached is not None:
+        verdict = (f"the crowd misses it at the sweep's {STAR_PAGES} page(s) ({sweep} of {asked}) "
+                   f"and reaches it at {reached} pages ({by_depth[reached]} of {asked})")
+    else:
+        verdict = (f"falls out at the crowd: {by_depth[deepest]} of {asked} starred it within {deepest} pages, "
+                   f"and a repo needs {min_shared}")
+    return {"repo": repo, "crowd": asked, "positions": positions, "by_depth": by_depth,
+            "unread": unread, "sweep_pages": STAR_PAGES, "sweep_count": sweep,
+            "min_shared": min_shared, "reached_at": reached, "verdict": verdict}
 
 
 def neighbors(people=None, client: github.Client | None = None, *,
               seeds=DEFAULT_SEEDS, min_shared: int = MIN_SHARED,
-              top: int = 25, exclude=(), keep_archived: bool = False
-              ) -> list[Neighbor]:
+              top: int = 25, exclude=(), keep_archived: bool = False,
+              pages: int | None = None) -> list[Neighbor]:
     """Repos concentrated in this crowd, best first."""
     client = client or github.Client()
     people = list(people) if people is not None else cohort(seeds, client)
-    counts, asked = crowd(people, client)
+    counts, asked = crowd(people, client, pages=pages)
     skip = set(exclude)
     out = []
     for repo, shared in counts.most_common():
@@ -282,7 +339,7 @@ def control(expect, people=None, client: github.Client | None = None, *,
     client = client or github.Client()
     people = list(people) if people is not None else cohort(client=client)
     found = neighbors(people, client, top=top, **kw)
-    counts, asked = crowd(people, client)
+    counts, asked = crowd(people, client, pages=kw.get("pages"))
     names = [n.repo for n in found]
     hits = [e for e in expect if e in names]
     leaks = [(n.repo, n.stars) for n in found if n.stars > popular]

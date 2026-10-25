@@ -4,6 +4,10 @@ from harness.knobs.base import _k
 KNOBS = [
     _k("crowd_limit", ["harness/neighbors.py:cohort(limit)"], [100, 250, 450], probe="crowd_limit",
        note="crowd size; read n= rather than the value, offline only cached people answer"),
+    _k("crowd_star_pages", ["harness/neighbors.py:STAR_PAGES"], [1, 2, 3, 5, 10], probe="star_pages", unit="pages",
+       note="pages of 100 stars read per crowd member, newest first; on the 250-person crowd 2026-10-25 they read "
+            "13/22/29/40/59% of its 128k stars for 250/382/484/637/887 cold starred requests, inside the sweep's "
+            "900-request --budget beside ~445 repo lookups only at 1 page (#764)"),
     _k("half_life", ["harness/neighbors.py:HALF_LIFE_DAYS"], [90.0, 365.0, 1095.0, 1e9], probe="half_life",
        note="push-date decay; 1e9 is the decay switched off"),
     _k("hops", ["harness/neighbors.py:cohort(hops)"], [1, 2, 3], probe="hops",
