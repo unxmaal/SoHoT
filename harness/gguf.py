@@ -297,7 +297,9 @@ def download(repo: str, filename: str, hf_download=None, refresh=None,
         rid = downloads.start(c, repo, downloads.GGUF, models_dir() / filename,
                               file=filename, origin=origin or downloads.FETCH)
         try:
-            where = hf_download(repo, filename, str(models_dir()))
+            # hf_hub_download stages the file under local_dir/.cache until it is whole. #771.
+            with downloads.landing(models_dir() / ".cache", models_dir() / filename, what=repo):
+                where = hf_download(repo, filename, str(models_dir()))
         except BaseException:
             downloads.finish(c, rid, failed=True)
             raise

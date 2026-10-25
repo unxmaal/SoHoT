@@ -485,8 +485,9 @@ def _download(repo, snapshot, listing, hf_download, text, conn, require_weights,
             rid = downloads.start(c, repo, downloads.HUB, downloads.hub_dir(repo))
             try:
                 # Only the variant inspect sized, not every copy the repo holds. #947.
-                where = str(snapshot(repo_id=repo, allow_patterns=allow) if allow
-                            else snapshot(repo_id=repo))
+                with downloads.landing(downloads.hub_dir(repo), what=repo):
+                    where = str(snapshot(repo_id=repo, allow_patterns=allow) if allow
+                                else snapshot(repo_id=repo))
             except BaseException:
                 downloads.finish(c, rid, failed=True)
                 raise
