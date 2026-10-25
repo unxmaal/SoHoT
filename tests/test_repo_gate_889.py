@@ -1,5 +1,6 @@
 """The repo lane gates code adoption: repo comparisons run first, and a code one runs only after a repo win. #889."""
 import argparse
+import sys
 
 import pytest
 
@@ -60,7 +61,7 @@ def test_without_enough_valid_tasks_the_order_is_untouched(store, monkeypatch):
 def test_the_gate_holds_at_min_tasks_on_a_mac_with_the_sandbox(monkeypatch):
     from evals import repo
     monkeypatch.setattr(repo_gate.sys, "platform", "darwin")
-    monkeypatch.setattr(repo, "SANDBOX_EXEC", "/bin/sh")
+    monkeypatch.setattr(repo, "SANDBOX_EXEC", sys.executable)
     monkeypatch.setattr(repo_gate, "valid_tasks", lambda machine=None: set(range(repo_gate.MIN_TASKS)))
     assert repo_gate.active()
     monkeypatch.setattr(repo_gate.sys, "platform", "linux")

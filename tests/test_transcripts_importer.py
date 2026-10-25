@@ -17,6 +17,8 @@ T0 = 1_760_000_000
 FIX_LINE = '    return "the widget answer is two now"'
 REQUEST = ("The importer drops every candidate when gh is down; make a gh failure raise instead, and "
            "mail someone.else@example.org the result")
+#: The identity every test here redacts against, never the machine running it.
+KNOWN = redact.Known(accounts=("zorblat",))
 
 
 def _iso(t: float) -> str:
@@ -68,6 +70,7 @@ def world(tmp_path, monkeypatch):
     """A checkout of acme/widget with a feature commit, its squash on main, and a session that printed the first."""
     monkeypatch.setattr(tr, "MIN_CUT_BYTES", 0)
     monkeypatch.setattr(tr, "admit", lambda case, env=None: None)
+    monkeypatch.setattr(redact, "known_here", lambda *a, **k: KNOWN)
     repos = tmp_path / "github"
     w = repos / "acme" / "widget"
     w.mkdir(parents=True)
@@ -105,7 +108,7 @@ def world(tmp_path, monkeypatch):
 
 def _survey(world, **kw):
     return tr.survey(world["projects"], [world["repos"]], world["tmp"] / "log",
-                     known=redact.Known(accounts=("zorblat",)),
+                     known=KNOWN,
                      index_of=lambda r: world["index"], mirror_of=lambda r: world["repo"] / ".git", **kw)
 
 
@@ -149,6 +152,20 @@ def test_a_printed_feature_commit_links_its_request_to_the_merged_squash(world):
     p = got["projects"]["widget"]
     assert p["sessions"] == 1 and p["requests_linked"] == 1 and p["dropped"] == {}
     assert got["transcripts"]["-home-proj"] == {"sessions": 1, "requests": 2}
+
+
+def test_a_session_recorded_on_windows_links_its_request_too(world):
+    recs = [json.loads(line) for line in world["main"].read_text(encoding="utf-8").splitlines()]
+    paths = []
+    for rec in recs:
+        for block in rec["message"]["content"] if isinstance(rec["message"]["content"], list) else []:
+            if "file_path" in block.get("input", {}):
+                block["input"]["file_path"] = "C:" + block["input"]["file_path"].replace("/", "\\")
+                paths.append(block["input"]["file_path"])
+    assert len(paths) == 2 and all(p.endswith("\\pkg\\mod.py") for p in paths)
+    _write(world["main"], recs)
+    got = _survey(world, run=False)
+    assert [p["fix"] for p in got["pending"]] == [world["squash"]]
 
 
 def test_a_commit_older_than_the_window_is_not_evidence(world):

@@ -1,5 +1,6 @@
 """A cold load or an idle sleep is never graded as the candidate being slow (#694)."""
 import os
+import sys
 import subprocess
 from pathlib import Path
 
@@ -110,7 +111,9 @@ def _sleep_idle(tmp_path, gib, os_name, **env):
     for name, out in (("uname", os_name), ("sysctl", str(gib * 1024 ** 3))):
         (bin_ / name).write_text(f"#!/bin/sh\necho {out}\n", encoding="utf-8")
         (bin_ / name).chmod(0o755)
-    out = subprocess.run([shells.BASH, str(REPO / "scripts" / "router-sleep-idle.sh")],
+    # Git Bash does not search a Windows-style PATH for the fake uname; the script takes the OS as $1 instead.
+    told = [os_name] if sys.platform == "win32" else []
+    out = subprocess.run([shells.BASH, str(REPO / "scripts" / "router-sleep-idle.sh"), *told],
                          env={"PATH": f"{bin_}{os.pathsep}/usr/bin:/bin", **env}, capture_output=True, text=True, check=True)
     return int(out.stdout.strip())
 

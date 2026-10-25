@@ -95,7 +95,7 @@ def _mentions(command: str, rel: str) -> bool:
 
 
 def _names(token: str, rel: str) -> bool:
-    token = token.strip("\"'").removeprefix("./")
+    token = token.strip("\"'").replace("\\", "/").removeprefix("./")
     return bool(token) and (token == rel or token.endswith("/" + rel) or rel.endswith("/" + token))
 
 
@@ -188,7 +188,7 @@ def edits(e: Event, files) -> bool:
         return False
     args = e.input or {}
     if e.name in EDITS:
-        path = str(args.get("file_path") or args.get("notebook_path") or "")
+        path = str(args.get("file_path") or args.get("notebook_path") or "").replace("\\", "/")
         return any(path == rel or path.endswith("/" + rel) for rel in files)
     if e.name == "Bash":
         cmd = str(args.get("command") or "")
@@ -212,7 +212,7 @@ def views_issue(e: Event, owner: str, name: str) -> bool:
         if repo is not None:
             if repo[0].lower() == owner.lower() and repo[1].lower() == name.lower():
                 return True
-        elif re.fullmatch(rf"{re.escape(name.lower())}(?:-[\w.-]+)?", Path(here.rstrip("/")).name.lower() or "-"):
+        elif re.fullmatch(rf"{re.escape(name.lower())}(?:-[\w.-]+)?", Path(here.replace("\\", "/").rstrip("/")).name.lower() or "-"):
             return True
     return False
 
