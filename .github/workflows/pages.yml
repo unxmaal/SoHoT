@@ -38,6 +38,10 @@ jobs:
           fi
           ls -la data/machines 2>/dev/null || mkdir -p data/machines
 
+      # Labelling an export from before #670 reads the gateway config and method templates. #1234.
+      - name: PyYAML, the render's one dependency
+        run: python -m pip install pyyaml==6.0.3
+
       - name: Render
         run: python -m harness.publish render --data data/machines --out site
 
