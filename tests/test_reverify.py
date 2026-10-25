@@ -340,6 +340,7 @@ def test_the_job_runs_in_this_checkout_wherever_soh_was_called(conn, tmp_path, m
     assert queued(conn)[0]["cwd"] == str(paths.REPO)
 
 
+@pytest.mark.gauntlet("a-closed-table-fronting-an-open-set", site="harness/reverify.py:_LANE_RUNTIMES")
 def test_a_lane_no_table_names_watches_every_runtime():
     assert reverify.runtimes_for("code", "q3-4b") == ("mlx", "mlx-lm", "litellm", "macos")
     got = reverify.runtimes_for("newlane", "x")

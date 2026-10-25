@@ -54,6 +54,12 @@ def test_prx_declares_bfloat16_through_its_text_encoder(tmp_path):
     assert td.declared_dtype(_prx(tmp_path)) == td.BF16
 
 
+@pytest.mark.gauntlet("a-closed-table-fronting-an-open-set", site="harness/torch_device.py:_NAMED")
+def test_a_config_naming_a_full_or_unknown_precision_declares_no_half(tmp_path):
+    _config(tmp_path / "text_encoder" / "config.json", torch_dtype="float32", dtype="auto")
+    assert td.declared_dtype(tmp_path) == ""
+
+
 def test_sdxl_turbo_keeps_float16(tmp_path):
     """The model that works at fp16 today must not move off it."""
     root = _sdxl_turbo(tmp_path)

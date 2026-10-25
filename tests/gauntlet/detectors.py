@@ -118,24 +118,49 @@ def closed_tables(trees):
                     and all(_str(k) is not None for k in value.keys)):
                 tables.setdefault(name, []).append((rel, line))
     out = []
+
+    def hit(rel, recv, at, why):
+        if isinstance(recv, ast.Name) and recv.id in tables:
+            homes, name = [h for h in tables[recv.id] if h[0] == rel], recv.id
+        elif isinstance(recv, ast.Attribute) and recv.attr in tables:
+            homes, name = _module_homes(recv.value, tables[recv.attr], prod), recv.attr
+        else:
+            return
+        out.extend(Hit(f"{home}:{name}", line, f"{why} at {rel}:{at}") for home, line in homes)
+
     for rel, tree in prod.items():
+        parent = {id(c): p for p in _walk(tree) for c in ast.iter_child_nodes(p)}
         for n in _walk(tree):
-            if not (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr == "get"
+            if (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr == "get"
                     and n.args and _str(n.args[0]) is None):
-                continue
-            recv = n.func.value
-            if isinstance(recv, ast.Name) and recv.id in tables:
-                homes = [h for h in tables[recv.id] if h[0] == rel]
-            elif isinstance(recv, ast.Attribute) and recv.attr in tables:
-                homes = tables[recv.attr]
-            else:
-                continue
-            name = recv.id if isinstance(recv, ast.Name) else recv.attr
-            for home, line in homes:
-                out.append(Hit(f"{home}:{name}", line,
-                               f"a fixed table looked up with a fallback at {rel}:{n.lineno}; an unlisted key "
-                               "falls through to a default"))
+                hit(rel, n.func.value, n.lineno, "a fixed table looked up with a fallback; an unlisted key "
+                    "falls through to a default")
+            elif isinstance(n, ast.Compare) and _str(n.left) is None:
+                for op, table in zip(n.ops, n.comparators):
+                    if isinstance(op, (ast.In, ast.NotIn)) and _quiet_miss(n, isinstance(op, ast.NotIn), parent):
+                        hit(rel, table, n.lineno, "a fixed table tested for membership; an unlisted key is "
+                            "dropped, skipped or defaulted")
     return out
+
+
+def _module_homes(mod, homes, files):
+    # `sweep_check.QUIET` is sweep_check's QUIET, not headless.QUIET; an alias (`bm`) names no file, so keep all.
+    if not isinstance(mod, ast.Name):
+        return homes
+    named = {rel for rel in files if Path(rel).stem == mod.id or mod.id in Path(rel).parts[:-1]}
+    return [h for h in homes if h[0] in named] if named else homes
+
+
+def _quiet_miss(node, negated, parent):
+    # Whether an unlisted key takes a quiet path: not a raise, and not kept for a report (#1189).
+    top = node
+    while isinstance(parent.get(id(top)), ast.BoolOp):
+        top = parent[id(top)]
+    up = parent.get(id(top))
+    if isinstance(up, ast.If) and up.test is top:
+        branch = up.body if negated else up.orelse
+        return not (branch and isinstance(branch[0], ast.Raise))
+    return isinstance(up, ast.IfExp) and up.test is top or not negated
 
 
 _NEWEST = re.compile(r"(?is)\bORDER\s+BY\s+[^;]*?\bDESC\s+LIMIT\s+1\b(?!\s*,|\d)")

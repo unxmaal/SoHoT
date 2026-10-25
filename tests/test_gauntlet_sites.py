@@ -105,3 +105,33 @@ def test_an_unlisted_platform_keeps_its_own_name():
 def test_an_unlisted_task_has_no_lane_rather_than_a_guessed_one():
     assert inspect.card_lane("voice-activity-detection") == ""
     assert inspect.card_lane("audio-classification") == ""
+
+
+@pytest.mark.gauntlet(CLOSED, site="harness/completion.py:ROOT_TAGS")
+def test_every_text_lane_unwraps_its_artifact_or_is_named_as_taking_the_reply_whole():
+    from evals import core
+    from harness import completion
+    assert set(completion.ROOT_TAGS) <= core.TEXT_MODALITIES
+    assert core.TEXT_MODALITIES - set(completion.ROOT_TAGS) == {"extract", "decide", "claims"}
+    assert completion.artifact(' {"a": 1}\n', "extract") == '{"a": 1}'
+
+
+@pytest.mark.gauntlet(CLOSED, site="harness/inspect.py:TAG_LANES")
+@pytest.mark.gauntlet(CLOSED, site="harness/inspect.py:AUDIO_TAGS")
+@pytest.mark.gauntlet(CLOSED, site="harness/inspect.py:AUDIO_WORDS")
+def test_a_card_tag_no_table_names_files_nowhere_and_every_named_lane_is_real():
+    for table in (inspect.TAG_LANES, inspect.AUDIO_TAGS, inspect.AUDIO_WORDS):
+        assert set(table.values()) <= set(lanes.ALL), table
+    assert inspect.lane_for({"pipeline_tag": "", "tags": ["sound-effects"]}) == ""
+    assert inspect.lane_for({"pipeline_tag": "text-to-audio", "tags": ["sound-effects"], "id": "a/b"}) == ""
+
+
+@pytest.mark.gauntlet(CLOSED, site="harness/runner_gaps.py:VENV_SCRIPTS")
+@pytest.mark.parametrize("platform", ["darwin", "linux", "win32"])
+def test_every_runner_venv_has_a_deploy_step_that_installs_into_it(monkeypatch, platform):
+    import sys
+    from harness import runner_gaps as rg
+    monkeypatch.setattr(sys, "platform", platform)
+    for venv in sorted({*rg.RUNNER_VENVS.values(), *rg._VENV_ENV, rg.AUDIO_ENV}):
+        assert rg.installs(venv, REPO), venv
+    assert rg.installs("no-such-venv", REPO) == frozenset()

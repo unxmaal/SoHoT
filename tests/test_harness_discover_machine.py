@@ -96,6 +96,12 @@ def test_mflux_is_left_to_the_enumerator_that_knows_its_entry_points():
         assert "mflux" not in {c.name for c in discover.generator_engines(m)}
 
 
+def test_every_generator_discovery_offers_is_an_engine_a_spec_can_name():
+    """#1189: a name the builders lost was skipped in silence, so discovery stopped offering it."""
+    from harness import engines
+    assert set(discover._ENGINE_RUNTIME) <= engines.names()
+
+
 def test_each_reported_engine_carries_the_command_that_measures_it():
     for c in discover.generator_engines(CARD):
         assert "evals.run" in c.how, f"{c.name} has no command"
