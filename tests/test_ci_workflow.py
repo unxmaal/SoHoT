@@ -201,3 +201,12 @@ def test_a_hung_test_names_itself_before_the_job_timeout():
     limit = int(ini["tool"]["pytest"]["ini_options"]["faulthandler_timeout"])
     doc, _ = _ci()
     assert 60 <= limit < doc["jobs"]["check-macos"]["timeout-minutes"] * 60 / 4
+
+
+def test_the_nightly_runs_the_litellm_suite_after_make_check():
+    """No job ran make test-litellm, so a collection error under the litellm overlay went unseen (#1221)."""
+    doc, _ = _ci()
+    steps = doc["jobs"]["check-linux"]["steps"]
+    check = _linux_step(steps, lambda s: "make check" in s.get("run", ""))
+    litellm = _linux_step(steps, lambda s: "make test-litellm" in s.get("run", ""))
+    assert litellm > check and steps[litellm].get("timeout-minutes")

@@ -15,7 +15,7 @@ from harness import watchdog as wd
 from tests import shells
 from tests.test_watchdog import NIGHT, Fake
 
-pytest.importorskip("mcp")
+pytest.importorskip("harness.mcp_server", reason="needs mcp 2: uv run --group mcp")
 
 PY = "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python"
 ARGS = "-m harness.mcp_server --host 0.0.0.0 --port 8899 --transport streamable-http"

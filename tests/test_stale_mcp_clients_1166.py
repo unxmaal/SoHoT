@@ -9,14 +9,14 @@ import time
 
 import pytest
 
-from harness import mcp_peers, mcp_server, morning
+from harness import mcp_peers, morning
 from harness import watchdog as wd
 from harness.commands import morning as morning_cmd
 
 from tests.test_mcp_orphans_1155 import ARGS, PY, P, Unit, _hold, _port, _start
 from tests.test_watchdog import NIGHT
 
-pytest.importorskip("mcp")
+mcp_server = pytest.importorskip("harness.mcp_server", reason="needs mcp 2: uv run --group mcp")
 
 CLAUDE = "claude --resume ghscavenge"
 # lsof -nP -iTCP:8899 -sTCP:ESTABLISHED -Fpn on the Studio, 2026-10-24: the orphan 13283 holds one session
