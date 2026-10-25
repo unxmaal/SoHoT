@@ -368,6 +368,17 @@ def _summary(rows: list[dict], name: str) -> dict | None:
     return {**summarize(mine)[name], "candidate": name}
 
 
+def lane_cell(rows, name_i: str, name_c: str, lane: str, against: str):
+    """The two candidates paired by case on what the lane ranks: its primary metric, or per stratum at the lane's weights. #701, #791."""
+    from harness import paired, winners
+    if lane in winners.STRATIFIED:
+        from evals.core import claims_stratum
+        from harness.checks import claims
+        return paired.stratified(rows, name_i, name_c, claims_stratum,
+                                 {0: claims.RECALL_WEIGHT, 1: 1 - claims.RECALL_WEIGHT}, against)
+    return paired.head_to_head(rows, name_i, name_c, winners.PRIMARY.get(lane, ""))
+
+
 def paired_p(rows, name_i: str, name_c: str, lane: str = "", against: str = "challenger"):
     """The paired cell, its p over independent evidence, and a note when repeats were shrunk.
 
@@ -375,14 +386,8 @@ def paired_p(rows, name_i: str, name_c: str, lane: str = "", against: str = "cha
     design effect 1+(r-1)*rho before the sign test: a near-deterministic case
     counts once at any repeat. #591. Rounding goes `against` the side the claim favours. #698.
     """
-    from harness import paired, power, winners
-    if lane in winners.STRATIFIED:
-        from evals.core import claims_stratum
-        from harness.checks import claims
-        cell = paired.stratified(rows, name_i, name_c, claims_stratum,
-                                 {0: claims.RECALL_WEIGHT, 1: 1 - claims.RECALL_WEIGHT}, against)
-    else:
-        cell = paired.head_to_head(rows, name_i, name_c, winners.PRIMARY.get(lane, ""))
+    from harness import paired, power
+    cell = lane_cell(rows, name_i, name_c, lane, against)
     rho, repeat = power.rows_icc([{**r, "passed": power.draw(r, lane)} for r in rows], (name_i, name_c))
     used = power.DEFAULT_RHO if rho is None else rho
     deff = power.design_effect(repeat, used)

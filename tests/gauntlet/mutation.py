@@ -69,7 +69,7 @@ MODULES = {
         "tests/test_claims_balanced_metric.py", "tests/test_gateway_switch.py", "tests/test_live_audit.py",
         "tests/test_shared_store_703.py", "tests/test_screen_evidence.py", "tests/test_harness_winners.py",
         "tests/test_lane_routes.py", "tests/test_remote_upstreams.py", "tests/test_deepen_993.py",
-        "tests/test_lane_too_small_1049.py", "tests/test_lane_until_1053.py"],
+        "tests/test_lane_too_small_1049.py", "tests/test_lane_until_1053.py", "tests/test_reverify_lane_metric_733.py"],
     "harness/serving.py": [
         "tests/test_harness_serving.py", "tests/test_lane_routes.py", "tests/test_gguf_route.py",
         "tests/test_schema_lanes.py", "tests/test_ds4.py", "tests/test_remote_upstreams.py",

@@ -775,6 +775,18 @@ def plausible_wer(summary: dict | None, lane: str, candidate: str = "", key: str
     return max(rates) if rates and max(rates) <= SCREEN_MAX_WER else None
 
 
+def working(summary: dict, lane: str, candidate: str, key: str) -> str:
+    """Why rows with no passing case still show the model working on its lane's metric, or ''; screen and reverify share it. #701, #1007, #733."""
+    # A decide case passes only when every field is right; a right field shows the model ran. #701.
+    if any(float((v.get("metrics") or {}).get("decide_accuracy") or 0.0) > 0 for v in summary.values()):
+        return "it answered decide fields correctly though no case was right in full"
+    heard = plausible_wer(summary, lane, candidate, key)
+    if heard is not None:
+        return (f"it transcribed the screen at corpus WER {heard:.2f}, under the "
+                f"{SCREEN_MAX_WER:g} plausibility limit, though no clip was word-perfect")
+    return ""
+
+
 def outcome(returncode: int, summary: dict | None, candidate: str = "",
             key: str = "", stderr_class: str = "",
             facts: dict | None = None, evidence: str = "", card=None, lane: str = "") -> Verdict:
@@ -806,15 +818,9 @@ def outcome(returncode: int, summary: dict | None, candidate: str = "",
     if rows and not silent:
         return Verdict("screened", f"{rows} case(s) passed a screen",
                        reasons.CANDIDATE)
-    # A decide case passes only when every field is right; a right field shows the model ran. #701.
-    if any(float((v.get("metrics") or {}).get("decide_accuracy") or 0.0) > 0 for v in summary.values()):
-        return Verdict("screened", "it answered decide fields correctly though no case was right in full",
-                       reasons.CANDIDATE)
-    heard = plausible_wer(summary, lane, candidate, key)
-    if heard is not None:
-        return Verdict("screened", f"it transcribed the screen at corpus WER {heard:.2f}, under the "
-                       f"{SCREEN_MAX_WER:g} plausibility limit, though no clip was word-perfect",
-                       reasons.CANDIDATE)
+    shown = working(summary, lane, candidate, key)
+    if shown:
+        return Verdict("screened", shown, reasons.CANDIDATE)
     mine = ([row_for(summary, candidate, key) or {}] if candidate
             else list(summary.values()))
     cls = reasons.first(c for r in mine for c in (r.get("failure_classes") or {}))
