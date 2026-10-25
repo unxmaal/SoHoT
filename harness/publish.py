@@ -719,8 +719,10 @@ def _ttft_cell(row: dict) -> str:
     return ttft_text(num(row.get("ttft_median_s")), num(row.get("ttft_p95_s")))
 
 
-def _metric_text(m: dict) -> str:
-    return " ".join(f"{k} {v:.3f}" for k, v in sorted((m or {}).items()))[:60]
+def metric_html(m: dict | None) -> str:
+    """Every metric on its own line, escaped and never cut (#1205)."""
+    from harness.report import _esc
+    return "<br>".join(_esc(f"{k} {v:.3f}") for k, v in sorted((m or {}).items()))
 
 
 def _section(doc: dict) -> str:
@@ -745,7 +747,7 @@ def _section(doc: dict) -> str:
             f'<td class="num">{_num(lane.get("pass_rate"))}</td>'
             f'<td class="num">{_num(lane.get("median_s"))}</td>'
             f'<td class="num">{_ttft_cell(lane)}</td>'
-            f'<td class="dim">{_esc(_metric_text(lane.get("metrics")))}</td>'
+            f'<td class="dim">{metric_html(lane.get("metrics"))}</td>'
             f'<td>{_date(lane.get("measured_at"))}</td>'
             f'<td>{" ".join(tags)}</td></tr>')
     comps = []
@@ -763,7 +765,7 @@ def _section(doc: dict) -> str:
             f'<td class="num">{_num(r.get("median_s"))}</td>'
             f'<td class="num">{_ttft_cell(r)}</td>'
             f'<td class="num">{_num(r.get("peak_gb"), "{:.1f}")}</td>'
-            f'<td class="dim">{_esc(_metric_text(r.get("metrics")))}</td></tr>'
+            f'<td class="dim">{metric_html(r.get("metrics"))}</td></tr>'
             for r in table)
         comps.append(
             f'<h3>{_esc(lane["lane"])} <span class="dim">latest run '
