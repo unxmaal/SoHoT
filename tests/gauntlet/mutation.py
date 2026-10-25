@@ -31,7 +31,8 @@ MODULES = {
         "tests/test_store_retract_screens.py", "tests/test_harness_memory_store.py",
         "tests/test_verdict_reasons.py", "tests/test_harness_store.py", "tests/test_rank_881.py",
         "tests/test_coherence_991.py", "tests/test_adopt_retest_1001.py", "tests/test_missing_package_1008.py",
-        "tests/test_live_screen_blame_1021.py", "tests/test_whisper_group_1024.py", "tests/test_audio_env_1030.py", "tests/test_drafters_1039.py", "tests/test_plan_refusal_1047.py"],
+        "tests/test_live_screen_blame_1021.py", "tests/test_whisper_group_1024.py", "tests/test_audio_env_1030.py", "tests/test_drafters_1039.py", "tests/test_plan_refusal_1047.py",
+        "tests/test_cut_sites_1202.py"],
     "harness/reasons.py": [
         "tests/test_gguf_first_911.py", "tests/test_verdict_reasons.py", "tests/test_refusal_shapes.py", "tests/test_screen_server_death.py",
         "tests/test_screen_evidence.py", "tests/test_harness_engines_repo_id.py",
@@ -78,7 +79,8 @@ MODULES = {
         "tests/test_nodes.py", "tests/test_trajectory_921.py", "tests/test_plan_refusal_1047.py"],
     "harness/router.py": [
         "tests/test_router_unload.py", "tests/test_lane_routes.py", "tests/test_router_swaps.py",
-        "tests/test_cold_load.py", "tests/test_remote_upstreams.py", "tests/test_gguf_route.py"],
+        "tests/test_cold_load.py", "tests/test_remote_upstreams.py", "tests/test_gguf_route.py",
+        "tests/test_cut_sites_1202.py"],
 }
 
 # Test files that import a mutated module and are deliberately not run against its mutants:

@@ -1,6 +1,8 @@
 """The repo grader runs every named id it can, keeps pytest's failure text, and one bad id or file voids nothing. #1141."""
 from evals import repo
-from tests.test_repo_lane import BASE_FILES, BUGGY, FIXED, HIDDEN, _diff, _here, _two_commits
+from tests.test_repo_lane import BASE_FILES, BUGGY, DARWIN, FIXED, HIDDEN, _diff, _here, _two_commits
+
+pytestmark = DARWIN
 
 REG = "def _requeue_gold():\n    pass\n"
 REG_TESTS = ("import pytest\nfrom pkg import reg\n\n\n"

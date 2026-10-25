@@ -306,6 +306,16 @@ def test_every_never_cuts_exemption_gives_a_reason_names_a_gating_site_and_cuts_
     assert not set(knobs.NEVER_CUTS) & set(_inventory()), "an exempted site leaves the untraced inventory"
 
 
+def test_the_exemption_check_parses_each_module_once_however_many_exemptions(monkeypatch):
+    texts = {"a.py": "import time\nPOLL_S = 1.0\nWAIT_S = 2.0\ndef f():\n    time.sleep(POLL_S)\n", "b.py": "x = 1\n"}
+    parsed = []
+    real = limit_trace.ast.parse
+    monkeypatch.setattr(limit_trace.ast, "parse", lambda text, *a, **k: parsed.append(text) or real(text, *a, **k))
+    assert limit_trace.exemption_problems({"a.py:POLL_S": "pacing", "a.py:WAIT_S": "pacing"},
+                                          root=None, texts=texts) == []
+    assert sorted(parsed) == sorted(texts.values())
+
+
 def test_an_exemption_with_no_reason_is_refused():
     texts = {"a.py": "import time\nPOLL_S = 1.0\ndef f():\n    time.sleep(POLL_S)\n"}
     assert limit_trace.exemption_problems({"a.py:POLL_S": "  "}, root=None, texts=texts) == ["a.py:POLL_S: no reason given"]

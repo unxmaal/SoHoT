@@ -14,6 +14,12 @@ def test_an_edit_tool_on_a_fix_file_is_an_edit_and_one_elsewhere_is_not():
     assert not sc.edits(E(1, "call", "Read", input={"file_path": "/w/harness/widget.py"}), FILES)
 
 
+def test_an_edit_written_with_windows_separators_is_an_edit():
+    assert sc.edits(E(1, "call", "Edit", input={"file_path": r"C:\w\sohot-9\harness\widget.py"}), FILES)
+    assert sc.edits(E(1, "call", "Write", input={"file_path": r"harness\widget.py"}), FILES)
+    assert not sc.edits(E(1, "call", "Edit", input={"file_path": r"C:\w\harness\widget_test.py"}), FILES)
+
+
 def test_a_shell_command_that_writes_a_fix_file_is_an_edit_and_one_that_reads_it_is_not():
     for cmd in ("sed -i '' 's/a/b/' harness/widget.py", "cd harness && sed -i 's/x/y/' widget.py",
                 "python3 - <<'EOF'\nPath('harness/widget.py').write_text(s)\nEOF", "cat > harness/widget.py <<EOF"):
@@ -122,6 +128,7 @@ def test_an_issue_view_of_the_cases_own_repo_is_named_by_flag_url_or_directory()
     assert own("gh issue view 9 -R acme/widget") and own("gh issue view https://github.com/acme/widget/issues/9")
     assert own("cd ~/w/widget-9 && gh issue view 9") and own("gh issue view 9", cwd="/w/widget")
     assert not own("gh issue view 9 -R acme/other") and not own("gh issue view 9", cwd="/w/private-repo")
+    assert own("gh issue view 9", cwd="C:\\w\\widget") and not own("gh issue view 9", cwd="C:\\w\\private-repo")
     assert not own("gh issue view 9 --comments", cwd="/w/widget") and not own("gh pr view 9", cwd="/w/widget")
 
 
@@ -134,3 +141,5 @@ def test_a_cut_is_on_task_when_a_user_turn_or_an_issue_view_names_the_fixs_issue
     assert sc.on_task("## user\ngo\n\n## tool Read /w/harness/widget.py\nx", [], FILES)
     assert sc.on_task("## user\ngo\n\n## tool Bash\n$ sed -n 1,9p harness/widget.py\nx", [], FILES)
     assert not sc.on_task("## user\ngo\n\n## tool Read /w/harness/other.py\nx", [], FILES)
+    assert sc.on_task("## user\ngo\n\n## tool Read C:\\w\\harness\\widget.py\nx", [], FILES)
+    assert not sc.on_task("## user\ngo\n\n## tool Read C:\\w\\harness\\other.py\nx", [], FILES)
