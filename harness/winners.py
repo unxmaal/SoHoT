@@ -143,7 +143,7 @@ STRATIFIED = {"claims"}
 #: Each lane's metrics in rank order after its first key and pass rate; shared names not listed follow by name. #717.
 ORDER = {
     "claims": ("claims_balanced", "claims_case_recall", "claims_case_specificity", "claims_empty_rate",
-               "claims_schema_valid"),
+               "claims_schema_valid", "claims_judged_bad"),
     "decide": ("decide_accuracy", "decide_brier", "decide_ece"),
     "music": ("wer", "duration_error_s"),
     "pii": ("pii_f1", "pii_recall", "pii_precision"),
