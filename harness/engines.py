@@ -258,6 +258,8 @@ _H3_OPTIONS = {"steps", "layers", "reuse", "width", "height", "ssd_streaming"}
 # assertion. Below 5 it refuses outright (h3.c:514). Say so before the run.
 H3_MIN_FRAMES = 22
 H3_FPS = 24
+#: Denoising passes when neither the spec nor the case names them; h3.c alone runs 20. #735.
+H3_STEPS = 4
 H3_DEFAULT_BIN = str(Path.home() / "projects/github/antirez/h3.c/h3")
 
 
@@ -288,7 +290,7 @@ def _h3(spec: str, model: str, options: dict) -> Engine:
             f"one would silently measure MiniMax-H3 instead. For a discovered "
             f"video candidate use diffusers-video:{model}")
     _check_options(options, _H3_OPTIONS, spec)
-    defaults = dict(options)
+    defaults = {"steps": H3_STEPS, **options}
 
     def argv(prompt: str, out: Path, params: dict) -> list[str]:
         p = {**defaults, **{k: v for k, v in params.items() if v is not None}}

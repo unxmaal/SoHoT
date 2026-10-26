@@ -830,6 +830,11 @@ class Receipt:
     #: receipt key -> {"retried", "lost"} requests a full shared llama-server pool failed. Not an axis. #755.
     pool_full: dict = field(default_factory=dict)
 
+    @property
+    def rows_per_case(self) -> int:
+        """The repeat its case ids carry: a receipt claiming repeats on a lane that ran each case once says 1. #1272."""
+        return self.repeat if any("#" in str(c) for c in self.case_ids) else 1
+
     def as_dict(self) -> dict:
         return {"modality": self.modality, "case_ids": list(self.case_ids),
                 "repeat": self.repeat, "sampling": dict(self.sampling),
@@ -1026,8 +1031,8 @@ def comparable(a: Receipt, b: Receipt) -> tuple[bool, str]:
     if a.split and b.split and (a.split, a.split_version) != (b.split, b.split_version):
         return False, (f"different split: {a.split} v{a.split_version} vs "
                        f"{b.split} v{b.split_version}")
-    if a.repeat != b.repeat:
-        return False, f"different repeat: {a.repeat} vs {b.repeat}"
+    if a.rows_per_case != b.rows_per_case:
+        return False, f"different repeat: {a.rows_per_case} vs {b.rows_per_case}"
     if tuple(a.budget_ladder) != tuple(b.budget_ladder):
         def said(r):
             return ",".join(map(str, r.budget_ladder)) or f"none (one budget, {r.max_tokens})"
@@ -1089,6 +1094,11 @@ def comparable(a: Receipt, b: Receipt) -> tuple[bool, str]:
         if a.launch[key] != b.launch[key]:
             return False, (f"different launch for {key}: {a.launch[key]} vs "
                            f"{b.launch[key]}")
+    # A WER lane receipt with no normaliser version was scored by version 1. #1266.
+    if a.modality in speech_check.WER_LANES or b.modality in speech_check.WER_LANES:
+        mine, theirs = a.instruments.get("wer", "1"), b.instruments.get("wer", "1")
+        if mine != theirs:
+            return False, f"different wer normaliser: {mine} vs {theirs}"
     for name in sorted(set(a.instruments) & set(b.instruments)):
         mine, theirs = a.instruments[name], b.instruments[name]
         if mine and theirs and mine != theirs:

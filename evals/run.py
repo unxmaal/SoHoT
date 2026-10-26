@@ -28,6 +28,7 @@ from pathlib import Path
 
 from harness import audio, completion, context, delegate, ds4, env, knobs, paths, reasons, router
 from harness.engines import Engine, names as engine_names, parse_options, resolve
+from harness.checks import speech as speech_check
 
 from dataclasses import replace
 
@@ -1321,8 +1322,18 @@ def _plan(args) -> tuple[str, list, list]:
     from harness import holdout
     side = "dev" if args.screen else (getattr(args, "split", "") or "all")
     chosen = fix_sized(screen_subset(sized(load_selected(args), args), args), args)
-    return side, chosen, expand_cases(screen_pool(chosen) if args.screen
-                                      else holdout.only(chosen, side), args.repeat)
+    pool = screen_pool(chosen) if args.screen else holdout.only(chosen, side)
+    ran = rows_per_case(pool, args.repeat)
+    if ran != args.repeat:
+        print(f"--repeat {args.repeat} ignored: {args.modality} is deterministic, so each case runs once and the "
+              f"receipt says repeat {ran} (#1272)", file=sys.stderr)
+        args.repeat = ran
+    return side, chosen, expand_cases(pool, args.repeat)
+
+
+def rows_per_case(cases: list[Case], repeat: int) -> int:
+    """The rows each case gets at `repeat`: `repeat` when expand_cases repeats any of them, else 1. #1272."""
+    return repeat if repeat < 2 or any(c.modality in STOCHASTIC_MODALITIES for c in cases) else 1
 
 
 def _gateway_name(candidate: str) -> str:
@@ -1531,7 +1542,7 @@ def _execute_at(args, overrides: dict) -> int:
             adherence=getattr(args, "adherence", "") or "",
             tier="screen" if getattr(args, "screen", False) else "measure",
             accelerator="" if away else accelerator_id(),
-            instruments=instruments(candidates),
+            instruments=instruments(candidates, args.modality),
             engines=engines(candidates),
             where="" if away else where_id(),
             swap_used_mb=0 if away else swap_used_mb(),
@@ -2021,7 +2032,7 @@ def engines(candidates) -> dict:
             if text_candidate(c)}
 
 
-def instruments(candidates=()) -> dict:
+def instruments(candidates=(), modality: str = "") -> dict:
     """What measured this run, for the receipt. See core.Receipt.instruments.
 
     Best effort by design: a receipt must not fail a finished run, and an
@@ -2051,6 +2062,8 @@ def instruments(candidates=()) -> dict:
         found["ear"] = "+".join(sorted({ear_of(c) for c in candidates if kind_of(c) == "tts"}))
     except ValueError as exc:
         found["ear"] = f"unknown ear: {exc}"
+    if modality in speech_check.WER_LANES:
+        found["wer"] = speech_check.NORMALISER
     return {k: v for k, v in found.items() if v}
 
 

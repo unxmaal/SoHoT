@@ -26,10 +26,10 @@ ROWS_API = "https://datasets-server.huggingface.co/rows"
 DATE_NOTE = "before 2015-04: LibriVox recordings, LibriSpeech release"
 #: Measured stt candidates whose cards name LibriSpeech as training data (its train splits).
 TRAINED_ON = ["nvidia/parakeet-tdt-0.6b-v2", "nvidia/parakeet-ctc-0.6b"]
-TRANSFORM = "human transcript as the reference; pass only when every word is right"
+TRANSFORM = "human transcript as the reference; pass at the known-good ear's noise floor (#1266)"
 MANIFEST = Path(__file__).with_name("librispeech.jsonl")
 MIN_WORDS, MAX_WORDS = 3, 20
-MAX_WER = 0.0
+MAX_WER = 0.2
 N = 480
 PAGE = 100
 

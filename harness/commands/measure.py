@@ -443,11 +443,13 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
     store = ms.connect()
     try:
         tested = adopt.comparisons(store, lane, split.version) if split is not None else 0
+        screened = adopt.screened_cases(store, lane, (ch_key, spec))
     finally:
         store.close()
     spent = taken[-1]["spent"] if taken else 0.0
     verdict = adopt.decide(lane, inc_row, ch_row, rows, split=split, plan=plan, spec=spec,
                            tested=tested, alpha=adopt.alpha_for(tested) - spent if taken else None)
+    verdict = _confirmed(verdict, rows, split, screened, _served(lane), inc_spec, spec, plan)
     if taken:
         verdict = replace(verdict, evidence={**verdict.evidence, "looks": taken})
     if taken_from:
@@ -788,12 +790,15 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
     try:
         tested = adopt.comparisons(store, lane, split.version)
         rows, _, taken_from = _merge_reused(store, out, plan, rows, {}, inc_key)
+        screened = adopt.screened_cases(store, lane, (ch_key, spec))
     finally:
         store.close()
     look, verdict = looks.look(rows, lane=lane, inc_key=inc_key, ch_key=ch_key, split=split,
                                plan=plan.as_dict(), alpha=adopt.alpha_for(tested),
                                spent_before=taken[-1]["spent"] if taken else 0.0, n=len(taken) + 1,
                                spec=spec, tested=tested)
+    if verdict is not None:
+        verdict = _confirmed(verdict, rows, split, screened, _served(lane), inc_spec, spec, plan)
     taken.append(look.as_dict())
     print(f"    {look.text}", flush=True)
     done = len(rows) - (taken_from or {}).get("reused", 0)
@@ -861,6 +866,80 @@ def _merge_reused(store, out, plan, rows: list, summary: dict, inc_key: str):
     return rows, summary, evidence
 
 
+def _served(lane: str) -> str:
+    from harness import adopt, winners
+    return adopt.default_for(lane, winners.typed().get(lane, ""))
+
+
+def _confirmed(verdict, rows, split, screened, served: str, inc_spec: str, spec: str, plan):
+    """The gate's verdict after its confirmation cells, carrying what a night confirmation run needs. #725."""
+    from harness import adopt
+    got = adopt.confirm(verdict, rows, split, screened)
+    if got.failure_class != reasons.CONFIRMING:
+        return got
+    held = {**got.evidence["confirm"], "served": served, "incumbent": inc_spec, "challenger": spec,
+            "repeat": int(getattr(plan, "repeat", 1) or 1)}
+    return replace(got, evidence={**got.evidence, "confirm": held})
+
+
+def confirm_job(vid: int) -> int:
+    """`soh adopt --confirm VID`: the night dev run that confirms or refuses a held holdout win. #725."""
+    from harness import adopt, candidates, holdout, runner_gaps, screen
+    from harness import memory_store as ms
+    store = ms.connect()
+    try:
+        row = store.execute("SELECT v.failure_class, v.power, v.detail, p.name, p.state_verdict_id FROM verdicts v "
+                            "LEFT JOIN proposals p ON p.id = v.proposal_id WHERE v.id = ?", (vid,)).fetchone()
+    finally:
+        store.close()
+    if row is None:
+        return err(f"no verdict {vid}")
+    if row["failure_class"] != reasons.CONFIRMING or row["state_verdict_id"] not in (None, vid):
+        print(f"  verdict {vid} is not a held holdout win any more, so there is nothing to confirm", flush=True)
+        return 0
+    held = (json.loads(row["power"] or "{}") or {}).get("confirm") or {}
+    lane = (row["detail"] or "").split(":", 1)[0].strip()
+    inc_spec, spec, name = held.get("incumbent", ""), held.get("challenger", ""), row["name"] or held.get("challenger", "")
+    was = held.get("served") or inc_spec
+    now = _served(lane)
+    if not inc_spec or not spec:
+        return err(f"verdict {vid} does not name the pair it held, so it cannot be confirmed")
+    if now != was and (screen.candidate_for(lane, now) or now) != was:
+        print(f"  verdict {vid}: the {lane} lane no longer serves {was} ({now} now), so a confirmation against "
+              f"it decides nothing; the adopt retest measures {spec} against {now}", flush=True)
+        return 0
+    split = holdout.for_lane(lane)
+    out = paths.home() / "runs" / f"{time.strftime('%Y%m%d-%H%M%S')}-confirm-{lane}"
+    argv = [*runner_gaps.launcher([inc_spec, spec], ["uv", "run", "python"]), "-m", "evals.run", "--modality", lane,
+            "--repeat", str(int(held.get("repeat") or 1)), "--out", str(out), "--candidates", f"{inc_spec},{spec}"]
+    if not split.too_small:
+        argv += ["--split", "dev"]
+    route = screen.routed_gateway(name)
+    if route:
+        argv += ["--gateway", route]
+    print(f"\n  {lane}: confirming {spec} over {inc_spec} on dev (verdict {vid})\n    {' '.join(argv)}", flush=True)
+    proc = _launch(argv)
+    if proc.returncode != 0:
+        err(proc.stderr.strip()[-400:] or "no stderr")
+        return 1
+    data = _receipt_at(out)
+    if not data:
+        return err(f"verdict {vid}: the confirmation run stored no receipt at {out}")
+    store = ms.connect()
+    try:
+        candidates.from_receipt(store, data.get("specs") or {}, lane=lane, proposals={spec: name})
+        inc_key, ch_key = candidates.key_for(store, inc_spec), candidates.key_for(store, spec)
+    finally:
+        store.close()
+    won = adopt.Verdict(lane, inc_key, ch_key, True, f"won the holdout (verdict {vid})")
+    verdict = adopt.confirm(won, data.get("rows") or [], split, frozenset(held.get("screened") or ()), fresh=True)
+    if verdict.failure_class == reasons.CONFIRMING:
+        return err(f"verdict {vid}: the confirmation run has no case outside the screened ones, so it decides nothing")
+    print(f"    {'ADOPTED' if verdict.adopt else 'kept the incumbent'}: {verdict.why}", flush=True)
+    _record(verdict, spec, data.get("run_id"), out)
+    return 0
+
+
 def _record(verdict, spec: str, run_id, out) -> None:
     """Record the verdict with its planned and observed seconds per case beside it. #810, #813."""
     from harness import adopt
@@ -874,6 +953,10 @@ def _record(verdict, spec: str, run_id, out) -> None:
         store.execute("UPDATE verdicts SET planned_s_per_case = ?, observed_s_per_case = ? WHERE id = ?",
                       (planned, seen, vid))
         store.commit()
+        if verdict.failure_class == reasons.CONFIRMING:
+            job = adopt.queue_confirmation(store, vid, verdict)
+            if job:
+                print(f"    confirmation queued for the night as job {job['id']}", flush=True)
     except ms.IllegalTransition as exc:
         print(f"  skipped {exc}", flush=True)
     finally:
