@@ -9,7 +9,9 @@ import platform
 import random
 import re
 import shlex
+import subprocess
 import sys
+import tempfile
 import time
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -48,6 +50,12 @@ GREEDY = {"temperature": 0.0, "top_k": 1, "top_p": 1.0, "min_p": 0.0, "typical_p
           "seed": 0}
 STOPPING = "eos or n_predict; upstream RepeatingTokensCriteria(100, 10) not applied"
 APPLY_PATCH_FAIL = ">>>>> Patch Apply Failed"
+#: run_evaluation.GIT_APPLY_CMDS at HARNESS_PIN, each tried on a pristine tree, then a reverse check.
+APPLY_CMDS = ("git apply --verbose", "git apply --verbose --3way", "git apply --verbose --reject",
+              "patch --batch --forward --fuzz=5 -p1 -i")
+SOURCE = "https://github.com/{repo}.git"
+APPLY_FILES = {"model": "predictions.jsonl", "upstream": "predictions.upstream.jsonl",
+               "reference": "reference/all_preds.jsonl"}
 KINDS = ("gold", "null", "model", "upstream", "reference")
 _QUANT = re.compile(r"(?i)\b(IQ\d_\w+|Q\d(?:_[A-Z0-9]+)*|F16|BF16|F32)\b")
 _TAG = re.compile(r"\<([\w-]+)\>(.*?)\<\/\1\>", re.S)
@@ -342,6 +350,134 @@ def cmd_grade(a) -> int:
     return 0
 
 
+def _git(tree: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess:
+    return subprocess.run(["git", "-C", str(tree), *args], capture_output=True, text=True, check=check)
+
+
+def _reset(tree: Path, sha: str) -> None:
+    _git(tree, "checkout", "-q", "-f", "--detach", sha)
+    _git(tree, "clean", "-q", "-fdx")
+
+
+def checkout(source: str, sha: str, tree: Path) -> Path:
+    """A partial clone of `source` at `sha`, reused across a repo's ids; blobs are fetched as checkouts need them."""
+    if not (tree / ".git").is_dir():
+        tree.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["git", "clone", "-q", "--filter=blob:none", "--no-checkout", source, str(tree)],
+                       capture_output=True, check=True)
+    if _git(tree, "cat-file", "-e", f"{sha}^{{commit}}", check=False).returncode:
+        _git(tree, "fetch", "-q", "origin", sha)
+    _reset(tree, sha)
+    return tree
+
+
+def apply_check(tree: Path, sha: str, patch: str) -> dict:
+    """Whether the harness's apply chain takes `patch` on `tree` at `sha`, and which command did; tree left pristine."""
+    if not (patch or "").strip():
+        return {"applied": False, "by": "empty"}
+    with tempfile.NamedTemporaryFile("w", suffix=".diff", delete=False, encoding="utf-8", newline="") as f:
+        f.write(patch)
+    try:
+        for attempt, cmd in enumerate(APPLY_CMDS):
+            if attempt:
+                _reset(tree, sha)
+            if subprocess.run([*shlex.split(cmd), f.name], cwd=tree, capture_output=True).returncode == 0:
+                return {"applied": True, "by": cmd}
+        # The harness counts a patch the chain left applied while every command still failed.
+        if subprocess.run(["git", "apply", "--check", "--reverse", f.name], cwd=tree,
+                          capture_output=True).returncode == 0:
+            return {"applied": True, "by": "git apply --check --reverse"}
+        return {"applied": False, "by": ""}
+    finally:
+        Path(f.name).unlink(missing_ok=True)
+        _reset(tree, sha)
+
+
+def _version(argv: list[str]) -> str:
+    try:
+        got = subprocess.run(argv, capture_output=True, text=True)
+    except OSError:
+        return ""
+    return (got.stdout or got.stderr).strip().splitlines()[0] if (got.stdout or got.stderr).strip() else ""
+
+
+def cmd_apply(a) -> int:
+    """The harness's apply step without Docker: each kind's patch on a clone at its base commit. #922."""
+    run = Path(a.run_dir)
+    ids = read_json(run / "sample.json")["ids"]
+    wanted = set(ids)
+    rows = {r["instance_id"]: r for r in _rows(a.verified, VERIFIED, ["instance_id", "repo", "base_commit", "patch"])
+            if r["instance_id"] in wanted}
+    patches = {"gold": {i: r["patch"] for i, r in rows.items()}}
+    for kind, name in APPLY_FILES.items():
+        got = _patches(run / name)
+        if got:
+            patches[kind] = got
+    out = run / "grades" / "apply.json"
+    done = (read_json(out).get("kinds") or {}) if out.is_file() else {}
+    kinds = {k: dict(done.get(k) or {}) for k in patches}
+    cache = Path(a.cache) if a.cache else run / "repos"
+
+    def save() -> None:
+        write_json(out, {"chain": list(APPLY_CMDS), "git": _version(["git", "--version"]),
+                         "patch": _version(["patch", "--version"]), "source": a.source, "kinds": kinds})
+
+    for iid in ids:
+        row = rows.get(iid)
+        todo = [k for k in patches if iid in patches[k] and iid not in kinds[k]]
+        if row is None or not todo:
+            continue
+        tree = checkout(a.source.format(repo=row["repo"]), row["base_commit"], cache / row["repo"].replace("/", "__"))
+        for k in todo:
+            kinds[k][iid] = apply_check(tree, row["base_commit"], patches[k][iid])
+        save()
+        print(f"apply: {iid} " + " ".join(f"{k}={'yes' if kinds[k][iid]['applied'] else 'no'}" for k in todo),
+              flush=True)
+    save()
+    missing = sorted(wanted - set(rows))
+    print(f"apply: wrote {out}" + (f"; {len(missing)} ids are not in the Verified rows" if missing else ""))
+    return 0
+
+
+def applied_here(run: Path, ids: list[str], results: dict) -> dict | None:
+    """The apply check's pairings on the ids whose gold patch applied here, or None before `apply` ran."""
+    path = run / "grades" / "apply.json"
+    if not path.is_file():
+        return None
+    got = read_json(path)
+    raw = got.get("kinds") or {}
+    kinds = {k: {i: {"applied": bool(v.get("applied"))} for i, v in d.items()} for k, d in raw.items()}
+    # The 2023 reference predates the harness's fallbacks; plain `git apply` is what its "applied" counted.
+    first = {k: {i: {"applied": v.get("by") == APPLY_CMDS[0]} for i, v in d.items()} for k, d in raw.items()}
+    gold = kinds.get("gold") or {}
+    kept, dropped = [], {}
+    for iid in ids:
+        if iid not in gold:
+            dropped[iid] = "gold patch not checked here"
+        elif not gold[iid]["applied"]:
+            dropped[iid] = "gold patch did not apply here"
+        else:
+            kept.append(iid)
+    out = {"chain": got.get("chain"), "git": got.get("git", ""), "patch": got.get("patch", ""),
+           "sampled": len(ids), "retained": len(kept), "dropped": dropped}
+    pub = published(results, kept)
+    # An id the reference made no patch for did not apply, as its published results count it.
+    def filled(table: dict, kind: str) -> dict | None:
+        return {i: (table.get(kind) or {}).get(i, {"applied": False}) for i in kept} if kind in table else None
+
+    ref, ref_first = filled(kinds, "reference"), filled(first, "reference")
+    for name, mine, theirs in (("ours_vs_reference", kinds.get("model"), ref),
+                               ("ours_vs_published", kinds.get("model"), pub),
+                               ("upstream_vs_published", kinds.get("upstream"), pub),
+                               ("reference_vs_published", ref, pub),
+                               ("ours_first_vs_published", first.get("model"), pub),
+                               ("reference_first_vs_published", ref_first, pub)):
+        common = [i for i in kept if mine is not None and theirs is not None and i in mine and i in theirs]
+        if common:
+            out[name] = paired(common, mine, theirs, "applied")
+    return out
+
+
 def graded(run: Path, kind: str) -> dict | None:
     """Per id from a harness log tree: {"applied", "resolved"}, or None for a harness error; None if ungraded."""
     root = run / "grades" / kind
@@ -434,10 +570,13 @@ def compare(run: Path) -> dict:
            "extraction": extraction(run, ids), "graded": {k: v is not None for k, v in grades.items()}}
     kept, dropped = controls(ids, grades["gold"], grades["null"])
     out["dropped"] = dropped
+    check = applied_here(run, ids, results)
+    if check is not None:
+        out["apply_check"] = check
     ours_patch = _patches(run / "predictions.jsonl")
     model = grades["model"]
     if model is None or not kept:
-        out["status"] = "pending"
+        out["status"] = "applied_only" if check and "ours_vs_published" in check else "pending"
         return out
     ours = {}
     for iid in kept:
@@ -465,13 +604,46 @@ def _rate(k: int, n: int, ci) -> str:
     return f"{k}/{n} {k / n:.1%} [{ci[0]:.1%}, {ci[1]:.1%}]" if n else "0/0"
 
 
+def _pair_lines(title: str, a: str, b: str, pairs: dict) -> list[str]:
+    lines = [title]
+    for field, t in pairs.items():
+        verdict = "within margin" if t["agrees"] else "gap"
+        lines.append(f"  {field:8} {a} {_rate(t['ours'], t['n'], t['ours_ci'])}  "
+                     f"{b} {_rate(t['theirs'], t['n'], t['theirs_ci'])}  diff {t['diff']:+.1%}  "
+                     f"agree {t['agreement']:.1%}  discordant {t['only_ours']}/{t['only_theirs']}  "
+                     f"McNemar p={t['mcnemar_p']:.4f}  {verdict}")
+    return lines
+
+
+def _apply_lines(check: dict) -> list[str]:
+    lines = [f"applied here, no Docker: retained {check['retained']} of {check['sampled']} after the gold control; "
+             f"{check['git'] or 'git unrecorded'}, {check['patch'] or 'patch unrecorded'}"]
+    for iid, why in sorted(check["dropped"].items()):
+        lines.append(f"  dropped {iid}: {why}")
+    for title, key, a, b in (("ours vs reference (both checked here)", "ours_vs_reference", "ours", "reference"),
+                             ("ours here vs published", "ours_vs_published", "ours", "published"),
+                             ("upstream extractor here vs published", "upstream_vs_published", "upstream",
+                              "published"),
+                             ("reference here vs published (checker drift)", "reference_vs_published", "here",
+                              "published"),
+                             ("ours, plain git apply only, vs published", "ours_first_vs_published", "ours",
+                              "published"),
+                             ("reference, plain git apply only, vs published", "reference_first_vs_published", "here",
+                              "published")):
+        if key in check:
+            lines += _pair_lines(title, a, b, {"applied": check[key]})
+    return lines
+
+
 def render(got: dict) -> str:
     lines = [f"SWE-bench Verified calibration against {got['reference_run']}: {got['run_dir']}",
              f"sampled {got['sampled']}; harness {got['harness'] or 'unrecorded'}"]
     ex = got["extraction"]
     lines.append("extraction: " + ", ".join(f"{k} {v}" for k, v in ex.items()))
     lines.append("graded: " + ", ".join(f"{k} {'yes' if v else 'no'}" for k, v in got["graded"].items()))
-    if got["status"] == "pending":
+    if "apply_check" in got:
+        lines += _apply_lines(got["apply_check"])
+    if got["status"] in ("pending", "applied_only"):
         lines.append("grading pending: python -m evals.swebench grade RUN_DIR writes grade/grade.sh "
                      "for an x86_64 Docker host; copy its grades/ back here")
         return "\n".join(lines)
@@ -481,22 +653,15 @@ def render(got: dict) -> str:
     for title, key, a, b in (("ours vs published reference", "vs_published", "ours", "published"),
                              ("ours vs reference regraded here", "vs_regraded", "ours", "regraded"),
                              ("regraded vs published (harness drift)", "harness_drift", "regraded", "published")):
-        if key not in got:
-            continue
-        lines.append(title)
-        for field, t in got[key].items():
-            verdict = "within margin" if t["agrees"] else "gap"
-            lines.append(f"  {field:8} {a} {_rate(t['ours'], t['n'], t['ours_ci'])}  "
-                         f"{b} {_rate(t['theirs'], t['n'], t['theirs_ci'])}  diff {t['diff']:+.1%}  "
-                         f"agree {t['agreement']:.1%}  discordant {t['only_ours']}/{t['only_theirs']}  "
-                         f"McNemar p={t['mcnemar_p']:.4f}  {verdict}")
+        if key in got:
+            lines += _pair_lines(title, a, b, got[key])
     return "\n".join(lines)
 
 
 def cmd_compare(a) -> int:
     got = compare(Path(a.run_dir))
     print(json.dumps(got, indent=2, sort_keys=True) if a.json else render(got))
-    return 0 if got["status"] == "graded" else 2
+    return 0 if got["status"] in ("graded", "applied_only") else 2
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -522,11 +687,17 @@ def main(argv: list[str] | None = None) -> int:
     g = sub.add_parser("grade", help="write the hand-off to the official harness on an x86_64 Docker host")
     g.add_argument("run_dir")
     g.add_argument("--workers", type=int, default=4)
+    ap_ = sub.add_parser("apply", help="the harness's apply chain on a clone at each base commit, no Docker")
+    ap_.add_argument("run_dir")
+    ap_.add_argument("--verified", help="Verified rows (jsonl or parquet); default the pinned hub revision")
+    ap_.add_argument("--source", default=SOURCE, help="clone URL template with {repo}")
+    ap_.add_argument("--cache", default="", help="where the clones go (default RUN_DIR/repos)")
     c = sub.add_parser("compare", help="per-instance applied and resolved against the reference")
     c.add_argument("run_dir")
     c.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
-    return {"sample": cmd_sample, "predict": cmd_predict, "grade": cmd_grade, "compare": cmd_compare}[a.cmd](a)
+    return {"sample": cmd_sample, "predict": cmd_predict, "grade": cmd_grade, "apply": cmd_apply,
+            "compare": cmd_compare}[a.cmd](a)
 
 
 if __name__ == "__main__":
