@@ -2,6 +2,7 @@
 import dataclasses
 import json
 import threading
+import time
 import types
 
 import httpx
@@ -10,13 +11,13 @@ import respx
 
 from evals import craft
 from evals.core import Case
-from evals.runners import agent, repo_repair
+from evals.runners import agent, base, repair, repo_repair, text
 from evals.runners import craft as craft_runner
 from evals.runners.agent import AgentRunner
 from evals.runners.method import BestOfRunner
 from evals.runners.repair import RepairRunner
 from evals.runners.text import CompletionRunner
-from harness import batch, completion, throughput
+from harness import batch, completion, delegate, methods, throughput
 from tests.test_agent_lane import case as agent_case
 from tests.test_agent_limits import Clock, fake_chat, list_dir
 from tests.test_craft_lane_1209 import SVG as RUN_BOOK
@@ -29,13 +30,42 @@ from tests.test_repo_repair_890 import _runner as _repair_runner
 
 GW = "http://127.0.0.1:4000"
 URL = f"{GW}/v1/chat/completions"
-POLL = 0.5
+# A poll far longer than any model time, on a clock only the fakes advance, so no scheduler delay reaches a bound. #1275.
+POLL = 30.0
+MODEL_S = 0.25
 SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 2"><circle cx="1" cy="1" r="1"/></svg>'
 
 
+class FakeTime:
+    """The time module, but perf_counter and monotonic read `now` and sleep advances it."""
+
+    def __init__(self):
+        self.now, self._lock = 1000.0, threading.Lock()
+
+    def perf_counter(self):
+        return self.now
+
+    monotonic = perf_counter
+
+    def sleep(self, seconds):
+        with self._lock:
+            self.now += seconds
+
+    def __getattr__(self, name):
+        return getattr(time, name)
+
+
+#: Every module whose clock the #776 subtraction reads or starts a timer on. #1275.
+CLOCKED = (completion, base, text, repair, delegate, methods)
+
+
 @pytest.fixture(autouse=True)
-def _poll(monkeypatch):
+def clock(monkeypatch):
     monkeypatch.setattr(batch, "BUSY_POLL_S", POLL)
+    fake = FakeTime()
+    for module in CLOCKED:
+        monkeypatch.setattr(module, "time", fake)
+    return fake
 
 
 def busy():
@@ -47,13 +77,16 @@ def ok(content=SVG, tokens=200):
                                      "usage": {"prompt_tokens": 10, "completion_tokens": tokens}})
 
 
-def replies(*seq):
-    """A gateway that answers `seq` in order, whichever thread asks."""
+def replies(clock, *seq):
+    """A gateway that answers `seq` in order, whichever thread asks; an answer takes MODEL_S on `clock`."""
     left, lock = list(seq), threading.Lock()
 
     def answer(request):
         with lock:
-            return left.pop(0)()
+            got = left.pop(0)()
+        if got.status_code == 200:
+            clock.sleep(MODEL_S)
+        return got
     return answer
 
 
@@ -62,43 +95,44 @@ def svg_case():
 
 
 @respx.mock
-def test_a_completion_reports_the_busy_wait_it_sat_through():
-    respx.post(URL).mock(side_effect=replies(busy, busy, ok))
+def test_a_completion_reports_the_busy_wait_it_sat_through(clock):
+    respx.post(URL).mock(side_effect=replies(clock, busy, busy, ok))
     got = completion.complete_full("hi", model="sohot-code", gateway=GW)
-    assert got.timing["busy_wait_s"] >= 2 * POLL - 0.05
+    assert got.timing["busy_wait_s"] == 2 * POLL
 
 
 @respx.mock
-def test_a_chat_turn_reports_the_busy_wait_it_sat_through():
-    respx.post(URL).mock(side_effect=replies(busy, ok))
+def test_a_chat_turn_reports_the_busy_wait_it_sat_through(clock):
+    respx.post(URL).mock(side_effect=replies(clock, busy, ok))
     got = completion.chat([{"role": "user", "content": "hi"}], model="sohot-code", gateway=GW, stream=False)
-    assert got.timing["busy_wait_s"] >= POLL - 0.05
+    assert got.timing["busy_wait_s"] == POLL
 
 
 @respx.mock
-def test_a_completion_admitted_at_once_reports_no_busy_wait():
-    respx.post(URL).mock(side_effect=replies(ok))
+def test_a_completion_admitted_at_once_reports_no_busy_wait(clock):
+    respx.post(URL).mock(side_effect=replies(clock, ok))
     assert "busy_wait_s" not in completion.complete_full("hi", model="sohot-code", gateway=GW).timing
 
 
 @respx.mock
-def test_an_eval_row_leaves_the_busy_wait_out_of_its_seconds_and_throughput():
-    respx.post(URL).mock(side_effect=replies(busy, busy, ok))
+def test_an_eval_rows_seconds_are_its_model_time_exactly(clock):
+    respx.post(URL).mock(side_effect=replies(clock, busy, busy, ok))
     r = CompletionRunner(GW, "local-mid").run(svg_case())
     assert r.passed
-    assert r.metrics["busy_wait_s"] >= 2 * POLL - 0.05
-    assert r.seconds < POLL
-    assert r.metrics["tokens_per_s"] > 200 / POLL
+    assert r.metrics["busy_wait_s"] == 2 * POLL
+    assert r.seconds == MODEL_S
+    assert r.metrics["tokens_per_s"] == pytest.approx(200 / MODEL_S)
 
 
 @respx.mock
-def test_a_best_of_sample_that_waits_in_a_pool_thread_is_left_out_of_the_row():
-    # The first sample fails, so the next two run together in a second wave and both wait once.
-    respx.post(URL).mock(side_effect=replies(lambda: ok("I cannot draw."), busy, busy, ok, ok))
+def test_a_best_of_row_stays_under_one_poll_when_its_pool_threads_wait(clock):
+    # The first sample fails, so the next two run together in a second wave; the threads share one fake clock,
+    # so the waits' union covers both polls and the row keeps between one and three model times.
+    respx.post(URL).mock(side_effect=replies(clock, lambda: ok("I cannot draw."), busy, busy, ok, ok))
     r = BestOfRunner(CompletionRunner(GW, "local-mid"), 3, slots=3).run(svg_case())
     assert r.passed and r.metrics["method_calls"] == 3
-    assert r.metrics["busy_wait_s"] >= POLL - 0.05
-    assert r.seconds < POLL
+    assert r.metrics["busy_wait_s"] >= 2 * POLL
+    assert MODEL_S <= r.seconds <= 3 * MODEL_S < POLL
 
 
 def test_the_agent_case_deadline_is_not_spent_by_a_busy_wait(monkeypatch):
@@ -118,13 +152,14 @@ def test_the_agent_case_deadline_is_not_spent_by_a_busy_wait(monkeypatch):
 
 
 @respx.mock
-def test_a_throughput_level_leaves_the_busy_wait_out_of_its_latency_and_rate():
-    respx.post(URL).mock(side_effect=replies(ok, busy, busy, ok))
-    got = throughput.sweep("sohot-code", ["t"], levels=(1,), post=throughput._gateway_post(GW, 30.0))
+def test_a_throughput_levels_latency_and_wall_are_its_model_time_exactly(clock):
+    respx.post(URL).mock(side_effect=replies(clock, ok, busy, busy, ok))
+    got = throughput.sweep("sohot-code", ["t"], levels=(1,), post=throughput._gateway_post(GW, 30.0),
+                           clock=clock.perf_counter)
     level = got[0]
     assert level["errors"] == 0
-    assert level["busy_wait_s"] >= 2 * POLL - 0.05
-    assert level["p50_s"] < POLL and level["wall_s"] < POLL
+    assert level["busy_wait_s"] == 2 * POLL
+    assert level["p50_s"] == MODEL_S and level["wall_s"] == MODEL_S
 
 
 def _waiting(chat, clock, seconds, waited):
@@ -167,8 +202,9 @@ def test_a_repo_repair_case_deadline_and_wall_leave_out_a_busy_wait(upstream, mo
 
 
 @respx.mock
-def test_a_repair_loop_leaves_the_busy_wait_out_of_its_throughput():
-    respx.post(URL).mock(side_effect=replies(busy, ok))
+def test_a_repair_loop_leaves_the_busy_wait_out_of_its_throughput(clock):
+    respx.post(URL).mock(side_effect=replies(clock, busy, ok))
     r = RepairRunner(GW, "local-large", attempts=1).run(svg_case())
-    assert r.metrics["busy_wait_s"] >= POLL - 0.05
-    assert r.metrics["tokens_per_s"] > 200 / POLL
+    assert r.metrics["busy_wait_s"] == POLL
+    assert r.seconds == MODEL_S
+    assert r.metrics["tokens_per_s"] == pytest.approx(200 / MODEL_S)

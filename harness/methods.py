@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
@@ -300,7 +301,6 @@ def _serve_plan(parsed: Parsed, lane: str, prompt: str, ask, slots=None) -> tupl
 
 
 def _serve_best_of(parsed: Parsed, lane: str, prompt: str, ask, slots=None) -> tuple[str, dict]:
-    import time
     from harness import completion
     n = parsed.args[0]
     started = time.perf_counter()
