@@ -72,13 +72,29 @@ def test_a_lane_with_too_few_rerun_cases_keeps_the_default_effect(conn):
 
 def test_a_churn_under_the_floor_registers_the_floor(conn):
     _run(conn, "decide", "m", {f"c{i}": [True, i != 0] for i in range(40)})
+    from harness import cuts
+    effects.derive(conn, record=False)
+    cuts.flush(conn)
+    assert conn.execute("SELECT COUNT(*) FROM limit_cuts").fetchone()[0] == 0
     got = effects.derive(conn)["decide"]
     assert 0 < got["churn"] < effects.FLOOR
     assert got["effect"] == effects.FLOOR
-    from harness import cuts
     cuts.flush(conn)
     knob, what = conn.execute("SELECT knob, what FROM limit_cuts").fetchone()
     assert knob == "adopt_effect_floor" and "decide 0.0125" in what
+
+
+def test_soh_knobs_effects_reads_a_copy_and_writes_nothing_to_this_home(conn, tmp_path, capsys):
+    from harness import cli
+    _run(conn, "decide", "m", {f"c{i}": [True, i != 0] for i in range(40)})
+    copy = tmp_path / "copy.db"
+    conn.execute(f"VACUUM INTO '{copy}'")
+    assert cli.main(["knobs", "effects", "--store", str(copy)]) == 0
+    out = capsys.readouterr().out
+    assert "decide" in out and "0.0125" in out and "replay: 0 adopt verdict(s)" in out
+    from harness import cuts
+    cuts.flush(conn)
+    assert conn.execute("SELECT COUNT(*) FROM limit_cuts").fetchone()[0] == 0
 
 
 def test_the_effect_knob_registers_each_lane_effect_with_its_unit_and_range():
@@ -352,6 +368,36 @@ def test_an_unconfirmed_win_names_the_smallest_gain_its_cells_could_see():
                                        "p": pytest.approx(0.5034, abs=1e-4)}
 
 
+def test_the_smallest_gain_reads_lane_metric_draws_and_their_correlation():
+    cells = []
+    for i in range(40):
+        if i < 10:
+            cells += [_row("inc", f"d{i}#1", False, 0.0), _row("inc", f"d{i}#2", False, 1.0)]
+        else:
+            cells += [_row("inc", f"d{i}", False, 0.0 if i < 25 else 1.0)]
+    assert adopt._confirm_sees(cells, "inc", "decide") == "; smallest gain these cells could see: +0.36 per cell at power 0.8"
+    two = []
+    for i in range(40):
+        a, b = (0.0, 1.0) if i < 10 else ((0.0, 0.0) if i < 25 else (1.0, 1.0))
+        two += [_row("inc", f"d{i}#1", False, a), _row("inc", f"d{i}#2", False, b)]
+    assert power.rows_icc([{**r, "passed": power.draw(r, "decide")} for r in two], ("inc",)) == (
+        pytest.approx(0.5094, abs=1e-4), 2.0)
+    assert adopt._confirm_sees(two, "inc", "decide") == "; smallest gain these cells could see: +0.30 per cell at power 0.8"
+
+
+def test_a_confirmation_worse_on_the_lane_metric_alone_is_a_loss():
+    ids = [f"d{i}" for i in range(10)]
+    rows = [x for c in ids for x in (_row("inc", c, False, 1.0), _row("ch", c, False, 0.0))]
+    got = adopt.confirm(_plain(), rows, DECIDE)
+    assert got.failure_class == "" and "significantly worse: 10 lost against 0 gained" in got.why
+
+
+def test_a_lane_named_by_nothing_reads_screens_stored_without_one(conn):
+    _run(conn, "", "ch", {"x1": [True]}, tier="screen")
+    assert adopt.screened_cases(conn, None, ("ch",)) == frozenset({"x1"})
+    assert adopt.screened_cases(conn, "code", ("", None)) == frozenset()
+
+
 def test_only_a_measured_gate_win_is_confirmed():
     rows = _rows({"d0": (False, True)})
     hand = adopt.Verdict("code", "inc", "ch", True, "preferred by hand", adopt.BY_HAND)
@@ -373,8 +419,9 @@ def test_confirmation_cells_come_from_dev_and_a_fresh_run_of_a_lane_too_small_to
     assert "on 3 dev case(s)" in got.why
 
 
-def test_the_confirmation_job_is_the_adopt_command_and_lands_in_the_given_store(conn, monkeypatch):
+def test_the_confirmation_job_is_the_adopt_command_and_lands_in_the_given_store(conn, monkeypatch, tmp_path):
     import sys
+    monkeypatch.chdir(tmp_path)
     assert adopt.confirm_argv(12) == [sys.executable, "-m", "harness.cli", "adopt", "--confirm", "12"]
 
     def elsewhere(*a, **k):
@@ -383,8 +430,8 @@ def test_the_confirmation_job_is_the_adopt_command_and_lands_in_the_given_store(
     monkeypatch.setattr(ms, "connect", elsewhere)
     v = adopt.Verdict("code", "inc", "ch", False, "held", failure_class=reasons.CONFIRMING)
     assert adopt.queue_confirmation(conn, 12, v, now=0.0) is not None
-    row = conn.execute("SELECT title, cwd, requested_by FROM jobs").fetchone()
+    row = conn.execute("SELECT title, cwd, requested_by, not_before FROM jobs").fetchone()
     assert dict(row) == {"title": "confirm code: ch over inc on dev (verdict 12)", "cwd": str(paths.REPO),
-                         "requested_by": "adopt"}
+                         "requested_by": "adopt", "not_before": workqueue.night_start(0.0)}
     conn.execute("UPDATE jobs SET state = ?", (workqueue.DONE,))
     assert adopt.queue_confirmation(conn, 12, v, now=0.0) is not None, "a finished confirmation does not block a new one"

@@ -63,13 +63,13 @@ def effect_of(basis: dict) -> float | None:
     return max(FLOOR, math.ceil(round(float(basis["churn"]) * 100, 6)) / 100)
 
 
-def derive(conn) -> dict[str, dict]:
-    """lane -> its churn basis and the effect it gives (None: the lane keeps power.DEFAULT_EFFECT)."""
+def derive(conn, record: bool = True) -> dict[str, dict]:
+    """lane -> its churn basis and the effect it gives (None: the lane keeps power.DEFAULT_EFFECT); `record` notes the floor's cut."""
     from harness import cuts
     out = {lane: {**basis, "effect": effect_of(basis)} for lane, basis in sorted(churn(conn).items())}
     floored = [f"{lane} {d['churn']:.4f}" for lane, d in out.items()
                if d["effect"] == FLOOR and d["churn"] is not None and d["churn"] < FLOOR]
-    if floored:
+    if floored and record:
         cuts.cut("adopt_effect_floor", f"rerun churn under the floor, raised to +{FLOOR:g}: {', '.join(floored)}",
                  kept=len(out) - len(floored), dropped=len(floored))
     return out

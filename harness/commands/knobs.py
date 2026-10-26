@@ -66,7 +66,8 @@ def cmd_effects(a) -> int:
     except (OSError, FileNotFoundError) as exc:
         return err(str(exc))
     try:
-        derived = effects.derive(conn)
+        # A store named on the command line is someone's copy; this home's cut log is not its record.
+        derived = effects.derive(conn, record=not a.store)
         want = {lane: d["effect"] for lane, d in derived.items() if d["effect"] is not None}
         replayed = effects.replay(conn, want)
     finally:
