@@ -1,0 +1,288 @@
+"""Per-lane effect from same-config rerun churn, and a dev confirmation before a gate win serves. #725."""
+import argparse
+import json
+import time
+
+import pytest
+
+from harness import adopt, effects, holdout, knobs, power, reasons
+from harness import memory_store as ms
+from harness import paths, screen, workqueue
+from harness.commands import adopt as adopt_cmd
+from harness.commands import measure as measure_cmd
+
+FAKE_MACHINE = {"fingerprint": "test/rig", "hw_model": "", "os": "", "arch": "",
+                "memory_gb": 0.0, "accelerator": "", "runtimes": "", "ceiling_gb": 0.0}
+
+
+@pytest.fixture
+def conn(tmp_path, monkeypatch):
+    monkeypatch.setenv(paths.ENV_VAR, str(tmp_path))
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", FAKE_MACHINE)
+    real = ms.connect
+    monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
+    c = ms.connect()
+    yield c
+    c.close()
+
+
+def _run(c, lane, key, draws, *, tier="measure", budget=4096, path=None):
+    """One stored run of `key`: draws is case -> list of pass bits, one per repeat."""
+    rid = c.execute("INSERT INTO runs (path, lane, tier, receipt, recorded_at) VALUES (?,?,?,?,?)",
+                    (path or f"r{time.monotonic_ns()}", lane, tier,
+                     json.dumps({"modality": lane, "max_tokens": budget}), time.time())).lastrowid
+    seq = 0
+    for case, bits in draws.items():
+        for k, bit in enumerate(bits, 1):
+            seq += 1
+            c.execute("INSERT INTO results (run_id, seq, candidate, case_id, repeat_index, passed) "
+                      "VALUES (?,?,?,?,?,?)", (rid, seq, key, case if len(bits) == 1 else f"{case}#{k}", k, int(bit)))
+    c.commit()
+    return rid
+
+
+# --- the effect ------------------------------------------------------------
+
+def test_rerun_churn_is_the_share_of_cells_a_same_config_rerun_flips(conn):
+    cases = [f"c{i}" for i in range(40)]
+    _run(conn, "code", "m", {c: [True] for c in cases})
+    _run(conn, "code", "m", {c: [i >= 8] for i, c in enumerate(cases)})
+    got = effects.churn(conn)["code"]
+    assert got["cases"] == 40 and got["configs"] == 1
+    assert got["churn"] == pytest.approx(0.1)
+    assert effects.effect_of(got) == pytest.approx(0.1)
+
+
+def test_draws_under_different_configs_are_not_pooled_as_reruns(conn):
+    cases = [f"c{i}" for i in range(40)]
+    _run(conn, "code", "m", {c: [True] for c in cases}, budget=4096)
+    _run(conn, "code", "m", {c: [False] for c in cases}, budget=8192)
+    _run(conn, "code", "other", {c: [False] for c in cases}, budget=4096)
+    assert effects.churn(conn).get("code", {}).get("cases", 0) == 0
+
+
+def test_a_lane_with_too_few_rerun_cases_keeps_the_default_effect(conn):
+    _run(conn, "tts", "m", {f"c{i}": [True, False] for i in range(effects.MIN_CASES - 1)})
+    got = effects.derive(conn)["tts"]
+    assert got["cases"] == effects.MIN_CASES - 1
+    assert got["effect"] is None
+    _run(conn, "tts", "m", {"extra": [True, True]})
+    assert effects.derive(conn)["tts"]["effect"] is not None
+
+
+def test_a_churn_under_the_floor_registers_the_floor(conn):
+    _run(conn, "decide", "m", {f"c{i}": [True, i != 0] for i in range(40)})
+    got = effects.derive(conn)["decide"]
+    assert 0 < got["churn"] < effects.FLOOR
+    assert got["effect"] == effects.FLOOR
+    from harness import cuts
+    cuts.flush(conn)
+    knob, what = conn.execute("SELECT knob, what FROM limit_cuts").fetchone()
+    assert knob == "adopt_effect_floor" and "decide 0.0125" in what
+
+
+def test_the_effect_knob_registers_each_lane_effect_with_its_unit_and_range():
+    k = knobs.KNOBS["adopt_effect"]
+    assert k.unit == "share"
+    assert power.EFFECT, "the per-lane effects are registered"
+    for lane, value in power.EFFECT.items():
+        assert value >= effects.FLOOR
+        assert k.default(lane) == value == power.effect_for(lane)
+        assert value in k.values_for(lane), lane
+    assert power.effect_for("no-such-lane") == power.DEFAULT_EFFECT
+    for name in ("adopt_effect_floor", "adopt_effect_min_cases"):
+        assert name in knobs.KNOBS
+
+
+@pytest.mark.gauntlet("a-closed-table-fronting-an-open-set", site="harness/power.py:EFFECT")
+def test_a_lane_the_effect_table_does_not_name_plans_at_the_default():
+    from harness import lanes
+    assert set(power.EFFECT) <= set(lanes.ALL)
+    for lane in set(lanes.ALL) - set(power.EFFECT):
+        assert power.effect_for(lane) == power.DEFAULT_EFFECT
+    assert power.effect_for(" Code ") == power.EFFECT["code"]
+
+
+def _verdict(c, lane, outcome, detail, failure_class="", plan=None, name="org/x"):
+    ms.record(c, ms.Seen(name=name, source="test", lane=lane))
+    vid = ms.decide(c, name, outcome, tier=ms.ADOPT, detail=detail, reason=reasons.LIMIT if failure_class else reasons.CANDIDATE)
+    c.execute("UPDATE verdicts SET failure_class = ?, power = ? WHERE id = ?",
+              (failure_class, json.dumps(plan or {}), vid))
+    c.commit()
+    return vid
+
+
+def test_replay_names_a_powered_null_that_a_smaller_effect_makes_underpowered(conn):
+    null = _verdict(conn, "code", "declined", "code: better on the metric, but 3 lost against 5 gained is p=0.73",
+                    plan={"effect": 0.2, "mde": 0.15, "enough": True, "target": 0.8, "power": 0.9}, name="org/a")
+    worse = _verdict(conn, "code", "declined", "code: does not beat the incumbent; significantly worse: 9 lost",
+                     plan={"effect": 0.2, "mde": 0.15, "enough": True, "target": 0.8}, name="org/b")
+    won = _verdict(conn, "svg", "measured", "svg: beats local-large on the lane's metric, 8 gained against 0 lost",
+                   name="org/c")
+    same = {r["id"]: r for r in effects.replay(conn, {"code": 0.2})}
+    assert same[null]["replayed"] == same[null]["stored"] == "candidate"
+    got = {r["id"]: r for r in effects.replay(conn, {"code": 0.1})}
+    assert (got[null]["stored"], got[null]["replayed"]) == ("candidate", reasons.UNDERPOWERED)
+    assert got[worse]["replayed"] == "candidate"
+    assert (got[won]["stored"], got[won]["replayed"]) == ("adopted", reasons.CONFIRMING)
+
+
+def test_the_power_header_names_each_lanes_effect(conn, monkeypatch, capsys):
+    monkeypatch.setattr(power, "EFFECT", {"code": 0.06})
+    monkeypatch.setattr(holdout, "splits", lambda root=None: {"code": holdout.Split("code", ("d1",), ("h1",), False)})
+    monkeypatch.setattr(adopt_cmd, "_profile", lambda lane, receipts, conn: ("k", "s", {}, None, (0, ()), []))
+    monkeypatch.setattr(power, "pair_cost", lambda *a, **k: (None, 2, {}))
+    monkeypatch.setattr(adopt, "comparisons", lambda conn, lane, version: 0)
+    adopt_cmd.cmd_power(argparse.Namespace(lane="code", receipt=None, challenger="", effect=None,
+                                           power_budget_min=None))
+    head = capsys.readouterr().out.splitlines()[0]
+    assert "+0.20" not in head
+    assert "each lane's effect" in head
+
+
+# --- the confirmation ------------------------------------------------------
+
+SPLIT = holdout.Split("code", dev=tuple(f"d{i}" for i in range(10)), holdout=("h1", "h2", "h3"), too_small=False)
+
+
+def _rows(cells, inc="inc", ch="ch"):
+    """cells: case -> (incumbent passed, challenger passed)."""
+    out = []
+    for case, (i, c) in cells.items():
+        out.append({"candidate": inc, "case_id": case, "passed": i, "seconds": 1.0, "metrics": {}})
+        out.append({"candidate": ch, "case_id": case, "passed": c, "seconds": 1.0, "metrics": {}})
+    return out
+
+
+def _won(lane="code"):
+    return adopt.Verdict(lane, "inc", "ch", True, "beats inc on the lane's metric, 3 gained against 0 lost, p=0.01",
+                         evidence={"split": SPLIT.as_dict()})
+
+
+def test_a_holdout_win_whose_dev_cells_confirm_it_is_adopted():
+    rows = _rows({**{f"d{i}": (False, True) for i in range(8)}, "d8": (True, True), "d9": (True, True)})
+    got = adopt.confirm(_won(), rows, SPLIT)
+    assert got.adopt, got.why
+    assert "confirmed on 10 dev case(s): 8 gained against 0 lost" in got.why
+    assert got.evidence["confirm"]["gained"] == 8
+
+
+def test_a_holdout_win_that_dev_does_not_confirm_is_not_served():
+    tie = _rows({**{f"d{i}": (False, True) for i in range(3)}, **{f"d{i}": (True, False) for i in range(3, 4)},
+                 **{f"d{i}": (True, True) for i in range(4, 10)}})
+    got = adopt.confirm(_won(), tie, SPLIT)
+    assert not got.adopt
+    assert got.failure_class == reasons.UNDERPOWERED, got.why
+    assert "not confirmed on 10 dev case(s): 3 gained against 1 lost" in got.why and "detectable" in got.why
+    worse = _rows({f"d{i}": (True, False) for i in range(10)})
+    got = adopt.confirm(_won(), worse, SPLIT)
+    assert not got.adopt and got.failure_class == ""
+    assert "significantly worse" in got.why
+    assert adopt.outcome_of(got) == ("declined", reasons.CANDIDATE)
+
+
+def test_cases_the_challenger_was_screened_on_are_not_confirmation_cells(conn):
+    rows = _rows({**{f"d{i}": (False, True) for i in range(8)}, "d8": (True, True), "d9": (True, True)})
+    _run(conn, "code", "ch", {f"d{i}": [True] for i in range(8)}, tier="screen")
+    _run(conn, "code", "ch", {"d9": [True]}, tier="measure")
+    _run(conn, "code", "inc", {"d8": [True]}, tier="screen")
+    seen = adopt.screened_cases(conn, "code", ("ch",))
+    assert seen == frozenset(f"d{i}" for i in range(8))
+    cells = adopt.confirmation_cells(rows, SPLIT, seen)
+    assert {holdout.base_id(r["case_id"]) for r in cells} == {"d8", "d9"}
+    got = adopt.confirm(_won(), rows, SPLIT, seen)
+    assert not got.adopt and "not confirmed on 2 dev case(s)" in got.why
+
+
+def test_a_holdout_win_with_no_dev_rows_is_held_and_queues_a_night_confirmation(conn, tmp_path):
+    rows = _rows({"h1": (False, True), "h2": (False, True), "h3": (False, True)})
+    got = adopt.confirm(_won(), rows, SPLIT)
+    assert not got.adopt and got.failure_class == reasons.CONFIRMING
+    assert adopt.outcome_of(got) == ("declined", reasons.LIMIT)
+    small = holdout.Split("svg", ("a", "b", "c"), ("a", "b", "c"), True)
+    assert adopt.confirm(_won("svg"), _rows({"a": (False, True)}), small).failure_class == reasons.CONFIRMING
+    got = adopt.Verdict(got.lane, got.incumbent, got.challenger, got.adopt, got.why, got.how, got.failure_class,
+                        {**got.evidence, "confirm": {**got.evidence["confirm"], "incumbent": "inc-spec",
+                                                      "challenger": "org/x", "repeat": 1}})
+    ms.record(conn, ms.Seen(name="org/x", source="test", lane="code"))
+    now = time.time()
+    measure_cmd._record(got, "org/x", None, tmp_path / "no-run")
+    vid = conn.execute("SELECT MAX(id) FROM verdicts").fetchone()[0]
+    assert conn.execute("SELECT COUNT(*) FROM adoptions").fetchone()[0] == 0
+    jobs = workqueue.pending(conn)
+    assert len(jobs) == 1
+    job = conn.execute("SELECT argv, not_before, night_gate FROM jobs").fetchone()
+    assert json.loads(job["argv"])[-2:] == ["--confirm", str(vid)]
+    assert job["night_gate"] == 1
+    assert job["not_before"] == pytest.approx(workqueue.night_start(now), abs=5)
+    adopt.queue_confirmation(conn, vid, got)
+    assert conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0] == 1
+
+
+def _confirming(conn, tmp_path, monkeypatch, incumbent="inc-spec"):
+    rows = _rows({"h1": (False, True), "h2": (False, True), "h3": (False, True)})
+    held = adopt.confirm(_won(), rows, SPLIT, frozenset({"d0"}))
+    held = adopt.Verdict(held.lane, held.incumbent, held.challenger, False, held.why, held.how, held.failure_class,
+                         {**held.evidence, "confirm": {**held.evidence["confirm"], "incumbent": incumbent,
+                                                        "challenger": "org/x", "repeat": 1}})
+    ms.record(conn, ms.Seen(name="org/x", source="test", lane="code"))
+    monkeypatch.setattr(adopt, "queue_confirmation", lambda *a, **k: None)
+    measure_cmd._record(held, "org/x", None, tmp_path / "no-run")
+    monkeypatch.setattr(holdout, "for_lane", lambda lane, root=None: SPLIT)
+    monkeypatch.setattr(adopt, "default_for", lambda lane, fallback, conn=None: "inc-spec")
+    monkeypatch.setattr(screen, "candidate_for", lambda lane, name: name)
+    return conn.execute("SELECT MAX(id) FROM verdicts").fetchone()[0]
+
+
+def _fake_run(monkeypatch, cells, seen):
+    class Done:
+        returncode = 0
+        stderr = ""
+
+    def launch(argv, **kw):
+        seen["argv"] = argv
+        return Done()
+
+    rows = _rows(cells, inc="inc-key", ch="ch-key")
+    for r in rows:
+        r["candidate"] = r["candidate"]
+    summary = {k: {"passed": sum(r["passed"] for r in rows if r["candidate"] == k), "total": len(cells),
+                   "pass_rate": 0.5, "median_s": 1.0, "metrics": {}} for k in ("inc-key", "ch-key")}
+    monkeypatch.setattr(measure_cmd, "_launch", launch)
+    monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: {
+        "specs": {"inc-key": "inc-spec", "ch-key": "org/x"}, "summary": summary, "rows": rows})
+
+
+def test_the_confirmation_job_adopts_when_dev_confirms_the_win(conn, tmp_path, monkeypatch):
+    vid = _confirming(conn, tmp_path, monkeypatch)
+    seen = {}
+    _fake_run(monkeypatch, {**{f"d{i}": (False, True) for i in range(9)}, "d9": (True, True)}, seen)
+    assert adopt_cmd.cmd_adopt(argparse.Namespace(power=False, from_measurement=False, confirm=vid)) == 0
+    argv = seen["argv"]
+    assert argv[argv.index("--split") + 1] == "dev"
+    assert argv[argv.index("--candidates") + 1] == "inc-spec,org/x"
+    row = conn.execute("SELECT outcome, detail FROM verdicts ORDER BY id DESC LIMIT 1").fetchone()
+    assert row["outcome"] == "measured", row["detail"]
+    assert "confirmed on 9 dev case(s)" in row["detail"]
+    assert conn.execute("SELECT COUNT(*) FROM adoptions WHERE lane = 'code'").fetchone()[0] == 1
+
+
+def test_the_confirmation_job_declines_when_dev_shows_the_challenger_worse(conn, tmp_path, monkeypatch):
+    vid = _confirming(conn, tmp_path, monkeypatch)
+    _fake_run(monkeypatch, {f"d{i}": (True, False) for i in range(10)}, {})
+    assert adopt_cmd.cmd_adopt(argparse.Namespace(power=False, from_measurement=False, confirm=vid)) == 0
+    row = conn.execute("SELECT outcome, reason, detail FROM verdicts ORDER BY id DESC LIMIT 1").fetchone()
+    assert (row["outcome"], row["reason"]) == ("declined", reasons.CANDIDATE), row["detail"]
+    assert "significantly worse" in row["detail"]
+    assert conn.execute("SELECT COUNT(*) FROM adoptions").fetchone()[0] == 0
+
+
+def test_a_confirmation_against_a_changed_incumbent_records_nothing(conn, tmp_path, monkeypatch, capsys):
+    vid = _confirming(conn, tmp_path, monkeypatch, incumbent="older-spec")
+    seen = {}
+    _fake_run(monkeypatch, {f"d{i}": (False, True) for i in range(10)}, seen)
+    before = conn.execute("SELECT COUNT(*) FROM verdicts").fetchone()[0]
+    assert adopt_cmd.cmd_adopt(argparse.Namespace(power=False, from_measurement=False, confirm=vid)) == 0
+    assert "argv" not in seen
+    assert conn.execute("SELECT COUNT(*) FROM verdicts").fetchone()[0] == before
+    assert "no longer serves older-spec" in capsys.readouterr().out

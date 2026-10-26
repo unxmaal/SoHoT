@@ -124,7 +124,9 @@ def _settled(conn):
     return dict(conn.execute("SELECT * FROM knob_sweeps ORDER BY id DESC").fetchone())
 
 
-def test_the_cheapest_value_tied_with_the_best_is_chosen_and_its_cost_recorded(conn, serving):
+def test_the_cheapest_value_tied_with_the_best_is_chosen_and_its_cost_recorded(conn, serving, monkeypatch):
+    from harness import power
+    monkeypatch.setattr(power, "EFFECT", {})
     binding_budget(conn)
     sweeps.check(conn, now=NOW)
     # 60 cases: enough power to call one lost case a tie at the default effect (#690).

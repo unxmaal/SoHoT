@@ -11,9 +11,11 @@ DAY = 86400.0
 def add_parser(sub) -> None:
     p = sub.add_parser("knobs", help="the knob backlog: unregistered gating sites, the ones this branch added, "
                        "and with --by-binding how often a stored reason quotes each one's limit")
-    p.add_argument("action", choices=("backlog", "engine-timeouts"),
-                   help="backlog, or engine-timeouts: each engine's slowest finished case per machine, the clock "
-                        "derived from it and how many stored cases each margin would have cut (#708)")
+    p.add_argument("action", choices=("backlog", "effects", "engine-timeouts"),
+                   help="backlog; effects: each lane's same-config rerun churn, the adopt effect derived from it "
+                        "against the registered one, and every stored adopt verdict replayed under it (#725); or "
+                        "engine-timeouts: each engine's slowest finished case per machine, the clock derived from "
+                        "it and how many stored cases each margin would have cut (#708)")
     p.add_argument("--by-binding", action="store_true",
                    help="rank the sites by waiting, skipped and declined verdicts a reason quoting them wrote")
     p.add_argument("--store", default="", help="a discovery.db to read read-only (default: a copy of this home's)")
@@ -57,9 +59,44 @@ def cmd_engine_timeouts(a) -> int:
     return 0
 
 
+def cmd_effects(a) -> int:
+    from harness import effects, power
+    try:
+        conn = _connect(a.store)
+    except (OSError, FileNotFoundError) as exc:
+        return err(str(exc))
+    try:
+        derived = effects.derive(conn)
+        want = {lane: d["effect"] for lane, d in derived.items() if d["effect"] is not None}
+        replayed = effects.replay(conn, want)
+    finally:
+        conn.close()
+    note(f"effect = the share of cells a same-config rerun flips each way, rounded up to 0.01, never under "
+         f"{effects.FLOOR:g}; under {effects.MIN_CASES} cases measured twice keeps {power.DEFAULT_EFFECT:g}")
+    note(f"\n{'lane':<10} {'configs':>7} {'cases':>6} {'churn':>7} {'derived':>8} {'registered':>10}")
+    drift = []
+    for lane, d in derived.items():
+        churn = "-" if d["churn"] is None else f"{d['churn']:.4f}"
+        got = power.effect_for(lane)
+        if (d["effect"] if d["effect"] is not None else power.DEFAULT_EFFECT) != got:
+            drift.append(lane)
+        note(f"{lane:<10} {d['configs']:>7} {d['cases']:>6} {churn:>7} "
+             f"{'-' if d['effect'] is None else format(d['effect'], '.2f'):>8} {got:>10.2f}"
+             + ("  differs" if lane in drift else ""))
+    changed = [r for r in replayed if r["replayed"] != r["stored"]]
+    note(f"\nreplay: {len(replayed)} adopt verdict(s), {len(changed)} change under the derived effects and the "
+         f"dev confirmation")
+    for r in changed:
+        note(f"  {r['id']:>6} {r['lane']:<9} {r['stored']} -> {r['replayed']}: {r['why']}")
+    emit(floor=effects.FLOOR, min_cases=effects.MIN_CASES, lanes=derived, drift=drift, replay=replayed)
+    return 0
+
+
 def cmd_knobs(a) -> int:
     if a.action == "engine-timeouts":
         return cmd_engine_timeouts(a)
+    if a.action == "effects":
+        return cmd_effects(a)
     from harness import knob_backlog as kb
     base = a.base or kb.BASE
     sites = kb.sites()

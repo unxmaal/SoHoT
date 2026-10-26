@@ -20,7 +20,8 @@ TARGET = 0.8
 #: The most repeats the adopt command and the discover loop will spend.
 CAP = 16
 #: The smallest change in per-cell pass rate worth adopting for, per lane.
-EFFECT = {}
+EFFECT = {"claims": 0.05, "code": 0.06, "decide": 0.05, "extract": 0.05, "ocr": 0.05, "pii": 0.05, "repo": 0.16,
+          "retrieval": 0.05, "stt": 0.06, "svg": 0.12, "web": 0.05}
 DEFAULT_EFFECT = 0.2
 #: Pass rate assumed for a case the incumbent has no stored rows for.
 UNSEEN = 0.5
