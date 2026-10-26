@@ -19,6 +19,8 @@ def _run_name(run: Path) -> str:
 
 def cmd_adopt(a) -> int:
     """The discovery loop's paired measure-and-adopt, for a named challenger."""
+    if getattr(a, "confirm", None) is not None:
+        return measure_cmd.confirm_job(a.confirm)
     if getattr(a, "power", False):
         return cmd_power(a)
     if getattr(a, "from_measurement", False):
@@ -160,16 +162,17 @@ def cmd_power(a) -> int:
                 "why": plan.why})
     finally:
         conn.close()
-    effect = getattr(a, "effect", None) or power.DEFAULT_EFFECT
-    note(f"power to detect +{effect:.2f} per cell at alpha {power._alpha()}, "
+    effect = getattr(a, "effect", None)
+    wanted = f"+{effect:.2f}" if effect else "each lane's effect"
+    note(f"power to detect {wanted} per cell at alpha {power._alpha()}, "
          f"target {power.TARGET}, repeat cap {power.CAP}, budget {_hm(budget)}; "
          f"the case is the unit when repeats correlate (rho)")
     for r in rows:
         rho = (f"rho {r['rho']:.2f}" + ("" if r["rho_measured"] else " assumed"))
         if r["enough"]:
-            head = f"repeat {r['repeat']} -> power {r['power']:.2f}"
+            head = f"+{r['effect']:.2f}: repeat {r['repeat']} -> power {r['power']:.2f}"
         else:
-            head = f"no repeat reaches {power.TARGET} (best {r['power']:.2f} at repeat {r['repeat']})"
+            head = f"+{r['effect']:.2f}: no repeat reaches {power.TARGET} (best {r['power']:.2f} at repeat {r['repeat']})"
         need = ("saturated" if r["cases_needed"] is None and not r["enough"]
                 else f"{r['cases_needed']} holdout needed, "
                      f"{r['more_holdout']} more holdout")
