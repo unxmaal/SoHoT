@@ -7,7 +7,7 @@ import time
 from harness import memory_store as ms
 
 #: Bumped whenever the document's shape changes; tests/test_lane_feed.py pins the shape per version.
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 #: Verdicts from the screen tier on are findings; inspect, judge and fetch come before a candidate exists.
 FINDING_TIERS = tuple(t for t in ms.TIERS if ms.LADDER[t] >= ms.LADDER[ms.SCREEN])
 STATUSES = ("adopted", "rejected", "measured", "screened", "pending")

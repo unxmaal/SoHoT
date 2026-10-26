@@ -234,7 +234,7 @@ def _shape(value):
 
 
 #: Recorded per SCHEMA_VERSION. A change here without a new version is a breaking change for Kubrick.
-SHAPES = {1: "ba68fa0b"}
+SHAPES = {1: "ba68fa0b", 2: "f899176d"}
 
 
 def test_schema_version_is_pinned_to_the_documents_shape(store):
