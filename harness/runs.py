@@ -303,15 +303,15 @@ def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
 
 
 def grade_cut_rows(conn) -> int:
-    """Give every stored reply cut before grading its lane's graded-failure metrics; the rows changed. #1113."""
+    """Give every stored reply that failed before grading its lane's graded-failure metrics; the rows changed. #1113, #1302."""
     from evals.core import GRADED_FAILURE, as_graded
-    lanes, cut = tuple(GRADED_FAILURE), reasons.CUT
+    lanes, never = tuple(GRADED_FAILURE), reasons.NEVER_RAN
     if not lanes:
         return 0
     got = conn.execute(
         "SELECT x.id, x.metrics, x.failure_class, r.lane FROM results x JOIN runs r ON r.id = x.run_id "
-        f"WHERE x.passed = 0 AND r.lane IN ({','.join('?' * len(lanes))}) "
-        f"AND x.failure_class IN ({','.join('?' * len(cut))})", (*lanes, *cut)).fetchall()
+        f"WHERE x.passed = 0 AND r.lane IN ({','.join('?' * len(lanes))}) AND x.failure_class <> '' "
+        f"AND x.failure_class NOT IN ({','.join('?' * len(never))})", (*lanes, *never)).fetchall()
     changed = 0
     for r in got:
         before = json.loads(r["metrics"] or "{}")
