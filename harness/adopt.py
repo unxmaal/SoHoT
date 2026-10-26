@@ -426,6 +426,11 @@ def _gates(lane, name_i, name_c, incumbent, challenger, rows, alpha: float = ALP
         return Verdict(lane, name_i, name_c, False,
                        f"{name_i} and {name_c} share no case in this run, so "
                        f"there is nothing to compare")
+    if cell.gained <= cell.lost:
+        # A two-sided test calls a difference either way significant; only a gain adopts. #1302.
+        return Verdict(lane, name_i, name_c, False,
+                       f"better on the metric, but the paired cells do not favour it: {cell.lost} lost "
+                       f"against {cell.gained} gained{shrunk}")
     if p > alpha:
         return Verdict(lane, name_i, name_c, False,
                        f"better on the metric, but {cell.lost} lost against "
@@ -493,7 +498,7 @@ def confirm(verdict: Verdict, rows, split, screened=frozenset(), *, fresh: bool 
     head = (f"{cases} dev case(s): {cell.gained} gained against {cell.lost} lost, p={p:.3f}"
             f"{f' ({shrunk})' if shrunk else ''}")
     inc, ch = _summary(cells, name_i), _summary(cells, name_c)
-    if inc and ch and better(inc, ch, lane) and p <= ALPHA:
+    if inc and ch and better(inc, ch, lane) and cell.gained > cell.lost and p <= ALPHA:
         return replace(verdict, why=f"{verdict.why}; confirmed on {head}", evidence=evidence)
     worse = _worse(cells, name_i, name_c, lane)
     if worse:

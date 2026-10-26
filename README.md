@@ -293,6 +293,12 @@ python -m harness.publish render --data <dir of machine JSON> --out /tmp/site
 python -m harness.privacy --files /tmp/site      # a directory means every file under it
 ```
 
+The tracker is published too. `python -m harness.privacy --github` scans every issue, PR and comment, and
+`--history N...` scans every earlier revision of those issues and their comments, which GitHub keeps showing
+after a scrub. Post through `python -m harness.privacy gh issue comment 12 --body-file body.md` (any `gh issue`
+or `gh pr` command): it sends nothing when the title or body matches. `python -m harness.privacy add NAME`
+registers a name in the home's `private-names.txt`, which every checkout and worktree on the machine reads.
+
 The front page's "How it works" diagram is drawn from
 `harness/how-it-works.workflow.json`, a workflow model in the format of
 [Archify](https://github.com/tt-a1i/archify). Every box cites the code it stands
@@ -1903,6 +1909,13 @@ null below power 0.8 reads underpowered, never no effect. `soh repo-report
 [RUN] --plan --effect D` sizes a run first. The planted `skill:no-change` is the
 known-answer control: it must score below `none`, and its placebo must not.
 
+`soh repo-route --local RUN --cloud RUN [--agentic RUN]` scores routing policies
+on stored rows only, read-only: never-route and always-route (which must equal
+their executors), the oracle ceiling, and cascades that escalate when the
+applicability gate fails (the patch does not apply, or pass_to_pass breaks),
+with cloud calls, local seconds, over-routes, under-routes and accepted-wrong
+answers. It also labels each prompt with the deterministic tool it asks for.
+
 `leetcode` (code lane) imports LeetCodeDataset (Apache-2.0) at a pinned
 revision: its whole temporal test split, items dated 2024-08 to 2025-03, plus
 train items dated 2024 or later, read from the file's tail by a byte range.
@@ -2425,6 +2438,25 @@ venv of their own (`venvs/shots`), built on first use.
 
     uv run python -m evals.run --modality shots \
       --candidates transnetv2:cpu,transnetv2:mps,scenedetect:adaptive,scenedetect:content
+
+The vision lane asks for the shot scale of a film frame (ECU, CU, MCU, MS, MLS,
+LS, ELS) and scores the answers against human labels from CineScale (Savardi et
+al., Mendeley Data, DOI 10.17632/th46h4vdwd.1, CC BY 4.0) with linearly weighted
+kappa. The frames come from this machine's own copies and never leave its home:
+`soh vision import` aligns one copy to its label file (whole film and each half
+must agree on speed and offset), refuses a pair of films whose labels fit each
+other's picture, draws frames off cuts and freezes them by digest, and adds the
+files' titles and folder to the home's `private-names.txt`, which the privacy
+scan and the export refuse. Every run permutes the true labels within each film
+and is discarded when the answers still agree with them (`vision_control_max_kappa`).
+`soh vision probe` is the reference row: DINOv2-small features and a
+leave-one-film-out linear probe, with its own control trained on shuffled
+labels. Only `evals/cases/vision/`, a drawn stand-in, ships.
+
+    soh vision import --labels <CineScale csv> --source <local copy> --film film-a
+    soh vision probe
+    soh vision run --candidate hf-vlm:Qwen/Qwen2.5-VL-3B-Instruct
+    soh vision report
 
 The ocr lane reads text out of an image. Its eight cases under
 `evals/cases/ocr/` are PNGs rendered by `uv run python -m evals.ocr_corpus`

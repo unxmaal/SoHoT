@@ -1,6 +1,7 @@
 """#771: the loop's fetch step beats from the bytes a download writes, so a long download is not stalled."""
 import os
 import threading
+import time
 import types
 
 import pytest
@@ -80,7 +81,8 @@ def test_a_preallocated_file_is_not_progress(clock, monkeypatch):
 
 def _until_beat(before, ready):
     """Wait for the watcher thread's beat after `before`, then let the fake download return."""
-    for _ in range(500):
+    end = time.monotonic() + 60  # a deadline only a hung watcher reaches; a loaded make check took over 5 s. #1303.
+    while time.monotonic() < end:
         b = hb.read()
         if b.get("updated", 0) > before and b.get("landed"):
             ready.set()

@@ -14,7 +14,7 @@ KNOBS = [
        unit="share", grades=True,
        note="CER an ocr case passes at, written into each case (#701); noise floor of Vision (macOS 27.0.1) on 464 "
             "clean renders, 440 of them planted plain (job 0159): 0.0 (1-15 chars), 0.08 (16-30), 0.043 (31+), so 0.1 "
-            "is the derived value (`soh floors`, #730)"),
+            "is the derived value; same-config rerun (job 0164) changed 0 of 464 (`soh floors`, #730)"),
     _k("pii_no_pii_share", ["evals/importers/pii_synth.py:NO_PII_SHARE"], [0.1, 0.2, 0.3],
        note="share of generated pii cases holding no PII, the control a redactor must leave unchanged (#610)"),
     _k("squad2_cases", ["evals/importers/squad2_check.py:N", "evals/importers/squad2_extract.py:N"], [220, 440, 880],
@@ -27,12 +27,14 @@ KNOBS = [
        unit="share", grades=True,
        note="per-utterance WER a LibriSpeech case passes at, written into each case (#701); noise floor of whisper-large-v3 "
             "on all 480 clips (job 0155) under normaliser 2 (#1266): 0.167 (1-10 words), 0.125 (11-17), 0.111 (18+), "
-            "so 0.2 is the derived value; normaliser 1 gave 0.25 (`soh floors`, #730)"),
+            "so 0.2 is the derived value; normaliser 1 gave 0.25; same-config rerun (job 0162) changed 0 of 480 "
+            "(`soh floors`, #730)"),
     _k("tts_max_wer", ["evals/importers/tts_synth.py:MAX_WER"], [0.1, 0.2, 0.3],
        unit="share", grades=True,
        note="read-back WER a generated tts case passes at, joint with the ear (#701); noise floor of Kokoro bm_george "
             "through the parakeet-v2 ear (mlx-audio 0.5.3) on 222 sentences without a 4-digit count (job 0157): 0.125 "
-            "(1-17 words), 0.111 (18+), so 0.2 is the derived value (`soh floors`, #730)"),
+            "(1-17 words), 0.111 (18+), so 0.2 is the derived value; same-config rerun (job 0163) changed 1 of 222 by "
+            "one word (tts-synth-0419) (`soh floors`, #730)"),
 ]
 
 NOT_GATING = {

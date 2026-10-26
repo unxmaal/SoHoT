@@ -48,9 +48,9 @@ def test_a_model_that_reproduces_clean_passages_raises_the_derived_hit_for_every
 
 
 def test_canon_sensitivity_is_reported_at_the_derived_hit(store):
-    _sets(store, "m", [0.0] * 20, [1.0] * 10 + [0.25] * 5 + [0.0] * 5)
-    m = _model(ct.calibrate(store, share=0.95, min_passages=10, values=(0.25, 0.5)), "m")
-    assert m["derived"] == 0.25 != ct.HIT and m["sensitivity"] == 0.75
+    _sets(store, "m", [0.0] * 20, [1.0] * 10 + [0.125] * 5 + [0.0] * 5)
+    m = _model(ct.calibrate(store, share=0.95, min_passages=10, values=(0.125, 0.5)), "m")
+    assert m["derived"] == 0.125 != ct.HIT and m["sensitivity"] == 0.75
 
 
 def test_the_clean_quantile_rounds_up_so_no_more_than_the_share_falls_above_it(store):

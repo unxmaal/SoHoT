@@ -106,6 +106,10 @@ PEFT_PIN="peft==0.21.0"
 # The version the live venv held when nimble-venv.sh still installed it unpinned. #1037.
 HUGGINGFACE_HUB_PIN="huggingface-hub==1.33.0"
 
+# The vision lane's mlx-vlm labeller (#1282), built by scripts/mlx-vlm-venv.sh.
+MLX_VLM_PIN="mlx-vlm==0.7.10"
+MLX_VLM_MLX_PIN="mlx==0.32.4"
+
 # The decide lane's decider engine (#467), built by scripts/decider-venv.sh.
 # PyPI 0.1.0 lacks the mlx extra, so it installs from a clone at this commit.
 DECIDER_REPO_URL="https://github.com/strands-labs/strands-decider.git"

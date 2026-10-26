@@ -269,3 +269,19 @@ def cmd_repo_report(a) -> int:
     note(repo_report.text(got))
     emit(True, **got)
     return 0
+
+
+def cmd_repo_route(a) -> int:
+    """Routing policies scored offline over stored repo runs, apart from executor results. #891."""
+    import sqlite3
+
+    from evals import repo_routing
+    from harness.commands.common import emit, err, note
+    try:
+        got = repo_routing.run({"local": a.local_run, "agentic": a.agentic, "cloud": a.cloud},
+                               store=a.store or None, cases_dir=a.cases or None)
+    except (repo_routing.Refused, OSError, sqlite3.Error) as exc:
+        return err(f"repo route refused: {exc}")
+    note(repo_routing.text(got))
+    emit(True, **got)
+    return 0

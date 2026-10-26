@@ -674,10 +674,39 @@ def benchmarks(machines: list[dict], now: float | None = None) -> str:
                          f'{how}</p>')
         wins.append(window(_esc(n), "".join(parts), tints[i % len(tints)],
                            attrs=f' id="lane-{_esc(n)}"'))
+    shots = _vision_window(machines)
+    if shots:
+        wins.append(shots)
     rest = (window("Not measured yet", "<p>No published measure run for: "
                    + ", ".join(_esc(n) for n in waiting) + ".</p>", "coral")
             if waiting and machines else "")
     return page("SoHoT benchmarks", intro + "".join(wins) + rest, 1, "benchmarks/", now)
+
+
+def _vision_window(machines: list[dict]) -> str:
+    """The vision lane's newest run per candidate per machine, scores only, with the labels' credit. #1207."""
+    parts, credit = [], ""
+    for d in machines:
+        rows = d.get("vision") or []
+        if not rows:
+            continue
+        credit = rows[0].get("labels") or credit
+        body = "".join(
+            f'<tr><td>{_esc(r.get("candidate"))}{" (reference)" if r.get("reference") else ""}</td>'
+            f'<td>{_esc(r.get("status"))}</td><td>{_num(r.get("kappa"), "{:.3f}")}</td>'
+            f'<td>{_num(r.get("within_one"), "{:.3f}")}</td><td>{_num(r.get("accuracy"), "{:.3f}")}</td>'
+            f'<td>{_num(r.get("majority"), "{:.3f}")}</td><td>{_num(r.get("valid_rate"), "{:.3f}")}</td>'
+            f'<td>{_num(r.get("control"), "{:+.3f}")}</td><td>{_esc(r.get("frames"))} / {_esc(r.get("films"))}</td>'
+            f'<td>{_date(r.get("generated_at"))}</td></tr>' for r in rows)
+        parts.append(f'<h3>{_esc(d["machine"].get("label"))}</h3><div class="wide"><table><tr><th>candidate</th>'
+                     '<th>status</th><th>weighted kappa</th><th>within one</th><th>accuracy</th><th>majority</th>'
+                     '<th>valid</th><th>control</th><th>frames / films</th><th>run</th></tr>'
+                     f'{body}</table></div>')
+    if not parts:
+        return ""
+    note = ('<p class="note">Shot scale of frames from each machine\'s own film copies. A run whose answers still '
+            'agree with labels shuffled within each film is discarded. Labels: ' + _esc(credit) + '.</p>')
+    return window("vision", "".join(parts) + note, "teal", attrs=' id="lane-vision"')
 
 
 def trends_page(machines: list[dict], now: float | None = None) -> str:

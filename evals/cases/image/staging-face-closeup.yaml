@@ -1,0 +1,18 @@
+id: staging-face-closeup
+modality: image
+prompt: A close-up portrait in which one person's face fills most of the frame.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      face: a face
+    require:
+    - type: frame
+      object: face
+      min: 0.3
+    - type: count
+      object: face
+      n: 1

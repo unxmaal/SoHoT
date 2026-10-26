@@ -382,6 +382,15 @@ def test_repo_cases_the_fix_size_selector_leaves_out_are_a_cut(monkeypatch):
     assert len(_spooled_knobs()) == 1
 
 
+def test_repo_cases_the_fix_size_floor_leaves_out_are_a_cut(monkeypatch):
+    import argparse
+    from evals import repo_size, run
+    monkeypatch.setattr(repo_size, "at_least", lambda chosen, floor: chosen[1:])
+    args = argparse.Namespace(max_fix_lines=None, min_fix_lines=21, modality="repo")
+    assert run.fix_sized(["a", "b", "c"], args) == ["b", "c"]
+    assert _spooled_knobs() == [("repo_min_fix_lines", 2, 1)]
+
+
 @pytest.mark.gauntlet("a-closed-table-fronting-an-open-set", site="harness/limit_trace.py:CALLS")
 def test_every_cuts_call_that_records_a_knob_is_one_the_scanner_reads():
     import inspect

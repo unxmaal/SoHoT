@@ -515,6 +515,9 @@ def export(conn=None, machine_id: int | None = None,
         }
         if machine_id is None:
             doc["trends"] = _trends(c, now)
+            from evals import vision
+            # Scores only, from this machine's run folders: the vision lane keeps no store rows. #1207.
+            doc["vision"] = vision.export_rows()
     return scrub(doc)
 
 

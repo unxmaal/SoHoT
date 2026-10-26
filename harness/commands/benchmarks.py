@@ -79,7 +79,7 @@ def _readme(repo: str) -> str:
 
 
 def _probe(a, conn) -> int:
-    from evals import run as evals_run
+    from evals import core
     from harness import contamination as ct
     from harness import memory_store as ms
     lane = (a.lane or "decide").strip().lower()
@@ -87,7 +87,7 @@ def _probe(a, conn) -> int:
         from evals import contamination_passages as cp
         lane, cases = ct.CALIBRATION, ct.passage_cases(cp.manifest())
     else:
-        cases = [c for c in evals_run.load_cases(_cases_root() / lane) if c.modality == lane]
+        cases = [c for c in core.load_cases(_cases_root() / lane) if c.modality == lane]
     if a.limit:
         cases = cases[:a.limit]
     ask = ct.gateway_ask(a.gateway)

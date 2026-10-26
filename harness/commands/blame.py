@@ -27,12 +27,16 @@ def cmd_blame(a) -> int:
         emit(True, codebook=ba.CODEBOOK, rules=list(ba.RULES), evidence=ba.EVIDENCE)
         return 0
     try:
+        after = ba.since(a.since) if getattr(a, "since", "") else None
+    except ValueError as exc:
+        return err(f"blame: {exc}")
+    try:
         conn = _open(a.db)
     except (OSError, sqlite3.Error) as exc:
         return err(f"blame: {exc}")
     try:
         if a.action == "sample":
-            got = ba.build(conn, a.seed)
+            got = ba.build(conn, a.seed, since=after)
             written = ba.write(got, out)
             note(f"{len(got['queue'])} rows to label ({sum(k['role'] == 'sample' for k in got['key'])} sampled, "
                  f"{sum(k['role'] == 'plant' for k in got['key'])} planted), store max verdict "
@@ -43,10 +47,14 @@ def cmd_blame(a) -> int:
         second = Path(a.second) if a.second else out / "labels-second.csv"
         try:
             got = ba.report(out / "key.csv", labels, second, conn)
+            earlier = Path(a.against) if getattr(a, "against", "") else None
+            if earlier is not None:
+                got["against"] = ba.compare(got, ba.report(earlier / "key.csv", earlier / "labels.csv",
+                                                           earlier / "labels-second.csv"))
         except (OSError, ValueError, KeyError) as exc:
             return err(f"blame report: {exc}")
     finally:
         conn.close()
-    note(ba.report_text(got))
+    note(ba.report_text(got) + (f"\n{ba.compare_text(got['against'])}" if "against" in got else ""))
     emit(True, **got)
     return 0

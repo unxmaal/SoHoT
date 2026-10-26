@@ -312,13 +312,16 @@ def _key(lane, served):
 
 def test_tts_shows_its_own_five_of_five_past_a_newer_screen(
         store_run, monkeypatch):
-    """The receipt has no specs map; the row is found through the candidate
-    row of what the lane serves. A newer screen of something else is not
-    the lane's measurement."""
+    """The row is found through the candidate row of what the lane serves.
+    A newer screen of something else is not the lane's measurement."""
+    from harness import audio, screen
     kokoro = "mlx-community/Kokoro-82M-bf16"
     key = _key("tts", kokoro)
+    # Windows types kokoro-onnx, so the receipt's specs map must not come from the platform default. #1292.
+    monkeypatch.setattr(audio, "DEFAULT_TTS_MODEL", audio.SPEECH_DEFAULTS["tts"]["win32"])
     store_run("20261005-161337-201-0000-tts", "tts",
-              {key: {"passed": 5, "total": 5}}, generated=_stamp(1))
+              {key: {"passed": 5, "total": 5}}, generated=_stamp(1),
+              specs={key: screen.candidate_for("tts", kokoro)})
     store_run("screen-1791290659-tts", "tts",
               {"supertonic-3": {"passed": 0, "total": 1}}, tier="screen",
               generated=_stamp(0.01))

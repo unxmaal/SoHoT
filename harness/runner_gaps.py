@@ -1,6 +1,6 @@
 """Why a runner here cannot load a repo, and the until naming what would. #950, #951.
 
-    uv run python -m harness.runner_gaps   rewrite both snapshots (mlx-lm from this venv, diffusers from its venv)
+    uv run python -m harness.runner_gaps   rewrite the snapshots (mlx-lm from this venv, diffusers and mlx-vlm from theirs)
 """
 from __future__ import annotations
 
@@ -14,6 +14,8 @@ from pathlib import Path
 
 #: Model types the locked mlx-lm builds (its models/ modules and MODEL_REMAPPING keys); first line `# <pin>`.
 MLX_LM_SNAPSHOT = Path(__file__).with_name("mlx_lm_model_types.txt")
+#: Model types the pinned mlx-vlm builds (models/ packages and MODEL_REMAPPING keys); first line `# <pin>`. #1282.
+MLX_VLM_SNAPSHOT = Path(__file__).with_name("mlx_vlm_model_types.txt")
 #: Pipeline classes the pinned diffusers ships; first line `# <pin>`.
 DIFFUSERS_SNAPSHOT = Path(__file__).with_name("diffusers_pipelines.txt")
 
@@ -79,6 +81,15 @@ def _snapshot(path: Path) -> tuple[str, frozenset]:
 @functools.lru_cache(maxsize=1)
 def mlx_lm_types() -> tuple[str, frozenset]:
     return _snapshot(MLX_LM_SNAPSHOT)
+
+
+@functools.lru_cache(maxsize=1)
+def mlx_vlm_types() -> tuple[str, frozenset]:
+    return _snapshot(MLX_VLM_SNAPSHOT)
+
+
+def mlx_vlm_builds(mtype: str) -> bool:
+    return bool(mtype) and mtype in mlx_vlm_types()[1]
 
 
 @functools.lru_cache(maxsize=1)
@@ -499,6 +510,32 @@ def write_mlx_lm(path: Path = MLX_LM_SNAPSHOT) -> int:
     return 0
 
 
+def mlx_vlm_names(package: Path) -> set[str]:
+    """Model types an mlx_vlm package source builds, read without importing it."""
+    names = {p.name for p in (package / "models").iterdir() if p.is_dir() and (p / "__init__.py").is_file()}
+    tree = ast.parse((package / "utils.py").read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and any(getattr(t, "id", "") == "MODEL_REMAPPING" for t in node.targets):
+            names |= {k.value for k in node.value.keys if isinstance(k, ast.Constant)}
+    return names
+
+
+def write_mlx_vlm(venv: Path | None = None, path: Path = MLX_VLM_SNAPSHOT) -> int:
+    """Rewrite the mlx-vlm snapshot from the mlx-vlm venv's package source, without importing it. #1282."""
+    import os
+    from harness import paths, stages
+    venv = Path(venv or os.environ.get("MLX_VLM_VENV") or paths.home() / "venvs" / "mlx-vlm")
+    for site in sorted(venv.glob("lib/python*/site-packages")):
+        if (site / "mlx_vlm" / "utils.py").is_file():
+            names = mlx_vlm_names(site / "mlx_vlm")
+            version = stages.dist_versions(site).get("mlx-vlm", "")
+            path.write_text(f"# mlx-vlm=={version}\n" + "\n".join(sorted(names)) + "\n", encoding="utf-8")
+            print(f"{path.name}: {len(names)} model types from mlx-vlm {version}")
+            return 0
+    print(f"no mlx_vlm package under {venv}", file=sys.stderr)
+    return 1
+
+
 def write_diffusers(venv: Path | None = None, path: Path = DIFFUSERS_SNAPSHOT) -> int:
     """Rewrite the diffusers snapshot from the diffusers venv's package source, without importing it."""
     import os
@@ -517,4 +554,4 @@ def write_diffusers(venv: Path | None = None, path: Path = DIFFUSERS_SNAPSHOT) -
 
 
 if __name__ == "__main__":
-    sys.exit(write_mlx_lm() or write_diffusers())
+    sys.exit(write_mlx_lm() or write_diffusers() or write_mlx_vlm())

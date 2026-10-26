@@ -1,0 +1,22 @@
+id: staging-hiker-below-mountain
+modality: image
+prompt: A tiny hiker standing in front of a huge mountain that fills the frame.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      person: a person
+      mountain: a mountain
+    require:
+    - type: bigger
+      object: mountain
+      than: person
+    - type: frame
+      object: person
+      max: 0.05
+    - type: count
+      object: person
+      n: 1

@@ -228,13 +228,29 @@ def is_ocr(tags) -> bool:
                for t in tags or ())
 
 
-def _settled_lane(task: str, tags: set, name: str) -> tuple[str, str] | None:
+#: The task the vision lane's exam asks: one image and a question in, text out. #1282.
+VISION_TASK = "image-text-to-text"
+
+
+def vision_card(card) -> bool:
+    """Is this a vision model the text runner cannot build: a typed, non-GGUF card mlx-lm has no module for? #1282."""
+    from harness import runner_gaps
+    card = card or {}
+    mtype = str(card.get("model_type") or (card.get("config") or {}).get("model_type") or "").strip()
+    tags = {str(t).strip().lower() for t in runner_gaps.tags_of(card)}
+    library = str(card.get("library_name") or card.get("library") or "").strip().lower()
+    return bool(mtype) and "gguf" not in tags and library != "gguf" and not runner_gaps.mlx_lm_builds(mtype)
+
+
+def _settled_lane(task: str, tags: set, name: str, card=None) -> tuple[str, str] | None:
     """The #387 answer for a settled task, or None for any other task."""
     if task in ("image-to-image", "image-text-to-image"):
         return ("image", "tag") if tags & TEXT_TO_IMAGE_TAGS else ("", "")
     # A card naming a lane by tag (svg) outranks its OCR tag. #562.
     if task in OCR_TASKS and is_ocr(tags) and not tags & set(TAG_LANES):
         return "ocr", "tag"
+    if task == VISION_TASK and not tags & set(TAG_LANES) and vision_card(card):
+        return "vision", "card"
     # An embedder is a retriever only when a tag says so; a general one is not. #563.
     if task in EMBED_TASKS and is_retrieval(tags):
         return "retrieval", "tag"
@@ -291,7 +307,7 @@ def lane_and_source(meta: dict, prose: str = "") -> tuple[str, str]:
     card_tags = {str(x).strip().lower() for x in (meta.get("tags") or [])}
     from_tags = {TAG_LANES[t] for t in card_tags if t in TAG_LANES}
     settled = _settled_lane(tag, card_tags,
-                            str(meta.get("id") or meta.get("modelId") or ""))
+                            str(meta.get("id") or meta.get("modelId") or ""), meta)
     if settled is not None:
         return settled
     if tag in PIPELINE_LANES:

@@ -1,0 +1,19 @@
+id: staging-cup-in-hands
+modality: image
+prompt: A man holding a cup of coffee in both hands, close-up.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      cup: a cup
+      hand: a hand
+    require:
+    - type: held
+      object: cup
+      by: hand
+    - type: count
+      object: cup
+      n: 1

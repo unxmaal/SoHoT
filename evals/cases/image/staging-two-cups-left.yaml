@@ -1,0 +1,26 @@
+id: staging-two-cups-left
+modality: image
+prompt: Two white coffee cups on the left side of a wooden table and one teapot on the right side, photographed
+  from the front.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      cup: a coffee cup
+      teapot: a teapot
+    require:
+    - type: count
+      object: cup
+      n: 2
+    - type: count
+      object: teapot
+      n: 1
+    - type: side
+      object: cup
+      side: left
+    - type: side
+      object: teapot
+      side: right

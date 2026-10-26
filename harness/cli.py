@@ -38,6 +38,7 @@ from harness.commands import context as context_cmd
 from harness.commands import day as day_cmd
 from harness.commands import degenerate as degenerate_cmd
 from harness.commands import floors as floors_cmd
+from harness.commands import staging as staging_cmd
 from harness.commands import discover as discover_cmd
 from harness.commands import gateway as gateway_cmd
 from harness.commands import gauntlet as gauntlet_cmd
@@ -46,6 +47,7 @@ from harness.commands import judge as judge_cmd
 from harness.commands import lanes as lanes_cmd
 from harness.commands import lane_feed as lane_feed_cmd
 from harness.commands import craft as craft_cmd
+from harness.commands import vision as vision_cmd
 from harness.commands import coherence as coherence_cmd
 from harness.commands import load_log as load_log_cmd
 from harness.commands import measure as measure_cmd
@@ -458,6 +460,18 @@ def build_parser() -> argparse.ArgumentParser:
     f.add_argument("--day", action="store_true",
                    help="the daytime job: as many downloads as the next night can screen, beside no sweep, "
                         "rate-capped in the capped hours; off unless LH_DAY_FETCH=1 (#1084)")
+    f.add_argument("--replay", type=float, default=None, metavar="DAYS",
+                   help="replay the last DAYS of fetch runs from their verdicts, with and without the pass-over term (#1288)")
+    f.add_argument("--passed-over", type=float, default=None, dest="passed_over",
+                   help="with --replay, the pass-over term per day instead of the fetch_passed_over knob")
+    f.add_argument("--passed-over-max", type=float, default=None, dest="passed_over_max",
+                   help="with --replay, its ceiling instead of the fetch_passed_over_max knob")
+    f.add_argument("--project", type=int, default=None, metavar="NIGHTS",
+                   help="with --replay, also run today's queue forward NIGHTS one-run nights at --budget-gib")
+    f.add_argument("--arrivals", type=int, default=0,
+                   help="with --project, fresh clones of queue rows that arrive each night")
+    f.add_argument("--watch", action="append", default=[],
+                   help="with --project, a row whose fetch night to print; default the five longest passed over")
     f.set_defaults(func=screen_cmd.cmd_fetch)
 
     rep = sub.add_parser(
@@ -491,6 +505,14 @@ def build_parser() -> argparse.ArgumentParser:
     rr.add_argument("--resamples", type=int, default=3000, help="task bootstrap resamples")
     rr.add_argument("--seed", type=int, default=1)
     rr.set_defaults(func=report_cmd.cmd_repo_report)
+    ro = sub.add_parser("repo-route", help="score routing policies offline over stored repo runs: never/always "
+                        "route, oracle, applicability-gate cascades, deterministic labels (#891)")
+    ro.add_argument("--local", dest="local_run", type=int, required=True, metavar="RUN", help="the local patch-only run")
+    ro.add_argument("--cloud", type=int, required=True, metavar="RUN", help="the cloud run")
+    ro.add_argument("--agentic", type=int, default=0, metavar="RUN", help="the local agentic (repair) run")
+    ro.add_argument("--store", default="", help="the store to read, read-only (default: this home's discovery.db)")
+    ro.add_argument("--cases", default="", help="the repo cases prompts are read from (default: evals/cases/repo)")
+    ro.set_defaults(func=report_cmd.cmd_repo_route)
     rs = sub.add_parser("repo-screen", help="the repo exam's screening subset: pick prints it, anchors writes "
                         "its base/reference outcomes from two stored runs, verdict judges screen runs (#1176)")
     rs.add_argument("action", choices=("pick", "anchors", "verdict"))
@@ -687,6 +709,7 @@ def build_parser() -> argparse.ArgumentParser:
     knobs_cmd.add_parser(sub)
     lane_feed_cmd.add_parser(sub)
     craft_cmd.add_parser(sub)
+    vision_cmd.add_parser(sub)
     climb_cmd.add_parser(sub)
     otel_cmd.add_parser(sub)
     dlg = sub.add_parser("delegated", help="record what became of a local_complete or "
@@ -787,6 +810,9 @@ def build_parser() -> argparse.ArgumentParser:
     bla.add_argument("--dir", default="", help="queue, key and label files (default: evals/blame)")
     bla.add_argument("--labels", default="", help="first labeller's file (default: <dir>/labels.csv)")
     bla.add_argument("--second", default="", help="second labeller's file (default: <dir>/labels-second.csv)")
+    bla.add_argument("--since", default="", help="sample: only state verdicts decided after this UTC date "
+                     "(YYYY-MM-DD or 'YYYY-MM-DD HH:MM'). #1293")
+    bla.add_argument("--against", default="", help="report: an earlier audit's directory, printed beside this one")
     bla.set_defaults(func=blame_cmd.cmd_blame)
     why = sub.add_parser("discover-why", help="which sources sighted a repo and where the crowd tier lets it "
                          "fall out, from the GitHub cache and the store read-only. #764")
@@ -812,6 +838,15 @@ def build_parser() -> argparse.ArgumentParser:
     flo.add_argument("--min-items", type=int, default=None, help="derive: knob floor_min_items for this run")
     flo.add_argument("--out", default="floors-planted", help="plant: where the clean ocr cases go")
     flo.set_defaults(func=floors_cmd.cmd_floors)
+    stg = sub.add_parser("staging", help="the image lane's staging detector: drawn checker controls, a labelling "
+                         "sheet from a night run, agreement with the labels, the paired night command. #1244")
+    stg.add_argument("action", choices=("controls", "sheet", "agreement", "night"))
+    stg.add_argument("path", nargs="?", default="", help="sheet: the run directory; agreement: the labelled sheet")
+    stg.add_argument("--device", choices=("cpu", "mps", "both"), default="both", help="controls: where to detect")
+    stg.add_argument("--out", default="staging-sheet.csv", help="sheet: the CSV to write")
+    stg.add_argument("--n", type=int, default=30, help="sheet: images to label")
+    stg.add_argument("--seed", type=int, default=0, help="sheet: the sampling seed")
+    stg.set_defaults(func=staging_cmd.cmd_staging)
     llg = sub.add_parser("load-log", help="re-decide held llama.cpp load failures from the router's log, "
                          "keeping each child's lines in its run directory; read-only without --apply. #953")
     llg.add_argument("--db", default="", help="the store (default: this home's discovery.db)")
@@ -842,8 +877,8 @@ def build_parser() -> argparse.ArgumentParser:
                       help="higher runs first; ties run in the order added")
     jobs.add_argument("--cwd", default="",
                       help="add: run here instead of the deploy checkout. #645")
-    jobs.add_argument("--not-before", default="", metavar="HH:MM",
-                      help="add: start no earlier than the next HH:MM local time. #900")
+    jobs.add_argument("--not-before", default="", metavar="WHEN",
+                      help="add: start no earlier than the next local HH:MM, or a local YYYY-MM-DD HH:MM. #900, #1297")
     jobs.add_argument("--night", action="store_true",
                       help="add: start no earlier than the night window discovery runs in. #900")
     jobs.set_defaults(func=jobs_cmd.cmd_jobs)

@@ -117,6 +117,8 @@ OVER_BUDGET, FAILED = "over budget", "last download failed"
 SKIPPED = "fetch skipped"
 #: The detail of the fetch verdict that records a download, the one fetch verdict that is not a skip.
 DOWNLOADED = "downloaded"
+#: The words of a refusal by what the run already fetched; rank.passed_over counts them. #1288.
+PASSED = "would take this run past its"
 SILENT = (BACKPRESSURE, BUDGET, FORMAT, NO_LANE, UNINSPECTED)
 
 
@@ -681,6 +683,12 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
                               reason=reasons.CANDIDATE)
             done.append({"repo": row["name"], "ok": False, "why": why})
             continue
+        # A lane discovery never screens loads its own weights when a person runs it. #1282.
+        if lanes.canonical(row.get("lane") or "") in lanes.BY_HAND:
+            why = screen.by_hand(row["lane"], row["name"], card=row)
+            ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=why, reason=reasons.HARNESS)
+            done.append({"repo": row["name"], "ok": False, "why": why})
+            continue
         # A RUNTIME THIS MACHINE DOES NOT HAVE IS AN ANSWER, not a gap to
         # come back to. rank.unrunnable already drops these from the ordering,
         # so they never reach a fetch and never receive a verdict: the queue
@@ -748,7 +756,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         # first `limit` rows left the rest at 0 for 22 sweeps. #292.
         size = (sizes or {}).get(name) or int(row.get("size_bytes") or 0)
         if over_budget(size, budget, spent):
-            why = (f"{size / GIB:.1f} GiB would take this run past its "
+            why = (f"{size / GIB:.1f} GiB {PASSED} "
                    f"{budget / GIB:.0f} GiB budget ({spent / GIB:.1f} GiB "
                    f"already fetched)")
             # Bigger than the whole budget, no sweep at this budget ever takes it. #704.

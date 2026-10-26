@@ -292,7 +292,7 @@ def test_run_json_prints_the_receipt_and_exits_nonzero_on_a_miss(child, monkeypa
     child.plan(name="org/load", lane="code", outcome="broken", tier="screen", reason="candidate")
     monkeypatch.setattr(canary, "PLANTS", (SCREEN,))
     real = canary.run
-    monkeypatch.setattr(canary, "run", lambda plants, wait_h: real(plants, run=child.run, wait_h=wait_h))
+    monkeypatch.setattr(canary, "run", lambda plants, wait_h, replays=(): real(plants, run=child.run, wait_h=wait_h))
     assert cli.main(["canary", "--run", "--plant", "load", "--json"]) == 1
     got = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
     assert got["ok"] is False and got["plants"][0]["plant"] == "load" and got["path"]
