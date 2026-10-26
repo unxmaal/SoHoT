@@ -68,29 +68,44 @@
    "until": "cases:stt>796"
   },
   {
+   "candidate": "stt:mlx-community/Voxtral-Mini-4B-Realtime-6bit",
+   "decided_at": "2026-10-26T01:29:18Z",
+   "detail": "the installed runtime could not load it: 1089-134686-0001: stt failed: HTTP 500: {\"detail\":\"Failed to load model 'mlx-community/Voxtral-Mini-4B-Realtime-6bit': TokenizersBackend has no attribute tokenizer\"}; 1188-133604-0000: stt failed: HTTP 500: {\"detail\":\"Failed to load model 'mlx-community/Voxtral-Mini-4B-Realtime-6bit': TokenizersBack",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "mlx-community/Voxtral-Mini-4B-Realtime-6bit",
+   "reason": "runtime",
+   "receipt_key": "Voxtral-Mini-4B-Realtime-6bit",
+   "run_id": 598,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "version:mlx-audio>0.5.3"
+  },
+  {
    "candidate": "stt:mlx-community/whisper-large-v3-mlx",
    "decided_at": "2026-10-19T22:58:04Z",
    "detail": "stt: lane too small, needs 261 holdout cases: 133 cannot show +0.20 per cell at power 0.8 at any repeat up to 16, so about 427 more stt cases are needed before a null says anything about whisper-large",
    "exam": {
     "about": "",
     "candidate": "whisper-large-v3-mlx",
-    "cases": 133,
-    "first_s": 4.016,
-    "median_s": 0.249,
+    "cases": 480,
+    "first_s": 3.803,
+    "median_s": 0.235,
     "metrics": {
-     "wer": 0.0225
+     "wer": 0.0262
     },
     "model": "whisper-large-v3-mlx",
     "not_run": "",
-    "pass_rate": 0.842,
-    "passed": 112,
+    "pass_rate": 0.8,
+    "passed": 384,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-19T22:58:04Z",
+    "run_at": "2026-10-26T03:25:57Z",
     "served_as": "",
     "source": "",
-    "total": 133,
+    "total": 480,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -111,23 +126,23 @@
    "exam": {
     "about": "",
     "candidate": "whisper-large-v3-mlx",
-    "cases": 133,
-    "first_s": 4.016,
-    "median_s": 0.249,
+    "cases": 480,
+    "first_s": 3.803,
+    "median_s": 0.235,
     "metrics": {
-     "wer": 0.0225
+     "wer": 0.0262
     },
     "model": "whisper-large-v3-mlx",
     "not_run": "",
-    "pass_rate": 0.842,
-    "passed": 112,
+    "pass_rate": 0.8,
+    "passed": 384,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-19T22:58:04Z",
+    "run_at": "2026-10-26T03:25:57Z",
     "served_as": "",
     "source": "",
-    "total": 133,
+    "total": 480,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -155,6 +170,21 @@
    "status": "rejected",
    "tier": "screen",
    "until": "runner:stt/nemotron3_5_asr"
+  },
+  {
+   "candidate": "stt:superwhisper/s1-mini",
+   "decided_at": "2026-10-26T01:29:10Z",
+   "detail": "the installed runtime could not load it: 1089-134686-0001: stt failed: HTTP 500: {\"detail\":\"Failed to load model 'superwhisper/s1-mini': Cannot find an appropriate cached snapshot folder for the specified revision on the local disk and outgoing traffic has been disabled. To enable repo look-ups and downloads online, set 'HF_HUB_OFFLINE=0' ",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "superwhisper/s1-mini",
+   "reason": "runtime",
+   "receipt_key": "s1-mini",
+   "run_id": 597,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "version:mlx-audio>0.5.3"
   },
   {
    "candidate": "stt:syvai/cohere-transcribe-diarize",
@@ -208,23 +238,23 @@
    "exam": {
     "about": "0.6B params",
     "candidate": "parakeet-tdt-0.6b-v2",
-    "cases": 133,
-    "first_s": 3.946,
-    "median_s": 0.095,
+    "cases": 480,
+    "first_s": 0.134,
+    "median_s": 0.099,
     "metrics": {
-     "wer": 0.0201
+     "wer": 0.0219
     },
     "model": "parakeet-tdt-0.6b-v2",
     "not_run": "",
-    "pass_rate": 0.827,
-    "passed": 110,
+    "pass_rate": 0.823,
+    "passed": 395,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-19T22:58:04Z",
+    "run_at": "2026-10-26T01:03:42Z",
     "served_as": "",
     "source": "",
-    "total": 133,
+    "total": 480,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -312,24 +342,9 @@
    "status": "pending",
    "tier": "inspect",
    "until": ""
-  },
-  {
-   "candidate": "stt:mlx-community/Voxtral-Mini-4B-Realtime-6bit",
-   "decided_at": "2026-10-23T12:07:30Z",
-   "detail": "downloaded",
-   "exam": null,
-   "outcome": "queued",
-   "proposal": "mlx-community/Voxtral-Mini-4B-Realtime-6bit",
-   "reason": "candidate",
-   "receipt_key": "Voxtral-Mini-4B-Realtime-6bit",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "fetch",
-   "until": ""
   }
  ],
- "cursor": 1792904037528423,
+ "cursor": 1792978158123167,
  "events": [
   {
    "at": "2026-09-08T02:00:21Z",
@@ -840,9 +855,91 @@
    "reason": "candidate",
    "run_id": 584,
    "tier": "screen"
+  },
+  {
+   "at": "2026-10-26T01:29:10Z",
+   "candidate": "stt:superwhisper/s1-mini",
+   "chosen": null,
+   "detail": "the installed runtime could not load it: 1089-134686-0001: stt failed: HTTP 500: {\"detail\":\"Failed to load model 'superwhisper/s1-mini': Cannot find an appropriate cached snapshot folder for the specified revision on the local disk and outgoing traffic has been disabled. To enable repo look-ups and downloads online, set 'HF_HUB_OFFLINE=0' ",
+   "how": "",
+   "id": 1792978150561781,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "runtime",
+   "run_id": 597,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-26T01:29:18Z",
+   "candidate": "stt:mlx-community/Voxtral-Mini-4B-Realtime-6bit",
+   "chosen": null,
+   "detail": "the installed runtime could not load it: 1089-134686-0001: stt failed: HTTP 500: {\"detail\":\"Failed to load model 'mlx-community/Voxtral-Mini-4B-Realtime-6bit': TokenizersBackend has no attribute tokenizer\"}; 1188-133604-0000: stt failed: HTTP 500: {\"detail\":\"Failed to load model 'mlx-community/Voxtral-Mini-4B-Realtime-6bit': TokenizersBack",
+   "how": "",
+   "id": 1792978158123167,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "runtime",
+   "run_id": 598,
+   "tier": "screen"
   }
  ],
  "exams": [
+  {
+   "cases": 480,
+   "differs": [],
+   "first_run_at": "2026-10-26T01:02:46Z",
+   "repeat": 1,
+   "rows": [
+    {
+     "about": "0.6B params",
+     "candidate": "parakeet-tdt-0.6b-v2",
+     "first_s": 0.134,
+     "median_s": 0.099,
+     "metrics": {
+      "wer": 0.0219
+     },
+     "model": "parakeet-tdt-0.6b-v2",
+     "not_run": "",
+     "pass_rate": 0.823,
+     "passed": 395,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-10-26T01:03:42Z",
+     "served_as": "",
+     "source": "",
+     "total": 480,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "about": "",
+     "candidate": "whisper-large-v3-mlx",
+     "first_s": 3.803,
+     "median_s": 0.235,
+     "metrics": {
+      "wer": 0.0262
+     },
+     "model": "whisper-large-v3-mlx",
+     "not_run": "",
+     "pass_rate": 0.8,
+     "passed": 384,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-10-26T03:25:57Z",
+     "served_as": "",
+     "source": "",
+     "total": 480,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    }
+   ],
+   "run_at": "2026-10-26T03:25:57Z",
+   "runs": 3
+  },
   {
    "cases": 133,
    "differs": [],
@@ -1010,7 +1107,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-10-25T18:04:06Z",
+ "generated_at": "2026-10-26T07:02:51Z",
  "knobs": [],
  "lane": {
   "cases": 480,
@@ -1029,15 +1126,15 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-10-19T22:58:04Z",
-  "median_s": 0.095,
+  "measured_at": "2026-10-26T01:03:42Z",
+  "median_s": 0.099,
   "metrics": {
-   "wer": 0.0201
+   "wer": 0.0219
   },
   "not_run": "",
   "parked": "",
   "parked_until": "",
-  "pass_rate": 0.827,
+  "pass_rate": 0.823,
   "serves": "mlx-community/parakeet-tdt-0.6b-v2",
   "serves_model": "mlx-community/parakeet-tdt-0.6b-v2; 0.6B params, by mlx-community",
   "stale": false
