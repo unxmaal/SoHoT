@@ -34,6 +34,43 @@ def _read_conn():
     return ledger.open_ro(path) if path.exists() else None
 
 
+def _carried(a, root: Path, source: str, since, until) -> int:
+    """`soh context --carried`: what tool output costs over a session, not only when it arrives."""
+    from harness import context_report as cr
+    if source != "transcripts" or a.by == "day":
+        why = "--carried reads transcripts per stream: it takes --by tool or category and --source transcripts"
+        note(why)
+        emit(False, error=why)
+        return 2
+    got = cr.carried(root, since=since, until=until, main_only=a.main_only)
+    rows = got["tools"]
+    if a.by == "category":
+        from harness import otel
+        label = otel.local_label if getattr(a, "label", "table") == "local" else None
+        cats = otel.categorize((r["tool"] for r in rows), label=label)
+        merged: dict = {}
+        for r in rows:
+            m = merged.setdefault(cats[r["tool"]], {"category": cats[r["tool"]], "results": 0, "entered": 0, "carried": 0})
+            for k in ("results", "entered", "carried"):
+                m[k] += r[k]
+        total = got["input"]
+        rows = sorted(({**m, "share": round(m["carried"] / total, 4) if total else 0.0} for m in merged.values()),
+                      key=lambda r: (-r["carried"], r["category"]))
+    note("estimated tokens: characters / 4; carried = a result's tokens times the later API calls of its stream "
+         "until a compaction")
+    note(f"{got['input']:,} input tokens over {got['api_calls']:,} API calls in {got['streams']:,} streams; "
+         f"tool output carried {got['carried']:,} "
+         f"({got['carried'] / got['input'] if got['input'] else 0:.1%}), {got['compactions']} compactions")
+    note(f"{a.by:<28} {'results':>8} {'entered':>9} {'carried':>9} {'share':>6}")
+    for r in rows:
+        note(f"{str(r[a.by])[:28]:<28} {r['results']:>8,} {_k(r['entered']):>9} {_k(r['carried']):>9} "
+             f"{r['share']:>6.1%}")
+    emit(estimate="chars/4", source=source, by=a.by, root=str(root), since=since, until=until,
+         main_only=a.main_only, input=got["input"], api_calls=got["api_calls"], streams=got["streams"],
+         compactions=got["compactions"], carried=got["carried"], rows=rows)
+    return 0
+
+
 def cmd_context(a) -> int:
     """Estimated tool-result tokens from Claude Code transcripts (chars / 4). #828."""
     from harness import context_report as cr
@@ -48,6 +85,8 @@ def cmd_context(a) -> int:
         return 2
     root = Path(a.root) if a.root else cr.default_root()
     source = getattr(a, "source", "transcripts")
+    if getattr(a, "carried", False):
+        return _carried(a, root, source, since, until)
     if source == "otel":
         raw = otel_rows(since, until if until is not None else now)
     else:
