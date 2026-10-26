@@ -1046,7 +1046,9 @@ def build_parser() -> argparse.ArgumentParser:
     h.add_argument("--base-url", default=audio.DEFAULT_BASE_URL)
     h.add_argument("--worst", choices=("stt", "tts"), default="",
                    help="list the stored clips with the highest WER, to listen to (#94)")
-    h.add_argument("-n", type=int, default=10, help="with --worst, how many clips")
+    h.add_argument("--suspect", action="store_true",
+                   help="stt clips whose ears agree with each other against the reference, to listen to (#94)")
+    h.add_argument("-n", type=int, default=10, help="with --worst or --suspect, how many clips")
     h.add_argument("--rates", action="store_true",
                    help="seconds per word over stored tts clips, against the runaway ceiling (#91)")
     h.add_argument("--cases", default="", help="cases root (default: evals/cases)")
