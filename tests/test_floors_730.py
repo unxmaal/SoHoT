@@ -84,7 +84,7 @@ def test_stt_floor_reads_the_reference_ears_stored_hypotheses_rescored_with_the_
     _row(store, run, 2, "parakeet-tdt-0.6b-v2", "u3", output="one two three")
     _row(store, run, 3, floors.REFERENCE["stt"], "gone", output="anything")
     items = floors.stt_items(store, refs)
-    assert [(i["case"], i["errors"], i["units"]) for i in items] == [("u1", 0, 4), ("u2", 1, 4)]
+    assert [(i["case"], i["errors"], i["units"]) for i in items] == [("u1", 0, 4), ("u2", 0, 4)]
 
 
 def test_tts_floor_leaves_out_four_digit_counts_read_year_style(store):

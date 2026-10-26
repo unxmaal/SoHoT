@@ -21,7 +21,7 @@ def _screened(heard: str, lane: str = "stt"):
 
 
 def test_one_wrong_word_on_one_clip_passes_the_stt_screen():
-    got = _screened("Stuff it into you, his belly counseled him.")
+    got = _screened("Stuff it into you, his belly consoled him.")
     assert got.outcome == "screened", got
 
 
@@ -32,7 +32,7 @@ def test_an_empty_or_degenerate_transcript_does_not(heard):
 
 
 def test_the_plausibility_screen_is_the_stt_lanes_alone():
-    assert _screened("Stuff it into you, his belly counseled him.", lane="tts").outcome == "declined"
+    assert _screened("Stuff it into you, his belly consoled him.", lane="tts").outcome == "declined"
 
 
 def _run9():

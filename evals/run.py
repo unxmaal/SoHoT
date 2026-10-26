@@ -28,6 +28,7 @@ from pathlib import Path
 
 from harness import audio, completion, context, delegate, ds4, env, knobs, paths, reasons, router
 from harness.engines import Engine, names as engine_names, parse_options, resolve
+from harness.checks import speech as speech_check
 
 from dataclasses import replace
 
@@ -1531,7 +1532,7 @@ def _execute_at(args, overrides: dict) -> int:
             adherence=getattr(args, "adherence", "") or "",
             tier="screen" if getattr(args, "screen", False) else "measure",
             accelerator="" if away else accelerator_id(),
-            instruments=instruments(candidates),
+            instruments=instruments(candidates, args.modality),
             engines=engines(candidates),
             where="" if away else where_id(),
             swap_used_mb=0 if away else swap_used_mb(),
@@ -2021,7 +2022,7 @@ def engines(candidates) -> dict:
             if text_candidate(c)}
 
 
-def instruments(candidates=()) -> dict:
+def instruments(candidates=(), modality: str = "") -> dict:
     """What measured this run, for the receipt. See core.Receipt.instruments.
 
     Best effort by design: a receipt must not fail a finished run, and an
@@ -2051,6 +2052,8 @@ def instruments(candidates=()) -> dict:
         found["ear"] = "+".join(sorted({ear_of(c) for c in candidates if kind_of(c) == "tts"}))
     except ValueError as exc:
         found["ear"] = f"unknown ear: {exc}"
+    if modality in speech_check.WER_LANES:
+        found["wer"] = speech_check.NORMALISER
     return {k: v for k, v in found.items() if v}
 
 

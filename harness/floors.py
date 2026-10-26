@@ -172,8 +172,14 @@ def stt_items(conn, refs: dict, instrument: str | None = None) -> list[dict]:
             continue
         errors, words = speech.wer_counts(refs[case], output)
         out.append({"case": case, "run": run[0], "rep": run[1], "errors": errors, "units": words,
-                    "stratum": stratum(words, "stt")})
+                    "stratum": stratum(words, "stt"), "scored": speech.NORMALISER})
     return out
+
+
+def normaliser(conn, run: int) -> str:
+    """The WER normaliser a stored run scored its rows with: its receipt's, else version 1. #1266."""
+    got = conn.execute("SELECT receipt FROM runs WHERE id = ?", (run,)).fetchone()
+    return (_metrics(got[0] if got else "{}").get("instruments") or {}).get("wer", "1")
 
 
 def tts_items(conn, prompts: dict, instrument: str | None = None, ear: str = "") -> list[dict]:
@@ -185,15 +191,17 @@ def tts_items(conn, prompts: dict, instrument: str | None = None, ear: str = "")
         if not prompt or _YEAR_STYLE.search(prompt):
             continue
         heard = _heard(detail)
+        scored = speech.NORMALISER
         if heard is not None:
             errors, words = speech.wer_counts(prompt, heard)
         else:
+            scored = normaliser(conn, run[0])
             m = _metrics(metrics)
             if "wer_words" not in m:
                 continue
             errors, words = m["wer_errors"], m["wer_words"]
         out.append({"case": case, "run": run[0], "rep": run[1], "errors": errors, "units": words,
-                    "stratum": stratum(words, "tts")})
+                    "stratum": stratum(words, "tts"), "scored": scored})
     return out
 
 
@@ -281,7 +289,8 @@ def _entry(conn, knob: str, lane: str, items: list[dict], share, min_items, *, c
     now = k.default() if current is None else current
     return {"knob": knob, "lane": lane, "instrument": REFERENCE[lane], "current": now, "floor": got["floor"],
             "derived": pick, "status": status(got, pick), "agrees": agrees(got, pick, now), "n": got["n"],
-            "strata": got["strata"], "reruns": reruns(items), "versions": versions(conn, lane, items)}
+            "strata": got["strata"], "reruns": reruns(items), "versions": versions(conn, lane, items),
+            "scored": dict(Counter(i["scored"] for i in items if "scored" in i))}
 
 
 def status(got: dict, pick) -> str:
