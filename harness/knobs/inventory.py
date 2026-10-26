@@ -27,6 +27,8 @@ NOT_GATING = {
     "harness/inventory_time.py:gh_items.ask->run(timeout)": "how long one gh list may take; a timeout reports "
                                                             "the effort account unavailable (#1152)",
     f"{W}:GH_TIMEOUT_S": "how long one gh or git call may take; a timeout reports that source unavailable (#1148)",
+    "harness/local_catches.py:GIT_TIMEOUT_S": "how long git rev-parse may take; a timeout records the run "
+                                               "with no commit (#1261)",
     f"{W}:CI_LIMIT": "CI runs gh lists; above the repo's count, and a full page is reported truncated (#1148)",}
 
 NEVER_CUTS = {

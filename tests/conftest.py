@@ -45,6 +45,7 @@ FAST_PATH_ENV = "SOHOT_FAST_PATH"
 #: Each test's start and end are appended here as they happen, so a cancelled run says where its time went. #1146.
 TEST_LOG_ENV = "SOHOT_TEST_LOG"
 _test_log: dict = {}
+_catches: dict = {}
 
 
 def _without_junitxml(addopts: str) -> str:
@@ -67,6 +68,10 @@ def pytest_configure(config):
     if path and not hasattr(config, "workerinput"):
         _test_log["file"] = open(path, "a", encoding="utf-8", buffering=1)
         _test_log["spent"] = {}
+    from harness import local_catches
+    # Popped so neither xdist workers nor a pytest a test starts record; the real home is read before any fixture. #1261.
+    if os.environ.pop(local_catches.ENV, "") == "1" and not os.environ.get("CI") and not hasattr(config, "workerinput"):
+        _catches.update(path=local_catches.path(), head=local_catches.head(), seen=set(), failed=set())
 
 
 def pytest_unconfigure(config):
@@ -86,7 +91,19 @@ def pytest_runtest_logstart(nodeid, location):
     _log_line("start", nodeid)
 
 
+def pytest_sessionfinish(session, exitstatus):
+    if _catches.get("seen"):
+        from harness import local_catches
+        local_catches.record(_catches["path"], _catches["head"], len(_catches["seen"]), int(exitstatus),
+                             _catches["failed"])
+    _catches.clear()
+
+
 def pytest_runtest_logreport(report):
+    if "seen" in _catches:
+        _catches["seen"].add(report.nodeid)
+        if report.failed:
+            _catches["failed"].add(report.nodeid)
     spent = _test_log.get("spent")
     if spent is None:
         return
