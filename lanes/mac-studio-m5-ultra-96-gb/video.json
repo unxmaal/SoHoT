@@ -1,6 +1,21 @@
 {
  "candidates": [
   {
+   "candidate": "diffusers-video:LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
+   "decided_at": "2026-10-26T01:28:46Z",
+   "detail": "it ran and passed nothing: fox-run: exit 1",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
+   "reason": "candidate",
+   "receipt_key": "diffusers-video/Minimax-H3-ref2v_Anime_2_Realism",
+   "run_id": 593,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "diffusers-video:FastVideo/FastVideo-FastH3-8-Step-V2",
    "decided_at": "2026-10-19T10:43:54Z",
    "detail": "unknown: no variant groups its weights (audio_vae/*.safetensors,text_encoder/*.safetensors,transformer/*.safetensors,vae/*.safetensors), so their 137.7 GiB sum is not a size it runs at",
@@ -53,7 +68,7 @@
    "until": ""
   }
  ],
- "cursor": 1789860275751092,
+ "cursor": 1792978126175368,
  "events": [
   {
    "at": "2026-09-19T23:24:35Z",
@@ -68,6 +83,21 @@
    "outcome": "queued",
    "reason": "reopened",
    "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-26T01:28:46Z",
+   "candidate": "diffusers-video:LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
+   "chosen": null,
+   "detail": "it ran and passed nothing: fox-run: exit 1",
+   "how": "",
+   "id": 1792978126175368,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 593,
    "tier": "screen"
   }
  ],
@@ -144,7 +174,7 @@
    "runs": 7
   }
  ],
- "generated_at": "2026-10-25T18:04:03Z",
+ "generated_at": "2026-10-26T07:02:48Z",
  "knobs": [],
  "lane": {
   "cases": 1,
