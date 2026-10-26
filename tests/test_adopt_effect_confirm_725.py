@@ -286,3 +286,105 @@ def test_a_confirmation_against_a_changed_incumbent_records_nothing(conn, tmp_pa
     assert "argv" not in seen
     assert conn.execute("SELECT COUNT(*) FROM verdicts").fetchone()[0] == before
     assert "no longer serves older-spec" in capsys.readouterr().out
+
+
+# --- the confirmation's exact record ---------------------------------------
+
+DECIDE = holdout.Split("decide", dev=tuple(f"d{i}" for i in range(10)), holdout=("h1", "h2", "h3"), too_small=False)
+
+
+def _row(who, case, passed, accuracy):
+    return {"candidate": who, "case_id": case, "passed": passed, "seconds": 1.0,
+            "metrics": {"decide_accuracy": accuracy}}
+
+
+def _plain(why="won"):
+    return adopt.Verdict("decide", "inc", "ch", True, why)
+
+
+def test_the_confirmation_reads_the_lane_metric_and_keeps_the_evidence_it_was_given():
+    ids = [f"d{i}" for i in range(10)]
+    rows = [x for c in ids for x in (_row("inc", c, c in ("d0", "d1"), 0.5), _row("ch", c, False, 1.0))]
+    v = adopt.Verdict("decide", "inc", "ch", True, "won", evidence={"x": 1, "confirm": {"kept": 1}})
+    got = adopt.confirm(v, rows, DECIDE, frozenset({"z9"}))
+    assert got.adopt is True and got.failure_class == ""
+    assert got.why == "won; confirmed on 10 dev case(s): 10 gained against 0 lost, p=0.002"
+    assert got.evidence == {"x": 1, "confirm": {"kept": 1, "screened": ["z9"], "cases": 10, "gained": 10, "lost": 0,
+                                                "p": 0.001953125}}
+
+
+def test_a_confirmation_over_correlated_repeats_says_how_it_counted_them():
+    rows = [x for i in range(10) for k in (1, 2)
+            for x in (_row("inc", f"d{i}#{k}", False, 0.0), _row("ch", f"d{i}#{k}", False, 1.0))]
+    got = adopt.confirm(_plain(), rows, DECIDE)
+    assert got.why == ("won; confirmed on 10 dev case(s): 20 gained against 0 lost, p=0.002 (10 gained against 0 "
+                       "lost once correlated repeats are counted as cases (rho 1.00 assumed, repeat 2.0))")
+
+
+def test_a_worse_and_a_held_confirmation_are_recorded_exactly():
+    ids = [f"d{i}" for i in range(10)]
+    rows = [x for c in ids for x in (_row("inc", c, True, 1.0), _row("ch", c, False, 0.0))]
+    got = adopt.confirm(_plain(), rows, DECIDE)
+    assert got.adopt is False and got.failure_class == ""
+    assert got.why == ("won the holdout, but on 10 dev case(s) it is significantly worse: 10 lost against 0 gained, "
+                       "p=0.00 (won)")
+    assert got.evidence == {"confirm": {"screened": [], "cases": 10, "gained": 0, "lost": 10, "p": 0.001953125}}
+    held = adopt.confirm(_plain(), [], DECIDE)
+    assert held.adopt is False and held.failure_class == reasons.CONFIRMING
+    assert held.why == ("held for confirmation: no case outside the holdout ran, so the incumbent serves until a "
+                        "night run of the dev cases confirms it (won)")
+    assert held.evidence == {"confirm": {"screened": []}}
+
+
+def test_an_unconfirmed_win_names_the_smallest_gain_its_cells_could_see():
+    split = holdout.Split("decide", dev=tuple(f"d{i}" for i in range(40)), holdout=("h1", "h2", "h3"), too_small=False)
+    rows = []
+    for i in range(40):
+        inc = 0.0 if i < 20 else 1.0
+        ch = (1.0 if i < 12 else 0.0) if i < 20 else (0.0 if i < 28 else 1.0)
+        rows += [_row("inc", f"d{i}", False, inc), _row("ch", f"d{i}", False, ch)]
+    got = adopt.confirm(_plain(), rows, split)
+    assert got.adopt is False and got.failure_class == reasons.UNDERPOWERED
+    assert got.why == ("won the holdout, not confirmed on 40 dev case(s): 12 gained against 8 lost, p=0.503; smallest "
+                       "gain these cells could see: +0.38 per cell at power 0.8; this null is not evidence of no "
+                       "difference (won)")
+    assert got.evidence["confirm"] == {"screened": [], "cases": 40, "gained": 12, "lost": 8,
+                                       "p": pytest.approx(0.5034, abs=1e-4)}
+
+
+def test_only_a_measured_gate_win_is_confirmed():
+    rows = _rows({"d0": (False, True)})
+    hand = adopt.Verdict("code", "inc", "ch", True, "preferred by hand", adopt.BY_HAND)
+    assert adopt.confirm(hand, rows, SPLIT) is hand
+    lost = adopt.Verdict("code", "inc", "ch", False, "no")
+    assert adopt.confirm(lost, rows, SPLIT) is lost
+
+
+def test_confirmation_cells_come_from_dev_and_a_fresh_run_of_a_lane_too_small_to_split():
+    small = holdout.Split("svg", ("a", "b"), ("a", "b"), True)
+    rows = _rows({"a": (False, True), "b": (True, True)})
+    assert adopt.confirmation_cells(rows, small) == []
+    assert adopt.confirmation_cells(rows, small, fresh=True) == rows
+    assert adopt.confirmation_cells(rows, small, frozenset({"a"}), True) == rows[2:]
+    assert adopt.confirmation_cells(rows, None) == []
+    assert adopt.confirmation_cells([], SPLIT) == []
+    got = adopt.confirm(_won("svg"), _rows({"a": (False, True), "b": (False, True), "c": (False, True)}),
+                        holdout.Split("svg", ("a", "b", "c"), ("a", "b", "c"), True), fresh=True)
+    assert "on 3 dev case(s)" in got.why
+
+
+def test_the_confirmation_job_is_the_adopt_command_and_lands_in_the_given_store(conn, monkeypatch):
+    import sys
+    assert adopt.confirm_argv(12) == [sys.executable, "-m", "harness.cli", "adopt", "--confirm", "12"]
+
+    def elsewhere(*a, **k):
+        raise AssertionError("opened another store")
+
+    monkeypatch.setattr(ms, "connect", elsewhere)
+    v = adopt.Verdict("code", "inc", "ch", False, "held", failure_class=reasons.CONFIRMING)
+    assert adopt.queue_confirmation(conn, 12, v, now=0.0) is not None
+    row = conn.execute("SELECT title, cwd, requested_by FROM jobs").fetchone()
+    assert dict(row) == {"title": "confirm code: ch over inc on dev (verdict 12)", "cwd": str(paths.REPO),
+                         "requested_by": "adopt"}
+    conn.execute("UPDATE jobs SET state = ?", (workqueue.DONE,))
+    assert adopt.queue_confirmation(conn, 12, v, now=0.0) is not None, "a finished confirmation does not block a new one"
