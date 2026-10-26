@@ -320,6 +320,16 @@ def _no_real_runtime(request, monkeypatch):
         pytest.fail(f"executed a real runtime binary: {calls}", pytrace=False)
 
 
+def _typed_keys() -> dict[str, str]:
+    from harness import candidates, models, screen, winners
+    out = {}
+    for lane, name in winners.typed().items():
+        spec = screen.candidate_for(lane, name) or name
+        out.setdefault(candidates.key_of(spec), spec)
+        out.update({old: old for old in models.old_names(spec) if old not in out})
+    return out
+
+
 def _rows_from(summary: dict) -> list[dict]:
     """Result rows whose summary is `summary`: n rows, constant time and metric."""
     rows = []
@@ -366,11 +376,16 @@ def store_run():
         here = ms.this_machine()
         env = {"hw_model": here["hw_model"] if hw_model is None else hw_model,
                "os": here["os"], "arch": here["arch"]}
+        rows = rows if rows is not None else _rows_from(summary or {})
+        if specs is None:
+            # evals.run maps a typed default's key to its spec, so served() finds its row. #1247.
+            typed = _typed_keys()
+            specs = {r["candidate"]: typed[r["candidate"]] for r in rows if r.get("candidate") in typed}
         data = {"generated": generated, "environment": env,
                 "receipt": {"modality": lane, "tier": tier,
                             "cases_digest": cases_digest, **(receipt or {})},
-                "specs": specs or {},
-                "rows": rows if rows is not None else _rows_from(summary or {})}
+                "specs": specs,
+                "rows": rows}
         own = conn is None
         conn = conn or ms.connect()
         try:

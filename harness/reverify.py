@@ -301,7 +301,10 @@ def plan(conn, *, now: float, facts: dict, lane: str = "") -> list[dict]:
 
 
 def _queue(conn, entry: dict, now: float, add) -> dict:
-    from harness import memory_store as ms, paths
+    from harness import candidates, memory_store as ms, paths
+    if entry["candidate_id"] is None:
+        # served() only looks up; the row a reverification names is created here. #1247.
+        entry = {**entry, "candidate_id": candidates.ensure(conn, entry["spec"], lane=entry["lane"])}
     job = add(entry["argv"], title=f"reverify {entry['lane']}: {entry['spec']}",
               cwd=str(paths.REPO), priority=PRIORITY, requested_by=REQUESTED_BY,
               conn=conn)
