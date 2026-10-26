@@ -66,6 +66,7 @@ UNIT_OUTPUTS = {
     "sweep-check": ("watchdog_actions", "at", "criterion = 'sweep_check'", ("sweep_check", "sweep-check.log")),
     "fetch": ("downloads", "started_at", "origin = 'fetch'", ("downloads",)),
     "delegations": ("delegations", "outcome_at", "", ("delegations",)),
+    "review": ("", "", "", ("review",)),
 }
 #: Where a person or a report reads a unit's output: commands, the morning brief, the audit, the published reports.
 REPORT_SURFACES = ("harness/commands/*.py", "harness/morning.py", "harness/live_audit.py", "harness/publish.py",
