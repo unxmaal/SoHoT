@@ -445,8 +445,10 @@ def applied_here(run: Path, ids: list[str], results: dict) -> dict | None:
     if not path.is_file():
         return None
     got = read_json(path)
-    kinds = {k: {i: {"applied": bool(v.get("applied"))} for i, v in d.items()}
-             for k, d in (got.get("kinds") or {}).items()}
+    raw = got.get("kinds") or {}
+    kinds = {k: {i: {"applied": bool(v.get("applied"))} for i, v in d.items()} for k, d in raw.items()}
+    # The 2023 reference predates the harness's fallbacks; plain `git apply` is what its "applied" counted.
+    first = {k: {i: {"applied": v.get("by") == APPLY_CMDS[0]} for i, v in d.items()} for k, d in raw.items()}
     gold = kinds.get("gold") or {}
     kept, dropped = [], {}
     for iid in ids:
@@ -460,11 +462,16 @@ def applied_here(run: Path, ids: list[str], results: dict) -> dict | None:
            "sampled": len(ids), "retained": len(kept), "dropped": dropped}
     pub = published(results, kept)
     # An id the reference made no patch for did not apply, as its published results count it.
-    ref = {i: (kinds.get("reference") or {}).get(i, {"applied": False}) for i in kept} if "reference" in kinds else None
+    def filled(table: dict, kind: str) -> dict | None:
+        return {i: (table.get(kind) or {}).get(i, {"applied": False}) for i in kept} if kind in table else None
+
+    ref, ref_first = filled(kinds, "reference"), filled(first, "reference")
     for name, mine, theirs in (("ours_vs_reference", kinds.get("model"), ref),
                                ("ours_vs_published", kinds.get("model"), pub),
                                ("upstream_vs_published", kinds.get("upstream"), pub),
-                               ("reference_vs_published", ref, pub)):
+                               ("reference_vs_published", ref, pub),
+                               ("ours_first_vs_published", first.get("model"), pub),
+                               ("reference_first_vs_published", ref_first, pub)):
         common = [i for i in kept if mine is not None and theirs is not None and i in mine and i in theirs]
         if common:
             out[name] = paired(common, mine, theirs, "applied")
@@ -618,6 +625,10 @@ def _apply_lines(check: dict) -> list[str]:
                              ("upstream extractor here vs published", "upstream_vs_published", "upstream",
                               "published"),
                              ("reference here vs published (checker drift)", "reference_vs_published", "here",
+                              "published"),
+                             ("ours, plain git apply only, vs published", "ours_first_vs_published", "ours",
+                              "published"),
+                             ("reference, plain git apply only, vs published", "reference_first_vs_published", "here",
                               "published")):
         if key in check:
             lines += _pair_lines(title, a, b, {"applied": check[key]})

@@ -304,3 +304,22 @@ def test_compare_reports_the_apply_check_when_no_docker_grades_exist(tmp_path, c
     text = capsys.readouterr().out
     assert "applied here, no Docker: retained 5 of 6 after the gold control" in text
     assert "ours vs reference (both checked here)" in text
+
+
+def test_the_apply_check_also_reports_plain_git_apply_as_the_published_run_applied(tmp_path, capsys):
+    ids = ["o__r-1", "o__r-2", "o__r-3"]
+    run = _run_dir(tmp_path, ids)
+    swebench.write_json(run / "reference" / "results.json", {"generated": ids, "applied": ["o__r-1"], "resolved": []})
+    first, fuzz = swebench.APPLY_CMDS[0], swebench.APPLY_CMDS[-1]
+    kinds = {"gold": {i: {"applied": True, "by": first} for i in ids},
+             "model": {"o__r-1": {"applied": True, "by": fuzz}, "o__r-2": {"applied": True, "by": first},
+                       "o__r-3": {"applied": False, "by": ""}},
+             "reference": {"o__r-1": {"applied": True, "by": first}, "o__r-2": {"applied": True, "by": fuzz}}}
+    swebench.write_json(run / "grades" / "apply.json", {"chain": list(swebench.APPLY_CMDS), "kinds": kinds})
+    check = swebench.compare(run)["apply_check"]
+    assert check["reference_vs_published"]["only_ours"] == 1, "the full chain takes the fuzzed reference patch"
+    plain = check["reference_first_vs_published"]
+    assert (plain["both"], plain["only_ours"], plain["only_theirs"], plain["agreement"]) == (1, 0, 0, 1.0)
+    ours = check["ours_first_vs_published"]
+    assert (ours["both"], ours["only_ours"], ours["only_theirs"]) == (0, 1, 1)
+    assert "reference, plain git apply only, vs published" in swebench.render(swebench.compare(run))
