@@ -362,10 +362,10 @@ def test_the_privacy_scan_fires_on_a_planted_title(tmp_path):
 
 
 def test_short_or_blank_private_names_are_not_registered_and_none_twice():
-    privacy.register(["ab", "  ", "Movies"])
-    assert privacy.home_names() == ["Movies"]
-    privacy.register(["Movies"])
-    assert privacy.home_names() == ["Movies"]
+    privacy.register(["ab", "  ", "Zorblat"])
+    assert privacy.home_names() == ["Zorblat"]
+    privacy.register(["Zorblat"])
+    assert privacy.home_names() == ["Zorblat"]
 
 
 def test_the_export_carries_scores_but_no_title_path_or_frame(tmp_path):
