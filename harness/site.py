@@ -575,6 +575,8 @@ SERVING_ROW = ' class="serving"'
 
 def _bench_table(lane: dict, table: list[dict] | None = None, dated: bool = False) -> str:
     from harness import publish
+    name = lane.get("lane", "")
+    lead = publish.lead(name)
     rows = []
     for r in lane.get("comparison") or [] if table is None else table:
         tags = []
@@ -583,19 +585,22 @@ def _bench_table(lane: dict, table: list[dict] | None = None, dated: bool = Fals
             tags.append('<span class="tag good">serving</span>')
         if r.get("reference"):
             tags.append('<span class="tag">reference, not adoptable</span>')
-        passed = (f'{r.get("passed")}/{r.get("total")} ' if r.get("total") else "")
-        score = (publish.not_run_text(r) if r.get("not_run")
-                 else f'{passed}{_num(r.get("pass_rate"))}')
+        if r.get("not_run"):
+            score = f'<td class="num"{" colspan=2" if lead else ""}>{_esc(publish.not_run_text(r))}</td>'
+        else:
+            score = ((f'<td class="num">{publish.lead_value(r, name)}</td>' if lead else "")
+                     + f'<td class="num">{_esc(publish.passed_text(r))}</td>')
         rows.append(
             f'<tr{SERVING_ROW if serving else ""}>'
             f'<td>{publish.model_html(r)} {" ".join(tags)}</td>'
-            f'<td class="num">{_esc(score)}</td>'
+            f'{score}'
             f'<td class="num">{_num(r.get("median_s"))}</td>'
             f'<td class="num">{_num(r.get("first_s"))}</td>'
             f'<td class="num">{_num(r.get("peak_gb"), "{:.1f}")}</td>'
-            f'<td>{publish.metric_html(r.get("metrics"))}</td>'
+            f'<td>{publish.metric_html(r.get("metrics"), name)}</td>'
             + (f'<td>{_date(r.get("run_at"))}</td>' if dated else "") + '</tr>')
-    return ('<div class="wide"><table><tr><th>candidate</th><th>pass</th><th>median s</th>'
+    head = (f'<th>{_esc(lead)}</th>' if lead else "") + f'<th>{_esc(publish.pass_label(name))}</th>'
+    return ('<div class="wide"><table><tr><th>candidate</th>' + head + '<th>median s</th>'
             '<th>first s</th><th>peak GB</th><th>metrics</th>'
             + ("<th>run</th>" if dated else "") +
             f'</tr>{"".join(rows)}</table></div>')
@@ -614,12 +619,21 @@ def _exam_caption(label: str, exam: dict) -> str:
             + (f'{_esc(apart)} &middot; ' if apart else "") + f'{when}</h3>')
 
 
+def _unreferenced(exam: dict) -> str:
+    """A note under an exam with no reference row, so a lone row is not read as compared. #671."""
+    rows = exam.get("rows") or []
+    if any(r.get("reference") for r in rows):
+        return ""
+    alone = "one candidate and " if len(rows) == 1 else ""
+    return f'<p class="note">This exam has {alone}no reference row to compare against.</p>'
+
+
 def _lane_tables(label: str, lane: dict) -> str:
     """The newest exam open, older ones newest first under one fold; an export from before #621 has only its latest run."""
     if "exams" not in lane:
         return (f'<h3>{_esc(label)} &middot; run {_date(lane.get("last_run_at"))}</h3>'
                 f'{_bench_table(lane)}')
-    tables = [_exam_caption(label, e) + _bench_table(lane, e.get("rows") or [], True)
+    tables = [_exam_caption(label, e) + _bench_table(lane, e.get("rows") or [], True) + _unreferenced(e)
               for e in lane["exams"]]
     earlier = (f'<details class="earlier"><summary>Earlier exams ({len(tables) - 1})</summary>'
                f'{"".join(tables[1:])}</details>' if len(tables) > 1 else "")

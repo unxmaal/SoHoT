@@ -13,6 +13,8 @@ KNOBS = [
        note="decode rate per machine a paired run's reply-budget estimate assumes; prices the deadline, not a grade (#696)"),
     _k("futility_cp", ["harness/looks.py:FUTILITY_CP"], [0.05, 0.1, 0.2],
        note="conditional power under the plan's effect below which a paused run that is not ahead stops for futility (#813)"),
+    _k("holdout_family_share", ["harness/holdout.py:FAMILY_SHARE"], [0.34, 0.5, 0.67],
+       note="largest share of a capped lane's holdout one case family holds; the excess goes to dev (#671)"),
     _k("holdout_saturated", ["harness/holdout.py:SATURATED"], [0.9, 0.95, 0.99],
        note="holdout pass share at or above which an incumbent leaves nothing to separate and reads as saturated (#479)"),
     _k("human_enough", ["harness/human.py:ENOUGH"], [1, 3, 5],
@@ -46,5 +48,6 @@ KNOBS = [
 ]
 
 NEVER_CUTS = {
+    "harness/holdout.py:FAMILY_SHARE": "moves holdout cases to dev, never drops one; the split version names it (#671)",
     "harness/holdout.py:SATURATED": "labels an incumbent's holdout saturated in the report; nothing is skipped (#479)",
 }

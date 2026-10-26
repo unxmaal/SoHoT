@@ -20,6 +20,10 @@ MIN_DEV = 3
 #: An incumbent passing at least this share of holdout leaves nothing to separate.
 SATURATED = 0.95
 SIDES = ("all", "dev", "holdout")
+#: Lanes whose holdout caps one case family's share; the excess goes to dev, never the reverse. #671.
+FAMILY_CAPPED = ("decide",)
+#: The largest share of a capped lane's holdout one family may hold. #671.
+FAMILY_SHARE = 0.5
 
 
 @dataclass(frozen=True)
@@ -55,6 +59,15 @@ def base_id(case_id: str) -> str:
     return str(case_id or "").split("#", 1)[0]
 
 
+def family(case_id: str) -> str:
+    """A case id without its last part: check-squad2-56de -> check-squad2."""
+    return base_id(case_id).rsplit("-", 1)[0]
+
+
+def _capped(lane: str) -> bool:
+    return (lane or "").strip().lower() in FAMILY_CAPPED
+
+
 def _draw(case) -> float:
     from evals.core import case_digest
     h = hashlib.sha256(f"{VERSION}\0{case_digest(case)}".encode("utf-8"))
@@ -71,7 +84,24 @@ def task_of(case) -> str:
 def version(lane: str) -> str:
     """The assignment version a lane's split records: a task-split lane adds the frozen task seed. #995."""
     from evals.importers import history
-    return f"{VERSION}+tasks-{history.SPLIT_SEED}" if (lane or "").strip().lower() == history.LANE else VERSION
+    if (lane or "").strip().lower() == history.LANE:
+        return f"{VERSION}+tasks-{history.SPLIT_SEED}"
+    return f"{VERSION}+family-{FAMILY_SHARE}" if _capped(lane) else VERSION
+
+
+def _cap(held: list) -> tuple[list, list]:
+    """(kept, moved): each family keeps its lowest draws, at most the count that holds every family to FAMILY_SHARE. #671."""
+    by: dict[str, list] = {}
+    for cid in held:
+        by.setdefault(family(cid), []).append(cid)
+    if len(by) < 2:
+        return list(held), []
+    counts = sorted(len(v) for v in by.values())
+    top = counts[-1]
+    while top > 1 and top > FAMILY_SHARE * sum(min(c, top) for c in counts):
+        top -= 1
+    keep = {cid for ids in by.values() for cid in ids[:top]}
+    return [c for c in held if c in keep], [c for c in held if c not in keep]
 
 
 def _assign_tasks(lane: str, cases) -> Split:
@@ -95,10 +125,14 @@ def assign(lane: str, cases) -> Split:
     drawn = sorted(((_draw(c), c.id) for c in cases), key=lambda t: (t[0], t[1]))
     ids = [cid for _, cid in drawn]
     if len(ids) < MIN_HOLDOUT + MIN_DEV:
-        return Split(lane, tuple(sorted(ids)), tuple(sorted(ids)), True)
+        return Split(lane, tuple(sorted(ids)), tuple(sorted(ids)), True, version(lane))
     n = sum(1 for d, _ in drawn if d < FRACTION)
     n = min(max(n, MIN_HOLDOUT), len(ids) - MIN_DEV)
-    return Split(lane, tuple(sorted(ids[n:])), tuple(sorted(ids[:n])), False)
+    held, dev = ids[:n], ids[n:]
+    if _capped(lane):
+        held, moved = _cap(held)
+        dev = dev + moved
+    return Split(lane, tuple(sorted(dev)), tuple(sorted(held)), False, version(lane))
 
 
 @functools.lru_cache(maxsize=8)
