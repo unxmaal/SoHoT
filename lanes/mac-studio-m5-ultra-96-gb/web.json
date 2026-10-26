@@ -3006,7 +3006,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-10-25T18:04:02Z",
+ "generated_at": "2026-10-26T07:02:47Z",
  "knobs": [],
  "lane": {
   "cases": 5,
@@ -3038,7 +3038,7 @@
   "pass_rate": 1.0,
   "serves": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
   "serves_model": "mlx-community/Qwen3-4B-Instruct-2507-4bit; 4B params, 4bit, by mlx-community",
-  "stale": false
+  "stale": true
  },
  "since": 0
 }
