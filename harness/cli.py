@@ -37,6 +37,7 @@ from harness.commands import common
 from harness.commands import context as context_cmd
 from harness.commands import day as day_cmd
 from harness.commands import degenerate as degenerate_cmd
+from harness.commands import floors as floors_cmd
 from harness.commands import discover as discover_cmd
 from harness.commands import gateway as gateway_cmd
 from harness.commands import gauntlet as gauntlet_cmd
@@ -798,6 +799,14 @@ def build_parser() -> argparse.ArgumentParser:
     deg.add_argument("--db", default="", help="redecide: the store (default: this home's discovery.db)")
     deg.add_argument("--apply", action="store_true", help="redecide: write the changed verdicts")
     deg.set_defaults(func=degenerate_cmd.cmd_degenerate)
+    flo = sub.add_parser("floors", help="each pass threshold against a known-good instrument's noise floor on "
+                         "clean known inputs, from the store read-only; plant writes the clean ocr inputs. #730")
+    flo.add_argument("action", nargs="?", choices=("derive", "plant"), default="derive")
+    flo.add_argument("--store", default="", help="derive: the store (default: this home's discovery.db)")
+    flo.add_argument("--share", type=float, default=None, help="derive: knob floor_pass_share for this run")
+    flo.add_argument("--min-items", type=int, default=None, help="derive: knob floor_min_items for this run")
+    flo.add_argument("--out", default="floors-planted", help="plant: where the clean ocr cases go")
+    flo.set_defaults(func=floors_cmd.cmd_floors)
     llg = sub.add_parser("load-log", help="re-decide held llama.cpp load failures from the router's log, "
                          "keeping each child's lines in its run directory; read-only without --apply. #953")
     llg.add_argument("--db", default="", help="the store (default: this home's discovery.db)")

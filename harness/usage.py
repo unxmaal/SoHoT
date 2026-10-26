@@ -398,7 +398,7 @@ MIN_REQUESTS = 20
 #: How many cluster-robust standard errors a rate must rise by to be called a regression.
 Z_WARN = 3.0
 #: A client's requests further apart than this are separate sessions; one session is one piece of evidence. #701.
-SESSION_GAP_S = 300.0
+SESSION_GAP_S = 600.0
 #: Failures the gateway or the client caused, which say nothing about the model behind the alias. #701.
 NOT_MODEL_ERRORS = frozenset({"AuthenticationError", "PermissionDeniedError", "RateLimitError",
                               "NotFoundError", "BadRequestError", "BudgetExceededError",
