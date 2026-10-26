@@ -48,6 +48,9 @@ KNOBS = [
     _k("repo_max_fix_lines", ["evals/repo_size.py:MAX_FIX_LINES"], [0, 20, 56, 115],
        note="largest reference fix (non-test lines base..fix) --max-fix-lines keeps, 0 all; 20/56/115 are the "
             "upper quartile edges of the 108-case exam, where Ornith passes 11/27, 1/27, 0/27 (FINDING #709, #890)"),
+    _k("repo_min_fix_lines", ["evals/repo_size.py:MIN_FIX_LINES"], [0, 21, 57, 116],
+       note="smallest reference fix --min-fix-lines keeps, 0 all; 21/57/116 are one past the repo_max_fix_lines "
+            "edges, so a size band runs alone instead of rerunning the smaller ones already measured (#1176)"),
     _k("repo_test_timeout", ["evals/repo.py:TEST_TIMEOUT_S"], [120.0, 300.0, 600.0, 1200.0],
        lanes=("repo",), limit="repo_test_timeout_s", unit="s", receipt="knobs",
        note="seconds the sandboxed pytest run of a repo case may take before it is killed (#887)"),
