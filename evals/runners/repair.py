@@ -17,6 +17,8 @@ single-shot candidate. The row reports `attempts`.
 """
 from __future__ import annotations
 
+import time
+
 from harness import completion
 
 from evals import core
@@ -55,8 +57,6 @@ class RepairRunner(BaseRunner):
             return self._generate(case)
 
     def _generate(self, case: Case):
-        import time
-
         # perf_counter, not monotonic: `monotonic` is GetTickCount64 on
         # Windows and quantises to 15.6ms, which measured a 0.15s run as
         # 0.14 in 75 of 200 tries. This number is reported as a result and
