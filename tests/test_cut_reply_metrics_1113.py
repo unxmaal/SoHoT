@@ -70,4 +70,4 @@ def test_the_runner_records_a_cut_repo_reply_as_a_graded_failure():
 
 def test_a_graded_value_is_never_overwritten():
     assert as_graded("repo", "token_budget_exhausted", {"patch_applied": 1}) == {"resolved": 0, "patch_applied": 1}
-    assert as_graded("repo", "crashed", {}) == {}
+    assert as_graded("repo", "environment_error", {}) == {}

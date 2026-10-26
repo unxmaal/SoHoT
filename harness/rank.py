@@ -68,6 +68,10 @@ DECLINED = -1.5
 HEAVY = -1.0
 #: A quantised child of this row is queued, which is the form a screen should take.
 QUANT_QUEUED = -2.0
+#: Per day a fetch budget refused a row that fit the whole budget, and the most that adds: priority aging (#1288).
+PASSED_OVER = 0.5
+PASSED_OVER_MAX = 30.0
+AT_CAP = "at the pass-over cap"
 
 _PARAMS = re.compile(r"(?<![A-Za-z0-9.])(\d+(?:\.\d+)?)([BbMm])(?![A-Za-z])")
 _FAMILY = re.compile(r"[a-z]+")
@@ -199,6 +203,15 @@ def value(row: dict, *, serving: set[str] = frozenset(),
         score += DECLINED * declines
         why.append(f"declined at adopt {int(row.get('adopt_declines'))} time(s)")
 
+    passed = int(row.get("passed_over") or 0)
+    if passed:
+        # A row each run's budget passes over gains for it, or a fitting row can wait forever. #1288.
+        gain = PASSED_OVER * passed
+        capped = gain > PASSED_OVER_MAX
+        score += PASSED_OVER_MAX if capped else gain
+        why.append(f"passed over by a fetch budget on {passed} day{'s' if passed > 1 else ''}"
+                   + (f", {AT_CAP}" if capped else ""))
+
     first = float(row.get("first_seen") or 0.0)
     if first:
         days = ((time.time() if now is None else now) - first) / 86400
@@ -287,7 +300,7 @@ def quantised_children(rows) -> dict[str, list[str]]:
 
 def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float | None = None,
          keep_laneless: bool = False, incumbents_by_lane: dict | None = None,
-         bases_by_lane: dict | None = None, now: float | None = None, standing=None, conn):
+         bases_by_lane: dict | None = None, now: float | None = None, standing=None, passed=None, trace: bool = True, conn):
     """Best first. Ties break on name so the order is stable across runs.
 
     A candidate NO LANE CAN TEST IS DROPPED rather than ranked last. Penalising
@@ -318,7 +331,9 @@ def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float | None = Non
     if standing is None:
         from harness import family
         standing = family.standing(conn)
-    rows = list(rows)
+    if passed is None:
+        passed = passed_over(conn, before=now)
+    rows = [{**r, "passed_over": passed[r["name"]]} if r.get("name") in passed else r for r in rows]
     quants = quantised_children(rows)
     out = []
     for row in rows:
@@ -343,6 +358,11 @@ def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float | None = Non
             got += QUANT_QUEUED
             why.append(f"a quantised form is queued: {sorted(kids)[0]}")
         out.append({**row, "value": got, "value_why": "; ".join(why)})
+    capped = [r["name"] for r in out if AT_CAP in r["value_why"]]
+    if capped and conn is not None and trace:
+        from harness import cuts
+        cuts.cut("fetch_passed_over_max", f"{len(capped)} row(s) at the pass-over cap, first {capped[0]}",
+                 kept=len(out) - len(capped), dropped=len(capped), conn=conn)
     # THE TIEBREAK IS ABOUT THE CANDIDATE, NEVER ITS NAME. Ten code candidates
     # scored an identical +3.7, so the order was the alphabet: `AxiomicLabs`
     # won every run and `z-lab` never did. A STABLE arbitrary tiebreak is worse
@@ -355,6 +375,29 @@ def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float | None = Non
     return sorted(out, key=lambda r: (-r["value"],
                                       -float(r.get("last_seen") or 0.0),
                                       r["name"]))
+
+
+def passed_over(conn, before: float | None = None) -> dict[str, int]:
+    """name -> days a fetch budget refused it though it fit the whole budget, since its last later-tier verdict or reopen."""
+    if conn is None:
+        return {}
+    from harness import fetching, reasons
+    try:
+        rows = conn.execute("""
+            SELECT p.name, COUNT(DISTINCT CAST(v.decided_at / 86400 AS INTEGER)) FROM verdicts v
+              JOIN proposals p ON p.id = v.proposal_id
+             WHERE v.tier = 'fetch' AND v.reason = :limit AND COALESCE(v.until, '') = ''
+               AND v.detail GLOB :refusal AND v.decided_at < :before
+               AND v.id > COALESCE((SELECT MAX(vx.id) FROM verdicts vx WHERE vx.proposal_id = v.proposal_id
+                                      AND vx.decided_at < :before
+                                      AND (vx.tier NOT IN ('inspect', 'fetch', 'judge') OR vx.reason = :reopened)), 0)
+             GROUP BY p.id""", {"limit": reasons.LIMIT, "refusal": f"[0-9]* GiB {fetching.PASSED} *",
+                                "before": time.time() if before is None else before,
+                                "reopened": reasons.REOPENED}).fetchall()
+    except (AttributeError, sqlite3.Error):
+        # An order hint never fails the ranking; no pass-overs is the answer.
+        return {}
+    return {r[0]: int(r[1]) for r in rows}
 
 
 def unrunnable(row: dict, machine=None) -> str:

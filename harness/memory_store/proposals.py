@@ -252,7 +252,7 @@ def by_registry(conn) -> dict[str, int]:
     return out
 
 
-def judgeable(conn, limit: int = 50) -> list[dict]:
+def judgeable(conn, limit: int = 50, names=None) -> list[dict]:
     """What the inspect tier queued and no judge has scored, best-corroborated
     first, with everything judge.describe() is shown.
 
@@ -266,8 +266,10 @@ def judgeable(conn, limit: int = 50) -> list[dict]:
     cost a model call to learn what is already recorded, and the rubric and
     judge model are recorded beside the score, so a run under a NEW rubric is
     told apart by that rather than by scoring everything again.
+
+    `names` returns those rows in the same shape whatever their state, for a replay of past runs (#1288).
     """
-    q = f"""
+    columns = """
         SELECT p.name, p.lane, p.registry, p.kind, p.description,
                p.size_bytes, p.category,
                p.hf_task, p.library, p.card_tags, p.attaches_to, p.runtime_needed,
@@ -282,7 +284,19 @@ def judgeable(conn, limit: int = 50) -> list[dict]:
                (SELECT v.detail FROM verdicts v
                  WHERE v.proposal_id = p.id AND v.tier = ?
                  ORDER BY v.id DESC LIMIT 1) AS inspected
-        FROM proposals p JOIN sightings s ON s.proposal_id = p.id
+        FROM proposals p JOIN sightings s ON s.proposal_id = p.id"""
+    if names is not None:
+        names = list(names)
+        if not names:
+            return []
+        q = f"""
+        {columns}
+        WHERE p.name IN ({','.join('?' * len(names))})
+        GROUP BY p.id
+    """
+        return with_lineage(conn, [dict(r) for r in conn.execute(q, (ms.machine_row(conn), INSPECT, *names))])
+    q = f"""
+        {columns}
         WHERE p.id IN (
             SELECT proposal_id FROM verdicts
             WHERE tier = ? AND outcome = 'queued'
