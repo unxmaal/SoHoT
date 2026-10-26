@@ -121,7 +121,7 @@ LEFT_OUT = {
         "test_store_state.py", "test_stt_screen_power_1007.py", "test_sweep_ceiling_806.py", "test_loop_revisit_1055.py",
         "test_incumbent_from_measurement_1110.py", "test_env_error_coverage_1116.py", "test_site.py",
         "test_metric_order_717.py",
-        "test_served_readonly_1247.py", "test_saturation_lane_metric_1267.py"),
+        "test_served_readonly_1247.py", "test_saturation_lane_metric_1267.py", "test_gate_direction_1302.py"),
     "harness/serving.py": (
         "test_mlx_backlog.py", "test_runner_gap_until_950.py", "test_agent_limits.py", "test_claims_lane.py", "test_decide_lane.py",
         "test_delegate_resident.py", "test_delegations.py", "test_lane_probe_924.py", "test_machine_host.py",
