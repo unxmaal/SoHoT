@@ -57,7 +57,6 @@ def _alpha() -> float:
 
 
 @functools.lru_cache(maxsize=None)
-@functools.lru_cache(maxsize=None)
 def _critical(d: int, alpha: float) -> int:
     """Fewest gains of d discordant cells that the two-sided test rejects on."""
     total = 2 ** d
@@ -111,8 +110,14 @@ def power_cells(gain: float, lose: float, n: int, alpha: float) -> float:
         need = _critical(d, alpha)
         if need > d:
             continue
-        total += _pmf(n, d, disc) * sum(_pmf(d, j, r) for j in range(need, d + 1))
+        total += _pmf(n, d, disc) * _tail(d, need, r)
     return min(1.0, total)
+
+
+@functools.lru_cache(maxsize=1 << 16)
+def _tail(d: int, need: int, r: float) -> float:
+    """P(at least `need` gains of d discordant cells), shared by every n whose range reaches d. #1292."""
+    return sum(_pmf(d, j, r) for j in range(need, d + 1))
 
 
 def _cell_odds(rates, effect: float) -> tuple[float, float]:
