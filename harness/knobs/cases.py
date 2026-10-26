@@ -4,10 +4,12 @@ from harness.knobs.base import _k
 KNOBS = [
     _k("benchmark_page_chars", ["evals/benchmark_import.py:PAGE_CHARS"], [500, 1500, 4000],
        note="characters a labelled page may have and still go into a benchmark case; longer ones are skipped, unmeasured (#491)"),
+    _k("decide_check_cases", ["evals/decide_corpus.py:CHECK_CASES"], [6],
+       note="SQuAD check cases the corpus builder draws; the SQuAD importer supplies the rest (#671)"),
     _k("decide_check_questions", ["evals/decide_corpus.py:QUESTIONS"], [3, 5, 8],
        note="SQuAD questions of one paragraph a decide check case holds; it is kept only with both answerable and not (#423)"),
-    _k("decide_per_family", ["evals/decide_corpus.py:PER_FAMILY"], [3, 6, 12],
-       note="decide cases the corpus builder draws per decision family (#423)"),
+    _k("decide_per_family", ["evals/decide_corpus.py:PER_FAMILY"], [6, 30, 60, 90],
+       note="decide cases the corpus builder draws per route, policy and rate family; 60 holds SQuAD to half the holdout (#423, #671)"),
     _k("ocr_max_cer", ["evals/importers/ocr_synth.py:MAX_CER", "evals/ocr_corpus.py:MAX_CER"], [0.0, 0.05, 0.1, 0.25],
        unit="share", grades=True,
        note="CER an ocr case passes at, written into each case (#701); noise floor of Vision (macOS 27.0.1) on 464 "
