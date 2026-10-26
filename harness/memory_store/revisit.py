@@ -576,6 +576,31 @@ def runner_waits(conn, lane: str = "") -> list[dict]:
     return out
 
 
+def relane_to_vision(conn) -> list[dict]:
+    """Move code-lane image-text-to-text rows to vision: by their card, or by a screen that found the text runner cannot load them. #1282."""
+    from harness import inspect as ins, lanes, reasons, runner_gaps
+    rows = conn.execute(
+        "SELECT p.name, p.state, p.hf_task, p.library, p.card_tags, p.model_type, "
+        "v.tier, v.reason, v.until FROM proposals p LEFT JOIN verdicts v ON v.id = p.state_verdict_id "
+        "WHERE lower(p.hf_task) = ? AND p.lane = 'code' ORDER BY p.name", (ins.VISION_TASK,)).fetchall()
+    moved = []
+    for r in rows:
+        card = {"pipeline_tag": r["hf_task"], "tags": runner_gaps.tags_of(dict(r)), "id": r["name"],
+                "model_type": r["model_type"], "library_name": r["library"]}
+        by_card = ins.lane_and_source(card)[0]
+        waits = (r["state"] == "declined" and r["tier"] == SCREEN and r["reason"] == reasons.RUNTIME
+                 and r["until"] == f"runner:{runner_gaps.VLM_RUNNER}")
+        if by_card != "vision" and not (waits and by_card == "code"):
+            continue
+        source = "card" if by_card == "vision" else lanes.SCREENED_SOURCE
+        conn.execute("UPDATE proposals SET lane = 'vision', lane_source = ? WHERE name = ?", (source, r["name"]))
+        if r["state"] in TERMINAL and r["tier"] in (SCREEN, MEASURE):
+            retract(conn, r["name"], f"moved to the vision lane: the {r['tier']} asked a text runner a vision "
+                                     f"model's question ({r['until'] or r['reason']})", tier=INSPECT)
+        moved.append({"name": r["name"], "source": source, "state": r["state"]})
+    return moved
+
+
 _NONE_OF = re.compile(r"none of ([\w, ]+)$")
 
 

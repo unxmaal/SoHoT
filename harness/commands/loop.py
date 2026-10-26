@@ -245,7 +245,7 @@ def _run_loop_held(a, keep=None) -> int:
             for repair, args in ((_reopen_stale_too_big, ()), (_reopen_unranked, ()),
                                  (_reopen_upstream_committed, ()), (_reread_runtime_declines, (a,)),
                                  (_move_past_screen, ()), (_reopen_revisitable, ()),
-                                 (_rederive_attachments, ())):
+                                 (_rederive_attachments, ()), (_relane_vision, ())):
                 rc = _repair(label, repair, args, failed) or rc
         sub = _ap.Namespace(**{**vars(a), **flags, **extra, "loop": False})
         rc = _step(label, discover_cmd.cmd_discover(sub), failed) or rc
@@ -719,6 +719,22 @@ def _rederive_attachments() -> dict:
     for c in got["changed"]:
         print(f"    {c['name']}: {c['was']} -> {c['now'] or '(a model)'}")
     return got
+
+
+def _relane_vision() -> list[dict]:
+    """Code-lane image-text-to-text rows the text runner cannot load go to the vision lane. #1282."""
+    from harness import memory_store as ms
+    store = ms.connect()
+    try:
+        moved = ms.relane_to_vision(store)
+        store.commit()
+    finally:
+        store.close()
+    if moved:
+        print(f"  moved {len(moved)} image-text-to-text row(s) from code to vision")
+    for m in moved:
+        print(f"    {m['name']}: by {m['source']}, was {m['state']}")
+    return moved
 
 
 def _reopen_stale_too_big() -> list[str]:
