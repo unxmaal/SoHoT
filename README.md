@@ -293,6 +293,12 @@ python -m harness.publish render --data <dir of machine JSON> --out /tmp/site
 python -m harness.privacy --files /tmp/site      # a directory means every file under it
 ```
 
+The tracker is published too. `python -m harness.privacy --github` scans every issue, PR and comment, and
+`--history N...` scans every earlier revision of those issues and their comments, which GitHub keeps showing
+after a scrub. Post through `python -m harness.privacy gh issue comment 12 --body-file body.md` (any `gh issue`
+or `gh pr` command): it sends nothing when the title or body matches. `python -m harness.privacy add NAME`
+registers a name in the home's `private-names.txt`, which every checkout and worktree on the machine reads.
+
 The front page's "How it works" diagram is drawn from
 `harness/how-it-works.workflow.json`, a workflow model in the format of
 [Archify](https://github.com/tt-a1i/archify). Every box cites the code it stands

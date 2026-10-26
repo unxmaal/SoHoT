@@ -380,7 +380,18 @@ def leaked(body: str, sha: str, fp: str) -> dict:
     return redact.detect(body, redact.known_here())
 
 
+def posted(title: str, body: str) -> dict:
+    """What the tracker's own privacy scan finds in the title and body, by kind. #1296."""
+    from harness import privacy
+    out: dict = {}
+    for f in privacy.check_post(f"{title}\n{body}"):
+        out[f.name] = out.get(f.name, 0) + 1
+    return out
+
+
 def file_issue(gh, title: str, body: str) -> int:
+    if posted(title, body):
+        raise RuntimeError(f"privacy: the issue would hold {', '.join(sorted(posted(title, body)))}")
     names = gh(["label", "list", "--search", LABEL, "--json", "name"])
     try:
         have = {r.get("name") for r in json.loads(names.stdout or "[]")}
@@ -647,12 +658,12 @@ def run(source: Path | None = None, ref: str = "origin/main", *, fetch: bool = T
                     continue
                 cand["refuter"] = str(verdict.get("why") or "")[:500]
                 body = body_for(f, cand, sha, output)
-                leaks = leaked(body, sha, fp)
+                title = f"review ({dim}): {f['title'][:150]}"
+                leaks = leaked(body, sha, fp) | posted(title, body)
                 if leaks:
                     cand.update(fate="withheld", why=f"the body would hold {', '.join(sorted(leaks))}")
                     continue
                 shown += 1
-                title = f"review ({dim}): {f['title'][:150]}"
                 if not filing:
                     cand.update(fate="would file", issue_title=title, body=body)
                     continue

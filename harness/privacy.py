@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -79,6 +80,9 @@ PATTERNS: list[tuple[str, re.Pattern[str], str]] = [
 #: exists to hide. One name per line in an untracked file, or in LH_PRIVATE_NAMES
 #: separated by commas. Absent means the structural patterns still run.
 NAMES_FILE = ".privacy-names"
+
+
+ROOT = Path(__file__).resolve().parent.parent
 
 
 def names(root: Path) -> list[str]:
@@ -201,16 +205,45 @@ def _gh(*args: str) -> list[dict]:
     return json.loads(r.stdout)
 
 
+def _api(path: str) -> list[dict]:
+    return _gh("api", path)
+
+
+#: Comment listings of the whole repo: conversation comments on issues and PRs, and PR review comments. #1296.
+COMMENT_LISTINGS = ("repos/{owner}/{repo}/issues/comments", "repos/{owner}/{repo}/pulls/comments")
+
+
+def comments(api=None) -> list[tuple[str, str]]:
+    """(origin, body) of every comment, read page by page until a short page. #1296."""
+    from harness import github
+    api = api or _api
+    out = []
+    for listing in COMMENT_LISTINGS:
+        page = 1
+        while True:
+            rows = api(f"{listing}?per_page={github.PER_PAGE}&page={page}")
+            for r in rows:
+                hit = re.search(r"/(pull|issues)/(\d+)", r.get("html_url") or "")
+                where = f"{'pr' if hit and hit.group(1) == 'pull' else 'issue'}#{hit.group(2) if hit else '?'}"
+                out.append((f"{where} comment {r.get('id')}", r.get("body") or ""))
+            if len(rows) < github.PER_PAGE:
+                break
+            page += 1
+    return out
+
+
 def scan_github(page: int = 300,
-                extra: tuple[str, re.Pattern[str], str] | None = None) -> tuple[list[Finding], dict[str, int]]:
-    """Every issue and PR, which are published the moment they are filed; returns the findings and how many of each were read."""
+                extra: tuple[str, re.Pattern[str], str] | None = None,
+                gh=None, api=None) -> tuple[list[Finding], dict[str, int]]:
+    """Every issue, PR and comment, which are published the moment they are filed; returns the findings and how many of each were read."""
+    gh = gh or _gh
     out: list[Finding] = []
-    counts = {"issue": 0, "pr": 0}
+    counts = {"issue": 0, "pr": 0, "comment": 0}
     for kind, cmd in (("issue", "issue"), ("pr", "pr")):
         limit = page
         while True:
-            rows = _gh(cmd, "list", "--state", "all", "--limit", str(limit),
-                       "--json", "number,title,body")
+            rows = gh(cmd, "list", "--state", "all", "--limit", str(limit),
+                      "--json", "number,title,body")
             # A full answer may be a truncated one: ask again for more until fewer come back. #700.
             if len(rows) < limit:
                 break
@@ -219,7 +252,110 @@ def scan_github(page: int = 300,
             body = f"{r['title']}\n{r['body'] or ''}"
             out.extend(scan(body, f"{kind}#{r['number']}", extra))
         counts[kind] = len(rows)
+    said = comments(api)
+    for origin, body in said:
+        out.extend(scan(body, origin, extra))
+    counts["comment"] = len(said)
     return out, counts
+
+
+#: Revisions GitHub returns per body or comment in one query; more and the history scan refuses rather than skip.
+HISTORY_EDITS = 100
+#: Comments per issue or PR one history query reads; more and the scan refuses.
+HISTORY_COMMENTS = 100
+_EDITS = f"userContentEdits(first: {HISTORY_EDITS}) {{ totalCount nodes {{ editedAt diff }} }}"
+_HISTORY = ("query($owner: String!, $name: String!, $n: Int!) { repository(owner: $owner, name: $name) { "
+            "issueOrPullRequest(number: $n) { ... on Issue { %s comments(first: %d) { totalCount nodes "
+            "{ databaseId %s } } } ... on PullRequest { %s comments(first: %d) { totalCount nodes "
+            "{ databaseId %s } } } } } }") % (_EDITS, HISTORY_COMMENTS, _EDITS, _EDITS, HISTORY_COMMENTS, _EDITS)
+
+
+def _whole(conn: dict, what: str) -> list[dict]:
+    nodes = conn.get("nodes") or []
+    if conn.get("totalCount", len(nodes)) > len(nodes):
+        raise ValueError(f"privacy history: {what} has {conn['totalCount']}, one query reads {len(nodes)}")
+    return nodes
+
+
+def _graphql(number: int) -> dict:
+    """{edits, comments: [{databaseId, edits}]} of one issue or PR, every revision GitHub keeps."""
+    got = _gh("api", "graphql", "-F", "owner={owner}", "-F", "name={repo}", "-F", f"n={number}",
+              "-f", f"query={_HISTORY}")
+    node = got["data"]["repository"]["issueOrPullRequest"] or {}
+    return {"edits": _whole(node.get("userContentEdits") or {}, f"#{number}'s edits"),
+            "comments": [{"databaseId": c["databaseId"],
+                          "edits": _whole(c.get("userContentEdits") or {}, f"#{number} comment {c['databaseId']}")}
+                         for c in _whole(node.get("comments") or {}, f"#{number}'s comments")]}
+
+
+def scan_history(numbers, extra: tuple[str, re.Pattern[str], str] | None = None, graphql=None) -> list[Finding]:
+    """Every earlier revision of these issues and PRs and of their comments, which GitHub still shows. #1296."""
+    out: list[Finding] = []
+    for n in numbers:
+        got = (graphql or _graphql)(int(n))
+        for e in got["edits"]:
+            out.extend(scan(e.get("diff") or "", f"#{n} edit {e.get('editedAt')}", extra))
+        for c in got["comments"]:
+            for e in c["edits"]:
+                out.extend(scan(e.get("diff") or "", f"#{n} comment {c['databaseId']} edit {e.get('editedAt')}", extra))
+    return out
+
+
+def check_post(text: str, root: Path | None = None) -> list[Finding]:
+    """What the scan finds in text about to be posted to the tracker; [] when it may go. #1296."""
+    return scan(text, "post", name_pattern(ROOT if root is None else root))
+
+
+#: gh flags whose value is published text, and those naming a file of it ("-" is stdin).
+POST_TEXT = ("--title", "-t", "--body", "-b")
+POST_FILE = ("--body-file", "-F")
+
+
+def post_texts(args, stdin=None) -> tuple[list[str], str | None]:
+    """The text a gh issue or pr command would publish, and the stdin it reads its body from."""
+    texts, fed = [], None
+    i = 0
+    while i < len(args):
+        flag, eq, inline = args[i].partition("=")
+        if flag in POST_TEXT + POST_FILE:
+            if eq:
+                value = inline
+            else:
+                i += 1
+                value = args[i] if i < len(args) else ""
+            if flag in POST_FILE:
+                if value == "-":
+                    fed = (stdin or sys.stdin).read()
+                    value = fed
+                else:
+                    value = Path(value).read_text(encoding="utf-8")
+            texts.append(value)
+        i += 1
+    return texts, fed
+
+
+def post(args) -> int:
+    """Run `gh <args>` only when the text it would publish passes the scan. #1296."""
+    texts, fed = post_texts(args)
+    found = [f for t in texts for f in check_post(t)]
+    for f in found:
+        print(f, file=sys.stderr)
+    if found:
+        print(f"refused: {len(found)} finding(s); nothing was sent to GitHub", file=sys.stderr)
+        return 1
+    return subprocess.run(["gh", *args], input=fed, text=True).returncode
+
+
+def add(found) -> int:
+    """Register names in the home's private-names.txt, which every checkout and worktree here reads. #1296."""
+    short = [n for n in found if len(" ".join(n.split())) < MIN_HOME_NAME]
+    if short:
+        print(f"refused: shorter than {MIN_HOME_NAME} characters, a common word: {', '.join(short)}", file=sys.stderr)
+        return 2
+    new = register(found)
+    for n in found:
+        print(f"{'added' if ' '.join(n.split()) in new else 'already registered'}: {n}")
+    return 0
 
 
 def expand(items) -> list[Path]:
@@ -242,15 +378,23 @@ def expand(items) -> list[Path]:
 def main(argv: list[str] | None = None) -> int:
     import argparse
 
+    argv = sys.argv[1:] if argv is None else list(argv)
+    if argv[:1] == ["add"]:
+        return add(argv[1:])
+    if argv[:1] == ["gh"]:
+        return post(argv[1:])
     ap = argparse.ArgumentParser(prog="python -m harness.privacy",
-                                 description=__doc__.splitlines()[0])
+                                 description=__doc__.splitlines()[0],
+                                 epilog="also: `add NAME...` registers a name; `gh ARGS...` runs gh only on clean text")
     ap.add_argument("--github", action="store_true",
-                    help="also scan every issue and PR body")
+                    help="also scan every issue and PR body and every comment")
+    ap.add_argument("--history", nargs="+", type=int, default=None, metavar="N",
+                    help="also scan every earlier revision of these issues or PRs and their comments")
     ap.add_argument("--files", nargs="+", default=None,
                     help="scan only these files; a directory means every file under it")
     a = ap.parse_args(argv)
 
-    root = Path(__file__).resolve().parent.parent
+    root = ROOT
     if a.files:
         found = [f for p in expand(a.files) for f in scan(
             p.read_text(encoding="utf-8", errors="replace"), str(p),
@@ -261,10 +405,14 @@ def main(argv: list[str] | None = None) -> int:
     if a.github:
         more, read = scan_github(extra=name_pattern(root))
         found += more
+    if a.history:
+        found += scan_history(a.history, extra=name_pattern(root))
     for f in found:
         print(f)
     if read is not None:
-        print(f"scanned {read['issue']} issue(s) and {read['pr']} PR(s)")
+        print(f"scanned {read['issue']} issue(s), {read['pr']} PR(s) and {read['comment']} comment(s)")
+    if a.history:
+        print(f"scanned the edit histories of {len(a.history)} issue(s) or PR(s)")
     print(f"{len(found)} finding(s)")
     return 1 if found else 0
 
