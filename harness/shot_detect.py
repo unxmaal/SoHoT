@@ -30,7 +30,9 @@ ADAPTIVE_THRESHOLD = 3.0
 CONTENT_THRESHOLD = 27.0
 #: Largest per-frame probability gap between MPS and CPU under which an MPS run counts as TransNetV2's.
 MPS_MAX_PROB_DIFF = 0.05
-DEVICES = ("cpu", "mps")
+#: CPU is TransNetV2's reference device; an MPS run counts only where it matches it.
+REFERENCE_DEVICE, CHECKED_DEVICE = "cpu", "mps"
+TRANSNET_DEVICES = (REFERENCE_DEVICE, CHECKED_DEVICE)
 DETECTORS = ("adaptive", "content")
 #: TransNetV2's input frame size, width x height.
 _W, _H = 48, 27
@@ -145,7 +147,7 @@ def _transnetv2(a) -> dict:
         raise
     out = {"device": a.device, "frames": len(got[0])}
     if a.device == "mps":
-        cpu = probabilities(a.clip, "cpu")
+        cpu = probabilities(a.clip, REFERENCE_DEVICE)
         why = disagreement(cpu, got, a.max_diff, **knobs)
         out["agreement"] = {**agreement(cpu, got, **knobs), "bound": a.max_diff}
         if why:
@@ -173,7 +175,7 @@ def parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="harness.shot_detect", description=__doc__.splitlines()[0])
     sub = ap.add_subparsers(dest="engine", required=True)
     t = sub.add_parser("transnetv2")
-    t.add_argument("--device", choices=DEVICES, default="cpu")
+    t.add_argument("--device", choices=TRANSNET_DEVICES, default="cpu")
     t.add_argument("--threshold", type=float, default=None)
     t.add_argument("--span-threshold", type=float, default=None)
     t.add_argument("--gap", type=int, default=None)

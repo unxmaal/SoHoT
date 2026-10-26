@@ -886,9 +886,9 @@ def _transnetv2(spec: str, model: str, options: dict) -> Engine:
     """TransNetV2 on CPU, or on MPS refused unless every frame agrees with CPU. Weights ship in the wheel."""
     from harness import shot_detect
     device = model or "cpu"
-    if device not in shot_detect.DEVICES:
+    if device not in shot_detect.TRANSNET_DEVICES:
         raise ValueError(f"{spec_error(spec)}: unknown transnetv2 device {device!r}; known: "
-                         f"{', '.join(shot_detect.DEVICES)}")
+                         f"{', '.join(shot_detect.TRANSNET_DEVICES)}")
     _check_options(options, set(), spec)
 
     def argv(prompt: str, out: Path, params: dict) -> list[str]:
