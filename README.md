@@ -1916,6 +1916,16 @@ applicability gate fails (the patch does not apply, or pass_to_pass breaks),
 with cloud calls, local seconds, over-routes, under-routes and accepted-wrong
 answers. It also labels each prompt with the deterministic tool it asks for.
 
+`soh baseline [--bar RATE]` prints each real workload three ways, all local, all
+Claude and hybrid, from stored rows only (the store opened read-only): every
+shadow-replay shape from `evals/analysis/demand/replay.jsonl`, and the repo,
+decide, claims, code and extract lanes from the newest Claude run and the local
+run on its exam. Each row has the local usable rate with a Wilson interval, the
+Claude rate, the hybrid rate at its gate, how many went to Claude, wrong local
+answers the gate let through, local GPU minutes and Claude tokens in and out. A
+lane with no stored Claude run says so. `--replay DIR --save PATH` refreshes the
+numbers-only replay summary from a replay working directory.
+
 `leetcode` (code lane) imports LeetCodeDataset (Apache-2.0) at a pinned
 revision: its whole temporal test split, items dated 2024-08 to 2025-03, plus
 train items dated 2024 or later, read from the file's tail by a byte range.
