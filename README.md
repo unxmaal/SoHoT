@@ -2406,6 +2406,25 @@ photo is the image lane's Z-Image output for `fox-snow`, frozen in
     soh craft validate
     uv run python -m evals.run --modality craft --candidates craft-reference,sohot-agent
 
+The vision lane asks for the shot scale of a film frame (ECU, CU, MCU, MS, MLS,
+LS, ELS) and scores the answers against human labels from CineScale (Savardi et
+al., Mendeley Data, DOI 10.17632/th46h4vdwd.1, CC BY 4.0) with linearly weighted
+kappa. The frames come from this machine's own copies and never leave its home:
+`soh vision import` aligns one copy to its label file (whole film and each half
+must agree on speed and offset), refuses a pair of films whose labels fit each
+other's picture, draws frames off cuts and freezes them by digest, and adds the
+files' titles and folder to the home's `private-names.txt`, which the privacy
+scan and the export refuse. Every run permutes the true labels within each film
+and is discarded when the answers still agree with them (`vision_control_max_kappa`).
+`soh vision probe` is the reference row: DINOv2-small features and a
+leave-one-film-out linear probe, with its own control trained on shuffled
+labels. Only `evals/cases/vision/`, a drawn stand-in, ships.
+
+    soh vision import --labels <CineScale csv> --source <local copy> --film film-a
+    soh vision probe
+    soh vision run --candidate hf-vlm:Qwen/Qwen2.5-VL-3B-Instruct
+    soh vision report
+
 The ocr lane reads text out of an image. Its eight cases under
 `evals/cases/ocr/` are PNGs rendered by `uv run python -m evals.ocr_corpus`
 (Pillow's bundled font, fixed sizes, one seeded noisy background, one tilted

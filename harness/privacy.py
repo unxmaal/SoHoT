@@ -88,7 +88,47 @@ def names(root: Path) -> list[str]:
     f = root / NAMES_FILE
     if f.exists():
         raw += "," + f.read_text(encoding="utf-8")
-    return [n.strip() for n in raw.replace("\n", ",").split(",") if n.strip()]
+    return [n.strip() for n in raw.replace("\n", ",").split(",") if n.strip()] + home_names()
+
+
+#: Names an importer learned on this machine (film titles, a library's folder), one per line. #1207.
+HOME_NAMES_FILE = "private-names.txt"
+#: Shorter names are common words, not something to hide.
+MIN_HOME_NAME = 4
+
+
+def _home_file() -> Path:
+    from harness import paths
+    return paths.home() / HOME_NAMES_FILE
+
+
+def home_names() -> list[str]:
+    """The names importers registered under this machine's home, or [] where none were."""
+    f = _home_file()
+    if not f.is_file():
+        return []
+    return [n.strip() for n in f.read_text(encoding="utf-8").splitlines() if n.strip()]
+
+
+def register(found) -> list[str]:
+    """Add names to the home's list, once each; returns the ones added."""
+    have = set(home_names())
+    new, short = [], 0
+    for n in found:
+        n = " ".join(str(n or "").split())
+        short += 0 < len(n) < MIN_HOME_NAME
+        if len(n) >= MIN_HOME_NAME and n not in have:
+            have.add(n)
+            new.append(n)
+    if short:
+        from harness import cuts
+        cuts.cut("vision_min_private_name", "privacy.register: names too short to hide", dropped=short)
+    if new:
+        f = _home_file()
+        f.parent.mkdir(parents=True, exist_ok=True)
+        with f.open("a", encoding="utf-8") as out:
+            out.writelines(f"{n}\n" for n in new)
+    return new
 
 
 def name_pattern(root: Path, more=()) -> tuple[str, re.Pattern[str], str] | None:

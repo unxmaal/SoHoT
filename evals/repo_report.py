@@ -288,6 +288,27 @@ def _sides(runs: list[dict], rows: list[dict]) -> dict:
     return out
 
 
+def attempts(rows, suite: dict, task: dict, order: list[str]) -> dict:
+    """side -> variant (and "all") -> rows, never-ran, invalid patches over the rows that ran, case seconds. #888."""
+    import statistics
+
+    from harness import holdout
+    out: dict = {}
+    for c in order:
+        mine = [r for r in rows if r["candidate"] == c and holdout.base_id(r["case_id"]) in suite]
+        out[c] = {}
+        for v in ("all",) + VARIANTS:
+            got = [r for r in mine if v == "all" or task[holdout.base_id(r["case_id"])][1] == v]
+            ran = [r for r in got if (r.get("failure_class") or "") not in reasons.NEVER_RAN]
+            bad = sum((r.get("failure_class") or "") == reasons.INVALID_PATCH for r in ran)
+            secs = [float(r.get("seconds") or 0.0) for r in got]
+            out[c][v] = {"rows": len(got), "ran": len(ran), "never_ran": len(got) - len(ran), "invalid_patch": bad,
+                         "invalid_rate": round(bad / len(ran), 4) if ran else 0.0,
+                         "ci95": list(intervals.wilson(bad, len(ran))), "seconds": round(sum(secs), 1),
+                         "median_s": round(statistics.median(secs), 1) if secs else 0.0}
+    return out
+
+
 def fair_cases(case_ids, labels=None) -> set:
     """Case ids both fairness labellers score under 2 on both axes (evals/fairness.py). #920."""
     from evals import fairness
@@ -343,7 +364,7 @@ def report(runs: list[dict], rows: list[dict], cases, *, resamples: int = compar
                           if len(runs) == 2 and runs[0]["receipt"].get(a) != runs[1]["receipt"].get(a)],
             "set_aside": {"no_task_key": no_key, "unpaired": unpaired, "single_variant": single,
                           "not_valid": invalid},
-            "excluded_never_ran": never_ran, "limit_rows": limits,
+            "excluded_never_ran": never_ran, "limit_rows": limits, "attempts": attempts(rows, suite, task, order),
             "views": {name: _view(suite, task, order, skip, alpha=alpha, resamples=resamples, seed=seed)
                       for name, skip in VIEWS.items()},
             "strata": {s: _view({k: d for k, d in suite.items() if size.get(k) == s}, task, order,
@@ -387,6 +408,14 @@ def text(rep: dict) -> str:
                f"{', '.join(rep['excluded_never_ran']) or 'none'}")
     out.append(f"fair subset: both labellers under 2 on both axes; {len(rep['fair']['unfair'])} valid case(s) "
                f"left out: {', '.join(rep['fair']['unfair']) or 'none'}")
+    if rep.get("attempts"):
+        out.append("attempts, valid set: invalid patches over the rows the harness ran; case seconds summed per case "
+                   "(cases overlap when a server has slots), not elapsed")
+        for c in (base, cand):
+            for v, a in rep["attempts"][c].items():
+                out.append(f"  {_name(rep, c):{_width(rep)}s} {v:8s} invalid patch {a['invalid_patch']}/{a['ran']} "
+                           f"[{a['ci95'][0]:.2f}, {a['ci95'][1]:.2f}], never ran {a['never_ran']}, "
+                           f"case seconds {a['seconds']:.0f} (median {a['median_s']:.0f})")
     for name in rep["views"]:
         for which, v in (("valid set", rep["views"][name]), ("fair subset", rep["fair"]["views"][name])):
             out += _block(rep, f"{name}, {which}", v, name == "limits as losses")
