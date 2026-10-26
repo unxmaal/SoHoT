@@ -455,9 +455,19 @@ EVERY = 1_000_000
 
 
 def measure_queue(store, want: str, top: int, sweep=None, room=None, slots=None, say=print) -> list[dict]:
-    """What the measure step takes, in order: paused runs, repo-lane comparisons, then the families' order. #1100, #1111."""
-    queue = _by_family(store, measure_cmd.measurable(store, top or EVERY, want), sweep, room, slots, say)
+    """What the measure step takes, in order: paused runs, repo-lane comparisons, then the families' order of gain per minute. #1100, #1111, #1315."""
+    gained = _by_gain(store, measure_cmd.measurable(store, top or EVERY, want), want, say)
+    queue = _by_family(store, gained, sweep, room, slots, say)
     return repo_gate.order(measure_cmd.resume_first(store, queue, want), store, want)
+
+
+def _by_gain(store, rows: list[dict], want: str, say=print) -> list[dict]:
+    """Rows by expected gain per GPU-minute, each key said; ties and unpriced rows keep the survivors order. #1315."""
+    from harness import measure_gain
+    ordered, gains = measure_gain.order(store, rows, want)
+    for i, g in enumerate(gains):
+        say(f"  gain: {i + 1}. {g.line()}")
+    return ordered
 
 
 def _by_family(store, rows: list[dict], sweep, room=None, slots=None, say=print) -> list[dict]:
