@@ -26,8 +26,8 @@ KNOBS = [
     _k("stt_max_wer", ["evals/importers/librispeech.py:MAX_WER"], [0.0, 0.05, 0.1, 0.2],
        unit="share", grades=True,
        note="per-utterance WER a LibriSpeech case passes at, written into each case (#701); noise floor of whisper-large-v3 "
-            "on all 480 clips (job 0155): 0.25 (1-10 words, scorer gaps #1266), 0.133 (11-17), 0.111 (18+), above "
-            "this range, so none derived until #1266 (`soh floors`, #730)"),
+            "on all 480 clips (job 0155) under normaliser 2 (#1266): 0.167 (1-10 words), 0.125 (11-17), 0.111 (18+), "
+            "so 0.2 is the derived value; normaliser 1 gave 0.25 (`soh floors`, #730)"),
     _k("tts_max_wer", ["evals/importers/tts_synth.py:MAX_WER"], [0.1, 0.2, 0.3],
        unit="share", grades=True,
        note="read-back WER a generated tts case passes at, joint with the ear (#701); noise floor of Kokoro bm_george "

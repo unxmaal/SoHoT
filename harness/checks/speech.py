@@ -13,7 +13,9 @@ machine does not have yet.
 """
 from __future__ import annotations
 
+import json
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -37,12 +39,33 @@ _SMALL = {"one", "two", "three", "four", "five", "six", "seven", "eight", "nine"
           "seventeen", "eighteen", "nineteen", "twenty", "thirty", "forty", "fifty",
           "sixty", "seventy", "eighty", "ninety"}
 
-#: One spelling per English word where references and transcribers differ only in orthography. #701.
-_EN_SPELLING = {"mr": "mister", "mrs": "missus", "dr": "doctor",
-                **{f"{stem}our": f"{stem}or" for stem in (
-                    "colo", "favo", "hono", "labo", "neighbo", "harbo", "humo", "vigo", "rigo",
-                    "odo", "parlo", "endeavo", "armo", "clamo", "rumo", "savo", "vapo")},
-                "centre": "center", "theatre": "theater", "grey": "gray", "practise": "practice"}
+#: The English WER normaliser's version; receipts carry it so WERs scored two ways are never compared. #1266.
+NORMALISER = "2"
+#: Lanes whose rows are scored by wer_counts, so whose receipts carry NORMALISER.
+WER_LANES = ("music", "stt", "tts")
+
+#: One spelling per English word where references and transcribers differ only in orthography: Whisper's map plus #701's. #1266.
+_EN_SPELLING = {**json.loads((Path(__file__).with_name("english_spelling.json")).read_text(encoding="utf-8"))["spellings"],
+                "mr": "mister", "mrs": "missus", "dr": "doctor", "o": "oh",
+                **{f"en{s}": f"in{s}" for s in ("quire", "quired", "quires", "quiring", "quiry", "quiries")}}
+#: Hesitations dropped on both sides, after the Open ASR leaderboard's patterns.
+_FILLER = re.compile(r"a+h+m*|e+h+m*|e+r+m*|h+m+|m{2,}|m+h+m*|u+h+m*|u+m+h*")
+#: Whisper's contractions, with 's expanded only after the leaderboard's pronouns and 'd only after a pronoun.
+_PRONOUN = r"(i|you|he|she|it|we|they|who|what|that|there|here|how|when|where|why|this)"
+_CONTRACTIONS = [(re.compile(p), r) for p, r in (
+    (r"\bwon't\b", "will not"), (r"\bcan't\b", "can not"), (r"\blet's\b", "let us"), (r"\bma'am\b", "madam"),
+    (r"\bwanna\b", "want to"), (r"\bgonna\b", "going to"), (r"\bgotta\b", "got to"),
+    (r"'d been\b", " had been"), (r"'s been\b", " has been"), (r"'d gone\b", " had gone"), (r"'s gone\b", " has gone"),
+    (r"'d done\b", " had done"), (r"'s got\b", " has got"),
+    (r"n't\b", " not"), (r"'re\b", " are"), (rf"\b{_PRONOUN}'s\b", r"\1 is"), (rf"\b{_PRONOUN}'d\b", r"\1 would"),
+    (r"(\w)'d\b", r"\1ed"), (r"'ll\b", " will"), (r"'ve\b", " have"), (r"'m\b", " am"),
+    (r"(\d)\s*%", r"\1 percent"), (r"[$](\d[\d,]*)\b(?!\.\d)", r"\1 dollars"), (r"£(\d[\d,]*)\b(?!\.\d)", r"\1 pounds"))]
+_BRACKETED = re.compile(r"[<\[][^>\]]*[>\]]|\([^)]*\)")
+#: A reference word elided the old way (ceasd, smild): consonant then d, matching its -ed form.
+_ELIDED = re.compile(r"[a-z]*[^aeiou\W\d]d")
+#: A number in a hypothesis, held as one token until its reading is chosen.
+_HELD = "zzheldnumber{}zz"
+_HELD_TOKEN = re.compile(r"zzheldnumber(\d+)zz")
 
 
 @dataclass
@@ -117,9 +140,7 @@ def normalize(text: str, language: str = "en") -> str:
     as the TTS model failing.
     """
     if language == "en":
-        text = _EN_NUMBER.sub(_en_number, _EN_GROUPING.sub("", text))
-        words = drop_number_and(_PUNCT.sub(" ", text.lower()).split())
-        return " ".join(_EN_SPELLING.get(w, w) for w in words)
+        return " ".join(_en_words(text))
     try:
         text = _DIGITS.sub(
             lambda m: num2words(int(m.group()), lang=language), text)
@@ -132,17 +153,101 @@ def normalize(text: str, language: str = "en") -> str:
     return " ".join(text.split())
 
 
-def wer(reference: str, hypothesis: str, language: str = "en") -> float:
-    """Word error rate, after normalization. 0.0 is perfect."""
-    ref = normalize(reference, language)
+def _plain(text: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFKD", text) if unicodedata.category(c) != "Mn")
+
+
+def _en_words(text: str, held: list | None = None) -> list[str]:
+    """One side's English words; with `held`, each number stays one token and its match is appended to `held`."""
+    text = _BRACKETED.sub(" ", _plain(text).lower().replace("’", "'"))
+    for pattern, replacement in _CONTRACTIONS:
+        text = pattern.sub(replacement, text)
+    text = _EN_GROUPING.sub("", text)
+    if held is None:
+        text = _EN_NUMBER.sub(_en_number, text)
+    else:
+        text = _EN_NUMBER.sub(lambda m: held.append(m) or f" {_HELD.format(len(held) - 1)} ", text)
+    words = [w for w in _PUNCT.sub(" ", text).split() if not _FILLER.fullmatch(w)]
+    return [_EN_SPELLING.get(w, w) for w in drop_number_and(words)]
+
+
+def _spoken(text: str) -> list[str]:
+    return drop_number_and(_PUNCT.sub(" ", text).split())
+
+
+def _readings(m: re.Match) -> list[list[str]]:
+    """How a hypothesis's digits may have been said: cardinal first, then ordinal and, for four digits, a year."""
+    whole, frac, suffix = m.groups()
+    if suffix or frac:
+        return [_spoken(_en_number(m))]
+    n = int(whole)
+    out = [_spoken(num2words(n, lang="en")), _spoken(num2words(n, lang="en", to="ordinal"))]
+    if len(whole) == 4:
+        out.append(_spoken(num2words(n, lang="en", to="year")))
+    return out
+
+
+def _errors(ref: list[str], hyp: list[str]) -> int:
+    if not ref or not hyp:
+        return len(ref) + len(hyp)
+    out = jiwer.process_words(" ".join(ref), " ".join(hyp))
+    return out.substitutions + out.deletions + out.insertions
+
+
+def _read(ref: list[str], hyp: list[str], held: list) -> list[str]:
+    """The hypothesis with each held number in the reading that leaves the fewest errors; a tie keeps the cardinal."""
+    options = [_readings(m) for m in held]
+    pick = [0] * len(options)
+
+    def spell(choice):
+        out = []
+        for w in hyp:
+            got = _HELD_TOKEN.fullmatch(w)
+            out.extend(options[int(got.group(1))][choice[int(got.group(1))]] if got else [w])
+        return out
+    for i, readings in enumerate(options):
+        pick[i] = min(range(len(readings)), key=lambda r: (_errors(ref, spell(pick[:i] + [r] + pick[i + 1:])), r))
+    return spell(pick)
+
+
+def _variants(side: list[str], other: list[str], score) -> list[str]:
+    """`side` with adjacent words joined, or an elided -d spelled -ed, where `other` writes it so and errors fall."""
+    vocab = set(other)
+    i = 0
+    while i < len(side):
+        trials = []
+        if i + 1 < len(side) and side[i] + side[i + 1] in vocab:
+            trials.append(side[:i] + [side[i] + side[i + 1]] + side[i + 2:])
+        if side[i] not in vocab and _ELIDED.fullmatch(side[i]) and side[i][:-1] + "ed" in vocab:
+            trials.append(side[:i] + [side[i][:-1] + "ed"] + side[i + 1:])
+        better = [t for t in trials if score(t) < score(side)]
+        if better:
+            side = better[0]
+            continue
+        i += 1
+    return side
+
+
+def pair(reference: str, hypothesis: str, language: str = "en") -> tuple[list[str], list[str]]:
+    """Reference and hypothesis words as scored: each side normalised, then read against the other. #1266."""
+    if language != "en":
+        ref, hyp = normalize(reference, language).split(), normalize(hypothesis, language).split()
+    else:
+        held: list = []
+        ref, hyp = _en_words(reference), _en_words(hypothesis, held)
+        if ref:
+            hyp = _read(ref, hyp, held)
+            ref = _variants(ref, hyp, lambda r: _errors(r, hyp))
+            hyp = _variants(hyp, ref, lambda h: _errors(ref, h))
     if not ref:
         raise ValueError("cannot score against an empty reference")
-    hyp = normalize(hypothesis, language)
-    if not hyp:
-        # jiwer treats an empty hypothesis as every word deleted, which is 1.0;
-        # spelling it out keeps the edge case from depending on jiwer's version.
-        return 1.0
-    return jiwer.wer(ref, hyp)
+    return ref, hyp
+
+
+def wer(reference: str, hypothesis: str, language: str = "en") -> float:
+    """Word error rate, after normalization. 0.0 is perfect."""
+    errors, words = wer_counts(reference, hypothesis, language)
+    return errors / words
 
 
 def wer_counts(reference: str, hypothesis: str,
@@ -152,15 +257,10 @@ def wer_counts(reference: str, hypothesis: str,
     Needed for a corpus rate: total errors over total words, rather than a mean
     of per-utterance rates in which a two-word clip outweighs a long one.
     """
-    ref = normalize(reference, language)
-    if not ref:
-        raise ValueError("cannot score against an empty reference")
-    words = len(ref.split())
-    hyp = normalize(hypothesis, language)
+    ref, hyp = pair(reference, hypothesis, language)
     if not hyp:
-        return words, words
-    out = jiwer.process_words(ref, hyp)
-    return out.substitutions + out.deletions + out.insertions, words
+        return len(ref), len(ref)
+    return _errors(ref, hyp), len(ref)
 
 
 def check(path: str | Path, reference: str, max_wer: float | None = None,

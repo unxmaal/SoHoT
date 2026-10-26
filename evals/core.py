@@ -1089,6 +1089,11 @@ def comparable(a: Receipt, b: Receipt) -> tuple[bool, str]:
         if a.launch[key] != b.launch[key]:
             return False, (f"different launch for {key}: {a.launch[key]} vs "
                            f"{b.launch[key]}")
+    # A WER lane receipt with no normaliser version was scored by version 1. #1266.
+    if a.modality in speech_check.WER_LANES or b.modality in speech_check.WER_LANES:
+        mine, theirs = a.instruments.get("wer", "1"), b.instruments.get("wer", "1")
+        if mine != theirs:
+            return False, f"different wer normaliser: {mine} vs {theirs}"
     for name in sorted(set(a.instruments) & set(b.instruments)):
         mine, theirs = a.instruments[name], b.instruments[name]
         if mine and theirs and mine != theirs:
