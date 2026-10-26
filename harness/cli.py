@@ -862,8 +862,8 @@ def build_parser() -> argparse.ArgumentParser:
                       help="higher runs first; ties run in the order added")
     jobs.add_argument("--cwd", default="",
                       help="add: run here instead of the deploy checkout. #645")
-    jobs.add_argument("--not-before", default="", metavar="HH:MM",
-                      help="add: start no earlier than the next HH:MM local time. #900")
+    jobs.add_argument("--not-before", default="", metavar="WHEN",
+                      help="add: start no earlier than the next local HH:MM, or a local YYYY-MM-DD HH:MM. #900, #1297")
     jobs.add_argument("--night", action="store_true",
                       help="add: start no earlier than the night window discovery runs in. #900")
     jobs.set_defaults(func=jobs_cmd.cmd_jobs)
