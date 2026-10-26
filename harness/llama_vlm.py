@@ -61,7 +61,14 @@ def pick(siblings, quant: str = "", ceiling: int = 1 << 62) -> tuple[str, str]:
 
 
 def files(repo: str, quant: str = "", revision: str | None = None) -> tuple[Path, Path]:
-    """The model and projector files of a hub repo, downloaded into the hub cache if absent."""
+    """The model and projector files of a hub repo, downloaded into the hub cache if absent; offline, the cached ones."""
+    import huggingface_hub
+    from huggingface_hub import constants
+    if constants.HF_HUB_OFFLINE:
+        root = Path(huggingface_hub.snapshot_download(repo, revision=revision, local_files_only=True,
+                                                      allow_patterns=["*.gguf"]))
+        model, mmproj = pick([{"rfilename": p.name, "size": p.stat().st_size} for p in root.glob("*.gguf")], quant)
+        return root / model, root / mmproj
     from huggingface_hub import HfApi, hf_hub_download
     info = HfApi().model_info(repo, revision=revision, files_metadata=True)
     siblings = [{"rfilename": s.rfilename, "size": s.size or 0} for s in info.siblings or []]

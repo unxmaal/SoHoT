@@ -304,6 +304,26 @@ def test_the_llamacpp_vlm_labeller_picks_the_quant_and_its_mmproj():
         llama_vlm.pick(SIBLINGS, "IQ1_S")
 
 
+def test_offline_the_llamacpp_vlm_labeller_picks_from_the_cached_snapshot(tmp_path, monkeypatch):
+    import huggingface_hub
+    from huggingface_hub import constants
+
+    from harness import llama_vlm
+    snap = tmp_path / "snap"
+    snap.mkdir()
+    for s in SIBLINGS:
+        if s["rfilename"].endswith(".gguf"):
+            (snap / s["rfilename"]).write_bytes(b"\0" * s["size"])
+    asked = []
+    monkeypatch.setattr(constants, "HF_HUB_OFFLINE", True)
+    monkeypatch.setattr(huggingface_hub, "snapshot_download",
+                        lambda repo, **kw: asked.append(kw) or str(snap))
+    monkeypatch.setattr(huggingface_hub, "HfApi", lambda: pytest.fail("offline must not ask the hub"))
+    model, mmproj = llama_vlm.files("org/Model-GGUF", "Q8_0")
+    assert (model, mmproj) == (snap / "Model-Q8_0.gguf", snap / "mmproj-Model-F16.gguf")
+    assert asked[0]["local_files_only"] is True
+
+
 class FakeServer:
     def __init__(self, argv):
         self.argv, self.ended, self.returncode = argv, False, None
