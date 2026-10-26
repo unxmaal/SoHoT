@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect x="0" y="25" width="25" height="50" fill="#b5838d"/>
+  <text x="12.5" y="57.5" font-size="15" text-anchor="middle" fill="#1d3557">maple</text>
+  <rect x="25" y="25" width="25" height="50" fill="#457b9d"/>
+  <text x="37.5" y="57.5" font-size="15" text-anchor="middle" fill="#1d3557">lumen</text>
+  <rect x="50" y="25" width="25" height="50" fill="#e76f51"/>
+  <text x="62.5" y="57.5" font-size="15" text-anchor="middle" fill="#1d3557">garnet</text>
+  <rect x="75" y="25" width="25" height="50" fill="#264653"/>
+  <text x="87.5" y="57.5" font-size="15" text-anchor="middle" fill="#1d3557">v8.17.89</text>
+</svg>

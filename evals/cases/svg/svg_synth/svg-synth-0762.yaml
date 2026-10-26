@@ -1,0 +1,47 @@
+# SoHoT generated svg cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py).
+# Imported by evals/importers from generated:evals.importers.svg_synth v1 seed 1050@1878dddb4e7787e9870bf9adfc18239059c29347; re-import, do not edit.
+id: svg-synth-0762
+modality: svg
+prompt: 'Draw three groups: a <g id="bravo"> holding exactly 1 <circle> filled #2a9d8f, a <g id="ember">
+  holding exactly 3 <rect> filled #6a4c93, a <g id="juniper"> holding exactly 3 <ellipse> filled #f4a261.
+  Each shape type goes only in its own group. Set every colour with a fill attribute. Draw nothing else:
+  no background, border, axis or other extra shapes.'
+methods:
+- llm
+assert:
+  structure:
+    count:
+      circle: 1
+      rect: 3
+      ellipse: 3
+    fill:
+      circle: '#2a9d8f'
+      rect: '#6a4c93'
+      ellipse: '#f4a261'
+    groups:
+      bravo:
+        circle: 1
+        rect: 0
+        ellipse: 0
+      ember:
+        circle: 0
+        rect: 3
+        ellipse: 0
+      juniper:
+        circle: 0
+        rect: 0
+        ellipse: 3
+attribution:
+  dataset: SoHoT generated svg cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py
+  license: generated
+  source: generated:evals.importers.svg_synth v1 seed 1050
+  revision: 1878dddb4e7787e9870bf9adfc18239059c29347
+  item: '762'
+  date: ''
+  transform: a seeded scene described as a prompt, asserted on its structure
+  importer: evals.importers.svg_synth
+  version: '1'
+  seed: 1050
+  kind: groups
+  stratum: hard

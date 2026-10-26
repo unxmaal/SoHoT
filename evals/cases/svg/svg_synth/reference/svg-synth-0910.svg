@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect x="0" y="50" width="100" height="100" fill="#f4a261"/>
+  <text x="50" y="115" font-size="30" text-anchor="middle" fill="#1d3557">garnet</text>
+  <rect x="100" y="50" width="100" height="100" fill="#1d3557"/>
+  <text x="150" y="115" font-size="30" text-anchor="middle" fill="#1d3557">v4.12.89</text>
+</svg>

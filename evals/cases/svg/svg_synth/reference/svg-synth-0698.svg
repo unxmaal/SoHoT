@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <rect x="4" y="15" width="45" height="45" fill="#e63946"/>
+  <text x="53" y="51" font-size="36">garnet</text>
+  <rect x="4" y="90" width="45" height="45" fill="#457b9d"/>
+  <text x="53" y="126" font-size="36">bravo</text>
+  <rect x="4" y="165" width="45" height="45" fill="#1d3557"/>
+  <text x="53" y="201" font-size="36">alpha</text>
+  <rect x="4" y="240" width="45" height="45" fill="#264653"/>
+  <text x="53" y="276" font-size="36">rook</text>
+</svg>

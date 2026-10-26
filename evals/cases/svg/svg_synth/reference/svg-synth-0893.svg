@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <rect x="4" y="6.66667" width="20" height="20" fill="#b5838d"/>
+  <text x="28" y="22.6667" font-size="16">alpha</text>
+  <rect x="4" y="40" width="20" height="20" fill="#2a9d8f"/>
+  <text x="28" y="56" font-size="16">juniper</text>
+  <rect x="4" y="73.3333" width="20" height="20" fill="#8ab17d"/>
+  <text x="28" y="89.3333" font-size="16">garnet</text>
+  <rect x="4" y="106.667" width="20" height="20" fill="#f4a261"/>
+  <text x="28" y="122.667" font-size="16">nova</text>
+  <rect x="4" y="140" width="20" height="20" fill="#457b9d"/>
+  <text x="28" y="156" font-size="16">pike</text>
+  <rect x="4" y="173.333" width="20" height="20" fill="#e63946"/>
+  <text x="28" y="189.333" font-size="16">delta</text>
+</svg>
