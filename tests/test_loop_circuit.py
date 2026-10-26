@@ -304,7 +304,7 @@ def test_a_method_crossed_with_the_incumbent_climbs_the_same_ladder(world, monke
     monkeypatch.setattr(family, "SLOTS", 0)
     # #1315's gain order would too: with no evidence, the one-call model is the cheaper measurement.
     from harness.commands import loop as loop_cmd
-    monkeypatch.setattr(loop_cmd, "_by_gain", lambda store, rows, want, say=print: rows)
+    monkeypatch.setattr(loop_cmd, "_by_gain", lambda store, rows, want, say=print, gated=None: rows)
     loop("--top", "5")
     assert adopted() == {"code": CHALLENGER}
     for spec in (f"plan:{INCUMBENT_UPSTREAM}", f"best-of:3:{INCUMBENT_UPSTREAM}",

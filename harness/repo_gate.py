@@ -44,13 +44,19 @@ def lane_of(row: dict, want: str = "") -> str:
     return measure_cmd.lane_for(row, want)
 
 
-def verdict(conn, name: str) -> str | None:
-    """The outcome of the proposal's latest repo-lane verdict at adopt, None when it has none."""
+def verdict(conn, name: str, before: float | None = None) -> str | None:
+    """The outcome of the proposal's latest repo-lane verdict at adopt (decided before `before`), None when it has none."""
     from harness import adopt
     got = conn.execute("SELECT v.outcome FROM verdicts v JOIN proposals p ON p.id = v.proposal_id "
-                       "WHERE p.name = ? AND v.tier = ? AND v.detail LIKE ? ORDER BY v.id DESC LIMIT 1",
-                       (name, adopt.TIER, f"{GATE}:%")).fetchone()
+                       "WHERE p.name = ? AND v.tier = ? AND v.detail LIKE ? AND (? IS NULL OR v.decided_at < ?) "
+                       "ORDER BY v.id DESC LIMIT 1", (name, adopt.TIER, f"{GATE}:%", before, before)).fetchone()
     return got[0] if got else None
+
+
+def needs(conn, row: dict, want: str = "", before: float | None = None) -> bool:
+    """Whether `row` is a gated comparison whose repo-lane comparison has not been won; the gate's activity aside."""
+    return (lane_of(row, want) in GATED and methods.runs_in(row.get("name", ""), GATE)
+            and verdict(conn, row.get("name", ""), before) != "measured")
 
 
 def owed(conn) -> list[dict]:
@@ -64,30 +70,41 @@ def owed(conn) -> list[dict]:
             if any(lanes.serves(r["lane"], g) for g in GATED)]
 
 
-def order(rows, conn, want: str = "", on: bool | None = None) -> list[dict]:
-    """Repo-lane comparisons first: each row measured in a gated lane gets one ahead of all else; owed rows join."""
+def join(rows, conn, want: str = "", on: bool | None = None) -> list[dict]:
+    """`rows` and the owed code comparisons not among them, so the gain order keys them too. #1323."""
+    from harness.commands import measure as measure_cmd
     if not (active() if on is None else on):
         return list(rows)
-    rows, owing = list(rows), owed(conn)
+    rows = list(rows)
     names = {r.get("name") for r in rows}
-    rows += [r for r in owing if r["name"] not in names]
-    won = {r["name"] for r in owing}
-    first = [r for r in rows if lane_of(r, want) == GATE]
-    have = {r.get("name") for r in first}
-    first += [{**r, "lane": GATE} for r in rows
-              if lane_of(r, want) in GATED and r.get("name") not in have | won
-              and methods.runs_in(r.get("name", ""), GATE)]
-    return first + [r for r in rows if lane_of(r, want) != GATE]
+    return rows + [r for r in owed(conn) if r["name"] not in names and measure_cmd.takes(r, want)]
+
+
+def order(rows, conn, want: str = "", on: bool | None = None, before: float | None = None) -> list[dict]:
+    """Each gated row with its repo-lane comparison just ahead of it, where the queue put it; nothing else moves. #1323."""
+    if not (active() if on is None else on):
+        return list(rows)
+    queued = {r.get("name"): r for r in reversed(rows) if lane_of(r, want) == GATE}
+    out, done = [], set()
+    for r in rows:
+        name, mine = r.get("name"), lane_of(r, want) == GATE
+        if name in done and mine:
+            continue
+        if not mine and name not in done and needs(conn, r, want, before):
+            done.add(name)
+            out.append(queued.get(name) or {**r, "lane": GATE})
+        elif mine:
+            done.add(name)
+        out.append(r)
+    return out
 
 
 def blocked(conn, row: dict, want: str = "") -> str:
     """Why `row` is not measured now: a gated comparison waits on a repo-lane win; "" when it may run."""
     lane = lane_of(row, want)
-    if lane not in GATED or not methods.runs_in(row.get("name", ""), GATE) or not active():
+    if not needs(conn, row, want) or not active():
         return ""
     got = verdict(conn, row.get("name", ""))
-    if got == "measured":
-        return ""
     return (f"{row.get('name', '')}: no {GATE}-lane win ({got or 'not measured there'}), "
             f"so its {lane} comparison does not run")
 
