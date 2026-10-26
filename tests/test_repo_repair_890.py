@@ -208,6 +208,33 @@ def test_the_size_selector_counts_non_test_lines_and_keeps_the_small_fixes(tmp_p
     assert [c.id for c in run.fix_sized([small, big], args)] == ["fixture"]
 
 
+def test_a_size_floor_keeps_only_the_larger_fixes_so_one_quartile_runs_alone(tmp_path):
+    small, big = _sized(tmp_path, "small", 5), _sized(tmp_path, "big", 30)
+    big = dataclasses.replace(big, id="big")
+    assert [c.id for c in repo_size.at_least([small, big], 6)] == ["big"]
+    assert [c.id for c in repo_size.at_least([small, big], 5)] == ["fixture", "big"]
+    assert [c.id for c in repo_size.at_least([small, big], 0)] == ["fixture", "big"]
+
+    def picked(*flags):
+        args = run.parse_args(["--modality", "repo", "--candidates", "x", *flags])
+        return [c.id for c in run.fix_sized([small, big], args)]
+    assert picked("--min-fix-lines", "6") == ["big"]
+    assert picked("--min-fix-lines", "6", "--max-fix-lines", "30") == ["big"]
+    assert picked("--min-fix-lines", "5", "--max-fix-lines", "29") == ["fixture"]
+    assert picked("--min-fix-lines", "5", "--max-fix-lines", "30") == ["fixture", "big"]
+
+
+def test_a_size_floor_above_the_ceiling_or_off_the_repo_lane_is_refused(tmp_path):
+    small = _sized(tmp_path, "small", 5)
+    with pytest.raises(SystemExit, match="--min-fix-lines 30 is above --max-fix-lines 20"):
+        run.fix_sized([small], run.parse_args(["--modality", "repo", "--candidates", "x",
+                                               "--min-fix-lines", "30", "--max-fix-lines", "20"]))
+    with pytest.raises(SystemExit, match="pass --modality repo"):
+        run.fix_sized([small], run.parse_args(["--modality", "code", "--candidates", "x", "--min-fix-lines", "6"]))
+    with pytest.raises(SystemExit, match="of 6 lines or more"):
+        run.fix_sized([small], run.parse_args(["--modality", "repo", "--candidates", "x", "--min-fix-lines", "6"]))
+
+
 def test_the_quartile_table_splits_cases_by_size_and_counts_passes_per_candidate():
     by = {f"c{i}": i for i in range(1, 9)}
     rows = [{"case_id": k, "candidate": c, "passed": c == "a" or v < 3} for k, v in by.items() for c in ("a", "b")]

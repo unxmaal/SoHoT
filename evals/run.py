@@ -691,26 +691,44 @@ def harness_of(args) -> str:
 
 
 def fix_sized(chosen: list[Case], args) -> list[Case]:
-    """The chosen cases whose reference fix changes at most --max-fix-lines non-test lines. #890."""
+    """The chosen cases whose reference fix changes between --min-fix-lines and --max-fix-lines non-test lines. #890, #1176."""
     from evals import repo_size
     limit = getattr(args, "max_fix_lines", None)
     limit = repo_size.MAX_FIX_LINES if limit is None else int(limit)
-    if not limit:
+    floor = getattr(args, "min_fix_lines", None)
+    floor = repo_size.MIN_FIX_LINES if floor is None else int(floor)
+    if not limit and not floor:
         return chosen
     if args.modality not in REPO_MODALITIES:
-        raise SystemExit("--max-fix-lines selects repo cases; pass --modality repo")
+        raise SystemExit(f"--{'max' if limit else 'min'}-fix-lines selects repo cases; pass --modality repo")
+    if limit and floor > limit:
+        raise SystemExit(f"--min-fix-lines {floor} is above --max-fix-lines {limit}; no case can be both")
+    from harness import cuts
+    got = chosen
+    if limit:
+        kept = _sized_by(repo_size.at_most, got, limit, "max", "or fewer")
+        if len(kept) < len(got):
+            cuts.cut("repo_max_fix_lines", "repo cases with a larger reference fix left out of the run", value=limit,
+                     kept=len(kept), dropped=len(got) - len(kept))
+        got = kept
+    if floor:
+        kept = _sized_by(repo_size.at_least, got, floor, "min", "or more")
+        if len(kept) < len(got):
+            cuts.cut("repo_min_fix_lines", "repo cases with a smaller reference fix left out of the run", value=floor,
+                     kept=len(kept), dropped=len(got) - len(kept))
+        got = kept
+    return got
+
+
+def _sized_by(pick, cases, n: int, flag: str, empty: str) -> list:
     from evals.repo import RepoEnvError
     try:
-        got = repo_size.at_most(chosen, limit)
+        kept = pick(cases, n)
     except RepoEnvError as exc:
-        raise SystemExit(f"--max-fix-lines: {exc}") from None
-    if not got:
-        raise SystemExit(f"no repo case has a reference fix of {limit} lines or fewer")
-    if len(got) < len(chosen):
-        from harness import cuts
-        cuts.cut("repo_max_fix_lines", "repo cases with a larger reference fix left out of the run", value=limit,
-                 kept=len(got), dropped=len(chosen) - len(got))
-    return got
+        raise SystemExit(f"--{flag}-fix-lines: {exc}") from None
+    if not kept:
+        raise SystemExit(f"no repo case has a reference fix of {n} lines {empty}")
+    return kept
 
 
 def size_report(cases, results) -> str:
@@ -1187,6 +1205,9 @@ def _parser():
     ap.add_argument("--max-fix-lines", type=int, default=None, metavar="N",
                     help="repo lane: only cases whose reference fix changes at most N non-test lines "
                          "(knob repo_max_fix_lines, default 0 = all) (#890)")
+    ap.add_argument("--min-fix-lines", type=int, default=None, metavar="N",
+                    help="repo lane: only cases whose reference fix changes at least N non-test lines, so one "
+                         "size quartile runs alone (knob repo_min_fix_lines, default 0 = all) (#1176)")
     ap.add_argument("--knob", action="append", default=[], metavar="NAME=VALUE",
                     help="run at this setting of a registered exam knob, recorded on the "
                          "receipt; repeatable (harness/knobs/, #636)")

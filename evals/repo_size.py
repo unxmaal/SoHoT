@@ -5,6 +5,8 @@ from evals import repo
 
 #: Largest reference fix --max-fix-lines keeps when it names none; 0 keeps every case.
 MAX_FIX_LINES = 0
+#: Smallest reference fix --min-fix-lines keeps when it names none; 0 keeps every case.
+MIN_FIX_LINES = 0
 
 
 def fix_lines(params: dict, memo: dict | None = None) -> int:
@@ -36,6 +38,14 @@ def at_most(cases, limit: int, by: dict | None = None) -> list:
         return list(cases)
     by = sizes(cases) if by is None else by
     return [c for c in cases if c.id in by and by[c.id] <= limit]
+
+
+def at_least(cases, floor: int, by: dict | None = None) -> list:
+    """The cases whose reference fix changes at least `floor` non-test lines; floor 0 keeps every case."""
+    if not floor:
+        return list(cases)
+    by = sizes(cases) if by is None else by
+    return [c for c in cases if c.id in by and by[c.id] >= floor]
 
 
 def quartiles(rows, by: dict[str, int]) -> list[dict]:
