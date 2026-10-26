@@ -1,4 +1,4 @@
-"""One case through transformers, in the hf-task venv: ocr (#562), retrieval (#563), pii (#564).
+"""One case through transformers, in the hf-task venv: ocr (#562), retrieval (#563), pii (#564), vision (#1207).
 
 Run by scripts/hf-task.sh; imports nothing from this package but torch_device and reasons.
 A repo that ships its own modelling code is refused, never executed.
@@ -72,6 +72,13 @@ def read_image(model: str, image: str, prompt: str, revision: str | None = None,
     Not a pipeline: transformers 5 has no image-to-text task, and its image-text-to-text
     pipeline refuses a repo with no processor class (trocr). Measured 2026-10-07.
     """
+    ask = load_reader(model, revision, max_new_tokens, device, attn, runtime, dtype)
+    return ask(image, prompt)
+
+
+def load_reader(model: str, revision: str | None = None, max_new_tokens: int | None = None,
+                device: str | None = None, attn: str = "", runtime: dict | None = None, dtype: str = ""):
+    """Load an image-text model once; returns ask(image, prompt) -> its reply. #1207."""
     import torch
     from PIL import Image
     from transformers import AutoModelForImageTextToText, AutoProcessor, AutoTokenizer
@@ -81,7 +88,6 @@ def read_image(model: str, image: str, prompt: str, revision: str | None = None,
     runtime = {} if runtime is None else runtime
     name = model_dtype(model, dev, revision, dtype)
     dtype = getattr(torch, name)
-    picture = Image.open(image).convert("RGB")
     # Eager attention repeats grouped KV heads, which MPS's sdpa matmul cannot type. #604.
     net = AutoModelForImageTextToText.from_pretrained(
         model, revision=revision, dtype=dtype,
@@ -90,23 +96,30 @@ def read_image(model: str, image: str, prompt: str, revision: str | None = None,
                                         or attn or "default"), dtype=name)
     proc = AutoProcessor.from_pretrained(model, revision=revision)
     if getattr(proc, "chat_template", None):
-        messages = [{"role": "user", "content": [{"type": "image", "image": picture},
-                                                 {"type": "text", "text": prompt}]}]
-        inputs = proc.apply_chat_template(messages, add_generation_prompt=True, tokenize=True,
-                                          return_dict=True, return_tensors="pt")
-        inputs = inputs.to(dev, dtype=dtype)
-        out = net.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False)
-        new = out[:, inputs["input_ids"].shape[1]:]
-        runtime["limit"] = limit_hit(new.shape[1], max_new_tokens)
-        return proc.batch_decode(new, skip_special_tokens=True)[0].strip()
+        def chat(image: str, prompt: str) -> str:
+            picture = Image.open(image).convert("RGB")
+            messages = [{"role": "user", "content": [{"type": "image", "image": picture},
+                                                     {"type": "text", "text": prompt}]}]
+            inputs = proc.apply_chat_template(messages, add_generation_prompt=True, tokenize=True,
+                                              return_dict=True, return_tensors="pt")
+            inputs = inputs.to(dev, dtype=dtype)
+            out = net.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False)
+            new = out[:, inputs["input_ids"].shape[1]:]
+            runtime["limit"] = limit_hit(new.shape[1], max_new_tokens)
+            return proc.batch_decode(new, skip_special_tokens=True)[0].strip()
+        return chat
     # Built before generating, so a tokenizer the venv cannot build fails in seconds. #1025.
     decoder = getattr(proc, "tokenizer", None) or _tokenizer(model, revision, AutoTokenizer)
-    pixels = getattr(proc, "image_processor", proc)(images=picture, return_tensors="pt")
-    out = net.generate(pixel_values=pixels.pixel_values.to(dev, dtype=dtype),
-                       max_new_tokens=max_new_tokens, do_sample=False)
-    # The decoder's start token is not a new one.
-    runtime["limit"] = limit_hit(out.shape[1] - 1, max_new_tokens)
-    return decoder.batch_decode(out, skip_special_tokens=True)[0].strip()
+
+    def read(image: str, prompt: str) -> str:
+        picture = Image.open(image).convert("RGB")
+        pixels = getattr(proc, "image_processor", proc)(images=picture, return_tensors="pt")
+        out = net.generate(pixel_values=pixels.pixel_values.to(dev, dtype=dtype),
+                           max_new_tokens=max_new_tokens, do_sample=False)
+        # The decoder's start token is not a new one.
+        runtime["limit"] = limit_hit(out.shape[1] - 1, max_new_tokens)
+        return decoder.batch_decode(out, skip_special_tokens=True)[0].strip()
+    return read
 
 
 def _tokenizer(model: str, revision, auto):
@@ -231,6 +244,93 @@ def pii(model: str, text: str, out, tag=tag_text) -> None:
     Path(out).write_text(json.dumps({"spans": spans}), encoding="utf-8")
 
 
+def _jsonl(path) -> list[dict]:
+    p = Path(path)
+    if not p.is_file():
+        return []
+    return [json.loads(line) for line in p.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def label_images(model: str, images: list[str], prompt: str, **load):
+    """One reply per image from one loaded model, yielded as each is read. #1207."""
+    ask = load_reader(model, **load)
+    for image in images:
+        yield ask(image, prompt)
+
+
+def vision_label(model: str, frames, prompt: str, out, label=label_images) -> None:
+    """Append {id, reply} per frame to out, skipping frames out already answers, so an abort resumes."""
+    done = {d["id"] for d in _jsonl(out)}
+    todo = [f for f in _jsonl(frames) if f["id"] not in done]
+    with Path(out).open("a", encoding="utf-8") as f:
+        for frame, reply in zip(todo, label(model, [t["image"] for t in todo], prompt)):
+            f.write(json.dumps({"id": frame["id"], "reply": reply}) + "\n")
+            f.flush()
+
+
+def embed_images(model: str, images: list[str], revision: str | None = None, device: str | None = None,
+                 batch: int = 32) -> list[list[float]]:
+    """CLS token plus mean patch token per image, the frozen features kubrick's linear row used. #1207."""
+    import torch
+    from PIL import Image
+    from transformers import AutoImageProcessor, AutoModel
+    dev = _device(torch, device)
+    proc = AutoImageProcessor.from_pretrained(model, revision=revision)
+    net = AutoModel.from_pretrained(model, revision=revision).to(dev).eval()
+    out: list[list[float]] = []
+    with torch.no_grad():
+        for i in range(0, len(images), batch):
+            pics = [Image.open(x).convert("RGB") for x in images[i:i + batch]]
+            h = net(**proc(images=pics, return_tensors="pt").to(dev)).last_hidden_state
+            out += torch.cat([h[:, 0], h[:, 1:].mean(1)], dim=1).float().cpu().tolist()
+    return out
+
+
+def fit_logistic(X, y, c: float, max_iter: int | None = None):
+    """Standardised multinomial logistic regression, L2 as scikit-learn's C; returns predict(X) -> labels. #1207."""
+    import torch
+
+    from evals.vision import FIT_MAX_ITER
+    max_iter = FIT_MAX_ITER if max_iter is None else max_iter
+    labels = sorted(set(y))
+    x = torch.tensor(X, dtype=torch.float64)
+    mu, sd = x.mean(0), x.std(0).clamp_min(1e-8)
+    z = (x - mu) / sd
+    t = torch.tensor([labels.index(v) for v in y])
+    w = torch.zeros(z.shape[1], len(labels), dtype=torch.float64, requires_grad=True)
+    b = torch.zeros(len(labels), dtype=torch.float64, requires_grad=True)
+    opt = torch.optim.LBFGS([w, b], max_iter=max_iter, line_search_fn="strong_wolfe")
+
+    def closure():
+        opt.zero_grad()
+        loss = torch.nn.functional.cross_entropy(z @ w + b, t) + (w ** 2).sum() / (2 * c * len(y))
+        loss.backward()
+        return loss
+    opt.step(closure)
+
+    def predict(xs):
+        zx = (torch.tensor(xs, dtype=torch.float64) - mu) / sd
+        return [labels[i] for i in (zx @ w + b).argmax(1).tolist()]
+    return predict
+
+
+def vision_probe(model: str, frames, out, features, c: float, shuffles: int, seed: int,
+                 embed=embed_images, fit=fit_logistic) -> None:
+    """Features (cached), then evals.vision's leave-one-film-out probe and its shuffled-label control."""
+    from evals import vision
+    rows = _jsonl(frames)
+    cache = Path(features)
+    have = json.loads(cache.read_text(encoding="utf-8")) if cache.is_file() else {}
+    todo = [r for r in rows if r["id"] not in have]
+    if todo:
+        have.update(zip((r["id"] for r in todo), embed(model, [r["image"] for r in todo])))
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_text(json.dumps(have), encoding="utf-8")
+    picked = [vision.Frame(r["id"], r["film"], Path(r["image"]), r["truth"]) for r in rows]
+    preds = vision.probe_predictions(picked, have, shuffles=shuffles, seed=seed, fit=fit, c=c)
+    Path(out).write_text(json.dumps(preds), encoding="utf-8")
+
+
 def _lacks(exc: ImportError) -> int:
     print(exc, file=sys.stderr)
     what = next((ln.strip() for ln in str(exc).splitlines() if ln.strip()), repr(exc))
@@ -238,7 +338,7 @@ def _lacks(exc: ImportError) -> int:
     return MISSING_PACKAGE
 
 
-def main(argv=None, read=None, score=None, tag=None) -> int:
+def main(argv=None, read=None, score=None, tag=None, label=None, embed=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = p.add_subparsers(dest="task", required=True)
     o = sub.add_parser("ocr")
@@ -266,9 +366,31 @@ def main(argv=None, read=None, score=None, tag=None) -> int:
     t.add_argument("--out", required=True)
     t.add_argument("--revision")
     t.add_argument("--device")
+    v = sub.add_parser("vision-label")
+    v.add_argument("--model", required=True)
+    v.add_argument("--frames", required=True)
+    v.add_argument("--prompt", required=True)
+    v.add_argument("--out", required=True)
+    v.add_argument("--revision")
+    v.add_argument("--max-new-tokens", type=int, default=None)
+    v.add_argument("--device")
+    v.add_argument("--attn", default="")
+    v.add_argument("--dtype", default="", choices=("", *DTYPES))
+    v.add_argument("--one-attempt", action="store_true")
+    q = sub.add_parser("vision-probe")
+    q.add_argument("--model", required=True)
+    q.add_argument("--frames", required=True)
+    q.add_argument("--out", required=True)
+    q.add_argument("--features", required=True)
+    q.add_argument("--c", type=float, required=True)
+    q.add_argument("--shuffles", type=int, required=True)
+    q.add_argument("--seed", type=int, default=1207)
+    q.add_argument("--revision")
+    q.add_argument("--device")
     argv = list(sys.argv[1:] if argv is None else argv)
     a = p.parse_args(argv)
-    if a.task == "ocr" and read is None and not (a.one_attempt or a.device or a.attn):
+    if a.task in ("ocr", "vision-label") and read is None and label is None and not (
+            a.one_attempt or a.device or a.attn):
         rc = fall_back(_attempt(argv))
         return rc if rc >= 0 else 128 - rc
     try:
@@ -280,6 +402,13 @@ def main(argv=None, read=None, score=None, tag=None) -> int:
             ocr(a.model, a.image, a.prompt, a.out, read=reader)
             if runtime:
                 Path(runtime_path(a.out)).write_text(json.dumps(runtime), encoding="utf-8")
+        elif a.task == "vision-label":
+            labeller = label or functools.partial(label_images, revision=a.revision, max_new_tokens=a.max_new_tokens,
+                                                  device=a.device, attn=a.attn, dtype=a.dtype)
+            vision_label(a.model, a.frames, a.prompt, a.out, label=labeller)
+        elif a.task == "vision-probe":
+            embedder = embed or functools.partial(embed_images, revision=a.revision, device=a.device)
+            vision_probe(a.model, a.frames, a.out, a.features, a.c, a.shuffles, a.seed, embed=embedder)
         elif a.task == "rank":
             scorer = score or functools.partial(score_texts, revision=a.revision,
                                                 device=a.device)
