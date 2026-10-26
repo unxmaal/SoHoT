@@ -41,21 +41,30 @@ def test_a_known_good_instrument_sets_the_floor_at_its_pass_share_quantile():
 
 
 def test_a_short_stratum_with_a_worse_tail_raises_the_floor():
-    long = [_item(0, 20, "long", f"l{i}") for i in range(20)]
-    short = [_item(0, 5, "short", f"s{i}") for i in range(9)] + [_item(1, 5, "short", "s9")]
+    long = [_item(0, 20, "18+", f"l{i}") for i in range(20)]
+    short = [_item(0, 5, "1-10", f"s{i}") for i in range(9)] + [_item(1, 5, "1-10", "s9")]
     got = floors.floor(long + short, share=0.9, min_items=10)
-    assert got["strata"]["long"]["quantile"] == 0.0
-    assert got["strata"]["short"]["quantile"] == 0.0
+    assert got["strata"]["18+"]["quantile"] == 0.0
+    assert got["strata"]["1-10"]["quantile"] == 0.0
     got = floors.floor(long + short, share=0.95, min_items=10)
     assert got["floor"] == pytest.approx(0.2)
 
 
-def test_a_stratum_under_the_minimum_sets_nothing():
-    items = [_item(0, 10, "big", f"b{i}") for i in range(12)] + [_item(5, 10, "tiny", "t")]
+def test_a_stratum_under_the_minimum_pools_with_its_neighbour():
+    items = ([_item(0, 10, "1-10", f"a{i}") for i in range(4)] + [_item(0, 10, "11-17", f"b{i}") for i in range(30)]
+             + [_item(5, 10, "18+", "c0")])
     got = floors.floor(items, share=0.95, min_items=10)
+    assert list(got["strata"]) == ["1+"] and got["n"] == 35 and got["complete"] is True
     assert got["floor"] == 0.0
-    assert got["strata"]["tiny"]["sets_floor"] is False
-    assert floors.floor([_item(1, 10)], share=0.95, min_items=10)["floor"] is None
+    mid = floors.floor([_item(0, 10, "1-10", f"a{i}") for i in range(4)] + [_item(0, 10, "11-17", f"b{i}") for i in range(12)]
+                       + [_item(0, 20, "18+", f"c{i}") for i in range(19)] + [_item(10, 20, "18+", "c19")], 0.95, 10)
+    assert list(mid["strata"]) == ["1-17", "18+"] and mid["strata"]["1-17"]["n"] == 16
+    assert mid["floor"] == 0.0
+    inner = floors.floor([_item(0, 10, "1-10", f"a{i}") for i in range(12)] + [_item(0, 15, "11-17", f"b{i}") for i in range(3)]
+                         + [_item(0, 20, "18+", f"c{i}") for i in range(20)], 0.95, 10)
+    assert list(inner["strata"]) == ["1-10", "11+"] and inner["strata"]["11+"]["n"] == 23
+    one = floors.floor([_item(1, 10)], share=0.95, min_items=10)
+    assert one["floor"] is None and one["complete"] is False
 
 
 def test_the_derived_threshold_is_the_smallest_knob_value_at_or_above_the_floor():
@@ -106,6 +115,8 @@ def test_identical_inputs_rerun_with_a_different_error_count_are_counted_as_reru
     items = [_item(0, 10, case="a", run=1), _item(0, 10, case="a", run=2),
              _item(0, 10, case="b", run=1), _item(2, 10, case="b", run=2), _item(1, 10, case="c", run=1)]
     assert floors.reruns(items) == {"repeated": 2, "differ": 1}
+    within = [{**_item(0, 10, case="d", run=7), "rep": 0}, {**_item(3, 10, case="d", run=7), "rep": 1}]
+    assert floors.reruns(within) == {"repeated": 1, "differ": 1}
 
 
 def test_the_session_gap_lands_in_the_sparsest_band_of_observed_gaps(store):
@@ -136,11 +147,10 @@ def test_a_knob_whose_default_is_not_its_derived_value_fails_the_command(store, 
 
 
 def test_a_provisional_floor_never_fails_and_a_complete_one_above_the_range_does():
-    big = [_item(0, 10, "a", f"a{i}") for i in range(12)]
-    few = floors.floor(big + [_item(9, 10, "b", "b0")], share=0.95, min_items=10)
+    few = floors.floor([_item(9, 10, "1-10", f"a{i}") for i in range(3)], share=0.95, min_items=10)
     assert floors.status(few, floors.derived(few["floor"], (0.0, 0.1))) == "provisional"
     assert floors.agrees(few, 0.0, 0.1) is True
-    high = floors.floor([_item(9, 10, "a", f"a{i}") for i in range(12)], share=0.95, min_items=10)
+    high = floors.floor([_item(9, 10, "1-10", f"a{i}") for i in range(12)], share=0.95, min_items=10)
     assert floors.status(high, floors.derived(high["floor"], (0.0, 0.1))) == "above range"
     assert floors.agrees(high, None, 0.1) is False
 
@@ -196,9 +206,10 @@ def test_every_threshold_knob_has_a_unit_a_range_and_its_evidence():
 
 def test_the_night_runs_measure_each_reference_twice_in_the_env_its_ear_needs(tmp_path):
     runs = floors.night(tmp_path)
-    assert all(r[r.index("--repeat") + 1] == "2" for r in runs)
+    assert not any("--repeat" in r for r in runs)
     specs = [r[r.index("--candidates") + 1] for r in runs]
-    assert sum("backend=whisper" in s or "ear=whisper" in s for s in specs) == 2
+    assert all(specs.count(s) == 2 for s in specs) and len(set(specs)) == 5
+    assert sum("backend=whisper" in s or "ear=whisper" in s for s in specs) == 4
     for r, s in zip(runs, specs):
         assert (r[0] == "env") is ("whisper" in s.split(",", 1)[-1]), r
     assert runs[-1][runs[-1].index("--cases") + 1] == str(tmp_path)

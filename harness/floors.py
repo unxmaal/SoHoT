@@ -29,7 +29,7 @@ _HEARD = "; heard "
 _EAR = re.compile(r",ear=([^,]*)")
 #: The word the image lane's text-render case asks for, planted at these sizes for its OCR floor.
 PLANT_WORD = "OPEN"
-PLANT_WORD_SIZES = (20, 28, 36, 48)
+PLANT_WORD_SIZES = (16, 20, 24, 28, 32, 36, 40, 48, 56, 64)
 #: Planted case ids say what they are, so the stored rows need no case file to be read as clean.
 PLANT_PREFIX = {"clean": "floor-ocr-", "word": "floor-word-"}
 
@@ -49,8 +49,29 @@ def quantile(values: list[float], share: float) -> float:
     return v[max(0, math.ceil(share * len(v)) - 1)]
 
 
+def _low(name: str) -> int:
+    got = re.match(r"\d+", name)
+    return int(got.group()) if got else 0
+
+
+def _pooled(by: dict, min_items: int) -> list[tuple[str, list[float]]]:
+    """Strata in length order, each under `min_items` pooled into its neighbour until none is or one is left."""
+    out = [(n, list(by[n])) for n in sorted(by, key=_low)]
+    while len(out) > 1:
+        small = [i for i, (_, r) in enumerate(out) if len(r) < min_items]
+        if not small:
+            break
+        i = min(small, key=lambda k: len(out[k][1]))
+        j = i + 1 if i + 1 < len(out) else i - 1
+        a, b = sorted((i, j))
+        top = out[b][0]
+        name = f"{_low(out[a][0])}+" if top.endswith("+") else f"{_low(out[a][0])}-{top.split('-')[1]}"
+        out[a:b + 1] = [(name, out[a][1] + out[b][1])]
+    return out
+
+
 def floor(items: list[dict], share: float | None = None, min_items: int | None = None) -> dict:
-    """{n, strata, floor}: per case its worst rerun; the floor is the largest per-stratum `share` quantile over strata big enough."""
+    """{n, strata, floor}: per case its worst rerun; strata under min_items pool with a neighbour; the floor is their largest `share` quantile."""
     share = FLOOR_PASS_SHARE if share is None else share
     min_items = FLOOR_MIN_ITEMS if min_items is None else min_items
     worst: dict = {}
@@ -62,7 +83,7 @@ def floor(items: list[dict], share: float | None = None, min_items: int | None =
     for name, rate in worst.values():
         by[name].append(rate)
     strata, sets = {}, []
-    for name, rates in sorted(by.items()):
+    for name, rates in _pooled(by, min_items):
         q = quantile(rates, share)
         big = len(rates) >= min_items
         strata[name] = {"n": len(rates), "zero_share": round(sum(r == 0 for r in rates) / len(rates), 3),
@@ -88,7 +109,7 @@ def reruns(items: list[dict]) -> dict:
     runs = defaultdict(set)
     for i in items:
         by[i["case"]].add(i["errors"])
-        runs[i["case"]].add(i["run"])
+        runs[i["case"]].add((i["run"], i.get("rep", 0)))
     repeated = [c for c in by if len(runs[c]) > 1]
     return {"repeated": len(repeated), "differ": sum(len(by[c]) > 1 for c in repeated)}
 
@@ -96,13 +117,13 @@ def reruns(items: list[dict]) -> dict:
 def _rows(conn, lane: str, candidate: str, ear: str = ""):
     """(case, output, metrics, detail, run) of one candidate; with `ear`, only runs it read back (no ear recorded: the default)."""
     got = conn.execute(
-        "SELECT r.case_id, r.output, r.metrics, r.detail, r.run_id, ru.receipt, ru.specs FROM results r "
+        "SELECT r.case_id, r.output, r.metrics, r.detail, r.run_id, ru.receipt, ru.specs, r.repeat_index FROM results r "
         "JOIN runs ru ON ru.id = r.run_id WHERE ru.lane = ? AND r.candidate = ? ORDER BY r.id", (lane, candidate))
     out = []
-    for case, output, metrics, detail, run, receipt, specs in got:
+    for case, output, metrics, detail, run, receipt, specs, rep in got:
         if ear and run_ear(receipt, specs, candidate) != ear:
             continue
-        out.append((case, output, metrics, detail, run))
+        out.append((case, output, metrics, detail, (run, rep or 0)))
     return out
 
 
@@ -150,7 +171,8 @@ def stt_items(conn, refs: dict, instrument: str | None = None) -> list[dict]:
         if case not in refs or not output:
             continue
         errors, words = speech.wer_counts(refs[case], output)
-        out.append({"case": case, "run": run, "errors": errors, "units": words, "stratum": stratum(words, "stt")})
+        out.append({"case": case, "run": run[0], "rep": run[1], "errors": errors, "units": words,
+                    "stratum": stratum(words, "stt")})
     return out
 
 
@@ -170,7 +192,8 @@ def tts_items(conn, prompts: dict, instrument: str | None = None, ear: str = "")
             if "wer_words" not in m:
                 continue
             errors, words = m["wer_errors"], m["wer_words"]
-        out.append({"case": case, "run": run, "errors": errors, "units": words, "stratum": stratum(words, "tts")})
+        out.append({"case": case, "run": run[0], "rep": run[1], "errors": errors, "units": words,
+                    "stratum": stratum(words, "tts")})
     return out
 
 
@@ -192,7 +215,7 @@ def ocr_items(conn, cases: dict, instrument: str | None = None, word: bool = Fal
         m = _metrics(metrics)
         if "cer_chars" not in m:
             continue
-        out.append({"case": case, "run": run, "errors": m["cer_errors"], "units": m["cer_chars"],
+        out.append({"case": case, "run": run[0], "rep": run[1], "errors": m["cer_errors"], "units": m["cer_chars"],
                     "stratum": stratum(m["cer_chars"], "ocr")})
     return out
 
@@ -263,7 +286,7 @@ def _entry(conn, knob: str, lane: str, items: list[dict], share, min_items, *, c
 
 def status(got: dict, pick) -> str:
     """"no rows", "provisional" (a stratum is under floor_min_items), "above range", or "derived"."""
-    if got["floor"] is None:
+    if not got["n"]:
         return "no rows"
     if not got["complete"]:
         return "provisional"
@@ -327,7 +350,7 @@ def plant(out, count: int | None = None) -> list[Path]:
 
 
 def night(planted) -> list[list[str]]:
-    """The runs that measure the floors on the planted and committed known inputs, each at repeat 2."""
+    """The runs that measure the floors on the planted and committed known inputs, each twice: --repeat is a no-op here (#1272)."""
     from harness import runner_gaps
     kokoro = "tts:mlx-community/Kokoro-82M-bf16,voice=bm_george"
     runs = [("stt", "evals/cases/stt/librispeech", "stt:mlx-community/whisper-large-v3-mlx,backend=whisper"),
@@ -336,5 +359,5 @@ def night(planted) -> list[list[str]]:
             ("tts", "evals/cases/tts/tts_synth", f"{kokoro},ear=whisper"),
             ("ocr", str(planted), "osocr:auto")]
     return [runner_gaps.launcher([spec], ["uv", "run", "python"])
-            + ["-m", "evals.run", "--split", "all", "--repeat", "2", "--modality", lane, "--cases", cases,
-               "--candidates", spec] for lane, cases, spec in runs]
+            + ["-m", "evals.run", "--split", "all", "--modality", lane, "--cases", cases, "--candidates", spec]
+            for lane, cases, spec in runs for _ in range(2)]
