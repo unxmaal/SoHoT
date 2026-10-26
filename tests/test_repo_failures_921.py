@@ -240,3 +240,77 @@ def test_every_committed_label_that_cites_a_regrade_has_one():
     assert cited and all((x["run"], x["case"]) in regrades for x in cited)
     model = {(x["run"], x["case"]) for x in F.load_labels() if F.GRADINGS.get(x.get("grading")) in (None, "model")}
     assert not any(g["resolved"] and (r, c) in model for (r, c), g in regrades.items())
+
+
+def _case(d, case, **stored):
+    (d / f"org_x--{case}.json").write_text(json.dumps({"case": case, **stored}), encoding="utf-8")
+
+
+@pytest.fixture
+def rerun(tmp_path):
+    d = tmp_path / "921-arm-a"
+    d.mkdir()
+    rows = [_row("ok", True), _row("cut", cls="token_budget_exhausted"), _row("tool"), _row("hunk"), _row("ctx"),
+            _row("new"), _row("wrong", cls="content_failed"), _row("env", cls="environment_error")]
+    details = {"tool": "the reply holds no diff", "hunk": "git apply: error: No valid patches in input",
+               "ctx": "git apply: error: patch failed: harness/x.py:50\nerror: harness/x.py: patch does not apply",
+               "new": "git apply: error: new file harness/v58.py depends on old contents",
+               "wrong": "fail_to_pass still failing: tests/test_x.py::test_y"}
+    for r in rows:
+        r["detail"] = details.get(r["case_id"], "")
+    (d / "results.json").write_text(json.dumps({"receipt": {}, "rows": rows}), encoding="utf-8")
+    _case(d, "tool", reply=REPLY, diff="")
+    _case(d, "hunk", reply="x", diff="--- a/x.py\n+++ b/x.py\n@@ def add(argv: list[str]):\n-a\n+b\n")
+    _case(d, "ctx", reply="x", diff="--- a/x.py\n+++ b/x.py\n@@ -50,1 +50,1 @@\n-a\n+b\n")
+    _case(d, "new", reply="x", diff="--- a/harness/v58.py\n+++ b/harness/v58.py\n@@ -0,0 +1,1 @@\n+a\n")
+    _case(d, "wrong", reply="x", diff="--- a/x.py\n+++ b/x.py\n@@ -1,1 +1,1 @@\n-a\n+b\n")
+    (d / "org_x--cut.trajectory.json").write_text(json.dumps({"requests": [
+        {"finish_reason": "length", "reasoning": "Let me look at the \"files\".\nLet me look at the \"files\".\n"}]}),
+        encoding="utf-8")
+    return d
+
+
+def test_a_new_file_written_against_old_contents_is_a_missing_file():
+    row = {"failure_class": "invalid_patch", "detail": "git apply: error: new file v58.py depends on old contents"}
+    assert F.cause(row, {"diff": "--- a/v58.py\n+++ b/v58.py\n@@ -0,0 +1 @@\n+a\n"}) == "missing_file"
+    assert F.CODEBOOK["missing_file"] == "model" and "missing_file" in F.PRECEDENCE
+
+
+def test_propose_labels_every_failing_row_with_an_excerpt_the_tally_accepts(rerun):
+    run = F.load_run(rerun)
+    got = F.propose(run, {"cut": ("looping", 'Let me look at the "files".')})
+    assert {x["case"]: x["class"] for x in got} == {
+        "cut": "budget_exhausted", "tool": "tool_call", "hunk": "malformed_hunk", "ctx": "context_mismatch",
+        "new": "missing_file", "wrong": "wrong_fix"}
+    assert all(F.check_excerpt(rerun, x) == "" for x in got)
+    assert F.unlabelled(run, got) == []
+    (cut,) = [x for x in got if x["case"] == "cut"]
+    assert cut["at_cut"] == "looping" and cut["file"] == "org_x--cut.trajectory.json"
+
+
+def test_propose_labels_a_regraded_row_from_its_regrade(rerun, tmp_path):
+    run = F.load_run(rerun)
+    regrades = F.load_regrades(_write(tmp_path / "r.jsonl", [
+        _regrade(rerun, "ctx", False, "fail_to_pass still failing: tests/test_x.py::test_y"),
+        _regrade(rerun, "new", True)]))
+    got = {x["case"]: x for x in F.propose(run, {"cut": ("looping", 'Let me look at the "files".')}, regrades)}
+    assert got["ctx"]["class"] == "wrong_fix" and got["ctx"]["regrade"] is True
+    assert "new" not in got
+    assert all(F.check_excerpt(rerun, x, regrades) == "" for x in got.values())
+    assert F.unlabelled(run, list(got.values()), regrades) == []
+
+
+def test_a_budget_row_no_labeller_read_is_left_unlabelled(rerun):
+    run = F.load_run(rerun)
+    assert F.unlabelled(run, F.propose(run, {})) == ["cut"]
+    with pytest.raises(ValueError, match="not in"):
+        F.propose(run, {"cut": ("looping", "words the reasoning never says")})
+
+
+def test_the_propose_command_prints_labels_the_codebook_accepts(rerun, tmp_path, capsys):
+    cuts = _write(tmp_path / "cuts.jsonl", [{"run": rerun.name, "case": "cut", "at_cut": "other",
+                                             "excerpt": 'Let me look at the "files".'}])
+    assert F.main(["propose", str(rerun), "--at-cut", str(cuts)]) == 0
+    out = tmp_path / "labels.jsonl"
+    out.write_text(capsys.readouterr().out, encoding="utf-8")
+    assert len(F.load_labels(out)) == 6
