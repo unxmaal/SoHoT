@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 84
+SCHEMA_VERSION = 85
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -288,6 +288,20 @@ CREATE TABLE IF NOT EXISTS jobs (
     not_before   REAL,
     -- 1 when not_before is the night start (--night), which a day clearance lifts. #1112.
     night_gate   INTEGER NOT NULL DEFAULT 0
+);
+
+-- One technique proposal triaged once: into a method (a registered one, or a drafted template), or left wanted. #993.
+CREATE TABLE IF NOT EXISTS technique_triage (
+    id           INTEGER PRIMARY KEY,
+    proposal_id  INTEGER NOT NULL UNIQUE REFERENCES proposals(id) ON DELETE CASCADE,
+    -- prompt (a method), other (not a prompt transform) or refused (the draft would not run).
+    outcome      TEXT NOT NULL,
+    method       TEXT NOT NULL DEFAULT '',
+    why          TEXT NOT NULL DEFAULT '',
+    -- A drafted template's row as JSON, which methods.REGISTRY resolves by its name; '' otherwise.
+    template     TEXT NOT NULL DEFAULT '',
+    drafted_by   TEXT NOT NULL DEFAULT '',
+    triaged_at   REAL NOT NULL
 );
 
 -- Eric's word that this machine may run jobs all day; the watchdog's day limits and the queue's night gate lift until `until`. #1112.

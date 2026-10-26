@@ -329,6 +329,40 @@ def test_a_method_crossed_with_the_incumbent_climbs_the_same_ladder(world, monke
         assert ("template" in cost) == (spec[0] in "dn"), cost
 
 
+def test_a_drafted_crossing_climbs_the_same_ladder(world, monkeypatch):
+    """A technique proposal the triage drafted into a template is crossed, screened and measured like plan. #993."""
+    from harness import family
+    from harness import technique_triage as tt
+    monkeypatch.setattr(family, "SLOTS", 0)
+    conn = ms.connect()
+    try:
+        ms.record(conn, ms.Seen(name="arxiv:2610.00001", source="hf-daily-papers",
+                                why="Listing edge cases first improves LLM code generation",
+                                description="Listing edge cases first improves LLM code generation.",
+                                category=ms.TECHNIQUE))
+    finally:
+        conn.close()
+    monkeypatch.setattr(tt, "draft", lambda row, known=(): {
+        "mechanism": "prompt", "name": "edge cases first", "lanes": ["code"],
+        "steps": [{"as": "cases", "prompt": "List the edge cases of this task. Do not solve it.\n\n{task}"},
+                  {"prompt": "{task}\n\nHandle these edge cases:\n{cases}"}]})
+    loop("--top", "7")
+    spec = f"t-edge-cases-first:{INCUMBENT_UPSTREAM}"
+    conn = ms.connect()
+    try:
+        tiers = [r["tier"] for r in conn.execute(
+            "SELECT v.tier FROM verdicts v JOIN proposals p ON p.id = v.proposal_id "
+            "WHERE p.name = ? ORDER BY v.id", (spec,))]
+        power = conn.execute("SELECT v.power FROM verdicts v JOIN proposals p ON p.state_verdict_id = v.id "
+                             "WHERE p.name = ?", (spec,)).fetchone()["power"]
+    finally:
+        conn.close()
+    assert tiers[:2] == ["inspect", "screen"], tiers
+    assert latest(spec)["tier"] == "adopt", latest(spec)
+    cost = json.loads(power)["cost"]
+    assert cost["base"] == INCUMBENT_UPSTREAM and cost["calls"] == 2.0 and "template" in cost, cost
+
+
 def test_a_model_server_that_dies_mid_screen_is_the_harnesss_fault(world):
     world.server = "dead"
     assert loop() == 1

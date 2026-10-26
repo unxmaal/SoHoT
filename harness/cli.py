@@ -343,6 +343,11 @@ def build_parser() -> argparse.ArgumentParser:
                         "families and compared models, to quantized repos that fit (#882)")
     d.add_argument("--papers", action="store_true",
                    help="read HuggingFace daily papers; each is a technique for a lane (#576)")
+    d.add_argument("--posts", action="store_true",
+                   help="read the `techniques` feeds, practitioners' posts; each entry is a technique (#993)")
+    d.add_argument("--triage", action="store_true",
+                   help="triage technique proposals into method crossings; --run drafts with the extract "
+                        "lane's model, up to --top (#993)")
     d.add_argument("--feeds", action="store_true",
                    help="read the community aggregation feeds for candidates")
     d.add_argument("--sources", action="store_true",
@@ -814,6 +819,11 @@ def build_parser() -> argparse.ArgumentParser:
                      "(YYYY-MM-DD or 'YYYY-MM-DD HH:MM'). #1293")
     bla.add_argument("--against", default="", help="report: an earlier audit's directory, printed beside this one")
     bla.set_defaults(func=blame_cmd.cmd_blame)
+    prop = sub.add_parser("propose", help="file a technique a person names, for the next triage to read (#993)")
+    prop.add_argument("url", help="the post, paper or page describing the technique")
+    prop.add_argument("--title", default="", help="its title; without one the page is fetched for it")
+    prop.add_argument("--note", default="", help="what the technique does, in a line")
+    prop.set_defaults(func=discover_cmd.cmd_propose)
     why = sub.add_parser("discover-why", help="which sources sighted a repo and where the crowd tier lets it "
                          "fall out, from the GitHub cache and the store read-only. #764")
     why.add_argument("repo", help="owner/name")

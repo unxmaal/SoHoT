@@ -174,7 +174,7 @@ def _bare(model: str) -> str:
         head, sep, rest = name.partition("/")
         if prefix:
             name = name[len(prefix):]
-        elif sep and rest and (head in heads or _BEST_OF.match(head)):
+        elif sep and rest and (head in heads or head in methods.REGISTRY or _BEST_OF.match(head)):
             name = rest
         else:
             return name

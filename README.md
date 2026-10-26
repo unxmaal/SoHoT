@@ -2074,10 +2074,21 @@ records each paper as a technique `arxiv:<id>` with its title, abstract and
 link, recorded in the `sources` table like the feeds. A paper is laned by the
 same prose routing as a model, title first and then title and abstract
 together; one that names no lane, or several, stays laneless. A technique is
-never queued for fetch, screen or measure: `soh discover --loop` lists them
-under `techniques wanted`, per lane, with title, link and sightings.
-Implementing a method is a job for a person or an agent, so the report decides
-nothing.
+never queued for fetch: it is triaged. `soh discover --posts` reads the
+`techniques` feeds (practitioners' posts, one proposal per entry) and
+`soh propose <url> [--title T --note N]` files one a person names. Triage
+(`soh discover --triage --run`, and the loop with `--run`, at most
+`triage_per_run` model calls) reads each unsettled technique in a text lane or
+the general bucket once: a link that is a registered method's `source` is that
+method; otherwise the extract lane's model drafts a template, which must load
+as a template and read `{task}`, and whose steps' digest, if it matches a
+registered template, makes it that template. A drafted template is a row in
+`technique_triage` and runs as `t-<name>:<base>` with no code. The method is
+crossed with each of its lanes' incumbents and climbs inspect, screen and
+measure like any crossing, unless the newest stored measure run of it in that
+lane was significantly worse than its pair, which declines it there citing the
+run. A technique that is not a prompt transform, or whose draft would not run,
+stays under `techniques wanted`.
 
 ### Refusals that stop being true
 
