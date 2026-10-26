@@ -253,6 +253,8 @@ def _run_loop_held(a, keep=None) -> int:
     want = (getattr(a, "lane", "") or "").strip().lower()
     store = ms.connect()
     try:
+        for line in _triage_lines(store, want, bool(getattr(a, "run", False))):
+            print(line)
         for line in _methods_lines(_cross_methods(store, want)):
             print(line)
         rows, _ = _queueable(store, want)
@@ -830,6 +832,13 @@ def _cross_methods(store, want: str = "") -> list[tuple[str, str, bool]]:
                           reason=reasons.CANDIDATE)
             out.append((lane, spec, not known))
     return out
+
+
+def _triage_lines(store, want: str = "", run: bool = False) -> list[str]:
+    """Technique proposals into method crossings before the loop crosses its registered methods; drafts only with --run. #993."""
+    from harness import technique_triage as tt
+    got = tt.triage(store, want=lanes.canonical(want) if want else "") if run else None
+    return tt.lines(store, got)
 
 
 def _methods_lines(crossed) -> list[str]:

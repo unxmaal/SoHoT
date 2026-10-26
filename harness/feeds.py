@@ -142,6 +142,9 @@ DEFAULT_SOURCES = [
     Source("hf-daily-papers", kind="papers",
            url="https://huggingface.co/api/daily_papers", lane="all",
            note="papers: new methods for a lane, not new weights"),
+    # Practitioners' posts: prompt and process techniques appear here before any paper. #993.
+    Source("simonwillison-entries", kind="techniques", url="https://simonwillison.net/atom/entries/",
+           lane="all", note="techniques: each post is triaged for a prompt technique a lane can measure"),
     Source("diffusers-releases", kind="releases",
            url="https://github.com/huggingface/diffusers/releases.atom",
            lane="video", reaches=("video", "image"),
