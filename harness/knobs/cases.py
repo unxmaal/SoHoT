@@ -40,6 +40,15 @@ KNOBS = [
 NOT_GATING = {
     "evals/importers/svg_synth.py:ATTEMPTS": "redraws of one row before the generator refuses a kind too small "
                                              "for its share; it raises, it never changes a case (#1050)",
+    "evals/importers/geneval.py:PARAMS[width]": "the picture size every staging case asks for, as the hand cases "
+                                                "do; exam content, not a threshold (#603)",
+    "evals/importers/geneval.py:PARAMS[height]": "the picture size every staging case asks for, as the hand cases "
+                                                 "do; exam content, not a threshold (#603)",
+    "evals/importers/geneval.py:PARAMS[seed]": "the generation seed every staging case asks for, as the hand cases "
+                                               "do; exam content, not a threshold (#603)",
+    "evals/importers/geneval.py:download->urllib.request.urlopen(timeout)": "network timeout of a by-hand refresh "
+                                                                           "of the recorded copy; it raises, it never "
+                                                                           "changes a case (#603)",
 }
 
 NEVER_CUTS = {

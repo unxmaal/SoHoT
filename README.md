@@ -2590,6 +2590,14 @@ tracer or OmniSVG emits paths only. The attribution records kind and stratum
 (easy, medium, hard). The negative control: the reference passes, one black
 square and the next case's drawing do not.
 
+The image lane's imported source is `geneval` (#603): GenEval's prompts (MIT,
+pinned commit, recorded copy checked by sha256) as staging cases for the
+pinned detector. An include count reads "at least", a counting row's include
+plus exclude reads "exactly", a position becomes `above` or `left_of` against
+the named object, and a colour must beat GenEval's other colours on the
+object's box. The negative control: boxes meeting the spec pass, no boxes and
+the next case's boxes do not.
+
 `repair` costs nothing extra, so it is the one to understand. Everything already
 checks its own output. It runs the code it wrote, draws the SVG to see whether
 anything is visible, opens the web page in a browser. All of that was

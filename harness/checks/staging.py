@@ -18,7 +18,7 @@ DETECTOR_REVISION = "cfd3195ba4ea9592eec887ded089f4c08eff231d"
 WEIGHT_FILES = ["*.json", "*.txt", "model.safetensors"]
 #: Bumped whenever a requirement's rule changes, so older verdicts are a different exam.
 CHECKER_VERSION = 1
-TYPES = ("count", "side", "above", "bigger", "frame", "attribute", "held")
+TYPES = ("count", "side", "above", "left_of", "bigger", "frame", "attribute", "held")
 #: Requirement types reported but left out of the pass: those whose detector agreement is under MIN_AGREEMENT.
 UNCOUNTED: frozenset[str] = frozenset()
 DEVICES = ("cpu", "mps")
@@ -93,7 +93,7 @@ def validate(spec) -> None:
     require = spec.get("require")
     if not isinstance(require, list) or not require:
         raise ValueError("assert.staging needs require: a list of requirements")
-    allowed = {"count": {"n"}, "side": {"side"}, "above": {"over"}, "bigger": {"than"},
+    allowed = {"count": {"n", "min"}, "side": {"side"}, "above": {"over"}, "left_of": {"of"}, "bigger": {"than"},
                "frame": {"min", "max"}, "attribute": {"is", "not"}, "held": {"by"}}
     for i, r in enumerate(require):
         kind = r.get("type") if isinstance(r, dict) else None
@@ -104,17 +104,26 @@ def validate(spec) -> None:
             raise ValueError(f"staging requirement {i} ({kind}): unknown field(s) {', '.join(sorted(extra))}")
         if r.get("object") not in objects:
             raise ValueError(f"staging requirement {i} ({kind}): object {r.get('object')!r} is not in objects")
-        for ref in ("over", "than", "by"):
+        for ref in ("over", "than", "by", "of"):
             if ref in allowed[kind] and r.get(ref) not in objects:
                 raise ValueError(f"staging requirement {i} ({kind}): {ref} {r.get(ref)!r} is not in objects")
-        if kind == "count" and (not isinstance(r.get("n"), int) or r["n"] < 0):
-            raise ValueError(f"staging requirement {i} (count): n must be a whole number")
+        if kind == "count" and ("n" in r) == ("min" in r):
+            raise ValueError(f"staging requirement {i} (count): needs one of n or min")
+        if kind == "count" and (not isinstance(r.get("n", r.get("min")), int) or r.get("n", r.get("min")) < 0):
+            raise ValueError(f"staging requirement {i} (count): n or min must be a whole number")
         if kind == "side" and r.get("side") not in ("left", "right"):
             raise ValueError(f"staging requirement {i} (side): side must be left or right")
         if kind == "frame" and not ({"min", "max"} & set(r)):
             raise ValueError(f"staging requirement {i} (frame): needs min or max, a share of the frame")
-        if kind == "attribute" and not (str(r.get("is") or "").strip() and str(r.get("not") or "").strip()):
-            raise ValueError(f"staging requirement {i} (attribute): needs is and not, two contrasting queries")
+        if kind == "attribute" and not (str(r.get("is") or "").strip() and _contrasts(r)):
+            raise ValueError(f"staging requirement {i} (attribute): needs is and not, contrasting queries")
+
+
+def _contrasts(r: dict) -> list[str]:
+    """An attribute's contrasting queries: one string, or a list the object must beat every one of."""
+    raw = r.get("not")
+    got = [raw] if isinstance(raw, str) else list(raw or [])
+    return [q for q in got if isinstance(q, str) and q.strip()]
 
 
 def probes(spec) -> list[str]:
@@ -122,7 +131,7 @@ def probes(spec) -> list[str]:
     out: list[str] = []
     for r in spec["require"]:
         if r["type"] == "attribute":
-            out += [q for q in (r["is"], r["not"]) if q not in out]
+            out += [q for q in [r["is"], *_contrasts(r)] if q not in out]
     return out
 
 
@@ -131,18 +140,21 @@ def question(r: dict, objects: dict) -> str:
     o = r["object"]
     kind = r["type"]
     if kind == "count":
-        return f"Are there exactly {r['n']} of: {objects[o]}?"
+        return (f"Are there exactly {r['n']} of: {objects[o]}?" if "n" in r
+                else f"Are there at least {r['min']} of: {objects[o]}?")
     if kind == "side":
         return f"Is every {objects[o]} in the {r['side']} half of the frame?"
     if kind == "above":
         return f"Is the {objects[o]} above the {objects[r['over']]}?"
+    if kind == "left_of":
+        return f"Is the {objects[o]} left of the {objects[r['of']]}?"
     if kind == "bigger":
         return f"Is the {objects[o]} clearly bigger in the frame than the {objects[r['than']]}?"
     if kind == "frame":
         bounds = " and ".join(f"{k} {int(r[k] * 100)}%" for k in ("min", "max") if k in r)
         return f"Does the {objects[o]} take up {bounds} of the frame?"
     if kind == "attribute":
-        return f"Is it {r['is']} rather than {r['not']}?"
+        return f"Is it {r['is']} rather than {' or '.join(_contrasts(r))}?"
     return f"Is the {objects[o]} held by the {objects[r['by']]}?"
 
 
@@ -173,6 +185,17 @@ def above(a: Box, b: Box, margin: float | None = None) -> bool:
     return ry / norm < -0.5
 
 
+def left_of(a: Box, b: Box, margin: float | None = None) -> bool:
+    """GenEval's relative_position read as "left of": the margin-revised x offset leads the direction."""
+    m = POSITION_MARGIN if margin is None else margin
+    dx, dy = a.cx - b.cx, a.cy - b.cy
+    rx = max(abs(dx) - m * (a.w + b.w), 0.0) * (1 if dx >= 0 else -1)
+    ry = max(abs(dy) - m * (a.h + b.h), 0.0) * (1 if dy >= 0 else -1)
+    if abs(rx) < 1e-3 and abs(ry) < 1e-3:
+        return False
+    return rx / (dx * dx + dy * dy) ** 0.5 < -0.5
+
+
 def suppress(boxes: list[Box], limit: float | None = None) -> list[Box]:
     """Greedy non-maximum suppression within each label, highest score first."""
     limit = NMS_IOU if limit is None else limit
@@ -201,6 +224,8 @@ def evaluate(spec: dict, boxes: list[Box], uncounted=None) -> list[Verdict]:
 def _one(r: dict, found: dict, objects: dict) -> tuple[bool, str]:
     kind, name = r["type"], r["object"]
     mine = found[name]
+    if kind == "count" and "min" in r:
+        return len(mine) >= r["min"], f"found {len(mine)} {name}, asked at least {r['min']}"
     if kind == "count":
         return len(mine) == r["n"], f"found {len(mine)} {name}, asked {r['n']}"
     if not mine:
@@ -209,13 +234,16 @@ def _one(r: dict, found: dict, objects: dict) -> tuple[bool, str]:
     if kind == "side":
         off = [b for b in mine if not (b.cx < 0.5 - SIDE_MARGIN if r["side"] == "left" else b.cx > 0.5 + SIDE_MARGIN)]
         return not off, f"{name} centre x {', '.join(f'{b.cx:.2f}' for b in mine)}, asked {r['side']}"
-    other_name = r.get("over") or r.get("than") or r.get("by")
+    other_name = r.get("over") or r.get("than") or r.get("by") or r.get("of")
     others = found.get(other_name, []) if other_name else []
-    if kind in ("above", "bigger", "held") and not others:
+    if kind in ("above", "left_of", "bigger", "held") and not others:
         return False, f"no {other_name} found"
     if kind == "above":
         bad = [(a, b) for a in mine for b in others if not above(a, b)]
         return not bad, f"{name} centre y {best.cy:.2f}, {other_name} centre y {others[0].cy:.2f}"
+    if kind == "left_of":
+        bad = [(a, b) for a in mine for b in others if not left_of(a, b)]
+        return not bad, f"{name} centre x {best.cx:.2f}, {other_name} centre x {others[0].cx:.2f}"
     if kind == "bigger":
         ratio = best.area / others[0].area if others[0].area else float("inf")
         return ratio > BIGGER_RATIO, f"{name} area {best.area:.3f} is {ratio:.2f}x {other_name}, asked over {BIGGER_RATIO}x"
@@ -224,8 +252,9 @@ def _one(r: dict, found: dict, objects: dict) -> tuple[bool, str]:
         ok = share >= r.get("min", 0.0) and share <= r.get("max", 1.0)
         return ok, f"{name} covers {share:.2f} of the frame"
     if kind == "attribute":
-        yes, no = best.probes.get(r["is"], 0.0), best.probes.get(r["not"], 0.0)
-        return yes > no + ATTRIBUTE_MARGIN, f"{r['is']!r} {yes:.3f} vs {r['not']!r} {no:.3f} on the {name} box"
+        yes = best.probes.get(r["is"], 0.0)
+        rival, no = max(((q, best.probes.get(q, 0.0)) for q in _contrasts(r)), key=lambda x: x[1])
+        return yes > no + ATTRIBUTE_MARGIN, f"{r['is']!r} {yes:.3f} vs {rival!r} {no:.3f} on the {name} box"
     share = max(inside(best, b) for b in others)
     return share >= HELD_OVERLAP, f"{share:.2f} of the {name} box lies in a {other_name} box, asked {HELD_OVERLAP}"
 

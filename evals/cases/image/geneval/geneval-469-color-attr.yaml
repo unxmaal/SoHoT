@@ -1,0 +1,59 @@
+# GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023), MIT (https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl).
+# Imported by evals/importers from github:djghosh13/geneval/prompts/evaluation_metadata.jsonl@af4902f24d3ca90ebbb446dd9891a59e0f82725f; re-import, do not edit.
+id: geneval-469-color-attr
+modality: image
+prompt: a photo of a black kite and a green bear
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      kite: a kite
+      bear: a bear
+    require:
+    - type: count
+      object: kite
+      min: 1
+    - type: count
+      object: bear
+      min: 1
+    - type: attribute
+      object: kite
+      is: a black kite
+      not:
+      - a red kite
+      - a orange kite
+      - a yellow kite
+      - a green kite
+      - a blue kite
+      - a purple kite
+      - a pink kite
+      - a brown kite
+      - a white kite
+    - type: attribute
+      object: bear
+      is: a green bear
+      not:
+      - a red bear
+      - a orange bear
+      - a yellow bear
+      - a blue bear
+      - a purple bear
+      - a pink bear
+      - a brown bear
+      - a black bear
+      - a white bear
+attribution:
+  dataset: GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023)
+  url: https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl
+  license: MIT
+  source: github:djghosh13/geneval/prompts/evaluation_metadata.jsonl
+  revision: af4902f24d3ca90ebbb446dd9891a59e0f82725f
+  item: '469'
+  date: '2023-08-22'
+  transform: 'GenEval include/exclude spec as staging requirements: include count at least, include plus
+    exclude exactly, position relative to the named object, colour against the nine others'
+  importer: evals.importers.geneval
+  tag: color_attr
