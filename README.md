@@ -1903,6 +1903,13 @@ null below power 0.8 reads underpowered, never no effect. `soh repo-report
 [RUN] --plan --effect D` sizes a run first. The planted `skill:no-change` is the
 known-answer control: it must score below `none`, and its placebo must not.
 
+`soh repo-route --local RUN --cloud RUN [--agentic RUN]` scores routing policies
+on stored rows only, read-only: never-route and always-route (which must equal
+their executors), the oracle ceiling, and cascades that escalate when the
+applicability gate fails (the patch does not apply, or pass_to_pass breaks),
+with cloud calls, local seconds, over-routes, under-routes and accepted-wrong
+answers. It also labels each prompt with the deterministic tool it asks for.
+
 `leetcode` (code lane) imports LeetCodeDataset (Apache-2.0) at a pinned
 revision: its whole temporal test split, items dated 2024-08 to 2025-03, plus
 train items dated 2024 or later, read from the file's tail by a byte range.

@@ -492,6 +492,14 @@ def build_parser() -> argparse.ArgumentParser:
     rr.add_argument("--resamples", type=int, default=3000, help="task bootstrap resamples")
     rr.add_argument("--seed", type=int, default=1)
     rr.set_defaults(func=report_cmd.cmd_repo_report)
+    ro = sub.add_parser("repo-route", help="score routing policies offline over stored repo runs: never/always "
+                        "route, oracle, applicability-gate cascades, deterministic labels (#891)")
+    ro.add_argument("--local", dest="local_run", type=int, required=True, metavar="RUN", help="the local patch-only run")
+    ro.add_argument("--cloud", type=int, required=True, metavar="RUN", help="the cloud run")
+    ro.add_argument("--agentic", type=int, default=0, metavar="RUN", help="the local agentic (repair) run")
+    ro.add_argument("--store", default="", help="the store to read, read-only (default: this home's discovery.db)")
+    ro.add_argument("--cases", default="", help="the repo cases prompts are read from (default: evals/cases/repo)")
+    ro.set_defaults(func=report_cmd.cmd_repo_route)
     rs = sub.add_parser("repo-screen", help="the repo exam's screening subset: pick prints it, anchors writes "
                         "its base/reference outcomes from two stored runs, verdict judges screen runs (#1176)")
     rs.add_argument("action", choices=("pick", "anchors", "verdict"))
