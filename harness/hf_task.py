@@ -264,7 +264,9 @@ def vision_label(model: str, frames, prompt: str, out, label=label_images) -> No
     todo = [f for f in _jsonl(frames) if f["id"] not in done]
     with Path(out).open("a", encoding="utf-8") as f:
         for frame, reply in zip(todo, label(model, [t["image"] for t in todo], prompt)):
-            f.write(json.dumps({"id": frame["id"], "reply": reply}) + "\n")
+            # A labeller may say a reply filled its token budget: (reply, cut). #1282.
+            reply, cut = reply if isinstance(reply, tuple) else (reply, False)
+            f.write(json.dumps({"id": frame["id"], "reply": reply, **({"cut": True} if cut else {})}) + "\n")
             f.flush()
 
 

@@ -101,9 +101,11 @@ def set_lane(conn, name: str, lane: str, source: str = "") -> bool:
     want = lanes.canonical(lane)
     if not want:
         return False
-    row = conn.execute("SELECT id, lane FROM proposals WHERE name = ?",
+    row = conn.execute("SELECT id, lane, lane_source FROM proposals WHERE name = ?",
                        (name,)).fetchone()
     if not row or lanes.canonical(row["lane"]) == want:
+        return False
+    if row["lane_source"] == lanes.SCREENED_SOURCE and source != lanes.SCREENED_SOURCE:
         return False
     conn.execute("UPDATE proposals SET lane = ?, lane_source = ? WHERE id = ?",
                  (want, source, row["id"]))

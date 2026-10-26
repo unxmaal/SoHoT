@@ -683,6 +683,12 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
                               reason=reasons.CANDIDATE)
             done.append({"repo": row["name"], "ok": False, "why": why})
             continue
+        # A lane discovery never screens loads its own weights when a person runs it. #1282.
+        if lanes.canonical(row.get("lane") or "") in lanes.BY_HAND:
+            why = screen.by_hand(row["lane"], row["name"], card=row)
+            ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=why, reason=reasons.HARNESS)
+            done.append({"repo": row["name"], "ok": False, "why": why})
+            continue
         # A RUNTIME THIS MACHINE DOES NOT HAVE IS AN ANSWER, not a gap to
         # come back to. rank.unrunnable already drops these from the ordering,
         # so they never reach a fetch and never receive a verdict: the queue

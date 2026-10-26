@@ -145,3 +145,23 @@ def judge(rows, draws: int | None = None, max_kappa: float | None = None, seed: 
         for k in HEADLINE:
             out.pop(k, None)
     return out
+
+
+def paired_kappa(truth, a, b, films, draws: int, level: float, seed: int = 1282) -> dict:
+    """Two answer lists on the same frames: kappa difference, a bootstrap interval resampling frames within each film, agreement. #1282."""
+    n = len(truth)
+    ka, kb = kappa(truth, a) or 0.0, kappa(truth, b) or 0.0
+    by_film: dict[str, list[int]] = {}
+    for i, f in enumerate(films):
+        by_film.setdefault(f, []).append(i)
+    rng = random.Random(seed)
+    diffs = []
+    for _ in range(draws):
+        pick = [rng.choice(idx) for idx in by_film.values() for _ in idx]
+        t = [truth[i] for i in pick]
+        diffs.append((kappa(t, [a[i] for i in pick]) or 0.0) - (kappa(t, [b[i] for i in pick]) or 0.0))
+    diffs.sort()
+    lo = diffs[int((1 - level) / 2 * (draws - 1))]
+    hi = diffs[int((1 + level) / 2 * (draws - 1))]
+    return {"kappa_a": ka, "kappa_b": kb, "diff": ka - kb, "low": lo, "high": hi, "level": level, "draws": draws,
+            "agree": sum(x == y for x, y in zip(a, b)) / n if n else 0.0, "n": n, "films": len(by_film)}
