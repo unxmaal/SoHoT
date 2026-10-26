@@ -71,6 +71,12 @@ def _same_size(child: str, parent: str) -> bool:
     return not (a and b) or max(a, b) / min(a, b) <= SIZE_RATIO
 
 
+def base_form(name: str, root_key: str) -> bool:
+    """Whether `name` is the root's own weights in some format: Qwen/X, unsloth/X-GGUF, bartowski/Qwen_X-GGUF."""
+    own = key(name)
+    return bool(root_key) and (own == root_key or own.endswith("_" + root_key))
+
+
 def exempt(name: str, lane: str) -> str:
     """The word in `name` naming training for `lane`, else ''."""
     words = set(_WORDS.findall((name or "").rsplit("/", 1)[-1].rsplit(":", 1)[-1].lower()))
@@ -117,6 +123,9 @@ class Standing:
         fam = None if _method(name) else self.of(row, lane)
         if fam is None or not fam.demoted or name.lower() in {n.lower() for n in fam.lost}:
             return 0.0, ""
+        if base_form(name, fam.key) and not any(base_form(n, fam.key) for n in fam.lost):
+            # Its derivatives lost; no form of the base itself did, so its question is open. #1288.
+            return 0.0, f"the {fam.key} base itself has no paired loss in {fam.lane}, only its derivatives"
         word = exempt(name, lane)
         if word:
             return 0.0, (f"exempt from the {fam.key} family demotion in {fam.lane}: "

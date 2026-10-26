@@ -95,6 +95,8 @@ def test_the_github_scan_reads_every_issue_not_the_newest_300(monkeypatch, capsy
     issues = [{"number": n, "title": f"issue {n}", "body": home if n == 1 else ""} for n in range(700, 0, -1)]
 
     def gh(cmd, *args):
+        if cmd == "api":
+            return []
         limit = int(args[args.index("--limit") + 1])
         return (issues if cmd == "issue" else [])[:limit]
     monkeypatch.setattr(privacy, "_gh", gh)
@@ -102,7 +104,7 @@ def test_the_github_scan_reads_every_issue_not_the_newest_300(monkeypatch, capsy
     rc = privacy.main(["--github"])
     out = capsys.readouterr().out
     assert rc == 1 and "issue#1" in out
-    assert "scanned 700 issue(s) and 0 PR(s)" in out
+    assert "scanned 700 issue(s), 0 PR(s) and 0 comment(s)" in out
 
 
 # ---- usage ----------------------------------------------------------------

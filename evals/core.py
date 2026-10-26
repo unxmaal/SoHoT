@@ -1615,13 +1615,18 @@ def _count(items) -> dict[str, int]:
 RETIRED_METRICS = frozenset({"cost_usd"})
 
 
-#: What a lane's grader records on a failed reply, given to a reply cut before grading so it ranks and pairs as one. #1113.
+#: What a lane's grader records on a failed reply, given to a reply that failed before grading so it ranks and pairs as one. #1113.
 GRADED_FAILURE = {"repo": {"resolved": 0, "patch_applied": 0}}
 
 
+def ungraded_failure(failure_class: str) -> bool:
+    """A model was asked and the reply failed (cut, crashed, timed out): any class but none and NEVER_RAN. #1113, #1302."""
+    return bool(failure_class) and failure_class not in reasons.NEVER_RAN
+
+
 def as_graded(lane: str, failure_class: str, metrics: dict | None) -> dict:
-    """`metrics`, with the lane's graded-failure values beneath them when the reply was cut before grading. #1113."""
-    fill = GRADED_FAILURE.get(lane) if failure_class in reasons.CUT else None
+    """`metrics`, with the lane's graded-failure values beneath them when the reply failed before grading. #1113, #1302."""
+    fill = GRADED_FAILURE.get(lane) if ungraded_failure(failure_class) else None
     return {**(fill or {}), **(metrics or {})}
 
 

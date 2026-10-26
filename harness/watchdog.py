@@ -1000,8 +1000,16 @@ class Hands:
     def file(self, f: Finding) -> str:
         if self.environ.get(FILE_ENV, "") != "1":
             return f"not filed: {FILE_ENV} is not 1"
-        from harness import paths
+        from harness import paths, privacy
         fp = fingerprint(f)
+        title = f"watchdog: {f.criterion} on {f.subject.kind} ({BY_ID[f.criterion].what})"
+        body = (f"The watchdog (#814) judged `{f.criterion}` on {f.subject.key}.\n\n"
+                f"Identified as: {f.subject.why}\n\nCommand: `{f.subject.command}`\n\n"
+                f"Evidence:\n```json\n{json.dumps(f.evidence, indent=2, default=str)}\n```\n\n"
+                f"{FINGERPRINT} {fp}\n")
+        found = privacy.check_post(f"{title}\n{body}")
+        if found:
+            return f"not filed: privacy: the issue would hold {', '.join(sorted({x.name for x in found}))}"
         try:
             seen = self.run(["gh", "issue", "list", "--state", "open", "--search", f"{fp} in:body",
                              "--json", "number", "--limit", "1"], capture_output=True, text=True,
@@ -1011,11 +1019,6 @@ class Hands:
             hits = json.loads(seen.stdout or "[]")
             if hits:
                 return f"already filed: #{hits[0]['number']}"
-            title = f"watchdog: {f.criterion} on {f.subject.kind} ({BY_ID[f.criterion].what})"
-            body = (f"The watchdog (#814) judged `{f.criterion}` on {f.subject.key}.\n\n"
-                    f"Identified as: {f.subject.why}\n\nCommand: `{f.subject.command}`\n\n"
-                    f"Evidence:\n```json\n{json.dumps(f.evidence, indent=2, default=str)}\n```\n\n"
-                    f"{FINGERPRINT} {fp}\n")
             made = self.run(["gh", "issue", "create", "--title", title, "--body", body], capture_output=True,
                             text=True, timeout=GH_TIMEOUT_S, cwd=paths.REPO)
         except (OSError, subprocess.SubprocessError, ValueError) as exc:
