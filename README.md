@@ -1030,11 +1030,15 @@ Code's context (#828). It reads `~/.claude/projects/**/*.jsonl` (subagents
 included, `--main-only` leaves them out), pairs each tool_result with its
 tool_use and prints calls, estimated tokens (characters / 4, not a tokenizer),
 p50, p95, max and the share from results over 2k tokens, per tool or per day.
-When `rtk` is on PATH it adds `rtk gain`'s own savings.
+When `rtk` is on PATH it adds `rtk gain`'s own savings. A result costs again
+on every later API call of its stream until a compaction, so `--carried` ranks
+tools by those carried tokens (hook context included) and gives each one's
+share of all input tokens.
 
 ```bash
 soh context --since 2026-10-06 --until 2026-10-13   # before the rtk hook
 soh context --since 2026-10-13 --by day --json
+soh context --since 7d --carried
 ```
 
 `soh ledger` joins cloud and local per day (#826). Cloud is Claude Code's
