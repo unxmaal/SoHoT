@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160">
+  <rect x="4" y="8" width="24" height="24" fill="#2a9d8f"/>
+  <text x="32" y="27.2" font-size="19.2">harbor</text>
+  <rect x="4" y="48" width="24" height="24" fill="#f4a261"/>
+  <text x="32" y="67.2" font-size="19.2">fjord</text>
+  <rect x="4" y="88" width="24" height="24" fill="#e63946"/>
+  <text x="32" y="107.2" font-size="19.2">quartz</text>
+  <rect x="4" y="128" width="24" height="24" fill="#264653"/>
+  <text x="32" y="147.2" font-size="19.2">rook</text>
+</svg>

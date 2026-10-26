@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120">
+  <g id="bravo">
+    <circle cx="24" cy="20" r="12" fill="#264653"/>
+    <circle cx="72" cy="20" r="12" fill="#264653"/>
+    <circle cx="120" cy="20" r="12" fill="#264653"/>
+    <circle cx="168" cy="20" r="12" fill="#264653"/>
+    <circle cx="216" cy="20" r="12" fill="#264653"/>
+  </g>
+  <g id="rook">
+    <rect x="108" y="48" width="24" height="24" fill="#b5838d"/>
+  </g>
+  <g id="nova">
+    <ellipse cx="120" cy="100" rx="12" ry="6" fill="#f4a261"/>
+  </g>
+</svg>

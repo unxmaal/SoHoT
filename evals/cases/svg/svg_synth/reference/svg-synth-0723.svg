@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <g id="bravo">
+    <circle cx="33.3333" cy="33.3333" r="20" fill="#e63946"/>
+    <circle cx="100" cy="33.3333" r="20" fill="#e63946"/>
+    <circle cx="166.667" cy="33.3333" r="20" fill="#e63946"/>
+  </g>
+  <g id="fjord">
+    <rect x="10" y="85" width="30" height="30" fill="#8ab17d"/>
+    <rect x="60" y="85" width="30" height="30" fill="#8ab17d"/>
+    <rect x="110" y="85" width="30" height="30" fill="#8ab17d"/>
+    <rect x="160" y="85" width="30" height="30" fill="#8ab17d"/>
+  </g>
+  <g id="rook">
+    <ellipse cx="25" cy="166.667" rx="15" ry="7.5" fill="#457b9d"/>
+    <ellipse cx="75" cy="166.667" rx="15" ry="7.5" fill="#457b9d"/>
+    <ellipse cx="125" cy="166.667" rx="15" ry="7.5" fill="#457b9d"/>
+    <ellipse cx="175" cy="166.667" rx="15" ry="7.5" fill="#457b9d"/>
+  </g>
+</svg>

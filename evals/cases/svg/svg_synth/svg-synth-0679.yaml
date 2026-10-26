@@ -1,0 +1,41 @@
+# SoHoT generated svg cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py).
+# Imported by evals/importers from generated:evals.importers.svg_synth v1 seed 1050@1878dddb4e7787e9870bf9adfc18239059c29347; re-import, do not edit.
+id: svg-synth-0679
+modality: svg
+prompt: 'On a viewBox of "0 0 240 120", draw an analogue clock face showing 6:10: one <circle> of radius
+  25 centred at (133, 78) for the face, and two <line> elements for the hands, each starting exactly at
+  the centre. The hour hand is shorter than the minute hand and sits where it really is at 6:10. No numbers,
+  ticks or other marks. Do not use transform attributes. Draw nothing else: no background, border, axis
+  or other extra shapes.'
+methods:
+- llm
+assert:
+  structure:
+    viewbox:
+    - 0
+    - 0
+    - 240
+    - 120
+    count:
+      circle: 1
+      line: 2
+    hands:
+      cx: 133
+      cy: 78
+      hour: 185.0
+      minute: 60.0
+    inside: true
+attribution:
+  dataset: SoHoT generated svg cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py
+  license: generated
+  source: generated:evals.importers.svg_synth v1 seed 1050
+  revision: 1878dddb4e7787e9870bf9adfc18239059c29347
+  item: '679'
+  date: ''
+  transform: a seeded scene described as a prompt, asserted on its structure
+  importer: evals.importers.svg_synth
+  version: '1'
+  seed: 1050
+  kind: clock
+  stratum: hard

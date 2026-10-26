@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120">
+  <g id="ember">
+    <circle cx="120" cy="20" r="12" fill="#457b9d"/>
+  </g>
+  <g id="alpha">
+    <rect x="28" y="48" width="24" height="24" fill="#6a4c93"/>
+    <rect x="108" y="48" width="24" height="24" fill="#6a4c93"/>
+    <rect x="188" y="48" width="24" height="24" fill="#6a4c93"/>
+  </g>
+  <g id="bravo">
+    <ellipse cx="120" cy="100" rx="12" ry="6" fill="#b5838d"/>
+  </g>
+</svg>
