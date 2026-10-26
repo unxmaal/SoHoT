@@ -191,5 +191,11 @@ def rows_on(rows, split: Split, side: str) -> list[dict]:
     return [r for r in rows or [] if split.side(r.get("case_id")) == side]
 
 
-def saturated(holdout_pass_rate) -> bool:
-    return holdout_pass_rate is not None and holdout_pass_rate >= SATURATED
+def saturated(score, metric: str = "") -> bool:
+    """A holdout score at the ceiling: >= SATURATED, or <= 1 - SATURATED for a lower-is-better metric (wer). #479, #1267."""
+    if score is None:
+        return False
+    from evals.core import direction_of
+    if metric and direction_of(metric) == "lower":
+        return score <= 1 - SATURATED
+    return score >= SATURATED
