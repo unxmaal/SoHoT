@@ -31,6 +31,8 @@ def cmd_fetch(a) -> int:
                  + (f"; {rate:.2f} MB/s over {got['capped_s'] / 60:.0f} capped min" if rate else ""))
         emit(**got, cleared=cleared)
         return 0
+    if getattr(a, "replay", None):
+        return _replay(a)
     want = (getattr(a, "lane", "") or "").strip().lower()
     store = ms.connect()
     try:
@@ -83,6 +85,31 @@ def cmd_fetch(a) -> int:
     finally:
         store.close()
     emit(fetched=fetched)
+    return 0
+
+
+def _replay(a) -> int:
+    """`soh fetch --replay DAYS`: what past runs fetched and what the pass-over term would have. #1288."""
+    from harness import fetch_replay, rank
+    from harness import memory_store as ms
+    step, cap = rank.PASSED_OVER, rank.PASSED_OVER_MAX
+    if a.passed_over is not None:
+        rank.PASSED_OVER = a.passed_over
+    if a.passed_over_max is not None:
+        rank.PASSED_OVER_MAX = a.passed_over_max
+    from harness import fetching
+    store = ms.connect()
+    try:
+        kw = {"serving": rank.serving(), "measured_lanes": rank.lanes_with_receipts(store)}
+        lines = fetch_replay.report(store, a.replay, **kw)
+        if getattr(a, "project", None):
+            lines += fetch_replay.projection(store, a.project, budget_gib=fetching.budget_gib(a.budget_gib),
+                                             arrivals=a.arrivals, watch=a.watch or (), **kw)
+        for line in lines:
+            note(line)
+    finally:
+        rank.PASSED_OVER, rank.PASSED_OVER_MAX = step, cap
+        store.close()
     return 0
 
 

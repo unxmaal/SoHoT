@@ -191,13 +191,27 @@ def at_clock(hhmm: str, now: float) -> float:
     return (at if at >= t else at + timedelta(days=1)).timestamp()
 
 
+def at_date(spec: str, now: float) -> float:
+    """A local 'YYYY-MM-DD HH:MM' as that exact time; one already past is refused. #1297."""
+    from datetime import datetime
+    try:
+        at = datetime.strptime(spec.strip().replace("T", " "), "%Y-%m-%d %H:%M")
+    except ValueError:
+        raise ValueError(f"a start time is HH:MM, YYYY-MM-DD HH:MM or 'night', not {spec!r}") from None
+    if at.timestamp() < now:
+        raise ValueError(f"the start {spec!r} is in the past")
+    return at.timestamp()
+
+
 def start_at(spec: str, now: float | None = None) -> float | None:
-    """'' -> None, 'night' -> night_start, 'HH:MM' -> its next occurrence. #900."""
+    """'' -> None, 'night' -> night_start, 'HH:MM' -> its next occurrence, 'YYYY-MM-DD HH:MM' -> then. #900, #1297."""
     spec = (spec or "").strip()
     if not spec:
         return None
     now = time.time() if now is None else now
-    return night_start(now) if spec == "night" else at_clock(spec, now)
+    if spec == "night":
+        return night_start(now)
+    return at_date(spec, now) if re.match(r"\d{4}-", spec) else at_clock(spec, now)
 
 
 def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",

@@ -90,7 +90,9 @@ def test_a_lane_with_two_current_exams_ranks_on_the_newest_run_s(conn, store_run
 
 
 def test_plain_only_keeps_composite_repo_specs_and_still_drops_an_alias_lanes_workflow(conn, store_run):
-    store_run("repo", "repo", {"llamacpp:Ornith": {"pass_rate": 0.2}, "claude-code:opus": {"pass_rate": 0.1}},
+    # A failed repo reply is graded resolved 0 (#1302), so each row carries the metric as a stored one does.
+    store_run("repo", "repo", {"llamacpp:Ornith": {"pass_rate": 0.2, "metrics": {"resolved": 0.2}},
+                               "claude-code:opus": {"pass_rate": 0.1, "metrics": {"resolved": 0.1}}},
               specs=own("llamacpp:Ornith", "claude-code:opus"), cases_digest="cur")
     store_run("svg", "svg", {"local-large": {"pass_rate": 0.5}, "repair/local-large": {"pass_rate": 1.0}},
               specs={**own("local-large"), "repair/local-large": "repair:local-large"}, cases_digest="cur")

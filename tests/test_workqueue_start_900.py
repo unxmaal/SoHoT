@@ -69,6 +69,23 @@ def test_a_clock_time_already_past_today_means_tomorrow():
         wq.start_at("25:00", now=at(16, 15))
 
 
+@pytest.mark.parametrize("spec", ["2026-10-18 21:00", "2026-10-18T21:00"])
+def test_a_dated_start_is_that_exact_local_time(spec):
+    assert wq.start_at(spec, now=at(16, 10, 30)) == at(18, 21)
+
+
+def test_a_dated_start_in_the_past_is_refused():
+    with pytest.raises(ValueError, match="past"):
+        wq.start_at("2026-10-15 21:00", now=at(16, 10))
+    with pytest.raises(ValueError):
+        wq.start_at("2026-13-01 21:00", now=at(16, 10))
+
+
+def test_a_clock_time_still_means_its_next_occurrence():
+    assert wq.start_at("21:00", now=at(16, 10)) == at(16, 21)
+    assert wq.start_at("09:00", now=at(16, 10)) == at(17, 9)
+
+
 def test_the_cli_takes_night_and_not_before_and_lists_the_start(capsys, monkeypatch):
     monkeypatch.setattr(wq.time, "time", lambda: at(16, 15))
     assert cli.main(["jobs", "add", "--night", "--json", "--", "true"]) == 0
