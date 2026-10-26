@@ -810,6 +810,9 @@ def build_parser() -> argparse.ArgumentParser:
     bla.add_argument("--dir", default="", help="queue, key and label files (default: evals/blame)")
     bla.add_argument("--labels", default="", help="first labeller's file (default: <dir>/labels.csv)")
     bla.add_argument("--second", default="", help="second labeller's file (default: <dir>/labels-second.csv)")
+    bla.add_argument("--since", default="", help="sample: only state verdicts decided after this UTC date "
+                     "(YYYY-MM-DD or 'YYYY-MM-DD HH:MM'). #1293")
+    bla.add_argument("--against", default="", help="report: an earlier audit's directory, printed beside this one")
     bla.set_defaults(func=blame_cmd.cmd_blame)
     why = sub.add_parser("discover-why", help="which sources sighted a repo and where the crowd tier lets it "
                          "fall out, from the GitHub cache and the store read-only. #764")

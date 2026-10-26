@@ -66,8 +66,8 @@ EVIDENCE = ("run directory (results.json receipt, stderr, checkpoint), files und
 FIELDS = ("verdict_id", "label", "evidence")
 
 POPULATION_SQL = (
-    "SELECT v.id, p.name, p.state, v.tier, v.reason, v.until, p.lane, p.hf_task FROM proposals p "
-    "JOIN verdicts v ON v.id = p.state_verdict_id WHERE p.state IN ({}) ORDER BY v.id"
+    "SELECT v.id, p.name, p.state, v.tier, v.reason, v.until, p.lane, p.hf_task, v.decided_at FROM proposals p "
+    "JOIN verdicts v ON v.id = p.state_verdict_id WHERE p.state IN ({}) AND v.decided_at > ? ORDER BY v.id"
 ).format(", ".join(f"'{s}'" for s in TERMINAL))
 RETRACTED_SQL = (
     "SELECT DISTINCT o.id, p.name, o.outcome AS state, o.tier, o.reason FROM verdicts r "
@@ -97,9 +97,26 @@ def stratum(row) -> str:
     return f"{row['tier'] or '-'}/{row['reason'] or '-'}"
 
 
-def population(conn) -> list[dict]:
-    """The current state verdict of every terminal proposal."""
-    return [dict(r) for r in conn.execute(POPULATION_SQL)]
+def since(text: str) -> float:
+    """'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM', read as UTC, in epoch seconds. #1293."""
+    import calendar
+    import time
+    for shape in ("%Y-%m-%d %H:%M", "%Y-%m-%d"):
+        try:
+            return float(calendar.timegm(time.strptime(str(text).strip(), shape)))
+        except ValueError:
+            continue
+    raise ValueError(f"cannot read {text!r} as a date; use YYYY-MM-DD or 'YYYY-MM-DD HH:MM' (UTC)")
+
+
+def utc(ts: float) -> str:
+    import time
+    return time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime(float(ts)))
+
+
+def population(conn, after: float | None = None) -> list[dict]:
+    """The current state verdict of every terminal proposal, or of those decided after `after`."""
+    return [dict(r) for r in conn.execute(POPULATION_SQL, (float("-inf") if after is None else float(after),))]
 
 
 def allocate(sizes: dict, total: int = DRAW_TOTAL, minimum: int = DRAW_MINIMUM) -> dict:
@@ -119,9 +136,10 @@ def allocate(sizes: dict, total: int = DRAW_TOTAL, minimum: int = DRAW_MINIMUM) 
     return {s: min(got[s], sizes[s]) for s in sizes}
 
 
-def sample(conn, seed: int, total: int = DRAW_TOTAL, minimum: int = DRAW_MINIMUM) -> tuple[list[dict], dict]:
+def sample(conn, seed: int, total: int = DRAW_TOTAL, minimum: int = DRAW_MINIMUM,
+           since: float | None = None) -> tuple[list[dict], dict]:
     """(rows, population sizes): census of CENSUS_TIERS plus a seeded draw from the other strata."""
-    rows = population(conn)
+    rows = population(conn, since)
     by: dict = {}
     for r in rows:
         by.setdefault(stratum(r), []).append(r)
@@ -184,14 +202,24 @@ def max_verdict(conn) -> int:
     return int(conn.execute("SELECT COALESCE(MAX(id), 0) FROM verdicts").fetchone()[0])
 
 
-def build(conn, seed: int) -> dict:
-    """The labelling queue (shuffled, unmarked) and its key, for one store snapshot and seed."""
-    rows, sizes = sample(conn, seed)
+def _decided(conn, ids) -> dict:
+    ids = list(ids)
+    if not ids:
+        return {}
+    return {r[0]: utc(r[1]) for r in conn.execute(
+        f"SELECT id, decided_at FROM verdicts WHERE id IN ({','.join('?' * len(ids))})", ids)}
+
+
+def build(conn, seed: int, since: float | None = None) -> dict:
+    """The labelling queue (shuffled, unmarked) and its key, for one store snapshot, seed and window."""
+    rows, sizes = sample(conn, seed, since=since)
+    # Plants test the labeller, not the window, so they come from the whole store.
     planted = plants(conn, seed, [r["id"] for r in rows])
+    when = _decided(conn, [r["id"] for r in rows + planted])
     key = [{"verdict_id": r["id"], "role": "sample", "stratum": r["stratum"],
-            "census": int(r["census"]), "plant": ""} for r in rows]
+            "census": int(r["census"]), "plant": "", "decided_at": when.get(r["id"], "")} for r in rows]
     key += [{"verdict_id": r["id"], "role": "plant", "stratum": r["stratum"], "census": 0,
-             "plant": r["plant"]} for r in planted]
+             "plant": r["plant"], "decided_at": when.get(r["id"], "")} for r in planted]
     names = {r["id"]: r["name"] for r in rows + planted}
     order = [k["verdict_id"] for k in key]
     random.Random(seed + 2).shuffle(order)
@@ -201,7 +229,10 @@ def build(conn, seed: int) -> dict:
         cuts.cut("blame_second_n", "sampled verdicts left out of the second labeller's set",
                  kept=SECOND_N, dropped=len(sampled) - SECOND_N, conn=conn)
     second = sorted(random.Random(seed + 3).sample(sampled, min(SECOND_N, len(sampled))))
-    return {"header": {"seed": seed, "max_verdict_id": max_verdict(conn), "population": sizes},
+    header = {"seed": seed, "max_verdict_id": max_verdict(conn), "population": sizes}
+    if since is not None:
+        header["since"] = utc(since)
+    return {"header": header,
             "queue": [{"verdict_id": v, "name": names[v] or ""} for v in order],
             "second": [{"verdict_id": v, "name": names[v] or ""} for v in second],
             "key": key}
@@ -228,7 +259,8 @@ def write(got: dict, out: Path) -> list[Path]:
     paths = [out / "queue.csv", out / "second-queue.csv", out / "key.csv"]
     _write_csv(paths[0], got["header"], ("verdict_id", "name"), got["queue"])
     _write_csv(paths[1], got["header"], ("verdict_id", "name"), got["second"])
-    _write_csv(paths[2], got["header"], ("verdict_id", "role", "stratum", "census", "plant"), got["key"])
+    _write_csv(paths[2], got["header"], ("verdict_id", "role", "stratum", "census", "plant", "decided_at"),
+               got["key"])
     return paths
 
 
@@ -322,7 +354,8 @@ def retraction_outcomes(conn) -> dict:
 
 def report_text(got: dict) -> str:
     h = got["header"]
-    lines = [f"blame audit, seed {h.get('seed')}, store max verdict {h.get('max_verdict_id')}"]
+    lines = [f"blame audit, seed {h.get('seed')}, store max verdict {h.get('max_verdict_id')}",
+             f"  window: {window(h)}"]
     if got.get("store_max_verdict_id") not in (None, h.get("max_verdict_id")):
         lines.append(f"  note: the store has moved on to verdict {got['store_max_verdict_id']}; the population "
                      f"sizes are the sample's")
@@ -349,6 +382,36 @@ def report_text(got: dict) -> str:
                      f"{f['changed']} changed, {f['pending']} pending")
     if got["unlabelled"]:
         lines.append(f"unlabelled: {len(got['unlabelled'])} row(s), e.g. {got['unlabelled'][:5]}")
+    return "\n".join(lines)
+
+
+def window(header: dict) -> str:
+    return (f"state verdicts decided after {header['since']}" if header.get("since")
+            else "every terminal state verdict")
+
+
+def compare(new: dict, old: dict) -> dict:
+    """This audit's shares beside an earlier one's; moved when the new upper bound is under the old lower one."""
+    def cell(r):
+        return {"share": r["share"], "ci95": r["ci95"], "decided": r["decided"]} if r else None
+    a, b = {r["stratum"]: r for r in new["strata"]}, {r["stratum"]: r for r in old["strata"]}
+    strata = [{"stratum": s, "new": cell(a.get(s)), "old": cell(b.get(s))} for s in sorted(set(a) | set(b))]
+    pn, po = list(new["population"]), list(old["population"])
+    return {"new_window": window(new["header"]), "old_window": window(old["header"]), "strata": strata,
+            "population": {"new": pn, "old": po}, "moved": pn[2] < po[1]}
+
+
+def compare_text(got: dict) -> str:
+    def fmt(c):
+        if not c or c["share"] is None:
+            return "-"
+        return f"{c['share']:.2f} [{c['ci95'][0]:.2f}, {c['ci95'][1]:.2f}]"
+    lines = [f"against: {got['old_window']}", f"  {'stratum':<20} {'this audit':<19} earlier"]
+    lines += [f"  {s['stratum']:<20} {fmt(s['new']):<19} {fmt(s['old'])}" for s in got["strata"]]
+    pn, po = got["population"]["new"], got["population"]["old"]
+    lines.append(f"  {'population':<20} {pn[0]:.2f} [{pn[1]:.2f}, {pn[2]:.2f}]  {po[0]:.2f} [{po[1]:.2f}, {po[2]:.2f}]")
+    lines.append(f"moved: {'yes' if got['moved'] else 'no'}, this audit's upper bound {pn[2]:.2f} "
+                 f"{'is' if got['moved'] else 'is not'} below the earlier lower bound {po[1]:.2f}")
     return "\n".join(lines)
 
 
