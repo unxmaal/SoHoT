@@ -316,6 +316,7 @@ class Frame:
     path: Path
     truth: str
     missing: bool = False
+    sha256: str = ""
 
 
 def load(root=None) -> list[Frame]:
@@ -333,11 +334,11 @@ def load(root=None) -> list[Frame]:
         for r in doc["frames"]:
             p = m.parent / r["file"]
             if not p.is_file():
-                out.append(Frame(r["id"], doc["film"], p, r["truth"], missing=True))
+                out.append(Frame(r["id"], doc["film"], p, r["truth"], missing=True, sha256=r["sha256"]))
                 continue
             if _sha(p) != r["sha256"]:
                 raise ValueError(f"{p.name}: frame bytes do not match the manifest digest")
-            out.append(Frame(r["id"], doc["film"], p, r["truth"]))
+            out.append(Frame(r["id"], doc["film"], p, r["truth"], sha256=r["sha256"]))
     return out
 
 
@@ -405,7 +406,7 @@ def run_dir(candidate: str) -> Path:
 def features_cache(model: str, frames) -> Path:
     """Where the probe's features for this model and these frames are kept, so a refit needs no GPU."""
     from harness import paths
-    key = hashlib.sha256(json.dumps([model, sorted(f"{f.id}:{f.path.name}" for f in frames)]).encode()).hexdigest()[:16]
+    key = hashlib.sha256(json.dumps([model, sorted(f"{f.id}:{f.sha256}" for f in frames)]).encode()).hexdigest()[:16]
     return paths.home() / "cache" / "vision" / f"{key}.json"
 
 

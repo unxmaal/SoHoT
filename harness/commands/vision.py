@@ -67,7 +67,11 @@ def hf_vlm(model: str, out: Path):
         if got.returncode:
             raise RuntimeError(f"hf-task vision-label exited {got.returncode}")
         have = _answers(answers)
-        return [have.get(f.id, "") for f in frames]
+        missing = [f.id for f in frames if f.id not in have]
+        if missing:
+            raise RuntimeError(f"hf-task vision-label answered {len(frames) - len(missing)} of {len(frames)} frames; "
+                               f"rerun with --out {out} to resume")
+        return [have[f.id] for f in frames]
     return label
 
 

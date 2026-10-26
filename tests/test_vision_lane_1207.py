@@ -388,6 +388,16 @@ def test_the_export_refuses_a_vision_row_naming_a_private_title(tmp_path):
         publish.checked(doc)
 
 
+def test_the_benchmarks_page_shows_the_vision_scores_and_credits_cinescale():
+    from harness import site
+    vision.run_exam(vision.load(SHIPPED), vision.size_labeller, None, "size")
+    doc = {"machine": {"label": "Test Box"}, "lanes": [], "vision": vision.export_rows()}
+    html = site.benchmarks([doc])
+    assert 'id="lane-vision"' in html and "size" in html and "1.000" in html
+    assert "10.17632/th46h4vdwd.1" in html and "CC BY 4.0" in html
+    assert "vision" not in site.benchmarks([{"machine": {"label": "Test Box"}, "lanes": []}])
+
+
 def test_the_machine_export_has_a_vision_key(tmp_path):
     vision.run_exam(vision.load(SHIPPED), vision.size_labeller, None, "size")
     doc = publish.export()
@@ -463,6 +473,33 @@ def test_vision_label_writes_one_answer_per_frame_and_resumes(tmp_path):
     assert rc == 0 and asked == ["/x/1.png", "/x/2.png"]
     got = [json.loads(x) for x in out.read_text(encoding="utf-8").splitlines()]
     assert [g["id"] for g in got] == ["f0", "f1", "f2"] and got[0]["reply"] == "CU"
+
+
+def test_a_frame_hf_task_left_unanswered_is_the_harness_not_the_model(tmp_path, monkeypatch):
+    from harness.commands import vision as cmd
+    frames = vision.load(SHIPPED)[:2]
+
+    def fake_run(argv, check=False):
+        out = Path(argv[argv.index("--out") + 1])
+        out.write_text(json.dumps({"id": frames[0].id, "reply": "CU"}) + "\n", encoding="utf-8")
+        return subprocess.CompletedProcess(argv, 0)
+    monkeypatch.setattr(cmd.subprocess, "run", fake_run)
+    with pytest.raises(RuntimeError, match="answered 1 of 2"):
+        cmd.hf_vlm("org/vlm", tmp_path)(frames)
+
+
+def test_the_probe_feature_cache_follows_frame_content_not_its_id(tmp_path):
+    root = tmp_path / "cases"
+    shutil.copytree(SHIPPED, root)
+    before = vision.features_cache("m", vision.load(root))
+    m = root / "synthetic-a" / "manifest.json"
+    doc = json.loads(m.read_text(encoding="utf-8"))
+    p = root / "synthetic-a" / doc["frames"][0]["file"]
+    p.write_bytes(p.read_bytes() + b"\0")
+    doc["frames"][0]["sha256"] = vision._sha(p)
+    doc["digest"] = vision._digest(doc["frames"])
+    m.write_text(json.dumps(doc), encoding="utf-8")
+    assert vision.features_cache("m", vision.load(root)) != before
 
 
 def test_the_vision_prompt_names_every_label_on_the_ladder():
