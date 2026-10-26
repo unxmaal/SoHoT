@@ -928,6 +928,8 @@ def build_parser() -> argparse.ArgumentParser:
     ado.add_argument("--power", action="store_true",
                      help="print, per lane, the repeat and holdout size needed to "
                           "reach power 0.8, and the projected wall time (#591)")
+    ado.add_argument("--table", action="store_true",
+                     help="with --power: one row per lane, holdout against the cases its effect needs (#603)")
     ado.add_argument("--from-measurement", action="store_true",
                      help="with --lane: a typed incumbent that passed none of its stored cases gives way to the "
                           "best measured local candidate on the current exam, if it wins the paired gate (#1110)")
