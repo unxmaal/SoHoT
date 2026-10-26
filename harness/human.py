@@ -132,7 +132,11 @@ def decided(lane: str, case: str, a: str, b: str, conn=None) -> str | None:
     as a tie -- because three answers that disagree is the finding, not a
     reason to keep asking.
     """
-    counts = tally(lane, case, a, b, conn)
+    return _plurality(tally(lane, case, a, b, conn))
+
+
+def _plurality(counts: Counter) -> str | None:
+    """decided()'s rule over one pairing's answers."""
     if sum(counts.values()) < ENOUGH:
         return None
     top = counts.most_common()
@@ -228,3 +232,60 @@ def pending(lane: str, pairs: list[dict], conn=None) -> list[dict]:
         from harness import cuts
         cuts.cut("human_enough", f"{lane} pairings with enough answers, no longer asked", dropped=done)
     return out
+
+
+#: What metric_agreement says of one voted pairing. #92.
+AGREE, DISAGREE, CANNOT_TELL = "agree", "disagree", "cannot tell"
+NO_PREFERENCE, UNDECIDED, UNSCORED = "no preference", "undecided", "unscored"
+#: Ranked metrics that measure speed, not the artifact; left out with latency. #92.
+SPEED_METRICS = frozenset({"tokens_per_s"})
+
+
+def _checker_pick(rows: list[dict], a: str, b: str, lane: str) -> str | None:
+    """The one of a, b the lane's rank key, less its speed terms, puts first on these rows; "" on a tie, None without both."""
+    from harness import runs, winners
+
+    if {r["candidate"] for r in rows} != {a, b}:
+        return None
+    summary = runs.summarize(rows)
+    names = tuple(n for n in winners.shared_metrics(summary.values(), lane) if n not in SPEED_METRICS)
+    ka, kb = (tuple(winners.order_key(summary[c], names, lane))[:-1] for c in (a, b))
+    return "" if ka == kb else (a if ka > kb else b)
+
+
+def metric_agreement(conn, lane: str = "") -> dict:
+    """Each decided pairing a person voted on beside the order the lane's checker gives the same artifacts. #92."""
+    from harness import runs
+
+    sql = ("SELECT lane, run, case_id, left_candidate, right_candidate, winner FROM human_votes "
+           "WHERE run != ''")
+    args: tuple = ()
+    if lane:
+        sql += " AND lane = ?"
+        args = (lanes.canonical(lane),)
+    votes: dict[tuple, Counter] = {}
+    for ln, run, case, a, b, winner in conn.execute(sql, args).fetchall():
+        votes.setdefault((ln, run, case, a, b), Counter())[winner] += 1
+    stored: dict[str, list[dict]] = {}
+    pairs, totals = [], {}
+    for (ln, run, case, a, b), counts in sorted(votes.items()):
+        if run not in stored:
+            got = runs.receipt_at(conn, run)
+            stored[run] = got["rows"] if got else []
+        rows = [r for r in stored[run]
+                if r["case_id"].split("#")[0] == case and r["candidate"] in (a, b)]
+        person, checker = _plurality(counts), _checker_pick(rows, a, b, ln)
+        if person is None:
+            outcome = UNDECIDED
+        elif person == "":
+            outcome = NO_PREFERENCE
+        elif checker is None:
+            outcome = UNSCORED
+        elif checker == "":
+            outcome = CANNOT_TELL
+        else:
+            outcome = AGREE if checker == person else DISAGREE
+        pairs.append({"lane": ln, "run": run, "case": case, "a": a, "b": b,
+                      "votes": dict(counts), "person": person, "checker": checker, "outcome": outcome})
+        totals.setdefault(ln, Counter())[outcome] += 1
+    return {"pairs": pairs, "lanes": {ln: dict(c) for ln, c in sorted(totals.items())}}
