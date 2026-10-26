@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import time
+from pathlib import Path
 
 from harness.commands.common import emit, err, note
 
@@ -82,7 +83,11 @@ def _probe(a, conn) -> int:
     from harness import contamination as ct
     from harness import memory_store as ms
     lane = (a.lane or "decide").strip().lower()
-    cases = [c for c in evals_run.load_cases(_cases_root() / lane) if c.modality == lane]
+    if getattr(a, "passages", False):
+        from evals import contamination_passages as cp
+        lane, cases = ct.CALIBRATION, ct.passage_cases(cp.manifest())
+    else:
+        cases = [c for c in evals_run.load_cases(_cases_root() / lane) if c.modality == lane]
     if a.limit:
         cases = cases[:a.limit]
     ask = ct.gateway_ask(a.gateway)
@@ -95,6 +100,32 @@ def _probe(a, conn) -> int:
              f"({len(rows) - probed} skipped or errored, {cut} of them cut at {ct.LIMIT})")
     emit(summary=ms.probe_summary(conn, lane))
     return 0
+
+
+def cmd_calibrate(a) -> int:
+    """HIT between known-clean and canon passages, from the stored probes read-only; 1 when a complete derivation disagrees. #727."""
+    import sqlite3
+
+    from harness import contamination as ct
+    from harness import live_audit
+    from harness import memory_store as ms
+    db = Path(getattr(a, "db", "") or ms.db_path())
+    if not db.is_file():
+        return err(f"benchmarks --calibrate: no store at {db}")
+    try:
+        conn = live_audit.open_readonly(db)
+    except (OSError, sqlite3.Error) as exc:
+        return err(f"benchmarks --calibrate: {exc}")
+    try:
+        got = ct.calibrate(conn)
+    finally:
+        conn.close()
+    for m in got["models"]:
+        note(f"{m['model']}: {m['status']}, clean q {m['clean_quantile']} -> HIT {m['derived']}, canon "
+             f"sensitivity {m['sensitivity']}, wiki {m['wiki_rate']} beside SQuAD {m['squad_rate']}, n {m['n']}")
+    note(f"contamination_hit {got['current']}: {got['status']}, derived {got['derived']}")
+    emit(got["agrees"], **got)
+    return 0 if got["agrees"] else 1
 
 
 def _cases_root():
@@ -136,9 +167,12 @@ def _listing(a, conn) -> int:
     for t in training:
         note(f"cutoff  {t['candidate']} ({t['alias'] or 'no alias'}): {t['cutoff'] or '?'} "
              f"from {t['cutoff_source'] or '?'}, {len(t['datasets'])} declared datasets")
+    control = {m["model"]: m for m in ct.calibrate(conn)["models"]}
     for p in probes:
-        note(f"probe   {p['model']} {p['lane']}/{p['family']}: {p['hits']}/{p['probed']} "
-             f"verbatim, mean overlap {p['mean_overlap'] or 0:.2f}, {p['skipped']} skipped, "
+        wiki = control.get(p["model"], {}).get("wiki_rate") if p["family"] == ct.SQUAD_FAMILY else None
+        beside = f"; pre-2016 Wikipedia control {wiki}" if wiki is not None else ""
+        note(f"probe   {p['model']} {p['lane']}/{p['family']}: {p['hits']}/{p['probed']} reproduced their "
+             f"source text verbatim{beside}, mean overlap {p['mean_overlap'] or 0:.2f}, {p['skipped']} skipped, "
              f"{p['limited']} cut at our token budget (a miss is not proof of absence)")
     for o in overlap:
         note(f"score   {o['candidate']}: {o['all']} on {o['n_all']} cases, {o['clean']} on "
@@ -163,6 +197,8 @@ def cmd_benchmarks(a) -> int:
         note(f"{len(written)} cases imported from {a.import_source}")
         emit(written=[str(p) for p in written])
         return 0 if written else 1
+    if getattr(a, "calibrate", False):
+        return cmd_calibrate(a)
     conn = ms.connect()
     try:
         if getattr(a, "training", None):

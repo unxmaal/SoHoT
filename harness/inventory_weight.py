@@ -15,9 +15,9 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from harness import paths
+from harness import local_catches, paths
 
-KINDS = ("cases", "tests", "units", "knobs", "checks")
+KINDS = ("cases", "tests", "units", "knobs", "checks", "agents")
 #: Candidates that must have sat a case on the current exam before its discrimination is judged.
 MIN_MODELS = 3
 #: The slowest share of tests a never-failed test must sit in to be flagged.
@@ -66,6 +66,7 @@ UNIT_OUTPUTS = {
     "sweep-check": ("watchdog_actions", "at", "criterion = 'sweep_check'", ("sweep_check", "sweep-check.log")),
     "fetch": ("downloads", "started_at", "origin = 'fetch'", ("downloads",)),
     "delegations": ("delegations", "outcome_at", "", ("delegations",)),
+    "review": ("", "", "", ("review",)),
 }
 #: Where a person or a report reads a unit's output: commands, the morning brief, the audit, the published reports.
 REPORT_SURFACES = ("harness/commands/*.py", "harness/morning.py", "harness/live_audit.py", "harness/publish.py",
@@ -534,12 +535,12 @@ def score_cases(src: dict, min_models: int = MIN_MODELS) -> list[dict]:
 
 
 def score_tests(junit: dict[str, float], failures: list[dict], origins: dict | None = None,
-                mutation: dict | None = None, slow_share: float = SLOW_SHARE) -> list[dict]:
-    failed = defaultdict(lambda: {"main": 0, "pr": 0, "last": ""})
+                mutation: dict | None = None, slow_share: float = SLOW_SHARE, local_runs: int = 0) -> list[dict]:
+    failed = defaultdict(lambda: {"main": 0, "pr": 0, "local": 0, "last": ""})
     for run in failures:
         for key in run.get("failed", ()):
             f = failed[key]
-            f["main" if run.get("main") else "pr"] += 1
+            f["local" if run.get("local") else "main" if run.get("main") else "pr"] += 1
             f["last"] = max(f["last"], f"{run.get('at', '')} run {run['id']}")
     selected = defaultdict(list)
     for module, files in (mutation or {}).items():
@@ -552,15 +553,18 @@ def score_tests(junit: dict[str, float], failures: list[dict], origins: dict | N
         path, _, name = key.partition("::")
         f = failed.get(key)
         mods = selected.get(path, [])
+        never = "never failed in CI or a local make check" if local_runs else "never failed in CI"
         if f:
-            ev, work = 1.0, f"failed in {f['main']} main and {f['pr']} PR run(s), last {f['last']}"
+            ev, work = 1.0, (f"failed in {f['main']} main and {f['pr']} PR run(s)"
+                             + (f" and {f['local']} local make check(s)" if f["local"] else "") + f", last {f['last']}")
         elif mods:
-            ev, work = 0.5, f"never failed; runs against mutants of {', '.join(mods)} (kills not recorded)"
+            ev, work = 0.5, f"{never}; runs against mutants of {', '.join(mods)} (kills not recorded)"
         else:
-            ev, work = 0.0, "never failed in CI; in no mutation selection"
+            ev, work = 0.0, f"{never}; in no mutation selection"
         o = (origins or {}).get(f"{path}::{name.rsplit('.', 1)[-1]}")
         out.append(_row("tests", key, round(s, 2), "s per run", ev, work, load=bool(f),
-                        why="has caught a failure in CI" if f else "",
+                        why=("has caught a failure in CI" if f["main"] + f["pr"] else
+                             "has caught a failure in a local make check") if f else "",
                         flagged=not f and not mods and s >= cut and s > 0,
                         origin=o["issues"][0] if o and o["issues"] else None))
     return out
@@ -616,10 +620,11 @@ def score_knobs(knobs: list[dict]) -> list[dict]:
 
 
 def score_checks(checks: dict, failures: list[dict], ci_total: int, days: float, watchdog_wakes: float | None) -> list[dict]:
-    caught = defaultdict(int)
+    caught, local = defaultdict(int), defaultdict(int)
     for run in failures:
         for key in run.get("failed", ()):
             caught[key] += 1
+            local[key] += bool(run.get("local"))
     out = []
     for c in checks.get("rows", ()):
         fam = c["family"]
@@ -632,6 +637,8 @@ def score_checks(checks: dict, failures: list[dict], ci_total: int, days: float,
         elif n:
             ev, work = 1.0, f"fired {n} time(s)" + (f", last {time.strftime('%Y-%m-%d', time.localtime(c['last']))}"
                                                     if c.get("last") else "")
+            if fam == "scanner" and local.get(c["name"]):
+                work += f", {local[c['name']]} in a local make check"
         else:
             ev, work = 0.0, "never fired" + (f" in {evals} evaluation(s)" if evals else "")
         if fam == "scanner":
@@ -642,31 +649,64 @@ def score_checks(checks: dict, failures: list[dict], ci_total: int, days: float,
     return out
 
 
+def _pct(part: int, whole: int) -> str:
+    return f"{100 * part / whole:.1f}%" if whole else "--"
+
+
+def score_agents(subagents: list[dict]) -> list[dict]:
+    """One row per agent type: input tokens, and what its subagents read and re-read before their first edit."""
+    by: dict[str, dict] = defaultdict(lambda: defaultdict(int))
+    for s in subagents:
+        t = by[s["type"]]
+        t["subagents"] += 1
+        t["never_edited"] += not s["edited"]
+        for f in ("input", "read", "reread", "carried", "carried_reread"):
+            t[f] += s[f]
+    out = []
+    for name, t in sorted(by.items(), key=lambda kv: (-kv[1]["carried_reread"], kv[0])):
+        work = (f"{t['subagents']} subagent(s), {t['never_edited']} never edited; before the first edit read "
+                f"{t['read']} tokens, re-read {t['reread']}; carried into later turns {t['carried']} input tokens "
+                f"({_pct(t['carried'], t['input'])}), re-reads {t['carried_reread']} "
+                f"({_pct(t['carried_reread'], t['input'])})")
+        out.append(_row("agents", name, t["input"], "input tokens", None, work,
+                        info="agent tokens are not a part: nothing here is cut (#1260)", **dict(t)))
+    return out
+
+
 def build(src: dict, min_models: int = MIN_MODELS, slow_share: float = SLOW_SHARE) -> dict:
     """Each kind's rows, ranked by cost x (1 - evidence of work), load-bearing ones last."""
     now, since = src["now"], src["since"]
     ci = src.get("ci") or {}
-    failures = ci.get("failures", [])
+    local = src.get("local") or {}
+    failures = ci.get("failures", []) + local.get("failures", [])
     kinds = {}
     if "cases" in src:
         kinds["cases"] = score_cases(src["cases"], min_models)
     if "junit" in src:
-        kinds["tests"] = score_tests(src["junit"], failures, src.get("test_origins"), src.get("mutation"), slow_share)
+        kinds["tests"] = score_tests(src["junit"], failures, src.get("test_origins"), src.get("mutation"), slow_share,
+                                     local.get("runs", 0))
     if "units" in src:
         kinds["units"] = score_units(src["units"], since, now)
     if "knobs" in src:
         kinds["knobs"] = score_knobs(src["knobs"])
     if "checks" in src:
-        kinds["checks"] = score_checks(src["checks"], failures, len(ci.get("runs", [])), (now - since) / DAY,
+        kinds["checks"] = score_checks(src["checks"], failures, len(ci.get("runs", [])) + local.get("runs", 0),
+                                       (now - since) / DAY,
                                        src.get("watchdog_wakes"))
+    if "agents" in src:
+        kinds["agents"] = score_agents(src["agents"]["subagents"])
     out = {}
     for kind, rows in kinds.items():
-        rows.sort(key=lambda r: (r["load_bearing"], not r["flagged"], -r["rank"], r["name"]))
+        if kind != "agents":
+            rows.sort(key=lambda r: (r["load_bearing"], not r["flagged"], -r["rank"], r["name"]))
         out[kind] = {"rows": rows, "flagged": sum(r["flagged"] for r in rows),
                      "load_bearing": sum(r["load_bearing"] for r in rows), "total": len(rows)}
+    ci_failed = ci.get("failures", [])
     return {"window": {"since": since, "now": now}, "kinds": out, "unavailable": src.get("unavailable", {}),
-            "ci": {"runs": len(ci.get("runs", [])), "failed": len(failures), "truncated": ci.get("truncated", False),
-                   "unreadable": [f["id"] for f in failures if f.get("why")]}}
+            "ci": {"runs": len(ci.get("runs", [])), "failed": len(ci_failed), "truncated": ci.get("truncated", False),
+                   "unreadable": [f["id"] for f in ci_failed if f.get("why")]},
+            "local": {"runs": local.get("runs", 0), "failed": len(local.get("failures", [])),
+                      "unreadable": local.get("unreadable", 0)}}
 
 
 def gather(conn, home: Path, now: float, since: float | None = None, kinds=KINDS, run=subprocess.run,
@@ -692,6 +732,8 @@ def gather(conn, home: Path, now: float, since: float | None = None, kinds=KINDS
                 listed["runs"] = [r for r in listed["runs"] if not r.get("createdAt") or _iso(r["createdAt"]) >= since]
             listed["failures"] = ci_failures(run, listed["runs"], ci_cache)
             src["ci"] = listed
+    if {"tests", "checks"} & set(kinds):
+        src["local"] = local_catches.read(home / local_catches.FILE, src["since"])
     if "cases" in kinds:
         src["cases"] = gather_cases(conn, exam_of)
     if "tests" in kinds:
@@ -711,6 +753,11 @@ def gather(conn, home: Path, now: float, since: float | None = None, kinds=KINDS
         src["knobs"] = gather_knobs(conn, commits)
     if "checks" in kinds:
         src["checks"] = gather_checks(conn, home, root, commits)
+    if "agents" in kinds:
+        from harness import agent_weight
+        got = guard("agents", lambda: agent_weight.scan(None, src["since"], now))
+        if got is not None:
+            src["agents"] = {"subagents": got}
     return src
 
 
@@ -730,11 +777,21 @@ def render(L: dict, top: int = 15, markdown: bool = False) -> str:
             + (", the run list was truncated" if ci.get("truncated") else "")
             + (f", {len(ci['unreadable'])} failed run log(s) unreadable" if ci.get("unreadable") else ""))
     out.append(head)
-    out.append("CI records only pushed failures; a test or scanner that caught a defect in a local make check "
-               "before the push left no record here (#1261)")
+    lo = L.get("local") or {}
+    out.append(f"local make check: {lo.get('runs', 0)} run(s) recorded, {lo.get('failed', 0)} failed"
+               + (f", {lo['unreadable']} unreadable line(s)" if lo.get("unreadable") else "")
+               + ("" if lo.get("runs") else "; runs before #1261 left no record"))
     for name, why in (L.get("unavailable") or {}).items():
         out.append(f"unavailable: {name}: {why}")
     for kind, k in L["kinds"].items():
+        if kind == "agents":
+            n = sum(r["subagents"] for r in k["rows"])
+            tot = {f: sum(r[f] for r in k["rows"]) for f in ("input", "reread", "carried_reread")}
+            out += ["", f"agents: {n} subagent(s), {tot['input']} input tokens; re-read before the first edit "
+                        f"{tot['reread']} tokens, carried into {tot['carried_reread']} input tokens "
+                        f"({_pct(tot['carried_reread'], tot['input'])}); tokens are characters // 4 (#1260)"]
+            out += [f"  {r['name']}: {r['work']}" for r in k["rows"][:top]]
+            continue
         flagged = [r for r in k["rows"] if r["flagged"]]
         title = f"{kind}: {k['flagged']} flagged, {k['load_bearing']} load-bearing, of {k['total']}"
         if markdown:

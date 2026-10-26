@@ -45,6 +45,7 @@ FAST_PATH_ENV = "SOHOT_FAST_PATH"
 #: Each test's start and end are appended here as they happen, so a cancelled run says where its time went. #1146.
 TEST_LOG_ENV = "SOHOT_TEST_LOG"
 _test_log: dict = {}
+_catches: dict = {}
 
 
 def _without_junitxml(addopts: str) -> str:
@@ -67,6 +68,10 @@ def pytest_configure(config):
     if path and not hasattr(config, "workerinput"):
         _test_log["file"] = open(path, "a", encoding="utf-8", buffering=1)
         _test_log["spent"] = {}
+    from harness import local_catches
+    # Popped so neither xdist workers nor a pytest a test starts record; the real home is read before any fixture. #1261.
+    if os.environ.pop(local_catches.ENV, "") == "1" and not os.environ.get("CI") and not hasattr(config, "workerinput"):
+        _catches.update(path=local_catches.path(), head=local_catches.head(), seen=set(), failed=set())
 
 
 def pytest_unconfigure(config):
@@ -86,7 +91,19 @@ def pytest_runtest_logstart(nodeid, location):
     _log_line("start", nodeid)
 
 
+def pytest_sessionfinish(session, exitstatus):
+    if _catches.get("seen"):
+        from harness import local_catches
+        local_catches.record(_catches["path"], _catches["head"], len(_catches["seen"]), int(exitstatus),
+                             _catches["failed"])
+    _catches.clear()
+
+
 def pytest_runtest_logreport(report):
+    if "seen" in _catches:
+        _catches["seen"].add(report.nodeid)
+        if report.failed:
+            _catches["failed"].add(report.nodeid)
     spent = _test_log.get("spent")
     if spent is None:
         return
@@ -320,6 +337,16 @@ def _no_real_runtime(request, monkeypatch):
         pytest.fail(f"executed a real runtime binary: {calls}", pytrace=False)
 
 
+def _typed_keys() -> dict[str, str]:
+    from harness import candidates, models, screen, winners
+    out = {}
+    for lane, name in winners.typed().items():
+        spec = screen.candidate_for(lane, name) or name
+        out.setdefault(candidates.key_of(spec), spec)
+        out.update({old: old for old in models.old_names(spec) if old not in out})
+    return out
+
+
 def _rows_from(summary: dict) -> list[dict]:
     """Result rows whose summary is `summary`: n rows, constant time and metric."""
     rows = []
@@ -366,11 +393,16 @@ def store_run():
         here = ms.this_machine()
         env = {"hw_model": here["hw_model"] if hw_model is None else hw_model,
                "os": here["os"], "arch": here["arch"]}
+        rows = rows if rows is not None else _rows_from(summary or {})
+        if specs is None:
+            # evals.run maps a typed default's key to its spec, so served() finds its row. #1247.
+            typed = _typed_keys()
+            specs = {r["candidate"]: typed[r["candidate"]] for r in rows if r.get("candidate") in typed}
         data = {"generated": generated, "environment": env,
                 "receipt": {"modality": lane, "tier": tier,
                             "cases_digest": cases_digest, **(receipt or {})},
-                "specs": specs or {},
-                "rows": rows if rows is not None else _rows_from(summary or {})}
+                "specs": specs,
+                "rows": rows}
         own = conn is None
         conn = conn or ms.connect()
         try:

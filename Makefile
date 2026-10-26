@@ -11,7 +11,7 @@ NAMESPACE ?= lh
 check: lint test          ## static checks + unit tests (no services needed)
 
 test:                     ## unit tests (fast; excludes the model-loading ones), across every core (#720)
-	uv run --group mcp pytest tests/ -q -n auto
+	SOHOT_CATCHES=1 uv run --group mcp pytest tests/ -q -n auto
 
 test-slow:                ## the metrics tests: loads multi-GB scorers, minutes
 	uv run --group metrics pytest tests/ -q -m slow

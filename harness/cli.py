@@ -37,6 +37,7 @@ from harness.commands import common
 from harness.commands import context as context_cmd
 from harness.commands import day as day_cmd
 from harness.commands import degenerate as degenerate_cmd
+from harness.commands import floors as floors_cmd
 from harness.commands import discover as discover_cmd
 from harness.commands import gateway as gateway_cmd
 from harness.commands import gauntlet as gauntlet_cmd
@@ -628,7 +629,7 @@ def build_parser() -> argparse.ArgumentParser:
     itm.set_defaults(func=inventory_cmd.cmd_time)
     iwt = invsub.add_parser("weight", help="each case, test, launchd unit, knob and check scored on its cost against "
                             "the work it has done: a ranked cut list for approval that removes nothing (#1148)")
-    iwt.add_argument("--kind", action="append", choices=("cases", "tests", "units", "knobs", "checks"),
+    iwt.add_argument("--kind", action="append", choices=("cases", "tests", "units", "knobs", "checks", "agents"),
                      help="only this kind (repeatable; default: all)")
     iwt.add_argument("--since", default="", help="window start: 30d, or a date (default: this machine's first day)")
     iwt.add_argument("--min-models", type=int, default=None, metavar="N",
@@ -755,6 +756,11 @@ def build_parser() -> argparse.ArgumentParser:
     bch.add_argument("--probe", nargs="+", metavar="MODEL",
                      help="prefix-completion contamination probe of the lane's cases (default decide)")
     bch.add_argument("--limit", type=int, default=0, help="with --probe, at most this many cases")
+    bch.add_argument("--passages", action="store_true",
+                     help="with --probe, probe the calibration passages (evals/contamination) instead of a lane (#727)")
+    bch.add_argument("--calibrate", action="store_true",
+                     help="derive contamination_hit from the stored calibration probes, read-only (#727)")
+    bch.add_argument("--db", default="", help="with --calibrate, the store (default: this home's discovery.db)")
     bch.add_argument("--gateway", default=completion.gateway_url())
     bch.set_defaults(func=benchmarks_cmd.cmd_benchmarks)
     cas = sub.add_parser("cases", help="re-run a case importer, or its negative control (#603)")
@@ -798,6 +804,14 @@ def build_parser() -> argparse.ArgumentParser:
     deg.add_argument("--db", default="", help="redecide: the store (default: this home's discovery.db)")
     deg.add_argument("--apply", action="store_true", help="redecide: write the changed verdicts")
     deg.set_defaults(func=degenerate_cmd.cmd_degenerate)
+    flo = sub.add_parser("floors", help="each pass threshold against a known-good instrument's noise floor on "
+                         "clean known inputs, from the store read-only; plant writes the clean ocr inputs. #730")
+    flo.add_argument("action", nargs="?", choices=("derive", "plant"), default="derive")
+    flo.add_argument("--store", default="", help="derive: the store (default: this home's discovery.db)")
+    flo.add_argument("--share", type=float, default=None, help="derive: knob floor_pass_share for this run")
+    flo.add_argument("--min-items", type=int, default=None, help="derive: knob floor_min_items for this run")
+    flo.add_argument("--out", default="floors-planted", help="plant: where the clean ocr cases go")
+    flo.set_defaults(func=floors_cmd.cmd_floors)
     llg = sub.add_parser("load-log", help="re-decide held llama.cpp load failures from the router's log, "
                          "keeping each child's lines in its run directory; read-only without --apply. #953")
     llg.add_argument("--db", default="", help="the store (default: this home's discovery.db)")
@@ -873,6 +887,9 @@ def build_parser() -> argparse.ArgumentParser:
                      help="with --lane: a typed incumbent that passed none of its stored cases gives way to the "
                           "best measured local candidate on the current exam, if it wins the paired gate (#1110)")
     ado.add_argument("--dry-run", action="store_true", help="with --from-measurement: say it, record nothing")
+    ado.add_argument("--confirm", type=int, default=None, metavar="VERDICT",
+                     help="run a held holdout win's dev confirmation and adopt or decline it; the adopt step "
+                          "queues this for the night (#725)")
     ado.add_argument("--receipt", action="append", default=[],
                      help="with --power, read the incumbent's draws from this "
                           "results.json instead of the store (repeatable)")

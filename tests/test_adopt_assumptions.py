@@ -73,7 +73,8 @@ def test_a_null_under_a_plan_for_a_bigger_effect_than_the_lane_cares_about_is_no
     assert conn.execute("SELECT reason FROM verdicts WHERE id = ?", (vid,)).fetchone()[0] == reasons.LIMIT
 
 
-def test_a_powered_null_at_the_lanes_effect_is_a_loss_that_names_its_detectable_effect():
+def test_a_powered_null_at_the_lanes_effect_is_a_loss_that_names_its_detectable_effect(monkeypatch):
+    monkeypatch.setattr(power, "EFFECT", {"code": 0.2})
     rows = _small_gain(150)
     got = adopt.decide("code", _summary("inc", rows), _summary("ch", rows), rows,
                        split=_split(150), plan=_powered_plan())

@@ -217,7 +217,8 @@ def test_an_underpowered_null_says_so():
     assert got.evidence["power"]["power"] == pytest.approx(weak.power)
 
 
-def test_a_powered_null_is_an_ordinary_loss():
+def test_a_powered_null_is_an_ordinary_loss(monkeypatch):
+    monkeypatch.setattr(power, "EFFECT", {"code": 0.2})
     rows = _rows({h: [(False, True)] + [(True, True)] * 2 for h in _split().holdout})
     strong = power.Plan(repeat=3, power=0.95, cells=9, cases=3, effect=0.2,
                         alpha=0.05, target=0.8, cap=16, capped=False,

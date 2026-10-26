@@ -2,10 +2,15 @@
 from harness.knobs.base import _k
 
 KNOBS = [
-    _k("contamination_hit", ["harness/contamination.py:HIT"], [0.25, 0.5, 0.75, 1.0],
-       note="leading-word overlap counted as reproducing a source; not calibrated on known-clean text (#700)"),
+    _k("contamination_clean_share", ["harness/contamination.py:CLEAN_SHARE"], [0.9, 0.95, 0.99], unit="share",
+       note="share of known-clean passages a calibrated contamination_hit must leave below it (#727)"),
+    _k("contamination_hit", ["harness/contamination.py:HIT"], [0.125, 0.25, 0.5, 0.75, 1.0], unit="share", grades=True,
+       note="leading-word overlap counted as reproducing a source (#700); set by `soh benchmarks --calibrate` "
+            "between known-clean and canon passages, no probes stored yet (#727)"),
     _k("contamination_max_tokens", ["harness/contamination.py:MAX_TOKENS"], [256, 1024, 4096],
        limit="contamination_max_tokens", unit="tokens", note="reply budget of a contamination probe; a probe that ends there is an error naming it, never a miss (#700)"),
+    _k("contamination_min_passages", ["harness/contamination.py:MIN_PASSAGES"], [5, 10, 30], unit="cases",
+       note="probed passages each calibration set needs before a model's HIT derivation counts (#727)"),
     _k("contamination_probe_words", ["harness/contamination.py:PREFIX_WORDS", "harness/contamination.py:TARGET_WORDS"],
        [16, 32, 64], note="leading words of a source item a contamination probe sends, then the words its reply is scored "
                           "against for contamination_hit; a shorter item is skipped (#491)"),
@@ -25,3 +30,15 @@ KNOBS = [
        lanes=("ocr",), limit="hf_max_new_tokens", unit="tokens", receipt="knobs",
        note="new tokens an hf-task ocr reply may take (#700)", unrecorded=512),
 ]
+
+NOT_GATING = {
+    "evals/contamination_passages.py:WORDS": "words kept per calibration passage; the probe reads its 48 and "
+                                             "split_prefix refuses a shorter one (#727)",
+    "evals/contamination_passages.py:_http->httpx.Client(timeout)": "how long a fixture build waits on Wikipedia or "
+                                                                     "Gutenberg; a timeout raises, it never shortens a passage (#727)",
+}
+
+NEVER_CUTS = {
+    "harness/contamination.py:CLEAN_SHARE": "the clean quantile a HIT is read at; every probe is reported (#727)",
+    "harness/contamination.py:MIN_PASSAGES": "when a model's derivation counts; every probe is reported (#727)",
+}

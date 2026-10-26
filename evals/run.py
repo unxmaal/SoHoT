@@ -2047,7 +2047,16 @@ def instruments(candidates=()) -> dict:
                             or serving.text_engine())
     except Exception:  # noqa: BLE001
         pass
+    try:
+        found["ear"] = "+".join(sorted({ear_of(c) for c in candidates if kind_of(c) == "tts"}))
+    except ValueError as exc:
+        found["ear"] = f"unknown ear: {exc}"
     return {k: v for k, v in found.items() if v}
+
+
+def ear_of(candidate: str) -> str:
+    """The transcriber that reads a tts candidate back, as audio.transcriber labels it. #730."""
+    return audio.ear_label(_options_of(candidate).get("ear", "server"))
 
 
 #: Below this, wall-clock is not comparable with a quiet machine. #283.

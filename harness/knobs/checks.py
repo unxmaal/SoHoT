@@ -6,6 +6,8 @@ KNOBS = [
        lanes=("web",), limit="chrome_render_timeout_s", unit="s", receipt="knobs", note="seconds headless Chrome may take to screenshot a page (#693)", unrecorded=60.0),
     _k("claims_control_recall", ["evals/claims_report.py:CONTROL_RECALL"], [0.8, 0.9, 0.95],
        note="control recall under which the claims report suspects the matcher, not the model (#661)"),
+    _k("claims_judge_agree_min", ["evals/claims_judge.py:AGREE_MIN"], [0.5, 0.6, 0.7, 0.8],
+       note="95% Wilson lower bound each judge calibration class must reach before judged claims count; 6/6 reviewed negatives is 0.61 (#655)"),
     _k("claims_match_threshold", ["harness/checks/claims.py:MATCH_THRESHOLD"], [0.3, 0.4, 0.5, 0.6, 0.7],
        lanes=("claims",), limit="claims_match_threshold", unit="share", receipt="knobs", note="word overlap at which an emitted claim is a reviewed one (#654)", grades=True),
     _k("claims_min_recall", ["harness/checks/claims.py:MIN_RECALL"], [0.25, 0.5, 0.75, 1.0],
@@ -38,4 +40,5 @@ NOT_GATING = {
 
 NEVER_CUTS = {
     "evals/claims_report.py:CONTROL_RECALL": "labels the claims report's matcher suspect; every claim is still scored (#661)",
+    "evals/claims_judge.py:AGREE_MIN": "decides whether stored judgments count in scoring; no claim or case is dropped (#655)",
 }

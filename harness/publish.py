@@ -339,9 +339,12 @@ def _resolved(run: dict | None) -> dict:
         return {}
 
 
-def _rank(r: dict) -> tuple:
-    return (bool(r["reference"]), bool(r["not_run"]), -(r["pass_rate"] or 0),
-            r["median_s"] or 0)
+def _rank(r: dict, lane: str = "") -> tuple:
+    """References and rows that never ran last, then the lane's metric, pass rate and speed. #671."""
+    from harness import winners
+    has, covered, value = winners.primary(r, lane)
+    return (bool(r["reference"]), bool(r["not_run"]), not has, -covered, -value,
+            -(r["pass_rate"] or 0), r["median_s"] or 0)
 
 
 def exams(conn, mid: int, lane: str) -> list[dict]:
@@ -369,7 +372,7 @@ def exams(conn, mid: int, lane: str) -> list[dict]:
                     "runs": len(group),
                     "run_at": _iso(group[0][0]["generated_at"]),
                     "first_run_at": _iso(group[-1][0]["generated_at"]),
-                    "rows": sorted(rows.values(), key=_rank)})
+                    "rows": sorted(rows.values(), key=lambda r: _rank(r, lane))})
     alike: dict[tuple, list[int]] = {}
     for i, e in enumerate(out):
         alike.setdefault((e["cases"], e["repeat"]), []).append(i)
@@ -397,14 +400,14 @@ def _lane(conn, mid: int, lane: str, held: dict, typed: dict, now: float) -> dic
     if newest:
         summary = runs.summarize(runs.rows(conn, newest["id"]))
         table = sorted((_row(k, s, _resolved(newest), conn) for k, s in summary.items()),
-                       key=lambda r: (bool(r["not_run"]), -(r["pass_rate"] or 0),
-                                      r["median_s"] or 0))
+                       key=lambda r: _rank({**r, "reference": False}, lane))
     return {
         "lane": lane, "wanted": lane in L.WANTED,
         "serves": serves, "adopted": bool(held),
         "serves_model": _serves_model(serves, conn),
         "adopted_how": held.get("how", ""),
         "not_run": why,
+        "passed": here.get("passed"), "total": here.get("total"),
         "pass_rate": here.get("pass_rate"), "median_s": here.get("median_s"),
         **_ttft(here),
         "metrics": _metrics(here.get("metrics") or {}),
@@ -772,7 +775,8 @@ def _cell(lane: dict | None) -> str:
                 f'<span class="tag bad">{_esc(not_run_text(lane))}</span></td>')
     stale = ' <span class="tag warn">stale</span>' if lane.get("stale") else ""
     return (f'<td>{_esc(lane.get("serves_model") or lane.get("serves"))}<br><span class="dim">'
-            f'{_num(lane.get("pass_rate"))} pass, {_num(lane.get("median_s"))}s, '
+            f'{_esc(score_text(lane, lane.get("lane", "")) if lead(lane.get("lane", "")) else _num(lane.get("pass_rate")) + " pass")}, '
+            f'{_num(lane.get("median_s"))}s, '
             f'{_date(lane.get("measured_at"))}</span>{stale}</td>')
 
 
@@ -783,10 +787,50 @@ def _ttft_cell(row: dict) -> str:
     return ttft_text(num(row.get("ttft_median_s")), num(row.get("ttft_p95_s")))
 
 
-def metric_html(m: dict | None) -> str:
+def metric_text(m: dict | None, lane: str = "") -> list[str]:
+    """Every metric, the lane's ranked ones first in winners.ORDER, the rest by name (#1205, #671)."""
+    from harness import winners
+    want = winners.ORDER.get(lane) or ((winners.PRIMARY[lane],) if lane in winners.PRIMARY else ())
+    key = lambda kv: (want.index(kv[0]) if kv[0] in want else len(want), kv[0])
+    return [f"{k} {v:.3f}" for k, v in sorted((m or {}).items(), key=key)]
+
+
+def metric_html(m: dict | None, lane: str = "") -> str:
     """Every metric on its own line, escaped and never cut (#1205)."""
     from harness.report import _esc
-    return "<br>".join(_esc(f"{k} {v:.3f}") for k, v in sorted((m or {}).items()))
+    return "<br>".join(_esc(t) for t in metric_text(m, lane))
+
+
+#: What an exact-case pass counts where it is not the lane's metric. #671.
+PASS_LABEL = {"decide": "all fields right"}
+
+
+def pass_label(lane: str) -> str:
+    return PASS_LABEL.get(lane, "pass")
+
+
+def lead(lane: str) -> str:
+    """The metric a lane's row leads with, "" where pass rate is the lane's metric. #671."""
+    from harness import winners
+    return winners.PRIMARY.get(lane, "")
+
+
+def lead_value(row: dict, lane: str) -> str:
+    v = (row.get("metrics") or {}).get(lead(lane))
+    return "--" if v is None else f"{v:.3f}"
+
+
+def passed_text(row: dict) -> str:
+    counted = (f'{row.get("passed")}/{row.get("total")} '
+               if row.get("total") and row.get("passed") is not None else "")
+    return f'{counted}{_num(row.get("pass_rate"))}'
+
+
+def score_text(row: dict, lane: str) -> str:
+    """The lane's metric, then exact passes named for what they count; pass rate alone on a lane without one. #671."""
+    if not lead(lane):
+        return _num(row.get("pass_rate"))
+    return f"{lead(lane)} {lead_value(row, lane)}, {pass_label(lane)} {passed_text(row)}"
 
 
 def _section(doc: dict) -> str:
@@ -808,10 +852,10 @@ def _section(doc: dict) -> str:
         rows.append(
             f'<tr><td>{_esc(lane["lane"])}</td>'
             f'<td>{_esc(lane.get("serves_model") or lane.get("serves")) or "--"}</td>'
-            f'<td class="num">{_num(lane.get("pass_rate"))}</td>'
+            f'<td class="num">{_esc(score_text(lane, lane["lane"]))}</td>'
             f'<td class="num">{_num(lane.get("median_s"))}</td>'
             f'<td class="num">{_ttft_cell(lane)}</td>'
-            f'<td class="dim">{metric_html(lane.get("metrics"))}</td>'
+            f'<td class="dim">{metric_html(lane.get("metrics"), lane["lane"])}</td>'
             f'<td>{_date(lane.get("measured_at"))}</td>'
             f'<td>{" ".join(tags)}</td></tr>')
     comps = []
@@ -819,22 +863,25 @@ def _section(doc: dict) -> str:
         table = lane.get("comparison") or []
         if not table:
             continue
+        name = lane["lane"]
+        head = f'<th>{_esc(lead(name))}</th>' if lead(name) else ""
         body = "".join(
             f'<tr{" class=changed" if r["candidate"] == lane.get("serves") else ""}>'
             f'<td>{model_html(r)}'
             f'{" <span class=dim>(reference)</span>" if r.get("reference") else ""}</td>'
-            + (f'<td class="num" colspan="2">{_esc(not_run_text(r))}</td>' if r.get("not_run") else
+            + (f'<td class="num" colspan="{3 if head else 2}">{_esc(not_run_text(r))}</td>' if r.get("not_run") else
+               (f'<td class="num">{lead_value(r, name)}</td>' if head else "") +
                f'<td class="num">{r.get("passed")}/{r.get("total")}</td>'
                f'<td class="num">{_num(r.get("pass_rate"))}</td>') +
             f'<td class="num">{_num(r.get("median_s"))}</td>'
             f'<td class="num">{_ttft_cell(r)}</td>'
             f'<td class="num">{_num(r.get("peak_gb"), "{:.1f}")}</td>'
-            f'<td class="dim">{metric_html(r.get("metrics"))}</td></tr>'
+            f'<td class="dim">{metric_html(r.get("metrics"), name)}</td></tr>'
             for r in table)
         comps.append(
             f'<h3>{_esc(lane["lane"])} <span class="dim">latest run '
             f'{_date(lane.get("last_run_at"))}</span></h3>'
-            '<div class="wide"><table><tr><th>candidate</th><th>passed</th><th>pass</th>'
+            f'<div class="wide"><table><tr><th>candidate</th>{head}<th>{_esc(pass_label(name))}</th><th>pass</th>'
             '<th>median s</th><th>TTFT med / p95</th><th>peak GB</th>'
             '<th>metric</th></tr>'
             f'{body}</table></div>')

@@ -619,6 +619,12 @@ def transcribe_whisperkit(path, model: str = DEFAULT_WHISPERKIT_MODEL,
     return text
 
 
+def ear_label(ear: str = "server") -> str:
+    """The label of the transcriber a tts `ear=` option names ("server", "whisper:fr"); the ear grades the lane. #730."""
+    backend, _, language = (ear or "server").partition(":")
+    return transcriber(backend=backend.strip(), language=language.strip()).label
+
+
 def transcriber(backend: str = "server", model: str = "", language: str = "",
                 base_url: str = DEFAULT_BASE_URL, timeout: float | None = None):
     """Build the callable that reads audio back, as `check()` wants it.

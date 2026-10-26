@@ -81,6 +81,8 @@ UNDERPOWERED = "underpowered"
 INCONCLUSIVE = "inconclusive"
 #: A verdict's class: the lane has too few cases for any repeat to see the effect, so nothing ran. #993.
 LANE_TOO_SMALL = "lane_too_small"
+#: A verdict's class: the holdout gate passed and the cases it was not decided on have not confirmed it yet. #725.
+CONFIRMING = "confirming"
 
 #: class -> (screen outcome, reason), in precedence order when rows disagree.
 CLASSES = {

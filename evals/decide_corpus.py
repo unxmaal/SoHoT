@@ -7,8 +7,9 @@ manifests at NIMBLE_REV (ids only; the nimble repository states no license).
 The text and labels come from each upstream dataset, under its own license,
 recorded in every case. The field wording is this repo's own.
 
-Four families, six cases each: route (MASSIVE), check (SQuAD 2.0), policy
-(Civil Comments) and rate (HelpSteer2). Selection walks each manifest in order
+Four families: route (MASSIVE), policy (Civil Comments) and rate (HelpSteer2)
+at PER_FAMILY each, and check (SQuAD 2.0) at CHECK_CASES, since the SQuAD importer
+supplies the rest. Selection walks each manifest in order
 and is label-aware only where stated, so a constant answer cannot pass a field.
 """
 from __future__ import annotations
@@ -28,7 +29,9 @@ NIMBLE = "bespokelabsai/nimble"
 NIMBLE_REV = "dcfdbd9a64f0d869f658d7a72f1beaee32737773"
 MANIFESTS = "docs/assets/public-benchmarks/subsets"
 DEFAULT_OUT = Path(__file__).resolve().parent / "cases" / "decide"
-PER_FAMILY = 6
+PER_FAMILY = 60
+#: SQuAD check cases built here; the rest come from evals/importers/squad2_check. #671.
+CHECK_CASES = 6
 ROWS_API = "https://datasets-server.huggingface.co/rows"
 
 MASSIVE_URL = ("https://amazon-massive-nlu-dataset.s3.amazonaws.com/"
@@ -108,23 +111,27 @@ def route_answers(row: dict) -> dict:
 
 
 def pick_route(ids: list[str], rows: dict[str, dict], n: int = PER_FAMILY) -> list[str]:
-    """Manifest order, distinct domains, first covering a positive per boolean."""
+    """Manifest order, first covering a positive per boolean, then one more per domain each round. #671."""
+    from collections import Counter
     order = [i for i in ids if i in rows]
-    chosen, domains = [], set()
+    chosen, domains = [], Counter()
     for name in SLOT_FIELDS:
         for i in order:
             row = rows[i]
             if i not in chosen and row["scenario"] not in domains \
                     and route_answers(row)[name]:
                 chosen.append(i)
-                domains.add(row["scenario"])
+                domains[rows[i]["scenario"]] += 1
                 break
-    for i in order:
-        if len(chosen) >= n:
-            break
-        if i not in chosen and rows[i]["scenario"] not in domains:
-            chosen.append(i)
-            domains.add(rows[i]["scenario"])
+    rounds = 1
+    while len(chosen) < n and len(chosen) < len(order):
+        for i in order:
+            if len(chosen) >= n:
+                break
+            if i not in chosen and domains[rows[i]["scenario"]] < rounds:
+                chosen.append(i)
+                domains[rows[i]["scenario"]] += 1
+        rounds += 1
     from harness import cuts
     return cuts.take(chosen, n, "decide_per_family", "decide route cases past the family size")
 
@@ -142,7 +149,7 @@ def route_case(row: dict) -> dict:
 QUESTIONS = 5
 
 
-def pick_check(ids: list[str], questions: dict[str, dict], n: int = PER_FAMILY) -> list[list[str]]:
+def pick_check(ids: list[str], questions: dict[str, dict], n: int = CHECK_CASES) -> list[list[str]]:
     """Paragraphs in manifest order whose first five questions mix both answers."""
     groups: dict[str, list[str]] = {}
     for i in ids:
@@ -158,6 +165,7 @@ def pick_check(ids: list[str], questions: dict[str, dict], n: int = PER_FAMILY) 
             out.append(head)
             trimmed += len(group) > QUESTIONS
         if len(out) == n:
+            cuts.cut("decide_check_cases", "decide check paragraphs past the case count", value=n, kept=len(out))
             break
     if trimmed:
         cuts.cut("decide_check_questions", "decide check paragraphs asked only their first questions", dropped=trimmed)
@@ -305,7 +313,14 @@ def _get(url: str, **params):
 
     import httpx
     for attempt in range(8):
-        r = httpx.get(url, params=params or None, timeout=120, follow_redirects=True)
+        try:
+            r = httpx.get(url, params=params or None, timeout=120, follow_redirects=True)
+        except httpx.TransportError:
+            # A connect timeout mid-import is the network, not the dataset: wait and ask again. #671.
+            if attempt == 7:
+                raise
+            time.sleep(2 ** attempt)
+            continue
         if r.status_code != 429 and r.status_code < 500:
             break
         # The rows API rate-limits a few hundred single-row reads, and 502s.
@@ -319,12 +334,21 @@ def manifest_ids(name: str) -> list[str]:
     return list(_get(url).json()["ids"])
 
 
+#: Rows the datasets-server returns per read, its maximum; single-row reads 429-stall (RULE #513).
+ROWS_PAGE = 100
+_PAGES: dict[tuple, dict[int, dict]] = {}
+
+
 def hf_row(dataset: str, config: str, split: str, index: int) -> dict:
-    got = _get(ROWS_API, dataset=dataset, config=config, split=split,
-               offset=index, length=1).json()["rows"]
-    if not got or got[0]["row_idx"] != index:
+    """One row, read with the page of ROWS_PAGE around it, which later rows on that page reuse."""
+    at = (dataset, config, split, index - index % ROWS_PAGE)
+    if at not in _PAGES:
+        got = _get(ROWS_API, dataset=dataset, config=config, split=split,
+                   offset=at[3], length=ROWS_PAGE).json()["rows"]
+        _PAGES[at] = {r["row_idx"]: r["row"] for r in got}
+    if index not in _PAGES[at]:
         raise SystemExit(f"{dataset} {split} has no row {index}")
-    return got[0]["row"]
+    return _PAGES[at][index]
 
 
 def massive_rows() -> dict[str, dict]:

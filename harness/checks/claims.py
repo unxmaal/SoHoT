@@ -271,7 +271,32 @@ def parse(text, schema: dict) -> list[tuple] | None:
     return out
 
 
-def check(artifact, schema: dict, reviews: list[dict], expect_empty: bool = False) -> CheckResult:
+def unmatched(emitted: list, reviews: list[dict]) -> list[tuple]:
+    """The emitted claims no interface's reviews match, in reply order. #655."""
+    weight = weights([r["claim"] for r in reviews])
+    used: set[int] = set()
+    by: dict[str, list[dict]] = {}
+    for r in reviews:
+        by.setdefault(interface_of(r), []).append(r)
+    for mine in by.values():
+        used |= {i for i, _, _ in match(emitted, mine, MATCH_THRESHOLD, sim=lambda a, b: similarity(a, b, weight))}
+    return [c for i, c in enumerate(emitted) if i not in used]
+
+
+def _judge(emitted: list, reviews: list[dict], judged) -> tuple[dict, str]:
+    """Counts of the calibrated judge's stored verdicts on unmatched claims, and a reason when it rejected any. #655."""
+    got = Counter()
+    for user, claim, refs in unmatched(emitted, reviews):
+        verdict = judged(user, claim, refs)
+        got["bad" if verdict in NEGATIVE else verdict if verdict in VERDICTS else "unjudged"] += 1
+    metrics = {"claims_judge_calibrated": 1, "claims_judged_good": got["good"],
+               "claims_judged_not_useful": got["not_useful"], "claims_judged_bad": got["bad"],
+               "claims_unjudged": got["unjudged"]}
+    return metrics, (f"the calibrated judge rejected {got['bad']} unreviewed claims" if got["bad"] else "")
+
+
+def check(artifact, schema: dict, reviews: list[dict], expect_empty: bool = False, judged=None) -> CheckResult:
+    """`judged` reads the calibrated judge's stored verdicts (evals.claims_judge.lookup); None scores matched claims only."""
     emitted = parse(artifact, schema)
     if emitted is None:
         out = CheckResult(False, "reply does not validate against the case's schema")
@@ -299,6 +324,10 @@ def check(artifact, schema: dict, reviews: list[dict], expect_empty: bool = Fals
         metrics.update({metric(k, interface): v for k, v in mine.items()})
         if why and not reason:
             reason, limit = f"{interface}: {why}", knob
+    if judged is not None:
+        mine, why = _judge(emitted, reviews, judged)
+        metrics.update(mine)
+        reason = reason or why
     out = CheckResult(not reason, reason, limit=limit)
     out.metrics = metrics
     return out

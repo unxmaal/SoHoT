@@ -372,10 +372,10 @@ def _lane_rows(lanes, changed) -> str:
         elif l["stale"]:
             tags.append(f'<span class="tag warn">last run '
                         f'{_days(l["age_days"])} ago</span>')
-        metric = " ".join(f"{k} {v:.3f}" for k, v in
-                          sorted((l["metrics"] or {}).items()))[:44]
-        rate = ("--" if l["pass_rate"] is None
-                else f"{l['pass_rate']:.2f}")
+        from harness import publish
+        metric = " ".join(publish.metric_text(l["metrics"], l["lane"]))
+        rate = ("--" if l["pass_rate"] is None and not publish.lead(l["lane"])
+                else publish.score_text(l, l["lane"]))
         med = "--" if l["median_s"] is None else f"{l['median_s']:.2f}s"
         ttft = ttft_text(l.get("ttft_median_s"), l.get("ttft_p95_s"))
         out.append(

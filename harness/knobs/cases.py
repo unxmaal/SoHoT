@@ -4,12 +4,17 @@ from harness.knobs.base import _k
 KNOBS = [
     _k("benchmark_page_chars", ["evals/benchmark_import.py:PAGE_CHARS"], [500, 1500, 4000],
        note="characters a labelled page may have and still go into a benchmark case; longer ones are skipped, unmeasured (#491)"),
+    _k("decide_check_cases", ["evals/decide_corpus.py:CHECK_CASES"], [6],
+       note="SQuAD check cases the corpus builder draws; the SQuAD importer supplies the rest (#671)"),
     _k("decide_check_questions", ["evals/decide_corpus.py:QUESTIONS"], [3, 5, 8],
        note="SQuAD questions of one paragraph a decide check case holds; it is kept only with both answerable and not (#423)"),
-    _k("decide_per_family", ["evals/decide_corpus.py:PER_FAMILY"], [3, 6, 12],
-       note="decide cases the corpus builder draws per decision family (#423)"),
+    _k("decide_per_family", ["evals/decide_corpus.py:PER_FAMILY"], [6, 30, 60, 90],
+       note="decide cases the corpus builder draws per route, policy and rate family; 60 holds SQuAD to half the holdout (#423, #671)"),
     _k("ocr_max_cer", ["evals/importers/ocr_synth.py:MAX_CER", "evals/ocr_corpus.py:MAX_CER"], [0.0, 0.05, 0.1, 0.25],
-       note="CER an ocr case passes at; written into each case, required since #701"),
+       unit="share", grades=True,
+       note="CER an ocr case passes at, written into each case (#701); noise floor of Vision (macOS 27.0.1) on 464 "
+            "clean renders, 440 of them planted plain (job 0159): 0.0 (1-15 chars), 0.08 (16-30), 0.043 (31+), so 0.1 "
+            "is the derived value (`soh floors`, #730)"),
     _k("pii_no_pii_share", ["evals/importers/pii_synth.py:NO_PII_SHARE"], [0.1, 0.2, 0.3],
        note="share of generated pii cases holding no PII, the control a redactor must leave unchanged (#610)"),
     _k("squad2_cases", ["evals/importers/squad2_check.py:N", "evals/importers/squad2_extract.py:N"], [220, 440, 880],
@@ -19,9 +24,15 @@ KNOBS = [
     _k("squad2_retrieval_cases", ["evals/importers/squad2_retrieval.py:N"], [290, 580, 1160],
        note="SQuAD 2.0 cases the retrieval importer draws (#603)"),
     _k("stt_max_wer", ["evals/importers/librispeech.py:MAX_WER"], [0.0, 0.05, 0.1, 0.2],
-       note="per-utterance WER a LibriSpeech case passes at; written into each case, so the cases digest carries it; floor unmeasured (#701)"),
+       unit="share", grades=True,
+       note="per-utterance WER a LibriSpeech case passes at, written into each case (#701); noise floor of whisper-large-v3 "
+            "on all 480 clips (job 0155): 0.25 (1-10 words, scorer gaps #1266), 0.133 (11-17), 0.111 (18+), above "
+            "this range, so none derived until #1266 (`soh floors`, #730)"),
     _k("tts_max_wer", ["evals/importers/tts_synth.py:MAX_WER"], [0.1, 0.2, 0.3],
-       note="read-back WER a generated tts case passes at, joint with the ear; floor unmeasured (#701)"),
+       unit="share", grades=True,
+       note="read-back WER a generated tts case passes at, joint with the ear (#701); noise floor of Kokoro bm_george "
+            "through the parakeet-v2 ear (mlx-audio 0.5.3) on 222 sentences without a 4-digit count (job 0157): 0.125 "
+            "(1-17 words), 0.111 (18+), so 0.2 is the derived value (`soh floors`, #730)"),
 ]
 
 NOT_GATING = {
