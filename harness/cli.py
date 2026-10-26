@@ -27,6 +27,7 @@ import sys
 
 from harness import adopt, audio, completion, env, power, proc, throughput, vector  # noqa: F401
 from harness.commands import adopt as adopt_cmd
+from harness.commands import baseline as baseline_cmd
 from harness.commands import api_spend as api_spend_cmd
 from harness.commands import benchmarks as benchmarks_cmd
 from harness.commands import blame as blame_cmd
@@ -513,6 +514,20 @@ def build_parser() -> argparse.ArgumentParser:
     ro.add_argument("--store", default="", help="the store to read, read-only (default: this home's discovery.db)")
     ro.add_argument("--cases", default="", help="the repo cases prompts are read from (default: evals/cases/repo)")
     ro.set_defaults(func=report_cmd.cmd_repo_route)
+    bl = sub.add_parser("baseline", help="each real workload as all local, all Claude and hybrid, from stored rows "
+                        "and the shadow replay's summary: rates with intervals, GPU minutes, Claude tokens (#687)")
+    bl.add_argument("--store", default="", help="the store to read, read-only (default: this home's discovery.db)")
+    bl.add_argument("--summary", default="", help="the replay summary (default: evals/analysis/demand/replay.jsonl)")
+    bl.add_argument("--replay", default="", metavar="DIR", help="read a replay working directory instead")
+    bl.add_argument("--save", default="", metavar="PATH", help="write the --replay directory's numbers-only summary")
+    bl.add_argument("--manifest", default="", help="the census manifest (default: evals/analysis/demand)")
+    bl.add_argument("--strata", default="", help="the census strata (default: evals/analysis/demand)")
+    bl.add_argument("--lane", action="append", default=[], help="a lane to read from the store (repeatable)")
+    bl.add_argument("--gate", type=float, default=None, help="decide: confidence under which a field goes to Claude "
+                    "(default: workload_baseline.DECIDE_GATE)")
+    bl.add_argument("--candidate", default="adopted", help="the replay candidate the local arm reads")
+    bl.add_argument("--bar", type=float, default=None, metavar="RATE", help="Eric's bar: keep or return per row")
+    bl.set_defaults(func=baseline_cmd.cmd_baseline)
     rs = sub.add_parser("repo-screen", help="the repo exam's screening subset: pick prints it, anchors writes "
                         "its base/reference outcomes from two stored runs, verdict judges screen runs (#1176)")
     rs.add_argument("action", choices=("pick", "anchors", "verdict"))

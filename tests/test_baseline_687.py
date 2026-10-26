@@ -99,6 +99,13 @@ def test_replay_rows_count_controls_apart_and_take_the_first_repeat():
     assert r["hybrid"]["k"] == 1 and r["to_claude"] == 0 and r["claude_tokens"] == {"in": 1000, "out": 100}
 
 
+def test_a_unit_whose_own_record_was_never_graded_leaves_the_claude_arm_unknown():
+    recs = _record("P1", "orchestration_chat", "not_usable")
+    recs = [r for r in recs if r["kind"] != "self"]
+    (r, _) = B.replay_rows(recs, _manifest([("P1", "orchestration_chat")]), {"s": {"N": 1, "tokens_out": 100}})
+    assert r["claude"] is None and r["hybrid"] is None and r["hybrid_bounds"] == [0, 1]
+
+
 def _packet(i, shape, control=False):
     return {"id": i, "key": f"k{i}", "kind": "main", "control": control, "weight": 1.0, "shape": shape,
             "fit": "fits_with_harness_work", "latency": "soon", "group": rp.GROUP[shape], "lane": rp.LANE[rp.GROUP[shape]],
@@ -159,26 +166,36 @@ def _rows(cand, codes, seconds=5.0, tokens=None):
     return out
 
 
-def _adopt(conn, lane, run_id):
+def _adopt(conn, lane, run_id, at=1):
     cid = conn.execute("SELECT candidate_id FROM results WHERE run_id = ? LIMIT 1", (run_id,)).fetchone()[0]
-    conn.execute("INSERT INTO adoptions (lane, candidate_id, run_id, how, adopted_at) VALUES (?, ?, ?, 'by-hand', 1)",
-                 (lane, cid, run_id))
+    conn.execute("INSERT INTO adoptions (lane, candidate_id, run_id, how, adopted_at) VALUES (?, ?, ?, 'by-hand', ?)",
+                 (lane, cid, run_id, at))
     conn.commit()
 
 
+@pytest.mark.gauntlet("state-is-whichever-row-came-last", site="evals/workload_baseline.py:_adopted")
+@pytest.mark.gauntlet("state-is-whichever-row-came-last", site="evals/workload_baseline.py:_newest")
 def test_the_local_run_is_taken_on_the_claude_runs_exam(store_run, tmp_path):
     from harness import memory_store as ms
     conn = ms.connect(tmp_path / "s.db")
+    orn = {"ornith": "llamacpp:ornith"}
     adopted = store_run("a", "repo", rows=_rows("ornith", "PIC"), conn=conn, cases_digest="X",
-                        generated="2026-10-01T00:00:00")
-    store_run("b", "repo", rows=_rows("other", "PPP"), conn=conn, cases_digest="X", generated="2026-10-02T00:00:00")
-    store_run("c", "repo", rows=_rows("ornith", "PPP"), conn=conn, cases_digest="Y", generated="2026-10-04T00:00:00")
+                        generated="2026-10-01T00:00:00", specs=orn)
+    store_run("b", "repo", rows=_rows("other", "PPP"), conn=conn, cases_digest="X", generated="2026-10-02T00:00:00",
+              specs={"other": "llamacpp:other"})
+    store_run("c", "repo", rows=_rows("ornith", "PPP"), conn=conn, cases_digest="Y", generated="2026-10-04T00:00:00",
+              specs=orn)
     cloud = store_run("d", "repo", rows=_rows("claude-code:opus", "PPC", tokens=(2, 3000, 600)), conn=conn,
                       cases_digest="X", generated="2026-10-03T00:00:00")
     _adopt(conn, "repo", adopted)
-    rows = B.lane_rows(conn, ["repo"])
+    (r,) = B.lane_rows(conn, ["repo"])
+    other = conn.execute("SELECT id FROM runs WHERE path LIKE '%b'").fetchone()[0]
+    _adopt(conn, "repo", other, at=2)
+    assert B.lane_rows(conn, ["repo"])[0]["runs"]["local"] == other
+    newer = store_run("e", "repo", rows=_rows("claude-code:opus", "PPP"), conn=conn, cases_digest="Y",
+                      generated="2026-10-05T00:00:00")
+    assert B.lane_rows(conn, ["repo"])[0]["runs"]["claude"] == newer
     conn.close()
-    (r,) = rows
     assert (r["runs"]["local"], r["runs"]["claude"]) == (adopted, cloud)
     assert (r["local"]["k"], r["claude"]["k"], r["n"]) == (1, 2, 3)
     # gate visible: t0 applied and resolved (kept), t1 did not apply (sent, Claude resolves), t2 applied wrong (kept)
@@ -201,6 +218,31 @@ def test_a_lane_with_no_stored_claude_run_says_so_instead_of_reading_zero(store_
     line = B.text({"rows": rows, "sources": {}})
     claims_line = next(x for x in line.splitlines() if x.startswith("claims"))
     assert "no stored claude run" in line and "0/0" not in claims_line
+
+
+def test_a_repeated_run_pairs_on_its_first_repeat(store_run, tmp_path):
+    from harness import memory_store as ms
+    conn = ms.connect(tmp_path / "s.db")
+
+    def rows(cand, bits):
+        return [{"candidate": cand, "case_id": f"t{i // 2}#{i % 2 + 1}", "passed": b, "seconds": 6.0,
+                 "failure_class": "" if b else "wrong", "metrics": {"completion_tokens": 9}} for i, b in enumerate(bits)]
+    store_run("a", "extract", rows=rows("local-large", [True, False, False, True]), conn=conn, cases_digest="X")
+    store_run("b", "extract", rows=rows("claude-code:opus", [True, True, True, True]), conn=conn, cases_digest="X")
+    (r,) = B.lane_rows(conn, ["extract"])
+    conn.close()
+    assert (r["n"], r["local"]["k"], r["claude"]["k"], r["local_gpu_min"]) == (2, 1, 2, 0.2)
+    assert r["claude_tokens"] == {"in": 0, "out": 18} and "claude input tokens not stored" in r["note"]
+
+
+def test_a_shapes_share_counts_only_its_fitting_units():
+    recs = _record("P1", "orchestration_chat", "usable_with_edits")
+    man = [{"id": "P1", "stratum": "s", "tokens_out": 100, "final": {"shape": "orchestration_chat",
+                                                                     "fit": "fits_with_harness_work"}},
+           {"id": "P2", "stratum": "s", "tokens_out": 300, "final": {"shape": "orchestration_chat",
+                                                                     "fit": "does_not_fit"}}]
+    rows = B.replay_rows(recs, man, {"s": {"N": 2, "tokens_out": 400}})
+    assert [r["share"] for r in rows] == [0.25, 0.25]
 
 
 def test_decide_fields_under_the_gate_go_to_claude(store_run, tmp_path):
