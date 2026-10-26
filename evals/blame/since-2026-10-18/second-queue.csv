@@ -1,0 +1,22 @@
+# {"max_verdict_id": 15285, "population": {"adopt/candidate": 6, "adopt/limit": 15, "fetch/candidate": 14, "fetch/machine": 2, "inspect/candidate": 1, "inspect/machine": 81, "inspect/upstream": 2, "screen/candidate": 4, "screen/limit": 7, "screen/reopened": 12, "screen/runtime": 12}, "seed": 1293, "since": "2026-10-18 00:00 UTC"}
+verdict_id,name
+12217,Danrisi/UltraReal_FineTune_Anima_base1_v3
+12224,ivanmikhnenkov/tinydit-256
+12228,SupraLabs/Supra2-Medium-Base
+12230,SupraLabs/Supra-50M-Reasoning
+12345,hellotung/patch-forcing
+12508,XiaomiMiMo/MiMo-V2.6-Pro-RL
+12548,internlm/Intern-S2-Preview
+12549,meituan-longcat/LongCat-Flash-Lite-Sparse
+12554,zai-org/GLM-5.3
+12601,deepseek-ai/DeepSeek-V4-Pro-0813
+12784,unsloth/llama-3-8b
+13168,mlx-community/Qwen3-ASR-0.6B-8bit
+13316,ampixa/sanoTTS
+13337,mlx-community/whisper-large-v3-mlx
+13365,neutral:llamacpp:Ornith-1.5-35B-Q4_K_M
+13598,terminusresearch/minimax-music3-latent-refiner-v0.10
+13618,deepen:mlx-community/Qwen2.5-7B-Instruct-4bit
+13619,plan:mlx-community/Qwen2.5-7B-Instruct-4bit
+15084,LiseTY/Minimax-H3-ref2v_Anime_2_Realism
+15087,SpragAI/qwen3-tts-emotion-tags
