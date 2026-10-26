@@ -194,6 +194,8 @@ def decide(lane: str, incumbent: dict, challenger: dict,
         got = Verdict(lane, name_i, name_c, False, f"{got.why}; {worse}")
     elif not got.adopt and plan is not None and rows:
         got = _lane_too_small(lane, name_i, name_c, got, plan, split) or _null(lane, name_i, name_c, got, plan)
+        if got.evidence.get("min_effect"):
+            evidence["min_effect"] = got.evidence["min_effect"]
     # A method's calls and latency travel with its verdict, won or lost. #576.
     from harness import methods
     cost = methods.cost_note(incumbent, challenger, spec) if spec else ""
@@ -347,8 +349,14 @@ def _null(lane, name_i, name_c, got: Verdict, plan) -> Verdict:
                        f"{shown} per cell, above the +{wanted:.2f} this lane adopts for, "
                        f"so a smaller gain is still open ({got.why}){tail}",
                        failure_class=reasons.UNDERPOWERED)
+    noise = power.noise_for(lane)
+    if seen <= noise + 1e-9:
+        return Verdict(lane, name_i, name_c, False,
+                       f"{got.why}; no gain of +{seen:.2f} or more per cell at power {plan.target}")
     return Verdict(lane, name_i, name_c, False,
-                   f"{got.why}; no gain of +{seen:.2f} or more per cell at power {plan.target}")
+                   f"{got.why}; no gain of +{seen:.2f} or more per cell at power {plan.target}; reruns could see "
+                   f"+{noise:.2f}, but a gain under adopt_min_effect +{wanted:.2f} is not worth a switch",
+                   evidence={"min_effect": {"noise": noise, "effect": wanted, "seen": round(seen, 4)}})
 
 
 def _summary(rows: list[dict], name: str) -> dict | None:
@@ -605,8 +613,15 @@ def record(conn, verdict: Verdict, spec: str = "",
                          **({"planned_alpha": verdict.evidence["planned_alpha"]}
                             if "planned_alpha" in verdict.evidence else {}),
                          **({"confirm": verdict.evidence["confirm"]}
-                            if verdict.evidence.get("confirm") else {})}), vid))
+                            if verdict.evidence.get("confirm") else {}),
+                         **({"min_effect": verdict.evidence["min_effect"]}
+                            if verdict.evidence.get("min_effect") else {})}), vid))
         conn.commit()
+    floor = verdict.evidence.get("min_effect")
+    if floor:
+        from harness import cuts
+        cuts.cut("adopt_min_effect", f"{verdict.lane}: {spec} declined on a null that could see "
+                 f"+{floor['seen']:.2f}, above the lane's +{floor['noise']:.2f} noise", kept=0, dropped=1, conn=conn)
     if serve:
         if verdict.how not in HOW:
             raise ValueError(f"unknown adoption kind {verdict.how!r}")

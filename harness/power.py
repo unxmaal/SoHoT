@@ -23,6 +23,8 @@ CAP = 16
 EFFECT = {"claims": 0.05, "code": 0.06, "decide": 0.05, "extract": 0.05, "ocr": 0.05, "pii": 0.05, "repo": 0.16,
           "retrieval": 0.05, "stt": 0.05, "svg": 0.12, "tts": 0.06, "web": 0.05}
 DEFAULT_EFFECT = 0.2
+#: The smallest per-cell gain worth a model switch, however little a lane's reruns flip. #1320.
+MIN_EFFECT = 0.1
 #: Pass rate assumed for a case the incumbent has no stored rows for.
 UNSEEN = 0.5
 #: Within-case correlation assumed until a repeated case measures it. #591.
@@ -47,8 +49,18 @@ PLATEAU = 0.95
 PLATEAU_ABS = 0.01
 
 
-def effect_for(lane: str) -> float:
+def noise_for(lane: str) -> float:
+    """The smallest gain the lane's same-config reruns let the gate see. #725."""
     return EFFECT.get((lane or "").strip().lower(), DEFAULT_EFFECT)
+
+
+def used(noise: float) -> float:
+    return max(float(noise), MIN_EFFECT)
+
+
+def effect_for(lane: str) -> float:
+    """The gain the gate is powered for: the lane's noise, never under MIN_EFFECT. #1320."""
+    return used(noise_for(lane))
 
 
 def _alpha() -> float:

@@ -72,24 +72,28 @@ def cmd_effects(a) -> int:
         replayed = effects.replay(conn, want)
     finally:
         conn.close()
-    note(f"effect = the share of cells a same-config rerun flips each way, rounded up to 0.01, never under "
-         f"{effects.FLOOR:g}; under {effects.MIN_CASES} cases measured twice keeps {power.DEFAULT_EFFECT:g}")
-    note(f"\n{'lane':<10} {'configs':>7} {'cases':>6} {'churn':>7} {'derived':>8} {'registered':>10}")
+    note(f"noise = the share of cells a same-config rerun flips each way, rounded up to 0.01, never under "
+         f"{effects.FLOOR:g}; under {effects.MIN_CASES} cases measured twice keeps {power.DEFAULT_EFFECT:g}; "
+         f"the gate powers for max(noise, adopt_min_effect {power.MIN_EFFECT:g})")
+    note(f"\n{'lane':<10} {'configs':>7} {'cases':>6} {'churn':>7} {'derived':>8} {'registered':>10} {'used':>5}")
     drift = []
     for lane, d in derived.items():
         churn = "-" if d["churn"] is None else f"{d['churn']:.4f}"
-        got = power.effect_for(lane)
+        got = power.noise_for(lane)
         if (d["effect"] if d["effect"] is not None else power.DEFAULT_EFFECT) != got:
             drift.append(lane)
         note(f"{lane:<10} {d['configs']:>7} {d['cases']:>6} {churn:>7} "
-             f"{'-' if d['effect'] is None else format(d['effect'], '.2f'):>8} {got:>10.2f}"
-             + ("  differs" if lane in drift else ""))
-    changed = [r for r in replayed if r["replayed"] != r["stored"]]
-    note(f"\nreplay: {len(replayed)} adopt verdict(s), {len(changed)} change under the derived effects and the "
-         f"dev confirmation")
+             f"{'-' if d['effect'] is None else format(d['effect'], '.2f'):>8} {got:>10.2f} "
+             f"{power.effect_for(lane):>5.2f}" + ("  differs" if lane in drift else ""))
+    changed = [r for r in replayed if r["replayed"] != r["stored"] or r["under_noise"] != r["replayed"]]
+    floored = [r for r in changed if r["under_noise"] != r["replayed"]]
+    note(f"\nreplay: {len(replayed)} adopt verdict(s), {len(changed)} change under the used effects and the dev "
+         f"confirmation or differ from the noise effect alone, {len(floored)} because of adopt_min_effect")
     for r in changed:
-        note(f"  {r['id']:>6} {r['lane']:<9} {r['stored']} -> {r['replayed']}: {r['why']}")
-    emit(floor=effects.FLOOR, min_cases=effects.MIN_CASES, lanes=derived, drift=drift, replay=replayed)
+        note(f"  {r['id']:>6} {r['lane']:<9} {r['stored']} -> {r['replayed']} (noise alone: {r['under_noise']}, "
+             f"+{r['noise']:.2f} -> +{r['effect']:.2f}): {r['why']}")
+    emit(floor=effects.FLOOR, min_cases=effects.MIN_CASES, min_effect=power.MIN_EFFECT, lanes=derived, drift=drift,
+         replay=replayed)
     return 0
 
 

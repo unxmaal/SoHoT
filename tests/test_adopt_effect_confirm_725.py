@@ -103,7 +103,8 @@ def test_the_effect_knob_registers_each_lane_effect_with_its_unit_and_range():
     assert power.EFFECT, "the per-lane effects are registered"
     for lane, value in power.EFFECT.items():
         assert value >= effects.FLOOR
-        assert k.default(lane) == value == power.effect_for(lane)
+        assert k.default(lane) == value == power.noise_for(lane)
+        assert power.effect_for(lane) == max(value, power.MIN_EFFECT)
         assert value in k.values_for(lane), lane
     assert power.effect_for("no-such-lane") == power.DEFAULT_EFFECT
     for name in ("adopt_effect_floor", "adopt_effect_min_cases"):
@@ -116,7 +117,7 @@ def test_a_lane_the_effect_table_does_not_name_plans_at_the_default():
     assert set(power.EFFECT) <= set(lanes.ALL)
     for lane in set(lanes.ALL) - set(power.EFFECT):
         assert power.effect_for(lane) == power.DEFAULT_EFFECT
-    assert power.effect_for(" Code ") == power.EFFECT["code"]
+    assert power.noise_for(" Code ") == power.EFFECT["code"]
 
 
 def _verdict(c, lane, outcome, detail, failure_class="", plan=None, name="org/x"):
