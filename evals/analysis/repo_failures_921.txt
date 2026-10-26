@@ -47,3 +47,23 @@ $ python -m evals.analysis.repo_failures sample <run 466> <run 467> <run 470> --
 
 $ python -m evals.analysis.repo_failures kappa evals/analysis/repo_failure_labels.jsonl evals/analysis/repo_failure_labels_blind.jsonl
 Cohen's kappa 1.000 over 29 rows
+
+$ python -m evals.analysis.repo_failures propose <run 472> <run 473> <run 474> --at-cut <first labeller at_cut>  (appended to repo_failure_labels.jsonl)
+$ python -m evals.analysis.repo_failures tally <run 472> <run 473> <run 474> --complete
+run                                      rows         pass token_budget    tool_call invalid_patc content_fail environment_  other
+921-arm-a                                  39            2           21            0           11            5            0  0
+921-arm-b                                  39            2            1            0           31            5            0  0
+921-arm-c                                  39            5            5            0           22            7            0  0
+
+921-arm-a labels: budget_exhausted 21 (harness), context_mismatch 3 (model), malformed_hunk 4 (model), tool_call 4 (protocol), wrong_fix 5 (model)
+  at the cut: drafting_diff 2, looping 5, other 9, rereading 5
+
+921-arm-b regraded: 1, now resolved: none
+
+921-arm-b labels: budget_exhausted 1 (harness), context_mismatch 10 (model), malformed_hunk 12 (model), missing_file 3 (model), no_diff 4 (model), tool_call 1 (protocol), wrong_fix 6 (model)
+  at the cut: looping 1
+
+921-arm-c regraded: 1, now resolved: sohot-371-symptom
+
+921-arm-c labels: budget_exhausted 5 (harness), context_mismatch 7 (model), malformed_hunk 5 (model), tool_call 9 (protocol), wrong_fix 7 (model)
+  at the cut: drafting_diff 2, other 2, rereading 1
