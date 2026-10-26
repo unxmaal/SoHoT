@@ -47,6 +47,7 @@ from harness.commands import judge as judge_cmd
 from harness.commands import lanes as lanes_cmd
 from harness.commands import lane_feed as lane_feed_cmd
 from harness.commands import craft as craft_cmd
+from harness.commands import vision as vision_cmd
 from harness.commands import coherence as coherence_cmd
 from harness.commands import load_log as load_log_cmd
 from harness.commands import measure as measure_cmd
@@ -696,6 +697,7 @@ def build_parser() -> argparse.ArgumentParser:
     knobs_cmd.add_parser(sub)
     lane_feed_cmd.add_parser(sub)
     craft_cmd.add_parser(sub)
+    vision_cmd.add_parser(sub)
     climb_cmd.add_parser(sub)
     otel_cmd.add_parser(sub)
     dlg = sub.add_parser("delegated", help="record what became of a local_complete or "

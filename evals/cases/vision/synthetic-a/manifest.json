@@ -1,0 +1,180 @@
+{
+ "version": 1,
+ "film": "synthetic-a",
+ "labels": "synthetic: drawn subject size",
+ "labels_sha256": "",
+ "source": {},
+ "alignment": {},
+ "height": 54,
+ "frames": [
+  {
+   "id": "synthetic-a-00000",
+   "file": "synthetic-a-00000.png",
+   "second": 0,
+   "at": 0.5,
+   "truth": "ECU",
+   "sha256": "6b0fd702381beb9869e32d4f6a6854285a0060ef252c57107b918951feec60b6"
+  },
+  {
+   "id": "synthetic-a-00001",
+   "file": "synthetic-a-00001.png",
+   "second": 1,
+   "at": 1.5,
+   "truth": "ECU",
+   "sha256": "1900bffd2675eee218986ea1fdf600105cf0278d929bc23de8d914deefceaa51"
+  },
+  {
+   "id": "synthetic-a-00002",
+   "file": "synthetic-a-00002.png",
+   "second": 2,
+   "at": 2.5,
+   "truth": "ECU",
+   "sha256": "8d7603b445bee9e12ffe96863116fdd24c701e7771212498f418d7534bdf9d4e"
+  },
+  {
+   "id": "synthetic-a-00003",
+   "file": "synthetic-a-00003.png",
+   "second": 3,
+   "at": 3.5,
+   "truth": "CU",
+   "sha256": "9b38167e9163bca320c98ec85e0700e6b3de97b17315c6c7bd740189f2ef4a16"
+  },
+  {
+   "id": "synthetic-a-00004",
+   "file": "synthetic-a-00004.png",
+   "second": 4,
+   "at": 4.5,
+   "truth": "CU",
+   "sha256": "cfafb385dd08bd5aa868925d555af3933b8671523b2478a0f1aef0156051e758"
+  },
+  {
+   "id": "synthetic-a-00005",
+   "file": "synthetic-a-00005.png",
+   "second": 5,
+   "at": 5.5,
+   "truth": "CU",
+   "sha256": "36479f789ca342a5f6abee286249f029186c183b18c6281a9ef3202b2cd2dd02"
+  },
+  {
+   "id": "synthetic-a-00006",
+   "file": "synthetic-a-00006.png",
+   "second": 6,
+   "at": 6.5,
+   "truth": "MCU",
+   "sha256": "0703add1563d997714d5622c1b34fc58322d5d0f1c38a481dbc24550b724c2d0"
+  },
+  {
+   "id": "synthetic-a-00007",
+   "file": "synthetic-a-00007.png",
+   "second": 7,
+   "at": 7.5,
+   "truth": "MCU",
+   "sha256": "4a722dbf6517a1f2bfd0eb73aab9ce2c3df67cecbd77b634a92629a98f2f7677"
+  },
+  {
+   "id": "synthetic-a-00008",
+   "file": "synthetic-a-00008.png",
+   "second": 8,
+   "at": 8.5,
+   "truth": "MCU",
+   "sha256": "80e7798be93a5c2788eed0e662a492bae51382c3f9fe74caf721c2869ce2d277"
+  },
+  {
+   "id": "synthetic-a-00009",
+   "file": "synthetic-a-00009.png",
+   "second": 9,
+   "at": 9.5,
+   "truth": "MS",
+   "sha256": "f60323a500a855bd4cb08670db0c1aa2eb465c879b5bd67f24f725fe39fb72e4"
+  },
+  {
+   "id": "synthetic-a-00010",
+   "file": "synthetic-a-00010.png",
+   "second": 10,
+   "at": 10.5,
+   "truth": "MS",
+   "sha256": "0f890dc545708b6c05b6e4b00e117d7cca776b2c81256c0cc552566302242f4e"
+  },
+  {
+   "id": "synthetic-a-00011",
+   "file": "synthetic-a-00011.png",
+   "second": 11,
+   "at": 11.5,
+   "truth": "MS",
+   "sha256": "5b8aa52a7ee0407449ebeb366ec66b0c4d738f7ae98b08f0b2bbefc3deac87e4"
+  },
+  {
+   "id": "synthetic-a-00012",
+   "file": "synthetic-a-00012.png",
+   "second": 12,
+   "at": 12.5,
+   "truth": "MLS",
+   "sha256": "e33ae9deb7faa6b26e812c53dcec8ff6c834e10229b6a37d62bd439486283bb9"
+  },
+  {
+   "id": "synthetic-a-00013",
+   "file": "synthetic-a-00013.png",
+   "second": 13,
+   "at": 13.5,
+   "truth": "MLS",
+   "sha256": "7e3adcfda617696e7a6bf6b9a9776e0a3f0a962c6957b82d7ce14fd54165abae"
+  },
+  {
+   "id": "synthetic-a-00014",
+   "file": "synthetic-a-00014.png",
+   "second": 14,
+   "at": 14.5,
+   "truth": "MLS",
+   "sha256": "683a6ba7a710ef04b92640416cf9fd166821cf945d00b5a26b845a1ef31ccff5"
+  },
+  {
+   "id": "synthetic-a-00015",
+   "file": "synthetic-a-00015.png",
+   "second": 15,
+   "at": 15.5,
+   "truth": "LS",
+   "sha256": "d85f66c764163441eb4432c714efb4423294cdddcee012e161ff506f959112a5"
+  },
+  {
+   "id": "synthetic-a-00016",
+   "file": "synthetic-a-00016.png",
+   "second": 16,
+   "at": 16.5,
+   "truth": "LS",
+   "sha256": "db2ce2d6a850b7aa77a7a2ca44667f92355a9737a359610720e9027354e66f20"
+  },
+  {
+   "id": "synthetic-a-00017",
+   "file": "synthetic-a-00017.png",
+   "second": 17,
+   "at": 17.5,
+   "truth": "LS",
+   "sha256": "2134fe145de5ca827aa0c93cecf8f620f357c3f6fdb80530d75c85fdbd494bf6"
+  },
+  {
+   "id": "synthetic-a-00018",
+   "file": "synthetic-a-00018.png",
+   "second": 18,
+   "at": 18.5,
+   "truth": "ELS",
+   "sha256": "a8e455cfbe1c0aa89d11cc60030cfac8c390d4b28f1d5d02c0f24c126f257f80"
+  },
+  {
+   "id": "synthetic-a-00019",
+   "file": "synthetic-a-00019.png",
+   "second": 19,
+   "at": 19.5,
+   "truth": "ELS",
+   "sha256": "3572c5c8ea2de1592fe71fd6ab623a1cb43b9b2fc56471bfcd3003e080d76369"
+  },
+  {
+   "id": "synthetic-a-00020",
+   "file": "synthetic-a-00020.png",
+   "second": 20,
+   "at": 20.5,
+   "truth": "ELS",
+   "sha256": "3df97dc5eed48d41f889c4412735d5736cee3abeb5374c58e9ecf3208d4048c1"
+  }
+ ],
+ "digest": "7387f9b1e3714b943b272ac5bfb349ea13f88987a1f67aea20ad772211563749"
+}
