@@ -16,6 +16,36 @@
    "until": "version:mlx-lm>0.32.0"
   },
   {
+   "candidate": "ggml-org/Laya-GGUF",
+   "decided_at": "2026-10-26T01:29:03Z",
+   "detail": "the installed runtime could not load it: llama-server: llama_model_load: error loading model: check_tensor_dims: tensor 'blk.28.ffn_up.weight' has wrong shape; expected 1024, 5248, got 1024, 4096, 1, 1 (server-load.log, eval.log lines 1212509-1212551)",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "ggml-org/Laya-GGUF",
+   "reason": "runtime",
+   "receipt_key": "ggml-org/Laya-GGUF",
+   "run_id": 595,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "version:llama.cpp>11146"
+  },
+  {
+   "candidate": "ggml-org/Laya-GGUF,temperature=0",
+   "decided_at": "2026-10-26T01:29:03Z",
+   "detail": "the installed runtime could not load it: llama-server: llama_model_load: error loading model: check_tensor_dims: tensor 'blk.28.ffn_up.weight' has wrong shape; expected 1024, 5248, got 1024, 4096, 1, 1 (server-load.log, eval.log lines 1212509-1212551)",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "ggml-org/Laya-GGUF",
+   "reason": "runtime",
+   "receipt_key": "ggml-org/Laya-GGUF",
+   "run_id": 595,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "version:llama.cpp>11146"
+  },
+  {
    "candidate": "nimble:bespokelabs/Bespoke-Nimble-9B",
    "decided_at": "2026-10-22T01:40:38Z",
    "detail": "2 case(s) passed a screen",
@@ -177,8 +207,8 @@
   },
   {
    "candidate": "decider:StrandsAgents/strands-decider-2B-hobson-v21",
-   "decided_at": "2026-10-23T12:06:02Z",
-   "detail": "downloaded",
+   "decided_at": "2026-10-26T01:29:07Z",
+   "detail": "not screened: our snapshot lacks files its runner opens; refetch: check-squad2-56dddf4066d3e219004dad5f: exit 1: huggingface_hub.errors.IncompleteSnapshotError: The cached snapshot for 'StrandsAgents/strands-decider-2B-hobson-v21' (revision 'main', commit 2b52a6235c1b8306bbfa30b00b9d4b74b63a39f5) is incomplete: 1 file(s) are missing (lora/adapter_model.safetensors",
    "exam": {
     "about": "2B params",
     "candidate": "decider/strands-decider-2B-hobson-v21",
@@ -207,9 +237,9 @@
    },
    "outcome": "queued",
    "proposal": "StrandsAgents/strands-decider-2B-hobson-v21",
-   "reason": "candidate",
+   "reason": "harness",
    "receipt_key": "decider/strands-decider-2B-hobson-v21",
-   "run_id": null,
+   "run_id": 596,
    "serves": false,
    "status": "pending",
    "tier": "fetch",
@@ -538,7 +568,7 @@
    "until": ""
   }
  ],
- "cursor": 1792722066692340,
+ "cursor": 1792978143007480,
  "events": [
   {
    "at": "2026-09-22T13:14:31Z",
@@ -703,6 +733,21 @@
    "outcome": "declined",
    "reason": "runtime",
    "run_id": 561,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-26T01:29:03Z",
+   "candidate": "ggml-org/Laya-GGUF",
+   "chosen": null,
+   "detail": "the installed runtime could not load it: llama-server: llama_model_load: error loading model: check_tensor_dims: tensor 'blk.28.ffn_up.weight' has wrong shape; expected 1024, 5248, got 1024, 4096, 1, 1 (server-load.log, eval.log lines 1212509-1212551)",
+   "how": "",
+   "id": 1792978143007480,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "runtime",
+   "run_id": 595,
    "tier": "screen"
   }
  ],
@@ -1089,7 +1134,7 @@
    "runs": 4
   }
  ],
- "generated_at": "2026-10-25T18:04:04Z",
+ "generated_at": "2026-10-26T07:02:48Z",
  "knobs": [],
  "lane": {
   "cases": 476,
