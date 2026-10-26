@@ -1,4 +1,4 @@
-"""`soh inventory`: read-only accounts of what the machine and the project spent. `time` is #1152."""
+"""`soh inventory`: read-only accounts of what the machine and the project spent. `time` is #1152, `weight` #1148."""
 from __future__ import annotations
 
 import datetime as _dt
@@ -109,5 +109,35 @@ def cmd_time(a) -> int:
     if not a.hours:
         L.pop("hours")
     show(L)
+    emit(**L)
+    return 0
+
+
+def cmd_weight(a) -> int:
+    from harness import inventory_weight as iw, paths
+
+    now = time.time()
+    since = None
+    if a.since:
+        from harness import context_report as cr
+        try:
+            since = cr.parse_when(a.since, now)
+        except ValueError as exc:
+            note(str(exc))
+            emit(False, error=str(exc))
+            return 2
+    conn = open_store()
+    if conn is None:
+        note("no store")
+        emit(False, error="no store")
+        return 1
+    try:
+        src = iw.gather(conn, paths.home(), now, since, kinds=a.kind or iw.KINDS, junit=a.junit, ci=not a.no_ci,
+                        ci_cache=Path(a.ci_cache) if a.ci_cache else None)
+    finally:
+        conn.close()
+    L = iw.build(src, min_models=iw.MIN_MODELS if a.min_models is None else a.min_models,
+                 slow_share=iw.SLOW_SHARE if a.slow_share is None else a.slow_share)
+    note(iw.render(L, a.n, markdown=a.markdown))
     emit(**L)
     return 0

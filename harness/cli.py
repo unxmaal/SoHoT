@@ -612,6 +612,23 @@ def build_parser() -> argparse.ArgumentParser:
     itm.add_argument("--hours", action="store_true", help="with --json, include every hour's row")
     itm.add_argument("--json", action="store_true", help="machine-readable result on stdout, including on failure")
     itm.set_defaults(func=inventory_cmd.cmd_time)
+    iwt = invsub.add_parser("weight", help="each case, test, launchd unit, knob and check scored on its cost against "
+                            "the work it has done: a ranked cut list for approval that removes nothing (#1148)")
+    iwt.add_argument("--kind", action="append", choices=("cases", "tests", "units", "knobs", "checks"),
+                     help="only this kind (repeatable; default: all)")
+    iwt.add_argument("--since", default="", help="window start: 30d, or a date (default: this machine's first day)")
+    iwt.add_argument("--min-models", type=int, default=None, metavar="N",
+                     help="candidates a case needs before its discrimination is judged (knob weight_min_models)")
+    iwt.add_argument("--slow-share", type=float, default=None, metavar="F",
+                     help="slowest share a never-failed test must sit in to be flagged (knob weight_slow_share)")
+    iwt.add_argument("--junit", default="", metavar="FILE",
+                     help="test times from this JUnit XML (default: the last green main push run's artifact)")
+    iwt.add_argument("--ci-cache", default="", metavar="DIR", help="keep each failed run's parsed log here")
+    iwt.add_argument("--no-ci", action="store_true", help="skip CI failure history")
+    iwt.add_argument("-n", type=int, default=15, help="flagged rows shown per kind")
+    iwt.add_argument("--markdown", action="store_true", help="the cut list as markdown, for an issue comment")
+    iwt.add_argument("--json", action="store_true", help="machine-readable result on stdout, including on failure")
+    iwt.set_defaults(func=inventory_cmd.cmd_weight)
     mor = sub.add_parser("morning", help="last night in one report: sweep, watchdog, nightly CI, ledger row, "
                          "stale lanes and deploy; --notify only when something needs a person")
     mor.add_argument("--since", default="18h", help="window: 18h, or a date such as 2026-10-14T20:00")
