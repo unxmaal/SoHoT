@@ -1,0 +1,42 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0456
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Dry
+  dock volunteers". The page holds exactly 6 <article> elements, in this order, each with one <h2> heading
+  and one <p> paragraph: "Rope walk" with "Bring your own gloves."; "Net shed" with "Members park for
+  free."; "East dock" with "No dogs past the gate."; "Sail loft" with "No dogs past the gate."; "Harbor
+  office" with "Bring your own gloves."; "Lighthouse" with "Bring your own gloves.". Use <article> for
+  nothing else.'
+assert:
+  structure:
+    title: Dry dock volunteers
+    articles:
+    - - Rope walk
+      - Bring your own gloves.
+    - - Net shed
+      - Members park for free.
+    - - East dock
+      - No dogs past the gate.
+    - - Sail loft
+      - No dogs past the gate.
+    - - Harbor office
+      - Bring your own gloves.
+    - - Lighthouse
+      - Bring your own gloves.
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '456'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: articles
+  stratum: medium

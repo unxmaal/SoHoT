@@ -1,0 +1,39 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-1229
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Rope
+  walk tours". The page needs an <h1> reading "Rope walk tours" followed by these <h2> headings in order:
+  "Overview", "Volunteers", "Weather", "Membership", "Prices". Use no other h1, h2 or h3 headings.'
+assert:
+  structure:
+    title: Rope walk tours
+    headings:
+    - - 1
+      - Rope walk tours
+    - - 2
+      - Overview
+    - - 2
+      - Volunteers
+    - - 2
+      - Weather
+    - - 2
+      - Membership
+    - - 2
+      - Prices
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '1229'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: headings
+  stratum: easy

@@ -1,0 +1,41 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0999
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Fish
+  market repairs". From these rows, the page holds only those whose Count is at least 617, in the order
+  given, as a table with the caption "Chandlery reorders", the header cells "Item", "Count", and these
+  rows given as Item / Count: rye flour, 617; pine tar, 683; cedar shingle, 800; iron nail, 387; clay
+  pot, 358. Put the header in one row of <th> cells and each value in its own <td>, with no units or extra
+  characters.'
+assert:
+  structure:
+    title: Fish market repairs
+    tables:
+    - caption: Chandlery reorders
+      head:
+      - Item
+      - Count
+      rows:
+      - - rye flour
+        - '617'
+      - - pine tar
+        - '683'
+      - - cedar shingle
+        - '800'
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '999'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: filter
+  stratum: hard

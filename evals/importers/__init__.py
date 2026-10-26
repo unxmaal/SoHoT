@@ -32,6 +32,7 @@ REGISTRY = [
     Source("pii_synth", "pii"),
     Source("tts_synth", "tts"),
     Source("svg_synth", "svg"),
+    Source("web_synth", "web"),
     Source("squad2_check", "decide"),
     Source("squad2_extract", "extract"),
     Source("squad2_retrieval", "retrieval"),

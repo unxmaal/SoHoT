@@ -1,0 +1,60 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0670
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Chandlery
+  membership". The page holds a table with the caption "Dry dock stock", the header cells "Item", "Count",
+  "Shelf", and these rows given as Item / Count / Shelf: rye flour, 79, A3; beeswax, 974, A3; cotton rope,
+  582, A3; silk ribbon, 747, A3; canvas sheet, 232, A1; cedar shingle, 943, A3; iron nail, 749, B1; wool
+  blanket, 812, D3. Keep the rows in this order. Put the header in one row of <th> cells and each value
+  in its own <td>, with no units or extra characters.'
+assert:
+  structure:
+    title: Chandlery membership
+    tables:
+    - caption: Dry dock stock
+      head:
+      - Item
+      - Count
+      - Shelf
+      rows:
+      - - rye flour
+        - '79'
+        - A3
+      - - beeswax
+        - '974'
+        - A3
+      - - cotton rope
+        - '582'
+        - A3
+      - - silk ribbon
+        - '747'
+        - A3
+      - - canvas sheet
+        - '232'
+        - A1
+      - - cedar shingle
+        - '943'
+        - A3
+      - - iron nail
+        - '749'
+        - B1
+      - - wool blanket
+        - '812'
+        - D3
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '670'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: table
+  stratum: easy

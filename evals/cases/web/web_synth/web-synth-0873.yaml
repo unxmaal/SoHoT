@@ -1,0 +1,51 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0873
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Lighthouse
+  events". The page holds a table with the caption "Chandlery orders", the header cells "Item", "Count",
+  and these rows given as Item / Count: silk ribbon, 111; paper roll, 218; rye flour, 117; iron nail,
+  788; canvas sheet, 21; cedar shingle, 561; glass jar, 945; clay pot, 142. List the rows sorted by Count,
+  largest first. Put the header in one row of <th> cells and each value in its own <td>, with no units
+  or extra characters.'
+assert:
+  structure:
+    title: Lighthouse events
+    tables:
+    - caption: Chandlery orders
+      head:
+      - Item
+      - Count
+      rows:
+      - - glass jar
+        - '945'
+      - - iron nail
+        - '788'
+      - - cedar shingle
+        - '561'
+      - - paper roll
+        - '218'
+      - - clay pot
+        - '142'
+      - - rye flour
+        - '117'
+      - - silk ribbon
+        - '111'
+      - - canvas sheet
+        - '21'
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '873'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: sorted
+  stratum: hard
