@@ -937,6 +937,11 @@ def build_parser() -> argparse.ArgumentParser:
     jud.add_argument("--min-votes", type=int, default=adopt.MIN_VOTES,
                      help="answers a by-hand adoption needs without --force")
     jud.set_defaults(func=judge_cmd.cmd_judge)
+    vot = sub.add_parser("votes", help="human A/B verdicts beside the lane checker's order of the same "
+                         "artifacts, read-only. #92")
+    vot.add_argument("--lane", default="", help="one lane (default: every lane with votes)")
+    vot.add_argument("--store", default="", help="the store (default: this home's discovery.db)")
+    vot.set_defaults(func=judge_cmd.cmd_votes)
     ado = sub.add_parser(
         "adopt",
         help="measure a challenger against a lane's incumbent and adopt it "
