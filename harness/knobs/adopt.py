@@ -5,14 +5,14 @@ KNOBS = [
     _k("adopt_alpha", ["harness/adopt.py:ALPHA"], [0.01, 0.025, 0.05, 0.1],
        note="level of the first paired test on a holdout; later ones face it over their comparison count (#698)"),
     _k("adopt_effect", ["harness/power.py:EFFECT", "harness/power.py:DEFAULT_EFFECT"], [0.05, 0.1, 0.2, 0.3],
-       lane_values={"code": (0.03, 0.06, 0.12, 0.2), "repo": (0.08, 0.16, 0.2, 0.3), "stt": (0.03, 0.06, 0.12, 0.2),
-                    "svg": (0.06, 0.12, 0.2, 0.3)}, unit="share",
+       lane_values={"code": (0.03, 0.06, 0.12, 0.2), "repo": (0.08, 0.16, 0.2, 0.3), "svg": (0.06, 0.12, 0.2, 0.3),
+                    "tts": (0.03, 0.06, 0.12, 0.2)}, unit="share",
        note="smallest per-cell gain a lane adopts for; a null that could not see it is not a loss (#698). Per lane "
             "it is the share of cells a same-config rerun flips each way (pooled within-case variance of the "
             "lane-metric draw), rounded up to 0.01, never under adopt_effect_floor. Store 2026-10-25, measure rows "
             "by lane, configs, cases measured twice, churn: claims 2/548 0.0009, code 39/1636 0.0575, decide 4/245 "
             "0, extract 6/500 0.0081, ocr 2/148 0.0078, pii 2/182 0, repo 3/152 0.1501, retrieval 2/203 0, stt "
-            "7/872 0.0535, svg 16/46 0.1100, web 11/55 0.0107; agent 28, image 23, music 11, tts 10 and video 2 "
+            "8/1352 0.0417, svg 16/46 0.1100, tts 3/470 0.0501, web 11/55 0.0107; agent 28, image 23, music 11 and video 2 "
             "cases are under adopt_effect_min_cases and keep 0.20. Replaying the 220 stored adopt verdicts changes "
             "one: 11228 (code, MDE +0.14) becomes underpowered. `soh knobs effects --store COPY` re-derives (#725)"),
     _k("adopt_effect_floor", ["harness/effects.py:FLOOR"], [0.02, 0.05, 0.1],
