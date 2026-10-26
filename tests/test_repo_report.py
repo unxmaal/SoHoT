@@ -357,3 +357,26 @@ def test_a_two_run_report_refuses_a_run_holding_two_candidates():
     rows = [_row(1, BASE, "t0-spec", "P"), _row(1, CAND, "t0-spec", "P"), _row(2, CAND, "t0-spec", "P")]
     with pytest.raises(R.Refused, match="run 1 holds 2 candidates"):
         R.report(_runs(1, 2), rows, [_case("t0-spec", "0" * 40, "spec")], resamples=50, fair=set())
+
+
+def test_the_repo_report_counts_invalid_patches_and_case_seconds_per_side_and_variant():
+    cases = [_case(f"t{t}-{v}", f"{t:040x}", v) for t in range(2) for v in R.VARIANTS]
+    codes = {1: "IPCE", 2: "PIIP"}
+    rows = [{**_row(run, who, c.id, codes[run][i]), "seconds": 10.0 * (i + 1) * run}
+            for run, who in ((1, BASE), (2, CAND)) for i, c in enumerate(cases)]
+    rep = R.report(_runs(1, 2), rows, cases, resamples=50, fair=set())
+    a = rep["attempts"]
+    assert a[BASE_SIDE]["spec"] == {"rows": 2, "ran": 2, "never_ran": 0, "invalid_patch": 1, "invalid_rate": 0.5,
+                                    "ci95": [0.0945, 0.9055], "seconds": 40.0, "median_s": 20.0}
+    assert (a[BASE_SIDE]["symptom"]["ran"], a[BASE_SIDE]["symptom"]["never_ran"]) == (1, 1)
+    assert a[BASE_SIDE]["symptom"]["invalid_patch"] == 0 and a[BASE_SIDE]["symptom"]["seconds"] == 60.0
+    assert a[CAND_SIDE]["all"]["invalid_patch"] == 2 and a[CAND_SIDE]["all"]["seconds"] == 200.0
+    assert f"  {BASE_SIDE:40s} spec     invalid patch 1/2 [0.09, 0.91], never ran 0, case seconds 40 (median 20)" \
+        in R.text(rep)
+
+
+def test_the_pilot_report_gives_invalid_patch_rate_and_time_from_the_stored_pilot_rows():
+    a = R.report(_runs(466, 467), _pilot_rows(), _repo_cases(), resamples=50)["attempts"]
+    got = {side: tuple((a[side][v]["invalid_patch"], a[side][v]["ran"], a[side][v]["never_ran"]) for v in R.VARIANTS)
+           for side in (ORNITH_SIDE, OPUS_SIDE)}
+    assert got == {ORNITH_SIDE: ((4, 19, 2), (6, 18, 2)), OPUS_SIDE: ((5, 19, 2), (2, 18, 2))}
