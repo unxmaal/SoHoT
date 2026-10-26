@@ -34,6 +34,7 @@ from harness.checks import render as render_check
 from harness.checks import retrieval as retrieval_check
 from harness.checks import video as video_check
 from harness.checks import speech as speech_check
+from harness.checks import staging as staging_check
 from harness.checks import svg as svg_check
 from harness.checks.base import CheckResult, extract
 
@@ -106,6 +107,14 @@ def _check_image(artifact, case: Case, adherence: str | None = None,
         metrics.update(a.metrics)
         warnings_out += a.warnings
 
+    spec = case.assertions.get("staging")
+    if spec:
+        s = staging_check.check(artifact, spec)
+        metrics.update(s.metrics)
+        if not s.ok:
+            out = CheckResult(False, s.reason, warnings_out + s.warnings, failure_class=s.failure_class)
+            out.metrics = metrics
+            return out
     expect_text = case.assertions.get("text")
     if not expect_text:
         out = CheckResult(True, "", warnings_out)
@@ -424,6 +433,7 @@ METRIC_DIRECTION = {
     "ink": "neutral",      # fraction of an SVG canvas actually marked
     "motion": "higher",    # change between video frames
     "adherence": "higher",  # how well the picture matches the prompt
+    "staging": "higher",  # share of a staging case's counted requirements the detector found met. #1244
     # Does the clone sound like its reference? A WER cannot see this at
     # all: an intelligible clone in the wrong voice scores a perfect 0.
     "speaker_similarity": "higher",
@@ -611,7 +621,7 @@ ASSERTION_KEYS = {"svg": TEXT_ASSERTIONS | {"structure"}, "web": TEXT_ASSERTIONS
                   # `text` is OCR'd out of the produced image; `max_cer` is how
                   # wrong the rendering may be. Not must_contain: there is no
                   # text to search, and that could only ever pass vacuously.
-                  "image": {"text", "max_cer"},
+                  "image": {"text", "max_cer", "staging"},
                   "tts": {"max_wer"},
                   "stt": {"max_wer"},
                   # `expect_vocals: false` inverts the question from "were the
@@ -935,6 +945,10 @@ def cases_digest(cases) -> str:
     # A matcher change rescores the same claims cases, so it is a different exam; case_digest stays put for holdout. #662.
     if any(c.modality == "claims" for c in cases):
         h.update(f"claims_matcher\x00{claims_check.MATCHER_VERSION}".encode("utf-8"))
+    # The detector, the rules and the uncounted types decide a staging verdict as much as the case does. #1244.
+    if any("staging" in c.assertions for c in cases):
+        h.update(f"staging\x00{staging_check.CHECKER_VERSION}\x00{staging_check.DETECTOR_REVISION}\x00"
+                 f"{','.join(sorted(staging_check.UNCOUNTED))}".encode("utf-8"))
     return h.hexdigest()[:16]
 
 
@@ -1200,6 +1214,11 @@ def load_case(path: Path, private: bool = False) -> Case:
         repo.validate(path.name, params)
     if modality == "ocr" and not str(assertions.get("text") or "").strip():
         raise ValueError(f"{path.name}: an ocr case needs assert.text, the reference")
+    if "staging" in assertions:
+        try:
+            staging_check.validate(assertions["staging"])
+        except ValueError as exc:
+            raise ValueError(f"{path.name}: {exc}") from exc
     if assertions.get("text") and "max_cer" not in assertions:
         raise ValueError(f"{path.name}: a case asserting text needs assert.max_cer; no lenient default (#701)")
     if "structure" in assertions:

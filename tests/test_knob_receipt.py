@@ -39,7 +39,10 @@ def test_the_settings_a_lane_records_are_its_knobs_defaults():
                                      "audio_timeout": knobs.KNOBS["audio_timeout"].default("tts"),
                                      "tts_token_floor": knobs.KNOBS["tts_token_floor"].default("tts"),
                                      "tts_cap_fill": knobs.KNOBS["tts_cap_fill"].default("tts")}
-    assert knobs.settings("image") == {"engine_timeout": knobs.KNOBS["engine_timeout"].default("image")}
+    staging = ("staging_attribute_margin", "staging_bigger_ratio", "staging_detect_threshold", "staging_held_overlap",
+               "staging_nms_iou", "staging_position_margin", "staging_side_margin")
+    assert knobs.settings("image") == {"engine_timeout": knobs.KNOBS["engine_timeout"].default("image"),
+                                       **{n: knobs.KNOBS[n].default("image") for n in staging}}
 
 
 def test_an_override_replaces_only_the_knob_it_names():

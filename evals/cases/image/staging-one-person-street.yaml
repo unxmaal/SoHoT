@@ -1,0 +1,18 @@
+id: staging-one-person-street
+modality: image
+prompt: A single person walking alone on the left side of an empty street, no one else in sight.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      person: a person
+    require:
+    - type: count
+      object: person
+      n: 1
+    - type: side
+      object: person
+      side: left

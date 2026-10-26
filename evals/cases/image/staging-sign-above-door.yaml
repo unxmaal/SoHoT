@@ -1,0 +1,23 @@
+id: staging-sign-above-door
+modality: image
+prompt: A shop sign mounted on the wall above a closed shop door.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      sign: a sign
+      door: a door
+    require:
+    - type: above
+      object: sign
+      over: door
+    - type: attribute
+      object: door
+      is: a closed door
+      not: an open door
+    - type: count
+      object: door
+      n: 1

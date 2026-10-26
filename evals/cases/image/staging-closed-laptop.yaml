@@ -1,0 +1,23 @@
+id: staging-closed-laptop
+modality: image
+prompt: A closed laptop on the right side of a desk and a coffee mug on the left side.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      laptop: a laptop
+      mug: a mug
+    require:
+    - type: attribute
+      object: laptop
+      is: a closed laptop
+      not: an open laptop
+    - type: side
+      object: laptop
+      side: right
+    - type: side
+      object: mug
+      side: left

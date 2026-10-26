@@ -1,0 +1,22 @@
+id: staging-cat-left-dog-right
+modality: image
+prompt: A cat on the left and a dog on the right, both sitting on a sofa.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      cat: a cat
+      dog: a dog
+    require:
+    - type: side
+      object: cat
+      side: left
+    - type: side
+      object: dog
+      side: right
+    - type: count
+      object: cat
+      n: 1

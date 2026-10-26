@@ -1,0 +1,18 @@
+id: staging-tree-fills-frame
+modality: image
+prompt: A single large oak tree filling most of the frame in an open field.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      tree: a tree
+    require:
+    - type: frame
+      object: tree
+      min: 0.4
+    - type: count
+      object: tree
+      n: 1

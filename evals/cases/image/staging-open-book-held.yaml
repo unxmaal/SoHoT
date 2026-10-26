@@ -1,0 +1,20 @@
+id: staging-open-book-held
+modality: image
+prompt: A woman holding an open book in her hands, reading.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      book: a book
+      person: a person
+    require:
+    - type: held
+      object: book
+      by: person
+    - type: attribute
+      object: book
+      is: an open book
+      not: a closed book

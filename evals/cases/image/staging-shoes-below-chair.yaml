@@ -1,0 +1,22 @@
+id: staging-shoes-below-chair
+modality: image
+prompt: A pair of shoes on the floor below an empty wooden chair.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      shoe: a shoe
+      chair: a chair
+    require:
+    - type: count
+      object: shoe
+      n: 2
+    - type: above
+      object: chair
+      over: shoe
+    - type: count
+      object: chair
+      n: 1
