@@ -53,6 +53,21 @@
    "until": "version:mlx-audio>0.5.3"
   },
   {
+   "candidate": "tts:SpragAI/qwen3-tts-emotion-tags",
+   "decided_at": "2026-10-26T01:28:54Z",
+   "detail": "it ran and passed nothing: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: ValueError: CustomVoice model requires 'voice' (speaker name) (e.g., ['serena', 'vivian', 'uncle_fu', 'ryan', 'aiden', 'ono_anna', 'sohee', '",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "SpragAI/qwen3-tts-emotion-tags",
+   "reason": "candidate",
+   "receipt_key": "qwen3-tts-emotion-tags",
+   "run_id": 594,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "tts:Supertone/supertonic-3",
    "decided_at": "2026-10-18T00:42:26Z",
    "detail": "retracted: tts:Supertone/supertonic-3's runner could not open the repo's layout, a runner gap rather than a verdict on Supertone/supertonic-3: it ran and passed nothing: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'Supertone/supertonic-3': Could not determine model type for Supertone/supertonic-3\"} || not run, no candidate for them -- tts: fr-liaison",
@@ -134,23 +149,97 @@
    "exam": {
     "about": "82M params, bf16, by Kokoro-82M-bf16",
     "candidate": "Kokoro-82M-bf16/bm_george",
-    "cases": 135,
-    "first_s": 19.897,
-    "median_s": 0.14,
+    "cases": 460,
+    "first_s": 2.833,
+    "median_s": 0.155,
     "metrics": {
-     "wer": 0.0824
+     "wer": 0.0837
     },
     "model": "Kokoro-82M-bf16/bm_george",
     "not_run": "",
-    "pass_rate": 0.865,
-    "passed": 115,
+    "pass_rate": 0.889,
+    "passed": 409,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-08T12:11:27Z",
+    "run_at": "2026-10-26T04:06:59Z",
     "served_as": "",
     "source": "https://huggingface.co/Kokoro-82M-bf16/bm_george",
-    "total": 133,
+    "total": 460,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "measured",
+   "proposal": "mlx-community/Kokoro-82M-bf16",
+   "reason": "candidate",
+   "receipt_key": "Kokoro-82M-bf16/bm_george",
+   "run_id": null,
+   "serves": false,
+   "status": "measured",
+   "tier": "measure",
+   "until": ""
+  },
+  {
+   "candidate": "tts:mlx-community/Kokoro-82M-bf16,voice=bm_george",
+   "decided_at": "2026-10-06T15:29:33Z",
+   "detail": "tts: already the lane's default",
+   "exam": {
+    "about": "82M params, bf16, by Kokoro-82M-bf16",
+    "candidate": "Kokoro-82M-bf16/bm_george",
+    "cases": 460,
+    "first_s": 2.833,
+    "median_s": 0.155,
+    "metrics": {
+     "wer": 0.0837
+    },
+    "model": "Kokoro-82M-bf16/bm_george",
+    "not_run": "",
+    "pass_rate": 0.889,
+    "passed": 409,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-10-26T04:06:59Z",
+    "served_as": "",
+    "source": "https://huggingface.co/Kokoro-82M-bf16/bm_george",
+    "total": 460,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "measured",
+   "proposal": "mlx-community/Kokoro-82M-bf16",
+   "reason": "candidate",
+   "receipt_key": "Kokoro-82M-bf16/bm_george",
+   "run_id": null,
+   "serves": false,
+   "status": "measured",
+   "tier": "measure",
+   "until": ""
+  },
+  {
+   "candidate": "tts:mlx-community/Kokoro-82M-bf16,voice=bm_george,ear=whisper",
+   "decided_at": "2026-10-06T15:29:33Z",
+   "detail": "tts: already the lane's default",
+   "exam": {
+    "about": "82M params, bf16, by Kokoro-82M-bf16",
+    "candidate": "Kokoro-82M-bf16/bm_george",
+    "cases": 460,
+    "first_s": 2.833,
+    "median_s": 0.155,
+    "metrics": {
+     "wer": 0.0837
+    },
+    "model": "Kokoro-82M-bf16/bm_george",
+    "not_run": "",
+    "pass_rate": 0.889,
+    "passed": 409,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-10-26T04:06:59Z",
+    "served_as": "",
+    "source": "https://huggingface.co/Kokoro-82M-bf16/bm_george",
+    "total": 460,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -225,7 +314,7 @@
    "until": "format:.pt"
   }
  ],
- "cursor": 1792726766007522,
+ "cursor": 1792978134303734,
  "events": [
   {
    "at": "2026-09-19T21:17:40Z",
@@ -601,9 +690,55 @@
    "reason": "runtime",
    "run_id": 567,
    "tier": "screen"
+  },
+  {
+   "at": "2026-10-26T01:28:54Z",
+   "candidate": "tts:SpragAI/qwen3-tts-emotion-tags",
+   "chosen": null,
+   "detail": "it ran and passed nothing: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: ValueError: CustomVoice model requires 'voice' (speaker name) (e.g., ['serena', 'vivian', 'uncle_fu', 'ryan', 'aiden', 'ono_anna', 'sohee', '",
+   "how": "",
+   "id": 1792978134303734,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 594,
+   "tier": "screen"
   }
  ],
  "exams": [
+  {
+   "cases": 460,
+   "differs": [],
+   "first_run_at": "2026-10-26T01:06:10Z",
+   "repeat": 1,
+   "rows": [
+    {
+     "about": "82M params, bf16, by Kokoro-82M-bf16",
+     "candidate": "Kokoro-82M-bf16/bm_george",
+     "first_s": 2.833,
+     "median_s": 0.155,
+     "metrics": {
+      "wer": 0.0837
+     },
+     "model": "Kokoro-82M-bf16/bm_george",
+     "not_run": "",
+     "pass_rate": 0.889,
+     "passed": 409,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-10-26T04:06:59Z",
+     "served_as": "",
+     "source": "https://huggingface.co/Kokoro-82M-bf16/bm_george",
+     "total": 460,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    }
+   ],
+   "run_at": "2026-10-26T04:06:59Z",
+   "runs": 3
+  },
   {
    "cases": 135,
    "differs": [],
@@ -719,7 +854,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-10-25T18:04:06Z",
+ "generated_at": "2026-10-26T07:02:52Z",
  "knobs": [],
  "lane": {
   "cases": 470,
@@ -749,7 +884,7 @@
   "pass_rate": 0.865,
   "serves": "mlx-community/Kokoro-82M-bf16",
   "serves_model": "mlx-community/Kokoro-82M-bf16; family yl4579/StyleTTS2-LJSpeech, 82M params, bf16, by mlx-community",
-  "stale": true
+  "stale": false
  },
  "since": 0
 }
