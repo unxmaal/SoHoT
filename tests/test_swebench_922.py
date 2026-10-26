@@ -228,3 +228,79 @@ def test_the_reference_results_and_predictions_are_still_published():
     assert len(results["applied"]) == 190 and len(results["resolved"]) == 6
     preds = [json.loads(line) for line in swebench._fetch(swebench.PREDS_URL).decode().splitlines() if line]
     assert len(preds) == 481 and {"instance_id", "model_patch"} <= set(preds[0])
+
+
+BASE = "def f(x):\n    return x\n\n\ndef g():\n    pass\n"
+FUZZY = "--- a/pkg/mod.py\n+++ b/pkg/mod.py\n@@ -1,3 +1,3 @@\n def f(y):\n-    return x\n+    return x + 1\n \n"
+
+
+def _origin(root: Path) -> tuple[Path, str]:
+    src = root / "r" / "a"
+    (src / "pkg").mkdir(parents=True)
+    (src / "pkg" / "mod.py").write_text(BASE, encoding="utf-8")
+    git = ["git", "-c", "user.email=t@t", "-c", "user.name=t", "-C", str(src)]
+    subprocess.run(["git", "init", "-q", str(src)], check=True)
+    subprocess.run([*git, "add", "-A"], check=True)
+    subprocess.run([*git, "commit", "-qm", "base"], check=True)
+    base = subprocess.run([*git, "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
+    (src / "pkg" / "mod.py").write_text("changed later\n", encoding="utf-8")
+    subprocess.run([*git, "commit", "-qam", "later"], check=True)
+    return src, base
+
+
+def test_the_apply_check_follows_the_harness_chain_down_to_patch_fuzz(tmp_path):
+    src, base = _origin(tmp_path / "src")
+    tree = swebench.checkout(str(src), base, tmp_path / "cache" / "r__a")
+    assert swebench.apply_check(tree, base, GOLD) == {"applied": True, "by": "git apply --verbose"}
+    assert (tree / "pkg" / "mod.py").read_text(encoding="utf-8") == BASE, "each check starts from a pristine base"
+    assert swebench.apply_check(tree, base, FUZZY) == {"applied": True, "by": "patch --batch --forward --fuzz=5 -p1 -i"}
+    assert swebench.apply_check(tree, base, "no diff here\n")["applied"] is False
+    assert swebench.apply_check(tree, base, "") == {"applied": False, "by": "empty"}
+    assert swebench.APPLY_CMDS[0] == "git apply --verbose" and len(swebench.APPLY_CMDS) == 4
+
+
+def test_apply_writes_each_kind_per_id_checked_on_a_clone_at_its_base(tmp_path):
+    src, base = _origin(tmp_path / "src")
+    ids = ["r__a-1", "r__a-2"]
+    run = _run_dir(tmp_path, ids)
+    rows = tmp_path / "verified.jsonl"
+    swebench.write_jsonl(rows, [{"instance_id": i, "repo": "r/a", "base_commit": base, "patch": GOLD} for i in ids])
+    swebench.write_jsonl(run / "predictions.jsonl", [swebench.prediction("r__a-1", "m", FUZZY),
+                                                    swebench.prediction("r__a-2", "m", "")])
+    swebench.write_jsonl(run / "reference" / "all_preds.jsonl", [swebench.prediction("r__a-1", "ref", "junk\n")])
+    source = str(tmp_path / "src") + "/{repo}"
+    assert swebench.main(["apply", str(run), "--verified", str(rows), "--source", source]) == 0
+    got = swebench.read_json(run / "grades" / "apply.json")
+    assert got["chain"] == list(swebench.APPLY_CMDS)
+    assert {k: {i: v["applied"] for i, v in got["kinds"][k].items()} for k in ("gold", "model", "reference")} == {
+        "gold": {"r__a-1": True, "r__a-2": True}, "model": {"r__a-1": True, "r__a-2": False},
+        "reference": {"r__a-1": False}}
+    assert "upstream" not in got["kinds"], "a kind with no predictions file is not checked"
+
+
+def test_compare_reports_the_apply_check_when_no_docker_grades_exist(tmp_path, capsys):
+    ids = [f"o__r-{i}" for i in range(1, 7)]
+    run = _run_dir(tmp_path, ids)
+    swebench.write_json(run / "reference" / "results.json",
+                        {"generated": ids, "applied": ["o__r-1", "o__r-2", "o__r-3"], "resolved": []})
+    swebench.write_jsonl(run / "predictions.jsonl", [swebench.prediction(i, "m", GOLD) for i in ids])
+    gold = {i: True for i in ids}
+    gold["o__r-6"] = False
+    ours = {"o__r-1": True, "o__r-2": True, "o__r-3": False, "o__r-4": True, "o__r-5": False, "o__r-6": True}
+    ref = {"o__r-1": True, "o__r-2": True, "o__r-3": True, "o__r-4": False, "o__r-5": False, "o__r-6": True}
+    swebench.write_json(run / "grades" / "apply.json", {"chain": list(swebench.APPLY_CMDS), "kinds": {
+        k: {i: {"applied": v, "by": ""} for i, v in d.items()} for k, d in (("gold", gold), ("model", ours),
+                                                                          ("reference", ref))}})
+    assert swebench.main(["compare", str(run), "--json"]) == 0
+    got = json.loads(capsys.readouterr().out)
+    check = got["apply_check"]
+    assert check["dropped"] == {"o__r-6": "gold patch did not apply here"} and check["retained"] == 5
+    mine = check["ours_vs_reference"]
+    assert (mine["both"], mine["only_ours"], mine["only_theirs"], mine["neither"]) == (2, 1, 1, 1)
+    drift = check["reference_vs_published"]
+    assert (drift["both"], drift["only_ours"], drift["only_theirs"]) == (3, 0, 0) and drift["agreement"] == 1.0
+    assert got["status"] == "applied_only"
+    assert swebench.main(["compare", str(run)]) == 0
+    text = capsys.readouterr().out
+    assert "applied here, no Docker: retained 5 of 6 after the gold control" in text
+    assert "ours vs reference (both checked here)" in text
