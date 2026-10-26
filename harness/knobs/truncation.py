@@ -5,8 +5,10 @@ KNOBS = [
     _k("contamination_clean_share", ["harness/contamination.py:CLEAN_SHARE"], [0.9, 0.95, 0.99], unit="share",
        note="share of known-clean passages a calibrated contamination_hit must leave below it (#727)"),
     _k("contamination_hit", ["harness/contamination.py:HIT"], [0.125, 0.25, 0.5, 0.75, 1.0], unit="share", grades=True,
-       note="leading-word overlap counted as reproducing a source (#700); set by `soh benchmarks --calibrate` "
-            "between known-clean and canon passages, no probes stored yet (#727)"),
+       note="leading-word overlap counted as reproducing a source (#700); calibrated on evals/contamination/probes.jsonl "
+            "(job 0166): the smallest value no more than 5% of known-clean passages reach for any of sohot-decide, "
+            "-extract, -code (clean hits at 0.25: 0/40, 0/33, 0/40; at 0.125: 7/40); canon sensitivity at 0.25 is "
+            "0.03-0.26, so a miss is weak evidence (#727)"),
     _k("contamination_max_tokens", ["harness/contamination.py:MAX_TOKENS"], [256, 1024, 4096],
        limit="contamination_max_tokens", unit="tokens", note="reply budget of a contamination probe; a probe that ends there is an error naming it, never a miss (#700)"),
     _k("contamination_min_passages", ["harness/contamination.py:MIN_PASSAGES"], [5, 10, 30], unit="cases",

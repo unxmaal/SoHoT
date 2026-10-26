@@ -8,8 +8,8 @@ from pathlib import Path
 
 PREFIX_WORDS = 32
 TARGET_WORDS = 16
-#: Share of the hidden continuation's leading words reproduced verbatim that counts as a hit.
-HIT = 0.5
+#: Share of the hidden continuation's leading words reproduced verbatim that counts as a hit; calibrated (#727).
+HIT = 0.25
 MAX_TOKENS = 1024
 #: The limit a probe records when the reply ended at MAX_TOKENS or came back empty. #700.
 LIMIT = "contamination_max_tokens"
@@ -174,12 +174,12 @@ def _quantile(values: list[float], share: float) -> float:
 
 
 def _newest(conn) -> dict:
-    """model -> family -> [overlap], from each (model, lane, case)'s newest hit or miss."""
+    """model -> family -> [overlap], from each (model, lane, case)'s newest probe when it is a hit or miss."""
     out: dict = {}
     rows = conn.execute(
         "SELECT p.model, p.lane, p.family, p.overlap FROM contamination_probes p JOIN "
-        "(SELECT MAX(id) AS id FROM contamination_probes WHERE outcome IN ('hit', 'miss') "
-        "GROUP BY model, lane, case_id) n ON n.id = p.id")
+        "(SELECT MAX(id) AS id FROM contamination_probes GROUP BY model, lane, case_id) n ON n.id = p.id "
+        "WHERE p.outcome IN ('hit', 'miss')")
     for model, lane, fam, got in rows:
         if lane == CALIBRATION and fam in SETS:
             key = fam
