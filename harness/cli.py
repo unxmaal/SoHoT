@@ -38,6 +38,7 @@ from harness.commands import context as context_cmd
 from harness.commands import day as day_cmd
 from harness.commands import degenerate as degenerate_cmd
 from harness.commands import floors as floors_cmd
+from harness.commands import staging as staging_cmd
 from harness.commands import discover as discover_cmd
 from harness.commands import gateway as gateway_cmd
 from harness.commands import gauntlet as gauntlet_cmd
@@ -812,6 +813,15 @@ def build_parser() -> argparse.ArgumentParser:
     flo.add_argument("--min-items", type=int, default=None, help="derive: knob floor_min_items for this run")
     flo.add_argument("--out", default="floors-planted", help="plant: where the clean ocr cases go")
     flo.set_defaults(func=floors_cmd.cmd_floors)
+    stg = sub.add_parser("staging", help="the image lane's staging detector: drawn checker controls, a labelling "
+                         "sheet from a night run, agreement with the labels, the paired night command. #1244")
+    stg.add_argument("action", choices=("controls", "sheet", "agreement", "night"))
+    stg.add_argument("path", nargs="?", default="", help="sheet: the run directory; agreement: the labelled sheet")
+    stg.add_argument("--device", choices=("cpu", "mps", "both"), default="both", help="controls: where to detect")
+    stg.add_argument("--out", default="staging-sheet.csv", help="sheet: the CSV to write")
+    stg.add_argument("--n", type=int, default=30, help="sheet: images to label")
+    stg.add_argument("--seed", type=int, default=0, help="sheet: the sampling seed")
+    stg.set_defaults(func=staging_cmd.cmd_staging)
     llg = sub.add_parser("load-log", help="re-decide held llama.cpp load failures from the router's log, "
                          "keeping each child's lines in its run directory; read-only without --apply. #953")
     llg.add_argument("--db", default="", help="the store (default: this home's discovery.db)")

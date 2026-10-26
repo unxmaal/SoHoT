@@ -1,0 +1,22 @@
+id: staging-door-fills-frame
+modality: image
+prompt: A tall red front door filling most of the frame, seen straight on, with one small potted plant beside it.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      door: a door
+      plant: a potted plant
+    require:
+    - type: frame
+      object: door
+      min: 0.35
+    - type: bigger
+      object: door
+      than: plant
+    - type: count
+      object: plant
+      n: 1

@@ -1,0 +1,23 @@
+id: staging-open-door-chair
+modality: image
+prompt: An open wooden door in a white hallway, with a single chair on the right side of the picture.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      door: a door
+      chair: a chair
+    require:
+    - type: attribute
+      object: door
+      is: an open door
+      not: a closed door
+    - type: side
+      object: chair
+      side: right
+    - type: count
+      object: chair
+      n: 1

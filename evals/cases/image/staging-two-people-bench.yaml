@@ -1,0 +1,19 @@
+id: staging-two-people-bench
+modality: image
+prompt: Exactly two people sitting on a park bench, and no one else in the scene.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      person: a person
+      bench: a bench
+    require:
+    - type: count
+      object: person
+      n: 2
+    - type: count
+      object: bench
+      n: 1

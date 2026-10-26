@@ -1,0 +1,22 @@
+id: staging-key-in-hand
+modality: image
+prompt: A close-up of a hand holding a single brass key against a plain grey background.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      key: a key
+      hand: a hand
+    require:
+    - type: held
+      object: key
+      by: hand
+    - type: count
+      object: key
+      n: 1
+    - type: frame
+      object: hand
+      min: 0.15

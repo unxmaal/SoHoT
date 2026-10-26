@@ -1,0 +1,22 @@
+id: staging-box-held
+modality: image
+prompt: A delivery worker holding a cardboard box in front of a house.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      box: a cardboard box
+      person: a person
+    require:
+    - type: held
+      object: box
+      by: person
+    - type: count
+      object: person
+      n: 1
+    - type: count
+      object: box
+      n: 1

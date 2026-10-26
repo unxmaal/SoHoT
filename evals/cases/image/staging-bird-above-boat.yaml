@@ -1,0 +1,22 @@
+id: staging-bird-above-boat
+modality: image
+prompt: A seagull flying above a small rowing boat on calm water.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      bird: a bird
+      boat: a boat
+    require:
+    - type: above
+      object: bird
+      over: boat
+    - type: bigger
+      object: boat
+      than: bird
+    - type: count
+      object: boat
+      n: 1

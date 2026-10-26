@@ -1,0 +1,22 @@
+id: staging-child-holds-ball
+modality: image
+prompt: A child holding a soccer ball in both hands in a park.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      ball: a ball
+      child: a child
+    require:
+    - type: held
+      object: ball
+      by: child
+    - type: count
+      object: ball
+      n: 1
+    - type: count
+      object: child
+      n: 1

@@ -1,0 +1,23 @@
+id: staging-open-umbrella
+modality: image
+prompt: A woman standing in the rain holding an open red umbrella above her head.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      umbrella: an umbrella
+      person: a person
+    require:
+    - type: above
+      object: umbrella
+      over: person
+    - type: attribute
+      object: umbrella
+      is: an open umbrella
+      not: a closed umbrella
+    - type: count
+      object: person
+      n: 1
