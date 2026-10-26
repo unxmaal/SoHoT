@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 
 from harness import lanes, paths
@@ -139,6 +140,7 @@ def cmd_power(a) -> int:
             alone = (power.power(measured, effect, plan.repeat, alpha, rho=plan.rho)
                      if measured else None)
             cases_run = len(set(split.dev) | set(split.holdout))
+            more = max(0, plan.cases_needed - len(split.holdout)) if plan.cases_needed else None
             projected = power.projected_seconds(cases_run, plan.repeat, median, calls)
             rows.append({
                 "lane": lane, "incumbent": key, "holdout": len(split.holdout),
@@ -155,19 +157,29 @@ def cmd_power(a) -> int:
                 "unseen": power.unseen_note(draws),
                 "comparisons": tested, "alpha": alpha,
                 "cases_needed": plan.cases_needed,
-                "more_holdout": (max(0, plan.cases_needed - len(split.holdout))
-                                 if plan.cases_needed else None),
+                "more_holdout": more,
+                "more_cases": None if more is None else math.ceil(more / holdout.FRACTION),
+                "effect_from": ("given" if getattr(a, "effect", None) else
+                                "measured" if lane in power.EFFECT else "default"),
+                "status": _status(plan, more, [rates[c] for c in split.holdout], effect),
                 "median_s": median, "calls": calls, "projected_s": projected, "estimate": est,
                 "fits_budget": projected is not None and projected <= budget,
                 "why": plan.why})
     finally:
         conn.close()
+    if not want:
+        rows += [_absent(lane) for lane in lanes.ALL if lane not in every]
+    if getattr(a, "table", False):
+        return _table(rows)
     effect = getattr(a, "effect", None)
     wanted = f"+{effect:.2f}" if effect else "each lane's effect"
     note(f"power to detect {wanted} per cell at alpha {power._alpha()}, "
          f"target {power.TARGET}, repeat cap {power.CAP}, budget {_hm(budget)}; "
          f"the case is the unit when repeats correlate (rho)")
     for r in rows:
+        if not r["cases"]:
+            note(f"  {r['lane']:8} {r['status']}")
+            continue
         rho = (f"rho {r['rho']:.2f}" + ("" if r["rho_measured"] else " assumed"))
         if r["enough"]:
             head = f"+{r['effect']:.2f}: repeat {r['repeat']} -> power {r['power']:.2f}"
@@ -193,4 +205,41 @@ def cmd_power(a) -> int:
                  f"unmeasured, drawn from the measured per-case rates; {alone}")
     emit(effect=effect, target=power.TARGET, cap=power.CAP,
          budget_s=budget, lanes=rows)
+    return 0
+
+
+def _status(plan, more, rates, effect) -> str:
+    from harness import power
+    if plan.enough or more == 0:
+        return "enough"
+    if more is not None:
+        return f"short {more}"
+    if not rates or power._cell_odds(rates, effect)[0] <= 0:
+        return "saturated"
+    return f"over {power.MAX_CASES}"
+
+
+def _absent(lane: str) -> dict:
+    """A lane with no case files in this checkout, such as one whose cases are imported at deploy."""
+    return {"lane": lane, "cases": 0, "holdout": 0, "effect": None, "effect_from": "", "rho": None,
+            "rho_measured": False, "observed": 0, "power": None, "cases_needed": None,
+            "more_holdout": None, "more_cases": None, "status": "no cases here"}
+
+
+def _table(rows) -> int:
+    """One fixed-column row per lane; `soh adopt --json --power` carries the same fields."""
+    head = ("lane", "cases", "holdout", "effect", "from", "rho", "rows", "power", "needed",
+            "more_holdout", "more_cases", "status")
+    def cell(v, fmt="{}"):
+        return "-" if v is None or v == "" else fmt.format(v)
+    lines = [head]
+    for r in rows:
+        rho = None if r["rho"] is None else f"{r['rho']:.2f}" + ("" if r["rho_measured"] else "?")
+        lines.append((r["lane"], str(r["cases"]), str(r["holdout"]), cell(r["effect"], "{:.2f}"),
+                      cell(r["effect_from"]), cell(rho), str(r["observed"]), cell(r["power"], "{:.2f}"),
+                      cell(r["cases_needed"]), cell(r["more_holdout"]), cell(r["more_cases"]), r["status"]))
+    widths = [max(len(line[i]) for line in lines) for i in range(len(head) - 1)]
+    for line in lines:
+        print("  ".join(c.ljust(w) for c, w in zip(line, widths)) + "  " + line[-1])
+    note("rho? is assumed until a repeated case measures it; rows 0 means the incumbent's rates are assumed")
     return 0
