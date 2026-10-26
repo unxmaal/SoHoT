@@ -8,15 +8,11 @@
     "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
     "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
     "cases": 72,
-    "first_s": 20.917,
-    "median_s": 20.917,
+    "first_s": 208.894,
+    "median_s": 191.666,
     "metrics": {
-     "completion_tokens": 2875.0,
      "patch_applied": 0.0,
-     "resolved": 0.0,
-     "test_s": 0.0,
-     "tokens_per_s": 138.4,
-     "wall_s": 20.917
+     "resolved": 0.0
     },
     "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
     "not_run": "",
@@ -25,12 +21,12 @@
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-25T07:00:37Z",
+    "run_at": "2026-10-26T07:02:42Z",
     "served_as": "",
     "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
-    "total": 1,
-    "ttft_median_s": 18.729,
-    "ttft_p95_s": 18.729
+    "total": 10,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
    },
    "outcome": "measured",
    "proposal": "ornith-ai/Ornith-1.5-35B-A3B-GGUF",
@@ -50,15 +46,11 @@
     "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
     "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
     "cases": 72,
-    "first_s": 20.917,
-    "median_s": 20.917,
+    "first_s": 208.894,
+    "median_s": 191.666,
     "metrics": {
-     "completion_tokens": 2875.0,
      "patch_applied": 0.0,
-     "resolved": 0.0,
-     "test_s": 0.0,
-     "tokens_per_s": 138.4,
-     "wall_s": 20.917
+     "resolved": 0.0
     },
     "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
     "not_run": "",
@@ -67,12 +59,12 @@
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-25T07:00:37Z",
+    "run_at": "2026-10-26T07:02:42Z",
     "served_as": "",
     "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
-    "total": 1,
-    "ttft_median_s": 18.729,
-    "ttft_p95_s": 18.729
+    "total": 10,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
    },
    "outcome": "measured",
    "proposal": "ornith-ai/Ornith-1.5-35B-A3B-GGUF",
@@ -92,15 +84,11 @@
     "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
     "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
     "cases": 72,
-    "first_s": 20.917,
-    "median_s": 20.917,
+    "first_s": 208.894,
+    "median_s": 191.666,
     "metrics": {
-     "completion_tokens": 2875.0,
      "patch_applied": 0.0,
-     "resolved": 0.0,
-     "test_s": 0.0,
-     "tokens_per_s": 138.4,
-     "wall_s": 20.917
+     "resolved": 0.0
     },
     "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
     "not_run": "",
@@ -109,12 +97,12 @@
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-25T07:00:37Z",
+    "run_at": "2026-10-26T07:02:42Z",
     "served_as": "",
     "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
-    "total": 1,
-    "ttft_median_s": 18.729,
-    "ttft_p95_s": 18.729
+    "total": 10,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
    },
    "outcome": "measured",
    "proposal": "ornith-ai/Ornith-1.5-35B-A3B-GGUF",
@@ -134,15 +122,11 @@
     "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
     "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
     "cases": 72,
-    "first_s": 20.917,
-    "median_s": 20.917,
+    "first_s": 208.894,
+    "median_s": 191.666,
     "metrics": {
-     "completion_tokens": 2875.0,
      "patch_applied": 0.0,
-     "resolved": 0.0,
-     "test_s": 0.0,
-     "tokens_per_s": 138.4,
-     "wall_s": 20.917
+     "resolved": 0.0
     },
     "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
     "not_run": "",
@@ -151,12 +135,12 @@
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-25T07:00:37Z",
+    "run_at": "2026-10-26T07:02:42Z",
     "served_as": "",
     "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
-    "total": 1,
-    "ttft_median_s": 18.729,
-    "ttft_p95_s": 18.729
+    "total": 10,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
    },
    "outcome": "measured",
    "proposal": "ornith-ai/Ornith-1.5-35B-A3B-GGUF",
@@ -389,30 +373,26 @@
    "exam": {
     "about": "family unsloth/Qwen3.5-27B, 27B params, Q4_K_M, by Jackrong",
     "candidate": "llamacpp:Qwopus3.5-27B-v3-Q4_K_M",
-    "cases": 80,
-    "first_s": 88.875,
-    "median_s": 477.781,
+    "cases": 72,
+    "first_s": 212.115,
+    "median_s": 264.305,
     "metrics": {
-     "completion_tokens": 6263.8571,
-     "patch_applied": 0.5,
-     "resolved": 0.1429,
-     "test_s": 0.8651,
-     "tokens_per_s": 40.0286,
-     "wall_s": 159.2311
+     "patch_applied": 0.0,
+     "resolved": 0.0
     },
     "model": "llamacpp:Qwopus3.5-27B-v3-Q4_K_M",
     "not_run": "",
-    "pass_rate": 0.143,
-    "passed": 2,
+    "pass_rate": 0.0,
+    "passed": 0,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-23T05:47:03Z",
+    "run_at": "2026-10-26T07:02:42Z",
     "served_as": "",
     "source": "https://huggingface.co/Jackrong/Qwopus3.5-27B-v3-GGUF",
-    "total": 14,
-    "ttft_median_s": 155.624,
-    "ttft_p95_s": 195.131
+    "total": 4,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
    },
    "outcome": "screened",
    "proposal": "Jackrong/Qwopus3.5-27B-v3-GGUF",
@@ -431,30 +411,26 @@
    "exam": {
     "about": "family unsloth/Qwen3.5-27B, 27B params, Q4_K_M, by Jackrong",
     "candidate": "llamacpp:Qwopus3.5-27B-v3-Q4_K_M",
-    "cases": 80,
-    "first_s": 88.875,
-    "median_s": 477.781,
+    "cases": 72,
+    "first_s": 212.115,
+    "median_s": 264.305,
     "metrics": {
-     "completion_tokens": 6263.8571,
-     "patch_applied": 0.5,
-     "resolved": 0.1429,
-     "test_s": 0.8651,
-     "tokens_per_s": 40.0286,
-     "wall_s": 159.2311
+     "patch_applied": 0.0,
+     "resolved": 0.0
     },
     "model": "llamacpp:Qwopus3.5-27B-v3-Q4_K_M",
     "not_run": "",
-    "pass_rate": 0.143,
-    "passed": 2,
+    "pass_rate": 0.0,
+    "passed": 0,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-23T05:47:03Z",
+    "run_at": "2026-10-26T07:02:42Z",
     "served_as": "",
     "source": "https://huggingface.co/Jackrong/Qwopus3.5-27B-v3-GGUF",
-    "total": 14,
-    "ttft_median_s": 155.624,
-    "ttft_p95_s": 195.131
+    "total": 4,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
    },
    "outcome": "screened",
    "proposal": "Jackrong/Qwopus3.5-27B-v3-GGUF",
@@ -473,30 +449,30 @@
    "exam": {
     "about": "family Qwen/Qwen3.6-27B, 27B params, Q4_K_M, by Jackrong",
     "candidate": "llamacpp:Qwopus3.6-27B-v2-MTP-Q4_K_M",
-    "cases": 108,
-    "first_s": 20.972,
-    "median_s": 46.082,
+    "cases": 72,
+    "first_s": 30.219,
+    "median_s": 41.627,
     "metrics": {
-     "completion_tokens": 3689.8235,
-     "patch_applied": 0.0741,
-     "resolved": 0.0556,
-     "test_s": 0.4489,
-     "tokens_per_s": 35.6118,
-     "wall_s": 113.8504
+     "completion_tokens": 1041.3636,
+     "patch_applied": 0.225,
+     "resolved": 0.2,
+     "test_s": 1.148,
+     "tokens_per_s": 32.3182,
+     "wall_s": 34.5899
     },
     "model": "llamacpp:Qwopus3.6-27B-v2-MTP-Q4_K_M",
     "not_run": "",
-    "pass_rate": 0.056,
-    "passed": 6,
+    "pass_rate": 0.2,
+    "passed": 8,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-24T09:45:50Z",
+    "run_at": "2026-10-26T06:06:06Z",
     "served_as": "",
     "source": "https://huggingface.co/Jackrong/Qwopus3.6-27B-v2-MTP-GGUF",
-    "total": 108,
-    "ttft_median_s": 19.744,
-    "ttft_p95_s": 446.191
+    "total": 40,
+    "ttft_median_s": 27.809,
+    "ttft_p95_s": 43.141
    },
    "outcome": "screened",
    "proposal": "Jackrong/Qwopus3.6-27B-v2-MTP-GGUF",
@@ -515,30 +491,30 @@
    "exam": {
     "about": "family Qwen/Qwen3.6-27B, 27B params, Q4_K_M, by Jackrong",
     "candidate": "llamacpp:Qwopus3.6-27B-v2-MTP-Q4_K_M",
-    "cases": 108,
-    "first_s": 20.972,
-    "median_s": 46.082,
+    "cases": 72,
+    "first_s": 30.219,
+    "median_s": 41.627,
     "metrics": {
-     "completion_tokens": 3689.8235,
-     "patch_applied": 0.0741,
-     "resolved": 0.0556,
-     "test_s": 0.4489,
-     "tokens_per_s": 35.6118,
-     "wall_s": 113.8504
+     "completion_tokens": 1041.3636,
+     "patch_applied": 0.225,
+     "resolved": 0.2,
+     "test_s": 1.148,
+     "tokens_per_s": 32.3182,
+     "wall_s": 34.5899
     },
     "model": "llamacpp:Qwopus3.6-27B-v2-MTP-Q4_K_M",
     "not_run": "",
-    "pass_rate": 0.056,
-    "passed": 6,
+    "pass_rate": 0.2,
+    "passed": 8,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-24T09:45:50Z",
+    "run_at": "2026-10-26T06:06:06Z",
     "served_as": "",
     "source": "https://huggingface.co/Jackrong/Qwopus3.6-27B-v2-MTP-GGUF",
-    "total": 108,
-    "ttft_median_s": 19.744,
-    "ttft_p95_s": 446.191
+    "total": 40,
+    "ttft_median_s": 27.809,
+    "ttft_p95_s": 43.141
    },
    "outcome": "screened",
    "proposal": "Jackrong/Qwopus3.6-27B-v2-MTP-GGUF",
@@ -1909,17 +1885,39 @@
    "repeat": 1,
    "rows": [
     {
+     "about": "family Qwen/Qwen3.6-27B, 27B params, Q4_K_M, by Jackrong",
+     "candidate": "llamacpp:Qwopus3.6-27B-v2-MTP-Q4_K_M",
+     "first_s": 30.219,
+     "median_s": 41.627,
+     "metrics": {
+      "completion_tokens": 1041.3636,
+      "patch_applied": 0.225,
+      "resolved": 0.2,
+      "test_s": 1.148,
+      "tokens_per_s": 32.3182,
+      "wall_s": 34.5899
+     },
+     "model": "llamacpp:Qwopus3.6-27B-v2-MTP-Q4_K_M",
+     "not_run": "",
+     "pass_rate": 0.2,
+     "passed": 8,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-10-26T06:06:06Z",
+     "served_as": "",
+     "source": "https://huggingface.co/Jackrong/Qwopus3.6-27B-v2-MTP-GGUF",
+     "total": 40,
+     "ttft_median_s": 27.809,
+     "ttft_p95_s": 43.141
+    },
+    {
      "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
-     "first_s": 20.917,
-     "median_s": 20.917,
+     "first_s": 208.894,
+     "median_s": 191.666,
      "metrics": {
-      "completion_tokens": 2875.0,
       "patch_applied": 0.0,
-      "resolved": 0.0,
-      "test_s": 0.0,
-      "tokens_per_s": 138.4,
-      "wall_s": 20.917
+      "resolved": 0.0
      },
      "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
      "not_run": "",
@@ -1927,12 +1925,12 @@
      "passed": 0,
      "peak_gb": 0.0,
      "reference": false,
-     "run_at": "2026-10-25T07:00:37Z",
+     "run_at": "2026-10-26T07:02:42Z",
      "served_as": "",
      "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
-     "total": 1,
-     "ttft_median_s": 18.729,
-     "ttft_p95_s": 18.729
+     "total": 10,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     },
     {
      "about": "0.6B params, by Qwen",
@@ -1959,10 +1957,32 @@
      "total": 1,
      "ttft_median_s": 2.851,
      "ttft_p95_s": 2.851
+    },
+    {
+     "about": "family unsloth/Qwen3.5-27B, 27B params, Q4_K_M, by Jackrong",
+     "candidate": "llamacpp:Qwopus3.5-27B-v3-Q4_K_M",
+     "first_s": 212.115,
+     "median_s": 264.305,
+     "metrics": {
+      "patch_applied": 0.0,
+      "resolved": 0.0
+     },
+     "model": "llamacpp:Qwopus3.5-27B-v3-Q4_K_M",
+     "not_run": "",
+     "pass_rate": 0.0,
+     "passed": 0,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-10-26T07:02:42Z",
+     "served_as": "",
+     "source": "https://huggingface.co/Jackrong/Qwopus3.5-27B-v3-GGUF",
+     "total": 4,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-10-25T07:00:37Z",
-   "runs": 1
+   "run_at": "2026-10-26T07:02:42Z",
+   "runs": 3
   },
   {
    "cases": 24,
@@ -3018,7 +3038,7 @@
    "runs": 3
   }
  ],
- "generated_at": "2026-10-25T18:04:05Z",
+ "generated_at": "2026-10-26T07:02:51Z",
  "knobs": [
   {
    "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
@@ -3088,15 +3108,11 @@
   "adopted_at": "2026-10-24T04:12:16Z",
   "adopted_how": "measured",
   "incumbent": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
-  "measured_at": "2026-10-25T07:00:37Z",
-  "median_s": 20.917,
+  "measured_at": "2026-10-26T07:02:42Z",
+  "median_s": 191.666,
   "metrics": {
-   "completion_tokens": 2875.0,
    "patch_applied": 0.0,
-   "resolved": 0.0,
-   "test_s": 0.0,
-   "tokens_per_s": 138.4,
-   "wall_s": 20.917
+   "resolved": 0.0
   },
   "not_run": "",
   "parked": "",
