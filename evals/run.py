@@ -1322,8 +1322,18 @@ def _plan(args) -> tuple[str, list, list]:
     from harness import holdout
     side = "dev" if args.screen else (getattr(args, "split", "") or "all")
     chosen = fix_sized(screen_subset(sized(load_selected(args), args), args), args)
-    return side, chosen, expand_cases(screen_pool(chosen) if args.screen
-                                      else holdout.only(chosen, side), args.repeat)
+    pool = screen_pool(chosen) if args.screen else holdout.only(chosen, side)
+    ran = rows_per_case(pool, args.repeat)
+    if ran != args.repeat:
+        print(f"--repeat {args.repeat} ignored: {args.modality} is deterministic, so each case runs once and the "
+              f"receipt says repeat {ran} (#1272)", file=sys.stderr)
+        args.repeat = ran
+    return side, chosen, expand_cases(pool, args.repeat)
+
+
+def rows_per_case(cases: list[Case], repeat: int) -> int:
+    """The rows each case gets at `repeat`: `repeat` when expand_cases repeats any of them, else 1. #1272."""
+    return repeat if repeat < 2 or any(c.modality in STOCHASTIC_MODALITIES for c in cases) else 1
 
 
 def _gateway_name(candidate: str) -> str:

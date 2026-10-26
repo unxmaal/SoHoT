@@ -143,10 +143,10 @@ def test_a_model_that_fails_below_its_card_size_is_never_recorded_broken():
 
 def test_a_diffusers_video_model_runs_at_its_own_steps_not_the_case_s():
     fox = load_cases(REPO / "evals" / "cases" / "video")[0]
-    assert fox.params.get("steps") == 4
-    argv = engines.resolve("diffusers-video:Lightricks/LTX-Video").argv(fox.prompt, Path("o.mp4"), fox.params)
+    params = {**fox.params, "steps": 4}
+    argv = engines.resolve("diffusers-video:Lightricks/LTX-Video").argv(fox.prompt, Path("o.mp4"), params)
     assert "--steps" not in argv, argv
-    argv = engines.resolve("diffusers-video:Lightricks/LTX-Video,steps=30").argv(fox.prompt, Path("o.mp4"), fox.params)
+    argv = engines.resolve("diffusers-video:Lightricks/LTX-Video,steps=30").argv(fox.prompt, Path("o.mp4"), params)
     assert argv[argv.index("--steps") + 1] == "30", argv
 
 

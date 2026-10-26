@@ -33,6 +33,14 @@ KNOBS = [
             "0 is #708's cut. Store 2026-10-25: a correct heavier model of an engine runs 6-20x the lighter ones "
             "(diffusers prxpixel-t2i 63-74 s graded vs 2-5 s, nimble 9B-v2 79.8 s vs 12.9 s), and no engine row was "
             "ever a TIMEOUT, so one rerun costs a wedged candidate one ceiling and never changed a stored row (#1256)"),
+    _k("h3_steps", ["harness/engines.py:H3_STEPS"], [4, 8, 20],
+       note="denoising passes h3 runs when neither the spec nor the case names them; it moved off fox-run.yaml, where "
+            "it read as part of the task. h3.c's own default is 20; the Studio ran fox-run (256x256x22) at 4 in "
+            "439.6 s, so 20 would cost the video exam about 5x (#735)"),
 ]
 
 NOT_GATING: dict = {}
+
+NEVER_CUTS = {
+    "harness/engines.py:H3_STEPS": "a sampler setting h3 is passed when nothing names one; it stops nothing (#735)",
+}
