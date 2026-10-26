@@ -51,9 +51,11 @@ def finding(**kw) -> dict:
 
 def plain(argv, work, timeout):
     """run_sandboxed's contract without the macOS sandbox, so the gate runs on every platform."""
+    # run_sandboxed gives the child a clean env; Linux CI's PYTEST_ADDOPTS --cov would print its home path. #1310.
+    env = {k: v for k, v in os.environ.items() if k != "PYTEST_ADDOPTS"}
     try:
         p = subprocess.run(argv, cwd=work, capture_output=True, text=True, timeout=timeout,
-                           env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"})
+                           env={**env, "PYTHONDONTWRITEBYTECODE": "1"})
     except subprocess.TimeoutExpired as exc:
         return -9, str(exc.stdout or ""), True
     return p.returncode, (p.stdout + p.stderr)[-2000:], False
