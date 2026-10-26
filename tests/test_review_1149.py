@@ -51,9 +51,11 @@ def finding(**kw) -> dict:
 
 def plain(argv, work, timeout):
     """run_sandboxed's contract without the macOS sandbox, so the gate runs on every platform."""
+    # run_sandboxed gives the child a clean env; Linux CI's PYTEST_ADDOPTS --cov would print its home path. #1310.
+    env = {k: v for k, v in os.environ.items() if k != "PYTEST_ADDOPTS"}
     try:
         p = subprocess.run(argv, cwd=work, capture_output=True, text=True, timeout=timeout,
-                           env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"})
+                           env={**env, "PYTHONDONTWRITEBYTECODE": "1"})
     except subprocess.TimeoutExpired as exc:
         return -9, str(exc.stdout or ""), True
     return p.returncode, (p.stdout + p.stderr)[-2000:], False
@@ -266,6 +268,21 @@ def test_a_body_that_fails_redaction_is_withheld(tmp_path):
     assert fates(r) == ["withheld"]
     assert "path" in r["candidates"][0]["why"]
     assert gh.created() == []
+
+
+def test_the_review_refuses_to_file_a_body_with_a_registered_name(tmp_path, monkeypatch):
+    from harness import privacy
+    monkeypatch.delenv("LH_PRIVATE_NAMES", raising=False)
+    privacy.register(["Zorblax Quentaro"])
+    # The body already passes redact.detect, which reads registered names; the title did not. #1296.
+    named = finding(title="wait_for never gives up, as zorblax quentaro saw")
+    r, _, gh = go(tmp_path, model=Model(findings=[named]))
+    assert fates(r) == ["withheld"] and "person-name" in r["candidates"][0]["why"]
+    assert gh.created() == []
+    before = len(gh.calls)
+    with pytest.raises(RuntimeError, match="privacy"):
+        review.file_issue(gh, "review: from zorblax quentaro", "a body")
+    assert len(gh.calls) == before
 
 
 def test_the_review_s_own_sha_and_fingerprint_never_withhold_a_body():

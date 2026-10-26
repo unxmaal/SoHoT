@@ -51,6 +51,21 @@ PROBE_C = 0.1
 PROBE_SHUFFLES = 5
 #: L-BFGS iterations of the probe's fit in the hf-task venv.
 FIT_MAX_ITER = 500
+#: New tokens a labeller's reply may take, the same for every engine; hf-task's own default for an image reply.
+REPLY_MAX_TOKENS = 512
+#: Context llama-server is started with: one frame's image tokens, the prompt and a reply.
+LLAMACPP_CTX = 4096
+#: Seconds a private llama-server has to answer its health check after it starts.
+LLAMACPP_START_S = 600
+#: Seconds one frame's reply may take from a private llama-server.
+REQUEST_TIMEOUT_S = 600
+#: Bootstrap draws behind compare's interval on a kappa difference.
+COMPARE_DRAWS = 2000
+#: Coverage of compare's interval.
+COMPARE_LEVEL = 0.95
+#: The labellers a vision candidate may name, and where each may put the model. #1282.
+LABELLERS = ("hf-vlm", "mlx-vlm", "llamacpp-vlm")
+DEVICES = ("gpu", "cpu")
 
 FILM_ID = re.compile(r"^[a-z0-9][a-z0-9-]{0,31}$")
 
@@ -410,14 +425,31 @@ def features_cache(model: str, frames) -> Path:
     return paths.home() / "cache" / "vision" / f"{key}.json"
 
 
-def _finish(frames, answers: dict, candidate: str, out, extra_control=None, reference=False) -> dict:
+def candidate_for(name: str, card=None) -> str:
+    """The labeller spelling for a repo: an MLX conversion to mlx-vlm, a GGUF to llama-server, else transformers. #1282."""
+    from harness import runner_gaps
+    card = card or {}
+    tags = {t.lower() for t in runner_gaps.tags_of(card)}
+    library = str(card.get("library") or card.get("library_name") or "").strip().lower()
+    mtype = runner_gaps.model_type(card)
+    if library == "mlx" or "mlx" in tags:
+        return f"mlx-vlm:{name}"
+    if library == "gguf" or "gguf" in tags:
+        return f"llamacpp-vlm:{name}"
+    if mtype and not runner_gaps.native_in_transformers(mtype) and runner_gaps.mlx_vlm_builds(mtype):
+        return f"mlx-vlm:{name}"
+    return f"hf-vlm:{name}"
+
+
+def _finish(frames, answers: dict, candidate: str, out, extra_control=None, reference=False, knobs=None) -> dict:
     runnable = [f for f in frames if not f.missing]
     rows = [{"film": f.film, "id": f.id, "truth": f.truth, "answer": ss.parse(answers.get(f.id, ""))}
             for f in runnable]
     got = ss.judge(rows, extra_control=extra_control)
     got.update(candidate=candidate, reference=reference, not_run=[f.id for f in frames if f.missing],
                films_n=len({f.film for f in runnable}), generated_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
-    got["knobs"] = {"vision_control_draws": ss.CONTROL_DRAWS, "vision_control_max_kappa": ss.CONTROL_MAX_KAPPA}
+    got["knobs"] = {"vision_control_draws": ss.CONTROL_DRAWS, "vision_control_max_kappa": ss.CONTROL_MAX_KAPPA,
+                    **(knobs or {})}
     if extra_control is not None:
         got["probe_control"] = list(extra_control)
         got["knobs"].update(vision_probe_c=PROBE_C, vision_probe_shuffles=len(extra_control),
@@ -426,19 +458,20 @@ def _finish(frames, answers: dict, candidate: str, out, extra_control=None, refe
     out.mkdir(parents=True, exist_ok=True)
     with (out / "answers.jsonl").open("w", encoding="utf-8") as f:
         for r in rows:
-            f.write(json.dumps({"id": r["id"], "reply": answers.get(r["id"], ""), "answer": r["answer"]}) + "\n")
+            f.write(json.dumps({"id": r["id"], "film": r["film"], "truth": r["truth"],
+                                "reply": answers.get(r["id"], ""), "answer": r["answer"]}) + "\n")
     (out / "score.json").write_text(json.dumps(got, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     got["dir"] = str(out)
     return got
 
 
-def run_exam(frames, label, out, candidate: str) -> dict:
+def run_exam(frames, label, out, candidate: str, knobs=None) -> dict:
     """label(frames) -> one reply per frame; scored, controlled and written to a run directory."""
     runnable = [f for f in frames if not f.missing]
     replies = list(label(runnable)) if runnable else []
     if len(replies) != len(runnable):
         raise ValueError(f"{candidate}: {len(replies)} replies for {len(runnable)} frames")
-    return _finish(frames, {f.id: r for f, r in zip(runnable, replies)}, candidate, out)
+    return _finish(frames, {f.id: r for f, r in zip(runnable, replies)}, candidate, out, knobs=knobs)
 
 
 def probe_predictions(frames, feats: dict, shuffles: int | None = None, seed: int = 1207, fit=None,
