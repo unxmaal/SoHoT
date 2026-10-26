@@ -58,6 +58,7 @@ from harness.commands import screen as screen_cmd
 from harness.commands import store as store_cmd
 from harness.commands import headless as headless_cmd
 from harness.commands import knobs as knobs_cmd
+from harness.commands import measure_order as measure_order_cmd
 from harness.commands import climb as climb_cmd
 from harness.commands import availability as availability_cmd
 from harness.commands import inventory as inventory_cmd
@@ -707,6 +708,7 @@ def build_parser() -> argparse.ArgumentParser:
     avl.set_defaults(func=availability_cmd.cmd_availability)
     headless_cmd.add_parser(sub)
     knobs_cmd.add_parser(sub)
+    measure_order_cmd.add_parser(sub)
     lane_feed_cmd.add_parser(sub)
     craft_cmd.add_parser(sub)
     vision_cmd.add_parser(sub)
