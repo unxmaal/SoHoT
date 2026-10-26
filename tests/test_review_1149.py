@@ -268,6 +268,21 @@ def test_a_body_that_fails_redaction_is_withheld(tmp_path):
     assert gh.created() == []
 
 
+def test_the_review_refuses_to_file_a_body_with_a_registered_name(tmp_path, monkeypatch):
+    from harness import privacy
+    monkeypatch.delenv("LH_PRIVATE_NAMES", raising=False)
+    privacy.register(["Zorblax Quentaro"])
+    # The body already passes redact.detect, which reads registered names; the title did not. #1296.
+    named = finding(title="wait_for never gives up, as zorblax quentaro saw")
+    r, _, gh = go(tmp_path, model=Model(findings=[named]))
+    assert fates(r) == ["withheld"] and "person-name" in r["candidates"][0]["why"]
+    assert gh.created() == []
+    before = len(gh.calls)
+    with pytest.raises(RuntimeError, match="privacy"):
+        review.file_issue(gh, "review: from zorblax quentaro", "a body")
+    assert len(gh.calls) == before
+
+
 def test_the_review_s_own_sha_and_fingerprint_never_withhold_a_body():
     # A 17-digit run inside a SHA reads as an id to redact.detect.
     sha, fp = "abc63273636968742284" + "f" * 20, review.fingerprint("waits.py", "while not ready():")
