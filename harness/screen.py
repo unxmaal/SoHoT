@@ -73,6 +73,8 @@ LANE_CANDIDATES = {
     "claims": ("{model}",),
     # A text candidate as an MCP client of the run book's pinned app. #1209.
     "craft": ("{model}",),
+    # Named engines only, never screened; a model here is a TransNetV2 device. #1208.
+    "shots": ("transnetv2:{model}",),
     "stt": ("stt:{model}",),
     "tts": ("tts:{model}",),
     **{lane: ("{model}",) for lane in lanes.TEXT_SERVED},

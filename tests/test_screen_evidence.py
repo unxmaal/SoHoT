@@ -265,6 +265,8 @@ SAMPLES = {
     "embed": ["embed:BAAI/bge-small-en-v1.5", "embed:BAAI/bge-small-en-v1.5,revision=abc"],
     "pii-regex": ["pii-regex"],
     "hf-pii": ["hf-pii:openai/privacy-filter", "hf-pii:openai/privacy-filter,device=cpu"],
+    "transnetv2": ["transnetv2:cpu", "transnetv2:mps"],
+    "scenedetect": ["scenedetect:adaptive", "scenedetect:content"],
 }
 SAMPLE_SPECS = [s for specs in SAMPLES.values() for s in specs]
 LANE_OF = {"image": "image", "video": "video", "music": "music"}

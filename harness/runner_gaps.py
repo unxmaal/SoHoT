@@ -41,21 +41,23 @@ _STOCK_LEAVES = frozenset({"weight", "bias", "scales", "biases"})
 REMOTE_CODE = "policy:trust_remote_code"
 #: The venv each process engine runs in, under <home>/venvs or the env var its script reads. #1008.
 RUNNER_VENVS = {"diffusers": "diffusers-cuda", "diffusers-video": "diffusers-cuda",
-                "hf-ocr": "hf-task", "rerank": "hf-task", "embed": "hf-task", "hf-pii": "hf-task"}
+                "hf-ocr": "hf-task", "rerank": "hf-task", "embed": "hf-task", "hf-pii": "hf-task",
+                "transnetv2": "shots", "scenedetect": "shots"}
 #: The in-process stt runner (audio.transcribe_whisper); the uv `whisper` group installs it. #1021.
 WHISPER_PACKAGE = "mlx-whisper"
 WHISPER_VENV = "whisper"
 #: Runner venvs uv syncs from this project's lock plus one dependency group when a run first needs them: venv -> group. #1024.
 GROUP_VENVS = {WHISPER_VENV: "whisper"}
 _VENV_ENV = {"diffusers-cuda": "DIFFUSERS_VENV", "hf-task": "HF_TASK_VENV", WHISPER_VENV: "WHISPER_VENV",
-             "nimble": "NIMBLE_VENV", "decider": "DECIDER_VENV"}
+             "nimble": "NIMBLE_VENV", "decider": "DECIDER_VENV", "shots": "SHOTS_VENV"}
 #: Venvs kept at <home>/<name>/venv beside the checkout their script clones, and the env var that moves that home. #1037.
 _CHECKOUT_VENVS = {"nimble": "NIMBLE_HOME", "decider": "DECIDER_HOME"}
 #: The script that builds each process engine's venv and the bash arrays of pins it installs. #1024, #1037.
 VENV_SCRIPTS = {"diffusers-cuda": ("scripts/diffusers-venv.sh", "DIFFUSERS_VENV_PINS", "DIFFUSERS_TORCH"),
                 "hf-task": ("scripts/hf-task-venv.sh", "HF_TASK_PINS", "HF_TASK_TORCH"),
                 "nimble": ("scripts/nimble-venv.sh", "NIMBLE_VENV_PINS"),
-                "decider": ("scripts/decider-venv.sh", "DECIDER_VENV_PINS", "DECIDER_MLX")}
+                "decider": ("scripts/decider-venv.sh", "DECIDER_VENV_PINS", "DECIDER_MLX"),
+                "shots": ("scripts/shots-venv.sh", "SHOTS_PINS", "SHOTS_TORCH")}
 #: The audio server's env: its script's `uv run --no-project --with` pins layered over the checkout's .venv. #1030.
 AUDIO_ENV = "audio-server"
 #: Envs uv builds when their run or service starts, so the deploy declaring a package ends a wait on it.

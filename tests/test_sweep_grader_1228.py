@@ -6,7 +6,7 @@ from tests.test_knob_sweeps import NOW, conn, record, serving  # noqa: F401
 
 GRADERS = {"claims_match_threshold", "claims_min_recall", "craft_geometry_tolerance",
            "craft_render_difference", "runaway_rate", "ocr_max_cer", "stt_max_wer", "tts_max_wer",
-           "contamination_hit"}
+           "contamination_hit", "shots_min_f1", "shots_tolerance"}
 
 
 @pytest.mark.parametrize("knob,lane,limit", [

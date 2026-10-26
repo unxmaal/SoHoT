@@ -86,6 +86,13 @@ TORCHSDE_PIN="torchsde==0.2.6"
 # hf-task: Gemma 3n and timm-backbone vision towers (timm); tiktoken-format tokenizers. #1027.
 TIMM_PIN="timm==1.0.30"
 TIKTOKEN_PIN="tiktoken==0.14.0"
+# The shots lane (#1208), built by scripts/shots-venv.sh: CPU torch off Apple Silicon, TransNetV2 (weights in the wheel), PySceneDetect.
+TORCH_CPU_INDEX="https://download.pytorch.org/whl/cpu"
+TORCH_CPU_PIN="torch==2.6.0+cpu"
+TRANSNETV2_PIN="transnetv2-pytorch==1.0.5"
+SCENEDETECT_PIN="scenedetect==0.7.2"
+OPENCV_PIN="opencv-python==5.0.0.93"
+NUMPY_PIN="numpy==2.5.4"
 
 # The decide lane's nimble engine (#423), built by scripts/nimble-venv.sh. The
 # checkout is pinned by commit; its requirements/mlx.txt and training.txt pins
