@@ -9,5 +9,4 @@ params:
   width: 256
   height: 256
   frames: 22          # h3 clamps anything smaller up to this
-  steps: 4
   seed: 42
