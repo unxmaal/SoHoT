@@ -243,9 +243,9 @@ def test_no_control_label_rests_on_the_stt_lane_701_found_biased():
         assert "mlx-community/whisper-large-v3-mlx" not in {i[0] for i in judge.SHAPES[shape]}, shape
 
 
-def test_the_text_render_case_does_not_call_its_max_cer_measured():
+def test_the_text_render_case_cites_the_floor_its_max_cer_was_measured_against():
     text = (Path(core.__file__).parent / "cases" / "image" / "text-render.yaml").read_text(encoding="utf-8")
-    assert "unmeasured" in text and "#730" in text
+    assert "unmeasured" not in text and "#730" in text and "0 errors" in text
 
 
 # ---- #726 rounding and alpha meet #701's lane metric ----------------------------

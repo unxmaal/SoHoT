@@ -114,9 +114,9 @@ def test_ocr_floor_reads_only_clean_renders(store):
 def test_identical_inputs_rerun_with_a_different_error_count_are_counted_as_rerun_noise():
     items = [_item(0, 10, case="a", run=1), _item(0, 10, case="a", run=2),
              _item(0, 10, case="b", run=1), _item(2, 10, case="b", run=2), _item(1, 10, case="c", run=1)]
-    assert floors.reruns(items) == {"repeated": 2, "differ": 1}
+    assert floors.reruns(items) == {"repeated": 2, "differ": 1, "cases": ["b"]}
     within = [{**_item(0, 10, case="d", run=7), "rep": 0}, {**_item(3, 10, case="d", run=7), "rep": 1}]
-    assert floors.reruns(within) == {"repeated": 1, "differ": 1}
+    assert floors.reruns(within) == {"repeated": 1, "differ": 1, "cases": ["d"]}
 
 
 def test_the_session_gap_lands_in_the_sparsest_band_of_observed_gaps(store):
@@ -227,3 +227,19 @@ def test_a_tts_run_read_back_by_another_ear_stays_out_of_the_default_ears_floor(
     _row(store, named, 0, voice, "t1", metrics=m)
     assert [i["run"] for i in floors.tts_items(store, prompts)] == [1]
     assert len(floors.tts_items(store, prompts, ear=floors.run_ear("{}", json.dumps({voice: "tts:x,ear=whisper"}), voice))) == 2
+
+
+def test_a_default_that_allows_the_same_errors_on_every_measured_length_agrees():
+    word = floors.floor([_item(0, 4, "1-15", f"w{i}") for i in range(10)], share=0.95, min_items=10)
+    assert word["units"] == [4]
+    pick = floors.derived(word["floor"], (0.0, 0.05, 0.1, 0.25))
+    assert pick == 0.0 and floors.agrees(word, pick, 0.1) is True
+    assert floors.agrees(word, pick, 0.25) is False
+    long = floors.floor([_item(0, 20, "18+", f"l{i}") for i in range(10)], share=0.95, min_items=10)
+    assert floors.agrees(long, 0.0, 0.1) is False
+
+
+def test_rerun_noise_names_the_inputs_whose_reruns_differ():
+    items = [_item(1, 14, case="t419", run=588), _item(0, 14, case="t419", run=600),
+             _item(0, 14, case="t1", run=588), _item(0, 14, case="t1", run=600)]
+    assert floors.reruns(items) == {"repeated": 2, "differ": 1, "cases": ["t419"]}

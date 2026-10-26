@@ -91,6 +91,7 @@ def floor(items: list[dict], share: float | None = None, min_items: int | None =
         if big:
             sets.append(q)
     return {"n": sum(s["n"] for s in strata.values()), "strata": strata,
+            "units": sorted({i["units"] for i in items if i["units"]}),
             "floor": round(max(sets), 4) if sets else None,
             "complete": bool(strata) and all(s["sets_floor"] for s in strata.values())}
 
@@ -111,7 +112,8 @@ def reruns(items: list[dict]) -> dict:
         by[i["case"]].add(i["errors"])
         runs[i["case"]].add((i["run"], i.get("rep", 0)))
     repeated = [c for c in by if len(runs[c]) > 1]
-    return {"repeated": len(repeated), "differ": sum(len(by[c]) > 1 for c in repeated)}
+    differ = sorted(c for c in repeated if len(by[c]) > 1)
+    return {"repeated": len(repeated), "differ": len(differ), "cases": differ}
 
 
 def _rows(conn, lane: str, candidate: str, ear: str = ""):
@@ -302,9 +304,16 @@ def status(got: dict, pick) -> str:
     return "above range" if pick is None else "derived"
 
 
+def same_rule(a: float, b: float, units) -> bool:
+    """Whether thresholds a and b allow the same error count on every item length measured."""
+    return all(math.floor(a * u + 1e-9) == math.floor(b * u + 1e-9) for u in units)
+
+
 def agrees(got: dict, pick, now) -> bool:
-    """Whether the knob's default stands: only a complete derivation can say it is wrong."""
-    return status(got, pick) in ("no rows", "provisional") or pick == now
+    """Whether the knob's default stands: only a complete derivation can say it is wrong, and one allowing the same errors agrees."""
+    if status(got, pick) in ("no rows", "provisional") or pick == now:
+        return True
+    return pick is not None and bool(got.get("units")) and same_rule(pick, now, got["units"])
 
 
 def report(conn, refs: dict | None = None, prompts: dict | None = None, cases: dict | None = None,
