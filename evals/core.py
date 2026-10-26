@@ -298,8 +298,9 @@ def _check_claims(artifact, case: Case) -> CheckResult:
             return CheckResult(False, f"engine left no output at {artifact.name}")
         artifact = artifact.read_text(encoding="utf-8")
     a = case.assertions
+    from evals import claims_judge
     return claims_check.check(artifact, case.params["schema"], a.get("reviews") or [],
-                              bool(a.get("expect_empty")))
+                              bool(a.get("expect_empty")), judged=claims_judge.lookup(case.id))
 
 
 def _check_pii(artifact, case: Case) -> CheckResult:
@@ -520,6 +521,10 @@ METRIC_DIRECTION = {
     "claims_empty_rate": "higher",
     "claims_emitted": "neutral",
     "claims_judge_calibrated": "neutral",
+    "claims_judged_good": "neutral",
+    "claims_judged_not_useful": "neutral",
+    "claims_judged_bad": "lower",
+    "claims_unjudged": "neutral",
     "claims_matcher_version": "neutral",
     "claims_empty_kept": "higher",
     "claims_empty_cases": "neutral",
