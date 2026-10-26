@@ -122,7 +122,11 @@ def gateway_ask(base: str, post=None, max_tokens: int = MAX_TOKENS):
                  timeout=600)
         r.raise_for_status()
         choice = (r.json().get("choices") or [{}])[0]
-        text = _THINK.sub("", (choice.get("message") or {}).get("content") or "").strip()
+        text = (choice.get("message") or {}).get("content") or ""
+        # A template that opens the think block itself leaves only its close in the reply. #727.
+        if "</think>" in text and "<think>" not in text:
+            text = text.rsplit("</think>", 1)[1]
+        text = _THINK.sub("", text).strip()
         if not text:
             raise Cut("no answer in content", max_tokens)
         # Only the leading TARGET_WORDS are scored, so a capped reply that reaches them carries the whole signal.

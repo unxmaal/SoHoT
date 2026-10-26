@@ -139,3 +139,21 @@ def test_the_calibration_knobs_carry_a_unit_a_range_and_their_evidence():
         k = knobs.KNOBS[name]
         assert k.unit and k.default() in k.values and "#727" in k.note, name
     assert knobs.KNOBS["contamination_hit"].grades is True
+
+
+def test_a_reply_whose_template_opened_the_think_block_is_scored_after_its_close():
+    class R:
+        def __init__(self, content):
+            self.content = content
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"choices": [{"message": {"content": self.content}, "finish_reason": "stop"}]}
+
+    reply = "is a singular trait, and I guess so\n</think>\n\nis the very continuation of the source text here now"
+    ask = ct.gateway_ask("http://gw", post=lambda *a, **k: R(reply))
+    assert ask("m", "p") == "is the very continuation of the source text here now"
+    ask = ct.gateway_ask("http://gw", post=lambda *a, **k: R("<think>x</think>kept"))
+    assert ask("m", "p") == "kept"
