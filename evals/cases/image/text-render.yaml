@@ -12,5 +12,5 @@ params:
   seed: 42
 assert:
   text: OPEN
-  # An unmeasured placeholder: four letters allow no character error; the Vision noise floor is #730.
+  # Vision read 10 planted clean renders of OPEN with 0 errors (#730); any value under 0.25 allows none.
   max_cer: 0.1
