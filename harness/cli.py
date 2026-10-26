@@ -628,7 +628,7 @@ def build_parser() -> argparse.ArgumentParser:
     itm.set_defaults(func=inventory_cmd.cmd_time)
     iwt = invsub.add_parser("weight", help="each case, test, launchd unit, knob and check scored on its cost against "
                             "the work it has done: a ranked cut list for approval that removes nothing (#1148)")
-    iwt.add_argument("--kind", action="append", choices=("cases", "tests", "units", "knobs", "checks"),
+    iwt.add_argument("--kind", action="append", choices=("cases", "tests", "units", "knobs", "checks", "agents"),
                      help="only this kind (repeatable; default: all)")
     iwt.add_argument("--since", default="", help="window start: 30d, or a date (default: this machine's first day)")
     iwt.add_argument("--min-models", type=int, default=None, metavar="N",

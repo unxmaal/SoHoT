@@ -17,7 +17,7 @@ from pathlib import Path
 
 from harness import paths
 
-KINDS = ("cases", "tests", "units", "knobs", "checks")
+KINDS = ("cases", "tests", "units", "knobs", "checks", "agents")
 #: Candidates that must have sat a case on the current exam before its discrimination is judged.
 MIN_MODELS = 3
 #: The slowest share of tests a never-failed test must sit in to be flagged.
@@ -643,6 +643,30 @@ def score_checks(checks: dict, failures: list[dict], ci_total: int, days: float,
     return out
 
 
+def _pct(part: int, whole: int) -> str:
+    return f"{100 * part / whole:.1f}%" if whole else "--"
+
+
+def score_agents(subagents: list[dict]) -> list[dict]:
+    """One row per agent type: input tokens, and what its subagents read and re-read before their first edit."""
+    by: dict[str, dict] = defaultdict(lambda: defaultdict(int))
+    for s in subagents:
+        t = by[s["type"]]
+        t["subagents"] += 1
+        t["never_edited"] += not s["edited"]
+        for f in ("input", "read", "reread", "carried", "carried_reread"):
+            t[f] += s[f]
+    out = []
+    for name, t in sorted(by.items(), key=lambda kv: (-kv[1]["carried_reread"], kv[0])):
+        work = (f"{t['subagents']} subagent(s), {t['never_edited']} never edited; before the first edit read "
+                f"{t['read']} tokens, re-read {t['reread']}; carried into later turns {t['carried']} input tokens "
+                f"({_pct(t['carried'], t['input'])}), re-reads {t['carried_reread']} "
+                f"({_pct(t['carried_reread'], t['input'])})")
+        out.append(_row("agents", name, t["input"], "input tokens", None, work,
+                        info="agent tokens are not a part: nothing here is cut (#1260)", **dict(t)))
+    return out
+
+
 def build(src: dict, min_models: int = MIN_MODELS, slow_share: float = SLOW_SHARE) -> dict:
     """Each kind's rows, ranked by cost x (1 - evidence of work), load-bearing ones last."""
     now, since = src["now"], src["since"]
@@ -660,9 +684,12 @@ def build(src: dict, min_models: int = MIN_MODELS, slow_share: float = SLOW_SHAR
     if "checks" in src:
         kinds["checks"] = score_checks(src["checks"], failures, len(ci.get("runs", [])), (now - since) / DAY,
                                        src.get("watchdog_wakes"))
+    if "agents" in src:
+        kinds["agents"] = score_agents(src["agents"]["subagents"])
     out = {}
     for kind, rows in kinds.items():
-        rows.sort(key=lambda r: (r["load_bearing"], not r["flagged"], -r["rank"], r["name"]))
+        if kind != "agents":
+            rows.sort(key=lambda r: (r["load_bearing"], not r["flagged"], -r["rank"], r["name"]))
         out[kind] = {"rows": rows, "flagged": sum(r["flagged"] for r in rows),
                      "load_bearing": sum(r["load_bearing"] for r in rows), "total": len(rows)}
     return {"window": {"since": since, "now": now}, "kinds": out, "unavailable": src.get("unavailable", {}),
@@ -712,6 +739,11 @@ def gather(conn, home: Path, now: float, since: float | None = None, kinds=KINDS
         src["knobs"] = gather_knobs(conn, commits)
     if "checks" in kinds:
         src["checks"] = gather_checks(conn, home, root, commits)
+    if "agents" in kinds:
+        from harness import agent_weight
+        got = guard("agents", lambda: agent_weight.scan(None, src["since"], now))
+        if got is not None:
+            src["agents"] = {"subagents": got}
     return src
 
 
@@ -736,6 +768,14 @@ def render(L: dict, top: int = 15, markdown: bool = False) -> str:
     for name, why in (L.get("unavailable") or {}).items():
         out.append(f"unavailable: {name}: {why}")
     for kind, k in L["kinds"].items():
+        if kind == "agents":
+            n = sum(r["subagents"] for r in k["rows"])
+            tot = {f: sum(r[f] for r in k["rows"]) for f in ("input", "reread", "carried_reread")}
+            out += ["", f"agents: {n} subagent(s), {tot['input']} input tokens; re-read before the first edit "
+                        f"{tot['reread']} tokens, carried into {tot['carried_reread']} input tokens "
+                        f"({_pct(tot['carried_reread'], tot['input'])}); tokens are characters // 4 (#1260)"]
+            out += [f"  {r['name']}: {r['work']}" for r in k["rows"][:top]]
+            continue
         flagged = [r for r in k["rows"] if r["flagged"]]
         title = f"{kind}: {k['flagged']} flagged, {k['load_bearing']} load-bearing, of {k['total']}"
         if markdown:
