@@ -5,7 +5,8 @@ from harness import knobs, sweeps
 from tests.test_knob_sweeps import NOW, conn, record, serving  # noqa: F401
 
 GRADERS = {"claims_match_threshold", "claims_min_recall", "craft_geometry_tolerance",
-           "craft_render_difference", "runaway_rate", "ocr_max_cer", "stt_max_wer", "tts_max_wer"}
+           "craft_render_difference", "runaway_rate", "ocr_max_cer", "stt_max_wer", "tts_max_wer",
+           "contamination_hit"}
 
 
 @pytest.mark.parametrize("knob,lane,limit", [

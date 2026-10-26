@@ -756,6 +756,11 @@ def build_parser() -> argparse.ArgumentParser:
     bch.add_argument("--probe", nargs="+", metavar="MODEL",
                      help="prefix-completion contamination probe of the lane's cases (default decide)")
     bch.add_argument("--limit", type=int, default=0, help="with --probe, at most this many cases")
+    bch.add_argument("--passages", action="store_true",
+                     help="with --probe, probe the calibration passages (evals/contamination) instead of a lane (#727)")
+    bch.add_argument("--calibrate", action="store_true",
+                     help="derive contamination_hit from the stored calibration probes, read-only (#727)")
+    bch.add_argument("--db", default="", help="with --calibrate, the store (default: this home's discovery.db)")
     bch.add_argument("--gateway", default=completion.gateway_url())
     bch.set_defaults(func=benchmarks_cmd.cmd_benchmarks)
     cas = sub.add_parser("cases", help="re-run a case importer, or its negative control (#603)")
