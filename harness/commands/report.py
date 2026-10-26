@@ -44,10 +44,11 @@ def cmd_report(a) -> int:
         if l.get("parked"):
             print(f"  {l['lane']} is parked: {l['parked']}; "
                   f"revisit when {l['parked_until']}")
-    saturated = [l["lane"] for l in lanes if l.get("saturated")]
+    saturated = [f"{l['lane']} ({report.saturation_text(l)})" for l in lanes if l.get("saturated")]
     if saturated:
-        print(f"  {len(saturated)} lane(s) saturated: the incumbent passes "
-              f">= 95% of holdout, so its cases cannot separate candidates: "
+        from harness import holdout
+        print(f"  {len(saturated)} lane(s) saturated: the incumbent's holdout score on the lane's metric is "
+              f"within {1 - holdout.SATURATED:.2f} of perfect, so its cases cannot separate candidates: "
               f"{', '.join(saturated)}")
     for f in state.get("failed_switches") or []:
         print(f"  sohot-{f['lane']} did not switch to {f['new_spec']} after "

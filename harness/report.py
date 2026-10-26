@@ -76,7 +76,8 @@ def lanes_state(conn, now: float | None = None) -> list[dict]:
         ran = runs.newest(conn, lane=lane, machines=mine,
                           tier=runs.MEASURE, candidate_id=cid) if cid else None
         here = runs.row_for(conn, ran["id"], cid) if ran else {}
-        held_rate = _holdout_rate(conn, lane, ran["id"], cid) if ran else None
+        held_rate, held_score = _holdout_scores(conn, lane, ran["id"], cid) if ran else (None, None)
+        held_metric = winners.PRIMARY.get(lane, PASS_RATE)
         age = runs.age_days(newest, now)
         last = reverify._latest(conn, lane, cid, settled=True) if cid else None
         out.append({
@@ -112,19 +113,41 @@ def lanes_state(conn, now: float | None = None) -> list[dict]:
                           and not L.parked(lane)[0]),
             # Its cases can no longer separate candidates; feeds #491. #479.
             "holdout_pass_rate": held_rate,
-            "saturated": holdout.saturated(held_rate),
+            # The lane's rank key over holdout, so the tag and the rank read one number. #1267.
+            "holdout_metric": held_metric,
+            "holdout_score": held_score,
+            "saturated": holdout.saturated(held_score, winners.PRIMARY.get(lane, "")),
             "reverify": last or {},
             "flagged": lane in flagged,
         })
     return out
 
 
-def _holdout_rate(conn, lane: str, run_id: int, cid) -> float | None:
-    """The served candidate's pass rate over the lane's holdout in one run."""
-    from harness import holdout, runs
-    split = holdout.for_lane(lane)
-    mine = holdout.rows_on(runs.rows(conn, run_id, cid), split, "holdout")
-    return round(sum(r["passed"] for r in mine) / len(mine), 3) if mine else None
+#: What a lane outside winners.PRIMARY ranks on first: its judged pass rate. #1267.
+PASS_RATE = "pass_rate"
+
+
+def _holdout_scores(conn, lane: str, run_id: int, cid) -> tuple[float | None, float | None]:
+    """(exact pass rate, winners.primary unsigned) over holdout; the score is None where the metric misses a judged row. #1267."""
+    from evals.core import direction_of
+    from harness import holdout, runs, winners
+    mine = holdout.rows_on(runs.rows(conn, run_id, cid), holdout.for_lane(lane), "holdout")
+    if not mine:
+        return None, None
+    rate = round(sum(r["passed"] for r in mine) / len(mine), 3)
+    has, covered, value = winners.primary(next(iter(runs.summarize(mine).values())), lane)
+    if not has or covered < 1.0:
+        return rate, None
+    metric = winners.PRIMARY.get(lane, "")
+    return rate, round(-value if metric and direction_of(metric) == "lower" else value, 3)
+
+
+def saturation_text(lane: dict) -> str:
+    """The metric and holdout score a lane is tagged saturated on; a stored state from before #1267 names its pass rate."""
+    if "holdout_score" not in lane:
+        return f"{PASS_RATE} {lane.get('holdout_pass_rate') or 0.0:.3f}"
+    score = lane.get("holdout_score")
+    return f"{lane.get('holdout_metric') or PASS_RATE} {'--' if score is None else f'{score:.3f}'}"
 
 
 def _model(spec: str) -> str:
@@ -362,7 +385,7 @@ def _lane_rows(lanes, changed) -> str:
         if l.get("refused"):
             tags.append(f'<span class="tag bad">{_esc(l["refused"])}</span>')
         if l.get("saturated"):
-            tags.append('<span class="tag warn">saturated</span>')
+            tags.append(f'<span class="tag warn">saturated: {_esc(saturation_text(l))}</span>')
         if l.get("flagged"):
             rv = l.get("reverify") or {}
             tags.append(f'<span class="tag bad" title="{_esc(rv.get("detail", ""))}">'

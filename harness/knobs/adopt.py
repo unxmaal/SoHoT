@@ -31,7 +31,7 @@ KNOBS = [
     _k("holdout_family_share", ["harness/holdout.py:FAMILY_SHARE"], [0.34, 0.5, 0.67],
        note="largest share of a capped lane's holdout one case family holds; the excess goes to dev (#671)"),
     _k("holdout_saturated", ["harness/holdout.py:SATURATED"], [0.9, 0.95, 0.99],
-       note="holdout pass share at or above which an incumbent leaves nothing to separate and reads as saturated (#479)"),
+       note="holdout score on the lane's rank key (winners.primary) at or above which an incumbent reads as saturated; a lower-is-better metric at or below 1 minus it (#479, #1267)"),
     _k("human_enough", ["harness/human.py:ENOUGH"], [1, 3, 5],
        note="answers a pairing needs before a person's lane verdict counts; diffusion lanes vary at a pinned seed (RULE #280, #274)"),
     _k("incumbent_reuse_min_draws", ["harness/reuse.py:MIN_DRAWS"], [1, 2, 3],
