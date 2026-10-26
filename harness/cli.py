@@ -460,6 +460,18 @@ def build_parser() -> argparse.ArgumentParser:
     f.add_argument("--day", action="store_true",
                    help="the daytime job: as many downloads as the next night can screen, beside no sweep, "
                         "rate-capped in the capped hours; off unless LH_DAY_FETCH=1 (#1084)")
+    f.add_argument("--replay", type=float, default=None, metavar="DAYS",
+                   help="replay the last DAYS of fetch runs from their verdicts, with and without the pass-over term (#1288)")
+    f.add_argument("--passed-over", type=float, default=None, dest="passed_over",
+                   help="with --replay, the pass-over term per day instead of the fetch_passed_over knob")
+    f.add_argument("--passed-over-max", type=float, default=None, dest="passed_over_max",
+                   help="with --replay, its ceiling instead of the fetch_passed_over_max knob")
+    f.add_argument("--project", type=int, default=None, metavar="NIGHTS",
+                   help="with --replay, also run today's queue forward NIGHTS one-run nights at --budget-gib")
+    f.add_argument("--arrivals", type=int, default=0,
+                   help="with --project, fresh clones of queue rows that arrive each night")
+    f.add_argument("--watch", action="append", default=[],
+                   help="with --project, a row whose fetch night to print; default the five longest passed over")
     f.set_defaults(func=screen_cmd.cmd_fetch)
 
     rep = sub.add_parser(
