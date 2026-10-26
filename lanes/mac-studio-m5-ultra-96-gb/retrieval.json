@@ -40,8 +40,8 @@
   },
   {
    "candidate": "rerank:cross-encoder/ettin-reranker-1b-v1",
-   "decided_at": "2026-10-25T03:11:29Z",
-   "detail": "3.8 GiB would take this run past its 40 GiB budget (39.2 GiB already fetched)",
+   "decided_at": "2026-10-26T01:06:27Z",
+   "detail": "fits: smallest variant model.safetensors: 3.8 GiB of 1 weight file",
    "exam": {
     "about": "1B params",
     "candidate": "rerank/ettin-reranker-1b-v1",
@@ -68,12 +68,12 @@
    },
    "outcome": "queued",
    "proposal": "cross-encoder/ettin-reranker-1b-v1",
-   "reason": "limit",
+   "reason": "candidate",
    "receipt_key": "rerank/ettin-reranker-1b-v1",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "fetch",
+   "tier": "inspect",
    "until": ""
   }
  ],
@@ -198,7 +198,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-10-25T18:04:05Z",
+ "generated_at": "2026-10-26T07:02:50Z",
  "knobs": [],
  "lane": {
   "cases": 594,
