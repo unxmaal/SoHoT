@@ -66,6 +66,7 @@ from harness.commands import sweep_check as sweep_check_cmd
 from harness.commands import otel as otel_cmd
 from harness.commands import usage as usage_cmd
 from harness.commands import canary as canary_cmd
+from harness.commands import review as review_cmd
 from harness.commands import claude_news as claude_news_cmd
 from harness.commands import delegated as delegated_cmd
 from harness.commands import volume as volume_cmd
@@ -568,6 +569,19 @@ def build_parser() -> argparse.ArgumentParser:
     can.add_argument("--lane", default="", help="spend: the lane")
     can.add_argument("--top", type=int, default=1, help="spend: candidates carried the whole way")
     can.set_defaults(func=canary_cmd.cmd_canary)
+    rev = sub.add_parser("review", help="the weekly adversarial review: headless Claude Code finds defects, a "
+                         "sandboxed reproduction and a refuter verify them, open and recent issues dedup (#1149)")
+    rev.add_argument("review_cmd", nargs="?", choices=("run", "stats", "off", "on"), default="run",
+                     help="run (default) reviews origin/main; stats is each dimension's precision; off and on "
+                          "are the kill switch")
+    rev.add_argument("--file", action="store_true",
+                     help="file the verified findings, when LH_REVIEW_FILE=1 too; without both it is a dry run")
+    rev.add_argument("--fixture", choices=("planted", "clean"), default="",
+                     help="review a throwaway repo with a planted unbounded wait, or its fixed twin, as a dry run")
+    rev.add_argument("--dimension", action="append", default=[], help="only this dimension (repeatable)")
+    rev.add_argument("--wait-h", type=float, default=None,
+                     help="how long to wait for the discovery loop to finish first")
+    rev.set_defaults(func=review_cmd.cmd_review)
     cn = sub.add_parser("claude-news", help="Claude Code changelog entries newer than the last "
                         "version seen, relevant to this setup first (#866)")
     cn.add_argument("--since", default="", help="digest versions above this one instead of the recorded one")
