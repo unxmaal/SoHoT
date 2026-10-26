@@ -1,0 +1,19 @@
+id: staging-lamp-above-table
+modality: image
+prompt: A single hanging pendant lamp above a small round table in an empty room.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      lamp: a lamp
+      table: a table
+    require:
+    - type: count
+      object: lamp
+      n: 1
+    - type: above
+      object: lamp
+      over: table

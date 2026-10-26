@@ -1,0 +1,22 @@
+id: staging-lit-candle-right
+modality: image
+prompt: A single lit candle on the right side of a dark wooden table.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      candle: a candle
+    require:
+    - type: attribute
+      object: candle
+      is: a lit candle
+      not: an unlit candle
+    - type: side
+      object: candle
+      side: right
+    - type: count
+      object: candle
+      n: 1

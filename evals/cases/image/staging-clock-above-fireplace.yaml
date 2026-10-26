@@ -1,0 +1,22 @@
+id: staging-clock-above-fireplace
+modality: image
+prompt: A round clock on the wall above a stone fireplace.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      clock: a clock
+      fireplace: a fireplace
+    require:
+    - type: above
+      object: clock
+      over: fireplace
+    - type: bigger
+      object: fireplace
+      than: clock
+    - type: count
+      object: clock
+      n: 1

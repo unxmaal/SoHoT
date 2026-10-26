@@ -1,0 +1,20 @@
+id: staging-footprints-to-cabin
+modality: image
+prompt: Human footprints in fresh snow leading toward a single wooden cabin.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      footprint: a footprint
+      cabin: a cabin
+    require:
+    - type: attribute
+      object: footprint
+      is: a human footprint
+      not: an animal paw print
+    - type: count
+      object: cabin
+      n: 1

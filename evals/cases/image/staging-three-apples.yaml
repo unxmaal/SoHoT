@@ -1,0 +1,22 @@
+id: staging-three-apples
+modality: image
+prompt: Exactly three red apples in a row on a white plate, seen from above.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      apple: an apple
+      plate: a plate
+    require:
+    - type: count
+      object: apple
+      n: 3
+    - type: count
+      object: plate
+      n: 1
+    - type: bigger
+      object: plate
+      than: apple

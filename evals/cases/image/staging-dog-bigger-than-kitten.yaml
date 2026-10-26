@@ -1,0 +1,22 @@
+id: staging-dog-bigger-than-kitten
+modality: image
+prompt: A large dog sitting next to a small kitten on a lawn, the dog much bigger than the kitten.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      dog: a dog
+      cat: a cat
+    require:
+    - type: bigger
+      object: dog
+      than: cat
+    - type: count
+      object: dog
+      n: 1
+    - type: count
+      object: cat
+      n: 1

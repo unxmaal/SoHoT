@@ -1,0 +1,23 @@
+id: staging-open-window-cat
+modality: image
+prompt: An open window with white curtains in a brick wall, and one cat sitting on the sill.
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      window: a window
+      cat: a cat
+    require:
+    - type: attribute
+      object: window
+      is: an open window
+      not: a closed window
+    - type: count
+      object: cat
+      n: 1
+    - type: bigger
+      object: window
+      than: cat
