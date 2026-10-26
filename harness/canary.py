@@ -55,6 +55,99 @@ PLANTS = (
 )
 
 
+@dataclass(frozen=True)
+class Replay:
+    """A stored known pair replayed through adopt.decide and confirm: no GPU, no isolated home, no store write. #1294."""
+    name: str
+    lane: str
+    #: Receipt keys, as the results table names the candidates.
+    incumbent: str
+    challenger: str
+    #: (the incumbent's measure run, the challenger's); the same run when both ran in one.
+    runs: tuple
+    #: (outcome, reason) the gate must reach; an empty reason is not checked.
+    expect: tuple
+
+
+REPLAYS = (
+    # Opus against Ornith on one shared exam, scores in the issue. #1294.
+    Replay("repo-known-better", "repo", "llamacpp:Ornith-1.5-35B-Q4_K_M", "claude-code:claude-opus-5-5",
+           (571, 572), ("measured", "")),
+    Replay("repo-known-worse", "repo", "claude-code:claude-opus-5-5", "llamacpp:Ornith-1.5-35B-Q4_K_M",
+           (572, 571), ("declined", "candidate")),
+    # Ornith against the smallest LFM in one run, the newest code run the gate separates both ways.
+    Replay("code-known-better", "code", "LiquidAI/LFM2.5-350M", "llamacpp:Ornith-1.5-35B-Q4_K_M",
+           (378, 378), ("measured", "")),
+    Replay("code-known-worse", "code", "llamacpp:Ornith-1.5-35B-Q4_K_M", "LiquidAI/LFM2.5-350M",
+           (378, 378), ("declined", "candidate")),
+)
+
+
+def _stored_rows(conn, run_id: int, key: str, lane: str) -> list[dict]:
+    return [{"case_id": r[0], "candidate": r[1], "passed": bool(r[2]), "metrics": json.loads(r[3] or "{}"),
+             "seconds": r[4], "peak_kb": r[5], "failure_class": r[6] or "", "repeat_index": r[7]}
+            for r in conn.execute(
+                "SELECT x.case_id, x.candidate, x.passed, x.metrics, x.seconds, x.peak_kb, x.failure_class, "
+                "x.repeat_index FROM results x JOIN runs u ON u.id = x.run_id "
+                "WHERE u.id = ? AND u.lane = ? AND u.tier = 'measure' AND x.candidate = ? ORDER BY x.seq",
+                (int(run_id), lane, key))]
+
+
+def _replay_invalid(conn, r: Replay, rows: list[dict], split) -> str:
+    """Why the stored data no longer holds the plant's known answer, else ""; never judged on the gate's answer."""
+    from harness import holdout
+    for run_id, key in zip(r.runs, (r.incumbent, r.challenger)):
+        if not any(x["candidate"] == key for x in rows):
+            return f"no rows for {key} in {r.lane} measure run {run_id}"
+    digests = {d for (d,) in conn.execute(
+        f"SELECT cases_digest FROM runs WHERE id IN ({','.join('?' * len(set(r.runs)))})", tuple(set(r.runs)))}
+    if len(digests) != 1 or "" in digests:
+        return f"runs {r.runs[0]} and {r.runs[1]} ran different exams ({', '.join(sorted(digests)) or 'none'})"
+    shared = ({holdout.base_id(x["case_id"]) for x in rows if x["candidate"] == r.incumbent}
+              & {holdout.base_id(x["case_id"]) for x in rows if x["candidate"] == r.challenger})
+    on = {side: len(shared & set(getattr(split, side))) for side in ("holdout", "dev")}
+    if on["holdout"] < holdout.MIN_HOLDOUT or on["dev"] < holdout.MIN_DEV:
+        return (f"today's {r.lane} split leaves {on['holdout']} of the stored cases on the holdout and "
+                f"{on['dev']} on dev, under {holdout.MIN_HOLDOUT} and {holdout.MIN_DEV}")
+    return ""
+
+
+def replay(conn, r: Replay, split=None) -> dict:
+    """The adopt gate's answer on the plant's stored rows, as `soh measure` asks it, against the known one."""
+    from harness import adopt, holdout
+    split = holdout.for_lane(r.lane) if split is None else split
+    want, want_reason = r.expect
+    base = {"plant": r.name, "lane": r.lane, "incumbent": r.incumbent, "challenger": r.challenger,
+            "runs": list(r.runs), "expected": [want, adopt.TIER, want_reason], "replay": True, "rcs": []}
+    rows = [x for run_id, key in zip(r.runs, (r.incumbent, r.challenger)) for x in _stored_rows(conn, run_id, key, r.lane)]
+    bad = _replay_invalid(conn, r, rows, split)
+    if bad:
+        return {**base, "observed": {}, "invalid": bad, "ok": False}
+    v = adopt.decide(r.lane, adopt._summary(rows, r.incumbent), adopt._summary(rows, r.challenger), rows,
+                     split=split)
+    v = adopt.confirm(v, rows, split)
+    outcome, reason = adopt.outcome_of(v)
+    got = {"outcome": outcome, "tier": adopt.TIER, "reason": reason, "why": v.why, "id": None}
+    ok = outcome == want and (not want_reason or reason == want_reason)
+    return {**base, "observed": got, "invalid": "", "ok": ok}
+
+
+def replay_all(replays) -> list[dict]:
+    """Every replay on the live store's stored rows, opened read-only."""
+    live = paths.home() / "discovery.db"
+    if not replays:
+        return []
+    if not live.is_file():
+        return [{"plant": r.name, "lane": r.lane, "replay": True, "observed": {}, "rcs": [], "ok": False,
+                 "expected": [*r.expect[:1], "adopt", r.expect[1]], "invalid": f"no store at {live}"}
+                for r in replays]
+    conn = sqlite3.connect(f"file:{live}?mode=ro", uri=True)
+    try:
+        return [replay(conn, r) for r in replays]
+    finally:
+        conn.close()
+
+
 def unsafe(plant: Plant) -> str:
     """Why a plant cannot run in isolation, else "": an adoption in a gateway text lane restarts the live gateway."""
     from harness import gateway
@@ -149,6 +242,8 @@ def leaked(live: Path, names, since: float) -> int:
     if not live.is_file():
         return 0
     names = list(names)
+    if not names:
+        return 0
     conn = sqlite3.connect(f"file:{live}?mode=ro", uri=True)
     try:
         return conn.execute(
@@ -206,26 +301,29 @@ def loop_running() -> bool:
 
 
 def run(plants=PLANTS, run=subprocess.run, now=time.time, sleep=time.sleep, wait_h: float = WAIT_H,
-        say=print) -> dict:
-    """Every plant in its own isolated home, after the live loop finishes; one receipt."""
+        say=print, replays=()) -> dict:
+    """Every replay on stored rows, then every plant in its own isolated home after the live loop finishes; one receipt."""
     from harness import exclusive
     bad = [why for why in map(unsafe, plants) if why]
     if bad:
         raise ValueError("; ".join(bad))
-    deadline = now() + wait_h * 3600
-    while loop_running():
+    first = now()
+    out = replay_all(replays)
+    deadline = first + wait_h * 3600
+    while plants and loop_running():
         if now() >= deadline:
-            return write({"started": now(), "finished": now(), "plants": [], "leaked": 0, "ok": False,
+            return write({"started": first, "finished": now(), "plants": out, "leaked": 0, "ok": False,
                           "skipped": f"the discovery loop was still running after {wait_h:g} h"})
         say("  the discovery loop is running; waiting for it to finish")
         sleep(POLL_S)
     started = now()
     stamp = time.strftime("%Y%m%d-%H%M%S", time.localtime(started))
-    prior, out = latest(), []
-    with exclusive.held("eval", announce=say, deadline_s=PLANT_DEADLINE_S * len(plants)):
-        for plant in plants:
-            out.append(run_plant(plant, receipts() / "homes" / stamp / plant.name, run=run, say=say,
-                                 prior=prior))
+    prior = latest()
+    if plants:
+        with exclusive.held("eval", announce=say, deadline_s=PLANT_DEADLINE_S * len(plants)):
+            for plant in plants:
+                out.append(run_plant(plant, receipts() / "homes" / stamp / plant.name, run=run, say=say,
+                                     prior=prior))
     n = leaked(paths.home() / "discovery.db", [p.challenger for p in plants], started)
     return write({"started": started, "finished": now(), "plants": out, "leaked": n,
                   "ok": bool(out) and all(p["ok"] for p in out) and n == 0})
