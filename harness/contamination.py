@@ -1,6 +1,7 @@
 """Contamination signals: declared training data, a prefix-completion probe, scores without overlap. #470."""
 from __future__ import annotations
 
+import math
 import re
 import time
 from pathlib import Path
@@ -12,6 +13,15 @@ HIT = 0.5
 MAX_TOKENS = 1024
 #: The limit a probe records when the reply ended at MAX_TOKENS or came back empty. #700.
 LIMIT = "contamination_max_tokens"
+#: Share of known-clean passages a calibrated HIT must leave below it, for every probed model. #727.
+CLEAN_SHARE = 0.95
+#: Probed passages each calibration set needs before a model's derivation counts. #727.
+MIN_PASSAGES = 10
+#: Calibration sets: Wikipedia newer than every model, public-domain canon in every crawl, pre-2016 Wikipedia not in SQuAD.
+SETS = ("clean", "canon", "wiki")
+CALIBRATION = "calibration"
+#: The decide family whose sources are SQuAD 2016 Wikipedia contexts.
+SQUAD_FAMILY = "check"
 _THINK = re.compile(r"<think>.*?(</think>|$)", re.S)
 INSTRUCTION = ("Continue the following text exactly as it appears in its original source. "
                "Output only the continuation, with no commentary.\n\n")
@@ -112,7 +122,11 @@ def gateway_ask(base: str, post=None, max_tokens: int = MAX_TOKENS):
                  timeout=600)
         r.raise_for_status()
         choice = (r.json().get("choices") or [{}])[0]
-        text = _THINK.sub("", (choice.get("message") or {}).get("content") or "").strip()
+        text = (choice.get("message") or {}).get("content") or ""
+        # A template that opens the think block itself leaves only its close in the reply. #727.
+        if "</think>" in text and "<think>" not in text:
+            text = text.rsplit("</think>", 1)[1]
+        text = _THINK.sub("", text).strip()
         if not text:
             raise Cut("no answer in content", max_tokens)
         # Only the leading TARGET_WORDS are scored, so a capped reply that reaches them carries the whole signal.
@@ -146,3 +160,71 @@ def with_and_without(conn, lane: str, cases_root: Path) -> list[dict]:
                     "clean": round(sum(clean) / len(clean), 4) if clean else None,
                     "n_clean": len(clean), "overlapping": hot})
     return out
+
+
+def passage_cases(rows) -> list:
+    """Probe-able cases from calibration passages: the id names its set, the text is the source."""
+    from types import SimpleNamespace
+    return [SimpleNamespace(id=r["id"], context=r["text"]) for r in rows]
+
+
+def _quantile(values: list[float], share: float) -> float:
+    v = sorted(values)
+    return v[max(0, math.ceil(share * len(v)) - 1)]
+
+
+def _newest(conn) -> dict:
+    """model -> family -> [overlap], from each (model, lane, case)'s newest hit or miss."""
+    out: dict = {}
+    rows = conn.execute(
+        "SELECT p.model, p.lane, p.family, p.overlap FROM contamination_probes p JOIN "
+        "(SELECT MAX(id) AS id FROM contamination_probes WHERE outcome IN ('hit', 'miss') "
+        "GROUP BY model, lane, case_id) n ON n.id = p.id")
+    for model, lane, fam, got in rows:
+        if lane == CALIBRATION and fam in SETS:
+            key = fam
+        elif fam == SQUAD_FAMILY:
+            key = "squad"
+        else:
+            continue
+        out.setdefault(model, {}).setdefault(key, []).append(float(got or 0.0))
+    return out
+
+
+def _rate(values: list[float], hit) -> float | None:
+    return round(sum(v >= hit for v in values) / len(values), 4) if values and hit is not None else None
+
+
+def calibrate(conn, share: float | None = None, min_passages: int | None = None, values=None) -> dict:
+    """Per model the lowest HIT over its clean passages' `share` quantile, its canon sensitivity, wiki and SQuAD rates; the largest wins."""
+    from harness import knobs
+    share = CLEAN_SHARE if share is None else share
+    min_passages = MIN_PASSAGES if min_passages is None else min_passages
+    values = sorted(values or knobs.KNOBS["contamination_hit"].values)
+    models = []
+    for model, by in sorted(_newest(conn).items()):
+        clean = by.get("clean") or []
+        if not clean:
+            continue
+        q = _quantile(clean, share)
+        pick = next((v for v in values if v > q), None)
+        n = {k: len(by.get(k) or []) for k in (*SETS, "squad")}
+        if any(n[k] < min_passages for k in SETS):
+            status = "provisional"
+        else:
+            status = "derived" if pick is not None else "above range"
+        models.append({"model": model, "n": n, "clean_quantile": q, "derived": pick, "status": status,
+                       "sensitivity": _rate(by.get("canon") or [], pick), "wiki_rate": _rate(by.get("wiki") or [], pick),
+                       "squad_rate": _rate(by.get("squad") or [], pick)})
+    if not models:
+        status = "no rows"
+    elif any(m["status"] == "provisional" for m in models):
+        status = "provisional"
+    elif any(m["status"] == "above range" for m in models):
+        status = "above range"
+    else:
+        status = "derived"
+    picks = [m["derived"] for m in models if m["derived"] is not None]
+    derived = max(picks) if status == "derived" else None
+    return {"models": models, "current": HIT, "derived": derived, "status": status,
+            "agrees": status in ("no rows", "provisional") or derived == HIT}
