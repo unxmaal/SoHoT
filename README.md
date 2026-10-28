@@ -945,7 +945,10 @@ fed only by our verdicts: the lane checker's pass or fail on each eval row, and 
 closed outcome of each delegation. LiteLLM 1.100.0 has no feedback API, so
 `gateway/route_feedback.py` writes those verdicts into the router's cells in
 process. A reply from either arm names the tier it went to in `x-sohot-routed`.
-Each row records `routed_cloud` and `cloud_tokens`.
+Each row records `routed_cloud` and `cloud_tokens`. An arm that can reach
+`cloud-opus` counts against `api_budget` like `cloud-opus` itself. Its cloud-routed
+calls are recorded in `soh api-spend` under the arm's name, and it is refused once
+the budget is spent.
 
     soh route-trial run --lane code --with cloud-opus   # paired holdout run, then the report
     soh route-trial report --lane code [--run ID]

@@ -308,3 +308,36 @@ def test_the_gateway_applies_header_verdicts_and_closed_delegations(monkeypatch)
     assert asyncio.run(rf.poll(now=routes.DELEGATION_POLL_S + 1)) == 1
     assert took == [("d-1", routes.FAIL)]
     assert asyncio.run(rf.poll(now=routes.DELEGATION_POLL_S + 2)) == 0, "polled again inside the interval"
+
+
+SPEND = """model_list:
+  - model_name: sohot-code
+    litellm_params: {model: openai/up, api_base: "http://127.0.0.1:1/v1", api_key: not-needed}
+  - model_name: cloud-opus
+    litellm_params: {model: anthropic/claude-opus-5-5, api_key: os.environ/ANTHROPIC_API_KEY,
+                     input_cost_per_token: 4.0e-06, output_cost_per_token: 2.0e-05}
+"""
+
+
+def _routed_kwargs(routed, cost=0.5):
+    return {"standard_logging_object": {"model_group": "sohot-code-auto", "model": "claude-opus-5-5",
+                                        "startTime": 1000.0, "prompt_tokens": 10, "completion_tokens": 5,
+                                        "response_cost": cost, "request_tags": [], "litellm_call_id": "r-1"},
+            "litellm_params": {"metadata": {"routing_decision": {"routed_model": routed}}}}
+
+
+def test_a_routing_arm_that_can_reach_the_cloud_spends_and_is_refused_like_the_cloud_alias(tmp_path):
+    import yaml
+    from harness import api_spend
+    cfg = tmp_path / "config.yaml"
+    data = yaml.safe_load(SPEND)
+    data["model_list"].append(routes.entry("code", routes.HEURISTIC, "sohot-code"))
+    cfg.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    assert api_spend.gate("sohot-code-auto", config=cfg, budget=1.0) == ""
+    assert api_spend.note(_routed_kwargs("sohot-code"), None, config=cfg) is False, "a local answer costs nothing"
+    assert api_spend.note(_routed_kwargs("cloud-opus", cost=1.5), None, config=cfg) is True
+    conn = ms.connect()
+    assert [tuple(r) for r in conn.execute("SELECT alias, cost_usd FROM api_spend")] == [("sohot-code-auto", 1.5)]
+    conn.close()
+    why = api_spend.gate("sohot-code-auto", config=cfg, budget=1.0)
+    assert "api_budget" in why and why.startswith("sohot-code-auto")
