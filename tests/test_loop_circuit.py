@@ -337,6 +337,9 @@ def test_a_drafted_crossing_climbs_the_same_ladder(world, monkeypatch):
     from harness import family
     from harness import technique_triage as tt
     monkeypatch.setattr(family, "SLOTS", 0)
+    # #1315's gain order would measure the one-call model first and adopt it before the crossing.
+    from harness.commands import loop as loop_cmd
+    monkeypatch.setattr(loop_cmd, "_by_gain", lambda store, rows, want, say=print: rows)
     conn = ms.connect()
     try:
         ms.record(conn, ms.Seen(name="arxiv:2610.00001", source="hf-daily-papers",
