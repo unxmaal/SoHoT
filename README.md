@@ -1033,13 +1033,31 @@ p50, p95, max and the share from results over 2k tokens, per tool or per day.
 When `rtk` is on PATH it adds `rtk gain`'s own savings. A result costs again
 on every later API call of its stream until a compaction, so `--carried` ranks
 tools by those carried tokens (hook context included) and gives each one's
-share of all input tokens.
+share of all input tokens. `--carried --by class` (#1333) says what the
+output was: KB search, Read split by file kind and by whether the stream later
+edits that path, Bash by the command at each pipeline head, plus Claude's own
+blocks (commands, Write bodies, text) carried the same way. `--referenced`
+adds, per KB search, the hits shown and those Claude named later (`#<id>` in
+its text or tool input, or a `get_entry` of that id) with their positions.
 
 ```bash
 soh context --since 2026-10-06 --until 2026-10-13   # before the rtk hook
 soh context --since 2026-10-13 --by day --json
 soh context --since 7d --carried
+soh context --since 7d --carried --by class --referenced
 ```
+
+`soh kb-filter --eval --dir DIR` asks whether a local model can keep only the
+KB search hits a session goes on to reference (#1334). It builds the labelled
+set from transcripts (query, the caller's last text block, the hits shown, the
+ones referenced later), holds out the newest week, and scores the decide and
+extract lanes against a position cut at the same kept tokens and the first two
+hits of each type. It also scores searches with a planted hit whose title is the
+need. Scores are appended per search, so a stopped run resumes. `--no-model`
+reports from what is stored. `--strict` counts a reference only when the kind is
+named beside the id. The filter keeps every hit when in doubt, keeps every hit
+whose id the caller named, and is not wired into any session until the
+held-out gate passes.
 
 `soh ledger` joins cloud and local per day (#826). Cloud is Claude Code's
 input, output and cache tokens from

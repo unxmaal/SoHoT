@@ -71,6 +71,37 @@ def _carried(a, root: Path, source: str, since, until) -> int:
     return 0
 
 
+def _by_class(a, root: Path, since, until) -> int:
+    """`soh context --carried --by class`: which output Claude carries and whether it used it. #1333."""
+    from harness import context_class as cc
+    referenced = getattr(a, "referenced", False)
+    got = cc.carried(root, since=since, until=until, main_only=a.main_only, referenced=referenced)
+    total = got["input"]
+    note("estimated tokens: characters / 4; carried = tokens times the later API calls of the stream "
+         "until a compaction; >=1k = carried by results of at least 1,000 tokens")
+    note(f"{total:,} input tokens over {got['api_calls']:,} API calls in {got['streams']:,} streams; "
+         f"tool output carried {got['carried']:,} ({got['carried'] / total if total else 0:.1%}), "
+         f"Claude's own blocks {got['own_carried']:,}, {got['compactions']} compactions")
+    for kind, title in (("output", "class"), ("own", "Claude's own blocks")):
+        note(f"\n{title:<36} {'results':>8} {'entered':>9} {'carried':>9} {'share':>6} {'>=1k':>9}")
+        for r in (r for r in got["rows"] if r["kind"] == kind):
+            note(f"{r['class'][:36]:<36} {r['results']:>8,} {_k(r['entered']):>9} {_k(r['carried']):>9} "
+                 f"{r['share']:>6.1%} {_k(r['carried_1k']):>9}")
+    reads = got["reads"]
+    note(f"\nReads >=1k: {reads['over_1k']:,}, never edited later {reads['never_edited']:,}; carried by kind: "
+         + ", ".join(f"{k} {_k(v)}" for k, v in sorted(reads["never_edited_carried_1k"].items(),
+                                                        key=lambda kv: -kv[1])))
+    if referenced:
+        kb = got["kb"]
+        note(f"KB searches >=1k: {kb['searches']:,} showing {kb['hits']:,} hits; referenced later "
+             f"{kb['referenced']:,} ({kb['referenced'] / kb['hits'] if kb['hits'] else 0:.1%}); "
+             f"{kb['unreferenced_searches']:,} searches with none; "
+             f"{kb['at_6_or_later'] / kb['referenced'] if kb['referenced'] else 0:.0%} of referenced at position 6+")
+    emit(estimate="chars/4", source="transcripts", by="class", root=str(root), since=since, until=until,
+         main_only=a.main_only, **got)
+    return 0
+
+
 def cmd_context(a) -> int:
     """Estimated tool-result tokens from Claude Code transcripts (chars / 4). #828."""
     from harness import context_report as cr
@@ -86,7 +117,14 @@ def cmd_context(a) -> int:
     root = Path(a.root) if a.root else cr.default_root()
     source = getattr(a, "source", "transcripts")
     if getattr(a, "carried", False):
+        if a.by == "class" and source == "transcripts":
+            return _by_class(a, root, since, until)
         return _carried(a, root, source, since, until)
+    if a.by == "class":
+        why = "--by class measures carried context: add --carried"
+        note(why)
+        emit(False, error=why)
+        return 2
     if source == "otel":
         raw = otel_rows(since, until if until is not None else now)
     else:
