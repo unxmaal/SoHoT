@@ -1033,12 +1033,18 @@ p50, p95, max and the share from results over 2k tokens, per tool or per day.
 When `rtk` is on PATH it adds `rtk gain`'s own savings. A result costs again
 on every later API call of its stream until a compaction, so `--carried` ranks
 tools by those carried tokens (hook context included) and gives each one's
-share of all input tokens.
+share of all input tokens. `--carried --by class` (#1333) says what the
+output was: KB search, Read split by file kind and by whether the stream later
+edits that path, Bash by the command at each pipeline head, plus Claude's own
+blocks (commands, Write bodies, text) carried the same way. `--referenced`
+adds, per KB search, the hits shown and those Claude named later (`#<id>` in
+its text or tool input, or a `get_entry` of that id) with their positions.
 
 ```bash
 soh context --since 2026-10-06 --until 2026-10-13   # before the rtk hook
 soh context --since 2026-10-13 --by day --json
 soh context --since 7d --carried
+soh context --since 7d --carried --by class --referenced
 ```
 
 `soh ledger` joins cloud and local per day (#826). Cloud is Claude Code's

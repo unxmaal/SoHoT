@@ -639,7 +639,8 @@ def build_parser() -> argparse.ArgumentParser:
                          "per tool or day, from Claude Code transcripts (chars/4 estimate)")
     ctx.add_argument("--since", default="7d", help="7d, 12h, or a date such as 2026-10-06")
     ctx.add_argument("--until", default="", help="same forms as --since; default now")
-    ctx.add_argument("--by", choices=("tool", "day", "category"), default="tool")
+    ctx.add_argument("--by", choices=("tool", "day", "category", "class"), default="tool",
+                     help="class (with --carried): what the output was, Read by file kind and edited later (#1333)")
     ctx.add_argument("--source", choices=("transcripts", "otel"), default="transcripts",
                      help="transcripts (chars/4) or the OTel tool_result rows (bytes/4), #868")
     ctx.add_argument("--label", choices=("table", "local"), default="table",
@@ -647,6 +648,8 @@ def build_parser() -> argparse.ArgumentParser:
     ctx.add_argument("--main-only", action="store_true", help="leave out subagent transcripts")
     ctx.add_argument("--carried", action="store_true",
                      help="tokens each result is carried into later API calls, as a share of all input (#828)")
+    ctx.add_argument("--referenced", action="store_true",
+                     help="--by class: per KB search, hits shown and hits Claude referenced later (#1333)")
     ctx.add_argument("--root", default="",
                      help="transcript root (default $SOH_CLAUDE_PROJECTS or ~/.claude/projects)")
     ctx.set_defaults(func=context_cmd.cmd_context)
