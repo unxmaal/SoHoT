@@ -935,6 +935,28 @@ Each node needs `machine:`, its hw_model/os/arch/host fingerprint, which
 node serves is stored under no machine, so `make smoke`, `launchd.sh install` and
 `python -m harness.nodes check` fail that node and `evals.run` warns.
 
+## Routing trial
+
+For code, extract, web and svg, the served config adds two LiteLLM complexity
+routers beside `sohot-<lane>`. Each sends SIMPLE and MEDIUM requests to the lane
+alias and COMPLEX and REASONING requests to `cloud-opus`. `sohot-<lane>-auto`
+classifies with LiteLLM's heuristic. `sohot-<lane>-adaptive` adds LiteLLM's bandit,
+fed only by our verdicts: the lane checker's pass or fail on each eval row, and the
+closed outcome of each delegation. LiteLLM 1.100.0 has no feedback API, so
+`gateway/route_feedback.py` writes those verdicts into the router's cells in
+process. A reply from either arm names the tier it went to in `x-sohot-routed`.
+Each row records `routed_cloud` and `cloud_tokens`.
+
+    soh route-trial run --lane code --with cloud-opus   # paired holdout run, then the report
+    soh route-trial report --lane code [--run ID]
+
+The report gives each arm's pass rate, cut replies, cloud calls, cloud tokens and
+wall time. It then judges the adaptive arm against each other candidate. It adopts
+only when the adaptive arm passes more (paired sign test at the adopt alpha) at
+equal or fewer cloud tokens, or spends fewer cloud tokens and loses no more than
+the lane's adopt effect. Fallbacks are looked up by the alias asked for, so a
+node's fallback does not cover a routed call.
+
 ## Gateway auth
 
 The gateway listens on every interface so other machines on the LAN can use

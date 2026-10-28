@@ -449,6 +449,9 @@ METRIC_DIRECTION = {
     # all: an intelligible clone in the wrong voice scores a perfect 0.
     "speaker_similarity": "higher",
     "tokens_per_s": "higher",
+    # A routing arm's row: whether it went to the cloud alias, and the tokens it spent there. #1338
+    "routed_cloud": "neutral",
+    "cloud_tokens": "lower",
     # How far a track missed the length it was asked for. The only music axis
     # with a direction: it is a request the artifact either honoured or did
     # not, and unlike a tempo estimate it has no prior to be dragged by.

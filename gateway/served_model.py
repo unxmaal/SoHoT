@@ -10,7 +10,7 @@ from functools import lru_cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from harness import models, nodes, serving  # noqa: E402
+from harness import models, nodes, routes, serving  # noqa: E402
 from harness.machine import LOOPBACK  # noqa: E402
 
 try:
@@ -154,6 +154,19 @@ def _answered(response, entry: dict) -> str:
     """The api_base of the deployment that answered: LiteLLM's record, else the entry's own."""
     hidden = getattr(response, "_hidden_params", None) or {}
     return str(hidden.get("api_base") or (entry.get("litellm_params") or {}).get("api_base") or "")
+
+
+def routed_to(data: dict, model: str) -> str:
+    """The tier model a routing arm sent the request to, "" for any other alias or when LiteLLM did not say. #1338."""
+    if not routes.is_router(_entry(model)):
+        return ""
+    for key in ("metadata", "litellm_metadata"):
+        md = data.get(key) or {}
+        decision = md.get("routing_decision") if isinstance(md, dict) else None
+        got = (decision or {}).get("routed_model") if isinstance(decision, dict) else None
+        if got or (isinstance(md, dict) and (got := md.get("adaptive_router_chosen_model"))):
+            return str(got)
+    return ""
 
 
 def _refuse(detail: str):
@@ -306,6 +319,8 @@ class ServedModel(CustomLogger):
     async def async_post_call_response_headers_hook(self, data, user_api_key_dict, response,
                                                     request_headers=None, litellm_call_info=None):
         sent = str(data.get("model") or "")
+        tier = routed_to(data, sent)
+        sent = tier or sent
         asked = sent.removesuffix(nodes.LOCAL_SUFFIX)
         routed = _entry(asked)
         node = routed.get(nodes.NODE_KEY) and serving.bare(_answered(response, _entry(sent))) \
@@ -314,7 +329,7 @@ class ServedModel(CustomLogger):
         answered = asked if node or not _entry(local) else local
         real = resolved({"model": answered})[0]
         alias = asked if real and asked != real else ""
-        headers = {}
+        headers = {routes.ROUTED_HEADER: tier} if tier else {}
         who = serving_machine(answered)
         if who:
             headers["x-sohot-machine"] = who
