@@ -465,11 +465,11 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
     from dataclasses import replace
 
     from evals.run import STOCHASTIC_MODALITIES
-    from harness import adopt, completion, holdout, power
+    from harness import adopt, holdout, power
     from harness import memory_store as ms
 
     split = holdout.for_lane(lane)
-    settings = (completion.budget(lane), ())
+    settings = _settings(lane, inc_spec, spec)
     store = ms.connect()
     try:
         draws, median_s, calls, est = priced(store, lane, inc_spec, spec)
@@ -506,7 +506,7 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
         plan, [rates[c] for c in split.holdout],
         cases_run=every if side == "all" else len(split.holdout), median_s=median_s,
         budget_s=per, explicit=bool(explicit), calls=calls)
-    plan = _with_reuse(plan, lane, inc_spec, est, side)
+    plan = _with_reuse(plan, lane, inc_spec, est, side, spec)
     if est["challenger_source"] not in ("measured", "like incumbent", "bounded") and est["challenger_s"] is not None:
         estimated = "; ".join(x for x in (estimated, f"challenger seconds per call "
                                           f"{est['challenger_s']:.0f}s by {est['challenger_source']}") if x)
@@ -543,10 +543,16 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
     return split, plan
 
 
+def _settings(lane: str, inc_spec: str, spec: str = "") -> tuple[int, tuple]:
+    """(reply budget, ladder) the paired evals.run of `inc_spec` and `spec` asks at, as that run derives it. #1352."""
+    from evals import run
+    return run.run_budget(lane, None, [s for s in (inc_spec, spec) if s]), ()
+
+
 def priced(store, lane: str, inc_spec: str, spec: str):
     """(incumbent draws, mean seconds per call, calls per case, estimate) for one paired run here; the queue order prices with it too. #696, #1315."""
-    from harness import candidates, completion, power, runs
-    settings = (completion.budget(lane), ())
+    from harness import candidates, power, runs
+    settings = _settings(lane, inc_spec, spec)
     machines = runs.here(store)
     draws, inc_s = power.served_profile(store, lane, inc_spec, settings, machines)
     basis = ""
@@ -558,7 +564,7 @@ def priced(store, lane: str, inc_spec: str, spec: str):
     return draws, median_s, calls, est
 
 
-def _with_reuse(plan, lane: str, inc_spec: str, est: dict, side: str):
+def _with_reuse(plan, lane: str, inc_spec: str, est: dict, side: str, spec: str = ""):
     """The plan with the incumbent cells stored draws under its identity cover, priced without them. #1094."""
     from evals import run
     from harness import holdout, reuse
@@ -568,7 +574,7 @@ def _with_reuse(plan, lane: str, inc_spec: str, est: dict, side: str):
     except SystemExit as exc:
         return replace(plan, reuse={"digest": "", "unresolved": [f"cases: {exc}"]})
     on = holdout.only(cases, side)
-    ident = run.content_identity(lane, inc_spec, run.run_budget(lane, None), (), {}, on)
+    ident = run.content_identity(lane, inc_spec, _settings(lane, inc_spec, spec)[0], (), {}, on)
     if not ident["digest"]:
         return replace(plan, reuse={"digest": "", "unresolved": ident["unresolved"]})
     cells = [c.id for c in run.expand_cases(on, plan.repeat)]
@@ -707,9 +713,9 @@ def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False) 
 
 def _held(lane: str, inc_spec: str, spec: str, split, name: str, sweep):
     """(the pairing's live pause if it may resume, the identity a resume needs); a changed exam is reported stale. #813."""
-    from harness import completion, knobs, paused
+    from harness import knobs, paused
     from harness import memory_store as ms
-    ident = paused.identity(lane, inc_spec, (completion.budget(lane), ()), knobs.settings(lane),
+    ident = paused.identity(lane, inc_spec, _settings(lane, inc_spec, spec), knobs.settings(lane),
                             split.version)
     store = ms.connect()
     try:
