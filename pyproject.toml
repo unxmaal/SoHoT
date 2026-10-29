@@ -121,5 +121,5 @@ markers = [
 # The repo root, so `from evals...` resolves without a sys.path hack in every
 # test module.
 pythonpath = ["."]
-# A hung test dumps every thread's stack and names itself instead of running into the job timeout (#712).
-faulthandler_timeout = 180
+# No faulthandler_timeout: its dump can spin forever on CPython 3.12; tests/conftest.py HANG_DUMP_S does it (#1351).
+faulthandler_timeout = 0

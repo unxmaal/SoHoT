@@ -59,8 +59,69 @@ def _without_junitxml(addopts: str) -> str:
     return shlex.join(out)
 
 
+#: Past HANG_DUMP_S a test prints every thread's stack; past HANG_EXIT_S its process exits so xdist names it (#1351).
+HANG_DUMP_S, HANG_EXIT_S = 180.0, 450.0
+_running: dict = {}
+
+
+def _stacks() -> str:
+    import sys
+    import threading
+    import traceback
+    names = {t.ident: t.name for t in threading.enumerate()}
+    return "".join(f"Thread {names.get(ident, ident)}:\n{''.join(traceback.format_stack(frame))}\n"
+                   for ident, frame in sys._current_frames().items())
+
+
+def _hang_check(running: dict, now: float, write, leave) -> None:
+    test = running.get("test")
+    if test is None:
+        return
+    spent, dump_s, exit_s = now - test["began"], HANG_DUMP_S, HANG_EXIT_S
+    if spent >= exit_s:
+        write(f"\n{test['nodeid']} ran {spent:.0f} s, past {exit_s:.0f} s: exiting this test process\n")
+        leave(70)
+    elif spent >= dump_s and not test["dumped"]:
+        test["dumped"] = True
+        write(f"\n{test['nodeid']} has run {spent:.0f} s; every thread's stack:\n{_stacks()}")
+
+
+def _hang_watch() -> None:
+    import os
+    import sys
+    import threading
+    import time
+    # Bound now, so a test that patches time.monotonic or os._exit cannot fire or silence this.
+    clock, leave, tick, put = time.monotonic, os._exit, threading.Event(), os.write
+    # A copy of stderr taken before any test's capture, as pytest's faulthandler plugin does.
+    fd = os.dup(sys.__stderr__.fileno())
+
+    def write(text):
+        put(fd, text.encode("utf-8", "replace"))
+
+    def loop():
+        while not tick.wait(1.0):
+            _hang_check(_running, clock(), write, leave)
+    threading.Thread(target=loop, name="hang-watch", daemon=True).start()
+    _running["clock"] = clock
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_protocol(item, nextitem):
+    clock = _running.get("clock")
+    if clock is not None:
+        _running["test"] = {"nodeid": item.nodeid, "began": clock(), "dumped": False}
+    try:
+        yield
+    finally:
+        _running.pop("test", None)
+
+
 def pytest_configure(config):
     import os
+    # faulthandler's timed dump of a running thread can spin forever in CPython 3.12 and wedge the worker (#1351).
+    if not _running:
+        _hang_watch()
     path = os.environ.pop(TEST_LOG_ENV, "")
     # A pytest a test starts inherits PYTEST_ADDOPTS and overwrote CI's JUnit XML with its own 2 tests (#1146).
     if "--junit" in os.environ.get("PYTEST_ADDOPTS", ""):
