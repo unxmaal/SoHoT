@@ -37,11 +37,12 @@ def test_a_refusal_says_whether_it_was_the_load_or_the_pressure():
     assert "pressure is level 2" in delegate.admit("eval", True, 2)[1]
 
 
-def _hold(kind="eval"):
+def _hold(kind="eval", job_id=None):
     code = ("from harness import exclusive; import time\n"
             f"with exclusive.held({kind!r}):\n print('held', flush=True); time.sleep(30)\n")
+    env = {**os.environ, **({wq.JOB_ENV: str(int(job_id))} if job_id else {})}
     child = subprocess.Popen([sys.executable, "-c", code], stdout=subprocess.PIPE,
-                             text=True, env=dict(os.environ))
+                             text=True, env=env)
     assert child.stdout.readline().strip() == "held"
     return child
 
@@ -51,7 +52,7 @@ def held_by_job():
     job = wq.add(["soh", "eval", "decide"], title="decide eval")
     job.update(state=wq.RUNNING, started=time.strftime(wq._STAMP))
     wq._write(job)
-    child = _hold()
+    child = _hold(job_id=job["id"])
     yield job
     child.kill()
     child.wait()
