@@ -773,7 +773,7 @@
   {
    "cases": 10,
    "differs": [],
-   "first_run_at": "2026-10-06T12:57:15Z",
+   "first_run_at": "2026-10-05T20:14:08Z",
    "repeat": 1,
    "rows": [
     {
@@ -820,41 +820,10 @@
     }
    ],
    "run_at": "2026-10-06T12:57:15Z",
-   "runs": 1
-  },
-  {
-   "cases": 10,
-   "differs": [],
-   "first_run_at": "2026-10-05T20:14:08Z",
-   "repeat": 1,
-   "rows": [
-    {
-     "about": "82M params, bf16, by Kokoro-82M-bf16",
-     "candidate": "Kokoro-82M-bf16/bm_george",
-     "first_s": 15.481,
-     "median_s": 0.207,
-     "metrics": {
-      "wer": 0.0
-     },
-     "model": "Kokoro-82M-bf16/bm_george",
-     "not_run": "",
-     "pass_rate": 1.0,
-     "passed": 5,
-     "peak_gb": 0.0,
-     "reference": false,
-     "run_at": "2026-10-05T20:14:08Z",
-     "served_as": "",
-     "source": "https://huggingface.co/Kokoro-82M-bf16/bm_george",
-     "total": 5,
-     "ttft_median_s": null,
-     "ttft_p95_s": null
-    }
-   ],
-   "run_at": "2026-10-05T20:14:08Z",
-   "runs": 1
+   "runs": 2
   }
  ],
- "generated_at": "2026-10-26T07:02:52Z",
+ "generated_at": "2026-10-29T10:17:08Z",
  "knobs": [],
  "lane": {
   "cases": 470,
@@ -867,7 +836,7 @@
   "label": "Mac Studio M5 Ultra 96 GB",
   "slug": "mac-studio-m5-ultra-96-gb"
  },
- "schema_version": 1,
+ "schema_version": 2,
  "served": {
   "adopted": false,
   "adopted_at": "",
