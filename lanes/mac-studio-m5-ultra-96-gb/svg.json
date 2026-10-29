@@ -81,36 +81,6 @@
    "until": ""
   },
   {
-   "candidate": "plan:q3-30b",
-   "decided_at": "2026-10-19T20:15:52Z",
-   "detail": "svg: lane too small, needs cases the incumbent fails: it passes all 195 holdout cases, so no challenger can show a gain on them; not run: power 0.00 at +1.00 per cell, so no run of this holdout can de",
-   "exam": null,
-   "outcome": "declined",
-   "proposal": "plan:q3-30b",
-   "reason": "limit",
-   "receipt_key": "plan/q3-30b",
-   "run_id": null,
-   "serves": false,
-   "status": "rejected",
-   "tier": "adopt",
-   "until": "cases:svg>643"
-  },
-  {
-   "candidate": "plan:q3-30b,temperature=0",
-   "decided_at": "2026-10-19T20:15:52Z",
-   "detail": "svg: lane too small, needs cases the incumbent fails: it passes all 195 holdout cases, so no challenger can show a gain on them; not run: power 0.00 at +1.00 per cell, so no run of this holdout can de",
-   "exam": null,
-   "outcome": "declined",
-   "proposal": "plan:q3-30b",
-   "reason": "limit",
-   "receipt_key": "plan/q3-30b",
-   "run_id": null,
-   "serves": false,
-   "status": "rejected",
-   "tier": "adopt",
-   "until": "cases:svg>643"
-  },
-  {
    "candidate": "q3-30b",
    "decided_at": "2026-10-06T20:56:56Z",
    "detail": "web: the incumbent stays: the cases disagree 2-2 with no majority (accessible-nav: q3-4b, dark-mode-toggle: q3-coder, data-table: q3-4b, form-validation: claude-code:claude-opus-5-5, landing-page: q3-",
@@ -351,6 +321,36 @@
    "until": ""
   },
   {
+   "candidate": "plan:q3-30b",
+   "decided_at": "2026-10-29T01:12:21Z",
+   "detail": "retracted: cases:svg>643 is met here",
+   "exam": null,
+   "outcome": "screened",
+   "proposal": "plan:q3-30b",
+   "reason": "reopened",
+   "receipt_key": "plan/q3-30b",
+   "run_id": null,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "plan:q3-30b,temperature=0",
+   "decided_at": "2026-10-29T01:12:21Z",
+   "detail": "retracted: cases:svg>643 is met here",
+   "exam": null,
+   "outcome": "screened",
+   "proposal": "plan:q3-30b",
+   "reason": "reopened",
+   "receipt_key": "plan/q3-30b",
+   "run_id": null,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "trace:mflux:dev",
    "decided_at": "2026-10-20T11:44:26Z",
    "detail": "retracted: cases:svg>3 is met and its screen passed: reopened to screened at screen",
@@ -429,7 +429,7 @@
    "until": ""
   }
  ],
- "cursor": 1792496666973468,
+ "cursor": 1793236341759691,
  "events": [
   {
    "at": "2026-10-04T14:29:27Z",
@@ -2995,6 +2995,21 @@
    "reason": "reopened",
    "run_id": null,
    "tier": "screen"
+  },
+  {
+   "at": "2026-10-29T01:12:21Z",
+   "candidate": "plan:q3-30b",
+   "chosen": null,
+   "detail": "retracted: cases:svg>643 is met here",
+   "how": "",
+   "id": 1793236341759691,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "reopened",
+   "run_id": null,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -3395,11 +3410,11 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-10-25T18:04:03Z",
+ "generated_at": "2026-10-29T10:17:04Z",
  "knobs": [],
  "lane": {
-  "cases": 643,
-  "cases_digest": "5df3c7945b306640",
+  "cases": 923,
+  "cases_digest": "2175852a95907ecb",
   "name": "svg",
   "params": {},
   "wanted": true
@@ -3408,7 +3423,7 @@
   "label": "Mac Studio M5 Ultra 96 GB",
   "slug": "mac-studio-m5-ultra-96-gb"
  },
- "schema_version": 1,
+ "schema_version": 2,
  "served": {
   "adopted": true,
   "adopted_at": "2026-10-06T19:57:01Z",
@@ -3428,7 +3443,7 @@
   "pass_rate": 1.0,
   "serves": "q3-30b",
   "serves_model": "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit (served as q3-30b); 30B (3B active) params, 4bit, by mlx-community",
-  "stale": false
+  "stale": true
  },
  "since": 0
 }
