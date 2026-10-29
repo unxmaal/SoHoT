@@ -1429,9 +1429,12 @@ def screen_refusal(args, candidates: list[str], cases: list) -> str:
         return ""
     if getattr(args, "resume", False) and args.out and (Path(args.out) / watch.CHECKPOINT).is_file():
         return ""
+    local = [c for c in candidates if not hosted(c)]
+    if not local:
+        return ""
     conn = ms.connect()
     try:
-        return repo_screen.refusal(conn, candidates, load_selected(args))
+        return repo_screen.refusal(conn, local, load_selected(args))
     finally:
         conn.close()
 

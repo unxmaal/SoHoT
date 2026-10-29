@@ -121,6 +121,7 @@ LEFT_OUT = {
         "test_over_budget_796.py", "test_planted_919.py", "test_projection_696.py", "test_rank_893.py", "test_router_unload.py",
         "test_store_state.py", "test_stt_screen_power_1007.py", "test_sweep_ceiling_806.py", "test_loop_revisit_1055.py",
         "test_incumbent_from_measurement_1110.py", "test_env_error_coverage_1116.py", "test_site.py",
+        "test_repo_looks_1353.py",
         "test_metric_order_717.py",
         "test_served_readonly_1247.py", "test_saturation_lane_metric_1267.py", "test_gate_direction_1302.py",
         "test_power_table_603.py"),

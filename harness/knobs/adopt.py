@@ -76,6 +76,8 @@ KNOBS = [
 ]
 
 NEVER_CUTS = {
+    "harness/looks.py:LOOK_INTERVAL_S": "sets when a paired run stops for an interim look; it resumes after the look "
+                                        "unless the look decides, so no case is dropped (#1353)",
     "harness/effects.py:MIN_CASES": "read only when soh knobs effects derives power.EFFECT offline; no run is cut (#725)",
     "harness/holdout.py:FAMILY_SHARE": "moves holdout cases to dev, never drops one; the split version names it (#671)",
     "harness/holdout.py:SATURATED": "labels an incumbent's holdout saturated in the report; nothing is skipped (#479)",

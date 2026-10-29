@@ -256,6 +256,23 @@ def test_the_screens_own_base_and_reference_need_no_screen(store):
         conn.close()
 
 
+def test_the_lanes_served_model_is_reverified_and_swept_without_a_screen(store, monkeypatch):
+    monkeypatch.setattr(adopt, "default_for", lambda lane, fallback, conn=None: "llamacpp:Served")
+    conn = store()
+    try:
+        assert repo_screen.refusal(conn, ["llamacpp:Served"], _cases()) == ""
+        assert "no repo screen result" in repo_screen.refusal(conn, ["llamacpp:Other"], _cases())
+    finally:
+        conn.close()
+
+
+def test_a_hosted_candidate_holds_no_gpu_so_needs_no_screen(store):
+    args = R.parse_args(["--modality", "repo", "--candidates", "claude-code:claude-sonnet-5-5"])
+    assert R.screen_refusal(args, ["claude-code:claude-sonnet-5-5"], R.expand_cases(_cases(), 1)) == ""
+    mixed = ["claude-code:claude-sonnet-5-5", "llamacpp:New"]
+    assert "llamacpp:New has no repo screen result" in R.screen_refusal(args, mixed, R.expand_cases(_cases(), 1))
+
+
 def test_a_run_that_missed_screen_cases_is_no_screen_result(store):
     ids = [c.id for c in repo_screen.pick(_cases())]
     rows = [{"candidate": "llamacpp:Part", "case_id": c, "passed": True, "seconds": 1.0} for c in ids[:-1]]
@@ -281,6 +298,11 @@ def test_a_full_repo_exam_for_an_unscreened_candidate_is_refused_at_start_and_at
     assert "no repo screen result" in R.argv_screen_refusal(_argv())
     with pytest.raises(ValueError, match="not queued: .*no repo screen result"):
         workqueue.add(_argv(), title="full exam")
+
+
+def test_a_knob_sweep_or_reverify_of_a_measured_model_is_queued_without_a_screen(store):
+    for planner in workqueue.REMEASURES:
+        assert workqueue.add(_argv(), title="sweep", requested_by=planner)["state"] == workqueue.PENDING
 
 
 def test_the_screen_itself_a_small_subset_a_resume_and_unscreened_are_not_refused(store, tmp_path):

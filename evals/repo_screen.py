@@ -252,6 +252,13 @@ def stored(conn, spec: str, ids) -> list[dict]:
     return out
 
 
+def served() -> set:
+    """The repo lane's served model by name and spec: reverify and knob sweeps rerun it, and it holds the lane already."""
+    from harness import adopt, screen, winners
+    name = adopt.default_for(LANE, winners.typed().get(LANE, ""))
+    return {name, screen.candidate_for(LANE, name) or name} if name else set()
+
+
 def refusal(conn, specs, cases, anchors: dict | None = None) -> str:
     """Why a repo exam larger than the screen waits for a spec's screen (none stored, or not survived), or "". #1353."""
     anchors = load_anchors() if anchors is None else anchors
@@ -264,7 +271,7 @@ def refusal(conn, specs, cases, anchors: dict | None = None) -> str:
     passed = base.get("passed") or {}
     base_rows = [{"case_id": i, "candidate": base.get("candidate") or "base", "passed": bool(passed[i]),
                   "seconds": None} for i in ids if i in passed]
-    anchored = {(anchors.get(side) or {}).get("candidate") for side in ("base", "reference")}
+    anchored = {(anchors.get(side) or {}).get("candidate") for side in ("base", "reference")} | served()
     for spec in specs:
         if spec in anchored:
             continue
