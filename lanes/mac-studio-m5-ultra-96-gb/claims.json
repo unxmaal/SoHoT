@@ -434,7 +434,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-10-26T07:02:50Z",
+ "generated_at": "2026-10-29T10:17:07Z",
  "knobs": [],
  "lane": {
   "cases": 299,
@@ -447,7 +447,7 @@
   "label": "Mac Studio M5 Ultra 96 GB",
   "slug": "mac-studio-m5-ultra-96-gb"
  },
- "schema_version": 1,
+ "schema_version": 2,
  "served": {
   "adopted": false,
   "adopted_at": "",
@@ -487,7 +487,7 @@
   "pass_rate": 0.635,
   "serves": "Qwen2.5-7B-Instruct-Q4_K_M",
   "serves_model": "Qwen2.5-7B-Instruct-Q4_K_M; 7B params, Q4_K_M, by bartowski",
-  "stale": false
+  "stale": true
  },
  "since": 0
 }
