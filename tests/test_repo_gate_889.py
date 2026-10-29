@@ -32,14 +32,14 @@ def _adopt_verdict(conn, name, lane, won):
     ms.decide(conn, name, "measured" if won else "declined", tier=ms.ADOPT, detail=f"{lane}: x")
 
 
-def test_every_code_row_gets_a_repo_comparison_ahead_of_every_other_row(store, held):
+def test_every_code_row_gets_a_repo_comparison_just_ahead_of_it(store, held):
     rows = [{"name": "a", "lane": "code"}, {"name": "img", "lane": "image"}, {"name": "b", "lane": "code"}]
     got = repo_gate.order(rows, store)
     assert [(r["name"], r["lane"]) for r in got] == [
-        ("a", "repo"), ("b", "repo"), ("a", "code"), ("img", "image"), ("b", "code")]
+        ("a", "repo"), ("a", "code"), ("img", "image"), ("b", "repo"), ("b", "code")]
 
 
-def test_a_paused_repo_measurement_is_not_doubled_and_stays_first(store, held):
+def test_a_queued_repo_measurement_is_not_doubled_and_goes_ahead_of_its_code_row(store, held):
     rows = [{"name": "a", "lane": "code"}, {"name": "a", "lane": "repo"}]
     got = repo_gate.order(rows, store)
     assert [(r["name"], r["lane"]) for r in got] == [("a", "repo"), ("a", "code")]
@@ -96,7 +96,7 @@ def test_a_repo_winner_whose_code_comparison_never_ran_is_owed_it_next_sweep(sto
     _adopt_verdict(store, "a", "repo", won=True)
     _adopt_verdict(store, "b", "repo", won=False)
     assert [r["name"] for r in repo_gate.owed(store)] == ["a"]
-    got = repo_gate.order([], store)
+    got = repo_gate.order(repo_gate.join([], store), store)
     assert [(r["name"], r["lane"]) for r in got] == [("a", "code")]
     _adopt_verdict(store, "a", "code", won=True)
     assert repo_gate.owed(store) == []
