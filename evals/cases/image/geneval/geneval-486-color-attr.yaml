@@ -1,0 +1,59 @@
+# GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023), MIT (https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl).
+# Imported by evals/importers from github:djghosh13/geneval/prompts/evaluation_metadata.jsonl@af4902f24d3ca90ebbb446dd9891a59e0f82725f; re-import, do not edit.
+id: geneval-486-color-attr
+modality: image
+prompt: a photo of a pink handbag and a black scissors
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      handbag: a handbag
+      scissors: a scissors
+    require:
+    - type: count
+      object: handbag
+      min: 1
+    - type: count
+      object: scissors
+      min: 1
+    - type: attribute
+      object: handbag
+      is: a pink handbag
+      not:
+      - a red handbag
+      - a orange handbag
+      - a yellow handbag
+      - a green handbag
+      - a blue handbag
+      - a purple handbag
+      - a brown handbag
+      - a black handbag
+      - a white handbag
+    - type: attribute
+      object: scissors
+      is: a black scissors
+      not:
+      - a red scissors
+      - a orange scissors
+      - a yellow scissors
+      - a green scissors
+      - a blue scissors
+      - a purple scissors
+      - a pink scissors
+      - a brown scissors
+      - a white scissors
+attribution:
+  dataset: GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023)
+  url: https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl
+  license: MIT
+  source: github:djghosh13/geneval/prompts/evaluation_metadata.jsonl
+  revision: af4902f24d3ca90ebbb446dd9891a59e0f82725f
+  item: '486'
+  date: '2023-08-22'
+  transform: 'GenEval include/exclude spec as staging requirements: include count at least, include plus
+    exclude exactly, position relative to the named object, colour against the nine others'
+  importer: evals.importers.geneval
+  tag: color_attr

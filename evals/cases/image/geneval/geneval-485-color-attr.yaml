@@ -1,0 +1,59 @@
+# GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023), MIT (https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl).
+# Imported by evals/importers from github:djghosh13/geneval/prompts/evaluation_metadata.jsonl@af4902f24d3ca90ebbb446dd9891a59e0f82725f; re-import, do not edit.
+id: geneval-485-color-attr
+modality: image
+prompt: a photo of a pink tv remote and a blue airplane
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      tv_remote: a tv remote
+      airplane: a airplane
+    require:
+    - type: count
+      object: tv_remote
+      min: 1
+    - type: count
+      object: airplane
+      min: 1
+    - type: attribute
+      object: tv_remote
+      is: a pink tv remote
+      not:
+      - a red tv remote
+      - a orange tv remote
+      - a yellow tv remote
+      - a green tv remote
+      - a blue tv remote
+      - a purple tv remote
+      - a brown tv remote
+      - a black tv remote
+      - a white tv remote
+    - type: attribute
+      object: airplane
+      is: a blue airplane
+      not:
+      - a red airplane
+      - a orange airplane
+      - a yellow airplane
+      - a green airplane
+      - a purple airplane
+      - a pink airplane
+      - a brown airplane
+      - a black airplane
+      - a white airplane
+attribution:
+  dataset: GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023)
+  url: https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl
+  license: MIT
+  source: github:djghosh13/geneval/prompts/evaluation_metadata.jsonl
+  revision: af4902f24d3ca90ebbb446dd9891a59e0f82725f
+  item: '485'
+  date: '2023-08-22'
+  transform: 'GenEval include/exclude spec as staging requirements: include count at least, include plus
+    exclude exactly, position relative to the named object, colour against the nine others'
+  importer: evals.importers.geneval
+  tag: color_attr

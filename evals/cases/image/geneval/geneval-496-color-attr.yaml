@@ -1,0 +1,59 @@
+# GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023), MIT (https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl).
+# Imported by evals/importers from github:djghosh13/geneval/prompts/evaluation_metadata.jsonl@af4902f24d3ca90ebbb446dd9891a59e0f82725f; re-import, do not edit.
+id: geneval-496-color-attr
+modality: image
+prompt: a photo of an orange microwave and a black spoon
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      microwave: a microwave
+      spoon: a spoon
+    require:
+    - type: count
+      object: microwave
+      min: 1
+    - type: count
+      object: spoon
+      min: 1
+    - type: attribute
+      object: microwave
+      is: a orange microwave
+      not:
+      - a red microwave
+      - a yellow microwave
+      - a green microwave
+      - a blue microwave
+      - a purple microwave
+      - a pink microwave
+      - a brown microwave
+      - a black microwave
+      - a white microwave
+    - type: attribute
+      object: spoon
+      is: a black spoon
+      not:
+      - a red spoon
+      - a orange spoon
+      - a yellow spoon
+      - a green spoon
+      - a blue spoon
+      - a purple spoon
+      - a pink spoon
+      - a brown spoon
+      - a white spoon
+attribution:
+  dataset: GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023)
+  url: https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl
+  license: MIT
+  source: github:djghosh13/geneval/prompts/evaluation_metadata.jsonl
+  revision: af4902f24d3ca90ebbb446dd9891a59e0f82725f
+  item: '496'
+  date: '2023-08-22'
+  transform: 'GenEval include/exclude spec as staging requirements: include count at least, include plus
+    exclude exactly, position relative to the named object, colour against the nine others'
+  importer: evals.importers.geneval
+  tag: color_attr
