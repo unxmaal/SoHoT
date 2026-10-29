@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <g id="indigo">
+    <circle cx="50" cy="50" r="30" fill="#264653"/>
+    <circle cx="150" cy="50" r="30" fill="#264653"/>
+    <circle cx="250" cy="50" r="30" fill="#264653"/>
+    <circle cx="350" cy="50" r="30" fill="#264653"/>
+  </g>
+  <g id="fjord">
+    <rect x="36.6667" y="120" width="60" height="60" fill="#e63946"/>
+    <rect x="170" y="120" width="60" height="60" fill="#e63946"/>
+    <rect x="303.333" y="120" width="60" height="60" fill="#e63946"/>
+  </g>
+  <g id="pike">
+    <ellipse cx="40" cy="250" rx="24" ry="12" fill="#6a4c93"/>
+    <ellipse cx="120" cy="250" rx="24" ry="12" fill="#6a4c93"/>
+    <ellipse cx="200" cy="250" rx="24" ry="12" fill="#6a4c93"/>
+    <ellipse cx="280" cy="250" rx="24" ry="12" fill="#6a4c93"/>
+    <ellipse cx="360" cy="250" rx="24" ry="12" fill="#6a4c93"/>
+  </g>
+</svg>

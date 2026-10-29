@@ -43,8 +43,10 @@ WANTED = ("image", "code", "web", "svg", "video", "music", "decide", "agent", "o
 #: ranked ahead of the five above.
 UNWANTED = ("extract", "stt", "tts")
 
-#: Eval lanes discovery never searches or screens for: their cases need an app installed by hand (#1209) or film copies only this machine holds (#1207).
-BY_HAND = ("craft", "vision")
+#: Eval lanes discovery never searches or screens for: their cases need an app installed by hand (#1209) or film copies only this machine holds (#1207), or the lane runs named engines only (#1208).
+BY_HAND = ("craft", "vision", "shots")
+#: lane_source of a lane a screen's own load failure chose; a card read later never moves it back. #1282.
+SCREENED_SOURCE = "screen"
 
 ALL = WANTED + UNWANTED
 

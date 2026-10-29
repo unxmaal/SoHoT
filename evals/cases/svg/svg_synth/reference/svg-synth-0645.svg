@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120">
+  <g id="alpha">
+    <circle cx="24" cy="20" r="12" fill="#8ab17d"/>
+    <circle cx="72" cy="20" r="12" fill="#8ab17d"/>
+    <circle cx="120" cy="20" r="12" fill="#8ab17d"/>
+    <circle cx="168" cy="20" r="12" fill="#8ab17d"/>
+    <circle cx="216" cy="20" r="12" fill="#8ab17d"/>
+  </g>
+  <g id="indigo">
+    <rect x="18" y="48" width="24" height="24" fill="#f4a261"/>
+    <rect x="78" y="48" width="24" height="24" fill="#f4a261"/>
+    <rect x="138" y="48" width="24" height="24" fill="#f4a261"/>
+    <rect x="198" y="48" width="24" height="24" fill="#f4a261"/>
+  </g>
+  <g id="cedar">
+    <ellipse cx="24" cy="100" rx="12" ry="6" fill="#264653"/>
+    <ellipse cx="72" cy="100" rx="12" ry="6" fill="#264653"/>
+    <ellipse cx="120" cy="100" rx="12" ry="6" fill="#264653"/>
+    <ellipse cx="168" cy="100" rx="12" ry="6" fill="#264653"/>
+    <ellipse cx="216" cy="100" rx="12" ry="6" fill="#264653"/>
+  </g>
+</svg>

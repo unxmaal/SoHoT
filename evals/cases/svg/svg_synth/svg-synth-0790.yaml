@@ -1,0 +1,33 @@
+# SoHoT generated svg cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py).
+# Imported by evals/importers from generated:evals.importers.svg_synth v1 seed 1050@1878dddb4e7787e9870bf9adfc18239059c29347; re-import, do not edit.
+id: svg-synth-0790
+modality: svg
+prompt: 'Draw exactly 3 <circle> filled #e63946, exactly 3 <rect> filled #8ab17d and exactly 3 <ellipse>
+  filled #457b9d, none of them overlapping. Set every colour with a fill attribute. Draw nothing else:
+  no background, border, axis or other extra shapes.'
+methods:
+- llm
+assert:
+  structure:
+    count:
+      circle: 3
+      rect: 3
+      ellipse: 3
+    fill:
+      circle: '#e63946'
+      rect: '#8ab17d'
+      ellipse: '#457b9d'
+attribution:
+  dataset: SoHoT generated svg cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py
+  license: generated
+  source: generated:evals.importers.svg_synth v1 seed 1050
+  revision: 1878dddb4e7787e9870bf9adfc18239059c29347
+  item: '790'
+  date: ''
+  transform: a seeded scene described as a prompt, asserted on its structure
+  importer: evals.importers.svg_synth
+  version: '1'
+  seed: 1050
+  kind: mix
+  stratum: medium

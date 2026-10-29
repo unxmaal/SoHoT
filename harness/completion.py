@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 
 import httpx
 
-from harness import reasons
+from harness import reasons, routes
 from harness.checks.base import extract
 
 DEFAULT_GATEWAY = "http://127.0.0.1:4000"
@@ -209,6 +209,8 @@ class CompletionError(RuntimeError):
         self.finish = finish
         #: What was sent: max_tokens, sampling, template, system_sha; set by complete_full. #921.
         self.request: dict = {}
+        #: The reply's call id and routed tier, for a reply that came back unusable. #1338.
+        self.call_id = self.routed = ""
 
 
 def user_message(prompt: str, context: str = "") -> str:
@@ -372,6 +374,8 @@ class Completion:
     call_id: str = ""
     #: The reply's reasoning_content; "" when the server sent none. #921.
     reasoning: str = ""
+    #: The tier model a routing arm sent the request to; "" for any other alias. #1338.
+    routed: str = ""
     #: What was sent: max_tokens, sampling, template, system_sha. #921.
     request: dict = field(default_factory=dict)
 
@@ -526,9 +530,10 @@ def _complete_full(sent: dict, prompt, model, gateway, modality, context, timeou
 
     if finish == reasons.STOPPED_LOW_YIELD:
         stop = _STOP_AFTER.get()
-        raise CompletionError(f"stopped after {stop} generated tokens, its yield stop point: tasks still running "
-                              f"there rarely pass", reasons.STOPPED_LOW_YIELD, knobs.hit("yield_stop", stop, "tokens"),
-                              usage=usage, reasoning=reasoning, finish=finish)
+        raise _replied(r, CompletionError(
+            f"stopped after {stop} generated tokens, its yield stop point: tasks still running "
+            f"there rarely pass", reasons.STOPPED_LOW_YIELD, knobs.hit("yield_stop", stop, "tokens"),
+            usage=usage, reasoning=reasoning, finish=finish))
     if text is None or not text.strip():
         # A THINKING MODEL that spent its whole budget reasoning returns null
         # content and a populated reasoning_content. Qwen3-8B and Qwen3-14B do
@@ -537,28 +542,37 @@ def _complete_full(sent: dict, prompt, model, gateway, modality, context, timeou
         # that in fact produced 4000 tokens of thought.
         if reasoning:
             spent = reasoning_tokens(usage)
-            raise CompletionError(
+            raise _replied(r, CompletionError(
                 f"{model} returned no answer: it spent the whole "
                 f"{max_tokens}-token budget on reasoning ("
                 + (f"{spent} tokens of reasoning, " if spent else "")
                 + f"{len(reasoning)} characters). This is a hybrid "
                 f"thinking model; use a non-thinking one for this lane, or "
                 f"raise max_tokens.", reasons.TOKEN_BUDGET_EXHAUSTED,
-                knobs.hit("max_tokens", max_tokens, "tokens"), usage=usage, reasoning=reasoning, finish=finish)
-        raise CompletionError("empty completion", reasons.CONTENT_FAILED,
-                              usage=usage, finish=finish)
+                knobs.hit("max_tokens", max_tokens, "tokens"), usage=usage, reasoning=reasoning, finish=finish))
+        raise _replied(r, CompletionError("empty completion", reasons.CONTENT_FAILED, usage=usage, finish=finish))
     return Completion(text, usage,
                       list(tokens) if isinstance(tokens, list) else [], timing,
-                      served, finish=finish, call_id=call_id_of(r), reasoning=reasoning)
+                      served, finish=finish, call_id=call_id_of(r), reasoning=reasoning,
+                      routed=header_of(r, routes.ROUTED_HEADER))
 
 
 #: The header LiteLLM's proxy answers with; its value is the logged litellm_call_id. #829.
 CALL_ID_HEADER = "x-litellm-call-id"
 
 
+def _replied(r, exc: "CompletionError") -> "CompletionError":
+    exc.call_id, exc.routed = call_id_of(r), header_of(r, routes.ROUTED_HEADER)
+    return exc
+
+
 def call_id_of(r) -> str:
+    return header_of(r, CALL_ID_HEADER)
+
+
+def header_of(r, name: str) -> str:
     try:
-        return str((getattr(r, "headers", None) or {}).get(CALL_ID_HEADER) or "")
+        return str((getattr(r, "headers", None) or {}).get(name) or "")
     except (AttributeError, TypeError):
         return ""
 
@@ -714,7 +728,7 @@ def _busy_post(gateway: str, payload: dict, timeout: float):
 def _send(gateway: str, payload: dict, timeout: float):
     url = f"{gateway.rstrip('/')}/v1/chat/completions"
     from harness import batch, gateway_key
-    headers = gateway_key.headers()
+    headers = {**gateway_key.headers(), **routes.headers()}
     if batch.current():
         headers = {**headers, batch.HEADER: batch.current()}
     if not payload.get("stream"):

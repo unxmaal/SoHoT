@@ -86,6 +86,13 @@ TORCHSDE_PIN="torchsde==0.2.6"
 # hf-task: Gemma 3n and timm-backbone vision towers (timm); tiktoken-format tokenizers. #1027.
 TIMM_PIN="timm==1.0.30"
 TIKTOKEN_PIN="tiktoken==0.14.0"
+# The shots lane (#1208), built by scripts/shots-venv.sh: CPU torch off Apple Silicon, TransNetV2 (weights in the wheel), PySceneDetect.
+TORCH_CPU_INDEX="https://download.pytorch.org/whl/cpu"
+TORCH_CPU_PIN="torch==2.6.0+cpu"
+TRANSNETV2_PIN="transnetv2-pytorch==1.0.5"
+SCENEDETECT_PIN="scenedetect==0.7.2"
+OPENCV_PIN="opencv-python==5.0.0.93"
+NUMPY_PIN="numpy==2.5.4"
 
 # The decide lane's nimble engine (#423), built by scripts/nimble-venv.sh. The
 # checkout is pinned by commit; its requirements/mlx.txt and training.txt pins
@@ -98,6 +105,10 @@ NIMBLE_TORCH_PIN="torch==2.8.0"
 PEFT_PIN="peft==0.21.0"
 # The version the live venv held when nimble-venv.sh still installed it unpinned. #1037.
 HUGGINGFACE_HUB_PIN="huggingface-hub==1.33.0"
+
+# The vision lane's mlx-vlm labeller (#1282), built by scripts/mlx-vlm-venv.sh.
+MLX_VLM_PIN="mlx-vlm==0.7.10"
+MLX_VLM_MLX_PIN="mlx==0.32.4"
 
 # The decide lane's decider engine (#467), built by scripts/decider-venv.sh.
 # PyPI 0.1.0 lacks the mlx extra, so it installs from a clone at this commit.

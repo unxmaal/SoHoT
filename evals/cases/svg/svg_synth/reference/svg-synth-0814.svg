@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160">
+  <g id="onyx">
+    <circle cx="80" cy="26.6667" r="16" fill="#1d3557"/>
+    <circle cx="240" cy="26.6667" r="16" fill="#1d3557"/>
+  </g>
+  <g id="pike">
+    <rect x="64" y="64" width="32" height="32" fill="#457b9d"/>
+    <rect x="224" y="64" width="32" height="32" fill="#457b9d"/>
+  </g>
+  <g id="alpha">
+    <ellipse cx="40" cy="133.333" rx="16" ry="8" fill="#264653"/>
+    <ellipse cx="120" cy="133.333" rx="16" ry="8" fill="#264653"/>
+    <ellipse cx="200" cy="133.333" rx="16" ry="8" fill="#264653"/>
+    <ellipse cx="280" cy="133.333" rx="16" ry="8" fill="#264653"/>
+  </g>
+</svg>

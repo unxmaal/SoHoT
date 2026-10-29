@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <g id="quartz">
+    <circle cx="200" cy="50" r="30" fill="#8ab17d"/>
+  </g>
+  <g id="harbor">
+    <rect x="170" y="120" width="60" height="60" fill="#b5838d"/>
+  </g>
+  <g id="rook">
+    <ellipse cx="200" cy="250" rx="30" ry="15" fill="#6a4c93"/>
+  </g>
+</svg>

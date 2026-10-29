@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from harness import privacy
+from harness import github, privacy
 
 
 def scan(text):
@@ -143,3 +143,111 @@ def test_a_real_mdns_host_is_still_caught():
     """The negative control for the carve-out. Narrowing a rule is how a rule
     stops working, so the thing it was written for must still fire."""
     assert scan("url: http://basement.local:8899/mcp") == ["private-host"]
+
+
+# ---- the tracker, before and after posting (#1296) -------------------------
+
+FAKE_NAME = "Zorblax Quentaro"
+
+
+class FakeGitHub:
+    """Issue and PR listings, paged comment listings and edit histories; records every call, reaches nothing."""
+
+    def __init__(self, comments=(), review_comments=(), per_page=None, edits=None):
+        self.comments, self.review_comments = list(comments), list(review_comments)
+        self.per_page, self.edits, self.calls = per_page or github.PER_PAGE, edits or {}, []
+
+    def gh(self, *args):
+        self.calls.append(args)
+        return [{"number": 1, "title": "A clean issue", "body": "nothing to see"}] if args[0] == "issue" else []
+
+    def api(self, path):
+        self.calls.append(("api", path))
+        rows = self.review_comments if "/pulls/comments" in path else self.comments
+        page = int(path.rsplit("page=", 1)[1])
+        return rows[(page - 1) * self.per_page:page * self.per_page]
+
+    def graphql(self, number):
+        self.calls.append(("graphql", number))
+        return self.edits[number]
+
+
+def comment(i, body, pr=False):
+    kind = "pull" if pr else "issues"
+    return {"id": 1000 + i, "html_url": f"https://github.com/o/r/{kind}/7#issuecomment-{1000 + i}", "body": body}
+
+
+def _names(monkeypatch, tmp_path):
+    monkeypatch.delenv("LH_PRIVATE_NAMES", raising=False)
+    privacy.register([FAKE_NAME])
+    return privacy.name_pattern(tmp_path)
+
+
+def test_a_planted_name_in_a_comment_fails_the_scan(tmp_path, monkeypatch):
+    fake = FakeGitHub(comments=[comment(1, "looks fine"), comment(2, f"{FAKE_NAME} measured it", pr=True)])
+    found, counts = privacy.scan_github(extra=_names(monkeypatch, tmp_path), gh=fake.gh, api=fake.api)
+    assert [(f.origin, f.name) for f in found] == [("pr#7 comment 1002", "person-name")]
+    assert counts == {"issue": 1, "pr": 0, "comment": 2}
+
+
+def test_a_clean_listing_passes(tmp_path, monkeypatch):
+    fake = FakeGitHub(comments=[comment(1, "looks fine")], review_comments=[comment(2, "nit: rename", pr=True)])
+    found, counts = privacy.scan_github(extra=_names(monkeypatch, tmp_path), gh=fake.gh, api=fake.api)
+    assert found == [] and counts["comment"] == 2
+
+
+def test_comments_are_read_past_the_first_page(tmp_path, monkeypatch):
+    rows = [comment(i, "fine") for i in range(5)] + [comment(9, f"ask {FAKE_NAME}")]
+    fake = FakeGitHub(comments=rows, per_page=2)
+    monkeypatch.setattr(github, "PER_PAGE", 2)
+    found, counts = privacy.scan_github(extra=_names(monkeypatch, tmp_path), gh=fake.gh, api=fake.api)
+    assert [f.origin for f in found] == ["issue#7 comment 1009"] and counts["comment"] == 6
+    assert ("api", "repos/{owner}/{repo}/issues/comments?per_page=2&page=3") in fake.calls
+
+
+def test_posting_a_registered_name_is_refused_before_any_network_call(tmp_path, monkeypatch, capsys):
+    _names(monkeypatch, tmp_path)
+    ran = []
+    monkeypatch.setattr(privacy.subprocess, "run", lambda *a, **kw: ran.append(a))
+    body = tmp_path / "body.md"
+    body.write_text(f"Thanks to {FAKE_NAME.lower()} for the trace.\n", encoding="utf-8")
+    assert privacy.main(["gh", "issue", "comment", "5", "--body-file", str(body)]) == 1
+    assert privacy.main(["gh", "pr", "create", "--title", "x", f"--body=from {FAKE_NAME}"]) == 1
+    assert privacy.main(["gh", "issue", "create", "-t", f"{FAKE_NAME}'s idea", "-b", "fine"]) == 1
+    assert ran == [] and "person-name" in capsys.readouterr().err
+
+
+def test_a_clean_post_reaches_gh(tmp_path, monkeypatch):
+    import io
+    _names(monkeypatch, tmp_path)
+    ran = []
+
+    def run(argv, **kw):
+        ran.append((argv, kw.get("input")))
+        return privacy.subprocess.CompletedProcess(argv, 0)
+
+    monkeypatch.setattr(privacy.subprocess, "run", run)
+    monkeypatch.setattr(privacy.sys, "stdin", io.StringIO("a plain body\n"))
+    assert privacy.main(["gh", "issue", "comment", "5", "--body-file", "-"]) == 0
+    assert ran == [(["gh", "issue", "comment", "5", "--body-file", "-"], "a plain body\n")]
+
+
+def test_an_added_name_is_caught_by_the_next_scan(tmp_path, monkeypatch, capsys):
+    monkeypatch.delenv("LH_PRIVATE_NAMES", raising=False)
+    assert privacy.check_post(f"ask {FAKE_NAME}", root=tmp_path) == []
+    assert privacy.main(["add", FAKE_NAME]) == 0
+    assert [f.name for f in privacy.check_post(f"ask {FAKE_NAME}", root=tmp_path)] == ["person-name"]
+    assert privacy.main(["add", FAKE_NAME]) == 0 and "already" in capsys.readouterr().out
+    assert privacy.main(["add", "Zo"]) == 2
+
+
+def test_an_edit_history_hit_is_reported_with_its_revision(tmp_path, monkeypatch):
+    edits = {922: {"edits": [{"editedAt": "2026-10-26T15:02:38Z", "diff": "scrubbed"},
+                             {"editedAt": "2026-10-17T12:22:54Z", "diff": f"run by {FAKE_NAME}"}],
+                   "comments": [{"databaseId": 55, "edits": [{"editedAt": "2026-10-17T13:00:00Z",
+                                                              "diff": "served from kitchen-mac.local"}]}]}}
+    fake = FakeGitHub(edits=edits)
+    found = privacy.scan_history([922], extra=_names(monkeypatch, tmp_path), graphql=fake.graphql)
+    assert [(f.origin, f.name) for f in found] == [
+        ("#922 edit 2026-10-17T12:22:54Z", "person-name"),
+        ("#922 comment 55 edit 2026-10-17T13:00:00Z", "private-host")]

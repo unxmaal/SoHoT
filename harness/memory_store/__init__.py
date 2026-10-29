@@ -35,7 +35,7 @@ from harness.memory_store.transitions import (IllegalTransition, REOPENS, RETEST
 from harness.memory_store.retests import (due_retests, recovered_false_negatives,
     reopen_due_retests, retest_counts)  # noqa: F401
 from harness.memory_store.revisit import (ATTACHMENT_DECLINE, _version_tuple, cards_to_reread, dangling_receipts,
-    rederive_attachments, stale_attachments,
+    rederive_attachments, relane_to_vision, stale_attachments,
     gguf_sized_off_lane, incomplete_copies, requeue_incomplete_copies,
     reopened_too_far, reopens_to, requeue_missing_in_snapshot, requeue_old_sizing, requeue_reopened_too_far,
     requeue_revisitable, requeue_stale_too_big,

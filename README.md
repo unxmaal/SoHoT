@@ -293,6 +293,12 @@ python -m harness.publish render --data <dir of machine JSON> --out /tmp/site
 python -m harness.privacy --files /tmp/site      # a directory means every file under it
 ```
 
+The tracker is published too. `python -m harness.privacy --github` scans every issue, PR and comment, and
+`--history N...` scans every earlier revision of those issues and their comments, which GitHub keeps showing
+after a scrub. Post through `python -m harness.privacy gh issue comment 12 --body-file body.md` (any `gh issue`
+or `gh pr` command): it sends nothing when the title or body matches. `python -m harness.privacy add NAME`
+registers a name in the home's `private-names.txt`, which every checkout and worktree on the machine reads.
+
 The front page's "How it works" diagram is drawn from
 `harness/how-it-works.workflow.json`, a workflow model in the format of
 [Archify](https://github.com/tt-a1i/archify). Every box cites the code it stands
@@ -929,6 +935,31 @@ Each node needs `machine:`, its hw_model/os/arch/host fingerprint, which
 node serves is stored under no machine, so `make smoke`, `launchd.sh install` and
 `python -m harness.nodes check` fail that node and `evals.run` warns.
 
+## Routing trial
+
+For code, extract, web and svg, the served config adds two LiteLLM complexity
+routers beside `sohot-<lane>`. Each sends SIMPLE and MEDIUM requests to the lane
+alias and COMPLEX and REASONING requests to `cloud-opus`. `sohot-<lane>-auto`
+classifies with LiteLLM's heuristic. `sohot-<lane>-adaptive` adds LiteLLM's bandit,
+fed only by our verdicts: the lane checker's pass or fail on each eval row, and the
+closed outcome of each delegation. LiteLLM 1.100.0 has no feedback API, so
+`gateway/route_feedback.py` writes those verdicts into the router's cells in
+process. A reply from either arm names the tier it went to in `x-sohot-routed`.
+Each row records `routed_cloud` and `cloud_tokens`. An arm that can reach
+`cloud-opus` counts against `api_budget` like `cloud-opus` itself. Its cloud-routed
+calls are recorded in `soh api-spend` under the arm's name, and it is refused once
+the budget is spent.
+
+    soh route-trial run --lane code --with cloud-opus   # paired holdout run, then the report
+    soh route-trial report --lane code [--run ID]
+
+The report gives each arm's pass rate, cut replies, cloud calls, cloud tokens and
+wall time. It then judges the adaptive arm against each other candidate. It adopts
+only when the adaptive arm passes more (paired sign test at the adopt alpha) at
+equal or fewer cloud tokens, or spends fewer cloud tokens and loses no more than
+the lane's adopt effect. Fallbacks are looked up by the alias asked for, so a
+node's fallback does not cover a routed call.
+
 ## Gateway auth
 
 The gateway listens on every interface so other machines on the LAN can use
@@ -1024,11 +1055,21 @@ Code's context (#828). It reads `~/.claude/projects/**/*.jsonl` (subagents
 included, `--main-only` leaves them out), pairs each tool_result with its
 tool_use and prints calls, estimated tokens (characters / 4, not a tokenizer),
 p50, p95, max and the share from results over 2k tokens, per tool or per day.
-When `rtk` is on PATH it adds `rtk gain`'s own savings.
+When `rtk` is on PATH it adds `rtk gain`'s own savings. A result costs again
+on every later API call of its stream until a compaction, so `--carried` ranks
+tools by those carried tokens (hook context included) and gives each one's
+share of all input tokens. `--carried --by class` (#1333) says what the
+output was: KB search, Read split by file kind and by whether the stream later
+edits that path, Bash by the command at each pipeline head, plus Claude's own
+blocks (commands, Write bodies, text) carried the same way. `--referenced`
+adds, per KB search, the hits shown and those Claude named later (`#<id>` in
+its text or tool input, or a `get_entry` of that id) with their positions.
 
 ```bash
 soh context --since 2026-10-06 --until 2026-10-13   # before the rtk hook
 soh context --since 2026-10-13 --by day --json
+soh context --since 7d --carried
+soh context --since 7d --carried --by class --referenced
 ```
 
 `soh ledger` joins cloud and local per day (#826). Cloud is Claude Code's
@@ -1910,6 +1951,16 @@ applicability gate fails (the patch does not apply, or pass_to_pass breaks),
 with cloud calls, local seconds, over-routes, under-routes and accepted-wrong
 answers. It also labels each prompt with the deterministic tool it asks for.
 
+`soh baseline [--bar RATE]` prints each real workload three ways, all local, all
+Claude and hybrid, from stored rows only (the store opened read-only): every
+shadow-replay shape from `evals/analysis/demand/replay.jsonl`, and the repo,
+decide, claims, code and extract lanes from the newest Claude run and the local
+run on its exam. Each row has the local usable rate with a Wilson interval, the
+Claude rate, the hybrid rate at its gate, how many went to Claude, wrong local
+answers the gate let through, local GPU minutes and Claude tokens in and out. A
+lane with no stored Claude run says so. `--replay DIR --save PATH` refreshes the
+numbers-only replay summary from a replay working directory.
+
 `leetcode` (code lane) imports LeetCodeDataset (Apache-2.0) at a pinned
 revision: its whole temporal test split, items dated 2024-08 to 2025-03, plus
 train items dated 2024 or later, read from the file's tail by a byte range.
@@ -2068,10 +2119,21 @@ records each paper as a technique `arxiv:<id>` with its title, abstract and
 link, recorded in the `sources` table like the feeds. A paper is laned by the
 same prose routing as a model, title first and then title and abstract
 together; one that names no lane, or several, stays laneless. A technique is
-never queued for fetch, screen or measure: `soh discover --loop` lists them
-under `techniques wanted`, per lane, with title, link and sightings.
-Implementing a method is a job for a person or an agent, so the report decides
-nothing.
+never queued for fetch: it is triaged. `soh discover --posts` reads the
+`techniques` feeds (practitioners' posts, one proposal per entry) and
+`soh propose <url> [--title T --note N]` files one a person names. Triage
+(`soh discover --triage --run`, and the loop with `--run`, at most
+`triage_per_run` model calls) reads each unsettled technique in a text lane or
+the general bucket once: a link that is a registered method's `source` is that
+method; otherwise the extract lane's model drafts a template, which must load
+as a template and read `{task}`, and whose steps' digest, if it matches a
+registered template, makes it that template. A drafted template is a row in
+`technique_triage` and runs as `t-<name>:<base>` with no code. The method is
+crossed with each of its lanes' incumbents and climbs inspect, screen and
+measure like any crossing, unless the newest stored measure run of it in that
+lane was significantly worse than its pair, which declines it there citing the
+run. A technique that is not a prompt transform, or whose draft would not run,
+stays under `techniques wanted`.
 
 ### Refusals that stop being true
 
@@ -2405,6 +2467,33 @@ photo is the image lane's Z-Image output for `fox-snow`, frozen in
 
     soh craft validate
     uv run python -m evals.run --modality craft --candidates craft-reference,sohot-agent
+
+The shots lane finds shot boundaries in video. Its twelve clips under
+`evals/cases/shots/shots_synth/` are generated by `soh cases import shots_synth`
+from ffmpeg's own synthetic sources (gradients, mandelbrot, testsrc2, life,
+cellauto, sierpinski, a noise field), each shot with a seeded pan, so no film
+frame is involved and the truth is exact by construction. Ten exam clips hold
+150 joins allocated exactly: 60 hard cuts and 15 each of dissolves and fades to
+black at 6, 12 and 24 frames. Flashes and whip pans are planted inside shots as
+negatives. Two controls ship beside them: an all-cut clip of short shots and a
+no-cut clip of one long shot with flashes and a whip. The spec that rebuilds
+each clip is in its case's attribution. A detection finds a transition inside
+its first to last frame widened by `shots_tolerance` (2 frames), one detection
+per transition. The checker reports recall per truth type (cut, dissolve, fade),
+precision per claimed label (a cut claim is right only on a cut, a gradual
+claim only on a dissolve or fade, an unlabelled detection is a cut claim),
+boundary F1, and the share of planted negatives triggered, each pooled over
+counts. A clip passes at boundary F1 of `shots_min_f1` (0.9). The candidates
+are `transnetv2:cpu` (transnetv2-pytorch 1.0.5, weights in the wheel; a run of
+above-threshold frames of 2 or fewer is a cut, longer a gradual placed at its
+midpoint), `transnetv2:mps`, which scores every clip on MPS and on CPU and
+records nothing when any frame's probability differs by more than
+`shots_mps_max_prob_diff`, and `scenedetect:adaptive` and `scenedetect:content`
+(PySceneDetect 0.7.2 at its defaults). They run through `scripts/shots.sh` in a
+venv of their own (`venvs/shots`), built on first use.
+
+    uv run python -m evals.run --modality shots \
+      --candidates transnetv2:cpu,transnetv2:mps,scenedetect:adaptive,scenedetect:content
 
 The vision lane asks for the shot scale of a film frame (ECU, CU, MCU, MS, MLS,
 LS, ELS) and scores the answers against human labels from CineScale (Savardi et

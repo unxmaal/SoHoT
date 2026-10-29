@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <rect x="4" y="20" width="60" height="60" fill="#457b9d"/>
+  <text x="68" y="68" font-size="48">maple</text>
+  <rect x="4" y="120" width="60" height="60" fill="#6a4c93"/>
+  <text x="68" y="168" font-size="48">alpha</text>
+  <rect x="4" y="220" width="60" height="60" fill="#264653"/>
+  <text x="68" y="268" font-size="48">rook</text>
+</svg>

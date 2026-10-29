@@ -436,6 +436,16 @@ def test_file_creates_an_issue_carrying_its_fingerprint():
     assert f"{wd.FINGERPRINT} {wd.fingerprint(f)}" in calls[1][calls[1].index("--body") + 1]
 
 
+def test_the_watchdog_refuses_to_file_a_body_with_a_registered_name(monkeypatch):
+    from harness import privacy
+    monkeypatch.delenv("LH_PRIVATE_NAMES", raising=False)
+    privacy.register(["Zorblax Quentaro"])
+    calls, fake = _gh([])
+    out = wd.Hands(run=fake, environ={wd.FILE_ENV: "1"}).do(wd.FILE, finding(command=EVAL + " # for zorblax quentaro"))
+    assert out.startswith("not filed: privacy") and "person-name" in out
+    assert calls == []
+
+
 def test_file_is_deduped_against_an_open_issue_with_the_fingerprint():
     calls, fake = _gh([{"number": 812}])
     assert wd.Hands(run=fake, environ={wd.FILE_ENV: "1"}).do(wd.FILE, finding()) == "already filed: #812"

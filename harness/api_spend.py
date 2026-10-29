@@ -198,9 +198,26 @@ def _has_table(conn) -> bool:
     return conn.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'api_spend'").fetchone() is not None
 
 
+def _tiers(e, config=None) -> list[dict]:
+    """A routing arm's metered tier entries, since any request to it may be routed there; [] for any other entry. #1338."""
+    from harness import routes
+    if not routes.is_router(e):
+        return []
+    cfg = ((e.get("litellm_params") or {}).get("complexity_router_config") or {}).get("tiers") or {}
+    return [t for t in (entry(str(name), config) for name in dict.fromkeys(cfg.values())) if metered(t)]
+
+
+def _routed(kwargs) -> str:
+    md = ((kwargs.get("litellm_params") or {}).get("metadata") or {}) if isinstance(kwargs, dict) else {}
+    decision = md.get("routing_decision") if isinstance(md, dict) else None
+    return str((decision or {}).get("routed_model") or "") if isinstance(decision, dict) else ""
+
+
 def gate(alias: str, config=None, budget: float | None = None) -> str:
     """Why a request to `alias` must be refused before it is sent, or ""; a local alias never reads the store."""
     e = entry(alias, config)
+    tiers = _tiers(e, config)
+    e = tiers[0] if tiers else e
     if not metered(e):
         return ""
     if not priced(e):
@@ -229,6 +246,9 @@ def note(kwargs, response_obj, config=None) -> bool:
     """Record a successful metered request now, so the next gate sees it; False for a local alias."""
     slo = kwargs.get("standard_logging_object") if isinstance(kwargs, dict) else None
     e = entry(str((slo or {}).get("model_group") or ""), config)
+    from harness import routes
+    if routes.is_router(e):
+        e = entry(_routed(kwargs), config)
     if not metered(e):
         return False
     try:

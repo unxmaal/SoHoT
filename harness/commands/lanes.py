@@ -531,6 +531,11 @@ def _stored_clips(a) -> int:
 
     from harness import clips
     try:
+        if getattr(a, "suspect", False):
+            got = clips.suspects(n=a.n, store=a.store or None, cases_dir=a.cases or None)
+            note(clips.suspects_text(got))
+            emit(clips=got)
+            return 0
         if a.worst:
             got = clips.worst(a.worst, n=a.n, store=a.store or None, cases_dir=a.cases or None)
             note(clips.worst_text(a.worst, got))
@@ -545,7 +550,7 @@ def _stored_clips(a) -> int:
 
 
 def cmd_hear(a) -> int:
-    if getattr(a, "worst", "") or getattr(a, "rates", False):
+    if getattr(a, "worst", "") or getattr(a, "rates", False) or getattr(a, "suspect", False):
         return _stored_clips(a)
     clip = Path(a.file) if a.file else Path(a.output or
                                             default_output("clip", ".wav"))

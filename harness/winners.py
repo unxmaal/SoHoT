@@ -137,7 +137,9 @@ class OrderKey(tuple):
 
 #: Lanes ranked on a pooled metric before pass rate: an exact-case rate is roughly acc^fields, and stt's is exact orthography. #701.
 #: claims balances case recall and specificity, since most cases expect nothing and silence passes them. #791.
-PRIMARY = {"decide": "decide_accuracy", "stt": "wer", "claims": "claims_balanced", "repo": "resolved"}
+#: shots pools boundary F1 over 12 clips, where a pass at an F1 bar is one bit per clip. #1208.
+PRIMARY = {"decide": "decide_accuracy", "stt": "wer", "claims": "claims_balanced", "repo": "resolved",
+           "shots": "shots_boundary_f1"}
 #: Lanes whose primary metric is a summary of strata, paired per stratum rather than per row. #791.
 STRATIFIED = {"claims"}
 #: Each lane's metrics in rank order after its first key and pass rate; shared names not listed follow by name. #717.
@@ -149,6 +151,8 @@ ORDER = {
     "pii": ("pii_f1", "pii_recall", "pii_precision"),
     "repo": ("resolved", "patch_applied", "agent_valid_call_rate"),
     "retrieval": ("retrieval_ndcg", "retrieval_recall"),
+    "shots": ("shots_boundary_f1", "shots_dissolve_recall", "shots_fade_recall", "shots_cut_recall",
+              "shots_gradual_precision", "shots_cut_precision", "shots_negatives_triggered", "shots_false"),
     "tts": ("wer", "speaker_similarity"),
 }
 #: Metrics that measure probabilities, meaningless on a row whose answers were one-hot. #701.

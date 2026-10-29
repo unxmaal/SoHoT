@@ -73,6 +73,8 @@ LANE_CANDIDATES = {
     "claims": ("{model}",),
     # A text candidate as an MCP client of the run book's pinned app. #1209.
     "craft": ("{model}",),
+    # Named engines only, never screened; a model here is a TransNetV2 device. #1208.
+    "shots": ("transnetv2:{model}",),
     "stt": ("stt:{model}",),
     "tts": ("tts:{model}",),
     **{lane: ("{model}",) for lane in lanes.TEXT_SERVED},
@@ -364,10 +366,24 @@ def case_gap(lane: str, spec: str) -> str:
 FOREIGN_LIBRARIES = {"comfyui": "weights packaged for ComfyUI, which no engine here loads"}
 
 
+def by_hand(lane: str, model: str, conn=None, card=None) -> str:
+    """What runs a candidate of a lane discovery never screens (lanes.BY_HAND). #1282."""
+    lane = lanes.canonical(lane)
+    if lane != "vision":
+        return f"the {lane} lane runs by hand"
+    if card is None and conn is not None:
+        from harness import memory_store as ms
+        card = ms.card_of(conn, model)
+    from evals import vision
+    return f"the vision lane runs by hand: soh vision run --candidate {vision.candidate_for(model, card)}"
+
+
 def runner_gap(lane: str, model: str, attaches_to: str = "",
                conn=None, card=None) -> str:
     """Why no runner here takes this candidate, or "". `no_runner` asks of a
     spec; this also answers for an adapter no engine is known to load. #467."""
+    if lanes.canonical(lane) in lanes.BY_HAND:
+        return by_hand(lane, model, conn=conn, card=card)
     spec = candidate_for(lane, model, attaches_to, conn=conn, card=card)
     from harness import ds4
     if spec.startswith(ds4.PREFIX):
