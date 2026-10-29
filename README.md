@@ -2680,6 +2680,7 @@ plus exclude reads "exactly", a position becomes `above` or `left_of` against
 the named object, and a colour must beat GenEval's other colours on the
 object's box. The negative control: boxes meeting the spec pass, no boxes and
 the next case's boxes do not.
+
 The web lane's generated source is `web_synth` (#603). Each row draws a page
 spec, and the spec gives the prompt and a `structure` assertion that
 `structure()` in `harness/checks/html.py` reads from the parsed page before
