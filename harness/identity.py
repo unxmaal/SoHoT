@@ -263,6 +263,19 @@ def digest_of(parts) -> str:
     return hashlib.sha256(json.dumps(parts, sort_keys=True, default=str).encode("utf-8")).hexdigest()
 
 
+def as_now(stored: dict, now: dict) -> str:
+    """The digest of stored parts with each knob now recorded but absent there filled at its unrecorded value. #1353."""
+    from harness import knobs
+    have = ((stored.get("settings") or {}).get("knobs"))
+    want = ((now.get("settings") or {}).get("knobs")) or {}
+    if not isinstance(have, dict):
+        return ""
+    fill = {k: knobs.UNRECORDED[k] for k in want if k not in have and k in knobs.UNRECORDED}
+    if not fill:
+        return ""
+    return digest_of({**stored, "settings": {**stored["settings"], "knobs": {**have, **fill}}})
+
+
 def _text_sha(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 

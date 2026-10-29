@@ -254,6 +254,10 @@ def stale_schema(cwd, conn) -> str:
             f"so it would refuse the store when it starts; queue from the deploy or update that checkout")
 
 
+#: Planners that rerun a model the lane already measured (a knob sweep, a reverify), so no repo screen comes first. #1353
+REMEASURES = ("sweep", "reverify")
+
+
 def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
         output: str = "", priority: int = 0, requested_by: str = "",
         not_before: float | None = None, night: bool = False, conn=None) -> dict:
@@ -268,9 +272,15 @@ def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
                          f"split it into words (zsh does not word-split $VAR). #363")
     if "evals.run" in [str(a) for a in argv]:
         from evals import run
-        spend = run.argv_spend_refusal(argv)
+        spend = run.argv_spend_refusal(argv) or (
+            "" if requested_by in REMEASURES else run.argv_screen_refusal(argv))
         if spend:
             raise ValueError(f"not queued: {spend}")
+    if "adopt" in [str(a) for a in argv]:
+        from harness.commands import adopt as adopt_cmd
+        unscreened = adopt_cmd.argv_screen_refusal(argv)
+        if unscreened:
+            raise ValueError(f"not queued: {unscreened}")
     with _store(conn) as c:
         stale = stale_schema(cwd or os.getcwd(), c)
         if stale:

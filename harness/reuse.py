@@ -11,13 +11,17 @@ MIN_DRAWS = 1
 REUSE_FILE = "reuse.json"
 
 
-def _runs_with(conn, lane: str, digest: str, exclude=()) -> dict[int, tuple[str, float, dict]]:
-    """run id -> (the receipt key whose recorded identity is `digest`, when it ran, its per-case digests)."""
-    from harness import runs
+def _runs_with(conn, lane: str, digest: str, exclude=(), parts=None) -> dict[int, tuple[str, float, dict]]:
+    """run id -> (the receipt key whose recorded identity is `digest`, when it ran, its per-case digests).
+
+    With `parts`, a run recorded before a knob was is matched when that knob's unrecorded value gives `digest`. #1353.
+    """
+    from harness import identity, runs
     skip = {runs.path_key(p) for p in exclude}
     out = {}
+    like = f"%{digest}%" if parts is None else "%identities%"
     for r in conn.execute("SELECT id, path, environment, COALESCE(generated_at, recorded_at) AS at "
-                          "FROM runs WHERE lane = ? AND environment LIKE ?", (lane, f"%{digest}%")):
+                          "FROM runs WHERE lane = ? AND environment LIKE ?", (lane, like)):
         if r["path"] in skip:
             continue
         try:
@@ -25,18 +29,22 @@ def _runs_with(conn, lane: str, digest: str, exclude=()) -> dict[int, tuple[str,
         except ValueError:
             continue
         for key, ident in (env.get("identities") or {}).items():
-            if isinstance(ident, dict) and ident.get("digest") == digest:
+            if not isinstance(ident, dict):
+                continue
+            if ident.get("digest") == digest or (
+                    parts is not None and isinstance(ident.get("parts"), dict)
+                    and identity.as_now(ident["parts"], parts) == digest):
                 out[r["id"]] = (key, float(r["at"] or 0.0), ident.get("cases") or {})
     return out
 
 
-def draws(conn, lane: str, digest: str, exclude=(), cases=None) -> dict[tuple[str, int], list[tuple]]:
+def draws(conn, lane: str, digest: str, exclude=(), cases=None, parts=None) -> dict[tuple[str, int], list[tuple]]:
     """(base case, repeat index) -> [(when, run id, stored case id, candidate, seconds, reply tokens, case digest)] newest first.
 
     A draw counts only where its run recorded the same per-case digest as `cases` gives now; harness refusals are left out.
     """
     from harness import reasons
-    found = _runs_with(conn, lane, digest, exclude) if digest else {}
+    found = _runs_with(conn, lane, digest, exclude, parts) if digest else {}
     out: dict = {}
     for run_id, (key, at, theirs) in found.items():
         for r in conn.execute("SELECT case_id, candidate, failure_class, seconds, metrics FROM results "
@@ -55,11 +63,12 @@ def draws(conn, lane: str, digest: str, exclude=(), cases=None) -> dict[tuple[st
     return {k: sorted(v, key=lambda d: (d[0], d[1]), reverse=True) for k, v in out.items()}
 
 
-def plan(conn, lane: str, digest: str, cells, *, cases=None, min_draws: int | None = None, exclude=()) -> dict:
+def plan(conn, lane: str, digest: str, cells, *, cases=None, min_draws: int | None = None, exclude=(),
+         parts=None) -> dict:
     """Which incumbent cells come from the store: the newest matching draw where a cell has at least min_draws."""
     from harness import holdout, paired
     need = max(1, int(MIN_DRAWS if min_draws is None else min_draws))
-    stored = draws(conn, lane, digest, exclude, cases)
+    stored = draws(conn, lane, digest, exclude, cases, parts)
     taken: dict = {}
     for cell in cells:
         got = stored.get((holdout.base_id(cell), paired.repeat_index(cell))) or []

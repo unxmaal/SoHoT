@@ -65,12 +65,12 @@ def _row(r) -> dict:
 
 def save(conn, *, lane: str, inc_spec: str, spec: str, proposal: str, out: str, ident: dict,
          plan: dict, done: int, total: int, looks: list, run_id=None, machine_id=None,
-         pause_id: int | None = None, why: str = "") -> int:
-    """Record or update the pause; each save is one more sweep the run has spanned."""
+         pause_id: int | None = None, why: str = "", spans: int = 1) -> int:
+    """Record or update the pause; a save adds `spans` sweeps, 0 for a later look slice in the same sweep (#1353)."""
     if pause_id is not None:
-        conn.execute("UPDATE paused_runs SET done = ?, total = ?, looks = ?, run_id = ?, sweeps = sweeps + 1, "
+        conn.execute("UPDATE paused_runs SET done = ?, total = ?, looks = ?, run_id = ?, sweeps = sweeps + ?, "
                      "state = 'paused', why = ?, paused_at = ? WHERE id = ?",
-                     (done, total, json.dumps(looks), run_id, why, time.time(), pause_id))
+                     (done, total, json.dumps(looks), run_id, int(spans), why, time.time(), pause_id))
         conn.commit()
         return pause_id
     cur = conn.execute(

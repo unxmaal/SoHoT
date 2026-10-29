@@ -1216,6 +1216,9 @@ def _parser():
     ap.add_argument("--repo-screen", action="store_true",
                     help="repo lane: only the screening subset, repo_screen_cases cases stratified by group "
                          "and variant (evals/repo_screen.py, #1176)")
+    ap.add_argument("--unscreened", action="store_true",
+                    help="repo lane: run more cases than the screen for a candidate whose repo screen has not "
+                         "survived, or has not run (#1353)")
     ap.add_argument("--harness", choices=("patch", "repair"), default="patch",
                     help="repo lane: patch asks for one diff; repair runs a bounded tool loop (list, search, "
                          "read, apply_patch, visible run_tests, finish) graded the same way (#890)")
@@ -1414,6 +1417,47 @@ def argv_spend_refusal(argv) -> str:
     return got["refuse"] if got else ""
 
 
+def screen_refusal(args, candidates: list[str], cases: list) -> str:
+    """Why a repo run larger than the screen waits for a candidate's repo screen, or "". #1353."""
+    from evals import repo_screen
+    from harness import holdout
+    from harness import memory_store as ms
+    if (args.modality != repo_screen.LANE or args.screen or getattr(args, "repo_screen", False)
+            or getattr(args, "unscreened", False)):
+        return ""
+    if len({holdout.base_id(c.id) for c in cases}) <= int(repo_screen.CASES):
+        return ""
+    if getattr(args, "resume", False) and args.out and (Path(args.out) / watch.CHECKPOINT).is_file():
+        return ""
+    local = [c for c in candidates if not hosted(c)]
+    if not local:
+        return ""
+    conn = ms.connect()
+    try:
+        return repo_screen.refusal(conn, local, load_selected(args))
+    finally:
+        conn.close()
+
+
+def screen_first(args, candidates: list[str], cases: list) -> None:
+    why = screen_refusal(args, candidates, cases)
+    if why:
+        raise SystemExit(f"evals.run: {why}")
+
+
+def argv_screen_refusal(argv) -> str:
+    """Why a queued `-m evals.run ...` repo exam must wait for a screen, or "". #1353."""
+    args = queued_args(argv)
+    if args is None or args.compare or args.modality != "repo" or not args.candidates:
+        return ""
+    try:
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            _, _, cases = _plan(args)
+    except SystemExit:
+        return ""
+    return screen_refusal(args, split_candidates(args.candidates), cases)
+
+
 def _execute_at(args, overrides: dict) -> int:
     from harness import holdout
     side, chosen, cases = _plan(args)
@@ -1434,6 +1478,7 @@ def _execute_at(args, overrides: dict) -> int:
         print(f"── {api_spend.describe(spend)}", flush=True)
         if spend["refuse"]:
             raise SystemExit(f"evals.run: {spend['refuse']}")
+    screen_first(args, candidates, cases)
     effective_template(args.modality, candidates)
     ladder = run_ladder(args.modality, getattr(args, "budget_ladder", None))
     if ladder and getattr(args, "max_tokens", None) is not None:
