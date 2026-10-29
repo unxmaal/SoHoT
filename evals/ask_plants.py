@@ -176,11 +176,11 @@ def write(out: Path, got: list[dict]) -> list[dict]:
     return rows
 
 
-def named(answer: str, expect: str) -> bool:
-    """The plant's token is in the answer: a whole number beside the word error for a count, the name otherwise."""
+def named(answer: str, expect: str, word: str = "error") -> bool:
+    """The plant's token is in the answer: a whole number and the count's word (error) for a count, the name otherwise."""
     if expect.isdigit():
         text = answer or ""
-        return "error" in text.lower() and re.search(rf"(?<![\d.]){expect}(?![\d.])", text) is not None
+        return word in text.lower() and re.search(rf"(?<![\d.]){expect}(?![\d.])", text) is not None
     return expect.lower() in (answer or "").lower()
 
 
@@ -206,19 +206,34 @@ def score(rows: list[dict]) -> dict:
             "by": by, "errors": sum(1 for r in rows if r.get("error"))}
 
 
-def run(out: Path, ask, n: int = 60, seed: int = 1335, progress=None) -> dict:
-    """Ask QUESTION of every planted and clean log with ask(path) -> answer; rows to out/results.jsonl."""
+SETS = ("pytest", "fresh", "third")
+
+
+def generated(family: str, n: int, seed: int | None) -> tuple[list[dict], str]:
+    """(cases, question) of one set: this module's pytest-shaped logs, evals.ask_plants_fresh or _third."""
+    if family in ("fresh", "third"):
+        import importlib
+        mod = importlib.import_module(f"evals.ask_plants_{family}")
+        return mod.cases(n, mod.SEED if seed is None else seed), mod.QUESTION
+    if family != "pytest":
+        raise ValueError(f"unknown set {family!r}: one of {', '.join(SETS)}")
+    return cases(n, 1335 if seed is None else seed), QUESTION
+
+
+def run(out: Path, ask, n: int = 60, seed: int | None = None, progress=None, family: str = "pytest") -> dict:
+    """Ask the set's question of every planted and clean log with ask(path, question); rows to out/results.jsonl."""
     from harness import ask as asking
-    rows = write(out, cases(n, seed))
+    got, question = generated(family, n, seed)
+    rows = write(out, got)
     done = []
     with open(out / "results.jsonl", "w", encoding="utf-8") as fh:
         for r in rows:
             for side, path in (("planted", r["path"]), ("clean", r["clean_path"])):
                 try:
-                    r[f"{side}_answer"] = ask(path)
+                    r[f"{side}_answer"] = ask(path, question)
                 except Exception as exc:  # noqa: BLE001
                     r[f"{side}_answer"], r["error"] = None, f"{side}: {exc}"
-            r["hit"] = r["planted_answer"] is not None and named(r["planted_answer"], r["expect"])
+            r["hit"] = r["planted_answer"] is not None and named(r["planted_answer"], r["expect"], r.get("word") or "error")
             r["clean_none"] = r["clean_answer"] is not None and asking.is_none(r["clean_answer"])
             fh.write(json.dumps(r) + "\n")
             fh.flush()

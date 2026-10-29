@@ -734,12 +734,17 @@ adopted here, through the same route `soh code` uses:
   context is smaller) are asked part by part
   and the answers merged. An answer line survives only if some line of the files holds it
   verbatim; for a question about failures, a line found only on PASSED, SKIPPED, XFAIL, XPASS
-  or warning lines is dropped too. Only a caller on this machine may pass `paths`: loopback, or a
+  or warning lines is dropped too, and so is a bare number. For such a question a fixed scan
+  then adds each failure-shaped line the model left out (a nonzero error or failure count,
+  FAILED/ERROR, an exception line, an error mark, a nonzero exit), at most `ask_failure_lines`
+  of them; a small model skips count lines. Only a caller on this machine may pass `paths`: loopback, or a
   connection from the server's own address. `soh ask PATH... -q QUESTION` does the same from
   a shell, with the caller's checkout as a root too; `soh ask --redo` counts digests that a
   full Read of the same path followed within 10 tool calls (the bar is 15%), and
   `soh ask --eval DIR` scores the lane on synthesized make check, pytest, CI and queue logs,
-  each with one planted failure and a clean twin.
+  each with one planted failure and a clean twin; `--set fresh` (go, jest, cargo, lint,
+  gradle) and `--set third` (unittest, rspec, C build, terraform) use other tools, plant
+  wording and question, and `--seed` regenerates any set.
 - `local_decide(question, schema, context="")` is `soh decide`: the same flat
   schema, answers plus a probability per choice, from the decide lane's model.
   It is not streamed, so `ttft_s` is empty: through the gateway a streamed
