@@ -56,6 +56,7 @@ from harness.commands import report as report_cmd
 from harness.commands import repo_screen as repo_screen_cmd
 from harness.commands import reverify as reverify_cmd
 from harness.commands import screen as screen_cmd
+from harness.commands import spans as spans_cmd
 from harness.commands import store as store_cmd
 from harness.commands import headless as headless_cmd
 from harness.commands import knobs as knobs_cmd
@@ -70,6 +71,7 @@ from harness.commands import morning as morning_cmd
 from harness.commands import sweep_check as sweep_check_cmd
 from harness.commands import otel as otel_cmd
 from harness.commands import route_trial as route_trial_cmd
+from harness.commands import ask as ask_cmd
 from harness.commands import usage as usage_cmd
 from harness.commands import canary as canary_cmd
 from harness.commands import review as review_cmd
@@ -737,10 +739,12 @@ def build_parser() -> argparse.ArgumentParser:
     measure_order_cmd.add_parser(sub)
     lane_feed_cmd.add_parser(sub)
     craft_cmd.add_parser(sub)
+    spans_cmd.add_parser(sub)
     vision_cmd.add_parser(sub)
     climb_cmd.add_parser(sub)
     otel_cmd.add_parser(sub)
     route_trial_cmd.add_parser(sub)
+    ask_cmd.add_parser(sub)
     dlg = sub.add_parser("delegated", help="record what became of a local_complete or "
                          "local_decide answer, or --report the rates per lane")
     dlg.add_argument("call_id", nargs="?", default="", help="the call_id the delegation returned")

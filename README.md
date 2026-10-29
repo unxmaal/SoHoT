@@ -723,6 +723,35 @@ adopted here, through the same route `soh code` uses:
   llama-server router's launch args or the stored context; when that is unknown
   the cap is 8192. A reply that spends the whole budget reasoning is an error
   that says how many tokens went to reasoning and suggests `thinking=false`.
+- `local_complete(paths=[...], question="...")` reads the files itself and returns only the
+  answer (`none` when they hold none), with `files` (each real path and its byte count),
+  `parts` and `calls`, so a long log or tool-output file never has to be pasted or Read. The
+  lane is extract unless given; the code lane answers with thinking off. Paths must resolve,
+  symlinks followed, under Claude Code's `tool-results` or background `tasks` output, SoHoT's
+  logs, or a root in `SOHOT_ASK_ROOTS` (`os.pathsep`-separated, for worktrees); hard links,
+  non-regular files, binary files and more bytes in all than the `ask_max_bytes` knob are refused.
+  Files longer than a part (`ask_chunk_chars`, 8,000 characters, less when the served
+  context is smaller) are asked part by part
+  and the answers merged. An answer line survives only if some line of the files holds it
+  verbatim; for a question about failures, a line found only on PASSED, SKIPPED, XFAIL, XPASS
+  or warning lines is dropped too. Only a caller on this machine may pass `paths`: loopback, or a
+  connection from the server's own address. `soh ask PATH... -q QUESTION` does the same from
+  a shell, with the caller's checkout as a root too; `soh ask --redo` counts digests that a
+  full Read of the same path followed within 10 tool calls (the bar is 15%), and
+  `soh ask --eval DIR` scores the lane on synthesized make check, pytest, CI and queue logs,
+  each with one planted failure and a clean twin.
+- `local_complete(paths=[one file], question="...", mode="spans")` is for a source or doc
+  file you will read but not edit. The code lane (thinking off) names the line ranges that
+  answer the question and quotes each range's first line; every quote is checked against the
+  file, and the reply is those ranges as Read numbers them (`spans: ...` header), so a Read with
+  offset/limit can fetch more. Any doubt returns the whole file (`whole: ...` with the reason):
+  a quote that is not on its line, `insufficient`, `none`, a range outside the file, a failed
+  call, a reply at its token budget, or spans quoting more than half the file. Files under
+  4,000 characters come back whole with no call. Paths go through the same boundary as above.
+  `soh spans PATH -q QUESTION` does the same from a shell; `soh spans --redo` counts spans
+  answers a full Read of the same file followed within 10 tool calls (the bar is 20%), and
+  `soh spans --eval DIR [--kind python]` samples past Reads that were never edited and scores
+  recall of what the session later used from the file (bar 90%); its rows hold numbers only.
 - `local_decide(question, schema, context="")` is `soh decide`: the same flat
   schema, answers plus a probability per choice, from the decide lane's model.
   It is not streamed, so `ttft_s` is empty: through the gateway a streamed
@@ -748,6 +777,8 @@ A snippet to paste into a project's CLAUDE.md:
 Delegate to `local_complete` / `local_decide` when the work is cheap and checkable:
 boilerplate, test scaffolding, docstrings, summaries of material you pass in,
 bulk rewrites, and classifying many items against a fixed schema.
+For a long log or tool-output file, pass its path, `local_complete(paths=[...], question=...)`,
+rather than its contents.
 Do it yourself when it needs judgment, touches security-sensitive code (auth,
 crypto, input handling, secrets), or needs repo-wide context you cannot pass in
 the prompt. Review what comes back before using it; the local model sees only
