@@ -133,6 +133,24 @@ def test_a_capped_run_never_lowers_its_own_cap(conn):
     assert reply_cap.entry(reply_cap.derive(conn, LANE), "m") == {"cap": BUDGET, "from": "budget", "model": "m"}
 
 
+def test_a_p95_cap_that_loses_a_tail_of_passes_beyond_noise_is_refused(conn):
+    rows = ([_row("m", i, True, 1000) for i in range(190)] + [_row("m", 190 + i, True, 20000) for i in range(10)]
+            + [_row("m", 200 + i, False, 30000) for i in range(20)])
+    record(conn, "m", rows)
+    got = reply_cap.entry(reply_cap.derive(conn, LANE), "m")
+    d = got["derived"]
+    assert (d["cap"], d["lost"], d["within_noise"]) == (4096, 10, False) and d["saved_share"] >= reply_cap.MIN_SAVED
+    assert (got["cap"], got["from"]) == (BUDGET, "budget") and "beyond rerun noise" in reply_cap.said(got)
+
+
+def test_a_p95_cap_that_loses_passes_within_noise_applies(conn):
+    rows = ([_row("m", i, True, 1000) for i in range(197)] + [_row("m", 197 + i, True, 20000) for i in range(3)]
+            + [_row("m", 200 + i, False, 30000) for i in range(20)])
+    record(conn, "m", rows)
+    got = reply_cap.entry(reply_cap.derive(conn, LANE), "m")
+    assert (got["cap"], got["lost"], got["within_noise"]) == (4096, 3, True)
+
+
 def test_a_cap_that_saves_too_little_keeps_the_lanes_budget(conn):
     record(conn, "m", [_row("m", i, True, 100) for i in range(20)])
     got = reply_cap.entry(reply_cap.derive(conn, LANE), "m")

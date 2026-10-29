@@ -110,8 +110,9 @@ def stepped(tokens: float, budget: int) -> int:
 
 
 def by_tokens(runs: list[dict], lane: str, quantile: float | None = None, margin: float | None = None,
-              min_passes: int | None = None) -> dict | None:
-    """The quantile of passing replies' completion tokens plus margin, from runs that gave the lane's whole budget."""
+              min_passes: int | None = None, z: float | None = None) -> dict | None:
+    """The quantile of passing replies' completion tokens plus margin, from runs that gave the lane's whole budget;
+    within_noise says whether the passes it cuts are within the sweep's sign test."""
     q = QUANTILE if quantile is None else float(quantile)
     m = MARGIN if margin is None else float(margin)
     least = MIN_PASSES if min_passes is None else int(min_passes)
@@ -124,8 +125,10 @@ def by_tokens(runs: list[dict], lane: str, quantile: float | None = None, margin
     at = tokens[max(0, math.ceil(q * len(tokens)) - 1)]
     cap = stepped(at * (1 + m), budget)
     saved = yield_stop.rescore([row for r in full for row in r["rows"]], cap if cap < budget else None)["saved_share"]
+    kept = within_noise({i: True for i in range(len(tokens))}, {i: t <= cap for i, t in enumerate(tokens)}, z)
     return {"cap": cap, "from": "tokens", "passes": len(tokens), "quantile": q, "margin": m, "tokens": at,
-            "most": tokens[-1], "saved_share": saved, "runs": sorted({r["run_id"] for r in full})}
+            "most": tokens[-1], "lost": sum(t > cap for t in tokens), "within_noise": kept,
+            "saved_share": saved, "runs": sorted({r["run_id"] for r in full})}
 
 
 def derive(conn, lane: str, found: list[dict] | None = None) -> dict:
@@ -147,7 +150,7 @@ def entry(derived: dict, spec: str, min_saved: float | None = None) -> dict:
     got = derived["models"].get(base)
     if not got:
         return {"cap": derived["budget"], "from": "budget", "model": base}
-    if int(got["cap"]) >= derived["budget"] or got["saved_share"] < least:
+    if int(got["cap"]) >= derived["budget"] or got["saved_share"] < least or not got.get("within_noise", True):
         return {"cap": derived["budget"], "from": "budget", "model": base, "derived": got}
     return {**got, "model": base}
 
@@ -180,7 +183,9 @@ def said(e: dict) -> str:
     """One line on where a cap came from."""
     if e["from"] == "budget" and e.get("derived"):
         d = e["derived"]
-        why = "is the budget" if d["cap"] >= e["cap"] else f"would save {d['saved_share']:.0%}, under {MIN_SAVED:g}"
+        why = ("is the budget" if d["cap"] >= e["cap"] else
+               f"would lose {d['lost']} of {d['passes']} passes, beyond rerun noise" if not d.get("within_noise", True)
+               else f"would save {d['saved_share']:.0%}, under {MIN_SAVED:g}")
         return f"{e['cap']}, the lane's budget: its derived {d['cap']} {why} ({said(d)})"
     if e["from"] == "budget":
         return f"{e['cap']}, the lane's budget: under {MIN_PASSES} passes of its own at it"

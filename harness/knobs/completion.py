@@ -28,16 +28,17 @@ KNOBS = [
     _k("reply_cap_min_saved", ["harness/reply_cap.py:MIN_SAVED"], [0.0, 0.05, 0.1, 0.2], unit="share", binds_via="reply_budget",
        note="the share of a model's stored seconds its cap must save before its runs ask at it, since a capped "
             "receipt no longer pairs with older ones at the lane's budget. Store 2026-10-29: agent Ornith 4096 saves 0% "
-            "and repo Opus 12288 0% (kept at the budget); repo Qwopus3.6 8000 saves 31%, code Ornith 24576 19% (#1352)"),
+            "and repo Opus 12288 0% (kept at the budget); repo Qwopus3.6 8000 saves 31%, repo Qwen3.6-27B 12288 24% (#1352)"),
     _k("reply_cap_noise_z", ["harness/reply_cap.py:NOISE_Z"], [1.64, 1.96, 2.58], unit="sd", binds_via="reply_budget",
-       note="a swept budget sets the cap when the cases only the best budget passes outnumber those only it passes "
-            "by no more than this many sd of their sum (a paired sign test). Store 2026-10-29: Qwopus3.6-27B repo "
-            "8000 9, 16384 9, 32768 6 of 108 -> 8000 at every value (#1352)"),
+       note="a swept budget, or a token-derived cap against the model's own passes, sets the cap when the cases only "
+            "the larger budget passes outnumber those only it passes by no more than this many sd of their sum (a "
+            "paired sign test). Store 2026-10-29: Qwopus3.6-27B repo 8000 9, 16384 9, 32768 6 of 108 -> 8000 at every "
+            "value; code Ornith's 24576 would lose 21 of 869 passes, over 1.96 x sqrt(21), so it keeps 32768 (#1352)"),
     _k("reply_cap_quantile", ["harness/reply_cap.py:QUANTILE"], [0.9, 0.95, 0.99, 1.0], unit="share", binds_via="reply_budget",
        note="the share of a model's passing replies, ranked by completion tokens, its cap lets finish. Store "
             "2026-10-29, on each model's rows at the whole budget: 0.95 gives repo Qwen3.6-27B 12288 (1 of 35 "
-            "passes lost, 24% of 4.1 GPU-h saved), code Ornith 24576 (21 of 869 lost, 19% of 20.4 h); 0.99 gives "
-            "both 32768, no cap (#1352)"),
+            "passes lost, 24% of 4.1 GPU-h saved), code Ornith 24576 (21 of 869 lost: refused by reply_cap_noise_z); "
+            "0.99 gives both 32768, no cap (#1352)"),
     _k("request_timeout", ["harness/completion.py:TIMEOUT_S", "harness/completion.py:MIN_DECODE_TOK_S"],
        [60.0, 120.0, 180.0, 300.0, 600.0], lanes=REQUEST_LANES, limit="timeout_s", unit="s", receipt="knobs", runner_attr="timeout",
        note="seconds one request may take; a big budget stretches it at the slowest decode"),
