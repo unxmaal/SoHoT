@@ -1,0 +1,36 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0782
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Harbor
+  office location". The page holds one definition list (<dl>) of these terms (<dt>) and their definitions
+  (<dd>), in this order: "fender": "a cushion between a hull and the quay"; "bollard": "a short post for
+  tying up a boat"; "buoy": "a float that marks a channel"; "gunwale": "the top edge of a hull''s side".'
+assert:
+  structure:
+    title: Harbor office location
+    dl:
+    - - fender
+      - a cushion between a hull and the quay
+    - - bollard
+      - a short post for tying up a boat
+    - - buoy
+      - a float that marks a channel
+    - - gunwale
+      - the top edge of a hull's side
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '782'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: dl
+  stratum: easy

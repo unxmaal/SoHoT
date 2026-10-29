@@ -1,0 +1,44 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0028
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Fish
+  market moorings". The page holds a form with an <input> of type "time" named "arrival" labelled "Arrival
+  time" with a <label> element, not required; an <input> of type "number" named "berth_length" labelled
+  "Berth length" with a <label> element, not required; an <input> of type "color" named "colour" labelled
+  "Favourite colour" with a <label> element, required; and a submit button reading "Register". Mark only
+  the controls asked as required.'
+assert:
+  structure:
+    title: Fish market moorings
+    form:
+      fields:
+      - label: Arrival time
+        name: arrival
+        type: time
+        required: false
+      - label: Berth length
+        name: berth_length
+        type: number
+        required: false
+      - label: Favourite colour
+        name: colour
+        type: color
+        required: true
+      submit: Register
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '28'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: form
+  stratum: medium

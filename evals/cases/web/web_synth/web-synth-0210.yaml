@@ -1,0 +1,70 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0210
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Tide
+  gauge overview". The page holds a <nav> holding exactly these links in this order: "Supplies" to #supplies,
+  "Moorings" to #moorings, "Location" to #location; and, for each link, a <section> whose id is the link''s
+  target without the # and which starts with an <h2> reading the link text. It also holds a table with
+  the caption "Fish market tally", the header cells "Item", "Count", and these rows given as Item / Count:
+  clay pot, 346; oak plank, 39; brass hinge, 322. Keep those rows in order and end the table with a row
+  whose first cell is "Total" and whose second cell is the sum of the counts. Put the header in one row
+  of <th> cells and each value in its own <td>, with no units or extra characters. Last, it holds a form
+  with an <input> of type "color" named "colour" labelled "Favourite colour" with a <label> element, not
+  required; an <input> of type "number" named "berth_length" labelled "Berth length" with a <label> element,
+  not required; and a submit button reading "Send". Mark only the controls asked as required.'
+assert:
+  structure:
+    title: Tide gauge overview
+    nav:
+    - - Supplies
+      - '#supplies'
+    - - Moorings
+      - '#moorings'
+    - - Location
+      - '#location'
+    sections:
+      supplies: Supplies
+      moorings: Moorings
+      location: Location
+    tables:
+    - caption: Fish market tally
+      head:
+      - Item
+      - Count
+      rows:
+      - - clay pot
+        - '346'
+      - - oak plank
+        - '39'
+      - - brass hinge
+        - '322'
+      - - Total
+        - '707'
+    form:
+      fields:
+      - label: Favourite colour
+        name: colour
+        type: color
+        required: false
+      - label: Berth length
+        name: berth_length
+        type: number
+        required: false
+      submit: Send
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '210'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: mix
+  stratum: hard

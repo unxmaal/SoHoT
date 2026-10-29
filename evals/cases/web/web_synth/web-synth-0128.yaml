@@ -1,0 +1,44 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0128
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Signal
+  tower events". The page holds an unordered list (<ul>) with these items in order: "Oil the winch" (sub-items:
+  "hang the nets"); "Check the ropes" (sub-items: "clear the drain", "coil the line", "raise the flag");
+  "Log the tide" (sub-items: "read the gauge"); "Lock the shed" (sub-items: "count the floats"); "Stow
+  the fenders" (sub-items: "sweep the deck"). Where sub-items are given, put them in a nested <ul> inside
+  that item, in the order given.'
+assert:
+  structure:
+    title: Signal tower events
+    lists:
+    - ordered: false
+      items:
+      - - Oil the winch
+        - - hang the nets
+      - - Check the ropes
+        - - clear the drain
+          - coil the line
+          - raise the flag
+      - - Log the tide
+        - - read the gauge
+      - - Lock the shed
+        - - count the floats
+      - - Stow the fenders
+        - - sweep the deck
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '128'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: outline
+  stratum: medium

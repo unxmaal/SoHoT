@@ -1,0 +1,48 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0439
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Chandlery
+  volunteers". The page holds a <nav> holding exactly these links in this order: "Prices" to #prices,
+  "Events" to #events, "Repairs" to #repairs, "Membership" to #membership, "Weather" to #weather, "Schedule"
+  to #schedule; and, for each link, a <section> whose id is the link''s target without the # and which
+  starts with an <h2> reading the link text.'
+assert:
+  structure:
+    title: Chandlery volunteers
+    nav:
+    - - Prices
+      - '#prices'
+    - - Events
+      - '#events'
+    - - Repairs
+      - '#repairs'
+    - - Membership
+      - '#membership'
+    - - Weather
+      - '#weather'
+    - - Schedule
+      - '#schedule'
+    sections:
+      prices: Prices
+      events: Events
+      repairs: Repairs
+      membership: Membership
+      weather: Weather
+      schedule: Schedule
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '439'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: nav
+  stratum: medium

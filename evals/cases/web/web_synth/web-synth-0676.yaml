@@ -1,0 +1,48 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0676
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "East
+  dock schedule". The page holds a form with an <input> of type "password" named "password" labelled "Password"
+  with a <label> element, not required; an <input> of type "url" named "website" labelled "Website" with
+  a <label> element, not required; an <input> of type "email" named "email" labelled "Email address" with
+  a <label> element, required; an <input> of type "color" named "colour" labelled "Favourite colour" with
+  a <label> element, required; and a submit button reading "Send". Mark only the controls asked as required.'
+assert:
+  structure:
+    title: East dock schedule
+    form:
+      fields:
+      - label: Password
+        name: password
+        type: password
+        required: false
+      - label: Website
+        name: website
+        type: url
+        required: false
+      - label: Email address
+        name: email
+        type: email
+        required: true
+      - label: Favourite colour
+        name: colour
+        type: color
+        required: true
+      submit: Send
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '676'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: form
+  stratum: medium

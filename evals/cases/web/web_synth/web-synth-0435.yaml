@@ -1,0 +1,39 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0435
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Tide
+  gauge location". From these rows, the page holds only those whose Count is at least 635, in the order
+  given, as a table with the caption "Net shed reorders", the header cells "Item", "Count", and these
+  rows given as Item / Count: linen towel, 956; paper roll, 534; cedar shingle, 60; tin can, 635; pine
+  tar, 112; cotton rope, 616; garden hose, 190; sea salt, 153. Put the header in one row of <th> cells
+  and each value in its own <td>, with no units or extra characters.'
+assert:
+  structure:
+    title: Tide gauge location
+    tables:
+    - caption: Net shed reorders
+      head:
+      - Item
+      - Count
+      rows:
+      - - linen towel
+        - '956'
+      - - tin can
+        - '635'
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '435'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: filter
+  stratum: hard

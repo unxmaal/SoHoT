@@ -1,0 +1,37 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-1169
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Ferry
+  slip weather". The page needs an <h1> reading "Ferry slip weather" followed by these <h2> headings in
+  order: "Moorings", "Location", "Rules", "Membership". Use no other h1, h2 or h3 headings.'
+assert:
+  structure:
+    title: Ferry slip weather
+    headings:
+    - - 1
+      - Ferry slip weather
+    - - 2
+      - Moorings
+    - - 2
+      - Location
+    - - 2
+      - Rules
+    - - 2
+      - Membership
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '1169'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: headings
+  stratum: easy

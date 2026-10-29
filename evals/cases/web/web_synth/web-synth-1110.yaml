@@ -1,0 +1,73 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-1110
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Rope
+  walk safety". The page holds a <nav> holding exactly these links in this order: "Safety" to #safety,
+  "Location" to #location, "Repairs" to #repairs, "Moorings" to #moorings; and, for each link, a <section>
+  whose id is the link''s target without the # and which starts with an <h2> reading the link text. It
+  also holds a table with the caption "Lighthouse tally", the header cells "Item", "Count", and these
+  rows given as Item / Count: rye flour, 150; iron nail, 323; wool blanket, 387. Keep those rows in order
+  and end the table with a row whose first cell is "Total" and whose second cell is the sum of the counts.
+  Put the header in one row of <th> cells and each value in its own <td>, with no units or extra characters.
+  Last, it holds a form with an <input> of type "url" named "website" labelled "Website" with a <label>
+  element, required; a <textarea> named "comments" labelled "Comments" with a <label> element, not required;
+  and a submit button reading "Send". Mark only the controls asked as required.'
+assert:
+  structure:
+    title: Rope walk safety
+    nav:
+    - - Safety
+      - '#safety'
+    - - Location
+      - '#location'
+    - - Repairs
+      - '#repairs'
+    - - Moorings
+      - '#moorings'
+    sections:
+      safety: Safety
+      location: Location
+      repairs: Repairs
+      moorings: Moorings
+    tables:
+    - caption: Lighthouse tally
+      head:
+      - Item
+      - Count
+      rows:
+      - - rye flour
+        - '150'
+      - - iron nail
+        - '323'
+      - - wool blanket
+        - '387'
+      - - Total
+        - '860'
+    form:
+      fields:
+      - label: Website
+        name: website
+        type: url
+        required: true
+      - label: Comments
+        name: comments
+        type: textarea
+        required: false
+      submit: Send
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '1110'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: mix
+  stratum: hard

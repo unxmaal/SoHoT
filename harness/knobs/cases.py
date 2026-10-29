@@ -40,6 +40,8 @@ KNOBS = [
 NOT_GATING = {
     "evals/importers/svg_synth.py:ATTEMPTS": "redraws of one row before the generator refuses a kind too small "
                                              "for its share; it raises, it never changes a case (#1050)",
+    "evals/importers/web_synth.py:ATTEMPTS": "redraws of one row before the generator refuses a kind too small "
+                                             "for its share; it raises, it never changes a case (#603)",
 }
 
 NEVER_CUTS = {
