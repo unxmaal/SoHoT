@@ -76,8 +76,15 @@ def check_lane(lane: str) -> str:
     return lane
 
 
+def _mine(record: dict) -> bool:
+    """Whether the lock's holder is this process's own queued job. #1349."""
+    from harness import workqueue as wq
+    me = os.environ.get(wq.JOB_ENV, "").strip()
+    return bool(me) and str(record.get("job") or "").strip() == me
+
+
 def busy() -> str:
-    """What holds the machine lock, or "" when nobody does. Never waits."""
+    """What other than this process's own job holds the machine lock, or "". Never waits."""
     if os.environ.get(exclusive.HELD_ENV) == "1":
         return ""
     fd = os.open(exclusive.lock_path(), os.O_RDWR | os.O_CREAT, 0o644)
@@ -87,7 +94,8 @@ def busy() -> str:
             return ""
     finally:
         os.close(fd)
-    return exclusive.describe(exclusive.holder())
+    record = exclusive.holder()
+    return "" if _mine(record) else exclusive.describe(record)
 
 
 def _preflight(*texts: str, max_tokens: int = 1) -> None:
@@ -180,11 +188,13 @@ def admit(holder: str, resident: bool | None, level: int | None) -> tuple[bool, 
     return True, f"the model is resident, so nothing loads beside {holder}"
 
 
-def running_job(conn=None) -> str:
-    """The queued job running here, with how long earlier runs of it took, or ""."""
+def running_job(conn=None, job_id=None) -> str:
+    """Queued job `job_id`, else the one running here, with how long earlier runs of it took, or ""."""
     from harness import workqueue as wq
     try:
-        job = wq.current(conn)
+        job = wq.get(job_id, conn) if job_id else wq.current(conn)
+        if job is not None and job.get("state") != wq.RUNNING:
+            job = None
         took = wq.durations(job["title"], conn) if job else []
         # Another machine's speed is a weaker estimate, so it says whose it is. #697.
         elsewhere = bool(job) and not took
@@ -265,7 +275,9 @@ def _gate(where: serving.Route) -> bool | None:
     held = busy()
     if not held:
         return None
-    job = running_job()
+    # The holder's own job, never the queue's current one: that may be this caller. #1349.
+    owner = str(exclusive.holder().get("job") or "").strip()
+    job = running_job(job_id=owner) if owner else ""
     holder = f"{held} under {job}" if job else held
     resident = loaded(where)
     level = None

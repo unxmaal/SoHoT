@@ -50,18 +50,27 @@ class Gain:
     minutes: float | None
     evidence: tuple = ()
     why: str = ""
+    first: Gain | None = None
 
     @property
     def key(self) -> float | None:
-        """Expected gain per GPU-minute; None when the row has no price."""
-        return None if not self.minutes else self.expected / self.minutes
+        """Gain per GPU-minute; behind a comparison run `first`, the pair's best prefix (Sidney's chain rule)."""
+        own = None if not self.minutes else self.expected / self.minutes
+        if self.first is None or self.first.key is None or own is None:
+            return own if self.first is None else self.first.key
+        return max(self.first.key, (self.first.expected + self.expected) / (self.first.minutes + self.minutes))
 
     def line(self) -> str:
         cost = f"{self.minutes:.0f} min" if self.minutes else f"unpriced ({self.why})"
         key = f"{self.key * 60:.4f}/h" if self.key is not None else "-"
         seen = ", ".join(e.source for e in self.evidence) or "no stored evidence"
+        after = ""
+        if self.first is not None:
+            f = self.first
+            after = (f", after its {f.lane} comparison (gain {f.expected:.4f}/cell over "
+                     f"{f'{f.minutes:.0f} min' if f.minutes else 'unpriced'})")
         return (f"{self.name} ({self.lane}): gain {self.expected:.4f}/cell above +{self.effect:.2f} "
-                f"(mean {self.mean:+.3f}, sd {self.sd:.3f}) over {cost}, key {key}; {seen}")
+                f"(mean {self.mean:+.3f}, sd {self.sd:.3f}) over {cost}{after}, key {key}; {seen}")
 
 
 @dataclass
@@ -241,9 +250,14 @@ def context(conn, before: float | None = None) -> Context:
     return Context(conn, before, comparisons(conn, before), family.standing(conn))
 
 
-def score(ctx: Context, row: dict, want: str = "") -> Gain:
-    from harness import power
+def score(ctx: Context, row: dict, want: str = "", gated: bool = False) -> Gain:
+    """The row's gain and price; `gated`, the repo-lane comparison its gate runs first is priced with it."""
+    from dataclasses import replace
+
+    from harness import power, repo_gate
     from harness.commands import measure as measure_cmd
+    if gated:
+        return replace(score(ctx, row, want), first=score(ctx, {**row, "lane": repo_gate.GATE}, want))
     name = row.get("name", "")
     lane = measure_cmd.lane_for(row, want)
     evs = evidence(ctx, name, lane)
@@ -259,10 +273,11 @@ def score(ctx: Context, row: dict, want: str = "") -> Gain:
     return Gain(name, lane, mean, sd, effect, expected_gain(mean, sd, effect), mins, tuple(evs), why)
 
 
-def order(conn, rows, want: str = "", before: float | None = None, ctx: Context | None = None) -> tuple[list, list]:
+def order(conn, rows, want: str = "", before: float | None = None, ctx: Context | None = None,
+          gated=None) -> tuple[list, list]:
     """Rows by expected gain per GPU-minute, highest first, unpriced last; ties keep their order. Returns (rows, gains)."""
     rows = list(rows)
     ctx = ctx or context(conn, before)
-    gains = [score(ctx, r, want) for r in rows]
+    gains = [score(ctx, r, want, bool(gated and gated(r))) for r in rows]
     at = sorted(range(len(rows)), key=lambda i: (gains[i].key is None, -(gains[i].key or 0.0), i))
     return [rows[i] for i in at], [gains[i] for i in at]

@@ -49,6 +49,8 @@ NOT_GATING = {
     "evals/importers/geneval.py:download->urllib.request.urlopen(timeout)": "network timeout of a by-hand refresh "
                                                                            "of the recorded copy; it raises, it never "
                                                                            "changes a case (#603)",
+    "evals/importers/web_synth.py:ATTEMPTS": "redraws of one row before the generator refuses a kind too small "
+                                             "for its share; it raises, it never changes a case (#603)",
 }
 
 NEVER_CUTS = {

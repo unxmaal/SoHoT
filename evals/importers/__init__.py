@@ -34,6 +34,7 @@ REGISTRY = [
     Source("svg_synth", "svg"),
     Source("shots_synth", "shots"),
     Source("geneval", "image"),
+    Source("web_synth", "web"),
     Source("squad2_check", "decide"),
     Source("squad2_extract", "extract"),
     Source("squad2_retrieval", "retrieval"),

@@ -1,0 +1,72 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0630
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Lighthouse
+  overview". The page holds a <nav> holding exactly these links in this order: "Overview" to #overview,
+  "Weather" to #weather, "Volunteers" to #volunteers; and, for each link, a <section> whose id is the
+  link''s target without the # and which starts with an <h2> reading the link text. It also holds a table
+  with the caption "Harbor office tally", the header cells "Item", "Count", and these rows given as Item
+  / Count: silk ribbon, 317; sea salt, 384; rubber seal, 1; clay pot, 391. Keep those rows in order and
+  end the table with a row whose first cell is "Total" and whose second cell is the sum of the counts.
+  Put the header in one row of <th> cells and each value in its own <td>, with no units or extra characters.
+  Last, it holds a form with a <textarea> named "comments" labelled "Comments" with a <label> element,
+  required; an <input> of type "number" named "berth_length" labelled "Berth length" with a <label> element,
+  not required; and a submit button reading "Submit order". Mark only the controls asked as required.'
+assert:
+  structure:
+    title: Lighthouse overview
+    nav:
+    - - Overview
+      - '#overview'
+    - - Weather
+      - '#weather'
+    - - Volunteers
+      - '#volunteers'
+    sections:
+      overview: Overview
+      weather: Weather
+      volunteers: Volunteers
+    tables:
+    - caption: Harbor office tally
+      head:
+      - Item
+      - Count
+      rows:
+      - - silk ribbon
+        - '317'
+      - - sea salt
+        - '384'
+      - - rubber seal
+        - '1'
+      - - clay pot
+        - '391'
+      - - Total
+        - '1093'
+    form:
+      fields:
+      - label: Comments
+        name: comments
+        type: textarea
+        required: true
+      - label: Berth length
+        name: berth_length
+        type: number
+        required: false
+      submit: Submit order
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '630'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: mix
+  stratum: hard

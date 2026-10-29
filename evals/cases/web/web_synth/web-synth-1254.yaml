@@ -1,0 +1,78 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-1254
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Signal
+  tower safety". The page holds a <nav> holding exactly these links in this order: "Weather" to #weather,
+  "Rules" to #rules, "Schedule" to #schedule, "Location" to #location; and, for each link, a <section>
+  whose id is the link''s target without the # and which starts with an <h2> reading the link text. It
+  also holds a table with the caption "Lighthouse tally", the header cells "Item", "Count", and these
+  rows given as Item / Count: pine tar, 325; cork float, 88; glass jar, 56; rye flour, 265; garden hose,
+  398. Keep those rows in order and end the table with a row whose first cell is "Total" and whose second
+  cell is the sum of the counts. Put the header in one row of <th> cells and each value in its own <td>,
+  with no units or extra characters. Last, it holds a form with an <input> of type "color" named "colour"
+  labelled "Favourite colour" with a <label> element, required; an <input> of type "date" named "start_date"
+  labelled "Start date" with a <label> element, not required; and a submit button reading "Send". Mark
+  only the controls asked as required.'
+assert:
+  structure:
+    title: Signal tower safety
+    nav:
+    - - Weather
+      - '#weather'
+    - - Rules
+      - '#rules'
+    - - Schedule
+      - '#schedule'
+    - - Location
+      - '#location'
+    sections:
+      weather: Weather
+      rules: Rules
+      schedule: Schedule
+      location: Location
+    tables:
+    - caption: Lighthouse tally
+      head:
+      - Item
+      - Count
+      rows:
+      - - pine tar
+        - '325'
+      - - cork float
+        - '88'
+      - - glass jar
+        - '56'
+      - - rye flour
+        - '265'
+      - - garden hose
+        - '398'
+      - - Total
+        - '1132'
+    form:
+      fields:
+      - label: Favourite colour
+        name: colour
+        type: color
+        required: true
+      - label: Start date
+        name: start_date
+        type: date
+        required: false
+      submit: Send
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '1254'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: mix
+  stratum: hard

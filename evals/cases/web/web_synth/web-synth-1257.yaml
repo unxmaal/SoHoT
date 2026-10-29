@@ -1,0 +1,51 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-1257
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Signal
+  tower history". The page holds a table with the caption "North pier orders", the header cells "Item",
+  "Count", and these rows given as Item / Count: brass hinge, 102; rye flour, 348; tin can, 268; clay
+  pot, 250; cotton rope, 312; cedar shingle, 587; pine tar, 522; iron nail, 294. List the rows sorted
+  by Count, largest first. Put the header in one row of <th> cells and each value in its own <td>, with
+  no units or extra characters.'
+assert:
+  structure:
+    title: Signal tower history
+    tables:
+    - caption: North pier orders
+      head:
+      - Item
+      - Count
+      rows:
+      - - cedar shingle
+        - '587'
+      - - pine tar
+        - '522'
+      - - rye flour
+        - '348'
+      - - cotton rope
+        - '312'
+      - - iron nail
+        - '294'
+      - - tin can
+        - '268'
+      - - clay pot
+        - '250'
+      - - brass hinge
+        - '102'
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '1257'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: sorted
+  stratum: hard

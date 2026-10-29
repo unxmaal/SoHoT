@@ -1,0 +1,73 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0282
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Net
+  shed schedule". The page holds a <nav> holding exactly these links in this order: "Membership" to #membership,
+  "Prices" to #prices, "Volunteers" to #volunteers, "Location" to #location; and, for each link, a <section>
+  whose id is the link''s target without the # and which starts with an <h2> reading the link text. It
+  also holds a table with the caption "Ferry slip tally", the header cells "Item", "Count", and these
+  rows given as Item / Count: linen towel, 178; rye flour, 19; glass jar, 98. Keep those rows in order
+  and end the table with a row whose first cell is "Total" and whose second cell is the sum of the counts.
+  Put the header in one row of <th> cells and each value in its own <td>, with no units or extra characters.
+  Last, it holds a form with an <input> of type "time" named "arrival" labelled "Arrival time" with a
+  <label> element, not required; an <input> of type "url" named "website" labelled "Website" with a <label>
+  element, not required; and a submit button reading "Send". Mark only the controls asked as required.'
+assert:
+  structure:
+    title: Net shed schedule
+    nav:
+    - - Membership
+      - '#membership'
+    - - Prices
+      - '#prices'
+    - - Volunteers
+      - '#volunteers'
+    - - Location
+      - '#location'
+    sections:
+      membership: Membership
+      prices: Prices
+      volunteers: Volunteers
+      location: Location
+    tables:
+    - caption: Ferry slip tally
+      head:
+      - Item
+      - Count
+      rows:
+      - - linen towel
+        - '178'
+      - - rye flour
+        - '19'
+      - - glass jar
+        - '98'
+      - - Total
+        - '295'
+    form:
+      fields:
+      - label: Arrival time
+        name: arrival
+        type: time
+        required: false
+      - label: Website
+        name: website
+        type: url
+        required: false
+      submit: Send
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '282'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: mix
+  stratum: hard

@@ -1,0 +1,45 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0187
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Fish
+  market prices". The page holds a <nav> holding exactly these links in this order: "History" to #history,
+  "Overview" to #overview, "Schedule" to #schedule, "Location" to #location, "Membership" to #membership;
+  and, for each link, a <section> whose id is the link''s target without the # and which starts with an
+  <h2> reading the link text.'
+assert:
+  structure:
+    title: Fish market prices
+    nav:
+    - - History
+      - '#history'
+    - - Overview
+      - '#overview'
+    - - Schedule
+      - '#schedule'
+    - - Location
+      - '#location'
+    - - Membership
+      - '#membership'
+    sections:
+      history: History
+      overview: Overview
+      schedule: Schedule
+      location: Location
+      membership: Membership
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '187'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: nav
+  stratum: medium

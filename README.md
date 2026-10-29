@@ -2680,6 +2680,17 @@ plus exclude reads "exactly", a position becomes `above` or `left_of` against
 the named object, and a colour must beat GenEval's other colours on the
 object's box. The negative control: boxes meeting the spec pass, no boxes and
 the next case's boxes do not.
+The web lane's generated source is `web_synth` (#603). Each row draws a page
+spec, and the spec gives the prompt and a `structure` assertion that
+`structure()` in `harness/checks/html.py` reads from the parsed page before
+any browser renders it: the title, the heading outline, table captions,
+headers and rows in order, nav links and the sections they point at, nested
+lists, definition lists, article cards, form controls with their labels,
+types and required flags, and no remote loads. Hard kinds need the content
+computed from the prompt: rows sorted, filtered, totalled or converted. The
+negative control: the page built from the spec passes, a bare page and the
+next case's page do not, and a hard kind's rows left as the prompt gives them
+fail.
 
 `repair` costs nothing extra, so it is the one to understand. Everything already
 checks its own output. It runs the code it wrote, draws the SVG to see whether
