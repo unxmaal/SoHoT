@@ -37,13 +37,13 @@ def cmd_jobs(a) -> int:
     rest, title = list(a.rest), a.title
     # REMAINDER swallows options written after the action.
     priority, cwd = a.priority, a.cwd
-    start = "night" if getattr(a, "night", False) else getattr(a, "not_before", "")
+    night, start = bool(getattr(a, "night", False)), getattr(a, "not_before", "")
     while rest[:1] in (["--title"], ["--json"], ["--priority"], ["--cwd"], ["--night"],
                        ["--not-before"]):
         if rest[0] == "--json":
             common._JSON, rest = True, rest[1:]
         elif rest[0] == "--night":
-            start, rest = "night", rest[1:]
+            night, rest = True, rest[1:]
         elif len(rest) > 1 and rest[0] == "--not-before":
             start, rest = rest[1], rest[2:]
         elif len(rest) > 1 and rest[0] == "--title":
@@ -68,8 +68,9 @@ def cmd_jobs(a) -> int:
         if a.action == "add":
             import os
             where = wq.queue_cwd(os.getcwd(), wq.deployed(), explicit=cwd)
+            not_before, gated = wq.start_with_night(start, night)
             job = wq.add(rest, title=a.title, cwd=where, priority=priority,
-                         requested_by="cli", not_before=wq.start_at(start), night=start == "night")
+                         requested_by="cli", not_before=not_before, night=gated)
             after = f" (not before {job['not_before']})" if job["not_before"] else ""
             note(f"queued {job['id']}{after}: {job['title']}")
             emit(job=job)

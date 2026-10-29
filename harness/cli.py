@@ -912,9 +912,9 @@ def build_parser() -> argparse.ArgumentParser:
     jobs.add_argument("--cwd", default="",
                       help="add: run here instead of the deploy checkout. #645")
     jobs.add_argument("--not-before", default="", metavar="WHEN",
-                      help="add: start no earlier than the next local HH:MM, or a local YYYY-MM-DD HH:MM. #900, #1297")
+                      help="add: start no earlier than the next local HH:MM, or a local YYYY-MM-DD[T]HH:MM[:SS]. #900, #1297")
     jobs.add_argument("--night", action="store_true",
-                      help="add: start no earlier than the night window discovery runs in. #900")
+                      help="add: start no earlier than the night window discovery runs in; with --not-before, the first night moment after it. #900, #1347")
     jobs.set_defaults(func=jobs_cmd.cmd_jobs)
     day = sub.add_parser("day", help="clear this machine to run jobs all day, until the watchdog's day end. #1112")
     day.add_argument("action", choices=("clear", "status", "revoke"))

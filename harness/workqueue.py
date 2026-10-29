@@ -194,10 +194,16 @@ def at_clock(hhmm: str, now: float) -> float:
 def at_date(spec: str, now: float) -> float:
     """A local 'YYYY-MM-DD HH:MM' as that exact time; one already past is refused. #1297."""
     from datetime import datetime
-    try:
-        at = datetime.strptime(spec.strip().replace("T", " "), "%Y-%m-%d %H:%M")
-    except ValueError:
-        raise ValueError(f"a start time is HH:MM, YYYY-MM-DD HH:MM or 'night', not {spec!r}") from None
+    text = spec.strip().replace("T", " ")
+    at = None
+    for form in ("%Y-%m-%d %H:%M", "%Y-%m-%d %H:%M:%S"):
+        try:
+            at = datetime.strptime(text, form)
+            break
+        except ValueError:
+            continue
+    if at is None:
+        raise ValueError(f"a start time is HH:MM, YYYY-MM-DD HH:MM[:SS] or 'night', not {spec!r}")
     if at.timestamp() < now:
         raise ValueError(f"the start {spec!r} is in the past")
     return at.timestamp()
@@ -212,6 +218,40 @@ def start_at(spec: str, now: float | None = None) -> float | None:
     if spec == "night":
         return night_start(now)
     return at_date(spec, now) if re.match(r"\d{4}-", spec) else at_clock(spec, now)
+
+
+def start_with_night(spec: str, night: bool, now: float | None = None) -> tuple[float | None, bool]:
+    """(not_before, night_gate) for --not-before spec and --night: both means the first night moment at or after spec. #1347."""
+    spec = (spec or "").strip()
+    if not night or not spec or spec == "night":
+        start = "night" if night else spec
+        return start_at(start, now), start == "night"
+    return night_start(start_at(spec, now)), False
+
+
+def _schema_file(cwd) -> Path | None:
+    here = Path(cwd).resolve()
+    return next((f for f in (t / "harness" / "memory_store" / "schema.py" for t in (here, *here.parents))
+                 if f.is_file()), None)
+
+
+def code_schema(cwd) -> int | None:
+    """The SCHEMA_VERSION the nearest checkout at or above cwd speaks, read as text; None outside one. #1348."""
+    schema = _schema_file(cwd)
+    m = schema and re.search(r"^SCHEMA_VERSION\s*=\s*(\d+)", schema.read_text(encoding="utf-8"), re.M)
+    return int(m.group(1)) if m else None
+
+
+def stale_schema(cwd, conn) -> str:
+    """Why a job in cwd would refuse this store (its code speaks an older schema), or ''. #1348."""
+    code = code_schema(cwd)
+    row = conn.execute("SELECT value FROM meta WHERE key='schema'").fetchone()
+    store = int(row["value"]) if row else 0
+    if code is None or code >= store:
+        return ""
+    top = _schema_file(cwd).parents[2]
+    return (f"the job's code ({top}) speaks schema {code} but the store is schema {store}, "
+            f"so it would refuse the store when it starts; queue from the deploy or update that checkout")
 
 
 def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
@@ -232,6 +272,9 @@ def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
         if spend:
             raise ValueError(f"not queued: {spend}")
     with _store(conn) as c:
+        stale = stale_schema(cwd or os.getcwd(), c)
+        if stale:
+            raise ValueError(f"not queued: {stale}")
         machine = _machine(c)
         # The store assigns the id inside the insert, so two writers cannot collide. #418.
         cur = c.execute(
@@ -637,6 +680,13 @@ def run_one(job: dict, popen=None) -> dict | None:
     log = log_dir() / f"{job['id']}.log"
     if not _claim(job, log):
         return None
+    with _store() as c:
+        stale = stale_schema(job["cwd"] or ".", c)
+    if stale:
+        log.write_text(f"not started: {stale}\n", encoding="utf-8")
+        job.update(rc=None, state=FAILED, note=f"not started: {stale}", finished=time.strftime(_STAMP))
+        _write(job)
+        return get(job["id"]) or job
     env = {**os.environ, JOB_ENV: str(int(job["id"]))}
     _cancel_flag(job["id"]).unlink(missing_ok=True)
     popen = popen or _in_group(job)
