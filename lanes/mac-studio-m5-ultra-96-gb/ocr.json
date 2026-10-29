@@ -450,7 +450,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-10-26T07:02:49Z",
+ "generated_at": "2026-10-29T10:17:06Z",
  "knobs": [],
  "lane": {
   "cases": 448,
@@ -463,7 +463,7 @@
   "label": "Mac Studio M5 Ultra 96 GB",
   "slug": "mac-studio-m5-ultra-96-gb"
  },
- "schema_version": 1,
+ "schema_version": 2,
  "served": {
   "adopted": false,
   "adopted_at": "",
