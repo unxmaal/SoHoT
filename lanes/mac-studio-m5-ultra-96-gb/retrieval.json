@@ -40,8 +40,8 @@
   },
   {
    "candidate": "rerank:cross-encoder/ettin-reranker-1b-v1",
-   "decided_at": "2026-10-26T01:06:27Z",
-   "detail": "fits: smallest variant model.safetensors: 3.8 GiB of 1 weight file",
+   "decided_at": "2026-10-29T01:19:40Z",
+   "detail": "3.8 GiB would take this run past its 40 GiB budget (39.7 GiB already fetched)",
    "exam": {
     "about": "1B params",
     "candidate": "rerank/ettin-reranker-1b-v1",
@@ -68,12 +68,12 @@
    },
    "outcome": "queued",
    "proposal": "cross-encoder/ettin-reranker-1b-v1",
-   "reason": "candidate",
+   "reason": "limit",
    "receipt_key": "rerank/ettin-reranker-1b-v1",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
+   "tier": "fetch",
    "until": ""
   }
  ],
@@ -198,7 +198,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-10-26T07:02:50Z",
+ "generated_at": "2026-10-29T10:17:06Z",
  "knobs": [],
  "lane": {
   "cases": 594,
@@ -211,7 +211,7 @@
   "label": "Mac Studio M5 Ultra 96 GB",
   "slug": "mac-studio-m5-ultra-96-gb"
  },
- "schema_version": 1,
+ "schema_version": 2,
  "served": {
   "adopted": false,
   "adopted_at": "",
@@ -229,7 +229,7 @@
   "pass_rate": 0.783,
   "serves": "bm25",
   "serves_model": "bm25",
-  "stale": false
+  "stale": true
  },
  "since": 0
 }
