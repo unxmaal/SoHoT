@@ -866,6 +866,8 @@ class Receipt:
     harness: str = ""
     #: receipt key -> {"retried", "lost"} requests a full shared llama-server pool failed. Not an axis. #755.
     pool_full: dict = field(default_factory=dict)
+    #: receipt key -> the reply cap its stored runs derived and where it came from. Not an axis; max_tokens is. #1352.
+    reply_cap: dict = field(default_factory=dict)
 
     @property
     def rows_per_case(self) -> int:
@@ -902,7 +904,8 @@ class Receipt:
                 "yield_stop": {k: dict(v) for k, v in self.yield_stop.items()},
                 "engine_timeout": {k: dict(v) for k, v in self.engine_timeout.items()},
                 **({"harness": self.harness} if self.harness else {}),
-                **({"pool_full": {k: dict(v) for k, v in self.pool_full.items()}} if self.pool_full else {})}
+                **({"pool_full": {k: dict(v) for k, v in self.pool_full.items()}} if self.pool_full else {}),
+                **({"reply_cap": {k: dict(v) for k, v in self.reply_cap.items()}} if self.reply_cap else {})}
 
     @classmethod
     def from_dict(cls, raw: dict) -> "Receipt":
@@ -934,7 +937,8 @@ class Receipt:
                    yield_stop=raw.get("yield_stop") or {},
                    engine_timeout=raw.get("engine_timeout") or {},
                    harness=raw.get("harness") or "",
-                   pool_full=raw.get("pool_full") or {})
+                   pool_full=raw.get("pool_full") or {},
+                   reply_cap=raw.get("reply_cap") or {})
 
 
 def legacy_knobs(raw: dict) -> dict:

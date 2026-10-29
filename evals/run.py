@@ -409,14 +409,31 @@ def server_sampling(specs: dict) -> dict:
     return out
 
 
-def run_budget(modality: str, asked: int | None) -> int:
-    """The reply budget a run records: the one it was given, else its lane's; 0 where no text is generated. #628."""
+def run_budget(modality: str, asked: int | None, candidates=(), harness: str = "patch") -> int:
+    """The reply budget a run records: the one it was given, else its candidates' derived cap; 0 where no text is generated. #628, #1352."""
+    return reply_budget(modality, asked, candidates, harness)[0]
+
+
+def reply_budget(modality: str, asked: int | None, candidates=(), harness: str = "patch") -> tuple[int, dict]:
+    """(the reply budget a run records, spec -> the cap it came from); a run of no candidate or another harness asks at its lane's. #1352."""
     if asked is not None and int(asked) < 1:
         raise SystemExit(f"--max-tokens must be at least 1, not {asked}")
     lane = completion.budget(modality)
     if modality != "all" and not lane:
-        return 0
-    return int(asked) if asked is not None else lane
+        return 0, {}
+    if asked is not None:
+        return int(asked), {}
+    if modality == "all" or harness != "patch" or not candidates:
+        return lane, {}
+    from harness import reply_cap
+    return reply_cap.budget_for(modality, candidates)
+
+
+def reply_caps(specs: dict, caps: dict) -> dict:
+    """receipt key -> the cap its model derived, for the receipt; a screen's greedy spec keys by its base model. #1352."""
+    from harness import convertible
+    by = {convertible.base_of(s): c for s, c in caps.items()}
+    return {key: by[b] for key, spec in specs.items() if (b := convertible.base_of(spec)) in by}
 
 
 def run_ladder(modality: str, asked: str | None) -> tuple[int, ...]:
@@ -1422,7 +1439,12 @@ def _execute_at(args, overrides: dict) -> int:
     if ladder and getattr(args, "max_tokens", None) is not None:
         raise SystemExit("--budget-ladder and --max-tokens say two things about the reply "
                          "budget; pass one")
-    budget = ladder[-1] if ladder else run_budget(args.modality, getattr(args, "max_tokens", None))
+    budget, caps = ((ladder[-1], {}) if ladder else
+                    reply_budget(args.modality, getattr(args, "max_tokens", None), candidates, harness))
+    if any(c["from"] != "budget" for c in caps.values()):
+        from harness import reply_cap
+        print(f"── reply budget {budget}: " + "; ".join(f"{s}: {reply_cap.said(c)}" for s, c in caps.items()),
+              flush=True)
     pool, counts, untils, caveat = cases, {}, {}, ""
     if args.screen:
         candidates = greedy(candidates)
@@ -1579,6 +1601,7 @@ def _execute_at(args, overrides: dict) -> int:
             pool_full=pooled,
             budget_ladder=ladder,
             yield_stop={todo[i][1].candidate: k["stop"] for i, k in enumerate(kept) if k.get("stop")},
+            reply_cap=reply_caps(specs, caps),
             engine_timeout=engine_reruns(clocks, planned),
             resolved=resolved,
             machine=serving,

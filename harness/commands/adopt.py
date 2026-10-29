@@ -74,14 +74,14 @@ def _row(r: dict) -> dict:
 
 def _profile(lane: str, receipts: dict, conn) -> tuple[str, str, dict, float | None, tuple, list]:
     """(incumbent key, its spec, its draws per case, its median seconds here at the lane's budget, settings, machines)."""
-    from harness import adopt, candidates, completion, power, runs, screen, winners
+    from harness import adopt, candidates, power, reply_cap, runs, screen, winners
     served = adopt.default_for(lane, winners.typed().get(lane, ""))
     spec = (screen.candidate_for(lane, served) or served) if served else ""
     try:
         key = candidates.key_of(spec) if spec else ""
     except Exception:  # noqa: BLE001
         key = ""
-    settings = (completion.budget(lane), ())
+    settings = (reply_cap.cap_for(conn, lane, [spec or served])[0], ())
     machines = runs.here(conn)
     if lane in receipts:
         sets = [[_row(r) for r in got["rows"]] for got in receipts[lane]]

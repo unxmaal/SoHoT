@@ -11,11 +11,13 @@ DAY = 86400.0
 def add_parser(sub) -> None:
     p = sub.add_parser("knobs", help="the knob backlog: unregistered gating sites, the ones this branch added, "
                        "and with --by-binding how often a stored reason quotes each one's limit")
-    p.add_argument("action", choices=("backlog", "effects", "engine-timeouts"),
+    p.add_argument("action", choices=("backlog", "effects", "engine-timeouts", "reply-caps"),
                    help="backlog; effects: each lane's same-config rerun churn, the adopt effect derived from it "
                         "against the registered one, and every stored adopt verdict replayed under it (#725); or "
                         "engine-timeouts: each engine's slowest finished case per machine, the clock derived from "
-                        "it and how many stored cases each margin would have cut (#708)")
+                        "it and how many stored cases each margin would have cut (#708); or reply-caps: each "
+                        "lane-model's derived reply budget, where it came from and what it keeps and saves on "
+                        "its stored rows (#1352)")
     p.add_argument("--by-binding", action="store_true",
                    help="rank the sites by waiting, skipped and declined verdicts a reason quoting them wrote")
     p.add_argument("--store", default="", help="a discovery.db to read read-only (default: a copy of this home's)")
@@ -97,7 +99,29 @@ def cmd_effects(a) -> int:
     return 0
 
 
+def cmd_reply_caps(a) -> int:
+    from harness import reply_cap as rc
+    try:
+        conn = _connect(a.store)
+    except (OSError, FileNotFoundError) as exc:
+        return err(str(exc))
+    try:
+        rows = rc.report(conn)
+    finally:
+        conn.close()
+    note(f"quantile {rc.QUANTILE:g} of a model's passing replies' tokens plus {rc.MARGIN:g}, in steps of {rc.STEP}, "
+         f"or its budget sweep within {rc.NOISE_Z:g} sd of the best; {rc.MIN_PASSES} passes needed; kept, lost and "
+         f"saved re-score its rows at the lane's whole budget")
+    for r in rows:
+        note(f"{r['lane']:<8} {r['model'][:44]:<44} {rc.said(r)}; {r['kept']} kept, {r['lost']} lost, "
+             f"{r['saved_share']:.0%} of {r['seconds'] / 3600:.1f} h saved")
+    emit(quantile=rc.QUANTILE, margin=rc.MARGIN, step=rc.STEP, min_passes=rc.MIN_PASSES, noise_z=rc.NOISE_Z, caps=rows)
+    return 0
+
+
 def cmd_knobs(a) -> int:
+    if a.action == "reply-caps":
+        return cmd_reply_caps(a)
     if a.action == "engine-timeouts":
         return cmd_engine_timeouts(a)
     if a.action == "effects":
