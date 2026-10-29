@@ -34,6 +34,23 @@ def cmd_adopt(a) -> int:
     return measure_cmd._measure_and_adopt(a, {"name": a.challenger, "lane": lane})
 
 
+def argv_screen_refusal(argv) -> str:
+    """Why a queued `soh adopt --lane repo --challenger X` waits for X's repo screen, or "". #1353."""
+    import argparse
+    argv = [str(x) for x in argv]
+    if "adopt" not in argv:
+        return ""
+    ap = argparse.ArgumentParser(add_help=False)
+    for flag in ("--lane", "--challenger", "--confirm"):
+        ap.add_argument(flag, default="")
+    for flag in ("--unscreened", "--power", "--from-measurement"):
+        ap.add_argument(flag, action="store_true")
+    got, _ = ap.parse_known_args(argv[argv.index("adopt") + 1:])
+    if got.confirm or got.power or got.from_measurement or not got.challenger:
+        return ""
+    return measure_cmd._screen_refusal(got, lanes.canonical(got.lane or ""), got.challenger)
+
+
 def _from_measurement(a) -> int:
     """`soh adopt --lane L --from-measurement`: a never-passing typed incumbent gives way to the best measured local candidate. #1110."""
     from harness import adopt, screen, winners

@@ -47,6 +47,11 @@ KNOBS = [
             "not run on it; 1 because the paired gate pairs one incumbent draw with each challenger draw "
             "(paired.head_to_head, power.plan per cell) and a draw under the same bytes is exchangeable with a "
             "fresh one; replay of run 521 on a store copy keeps the futility verdict (#1094)"),
+    _k("look_interval_s", ["harness/looks.py:LOOK_INTERVAL_S"], [600.0, 1800.0, 3600.0, 7200.0], unit="s",
+       note="seconds of a paired run between interim looks inside its budget; each look restarts evals.run "
+            "with --resume, about 23 s before its first case on a repo resume (job 0196), so 1800 costs ~1.3% "
+            "of the slice and looks every ~4-6 repo cells (Ornith 164 s + Qwen3.6 294 s a pair) or ~8-10 code "
+            "cells (Ornith 56 s + Swift-Qwen3.8 174 s, job 0199); at 7200 (the 2 h power_budget_min) the run looks only when its budget ends, as before (#1353)"),
     _k("power_fallback_repeat", ["harness/power.py:FALLBACK_REPEAT"], [1, 2, 3, 5],
        note="repeat a paired run takes when the powered one does not fit its budget (#591)"),
     _k("power_measuring_repeat", ["harness/power.py:MEASURING_REPEAT"], [2, 3, 4],

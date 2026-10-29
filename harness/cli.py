@@ -976,6 +976,8 @@ def build_parser() -> argparse.ArgumentParser:
                           "detect --effect on the holdout, capped (#479)")
     ado.add_argument("--effect", type=float, default=None,
                      help="the smallest per-cell pass-rate gain worth adopting for")
+    ado.add_argument("--unscreened", action="store_true",
+                     help="repo lane: measure a challenger whose repo screen has not survived, or has not run (#1353)")
     ado.set_defaults(func=adopt_cmd.cmd_adopt)
 
     rpl = sub.add_parser(

@@ -272,7 +272,7 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
     Two separate runs would be two receipts that comparable() would refuse, and
     rightly.
     """
-    from harness import adopt, candidates, screen, winners
+    from harness import adopt, candidates, paused, screen, winners
     from harness import memory_store as ms
 
     name = row["name"]
@@ -307,6 +307,13 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         print(f"  {name}: already the {lane} lane's default ({spec})")
         _settle(name, "measured", f"{lane}: already the lane's default")
         return 0
+    unscreened = _screen_refusal(a, lane, spec)
+    if unscreened:
+        if sweep is None:
+            return err(f"{name}: not measured: {unscreened}")
+        print(f"  {name}: not measured: {unscreened}", flush=True)
+        sweep.lines.append(f"{name}: not measured: {unscreened}")
+        return 0
     # THE PAIR MUST REACH THE SAME SERVER. One --gateway serves the whole run,
     # so when the challenger's repo id sends it to mlx_lm.server the incumbent
     # cannot travel as a LiteLLM alias: :8081 has never heard of `q3-4b`, the
@@ -329,30 +336,50 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
     if sweep is not None and sweep.remaining() <= 0:
         print(f"  {name}: not started, the sweep ceiling is reached; it waits for the next sweep", flush=True)
         return 0
-    for _ in range(2):
-        # NAME THE DIRECTORY, DO NOT GUESS AT IT AFTERWARDS: a newest-receipt read
-        # took a stranger's run (`legacy-...` sorts above timestamps). #222.
-        out = (Path(held["out"]) if held else paths.home() / "runs"
-               / f"{time.strftime('%Y%m%d-%H%M%S')}-adopt-{lane}")
-        if (getattr(plan, "reuse", None) or {}).get("reused"):
-            from harness import reuse
-            reuse.write(out, inc_spec, plan.reuse)
-        argv = _argv(lane, plan, out, inc_spec, spec, resume=bool(held))
-        # ROUTE IT THE WAY THE SCREEN DOES: LiteLLM refuses a repo id it has no alias for. #223, #206.
-        route = screen.routed_gateway(name)
-        if route:
-            argv += ["--gateway", route]
-        print(f"\n  {lane}: {name} against {incumbent}")
-        print(f"    {' '.join(argv)}", flush=True)
-        loaded.append(spec)
-        proc = _launch(argv, deadline_s=plan.deadline_s)
-        if proc.returncode == watch.STALE and held:
-            _stale(held, "the run's own checkpoint is another exam", name, sweep)
-            held = None
-            continue
-        break
-    if getattr(proc, "timed_out", False) or proc.returncode == watch.PAUSED:
-        return _paused(name, lane, inc_spec, spec, split, plan, out, held, ident, sweep)
+    started, spans = time.time(), 1
+    while True:
+        for _ in range(2):
+            # NAME THE DIRECTORY, DO NOT GUESS AT IT AFTERWARDS: a newest-receipt read
+            # took a stranger's run (`legacy-...` sorts above timestamps). #222.
+            out = (Path(held["out"]) if held else paths.home() / "runs"
+                   / f"{time.strftime('%Y%m%d-%H%M%S')}-adopt-{lane}")
+            if (getattr(plan, "reuse", None) or {}).get("reused"):
+                from harness import reuse
+                reuse.write(out, inc_spec, plan.reuse)
+            part, last = _slice(plan, time.time() - started)
+            argv = _argv(lane, part, out, inc_spec, spec, resume=bool(held),
+                         unscreened=lane == "repo")
+            # ROUTE IT THE WAY THE SCREEN DOES: LiteLLM refuses a repo id it has no alias for. #223, #206.
+            route = screen.routed_gateway(name)
+            if route:
+                argv += ["--gateway", route]
+            print(f"\n  {lane}: {name} against {incumbent}")
+            print(f"    {' '.join(argv)}", flush=True)
+            if spec not in loaded:
+                loaded.append(spec)
+            proc = _launch(argv, deadline_s=part.deadline_s)
+            if proc.returncode == watch.STALE and held:
+                _stale(held, "the run's own checkpoint is another exam", name, sweep)
+                held = None
+                continue
+            break
+        if not (getattr(proc, "timed_out", False) or proc.returncode == watch.PAUSED):
+            break
+        before = int((held or {}).get("done") or 0)
+        between = _between_looks(proc, out, last, before)
+        rc = _paused(name, lane, inc_spec, spec, split, plan, out, held, ident, sweep,
+                     interim=between, spans=spans)
+        spans = 0
+        if not between:
+            return rc
+        store = ms.connect()
+        try:
+            held = paused.find(store, lane, spec)
+        finally:
+            store.close()
+        if held is None:
+            return rc
+        held = {**held, "identity": ident}
     if _signalled(proc.returncode) and (watch.read(out) or ({}, []))[1]:
         # Stopped from outside (the watchdog, a TERM): its rows are kept and the next sweep resumes it. #864.
         print(f"    stopped by a signal (exit {proc.returncode}); its checkpointed cases are kept", flush=True)
@@ -580,7 +607,7 @@ def _with_reuse(plan, lane: str, inc_spec: str, est: dict, side: str, spec: str 
     cells = [c.id for c in run.expand_cases(on, plan.repeat)]
     store = ms.connect()
     try:
-        got = reuse.plan(store, lane, ident["digest"], cells, cases=ident["cases"])
+        got = reuse.plan(store, lane, ident["digest"], cells, cases=ident["cases"], parts=ident["parts"])
     finally:
         store.close()
     inc = (est.get("incumbent_s") or 0.0) * (est.get("incumbent_calls") or 1)
@@ -688,7 +715,46 @@ def _stop_group(proc, grace_s: float) -> None:
     workqueue.stop_group(proc.pid, grace=grace_s, proc=proc)
 
 
-def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False) -> list[str]:
+def _screen_refusal(a, lane: str, spec: str) -> str:
+    """Why a repo pairing waits for the challenger's repo screen, or ""; a held pause resumes. #1353."""
+    from evals import repo_screen
+    from harness import identity, paused
+    from harness import memory_store as ms
+    if lane != repo_screen.LANE or getattr(a, "unscreened", False):
+        return ""
+    store = ms.connect()
+    try:
+        if paused.find(store, lane, spec):
+            return ""
+        return repo_screen.refusal(store, [spec], identity.lane_cases(lane))
+    finally:
+        store.close()
+
+
+def _slice(plan, elapsed: float):
+    """(this launch's share of the plan, whether it is the budget's last): one look interval of what is left. #1353."""
+    from harness import looks
+    if plan.budget_s is None:
+        return plan, True
+    left = max(0.0, plan.budget_s - elapsed)
+    step = float(looks.LOOK_INTERVAL_S or 0.0)
+    deadline = None if plan.deadline_s is None else max(0.0, plan.deadline_s - elapsed)
+    last = step <= 0 or step >= left
+    return replace(plan, budget_s=left if last else step, deadline_s=deadline), last
+
+
+def _between_looks(proc, out, last: bool, before: int) -> bool:
+    """Whether a slice stopped at its own look time, with budget left and new rows, so the run goes on after a look."""
+    if last or getattr(proc, "timed_out", False) or proc.returncode != watch.PAUSED:
+        return False
+    progress = watch.read_progress(out)
+    if not str(progress.get("why") or "").startswith("paused at its stop time"):
+        return False
+    return len((watch.read(out) or ({}, []))[1]) > before
+
+
+def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False,
+          unscreened: bool = False) -> list[str]:
     """The paired evals.run: pause at this sweep's slice, a plan per case for a watchdog, resume when held. #813, #810."""
     from harness import runner_gaps
     argv = [*runner_gaps.launcher([inc_spec, spec], ["uv", "run", "python"]), "-m", "evals.run", "--modality", lane,
@@ -708,6 +774,9 @@ def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False) 
         argv += ["--reuse", str(Path(out) / reuse.REUSE_FILE)]
     if resume:
         argv.append("--resume")
+    if unscreened:
+        # The measure step judged the challenger's screen itself; the lane's incumbent needs none. #1353.
+        argv.append("--unscreened")
     return argv
 
 
@@ -785,8 +854,12 @@ def _signalled(rc) -> bool:
     return rc is not None and (rc < 0 or rc - 128 in stops)
 
 
-def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, held, ident, sweep) -> int:
-    """A run paused at its slice: take an interim look, then stop early on it or keep the pause for the next sweep. #813."""
+def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, held, ident, sweep,
+            interim: bool = False, spans: int = 1) -> int:
+    """A run paused at its slice: take an interim look, then stop early on it or keep the pause for the next sweep. #813.
+
+    `interim` is a look between slices of one launch (#1353): the pause is kept for a crash, the sweep is not told.
+    """
     import math
 
     from harness import adopt, candidates, looks, paused, power
@@ -836,9 +909,11 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
         paused.save(store, lane=lane, inc_spec=inc_spec, spec=spec, proposal=name, out=str(out),
                     ident=ident, plan=plan.as_dict(), done=done, total=total, looks=taken,
                     run_id=progress.get("run_id"), machine_id=ms.remember_machine(store),
-                    pause_id=held["id"] if held else None, why=why)
+                    pause_id=held["id"] if held else None, why=why, spans=spans)
     finally:
         store.close()
+    if interim:
+        return 0
     print(f"  {name}: {why}", flush=True)
     if sweep is not None:
         sweep.lines.append(f"{name}: {why}")

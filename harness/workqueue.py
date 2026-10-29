@@ -268,9 +268,14 @@ def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
                          f"split it into words (zsh does not word-split $VAR). #363")
     if "evals.run" in [str(a) for a in argv]:
         from evals import run
-        spend = run.argv_spend_refusal(argv)
+        spend = run.argv_spend_refusal(argv) or run.argv_screen_refusal(argv)
         if spend:
             raise ValueError(f"not queued: {spend}")
+    if "adopt" in [str(a) for a in argv]:
+        from harness.commands import adopt as adopt_cmd
+        unscreened = adopt_cmd.argv_screen_refusal(argv)
+        if unscreened:
+            raise ValueError(f"not queued: {unscreened}")
     with _store(conn) as c:
         stale = stale_schema(cwd or os.getcwd(), c)
         if stale:

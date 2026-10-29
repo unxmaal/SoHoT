@@ -7,6 +7,8 @@ from statistics import NormalDist
 
 #: Futility stops a run only when conditional power under the plan's effect falls below this AND the challenger is not ahead.
 FUTILITY_CP = 0.10
+#: Seconds a paired run goes between interim looks inside its budget. #1353.
+LOOK_INTERVAL_S = 1800.0
 
 
 def spent(t: float, alpha: float) -> float:
