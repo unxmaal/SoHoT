@@ -1,0 +1,59 @@
+# GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023), MIT (https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl).
+# Imported by evals/importers from github:djghosh13/geneval/prompts/evaluation_metadata.jsonl@af4902f24d3ca90ebbb446dd9891a59e0f82725f; re-import, do not edit.
+id: geneval-551-color-attr
+modality: image
+prompt: a photo of a green cup and a red pizza
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      cup: a cup
+      pizza: a pizza
+    require:
+    - type: count
+      object: cup
+      min: 1
+    - type: count
+      object: pizza
+      min: 1
+    - type: attribute
+      object: cup
+      is: a green cup
+      not:
+      - a red cup
+      - a orange cup
+      - a yellow cup
+      - a blue cup
+      - a purple cup
+      - a pink cup
+      - a brown cup
+      - a black cup
+      - a white cup
+    - type: attribute
+      object: pizza
+      is: a red pizza
+      not:
+      - a orange pizza
+      - a yellow pizza
+      - a green pizza
+      - a blue pizza
+      - a purple pizza
+      - a pink pizza
+      - a brown pizza
+      - a black pizza
+      - a white pizza
+attribution:
+  dataset: GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023)
+  url: https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl
+  license: MIT
+  source: github:djghosh13/geneval/prompts/evaluation_metadata.jsonl
+  revision: af4902f24d3ca90ebbb446dd9891a59e0f82725f
+  item: '551'
+  date: '2023-08-22'
+  transform: 'GenEval include/exclude spec as staging requirements: include count at least, include plus
+    exclude exactly, position relative to the named object, colour against the nine others'
+  importer: evals.importers.geneval
+  tag: color_attr

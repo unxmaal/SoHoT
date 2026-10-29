@@ -1,0 +1,59 @@
+# GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023), MIT (https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl).
+# Imported by evals/importers from github:djghosh13/geneval/prompts/evaluation_metadata.jsonl@af4902f24d3ca90ebbb446dd9891a59e0f82725f; re-import, do not edit.
+id: geneval-542-color-attr
+modality: image
+prompt: a photo of a brown giraffe and a white stop sign
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      giraffe: a giraffe
+      stop_sign: a stop sign
+    require:
+    - type: count
+      object: giraffe
+      min: 1
+    - type: count
+      object: stop_sign
+      min: 1
+    - type: attribute
+      object: giraffe
+      is: a brown giraffe
+      not:
+      - a red giraffe
+      - a orange giraffe
+      - a yellow giraffe
+      - a green giraffe
+      - a blue giraffe
+      - a purple giraffe
+      - a pink giraffe
+      - a black giraffe
+      - a white giraffe
+    - type: attribute
+      object: stop_sign
+      is: a white stop sign
+      not:
+      - a red stop sign
+      - a orange stop sign
+      - a yellow stop sign
+      - a green stop sign
+      - a blue stop sign
+      - a purple stop sign
+      - a pink stop sign
+      - a brown stop sign
+      - a black stop sign
+attribution:
+  dataset: GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023)
+  url: https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl
+  license: MIT
+  source: github:djghosh13/geneval/prompts/evaluation_metadata.jsonl
+  revision: af4902f24d3ca90ebbb446dd9891a59e0f82725f
+  item: '542'
+  date: '2023-08-22'
+  transform: 'GenEval include/exclude spec as staging requirements: include count at least, include plus
+    exclude exactly, position relative to the named object, colour against the nine others'
+  importer: evals.importers.geneval
+  tag: color_attr

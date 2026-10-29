@@ -1,0 +1,59 @@
+# GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023), MIT (https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl).
+# Imported by evals/importers from github:djghosh13/geneval/prompts/evaluation_metadata.jsonl@af4902f24d3ca90ebbb446dd9891a59e0f82725f; re-import, do not edit.
+id: geneval-453-color-attr
+modality: image
+prompt: a photo of a purple wine glass and a black apple
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      wine_glass: a wine glass
+      apple: a apple
+    require:
+    - type: count
+      object: wine_glass
+      min: 1
+    - type: count
+      object: apple
+      min: 1
+    - type: attribute
+      object: wine_glass
+      is: a purple wine glass
+      not:
+      - a red wine glass
+      - a orange wine glass
+      - a yellow wine glass
+      - a green wine glass
+      - a blue wine glass
+      - a pink wine glass
+      - a brown wine glass
+      - a black wine glass
+      - a white wine glass
+    - type: attribute
+      object: apple
+      is: a black apple
+      not:
+      - a red apple
+      - a orange apple
+      - a yellow apple
+      - a green apple
+      - a blue apple
+      - a purple apple
+      - a pink apple
+      - a brown apple
+      - a white apple
+attribution:
+  dataset: GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023)
+  url: https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl
+  license: MIT
+  source: github:djghosh13/geneval/prompts/evaluation_metadata.jsonl
+  revision: af4902f24d3ca90ebbb446dd9891a59e0f82725f
+  item: '453'
+  date: '2023-08-22'
+  transform: 'GenEval include/exclude spec as staging requirements: include count at least, include plus
+    exclude exactly, position relative to the named object, colour against the nine others'
+  importer: evals.importers.geneval
+  tag: color_attr

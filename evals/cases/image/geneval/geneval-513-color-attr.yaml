@@ -1,0 +1,59 @@
+# GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023), MIT (https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl).
+# Imported by evals/importers from github:djghosh13/geneval/prompts/evaluation_metadata.jsonl@af4902f24d3ca90ebbb446dd9891a59e0f82725f; re-import, do not edit.
+id: geneval-513-color-attr
+modality: image
+prompt: a photo of a blue baseball bat and a pink book
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      baseball_bat: a baseball bat
+      book: a book
+    require:
+    - type: count
+      object: baseball_bat
+      min: 1
+    - type: count
+      object: book
+      min: 1
+    - type: attribute
+      object: baseball_bat
+      is: a blue baseball bat
+      not:
+      - a red baseball bat
+      - a orange baseball bat
+      - a yellow baseball bat
+      - a green baseball bat
+      - a purple baseball bat
+      - a pink baseball bat
+      - a brown baseball bat
+      - a black baseball bat
+      - a white baseball bat
+    - type: attribute
+      object: book
+      is: a pink book
+      not:
+      - a red book
+      - a orange book
+      - a yellow book
+      - a green book
+      - a blue book
+      - a purple book
+      - a brown book
+      - a black book
+      - a white book
+attribution:
+  dataset: GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023)
+  url: https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl
+  license: MIT
+  source: github:djghosh13/geneval/prompts/evaluation_metadata.jsonl
+  revision: af4902f24d3ca90ebbb446dd9891a59e0f82725f
+  item: '513'
+  date: '2023-08-22'
+  transform: 'GenEval include/exclude spec as staging requirements: include count at least, include plus
+    exclude exactly, position relative to the named object, colour against the nine others'
+  importer: evals.importers.geneval
+  tag: color_attr

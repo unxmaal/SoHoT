@@ -2673,6 +2673,14 @@ tracer or OmniSVG emits paths only. The attribution records kind and stratum
 (easy, medium, hard). The negative control: the reference passes, one black
 square and the next case's drawing do not.
 
+The image lane's imported source is `geneval` (#603): GenEval's prompts (MIT,
+pinned commit, recorded copy checked by sha256) as staging cases for the
+pinned detector. An include count reads "at least", a counting row's include
+plus exclude reads "exactly", a position becomes `above` or `left_of` against
+the named object, and a colour must beat GenEval's other colours on the
+object's box. The negative control: boxes meeting the spec pass, no boxes and
+the next case's boxes do not.
+
 The web lane's generated source is `web_synth` (#603). Each row draws a page
 spec, and the spec gives the prompt and a `structure` assertion that
 `structure()` in `harness/checks/html.py` reads from the parsed page before
