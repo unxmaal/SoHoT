@@ -15,12 +15,12 @@ def test_the_table_prints_one_row_per_lane_with_holdout_and_cases_needed(capsys,
     assert cli.main(["adopt", "--power", "--table", "--lane", "svg"]) == 0
     out = capsys.readouterr().out.splitlines()
     head = next(i for i, line in enumerate(out) if line.split()[:1] == ["lane"])
-    assert out[head].split() == ["lane", "cases", "holdout", "effect", "from", "rho", "rows", "power",
+    assert out[head].split() == ["lane", "cases", "holdout", "noise", "effect", "from", "rho", "rows", "power",
                                  "needed", "more_holdout", "more_cases", "status"]
     svg = out[head + 1].split()
     split = holdout.for_lane("svg")
-    assert svg[:5] == ["svg", str(len(split.dev) + len(split.holdout)), str(len(split.holdout)),
-                       f"{power.effect_for('svg'):.2f}", "measured"]
+    assert svg[:6] == ["svg", str(len(split.dev) + len(split.holdout)), str(len(split.holdout)),
+                       f"{power.noise_for('svg'):.2f}", f"{power.effect_for('svg'):.2f}", "measured"]
     assert [line.split()[0] for line in out[head + 1:] if line.split()[0] in lanes.ALL] == ["svg"]
 
 

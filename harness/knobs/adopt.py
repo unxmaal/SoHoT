@@ -16,11 +16,19 @@ KNOBS = [
             "cases are under adopt_effect_min_cases and keep 0.20. Replaying the 220 stored adopt verdicts changes "
             "one: 11228 (code, MDE +0.14) becomes underpowered. `soh knobs effects --store COPY` re-derives (#725)"),
     _k("adopt_effect_floor", ["harness/effects.py:FLOOR"], [0.02, 0.05, 0.1],
-       note="the smallest per-cell gain worth a model switch on a lane whose same-config reruns never flip "
-            "(decide, pii, retrieval churn 0): a value choice, not a measurement (#725)"),
+       note="the least noise effect a lane registers when its same-config reruns never flip (decide, pii, "
+            "retrieval churn 0); the gate still powers for adopt_min_effect when that is larger (#725, #1320)"),
     _k("adopt_effect_min_cases", ["harness/effects.py:MIN_CASES"], [10, 30, 100],
        note="cases measured twice under one config before a lane's churn sets its effect; at 30 the churn's "
             "relative standard error is about a quarter (#725)"),
+    _k("adopt_min_effect", ["harness/power.py:MIN_EFFECT"], [0.05, 0.1, 0.15, 0.2], unit="share",
+       note="the smallest per-cell gain worth a model switch; the gate powers for max(lane noise effect, this). "
+            "Holdout cases power 0.8 needs on each incumbent's measured rates and rho, store 2026-10-26, against "
+            "holdouts of 134-189: at 0.05 code 947 (noise 0.06), decide 293, extract 1160, ocr 690, pii 700, "
+            "retrieval 836, tts over 2000; at 0.10 code 384, decide 146, extract 423, ocr 320, pii 349, retrieval "
+            "417, tts 1734; at 0.15 code 196, decide 134 (enough), extract 249, ocr 208, pii 233, retrieval 278, "
+            "tts 835; at 0.20 code 135 (enough), extract 175, ocr 154, pii 174, retrieval 208, tts 510. Replaying "
+            "the 221 stored adopt verdicts, none changes class because of it (#1320)"),
     _k("deadline_grace", ["harness/power.py:DEADLINE_GRACE"], [1.0, 1.25, 1.5, 2.0],
        note="how far past its budget a paired run's slice may go before it is stopped; its rows are checkpointed and it resumes (#673, #813)"),
     _k("decode_tok_s", ["harness/power.py:DECODE_TOK_S", "harness/completion.py:MIN_DECODE_TOK_S"],

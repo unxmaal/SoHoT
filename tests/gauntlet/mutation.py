@@ -71,7 +71,7 @@ MODULES = {
         "tests/test_shared_store_703.py", "tests/test_screen_evidence.py", "tests/test_harness_winners.py",
         "tests/test_lane_routes.py", "tests/test_remote_upstreams.py", "tests/test_deepen_993.py",
         "tests/test_lane_too_small_1049.py", "tests/test_lane_until_1053.py", "tests/test_reverify_lane_metric_733.py",
-        "tests/test_adopt_effect_confirm_725.py"],
+        "tests/test_adopt_effect_confirm_725.py", "tests/test_min_effect_1320.py"],
     "harness/serving.py": [
         "tests/test_harness_serving.py", "tests/test_lane_routes.py", "tests/test_gguf_route.py",
         "tests/test_schema_lanes.py", "tests/test_ds4.py", "tests/test_remote_upstreams.py",
@@ -106,7 +106,7 @@ LEFT_OUT = {
         "test_repo_causes_1170.py", "test_pool_full_retry_755.py", "test_engine_timeout_708.py",
         "test_engine_timeout_1256.py", "test_trocr_tokenizer_1025.py", "test_fetch_files_1040.py", "test_lane_too_small_1049.py",
         "test_lane_until_1053.py", "test_loop_revisit_1055.py", "test_revisit_tier_1060.py",
-        "test_adopt_effect_confirm_725.py", "test_technique_triage_993.py"),
+        "test_adopt_effect_confirm_725.py", "test_min_effect_1320.py", "test_technique_triage_993.py"),
     "harness/screen.py": (
         "test_attachment_tags_949.py", "test_lane_too_small_1049.py", "test_vision_engines_1282.py",
         "test_variants_947.py", "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",
