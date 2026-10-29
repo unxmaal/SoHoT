@@ -1,5 +1,6 @@
 """Per-lane effect from same-config rerun churn, and a dev confirmation before a gate win serves. #725."""
 import argparse
+import itertools
 import json
 import time
 
@@ -10,6 +11,8 @@ from harness import memory_store as ms
 from harness import paths, screen, workqueue
 from harness.commands import adopt as adopt_cmd
 from harness.commands import measure as measure_cmd
+
+_PATHS = itertools.count()
 
 FAKE_MACHINE = {"fingerprint": "test/rig", "hw_model": "", "os": "", "arch": "",
                 "memory_gb": 0.0, "accelerator": "", "runtimes": "", "ceiling_gb": 0.0}
@@ -29,7 +32,7 @@ def conn(tmp_path, monkeypatch):
 def _run(c, lane, key, draws, *, tier="measure", budget=4096, path=None):
     """One stored run of `key`: draws is case -> list of pass bits, one per repeat."""
     rid = c.execute("INSERT INTO runs (path, lane, tier, receipt, recorded_at) VALUES (?,?,?,?,?)",
-                    (path or f"r{time.monotonic_ns()}", lane, tier,
+                    (path or f"r{next(_PATHS)}", lane, tier,
                      json.dumps({"modality": lane, "max_tokens": budget}), time.time())).lastrowid
     seq = 0
     for case, bits in draws.items():

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <g id="juniper">
+    <circle cx="75" cy="33.3333" r="20" fill="#e63946"/>
+    <circle cx="225" cy="33.3333" r="20" fill="#e63946"/>
+  </g>
+  <g id="ember">
+    <rect x="30" y="80" width="40" height="40" fill="#e76f51"/>
+    <rect x="130" y="80" width="40" height="40" fill="#e76f51"/>
+    <rect x="230" y="80" width="40" height="40" fill="#e76f51"/>
+  </g>
+  <g id="onyx">
+    <ellipse cx="30" cy="166.667" rx="18" ry="9" fill="#6a4c93"/>
+    <ellipse cx="90" cy="166.667" rx="18" ry="9" fill="#6a4c93"/>
+    <ellipse cx="150" cy="166.667" rx="18" ry="9" fill="#6a4c93"/>
+    <ellipse cx="210" cy="166.667" rx="18" ry="9" fill="#6a4c93"/>
+    <ellipse cx="270" cy="166.667" rx="18" ry="9" fill="#6a4c93"/>
+  </g>
+</svg>

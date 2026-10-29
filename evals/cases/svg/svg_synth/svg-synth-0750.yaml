@@ -1,0 +1,58 @@
+# SoHoT generated svg cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py).
+# Imported by evals/importers from generated:evals.importers.svg_synth v1 seed 1050@1878dddb4e7787e9870bf9adfc18239059c29347; re-import, do not edit.
+id: svg-synth-0750
+modality: svg
+prompt: 'Draw a chart legend on a viewBox of "0 0 200 200": 8 rows from top to bottom, each one square
+  <rect> swatch with its label in a <text> beside it: #f4a261 labelled "delta"; #b5838d labelled "lumen";
+  #1d3557 labelled "ember"; #e63946 labelled "indigo"; #8ab17d labelled "pike"; #264653 labelled "rook";
+  #457b9d labelled "kelp"; #6a4c93 labelled "maple". Exactly 8 <rect> and 8 <text>. Set every colour with
+  a fill attribute. Do not use transform attributes. Draw nothing else: no background, border, axis or
+  other extra shapes.'
+methods:
+- llm
+assert:
+  structure:
+    viewbox:
+    - 0
+    - 0
+    - 200
+    - 200
+    count:
+      rect: 8
+      text: 8
+    order:
+      tag: rect
+      axis: yx
+      fills:
+      - '#f4a261'
+      - '#b5838d'
+      - '#1d3557'
+      - '#e63946'
+      - '#8ab17d'
+      - '#264653'
+      - '#457b9d'
+      - '#6a4c93'
+    labels:
+    - delta
+    - lumen
+    - ember
+    - indigo
+    - pike
+    - rook
+    - kelp
+    - maple
+    inside: true
+attribution:
+  dataset: SoHoT generated svg cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py
+  license: generated
+  source: generated:evals.importers.svg_synth v1 seed 1050
+  revision: 1878dddb4e7787e9870bf9adfc18239059c29347
+  item: '750'
+  date: ''
+  transform: a seeded scene described as a prompt, asserted on its structure
+  importer: evals.importers.svg_synth
+  version: '1'
+  seed: 1050
+  kind: legend
+  stratum: hard

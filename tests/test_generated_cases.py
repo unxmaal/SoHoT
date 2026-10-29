@@ -116,7 +116,7 @@ def test_an_imported_file_is_written_beside_its_case_and_may_not_escape(tmp_path
     ("ocr_synth", {"reference": 440, "other-case": 0, "empty": 0}),
     ("pii_synth", {"reference": 540, "nothing": 120, "everything": 0}),
     ("tts_synth", {"reference": 460, "silence": 0, "fixed": 0}),
-    ("svg_synth", {"reference": 640, "square": 0, "other-case": 0}),
+    ("svg_synth", {"reference": 920, "square": 0, "other-case": 0}),
     ("web_synth", {"reference": 1300, "blank": 0, "other-case": 0}),
 ])
 def test_the_registered_negative_control_separates_reference_from_responders(committed, name,

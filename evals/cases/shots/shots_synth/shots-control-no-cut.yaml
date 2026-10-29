@@ -1,0 +1,50 @@
+# SoHoT generated shot-boundary clips, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/shots_synth.py).
+# Imported by evals/importers from generated:evals.importers.shots_synth v1 seed 1208@565ae336ede16923ce3fe391f0676704292b6f7d; re-import, do not edit.
+id: shots-control-no-cut
+modality: shots
+prompt: 'Mark every shot boundary in this clip: hard cuts, dissolves and fades.'
+input_file: clips/shots-control-no-cut.mp4
+assert:
+  fps: 24
+  frames: 720
+  transitions: []
+  negatives:
+  - kind: flash
+    first: 120
+    last: 121
+  - kind: whip
+    first: 300
+    last: 305
+  - kind: flash
+    first: 480
+    last: 480
+attribution:
+  dataset: SoHoT generated shot-boundary clips
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/shots_synth.py
+  license: generated
+  source: generated:evals.importers.shots_synth v1 seed 1208
+  revision: 565ae336ede16923ce3fe391f0676704292b6f7d
+  item: '11'
+  date: ''
+  transform: lavfi sources with a seeded pan, control clip, x264 crf 30, 192x108 at 24 fps
+  importer: evals.importers.shots_synth
+  version: '1'
+  seed: 1208
+  role: control
+  spec:
+    fps: 24
+    width: 192
+    height: 108
+    segments:
+    - source: mandelbrot
+      seed: 656607661
+      frames: 720
+      flash:
+      - - 120
+        - 121
+      - - 480
+        - 480
+      whip:
+      - - 300
+        - 305
+    joins: []

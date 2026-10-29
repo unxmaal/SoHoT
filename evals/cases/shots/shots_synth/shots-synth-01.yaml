@@ -1,0 +1,183 @@
+# SoHoT generated shot-boundary clips, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/shots_synth.py).
+# Imported by evals/importers from generated:evals.importers.shots_synth v1 seed 1208@565ae336ede16923ce3fe391f0676704292b6f7d; re-import, do not edit.
+id: shots-synth-01
+modality: shots
+prompt: 'Mark every shot boundary in this clip: hard cuts, dissolves and fades.'
+input_file: clips/shots-synth-01.mp4
+assert:
+  fps: 24
+  frames: 1069
+  transitions:
+  - kind: fade
+    first: 60
+    last: 71
+  - kind: dissolve
+    first: 139
+    last: 144
+  - kind: dissolve
+    first: 193
+    last: 204
+  - kind: dissolve
+    first: 227
+    last: 232
+  - kind: fade
+    first: 310
+    last: 321
+  - kind: cut
+    first: 379
+    last: 379
+  - kind: cut
+    first: 439
+    last: 439
+  - kind: cut
+    first: 493
+    last: 493
+  - kind: cut
+    first: 582
+    last: 582
+  - kind: cut
+    first: 633
+    last: 633
+  - kind: cut
+    first: 705
+    last: 705
+  - kind: cut
+    first: 763
+    last: 763
+  - kind: cut
+    first: 818
+    last: 818
+  - kind: dissolve
+    first: 901
+    last: 906
+  - kind: cut
+    first: 994
+    last: 994
+  negatives:
+  - kind: flash
+    first: 40
+    last: 40
+  - kind: flash
+    first: 152
+    last: 153
+  - kind: flash
+    first: 241
+    last: 241
+  - kind: flash
+    first: 474
+    last: 475
+  - kind: flash
+    first: 745
+    last: 746
+attribution:
+  dataset: SoHoT generated shot-boundary clips
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/shots_synth.py
+  license: generated
+  source: generated:evals.importers.shots_synth v1 seed 1208
+  revision: 565ae336ede16923ce3fe391f0676704292b6f7d
+  item: '1'
+  date: ''
+  transform: lavfi sources with a seeded pan, exam clip, x264 crf 30, 192x108 at 24 fps
+  importer: evals.importers.shots_synth
+  version: '1'
+  seed: 1208
+  role: exam
+  spec:
+    fps: 24
+    width: 192
+    height: 108
+    segments:
+    - source: cellauto
+      seed: 743437939
+      frames: 72
+      flash:
+      - - 40
+        - 40
+    - source: noise
+      seed: 190622550
+      frames: 85
+    - source: cellauto
+      seed: 306251888
+      frames: 66
+      flash:
+      - - 13
+        - 14
+    - source: mandelbrot
+      seed: 446594622
+      frames: 40
+    - source: cellauto
+      seed: 552036288
+      frames: 95
+      flash:
+      - - 14
+        - 14
+    - source: gradients
+      seed: 147966242
+      frames: 69
+    - source: noise
+      seed: 127433623
+      frames: 60
+    - source: life
+      seed: 199620382
+      frames: 54
+      flash:
+      - - 35
+        - 36
+    - source: testsrc2
+      seed: 741922033
+      frames: 89
+    - source: gradients
+      seed: 2491309
+      frames: 51
+    - source: noise
+      seed: 743498916
+      frames: 72
+    - source: life
+      seed: 51207128
+      frames: 58
+      flash:
+      - - 40
+        - 41
+    - source: testsrc2
+      seed: 790367083
+      frames: 55
+    - source: gradients
+      seed: 76907908
+      frames: 89
+    - source: noise
+      seed: 472170158
+      frames: 93
+    - source: gradients
+      seed: 1028966358
+      frames: 75
+    joins:
+    - kind: fade
+      frames: 12
+    - kind: dissolve
+      frames: 6
+    - kind: dissolve
+      frames: 12
+    - kind: dissolve
+      frames: 6
+    - kind: fade
+      frames: 12
+    - kind: cut
+      frames: 0
+    - kind: cut
+      frames: 0
+    - kind: cut
+      frames: 0
+    - kind: cut
+      frames: 0
+    - kind: cut
+      frames: 0
+    - kind: cut
+      frames: 0
+    - kind: cut
+      frames: 0
+    - kind: cut
+      frames: 0
+    - kind: dissolve
+      frames: 6
+    - kind: cut
+      frames: 0

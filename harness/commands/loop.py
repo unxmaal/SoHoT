@@ -253,6 +253,8 @@ def _run_loop_held(a, keep=None) -> int:
     want = (getattr(a, "lane", "") or "").strip().lower()
     store = ms.connect()
     try:
+        for line in _triage_lines(store, want, bool(getattr(a, "run", False))):
+            print(line)
         for line in _methods_lines(_cross_methods(store, want)):
             print(line)
         rows, _ = _queueable(store, want)
@@ -455,9 +457,19 @@ EVERY = 1_000_000
 
 
 def measure_queue(store, want: str, top: int, sweep=None, room=None, slots=None, say=print) -> list[dict]:
-    """What the measure step takes, in order: paused runs, repo-lane comparisons, then the families' order. #1100, #1111."""
-    queue = _by_family(store, measure_cmd.measurable(store, top or EVERY, want), sweep, room, slots, say)
+    """What the measure step takes, in order: paused runs, repo-lane comparisons, then the families' order of gain per minute. #1100, #1111, #1315."""
+    gained = _by_gain(store, measure_cmd.measurable(store, top or EVERY, want), want, say)
+    queue = _by_family(store, gained, sweep, room, slots, say)
     return repo_gate.order(measure_cmd.resume_first(store, queue, want), store, want)
+
+
+def _by_gain(store, rows: list[dict], want: str, say=print) -> list[dict]:
+    """Rows by expected gain per GPU-minute, each key said; ties and unpriced rows keep the survivors order. #1315."""
+    from harness import measure_gain
+    ordered, gains = measure_gain.order(store, rows, want)
+    for i, g in enumerate(gains):
+        say(f"  gain: {i + 1}. {g.line()}")
+    return ordered
 
 
 def _by_family(store, rows: list[dict], sweep, room=None, slots=None, say=print) -> list[dict]:
@@ -820,6 +832,13 @@ def _cross_methods(store, want: str = "") -> list[tuple[str, str, bool]]:
                           reason=reasons.CANDIDATE)
             out.append((lane, spec, not known))
     return out
+
+
+def _triage_lines(store, want: str = "", run: bool = False) -> list[str]:
+    """Technique proposals into method crossings before the loop crosses its registered methods; drafts only with --run. #993."""
+    from harness import technique_triage as tt
+    got = tt.triage(store, want=lanes.canonical(want) if want else "") if run else None
+    return tt.lines(store, got)
 
 
 def _methods_lines(crossed) -> list[str]:

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <g id="rook">
+    <circle cx="37.5" cy="33.3333" r="20" fill="#8ab17d"/>
+    <circle cx="112.5" cy="33.3333" r="20" fill="#8ab17d"/>
+    <circle cx="187.5" cy="33.3333" r="20" fill="#8ab17d"/>
+    <circle cx="262.5" cy="33.3333" r="20" fill="#8ab17d"/>
+  </g>
+  <g id="cedar">
+    <rect x="12" y="82" width="36" height="36" fill="#457b9d"/>
+    <rect x="72" y="82" width="36" height="36" fill="#457b9d"/>
+    <rect x="132" y="82" width="36" height="36" fill="#457b9d"/>
+    <rect x="192" y="82" width="36" height="36" fill="#457b9d"/>
+    <rect x="252" y="82" width="36" height="36" fill="#457b9d"/>
+  </g>
+  <g id="maple">
+    <ellipse cx="50" cy="166.667" rx="20" ry="10" fill="#f4a261"/>
+    <ellipse cx="150" cy="166.667" rx="20" ry="10" fill="#f4a261"/>
+    <ellipse cx="250" cy="166.667" rx="20" ry="10" fill="#f4a261"/>
+  </g>
+</svg>

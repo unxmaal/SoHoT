@@ -32,6 +32,7 @@ from harness.checks import ocr as ocr_check
 from harness.checks import pii as pii_check
 from harness.checks import render as render_check
 from harness.checks import retrieval as retrieval_check
+from harness.checks import shots as shots_check
 from harness.checks import video as video_check
 from harness.checks import speech as speech_check
 from harness.checks import staging as staging_check
@@ -351,6 +352,15 @@ def _check_ocr(artifact, case: Case) -> CheckResult:
     return out
 
 
+def _check_shots(artifact, case: Case) -> CheckResult:
+    """Detected boundaries against the clip's exact transitions, each type apart. #1208."""
+    if isinstance(artifact, Path):
+        if not artifact.exists():
+            return CheckResult(False, f"engine left no output at {artifact.name}")
+        artifact = artifact.read_text(encoding="utf-8")
+    return shots_check.check(str(artifact or ""), case.assertions)
+
+
 def _check_repo(artifact, case: Case) -> CheckResult:
     """The runner graded the checkout before discarding it; this reads its verdict. #887."""
     try:
@@ -403,6 +413,7 @@ CHECKERS = {
     "ocr": lambda a, c, **kw: _check_ocr(a, c),
     "retrieval": lambda a, c, **kw: _check_retrieval(a, c),
     "pii": lambda a, c, **kw: _check_pii(a, c),
+    "shots": lambda a, c, **kw: _check_shots(a, c),
     "svg": lambda a, c, **kw: _check_svg(a, c),
     "music": _check_music,
     "web": lambda a, c, **kw: _check_web(a, c),
@@ -441,6 +452,9 @@ METRIC_DIRECTION = {
     # all: an intelligible clone in the wrong voice scores a perfect 0.
     "speaker_similarity": "higher",
     "tokens_per_s": "higher",
+    # A routing arm's row: whether it went to the cloud alias, and the tokens it spent there. #1338
+    "routed_cloud": "neutral",
+    "cloud_tokens": "lower",
     # How far a track missed the length it was asked for. The only music axis
     # with a direction: it is a request the artifact either honoured or did
     # not, and unlike a tempo estimate it has no prior to be dragged by.
@@ -528,6 +542,15 @@ METRIC_DIRECTION = {
     "pii_f1": "higher",
     "pii_precision": "higher",
     "pii_recall": "higher",
+    # shots (#1208): boundary F1 over every type, recall per truth type, precision per claimed label.
+    "shots_boundary_f1": "higher",
+    "shots_cut_recall": "higher",
+    "shots_dissolve_recall": "higher",
+    "shots_fade_recall": "higher",
+    "shots_cut_precision": "higher",
+    "shots_gradual_precision": "higher",
+    "shots_negatives_triggered": "lower",
+    "shots_false": "lower",
     # claims (#654): matched against human reviews; expect_empty cases report apart.
     # Reviewed-case metrics are per review interface, never pooled (#661).
     "claims_schema_valid": "higher",
@@ -638,6 +661,7 @@ ASSERTION_KEYS = {"svg": TEXT_ASSERTIONS | {"structure"}, "web": TEXT_ASSERTIONS
                   "ocr": {"text", "max_cer"},
                   "retrieval": {"relevant", "k"},
                   "pii": {"pii"},
+                  "shots": {"fps", "frames", "transitions", "negatives"},
                   "claims": {"reviews", "expect_empty", "basis", "origin"}}
 
 
@@ -651,7 +675,7 @@ TRAJECTORY_SUFFIX = ".trajectory.json"
 TEXT_SUFFIX = {"svg": ".svg", "web": ".html", "code": ".py", "decide": ".json", "claims": ".json",
                "agent": ".json", "repo": ".json", "craft": ".json"}
 #: Lanes whose case hands the candidate a file to read through input_file. #562.
-INPUT_MODALITIES = {"ocr", "retrieval"}
+INPUT_MODALITIES = {"ocr", "retrieval", "shots"}
 #: Lanes whose runner drives a tool loop over a sandboxed repo. #474.
 AGENT_MODALITIES = {"agent"}
 #: Lanes whose runner drives a craft app over the app's own MCP server. #1209.
@@ -1655,6 +1679,10 @@ RATIO_METRICS = {"wer": ("wer_errors", "wer_words"),
                  "pii_f1": ("pii_2tp", "pii_f1_den"),
                  "pii_precision": ("pii_tp", "pii_pred"),
                  "pii_recall": ("pii_tp", "pii_gold"),
+                 "shots_boundary_f1": ("shots_2tp", "shots_f1_den"),
+                 **{f"shots_{k}_recall": (f"shots_{k}_found", f"shots_{k}_total") for k in shots_check.KINDS},
+                 **{f"shots_{c}_precision": (f"shots_{c}_right", f"shots_{c}_claimed") for c in ("cut", "gradual")},
+                 "shots_negatives_triggered": ("shots_negatives_hit", "shots_negatives_total"),
                  "claims_empty_rate": ("claims_empty_kept", "claims_empty_cases"),
                  **{f"claims_{name}": (f"claims_{n}", f"claims_{d}")
                     for name, (n, d) in claims_check.PER_INTERFACE_RATIOS.items()},

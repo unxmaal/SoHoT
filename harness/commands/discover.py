@@ -5,7 +5,7 @@ import argparse
 import json
 
 from harness import discover as discovery, paths, reasons
-from harness.commands.common import err
+from harness.commands.common import emit, err
 from harness.commands import judge as judge_cmd
 from harness.commands import loop as loop_cmd
 from harness.commands import report as report_cmd
@@ -55,6 +55,10 @@ def cmd_discover(a) -> int:
         return _report_quants(a)
     if getattr(a, "papers", False):
         return _report_papers(a)
+    if getattr(a, "posts", False):
+        return _report_posts(a)
+    if getattr(a, "triage", False):
+        return _report_triage(a)
     if a.external:
         if not a.lane:
             return err("--external needs a --lane: the registries are asked "
@@ -808,7 +812,7 @@ def _report_sources(a) -> int:
 #: Every source family, in the order a sweep reads them. Each entry is the
 #: attribute cmd_discover dispatches on, so adding a source family here is the
 #: only edit needed to put it in the sweep.
-SOURCE_TIERS = ("feeds", "neighbors", "benchmarks", "papers", "quants")
+SOURCE_TIERS = ("feeds", "neighbors", "benchmarks", "papers", "posts", "quants")
 
 
 def _report_benchmarks(a) -> int:
@@ -859,6 +863,59 @@ def _report_papers(a) -> int:
     laned = sum(1 for s in found if s.lane)
     print(f"  {len(found)} paper(s) read, {laned} with a lane"
           if found else "  no day of papers was due")
+    return 0
+
+
+def _report_posts(a) -> int:
+    """The practitioner tier of a sweep: each `techniques` feed entry is a technique proposal. #993."""
+    from harness import posts
+    from harness import memory_store as ms
+    conn = ms.connect()
+    try:
+        found = posts.sweep(conn)
+        failed = [r["name"] for r in (ms.source_row(conn, s.name) or {} for s in feeds_of(posts.KIND))
+                  if r and r.get("last_status") == "failed"]
+    finally:
+        conn.close()
+    print(f"  {len(found)} post(s) read as techniques" if found else "  no techniques feed had an entry")
+    for name in failed:
+        err(f"{name}: could not be read")
+    return 1 if failed else 0
+
+
+def feeds_of(kind: str) -> list:
+    from harness import feeds
+    return [s for s in feeds.load_sources() if s.kind == kind and s.enabled]
+
+
+def _report_triage(a) -> int:
+    """Technique proposals into method crossings: a dry count without --run, drafts with it. #993."""
+    from harness import technique_triage as tt
+    from harness import memory_store as ms
+    conn = ms.connect()
+    try:
+        limit = a.top if getattr(a, "top", None) is not None else tt.PER_RUN
+        got = tt.triage(conn, limit=limit, want=(a.lane or "").strip().lower()) if getattr(a, "run", False) else None
+        for line in tt.lines(conn, got, per_run=limit):
+            print(line)
+    finally:
+        conn.close()
+    return 0
+
+
+def cmd_propose(a) -> int:
+    """`soh propose <url>`: a technique a person names, sighted under `person`. #993."""
+    from harness import posts
+    from harness import memory_store as ms
+    conn = ms.connect()
+    try:
+        s = posts.propose(conn, a.url, title=a.title, note=a.note)
+    finally:
+        conn.close()
+    if getattr(a, "json", False):
+        emit(name=s.name, title=s.why, lane=s.lane, url=s.url)
+    else:
+        print(f"proposed {s.name}: {s.why}{f' ({s.lane} lane)' if s.lane else ''}; the next triage reads it")
     return 0
 
 

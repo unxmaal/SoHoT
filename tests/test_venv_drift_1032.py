@@ -99,7 +99,7 @@ def test_a_pin_not_installed_or_off_version_is_drift(tmp_path, monkeypatch):
 def test_every_runner_venv_script_pins_each_package_exactly(monkeypatch, venv, platform):
     monkeypatch.setattr(sys, "platform", platform)
     got = venv_drift.pins(venv, ROOT)
-    assert {"torch", "transformers"} <= set(got)
+    assert {"torch", "transformers" if venv != "shots" else "transnetv2-pytorch"} <= set(got)
     assert all("==" in pin for pin in got.values()), got
 
 
@@ -158,7 +158,8 @@ def _source(tmp_path, script: str, env_var: str, venv: Path) -> list[str]:
 
 
 @pytest.mark.skipif(sys.platform == "win32" or not shells.BASH, reason="sources a bash script with a fake uv")
-@pytest.mark.parametrize("script, env_var", [("diffusers-venv.sh", "DIFFUSERS_VENV"), ("hf-task-venv.sh", "HF_TASK_VENV")])
+@pytest.mark.parametrize("script, env_var", [("diffusers-venv.sh", "DIFFUSERS_VENV"), ("hf-task-venv.sh", "HF_TASK_VENV"),
+                                             ("shots-venv.sh", "SHOTS_VENV")])
 def test_a_venv_script_rebuilds_from_empty_when_anything_but_its_pins_is_installed(tmp_path, script, env_var):
     (tmp_path / "bin").mkdir()
     (tmp_path / "bin" / "uv").write_text(FAKE_UV, encoding="utf-8")
