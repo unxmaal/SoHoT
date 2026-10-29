@@ -32,11 +32,11 @@ import time
 from pathlib import Path
 from typing import Any
 
-from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver import Context, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import BaseModel
 
-from harness import completion, cuts, delegate, delegations, env, exclusive, paths, workqueue
+from harness import ask, completion, cuts, delegate, delegations, env, exclusive, paths, workqueue
 
 
 class JobInfo(BaseModel):
@@ -200,6 +200,10 @@ class LocalCompletion(BaseModel):
     call_id: str
     #: How to report what became of the answer, and what happens if you do not. #1158.
     report: str = ""
+    #: With `paths`: each file read, as {path, bytes}; the parts it was cut into and the calls made. #1335.
+    files: list[dict] | None = None
+    parts: int | None = None
+    calls: int | None = None
 
 
 class LocalDecision(BaseModel):
@@ -236,21 +240,48 @@ def _delegated(call, *args, **kw) -> dict:
     "(code, web, svg, extract, decide) and get the text back with the model "
     "that answered, time to first token and total seconds. Good for "
     "boilerplate, test scaffolding, summaries and bulk rewriting; it sees only "
-    "the prompt you pass. `system` replaces the lane's own system prompt. "
+    "the prompt you pass. To ask about a long log or tool-output file, do not "
+    "paste it: pass `paths` (absolute, on this machine) and `question`, and the "
+    "server reads the files itself and returns only the answer (\"none\" when "
+    "the files hold none), with each path and its byte count so you can still "
+    "Read one. Paths must sit under Claude Code's tool-results or task output, "
+    "this machine's SoHoT logs, or a root in SOHOT_ASK_ROOTS; 1 MiB in all. "
+    "`lane` defaults to code for a prompt and extract for paths. "
+    "`system` replaces the lane's own system prompt. "
     "While a batch run holds the machine it answers only if the model is "
     "already loaded; otherwise it refuses rather than waits. `thinking` false "
     "turns a hybrid thinking model's reasoning off; left out, the lane is "
     "served as it was measured. max_tokens may go up to the model's served "
     "context less the prompt (8192 when that context is unknown). Report what "
     "became of the answer with `delegated` and the returned call_id."))
-def local_complete(prompt: str, lane: str = "code", system: str | None = None,
-                   max_tokens: int = 2048, temperature: float | None = None,
-                   thinking: bool | None = None) -> LocalCompletion:
-    got = _delegated(delegate.complete, lane, prompt, system=system,
-                     max_tokens=max_tokens, temperature=temperature,
-                     thinking=thinking, delegated=True)
+def local_complete(prompt: str = "", lane: str = "", system: str | None = None,
+                   max_tokens: int | None = None, temperature: float | None = None,
+                   thinking: bool | None = None, paths: list[str] | None = None,
+                   question: str = "", ctx: Context | None = None) -> LocalCompletion:
+    if paths:
+        _from_here(ctx)
+        got = _delegated(ask.ask, paths, question or prompt, lane=lane or "extract",
+                         max_tokens=max_tokens or ask.REPLY_TOKENS, system=system,
+                         thinking=thinking, delegated=True)
+    else:
+        if question and not prompt:
+            raise ToolError("`question` asks about `paths`; pass the files, or put the task in `prompt`")
+        got = _delegated(delegate.complete, lane or "code", prompt, system=system,
+                         max_tokens=2048 if max_tokens is None else max_tokens,
+                         temperature=temperature, thinking=thinking, delegated=True)
     got["report"] = delegations.instruction(got["call_id"])
-    return LocalCompletion(**{k: got[k] for k in LocalCompletion.model_fields})
+    return LocalCompletion(**{k: got[k] for k in LocalCompletion.model_fields if k in got})
+
+
+def _from_here(ctx) -> None:
+    """Refuse `paths` from another machine: the server binds every interface with no authentication."""
+    try:
+        request = ctx.request_context.request if ctx is not None else None
+    except (AttributeError, ValueError):
+        request = None
+    if not ask.local_client(request):
+        raise ToolError("`paths` are read on the serving machine, so only a caller on it may pass them; "
+                        "from another machine, put the material in `prompt`")
 
 
 @SERVER.tool(description=(

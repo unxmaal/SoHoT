@@ -70,6 +70,7 @@ from harness.commands import morning as morning_cmd
 from harness.commands import sweep_check as sweep_check_cmd
 from harness.commands import otel as otel_cmd
 from harness.commands import route_trial as route_trial_cmd
+from harness.commands import ask as ask_cmd
 from harness.commands import usage as usage_cmd
 from harness.commands import canary as canary_cmd
 from harness.commands import review as review_cmd
@@ -741,6 +742,7 @@ def build_parser() -> argparse.ArgumentParser:
     climb_cmd.add_parser(sub)
     otel_cmd.add_parser(sub)
     route_trial_cmd.add_parser(sub)
+    ask_cmd.add_parser(sub)
     dlg = sub.add_parser("delegated", help="record what became of a local_complete or "
                          "local_decide answer, or --report the rates per lane")
     dlg.add_argument("call_id", nargs="?", default="", help="the call_id the delegation returned")
