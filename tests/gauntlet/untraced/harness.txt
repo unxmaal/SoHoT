@@ -127,7 +127,6 @@ harness/looks.py:FUTILITY_CP
 harness/machine.py:_mflux_cli->subprocess.run(timeout)
 harness/machine.py:_platform_uuid->subprocess.run(timeout)
 harness/mcp_server.py:_local_hostname->subprocess.run(timeout)
-harness/mcp_server.py:local_complete(max_tokens)
 harness/memory.py:GPU_FRACTION
 harness/memory.py:MIN_RESERVE_GB
 harness/memory.py:_discrete->subprocess.run(timeout)

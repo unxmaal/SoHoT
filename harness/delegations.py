@@ -174,7 +174,7 @@ def _answer(name: str, body: dict) -> str:
 
 
 def _asked(name: str, given: dict) -> str:
-    keys = ("question", "context") if _short(name) == "local_decide" else ("prompt", "system")
+    keys = ("question", "context") if _short(name) == "local_decide" else ("prompt", "question", "system")
     return "\n".join(str(given.get(k) or "") for k in keys)
 
 
