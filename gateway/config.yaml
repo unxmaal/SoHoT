@@ -171,7 +171,9 @@ litellm_settings:
   # usage_log records each request's shape, never its text, to the store (#481).
   # served_model names the model that answered in the reply and its headers (#670).
   # spend_guard records a metered alias's dollars and refuses it past api_budget (#1214).
-  callbacks: ["schema_guard.proxy_handler_instance", "usage_log.proxy_handler_instance",
+  # route_feedback feeds a routing arm verdicts before any hook can refuse the request carrying them (#1338).
+  callbacks: ["route_feedback.proxy_handler_instance",
+              "schema_guard.proxy_handler_instance", "usage_log.proxy_handler_instance",
               "served_model.proxy_handler_instance", "spend_guard.proxy_handler_instance"]
   # mlx_lm.server implements /v1/chat/completions but NOT /v1/responses.
   # Without this, LiteLLM routes /v1/messages through its Responses adapter

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <rect x="0" y="75" width="200" height="150" fill="#6a4c93"/>
+  <text x="100" y="172.5" font-size="45" text-anchor="middle" fill="#1d3557">rook</text>
+  <rect x="200" y="75" width="200" height="150" fill="#8ab17d"/>
+  <text x="300" y="172.5" font-size="45" text-anchor="middle" fill="#1d3557">v1.15.65</text>
+</svg>

@@ -15,7 +15,7 @@ from evals.importers import Imported, provenance
 LANE = "svg"
 VERSION = "1"
 SEED = 1050
-COUNT = 640
+COUNT = 920
 SOURCE = f"generated:evals.importers.svg_synth v{VERSION} seed {SEED}"
 DATASET = "SoHoT generated svg cases"
 URL = "https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py"

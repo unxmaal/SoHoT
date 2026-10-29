@@ -156,6 +156,50 @@ def worst(lane: str, n: int = 10, store=None, cases_dir=None) -> list[dict]:
     return out
 
 
+#: Fewest distinct ears that must hear the same words before the reference, not the ears, is suspect. #94.
+SUSPECT_EARS = 3
+
+
+def suspects(n: int = 10, store=None, cases_dir=None, ears: int = SUSPECT_EARS) -> list[dict]:
+    """stt clips where a strict majority of at least `ears` candidates hear the same words and the current scorer
+    still counts those words wrong against the reference: a wrong reference looks like this, a hard clip does not. #94."""
+    from harness.checks import speech
+
+    refs = references("stt", cases_dir)
+    heard_by: dict[str, dict[str, str]] = {}
+    for r in sorted(rows("stt", store), key=lambda r: (r["run"], r["candidate"])):
+        if r["case_id"] in refs and r["hypothesis"]:
+            heard_by.setdefault(r["case_id"], {}).setdefault(r["candidate"], r["hypothesis"])
+    out = []
+    for cid, heard_here in heard_by.items():
+        groups: dict[str, list[str]] = {}
+        for cand, text in sorted(heard_here.items()):
+            groups.setdefault(speech.normalize(text), []).append(cand)
+        words, agreeing = max(groups.items(), key=lambda g: (len(g[1]), g[0]))
+        if len(agreeing) < ears or 2 * len(agreeing) <= len(heard_here):
+            continue
+        text = heard_here[agreeing[0]]
+        errors, total = speech.wer_counts(refs[cid]["reference"], text)
+        if errors:
+            out.append({"case_id": cid, "reference": refs[cid]["reference"], "hypothesis": text,
+                        "agree": len(agreeing), "ears": len(heard_here), "candidates": agreeing,
+                        "errors": errors, "words": total, "audio": refs[cid]["audio"],
+                        "play": play(refs[cid]["audio"])})
+    out.sort(key=lambda c: (-c["agree"], -c["errors"] / max(c["words"], 1), c["case_id"]))
+    return out[:n]
+
+
+def suspects_text(got: list[dict]) -> str:
+    lines = []
+    for i, c in enumerate(got, 1):
+        lines += [f"{i}. {c['case_id']}  {c['agree']} of {c['ears']} ears agree, "
+                  f"{c['errors']} error(s) in {c['words']} words against the reference",
+                  f"   reference:  {c['reference']}",
+                  f"   heard:      {c['hypothesis']}",
+                  f"   play:       {c['play']}"]
+    return "\n".join(lines) or "no stt clip where the ears agree against the reference"
+
+
 def _summary(values: list[float]) -> dict:
     if not values:
         return {"n": 0}

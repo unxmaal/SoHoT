@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <g id="alpha">
+    <circle cx="30" cy="33.3333" r="18" fill="#e63946"/>
+    <circle cx="90" cy="33.3333" r="18" fill="#e63946"/>
+    <circle cx="150" cy="33.3333" r="18" fill="#e63946"/>
+    <circle cx="210" cy="33.3333" r="18" fill="#e63946"/>
+    <circle cx="270" cy="33.3333" r="18" fill="#e63946"/>
+  </g>
+  <g id="quartz">
+    <rect x="30" y="80" width="40" height="40" fill="#264653"/>
+    <rect x="130" y="80" width="40" height="40" fill="#264653"/>
+    <rect x="230" y="80" width="40" height="40" fill="#264653"/>
+  </g>
+  <g id="indigo">
+    <ellipse cx="30" cy="166.667" rx="18" ry="9" fill="#1d3557"/>
+    <ellipse cx="90" cy="166.667" rx="18" ry="9" fill="#1d3557"/>
+    <ellipse cx="150" cy="166.667" rx="18" ry="9" fill="#1d3557"/>
+    <ellipse cx="210" cy="166.667" rx="18" ry="9" fill="#1d3557"/>
+    <ellipse cx="270" cy="166.667" rx="18" ry="9" fill="#1d3557"/>
+  </g>
+</svg>

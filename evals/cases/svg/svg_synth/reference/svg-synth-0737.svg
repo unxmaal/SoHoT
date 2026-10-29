@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <rect x="4" y="10" width="30" height="30" fill="#f4a261"/>
+  <text x="38" y="34" font-size="24">juniper</text>
+  <rect x="4" y="60" width="30" height="30" fill="#e63946"/>
+  <text x="38" y="84" font-size="24">delta</text>
+  <rect x="4" y="110" width="30" height="30" fill="#2a9d8f"/>
+  <text x="38" y="134" font-size="24">quartz</text>
+  <rect x="4" y="160" width="30" height="30" fill="#457b9d"/>
+  <text x="38" y="184" font-size="24">fjord</text>
+  <rect x="4" y="210" width="30" height="30" fill="#e76f51"/>
+  <text x="38" y="234" font-size="24">nova</text>
+  <rect x="4" y="260" width="30" height="30" fill="#6a4c93"/>
+  <text x="38" y="284" font-size="24">ember</text>
+</svg>

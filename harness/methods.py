@@ -69,6 +69,8 @@ def parse(spec: str) -> Parsed | None:
     head, sep, rest = spec.partition(":")
     head = head.partition(",")[0].strip()
     method = REGISTRY.get(head)
+    if method is None and sep and head.startswith(DRAFTED_PREFIX) and _NAME.fullmatch(head):
+        raise ValueError(f"{spec!r}: no drafted template {head!r} in this store")
     if method is None:
         return None
     args = []
@@ -448,6 +450,8 @@ def from_template(row: dict, where: str = "a template") -> Method:
             unread[label] = i
         steps.append(Step(prompt, label, bool(s.get("answers")) or last))
     unread.pop(steps[-1].name, None)
+    if not any("task" in _SLOT.findall(s.prompt) for s in steps):
+        raise ValueError(f"{name}: no step reads {{task}}, so the template never sees the task")
     if unread:
         raise ValueError(f"{name}: no later step reads step {min(unread.values())}'s reply")
     body = json.dumps([[s.prompt, s.name, s.answers] for s in steps])
@@ -488,8 +492,33 @@ def _template(parsed: Parsed, base_builder, outdir):
     return TemplateRunner(base, parsed.method)
 
 
-def _registry(coded, templated) -> dict[str, Method]:
-    out = {m.name: m for m in coded}
+#: The head of a template drafted from a technique proposal and stored in the store, not this repo. #993.
+DRAFTED_PREFIX = "t-"
+#: store identity -> {name: Method}, the drafted templates read from that store.
+_DRAFTED: dict[str, dict] = {}
+
+
+class _Registry(dict):
+    """The registered methods; a `t-` name not among them is a drafted template read from the store. #993."""
+
+    def __missing__(self, key):
+        got = drafted(key)
+        if got is None:
+            raise KeyError(key)
+        return got
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def __contains__(self, key):
+        return dict.__contains__(self, key) or drafted(key) is not None
+
+
+def _registry(coded, templated) -> _Registry:
+    out = _Registry({m.name: m for m in coded})
     for m in templated:
         if m.name in out:
             raise ValueError(f"template {m.name!r} takes the name of a method already registered")
@@ -497,7 +526,65 @@ def _registry(coded, templated) -> dict[str, Method]:
     return out
 
 
-REGISTRY: dict[str, Method] = _registry((
+def drafted(name) -> Method | None:
+    """The drafted template `name` from this home's store, re-read once on a miss; None for any other name."""
+    if not isinstance(name, str) or not name.startswith(DRAFTED_PREFIX) or not _NAME.fullmatch(name):
+        return None
+    key = _store_key()
+    if name not in _DRAFTED.get(key, {}):
+        _DRAFTED[key] = _read_drafted()
+    return _DRAFTED[key].get(name)
+
+
+def forget_drafted() -> None:
+    _DRAFTED.clear()
+
+
+def _store_key() -> str:
+    from harness import store
+    if store.backend() == store.POSTGRES:
+        return "postgres"
+    from harness.memory_store import connection
+    return str(connection.db_path())
+
+
+def _read_drafted() -> dict:
+    """Every drafted template in the store, read without migrating it: a measure child resolves one by name."""
+    import sqlite3
+    from harness import store
+    from harness.memory_store import connection, migrations
+    conn, mine = connection.lent() or migrations.migrating(), False
+    try:
+        if conn is None and store.backend() == store.POSTGRES:
+            conn, mine = store.postgres_connect(), True
+        elif conn is None:
+            path = connection.db_path()
+            if not path.is_file():
+                return {}
+            conn, mine = sqlite3.connect(f"file:{path}?mode=ro", uri=True), True
+        rows = conn.execute("SELECT method, template FROM technique_triage WHERE template <> ''").fetchall()
+    except sqlite3.Error:
+        return {}
+    finally:
+        if mine:
+            conn.close()
+    return stored_templates(rows)
+
+
+def stored_templates(rows) -> dict:
+    """(name, template JSON) rows as {name: Method}; a row that no longer validates is left out."""
+    out = {}
+    for name, text in rows:
+        try:
+            m = from_template(json.loads(text), f"drafted template {name}")
+        except (ValueError, TypeError, AttributeError):
+            continue
+        if m.name == name and m.name.startswith(DRAFTED_PREFIX):
+            out[m.name] = m
+    return out
+
+
+REGISTRY: _Registry = _registry((
     Method("trace", "trace:<image engine>", ("svg",), "trace",
            "draw a raster with an image engine, then vectorize it", _trace,
            modality="svg", base_lane="image", preset="illustration"),

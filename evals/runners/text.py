@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import time
 
-from harness import completion, delegate, knobs, reasons
+from harness import completion, delegate, knobs, reasons, routes
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
@@ -119,6 +119,7 @@ class CompletionRunner(BaseRunner):
                     system=system)
         except completion.CompletionError as exc:
             self._keep(exc.request, exc.reasoning, exc.finish, exc.usage, str(exc))
+            self.last_call_id, self.last_routed, self.last_usage = exc.call_id, exc.routed, dict(exc.usage)
             if exc.failure_class == reasons.TOKEN_BUDGET_EXHAUSTED:
                 exc.failure_class, exc.limit = self._cut(self._stopped_at(limit, exc.usage))
             elif exc.failure_class == reasons.TIMEOUT and cold:
@@ -130,6 +131,7 @@ class CompletionRunner(BaseRunner):
             raise
         self._keep(got.request, got.reasoning, got.finish, got.usage)
         self.answered = True
+        self.last_call_id, self.last_routed, self.last_usage = got.call_id, got.routed, dict(got.usage)
         self.last_timing = {**got.timing, "cold": cold}
         spent = int(got.usage.get("completion_tokens") or 0)
         if got.finish == "length" or spent >= budget:
@@ -185,6 +187,8 @@ class CompletionRunner(BaseRunner):
         self.last_metrics = {}
         self.last_timing = {}
         self.last_cut = ""
+        self.last_call_id = self.last_routed = ""
+        self.last_usage = {}
         # Its own scope: a best-of sample is timed without its siblings' busy waits. #776.
         with completion.measuring():
             text, usage = self._generate(case)
@@ -225,6 +229,17 @@ class CompletionRunner(BaseRunner):
 
     def extra_metrics(self) -> dict:
         return getattr(self, "last_metrics", {})
+
+    def graded(self, case: Case, row) -> None:
+        """A routing arm's row says where it went; its verdict goes back to the gateway, which keeps only the calls it routed. #1338."""
+        routed = getattr(self, "last_routed", "")
+        if not routed:
+            return
+        cloud = routes.is_cloud(routed)
+        usage = getattr(self, "last_usage", None) or {}
+        spent = int(usage.get("prompt_tokens") or 0) + int(usage.get("completion_tokens") or 0)
+        row.metrics = {**(row.metrics or {}), "routed_cloud": int(cloud), "cloud_tokens": spent if cloud else 0}
+        routes.report(self.last_call_id, routes.verdict(row.passed, row.failure_class))
 
     def budget(self, case: Case) -> int:
         return self.max_tokens or completion.budget(case.modality) or completion.MAX_TOKENS

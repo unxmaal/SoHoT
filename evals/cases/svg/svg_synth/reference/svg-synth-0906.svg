@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <rect x="4" y="12" width="36" height="36" fill="#e76f51"/>
+  <text x="44" y="40.8" font-size="28.8">ember</text>
+  <rect x="4" y="72" width="36" height="36" fill="#8ab17d"/>
+  <text x="44" y="100.8" font-size="28.8">kelp</text>
+  <rect x="4" y="132" width="36" height="36" fill="#264653"/>
+  <text x="44" y="160.8" font-size="28.8">bravo</text>
+  <rect x="4" y="192" width="36" height="36" fill="#e63946"/>
+  <text x="44" y="220.8" font-size="28.8">alpha</text>
+  <rect x="4" y="252" width="36" height="36" fill="#b5838d"/>
+  <text x="44" y="280.8" font-size="28.8">onyx</text>
+</svg>

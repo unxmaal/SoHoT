@@ -2,13 +2,13 @@
 from harness.knobs.base import _k
 
 #: The lanes an eval runs through an engine process: ProcessRunner, ChainRunner (image) and TraceRunner (svg).
-ENGINE_LANES = ("decide", "image", "music", "ocr", "pii", "retrieval", "svg", "video")
+ENGINE_LANES = ("decide", "image", "music", "ocr", "pii", "retrieval", "shots", "svg", "video")
 
 #: Each engine's own ceiling, the clock it runs at until enough of its cases are measured here.
 CEILINGS = ["harness/engines.py:Engine.timeout", "evals/runners/chain.py:ChainRunner.__init__(timeout)",
             *(f"harness/engines.py:{b}->Engine(timeout)" for b in (
                 "_acestep", "_bm25", "_decider", "_diffusers", "_hf_ocr", "_hf_pii", "_mflux", "_nimble", "_osocr",
-                "_pii_regex", "_ranker.build"))]
+                "_pii_regex", "_ranker.build", "_scenedetect", "_transnetv2"))]
 
 KNOBS = [
     _k("engine_timeout", ["harness/engine_timeout.py:MARGIN", *CEILINGS], [2.0, 3.0, 5.0, 10.0],

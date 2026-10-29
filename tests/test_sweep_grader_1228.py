@@ -8,7 +8,7 @@ GRADERS = {"claims_match_threshold", "claims_min_recall", "craft_geometry_tolera
            "craft_render_difference", "runaway_rate", "ocr_max_cer", "stt_max_wer", "tts_max_wer",
            "contamination_hit", "staging_attribute_margin", "staging_bigger_ratio", "staging_detect_threshold",
            "staging_held_overlap", "staging_nms_iou", "staging_position_margin", "staging_side_margin",
-           "vision_align_min_z", "vision_control_max_kappa"}
+           "vision_align_min_z", "vision_control_max_kappa", "shots_min_f1", "shots_tolerance"}
 
 
 @pytest.mark.parametrize("knob,lane,limit", [

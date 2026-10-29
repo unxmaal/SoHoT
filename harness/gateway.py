@@ -133,6 +133,10 @@ def served(config=None, defaults=None, nodes=None) -> dict:
                                                 "litellm_params": params}
                 added.append(by_name[where.model.lower()])
         added.append({"model_name": LANE_ALIAS.format(lane), "litellm_params": params})
+    from harness import routes
+    named = set(by_name) | {str(e["model_name"]).lower() for e in added}
+    lanes_served = {lane: LANE_ALIAS.format(lane) for lane in TEXT_LANES if LANE_ALIAS.format(lane) in named}
+    added.extend(routes.entries(lanes_served, named))
     from harness import nodes as _nodes
     if nodes is None:
         try:

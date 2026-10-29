@@ -302,6 +302,9 @@ def test_a_method_crossed_with_the_incumbent_climbs_the_same_ladder(world, monke
     from harness import family
     # #1111's slot would measure the never-compared challenger first and adopt it before the crossings.
     monkeypatch.setattr(family, "SLOTS", 0)
+    # #1315's gain order would too: with no evidence, the one-call model is the cheaper measurement.
+    from harness.commands import loop as loop_cmd
+    monkeypatch.setattr(loop_cmd, "_by_gain", lambda store, rows, want, say=print: rows)
     loop("--top", "5")
     assert adopted() == {"code": CHALLENGER}
     for spec in (f"plan:{INCUMBENT_UPSTREAM}", f"best-of:3:{INCUMBENT_UPSTREAM}",
@@ -327,6 +330,43 @@ def test_a_method_crossed_with_the_incumbent_climbs_the_same_ladder(world, monke
         # The fake's first sample passes clean, so best-of stops there. #807.
         assert cost["base"] == INCUMBENT_UPSTREAM and cost["calls"] == (2.0 if spec[0] in "pd" else 1.0)
         assert ("template" in cost) == (spec[0] in "dn"), cost
+
+
+def test_a_drafted_crossing_climbs_the_same_ladder(world, monkeypatch):
+    """A technique proposal the triage drafted into a template is crossed, screened and measured like plan. #993."""
+    from harness import family
+    from harness import technique_triage as tt
+    monkeypatch.setattr(family, "SLOTS", 0)
+    # #1315's gain order would measure the one-call model first and adopt it before the crossing.
+    from harness.commands import loop as loop_cmd
+    monkeypatch.setattr(loop_cmd, "_by_gain", lambda store, rows, want, say=print: rows)
+    conn = ms.connect()
+    try:
+        ms.record(conn, ms.Seen(name="arxiv:2610.00001", source="hf-daily-papers",
+                                why="Listing edge cases first improves LLM code generation",
+                                description="Listing edge cases first improves LLM code generation.",
+                                category=ms.TECHNIQUE))
+    finally:
+        conn.close()
+    monkeypatch.setattr(tt, "draft", lambda row, known=(): {
+        "mechanism": "prompt", "name": "edge cases first", "lanes": ["code"],
+        "steps": [{"as": "cases", "prompt": "List the edge cases of this task. Do not solve it.\n\n{task}"},
+                  {"prompt": "{task}\n\nHandle these edge cases:\n{cases}"}]})
+    loop("--top", "7")
+    spec = f"t-edge-cases-first:{INCUMBENT_UPSTREAM}"
+    conn = ms.connect()
+    try:
+        tiers = [r["tier"] for r in conn.execute(
+            "SELECT v.tier FROM verdicts v JOIN proposals p ON p.id = v.proposal_id "
+            "WHERE p.name = ? ORDER BY v.id", (spec,))]
+        power = conn.execute("SELECT v.power FROM verdicts v JOIN proposals p ON p.state_verdict_id = v.id "
+                             "WHERE p.name = ?", (spec,)).fetchone()["power"]
+    finally:
+        conn.close()
+    assert tiers[:2] == ["inspect", "screen"], tiers
+    assert latest(spec)["tier"] == "adopt", latest(spec)
+    cost = json.loads(power)["cost"]
+    assert cost["base"] == INCUMBENT_UPSTREAM and cost["calls"] == 2.0 and "template" in cost, cost
 
 
 def test_a_model_server_that_dies_mid_screen_is_the_harnesss_fault(world):

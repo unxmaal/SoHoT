@@ -465,23 +465,14 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
     from dataclasses import replace
 
     from evals.run import STOCHASTIC_MODALITIES
-    from harness import adopt, candidates, completion, holdout, power, runs
+    from harness import adopt, completion, holdout, power
     from harness import memory_store as ms
 
     split = holdout.for_lane(lane)
     settings = (completion.budget(lane), ())
-    inc_key = candidates.key_of(inc_spec) or inc_spec
     store = ms.connect()
     try:
-        machines = runs.here(store)
-        draws, inc_s = power.served_profile(store, lane, inc_spec, settings, machines)
-        basis = ""
-        if inc_s is None and settings[0]:
-            inc_s, basis = power.served_bound(store, lane, inc_spec, settings, machines)
-        median_s, calls, est = power.pair_cost(store, lane, incumbent=inc_key, incumbent_spec=inc_spec,
-                                               incumbent_s=inc_s, challenger=spec,
-                                               settings=settings, machines=machines,
-                                               incumbent_basis=basis)
+        draws, median_s, calls, est = priced(store, lane, inc_spec, spec)
         alpha = adopt.alpha_for(adopt.comparisons(store, lane, split.version))
     finally:
         store.close()
@@ -550,6 +541,21 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
               f"unmeasured, drawn from the incumbent's measured per-case rates",
               flush=True)
     return split, plan
+
+
+def priced(store, lane: str, inc_spec: str, spec: str):
+    """(incumbent draws, mean seconds per call, calls per case, estimate) for one paired run here; the queue order prices with it too. #696, #1315."""
+    from harness import candidates, completion, power, runs
+    settings = (completion.budget(lane), ())
+    machines = runs.here(store)
+    draws, inc_s = power.served_profile(store, lane, inc_spec, settings, machines)
+    basis = ""
+    if inc_s is None and settings[0]:
+        inc_s, basis = power.served_bound(store, lane, inc_spec, settings, machines)
+    median_s, calls, est = power.pair_cost(store, lane, incumbent=candidates.key_of(inc_spec) or inc_spec,
+                                           incumbent_spec=inc_spec, incumbent_s=inc_s, challenger=spec,
+                                           settings=settings, machines=machines, incumbent_basis=basis)
+    return draws, median_s, calls, est
 
 
 def _with_reuse(plan, lane: str, inc_spec: str, est: dict, side: str):

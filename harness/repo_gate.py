@@ -64,9 +64,9 @@ def owed(conn) -> list[dict]:
             if any(lanes.serves(r["lane"], g) for g in GATED)]
 
 
-def order(rows, conn, want: str = "") -> list[dict]:
+def order(rows, conn, want: str = "", on: bool | None = None) -> list[dict]:
     """Repo-lane comparisons first: each row measured in a gated lane gets one ahead of all else; owed rows join."""
-    if not active():
+    if not (active() if on is None else on):
         return list(rows)
     rows, owing = list(rows), owed(conn)
     names = {r.get("name") for r in rows}

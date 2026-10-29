@@ -277,7 +277,7 @@ def _no_real_disk_sweep(monkeypatch):
 
 
 #: Runtime binaries the suite must never execute on the machine it runs on. #536.
-RUNTIME_BINARIES = ("llama-server", "llama-cli", "mlx_lm.server", "needle", "vectorcraft-cli", "figcraft-cli")
+RUNTIME_BINARIES = ("llama-server", "llama-cli", "mlx_lm.server", "needle", "vectorcraft-cli", "figcraft-cli", "shots.sh")
 RUNTIME_PREFIXES = ("mflux-generate", "needle-")
 
 

@@ -159,7 +159,9 @@ def cmd_power(a) -> int:
                 "cases_needed": plan.cases_needed,
                 "more_holdout": more,
                 "more_cases": None if more is None else math.ceil(more / holdout.FRACTION),
+                "noise_effect": power.noise_for(lane),
                 "effect_from": ("given" if getattr(a, "effect", None) else
+                                "floor" if effect > power.noise_for(lane) else
                                 "measured" if lane in power.EFFECT else "default"),
                 "status": _status(plan, more, [rates[c] for c in split.holdout], effect),
                 "median_s": median, "calls": calls, "projected_s": projected, "estimate": est,
@@ -172,7 +174,7 @@ def cmd_power(a) -> int:
     if getattr(a, "table", False):
         return _table(rows)
     effect = getattr(a, "effect", None)
-    wanted = f"+{effect:.2f}" if effect else "each lane's effect"
+    wanted = f"+{effect:.2f}" if effect else f"each lane's effect (its rerun noise, never under +{power.MIN_EFFECT:.2f})"
     note(f"power to detect {wanted} per cell at alpha {power._alpha()}, "
          f"target {power.TARGET}, repeat cap {power.CAP}, budget {_hm(budget)}; "
          f"the case is the unit when repeats correlate (rho)")
@@ -221,25 +223,29 @@ def _status(plan, more, rates, effect) -> str:
 
 def _absent(lane: str) -> dict:
     """A lane with no case files in this checkout, such as one whose cases are imported at deploy."""
-    return {"lane": lane, "cases": 0, "holdout": 0, "effect": None, "effect_from": "", "rho": None,
+    return {"lane": lane, "cases": 0, "holdout": 0, "noise_effect": None, "effect": None, "effect_from": "", "rho": None,
             "rho_measured": False, "observed": 0, "power": None, "cases_needed": None,
             "more_holdout": None, "more_cases": None, "status": "no cases here"}
 
 
 def _table(rows) -> int:
     """One fixed-column row per lane; `soh adopt --json --power` carries the same fields."""
-    head = ("lane", "cases", "holdout", "effect", "from", "rho", "rows", "power", "needed",
+    from harness import power
+    head = ("lane", "cases", "holdout", "noise", "effect", "from", "rho", "rows", "power", "needed",
             "more_holdout", "more_cases", "status")
     def cell(v, fmt="{}"):
         return "-" if v is None or v == "" else fmt.format(v)
     lines = [head]
     for r in rows:
         rho = None if r["rho"] is None else f"{r['rho']:.2f}" + ("" if r["rho_measured"] else "?")
-        lines.append((r["lane"], str(r["cases"]), str(r["holdout"]), cell(r["effect"], "{:.2f}"),
+        lines.append((r["lane"], str(r["cases"]), str(r["holdout"]), cell(r["noise_effect"], "{:.2f}"),
+                      cell(r["effect"], "{:.2f}"),
                       cell(r["effect_from"]), cell(rho), str(r["observed"]), cell(r["power"], "{:.2f}"),
                       cell(r["cases_needed"]), cell(r["more_holdout"]), cell(r["more_cases"]), r["status"]))
     widths = [max(len(line[i]) for line in lines) for i in range(len(head) - 1)]
     for line in lines:
         print("  ".join(c.ljust(w) for c, w in zip(line, widths)) + "  " + line[-1])
+    note("noise is the gain the lane's reruns let the gate see; effect is what it powers for, never under "
+         f"adopt_min_effect +{power.MIN_EFFECT:.2f} (from floor)")
     note("rho? is assumed until a repeated case measures it; rows 0 means the incumbent's rates are assumed")
     return 0
