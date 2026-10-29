@@ -1,0 +1,283 @@
+{"candidates": ["adopted", "llamacpp:Qwen3.6-27B-Q4_K_M"], "kind": "meta", "missing": 0, "now": 1792774800.0, "seed": 1161, "selected": 47}
+{"control": true, "id": "P004", "kind": "unit", "lane": "code", "shape": "multi_file_code"}
+{"control": false, "id": "P005", "kind": "unit", "lane": "code", "shape": "small_code_edit"}
+{"control": false, "id": "P006", "kind": "unit", "lane": "code", "shape": "investigation_debug"}
+{"control": false, "id": "P008", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"control": false, "id": "P009", "kind": "unit", "lane": "decide", "shape": "triage_decide"}
+{"control": false, "id": "P010", "kind": "unit", "lane": "code", "shape": "investigation_debug"}
+{"control": true, "id": "P011", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"control": false, "id": "P014", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"control": false, "id": "P016", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"control": false, "id": "P019", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"control": true, "id": "P021", "kind": "unit", "lane": "decide", "shape": "triage_decide"}
+{"control": true, "id": "P023", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"control": false, "id": "P025", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"control": false, "id": "P027", "kind": "unit", "lane": "code", "shape": "multi_file_code"}
+{"control": true, "id": "P029", "kind": "unit", "lane": "code", "shape": "multi_file_code"}
+{"control": false, "id": "P030", "kind": "unit", "lane": "extract", "shape": "extract_classify"}
+{"control": true, "id": "P035", "kind": "unit", "lane": "code", "shape": "investigation_debug"}
+{"control": true, "id": "P038", "kind": "unit", "lane": "code", "shape": "investigation_debug"}
+{"control": false, "id": "P041", "kind": "unit", "lane": "code", "shape": "small_code_edit"}
+{"control": false, "id": "P046", "kind": "unit", "lane": "decide", "shape": "triage_decide"}
+{"control": false, "id": "P047", "kind": "unit", "lane": "code", "shape": "small_code_edit"}
+{"control": false, "id": "P048", "kind": "unit", "lane": "decide", "shape": "triage_decide"}
+{"control": false, "id": "P049", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"control": false, "id": "P051", "kind": "unit", "lane": "code", "shape": "investigation_debug"}
+{"control": false, "id": "P055", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"control": false, "id": "P057", "kind": "unit", "lane": "code", "shape": "small_code_edit"}
+{"control": false, "id": "P059", "kind": "unit", "lane": "code", "shape": "draft_prose"}
+{"control": false, "id": "P060", "kind": "unit", "lane": "code", "shape": "small_code_edit"}
+{"control": false, "id": "P063", "kind": "unit", "lane": "code", "shape": "small_code_edit"}
+{"control": false, "id": "P067", "kind": "unit", "lane": "extract", "shape": "summarise_digest"}
+{"control": false, "id": "P074", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"control": false, "id": "P075", "kind": "unit", "lane": "decide", "shape": "triage_decide"}
+{"control": false, "id": "P082", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"control": false, "id": "P084", "kind": "unit", "lane": "extract", "shape": "summarise_digest"}
+{"control": true, "id": "P089", "kind": "unit", "lane": "code", "shape": "multi_file_code"}
+{"control": false, "id": "P091", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"control": false, "id": "P092", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"control": false, "id": "P096", "kind": "unit", "lane": "decide", "shape": "triage_decide"}
+{"control": false, "id": "P097", "kind": "unit", "lane": "code", "shape": "small_code_edit"}
+{"control": true, "id": "P099", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"control": false, "id": "P100", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"control": false, "id": "P101", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"control": false, "id": "P111", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"control": false, "id": "P113", "kind": "unit", "lane": "extract", "shape": "summarise_digest"}
+{"control": false, "id": "P114", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"control": false, "id": "P116", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"control": true, "id": "P119", "kind": "unit", "lane": "code", "shape": "orchestration_chat"}
+{"candidate": "adopted", "completion_tokens": 4409, "error": false, "grade": "not_usable", "grader": "judge", "id": "P004", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 6948, "repeat": 1, "seconds": 33.3786}
+{"candidate": "adopted", "completion_tokens": null, "error": true, "grade": "not_usable", "grader": "error", "id": "P005", "kind": "reply", "model": "", "prompt_tokens": null, "repeat": 1, "seconds": null}
+{"candidate": "adopted", "completion_tokens": 2303, "error": false, "grade": "not_usable", "grader": "judge", "id": "P006", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 212, "repeat": 1, "seconds": 16.1018}
+{"candidate": "adopted", "completion_tokens": 513, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P008", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7517, "repeat": 1, "seconds": 5.6981}
+{"candidate": "adopted", "completion_tokens": 36, "error": false, "grade": "not_usable", "grader": "judge", "id": "P009", "kind": "reply", "model": "imajev-4b-Q8_0", "prompt_tokens": 583, "repeat": 1, "seconds": 0.471}
+{"candidate": "adopted", "completion_tokens": 3351, "error": false, "grade": "not_usable", "grader": "judge", "id": "P010", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 826, "repeat": 1, "seconds": 23.7082}
+{"candidate": "adopted", "completion_tokens": 8594, "error": false, "grade": "not_usable", "grader": "judge", "id": "P011", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 8155, "repeat": 1, "seconds": 65.3471}
+{"candidate": "adopted", "completion_tokens": 5041, "error": false, "grade": "not_usable", "grader": "judge", "id": "P014", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7051, "repeat": 1, "seconds": 38.2928}
+{"candidate": "adopted", "completion_tokens": 2626, "error": false, "grade": "not_usable", "grader": "judge", "id": "P016", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7486, "repeat": 1, "seconds": 20.9477}
+{"candidate": "adopted", "completion_tokens": 1464, "error": false, "grade": "not_usable", "grader": "judge", "id": "P019", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 8643, "repeat": 1, "seconds": 12.9412}
+{"candidate": "adopted", "completion_tokens": 133, "error": false, "grade": "not_usable", "grader": "judge", "id": "P021", "kind": "reply", "model": "imajev-4b-Q8_0", "prompt_tokens": 7284, "repeat": 1, "seconds": 2.5966}
+{"candidate": "adopted", "completion_tokens": 10349, "error": false, "grade": "not_usable", "grader": "judge", "id": "P023", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7503, "repeat": 1, "seconds": 77.5062}
+{"candidate": "adopted", "completion_tokens": 6610, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P025", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7598, "repeat": 1, "seconds": 49.8634}
+{"candidate": "adopted", "completion_tokens": 1659, "error": false, "grade": "not_usable", "grader": "judge", "id": "P027", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 942, "repeat": 1, "seconds": 11.9545}
+{"candidate": "adopted", "completion_tokens": 4860, "error": false, "grade": "not_usable", "grader": "judge", "id": "P029", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7815, "repeat": 1, "seconds": 37.2204}
+{"candidate": "adopted", "completion_tokens": 215, "error": false, "grade": "not_usable", "grader": "judge", "id": "P030", "kind": "reply", "model": "mlx-community/Qwen2.5-7B-Instruct-4bit", "prompt_tokens": 7307, "repeat": 1, "seconds": 6.261}
+{"candidate": "adopted", "completion_tokens": 4775, "error": false, "grade": "not_usable", "grader": "judge", "id": "P035", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 5843, "repeat": 1, "seconds": 35.6322}
+{"candidate": "adopted", "completion_tokens": 5119, "error": false, "grade": "not_usable", "grader": "judge", "id": "P038", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7174, "repeat": 1, "seconds": 38.7021}
+{"candidate": "adopted", "completion_tokens": 626, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P041", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7905, "repeat": 1, "seconds": 6.6654}
+{"candidate": "adopted", "completion_tokens": 95, "error": false, "grade": "not_usable", "grader": "judge", "id": "P046", "kind": "reply", "model": "imajev-4b-Q8_0", "prompt_tokens": 458, "repeat": 1, "seconds": 0.8487}
+{"candidate": "adopted", "completion_tokens": 11855, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P047", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7026, "repeat": 1, "seconds": 88.3419}
+{"candidate": "adopted", "completion_tokens": 34, "error": false, "grade": "not_usable", "grader": "judge", "id": "P048", "kind": "reply", "model": "imajev-4b-Q8_0", "prompt_tokens": 621, "repeat": 1, "seconds": 0.4369}
+{"candidate": "adopted", "completion_tokens": 19405, "error": false, "grade": "not_usable", "grader": "judge", "id": "P049", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 8089, "repeat": 1, "seconds": 147.1768}
+{"candidate": "adopted", "completion_tokens": 1368, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P051", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 8118, "repeat": 1, "seconds": 12.0487}
+{"candidate": "adopted", "completion_tokens": 1923, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P055", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7692, "repeat": 1, "seconds": 15.8172}
+{"candidate": "adopted", "completion_tokens": 1050, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P057", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7781, "repeat": 1, "seconds": 9.5344}
+{"candidate": "adopted", "completion_tokens": 3047, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P059", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 1498, "repeat": 1, "seconds": 21.58}
+{"candidate": "adopted", "completion_tokens": 9576, "error": false, "grade": "not_usable", "grader": "judge", "id": "P060", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7558, "repeat": 1, "seconds": 71.4547}
+{"candidate": "adopted", "completion_tokens": 3863, "error": false, "grade": "not_usable", "grader": "judge", "id": "P063", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7574, "repeat": 1, "seconds": 29.718}
+{"candidate": "adopted", "completion_tokens": 449, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P067", "kind": "reply", "model": "mlx-community/Qwen2.5-7B-Instruct-4bit", "prompt_tokens": 7687, "repeat": 1, "seconds": 4.7918}
+{"candidate": "adopted", "completion_tokens": 714, "error": false, "grade": "not_usable", "grader": "judge", "id": "P074", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 8310, "repeat": 1, "seconds": 7.4077}
+{"candidate": "adopted", "completion_tokens": 52, "error": false, "grade": "not_usable", "grader": "judge", "id": "P075", "kind": "reply", "model": "imajev-4b-Q8_0", "prompt_tokens": 654, "repeat": 1, "seconds": 0.6022}
+{"candidate": "adopted", "completion_tokens": 3450, "error": false, "grade": "not_usable", "grader": "judge", "id": "P082", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7776, "repeat": 1, "seconds": 26.7217}
+{"candidate": "adopted", "completion_tokens": 135, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P084", "kind": "reply", "model": "mlx-community/Qwen2.5-7B-Instruct-4bit", "prompt_tokens": 7270, "repeat": 1, "seconds": 2.5804}
+{"candidate": "adopted", "completion_tokens": 1656, "error": false, "grade": "not_usable", "grader": "judge", "id": "P089", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 638, "repeat": 1, "seconds": 11.7014}
+{"candidate": "adopted", "completion_tokens": 12820, "error": false, "grade": "not_usable", "grader": "judge", "id": "P091", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7001, "repeat": 1, "seconds": 95.5842}
+{"candidate": "adopted", "completion_tokens": 856, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P092", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7180, "repeat": 1, "seconds": 8.0192}
+{"candidate": "adopted", "completion_tokens": 60, "error": false, "grade": "not_usable", "grader": "judge", "id": "P096", "kind": "reply", "model": "imajev-4b-Q8_0", "prompt_tokens": 652, "repeat": 1, "seconds": 0.6572}
+{"candidate": "adopted", "completion_tokens": 2870, "error": false, "grade": "not_usable", "grader": "judge", "id": "P097", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 6271, "repeat": 1, "seconds": 22.0432}
+{"candidate": "adopted", "completion_tokens": 3579, "error": false, "grade": "not_usable", "grader": "judge", "id": "P099", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 8074, "repeat": 1, "seconds": 27.9949}
+{"candidate": "adopted", "completion_tokens": 2114, "error": false, "grade": "not_usable", "grader": "judge", "id": "P100", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7067, "repeat": 1, "seconds": 17.0613}
+{"candidate": "adopted", "completion_tokens": 1455, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P101", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7451, "repeat": 1, "seconds": 12.4285}
+{"candidate": "adopted", "completion_tokens": 954, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P111", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7066, "repeat": 1, "seconds": 8.7103}
+{"candidate": "adopted", "completion_tokens": 84, "error": false, "grade": "not_usable", "grader": "judge", "id": "P113", "kind": "reply", "model": "mlx-community/Qwen2.5-7B-Instruct-4bit", "prompt_tokens": 6986, "repeat": 1, "seconds": 2.1357}
+{"candidate": "adopted", "completion_tokens": 1219, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P114", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 6693, "repeat": 1, "seconds": 10.4411}
+{"candidate": "adopted", "completion_tokens": 726, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P116", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 8631, "repeat": 1, "seconds": 7.6021}
+{"candidate": "adopted", "completion_tokens": 1565, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P119", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7610, "repeat": 1, "seconds": 13.2591}
+{"candidate": "adopted", "completion_tokens": 4409, "error": false, "grade": "not_usable", "grader": "judge", "id": "P004", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 6948, "repeat": 2, "seconds": 33.5089}
+{"candidate": "adopted", "completion_tokens": null, "error": true, "grade": "not_usable", "grader": "error", "id": "P005", "kind": "reply", "model": "", "prompt_tokens": null, "repeat": 2, "seconds": null}
+{"candidate": "adopted", "completion_tokens": 2303, "error": false, "grade": "not_usable", "grader": "judge", "id": "P006", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 212, "repeat": 2, "seconds": 16.1525}
+{"candidate": "adopted", "completion_tokens": 513, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P008", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7517, "repeat": 2, "seconds": 5.6934}
+{"candidate": "adopted", "completion_tokens": 36, "error": false, "grade": "not_usable", "grader": "judge", "id": "P009", "kind": "reply", "model": "imajev-4b-Q8_0", "prompt_tokens": 583, "repeat": 2, "seconds": 0.4701}
+{"candidate": "adopted", "completion_tokens": 3351, "error": false, "grade": "not_usable", "grader": "judge", "id": "P010", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 826, "repeat": 2, "seconds": 23.6127}
+{"candidate": "adopted", "completion_tokens": 8594, "error": false, "grade": "not_usable", "grader": "judge", "id": "P011", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 8155, "repeat": 2, "seconds": 65.095}
+{"candidate": "adopted", "completion_tokens": 5041, "error": false, "grade": "not_usable", "grader": "judge", "id": "P014", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7051, "repeat": 2, "seconds": 38.1914}
+{"candidate": "adopted", "completion_tokens": 2626, "error": false, "grade": "not_usable", "grader": "judge", "id": "P016", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7486, "repeat": 2, "seconds": 20.9072}
+{"candidate": "adopted", "completion_tokens": 1464, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P019", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 8643, "repeat": 2, "seconds": 12.8742}
+{"candidate": "adopted", "completion_tokens": 133, "error": false, "grade": "not_usable", "grader": "judge", "id": "P021", "kind": "reply", "model": "imajev-4b-Q8_0", "prompt_tokens": 7284, "repeat": 2, "seconds": 2.5935}
+{"candidate": "adopted", "completion_tokens": 10349, "error": false, "grade": "not_usable", "grader": "judge", "id": "P023", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7503, "repeat": 2, "seconds": 77.8097}
+{"candidate": "adopted", "completion_tokens": 6610, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P025", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7598, "repeat": 2, "seconds": 50.0992}
+{"candidate": "adopted", "completion_tokens": 1659, "error": false, "grade": "not_usable", "grader": "judge", "id": "P027", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 942, "repeat": 2, "seconds": 11.8781}
+{"candidate": "adopted", "completion_tokens": 4860, "error": false, "grade": "not_usable", "grader": "judge", "id": "P029", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7815, "repeat": 2, "seconds": 37.2932}
+{"candidate": "adopted", "completion_tokens": 215, "error": false, "grade": "not_usable", "grader": "judge", "id": "P030", "kind": "reply", "model": "mlx-community/Qwen2.5-7B-Instruct-4bit", "prompt_tokens": 7307, "repeat": 2, "seconds": 1.6591}
+{"candidate": "adopted", "completion_tokens": 4775, "error": false, "grade": "not_usable", "grader": "judge", "id": "P035", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 5843, "repeat": 2, "seconds": 35.7208}
+{"candidate": "adopted", "completion_tokens": 5119, "error": false, "grade": "not_usable", "grader": "judge", "id": "P038", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7174, "repeat": 2, "seconds": 38.8139}
+{"candidate": "adopted", "completion_tokens": 626, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P041", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7905, "repeat": 2, "seconds": 6.6777}
+{"candidate": "adopted", "completion_tokens": 95, "error": false, "grade": "not_usable", "grader": "judge", "id": "P046", "kind": "reply", "model": "imajev-4b-Q8_0", "prompt_tokens": 458, "repeat": 2, "seconds": 0.8424}
+{"candidate": "adopted", "completion_tokens": 11855, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P047", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7026, "repeat": 2, "seconds": 88.2897}
+{"candidate": "adopted", "completion_tokens": 34, "error": false, "grade": "not_usable", "grader": "judge", "id": "P048", "kind": "reply", "model": "imajev-4b-Q8_0", "prompt_tokens": 621, "repeat": 2, "seconds": 0.4367}
+{"candidate": "adopted", "completion_tokens": 19405, "error": false, "grade": "not_usable", "grader": "judge", "id": "P049", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 8089, "repeat": 2, "seconds": 147.147}
+{"candidate": "adopted", "completion_tokens": 1368, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P051", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 8118, "repeat": 2, "seconds": 12.0238}
+{"candidate": "adopted", "completion_tokens": 1923, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P055", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7692, "repeat": 2, "seconds": 15.7884}
+{"candidate": "adopted", "completion_tokens": 1050, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P057", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7781, "repeat": 2, "seconds": 9.5896}
+{"candidate": "adopted", "completion_tokens": 3047, "error": false, "grade": "not_usable", "grader": "judge", "id": "P059", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 1498, "repeat": 2, "seconds": 21.6355}
+{"candidate": "adopted", "completion_tokens": 9576, "error": false, "grade": "not_usable", "grader": "judge", "id": "P060", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7558, "repeat": 2, "seconds": 71.6241}
+{"candidate": "adopted", "completion_tokens": 3863, "error": false, "grade": "not_usable", "grader": "judge", "id": "P063", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7574, "repeat": 2, "seconds": 29.7489}
+{"candidate": "adopted", "completion_tokens": 449, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P067", "kind": "reply", "model": "mlx-community/Qwen2.5-7B-Instruct-4bit", "prompt_tokens": 7687, "repeat": 2, "seconds": 3.3078}
+{"candidate": "adopted", "completion_tokens": 714, "error": false, "grade": "not_usable", "grader": "judge", "id": "P074", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 8310, "repeat": 2, "seconds": 7.3787}
+{"candidate": "adopted", "completion_tokens": 52, "error": false, "grade": "not_usable", "grader": "judge", "id": "P075", "kind": "reply", "model": "imajev-4b-Q8_0", "prompt_tokens": 654, "repeat": 2, "seconds": 0.5963}
+{"candidate": "adopted", "completion_tokens": 3450, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P082", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7776, "repeat": 2, "seconds": 26.7874}
+{"candidate": "adopted", "completion_tokens": 135, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P084", "kind": "reply", "model": "mlx-community/Qwen2.5-7B-Instruct-4bit", "prompt_tokens": 7270, "repeat": 2, "seconds": 1.1583}
+{"candidate": "adopted", "completion_tokens": 1656, "error": false, "grade": "not_usable", "grader": "judge", "id": "P089", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 638, "repeat": 2, "seconds": 11.7296}
+{"candidate": "adopted", "completion_tokens": 12820, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P091", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7001, "repeat": 2, "seconds": 95.6647}
+{"candidate": "adopted", "completion_tokens": 856, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P092", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7180, "repeat": 2, "seconds": 8.0516}
+{"candidate": "adopted", "completion_tokens": 60, "error": false, "grade": "not_usable", "grader": "judge", "id": "P096", "kind": "reply", "model": "imajev-4b-Q8_0", "prompt_tokens": 652, "repeat": 2, "seconds": 0.6608}
+{"candidate": "adopted", "completion_tokens": 2870, "error": false, "grade": "not_usable", "grader": "judge", "id": "P097", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 6271, "repeat": 2, "seconds": 22.0282}
+{"candidate": "adopted", "completion_tokens": 3579, "error": false, "grade": "not_usable", "grader": "judge", "id": "P099", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 8074, "repeat": 2, "seconds": 27.9648}
+{"candidate": "adopted", "completion_tokens": 2114, "error": false, "grade": "not_usable", "grader": "judge", "id": "P100", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7067, "repeat": 2, "seconds": 16.983}
+{"candidate": "adopted", "completion_tokens": 1455, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P101", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7451, "repeat": 2, "seconds": 12.4187}
+{"candidate": "adopted", "completion_tokens": 954, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P111", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7066, "repeat": 2, "seconds": 8.701}
+{"candidate": "adopted", "completion_tokens": 84, "error": false, "grade": "not_usable", "grader": "judge", "id": "P113", "kind": "reply", "model": "mlx-community/Qwen2.5-7B-Instruct-4bit", "prompt_tokens": 6986, "repeat": 2, "seconds": 0.7454}
+{"candidate": "adopted", "completion_tokens": 1219, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P114", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 6693, "repeat": 2, "seconds": 10.4474}
+{"candidate": "adopted", "completion_tokens": 726, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P116", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 8631, "repeat": 2, "seconds": 7.5434}
+{"candidate": "adopted", "completion_tokens": 1565, "error": false, "grade": "not_usable", "grader": "judge", "id": "P119", "kind": "reply", "model": "Ornith-1.5-35B-Q4_K_M", "prompt_tokens": 7610, "repeat": 2, "seconds": 13.251}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 1643, "error": false, "grade": "not_usable", "grader": "judge", "id": "P004", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 6948, "repeat": 1, "seconds": 44.184}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 1840, "error": false, "grade": "not_usable", "grader": "judge", "id": "P005", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7639, "repeat": 1, "seconds": 49.5716}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 1728, "error": false, "grade": "not_usable", "grader": "judge", "id": "P006", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 212, "repeat": 1, "seconds": 37.8133}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 479, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P008", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7517, "repeat": 1, "seconds": 18.8658}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 115, "error": false, "grade": "not_usable", "grader": "judge", "id": "P009", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 583, "repeat": 1, "seconds": 3.1464}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 915, "error": false, "grade": "not_usable", "grader": "judge", "id": "P010", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 826, "repeat": 1, "seconds": 20.7743}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 823, "error": false, "grade": "not_usable", "grader": "judge", "id": "P011", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 8155, "repeat": 1, "seconds": 27.4182}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 481, "error": false, "grade": "not_usable", "grader": "judge", "id": "P014", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7051, "repeat": 1, "seconds": 18.4793}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 467, "error": false, "grade": "not_usable", "grader": "judge", "id": "P016", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7486, "repeat": 1, "seconds": 18.6358}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 153, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P019", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 8643, "repeat": 1, "seconds": 12.9936}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 831, "error": false, "grade": "not_usable", "grader": "judge", "id": "P021", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7284, "repeat": 1, "seconds": 26.6407}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 2295, "error": false, "grade": "not_usable", "grader": "judge", "id": "P023", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7503, "repeat": 1, "seconds": 59.6948}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 1637, "error": false, "grade": "not_usable", "grader": "judge", "id": "P025", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7598, "repeat": 1, "seconds": 45.0924}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 459, "error": false, "grade": "not_usable", "grader": "judge", "id": "P027", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 942, "repeat": 1, "seconds": 11.1305}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 962, "error": false, "grade": "not_usable", "grader": "judge", "id": "P029", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7815, "repeat": 1, "seconds": 30.1704}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 681, "error": false, "grade": "not_usable", "grader": "judge", "id": "P030", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7498, "repeat": 1, "seconds": 23.506}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 828, "error": false, "grade": "not_usable", "grader": "judge", "id": "P035", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 5843, "repeat": 1, "seconds": 24.7208}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 849, "error": false, "grade": "not_usable", "grader": "judge", "id": "P038", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7174, "repeat": 1, "seconds": 26.8615}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 605, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P041", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7905, "repeat": 1, "seconds": 22.3974}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 123, "error": false, "grade": "not_usable", "grader": "judge", "id": "P046", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 458, "repeat": 1, "seconds": 3.2411}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 575, "error": false, "grade": "not_usable", "grader": "judge", "id": "P047", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7026, "repeat": 1, "seconds": 20.4673}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 169, "error": false, "grade": "not_usable", "grader": "judge", "id": "P048", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 621, "repeat": 1, "seconds": 4.406}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 4052, "error": false, "grade": "not_usable", "grader": "judge", "id": "P049", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 8089, "repeat": 1, "seconds": 100.1252}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 432, "error": false, "grade": "not_usable", "grader": "judge", "id": "P051", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 8118, "repeat": 1, "seconds": 18.6483}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 1084, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P055", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7692, "repeat": 1, "seconds": 25.0264}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 425, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P057", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7781, "repeat": 1, "seconds": 18.067}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 2724, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P059", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 1498, "repeat": 1, "seconds": 61.3038}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 9606, "error": false, "grade": "not_usable", "grader": "judge", "id": "P060", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7558, "repeat": 1, "seconds": 227.1491}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 462, "error": false, "grade": "not_usable", "grader": "judge", "id": "P063", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7574, "repeat": 1, "seconds": 18.6838}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 519, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P067", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7916, "repeat": 1, "seconds": 20.4534}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 374, "error": false, "grade": "not_usable", "grader": "judge", "id": "P074", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 8310, "repeat": 1, "seconds": 17.5808}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 137, "error": false, "grade": "not_usable", "grader": "judge", "id": "P075", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 654, "repeat": 1, "seconds": 3.7421}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 289, "error": false, "grade": "not_usable", "grader": "judge", "id": "P082", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7776, "repeat": 1, "seconds": 14.938}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 213, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P084", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7516, "repeat": 1, "seconds": 12.955}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 882, "error": false, "grade": "not_usable", "grader": "judge", "id": "P089", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 638, "repeat": 1, "seconds": 20.0291}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 1983, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P091", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7001, "repeat": 1, "seconds": 52.1641}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 720, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P092", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7180, "repeat": 1, "seconds": 24.0238}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 162, "error": false, "grade": "not_usable", "grader": "judge", "id": "P096", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 652, "repeat": 1, "seconds": 4.1338}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 402, "error": false, "grade": "not_usable", "grader": "judge", "id": "P097", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 6271, "repeat": 1, "seconds": 15.7674}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 429, "error": false, "grade": "not_usable", "grader": "judge", "id": "P099", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 8074, "repeat": 1, "seconds": 18.4814}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 586, "error": false, "grade": "not_usable", "grader": "judge", "id": "P100", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7067, "repeat": 1, "seconds": 20.7691}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 201, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P101", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7451, "repeat": 1, "seconds": 12.6484}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 207, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P111", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7066, "repeat": 1, "seconds": 12.3177}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 635, "error": false, "grade": "not_usable", "grader": "judge", "id": "P113", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7192, "repeat": 1, "seconds": 22.0453}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 545, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P114", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 6693, "repeat": 1, "seconds": 19.3979}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 146, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P116", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 8631, "repeat": 1, "seconds": 12.7536}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 195, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P119", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7610, "repeat": 1, "seconds": 12.661}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 1643, "error": false, "grade": "not_usable", "grader": "judge", "id": "P004", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 6948, "repeat": 2, "seconds": 44.2755}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 1840, "error": false, "grade": "not_usable", "grader": "judge", "id": "P005", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7639, "repeat": 2, "seconds": 50.3289}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 1728, "error": false, "grade": "not_usable", "grader": "judge", "id": "P006", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 212, "repeat": 2, "seconds": 38.3563}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 479, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P008", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7517, "repeat": 2, "seconds": 18.9972}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 115, "error": false, "grade": "not_usable", "grader": "judge", "id": "P009", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 583, "repeat": 2, "seconds": 3.1675}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 915, "error": false, "grade": "not_usable", "grader": "judge", "id": "P010", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 826, "repeat": 2, "seconds": 20.9238}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 823, "error": false, "grade": "not_usable", "grader": "judge", "id": "P011", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 8155, "repeat": 2, "seconds": 27.5696}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 481, "error": false, "grade": "not_usable", "grader": "judge", "id": "P014", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7051, "repeat": 2, "seconds": 18.5955}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 467, "error": false, "grade": "not_usable", "grader": "judge", "id": "P016", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7486, "repeat": 2, "seconds": 18.7584}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 153, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P019", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 8643, "repeat": 2, "seconds": 13.0603}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 831, "error": false, "grade": "not_usable", "grader": "judge", "id": "P021", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7284, "repeat": 2, "seconds": 26.7841}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 2295, "error": false, "grade": "not_usable", "grader": "judge", "id": "P023", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7503, "repeat": 2, "seconds": 60.1205}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 1637, "error": false, "grade": "not_usable", "grader": "judge", "id": "P025", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7598, "repeat": 2, "seconds": 45.3641}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 459, "error": false, "grade": "not_usable", "grader": "judge", "id": "P027", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 942, "repeat": 2, "seconds": 11.1181}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 962, "error": false, "grade": "not_usable", "grader": "judge", "id": "P029", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7815, "repeat": 2, "seconds": 30.1394}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 681, "error": false, "grade": "not_usable", "grader": "judge", "id": "P030", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7498, "repeat": 2, "seconds": 23.3873}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 828, "error": false, "grade": "not_usable", "grader": "judge", "id": "P035", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 5843, "repeat": 2, "seconds": 24.7692}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 849, "error": false, "grade": "not_usable", "grader": "judge", "id": "P038", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7174, "repeat": 2, "seconds": 26.7596}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 605, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P041", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7905, "repeat": 2, "seconds": 22.2028}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 123, "error": false, "grade": "not_usable", "grader": "judge", "id": "P046", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 458, "repeat": 2, "seconds": 3.1563}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 575, "error": false, "grade": "not_usable", "grader": "judge", "id": "P047", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7026, "repeat": 2, "seconds": 20.4727}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 169, "error": false, "grade": "not_usable", "grader": "judge", "id": "P048", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 621, "repeat": 2, "seconds": 4.3499}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 4052, "error": false, "grade": "not_usable", "grader": "judge", "id": "P049", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 8089, "repeat": 2, "seconds": 100.1925}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 432, "error": false, "grade": "not_usable", "grader": "judge", "id": "P051", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 8118, "repeat": 2, "seconds": 18.6192}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 1084, "error": false, "grade": "not_usable", "grader": "judge", "id": "P055", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7692, "repeat": 2, "seconds": 24.8259}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 425, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P057", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7781, "repeat": 2, "seconds": 17.938}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 2724, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P059", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 1498, "repeat": 2, "seconds": 61.2409}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 9606, "error": false, "grade": "not_usable", "grader": "judge", "id": "P060", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7558, "repeat": 2, "seconds": 226.7632}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 462, "error": false, "grade": "not_usable", "grader": "judge", "id": "P063", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7574, "repeat": 2, "seconds": 18.6571}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 519, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P067", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7916, "repeat": 2, "seconds": 20.3502}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 374, "error": false, "grade": "not_usable", "grader": "judge", "id": "P074", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 8310, "repeat": 2, "seconds": 17.5619}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 137, "error": false, "grade": "not_usable", "grader": "judge", "id": "P075", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 654, "repeat": 2, "seconds": 3.7568}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 289, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P082", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7776, "repeat": 2, "seconds": 14.8956}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 213, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P084", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7516, "repeat": 2, "seconds": 12.9257}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 882, "error": false, "grade": "not_usable", "grader": "judge", "id": "P089", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 638, "repeat": 2, "seconds": 19.9073}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 1983, "error": false, "grade": "not_usable", "grader": "judge", "id": "P091", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7001, "repeat": 2, "seconds": 51.9345}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 720, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P092", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7180, "repeat": 2, "seconds": 23.9175}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 162, "error": false, "grade": "not_usable", "grader": "judge", "id": "P096", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 652, "repeat": 2, "seconds": 4.1225}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 402, "error": false, "grade": "not_usable", "grader": "judge", "id": "P097", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 6271, "repeat": 2, "seconds": 15.7972}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 429, "error": false, "grade": "not_usable", "grader": "judge", "id": "P099", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 8074, "repeat": 2, "seconds": 18.4666}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 586, "error": false, "grade": "not_usable", "grader": "judge", "id": "P100", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7067, "repeat": 2, "seconds": 20.7528}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 201, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P101", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7451, "repeat": 2, "seconds": 12.6108}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 207, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P111", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7066, "repeat": 2, "seconds": 12.3059}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 635, "error": false, "grade": "not_usable", "grader": "judge", "id": "P113", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7192, "repeat": 2, "seconds": 22.0048}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 545, "error": false, "grade": "usable_with_edits", "grader": "judge", "id": "P114", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 6693, "repeat": 2, "seconds": 19.3893}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 146, "error": false, "grade": "usable_as_is", "grader": "judge", "id": "P116", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 8631, "repeat": 2, "seconds": 12.7626}
+{"candidate": "llamacpp:Qwen3.6-27B-Q4_K_M", "completion_tokens": 195, "error": false, "grade": "not_usable", "grader": "judge", "id": "P119", "kind": "reply", "model": "Qwen3.6-27B-Q4_K_M", "prompt_tokens": 7610, "repeat": 2, "seconds": 12.643}
+{"grade": "usable_as_is", "id": "P004", "kind": "self"}
+{"grade": "not_usable", "id": "P005", "kind": "self"}
+{"grade": "usable_as_is", "id": "P006", "kind": "self"}
+{"grade": "usable_as_is", "id": "P008", "kind": "self"}
+{"grade": "not_usable", "id": "P009", "kind": "self"}
+{"grade": "usable_as_is", "id": "P010", "kind": "self"}
+{"grade": "usable_as_is", "id": "P011", "kind": "self"}
+{"grade": "usable_as_is", "id": "P014", "kind": "self"}
+{"grade": "usable_as_is", "id": "P016", "kind": "self"}
+{"grade": "usable_as_is", "id": "P019", "kind": "self"}
+{"grade": "usable_as_is", "id": "P021", "kind": "self"}
+{"grade": "usable_as_is", "id": "P023", "kind": "self"}
+{"grade": "not_usable", "id": "P025", "kind": "self"}
+{"grade": "not_usable", "id": "P027", "kind": "self"}
+{"grade": "usable_as_is", "id": "P029", "kind": "self"}
+{"grade": "usable_as_is", "id": "P030", "kind": "self"}
+{"grade": "usable_as_is", "id": "P035", "kind": "self"}
+{"grade": "usable_as_is", "id": "P038", "kind": "self"}
+{"grade": "usable_as_is", "id": "P041", "kind": "self"}
+{"grade": "not_usable", "id": "P046", "kind": "self"}
+{"grade": "usable_as_is", "id": "P047", "kind": "self"}
+{"grade": "usable_as_is", "id": "P048", "kind": "self"}
+{"grade": "usable_as_is", "id": "P049", "kind": "self"}
+{"grade": "usable_as_is", "id": "P051", "kind": "self"}
+{"grade": "usable_as_is", "id": "P055", "kind": "self"}
+{"grade": "usable_as_is", "id": "P057", "kind": "self"}
+{"grade": "not_usable", "id": "P059", "kind": "self"}
+{"grade": "usable_as_is", "id": "P060", "kind": "self"}
+{"grade": "usable_as_is", "id": "P063", "kind": "self"}
+{"grade": "usable_as_is", "id": "P067", "kind": "self"}
+{"grade": "usable_as_is", "id": "P074", "kind": "self"}
+{"grade": "usable_as_is", "id": "P075", "kind": "self"}
+{"grade": "usable_as_is", "id": "P082", "kind": "self"}
+{"grade": "usable_as_is", "id": "P084", "kind": "self"}
+{"grade": "usable_as_is", "id": "P089", "kind": "self"}
+{"grade": "not_usable", "id": "P091", "kind": "self"}
+{"grade": "usable_as_is", "id": "P092", "kind": "self"}
+{"grade": "usable_as_is", "id": "P096", "kind": "self"}
+{"grade": "not_usable", "id": "P097", "kind": "self"}
+{"grade": "usable_as_is", "id": "P099", "kind": "self"}
+{"grade": "usable_as_is", "id": "P100", "kind": "self"}
+{"grade": "usable_as_is", "id": "P101", "kind": "self"}
+{"grade": "usable_as_is", "id": "P111", "kind": "self"}
+{"grade": "usable_as_is", "id": "P113", "kind": "self"}
+{"grade": "usable_as_is", "id": "P114", "kind": "self"}
+{"grade": "usable_as_is", "id": "P116", "kind": "self"}
+{"grade": "usable_as_is", "id": "P119", "kind": "self"}

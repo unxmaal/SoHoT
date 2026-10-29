@@ -286,3 +286,24 @@ def test_a_summary_over_stored_rows_carries_every_field_summarize_reads():
     assert bare["failures"] == ["d: "] and bare["failure_classes"] == {}
     assert (bare["warnings"], bare["peak_kb"], bare["total_s"], bare["metrics"]) == (0, 0, 0.0, {})
     assert adopt._summary(rows, "nobody") is None
+
+
+@pytest.mark.parametrize("inc_bits,ch_bits,lost,gained", [
+    ([True] * 4 + [False], [False] * 4 + [True], 4, 1),
+    ([True, True, False, False], [False, False, True, True], 2, 2),
+])
+def test_a_metric_win_whose_paired_cells_do_not_favour_it_is_a_loss(monkeypatch, inc_bits, ch_bits, lost, gained):
+    """#1302: the paired gate reads direction first, so a tie or a net loss never reaches the p test."""
+    monkeypatch.setattr(adopt, "better", lambda incumbent, challenger, lane="": True)
+    got = adopt._gates("code", "inc", "ch", {}, {}, head_to_head_rows(inc_bits, ch_bits))
+    assert got == adopt.Verdict("code", "inc", "ch", False, f"better on the metric, but the paired cells "
+                                f"do not favour it: {lost} lost against {gained} gained"), got
+
+
+def test_a_metric_win_that_lost_significantly_says_it_is_worse(monkeypatch):
+    """#594: decide names a significant loss beside the gate's own reason."""
+    monkeypatch.setattr(adopt, "better", lambda incumbent, challenger, lane="": True)
+    rows = head_to_head_rows([True] * 20, [False] * 20)
+    got = adopt.decide("code", adopt._summary(rows, "inc"), adopt._summary(rows, "ch"), rows)
+    assert not got.adopt and "significantly worse: 20 lost against 0 gained" in got.why, got.why
+    assert (got.lane, got.incumbent, got.challenger) == ("code", "inc", "ch"), got

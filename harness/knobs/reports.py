@@ -8,6 +8,8 @@ KNOBS = [
        note="terminal verdicts the blame audit draws for a second labeller to agree on (#918)"),
     _k("context_big", ["harness/context_report.py:BIG"], [1000, 2000, 5000],
        note="estimated tokens past which a tool result counts toward `soh context`'s share over 2k (#828)"),
+    _k("context_class_big", ["harness/context_class.py:BIG"], [500, 1000, 2000],
+       note="estimated tokens from which a result counts in `soh context --by class`'s over-1k columns (#1333)"),
     _k("dora_thin", ["harness/dora.py:THIN"], [2, 3, 5],
        note="incidents or lead times under which a DORA figure is marked thin; one incident once read as a median (#5bb56d5a)"),
     _k("knob_backlog_literal_letters", ["harness/knob_backlog.py:LITERAL_LETTERS"], [4, 8, 16],
@@ -22,5 +24,6 @@ NOT_GATING = {
 
 NEVER_CUTS = {
     "harness/context_report.py:BIG": "which results the share-over-2k column counts; every result is counted (#828)",
+    "harness/context_class.py:BIG": "which results the over-1k columns count; every result is counted (#1333)",
     "harness/dora.py:THIN": "marks a DORA figure thin; the figure is still computed and shown (#5bb56d5a)",
 }

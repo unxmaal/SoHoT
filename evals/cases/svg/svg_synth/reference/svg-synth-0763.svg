@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120">
+  <rect x="4" y="4.8" width="14.4" height="14.4" fill="#8ab17d"/>
+  <text x="22.4" y="16.32" font-size="11.52">maple</text>
+  <rect x="4" y="28.8" width="14.4" height="14.4" fill="#6a4c93"/>
+  <text x="22.4" y="40.32" font-size="11.52">cedar</text>
+  <rect x="4" y="52.8" width="14.4" height="14.4" fill="#264653"/>
+  <text x="22.4" y="64.32" font-size="11.52">quartz</text>
+  <rect x="4" y="76.8" width="14.4" height="14.4" fill="#b5838d"/>
+  <text x="22.4" y="88.32" font-size="11.52">bravo</text>
+  <rect x="4" y="100.8" width="14.4" height="14.4" fill="#e63946"/>
+  <text x="22.4" y="112.32" font-size="11.52">kelp</text>
+</svg>

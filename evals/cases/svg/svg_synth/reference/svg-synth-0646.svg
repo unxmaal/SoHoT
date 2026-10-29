@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <rect x="4" y="5" width="15" height="15" fill="#6a4c93"/>
+  <text x="23" y="17" font-size="12">rook</text>
+  <rect x="4" y="30" width="15" height="15" fill="#2a9d8f"/>
+  <text x="23" y="42" font-size="12">fjord</text>
+  <rect x="4" y="55" width="15" height="15" fill="#1d3557"/>
+  <text x="23" y="67" font-size="12">delta</text>
+  <rect x="4" y="80" width="15" height="15" fill="#e76f51"/>
+  <text x="23" y="92" font-size="12">quartz</text>
+  <rect x="4" y="105" width="15" height="15" fill="#f4a261"/>
+  <text x="23" y="117" font-size="12">juniper</text>
+  <rect x="4" y="130" width="15" height="15" fill="#b5838d"/>
+  <text x="23" y="142" font-size="12">garnet</text>
+  <rect x="4" y="155" width="15" height="15" fill="#8ab17d"/>
+  <text x="23" y="167" font-size="12">lumen</text>
+  <rect x="4" y="180" width="15" height="15" fill="#264653"/>
+  <text x="23" y="192" font-size="12">kelp</text>
+</svg>

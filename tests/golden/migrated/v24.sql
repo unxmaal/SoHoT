@@ -86,7 +86,7 @@ table meta [('key', 'TEXT', 0, None, 1), ('value', 'TEXT', 0, None, 0)]
   index sqlite_autoindex_meta_1 unique=1 ['key']
   ('artifact_split', '{}')
   ('candidate_guesses', '[{"adoption": 2, "from": "the adopt verdict/'s machine; no vote or judged run names one", "lane": "svg", "machine": 4, "proposal": "org-l/svg-thing", "spec": "mlx:org-l/svg-thing"}]')
-  ('schema', '84')
+  ('schema', '85')
 table otel_events [('id', 'INTEGER', 0, None, 1), ('key', 'TEXT', 1, None, 0), ('received_at', 'REAL', 1, None, 0), ('at', 'REAL', 1, None, 0), ('session_id', 'TEXT', 1, "''", 0), ('prompt_id', 'TEXT', 1, "''", 0), ('name', 'TEXT', 1, None, 0), ('tool', 'TEXT', 1, "''", 0), ('model', 'TEXT', 1, "''", 0), ('query_source', 'TEXT', 1, "''", 0), ('success', 'INTEGER', 0, None, 0), ('duration_ms', 'REAL', 0, None, 0), ('input_tokens', 'REAL', 0, None, 0), ('output_tokens', 'REAL', 0, None, 0), ('cache_read_tokens', 'REAL', 0, None, 0), ('cache_creation_tokens', 'REAL', 0, None, 0), ('cache_creation_5m_tokens', 'REAL', 0, None, 0), ('cache_creation_1h_tokens', 'REAL', 0, None, 0), ('cost_usd', 'REAL', 0, None, 0), ('result_bytes', 'REAL', 0, None, 0), ('attrs', 'TEXT', 1, "'{}'", 0)]
   index ix_otel_events_at unique=0 ['at', 'name']
   index ix_otel_events_session unique=0 ['session_id', 'at']
@@ -159,6 +159,8 @@ table sources [('id', 'INTEGER', 0, None, 1), ('name', 'TEXT', 1, None, 0), ('ki
   (2, 'github-search', '', '', 0, 1790007600.0, 1790007600.0, 'ok', '', 0, 'no source by this name; nothing reads a row with no kind and no url. #625')
 table sqlite_sequence [('name', '', 0, None, 0), ('seq', '', 0, None, 0)]
   ('jobs', 2)
+table technique_triage [('id', 'INTEGER', 0, None, 1), ('proposal_id', 'INTEGER', 1, None, 0), ('outcome', 'TEXT', 1, None, 0), ('method', 'TEXT', 1, "''", 0), ('why', 'TEXT', 1, "''", 0), ('template', 'TEXT', 1, "''", 0), ('drafted_by', 'TEXT', 1, "''", 0), ('triaged_at', 'REAL', 1, None, 0)]
+  index sqlite_autoindex_technique_triage_1 unique=1 ['proposal_id']
 table verdicts [('id', 'INTEGER', 0, None, 1), ('proposal_id', 'INTEGER', 0, None, 0), ('outcome', 'TEXT', 1, None, 0), ('tier', 'TEXT', 1, "''", 0), ('detail', 'TEXT', 1, "''", 0), ('run_path', 'TEXT', 1, "''", 0), ('score', 'REAL', 0, None, 0), ('rubric', 'TEXT', 1, "''", 0), ('judge', 'TEXT', 1, "''", 0), ('decided_at', 'REAL', 1, None, 0), ('machine_id', 'INTEGER', 0, None, 0), ('size_bytes', 'INTEGER', 1, '0', 0), ('upstream_idle_days', 'REAL', 1, '0', 0), ('until', 'TEXT', 1, "''", 0), ('candidate_id', 'INTEGER', 0, None, 0), ('reopens', 'INTEGER', 0, None, 0), ('reopen_kind', 'TEXT', 1, "''", 0), ('reason', 'TEXT', 1, "''", 0), ('failure_class', 'TEXT', 1, "''", 0), ('split_version', 'TEXT', 1, "''", 0), ('power', 'TEXT', 1, "'{}'", 0), ('planned_s_per_case', 'REAL', 0, None, 0), ('observed_s_per_case', 'REAL', 0, None, 0), ('ceiling_gb', 'REAL', 0, None, 0), ('run_id', 'INTEGER', 0, None, 0)]
   index ix_verdict_cand unique=0 ['candidate_id']
   index ix_verdict_prop unique=0 ['proposal_id']

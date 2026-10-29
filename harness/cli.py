@@ -27,6 +27,7 @@ import sys
 
 from harness import adopt, audio, completion, env, power, proc, throughput, vector  # noqa: F401
 from harness.commands import adopt as adopt_cmd
+from harness.commands import baseline as baseline_cmd
 from harness.commands import api_spend as api_spend_cmd
 from harness.commands import benchmarks as benchmarks_cmd
 from harness.commands import blame as blame_cmd
@@ -68,6 +69,7 @@ from harness.commands import funnel as funnel_cmd
 from harness.commands import morning as morning_cmd
 from harness.commands import sweep_check as sweep_check_cmd
 from harness.commands import otel as otel_cmd
+from harness.commands import route_trial as route_trial_cmd
 from harness.commands import usage as usage_cmd
 from harness.commands import canary as canary_cmd
 from harness.commands import review as review_cmd
@@ -344,6 +346,11 @@ def build_parser() -> argparse.ArgumentParser:
                         "families and compared models, to quantized repos that fit (#882)")
     d.add_argument("--papers", action="store_true",
                    help="read HuggingFace daily papers; each is a technique for a lane (#576)")
+    d.add_argument("--posts", action="store_true",
+                   help="read the `techniques` feeds, practitioners' posts; each entry is a technique (#993)")
+    d.add_argument("--triage", action="store_true",
+                   help="triage technique proposals into method crossings; --run drafts with the extract "
+                        "lane's model, up to --top (#993)")
     d.add_argument("--feeds", action="store_true",
                    help="read the community aggregation feeds for candidates")
     d.add_argument("--sources", action="store_true",
@@ -514,6 +521,20 @@ def build_parser() -> argparse.ArgumentParser:
     ro.add_argument("--store", default="", help="the store to read, read-only (default: this home's discovery.db)")
     ro.add_argument("--cases", default="", help="the repo cases prompts are read from (default: evals/cases/repo)")
     ro.set_defaults(func=report_cmd.cmd_repo_route)
+    bl = sub.add_parser("baseline", help="each real workload as all local, all Claude and hybrid, from stored rows "
+                        "and the shadow replay's summary: rates with intervals, GPU minutes, Claude tokens (#687)")
+    bl.add_argument("--store", default="", help="the store to read, read-only (default: this home's discovery.db)")
+    bl.add_argument("--summary", default="", help="the replay summary (default: evals/analysis/demand/replay.jsonl)")
+    bl.add_argument("--replay", default="", metavar="DIR", help="read a replay working directory instead")
+    bl.add_argument("--save", default="", metavar="PATH", help="write the --replay directory's numbers-only summary")
+    bl.add_argument("--manifest", default="", help="the census manifest (default: evals/analysis/demand)")
+    bl.add_argument("--strata", default="", help="the census strata (default: evals/analysis/demand)")
+    bl.add_argument("--lane", action="append", default=[], help="a lane to read from the store (repeatable)")
+    bl.add_argument("--gate", type=float, default=None, help="decide: confidence under which a field goes to Claude "
+                    "(default: workload_baseline.DECIDE_GATE)")
+    bl.add_argument("--candidate", default="adopted", help="the replay candidate the local arm reads")
+    bl.add_argument("--bar", type=float, default=None, metavar="RATE", help="Eric's bar: keep or return per row")
+    bl.set_defaults(func=baseline_cmd.cmd_baseline)
     rs = sub.add_parser("repo-screen", help="the repo exam's screening subset: pick prints it, anchors writes "
                         "its base/reference outcomes from two stored runs, verdict judges screen runs (#1176)")
     rs.add_argument("action", choices=("pick", "anchors", "verdict"))
@@ -619,12 +640,17 @@ def build_parser() -> argparse.ArgumentParser:
                          "per tool or day, from Claude Code transcripts (chars/4 estimate)")
     ctx.add_argument("--since", default="7d", help="7d, 12h, or a date such as 2026-10-06")
     ctx.add_argument("--until", default="", help="same forms as --since; default now")
-    ctx.add_argument("--by", choices=("tool", "day", "category"), default="tool")
+    ctx.add_argument("--by", choices=("tool", "day", "category", "class"), default="tool",
+                     help="class (with --carried): what the output was, Read by file kind and edited later (#1333)")
     ctx.add_argument("--source", choices=("transcripts", "otel"), default="transcripts",
                      help="transcripts (chars/4) or the OTel tool_result rows (bytes/4), #868")
     ctx.add_argument("--label", choices=("table", "local"), default="table",
                      help="--by category: the fixed table, or the decide lane for tools it does not name")
     ctx.add_argument("--main-only", action="store_true", help="leave out subagent transcripts")
+    ctx.add_argument("--carried", action="store_true",
+                     help="tokens each result is carried into later API calls, as a share of all input (#828)")
+    ctx.add_argument("--referenced", action="store_true",
+                     help="--by class: per KB search, hits shown and hits Claude referenced later (#1333)")
     ctx.add_argument("--root", default="",
                      help="transcript root (default $SOH_CLAUDE_PROJECTS or ~/.claude/projects)")
     ctx.set_defaults(func=context_cmd.cmd_context)
@@ -714,6 +740,7 @@ def build_parser() -> argparse.ArgumentParser:
     vision_cmd.add_parser(sub)
     climb_cmd.add_parser(sub)
     otel_cmd.add_parser(sub)
+    route_trial_cmd.add_parser(sub)
     dlg = sub.add_parser("delegated", help="record what became of a local_complete or "
                          "local_decide answer, or --report the rates per lane")
     dlg.add_argument("call_id", nargs="?", default="", help="the call_id the delegation returned")
@@ -816,6 +843,11 @@ def build_parser() -> argparse.ArgumentParser:
                      "(YYYY-MM-DD or 'YYYY-MM-DD HH:MM'). #1293")
     bla.add_argument("--against", default="", help="report: an earlier audit's directory, printed beside this one")
     bla.set_defaults(func=blame_cmd.cmd_blame)
+    prop = sub.add_parser("propose", help="file a technique a person names, for the next triage to read (#993)")
+    prop.add_argument("url", help="the post, paper or page describing the technique")
+    prop.add_argument("--title", default="", help="its title; without one the page is fetched for it")
+    prop.add_argument("--note", default="", help="what the technique does, in a line")
+    prop.set_defaults(func=discover_cmd.cmd_propose)
     why = sub.add_parser("discover-why", help="which sources sighted a repo and where the crowd tier lets it "
                          "fall out, from the GitHub cache and the store read-only. #764")
     why.add_argument("repo", help="owner/name")
@@ -910,6 +942,11 @@ def build_parser() -> argparse.ArgumentParser:
     jud.add_argument("--min-votes", type=int, default=adopt.MIN_VOTES,
                      help="answers a by-hand adoption needs without --force")
     jud.set_defaults(func=judge_cmd.cmd_judge)
+    vot = sub.add_parser("votes", help="human A/B verdicts beside the lane checker's order of the same "
+                         "artifacts, read-only. #92")
+    vot.add_argument("--lane", default="", help="one lane (default: every lane with votes)")
+    vot.add_argument("--store", default="", help="the store (default: this home's discovery.db)")
+    vot.set_defaults(func=judge_cmd.cmd_votes)
     ado = sub.add_parser(
         "adopt",
         help="measure a challenger against a lane's incumbent and adopt it "
@@ -1014,7 +1051,9 @@ def build_parser() -> argparse.ArgumentParser:
     h.add_argument("--base-url", default=audio.DEFAULT_BASE_URL)
     h.add_argument("--worst", choices=("stt", "tts"), default="",
                    help="list the stored clips with the highest WER, to listen to (#94)")
-    h.add_argument("-n", type=int, default=10, help="with --worst, how many clips")
+    h.add_argument("--suspect", action="store_true",
+                   help="stt clips whose ears agree with each other against the reference, to listen to (#94)")
+    h.add_argument("-n", type=int, default=10, help="with --worst or --suspect, how many clips")
     h.add_argument("--rates", action="store_true",
                    help="seconds per word over stored tts clips, against the runaway ceiling (#91)")
     h.add_argument("--cases", default="", help="cases root (default: evals/cases)")
@@ -1041,7 +1080,7 @@ VERB_PURPOSE = {
                      "label-score", "label-select", "say", "hear"), "work"),
     **dict.fromkeys(("discover", "fetch"), "discover"),
     **dict.fromkeys(("rubric", "throughput", "judge", "adopt", "verify", "reverify",
-                     "sensitivity", "gauntlet", "chaos"), "eval"),
+                     "sensitivity", "gauntlet", "chaos", "route-trial"), "eval"),
     "watchdog": "watchdog",
     "morning": "watchdog",
     "sweep-check": "watchdog",

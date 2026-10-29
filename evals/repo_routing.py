@@ -128,14 +128,19 @@ def score(by: dict, cases: list[str], variant: dict, how: tuple) -> dict:
             "cloud_share": round(acc["cloud_calls"] / n, 4) if n else 0.0}
 
 
+def shared(by: dict) -> tuple[list[str], list[str], list[str]]:
+    """(cases every route ran, minus those the harness never ran on some route; those left out; all shared)."""
+    common = sorted(set.intersection(*(set(rows) for rows in by.values())))
+    never = [k for k in common if any(by[r][k]["failure_class"] in reasons.NEVER_RAN for r in by)]
+    return [k for k in common if k not in never], never, common
+
+
 def report(by: dict, meta: dict | None = None, runs: dict | None = None) -> dict:
     """Routes -> rows in, everything the text prints out. by: {route: {case: row}}; meta: {case: (prompt, variant)}."""
     if "local" not in by or "cloud" not in by:
         raise Refused("routing needs a local and a cloud run")
     meta = meta or {}
-    shared = sorted(set.intersection(*(set(rows) for rows in by.values())))
-    never = [k for k in shared if any(by[r][k]["failure_class"] in reasons.NEVER_RAN for r in by)]
-    cases = [k for k in shared if k not in never]
+    cases, never, shared_ = shared(by)
     if not cases:
         raise Refused("the runs share no case the harness ran on every route")
     variant = {k: (meta[k][1] if k in meta else "") or next((v for v in VARIANTS if k.endswith(f"-{v}")), "")
@@ -144,7 +149,7 @@ def report(by: dict, meta: dict | None = None, runs: dict | None = None) -> dict
     for k in cases:
         labels.setdefault(label(meta[k][0] if k in meta else ""), []).append(k)
     return {"runs": runs or {}, "cases": len(cases), "never_ran": never,
-            "only": {r: len(set(rows) - set(shared)) for r, rows in by.items()},
+            "only": {r: len(set(rows) - set(shared_)) for r, rows in by.items()},
             "executors": {r: {"resolved": sum(by[r][k]["passed"] for k in cases), "n": len(cases)} for r in by},
             "gates": {r: {g: gate_table({k: by[r][k] for k in cases}, g) for g in GATES} for r in by},
             "policies": {name: score(by, cases, variant, how) for name, how in policies(list(by)).items()},

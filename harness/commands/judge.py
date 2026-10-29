@@ -18,6 +18,46 @@ def _evalset(name: str) -> Path:
     return p if p.is_dir() else paths.home() / "evalsets" / name
 
 
+def votes_text(got: dict) -> str:
+    """One line per lane, then each scored pairing, for `soh votes`. #92."""
+    from harness import human
+
+    lines = []
+    for lane, counts in got["lanes"].items():
+        seen = counts.get(human.AGREE, 0) + counts.get(human.DISAGREE, 0)
+        decided = seen + counts.get(human.CANNOT_TELL, 0)
+        lines.append(f"{lane}: {decided} pairing(s) a person decided and the checker scored; the checker "
+                     f"agrees on {counts.get(human.AGREE, 0)}, disagrees on {counts.get(human.DISAGREE, 0)}, "
+                     f"cannot tell on {counts.get(human.CANNOT_TELL, 0)}"
+                     + "".join(f"; {k} {n}" for k, n in sorted(counts.items())
+                               if k not in (human.AGREE, human.DISAGREE, human.CANNOT_TELL)))
+    for p in got["pairs"]:
+        if p["outcome"] in (human.AGREE, human.DISAGREE, human.CANNOT_TELL):
+            lines.append(f"  {p['lane']} {p['case']}: person {p['person']}, checker "
+                         f"{p['checker'] or 'tie'} ({p['outcome']}; {p['a']} vs {p['b']})")
+    return "\n".join(lines) or "no human votes name a stored run"
+
+
+def cmd_votes(a) -> int:
+    """Human A/B verdicts beside the lane checker's order of the same artifacts, read-only. #92."""
+    import sqlite3
+
+    from harness import human
+    from harness import memory_store as ms
+    from harness.live_audit import open_readonly
+    try:
+        conn = open_readonly(a.store or ms.db_path())
+        try:
+            got = human.metric_agreement(conn, a.lane)
+        finally:
+            conn.close()
+    except (OSError, sqlite3.Error) as exc:
+        return err(f"could not read the votes: {exc}")
+    note(votes_text(got))
+    emit(**got)
+    return 0
+
+
 def cmd_rubric(a) -> int:
     """Label an eval set by hand, then score local models against it. #286."""
     from harness import label_server, rubric_eval as rv

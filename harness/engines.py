@@ -27,7 +27,7 @@ Argv = Callable[[str, Path, dict], list[str]]
 
 GRAMMAR = ("engine:model[,key=value,...]  "
            "(engines: mflux, h3, diffusers, diffusers-video, acestep, nimble, decider, "
-           "osocr, hf-ocr, bm25, rerank, embed, pii-regex, hf-pii)")
+           "osocr, hf-ocr, bm25, rerank, embed, pii-regex, hf-pii, transnetv2, scenedetect)")
 
 
 def spec_error(spec: str) -> str:
@@ -870,6 +870,63 @@ def _hf_pii(spec: str, model: str, options: dict) -> Engine:
                   timeout=3600.0)
 
 
+# ---- the shots lane: TransNetV2 and PySceneDetect over one clip (#1208) ----
+
+SHOTS_DEFAULT_BIN = str(Path(__file__).resolve().parent.parent / "scripts" / "shots.sh")
+
+
+def _clip_of(params: dict) -> str:
+    got = (params or {}).get("input")
+    if not got:
+        raise ValueError("this case has no input clip; the shots lane reads one")
+    return str(got)
+
+
+def _transnetv2(spec: str, model: str, options: dict) -> Engine:
+    """TransNetV2 on CPU, or on MPS refused unless every frame agrees with CPU. Weights ship in the wheel."""
+    from harness import shot_detect
+    device = model or "cpu"
+    if device not in shot_detect.TRANSNET_DEVICES:
+        raise ValueError(f"{spec_error(spec)}: unknown transnetv2 device {device!r}; known: "
+                         f"{', '.join(shot_detect.TRANSNET_DEVICES)}")
+    _check_options(options, set(), spec)
+
+    def argv(prompt: str, out: Path, params: dict) -> list[str]:
+        # Read at call time, so a knob override reaches the child.
+        return [os.environ.get("SHOTS_BIN", SHOTS_DEFAULT_BIN), "transnetv2", "--device", device,
+                "--clip", _clip_of(params), "--out", str(out),
+                "--threshold", str(shot_detect.SINGLE_THRESHOLD),
+                "--span-threshold", str(shot_detect.SPAN_THRESHOLD),
+                "--gap", str(shot_detect.GAP_CLOSE_FRAMES), "--cut-run", str(shot_detect.CUT_RUN_FRAMES),
+                "--min-shot", str(shot_detect.MIN_SHOT_FRAMES),
+                "--max-diff", str(shot_detect.MPS_MAX_PROB_DIFF)]
+
+    return Engine(name=f"transnetv2/{device}", spec=spec, argv=argv, modality="shots",
+                  output_suffix=".json",
+                  # The first case may build the venv; an MPS case scores the clip twice.
+                  timeout=1800.0)
+
+
+def _scenedetect(spec: str, model: str, options: dict) -> Engine:
+    """PySceneDetect's adaptive or content detector, the classical baseline. No weights."""
+    from harness import shot_detect
+    detector = model or "adaptive"
+    if detector not in shot_detect.DETECTORS:
+        raise ValueError(f"{spec_error(spec)}: unknown scenedetect detector {detector!r}; known: "
+                         f"{', '.join(shot_detect.DETECTORS)}")
+    _check_options(options, set(), spec)
+
+    def argv(prompt: str, out: Path, params: dict) -> list[str]:
+        threshold = (shot_detect.ADAPTIVE_THRESHOLD if detector == "adaptive"
+                     else shot_detect.CONTENT_THRESHOLD)
+        return [os.environ.get("SHOTS_BIN", SHOTS_DEFAULT_BIN), "scenedetect", "--detector", detector,
+                "--clip", _clip_of(params), "--out", str(out), "--threshold", str(threshold),
+                "--min-shot", str(shot_detect.MIN_SHOT_FRAMES)]
+
+    return Engine(name=f"scenedetect/{detector}", spec=spec, argv=argv, modality="shots",
+                  output_suffix=".json", timeout=1800.0)
+
+
 _BUILDERS: dict[str, Callable[[str, str, dict], Engine]] = {
     "mflux": _mflux,
     "h3": _h3,
@@ -885,4 +942,6 @@ _BUILDERS: dict[str, Callable[[str, str, dict], Engine]] = {
     "embed": _ranker("bi", "embed"),
     "pii-regex": _pii_regex,
     "hf-pii": _hf_pii,
+    "transnetv2": _transnetv2,
+    "scenedetect": _scenedetect,
 }

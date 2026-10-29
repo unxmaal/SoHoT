@@ -22,6 +22,7 @@ CODEBOOK = {
     "tool_call": "protocol",
     "malformed_hunk": "model",
     "context_mismatch": "model",
+    "missing_file": "model",
     "no_diff": "model",
     "wrong_fix": "model",
     "regression": "model",
@@ -36,6 +37,8 @@ DEFINITIONS = {
     "malformed_hunk": "a hunk header git cannot parse, such as `@@ def name(...)` or `@@ -def ...` with no line ranges",
     "recount_header": "git apply --recount rejects a diff only because a file has no `diff --git` line, so the next "
                       "file's ---/+++ headers count as hunk lines; it applies once one is added before each `--- ` (#940)",
+    "missing_file": "the diff edits a path the base tree lacks, or writes a new file without /dev/null as its old "
+                    "side (\"No such file or directory\", \"depends on old contents\")",
     "context_mismatch": "the hunks parse, but their context or removed lines are not in the base file, so git apply "
                         "--recount fails (\"patch failed: <file>:<line>\")",
     "wrong_fix": "the patch applied and at least one fail_to_pass test still fails",
@@ -62,8 +65,8 @@ GRADING_DEFINITIONS = {
                "such failing test is genuine whatever else it fails on",
 }
 #: The first class that fits wins: a row is labelled by the earliest step it failed at.
-PRECEDENCE = ("budget_exhausted", "tool_call", "no_diff", "malformed_hunk", "recount_header", "context_mismatch",
-              "wrong_fix", "regression")
+PRECEDENCE = ("budget_exhausted", "tool_call", "no_diff", "malformed_hunk", "recount_header", "missing_file",
+              "context_mismatch", "wrong_fix", "regression")
 #: What a budget-exhausted reply's reasoning was doing when the budget cut it; unrecorded when the run kept none.
 AT_CUT = ("looping", "rereading", "drafting_diff", "other", "unrecorded")
 #: The runner's own classes, in the order the issue's table reports them.
@@ -292,6 +295,12 @@ _REFUSED = re.compile(r"safeguards flagged|anthropic\.com/legal/aup|usage polic"
 _TOOL = re.compile(r"<tool_call>|<function=")
 _RANGED = re.compile(r"^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@")
 _MALFORMED = ("garbage", "corrupt patch", "No valid patches", "without header")
+_MISSING = ("No such file or directory", "depends on old contents")
+_CONTEXT = re.compile(r"patch failed: \S+")
+#: The codebook class a labeller gives each cause `cause` reads off a row; a cause missing here needs a person.
+FROM_CAUSE = {"budget_no_answer": "budget_exhausted", "budget_cut_answer": "budget_exhausted",
+              **{c: c for c in ("tool_call", "no_diff", "malformed_hunk", "missing_file", "context_mismatch",
+                                "wrong_fix", "regression")}}
 
 
 def _read(path: Path) -> dict:
@@ -318,7 +327,7 @@ def cause(row: dict, stored: dict) -> str:
         hunks = [x for x in diff.splitlines() if x.startswith("@@")]
         if any(m in detail for m in _MALFORMED) or any(not _RANGED.match(h) for h in hunks):
             return "malformed_hunk"
-        if "No such file or directory" in detail:
+        if any(m in detail for m in _MISSING):
             return "missing_file"
         return "context_mismatch" if "patch failed" in detail else "unclassed"
     if fc == "content_failed":
@@ -345,6 +354,72 @@ def causes(run: Run, groups: dict) -> list[dict]:
         out.append({"case": case, "group": groups.get(case, "unknown"), "cause": cause(row, stored),
                     "prompt_tokens": last.get("prompt_tokens"), "completion_tokens": last.get("completion_tokens"),
                     "finish": last.get("finish_reason")})
+    return out
+
+
+def _cite(run: Run, case: str, files: list[str], text: str) -> tuple[str, int, str] | None:
+    """(file, offset, excerpt) where `text` sits in the first of `files` holding it, as the file's JSON spells it."""
+    for name in files:
+        f = run.path / name
+        if not f.is_file():
+            continue
+        data = f.read_bytes()
+        # A shared file is read from the row's own entry on, so the cite is that row's text.
+        start = max(data.find(json.dumps(case).encode()), 0) if name in ("results.json", "checkpoint.jsonl") else 0
+        for spelt in dict.fromkeys((json.dumps(text)[1:-1], json.dumps(text, ensure_ascii=False)[1:-1])):
+            if (at := data.find(spelt.encode("utf-8"), start)) >= 0:
+                return name, at, spelt
+    return None
+
+
+def _evidence(cls: str, row: dict, stored: dict) -> str:
+    """The text in a row's reply, diff or grade that shows its class."""
+    detail, diff = str(row.get("detail") or ""), str(stored.get("diff") or "")
+    if cls == "tool_call":
+        return _TOOL.search(str(stored.get("reply") or "")).group(0)
+    if cls == "malformed_hunk":
+        bad = [x for x in diff.splitlines() if x.startswith("@@") and not _RANGED.match(x)]
+        return bad[0] if bad else next(m for m in _MALFORMED if m in detail)
+    if cls == "missing_file":
+        return next(x for x in detail.splitlines() if any(m in x for m in _MISSING)).removeprefix("git apply: ")
+    if cls == "context_mismatch":
+        return _CONTEXT.search(detail).group(0)
+    return detail.splitlines()[0]
+
+
+def propose(run: Run, at_cut: dict, regrades=None) -> list[dict]:
+    """A label for each failing row `cause` reads, citing its evidence; a budget row needs `at_cut` {case: (verdict, text)}."""
+    out = []
+    for row in run.rows:
+        case = row.get("case_id") or ""
+        if row.get("passed") or row.get("failure_class") in UNLABELLED:
+            continue
+        stem = f"{str(row.get('candidate') or '').replace('/', '_')}--{case}"
+        stored = _read(run.path / f"{stem}.json")
+        again = (regrades or {}).get((run.name, case))
+        if again is not None and again["patch_applied"]:
+            # A row today's grader applies is labelled from its regrade; a resolved one needs no label. #940.
+            if not again["resolved"]:
+                text = _evidence("wrong_fix", {"detail": again["detail"]}, {})
+                at = again["detail"].encode("utf-8").find(text.encode("utf-8"))
+                out.append({"run": run.name, "case": case, "class": "wrong_fix", "file": stem + ".json",
+                            "regrade": True, "offset": at, "excerpt": text, "by": "propose, #921"})
+            continue
+        cls = FROM_CAUSE.get(cause(row, stored))
+        if cls is None or (cls == "budget_exhausted" and case not in at_cut):
+            continue
+        extra, files = {}, [f"{stem}.json", "results.json", "checkpoint.jsonl"]
+        if cls == "budget_exhausted":
+            extra["at_cut"], text = at_cut[case]
+            files = [f"{stem}.trajectory.json", f"{stem}.json"]
+        else:
+            text = _evidence(cls, row, stored)
+        got = _cite(run, case, files, text)
+        if got is None:
+            raise ValueError(f"{run.name} {case}: {text[:60]!r} is not in {', '.join(files)}")
+        name, at, excerpt = got
+        out.append({"run": run.name, "case": case, "class": cls, **extra, "file": name, "offset": at,
+                    "excerpt": excerpt, "by": "propose, #921"})
     return out
 
 
@@ -505,6 +580,24 @@ def _kappa(args) -> int:
     return 0
 
 
+def _propose(args) -> int:
+    cuts = {}
+    for x in load_labels_raw(args.at_cut) if args.at_cut else ():
+        if x.get("at_cut") not in AT_CUT:
+            raise ValueError(f"{x.get('case')}: at_cut {x.get('at_cut')!r} is not one of {', '.join(AT_CUT)}")
+        cuts.setdefault(x["run"], {})[x["case"]] = (x["at_cut"], x["excerpt"])
+    regrades = load_regrades(args.regrades)
+    for path in args.runs:
+        run = load_run(path)
+        for lab in propose(run, cuts.get(run.name, {}), regrades):
+            print(json.dumps(lab, ensure_ascii=False))
+    return 0
+
+
+def load_labels_raw(path) -> list[dict]:
+    return [json.loads(x) for x in Path(path).read_text(encoding="utf-8").splitlines() if x.strip()]
+
+
 def _locate(args) -> int:
     for at in locate(Path(args.run) / args.file, args.text):
         print(at)
@@ -547,7 +640,12 @@ def main(argv: list[str] | None = None) -> int:
     k.add_argument("b")
     k.add_argument("--key", default="class", choices=("class", "grading"), help="the field compared (#1141)")
     k.set_defaults(fn=_kappa)
-    lo = sub.add_parser("locate", help="the byte offsets a text starts at in a run file")
+    p = sub.add_parser("propose", help="a label per failing row, applying the codebook to what cause reads off it")
+    p.add_argument("runs", nargs="+")
+    p.add_argument("--at-cut", default=None, help="JSONL of run, case, at_cut, excerpt for the budget rows")
+    p.add_argument("--regrades", default=str(REGRADES), help="rows graded again; an applied one is labelled from it")
+    p.set_defaults(fn=_propose)
+    lo = sub.add_parser("locate",help="the byte offsets a text starts at in a run file")
     lo.add_argument("run")
     lo.add_argument("file")
     lo.add_argument("text")

@@ -63,6 +63,6 @@ def test_every_lane_whose_checker_emits_several_ranked_metrics_declares_their_or
 
 def test_every_declared_order_names_metrics_with_a_direction():
     for lane, names in winners.ORDER.items():
-        assert lane in lanes.ALL, lane
+        assert lane in lanes.ALL + lanes.BY_HAND, lane
         assert len(set(names)) == len(names), lane
         assert all(core.direction_of(n) != "neutral" for n in names), lane
