@@ -611,3 +611,58 @@ def test_a_passing_line_quoted_without_its_status_word_is_still_dropped():
     text = "tests/a.py::test_ok PASSED [ 10%]\nFAILED tests/b.py::test_bad - assert 1 == 2\n"
     assert ask.ground("tests/a.py::test_ok", text, "what failed?") == ask.NONE
     assert ask.ground("tests/b.py::test_bad", text, "what failed?") == "tests/b.py::test_bad"
+
+
+# ---- evals and the redo measure never write the live store (#1346) ------------
+
+@pytest.fixture
+def live_home(tmp_path, monkeypatch):
+    """A fixture home standing in for the live one: a migrated store with the limit_cuts table."""
+    from harness import memory_store as ms, paths
+    live = tmp_path / "live"
+    live.mkdir()
+    monkeypatch.setenv(paths.ENV_VAR, str(live))
+    ms.connect().close()
+    monkeypatch.setattr(paths, "DEFAULT_HOME", live)
+    monkeypatch.delenv(paths.ENV_VAR)
+    return live / "discovery.db"
+
+
+def _writes_to(monkeypatch, store: Path) -> list:
+    import sqlite3
+    seen, real = [], sqlite3.connect
+
+    def spy(db, *args, **kw):
+        raw = str(db)
+        plain = raw.removeprefix("file:").split("?")[0]
+        if Path(plain).resolve() == store.resolve() and "mode=ro" not in raw:
+            seen.append(raw)
+        return real(db, *args, **kw)
+    monkeypatch.setattr(sqlite3, "connect", spy)
+    return seen
+
+
+def test_the_eval_runs_from_a_scratch_home_and_never_opens_the_live_store_to_write(live_home, tmp_path, monkeypatch):
+    from harness import cli
+    before = live_home.read_bytes()
+    writes = _writes_to(monkeypatch, live_home)
+    monkeypatch.setattr(delegate, "complete", lambda lane, p, **kw: {"text": "none", "spec": "s", "model": "m"})
+    cli.main(["ask", "--eval", str(tmp_path / "ev"), "--n", "4", "--chunk", "2000"])
+    assert writes == [] and live_home.read_bytes() == before
+    assert (tmp_path / "ev" / "home").is_dir() and (tmp_path / "ev" / "results.jsonl").exists()
+
+
+def test_the_redo_measure_runs_from_a_scratch_home(live_home, tmp_path, monkeypatch):
+    from harness import cli, paths
+    writes = _writes_to(monkeypatch, live_home)
+    assert cli.main(["ask", "--redo", "--root", str(tmp_path)]) == 0
+    assert writes == [] and not paths.is_live(paths.home() / "discovery.db")
+
+
+def test_naming_the_live_home_is_refused_unless_asked_for(live_home, tmp_path, monkeypatch, capsys):
+    from harness import cli, paths
+    monkeypatch.setenv(paths.ENV_VAR, str(live_home.parent))
+    assert cli.main(["ask", "--redo", "--root", str(tmp_path)]) == 2
+    assert "--live-home" in capsys.readouterr().out
+    assert cli.main(["ask", "--redo", "--root", str(tmp_path), "--live-home"]) == 0
+    assert paths.is_live(paths.home() / "discovery.db")
