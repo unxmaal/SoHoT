@@ -172,8 +172,11 @@ def test_the_watchdog_does_not_pause_a_cloud_job_for_daytime_gpu(tmp_path):
                       jobs={"0007": 500}, cloud=cloud, lock=lock)
 
     run_cmd = "uv run python -m evals.run --modality repo --candidates claude-code:claude-opus-5-5"
-    assert ids(judged(job(), NOON)[1], "daytime_gpu") == ["job 0007"]
+    assert ids(judged(job(lock={"kind": "eval", "pgid": 510}), NOON)[1], "daytime_gpu") == ["job 0007"]
     assert ids(judged(job(cloud={510}), NOON)[1], "daytime_gpu") == []
+    unknown = job(cloud={510})
+    unknown._lock = None
+    assert ids(judged(unknown, NOON)[1], "daytime_gpu") == [], "an unknown holder still spares a cloud-only job"
     assert ids(judged(job(cloud={510}, lock={"kind": "eval", "pgid": 500}), NOON)[1], "daytime_gpu") == ["job 0007"]
 
 

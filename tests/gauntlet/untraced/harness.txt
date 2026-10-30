@@ -213,8 +213,6 @@ harness/watchdog.py:ESCALATE_WINDOW_S
 harness/watchdog.py:FALLBACK_MAX
 harness/watchdog.py:IDLE_HOLD_S
 harness/watchdog.py:IDLE_UNLOAD_DAY_S
-harness/watchdog.py:LONG_RUN_DAY_S
-harness/watchdog.py:LONG_RUN_S
 harness/watchdog.py:NOTIFY_EVERY_S
 harness/watchdog.py:ORPHAN_GRACE_S
 harness/watchdog.py:OVERRUN_FACTOR

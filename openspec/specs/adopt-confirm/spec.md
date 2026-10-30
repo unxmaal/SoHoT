@@ -181,17 +181,22 @@ Test: tests/test_lane_too_small_1049.py::test_a_null_on_a_too_small_lane_names_b
 Test: tests/test_lane_too_small_1049.py::test_a_plan_no_run_can_decide_is_a_verdict_written_without_running_it
 
 ### Requirement: Dev confirmation of a holdout win
-A measured gate win SHALL serve only when its confirmation cells (dev rows, less cases the challenger's screen ran) are better on the lane metric with gained > lost at p within ALPHA (0.05, not divided by the comparison count); otherwise it SHALL be declined: a candidate loss when significantly worse, else underpowered naming the smallest gain the cells could see. By-hand verdicts and losses SHALL pass through unchanged.
+A measured gate win SHALL serve only when its confirmation cells (dev rows, less cases the challenger's screen ran) are better on the lane metric with gained > lost at p within ALPHA (0.05, not divided by the comparison count); otherwise it SHALL be declined: a candidate loss when significantly worse, or when the cells were powered to see the lane's effect (the rule `decide()` applies to a null, with the cells planned as a holdout: the incumbent's draws on them at their repeat and ALPHA); only a null the cells could not see SHALL be underpowered, naming the smallest gain they could see. By-hand verdicts and losses SHALL pass through unchanged.
 
 #### Scenario: dev confirms
 - **WHEN** 10 dev cases show 8 gained against 0 lost
 - **THEN** the verdict adopts with "confirmed on 10 dev case(s)" and confirm evidence
 Test: tests/test_adopt_effect_confirm_725.py::test_a_holdout_win_whose_dev_cells_confirm_it_is_adopted
 
-#### Scenario: dev does not confirm, or shows it worse
-- **WHEN** dev shows 3 gained against 1 lost, or 10 lost
-- **THEN** the first is underpowered and the second a candidate loss, significantly worse
-Test: tests/test_adopt_effect_confirm_725.py::test_a_holdout_win_that_dev_does_not_confirm_is_not_served
+#### Scenario: dev too small to see the effect does not confirm, or shows it worse
+- **WHEN** 10 dev cases show 3 gained against 1 lost, or 10 lost
+- **THEN** the first is underpowered (power under 0.8 at the lane's +0.10) and the second a candidate loss, significantly worse
+Test: tests/test_adopt_effect_confirm_725.py::test_a_holdout_win_that_dev_cells_too_few_to_see_it_do_not_confirm_is_underpowered
+
+#### Scenario: dev powered to see the effect does not confirm
+- **WHEN** 100 dev cases, powered at the lane's +0.10, show 2 gained against 1 lost
+- **THEN** the verdict is a candidate loss (declined/candidate), "no gain of +0.08 or more", not underpowered
+Test: tests/test_adopt_effect_confirm_725.py::test_a_holdout_win_that_dev_cells_powered_to_see_it_do_not_confirm_is_a_loss
 
 #### Scenario: confirmation reads the lane metric
 - **WHEN** pass bits and the lane metric disagree on dev
@@ -211,7 +216,7 @@ Test: tests/test_adopt_effect_confirm_725.py::test_only_a_measured_gate_win_is_c
 #### Scenario: confirmation is tested at undivided alpha
 - **WHEN** the holdout verdict faced alpha_for(tested) with tested above 0
 - **THEN** the confirmation still tests dev at ALPHA
-Test: untested
+Test: tests/test_adopt_effect_confirm_725.py::test_the_confirmation_is_tested_at_undivided_alpha
 
 ### Requirement: CONFIRMING holds a win until a night run
 When a measured gate win has no confirmation cells the adopt tier SHALL record it as `confirming` (declined, limit), write no adoption so the incumbent keeps serving, and queue one night confirmation job; a lane too small to split SHALL always be held in-run, and the night run of it SHALL use every case.
@@ -296,16 +301,26 @@ Test: tests/test_confirm_resume_1357.py::test_a_finished_confirm_run_with_no_ver
 Test: tests/test_confirm_resume_1357.py::test_a_finished_confirm_run_already_judged_older_than_the_hold_or_of_another_exam_is_not_reused
 
 ### Requirement: Paired measure pauses and resumes
-`soh adopt --lane L --challenger X` SHALL run incumbent and challenger in one paired eval in a named run directory; when the run pauses at its slice, or is killed at its deadline, it SHALL take an interim look, save a paused_runs row with no verdict and return 0, and the next measure of the pair SHALL resume the same directory at the same repeat.
+`soh adopt --lane L --challenger X` SHALL run incumbent and challenger in one paired eval in a named run directory; when the run pauses at its slice, or is killed at its deadline, it SHALL take an interim look, save a paused_runs row with no verdict and exit with the paused code (75), as a paused confirmation does, so a queue job running it is recorded paused; the discover loop SHALL count a paused pair as neither failed nor done; and the next measure of the pair SHALL resume the same directory at the same repeat.
 
 #### Scenario: paused at the slice
 - **WHEN** the paired eval stops at its stop time
-- **THEN** `_measure` returns 0, a paused row with one look is saved and no adopt verdict is written
+- **THEN** `_measure` returns 75, a paused row with one look is saved and no adopt verdict is written
 Test: tests/test_resume_813.py::test_a_run_paused_at_its_slice_is_recorded_with_progress_and_a_look
+
+#### Scenario: the adopt command exits paused
+- **WHEN** `soh adopt --lane code --challenger X` pauses
+- **THEN** it returns 75 and a paused row is saved
+Test: tests/test_resume_813.py::test_a_paused_adopt_command_exits_75_as_a_paused_confirmation_does
+
+#### Scenario: a sweep is not failed by a pause
+- **WHEN** the loop measures a pair that pauses and one that fails
+- **THEN** only the failed one is a failed step
+Test: tests/test_resume_813.py::test_a_sweep_counts_a_paused_pair_as_neither_failed_nor_done
 
 #### Scenario: a deadline kill
 - **WHEN** the eval is stopped at its deadline
-- **THEN** it is a pause, not a verdict
+- **THEN** it is a pause (75), not a verdict
 Test: tests/test_resume_813.py::test_a_deadline_kill_is_a_pause_not_a_verdict
 
 #### Scenario: the next measure resumes
@@ -457,6 +472,16 @@ Test: tests/test_human_verdicts.py::test_no_preference_leaves_the_incumbent_in_p
 - **WHEN** one case is won and the rest tied
 - **THEN** the lane is not carried
 Test: tests/test_adopt_assumptions.py::test_one_win_and_three_ties_does_not_carry_the_lane
+
+#### Scenario: a strict majority carries the lane
+- **WHEN** both of two cases prefer the challenger
+- **THEN** the lane verdict names the challenger
+Test: tests/test_human_verdicts.py::test_a_strict_majority_of_cases_carries_the_lane
+
+#### Scenario: a plurality that is not a majority
+- **WHEN** of four cases the challenger wins two, the incumbent one and one is tied
+- **THEN** there is no lane verdict, "won 2 of 4 case(s), not a majority"
+Test: tests/test_human_verdicts.py::test_a_plurality_that_is_not_a_majority_does_not_carry_the_lane
 
 #### Scenario: too few votes
 - **WHEN** 9 votes prefer the challenger

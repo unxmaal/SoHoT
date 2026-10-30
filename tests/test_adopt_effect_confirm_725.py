@@ -187,18 +187,44 @@ def test_a_holdout_win_whose_dev_cells_confirm_it_is_adopted():
     assert got.evidence["confirm"]["gained"] == 8
 
 
-def test_a_holdout_win_that_dev_does_not_confirm_is_not_served():
+def test_a_holdout_win_that_dev_cells_too_few_to_see_it_do_not_confirm_is_underpowered():
     tie = _rows({**{f"d{i}": (False, True) for i in range(3)}, **{f"d{i}": (True, False) for i in range(3, 4)},
                  **{f"d{i}": (True, True) for i in range(4, 10)}})
     got = adopt.confirm(_won(), tie, SPLIT)
     assert not got.adopt
     assert got.failure_class == reasons.UNDERPOWERED, got.why
+    assert "underpowered: power 0.00 < 0.8 to detect +0.10 per cell" in got.why
     assert "not confirmed on 10 dev case(s): 3 gained against 1 lost" in got.why and "detectable" in got.why
+    assert "holdout cases" not in got.why
+    assert got.evidence["confirm"]["effect"] == 0.1 and got.evidence["confirm"]["power"] < power.TARGET
+
+
+def test_a_holdout_win_that_dev_cells_powered_to_see_it_do_not_confirm_is_a_loss():
+    wide = holdout.Split("code", dev=tuple(f"d{i}" for i in range(100)), holdout=("h1", "h2", "h3"), too_small=False)
+    rows = _rows({**{f"d{i}": (False, False) for i in range(95)}, "d95": (False, True), "d96": (False, True),
+                  "d97": (True, False), "d98": (True, True), "d99": (True, True)})
+    plan = adopt._confirm_plan(adopt.confirmation_cells(rows, wide), "inc", "code")
+    assert plan.enough and plan.mde == pytest.approx(0.081)
+    got = adopt.confirm(_won(), rows, wide)
+    assert not got.adopt and got.failure_class == "", got.why
+    assert adopt.outcome_of(got) == ("declined", reasons.CANDIDATE)
+    assert "not confirmed on 100 dev case(s): 2 gained against 1 lost" in got.why
+    assert "no gain of +0.08 or more per cell at power 0.8" in got.why and "underpowered" not in got.why
+    assert got.evidence["min_effect"] == {"noise": 0.06, "effect": 0.1, "seen": 0.081}
+    assert got.evidence["confirm"]["mde"] == pytest.approx(0.081)
     worse = _rows({f"d{i}": (True, False) for i in range(10)})
     got = adopt.confirm(_won(), worse, SPLIT)
     assert not got.adopt and got.failure_class == ""
     assert "significantly worse" in got.why
     assert adopt.outcome_of(got) == ("declined", reasons.CANDIDATE)
+
+
+def test_the_confirmation_is_tested_at_undivided_alpha():
+    won = adopt.Verdict("code", "inc", "ch", True, "won", evidence={"comparisons": 5, "alpha": adopt.alpha_for(4)})
+    rows = _rows({**{f"d{i}": (False, True) for i in range(7)}, **{f"d{i}": (True, True) for i in range(7, 10)}})
+    got = adopt.confirm(won, rows, SPLIT)
+    assert adopt.alpha_for(4) < got.evidence["confirm"]["p"] <= adopt.ALPHA
+    assert got.adopt and "confirmed on 10 dev case(s): 7 gained against 0 lost" in got.why
 
 
 def test_cases_the_challenger_was_screened_on_are_not_confirmation_cells(conn):
@@ -382,11 +408,13 @@ def test_an_unconfirmed_win_names_the_smallest_gain_its_cells_could_see():
         rows += [_row("inc", f"d{i}", False, inc), _row("ch", f"d{i}", False, ch)]
     got = adopt.confirm(_plain(), rows, split)
     assert got.adopt is False and got.failure_class == reasons.UNDERPOWERED
-    assert got.why == ("won the holdout, not confirmed on 40 dev case(s): 12 gained against 8 lost, p=0.503; smallest "
-                       "gain these cells could see: +0.38 per cell at power 0.8; this null is not evidence of no "
-                       "difference (won)")
+    assert got.why == ("won the holdout, underpowered: power 0.01 < 0.8 to detect +0.10 per cell at alpha 0.05 over 40 "
+                       "effective cells, so this null is not evidence of no difference (not confirmed on 40 dev "
+                       "case(s): 12 gained against 8 lost, p=0.503); smallest gain this run could see: +0.38 per cell "
+                       "at power 0.8 (won)")
     assert got.evidence["confirm"] == {"screened": [], "cases": 40, "gained": 12, "lost": 8,
-                                       "p": pytest.approx(0.5034, abs=1e-4)}
+                                       "p": pytest.approx(0.5034, abs=1e-4), "power": 0.0139, "effect": 0.1,
+                                       "mde": 0.381}
 
 
 def test_the_smallest_gain_reads_lane_metric_draws_and_their_correlation():
@@ -396,14 +424,14 @@ def test_the_smallest_gain_reads_lane_metric_draws_and_their_correlation():
             cells += [_row("inc", f"d{i}#1", False, 0.0), _row("inc", f"d{i}#2", False, 1.0)]
         else:
             cells += [_row("inc", f"d{i}", False, 0.0 if i < 25 else 1.0)]
-    assert adopt._confirm_sees(cells, "inc", "decide") == "; smallest gain these cells could see: +0.36 per cell at power 0.8"
+    assert adopt._confirm_plan(cells, "inc", "decide").mde == pytest.approx(0.36, abs=0.005)
     two = []
     for i in range(40):
         a, b = (0.0, 1.0) if i < 10 else ((0.0, 0.0) if i < 25 else (1.0, 1.0))
         two += [_row("inc", f"d{i}#1", False, a), _row("inc", f"d{i}#2", False, b)]
     assert power.rows_icc([{**r, "passed": power.draw(r, "decide")} for r in two], ("inc",)) == (
         pytest.approx(0.5094, abs=1e-4), 2.0)
-    assert adopt._confirm_sees(two, "inc", "decide") == "; smallest gain these cells could see: +0.30 per cell at power 0.8"
+    assert adopt._confirm_plan(two, "inc", "decide").mde == pytest.approx(0.30, abs=0.005)
 
 
 def test_a_confirmation_worse_on_the_lane_metric_alone_is_a_loss():

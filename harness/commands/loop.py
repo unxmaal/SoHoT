@@ -1,6 +1,7 @@
 """`soh discover --loop`: the tiers chained, the queue they share, and the spend that settles them."""
 from __future__ import annotations
 
+from evals import watch
 from harness import lanes, methods, repo_gate
 from harness.commands import discover as discover_cmd
 from harness.commands import measure as measure_cmd
@@ -548,8 +549,9 @@ def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=No
             print(f"  {why}", flush=True)
             continue
         _beat("measure", candidate=row.get("name", ""), item=i, items=total)
-        rc = _step(f"measure {row.get('name', '')}".strip(),
-                   measure_cmd._measure_and_adopt(repo_gate.args_for(a, row), row, sweep), failed) or rc
+        got = measure_cmd._measure_and_adopt(repo_gate.args_for(a, row), row, sweep)
+        # A paused pair resumes next sweep; it is not a failed step. #1374.
+        rc = _step(f"measure {row.get('name', '')}".strip(), 0 if got == watch.PAUSED else got, failed) or rc
         if sweep is not None and sweep.squeezed:
             # Its model is released by now: re-sample memory before each start from here on.
             print(f"  {row.get('name', '')} was paused for memory; going on with what fits, smallest first",
