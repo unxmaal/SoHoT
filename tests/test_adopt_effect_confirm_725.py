@@ -239,6 +239,23 @@ def test_a_holdout_win_with_no_dev_rows_is_held_and_queues_a_night_confirmation(
     assert conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0] == 1
 
 
+def test_a_confirmation_job_does_not_count_itself_and_a_continuation_starts_when_named(conn, monkeypatch):
+    held = adopt.Verdict("code", "inc-spec", "org/x", False, "", failure_class=reasons.CONFIRMING)
+    monkeypatch.delenv(workqueue.JOB_ENV, raising=False)
+    job = adopt.queue_confirmation(conn, 7, held, now=0.0)
+    conn.execute("UPDATE jobs SET state = ? WHERE id = ?", (workqueue.RUNNING, int(job["id"])))
+    conn.commit()
+    assert adopt.queue_confirmation(conn, 7, held) is None
+    monkeypatch.setenv(workqueue.JOB_ENV, " 7x")
+    assert adopt.queue_confirmation(conn, 7, held) is None
+    monkeypatch.setenv(workqueue.JOB_ENV, f" {int(job['id'])} ")
+    later = adopt.queue_confirmation(conn, 7, held, start=123.0)
+    assert later is not None and later["id"] != job["id"]
+    row = conn.execute("SELECT not_before, night_gate FROM jobs WHERE id = ?", (int(later["id"]),)).fetchone()
+    assert (row["not_before"], row["night_gate"]) == (123.0, 1)
+    assert adopt.queue_confirmation(conn, 7, held, start=123.0) is None
+
+
 def _confirming(conn, tmp_path, monkeypatch, incumbent="inc-spec"):
     rows = _rows({"h1": (False, True), "h2": (False, True), "h3": (False, True)})
     held = adopt.confirm(_won(), rows, SPLIT, frozenset({"d0"}))

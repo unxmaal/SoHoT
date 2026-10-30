@@ -20,6 +20,8 @@ from harness import exclusive, paths
 
 PENDING, RUNNING, DONE, FAILED = "pending", "running", "done", "failed"
 CANCELLED = "cancelled"
+#: A job whose command paused on request with its work checkpointed (evals.watch.PAUSED). #1357.
+PAUSED = "paused"
 #: The lock class a job waits for before the worker starts it. #1153.
 GPU, CLOUD = "gpu", "cloud"
 #: How often a worker with jobs running looks for one it can start beside them. #1153.
@@ -165,6 +167,12 @@ def night_start(now: float) -> float:
             if start > t:
                 later.append(start)
     return min(later).timestamp()
+
+
+def next_night(now: float) -> float:
+    """When the night after this one starts: night_start(now) by day, the following night's start at night. #1357."""
+    start = night_start(now)
+    return start if start > now else night_start(night_window(now)[1])
 
 
 def night_window(now: float) -> tuple[float, float]:
@@ -715,7 +723,8 @@ def run_one(job: dict, popen=None) -> dict | None:
         flag.unlink(missing_ok=True)
         _settle_cancelled(job, rc=rc)
     else:
-        job.update(state=DONE if rc == 0 else FAILED)
+        from evals import watch
+        job.update(state=DONE if rc == 0 else PAUSED if rc == watch.PAUSED else FAILED)
         _write(job)
     return get(job["id"]) or job
 

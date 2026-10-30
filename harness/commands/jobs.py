@@ -116,7 +116,7 @@ def cmd_jobs(a) -> int:
          f"{'may start' if ok else 'waits'}: {why}")
     shown = ([j for j in got if j["state"] == wq.RUNNING] + wq.order(
         [j for j in got if j["state"] == wq.PENDING])
-             + [j for j in got if j["state"] in (wq.DONE, wq.FAILED, wq.CANCELLED)])
+             + [j for j in got if j["state"] in (wq.DONE, wq.PAUSED, wq.FAILED, wq.CANCELLED)])
     locks = exclusive.holders()
     loose = held_locks(got, locks)
     for j in shown:

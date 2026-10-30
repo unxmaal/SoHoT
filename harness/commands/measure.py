@@ -971,7 +971,7 @@ def _confirmed(verdict, rows, split, screened, served: str, inc_spec: str, spec:
 
 def confirm_job(vid: int) -> int:
     """`soh adopt --confirm VID`: the night dev run that confirms or refuses a held holdout win. #725."""
-    from harness import adopt, candidates, holdout, runner_gaps, screen
+    from harness import adopt, candidates, holdout, screen
     from harness import memory_store as ms
     store = ms.connect()
     try:
@@ -996,16 +996,16 @@ def confirm_job(vid: int) -> int:
               f"it decides nothing; the adopt retest measures {spec} against {now}", flush=True)
         return 0
     split = holdout.for_lane(lane)
-    out = paths.home() / "runs" / f"{time.strftime('%Y%m%d-%H%M%S')}-confirm-{lane}"
-    argv = [*runner_gaps.launcher([inc_spec, spec], ["uv", "run", "python"]), "-m", "evals.run", "--modality", lane,
-            "--repeat", str(int(held.get("repeat") or 1)), "--out", str(out), "--candidates", f"{inc_spec},{spec}"]
-    if not split.too_small:
-        argv += ["--split", "dev"]
-    route = screen.routed_gateway(name)
-    if route:
-        argv += ["--gateway", route]
-    print(f"\n  {lane}: confirming {spec} over {inc_spec} on dev (verdict {vid})\n    {' '.join(argv)}", flush=True)
-    proc = _launch(argv)
+    repeat = int(held.get("repeat") or 1)
+    side = "all" if split.too_small else "dev"
+    out = _confirm_dir(lane, [inc_spec, spec], repeat, side)
+    proc, ran = _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid)
+    if out is not None and proc.returncode == watch.STALE:
+        print(f"    {out} ran another exam, so the confirmation is starting fresh", flush=True)
+        proc, ran = _confirm_run(lane, inc_spec, spec, name, repeat, split, None, vid)
+    out = ran
+    if proc.returncode == watch.PAUSED:
+        return _confirm_paused(vid, lane, inc_spec, spec, out)
     if proc.returncode != 0:
         err(proc.stderr.strip()[-400:] or "no stderr")
         return 1
@@ -1025,6 +1025,53 @@ def confirm_job(vid: int) -> int:
     print(f"    {'ADOPTED' if verdict.adopt else 'kept the incumbent'}: {verdict.why}", flush=True)
     _record(verdict, spec, data.get("run_id"), out)
     return 0
+
+
+def _confirm_dir(lane: str, pair: list, repeat: int, side: str) -> Path | None:
+    """The newest unfinished confirmation run of this pair on this exam, to resume. #1357."""
+    for out in sorted((paths.home() / "runs").glob(f"*-confirm-{lane}"), reverse=True):
+        had = watch.read(out)
+        if had is None or watch.read_progress(out).get("state") == "done":
+            continue
+        ident = had[0]
+        if (list(ident.get("candidates") or ()) == list(pair) and int(ident.get("repeat") or 1) == repeat
+                and (ident.get("split") or "all") == side):
+            return out
+    return None
+
+
+def _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid):
+    """(process, out dir) of the confirmation eval, resuming `out` when one is named. #1357."""
+    from harness import runner_gaps, screen
+    resume = out is not None
+    out = out or paths.home() / "runs" / f"{time.strftime('%Y%m%d-%H%M%S')}-confirm-{lane}"
+    argv = [*runner_gaps.launcher([inc_spec, spec], ["uv", "run", "python"]), "-m", "evals.run", "--modality", lane,
+            "--repeat", str(repeat), "--out", str(out), "--candidates", f"{inc_spec},{spec}"]
+    if not split.too_small:
+        argv += ["--split", "dev"]
+    if resume:
+        argv += ["--resume"]
+    route = screen.routed_gateway(name)
+    if route:
+        argv += ["--gateway", route]
+    print(f"\n  {lane}: {'resuming' if resume else 'confirming'} {spec} over {inc_spec} on dev (verdict {vid})"
+          f"\n    {' '.join(argv)}", flush=True)
+    return _launch(argv), out
+
+
+def _confirm_paused(vid: int, lane: str, inc_spec: str, spec: str, out) -> int:
+    """A paused confirmation records no verdict and queues its own continuation for the next night. #1357."""
+    from harness import adopt, workqueue
+    from harness import memory_store as ms
+    store = ms.connect()
+    try:
+        job = adopt.queue_confirmation(store, vid, adopt.Verdict(lane, inc_spec, spec, False, ""),
+                                       start=workqueue.next_night(time.time()))
+    finally:
+        store.close()
+    then = f"; it resumes as job {job['id']}" if job else ""
+    print(f"    paused at {out}: {watch.pause_reason(out) or 'on request'}{then}", flush=True)
+    return watch.PAUSED
 
 
 def _record(verdict, spec: str, run_id, out) -> None:
