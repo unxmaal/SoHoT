@@ -542,7 +542,7 @@ def argv(row: dict, outdir=None) -> list[str]:
     metrics: the screen answers whether it runs, and a metric here would invite
     ranking a screen against a measurement."""
     from harness import runner_gaps
-    out = [*runner_gaps.launcher([row["candidate"]], [sys.executable or "python"]), "-m", "evals.run",
+    out = [*runner_gaps.launcher([row["candidate"]], [sys.executable or "python"], row["modality"]), "-m", "evals.run",
            "--modality", row["modality"],
            "--screen", "--repeat", "1", "--candidates", row["candidate"]]
     upstream = routed_gateway(row.get("name") or "")

@@ -50,6 +50,8 @@ WHISPER_PACKAGE = "mlx-whisper"
 WHISPER_VENV = "whisper"
 #: Runner venvs uv syncs from this project's lock plus one dependency group when a run first needs them: venv -> group. #1024.
 GROUP_VENVS = {WHISPER_VENV: "whisper"}
+#: The uv group a case assertion's grader imports beyond the base env: staging's detector needs torch. #1358.
+ASSERTION_GROUPS = {"staging": "metrics"}
 _VENV_ENV = {"diffusers-cuda": "DIFFUSERS_VENV", "hf-task": "HF_TASK_VENV", WHISPER_VENV: "WHISPER_VENV",
              "nimble": "NIMBLE_VENV", "decider": "DECIDER_VENV", "shots": "SHOTS_VENV"}
 #: Venvs kept at <home>/<name>/venv beside the checkout their script clones, and the env var that moves that home. #1037.
@@ -334,13 +336,21 @@ def venv_of(spec: str) -> str:
     return RUNNER_VENVS.get(head, "")
 
 
-def launcher(specs, default: list[str]) -> list[str]:
-    """The interpreter an evals.run over `specs` starts with: a group venv's uv run when a spec needs one, else `default`. #1024."""
+def lane_groups(lane: str, root=None) -> tuple[str, ...]:
+    """The uv groups a lane's own graders import: metrics wherever one of its cases asserts staging. #1358."""
+    from harness import holdout
+    return tuple(sorted({group for c in holdout.lane_cases(lane, root) for key, group in ASSERTION_GROUPS.items()
+                         if key in c.assertions}))
+
+
+def launcher(specs, default: list[str], lane: str = "") -> list[str]:
+    """The interpreter an evals.run over `specs` starts with: uv run with each group a spec or the lane needs, else `default`. #1024, #1358."""
     venv = next((v for v in map(venv_of, specs) if v in GROUP_VENVS), "")
+    groups = [arg for g in (lane_groups(lane) if lane else ()) for arg in ("--group", g)]
     if not venv:
-        return list(default)
+        return ["uv", "run", *groups, "python"] if groups else list(default)
     return ["env", "-u", "VIRTUAL_ENV", f"UV_PROJECT_ENVIRONMENT={venv_path(venv)}",
-            "uv", "run", "--group", GROUP_VENVS[venv], "python"]
+            "uv", "run", "--group", GROUP_VENVS[venv], *groups, "python"]
 
 
 def _requirements(names) -> frozenset:
