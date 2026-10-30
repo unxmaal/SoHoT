@@ -99,7 +99,7 @@ def plan(lanes_state, *, only: str = "", include_stale: bool = True,
         else:
             spec = screen.candidate_for(name, default) or default
             from harness import runner_gaps
-            task.argv = [*runner_gaps.launcher([spec], ["uv", "run", "python"]), "-m", "evals.run",
+            task.argv = [*runner_gaps.launcher([spec], ["uv", "run", "python"], name), "-m", "evals.run",
                          "--modality", name, "--candidates", spec]
             route = screen.routed_gateway(default)
             if route:

@@ -266,7 +266,10 @@ def device() -> str:
         if chosen not in DEVICES:
             raise ValueError(f"SOH_STAGING_DEVICE={chosen!r} is not one of {', '.join(DEVICES)}")
         return chosen
-    import torch
+    try:
+        import torch
+    except ImportError as exc:
+        raise DetectorUnavailable(f"{exc}; run with: uv run --group metrics") from exc
     return "mps" if torch.backends.mps.is_available() else "cpu"
 
 
