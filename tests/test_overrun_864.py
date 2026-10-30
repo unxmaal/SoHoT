@@ -200,7 +200,7 @@ def test_a_resumed_run_is_priced_afresh_and_keeps_its_exam(monkeypatch, world): 
 def test_a_run_stopped_by_a_signal_is_kept_as_a_pause_and_resumed(monkeypatch, world, rc):  # noqa: F811
     fake = Eval(rc=rc, rows=_rows(10))
     monkeypatch.setattr(measure_cmd, "_launch", fake)
-    assert _measure() == 0
+    assert _measure() == watch.PAUSED
     conn = world()
     try:
         (p,) = _pauses(conn)
@@ -247,7 +247,7 @@ def test_a_run_stopped_before_this_fix_is_found_by_its_checkpoint_and_resumed(mo
     out = _abandon(tmp_path, "20261014-232539-adopt-code", [INC, CH], repeat=3)
     fake = Eval(rows=_rows(10))
     monkeypatch.setattr(measure_cmd, "_launch", fake)
-    assert _measure() == 0
+    assert _measure() == watch.PAUSED
     (argv,) = fake.argvs
     assert "--resume" in argv and argv[argv.index("--out") + 1] == str(out)
     assert argv[argv.index("--repeat") + 1] == "3" and argv[argv.index("--split") + 1] == "holdout"

@@ -474,14 +474,17 @@ def screened_cases(conn, lane: str, keys) -> frozenset:
     return frozenset(holdout.base_id(r[0]) for r in got)
 
 
-def _confirm_sees(cells, name_i: str, lane: str) -> str:
+def _confirm_plan(cells, name_i: str, lane: str):
+    """The power plan the confirmation cells amount to: the incumbent's draws on them, at their repeat and ALPHA. #1375."""
+    from dataclasses import replace
+
     from harness import power
     draws, _ = power.draws_from(cells, name_i, lane)
     rates = [sum(v) / len(v) for v in draws.values() if v]
     rho, repeat = power.rows_icc([{**r, "passed": power.draw(r, lane)} for r in cells], (name_i,))
-    got = power.mde(rates, max(1, round(repeat)), ALPHA, power.DEFAULT_RHO if rho is None else rho, power.TARGET)
-    return (f"; smallest gain these cells could see: +{got:.2f} per cell at power {power.TARGET}"
-            if got is not None else f"; no gain up to +1.00 is detectable on them at power {power.TARGET}")
+    got = power.plan(rates, power.effect_for(lane), repeat=max(1, round(repeat)), rho=rho, observed=len(rates))
+    # Its advice counts holdout cases, which these are not.
+    return replace(got, why="")
 
 
 def confirm(verdict: Verdict, rows, split, screened=frozenset(), *, fresh: bool = False) -> Verdict:
@@ -512,9 +515,14 @@ def confirm(verdict: Verdict, rows, split, screened=frozenset(), *, fresh: bool 
     if worse:
         return replace(verdict, adopt=False, failure_class="", evidence=evidence,
                        why=f"won the holdout, but on {cases} dev case(s) it is {worse} ({verdict.why})")
-    return replace(verdict, adopt=False, failure_class=reasons.UNDERPOWERED, evidence=evidence,
-                   why=(f"won the holdout, not confirmed on {head}{_confirm_sees(cells, name_i, lane)}; "
-                        f"this null is not evidence of no difference ({verdict.why})"))
+    # A null the cells could see is a loss; only one they could not is underpowered, as decide() rules. #725, #1375.
+    plan = _confirm_plan(cells, name_i, lane)
+    null = _null(lane, name_i, name_c, Verdict(lane, name_i, name_c, False, f"not confirmed on {head}"), plan)
+    evidence["confirm"].update(power=round(plan.power, 4), effect=plan.effect, mde=plan.mde)
+    if null.evidence.get("min_effect"):
+        evidence["min_effect"] = null.evidence["min_effect"]
+    return replace(verdict, adopt=False, failure_class=null.failure_class, evidence=evidence,
+                   why=f"won the holdout, {null.why} ({verdict.why})")
 
 
 def confirm_argv(vid: int) -> list[str]:

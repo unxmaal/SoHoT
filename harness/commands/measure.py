@@ -923,7 +923,8 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
                 sweep.squeezed = why
             else:
                 sweep.halted = why
-    return 0
+    # Paused, as a paused --confirm exits, so the queue records it paused, not done. #1374.
+    return watch.PAUSED
 
 
 def _stopped_at(out, key: str) -> int | None:
