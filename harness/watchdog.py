@@ -23,10 +23,19 @@ NOTE, NOTIFY, FILE, PAUSE, STOP, REAP, UNLOAD, RESTART = (
     "note", "notify", "file", "pause", "stop", "reap", "unload", "restart")
 ACTIONS = (NOTE, NOTIFY, FILE, PAUSE, STOP, REAP, UNLOAD, RESTART)
 
-#: Wall clock a discover sweep, queue job or unowned eval may run at night before it is flagged.
-LONG_RUN_S = 8 * 3600.0
+#: Wall clock each kind of job (kind_of) may run at night before long_run flags it, then pauses it (#1372).
+LONG_RUN_ADOPT_S = 8 * 3600.0
+LONG_RUN_CONFIRM_S = 8 * 3600.0
+LONG_RUN_EVAL_S = 8 * 3600.0
+LONG_RUN_OTHER_S = 8 * 3600.0
+LONG_RUN_SWEEP_S = 8 * 3600.0
 #: The same, during the day hours.
-LONG_RUN_DAY_S = 2 * 3600.0
+LONG_RUN_DAY_ADOPT_S = 2 * 3600.0
+LONG_RUN_DAY_CONFIRM_S = 2 * 3600.0
+LONG_RUN_DAY_EVAL_S = 2 * 3600.0
+LONG_RUN_DAY_OTHER_S = 2 * 3600.0
+LONG_RUN_DAY_SWEEP_S = 2 * 3600.0
+KINDS = ("adopt", "confirm", "eval", "other", "sweep")
 #: Observed seconds per case over this multiple of the plan's reads as a harness defect (Decision #456).
 OVERRUN_FACTOR = 2.0
 #: Cases a run must have finished before its observed rate is judged against the plan.
@@ -38,10 +47,10 @@ STALL_S = 1800.0
 STALL_CASES = 10
 #: An orphan younger than this may be a parent mid-exit; it is left one more wake.
 ORPHAN_GRACE_S = 120.0
-#: Eric's day, local hours [start, end): the discover agent fires at the end of it.
+#: Eric's day, local hours [start, end); the discover agent starts at scripts/launchd.sh DISCOVER_HOURS, which this does not move (#1369).
 DAY_START_HOUR = 8
 DAY_END_HOUR = 21
-#: A GPU job running longer than this inside the day hours is paused for the night.
+#: A job holding the GPU lock longer than this inside the day hours is paused for the night, never stopped (#1370, #1371).
 DAYTIME_GPU_S = 3600.0
 #: The eval lock held this long with no SoHoT job running is a stuck holder.
 IDLE_HOLD_S = 1800.0
@@ -70,6 +79,7 @@ NOTIFY_EVERY_S = 3600.0
 NOTIFY_TIMEOUT_S = 10.0
 NOTIFY_TITLE = "SoHoT watchdog"
 NOTIFIED = "notified"
+UNPAUSABLE = "no progress file to pause through: notified instead, and it runs on"
 
 ACT_ENV = "LH_WATCHDOG_ACT"
 FILE_ENV = "LH_WATCHDOG_FILE"
@@ -140,6 +150,8 @@ class World:
     lanes: list | None = None
     #: The day clearance in force (soh day clear), or None. #1112.
     clearance: dict | None = None
+    #: The top subject whose process holds the GPU lock: "" when none does, None when that cannot be told. #1370.
+    gpu: str | None = ""
     #: The mcp unit's pid and how long it has run; None when no unit is loaded or launchd cannot be asked.
     mcp_live: int | None = None
     mcp_live_s: float | None = None
@@ -525,6 +537,7 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
         if world.mcp_stale:
             _mcp_clients(probes, world, listed)
     world.lock = probes.lock()
+    world.gpu = _gpu_holder(world, procs)
     world.cloud = probes.cloud()
     world.resident = probes.resident()
     world.pressure = probes.pressure()
@@ -548,6 +561,23 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
     except Exception as exc:  # noqa: BLE001 - a probe that cannot run is a gap, never a lost wake
         world.gaps["lanes"] = f"the lane probes failed: {type(exc).__name__}: {exc}"[:300]
     return world
+
+
+def _gpu_holder(w: World, procs: dict) -> str | None:
+    """The key of the top subject whose process, its evals' or a descendant's, holds the GPU lock. #1370."""
+    held = w.lock
+    if held is None:
+        return None
+    if not held:
+        return ""
+    pids = {p for p in (held.get("pid"), held.get("pgid")) if isinstance(p, int)}
+    if not pids:
+        return None
+    chain = pids | {a for p in pids for a in _ancestors(p, procs)}
+    for s in w.top:
+        if any({x.pid, x.pgid} & chain for x in [s, *s.children]):
+            return s.key
+    return ""
 
 
 def _idle_since(probes: Probes, w: World, asked: dict, now: float) -> dict:
@@ -593,12 +623,46 @@ def _cleared(w: World) -> bool:
     return daytime(w.now) and w.clearance is not None
 
 
+_CONFIRM = re.compile(r"\badopt\b.*\s--confirm\b")
+_ADOPT = re.compile(r"\badopt\b")
+
+
+def kind_of(s: Subject) -> str:
+    """The job kind long_run's limits are keyed by: sweep, confirm, adopt, eval or other. #1372."""
+    if s.kind == "discover":
+        return "sweep"
+    if _CONFIRM.search(s.command):
+        return "confirm"
+    if _ADOPT.search(s.command):
+        return "adopt"
+    return "eval" if s.kind == "eval" or _EVAL.search(s.command) else "other"
+
+
+def long_run_limits() -> dict:
+    """kind -> (night seconds, day seconds), read when asked so a rebound knob takes effect. #1372."""
+    return {"adopt": (LONG_RUN_ADOPT_S, LONG_RUN_DAY_ADOPT_S), "confirm": (LONG_RUN_CONFIRM_S, LONG_RUN_DAY_CONFIRM_S),
+            "eval": (LONG_RUN_EVAL_S, LONG_RUN_DAY_EVAL_S), "other": (LONG_RUN_OTHER_S, LONG_RUN_DAY_OTHER_S),
+            "sweep": (LONG_RUN_SWEEP_S, LONG_RUN_DAY_SWEEP_S)}
+
+
+def long_run_limit(s: Subject, day: bool) -> tuple[str, float]:
+    """(knob, seconds) of the long_run limit a subject is judged by. #1372."""
+    kind = kind_of(s)
+    return (f"watchdog_long_run_day_{kind}" if day else f"watchdog_long_run_{kind}"), long_run_limits()[kind][day]
+
+
 def _long_run(w: World) -> list[Finding]:
-    limit = LONG_RUN_DAY_S if daytime(w.now) else LONG_RUN_S
     if _cleared(w):
         return []
-    return [Finding("long_run", s, {"elapsed_s": round(s.elapsed_s), "limit_s": limit, "day": daytime(w.now)})
-            for s in w.top if s.elapsed_s is not None and s.elapsed_s > limit and not s.orphan]
+    from harness import knobs
+    day, out = daytime(w.now), []
+    for s in w.top:
+        knob, limit = long_run_limit(s, day)
+        if s.elapsed_s is not None and s.elapsed_s > limit and not s.orphan:
+            out.append(Finding("long_run", s, {"elapsed_s": round(s.elapsed_s), "limit_s": limit, "day": day,
+                                               "kind": kind_of(s),
+                                               "limit": knobs.limit_text(knobs.hit(knob, limit, "s"))}))
+    return out
 
 
 def _cells(run: dict):
@@ -727,13 +791,20 @@ def _stale_mcp(w: World) -> list[Finding]:
                                      "remedy": STALE_MCP_REMEDY}) for s in w.mcp_stale]
 
 
+def _on_gpu(w: World, s: Subject) -> bool:
+    """It holds the GPU lock; when the holder cannot be told, any subject not running cloud-only evals. #1370."""
+    return s.key == w.gpu if w.gpu is not None else not _cloud_only(w, s)
+
+
 def _daytime_gpu(w: World) -> list[Finding]:
     if not daytime(w.now) or _cleared(w):
         return []
     return [Finding("daytime_gpu", s, {"elapsed_s": round(s.elapsed_s), "limit_s": DAYTIME_GPU_S,
-                                       "hours": [DAY_START_HOUR, DAY_END_HOUR]})
+                                       "hours": [DAY_START_HOUR, DAY_END_HOUR],
+                                       "gpu": "holds the GPU lock" if w.gpu is not None else
+                                       "the GPU lock's holder cannot be told"})
             for s in w.top if s.elapsed_s is not None and s.elapsed_s > DAYTIME_GPU_S and not s.orphan
-            and not _cloud_only(w, s)]
+            and _on_gpu(w, s)]
 
 
 def _cloud_only(w: World, s: Subject) -> bool:
@@ -753,8 +824,8 @@ def _day_clear(w: World) -> list[Finding]:
     return [Finding("day_clear", s, {"skipped": skipped, "elapsed_s": round(s.elapsed_s), "limit_s": limit,
                                      "clearance": c["id"], "said": c["said"], "until": c["until"]})
             for s in w.top if s.elapsed_s is not None and not s.orphan
-            for skipped, limit in (("daytime_gpu", DAYTIME_GPU_S), ("long_run", LONG_RUN_DAY_S))
-            if s.elapsed_s > limit and not (skipped == "daytime_gpu" and _cloud_only(w, s))]
+            for skipped, limit in (("daytime_gpu", DAYTIME_GPU_S), ("long_run", long_run_limit(s, True)[1]))
+            if s.elapsed_s > limit and not (skipped == "daytime_gpu" and not _on_gpu(w, s))]
 
 
 def _idle_lock(w: World) -> list[Finding]:
@@ -881,9 +952,12 @@ class Criterion:
     what: str
 
 
+_LONG_RUN_KNOBS = tuple(f"watchdog_long_run_{k}" for k in KINDS)
+_LONG_RUN_DAY_KNOBS = tuple(f"watchdog_long_run_day_{k}" for k in KINDS)
+
 CRITERIA = (
-    Criterion("long_run", ("watchdog_long_run", "watchdog_long_run_day"), NOTIFY, PAUSE, ("processes",),
-              _long_run, "has run a long time (tighter during the day)"),
+    Criterion("long_run", _LONG_RUN_KNOBS + _LONG_RUN_DAY_KNOBS, NOTIFY, PAUSE, ("processes",),
+              _long_run, "has run longer than its kind's limit (tighter during the day)"),
     Criterion("overrun", ("watchdog_overrun_factor", "watchdog_overrun_min_cases", "watchdog_overrun_min_pairs"), FILE, STOP,
               ("processes", "progress"), _overrun,
               "observed s/case far over the plan's, or a challenger far slower than planned on the incumbent's cases"),
@@ -894,8 +968,8 @@ CRITERIA = (
     Criterion("stale_mcp", ("watchdog_orphan_grace",), NOTIFY, FILE, ("processes", "mcp_unit"), _stale_mcp,
               "an old MCP server kept alive by a client's open stream, serving the tool list it started with"),
     Criterion("daytime_gpu", ("watchdog_day_start_hour", "watchdog_day_end_hour", "watchdog_daytime_gpu"), PAUSE,
-              STOP, ("processes",), _daytime_gpu, "a long GPU job inside Eric's day hours"),
-    Criterion("day_clear", ("watchdog_day_end_hour", "watchdog_daytime_gpu", "watchdog_long_run_day"), NOTE, NOTIFY,
+              NOTIFY, ("processes",), _daytime_gpu, "a job holding the GPU lock long inside Eric's day hours"),
+    Criterion("day_clear", ("watchdog_day_end_hour", "watchdog_daytime_gpu") + _LONG_RUN_DAY_KNOBS, NOTE, NOTIFY,
               ("processes",), _day_clear,
               "a long day job let off daytime_gpu and long_run's day limit: Eric cleared the day (soh day clear)"),
     Criterion("idle_lock", ("watchdog_idle_hold",), NOTE, FILE, ("processes", "lock"), _idle_lock,
@@ -1201,6 +1275,9 @@ def wake(conn, probes: Probes | None = None, hands: Hands | None = None, act: bo
             c = BY_ID[f.criterion]
             escalated = repeats(conn, f, now, not act) >= ESCALATE_AFTER
             action = c.escalation if escalated else c.action
+            if action == PAUSE and not f.subject.runs():
+                # A time or memory limit never stops a job; one with nothing to pause through is told about. #1371.
+                action, f = NOTIFY, Finding(f.criterion, f.subject, {**f.evidence, "unpausable": UNPAUSABLE})
             outcome = _act(conn, hands, action, f, now) if act else "dry-run"
             row = record(conn, f, action, escalated, not act, outcome, now)
             mark = "" if act else "[dry-run] would "
