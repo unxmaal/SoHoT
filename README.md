@@ -2808,7 +2808,10 @@ normal, whether or not someone is at the machine; under pressure it waits,
 and an unreadable pressure level does not block it. Jobs are rows in the
 store's `jobs` table, so they survive a restart, and output goes to
 `~/localharness/logs/jobs/<id>.log`. A failed job is recorded and the next
-starts. A job cut off by a reboot is marked failed rather than rerun. An eval
+starts. A job whose eval paused with its cases checkpointed is recorded
+paused, not failed; a paused `soh adopt --confirm` queues itself for
+the next night and resumes the same run directory. A job cut off by a reboot
+is marked failed rather than rerun. An eval
 run a job produced is linked to it (`runs.job_id`).
 
 Over MCP, `image` and `video` are queued at priority 10, ahead of batch work

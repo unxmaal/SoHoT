@@ -522,20 +522,26 @@ def confirm_argv(vid: int) -> list[str]:
     return [sys.executable, "-m", "harness.cli", "adopt", "--confirm", str(int(vid))]
 
 
-def queue_confirmation(conn, vid: int, verdict: Verdict, now: float | None = None) -> dict | None:
-    """Queue tonight's dev run that confirms or refuses a held holdout win, once per verdict. #725."""
+def queue_confirmation(conn, vid: int, verdict: Verdict, now: float | None = None,
+                       start: float | None = None) -> dict | None:
+    """Queue tonight's dev run (or one at `start`) that confirms or refuses a held holdout win, once per verdict. #725."""
+    import os
     import time
 
     from harness import paths, workqueue
     argv = confirm_argv(vid)
-    have = conn.execute("SELECT id FROM jobs WHERE argv = ? AND state IN (?, ?)",
-                        (json.dumps(argv), workqueue.PENDING, workqueue.RUNNING)).fetchone()
+    # The job this runs in is not the continuation it queues. #1357.
+    mine = os.environ.get(workqueue.JOB_ENV, "").strip()
+    mine = int(mine) if mine.isdigit() else None
+    have = conn.execute("SELECT id FROM jobs WHERE argv = ? AND state IN (?, ?) AND id IS NOT ?",
+                        (json.dumps(argv), workqueue.PENDING, workqueue.RUNNING, mine)).fetchone()
     if have is not None:
         return None
     return workqueue.add(argv, title=(f"confirm {verdict.lane}: {verdict.challenger} over {verdict.incumbent} "
                                       f"on dev (verdict {vid})"),
                          cwd=str(paths.REPO), requested_by="adopt",
-                         not_before=workqueue.night_start(time.time() if now is None else now),
+                         not_before=(workqueue.night_start(time.time() if now is None else now)
+                                     if start is None else start),
                          night=True, conn=conn)
 
 
