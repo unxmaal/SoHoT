@@ -38,6 +38,21 @@
    "until": "runtime:cuda"
   },
   {
+   "candidate": "tts:KittenML/kitten-tts-2",
+   "decided_at": "2026-10-30T06:21:52Z",
+   "detail": "the installed runtime could not load it: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'KittenML/kitten-tts-2': ModelConfig.__init__() missing 11 required positional arguments: 'hidden_dim', 'max_conv_dim', 'max_dur', 'n_layer', 'n_mels', 'n_token', 'style_dim', 'text_encoder_kernel_size', 'asr_res_dim', 'plbert', and ",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "KittenML/kitten-tts-2",
+   "reason": "runtime",
+   "receipt_key": "kitten-tts-2",
+   "run_id": 621,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "version:mlx-audio>0.5.3"
+  },
+  {
    "candidate": "tts:Marvis-AI/marvis-tts-250m-v0.2-MLX-8bit",
    "decided_at": "2026-10-23T03:39:26Z",
    "detail": "the installed runtime could not load it: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'Marvis-AI/marvis-tts-250m-v0.2-MLX-8bit': An error happened while trying to locate the file on the Hub and we cannot find the requested files in the local cache. Please check your connection and try again or make sure your Internet ",
@@ -314,7 +329,7 @@
    "until": "format:.pt"
   }
  ],
- "cursor": 1792978134303734,
+ "cursor": 1793341312223836,
  "events": [
   {
    "at": "2026-09-19T21:17:40Z",
@@ -705,6 +720,21 @@
    "reason": "candidate",
    "run_id": 594,
    "tier": "screen"
+  },
+  {
+   "at": "2026-10-30T06:21:52Z",
+   "candidate": "tts:KittenML/kitten-tts-2",
+   "chosen": null,
+   "detail": "the installed runtime could not load it: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'KittenML/kitten-tts-2': ModelConfig.__init__() missing 11 required positional arguments: 'hidden_dim', 'max_conv_dim', 'max_dur', 'n_layer', 'n_mels', 'n_token', 'style_dim', 'text_encoder_kernel_size', 'asr_res_dim', 'plbert', and ",
+   "how": "",
+   "id": 1793341312223836,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "runtime",
+   "run_id": 621,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -823,7 +853,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-10-29T10:17:08Z",
+ "generated_at": "2026-10-30T07:00:28Z",
  "knobs": [],
  "lane": {
   "cases": 470,
