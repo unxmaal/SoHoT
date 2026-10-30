@@ -138,7 +138,7 @@ Test: tests/test_mcp_orphans_1155.py::test_with_no_mcp_unit_the_criterion_is_ski
 Test: untested
 
 ### Requirement: A fixed criteria table and action set
-The watchdog SHALL judge only the criteria in its table, each mapping to a first action and a different escalation drawn from the fixed set note, notify, file, pause, stop, reap, unload, restart, with its thresholds in registered knobs; the mapping SHALL be long_run notify then pause, overrun file then stop, no_progress notify then stop, orphan reap then file, stale_mcp notify then file, daytime_gpu pause then stop, day_clear note then notify, idle_lock note then file, idle_model note then unload, idle_unload unload then notify, memory notify then pause, memory_warn notify then unload, gateway_down notify then restart, mlx_dead restart then notify, node_fallbacks notify then file.
+The watchdog SHALL judge only the criteria in its table, each mapping to a first action and a different escalation drawn from the fixed set note, notify, file, pause, stop, reap, unload, restart, with its thresholds in registered knobs; the mapping SHALL be long_run notify then pause, overrun file then stop, no_progress notify then stop, orphan reap then file, stale_mcp notify then file, daytime_gpu pause then notify, day_clear note then notify, idle_lock note then file, idle_model note then unload, idle_unload unload then notify, memory notify then pause, memory_warn notify then unload, gateway_down notify then restart, mlx_dead restart then notify, node_fallbacks notify then file.
 
 #### Scenario: Table integrity
 - **WHEN** the criteria table is loaded
@@ -186,8 +186,26 @@ Test: tests/test_watchdog.py::test_a_dry_run_records_what_it_would_do_and_does_n
 - **THEN** the fingerprints are equal, and a different criterion gives a different one
 Test: tests/test_watchdog.py::test_the_fingerprint_survives_a_new_pid_and_changes_with_the_criterion
 
+### Requirement: A time limit never stops a job
+No length or day limit (long_run, daytime_gpu, day_clear) SHALL stop a job; when the action a wake takes is pause and the subject has no progress file to pause through, the watchdog SHALL notify instead, recording why in the evidence, and the job SHALL run on.
+
+#### Scenario: No stop in a time limit's row of the table
+- **WHEN** the criteria table is loaded
+- **THEN** neither long_run, daytime_gpu nor day_clear has stop as its action or escalation
+Test: tests/test_watchdog_limits_1369.py::test_no_length_or_day_limit_ever_stops_a_job
+
+#### Scenario: A job with nothing to pause through
+- **WHEN** daytime_gpu trips on a job with no progress file on every wake past the escalation
+- **THEN** every row is notify, the first ones say it is unpausable, and no pause or stop is asked for
+Test: tests/test_watchdog_limits_1369.py::test_a_day_job_with_no_progress_file_is_notified_about_on_every_trip_and_never_stopped
+
+#### Scenario: A dry run says the same
+- **WHEN** a dry-run wake judges daytime_gpu on a job with no progress file
+- **THEN** it says it would notify
+Test: tests/test_watchdog_limits_1369.py::test_a_dry_run_says_it_would_notify_when_there_is_nothing_to_pause
+
 ### Requirement: long_run
-The watchdog SHALL find long_run on each non-orphan top-level subject whose elapsed time exceeds `LONG_RUN_DAY_S` (2 h) inside the day hours or `LONG_RUN_S` (8 h) outside them, one limit for every subject kind.
+The watchdog SHALL find long_run on each non-orphan top-level subject whose elapsed time exceeds its kind's day limit inside the day hours or its kind's night limit outside them, recording the kind and the limit as `<knob>>N`; the kind SHALL be sweep (the discover agent), confirm (`adopt --confirm`), adopt, eval (an evals.run) or other, read from the command, and each kind's night and day limit SHALL be its own registered knob (`watchdog_long_run_<kind>`, `watchdog_long_run_day_<kind>`), 8 h and 2 h by default. Its action SHALL be notify, escalating to pause.
 
 #### Scenario: Night limit
 - **WHEN** a job has run just past the night limit at night
@@ -198,6 +216,31 @@ Test: tests/test_watchdog.py::test_long_run_trips_past_the_night_limit_and_not_b
 - **WHEN** a job has run just past the day limit
 - **THEN** long_run trips at noon and not at night
 Test: tests/test_watchdog.py::test_long_run_is_tighter_during_the_day
+
+#### Scenario: The kind is read from the command
+- **WHEN** a job runs `adopt --confirm`, `adopt`, an evals.run or another command
+- **THEN** its kind is confirm, adopt, eval or other
+Test: tests/test_watchdog_limits_1369.py::test_a_job_s_kind_is_read_from_its_command
+
+#### Scenario: The sweep and an unowned eval
+- **WHEN** the subject is the discover agent, or an eval no job owns
+- **THEN** its kind is sweep, or eval
+Test: tests/test_watchdog_limits_1369.py::test_the_discover_agent_is_a_sweep_and_an_unowned_eval_an_eval
+
+#### Scenario: One registered knob per kind and limit
+- **WHEN** each kind's night and day limit is looked up
+- **THEN** it is a registered knob in seconds with a limit name, evidence in its note, 8 h at night and 2 h by day
+Test: tests/test_watchdog_limits_1369.py::test_every_kind_has_a_registered_knob_per_limit_defaulting_to_8_h_at_night_and_2_h_by_day
+
+#### Scenario: Raising one kind's limit
+- **WHEN** the adopt night limit is raised and an adopt job and another job are past the old limit
+- **THEN** only the other job trips, with its kind and `watchdog_long_run_other>N` in the evidence
+Test: tests/test_watchdog_limits_1369.py::test_raising_one_kind_s_limit_lets_that_kind_run_on_while_another_still_trips
+
+#### Scenario: Notify, then pause, never stop
+- **WHEN** two jobs past the night limit trip on three acting wakes, one with a progress file and one without
+- **THEN** the first is notified twice then paused, escalated; the second is notified each time; nothing is stopped
+Test: tests/test_watchdog_limits_1369.py::test_long_run_notifies_then_pauses_through_the_progress_file_and_never_stops
 
 ### Requirement: overrun
 The watchdog SHALL find overrun on an eval with at least `OVERRUN_MIN_CASES` (3) cases done when a candidate's observed seconds per case exceed `OVERRUN_FACTOR` (2) times its plan; in a paired run a challenger SHALL instead be judged against the incumbent on at least `OVERRUN_MIN_PAIRS` (5) shared cases, per reply token when both have token counts and per second otherwise, against the plan's ratio, including incumbent cells taken from stored draws.
@@ -274,35 +317,73 @@ Test: tests/test_watchdog.py::test_a_queue_job_with_no_worker_or_a_settled_row_i
 Test: tests/test_watchdog.py::test_reap_kills_an_orphan_group_and_refuses_one_that_is_not
 
 ### Requirement: daytime_gpu
-Inside the day hours [`DAY_START_HOUR`, `DAY_END_HOUR`) (local hours), the watchdog SHALL find daytime_gpu on every non-orphan top-level subject past `DAYTIME_GPU_S`, whatever it runs, except a subject whose evals all hold a cloud slot while it holds no GPU lock.
+Inside the day hours [`DAY_START_HOUR`, `DAY_END_HOUR`) (local hours), the watchdog SHALL find daytime_gpu on the non-orphan top-level subject past `DAYTIME_GPU_S` whose own process, one of its evals or any descendant holds the GPU lock; when the lock's holder cannot be told (the lock unreadable, or held with no pid in its record) it SHALL judge every such subject except one whose evals all hold a cloud slot. Its action SHALL be pause, escalating to notify.
 
 #### Scenario: Day and night
-- **WHEN** a job has run past the limit
+- **WHEN** a job holding the GPU lock has run past the limit
 - **THEN** daytime_gpu trips at noon and not at night, and a job under the limit does not trip at noon
 Test: tests/test_watchdog.py::test_daytime_gpu_trips_inside_the_day_and_not_at_night
 
-#### Scenario: Any job kind trips
-- **WHEN** two jobs are past the limit in the day with no clearance, one running an eval and one running another command
-- **THEN** both trip daytime_gpu
-Test: tests/test_day_clear_1112.py::test_without_a_clearance_the_day_limit_pauses_them
+#### Scenario: Only the GPU lock's holder trips
+- **WHEN** two jobs are past the limit in the day with no clearance, one whose eval holds the GPU lock and one running another command
+- **THEN** only the holder trips daytime_gpu
+Test: tests/test_day_clear_1112.py::test_without_a_clearance_the_day_limit_pauses_the_gpu_holder_only
+
+#### Scenario: A free lock trips nothing
+- **WHEN** two jobs are past the limit and the GPU lock is free
+- **THEN** neither trips, and with the lock held by one job's eval only that job trips
+Test: tests/test_watchdog_limits_1369.py::test_daytime_gpu_judges_only_the_job_whose_eval_holds_the_gpu_lock
+
+#### Scenario: A descendant holds the lock
+- **WHEN** a helper process in its own group under a job holds the GPU lock
+- **THEN** that job trips daytime_gpu
+Test: tests/test_watchdog_limits_1369.py::test_a_lock_held_by_any_descendant_of_a_job_is_that_job_s
+
+#### Scenario: A holder that is not ours
+- **WHEN** a process no job or sweep owns holds the GPU lock
+- **THEN** no job trips daytime_gpu
+Test: tests/test_watchdog_limits_1369.py::test_a_lock_held_by_something_not_ours_trips_no_job
+
+#### Scenario: An unknown holder
+- **WHEN** the GPU lock cannot be read, or is held with no pid in its record
+- **THEN** every job past the limit trips, its evidence saying the holder cannot be told
+Test: tests/test_watchdog_limits_1369.py::test_an_unknown_holder_judges_every_job_as_before
 
 #### Scenario: A cloud-only job
 - **WHEN** a job's eval holds a cloud slot and the job holds no GPU lock
-- **THEN** daytime_gpu does not trip, and it does when the job also holds the eval lock
+- **THEN** daytime_gpu does not trip, also when the holder cannot be told, and it does when the job holds the GPU lock
 Test: tests/test_cloud_lock_1135.py::test_the_watchdog_does_not_pause_a_cloud_job_for_daytime_gpu
 
-#### Scenario: A job with no progress file is stopped
-- **WHEN** daytime_gpu trips on a job with no progress file on three wakes inside the window
-- **THEN** the two pauses are unavailable and the third trip stops its group
-Test: untested
+#### Scenario: A job with a progress file is paused, then notified about
+- **WHEN** daytime_gpu trips on a GPU job with a progress file on three acting wakes inside the window
+- **THEN** the first two pause it and the third notifies, escalated
+Test: tests/test_watchdog_limits_1369.py::test_a_day_job_with_a_progress_file_is_paused_then_notified_about
+
+### Requirement: The day hours are the watchdog's own
+`DAY_START_HOUR` and `DAY_END_HOUR` SHALL set only the watchdog's day limits, the day clearance's end and the work queue's day; the discover agent SHALL start at the hours `DISCOVER_HOURS` in scripts/launchd.sh installs, and the default discover hours SHALL fall outside the day hours.
+
+#### Scenario: The default sweep starts at night
+- **WHEN** the launchd script's default discover hours are read
+- **THEN** none of them falls inside the watchdog's day hours
+Test: tests/test_watchdog_limits_1369.py::test_the_default_discover_hours_fall_outside_the_watchdog_day
+
+#### Scenario: Moving the day end moves no sweep
+- **WHEN** the day end hour is changed
+- **THEN** the discover hours are unchanged and the day end knob's note names DISCOVER_HOURS as the discover agent's start
+Test: tests/test_watchdog_limits_1369.py::test_moving_the_day_end_does_not_move_the_discover_hours
 
 ### Requirement: Day clearance
 A day clearance SHALL be one machine-wide store row, given with who and why, in force from when it is given until today's `DAY_END_HOUR`; while one is in force inside the day hours the watchdog SHALL skip daytime_gpu and long_run and record one day_clear finding per subject per day limit it is past, and SHALL never lift anything outside the day hours or any other criterion.
 
 #### Scenario: Every job let off both limits
-- **WHEN** two jobs are past both day limits under a clearance
-- **THEN** neither daytime_gpu nor long_run trips, and four day_clear findings carry the clearance text
+- **WHEN** two jobs are past both day limits under a clearance, one of them holding the GPU lock
+- **THEN** neither daytime_gpu nor long_run trips, and three day_clear findings carry the clearance text: long_run for both, daytime_gpu for the holder
 Test: tests/test_day_clear_1112.py::test_a_clearance_lets_every_job_past_both_day_limits_and_names_each_skip
+
+#### Scenario: Each job's own kind's day limit
+- **WHEN** the adopt day limit is raised and an adopt job and another job are past the old limit under a clearance
+- **THEN** only the other job is let off long_run
+Test: tests/test_watchdog_limits_1369.py::test_a_clearance_lets_off_each_job_by_its_own_kind_s_day_limit
 
 #### Scenario: Never at night
 - **WHEN** a clearance is in force at night and jobs are past the night limit
@@ -326,7 +407,7 @@ Test: tests/test_day_clear_1112.py::test_a_second_clearance_is_revoked_with_the_
 
 #### Scenario: A wake under a stored clearance
 - **WHEN** acting wakes run under a stored clearance and then after revoke
-- **THEN** each skip is a day_clear row, noted then notified on repeat, and after revoke the job is paused by daytime_gpu
+- **THEN** each skip is a day_clear row, noted then notified on repeat, and after revoke daytime_gpu notifies about the job, which has no progress file to pause through
 Test: tests/test_day_clear_1112.py::test_a_wake_reads_the_store_clearance_records_each_skip_and_at_most_notifies
 
 #### Scenario: The day command
