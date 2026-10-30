@@ -1,4 +1,4 @@
-"""Jobs from any caller, run in order under the machine lock while memory pressure is normal. #353, #573.
+"""Jobs from any caller, by priority then id within each lock class: one GPU job at a time, cloud jobs in free cloud slots, while memory pressure is normal. #353, #573, #1153.
 
 Jobs are rows in the store's `jobs` table (#418). The runner flock and the
 paused flag stay files: a kernel lock and an operator switch.
@@ -419,12 +419,14 @@ def set_priority(job_id: str, priority: int, conn=None) -> dict:
 
 
 def cancel(job_id: str, conn=None, grace: float = CANCEL_GRACE_S) -> dict:
-    """Drop a pending job; stop a running one's process group, wait, and record it cancelled. #628."""
+    """Record a pending job cancelled; stop a running one's process group, wait, and record it cancelled. #628, #1364."""
     with _store(conn) as c:
         job = get(job_id, conn=c)
         if job is None or job["state"] != RUNNING:
-            _only_pending(c, job_id, "DELETE FROM jobs", verb="cancelled")
-            return job
+            note = f"cancelled by soh jobs cancel at {time.strftime(_STAMP)}; before it started"
+            _only_pending(c, job_id, "UPDATE jobs SET state = ?, finished_at = ?, note = ?",
+                          (CANCELLED, time.time(), note), verb="cancelled")
+            return get(job_id, conn=c)
     pid = _pid_of(job["id"])
     if pid is None:
         raise ValueError(f"job {job['id']} is running but no process of it is on this "

@@ -58,6 +58,11 @@ def cmd_jobs(a) -> int:
             rest = rest[2:]
         else:
             break
+    asks = {"-h", "--help"}
+    if rest[:1] and rest[0] in asks or a.action != "add" and asks & set(rest):
+        # REMAINDER keeps argparse from seeing --help; only add's command after -- may carry one. #1366.
+        a.show_help()
+        return 0
     if rest[:1] == ["--"]:
         rest = rest[1:]
     elif a.action != "add" and "--json" in rest:

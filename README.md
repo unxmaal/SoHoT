@@ -2786,7 +2786,7 @@ commits, since `uv run` there would run that checkout's code instead; pass
 `--cwd DIR` to run somewhere on purpose. Without a deploy checkout the job runs
 where it was queued.
 
-`soh jobs cancel` drops a pending job. On a running one it signals the job's
+`soh jobs cancel` records a pending job `cancelled` without running it. On a running one it signals the job's
 process group (each job is started as its own), waits for it to exit, kills
 what is left after a grace period, and records the job `cancelled` with a note.
 It works on the machine running the job.

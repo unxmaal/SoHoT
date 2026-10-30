@@ -369,6 +369,8 @@ def judge(conn, rv: dict, job: dict | None) -> tuple[str, str, str, str, int | N
         return CANCELLED, reasons.HARNESS, "", "the job was cancelled before it ran", None
     run = conn.execute("SELECT * FROM runs WHERE job_id = ? ORDER BY id DESC LIMIT 1",
                        (job["id"],)).fetchone()
+    if run is None and job["state"] == CANCELLED:
+        return CANCELLED, reasons.HARNESS, "", f"job {job['id']} was cancelled and stored no run", None
     if run is None:
         return (UNRUN, reasons.HARNESS, "",
                 f"job {job['id']} {job['state']} rc={job['rc']} and stored no run", None)

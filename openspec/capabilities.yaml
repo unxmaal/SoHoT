@@ -2,9 +2,9 @@
 trees: [harness, evals]
 capabilities:
   - name: work-queue
-    summary: The jobs every caller shares, run in order under the machine lock, GPU and cloud slots apart.
+    summary: The jobs every caller shares, by priority then id within each lock class, one GPU job at a time and cloud jobs in free cloud slots.
     spec: written
-    untested: 4
+    untested: 3
     modules:
       - harness/workqueue.py
       - harness/commands/jobs.py
