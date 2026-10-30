@@ -82,6 +82,21 @@ UNTIL = {
 }
 
 
+def lane_cases(lane: str) -> int:
+    """How many distinct cases a lane ships, the count a cases: until is judged by. #691."""
+    from harness import holdout
+    split = holdout.for_lane(lane)
+    return len(set(split.dev) | set(split.holdout))
+
+
+def case_counts(conn: sqlite3.Connection) -> dict:
+    """{lane: cases} for every lane a state-holding cases: until names, as a requeue judged them. #1361."""
+    rows = conn.execute("SELECT v.until FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
+                        "WHERE v.until LIKE 'cases:%'").fetchall()
+    lanes = {r[0][len("cases:"):].partition(">")[0] for r in rows}
+    return {lane: lane_cases(lane) for lane in sorted(lanes) if lane}
+
+
 def until_met(until: str, facts: dict | None = None) -> bool:
     """Whether `facts` satisfies the condition a verdict is waiting on.
 
@@ -143,9 +158,7 @@ def until_met(until: str, facts: dict | None = None) -> bool:
         if "cases" in facts:
             have = (facts.get("cases") or {}).get(lane)
         else:
-            from harness import holdout
-            split = holdout.for_lane(lane)
-            have = len(set(split.dev) | set(split.holdout))
+            have = lane_cases(lane)
         try:
             return have is not None and int(have) > int(floor)
         except ValueError:

@@ -690,11 +690,13 @@ def _reopen_revisitable() -> list[dict]:
     began = heartbeat.clock()
     store = ms.connect()
     try:
+        counts = ms.case_counts(store)
         rows = ms.revisitable(store)
         ms.requeue_revisitable(store, rows=rows)
         spent = ms.revisitable(store, spent=True)
     finally:
         store.close()
+    heartbeat.note(heartbeat.REVISIT_CASES, counts)
     heartbeat.mark(heartbeat.REOPENED_REVISITABLE, began)
     print(f"  requeued {len(rows)} refusal(s) whose until is met here")
     for r in rows:
