@@ -337,8 +337,8 @@
   },
   {
    "candidate": "mflux:mlx-community/flux2-klein-9b-4bit",
-   "decided_at": "2026-10-29T01:19:40Z",
-   "detail": "8.9 GiB would take this run past its 40 GiB budget (39.7 GiB already fetched)",
+   "decided_at": "2026-10-30T01:08:49Z",
+   "detail": "8.9 GiB would take this run past its 40 GiB budget (32.6 GiB already fetched)",
    "exam": null,
    "outcome": "queued",
    "proposal": "mlx-community/flux2-klein-9b-4bit",
@@ -2442,7 +2442,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-10-29T10:17:03Z",
+ "generated_at": "2026-10-30T07:00:22Z",
  "knobs": [],
  "lane": {
   "cases": 31,
