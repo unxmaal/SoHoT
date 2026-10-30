@@ -6,7 +6,6 @@
   "harness.adopt:_ceiling_gb:[ \"'ceiling_gb'\"->\"'CEILING_GB'\"",
   "harness.adopt:_ceiling_gb:is 'not'->''",
   "harness.adopt:_ceiling_gb:or '0'->'1'",
-  "harness.adopt:_confirm_sees:, 'ALPHA'->'None'",
   "harness.adopt:_gates:( 'lane'->'None'",
   "harness.adopt:_gates:( 'lane'->'None' #2",
   "harness.adopt:_gates:( 'lane'->'None' #3",

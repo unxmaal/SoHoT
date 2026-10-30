@@ -8,7 +8,8 @@ from pathlib import Path
 from tests import conftest
 
 ROOT = Path(__file__).resolve().parents[1]
-CHILD_TIMEOUT_S = 60
+# Only "did not hang": each child waits on the watch's own flags, never on a sleep it races. #1379.
+CHILD_TIMEOUT_S = conftest.HANG_DUMP_S
 
 
 def _check(now, running):
@@ -41,7 +42,8 @@ def test_the_dump_reaches_the_terminal_past_pytests_own_capture(tmp_path):
     (tmp_path / "pytest.ini").write_text("[pytest]\n", encoding="utf-8")
     (tmp_path / "test_slow.py").write_text(
         "import time\nfrom tests import conftest\n\n\n"
-        "def test_slow():\n    conftest.HANG_DUMP_S = 0.5\n    time.sleep(3)\n", encoding="utf-8")
+        "def test_slow():\n    conftest.HANG_DUMP_S = 0.0\n"
+        "    while not conftest._running['test']['dumped']:\n        time.sleep(0.05)\n", encoding="utf-8")
     env = {k: v for k, v in os.environ.items() if k != "PYTEST_ADDOPTS"}
     env["PYTHONPATH"] = str(ROOT)
     got = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "tests.conftest", "-p", "no:xdist",
@@ -55,12 +57,17 @@ def test_a_hung_test_is_dumped_and_ended_even_when_it_freezes_the_clock():
     code = (
         "import time\n"
         "from tests import conftest as c\n"
-        "c.HANG_DUMP_S, c.HANG_EXIT_S = 0.5, 2.5\n"
+        "c.HANG_DUMP_S, c.HANG_EXIT_S = 0.0, float('inf')\n"
         "c._hang_watch()\n"
         "c._running['test'] = {'nodeid': 'x::hangs', 'began': c._running['clock'](), 'dumped': False}\n"
         "time.monotonic = lambda: 0.0\n"
-        "time.sleep(CHILD)\n".replace("CHILD", str(CHILD_TIMEOUT_S)))
+        "while not c._running['test']['dumped']:\n"
+        "    time.sleep(0.05)\n"
+        "c.HANG_EXIT_S = 0.0\n"
+        "while True:\n"
+        "    time.sleep(1)\n")
     got = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True,
                          timeout=CHILD_TIMEOUT_S)
     assert got.returncode == 70, got.stderr
-    assert "x::hangs has run" in got.stderr and "line 7, in <module>" in got.stderr and "x::hangs ran" in got.stderr
+    assert "x::hangs has run" in got.stderr and "x::hangs ran" in got.stderr
+    assert 'File "<string>", line 8, in <module>' in got.stderr or 'File "<string>", line 7, in <module>' in got.stderr

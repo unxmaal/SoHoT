@@ -23,7 +23,7 @@ capabilities:
   - name: adopt-confirm
     summary: A measured or by-hand winner becomes a lane's served model, through the paired gate and its confirmation.
     spec: written
-    untested: 5
+    untested: 4
     modules:
       - harness/adopt.py
       - harness/commands/adopt.py

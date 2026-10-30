@@ -257,12 +257,23 @@ def test_a_lane_is_not_judged_until_every_case_is():
     assert won is None and "not judged" in why or "fewer than" in why
 
 
-def test_a_plurality_of_cases_carries_the_lane():
+def test_a_strict_majority_of_cases_carries_the_lane():
     pairs = human.pairings(RECEIPT)
     _settle("image", "fox", "alpha", "beta", "a")
     _settle("image", "sign", "alpha", "beta", "a")
     won, why = human.lane_verdict("image", pairs)
     assert won == "alpha", why
+
+
+def test_a_plurality_that_is_not_a_majority_does_not_carry_the_lane():
+    four = {"rows": [{"case_id": f"{c}#1", "candidate": who, "passed": True, "artifact_path": f"/runs/{who}-{c}.png"}
+                     for c in ("fox", "sign", "moon", "tree") for who in ("alpha", "beta")]}
+    pairs = human.pairings(four)
+    for case, answer in (("fox", "a"), ("sign", "a"), ("moon", "b"), ("tree", "tie")):
+        _settle("image", case, "alpha", "beta", answer)
+    won, why = human.lane_verdict("image", pairs)
+    assert won == "", why
+    assert "alpha won 2 of 4 case(s), not a majority" in why
 
 
 def test_cases_that_disagree_evenly_are_no_preference():
