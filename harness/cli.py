@@ -39,6 +39,7 @@ from harness.commands import context as context_cmd
 from harness.commands import day as day_cmd
 from harness.commands import degenerate as degenerate_cmd
 from harness.commands import floors as floors_cmd
+from harness.commands import specs as specs_cmd
 from harness.commands import staging as staging_cmd
 from harness.commands import discover as discover_cmd
 from harness.commands import gateway as gateway_cmd
@@ -920,6 +921,10 @@ def build_parser() -> argparse.ArgumentParser:
     day.add_argument("action", choices=("clear", "status", "revoke"))
     day.add_argument("said", nargs="*", help='clear: who cleared it and why, e.g. "eric: the #1110 baseline"')
     day.set_defaults(func=day_cmd.cmd_day)
+    spc = sub.add_parser("specs", help="per capability in openspec/: scenarios, bound to a test, untested; "
+                         "non-zero when a spec names a missing test or a module has no capability. #1363")
+    spc.add_argument("--untested", action="store_true", help="also list each untested scenario")
+    spc.set_defaults(func=specs_cmd.cmd_specs)
     jud = sub.add_parser(
         "judge",
         help="decide a human-judged lane by looking and listening. Issue #273")
