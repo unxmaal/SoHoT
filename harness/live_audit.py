@@ -189,11 +189,28 @@ def _facts_here(conn) -> dict:
     return (ms.recorded_facts(conn, mid) if mid is not None else {}) or ms.this_machine()
 
 
-def _revisitable(conn, facts=None, reopened_at=...) -> tuple[list, list]:
+def _met_at_sweep(row: dict, data: dict | None) -> bool:
+    """Whether a row's cases: until was already met when the loop's requeue ran; other untils are judged by time. #1361."""
+    from harness import memory_store as ms
+    if not row["until"].startswith("cases:"):
+        return True
+    counts = (data or {}).get(heartbeat.REVISIT_CASES)
+    if isinstance(counts, dict):
+        return ms.until_met(row["until"], {"cases": counts})
+    # A requeue that recorded no counts: a deploy since it may have brought the cases.
+    ran = (data or {}).get("finished_commit") or (data or {}).get("commit") or ""
+    head = heartbeat.code_commit()
+    return not ran or not head or ran == head
+
+
+def _revisitable(conn, facts=None, reopened_at=..., data=...) -> tuple[list, list]:
     """(failures, warnings): state-holding refusals whose until is met here; one the loop's requeue left fails. #1055."""
     from harness import memory_store as ms
     facts = _facts_here(conn) if facts is None else facts
     survived, fresh, swept = _survived("revisitable", ms.revisitable(conn, facts), reopened_at)
+    data = heartbeat.read() if data is ... else data
+    fresh += [r for r in survived if not _met_at_sweep(r, data)]
+    survived = [r for r in survived if r not in fresh]
 
     def say(r):
         return f"verdict {r['verdict_id']} {r['name']}: {r['until']} is met here"

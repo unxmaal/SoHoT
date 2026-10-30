@@ -88,8 +88,10 @@ REWROTE_RUNNER_GAPS = "rewrote_runner_gaps_950"
 REOPENED_REVISITABLE = "reopened_revisitable_1055"
 #: When a loop last moved past-screen reopens from inspect to the measure queue. #1060.
 MOVED_PAST_SCREEN = "moved_past_screen_1060"
+#: The {lane: cases} that last requeue judged cases: untils by. #1361.
+REVISIT_CASES = "revisit_cases_1361"
 KEPT = (REOPENED_TOO_BIG, REDERIVED_ATTACHMENTS, REQUEUED_OLD_SIZING, REOPENED_UNRANKED, REWROTE_RUNNER_GAPS,
-        REOPENED_REVISITABLE, MOVED_PAST_SCREEN)
+        REOPENED_REVISITABLE, MOVED_PAST_SCREEN, REVISIT_CASES)
 
 
 def code_commit(repo: Path | None = None) -> str:
