@@ -1,6 +1,7 @@
 """A paused confirmation run resumes where it stopped, and a paused job is not a failed one. #1357."""
 import argparse
 import json
+import os
 import time
 import types
 from datetime import datetime
@@ -156,8 +157,8 @@ def test_only_an_unfinished_confirm_dir_for_the_same_pair_and_exam_is_resumed(co
     assert seen["calls"][0]["out"].name.startswith(time.strftime("%Y"))
     older = _dir("20261005-000000-confirm-code", pair, "paused")
     newer = _dir("20261006-000000-confirm-code", pair, "paused")
-    assert measure_cmd._confirm_dir("code", pair, 1, "dev") == newer
-    assert measure_cmd._confirm_dir("code", pair, 2, "dev") is None
+    assert measure_cmd._confirm_dir("code", pair, 1, "dev") == (newer, None)
+    assert measure_cmd._confirm_dir("code", pair, 2, "dev") == (None, None)
     assert older != newer
 
 
@@ -205,3 +206,61 @@ def test_the_next_night_is_tonight_by_day_and_tomorrow_night_at_night(monkeypatc
     monkeypatch.setattr(watchdog, "DAY_START_HOUR", 8)
     monkeypatch.setattr(watchdog, "DAY_END_HOUR", 21)
     assert workqueue.next_night(now) == want
+
+
+def _finished(conn, name, rows, at=None):
+    """A confirm dir an outside `evals.run --out` finished: progress done, its run stored, no verdict on it."""
+    out = _dir(name, ["inc-spec", "org/x"], "done")
+    rid = conn.execute("INSERT INTO runs (path, lane, tier, receipt, recorded_at) VALUES (?,?,?,?,?)",
+                       (str(out), "code", "measure", json.dumps({"modality": "code"}), time.time())).lastrowid
+    conn.commit()
+    if at is not None:
+        os.utime(out / watch.PROGRESS, (at, at))
+    return out, {"run_id": rid, "specs": {"inc-key": "inc-spec", "ch-key": "org/x"}, "rows": rows}
+
+
+def test_a_finished_confirm_run_with_no_verdict_is_recorded_from_its_receipt_without_a_rerun(
+        conn, tmp_path, monkeypatch, capsys):
+    vid = _held(conn, tmp_path, monkeypatch)
+    out, data = _finished(conn, "20261030-000000-confirm-code", _rows(CELLS, "inc-key", "ch-key"))
+    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: pytest.fail(f"reran: {argv}"))
+    monkeypatch.setattr(measure_cmd, "_receipt_at", lambda at: data if at == out else None)
+    assert measure_cmd.confirm_job(vid) == 0
+    row = conn.execute("SELECT outcome, detail, run_id FROM verdicts ORDER BY id DESC LIMIT 1").fetchone()
+    assert (row["outcome"], row["run_id"]) == ("measured", data["run_id"]), row["detail"]
+    assert "finished without a verdict" in capsys.readouterr().out
+    assert measure_cmd._confirm_dir("code", ["inc-spec", "org/x"], 1, "dev") == (None, None)
+
+
+def test_a_finished_confirm_run_already_judged_older_than_the_hold_or_of_another_exam_is_not_reused(
+        conn, tmp_path, monkeypatch):
+    vid = _held(conn, tmp_path, monkeypatch)
+    since = conn.execute("SELECT decided_at FROM verdicts WHERE id = ?", (vid,)).fetchone()[0]
+    rows = _rows(CELLS, "inc-key", "ch-key")
+    judged, a = _finished(conn, "20261030-000001-confirm-code", rows)
+    conn.execute("UPDATE verdicts SET run_id = ? WHERE id = ?", (a["run_id"], vid))
+    conn.commit()
+    old, b = _finished(conn, "20261030-000002-confirm-code", rows, at=since - 60)
+    other, c = _finished(conn, "20261030-000003-confirm-code", rows)
+    ident = {"modality": "code", "candidates": ["inc-spec", "org/x"], "repeat": 1, "split": "dev",
+             "split_version": "older"}
+    watch.Checkpoint(other, ident)
+    (other / watch.PROGRESS).write_text(json.dumps({"state": "done"}), encoding="utf-8")
+    receipts = {judged: a, old: b, other: c}
+    monkeypatch.setattr(measure_cmd, "_receipt_at", lambda at: receipts.get(at))
+    assert measure_cmd._confirm_dir("code", ["inc-spec", "org/x"], 1, "dev", since=since) == (None, None)
+    fine = {**ident, "split_version": holdout.version("code")}
+    watch.Checkpoint(other, fine)
+    assert measure_cmd._confirm_dir("code", ["inc-spec", "org/x"], 1, "dev", since=since) == (other, c)
+
+
+def test_a_confirmation_does_not_record_a_finished_run_from_before_the_hold(conn, tmp_path, monkeypatch):
+    vid = _held(conn, tmp_path, monkeypatch)
+    since = conn.execute("SELECT decided_at FROM verdicts WHERE id = ?", (vid,)).fetchone()[0]
+    old, data = _finished(conn, "20261030-000000-confirm-code", [], at=since - 60)
+    seen = {}
+    _fake_eval(monkeypatch, seen)
+    fresh = measure_cmd._receipt_at
+    monkeypatch.setattr(measure_cmd, "_receipt_at", lambda at: data if at == old else fresh(at))
+    assert measure_cmd.confirm_job(vid) == 0
+    assert [c["out"] == old for c in seen["calls"]] == [False]

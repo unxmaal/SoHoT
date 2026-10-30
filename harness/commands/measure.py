@@ -975,7 +975,8 @@ def confirm_job(vid: int) -> int:
     from harness import memory_store as ms
     store = ms.connect()
     try:
-        row = store.execute("SELECT v.failure_class, v.power, v.detail, p.name, p.state_verdict_id FROM verdicts v "
+        row = store.execute("SELECT v.failure_class, v.power, v.detail, v.decided_at, p.name, p.state_verdict_id "
+                            "FROM verdicts v "
                             "LEFT JOIN proposals p ON p.id = v.proposal_id WHERE v.id = ?", (vid,)).fetchone()
     finally:
         store.close()
@@ -998,20 +999,23 @@ def confirm_job(vid: int) -> int:
     split = holdout.for_lane(lane)
     repeat = int(held.get("repeat") or 1)
     side = "all" if split.too_small else "dev"
-    out = _confirm_dir(lane, [inc_spec, spec], repeat, side)
-    proc, ran = _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid)
-    if out is not None and proc.returncode == watch.STALE:
-        print(f"    {out} ran another exam, so the confirmation is starting fresh", flush=True)
-        proc, ran = _confirm_run(lane, inc_spec, spec, name, repeat, split, None, vid)
-    out = ran
-    if proc.returncode == watch.PAUSED:
-        return _confirm_paused(vid, lane, inc_spec, spec, out)
-    if proc.returncode != 0:
-        err(proc.stderr.strip()[-400:] or "no stderr")
-        return 1
-    data = _receipt_at(out)
-    if not data:
-        return err(f"verdict {vid}: the confirmation run stored no receipt at {out}")
+    out, data = _confirm_dir(lane, [inc_spec, spec], repeat, side, since=float(row["decided_at"] or 0))
+    if data:
+        print(f"    {out} finished without a verdict; recording it from its receipt (verdict {vid})", flush=True)
+    else:
+        proc, ran = _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid)
+        if out is not None and proc.returncode == watch.STALE:
+            print(f"    {out} ran another exam, so the confirmation is starting fresh", flush=True)
+            proc, ran = _confirm_run(lane, inc_spec, spec, name, repeat, split, None, vid)
+        out = ran
+        if proc.returncode == watch.PAUSED:
+            return _confirm_paused(vid, lane, inc_spec, spec, out)
+        if proc.returncode != 0:
+            err(proc.stderr.strip()[-400:] or "no stderr")
+            return 1
+        data = _receipt_at(out)
+        if not data:
+            return err(f"verdict {vid}: the confirmation run stored no receipt at {out}")
     store = ms.connect()
     try:
         candidates.from_receipt(store, data.get("specs") or {}, lane=lane, proposals={spec: name})
@@ -1027,17 +1031,34 @@ def confirm_job(vid: int) -> int:
     return 0
 
 
-def _confirm_dir(lane: str, pair: list, repeat: int, side: str) -> Path | None:
-    """The newest unfinished confirmation run of this pair on this exam, to resume. #1357."""
+def _confirm_dir(lane: str, pair: list, repeat: int, side: str, since: float = 0.0) -> tuple:
+    """(dir, None) for the newest unfinished confirmation of this pair and exam, to resume; (dir, receipt) for one
+    finished since `since` that no verdict was read from, to record; (None, None) for neither. #1357."""
+    from harness import holdout
+    from harness import memory_store as ms
     for out in sorted((paths.home() / "runs").glob(f"*-confirm-{lane}"), reverse=True):
         had = watch.read(out)
-        if had is None or watch.read_progress(out).get("state") == "done":
-            continue
-        ident = had[0]
-        if (list(ident.get("candidates") or ()) == list(pair) and int(ident.get("repeat") or 1) == repeat
+        ident = had[0] if had else {}
+        if not (had and list(ident.get("candidates") or ()) == list(pair) and int(ident.get("repeat") or 1) == repeat
                 and (ident.get("split") or "all") == side):
-            return out
-    return None
+            continue
+        if watch.read_progress(out).get("state") != "done":
+            return out, None
+        if ident.get("split_version", holdout.version(lane)) != holdout.version(lane):
+            continue
+        if (out / watch.PROGRESS).stat().st_mtime < since:
+            continue
+        data = _receipt_at(out)
+        if not data or data.get("run_id") is None:
+            continue
+        store = ms.connect()
+        try:
+            judged = store.execute("SELECT 1 FROM verdicts WHERE run_id = ?", (int(data["run_id"]),)).fetchone()
+        finally:
+            store.close()
+        if judged is None:
+            return out, data
+    return None, None
 
 
 def _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid):
