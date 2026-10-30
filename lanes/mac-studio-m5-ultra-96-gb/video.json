@@ -16,6 +16,21 @@
    "until": ""
   },
   {
+   "candidate": "diffusers-video:Motif-Technologies/Motif-Video-2B",
+   "decided_at": "2026-10-30T03:03:25Z",
+   "detail": "1 case(s) passed a screen",
+   "exam": null,
+   "outcome": "screened",
+   "proposal": "Motif-Technologies/Motif-Video-2B",
+   "reason": "candidate",
+   "receipt_key": "diffusers-video/Motif-Video-2B",
+   "run_id": 617,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "diffusers-video:FastVideo/FastVideo-FastH3-8-Step-V2",
    "decided_at": "2026-10-19T10:43:54Z",
    "detail": "unknown: no variant groups its weights (audio_vae/*.safetensors,text_encoder/*.safetensors,transformer/*.safetensors,vae/*.safetensors), so their 137.7 GiB sum is not a size it runs at",
@@ -68,7 +83,7 @@
    "until": ""
   }
  ],
- "cursor": 1792978126175368,
+ "cursor": 1793329405596317,
  "events": [
   {
    "at": "2026-09-19T23:24:35Z",
@@ -98,6 +113,36 @@
    "outcome": "broken",
    "reason": "candidate",
    "run_id": 593,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-29T04:10:06Z",
+   "candidate": "Motif-Technologies/Motif-Video-2B",
+   "chosen": null,
+   "detail": "not screened: needs 20.4 GB but only 5.3 GB is safely available (23.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1793247006302046,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-30T03:03:25Z",
+   "candidate": "diffusers-video:Motif-Technologies/Motif-Video-2B",
+   "chosen": null,
+   "detail": "1 case(s) passed a screen",
+   "how": "",
+   "id": 1793329405596317,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 617,
    "tier": "screen"
   }
  ],
@@ -174,7 +219,7 @@
    "runs": 7
   }
  ],
- "generated_at": "2026-10-29T10:17:04Z",
+ "generated_at": "2026-10-30T07:00:24Z",
  "knobs": [],
  "lane": {
   "cases": 1,
