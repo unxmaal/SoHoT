@@ -50,7 +50,8 @@ capabilities:
 
   - name: screen
     summary: The rung between a ranked queue and a measurement, and the queue's ranking by what is worth learning.
-    spec: pending
+    spec: written
+    untested: 9
     modules:
       - harness/screen.py
       - harness/commands/screen.py
