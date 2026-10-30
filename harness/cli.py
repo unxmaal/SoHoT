@@ -414,8 +414,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="what the stored runs say won each lane, against the "
                         "defaults this CLI has typed in")
     d.add_argument("--screen", action="store_true",
-                   help="run the cheapest real thing on the top of the queue "
-                        "and record whether it ran at all. Says what it would "
+                   help="screen the highest-ranked rows whose weights are on "
+                        "disk, up to --limit, and record whether each ran at "
+                        "all. Says what it would "
                         "do unless given --run, and NEVER downloads")
     d.add_argument("--run", action="store_true",
                    help="with --screen, actually run it")
