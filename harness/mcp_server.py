@@ -16,8 +16,8 @@ the caller wants the first-token time and the model that answered; they share
 the lane commands' route rather than their argv.
 
 svg, web and code answer directly. image and video go on the shared work
-queue (harness/workqueue.py, #353): they return a job id at once, run in order
-while memory pressure is normal, and job_result hands back the file.
+queue (harness/workqueue.py, #353): they return a job id at once, run by priority
+then id, one GPU job at a time, while memory pressure is normal, and job_result hands back the file.
 
     ./scripts/serve-mcp.sh          # 0.0.0.0, no auth, trusted LAN only
 
@@ -78,7 +78,8 @@ SERVER = MCPServer(
     instructions=(
         "Local media generation on Apple Silicon. svg, web and code answer "
         "directly, in seconds once the model is loaded. image and video go on this machine's work queue and "
-        "return a job id at once: jobs run in order, and wait while the "
+        "return a job id at once: jobs run by priority then id, one GPU job at a time with "
+        "all-hosted evals beside it in free cloud slots, and wait while the "
         "machine is short of memory. Poll job_status; when it is "
         "done, job_result returns the file itself. local_complete and "
         "local_decide hand a text subtask to this machine's adopted local "

@@ -901,8 +901,8 @@ def build_parser() -> argparse.ArgumentParser:
     wd.add_argument("--act", action="store_true", help="take the actions this once")
     wd.add_argument("--dry-run", action="store_true", help="only print and record what it would do")
     wd.set_defaults(func=_watchdog)
-    jobs = sub.add_parser("jobs", help="the work queue: runs in order while "
-                          "memory pressure is normal")
+    jobs = sub.add_parser("jobs", help="the work queue: by priority then id, one GPU job at a time and "
+                          "cloud jobs in free cloud slots, while memory pressure is normal")
     jobs.add_argument("action", choices=("add", "list", "pause", "resume",
                                          "cancel", "priority"))
     jobs.add_argument("rest", nargs=argparse.REMAINDER,
@@ -916,7 +916,7 @@ def build_parser() -> argparse.ArgumentParser:
                       help="add: start no earlier than the next local HH:MM, or a local YYYY-MM-DD[T]HH:MM[:SS]. #900, #1297")
     jobs.add_argument("--night", action="store_true",
                       help="add: start no earlier than the night window discovery runs in; with --not-before, the first night moment after it. #900, #1347")
-    jobs.set_defaults(func=jobs_cmd.cmd_jobs)
+    jobs.set_defaults(func=jobs_cmd.cmd_jobs, show_help=jobs.print_help)
     day = sub.add_parser("day", help="clear this machine to run jobs all day, until the watchdog's day end. #1112")
     day.add_argument("action", choices=("clear", "status", "revoke"))
     day.add_argument("said", nargs="*", help='clear: who cleared it and why, e.g. "eric: the #1110 baseline"')

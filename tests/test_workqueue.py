@@ -130,14 +130,17 @@ def test_a_job_cut_off_mid_run_is_not_silently_rerun(tmp_path):
     assert got["state"] == wq.FAILED and "interrupted" in got["note"]
 
 
-def test_only_a_pending_job_can_be_cancelled():
-    job = wq.add(py("pass"))
-    wq.run_pending()
-    with pytest.raises(ValueError, match="is done"):
+def test_a_cancelled_pending_job_is_kept_and_recorded_cancelled_and_never_runs(tmp_path):
+    """#1364: a consumer that reads the job's state sees cancelled, not a missing row."""
+    flag = tmp_path / "ran"
+    job = wq.add(py(f"open({str(flag)!r}, 'w')"))
+    got = wq.cancel(job["id"])
+    assert (got["state"], got["started"]) == (wq.CANCELLED, "")
+    assert got["finished"] and "before it started" in got["note"]
+    assert [j["state"] for j in wq.jobs()] == [wq.CANCELLED]
+    assert wq.run_pending() == [] and not flag.exists()
+    with pytest.raises(ValueError, match="is cancelled"):
         wq.cancel(job["id"])
-    other = wq.add(py("pass"))
-    wq.cancel(other["id"])
-    assert [j["id"] for j in wq.jobs()] == [job["id"]]
 
 
 def test_the_command_keeps_its_own_separators_and_flags(capsys):
@@ -158,6 +161,21 @@ def test_pause_resume_and_list_through_the_cli(capsys):
     assert got["jobs"][0]["state"] == wq.PENDING and got["gate_open"] is False
     assert cli.main(["jobs", "resume", "--json"]) == 0
     assert json.loads(capsys.readouterr().out)["paused"] is False
+
+
+@pytest.mark.parametrize("ask", ["--help", "-h"])
+def test_a_help_flag_after_the_action_prints_help_and_changes_nothing(capsys, ask):
+    """#1366: `soh jobs pause --help` once halted the queue."""
+    assert cli.main(["jobs", "pause", ask]) == 0
+    assert "usage:" in capsys.readouterr().out and not wq.paused()
+    wq.pause()
+    assert cli.main(["jobs", "resume", "--json", ask]) == 0
+    assert "usage:" in capsys.readouterr().out and wq.paused()
+    assert cli.main(["jobs", "add", "--title", "T", ask]) == 0
+    assert cli.main(["jobs", "cancel", "0001", ask]) == 0
+    assert wq.jobs() == []
+    assert cli.main(["jobs", "add", "--", "echo", ask]) == 0
+    assert [j["argv"] for j in wq.jobs()] == [["echo", ask]]
 
 
 def test_higher_priority_runs_first_and_ties_keep_their_order(tmp_path):
@@ -236,10 +254,16 @@ def test_concurrent_adds_from_two_processes_get_distinct_ids(tmp_path):
     assert {j["requested_by"] for j in wq.jobs()} == {"mcp", "cli"}
 
 
-def test_a_cancelled_highest_id_is_not_handed_out_again():
+def test_a_deleted_highest_id_is_not_handed_out_again():
+    from harness import memory_store as ms
     wq.add(py("pass"))
     top = wq.add(py("pass"))
-    wq.cancel(top["id"])
+    conn = ms.connect()
+    try:
+        conn.execute("DELETE FROM jobs WHERE id = ?", (int(top["id"]),))
+        conn.commit()
+    finally:
+        conn.close()
     assert wq.get(top["id"]) is None
     assert wq.add(py("pass"))["id"] == f"{int(top['id']) + 1:04d}"
 

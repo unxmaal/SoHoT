@@ -122,10 +122,10 @@ The queue SHALL take each id from the store's insert, so concurrent adders get d
 - **THEN** all 30 ids are distinct and each job keeps its requester
 Test: tests/test_workqueue.py::test_concurrent_adds_from_two_processes_get_distinct_ids
 
-#### Scenario: The highest id is cancelled
-- **WHEN** the newest pending job is cancelled and another is added
-- **THEN** the new id is one more than the cancelled id
-Test: tests/test_workqueue.py::test_a_cancelled_highest_id_is_not_handed_out_again
+#### Scenario: The highest id is deleted
+- **WHEN** the newest job's row is deleted and another is added
+- **THEN** the new id is one more than the deleted id
+Test: tests/test_workqueue.py::test_a_deleted_highest_id_is_not_handed_out_again
 
 #### Scenario: Ids past four digits
 - **WHEN** a job 9999 exists and another is added
@@ -264,17 +264,17 @@ Test: tests/test_workqueue.py::test_the_worker_runs_the_queue_when_memory_is_cal
 Test: tests/test_workqueue.py::test_a_closing_gate_stops_the_next_job_not_the_running_one
 
 ### Requirement: Pause and resume through the CLI
-`soh jobs pause` and `soh jobs resume` SHALL set and clear the pause flag and report the gate; any further arguments to them are ignored.
+`soh jobs pause` and `soh jobs resume` SHALL set and clear the pause flag and report the gate; any further arguments to them are ignored, except that `-h` or `--help` anywhere after any action but `add`, or before `add`'s command, SHALL print the help and change nothing.
 
 #### Scenario: Pause, list, resume
 - **WHEN** the operator pauses, adds a job, lists, then resumes
 - **THEN** pause reports paused true, the listing shows the job pending with the gate closed, and resume reports paused false
 Test: tests/test_workqueue.py::test_pause_resume_and_list_through_the_cli
 
-#### Scenario: Pause given a help flag
-- **WHEN** `soh jobs pause --help` is run
-- **THEN** the queue is paused
-Test: untested
+#### Scenario: A help flag after the action
+- **WHEN** `soh jobs pause --help`, `soh jobs resume --help`, `soh jobs add --help` or `soh jobs cancel <id> --help` is run
+- **THEN** it prints the help and the pause flag and the queue are unchanged, while `soh jobs add -- echo --help` still queues `echo --help`
+Test: tests/test_workqueue.py::test_a_help_flag_after_the_action_prints_help_and_changes_nothing
 
 ### Requirement: Quiesce pauses and waits for running work
 `quiesce()` SHALL set the pause flag, wait until no runner holds the runner lock, and return whether the queue was already paused, leaving it paused.
@@ -443,13 +443,13 @@ Test: tests/test_stop_group_677.py::test_linux_reads_a_group_of_zombies_as_stopp
 - **THEN** the group reads as alive
 Test: tests/test_stop_group_677.py::test_macos_reads_a_member_inside_exit_as_alive
 
-### Requirement: Cancel deletes a pending job and stops a running one
-`soh jobs cancel <id>` SHALL delete a pending job's row; for a running job with a live process on this machine it SHALL set the cancel flag, stop the job's process group with the grace, and record the job `cancelled` with a note saying how it stopped. It MUST refuse a running job with no process here, and any job that is neither pending nor running.
+### Requirement: Cancel records a pending job cancelled and stops a running one
+`soh jobs cancel <id>` SHALL keep a pending job's row and record it `cancelled` with a finish time and a note, so it never starts and every reader of its state sees `cancelled`; for a running job with a live process on this machine it SHALL set the cancel flag, stop the job's process group with the grace, and record the job `cancelled` with a note saying how it stopped. It MUST refuse a running job with no process here, and any job that is neither pending nor running.
 
 #### Scenario: Cancel a pending job
-- **WHEN** a pending job is cancelled
-- **THEN** its row is gone from the queue
-Test: tests/test_workqueue.py::test_only_a_pending_job_can_be_cancelled
+- **WHEN** a pending job is cancelled and the worker runs
+- **THEN** the job is `cancelled` with a finish time, no start and a note, it never runs, and a second cancel is refused naming its state
+Test: tests/test_workqueue.py::test_a_cancelled_pending_job_is_kept_and_recorded_cancelled_and_never_runs
 
 #### Scenario: Cancel a running job and its children
 - **WHEN** a running job with a grandchild is cancelled with a short grace

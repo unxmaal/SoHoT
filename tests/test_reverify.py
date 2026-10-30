@@ -350,9 +350,11 @@ def test_a_lane_no_table_names_watches_every_runtime():
 def test_a_cancelled_job_is_not_a_verdict_on_the_model(upgraded):
     conn = upgraded
     check(conn)
-    wq.cancel(queued(conn)[0]["id"], conn=conn)
+    job = queued(conn)[0]["id"]
+    wq.cancel(job, conn=conn)
     check(conn, now=NOW + 120)
-    assert _latest(conn)["outcome"] in (reverify.CANCELLED, "")
+    got = conn.execute("SELECT outcome FROM reverifications WHERE job_id = ?", (int(job),)).fetchone()
+    assert got["outcome"] == reverify.CANCELLED
     assert reverify.flags(conn) == {}
 
 
