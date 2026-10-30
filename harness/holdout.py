@@ -155,15 +155,25 @@ def _splits(roots: tuple) -> dict:
     return {lane: assign(lane, cases) for lane, cases in by.items()}
 
 
-def splits(root=None) -> dict:
-    """lane -> the split of its shipped cases (evals/cases by default) plus local-only ones. #654."""
+def _roots(root=None) -> tuple:
     from evals.core import local_root
     roots = [(Path(root) if root is not None else
               Path(__file__).resolve().parent.parent / "evals" / "cases", False)]
     if root is None and local_root().is_dir():
         roots.append((local_root(), True))
     # Keyed on every file's mtime, so an edited case is drawn again.
-    return _splits(tuple((str(r), private, _stamp(r)) for r, private in roots))
+    return tuple((str(r), private, _stamp(r)) for r, private in roots)
+
+
+def splits(root=None) -> dict:
+    """lane -> the split of its shipped cases (evals/cases by default) plus local-only ones. #654."""
+    return _splits(_roots(root))
+
+
+def lane_cases(lane: str, root=None) -> list:
+    """Every case of one lane, shipped and local-only, from the same per-root cache. #1358."""
+    key = (lane or "").strip().lower()
+    return [c for r, private, stamp in _roots(root) for c in _cases(r, private, stamp) if c.modality == key]
 
 
 def for_lane(lane: str, root=None) -> Split:

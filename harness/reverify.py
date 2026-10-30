@@ -270,7 +270,7 @@ def argv(item: dict, base: dict | None = None) -> list[str]:
     from harness import screen
     specs = [item["spec"]] + ([item["incumbent"]] if item["incumbent"] else [])
     from harness import runner_gaps
-    out = [*runner_gaps.launcher(specs, ["uv", "run", "python"]), "-m", "evals.run", "--modality", item["lane"],
+    out = [*runner_gaps.launcher(specs, ["uv", "run", "python"], item["lane"]), "-m", "evals.run", "--modality", item["lane"],
            "--candidates", ",".join(specs)]
     route = screen.routed_gateway(item["spec"])
     if route:

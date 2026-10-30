@@ -376,6 +376,6 @@ def night(planted) -> list[list[str]]:
             ("tts", "evals/cases/tts/tts_synth", kokoro),
             ("tts", "evals/cases/tts/tts_synth", f"{kokoro},ear=whisper"),
             ("ocr", str(planted), "osocr:auto")]
-    return [runner_gaps.launcher([spec], ["uv", "run", "python"])
+    return [runner_gaps.launcher([spec], ["uv", "run", "python"], lane)
             + ["-m", "evals.run", "--split", "all", "--modality", lane, "--cases", cases, "--candidates", spec]
             for lane, cases, spec in runs for _ in range(2)]

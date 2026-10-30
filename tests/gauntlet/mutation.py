@@ -92,7 +92,8 @@ LEFT_OUT = {
                                             "test_lane_until_1053.py", "test_loop_revisit_1055.py",
                                             "test_revisit_tier_1060.py", "test_site.py"),
     "harness/reasons.py": (
-        "test_repo_repair_890.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_vision_engines_1282.py",
+        "test_repo_repair_890.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_staging_torch_1358.py",
+        "test_vision_engines_1282.py",
         "test_shots_check_1208.py",
         "test_adopt_retest_1001.py", "test_attachment_tags_949.py", "test_canary_919.py",
         "test_chaos.py", "test_claims_lane.py", "test_gateway_key.py", "test_harness_checks_ocr.py",
@@ -115,7 +116,8 @@ LEFT_OUT = {
         "test_remote_upstreams.py", "test_router_unload.py", "test_slots_memory.py", "test_store_card_facts.py",
         "test_store_state.py", "test_until_keys_928.py", "test_fetch_files_1040.py", "test_lane_heads_1084.py",
         "test_engine_timeout_708.py", "test_engine_timeout_1256.py",
-        "test_served_readonly_1247.py", "test_adopt_effect_confirm_725.py", "test_confirm_resume_1357.py"),
+        "test_served_readonly_1247.py", "test_adopt_effect_confirm_725.py", "test_staging_torch_1358.py",
+        "test_confirm_resume_1357.py"),
     "harness/adopt.py": (
         "test_technique_triage_993.py", "test_harness_paired.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
         "test_over_budget_796.py", "test_planted_919.py", "test_projection_696.py", "test_rank_893.py", "test_router_unload.py",

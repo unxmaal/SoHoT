@@ -757,7 +757,7 @@ def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False,
           unscreened: bool = False) -> list[str]:
     """The paired evals.run: pause at this sweep's slice, a plan per case for a watchdog, resume when held. #813, #810."""
     from harness import runner_gaps
-    argv = [*runner_gaps.launcher([inc_spec, spec], ["uv", "run", "python"]), "-m", "evals.run", "--modality", lane,
+    argv = [*runner_gaps.launcher([inc_spec, spec], ["uv", "run", "python"], lane), "-m", "evals.run", "--modality", lane,
             "--repeat", str(plan.repeat), "--out", str(out),
             "--candidates", f"{inc_spec},{spec}"]
     if plan.side != "all":
@@ -1066,7 +1066,7 @@ def _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid):
     from harness import runner_gaps, screen
     resume = out is not None
     out = out or paths.home() / "runs" / f"{time.strftime('%Y%m%d-%H%M%S')}-confirm-{lane}"
-    argv = [*runner_gaps.launcher([inc_spec, spec], ["uv", "run", "python"]), "-m", "evals.run", "--modality", lane,
+    argv = [*runner_gaps.launcher([inc_spec, spec], ["uv", "run", "python"], lane), "-m", "evals.run", "--modality", lane,
             "--repeat", str(repeat), "--out", str(out), "--candidates", f"{inc_spec},{spec}"]
     if not split.too_small:
         argv += ["--split", "dev"]
