@@ -40,8 +40,8 @@
   },
   {
    "candidate": "rerank:cross-encoder/ettin-reranker-1b-v1",
-   "decided_at": "2026-10-29T01:19:40Z",
-   "detail": "3.8 GiB would take this run past its 40 GiB budget (39.7 GiB already fetched)",
+   "decided_at": "2026-10-30T03:02:27Z",
+   "detail": "not screened: needs 5.6 GB but only 1.0 GB is safely available (19.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
    "exam": {
     "about": "1B params",
     "candidate": "rerank/ettin-reranker-1b-v1",
@@ -68,16 +68,16 @@
    },
    "outcome": "queued",
    "proposal": "cross-encoder/ettin-reranker-1b-v1",
-   "reason": "limit",
+   "reason": "memory",
    "receipt_key": "rerank/ettin-reranker-1b-v1",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "fetch",
-   "until": ""
+   "tier": "screen",
+   "until": "room_gb:>5.6"
   }
  ],
- "cursor": 1791386453535232,
+ "cursor": 1793329347941493,
  "events": [
   {
    "at": "2026-10-07T15:20:06Z",
@@ -108,6 +108,21 @@
    "reason": "limit",
    "run_id": 389,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-10-30T03:02:27Z",
+   "candidate": "cross-encoder/ettin-reranker-1b-v1",
+   "chosen": null,
+   "detail": "not screened: needs 5.6 GB but only 1.0 GB is safely available (19.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1793329347941493,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -198,7 +213,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-10-29T10:17:06Z",
+ "generated_at": "2026-10-30T07:00:26Z",
  "knobs": [],
  "lane": {
   "cases": 594,
