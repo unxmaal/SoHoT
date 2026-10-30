@@ -108,7 +108,8 @@ capabilities:
 
   - name: reverify
     summary: Re-running served models when their runtime moves, they age or real use regresses; each lane's own check.
-    spec: pending
+    spec: written
+    untested: 15
     modules:
       - harness/reverify.py
       - harness/commands/reverify.py
