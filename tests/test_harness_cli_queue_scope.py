@@ -32,7 +32,7 @@ def _rows():
 def test_the_lane_scope_sees_the_whole_backlog(monkeypatch):
     asked = []
 
-    def judgeable(conn, limit=50):
+    def judgeable(conn, limit=50, limit_knob=""):
         asked.append(limit)
         return _rows()
 
@@ -46,7 +46,7 @@ def test_the_lane_scope_sees_the_whole_backlog(monkeypatch):
 
 def test_an_unscoped_queue_keeps_every_row(monkeypatch):
     monkeypatch.setattr("harness.memory_store.judgeable",
-                        lambda conn, limit=50: _rows())
+                        lambda conn, limit=50, limit_knob="": _rows())
     rows, waiting = cli._queueable(_Store(_rows()), "")
     assert waiting == 20
 
@@ -54,7 +54,7 @@ def test_an_unscoped_queue_keeps_every_row(monkeypatch):
 def test_a_text_candidate_is_in_scope_for_the_web_lane(monkeypatch):
     """The scope asks lanes.serves, not equality, so #208's fix survives."""
     monkeypatch.setattr("harness.memory_store.judgeable",
-                        lambda conn, limit=50: _rows())
+                        lambda conn, limit=50, limit_knob="": _rows())
     rows, waiting = cli._queueable(_Store(_rows()), "web")
     assert waiting == 19
 
@@ -68,7 +68,7 @@ def test_the_denominator_counts_only_what_a_screen_could_answer(monkeypatch, cap
             {"name": "org/b-style-LoRA", "lane": "image", "description": "",
              "times": 1}]
     monkeypatch.setattr("harness.memory_store.judgeable",
-                        lambda conn, limit=50: rows)
+                        lambda conn, limit=50, limit_knob="": rows)
     monkeypatch.setattr("harness.memory_store.connect", lambda *a, **k: _Store(rows))
     monkeypatch.setattr("harness.memory_store.retest_counts", lambda conn: {
         "due": 0, "pending": 0, "final": 0, "recovered": 0})
@@ -89,7 +89,7 @@ def test_the_screen_tier_scopes_before_limiting_too(monkeypatch, capsys):
     rows.append({"name": "org/theimage", "lane": "image", "description": "",
                  "times": 1, "registry": "huggingface"})
     monkeypatch.setattr("harness.memory_store.judgeable",
-                        lambda conn, limit=50: rows)
+                        lambda conn, limit=50, limit_knob="": rows)
     monkeypatch.setattr("harness.memory_store.connect",
                         lambda *a, **k: _Store(rows))
     monkeypatch.setattr("harness.fetching.missing",
@@ -114,7 +114,7 @@ def test_a_fetched_candidate_below_the_rank_head_is_still_screened(monkeypatch, 
     fetched = {"name": "org/fetched", "state": "ready", "why_not": "",
                "modality": "image", "candidate": "x"}
     monkeypatch.setattr("harness.memory_store.judgeable",
-                        lambda conn, limit=50: rows)
+                        lambda conn, limit=50, limit_knob="": rows)
     monkeypatch.setattr("harness.memory_store.connect",
                         lambda *a, **k: _Store(rows))
     monkeypatch.setattr("harness.rank.serving", lambda *a, **k: set())
