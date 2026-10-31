@@ -661,25 +661,95 @@ def decode_rate(conn, lane: str, keys, settings: tuple | None, machines, tiers=(
     return statistics.fmean(rates) if rates else None
 
 
-def challenger_seconds(conn, lane: str, key: str, *, incumbent: str, incumbent_s: float | None,
-                       settings: tuple | None, machines, incumbent_keys=()) -> tuple[float | None, str]:
-    """Seconds per call of a challenger here: its own screen or measure median, else scaled by size, else the floor. #696."""
+def exam_of(lane: str) -> tuple[frozenset, frozenset]:
+    """A lane's exam case ids, and the ids a run must cover to price it: the repo screen's stratified subset, else the holdout. #1354."""
+    from harness import holdout
     lane = (lane or "").strip().lower()
+    split = holdout.for_lane(lane)
+    need = frozenset(split.holdout)
+    if lane == "repo":
+        from evals import repo_screen
+        try:
+            need = frozenset(c.id for c in repo_screen.pick(holdout.lane_cases(lane)))
+        except repo_screen.Refused:
+            pass
+    return frozenset(split.dev) | frozenset(split.holdout), need
+
+
+def exam_seconds(conn, lane: str, key: str, settings: tuple | None, machines,
+                 exam: tuple | None = None) -> tuple[float | None, str]:
+    """A candidate's mean seconds per case on its own runs here that covered this exam, at the run's budget or bounded by a larger one. #1354."""
+    import json
+
+    from harness import holdout, reasons
+    lane = (lane or "").strip().lower()
+    cases, need = exam_of(lane) if exam is None else exam
+    if not need or settings is None:
+        return None, ""
+    want, ladder = int(settings[0]), tuple(settings[1] or ())
+    by: dict[tuple, list] = {}
+    for r in conn.execute(
+            "SELECT x.run_id, x.case_id, x.seconds, x.failure_class, u.receipt, u.machine_id FROM results x "
+            "JOIN runs u ON u.id = x.run_id WHERE u.lane = ? AND u.tier IN ('screen', 'measure') AND x.candidate = ?",
+            (lane, key)):
+        if machines is not None and r["machine_id"] not in set(machines):
+            continue
+        if r["seconds"] is None or (r["failure_class"] or "") in reasons.NEVER_RAN:
+            continue
+        try:
+            harness = json.loads(r["receipt"] or "{}").get("harness")
+        except ValueError:
+            continue
+        budget, got = reply_settings(r["receipt"], lane)
+        if (harness or "patch") != "patch" or budget < want or got != ladder:
+            continue
+        by.setdefault((budget, r["run_id"]), []).append(r)
+    covered = {k: v for k, v in by.items() if {holdout.base_id(r["case_id"]) for r in v} >= need}
+    if not covered:
+        return None, ""
+    budget = min(b for b, _ in covered)
+    rows = [r for (b, _), v in covered.items() if b == budget for r in v if holdout.base_id(r["case_id"]) in cases]
+    if not rows:
+        return None, ""
+    run_ids = sorted({r for b, r in covered if b == budget})
+    at = (f"at the {want}-token budget" if budget == want
+          else f"at {budget} tokens, an upper bound at {want}")
+    return (statistics.fmean(float(r["seconds"]) for r in rows),
+            f"its own mean over {len(rows)} row(s) of this exam here, run(s) {', '.join(map(str, run_ids))}, {at}")
+
+
+def challenger_seconds(conn, lane: str, key: str, *, incumbent: str, incumbent_s: float | None,
+                       settings: tuple | None, machines, incumbent_keys=(),
+                       exam: tuple | None = None) -> tuple[float | None, str, str]:
+    """Seconds per call of a challenger here, its source and basis: its own exam runs, decode ratio, any own rows, size, floor. #696, #1354."""
+    lane = (lane or "").strip().lower()
+    own, basis = exam_seconds(conn, lane, key, settings, machines, exam)
+    if own is not None:
+        return own, "exam", basis
     # A screen's few cases price its decode speed, not the holdout's heavy-tailed reply lengths; speed is any budget's. #864.
     mine = decode_rate(conn, lane, (key,), None, machines, ("screen", "measure"))
     theirs = decode_rate(conn, lane, (incumbent, *incumbent_keys), None, machines)
     if incumbent_s is not None and mine and theirs:
-        return incumbent_s * theirs / mine, "decode ratio"
+        return (incumbent_s * theirs / mine, "decode ratio",
+                f"the incumbent's {incumbent_s:.0f}s x its {theirs:.1f} tok/s over the challenger's {mine:.1f} tok/s")
     own = _median(_candidate_rows(conn, lane, key, ("screen", "measure")), lane, key, settings, machines)
     if own is not None:
-        return own, "measured"
+        return own, "measured", "its own screen or measure rows here at the run's budget"
     mine, theirs = stored_size(conn, key), max(stored_size(conn, k) for k in (incumbent, *incumbent_keys))
     if incumbent_s is not None and mine and theirs:
-        return incumbent_s * mine / theirs, "size ratio"
+        return incumbent_s * mine / theirs, "size ratio", f"the incumbent's {incumbent_s:.0f}s x weights {mine}/{theirs} bytes"
     floor = floor_seconds(lane)
     if floor is not None:
-        return floor, "floor"
-    return incumbent_s, "incumbent"
+        return floor, "floor", "the lane's whole reply budget at the slowest decode rate allowed"
+    return incumbent_s, "incumbent", "the incumbent's seconds"
+
+
+def challenger_note(est: dict) -> str:
+    """The plan's line on how the challenger's seconds per call were priced, or "" when it is priced as the incumbent. #1354."""
+    if est.get("challenger_s") is None or est.get("challenger_source") in (None, "like incumbent"):
+        return ""
+    return (f"challenger seconds per call {est['challenger_s']:.0f}s by {est['challenger_source']}"
+            + (f": {est['challenger_basis']}" if est.get("challenger_basis") else ""))
 
 
 def _base_key(spec: str) -> str:
@@ -725,19 +795,21 @@ def pair_cost(conn, lane: str, *, incumbent: str, incumbent_spec: str, incumbent
         known = served_keys(conn, lane, incumbent_spec) if incumbent_spec else []
         same = key in (incumbent, _base_key(incumbent_spec or incumbent), *known)
         if same:
-            ch_s, ch_source = incumbent_s, inc_source
+            ch_s, ch_source, ch_basis = incumbent_s, inc_source, "the incumbent's, the same model"
         else:
-            ch_s, ch_source = challenger_seconds(conn, lane, key, incumbent=incumbent, incumbent_s=incumbent_s,
-                                                 settings=settings, machines=machines, incumbent_keys=known)
+            ch_s, ch_source, ch_basis = challenger_seconds(
+                conn, lane, key, incumbent=incumbent, incumbent_s=incumbent_s,
+                settings=settings, machines=machines, incumbent_keys=known)
         ch_calls = expected_calls(conn, lane, challenger, settings, *((incumbent, *known) if same else ()))
     else:
-        ch_s, ch_source, ch_calls = incumbent_s, "like incumbent", inc_calls
+        ch_s, ch_source, ch_basis, ch_calls = incumbent_s, "like incumbent", "", inc_calls
     calls = round(inc_calls + ch_calls, 2)
     mean = None if incumbent_s is None or ch_s is None else (inc_calls * incumbent_s + ch_calls * ch_s) / calls
     est = {"machines": list(machines or ()), "settings": list(settings or ()), "decode_tok_s": tok_s,
            "incumbent_s": incumbent_s, "incumbent_source": inc_source, "incumbent_calls": inc_calls,
            "incumbent_basis": incumbent_basis,
-           "challenger_s": ch_s, "challenger_source": ch_source, "challenger_calls": ch_calls}
+           "challenger_s": ch_s, "challenger_source": ch_source, "challenger_basis": ch_basis,
+           "challenger_calls": ch_calls}
     return mean, calls, est
 
 

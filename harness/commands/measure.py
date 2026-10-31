@@ -543,9 +543,7 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
         cases_run=every if side == "all" else len(split.holdout), median_s=median_s,
         budget_s=per, explicit=bool(explicit), calls=calls)
     plan = _with_reuse(plan, lane, inc_spec, est, side, spec)
-    if est["challenger_source"] not in ("measured", "like incumbent", "bounded") and est["challenger_s"] is not None:
-        estimated = "; ".join(x for x in (estimated, f"challenger seconds per call "
-                                          f"{est['challenger_s']:.0f}s by {est['challenger_source']}") if x)
+    estimated = "; ".join(x for x in (estimated, power.challenger_note(est)) if x)
     # Longer than one budget is paused and resumed, never refused for length. #813.
     sweeps = (math.ceil(plan.projected_s / per) if plan.projected_s and per else None)
     spans = (f"projected {sweeps} sweep(s) at {power._hm(per)} each, paused and resumed"
