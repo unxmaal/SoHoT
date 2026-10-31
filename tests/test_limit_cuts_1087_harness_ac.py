@@ -88,6 +88,20 @@ def test_a_by_hand_win_on_too_few_votes_is_held_as_a_cut(monkeypatch):
     assert _knobs() == ["harness/adopt.py:MIN_VOTES"]
 
 
+def test_the_held_and_alpha_cuts_land_whole_in_the_store_they_are_given(tmp_path, monkeypatch):
+    from harness import adopt, human
+    conn = ms.connect(tmp_path / "d.db")
+    monkeypatch.setattr(human, "lane_verdict", lambda lane, pairs, conn=None: ("ch", "a person preferred it"))
+    monkeypatch.setattr(human, "vote_stats", lambda lane, pairs, conn=None: (3, 1.0))
+    assert adopt.decide_by_hand("tts", "inc", "ch", [], min_votes=5, conn=conn).held
+    ms.record(conn, ms.Seen(name="org/new", source="feeds", lane="tts", kind="weights", resolved="org/new"))
+    adopt.record(conn, adopt.Verdict("tts", "inc", "org/new", False, "not established", alpha_cut=(0.0312, 0.0125)))
+    got = [tuple(r) for r in conn.execute("SELECT knob, value, what, kept, dropped FROM limit_cuts ORDER BY id")
+           if r["knob"] in ("harness/adopt.py:MIN_VOTES", "adopt_alpha")]
+    assert got == [("harness/adopt.py:MIN_VOTES", 5.0, "tts: ch held on 3 vote(s)", 0, 1),
+                   ("adopt_alpha", 0.0125, "tts: org/new better on the metric at p=0.031, over alpha", 0, 1)]
+
+
 def test_empty_tts_audio_is_a_cut(tmp_path, monkeypatch):
     from harness import audio
     from tests.test_harness_audio import wav_bytes

@@ -219,6 +219,21 @@ def test_a_holdout_win_that_dev_cells_powered_to_see_it_do_not_confirm_is_a_loss
     assert adopt.outcome_of(got) == ("declined", reasons.CANDIDATE)
 
 
+def test_an_unconfirmed_win_carries_an_alpha_cut_only_when_the_dev_cells_favour_the_challenger():
+    tie = _rows({**{f"d{i}": (False, True) for i in range(3)}, "d3": (True, False),
+                 **{f"d{i}": (True, True) for i in range(4, 10)}})
+    got = adopt.confirm(_won(), tie, SPLIT)
+    assert not got.adopt and got.alpha_cut == (got.evidence["confirm"]["p"], adopt.ALPHA)
+    even = _rows({"d0": (False, True), "d1": (False, True), "d2": (True, False), "d3": (True, False),
+                  **{f"d{i}": (True, True) for i in range(4, 10)}})
+    for r in even:
+        r["seconds"] = 0.5 if r["candidate"] == "ch" else 1.0
+    cells = adopt.confirmation_cells(even, SPLIT)
+    assert adopt.better(adopt._summary(cells, "inc"), adopt._summary(cells, "ch"), "code")
+    got = adopt.confirm(_won(), even, SPLIT)
+    assert not got.adopt and got.alpha_cut == (), got.why
+
+
 def test_the_confirmation_is_tested_at_undivided_alpha():
     won = adopt.Verdict("code", "inc", "ch", True, "won", evidence={"comparisons": 5, "alpha": adopt.alpha_for(4)})
     rows = _rows({**{f"d{i}": (False, True) for i in range(7)}, **{f"d{i}": (True, True) for i in range(7, 10)}})
