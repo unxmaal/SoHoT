@@ -16,6 +16,7 @@ from pathlib import Path
 
 from evals import interface, redact, repo, session_cut
 from evals.importers import Imported, history, provenance
+from harness import paths
 
 LANE = "repo"
 SOURCE = "claude-code:transcripts"
@@ -397,7 +398,7 @@ def cut(main: Path, subs, requests: list[Request], req: Request, files, stream: 
         return "no_edit"
     _, kind, _, evs, i = min(hits, key=lambda h: h[0])
     pin = (lambda e: session_cut.views_issue(e, *repo)) if repo else None
-    text = session_cut.render(evs[:i], pin=pin)
+    text = session_cut.render(evs[:i], pin=pin, budget_knob="transcripts_cut_budget")
     return session_cut.HEAD + text, {"stream": kind, "events": i, "bytes": len(text.encode("utf-8")), "until": evs[i].at}
 
 
@@ -918,6 +919,7 @@ def main(argv: list[str] | None = None) -> int:
         ap.error("--log is required unless --dry-run")
     keep = None if a.restart or not a.out.is_file() else manifest(a.out)
     known = redact.known_here(a.names)
+    paths.eval_home(reads_live=True)
     got = survey(a.root or default_root(), a.repos, a.log or Path(os.devnull), known=known, probes=a.probes,
                  run=not a.dry_run, keep=keep)
     print("\n".join(report(got)), file=sys.stderr)

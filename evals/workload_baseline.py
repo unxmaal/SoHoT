@@ -379,7 +379,7 @@ def text(rep: dict) -> str:
             "hybrid: review = the local answer kept when graded usable, else Claude; visible = the #891 "
             "applicability gate; a gate with no stored Claude arm prints bounds. GPU min = local request seconds "
             "summed.",
-            f"bar: {'not set; Eric sets it (soh baseline --bar RATE)' if bar is None else f'{bar:g}, applied to the local interval'}"]
+            f"bar: {'not set; the owner sets it (soh baseline --bar RATE)' if bar is None else f'{bar:g}, applied to the local interval'}"]
     if a:
         out.append(f"replay grading agreement, first two replays: {_pct(a)} (needs {100 * a['needs']:.0f}%: "
                    f"{'PASS' if a['rate'] is not None and a['rate'] >= a['needs'] else 'FAIL'})")

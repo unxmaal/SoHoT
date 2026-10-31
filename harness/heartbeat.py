@@ -97,20 +97,14 @@ KEPT = (REOPENED_TOO_BIG, REDERIVED_ATTACHMENTS, REQUEUED_OLD_SIZING, REOPENED_U
 def code_commit(repo: Path | None = None) -> str:
     """The commit the checkout this code was imported from has checked out, read from .git; '' when unreadable. #1000."""
     from harness import paths
+    from harness import repo as checkout
     repo = paths.REPO if repo is None else Path(repo)
     try:
-        git = repo / ".git"
-        gitdir = git
-        if git.is_file():
-            gitdir = Path(git.read_text(encoding="utf-8").split("gitdir:", 1)[1].strip())
-            gitdir = gitdir if gitdir.is_absolute() else repo / gitdir
+        gitdir, common = checkout.git_dirs(repo)
         head = (gitdir / "HEAD").read_text(encoding="utf-8").strip()
         if not head.startswith("ref:"):
             return head
         ref = head[4:].strip()
-        common = gitdir
-        if (gitdir / "commondir").is_file():
-            common = (gitdir / (gitdir / "commondir").read_text(encoding="utf-8").strip()).resolve()
         for d in (gitdir, common):
             if (d / ref).is_file():
                 return (d / ref).read_text(encoding="utf-8").strip()

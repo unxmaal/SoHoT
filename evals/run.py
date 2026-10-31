@@ -2003,6 +2003,9 @@ def warm(runner, clock=None, sleep=None) -> None:
                 print(f"  {exc}; waiting up to {GATEWAY_DOWN_WAIT_S:g} s for it to answer",
                       file=sys.stderr, flush=True)
             if now >= end:
+                from harness import cuts
+                cuts.cut("gateway_down_wait", f"warm-up of {getattr(runner, 'candidate', '')} at a refusing gateway",
+                         kept=0, dropped=1)
                 raise
             sleep(GATEWAY_DOWN_POLL_S)
 

@@ -141,6 +141,8 @@ def cut(knob: str, what: str, *, value=None, kept: int | None = None, dropped: i
     from harness import memory_store as ms
     if ms.lent() is not None:
         return  # a read-only or dry run; spooled, the row would reach this home's store later. #1426.
+    if paths.evaluating():
+        return  # an eval or probe's limits are not the work's. #1346.
     value = value_of(knob) if value is None else value
     try:
         number = float(value) if value is not None else None
@@ -151,6 +153,8 @@ def cut(knob: str, what: str, *, value=None, kept: int | None = None, dropped: i
     if conn is not None and _write(conn, [row]):
         flush(conn)
         return
+    if paths.live_from_elsewhere(ms.db_path()):
+        return  # a worktree's cut in the live home would pass for the deploy's work. #1346.
     _spool(row)
     flush()
 
