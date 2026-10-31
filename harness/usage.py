@@ -205,7 +205,7 @@ def target():
     """The store to write, or None: the live store only from the deploy checkout."""
     from harness import memory_store as ms
     path = ms.db_path()
-    if paths.is_live(path) and paths.runs_elsewhere() is not None:
+    if paths.evaluating() or paths.live_from_elsewhere(path):
         return None
     return path
 

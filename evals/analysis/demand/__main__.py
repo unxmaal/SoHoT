@@ -60,6 +60,8 @@ def _report(args) -> int:
 
 
 def _replay(args) -> int:
+    from harness import paths
+    paths.eval_home(reads_live=True)
     out = Path(args.out)
     steps = [s.strip() for s in args.steps.split(",") if s.strip()]
     if bad := [s for s in steps if s not in rp.STEPS]:

@@ -47,7 +47,7 @@ STALL_S = 1800.0
 STALL_CASES = 10
 #: An orphan younger than this may be a parent mid-exit; it is left one more wake.
 ORPHAN_GRACE_S = 120.0
-#: Eric's day, local hours [start, end); the discover agent starts at scripts/launchd.sh DISCOVER_HOURS, which this does not move (#1369).
+#: The owner's day, local hours [start, end); the discover agent starts at scripts/launchd.sh DISCOVER_HOURS, which this does not move (#1369).
 DAY_START_HOUR = 8
 DAY_END_HOUR = 21
 #: A job holding the GPU lock longer than this inside the day hours is paused for the night, never stopped (#1370, #1371).
@@ -631,7 +631,7 @@ def daytime(now: float) -> bool:
 
 
 def _cleared(w: World) -> bool:
-    """Eric cleared today's day hours (soh day clear); the night limits are never lifted. #1112."""
+    """The owner cleared today's day hours (soh day clear); the night limits are never lifted. #1112."""
     return daytime(w.now) and w.clearance is not None
 
 
@@ -941,7 +941,7 @@ def idle(w: World) -> list[dict]:
 
 
 def unload_after(now: float) -> float:
-    """Seconds without a request after which a served model is given back: the day limit in Eric's hours, else the router's own."""
+    """Seconds without a request after which a served model is given back: the day limit in the owner's hours, else the router's own."""
     if daytime(now):
         return IDLE_UNLOAD_DAY_S
     from harness import knobs
@@ -1028,10 +1028,10 @@ CRITERIA = (
     Criterion("stale_mcp", ("watchdog_orphan_grace",), NOTIFY, FILE, ("processes", "mcp_unit"), _stale_mcp,
               "an old MCP server kept alive by a client's open stream, serving the tool list it started with"),
     Criterion("daytime_gpu", ("watchdog_day_start_hour", "watchdog_day_end_hour", "watchdog_daytime_gpu"), PAUSE,
-              NOTIFY, ("processes",), _daytime_gpu, "a job holding the GPU lock long inside Eric's day hours"),
+              NOTIFY, ("processes",), _daytime_gpu, "a job holding the GPU lock long inside the owner's day hours"),
     Criterion("day_clear", ("watchdog_day_end_hour", "watchdog_daytime_gpu") + _LONG_RUN_DAY_KNOBS, NOTE, NOTIFY,
               ("processes",), _day_clear,
-              "a long day job let off daytime_gpu and long_run's day limit: Eric cleared the day (soh day clear)"),
+              "a long day job let off daytime_gpu and long_run's day limit: the owner cleared the day (soh day clear)"),
     Criterion("idle_lock", ("watchdog_idle_hold",), NOTE, FILE, ("processes", "lock"), _idle_lock,
               "the eval lock held with nothing running"),
     Criterion("idle_model", (), NOTE, UNLOAD, ("processes", "resident"), _idle_model,

@@ -1,4 +1,4 @@
-"""Eric's machine-wide day clearance: jobs may run all day until that day's watchdog day end. #1112."""
+"""The owner's machine-wide day clearance: jobs may run all day until that day's watchdog day end. #1112."""
 from __future__ import annotations
 
 import time
@@ -32,7 +32,7 @@ def clear(conn, said: str, now: float | None = None) -> dict:
     from harness import memory_store as ms
     said = (said or "").strip()
     if not said:
-        raise ValueError('a day clearance names who gave it and why: soh day clear "eric: the #1110 baseline"')
+        raise ValueError('a day clearance names who gave it and why: soh day clear "owner: the #1110 baseline"')
     now = time.time() if now is None else now
     until = day_end(now)
     if until <= now:

@@ -76,7 +76,7 @@ def test_content_attributes_never_reach_the_store():
     put(*fixture_rows())
     events, metrics = stored()
     blob = json.dumps([events, metrics], default=str)
-    for leak in ("SECRET-PROMPT", "SECRET-INPUT", "SECRET-ERROR", "eric@example.invalid", "tool_parameters"):
+    for leak in ("SECRET-PROMPT", "SECRET-INPUT", "SECRET-ERROR", "user@example.invalid", "tool_parameters"):
         assert leak not in blob, leak
 
 

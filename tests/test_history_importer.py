@@ -274,7 +274,7 @@ PILOT = {
     "sohot-363": ("bf4586bc2951", "holdout", "0055d7accb2b"),
     "sohot-368": ("5839a3552153", "dev", "2dc141b03b71"),
     "sohot-371": ("467550a8e0da", "holdout", "da55fcb8daf7"),
-    "sohot-374": ("fee4061ce915", "holdout", "f9b5e28ae1a9"),
+    "sohot-374": ("fee4061ce915", "holdout", "9d282e786206"),  # prompt reworded to drop a private name, #1308
     "sohot-376": ("67dc663cb680", "dev", "d5bb2cdc5c39"),
     "sohot-396": ("8f2219efa0bf", "holdout", "c60c3b145556"),
     "sohot-399": ("7d44a19c8fc4", "holdout", "be97c54bf9e5"),
