@@ -108,7 +108,8 @@ LEFT_OUT = {
         "test_repo_causes_1170.py", "test_pool_full_retry_755.py", "test_engine_timeout_708.py", "test_reply_cap_1352.py",
         "test_engine_timeout_1256.py", "test_trocr_tokenizer_1025.py", "test_fetch_files_1040.py", "test_lane_too_small_1049.py",
         "test_lane_until_1053.py", "test_loop_revisit_1055.py", "test_revisit_tier_1060.py",
-        "test_revisitable_after_deploy_1361.py", "test_adopt_effect_confirm_725.py", "test_min_effect_1320.py", "test_technique_triage_993.py"),
+        "test_revisitable_after_deploy_1361.py", "test_adopt_effect_confirm_725.py", "test_min_effect_1320.py", "test_technique_triage_993.py",
+        "test_exam_price_1354.py"),
     "harness/screen.py": (
         "test_attachment_tags_949.py", "test_lane_too_small_1049.py", "test_vision_engines_1282.py",
         "test_variants_947.py", "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",
