@@ -81,4 +81,8 @@ NEVER_CUTS = {
     "harness/effects.py:MIN_CASES": "read only when soh knobs effects derives power.EFFECT offline; no run is cut (#725)",
     "harness/holdout.py:FAMILY_SHARE": "moves holdout cases to dev, never drops one; the split version names it (#671)",
     "harness/holdout.py:SATURATED": "labels an incumbent's holdout saturated in the report; nothing is skipped (#479)",
+    "harness/power.py:UNSEEN": "the pass rate a plan assumes for a case with no stored rows; the plan is marked "
+                               "unmeasured and no case is dropped (#698)",
+    "harness/reverify.py:DEFAULT_DAYS": "days between re-runs of a served model; a due model is re-run, never "
+                                        "skipped (#408)",
 }

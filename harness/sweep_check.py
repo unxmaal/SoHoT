@@ -85,7 +85,10 @@ def verdict(unit: dict | None, beat: dict | None, now: float, start: float, aliv
     if unit.get("loaded") is False:
         return {"verdict": UNLOADED, "line": f"the discover unit is not loaded in launchd "
                                             f"({unit.get('why') or 'no such service'}); scripts/launchd.sh install loads it"}
+    from harness import cuts
     b = beat if beat and float(beat.get("started") or 0) >= start - START_SLACK_S else None
+    if beat and b is None:
+        cuts.cut("sweep_check_start_slack", "a heartbeat that started before tonight's window")
     live = unit.get("state") == "running" and bool(unit.get("pid"))
     rc = unit.get("rc")
     sig = f", {unit['signal']}" if unit.get("signal") else ""
@@ -105,6 +108,8 @@ def verdict(unit: dict | None, beat: dict | None, now: float, start: float, aliv
                                               f"{heartbeat.ago(ran)}, at {where}"}
         short = int(b.get("step") or 0) < int(b.get("total") or 0)
         if ran < EARLY_S or short:
+            if not short:
+                cuts.cut("sweep_check_early", "a finished sweep read as finished early")
             return {"verdict": EARLY, "line": f"the sweep finished rc 0 after only {heartbeat.ago(ran)} at "
                                              f"{_hm(b.get('finished') or now)}, at {where}"}
         return {"verdict": FINISHED, "line": f"the sweep finished rc 0 at {_hm(b.get('finished') or now)} after "
@@ -118,6 +123,8 @@ def verdict(unit: dict | None, beat: dict | None, now: float, start: float, aliv
     limit = max(STALL_S, float(b.get("deadline_s") or 0))
     outside = "" if live else f" (pid {pid}, not under the launchd unit)"
     if age > limit:
+        if limit == STALL_S:
+            cuts.cut("sweep_check_stall", "a running sweep read as stalled")
         return {"verdict": STALLED, "line": f"the sweep is stalled{outside}: no progress for {heartbeat.ago(age)} "
                                            f"(limit {heartbeat.ago(limit)}), at {where}"}
     return {"verdict": RUNNING, "line": f"the sweep is running{outside}: {where}; last progress "

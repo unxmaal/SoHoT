@@ -69,6 +69,9 @@ def run(step_gb: float = 1.0, settle_s: float = 3.0, floor_pct: int = 10,
                 break
     finally:
         release()
+    if stopped == "free below floor":
+        from harness import cuts
+        cuts.cut("harness/ramp.py:run(floor_pct)", "memory ramp steps past the free-memory floor", value=floor_pct)
     last_normal = (warn_at - step_gb) if warn_at is not None else held
     margin = (round(base["available_gb"] - last_normal, 2)
               if warn_at is not None else None)

@@ -59,9 +59,11 @@ def deploy_checkout() -> Path | None:
     """Where the services run from, as scripts/launchd.sh defines it; None without launchd."""
     if sys.platform == "win32":
         return None
+    from harness import cuts
     try:
-        out = subprocess.run(["bash", str(REPO / "scripts" / "launchd.sh"), "deploy-path"],
-                             capture_output=True, text=True, timeout=30, check=True)
+        with cuts.timeout("harness/paths.py:deploy_checkout->subprocess.run(timeout)", "the deploy path lookup"):
+            out = subprocess.run(["bash", str(REPO / "scripts" / "launchd.sh"), "deploy-path"],
+                                 capture_output=True, text=True, timeout=30, check=True)
     except (OSError, subprocess.SubprocessError):
         return None
     got = out.stdout.strip()

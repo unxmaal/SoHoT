@@ -18,3 +18,8 @@ KNOBS = [
        note="times its last main run a test must take to be named slower; 3x with 20 s also named two tests "
             "that vary by runner (#1146)"),
 ]
+
+NEVER_CUTS = {
+    f"{T}:SLOWER_ADDED_S": "which tests a CI run names in a slower-test warning; every test still runs and is timed",
+    f"{T}:SLOWER_RATIO": "which tests a CI run names in a slower-test warning; every test still runs and is timed",
+}

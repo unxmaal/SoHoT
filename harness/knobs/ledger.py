@@ -31,3 +31,8 @@ NOT_GATING = {
                                                          "the version unknown (#1005)",
     "harness/commands/ledger.py:gather_compare->_dt.timedelta(days)": "one calendar day, the compared window (#868)",
 }
+
+NEVER_CUTS = {
+    "harness/statusline.py:MIN_GAP_S": "how often an unchanged rate-limit reading is written again; a skipped one "
+                                       "repeats the last row's values (#826)",
+}

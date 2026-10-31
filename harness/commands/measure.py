@@ -370,6 +370,9 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
                 held = None
                 continue
             break
+        if getattr(proc, "timed_out", False):
+            from harness import cuts
+            cuts.cut("deadline_grace", f"{lane}: {name} stopped at its deadline past the budget", kept=0, dropped=1)
         if not (getattr(proc, "timed_out", False) or proc.returncode == watch.PAUSED):
             break
         before = int((held or {}).get("done") or 0)

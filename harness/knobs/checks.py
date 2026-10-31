@@ -41,4 +41,5 @@ NOT_GATING = {
 NEVER_CUTS = {
     "evals/claims_report.py:CONTROL_RECALL": "labels the claims report's matcher suspect; every claim is still scored (#661)",
     "evals/claims_judge.py:AGREE_MIN": "decides whether stored judgments count in scoring; no claim or case is dropped (#655)",
+    "harness/rubric_eval.py:TEMPERATURE": "the rubric judge's sampling temperature; it shapes a reply and drops none",
 }
