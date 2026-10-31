@@ -83,14 +83,19 @@ def _gateway_errors(conn) -> list:
     from harness import usage
     # Rates over a window the writer dropped rows from are not rates of real use. #700.
     out = usage.drop_warning(conn, time.time() - usage.parse_since(usage.DEFAULT_SINCE))
+    few = []
     for lane, s in sorted(usage.real_use(conn).items()):
         if s["requests"] < MIN_REQUESTS:
+            few.append(lane)
             continue
         if (s["error_rate"] or 0) > ERROR_RATE_MAX:
             out.append(f"sohot-{lane}: {s['error_rate']:.0%} of {s['requests']} requests failed in the model")
         if (s.get("gateway_error_rate") or 0) > ERROR_RATE_MAX:
             out.append(f"sohot-{lane}: the gateway or client refused {s['gateway_error_rate']:.0%} "
                        f"of {s['requests']} requests (rate limit, auth, budget or bad request)")
+    if few:
+        from harness import cuts
+        cuts.cut("harness/live_audit.py:MIN_REQUESTS", f"error rates of {', '.join(few)} left unjudged", dropped=len(few))
     return out
 
 

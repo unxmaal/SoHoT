@@ -918,6 +918,7 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
     print(f"    {look.text}", flush=True)
     done = len(rows) - (taken_from or {}).get("reused", 0)
     total = int(progress.get("total") or (plan.cases_run or 0) * plan.repeat * 2 or done)
+    looks.stopped(look, lane, done, total)
     if verdict is not None:
         verdict = replace(verdict, evidence={**verdict.evidence, "split": split.as_dict(),
                                              "power": plan.as_dict(), "looks": taken,

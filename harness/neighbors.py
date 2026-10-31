@@ -151,8 +151,11 @@ def cohort(seeds=DEFAULT_SEEDS, client: github.Client | None = None, *,
     client = client or github.Client()
     people: list[str] = []
     seen: set[str] = set()
+    over = {"limit": 0, "per_repo": 0, "min_degree": 0}
 
     def add(login) -> bool:
+        if login and login not in seen and not login.endswith("[bot]") and len(people) >= limit:
+            over["limit"] += 1
         if (login and login not in seen and not login.endswith("[bot]")
                 and len(people) < limit):
             seen.add(login)
@@ -163,13 +166,16 @@ def cohort(seeds=DEFAULT_SEEDS, client: github.Client | None = None, *,
     core: list[str] = []
     for repo in seeds:
         try:
-            found = client.contributors(repo)[:per_repo]
+            listed = client.contributors(repo)
         except github.GitHubError:
             continue
+        found = listed[:per_repo]
+        over["per_repo"] += len(listed) - len(found)
         for login in found:
             add(login)
             core.append(login)
     if not follow:
+        _cohort_cuts(over, len(people), limit, per_repo, min_degree)
         return people[:limit]
 
     # EACH HOP GETS ITS OWN BUDGET, and without one `hops` is unreachable.
@@ -197,12 +203,29 @@ def cohort(seeds=DEFAULT_SEEDS, client: github.Client | None = None, *,
         for name, d in ranked:
             if len(added) >= budget or len(people) >= limit:
                 break
+            over["min_degree"] += d < floor
             if d >= floor and add(name):
                 added.append(name)
         if not added:
             break
         frontier = added
+    else:
+        if len(people) < limit:
+            from harness import cuts
+            cuts.cut("hops", "a crowd still growing at its last hop", value=hops, kept=len(people))
+    _cohort_cuts(over, len(people), limit, per_repo, min_degree)
     return people[:limit]
+
+
+def _cohort_cuts(over: dict, size: int, limit: int, per_repo: int, min_degree: int) -> None:
+    """One cut per crowd for each of its caps that left someone out."""
+    from harness import cuts
+    if over["limit"]:
+        cuts.cut("crowd_limit", "people left out of a full crowd", value=limit, kept=size, dropped=over["limit"])
+    if over["per_repo"]:
+        cuts.cut("per_repo", "contributors past the per-repo take", value=per_repo, dropped=over["per_repo"])
+    if over["min_degree"]:
+        cuts.cut("min_degree", "people too few of the crowd follow", value=min_degree, dropped=over["min_degree"])
 
 
 def stars_of(client: github.Client, login: str, pages: int) -> tuple[list[str], bool, bool]:
@@ -285,8 +308,11 @@ def neighbors(people=None, client: github.Client | None = None, *,
     counts, asked = crowd(people, client, pages=pages)
     skip = set(exclude)
     out = []
-    for repo, shared in counts.most_common():
+    for n, (repo, shared) in enumerate(counts.most_common()):
         if shared < min_shared:
+            from harness import cuts
+            cuts.cut("min_shared", "repos too few of the crowd starred", value=min_shared, kept=n,
+                     dropped=len(counts) - n)
             break
         if repo in skip:
             continue

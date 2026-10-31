@@ -41,6 +41,8 @@ NOT_GATING = {
 }
 
 NEVER_CUTS = {
+    "harness/judge.py:MENTION_CHUNK_CHARS": "the piece size a long thread is read in; every piece is asked and the "
+                                            "mentions joined, so no text is left unread (#700)",
     "harness/contamination.py:CLEAN_SHARE": "the clean quantile a HIT is read at; every probe is reported (#727)",
     "harness/contamination.py:MIN_PASSAGES": "when a model's derivation counts; every probe is reported (#727)",
     "harness/contamination.py:HIT": "labels a probe hit or miss for the benchmark report; no case is dropped by it (#727)",
