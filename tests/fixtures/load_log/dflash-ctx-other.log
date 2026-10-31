@@ -18,7 +18,7 @@
 0.02.974.258 I srv          load:   f16
 0.02.974.258 I srv          load:   --kv-unified
 0.02.974.258 I srv          load:   --model
-0.02.974.258 I srv          load:   /Volumes/Models/hf/gguf/Qwen3.6-35B-A3B-DFlash-Q4_K_M.gguf
+0.02.974.258 I srv          load:   /Volumes/MODELS/hf/gguf/Qwen3.6-35B-A3B-DFlash-Q4_K_M.gguf
 0.02.974.259 I srv          load:   --n-gpu-layers
 0.02.974.259 I srv          load:   999
 0.02.974.259 I srv          load:   --parallel
@@ -29,15 +29,15 @@
 [49215] 0.00.043.377 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
 [49215] 0.00.043.596 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
 [49215] 
-[49215] 0.00.045.503 I srv    load_model: loading model '/Volumes/Models/hf/gguf/Qwen3.6-35B-A3B-DFlash-Q4_K_M.gguf'
+[49215] 0.00.045.503 I srv    load_model: loading model '/Volumes/MODELS/hf/gguf/Qwen3.6-35B-A3B-DFlash-Q4_K_M.gguf'
 [49215] 0.00.217.192 E llama_init_from_model: failed to initialize the context: dflash requires ctx_other to be set (this warning is normal during memory fitting)
 [49215] 0.00.229.472 E common_fit_params: encountered an error while trying to fit params to free device memory: failed to create llama_context from model
 [49215] 
 [49215] 
 [49215] 0.00.388.862 E llama_init_from_model: failed to initialize the context: dflash requires ctx_other to be set (this warning is normal during memory fitting)
-[49215] 0.00.388.865 E cmn  common_init_: failed to create context with model '/Volumes/Models/hf/gguf/Qwen3.6-35B-A3B-DFlash-Q4_K_M.gguf'
-[49215] 0.00.388.865 E cmn  common_init_: failed to create context with model '/Volumes/Models/hf/gguf/Qwen3.6-35B-A3B-DFlash-Q4_K_M.gguf'
-[49215] 0.00.388.866 E srv    load_model: failed to create_context with model '/Volumes/Models/hf/gguf/Qwen3.6-35B-A3B-DFlash-Q4_K_M.gguf'
+[49215] 0.00.388.865 E cmn  common_init_: failed to create context with model '/Volumes/MODELS/hf/gguf/Qwen3.6-35B-A3B-DFlash-Q4_K_M.gguf'
+[49215] 0.00.388.865 E cmn  common_init_: failed to create context with model '/Volumes/MODELS/hf/gguf/Qwen3.6-35B-A3B-DFlash-Q4_K_M.gguf'
+[49215] 0.00.388.866 E srv    load_model: failed to create_context with model '/Volumes/MODELS/hf/gguf/Qwen3.6-35B-A3B-DFlash-Q4_K_M.gguf'
 [49215] 0.00.388.867 I srv    operator(): operator(): cleaning up before exit...
 [49215] 0.00.389.228 E srv  llama_server: exiting due to model loading error
 0.03.460.127 I srv           run: instance name=Qwen3.6-35B-A3B-DFlash-Q4_K_M exited with status 1

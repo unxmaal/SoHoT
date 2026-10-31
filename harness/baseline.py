@@ -20,7 +20,13 @@ def zero_pass(conn, lane: str, spec: str) -> dict | None:
     if not lane or not spec or lane in adopt.current(conn):
         return None
     draws, _ = power.served_profile(conn, lane, spec)
-    if len(draws) < MIN_CASES or any(any(d) for d in draws.values()):
+    if any(any(d) for d in draws.values()):
+        return None
+    if len(draws) < MIN_CASES:
+        if draws:
+            from harness import cuts
+            cuts.cut("zero_pass_min_cases", f"{lane}: {spec} passed none of {len(draws)} case(s), too few to call it "
+                     "never passing", kept=0, dropped=1, conn=conn)
         return None
     return {"spec": spec, "cases": len(draws), "draws": sum(len(d) for d in draws.values())}
 

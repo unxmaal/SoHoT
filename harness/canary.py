@@ -312,6 +312,9 @@ def run(plants=PLANTS, run=subprocess.run, now=time.time, sleep=time.sleep, wait
     deadline = first + wait_h * 3600
     while plants and loop_running():
         if now() >= deadline:
+            from harness import cuts
+            cuts.cut("canary_wait_h", "the canary's plants: the discovery loop was still running", value=wait_h,
+                     kept=0, dropped=len(plants))
             return write({"started": first, "finished": now(), "plants": out, "leaked": 0, "ok": False,
                           "skipped": f"the discovery loop was still running after {wait_h:g} h"})
         say("  the discovery loop is running; waiting for it to finish")
@@ -356,6 +359,9 @@ def morning_line(now: float | None = None) -> str:
     """One line for `soh morning` when the canary needs a person, else ""."""
     now = time.time() if now is None else now
     r = latest()
+    if r is not None and now - float(r.get("started") or 0) > STALE_DAYS * 86400:
+        from harness import cuts
+        cuts.cut("canary_stale_days", "the newest canary receipt, too old to vouch for the loop", kept=0, dropped=1)
     if r is None or now - float(r.get("started") or 0) > STALE_DAYS * 86400:
         return f"the canary has no receipt newer than {STALE_DAYS} days"
     wrong = [p["plant"] for p in r.get("plants") or [] if not p.get("ok") and not p.get("invalid")]

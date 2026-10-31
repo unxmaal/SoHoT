@@ -221,7 +221,7 @@ def takes_attachment(lane: str, kind: str) -> bool:
 
 
 #: A GGUF file served by llama-server's router, named by its stem. #295.
-from harness.serving import LLAMACPP_PREFIX  # noqa: E402
+from harness.serving import LLAMACPP_PREFIX, VLLM_PREFIX  # noqa: E402
 
 
 def candidate_for(lane: str, model: str, attaches_to: str = "",
@@ -253,8 +253,15 @@ def candidate_for(lane: str, model: str, attaches_to: str = "",
     """
     specs = LANE_CANDIDATES.get(lanes.canonical(lane), ())
     from harness import ds4
-    if model.startswith(ds4.PREFIX):
+    if model.startswith((ds4.PREFIX, VLLM_PREFIX)):
         return model
+    if not attaches_to and lanes.canonical(lane) in lanes.TEXT_SERVED:
+        if card is None and conn is not None:
+            from harness import memory_store as ms
+            card = ms.card_of(conn, model)
+        if (card or {}).get("runtime_needed") == "vllm":
+            # Weights only vLLM loads go to its server, never to mlx_lm.server. #960.
+            return f"{VLLM_PREFIX}{model}"
     if not attaches_to and lanes.canonical(lane) in lanes.GGUF_SERVED and ds4.recognised(model, card):
         # ds4's own GGUFs load in ds4-server and nowhere else. #611.
         return ds4.spec_for(model, (card or {}).get("siblings"), conn=conn)
@@ -394,11 +401,16 @@ def runner_gap(lane: str, model: str, attaches_to: str = "",
         except ValueError as exc:
             return str(exc)
         return case_gap(lane, spec)
+    if spec.startswith(VLLM_PREFIX):
+        from harness import vllm
+        return case_gap(lane, spec) if vllm.available() else f"needs-vllm: {vllm.absent()}"
     if spec:
         from harness import engines
         if card is None and conn is not None:
             from harness import memory_store as ms
             card = ms.card_of(conn, model)
+        if (card or {}).get("runtime_needed") == "vllm":
+            return f"needs vllm, which serves only the {', '.join(lanes.TEXT_SERVED)} lanes here"
         library = str((card or {}).get("library") or (card or {}).get("library_name") or "").strip().lower()
         if library in FOREIGN_LIBRARIES:
             return f"needs its own runner: its card names the {library} library, {FOREIGN_LIBRARIES[library]}"

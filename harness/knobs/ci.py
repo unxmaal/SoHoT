@@ -25,3 +25,9 @@ NOT_GATING = {
     "scripts/ci-retry.sh:CI_RETRY_DELAY": "seconds before CI's first `uv sync` retry, doubling after; it only "
                                           "spaces attempts at the same install (#1440)",
 }
+
+NEVER_CUTS = {
+    "harness/ci_budget.py:MACOS_TIMEOUT_MIN": "a copy of check-macos timeout-minutes a test holds equal to ci.yml; the "
+                                              "harness reads it nowhere (#1146)",
+    "harness/ci_budget.py:WARN_SHARE": "when a CI job's time warns; the job runs on either way (#1146)",
+}
