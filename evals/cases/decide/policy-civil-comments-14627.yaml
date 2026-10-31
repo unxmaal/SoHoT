@@ -4,7 +4,7 @@ id: policy-civil-comments-14627
 modality: decide
 prompt: Apply the moderation policy below to this comment.
 context: It would seem that criminal charges for extortion, fraud, corruption need to be laid against
-  Trillian and Eric Wood soonest.
+  Trillian and [name] Wood soonest.
 params:
   schema:
     toxic:
