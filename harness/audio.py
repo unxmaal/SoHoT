@@ -308,6 +308,9 @@ def speak(text: str, out: str | Path, voice: str = DEFAULT_KOKORO_VOICE,
         raise AudioError(f"tts unreachable at {base_url}: {exc} ({_START_HINT})") from exc
 
     if len(r.content) < MIN_AUDIO_BYTES:
+        from harness import cuts
+        cuts.cut("harness/audio.py:MIN_AUDIO_BYTES", f"tts reply of {len(r.content)} bytes refused as empty audio",
+                 kept=0, dropped=1)
         raise AudioError(
             f"tts returned {len(r.content)} bytes, which is empty audio. "
             "mlx_audio does this on a 200 when misaki is not installed; check "

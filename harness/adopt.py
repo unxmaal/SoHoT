@@ -80,6 +80,8 @@ class Verdict:
     held: str = ""
     #: The predicate that reopens a verdict waiting on a fact, as memory_store.decide takes it. #993.
     until: str = ""
+    #: (p, alpha) when a challenger better on the metric was refused only by the paired gate's alpha. #1087.
+    alpha_cut: tuple = ()
 
 
 def better(incumbent: dict, challenger: dict, lane: str = "") -> bool:
@@ -128,6 +130,9 @@ def decide_by_hand(lane: str, incumbent: str, challenger: str,
     votes, agree = human.vote_stats(lane, pairs, conn=conn)
     short = votes < min_votes
     if short and not force:
+        from harness import cuts
+        cuts.cut("harness/adopt.py:MIN_VOTES", f"{lane}: {challenger} held on {votes} vote(s)", value=min_votes,
+                 kept=0, dropped=1, conn=conn)
         return Verdict(lane, incumbent, challenger, False, why, BY_HAND,
                        votes=votes, agreement=agree, held=(
                            f"held: {votes} votes, fewer than {min_votes}; "
@@ -189,6 +194,7 @@ def decide(lane: str, incumbent: dict, challenger: dict,
             evidence["dev"] = {"not_run": plan.dev_skipped}
             notes.append(plan.dev_skipped)
     got = _gates(lane, name_i, name_c, incumbent, challenger, rows, alpha)
+    alpha_cut = got.alpha_cut
     worse = _worse(rows, name_i, name_c, lane, alpha) if rows and not got.adopt else ""
     if worse:
         got = Verdict(lane, name_i, name_c, False, f"{got.why}; {worse}")
@@ -202,7 +208,7 @@ def decide(lane: str, incumbent: dict, challenger: dict,
         evidence["cost"] = methods.cost(incumbent, challenger, spec)
     why = "; ".join([got.why, *notes, *([cost] if cost else [])])
     return Verdict(lane, name_i, name_c, got.adopt, why, got.how,
-                   got.failure_class, evidence, until=got.until)
+                   got.failure_class, evidence, until=got.until, alpha_cut=alpha_cut)
 
 
 def _lane_too_small(lane, name_i, name_c, got: Verdict, plan, split) -> Verdict | None:
@@ -444,7 +450,7 @@ def _gates(lane, name_i, name_c, incumbent, challenger, rows, alpha: float = ALP
         return Verdict(lane, name_i, name_c, False,
                        f"better on the metric, but {cell.lost} lost against "
                        f"{cell.gained} gained is p={p:.2f}{shrunk}, so the "
-                       f"difference is not established")
+                       f"difference is not established", alpha_cut=(p, alpha))
     return Verdict(lane, name_i, name_c, True,
                    f"beats {name_i} on the lane's metric, {cell.gained} gained "
                    f"against {cell.lost} lost, p={p:.2f}{shrunk}")
@@ -510,7 +516,8 @@ def confirm(verdict: Verdict, rows, split, screened=frozenset(), *, fresh: bool 
     head = (f"{cases} dev case(s): {cell.gained} gained against {cell.lost} lost, p={p:.3f}"
             f"{f' ({shrunk})' if shrunk else ''}")
     inc, ch = _summary(cells, name_i), _summary(cells, name_c)
-    if inc and ch and better(inc, ch, lane) and cell.gained > cell.lost and p <= ALPHA:
+    favours = bool(inc and ch and better(inc, ch, lane) and cell.gained > cell.lost)
+    if favours and p <= ALPHA:
         return replace(verdict, why=f"{verdict.why}; confirmed on {head}", evidence=evidence)
     worse = _worse(cells, name_i, name_c, lane)
     if worse:
@@ -522,7 +529,7 @@ def confirm(verdict: Verdict, rows, split, screened=frozenset(), *, fresh: bool 
     evidence["confirm"].update(power=round(plan.power, 4), effect=plan.effect, mde=plan.mde)
     evidence.update({k: null.evidence[k] for k in ("min_effect", "lane_effect") if null.evidence.get(k)})
     return replace(verdict, adopt=False, failure_class=null.failure_class, evidence=evidence,
-                   why=f"won the holdout, {null.why} ({verdict.why})")
+                   why=f"won the holdout, {null.why} ({verdict.why})", alpha_cut=(p, ALPHA) if favours else ())
 
 
 def confirm_argv(vid: int) -> list[str]:
@@ -642,6 +649,11 @@ def record(conn, verdict: Verdict, spec: str = "",
         cuts.cut("adopt_effect", f"{verdict.lane}: {spec} declined on a null that sees only "
                  f"+{lane_effect['seen']:.2f}, inside the lane's +{lane_effect['noise']:.2f} noise",
                  value=lane_effect["noise"], kept=0, dropped=1, conn=conn)
+    if verdict.alpha_cut and not verdict.adopt:
+        from harness import cuts
+        p, alpha = verdict.alpha_cut
+        cuts.cut("adopt_alpha", f"{verdict.lane}: {spec} better on the metric at p={p:.3f}, over alpha", value=alpha,
+                 kept=0, dropped=1, conn=conn)
     if serve:
         if verdict.how not in HOW:
             raise ValueError(f"unknown adoption kind {verdict.how!r}")

@@ -47,4 +47,8 @@ NOT_GATING = {
 NEVER_CUTS = {
     "harness/rank.py:PASSED_OVER": "a queue-order weight per day passed over; it orders the fetch and never refuses a row",
     "harness/downloads.py:PROGRESS_POLL_S": "seconds between looks at a download's bytes; it paces heartbeat beats and stops nothing",
+    "harness/ceiling.py:SCREEN_DAYS": "how far back the per-screen time is averaged; the screen count it feeds records its "
+                                      "cut as screen_fraction (#1084)",
+    "harness/ceiling.py:SCREEN_S": "the per-screen time assumed before any screen is stored; the screen count it feeds "
+                                   "records its cut as screen_fraction (#1084)",
 }
