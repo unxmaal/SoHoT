@@ -28,9 +28,8 @@ def _cuts() -> list[tuple]:
     if ms.db_path().exists():
         conn = sqlite3.connect(ms.db_path())
         try:
-            got += [tuple(r) for r in conn.execute("SELECT knob, kept, dropped FROM limit_cuts ORDER BY id")]
-        except sqlite3.OperationalError:
-            pass
+            if conn.execute("SELECT 1 FROM sqlite_master WHERE name = 'limit_cuts'").fetchone():
+                got += [tuple(r) for r in conn.execute("SELECT knob, kept, dropped FROM limit_cuts ORDER BY id")]
         finally:
             conn.close()
     return got
