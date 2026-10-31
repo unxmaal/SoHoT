@@ -79,4 +79,6 @@ NEVER_CUTS = {
                                                                    "its own binding as max_tokens.<lane> (#628)",
     "evals/runners/text.py:CompletionRunner.warm->completion.complete_with_usage(max_tokens)":
         "the warm-up's reply budget; a reply cut there counts as answered (#406)",
+    "harness/yield_stop.py:EXPLORE_SHARE": "the share of tasks drawn to run past the stop point to the budget; it only "
+                                           "lets work through, and each stop records yield_stop (#1127)",
 }

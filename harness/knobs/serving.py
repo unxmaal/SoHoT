@@ -151,4 +151,6 @@ NEVER_CUTS = {
                                "records under its own knob (#498)",
     **{f"evals/run.py:{f}(max_tokens)": "0 passes no override, so the runner asks at the lane's reply_budget, which "
        "records its own binding (#628)" for f in ("build_runner", "_agent_runner", "_build_runner")},
+    "harness/vllm.py:_probe->_DIRECT.open(timeout)": "how long one readiness probe waits; a slow answer reads as not "
+                                                     "up yet and is probed again, and served(timeout) records the cut",
 }
