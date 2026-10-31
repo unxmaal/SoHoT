@@ -274,10 +274,10 @@ def render(evs: list[Event], budget: int = BUDGET_BYTES, cap: int = OUTPUT_CAP_B
     for e in evs:
         if e.kind == "user":
             entries.append(f"## user\n{(body := _cap(e.body, cap * 4))}")
-            counts["output"] = counts.get("output", 0) + (body is not e.body)
+            counts["output"] = counts.get("output", 0) + (body != e.body)
         elif e.kind == "text":
             entries.append(f"## assistant\n{(body := _cap(e.body, cap * 2))}")
-            counts["output"] = counts.get("output", 0) + (body is not e.body)
+            counts["output"] = counts.get("output", 0) + (body != e.body)
         elif e.kind == "call":
             at[e.ref or len(entries)], calls[len(entries)] = len(entries), e
             if pin is not None and pin(e):
