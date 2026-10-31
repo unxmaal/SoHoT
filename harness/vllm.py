@@ -117,7 +117,7 @@ def _stop(proc: subprocess.Popen, grace: float) -> None:
 
 @contextlib.contextmanager
 def served(cmd: list[str], port: int, log, env=None, timeout: float = 600.0,
-           grace: float = 30.0, poll: float = 0.5):
+           grace: float = 30.0, poll: float = 0.5, timeout_knob: str = "harness/vllm.py:served(timeout)"):
     """Run `cmd` until it answers /v1/models on `port`, yield it, then stop its process group."""
     base = f"http://127.0.0.1:{port}"
     log = Path(log)
@@ -131,11 +131,15 @@ def served(cmd: list[str], port: int, log, env=None, timeout: float = 600.0,
         deadline = time.monotonic() + timeout
         while why := _probe(base):
             if proc.poll() is not None:
-                raise RuntimeError(f"{cmd[0]} exited {proc.returncode} before serving:\n"
-                                   f"{_tail(log)}")
+                tail = _tail(log)
+                if "--gpu-memory-utilization" in cmd and "gpu_memory_utilization" in tail:
+                    from harness import cuts
+                    cuts.cut("harness/vllm.py:METAL_MEMORY_FRACTION", f"{cmd[0]} found no room for its KV cache",
+                             kept=0, dropped=1)
+                raise RuntimeError(f"{cmd[0]} exited {proc.returncode} before serving:\n{tail}")
             if time.monotonic() > deadline:
                 from harness import cuts
-                cuts.cut("harness/vllm.py:served(timeout)", f"{cmd[0]} did not serve in time", value=timeout,
+                cuts.cut(timeout_knob, f"{cmd[0]} did not serve in time", value=timeout,
                          kept=0, dropped=1)
                 raise RuntimeError(f"{cmd[0]} did not serve within {timeout:.0f}s "
                                    f"(last probe: {why}):\n{_tail(log)}")

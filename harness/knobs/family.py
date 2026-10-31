@@ -28,3 +28,7 @@ KNOBS = [
 NOT_GATING = {
     "harness/commands/families.py:DAY": "seconds in a day (#1100)",
 }
+
+NEVER_CUTS = {
+    "harness/family.py:DEMOTION": "a rank offset; the demoted row stays in the queue at a lower place (#1087)",
+}

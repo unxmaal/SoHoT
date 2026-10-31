@@ -88,8 +88,10 @@ def _slug(path: str) -> str:
 
 def _gh(path: str) -> str:
     """One `gh api` call. Replaced wholesale in tests."""
-    proc = subprocess.run(["gh", "api", path], capture_output=True, text=True,
-                          timeout=60)
+    from harness import cuts
+    with cuts.timeout("harness/github.py:_gh->subprocess.run(timeout)", f"gh api {path}"):
+        proc = subprocess.run(["gh", "api", path], capture_output=True, text=True,
+                              timeout=60)
     if proc.returncode != 0:
         detail = proc.stderr.strip()[:200]
         if "Not Found" in detail or "404" in detail:

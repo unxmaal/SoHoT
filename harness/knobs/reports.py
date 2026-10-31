@@ -38,6 +38,7 @@ NEVER_CUTS = {
     "harness/context_mistakes.py:BANDS": "which band a message falls in; every message is in one band (#1381)",
     "harness/context_mistakes.py:MATCH_S": "which call a KB row joins; a row with none is counted and printed (#1381)",
     "harness/context_mistakes.py:WINDOWS": "which windows are tested; every message and event is counted (#1381)",
+    "harness/dora.py:DEFAULT_DAYS": "the window a DORA report describes, printed with it; nothing in it is dropped (#1087)",
     "harness/dora.py:THIN": "marks a DORA figure thin; the figure is still computed and shown (#5bb56d5a)",
     "harness/publish.py:STALE_DAYS": "tags a published lane stale on the site; its numbers are still published (#1210)",
     "harness/report.py:STALE_LANE_DAYS": "read by no code; no lane or row is skipped by it",

@@ -42,4 +42,9 @@ NEVER_CUTS = {
     "evals/claims_report.py:CONTROL_RECALL": "labels the claims report's matcher suspect; every claim is still scored (#661)",
     "evals/claims_judge.py:AGREE_MIN": "decides whether stored judgments count in scoring; no claim or case is dropped (#655)",
     "harness/rubric_eval.py:TEMPERATURE": "the rubric judge's sampling temperature; it shapes a reply and drops none",
+    "harness/vector.py:TRACE_PRESETS[icon][path_precision]": "decimal places vtracer writes each path coordinate "
+                                                             "with; a rounding step, no path is dropped (#4)",
+    "harness/vector.py:TRACE_PRESETS[illustration][path_precision]": "decimal places vtracer writes each path "
+                                                                     "coordinate with; a rounding step, no path is "
+                                                                     "dropped (#4)",
 }
