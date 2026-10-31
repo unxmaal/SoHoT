@@ -92,6 +92,18 @@ def runs() -> Path:
     return _sub("runs")
 
 
+def unused_run(stamp: str, suffix: str = "") -> Path:
+    """A run directory under runs() that no other run holds, created here: stamp, then stamp.2, stamp.3, ... #1443."""
+    n = 1
+    while True:
+        got = runs() / f"{stamp}{f'.{n}' if n > 1 else ''}{suffix}"
+        try:
+            got.mkdir(parents=True)
+            return got
+        except FileExistsError:
+            n += 1
+
+
 def logs() -> Path:
     """Service stdout and stderr. Not outputs; deletable at any time."""
     return _sub("logs")

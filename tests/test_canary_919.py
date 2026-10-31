@@ -10,6 +10,7 @@ import pytest
 from harness import canary, cli, exclusive, heartbeat, morning, paths
 from harness import memory_store as ms
 from harness.commands import morning as morning_cmd
+from tests import conftest
 
 #: A child that writes what the plant's script says into whatever store its own environment names.
 CHILD = """
@@ -240,7 +241,7 @@ LOADS = canary.Plant("loads", "code", "org/load", ("screened", "screen", ""), th
 
 
 def _llamacpp(monkeypatch, build):
-    monkeypatch.setattr(ms, "this_machine", lambda: {"versions": {"llama.cpp": build}})
+    conftest.stand_in_machine(monkeypatch, {"versions": {"llama.cpp": build}})
 
 
 def test_the_children_are_told_whose_router_log_their_screen_lands_in(child, _home):

@@ -6,13 +6,14 @@ import pytest
 from harness import knobs, reverify, sweeps, workqueue as wq
 from harness import memory_store as ms
 from tests.test_knob_sweeps import DAY, M, NOW, _finish, _settled, binding_budget, queued, record
+from tests import conftest
 
 LIVE_SECONDS = {2000: 533.493, 4000: 900.0, 8000: 1300.0, 16384: 1700.0, 32768: 2300.0, 65536: 2637.787}
 
 
 @pytest.fixture
 def conn(tmp_path, monkeypatch):
-    monkeypatch.setattr(ms, "this_machine", lambda: dict(M))
+    conftest.stand_in_machine(monkeypatch, M)
     c = ms.connect(tmp_path / "d.db")
     ms.remember_machine(c, dict(M))
     yield c

@@ -8,6 +8,7 @@ from harness import engines, live_audit, machine, reasons, runner_gaps, screen
 from harness import memory_store as ms
 from harness.memory_store import revisit
 from harness.memory_store.migrations import retractions
+from tests import conftest
 
 INSTALLED = {"versions": {"mlx-lm": "0.32.0", "diffusers": "0.40.0", "transformers": "5.16.1",
                           "hf-task/transformers": "5.17.0", "ace-step": "1.5.0"}}
@@ -15,8 +16,7 @@ INSTALLED = {"versions": {"mlx-lm": "0.32.0", "diffusers": "0.40.0", "transforme
 
 @pytest.fixture(autouse=True)
 def _installed(monkeypatch):
-    real = ms.this_machine()
-    monkeypatch.setattr(ms, "this_machine", lambda: {**real, **INSTALLED})
+    conftest.stand_in_machine(monkeypatch, INSTALLED)
 
 
 def _gateway(error: str) -> str:

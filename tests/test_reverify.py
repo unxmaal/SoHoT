@@ -5,6 +5,7 @@ import pytest
 
 from harness import adopt, cli, lanes, reverify, runs, workqueue as wq
 from harness import memory_store as ms
+from tests import conftest
 
 DAY = 86400.0
 NOW = 1_800_000_000.0
@@ -21,7 +22,7 @@ def on(monkeypatch):
     """Pin the machine the code runs on, and its runtime versions now."""
     def be(**changes):
         facts = {**M2, **changes}
-        monkeypatch.setattr(ms, "this_machine", lambda: dict(facts))
+        conftest.stand_in_machine(monkeypatch, facts)
     be()
     return be
 

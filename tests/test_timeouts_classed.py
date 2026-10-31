@@ -12,6 +12,7 @@ from harness import memory_store as ms
 from harness.checks import code as code_check
 from harness.engines import Engine
 from tests.gauntlet import scanners
+from tests import conftest
 
 SLEEPER = "import time\ntime.sleep(30)\n"
 
@@ -175,7 +176,7 @@ M = {"fingerprint": "Mac17,15/macOS/arm64", "hw_model": "Mac17,15", "os": "macOS
 
 
 def test_binding_sees_the_code_check_timeout_bind_on_a_run(tmp_path, monkeypatch):
-    monkeypatch.setattr(ms, "this_machine", lambda: dict(M))
+    conftest.stand_in_machine(monkeypatch, M)
     conn = ms.connect(tmp_path / "d.db")
     ms.remember_machine(conn, dict(M))
     now = 1_800_000_000.0

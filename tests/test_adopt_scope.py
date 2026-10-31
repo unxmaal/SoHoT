@@ -5,6 +5,7 @@ import pytest
 
 from harness import adopt, candidates, human
 from harness import memory_store as ms
+from tests import conftest
 
 M2 = {"fingerprint": "Mac14,12/macOS/arm64", "hw_model": "Mac14,12",
       "os": "macOS-26", "arch": "arm64", "memory_gb": 32.0,
@@ -17,7 +18,7 @@ GIB_KB = 1024 ** 2
 @pytest.fixture
 def on(monkeypatch):
     def be(facts):
-        monkeypatch.setattr(ms, "this_machine", lambda: dict(facts))
+        conftest.stand_in_machine(monkeypatch, facts)
     be(STUDIO)
     return be
 

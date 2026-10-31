@@ -385,3 +385,44 @@ def test_no_test_bounds_measured_wall_time_from_above():
     _fail_with(scanners.scan_tree(REPO, scanners.wall_bounds, scanners.is_python, _tests_only),
                "a loaded machine (make check -n auto beside other suites) overruns any upper bound on wall time; "
                "assert order, a count, a lower bound or a structural fact, or inject the clock (#1423)")
+
+
+def test_production_code_that_tells_a_stand_in_from_the_real_function_is_found():
+    for bad in ("if getattr(ms.this_machine, \"__module__\", \"\") != __name__:\n    pass\n",
+                "if ms.this_machine.__module__ == __name__:\n    pass\n",
+                "if ms.this_machine is not this_machine:\n    pass\n",
+                "ok = hasattr(fn, \"__module__\")\n"):
+        assert len(scanners.double_sniffs(bad, "harness/m.py")) == 1, bad
+
+
+def test_identity_checks_that_do_not_sniff_for_a_double_are_left_alone():
+    innocent = ("if fn is None or self.conn is not conn_b:\n    pass\n"
+                "name = getattr(fn, \"__name__\", \"\")\nkind = type(e).__qualname__\n")
+    _quiet_then_fires(scanners.double_sniffs, innocent, "if ms.this_fingerprint is this_fingerprint:\n    pass\n",
+                      "harness/m.py")
+
+
+def test_no_production_code_sniffs_for_a_test_double():
+    _fail_with(scanners.scan_tree(REPO, scanners.double_sniffs, scanners.is_python, lambda rel: not _tests_only(rel)),
+               "production code that checks whether a name was replaced runs one path under test and another live; "
+               "tests name the machine at environment.identity instead (#1437, #451)")
+
+
+def test_a_test_that_replaces_this_machine_is_found():
+    src = ("def test_x(monkeypatch):\n    monkeypatch.setattr(ms, \"this_machine\", lambda: {})\n"
+           "    monkeypatch.setattr(\"harness.memory_store.this_fingerprint\", lambda: \"f\")\n")
+    assert [f.split(":")[1] for f in scanners.machine_stand_ins(src, "tests/test_x.py")] == ["2", "3"]
+
+
+def test_a_test_that_names_the_machine_at_the_seam_is_left_alone():
+    innocent = ("def test_x(monkeypatch, machine_is):\n    machine_is({\"hw_model\": \"T,1\"})\n"
+                "    monkeypatch.setattr(ms.machines, \"_THIS_MACHINE\", None)\n"
+                "    monkeypatch.setattr(environment, \"identity\", lambda: {})\n")
+    _quiet_then_fires(scanners.machine_stand_ins, innocent,
+                      "    monkeypatch.setattr(served, \"this_machine\", lambda: \"f\")\n", "tests/test_x.py")
+
+
+def test_no_test_replaces_this_machine():
+    _fail_with(scanners.scan_tree(REPO, scanners.machine_stand_ins, scanners.is_python, _tests_only),
+               "a replaced this_machine reaches some callers and not this_fingerprint or the gateway; "
+               "use conftest machine_is / machine_has (#1437)")

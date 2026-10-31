@@ -81,9 +81,8 @@ _THIS_FINGERPRINT: str | None = None
 def this_fingerprint() -> str:
     """this_machine()'s fingerprint without the runtime-version probes it takes to fill the rest. #1427."""
     global _THIS_FINGERPRINT
-    # A stand-in this_machine names the machine for every caller, this one too. #451.
-    if _THIS_MACHINE is not None or getattr(ms.this_machine, "__module__", "") != __name__:
-        return ms.this_machine()["fingerprint"]
+    if _THIS_MACHINE is not None:
+        return _THIS_MACHINE["fingerprint"]
     if _THIS_FINGERPRINT is not None:
         return _THIS_FINGERPRINT
     from harness import machine as _machine

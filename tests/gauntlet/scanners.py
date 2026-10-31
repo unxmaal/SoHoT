@@ -839,3 +839,44 @@ def wall_bounds(text, rel, waivers=None):
     return out + [f"{rel}:{line}: an upper bound on measured wall time fails on a loaded machine; assert order, "
                   f"a count, a lower bound or a structural fact, or inject the clock"
                   for line in sorted(found - waived)]
+
+
+def _sniffs(n):
+    if isinstance(n, ast.Attribute) and n.attr == "__module__":
+        return True
+    if (isinstance(n, ast.Call) and _call_name(n) in ("getattr", "hasattr") and len(n.args) > 1
+            and isinstance(n.args[1], ast.Constant) and n.args[1].value == "__module__"):
+        return True
+    if isinstance(n, ast.Compare) and any(isinstance(o, (ast.Is, ast.IsNot)) for o in n.ops):
+        sides = [n.left, *n.comparators]
+        return bool({s.attr for s in sides if isinstance(s, ast.Attribute)}
+                    & {s.id for s in sides if isinstance(s, ast.Name)})
+    return False
+
+
+def double_sniffs(text, rel):
+    """Production code that asks whether a name is a test double: a __module__ read, or `pkg.f is f`. #1437."""
+    tree, out = _parse(text, rel)
+    if tree is None:
+        return out
+    return out + [f"{rel}:{line}: tells a stand-in from the real function; name the machine (or the fact) at its seam "
+                  f"instead, so production code has one path" for line in sorted({n.lineno for n in ast.walk(tree) if _sniffs(n)})]
+
+
+#: The names a test once replaced to change which machine this is; the seam is environment.identity. #1437.
+MACHINE_STAND_INS = ("this_machine", "this_fingerprint")
+
+
+def machine_stand_ins(text, rel):
+    """A test that replaces this_machine or this_fingerprint instead of naming the machine at the seam. #1437."""
+    tree, out = _parse(text, rel)
+    if tree is None:
+        return out
+    for n in ast.walk(tree):
+        if not (isinstance(n, ast.Call) and _call_name(n) == "setattr" and n.args):
+            continue
+        name = n.args[1] if len(n.args) > 1 and not isinstance(n.args[0], ast.Constant) else n.args[0]
+        if isinstance(name, ast.Constant) and str(name.value).rsplit(".", 1)[-1] in MACHINE_STAND_INS:
+            out.append(f"{rel}:{n.lineno}: replaces {name.value}; name the machine with conftest machine_is or "
+                       f"machine_has, which reach it through environment.identity")
+    return out
