@@ -33,7 +33,8 @@ def _range(name: str) -> tuple:
 
 
 def offline(cache: Path | None = None) -> github.Client:
-    return github.Client(budget=0, ttl_hours=FOREVER_HOURS, cache=cache)
+    return github.Client(budget=0, ttl_hours=FOREVER_HOURS, cache=cache,
+                         budget_knob="harness/probes.py:offline->github.Client(budget)")
 
 
 def clones() -> Path:

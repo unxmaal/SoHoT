@@ -34,4 +34,6 @@ NOT_GATING = {
 
 NEVER_CUTS = {
     "harness/ledger.py:TARIFF_USD_PER_KWH": "the price a kWh is multiplied by; every reading is counted (#826)",
+    "harness/statusline.py:MIN_GAP_S": "how often an unchanged rate-limit reading is written again; a skipped one "
+                                       "repeats the last row's values (#826)",
 }

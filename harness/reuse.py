@@ -70,10 +70,17 @@ def plan(conn, lane: str, digest: str, cells, *, cases=None, min_draws: int | No
     need = max(1, int(MIN_DRAWS if min_draws is None else min_draws))
     stored = draws(conn, lane, digest, exclude, cases, parts)
     taken: dict = {}
+    short = 0
     for cell in cells:
         got = stored.get((holdout.base_id(cell), paired.repeat_index(cell))) or []
         if len(got) >= need:
             taken[cell] = list(got[0][1:])
+        elif got:
+            short += 1
+    if short:
+        from harness import cuts
+        cuts.cut("incumbent_reuse_min_draws", f"{lane}: incumbent cells with too few stored draws to reuse",
+                 value=need, kept=len(taken), dropped=short, conn=conn)
     by: dict[str, int] = {}
     for run_id, *_ in taken.values():
         by[str(run_id)] = by.get(str(run_id), 0) + 1
