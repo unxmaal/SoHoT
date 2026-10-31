@@ -132,6 +132,9 @@ class OmniSVGRunner(BaseRunner):
             try:
                 r = proc.run(argv, timeout=self.timeout, cwd=str(self.root))
             except subprocess.TimeoutExpired as exc:
+                from harness import cuts
+                cuts.cut("evals/runners/omnisvg.py:TIMEOUT", f"{case.id}: omnisvg generation", value=self.timeout,
+                         kept=0, dropped=1)
                 raise RunnerError(
                     f"omnisvg exceeded {self.timeout:.0f}s",
                     failure_class=reasons.TIMEOUT) from exc

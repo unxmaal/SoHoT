@@ -45,9 +45,11 @@ def _in_git(path: Path) -> bool:
     probe = path
     while not probe.exists():
         probe = probe.parent
+    from harness import cuts
     try:
-        got = subprocess.run(["git", "-C", str(probe), "rev-parse", "--is-inside-work-tree"],
-                             capture_output=True, text=True, timeout=30)
+        with cuts.timeout("evals/claims_import.py:_in_git->subprocess.run(timeout)", f"git work tree probe of {probe}"):
+            got = subprocess.run(["git", "-C", str(probe), "rev-parse", "--is-inside-work-tree"],
+                                 capture_output=True, text=True, timeout=30)
     except (OSError, subprocess.SubprocessError):
         return False
     return got.returncode == 0 and got.stdout.strip() == "true"
