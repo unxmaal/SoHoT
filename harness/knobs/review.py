@@ -25,7 +25,7 @@ KNOBS = [
        note="closed review-bot issues a dimension needs before its precision can switch it off (#1149)"),
     _k("review_min_precision", [f"{R}:MIN_PRECISION"], [0.3, 0.5, 0.7],
        note="share of a dimension's closed issues closed as completed below which the next run skips it; "
-            "below one half, closing its issues costs Eric more than they find (#1149)"),
+            "below one half, closing its issues costs the reviewer more than they find (#1149)"),
     _k("review_precision_weeks", [f"{R}:PRECISION_WEEKS"], [4, 8],
        note="weeks a dimension files before its precision can switch it off (#1149)"),
     _k("review_quote_slack", [f"{R}:QUOTE_SLACK"], [0, 3, 10],

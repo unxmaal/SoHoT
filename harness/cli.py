@@ -536,7 +536,7 @@ def build_parser() -> argparse.ArgumentParser:
     bl.add_argument("--gate", type=float, default=None, help="decide: confidence under which a field goes to Claude "
                     "(default: workload_baseline.DECIDE_GATE)")
     bl.add_argument("--candidate", default="adopted", help="the replay candidate the local arm reads")
-    bl.add_argument("--bar", type=float, default=None, metavar="RATE", help="Eric's bar: keep or return per row")
+    bl.add_argument("--bar", type=float, default=None, metavar="RATE", help="the owner's bar: keep or return per row")
     bl.set_defaults(func=baseline_cmd.cmd_baseline)
     rs = sub.add_parser("repo-screen", help="the repo exam's screening subset: pick prints it, anchors writes "
                         "its base/reference outcomes from two stored runs, verdict judges screen runs (#1176)")
@@ -675,7 +675,7 @@ def build_parser() -> argparse.ArgumentParser:
     led.set_defaults(func=ledger_cmd.cmd_ledger)
     inv = sub.add_parser("inventory", help="read-only accounts of what the machine and the project spent")
     invsub = inv.add_subparsers(dest="inventory", required=True)
-    itm = invsub.add_parser("time", help="the machine's hours by category, hours Eric was blocked, local work "
+    itm = invsub.add_parser("time", help="the machine's hours by category, hours the owner was blocked, local work "
                             "and engineering effort by area; the store read with mode=ro (#1152)")
     itm.add_argument("--since", default="", help="window start: 14d, or a date (default: this machine's first day)")
     itm.add_argument("--no-effort", action="store_true", help="skip the GitHub effort account")
@@ -927,7 +927,7 @@ def build_parser() -> argparse.ArgumentParser:
     jobs.set_defaults(func=jobs_cmd.cmd_jobs, show_help=jobs.print_help)
     day = sub.add_parser("day", help="clear this machine to run jobs all day, until the watchdog's day end. #1112")
     day.add_argument("action", choices=("clear", "status", "revoke"))
-    day.add_argument("said", nargs="*", help='clear: who cleared it and why, e.g. "eric: the #1110 baseline"')
+    day.add_argument("said", nargs="*", help='clear: who cleared it and why, e.g. "owner: the #1110 baseline"')
     day.set_defaults(func=day_cmd.cmd_day)
     spc = sub.add_parser("specs", help="per capability in openspec/: scenarios, bound to a test, untested; "
                          "non-zero when a spec names a missing test or a module has no capability. #1363")

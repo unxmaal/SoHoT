@@ -398,7 +398,7 @@ def cut(main: Path, subs, requests: list[Request], req: Request, files, stream: 
         return "no_edit"
     _, kind, _, evs, i = min(hits, key=lambda h: h[0])
     pin = (lambda e: session_cut.views_issue(e, *repo)) if repo else None
-    text = session_cut.render(evs[:i], pin=pin)
+    text = session_cut.render(evs[:i], pin=pin, budget_knob="transcripts_cut_budget")
     return session_cut.HEAD + text, {"stream": kind, "events": i, "bytes": len(text.encode("utf-8")), "until": evs[i].at}
 
 
