@@ -66,12 +66,13 @@ def parents_of(conn, names) -> dict[str, list[tuple[str, str]]]:
 
 def card_of(conn, name: str) -> dict | None:
     """The card facts an engine is chosen by: library, tags, parents. #467."""
-    row = conn.execute("SELECT library, card_tags, hf_task, model_type, remote_code "
+    row = conn.execute("SELECT library, card_tags, hf_task, model_type, remote_code, runtime_needed "
                        "FROM proposals WHERE name = ?", (name,)).fetchone()
     if not row:
         return None
     return {"library": row["library"], "card_tags": row["card_tags"], "hf_task": row["hf_task"],
             "model_type": row["model_type"], "remote_code": row["remote_code"],
+            "runtime_needed": row["runtime_needed"],
             "parents": parents_of(conn, [name])[name]}
 
 

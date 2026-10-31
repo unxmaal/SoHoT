@@ -209,7 +209,8 @@ def measurable(store, top: int, want: str = "", top_knob: str = "discover_top") 
     """Survivors in the scoped lane, filtered before the limit; a limit that drops one is a cut. #386, #1087."""
     from harness import cuts
     from harness import memory_store as ms
-    rows = [r for r in ms.survivors(store, limit=1_000_000) if takes(r, want)]
+    every = ms.survivors(store, limit=1_000_000, limit_knob="harness/commands/measure.py:measurable->ms.survivors(limit)")
+    rows = [r for r in every if takes(r, want)]
     return cuts.take(rows, top, top_knob, "measurable survivors past --top", conn=store)
 
 
@@ -547,9 +548,7 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
         cases_run=every if side == "all" else len(split.holdout), median_s=median_s,
         budget_s=per, explicit=bool(explicit), calls=calls)
     plan = _with_reuse(plan, lane, inc_spec, est, side, spec)
-    if est["challenger_source"] not in ("measured", "like incumbent", "bounded") and est["challenger_s"] is not None:
-        estimated = "; ".join(x for x in (estimated, f"challenger seconds per call "
-                                          f"{est['challenger_s']:.0f}s by {est['challenger_source']}") if x)
+    estimated = "; ".join(x for x in (estimated, power.challenger_note(est)) if x)
     # Longer than one budget is paused and resumed, never refused for length. #813.
     sweeps = (math.ceil(plan.projected_s / per) if plan.projected_s and per else None)
     spans = (f"projected {sweeps} sweep(s) at {power._hm(per)} each, paused and resumed"
@@ -931,6 +930,7 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
     print(f"    {look.text}", flush=True)
     done = len(rows) - (taken_from or {}).get("reused", 0)
     total = int(progress.get("total") or (plan.cases_run or 0) * plan.repeat * 2 or done)
+    looks.stopped(look, lane, done, total)
     if verdict is not None:
         verdict = replace(verdict, evidence={**verdict.evidence, "split": split.as_dict(),
                                              "power": plan.as_dict(), "looks": taken,

@@ -1188,7 +1188,8 @@ MiniMax-H3's 134 GiB checkpoint is read from `$H3_MODEL_DIR`, else
 video lane streams it from disk, so its speed is the disk's: on a Mac Studio an
 external USB volume read 376 MB/s with the GPU idle, against 5.27 GB/s from the
 internal SSD. A copy or symlink at the home path moves it without moving the
-cache.
+cache. `fetch-h3-weights.sh` and `h3-weights-status.sh` ask the engine for that
+directory rather than computing their own (#1450).
 
 `HF_MIN_FREE_GB` is 20, which is enough for a normal model and deliberately not
 enough for MiniMax-H3. `fetch-h3-weights.sh` demands its own 160GB and
@@ -2943,7 +2944,11 @@ stops it. vllm-metal always gets `--gpu-memory-utilization 0.2 --max-model-len
 for a 4B model. A `vllm:` spec
 works anywhere a text spec does (evals, lane commands, an adoption the
 generated gateway config fronts); `VLLM_ENGINE` names which implementation it
-is on the receipt's `engines` map.
+is on the receipt's `engines` map. This machine has vLLM only when that engine's
+executable is in its venv, the one answer `harness/vllm.py:available()` gives
+every caller; a vllm on PATH is nothing the harness starts. A candidate whose
+weights only vLLM loads screens as `vllm:<repo id>` on a text lane, and
+evals.run starts the server for it (#960).
 
 Measured 2026-10-07 on the M5 Ultra, Qwen3-4B-Instruct-2507 (MLX 4-bit; Q4_K_M
 GGUF for llama-server with 16 slots), 32 texts, 300-token budget, total tokens

@@ -104,6 +104,14 @@ def look(rows, *, lane: str, inc_key: str, ch_key: str, split, plan: dict, alpha
     return Look(n, t, cell.gained, cell.lost, nominal, used, cp, "continue", f"{head}; continues"), None
 
 
+def stopped(look: Look, lane: str, done: int, total: int) -> None:
+    """A run the futility bound stopped is a cut of the cases it would still have run."""
+    if look.decision == "futility":
+        from harness import cuts
+        cuts.cut("futility_cp", f"{lane} paired run stopped for futility at look {look.n}", kept=done,
+                 dropped=max(0, total - done))
+
+
 def _deff(plan: dict) -> float:
     cells, cases, repeat = plan.get("cells"), plan.get("cases"), plan.get("repeat") or 1
     if not cells or not cases:

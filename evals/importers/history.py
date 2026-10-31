@@ -14,6 +14,7 @@ from pathlib import Path
 
 from evals import interface, repo
 from evals.importers import Imported, provenance
+from harness import paths, privacy
 
 LANE = "repo"
 SOURCE = "git:unxmaal/SoHoT"
@@ -92,7 +93,6 @@ def graded(task: str, ids) -> list:
 _HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
 _LABEL = re.compile(r"^(?:\*\*([^*\n]{1,60}?)[:.]?\*\*:?|([A-Z][A-Za-z ]{0,40}?):(?=\s|$))")
 _LIST = re.compile(r"^(\s+|[-*+] |\d+[.)] )")
-_HOME = re.compile(r"/(?:Users|home)/[^/\s]+/")
 _HOST = re.compile(r"\b(?:10|192\.168|172\.(?:1[6-9]|2\d|3[01]))\.\d+\.\d+\b"
                    r"|(?<![\w<])(?!cluster\.local)[a-z0-9-]+\.local\b")
 
@@ -172,7 +172,7 @@ def strip_sections(body: str, names) -> str:
 
 def prompts(title: str, body: str, solution=()) -> dict[str, str]:
     """variant -> prompt text; symptom is None when it would only repeat spec or say nothing."""
-    body = _HOST.sub("<host>", _HOME.sub("~/", body))
+    body = _HOST.sub("<host>", privacy.mask_home(body))
     spec = strip_sections(body, NOT_PROMPT)
     symptom = strip_sections(body, NOT_PROMPT + SOLUTION + tuple(solution))
     head = f"# {title.strip()}\n\n"
@@ -240,7 +240,7 @@ def refresh(got: dict, mirror) -> dict:
 
 def tests_call(mirror, base: str, fix: str) -> list[str]:
     """The interface lines a task's prompts show, with home paths and LAN hosts masked as in the prompt. #1103."""
-    return [_HOST.sub("<host>", _HOME.sub("~/", line)) for line in interface.tests_call(mirror, base, fix)]
+    return [_HOST.sub("<host>", privacy.mask_home(line)) for line in interface.tests_call(mirror, base, fix)]
 
 
 def unlisted(mirror, t: dict, calls) -> dict:
@@ -267,6 +267,18 @@ def screen(c: dict) -> str | None:
     if not c["context_files"]:
         return "only_new_files"
     return None
+
+
+def record_cuts(big, timeouts: int, timeout: float) -> None:
+    """One cut per size limit that screened candidates out as too_big, and one for probes dropped as timeout."""
+    from harness import cuts
+    if files := sum(len(c["source_files"]) > MAX_SOURCE_FILES for c in big):
+        cuts.cut("history_max_source_files", "fix commits screened out as too_big on source files", dropped=files)
+    if lines := sum(c["lines"] > MAX_LINES for c in big):
+        cuts.cut("history_max_lines", "fix commits screened out as too_big on changed lines", dropped=lines)
+    if timeouts:
+        cuts.cut("evals/importers/history.py:TIMEOUT_S", "probed fix commits dropped as timeout", value=timeout,
+                 dropped=timeouts)
 
 
 def size_of(strata: dict) -> str:
@@ -450,7 +462,7 @@ def survey(source: str, revision: str, limit: int | None, log, get_issue=None, t
     if lost:
         raise RuntimeError(f"tasks not on {revision[:10]}'s fix history, so they cannot be kept: {lost}")
     kept, drops, pending, seen = [], [], [], {t["issue"] for t in old.values()}
-    ran = 0
+    ran, big = 0, []
     for c in pool:
         if limit is not None and len(kept) >= limit or probes is not None and ran >= probes:
             break
@@ -479,12 +491,14 @@ def survey(source: str, revision: str, limit: int | None, log, get_issue=None, t
             print(f"{c['issue']:>4} {c['fix'][:10]} {why or 'kept'} {time.monotonic() - t0:.0f}s",
                   file=sys.stderr, flush=True)
         if why:
+            big += [c] if why == "too_big" else []
             drops.append({"issue": c["issue"], "pr": c["pr"], "fix": c["fix"], "reason": why,
                           **({"cause": res["cause"]} if res and res.get("cause") else {})})
             continue
         seen.add(c["issue"])
         kept.append(task_row(src.prefix, c, res, text, tests_call(mirror, c["base"], c["fix"])))
     kept += [t for f, t in old.items() if t not in kept]
+    record_cuts(big, sum(d["reason"] == "timeout" for d in drops), timeout)
     return {"version": VERSION, "source": src.source, "repo": source, "revision": revision,
             "criteria": {"subject": src.subject.pattern, "first_parent": True, "merges": src.merges,
                          "max_source_files": MAX_SOURCE_FILES, "max_lines": MAX_LINES,
@@ -690,6 +704,7 @@ def main(argv: list[str] | None = None) -> int:
         ap.error("--log is required for a survey")
     a.out.parent.mkdir(parents=True, exist_ok=True)
     held = manifest(src.manifest) if src.manifest.is_file() else None
+    paths.eval_home(reads_live=True)
     got = survey(a.source, a.revision, a.limit, a.log, keep=None if a.restart else held,
                  probes=a.probes, run=not a.project, src=src)
     a.out.write_text(json.dumps(got, indent=1) + "\n", encoding="utf-8")

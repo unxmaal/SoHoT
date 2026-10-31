@@ -301,6 +301,8 @@ def _h3(spec: str, model: str, options: dict) -> Engine:
         if requested is None and p.get("seconds") is not None:
             requested = int(p["seconds"]) * H3_FPS
         if requested is not None and int(requested) < H3_MIN_FRAMES:
+            from harness import cuts
+            cuts.cut("harness/engines.py:H3_MIN_FRAMES", "h3: a clip under the minimum frames refused", kept=0, dropped=1)
             raise ValueError(
                 f"h3: minimum output is {H3_MIN_FRAMES} frames "
                 f"({H3_MIN_FRAMES / H3_FPS:.2f}s at {H3_FPS}fps), asked for "

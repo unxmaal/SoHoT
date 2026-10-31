@@ -1857,7 +1857,12 @@ def served_shapes(specs: dict, resolved: dict, seen: dict, away: bool,
 
 
 def _servable(candidate: str) -> None:
-    """Refuse before anything runs when ds4-server cannot serve this candidate. #611."""
+    """Refuse before anything runs when ds4-server or vLLM cannot serve this candidate. #611, #960."""
+    if kind_of(candidate) == VLLM_KIND:
+        from harness import vllm
+        if not vllm.available():
+            raise SystemExit(f"{candidate} is not served: no vLLM engine here: {vllm.absent()}")
+        return
     if kind_of(candidate) != DS4_KIND:
         return
     try:
@@ -1868,7 +1873,15 @@ def _servable(candidate: str) -> None:
 
 @contextlib.contextmanager
 def _served(candidate: str):
-    """The ds4-server launch a ds4 candidate runs against, started for it if none is up."""
+    """The ds4-server launch a ds4 candidate runs against, started for it if none is up; a vLLM one's server likewise."""
+    if kind_of(candidate) == VLLM_KIND:
+        from harness import vllm
+        try:
+            with vllm.serving(candidate.partition(",")[0]):
+                yield None
+        except vllm.Unservable as exc:
+            raise SystemExit(f"{candidate} is not served: {exc}") from None
+        return
     if kind_of(candidate) != DS4_KIND:
         yield None
         return
@@ -1900,8 +1913,8 @@ def _home(candidate: str, gateway: str) -> tuple[str, str, int | None]:
 
 def pair_block(candidates, gateway: str, home=_home) -> int | None:
     """Cases per candidate in turn: 1 when every model stays resident, PAIR_BLOCK when a turn reloads, None for candidate-major. #816."""
-    if any(kind_of(c) == DS4_KIND for c in candidates):
-        return None   # one ds4-server per candidate, started and stopped around its cases
+    if any(kind_of(c) in (DS4_KIND, VLLM_KIND) for c in candidates):
+        return None   # one ds4-server or vLLM server per candidate, started and stopped around its cases
     held: dict = {}
     for c in candidates:
         base, model, cap = home(c, gateway)
@@ -2019,6 +2032,9 @@ def warm(runner, clock=None, sleep=None) -> None:
                 print(f"  {exc}; waiting up to {GATEWAY_DOWN_WAIT_S:g} s for it to answer",
                       file=sys.stderr, flush=True)
             if now >= end:
+                from harness import cuts
+                cuts.cut("gateway_down_wait", f"warm-up of {getattr(runner, 'candidate', '')} at a refusing gateway",
+                         kept=0, dropped=1)
                 raise
             sleep(GATEWAY_DOWN_POLL_S)
 

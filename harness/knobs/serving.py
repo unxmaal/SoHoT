@@ -147,6 +147,16 @@ NOT_GATING = {
 }
 
 NEVER_CUTS = {
+    "harness/live_audit.py:ERROR_RATE_MAX": "the error rate past which the audit names a lane; it reports and drops "
+                                            "no request (#739)",
+    "harness/mlx_server.py:PROMPT_CACHE_BYTES": "bytes of KV cache the mlx server keeps; an evicted prefix is "
+                                                "recomputed, so no request or reply is dropped (#912)",
+    "harness/mlx_server.py:PROMPT_CACHE_SIZE": "KV caches the mlx server keeps; an evicted prefix is recomputed, so no "
+                                               "request or reply is dropped (#912)",
     "harness/context.py:STEP": "the granularity a context is rounded down to; the KV room or trained context that binds "
                                "records under its own knob (#498)",
+    **{f"evals/run.py:{f}(max_tokens)": "0 passes no override, so the runner asks at the lane's reply_budget, which "
+       "records its own binding (#628)" for f in ("build_runner", "_agent_runner", "_build_runner")},
+    "harness/vllm.py:_probe->_DIRECT.open(timeout)": "how long one readiness probe waits; a slow answer reads as not "
+                                                     "up yet and is probed again, and served(timeout) records the cut",
 }

@@ -125,7 +125,7 @@ def run_batch(items, out, decide=None, concurrency: int = 4) -> dict:
 def select(items, labels, threshold: float = 0.9, thresholds=None, every: int = 0) -> list[dict]:
     """Items to check blind: fields below their threshold, and every Nth item whole."""
     lab, thresholds = latest(labels), thresholds or {}
-    todo = []
+    todo, sure = [], 0
     for n, item in enumerate(items):
         row = lab.get(item.get("id")) if isinstance(item, dict) else None
         if not row or row.get("error"):
@@ -134,10 +134,15 @@ def select(items, labels, threshold: float = 0.9, thresholds=None, every: int = 
         whole = every and n % every == 0
         keep = [f for f in schema if whole or (conf(row, f) is None or
                 conf(row, f) < thresholds.get(f, threshold))]
+        sure += len(schema) - len(keep)
         if keep:
             todo.append({"id": item["id"], "question": item.get("question") or "",
                          "context": item.get("context") or "",
                          "schema": {f: schema[f] for f in keep}})
+    if sure:
+        from harness import cuts
+        cuts.cut("harness/label.py:select(threshold)", "fields left out of the blind check as confident",
+                 value=threshold, dropped=sure)
     return todo
 
 

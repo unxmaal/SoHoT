@@ -18,3 +18,16 @@ KNOBS = [
        note="times its last main run a test must take to be named slower; 3x with 20 s also named two tests "
             "that vary by runner (#1146)"),
 ]
+
+NOT_GATING = {
+    "scripts/ci-retry.sh:CI_RETRY_ATTEMPTS": "how many times CI runs `uv sync` before the job fails; a network "
+                                             "blip retried is the same install, and a persistent failure still fails (#1440)",
+    "scripts/ci-retry.sh:CI_RETRY_DELAY": "seconds before CI's first `uv sync` retry, doubling after; it only "
+                                          "spaces attempts at the same install (#1440)",
+}
+
+NEVER_CUTS = {
+    "harness/ci_budget.py:MACOS_TIMEOUT_MIN": "a copy of check-macos timeout-minutes a test holds equal to ci.yml; the "
+                                              "harness reads it nowhere (#1146)",
+    "harness/ci_budget.py:WARN_SHARE": "when a CI job's time warns; the job runs on either way (#1146)",
+}

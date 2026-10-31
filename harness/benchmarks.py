@@ -189,6 +189,7 @@ def _due(conn, name: str, now: float, force: bool) -> bool:
 
 def _read_hf(lane: str, get) -> list[Benchmark]:
     found: dict[str, Benchmark] = {}
+    unpopular: set[str] = set()
     for q in LANE_QUERIES[lane]["hf"]:
         for sort in HF_SORTS:
             params = {**q, "sort": sort, "direction": -1, "limit": HF_LIMIT, "full": "true"}
@@ -197,6 +198,13 @@ def _read_hf(lane: str, get) -> list[Benchmark]:
             for entry in page:
                 if entry.get("id") and _popular(entry):
                     found.setdefault(entry["id"], from_hf(entry, lane))
+                elif entry.get("id"):
+                    unpopular.add(entry["id"])
+    unpopular -= set(found)
+    if unpopular:
+        what = f"huggingface {lane} datasets under both the download and the like floor"
+        cuts.cut("harness/benchmarks.py:MIN_DOWNLOADS", what, kept=len(found), dropped=len(unpopular))
+        cuts.cut("harness/benchmarks.py:MIN_LIKES", what, kept=len(found), dropped=len(unpopular))
     return list(found.values())
 
 
@@ -216,11 +224,13 @@ def sweep(conn, lanes=None, get=None, now: float | None = None,
     get = get or _get_json
     now = time.time() if now is None else float(now)
     out: list[Benchmark] = []
+    early = 0
     # A lane with no queries has no benchmark source to read, which is not a failed read. #601.
     for lane in [x for x in (lanes or sorted(LANE_QUERIES)) if x in LANE_QUERIES]:
         for registry, read in (("huggingface", _read_hf), ("github", _read_gh)):
             name = f"{KIND}:{registry}:{lane}"
             if not _due(conn, name, now, force):
+                early += 1
                 continue
             try:
                 found = read(lane, get)
@@ -235,6 +245,9 @@ def sweep(conn, lanes=None, get=None, now: float | None = None,
             ms.record_source(conn, name, kind=KIND, url=HF_DATASETS if registry ==
                              "huggingface" else GH_SEARCH, at=now)
             out.extend(found)
+    if early:
+        cuts.cut("harness/feeds.py:DEFAULT_INTERVAL_DAYS", "benchmark registry reads skipped inside the interval",
+                 value=feeds.interval_days(), dropped=early, conn=conn)
     return out
 
 

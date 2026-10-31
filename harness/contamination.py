@@ -114,12 +114,14 @@ def gateway_ask(base: str, post=None, max_tokens: int = MAX_TOKENS):
         post = httpx.post
 
     def ask(model: str, prompt: str) -> str:
-        r = post(f"{base.rstrip('/')}/v1/chat/completions",
-                 json={"model": model, "temperature": 0, "max_tokens": max_tokens,
-                       "chat_template_kwargs": {"enable_thinking": False},
-                       "messages": [{"role": "user", "content": prompt}]},
-                 headers={"Content-Type": "application/json", **gateway_key.headers()},
-                 timeout=600)
+        from harness import cuts
+        with cuts.timeout("harness/contamination.py:gateway_ask.ask->post(timeout)", f"{model}: a contamination probe"):
+            r = post(f"{base.rstrip('/')}/v1/chat/completions",
+                     json={"model": model, "temperature": 0, "max_tokens": max_tokens,
+                           "chat_template_kwargs": {"enable_thinking": False},
+                           "messages": [{"role": "user", "content": prompt}]},
+                     headers={"Content-Type": "application/json", **gateway_key.headers()},
+                     timeout=600)
         r.raise_for_status()
         choice = (r.json().get("choices") or [{}])[0]
         text = (choice.get("message") or {}).get("content") or ""

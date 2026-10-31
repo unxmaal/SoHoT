@@ -97,20 +97,14 @@ KEPT = (REOPENED_TOO_BIG, REDERIVED_ATTACHMENTS, REQUEUED_OLD_SIZING, REOPENED_U
 def code_commit(repo: Path | None = None) -> str:
     """The commit the checkout this code was imported from has checked out, read from .git; '' when unreadable. #1000."""
     from harness import paths
+    from harness import repo as checkout
     repo = paths.REPO if repo is None else Path(repo)
     try:
-        git = repo / ".git"
-        gitdir = git
-        if git.is_file():
-            gitdir = Path(git.read_text(encoding="utf-8").split("gitdir:", 1)[1].strip())
-            gitdir = gitdir if gitdir.is_absolute() else repo / gitdir
+        gitdir, common = checkout.git_dirs(repo)
         head = (gitdir / "HEAD").read_text(encoding="utf-8").strip()
         if not head.startswith("ref:"):
             return head
         ref = head[4:].strip()
-        common = gitdir
-        if (gitdir / "commondir").is_file():
-            common = (gitdir / (gitdir / "commondir").read_text(encoding="utf-8").strip()).resolve()
         for d in (gitdir, common):
             if (d / ref).is_file():
                 return (d / ref).read_text(encoding="utf-8").strip()
@@ -251,7 +245,8 @@ def progress_at(data: dict, holder: dict | None = None) -> float:
 
 def stall_after(data: dict) -> float:
     """Seconds without a beat before this loop reads as stalled: the step's own deadline when it set one."""
-    return max(STALL_S, float(data.get("deadline_s") or 0))
+    own = float(data.get("deadline_s") or 0)
+    return own if own > STALL_S else STALL_S
 
 
 def finish(rc: int | None = None, error: str = "") -> None:
@@ -375,6 +370,5 @@ def overdue(data=None) -> str:
         return "no discovery loop has run on this machine"
     every = sweep_every_s(discover_hours())
     age = clock() - float(data["started"])
-    if age <= every + SWEEP_SLACK_S:
-        return ""
-    return f"last discovery loop started {ago(age)} ago; the schedule starts one every {ago(every)}"
+    late = age > every + SWEEP_SLACK_S
+    return f"last discovery loop started {ago(age)} ago; the schedule starts one every {ago(every)}" if late else ""

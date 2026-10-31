@@ -6,8 +6,8 @@ prompt: '# Net-new check: rank and label claims by novelty against a reference c
   the wiki
 
 
-  Eric, 2026-10-11: "Are we testing if the claims are net-new before writing them to the wiki? If not
-  we should. Obviously IRIX runs on an Octane. That''s old and well established info."
+  The owner, 2026-10-11: "Are we testing if the claims are net-new before writing them to the wiki? If
+  not we should. Obviously IRIX runs on an Octane. That''s old and well established info."
 
 
   We are not. Today a claim reaches a page if it passes the verdict gate and its topic has 3 claims; corroboration

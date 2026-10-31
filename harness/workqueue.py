@@ -110,9 +110,11 @@ def jobs(conn=None) -> list[dict]:
 
 
 def _git(path: Path, *args: str) -> str | None:
+    from harness import cuts
     try:
-        out = subprocess.run(["git", "-C", str(path), *args], capture_output=True,
-                             text=True, timeout=30)
+        with cuts.timeout("harness/workqueue.py:_git->subprocess.run(timeout)", f"git {' '.join(args)}"):
+            out = subprocess.run(["git", "-C", str(path), *args], capture_output=True,
+                                 text=True, timeout=30)
     except (OSError, subprocess.SubprocessError):
         return None
     return out.stdout.strip() if out.returncode == 0 else None
