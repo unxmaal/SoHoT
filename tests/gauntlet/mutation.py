@@ -34,7 +34,7 @@ MODULES = {
         "tests/test_live_screen_blame_1021.py", "tests/test_whisper_group_1024.py", "tests/test_audio_env_1030.py", "tests/test_drafters_1039.py", "tests/test_plan_refusal_1047.py",
         "tests/test_cut_sites_1202.py"],
     "harness/reasons.py": [
-        "tests/test_gguf_first_911.py", "tests/test_verdict_reasons.py", "tests/test_refusal_shapes.py", "tests/test_screen_server_death.py",
+        "tests/test_weedout_1439.py", "tests/test_gguf_first_911.py", "tests/test_verdict_reasons.py", "tests/test_refusal_shapes.py", "tests/test_screen_server_death.py",
         "tests/test_screen_evidence.py", "tests/test_harness_engines_repo_id.py",
         "tests/test_mps_backend_abort.py", "tests/test_timeouts_classed.py", "tests/test_agent_limits.py",
         "tests/test_served_ctx_limit.py", "tests/test_eval_budget.py", "tests/test_batch_lease_769.py",
