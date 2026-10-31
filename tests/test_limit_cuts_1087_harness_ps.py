@@ -132,6 +132,35 @@ def test_a_null_declined_only_because_the_lane_noise_is_above_the_floor_records_
     assert _cut_rows(conn) == [("adopt_effect", 0, 1)]
 
 
+def test_the_lane_effect_cut_is_written_whole_into_the_store_the_verdict_is_recorded_in(conn, monkeypatch):
+    from harness import adopt, power
+    from tests.test_min_effect_1320 import _null_on
+    monkeypatch.setattr(power, "EFFECT", {"decide": 0.17})
+    inside = _null_on("decide", 0.15)
+    adopt.record(conn, adopt.Verdict("decide", "inc", "q3-30b", False, inside.why, evidence=inside.evidence))
+    got = [tuple(r) for r in conn.execute("SELECT knob, value, what, kept, dropped FROM limit_cuts")]
+    assert got == [("adopt_effect", 0.17, "decide: q3-30b declined on a null that sees only +0.15, "
+                                          "inside the lane's +0.17 noise", 0, 1)]
+
+
+def _spooled_what() -> list[str]:
+    path = cuts._spool_path()
+    return [json.loads(line)["what"] for line in path.read_text(encoding="utf-8").splitlines()] if path.exists() else []
+
+
+def test_the_floor_and_wer_cuts_say_what_they_cut(monkeypatch):
+    from harness import screen
+    monkeypatch.setattr(cuts, "_own_store", lambda: None)
+    assert screen.listing_kind([{"rfilename": "model.safetensors", "size": 1024}]) == screen.LOOSE
+    garbled = {"wer": 0.9}
+    assert screen.plausible_wer({"k": {"metrics": garbled, "metric_n": {"wer": 4}}}, "stt") is None
+    assert screen.plausible_wer({"org/x": {"candidate": "org/x", "metrics": garbled, "metric_n": {"wer": 4}}},
+                                "stt", "org/x") is None
+    assert _spooled_what() == ["a listing whose largest weight is 1024 bytes read as loose weights",
+                               "a model: corpus WER 0.90 not read as working",
+                               "org/x: corpus WER 0.90 not read as working"]
+
+
 def test_decide_carries_the_lane_effect_evidence_from_its_null(monkeypatch):
     from harness import adopt
     from tests.test_min_effect_1320 import _plan

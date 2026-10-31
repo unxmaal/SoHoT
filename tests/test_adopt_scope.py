@@ -63,6 +63,15 @@ def test_a_by_hand_adoption_serves_only_the_machine_it_was_made_on(conn, on):
     assert adopt.adopted(conn) == {}
 
 
+def test_lane_defaults_reads_the_machine_it_is_asked_about(conn, on):
+    _by_hand(conn, "image", "mflux:dev")
+    studio = ms.remember_machine(conn)
+    on(M2)
+    ms.remember_machine(conn)
+    assert adopt.lane_defaults(conn, typed={"image": "typed"}) == {"image": "typed"}
+    assert adopt.lane_defaults(conn, studio, typed={"image": "typed"}) == {"image": "mflux:dev"}
+
+
 def test_all_machines_is_explicit_and_recorded(conn, on):
     _by_hand(conn, "image", "mflux:dev", all_machines=True)
     row = conn.execute("SELECT all_machines FROM adoptions").fetchone()
