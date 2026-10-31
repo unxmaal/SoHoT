@@ -639,7 +639,8 @@ def build_parser() -> argparse.ArgumentParser:
     cn.set_defaults(func=claude_news_cmd.cmd_claude_news)
     ctx = sub.add_parser("context", help="tool-result tokens entering Claude's context, "
                          "per tool or day, from Claude Code transcripts (chars/4 estimate)")
-    ctx.add_argument("--since", default="7d", help="7d, 12h, or a date such as 2026-10-06")
+    ctx.add_argument("--since", default=None, help="7d, 12h, or a date such as 2026-10-06 (default 7d; "
+                     "every session with --mistakes)")
     ctx.add_argument("--until", default="", help="same forms as --since; default now")
     ctx.add_argument("--by", choices=("tool", "day", "category", "class"), default="tool",
                      help="class (with --carried): what the output was, Read by file kind and edited later (#1333)")
@@ -652,6 +653,10 @@ def build_parser() -> argparse.ArgumentParser:
                      help="tokens each result is carried into later API calls, as a share of all input (#828)")
     ctx.add_argument("--referenced", action="store_true",
                      help="--by class: per KB search, hits shown and hits Claude referenced later (#1333)")
+    ctx.add_argument("--mistakes", action="store_true",
+                     help="KB mistakes after compaction and per context band vs messages, exact p-values (#1381)")
+    ctx.add_argument("--kb", default="",
+                     help="--mistakes: mcm-engine MCP URL or a file of its scroll_entries pages (default $SOH_MCM_URL)")
     ctx.add_argument("--root", default="",
                      help="transcript root (default $SOH_CLAUDE_PROJECTS or ~/.claude/projects)")
     ctx.set_defaults(func=context_cmd.cmd_context)

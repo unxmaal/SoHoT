@@ -159,8 +159,8 @@ def _enter(acc: dict, tool: str, tokens: int, inside: bool) -> tuple[str, int]:
     return tool, tokens
 
 
-def streams(root: Path, since: float, main_only: bool = False):
-    """(records, usage) per stream: each interactive main transcript, then its subagents; a message counts once."""
+def labelled_streams(root: Path, since: float, main_only: bool = False, headless: bool = False):
+    """(session, kind, records, usage) per stream, kind main, sub or headless; a message counts once. #1381."""
     from evals.analysis import demand
     from evals.importers import transcripts as tr
     claimed: set = set()
@@ -168,12 +168,20 @@ def streams(root: Path, since: float, main_only: bool = False):
         if main.stat().st_mtime < since:
             continue
         recs = [r for r in tr.records(main) if not r.get("isSidechain")]
-        if demand._headless(recs):
+        hl = demand._headless(recs)
+        if hl and not headless:
             continue
-        for rs in [recs] + ([] if main_only else sorted((list(tr.records(s)) for s in subs), key=demand._began)):
+        subs = [] if main_only else sorted((list(tr.records(s)) for s in subs), key=demand._began)
+        for kind, rs in [("headless" if hl else "main", recs)] + [("headless" if hl else "sub", s) for s in subs]:
             usage = demand._usage(rs, claimed)
             claimed |= set(usage)
-            yield rs, usage
+            yield main.stem, kind, rs, usage
+
+
+def streams(root: Path, since: float, main_only: bool = False):
+    """(records, usage) per stream: each interactive main transcript, then its subagents; a message counts once."""
+    for _session, _kind, rs, usage in labelled_streams(root, since, main_only):
+        yield rs, usage
 
 
 def carried(root: Path, *, since: float | None = None, until: float | None = None, main_only: bool = False) -> dict:
