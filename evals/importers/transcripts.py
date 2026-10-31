@@ -564,13 +564,21 @@ def _unit(stats, project, request, why=None):
     return s
 
 
+def _window_cuts(early: int, late: int) -> None:
+    from harness import cuts
+    if early:
+        cuts.cut("transcripts_commit_before", "commit evidence left unlinked, committed before the window", dropped=early)
+    if late:
+        cuts.cut("transcripts_commit_after", "commit evidence left unlinked, committed after the window", dropped=late)
+
+
 def link(scanned, repos, index_of, mirror_of) -> tuple[list[dict], dict]:
     """Candidate tasks (one per request and merged fix) from scanned sessions, and per-project counts with drops."""
     stats = {}
     every = [e for _, (_, found, _) in scanned for e in found]
     hits = resolve(repos, {e.value for e in every if e.kind == "commit"})
     by_slug = {r.slug: r for r in repos if r.owner}
-    units = {}
+    units, early, late = {}, 0, 0
     for session, (requests, found, _) in scanned:
         for e in found:
             req = request_for(requests, e.anchor)
@@ -581,6 +589,8 @@ def link(scanned, repos, index_of, mirror_of) -> tuple[list[dict], dict]:
                 near = [(r, sha) for r, sha, t in hits.get(e.value, [])
                         if e.at - COMMIT_BEFORE_S <= t <= e.at + COMMIT_AFTER_S]
                 if not near:
+                    early += any(t < e.at - COMMIT_BEFORE_S for _, _, t in hits.get(e.value, []))
+                    late += any(t > e.at + COMMIT_AFTER_S for _, _, t in hits.get(e.value, []))
                     continue
                 if len({r.path for r, _ in near}) > 1:
                     _unit(stats, "(ambiguous)", req, "ambiguous_commit")
@@ -596,6 +606,7 @@ def link(scanned, repos, index_of, mirror_of) -> tuple[list[dict], dict]:
                 _unit(stats, r.slug, None, "no_request")
                 continue
             units.setdefault((req.session, req.prompt_id, r.slug), (req, r, []))[2].append((e.kind, sha, pr, e.stream, e.at))
+    _window_cuts(early, late)
     out, per_request = [], Counter()
     for (_, _, slug), (req, r, items) in units.items():
         if not r.owner:
@@ -632,6 +643,17 @@ def link(scanned, repos, index_of, mirror_of) -> tuple[list[dict], dict]:
     return out, stats
 
 
+def _survey_cuts(stats: dict, big, timeout) -> None:
+    from harness import cuts
+    dropped = Counter()
+    for s in stats.values():
+        dropped.update(s["dropped"])
+    if dropped["cut_too_short"]:
+        cuts.cut("transcripts_min_cut_bytes", "linked requests whose cut was too short to be a task",
+                 dropped=dropped["cut_too_short"])
+    history.record_cuts(big, dropped["timeout"], timeout)
+
+
 def task_id(slug: str, pr: int | None, fix: str) -> str:
     return f"{slug}-{f'pr{pr}' if pr else fix[:10]}-{VARIANT}"
 
@@ -655,7 +677,7 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
         next(got for s, got in scanned if s == session)[1].extend(extra)
     found, stats = link(scanned, repos, index_of, mirror_of)
     old = {t["fix"]: t for t in (keep or {}).get("tasks", [])}
-    kept, seen, ran, pending, flagged, seen_in, refused = [], set(), 0, [], Counter(), {}, {}
+    kept, seen, ran, pending, flagged, seen_in, refused, big = [], set(), 0, [], Counter(), {}, {}, []
     files_of = {main.stem: (main, subs) for _, main, subs in sessions(root)}
     requests_of = {session: got[0] for session, got in scanned}
     first = {}
@@ -722,6 +744,7 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
             print(f"{task_id(r.slug, c['pr'], fix)} {why or 'kept'} {time.monotonic() - t0:.0f}s",
                   file=sys.stderr, flush=True)
         if why:
+            big += [cand] if why == "too_big" else []
             s["dropped"][why] += 1
             continue
         row = {"id": task_id(r.slug, c["pr"], fix), "repo": r.url, "slug": r.slug, "pr": c["pr"],
@@ -755,6 +778,7 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
         kept.append(row)
     kept += [t for f, t in old.items() if f not in {c["fix"] for c in found} and t["id"] not in RETIRED
              and t["id"] not in EXCLUDED]
+    _survey_cuts(stats, big, timeout)
     projects = {p: {"sessions": len(s["sessions"]), "requests_linked": len(s["linked"]), "tasks": s["tasks"],
                     "dropped": dict(sorted(s["dropped"].items()))} for p, s in sorted(stats.items())}
     return {"version": VERSION, "source": SOURCE,
