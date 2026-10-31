@@ -64,13 +64,10 @@ def test_a_missing_file_fails_before_the_tracer(tmp_path):
     assert "nope.png" in str(e.value)
 
 
-def test_tracing_is_fast_enough_to_be_free(tmp_path):
-    """54s of diffusion plus 0.05s of tracing is a pipeline; plus 30s would be
-    a different decision."""
-    import time
-    t0 = time.time()
-    vector.trace(png(tmp_path / "a.png", size=256))
-    assert time.time() - t0 < 5.0
+def test_a_pipeline_sized_raster_traces_to_an_svg(tmp_path):
+    """The size the image lane hands over; its speed is not asserted, since a wall bound measures the runner. #1423."""
+    out = vector.trace(png(tmp_path / "a.png", size=256))
+    assert "<path" in out and "</svg>" in out
 
 
 def test_the_traced_svg_carries_a_viewbox(tmp_path):

@@ -2,7 +2,6 @@
 import argparse
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 import pytest
@@ -138,6 +137,7 @@ from harness import exclusive
 with exclusive.held("eval"):
     pathlib.Path(sys.argv[1]).write_text("held", encoding="utf-8")
     time.sleep(120)
+    pathlib.Path(sys.argv[1]).write_text("slept", encoding="utf-8")
 ''', sys.argv[1]])
 child.wait()
 """
@@ -146,12 +146,11 @@ child.wait()
 @pytest.mark.long
 def test_a_run_past_its_deadline_is_stopped_and_the_lock_released(tmp_path):
     marker = tmp_path / "held"
-    started = time.monotonic()
     got = measure_cmd._launch([sys.executable, "-c", HOLDER, str(marker)],
                               deadline_s=5.0, cwd=str(ROOT), grace_s=2.0)
     assert got.timed_out
-    assert time.monotonic() - started < 60
-    assert marker.read_text(encoding="utf-8") == "held", "the grandchild never took the lock"
+    # "held" and not "slept": the grandchild was stopped, not waited out. #1423.
+    assert marker.read_text(encoding="utf-8") == "held", "the grandchild never took the lock, or slept out its 120 s"
     with exclusive.try_held("eval") as free:
         assert free, "generation.lock is still held after the deadline"
 
