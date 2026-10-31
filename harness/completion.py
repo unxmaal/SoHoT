@@ -46,7 +46,11 @@ def _answers_as_gateway(base: str) -> bool:
         return True
     try:
         r = httpx.get(base + "/health/liveliness", timeout=2.0)
-    except httpx.HTTPError:
+    except httpx.HTTPError as exc:
+        from harness import cuts
+        if cuts.timed_out(exc):
+            cuts.cut("harness/completion.py:_answers_as_gateway->httpx.get(timeout)",
+                     f"{base}: no liveness answer in time, so not taken for a gateway", kept=0, dropped=1)
         return False
     if r.status_code == 200 and "alive" in r.text.lower():
         _GATEWAYS.add(base)

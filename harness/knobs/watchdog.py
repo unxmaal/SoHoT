@@ -108,6 +108,7 @@ NOT_GATING = {
 }
 
 NEVER_CUTS = {
+    "harness/availability.py:TARGET": "the share a lane's availability is flagged under in the report; it drops no probe",
     "harness/workqueue.py:quiesce(wait)": "seconds between looks for a running job while the queue is paused; it waits "
                                           "for every job and stops none (#577)",
 }
