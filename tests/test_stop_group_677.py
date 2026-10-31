@@ -67,9 +67,14 @@ def test_a_group_whose_leader_exited_unreaped_is_stopped_without_raising(tmp_pat
     proc, lock, grandchild = _spawn_exited(tmp_path)
     try:
         assert not _lock_free(lock)
-        started = time.monotonic()
-        assert wq.stop_group(proc.pid, grace=10.0) == "term"
-        assert time.monotonic() - started < 5.0
+        polls = []
+
+        def sleep(s):
+            # A grace this long is never sat out by a group that stopped; #677 sat out every grace. #1423.
+            assert len(polls) < 300, "stop_group polled a stopped group as if it were alive"
+            polls.append(s)
+            time.sleep(s)
+        assert wq.stop_group(proc.pid, grace=3600.0, sleep=sleep) == "term"
         assert _lock_free(lock)
     finally:
         _cleanup(proc, grandchild)

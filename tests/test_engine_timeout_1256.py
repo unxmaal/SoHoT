@@ -60,10 +60,13 @@ def test_a_correct_candidate_five_times_slower_than_the_engine_history_is_graded
     slow = SLOW * HISTORY_S
     r, clocks = runner_for(conn, tmp_path, monkeypatch, slow)
     cut_at = r.timeout
+    started = time.perf_counter()
     first = r.run(CASE)
+    wall = time.perf_counter() - started
     assert first.passed and first.failure_class == "" and not first.limit
     assert first.metrics["engine_rerun_wait_s"] >= cut_at * 0.9
-    assert first.seconds < slow + cut_at * 0.5, "the cut attempt is not the case's time"
+    # The stored wait is rounded to hundredths of a second.
+    assert first.seconds <= wall - first.metrics["engine_rerun_wait_s"] + 0.01, "the cut attempt is not the case's time"
     ((entry),) = r.reran
     assert entry["cut_at"] == cut_at and "timed_out" not in entry
     assert r.timeout == min(10.0, max(cut_at, float(-(-et.MARGIN * entry["seconds"] // 1))))

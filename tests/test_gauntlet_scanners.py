@@ -344,3 +344,44 @@ def test_every_live_audit_check_a_loop_step_repairs_waits_on_that_steps_heartbea
                                          (REPO / scanners.LOOP_FILE).read_text(encoding="utf-8"), stores),
                "a check whose backlog a loop step repairs is an inventory until that step has run; it gated the "
                "deploy smoke on the backlog it started with (#972, #904, gauntlet a-rule-change-leaves-old-decisions-standing)")
+
+
+_TIMED = "import time\n\ndef test_x(r):\n    started = time.perf_counter()\n    r.go()\n    after = time.perf_counter()\n"
+
+
+def test_an_upper_bound_on_measured_wall_time_is_found():
+    for bad in ("    assert time.perf_counter() - started < 1.0\n",
+                "    took = after - started\n    assert took <= 2\n",
+                "    assert r.seconds < 0.4\n",
+                "    assert 15 > after - started\n",
+                "    assert abs(r.stamp - time.time()) < 60\n",
+                "    assert 0 < r.out['wall_s'] < 3 * 0.5\n"):
+        assert len(scanners.wall_bounds(_TIMED + bad, "tests/test_t.py")) == 1, bad
+
+
+def test_order_lower_bounds_and_brackets_of_measured_time_are_left_alone():
+    innocent = _TIMED + ("    assert r.seconds >= 0.4 and after - started >= r.seconds\n"
+                         "    assert started <= r.stamp <= after + 60 - 0.5\n"
+                         "    assert r.first_s < r.ttft_s <= after - started\n"
+                         "    assert r.rate / r.capped_s < 5\n")
+    _quiet_then_fires(scanners.wall_bounds, innocent, "    assert after - started < 5\n", "tests/test_t.py")
+
+
+def test_a_waived_fake_clock_test_is_left_alone_and_only_that_test():
+    src = _TIMED + "    assert r.seconds < 0.4\n"
+    assert scanners.wall_bounds(src, "tests/test_t.py", waivers={"tests/test_t.py:test_x": "fake clock"}) == []
+    assert scanners.wall_bounds(src, "tests/test_t.py", waivers={"tests/test_t.py:test_y": "fake clock"}) != []
+
+
+def test_every_wall_bound_waiver_names_a_test_that_exists():
+    import ast
+    for site in scanners.WALL_BOUND_WAIVERS:
+        rel, name = site.split(":")
+        tree = ast.parse((REPO / rel).read_text(encoding="utf-8"))
+        assert name in {n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)}, site
+
+
+def test_no_test_bounds_measured_wall_time_from_above():
+    _fail_with(scanners.scan_tree(REPO, scanners.wall_bounds, scanners.is_python, _tests_only),
+               "a loaded machine (make check -n auto beside other suites) overruns any upper bound on wall time; "
+               "assert order, a count, a lower bound or a structural fact, or inject the clock (#1423)")

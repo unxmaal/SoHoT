@@ -323,9 +323,8 @@ def test_a_test_run_is_time_capped(tmp_path):
         "    def test_x(self):\n        time.sleep(30)\n", encoding="utf-8")
     b = sandbox.Sandbox.create(src, test_timeout=1.0)
     try:
-        started = time.perf_counter()
-        assert "timed out" in b.run_tests()
-        assert time.perf_counter() - started < 15
+        # Only the cap says this; an uncapped run would sit out the sleep and report exit code 0.
+        assert "timed out after 1s" in b.run_tests()
     finally:
         b.cleanup()
 

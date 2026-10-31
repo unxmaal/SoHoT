@@ -291,6 +291,8 @@ def _free_disk_is_pinned(monkeypatch):
     from harness import fetching
     monkeypatch.setattr(fetching, "free_bytes",
                         lambda path=None: 900 * fetching.GIB)
+    # Nor does a script that sources env.sh: its 20 GB floor read the boot disk mid-suite. #1423.
+    monkeypatch.setenv("HF_MIN_FREE_GB", "0")
 
 
 @pytest.fixture(autouse=True)

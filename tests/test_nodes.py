@@ -222,17 +222,24 @@ def test_a_refused_node_is_skipped_for_this_machines_copy(tmp_path, monkeypatch)
 
 def test_a_node_that_never_completes_a_connection_is_skipped_within_the_connect_timeout(
         tmp_path, monkeypatch):
+    dialled, waits = [], []
+    real_wait = asyncio.wait_for
+
     async def silent(host, port, **kw):
+        dialled.append(port)
         await asyncio.sleep(3600)
+
+    async def wait_for(aw, timeout):
+        waits.append(timeout)
+        return await real_wait(aw, timeout)
     monkeypatch.setattr(asyncio, "open_connection", silent)
+    monkeypatch.setattr(asyncio, "wait_for", wait_for)
     config(tmp_path, monkeypatch, node(connect_timeout=1))
-    started = time.monotonic()
     got = _pre("Qwen2.5-7B-Instruct-Q4_K_M")["model"]
     assert got == "Qwen2.5-7B-Instruct-Q4_K_M@local"
-    assert time.monotonic() - started < 2.0
-    started = time.monotonic()
+    assert len(dialled) == 1 and waits == [1.0], "the silent dial was not given up at the node's connect timeout"
     assert _pre("eval-7b")["model"] == "eval-7b@local"
-    assert time.monotonic() - started < 0.2
+    assert len(dialled) == 1, "a node found silent was dialled again inside its cooldown"
 
 
 def test_a_reachable_node_keeps_the_request_and_is_asked_once_per_window(tmp_path, monkeypatch):
@@ -268,8 +275,12 @@ def test_a_hung_shape_probe_does_not_stall_the_event_loop_or_other_replies(monke
     """#722: served_shape's urllib calls ran on the gateway's event loop."""
     from harness import context
 
+    entered, release, left = threading.Event(), threading.Event(), threading.Event()
+
     def hung(spec, *a, **k):
-        time.sleep(3)
+        entered.set()
+        release.wait(10)
+        left.set()
         return 4096
     monkeypatch.setattr(context, "served_ctx", hung)
     monkeypatch.setattr(context, "served_slots", hung)
@@ -277,20 +288,26 @@ def test_a_hung_shape_probe_does_not_stall_the_event_loop_or_other_replies(monke
     served._PROBING.clear()
 
     async def both():
-        ticks = []
+        done, during = [], []
 
         async def ticker():
-            for _ in range(10):
-                started = time.monotonic()
-                await asyncio.sleep(0.02)
-                ticks.append(time.monotonic() - started)
-        started = time.monotonic()
-        _, a, b = await asyncio.gather(ticker(), served.shape("slow-a"), served.shape("slow-b"))
-        return time.monotonic() - started, max(ticks), a, b
-    took, worst_tick, a, b = asyncio.run(both())
-    assert worst_tick < 0.3
-    assert took < 1.5
+            while not done:
+                await asyncio.sleep(0.01)
+                if entered.is_set() and not left.is_set():
+                    during.append(1)
+
+        async def replies():
+            got = await asyncio.gather(served.shape("slow-a"), served.shape("slow-b"))
+            done.append(1)
+            release.set()
+            return got
+        _, (a, b) = await asyncio.gather(ticker(), replies())
+        return len(during), a, b
+    ticked, a, b = asyncio.run(both())
+    served._SHAPES.clear()
+    # Replies came back while the probe was still hung, and the loop kept ticking under it.
     assert a == {} and b == {}
+    assert ticked > 0
 
 
 def test_a_node_reports_its_shape_from_props_with_its_key(tmp_path, monkeypatch):

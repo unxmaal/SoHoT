@@ -21,6 +21,8 @@ class Fake(ThreadingHTTPServer):
     reply = "def add(a, b):\n    return a + b\n"
     logprobs = None
     stall_s = 0.0
+    #: Set once a stalled handler has slept out its stall_s. #1423.
+    stall_over = False
     #: Seconds before the first token; only the tests that assert on TTFT pay it. #720.
     answer_at = 0.0
     #: What LiteLLM in front of mlx_lm.server did, measured 2026-10-06.
@@ -46,6 +48,7 @@ class Handler(BaseHTTPRequestHandler):
         s.seen.append(json.loads(self.rfile.read(int(self.headers["Content-Length"]))))
         if s.stall_s:
             time.sleep(s.stall_s)
+            s.stall_over = True
         if not s.seen[-1].get("stream"):
             choice = {"message": {"role": "assistant", "content": s.reply},
                       "finish_reason": "stop"}
@@ -102,10 +105,12 @@ def fake(monkeypatch):
 
 def test_a_completion_carries_text_the_model_that_answered_and_its_timing(fake):
     fake.answer_at = ANSWER_AT
+    started = time.perf_counter()
     got = delegate.complete("code", "write add")
+    wall = time.perf_counter() - started
     assert got["text"] == Fake.reply
     assert got["model"] == SERVED and got["spec"] == "sohot-code"
-    assert ANSWER_AT <= got["ttft_s"] <= got["seconds"] < ANSWER_AT + 5
+    assert ANSWER_AT <= got["ttft_s"] <= got["seconds"] <= wall
     assert (got["prompt_tokens"], got["completion_tokens"]) == (9, 7)
     sent = fake.seen[0]
     assert sent["stream"] is True and sent["model"] == "sohot-code"
@@ -191,11 +196,10 @@ def test_a_budget_spent_on_reasoning_says_how_much_and_offers_thinking_off(fake)
 
 def test_a_stalled_server_times_out_rather_than_hanging(fake):
     fake.stall_s = 30.0
-    started = time.perf_counter()
     with pytest.raises(completion.CompletionError, match="timed out"):
         delegate.complete("code", "x", timeout=0.5)
-    # Gave up long before the stall ended; a 2.5s bound flaked on Windows CI (#869).
-    assert time.perf_counter() - started < 15
+    # Gave up while the server was still stalled; wall bounds flaked on Windows CI (#869, #1423).
+    assert fake.seen and not fake.stall_over
 
 
 def test_a_held_machine_lock_refuses_at_once_and_names_the_holder(fake):
@@ -208,11 +212,11 @@ def test_a_held_machine_lock_refuses_at_once_and_names_the_holder(fake):
                              text=True, env=dict(os.environ))
     try:
         assert child.stdout.readline().strip() == "held"
-        started = time.perf_counter()
         with pytest.raises(delegate.Refused, match="busy with eval"):
             delegate.complete("code", "x")
-        # Refused while the holder still holds; a wall-clock bound under 1s flaked on Windows CI (#623).
-        assert child.poll() is None and time.perf_counter() - started < 15
+        # Refused while the holder still holds; wall-clock bounds flaked on Windows CI (#623, #1423).
+        with exclusive.try_held("svg") as got:
+            assert got is False, "the holder had let go before the refusal came"
         assert fake.seen == []
     finally:
         child.kill()

@@ -68,12 +68,17 @@ class Slow(BaseRunner):
 
     def __init__(self, answers, delay=0.0):
         self.answers, self.delay, self.made, self.lock = answers, delay, [], threading.Lock()
+        self.live = [0, 0]   # in flight, peak; a list so each sample's copy of the base shares it
 
     def generate(self, case):
         with self.lock:
             self.made.append(1)
             i = len(self.made) - 1
+            self.live[0] += 1
+            self.live[1] = max(self.live)
         time.sleep(self.delay)
+        with self.lock:
+            self.live[0] -= 1
         return self.answers[min(i, len(self.answers) - 1)], 0
 
     def extra_metrics(self):
@@ -97,9 +102,13 @@ def test_the_runner_samples_concurrently_and_its_seconds_are_wall_time():
     from evals.runners.method import BestOfRunner
     delay = 0.3
     base = Slow(["12"], delay)
+    started = time.perf_counter()
     r = BestOfRunner(base, 4, slots=3).run(extract_case())
+    wall = time.perf_counter() - started
     assert len(base.made) == 4 and r.metrics["method_calls"] == 4
-    assert r.seconds < 3.5 * delay   # two delays concurrent, four in turn
+    assert base.live[1] == 3   # the first alone, then three at once
+    # Both waves are in the row, and no more than the wall around it: a sum of samples would exceed it.
+    assert 2 * delay <= r.seconds <= wall
     assert r.metrics["completion_tokens"] == 40
 
 
