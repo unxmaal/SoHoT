@@ -34,7 +34,8 @@ capabilities:
 
   - name: measure
     summary: The measure tier, its pauses, looks and resumes, and the order the measure queue is spent in.
-    spec: pending
+    spec: written
+    untested: 43
     modules:
       - harness/commands/measure.py
       - harness/commands/measure_order.py
@@ -109,7 +110,8 @@ capabilities:
 
   - name: reverify
     summary: Re-running served models when their runtime moves, they age or real use regresses; each lane's own check.
-    spec: pending
+    spec: written
+    untested: 15
     modules:
       - harness/reverify.py
       - harness/commands/reverify.py
