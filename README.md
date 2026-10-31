@@ -1112,6 +1112,19 @@ soh ledger --compare 2026-10-14        # OTel events, OTel metrics, ccusage, tra
 soh context --source otel --by category
 ```
 
+`soh unverified` is a Claude Code Stop hook, off until a project turns it on
+(#1380). At the end of each turn it asks the decide lane's local model, for
+each factual sentence of the final message, whether a tool result in the same
+turn shows it, and blocks the stop once, naming the claims that none does, so
+the assistant cites, checks or marks them unverified. Any error or the
+`unverified_turn_timeout_s` deadline allows the stop. It logs counts and the
+flagged claims to `logs/unverified.jsonl`, never other transcript text.
+
+```bash
+soh unverified --settings                          # the block to add to .claude/settings.json
+soh unverified --transcript session.jsonl --json   # check a transcript's last turn; writes nothing
+```
+
 Each watchdog wake also asks every text lane a known-answer completion on the
 route `local_complete` takes (#924), but only when the lane's model is
 resident and, for a server on this machine, nobody holds the eval lock. Each
