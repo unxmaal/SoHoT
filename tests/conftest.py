@@ -610,6 +610,7 @@ def _identity_per_test(monkeypatch, _home, _no_real_metal, _no_real_runtime_prob
     monkeypatch.setattr(ms.machines, "_PROVISIONAL", None)
     monkeypatch.setattr(machine, "_UUID_FAILED_AT", None)
     monkeypatch.setattr(ms.machines, "_THIS_MACHINE", copy.deepcopy(_IDENTITY.get("facts")))
+    monkeypatch.setattr(ms.machines, "_THIS_FINGERPRINT", None)
     monkeypatch.setattr(machine, "_UUID", _IDENTITY.get("uuid"))
     # With no platform uuid (Windows) host_id reads LH_HOME, so the gateway's identity must find the pinned host there. #852.
     host = (_IDENTITY.get("facts") or {}).get("host")

@@ -79,6 +79,34 @@ def this_machine() -> dict:
     return got
 
 
+#: This machine's fingerprint from the cheap identity probes, for a process that only looks its row up. #1427.
+_THIS_FINGERPRINT: str | None = None
+
+
+def this_fingerprint() -> str:
+    """this_machine()'s fingerprint without the runtime-version probes it takes to fill the rest. #1427."""
+    global _THIS_FINGERPRINT
+    # A stand-in this_machine names the machine for every caller, this one too. #451.
+    if _THIS_MACHINE is not None or getattr(ms.this_machine, "__module__", "") != __name__:
+        return ms.this_machine()["fingerprint"]
+    from evals import environment
+    # So does a stand-in environment.capture, which this_machine() reads. #451.
+    if getattr(environment.capture, "__module__", "") != environment.__name__:
+        return ms.this_machine()["fingerprint"]
+    if _THIS_FINGERPRINT is not None:
+        return _THIS_FINGERPRINT
+    from harness import machine as _machine
+    try:
+        fp = environment.identity()["fingerprint"]
+    except Exception:  # noqa: BLE001
+        return ms.this_machine()["fingerprint"]
+    if not fp or _machine.uuid_failed():
+        # A host from a failed uuid probe is not this machine's answer yet. #747.
+        return ms.this_machine()["fingerprint"]
+    _THIS_FINGERPRINT = fp
+    return fp
+
+
 def _identity() -> dict:
     """hw_model, os, arch and host from the cheap probes, or {} when they fail too. #747."""
     try:
@@ -140,7 +168,7 @@ def _claim(conn, fp: str) -> None:
 
 def machine_row(conn, fingerprint: str | None = None) -> int | None:
     """The id stored for a fingerprint (this machine's by default), or None."""
-    fp = fingerprint if fingerprint is not None else ms.this_machine()["fingerprint"]
+    fp = fingerprint if fingerprint is not None else ms.this_fingerprint()
     row = conn.execute("SELECT id FROM machines WHERE fingerprint = ?",
                        (fp,)).fetchone()
     if row is None and fingerprint is None and _machine_of(fp):
