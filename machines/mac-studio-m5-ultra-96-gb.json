@@ -42,12 +42,12 @@
   }
  ],
  "export_version": 4,
- "generated_at": "2026-10-30T07:00:17Z",
+ "generated_at": "2026-10-31T09:17:28Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 10.33,
+   "age_days": 11.43,
    "comparison": [
     {
      "about": "",
@@ -343,108 +343,108 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.2,
+   "age_days": 0.0,
    "comparison": [
     {
      "about": "family ukisai/Swift-Qwen3.8-27b, 27B params, Q4_K_M, by bartowski",
      "candidate": "llamacpp:ukisai_Swift-Qwen3.8-27b-Q4_K_M",
-     "first_s": 7.407,
-     "median_s": 35.65,
+     "first_s": 6.451,
+     "median_s": 40.208,
      "metrics": {
-      "code_pass": 0.95,
-      "completion_tokens": 3376.7419,
-      "tokens_per_s": 42.7909
+      "code_pass": 0.9468,
+      "completion_tokens": 3451.1658,
+      "tokens_per_s": 43.4218
      },
      "model": "llamacpp:ukisai_Swift-Qwen3.8-27b-Q4_K_M",
      "not_run": "",
-     "pass_rate": 0.854,
-     "passed": 169,
+     "pass_rate": 0.849,
+     "passed": 174,
      "peak_gb": 0.0,
      "reference": false,
      "served_as": "",
      "source": "https://huggingface.co/bartowski/ukisai_Swift-Qwen3.8-27b-GGUF",
-     "total": 198,
-     "ttft_median_s": 26.739,
-     "ttft_p95_s": 304.598
+     "total": 205,
+     "ttft_median_s": 31.274,
+     "ttft_p95_s": 277.039
     },
     {
      "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
-     "first_s": 0.969,
-     "median_s": 10.657,
+     "first_s": 1.553,
+     "median_s": 11.558,
      "metrics": {
-      "code_pass": 0.9318,
-      "completion_tokens": 2734.3743,
-      "tokens_per_s": 134.9531
+      "code_pass": 0.9489,
+      "completion_tokens": 2935.3011,
+      "tokens_per_s": 133.0581
      },
      "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
      "not_run": "",
      "pass_rate": 0.8,
-     "passed": 160,
+     "passed": 168,
      "peak_gb": 0.0,
      "reference": false,
      "served_as": "",
      "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
-     "total": 200,
-     "ttft_median_s": 7.574,
-     "ttft_p95_s": 88.625
+     "total": 210,
+     "ttft_median_s": 7.907,
+     "ttft_p95_s": 95.232
     }
    ],
    "exams": [
     {
      "cases": 316,
      "differs": [],
-     "first_run_at": "2026-10-30T02:14:52Z",
+     "first_run_at": "2026-10-31T09:17:08Z",
      "repeat": 1,
      "rows": [
       {
        "about": "family ukisai/Swift-Qwen3.8-27b, 27B params, Q4_K_M, by bartowski",
        "candidate": "llamacpp:ukisai_Swift-Qwen3.8-27b-Q4_K_M",
-       "first_s": 7.407,
-       "median_s": 35.65,
+       "first_s": 6.451,
+       "median_s": 40.208,
        "metrics": {
-        "code_pass": 0.95,
-        "completion_tokens": 3376.7419,
-        "tokens_per_s": 42.7909
+        "code_pass": 0.9468,
+        "completion_tokens": 3451.1658,
+        "tokens_per_s": 43.4218
        },
        "model": "llamacpp:ukisai_Swift-Qwen3.8-27b-Q4_K_M",
        "not_run": "",
-       "pass_rate": 0.854,
-       "passed": 169,
+       "pass_rate": 0.849,
+       "passed": 174,
        "peak_gb": 0.0,
        "reference": false,
-       "run_at": "2026-10-30T02:14:52Z",
+       "run_at": "2026-10-31T09:17:08Z",
        "served_as": "",
        "source": "https://huggingface.co/bartowski/ukisai_Swift-Qwen3.8-27b-GGUF",
-       "total": 198,
-       "ttft_median_s": 26.739,
-       "ttft_p95_s": 304.598
+       "total": 205,
+       "ttft_median_s": 31.274,
+       "ttft_p95_s": 277.039
       },
       {
        "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
        "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
-       "first_s": 0.969,
-       "median_s": 10.657,
+       "first_s": 1.553,
+       "median_s": 11.558,
        "metrics": {
-        "code_pass": 0.9318,
-        "completion_tokens": 2734.3743,
-        "tokens_per_s": 134.9531
+        "code_pass": 0.9489,
+        "completion_tokens": 2935.3011,
+        "tokens_per_s": 133.0581
        },
        "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
        "not_run": "",
        "pass_rate": 0.8,
-       "passed": 160,
+       "passed": 168,
        "peak_gb": 0.0,
        "reference": false,
-       "run_at": "2026-10-30T02:14:52Z",
+       "run_at": "2026-10-31T09:17:08Z",
        "served_as": "",
        "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
-       "total": 200,
-       "ttft_median_s": 7.574,
-       "ttft_p95_s": 88.625
+       "total": 210,
+       "ttft_median_s": 7.907,
+       "ttft_p95_s": 95.232
       }
      ],
-     "run_at": "2026-10-30T02:14:52Z",
+     "run_at": "2026-10-31T09:17:08Z",
      "runs": 1
     },
     {
@@ -1870,29 +1870,29 @@
     }
    ],
    "lane": "code",
-   "last_run_at": "2026-10-30T02:14:52Z",
-   "measured_at": "2026-10-30T02:14:52Z",
-   "median_s": 10.657,
+   "last_run_at": "2026-10-31T09:17:08Z",
+   "measured_at": "2026-10-31T09:17:08Z",
+   "median_s": 11.558,
    "metrics": {
-    "code_pass": 0.9318,
-    "completion_tokens": 2734.3743,
-    "tokens_per_s": 134.9531
+    "code_pass": 0.9489,
+    "completion_tokens": 2935.3011,
+    "tokens_per_s": 133.0581
    },
    "not_run": "",
    "parked": "",
    "parked_until": "",
    "pass_rate": 0.8,
-   "passed": 160,
+   "passed": 168,
    "real_use": {
-    "completion_tokens": 393967,
-    "error_rate": 0.005780346820809248,
+    "completion_tokens": 450123,
+    "error_rate": 0.002290950744558992,
     "errors": 2,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 973724,
-    "requests": 346,
+    "prompt_tokens": 1017977,
+    "requests": 873,
     "tool_calls": 0,
     "ttft_p50": 15.3273,
     "ttft_p95": 69.421
@@ -1900,50 +1900,26 @@
    "serves": "llamacpp:Ornith-1.5-35B-Q4_K_M",
    "serves_model": "llamacpp:Ornith-1.5-35B-Q4_K_M; 35B (3B active) params, Q4_K_M, by ornith-ai",
    "stale": false,
-   "total": 200,
-   "ttft_median_s": 7.574,
-   "ttft_p95_s": 88.625,
+   "total": 210,
+   "ttft_median_s": 7.907,
+   "ttft_p95_s": 95.232,
    "unverified": false,
    "wanted": true
   },
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 11.21,
+   "age_days": 1.09,
    "comparison": [
     {
      "about": "4B params, 4bit, by mlx-community",
-     "candidate": "best-of-3/q3-4b",
-     "first_s": 21.875,
-     "median_s": 6.74,
-     "metrics": {
-      "completion_tokens": 1289.1,
-      "ink": 0.4332,
-      "method_calls": 1.0,
-      "method_chosen": 1.0,
-      "method_samples": 3.0
-     },
-     "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
-     "not_run": "",
-     "pass_rate": 1.0,
-     "passed": 10,
-     "peak_gb": 0.0,
-     "reference": false,
-     "served_as": "",
-     "source": "https://huggingface.co/mlx-community/Qwen3-4B-Instruct-2507-4bit",
-     "total": 10,
-     "ttft_median_s": null,
-     "ttft_p95_s": null
-    },
-    {
-     "about": "4B params, 4bit, by mlx-community",
      "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
-     "first_s": 18.048,
-     "median_s": 8.902,
+     "first_s": 7.279,
+     "median_s": 7.578,
      "metrics": {
-      "completion_tokens": 1236.9,
-      "ink": 0.4641,
-      "tokens_per_s": 148.88
+      "completion_tokens": 1228.8,
+      "ink": 0.399,
+      "tokens_per_s": 159.79
      },
      "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
      "not_run": "",
@@ -1955,7 +1931,7 @@
      "source": "https://huggingface.co/mlx-community/Qwen3-4B-Instruct-2507-4bit",
      "total": 10,
      "ttft_median_s": 0.076,
-     "ttft_p95_s": 0.162
+     "ttft_p95_s": 0.113
     }
    ],
    "exams": [
@@ -1993,12 +1969,12 @@
       {
        "about": "4B params, 4bit, by mlx-community",
        "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
-       "first_s": 18.048,
-       "median_s": 8.902,
+       "first_s": 7.279,
+       "median_s": 7.578,
        "metrics": {
-        "completion_tokens": 1236.9,
-        "ink": 0.4641,
-        "tokens_per_s": 148.88
+        "completion_tokens": 1228.8,
+        "ink": 0.399,
+        "tokens_per_s": 159.79
        },
        "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
        "not_run": "",
@@ -2006,12 +1982,12 @@
        "passed": 10,
        "peak_gb": 0.0,
        "reference": false,
-       "run_at": "2026-10-19T02:02:54Z",
+       "run_at": "2026-10-30T07:01:53Z",
        "served_as": "",
        "source": "https://huggingface.co/mlx-community/Qwen3-4B-Instruct-2507-4bit",
        "total": 10,
        "ttft_median_s": 0.076,
-       "ttft_p95_s": 0.162
+       "ttft_p95_s": 0.113
       },
       {
        "about": "4B params, 4bit, by mlx-community",
@@ -2037,8 +2013,8 @@
        "ttft_p95_s": null
       }
      ],
-     "run_at": "2026-10-19T02:02:54Z",
-     "runs": 2
+     "run_at": "2026-10-30T07:01:53Z",
+     "runs": 3
     },
     {
      "cases": 5,
@@ -2311,13 +2287,13 @@
     }
    ],
    "lane": "web",
-   "last_run_at": "2026-10-19T02:02:54Z",
-   "measured_at": "2026-10-19T02:02:54Z",
-   "median_s": 8.902,
+   "last_run_at": "2026-10-30T07:01:53Z",
+   "measured_at": "2026-10-30T07:01:53Z",
+   "median_s": 7.578,
    "metrics": {
-    "completion_tokens": 1236.9,
-    "ink": 0.4641,
-    "tokens_per_s": 148.88
+    "completion_tokens": 1228.8,
+    "ink": 0.399,
+    "tokens_per_s": 159.79
    },
    "not_run": "",
    "parked": "",
@@ -2327,64 +2303,124 @@
    "real_use": null,
    "serves": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
    "serves_model": "mlx-community/Qwen3-4B-Instruct-2507-4bit; 4B params, 4bit, by mlx-community",
-   "stale": true,
+   "stale": false,
    "total": 10,
    "ttft_median_s": 0.076,
-   "ttft_p95_s": 0.162,
+   "ttft_p95_s": 0.113,
    "unverified": false,
    "wanted": true
   },
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 10.58,
+   "age_days": 0.95,
    "comparison": [
     {
      "about": "30B (3B active) params, 4bit, by mlx-community",
-     "candidate": "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
-     "first_s": 4.446,
-     "median_s": 3.478,
+     "candidate": "q3-30b",
+     "first_s": 4.957,
+     "median_s": 2.396,
      "metrics": {
-      "completion_tokens": 303.0,
-      "ink": 0.1992,
-      "svg_bytes": 697.6667,
-      "tokens_per_s": 101.8
+      "completion_tokens": 343.5861,
+      "ink": 0.3288,
+      "svg_bytes": 600.397,
+      "tokens_per_s": 120.6085
      },
      "model": "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
      "not_run": "",
-     "pass_rate": 1.0,
-     "passed": 3,
+     "pass_rate": 0.689,
+     "passed": 1272,
      "peak_gb": 0.0,
      "reference": false,
-     "served_as": "",
+     "served_as": "q3-30b",
      "source": "https://huggingface.co/mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
-     "total": 3,
-     "ttft_median_s": 0.169,
-     "ttft_p95_s": 1.853
+     "total": 1846,
+     "ttft_median_s": 0.106,
+     "ttft_p95_s": 0.162
     },
     {
-     "about": "",
-     "candidate": "omnisvg:8B",
-     "first_s": 172.268,
-     "median_s": 173.582,
+     "about": "7B params, 4bit, by mlx-community",
+     "candidate": "local-large",
+     "first_s": 1.933,
+     "median_s": 2.131,
      "metrics": {
-      "ink": 0.6604,
-      "svg_bytes": 5065.0
+      "completion_tokens": 332.6544,
+      "ink": 0.4071,
+      "svg_bytes": 542.911,
+      "tokens_per_s": 121.0498
      },
-     "model": "omnisvg:8B",
+     "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
      "not_run": "",
-     "pass_rate": 0.5,
-     "passed": 1,
-     "peak_gb": 47.69,
+     "pass_rate": 0.542,
+     "passed": 1000,
+     "peak_gb": 0.0,
      "reference": false,
-     "served_as": "",
-     "source": "",
-     "total": 2,
-     "ttft_median_s": null,
-     "ttft_p95_s": null
+     "served_as": "local-large",
+     "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
+     "total": 1846,
+     "ttft_median_s": 0.079,
+     "ttft_p95_s": 0.155
     }
    ],
    "exams": [
+    {
+     "cases": 923,
+     "differs": [],
+     "first_run_at": "2026-10-30T10:22:46Z",
+     "repeat": 2,
+     "rows": [
+      {
+       "about": "30B (3B active) params, 4bit, by mlx-community",
+       "candidate": "q3-30b",
+       "first_s": 4.957,
+       "median_s": 2.396,
+       "metrics": {
+        "completion_tokens": 343.5861,
+        "ink": 0.3288,
+        "svg_bytes": 600.397,
+        "tokens_per_s": 120.6085
+       },
+       "model": "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
+       "not_run": "",
+       "pass_rate": 0.689,
+       "passed": 1272,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-30T10:22:46Z",
+       "served_as": "q3-30b",
+       "source": "https://huggingface.co/mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
+       "total": 1846,
+       "ttft_median_s": 0.106,
+       "ttft_p95_s": 0.162
+      },
+      {
+       "about": "7B params, 4bit, by mlx-community",
+       "candidate": "local-large",
+       "first_s": 1.933,
+       "median_s": 2.131,
+       "metrics": {
+        "completion_tokens": 332.6544,
+        "ink": 0.4071,
+        "svg_bytes": 542.911,
+        "tokens_per_s": 121.0498
+       },
+       "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+       "not_run": "",
+       "pass_rate": 0.542,
+       "passed": 1000,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-30T10:22:46Z",
+       "served_as": "local-large",
+       "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
+       "total": 1846,
+       "ttft_median_s": 0.079,
+       "ttft_p95_s": 0.155
+      }
+     ],
+     "run_at": "2026-10-30T10:22:46Z",
+     "runs": 1
+    },
     {
      "cases": 3,
      "differs": [],
@@ -2783,40 +2819,40 @@
     }
    ],
    "lane": "svg",
-   "last_run_at": "2026-10-19T17:09:34Z",
-   "measured_at": "2026-10-19T16:58:12Z",
-   "median_s": 1.336,
+   "last_run_at": "2026-10-30T10:22:46Z",
+   "measured_at": "2026-10-30T10:22:46Z",
+   "median_s": 2.396,
    "metrics": {
-    "completion_tokens": 270.6667,
-    "ink": 0.1629,
-    "svg_bytes": 615.6667,
-    "tokens_per_s": 116.8
+    "completion_tokens": 343.5861,
+    "ink": 0.3288,
+    "svg_bytes": 600.397,
+    "tokens_per_s": 120.6085
    },
    "not_run": "",
    "parked": "",
    "parked_until": "",
-   "pass_rate": 1.0,
-   "passed": 6,
+   "pass_rate": 0.689,
+   "passed": 1272,
    "real_use": null,
    "serves": "q3-30b",
    "serves_model": "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit (served as q3-30b); 30B (3B active) params, 4bit, by mlx-community",
-   "stale": true,
-   "total": 6,
-   "ttft_median_s": 0.093,
-   "ttft_p95_s": 0.182,
+   "stale": false,
+   "total": 1846,
+   "ttft_median_s": 0.106,
+   "ttft_p95_s": 0.162,
    "unverified": false,
    "wanted": true
   },
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 9.79,
+   "age_days": 0.95,
    "comparison": [
     {
      "about": "",
      "candidate": "h3/minimax-h3",
-     "first_s": 27.845,
-     "median_s": 27.845,
+     "first_s": 23.645,
+     "median_s": 23.645,
      "metrics": {
       "motion": 0.0418
      },
@@ -2824,7 +2860,7 @@
      "not_run": "",
      "pass_rate": 1.0,
      "passed": 1,
-     "peak_gb": 5.66,
+     "peak_gb": 5.59,
      "reference": false,
      "served_as": "",
      "source": "",
@@ -2836,7 +2872,48 @@
    "exams": [
     {
      "cases": 1,
-     "differs": [],
+     "differs": [
+      [
+       "case text",
+       "e110870e"
+      ]
+     ],
+     "first_run_at": "2026-10-30T10:23:12Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "about": "",
+       "candidate": "h3/minimax-h3",
+       "first_s": 23.645,
+       "median_s": 23.645,
+       "metrics": {
+        "motion": 0.0418
+       },
+       "model": "h3/minimax-h3",
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 1,
+       "peak_gb": 5.59,
+       "reference": false,
+       "run_at": "2026-10-30T10:23:12Z",
+       "served_as": "",
+       "source": "",
+       "total": 1,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-30T10:23:12Z",
+     "runs": 1
+    },
+    {
+     "cases": 1,
+     "differs": [
+      [
+       "case text",
+       "06d7862d"
+      ]
+     ],
      "first_run_at": "2026-10-05T20:57:38Z",
      "repeat": 1,
      "rows": [
@@ -2907,9 +2984,9 @@
     }
    ],
    "lane": "video",
-   "last_run_at": "2026-10-20T11:59:16Z",
-   "measured_at": "2026-10-20T11:59:16Z",
-   "median_s": 27.845,
+   "last_run_at": "2026-10-30T10:23:12Z",
+   "measured_at": "2026-10-30T10:23:12Z",
+   "median_s": 23.645,
    "metrics": {
     "motion": 0.0418
    },
@@ -2921,7 +2998,7 @@
    "real_use": null,
    "serves": "h3",
    "serves_model": "h3",
-   "stale": true,
+   "stale": false,
    "total": 1,
    "ttft_median_s": null,
    "ttft_p95_s": null,
@@ -2931,23 +3008,23 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 8.21,
+   "age_days": 0.95,
    "comparison": [
     {
      "about": "",
      "candidate": "acestep/acestep-v15-turbo",
-     "first_s": 54.683,
-     "median_s": 45.815,
+     "first_s": 49.148,
+     "median_s": 26.874,
      "metrics": {
       "duration_error_s": 0.0,
       "seconds": 30.0,
-      "wer": 0.3211
+      "wer": 0.7248
      },
      "model": "acestep/acestep-v15-turbo",
      "not_run": "",
-     "pass_rate": 1.0,
-     "passed": 4,
-     "peak_gb": 45.6,
+     "pass_rate": 0.5,
+     "passed": 2,
+     "peak_gb": 45.95,
      "reference": false,
      "served_as": "",
      "source": "",
@@ -2957,6 +3034,39 @@
     }
    ],
    "exams": [
+    {
+     "cases": 4,
+     "differs": [],
+     "first_run_at": "2026-10-30T10:27:25Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "about": "",
+       "candidate": "acestep/acestep-v15-turbo",
+       "first_s": 49.148,
+       "median_s": 26.874,
+       "metrics": {
+        "duration_error_s": 0.0,
+        "seconds": 30.0,
+        "wer": 0.7248
+       },
+       "model": "acestep/acestep-v15-turbo",
+       "not_run": "",
+       "pass_rate": 0.5,
+       "passed": 2,
+       "peak_gb": 45.95,
+       "reference": false,
+       "run_at": "2026-10-30T10:27:25Z",
+       "served_as": "",
+       "source": "",
+       "total": 4,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-30T10:27:25Z",
+     "runs": 1
+    },
     {
      "cases": 4,
      "differs": [],
@@ -3015,23 +3125,23 @@
     }
    ],
    "lane": "music",
-   "last_run_at": "2026-10-22T01:59:23Z",
-   "measured_at": "2026-10-22T01:59:23Z",
-   "median_s": 45.815,
+   "last_run_at": "2026-10-30T10:27:25Z",
+   "measured_at": "2026-10-30T10:27:25Z",
+   "median_s": 26.874,
    "metrics": {
     "duration_error_s": 0.0,
     "seconds": 30.0,
-    "wer": 0.3211
+    "wer": 0.7248
    },
    "not_run": "",
    "parked": "",
    "parked_until": "",
-   "pass_rate": 1.0,
-   "passed": 4,
+   "pass_rate": 0.5,
+   "passed": 2,
    "real_use": null,
    "serves": "acestep:acestep-v15-turbo",
    "serves_model": "acestep:acestep-v15-turbo",
-   "stale": true,
+   "stale": false,
    "total": 4,
    "ttft_median_s": null,
    "ttft_p95_s": null,
@@ -3041,7 +3151,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.37,
+   "age_days": 2.46,
    "comparison": [
     {
      "about": "9B params",
@@ -3604,15 +3714,15 @@
    "pass_rate": 0.41,
    "passed": 55,
    "real_use": {
-    "completion_tokens": 117179,
+    "completion_tokens": 454590,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 31674,
-    "requests": 156,
+    "prompt_tokens": 76304,
+    "requests": 708,
     "tool_calls": 0,
     "ttft_p50": 0.7104,
     "ttft_p95": 8.1079
@@ -3629,24 +3739,24 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 8.21,
+   "age_days": 0.95,
    "comparison": [
     {
      "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
-     "first_s": 6.951,
-     "median_s": 7.644,
+     "first_s": 8.21,
+     "median_s": 8.438,
      "metrics": {
       "agent_ctx": 262144.0,
-      "agent_model_s": 8.3332,
+      "agent_model_s": 8.8687,
       "agent_no_tool_steps": 0.0,
-      "agent_steps": 5.2143,
-      "agent_tool_s": 0.0816,
-      "agent_ttft_sum_s": 5.3551,
+      "agent_steps": 5.5714,
+      "agent_tool_s": 0.0827,
+      "agent_ttft_sum_s": 5.7405,
       "agent_valid_call_rate": 1.0,
-      "agent_wall_s": 8.6141,
-      "completion_tokens": 692.1429,
-      "prompt_tokens": 30493.0
+      "agent_wall_s": 9.1401,
+      "completion_tokens": 771.6429,
+      "prompt_tokens": 31229.7143
      },
      "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
      "not_run": "",
@@ -3657,36 +3767,36 @@
      "served_as": "",
      "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
      "total": 14,
-     "ttft_median_s": 0.321,
-     "ttft_p95_s": 0.778
+     "ttft_median_s": 0.295,
+     "ttft_p95_s": 1.185
     },
     {
      "about": "4B params, 4bit, by mlx-community",
      "candidate": "q3-4b",
-     "first_s": 2.226,
-     "median_s": 3.18,
+     "first_s": 2.196,
+     "median_s": 2.466,
      "metrics": {
-      "agent_model_s": 12.5525,
-      "agent_no_tool_steps": 0.0,
-      "agent_steps": 4.4286,
-      "agent_tool_s": 0.0163,
-      "agent_ttft_sum_s": 3.1154,
+      "agent_model_s": 4.7196,
+      "agent_no_tool_steps": 0.0714,
+      "agent_steps": 3.7857,
+      "agent_tool_s": 0.0068,
+      "agent_ttft_sum_s": 2.6997,
       "agent_valid_call_rate": 1.0,
-      "agent_wall_s": 12.6399,
-      "completion_tokens": 980.7143,
-      "prompt_tokens": 17104.1429
+      "agent_wall_s": 4.7991,
+      "completion_tokens": 331.4286,
+      "prompt_tokens": 13822.7857
      },
      "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
      "not_run": "",
-     "pass_rate": 0.429,
-     "passed": 6,
+     "pass_rate": 0.357,
+     "passed": 5,
      "peak_gb": 0.0,
      "reference": false,
      "served_as": "q3-4b",
      "source": "https://huggingface.co/mlx-community/Qwen3-4B-Instruct-2507-4bit",
      "total": 14,
-     "ttft_median_s": 0.228,
-     "ttft_p95_s": 9.379
+     "ttft_median_s": 0.188,
+     "ttft_p95_s": 9.671
     }
    ],
    "exams": [
@@ -3699,19 +3809,19 @@
       {
        "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
        "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
-       "first_s": 6.951,
-       "median_s": 7.644,
+       "first_s": 8.21,
+       "median_s": 8.438,
        "metrics": {
         "agent_ctx": 262144.0,
-        "agent_model_s": 8.3332,
+        "agent_model_s": 8.8687,
         "agent_no_tool_steps": 0.0,
-        "agent_steps": 5.2143,
-        "agent_tool_s": 0.0816,
-        "agent_ttft_sum_s": 5.3551,
+        "agent_steps": 5.5714,
+        "agent_tool_s": 0.0827,
+        "agent_ttft_sum_s": 5.7405,
         "agent_valid_call_rate": 1.0,
-        "agent_wall_s": 8.6141,
-        "completion_tokens": 692.1429,
-        "prompt_tokens": 30493.0
+        "agent_wall_s": 9.1401,
+        "completion_tokens": 771.6429,
+        "prompt_tokens": 31229.7143
        },
        "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
        "not_run": "",
@@ -3719,12 +3829,12 @@
        "passed": 14,
        "peak_gb": 0.0,
        "reference": false,
-       "run_at": "2026-10-22T02:04:50Z",
+       "run_at": "2026-10-30T10:31:11Z",
        "served_as": "",
        "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
        "total": 14,
-       "ttft_median_s": 0.321,
-       "ttft_p95_s": 0.778
+       "ttft_median_s": 0.295,
+       "ttft_p95_s": 1.185
       },
       {
        "about": "",
@@ -3759,35 +3869,35 @@
       {
        "about": "4B params, 4bit, by mlx-community",
        "candidate": "q3-4b",
-       "first_s": 2.226,
-       "median_s": 3.18,
+       "first_s": 2.196,
+       "median_s": 2.466,
        "metrics": {
-        "agent_model_s": 12.5525,
-        "agent_no_tool_steps": 0.0,
-        "agent_steps": 4.4286,
-        "agent_tool_s": 0.0163,
-        "agent_ttft_sum_s": 3.1154,
+        "agent_model_s": 4.7196,
+        "agent_no_tool_steps": 0.0714,
+        "agent_steps": 3.7857,
+        "agent_tool_s": 0.0068,
+        "agent_ttft_sum_s": 2.6997,
         "agent_valid_call_rate": 1.0,
-        "agent_wall_s": 12.6399,
-        "completion_tokens": 980.7143,
-        "prompt_tokens": 17104.1429
+        "agent_wall_s": 4.7991,
+        "completion_tokens": 331.4286,
+        "prompt_tokens": 13822.7857
        },
        "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
        "not_run": "",
-       "pass_rate": 0.429,
-       "passed": 6,
+       "pass_rate": 0.357,
+       "passed": 5,
        "peak_gb": 0.0,
        "reference": false,
-       "run_at": "2026-10-22T02:04:50Z",
+       "run_at": "2026-10-30T10:31:11Z",
        "served_as": "q3-4b",
        "source": "https://huggingface.co/mlx-community/Qwen3-4B-Instruct-2507-4bit",
        "total": 14,
-       "ttft_median_s": 0.228,
-       "ttft_p95_s": 9.379
+       "ttft_median_s": 0.188,
+       "ttft_p95_s": 9.671
       }
      ],
-     "run_at": "2026-10-22T02:04:50Z",
-     "runs": 3
+     "run_at": "2026-10-30T10:31:11Z",
+     "runs": 4
     },
     {
      "cases": 14,
@@ -3860,20 +3970,20 @@
     }
    ],
    "lane": "agent",
-   "last_run_at": "2026-10-22T02:04:50Z",
-   "measured_at": "2026-10-22T02:04:50Z",
-   "median_s": 7.644,
+   "last_run_at": "2026-10-30T10:31:11Z",
+   "measured_at": "2026-10-30T10:31:11Z",
+   "median_s": 8.438,
    "metrics": {
     "agent_ctx": 262144.0,
-    "agent_model_s": 8.3332,
+    "agent_model_s": 8.8687,
     "agent_no_tool_steps": 0.0,
-    "agent_steps": 5.2143,
-    "agent_tool_s": 0.0816,
-    "agent_ttft_sum_s": 5.3551,
+    "agent_steps": 5.5714,
+    "agent_tool_s": 0.0827,
+    "agent_ttft_sum_s": 5.7405,
     "agent_valid_call_rate": 1.0,
-    "agent_wall_s": 8.6141,
-    "completion_tokens": 692.1429,
-    "prompt_tokens": 30493.0
+    "agent_wall_s": 9.1401,
+    "completion_tokens": 771.6429,
+    "prompt_tokens": 31229.7143
    },
    "not_run": "",
    "parked": "",
@@ -3881,32 +3991,32 @@
    "pass_rate": 1.0,
    "passed": 14,
    "real_use": {
-    "completion_tokens": 2836,
+    "completion_tokens": 2780,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": 0.0,
-    "prompt_tokens": 34395,
-    "requests": 94,
+    "prompt_tokens": 33919,
+    "requests": 66,
     "tool_calls": 15,
     "ttft_p50": 0.13906383514404297,
     "ttft_p95": 0.4134371280670166
    },
    "serves": "llamacpp:Ornith-1.5-35B-Q4_K_M",
    "serves_model": "llamacpp:Ornith-1.5-35B-Q4_K_M; 35B (3B active) params, Q4_K_M, by ornith-ai",
-   "stale": true,
+   "stale": false,
    "total": 14,
-   "ttft_median_s": 0.321,
-   "ttft_p95_s": 0.778,
+   "ttft_median_s": 0.295,
+   "ttft_p95_s": 1.185,
    "unverified": false,
    "wanted": true
   },
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 4.04,
+   "age_days": 5.13,
    "comparison": [
     {
      "about": "",
@@ -4101,13 +4211,13 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 8.03,
+   "age_days": 0.95,
    "comparison": [
     {
      "about": "",
      "candidate": "bm25/okapi",
      "first_s": 0.027,
-     "median_s": 0.026,
+     "median_s": 0.027,
      "metrics": {
       "retrieval_ndcg": 0.8803,
       "retrieval_recall": 0.7831
@@ -4136,7 +4246,7 @@
        "about": "",
        "candidate": "bm25/okapi",
        "first_s": 0.027,
-       "median_s": 0.026,
+       "median_s": 0.027,
        "metrics": {
         "retrieval_ndcg": 0.8803,
         "retrieval_recall": 0.7831
@@ -4147,7 +4257,7 @@
        "passed": 148,
        "peak_gb": 0.01,
        "reference": false,
-       "run_at": "2026-10-22T06:14:17Z",
+       "run_at": "2026-10-30T10:31:18Z",
        "served_as": "",
        "source": "",
        "total": 189,
@@ -4155,8 +4265,8 @@
        "ttft_p95_s": null
       }
      ],
-     "run_at": "2026-10-22T06:14:17Z",
-     "runs": 3
+     "run_at": "2026-10-30T10:31:18Z",
+     "runs": 4
     },
     {
      "cases": 14,
@@ -4214,9 +4324,9 @@
     }
    ],
    "lane": "retrieval",
-   "last_run_at": "2026-10-22T06:14:17Z",
-   "measured_at": "2026-10-22T06:14:17Z",
-   "median_s": 0.026,
+   "last_run_at": "2026-10-30T10:31:18Z",
+   "measured_at": "2026-10-30T10:31:18Z",
+   "median_s": 0.027,
    "metrics": {
     "retrieval_ndcg": 0.8803,
     "retrieval_recall": 0.7831
@@ -4229,7 +4339,7 @@
    "real_use": null,
    "serves": "bm25",
    "serves_model": "bm25",
-   "stale": true,
+   "stale": false,
    "total": 189,
    "ttft_median_s": null,
    "ttft_p95_s": null,
@@ -4239,13 +4349,13 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 8.03,
+   "age_days": 0.95,
    "comparison": [
     {
      "about": "",
      "candidate": "pii-regex/patterns",
      "first_s": 0.027,
-     "median_s": 0.025,
+     "median_s": 0.026,
      "metrics": {
       "pii_f1": 0.7778,
       "pii_precision": 1.0,
@@ -4275,7 +4385,7 @@
        "about": "",
        "candidate": "pii-regex/patterns",
        "first_s": 0.027,
-       "median_s": 0.025,
+       "median_s": 0.026,
        "metrics": {
         "pii_f1": 0.7778,
         "pii_precision": 1.0,
@@ -4287,7 +4397,7 @@
        "passed": 123,
        "peak_gb": 0.01,
        "reference": false,
-       "run_at": "2026-10-22T06:14:23Z",
+       "run_at": "2026-10-30T10:31:25Z",
        "served_as": "",
        "source": "",
        "total": 166,
@@ -4295,8 +4405,8 @@
        "ttft_p95_s": null
       }
      ],
-     "run_at": "2026-10-22T06:14:23Z",
-     "runs": 3
+     "run_at": "2026-10-30T10:31:25Z",
+     "runs": 4
     },
     {
      "cases": 16,
@@ -4356,9 +4466,9 @@
     }
    ],
    "lane": "pii",
-   "last_run_at": "2026-10-22T06:14:23Z",
-   "measured_at": "2026-10-22T06:14:23Z",
-   "median_s": 0.025,
+   "last_run_at": "2026-10-30T10:31:25Z",
+   "measured_at": "2026-10-30T10:31:25Z",
+   "median_s": 0.026,
    "metrics": {
     "pii_f1": 0.7778,
     "pii_precision": 1.0,
@@ -4372,7 +4482,7 @@
    "real_use": null,
    "serves": "pii-regex",
    "serves_model": "pii-regex",
-   "stale": true,
+   "stale": false,
    "total": 166,
    "ttft_median_s": null,
    "ttft_p95_s": null,
@@ -4382,38 +4492,38 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 10.24,
+   "age_days": 0.95,
    "comparison": [
     {
      "about": "7B params, Q4_K_M, by bartowski",
      "candidate": "Qwen2.5-7B-Instruct-Q4_K_M",
-     "first_s": 0.17,
-     "median_s": 0.132,
+     "first_s": 0.196,
+     "median_s": 0.152,
      "metrics": {
-      "claims_bad_matched_cited_only": 0.087,
+      "claims_bad_matched_cited_only": 0.0909,
       "claims_bad_matched_conversation": 0.0,
       "claims_balanced": 0.5723,
       "claims_case_recall": 0.4792,
       "claims_case_specificity": 0.6653,
-      "claims_emitted": 0.9262,
+      "claims_emitted": 0.9024,
       "claims_empty_rate": 0.6653,
       "claims_judge_calibrated": 0.0,
       "claims_matcher_version": 2.0,
-      "claims_near_miss_cited_only": 0.2609,
-      "claims_near_miss_conversation": 0.087,
-      "claims_pass_cited_only": 0.3043,
-      "claims_pass_conversation": 0.7609,
-      "claims_precision_cited_only": 0.8485,
-      "claims_precision_conversation": 0.9221,
-      "claims_recall_cited_only": 0.28,
-      "claims_recall_conversation": 0.6339,
-      "claims_schema_valid": 0.9967,
-      "claims_unreviewed_cited_only": 1.7826,
-      "claims_unreviewed_conversation": 1.5652,
-      "claims_verbatim_cited_only": 0.2609,
-      "claims_verbatim_conversation": 0.9565,
-      "completion_tokens": 29.7191,
-      "tokens_per_s": 69.3545
+      "claims_near_miss_cited_only": 0.1818,
+      "claims_near_miss_conversation": 0.0889,
+      "claims_pass_cited_only": 0.3182,
+      "claims_pass_conversation": 0.7556,
+      "claims_precision_cited_only": 0.8214,
+      "claims_precision_conversation": 0.9189,
+      "claims_recall_cited_only": 0.2875,
+      "claims_recall_conversation": 0.6296,
+      "claims_schema_valid": 1.0,
+      "claims_unreviewed_cited_only": 1.7273,
+      "claims_unreviewed_conversation": 1.4889,
+      "claims_verbatim_cited_only": 0.2727,
+      "claims_verbatim_conversation": 0.9556,
+      "completion_tokens": 27.7879,
+      "tokens_per_s": 66.8054
      },
      "model": "Qwen2.5-7B-Instruct-Q4_K_M",
      "not_run": "",
@@ -4424,8 +4534,8 @@
      "served_as": "",
      "source": "https://huggingface.co/bartowski/Qwen2.5-7B-Instruct-GGUF",
      "total": 299,
-     "ttft_median_s": 0.089,
-     "ttft_p95_s": 0.22
+     "ttft_median_s": 0.084,
+     "ttft_p95_s": 0.203
     }
    ],
    "exams": [
@@ -4443,33 +4553,33 @@
       {
        "about": "7B params, Q4_K_M, by bartowski",
        "candidate": "Qwen2.5-7B-Instruct-Q4_K_M",
-       "first_s": 0.17,
-       "median_s": 0.132,
+       "first_s": 0.196,
+       "median_s": 0.152,
        "metrics": {
-        "claims_bad_matched_cited_only": 0.087,
+        "claims_bad_matched_cited_only": 0.0909,
         "claims_bad_matched_conversation": 0.0,
         "claims_balanced": 0.5723,
         "claims_case_recall": 0.4792,
         "claims_case_specificity": 0.6653,
-        "claims_emitted": 0.9262,
+        "claims_emitted": 0.9024,
         "claims_empty_rate": 0.6653,
         "claims_judge_calibrated": 0.0,
         "claims_matcher_version": 2.0,
-        "claims_near_miss_cited_only": 0.2609,
-        "claims_near_miss_conversation": 0.087,
-        "claims_pass_cited_only": 0.3043,
-        "claims_pass_conversation": 0.7609,
-        "claims_precision_cited_only": 0.8485,
-        "claims_precision_conversation": 0.9221,
-        "claims_recall_cited_only": 0.28,
-        "claims_recall_conversation": 0.6339,
-        "claims_schema_valid": 0.9967,
-        "claims_unreviewed_cited_only": 1.7826,
-        "claims_unreviewed_conversation": 1.5652,
-        "claims_verbatim_cited_only": 0.2609,
-        "claims_verbatim_conversation": 0.9565,
-        "completion_tokens": 29.7191,
-        "tokens_per_s": 69.3545
+        "claims_near_miss_cited_only": 0.1818,
+        "claims_near_miss_conversation": 0.0889,
+        "claims_pass_cited_only": 0.3182,
+        "claims_pass_conversation": 0.7556,
+        "claims_precision_cited_only": 0.8214,
+        "claims_precision_conversation": 0.9189,
+        "claims_recall_cited_only": 0.2875,
+        "claims_recall_conversation": 0.6296,
+        "claims_schema_valid": 1.0,
+        "claims_unreviewed_cited_only": 1.7273,
+        "claims_unreviewed_conversation": 1.4889,
+        "claims_verbatim_cited_only": 0.2727,
+        "claims_verbatim_conversation": 0.9556,
+        "completion_tokens": 27.7879,
+        "tokens_per_s": 66.8054
        },
        "model": "Qwen2.5-7B-Instruct-Q4_K_M",
        "not_run": "",
@@ -4477,16 +4587,16 @@
        "passed": 190,
        "peak_gb": 0.0,
        "reference": false,
-       "run_at": "2026-10-20T01:17:17Z",
+       "run_at": "2026-10-30T10:24:57Z",
        "served_as": "",
        "source": "https://huggingface.co/bartowski/Qwen2.5-7B-Instruct-GGUF",
        "total": 299,
-       "ttft_median_s": 0.089,
-       "ttft_p95_s": 0.22
+       "ttft_median_s": 0.084,
+       "ttft_p95_s": 0.203
       }
      ],
-     "run_at": "2026-10-20T01:17:17Z",
-     "runs": 2
+     "run_at": "2026-10-30T10:24:57Z",
+     "runs": 3
     },
     {
      "cases": 299,
@@ -4667,34 +4777,34 @@
     }
    ],
    "lane": "claims",
-   "last_run_at": "2026-10-20T01:17:17Z",
-   "measured_at": "2026-10-20T01:17:17Z",
-   "median_s": 0.132,
+   "last_run_at": "2026-10-30T10:24:57Z",
+   "measured_at": "2026-10-30T10:24:57Z",
+   "median_s": 0.152,
    "metrics": {
-    "claims_bad_matched_cited_only": 0.087,
+    "claims_bad_matched_cited_only": 0.0909,
     "claims_bad_matched_conversation": 0.0,
     "claims_balanced": 0.5723,
     "claims_case_recall": 0.4792,
     "claims_case_specificity": 0.6653,
-    "claims_emitted": 0.9262,
+    "claims_emitted": 0.9024,
     "claims_empty_rate": 0.6653,
     "claims_judge_calibrated": 0.0,
     "claims_matcher_version": 2.0,
-    "claims_near_miss_cited_only": 0.2609,
-    "claims_near_miss_conversation": 0.087,
-    "claims_pass_cited_only": 0.3043,
-    "claims_pass_conversation": 0.7609,
-    "claims_precision_cited_only": 0.8485,
-    "claims_precision_conversation": 0.9221,
-    "claims_recall_cited_only": 0.28,
-    "claims_recall_conversation": 0.6339,
-    "claims_schema_valid": 0.9967,
-    "claims_unreviewed_cited_only": 1.7826,
-    "claims_unreviewed_conversation": 1.5652,
-    "claims_verbatim_cited_only": 0.2609,
-    "claims_verbatim_conversation": 0.9565,
-    "completion_tokens": 29.7191,
-    "tokens_per_s": 69.3545
+    "claims_near_miss_cited_only": 0.1818,
+    "claims_near_miss_conversation": 0.0889,
+    "claims_pass_cited_only": 0.3182,
+    "claims_pass_conversation": 0.7556,
+    "claims_precision_cited_only": 0.8214,
+    "claims_precision_conversation": 0.9189,
+    "claims_recall_cited_only": 0.2875,
+    "claims_recall_conversation": 0.6296,
+    "claims_schema_valid": 1.0,
+    "claims_unreviewed_cited_only": 1.7273,
+    "claims_unreviewed_conversation": 1.4889,
+    "claims_verbatim_cited_only": 0.2727,
+    "claims_verbatim_conversation": 0.9556,
+    "completion_tokens": 27.7879,
+    "tokens_per_s": 66.8054
    },
    "not_run": "",
    "parked": "",
@@ -4702,32 +4812,32 @@
    "pass_rate": 0.635,
    "passed": 190,
    "real_use": {
-    "completion_tokens": 1164,
+    "completion_tokens": 873,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 528,
-    "requests": 12,
+    "prompt_tokens": 396,
+    "requests": 9,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
    },
    "serves": "Qwen2.5-7B-Instruct-Q4_K_M",
    "serves_model": "Qwen2.5-7B-Instruct-Q4_K_M; 7B params, Q4_K_M, by bartowski",
-   "stale": true,
+   "stale": false,
    "total": 299,
-   "ttft_median_s": 0.089,
-   "ttft_p95_s": 0.22,
+   "ttft_median_s": 0.084,
+   "ttft_p95_s": 0.203,
    "unverified": false,
    "wanted": true
   },
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.0,
+   "age_days": 1.1,
    "comparison": [
     {
      "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
@@ -6100,7 +6210,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 8.02,
+   "age_days": 9.12,
    "comparison": [
     {
      "about": "7B params, 4bit, by mlx-community",
@@ -6411,15 +6521,15 @@
    "pass_rate": 0.722,
    "passed": 325,
    "real_use": {
-    "completion_tokens": 13136,
+    "completion_tokens": 61469,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 72063,
-    "requests": 135,
+    "prompt_tokens": 125692,
+    "requests": 687,
     "tool_calls": 0,
     "ttft_p50": 19.4987,
     "ttft_p95": 21.017
@@ -6436,7 +6546,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 4.15,
+   "age_days": 5.24,
    "comparison": [
     {
      "about": "",
@@ -6642,7 +6752,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 4.12,
+   "age_days": 5.22,
    "comparison": [
     {
      "about": "82M params, bf16, by Kokoro-82M-bf16",
@@ -6811,7 +6921,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-10-30T07:00:16Z",
+  "last_seen": "2026-10-31T01:16:32Z",
   "memory_gb": 96.0,
   "os": "macOS 27.0.1",
   "runtimes": [
@@ -6877,7 +6987,8 @@
       "2026-10-26": 2133088.0,
       "2026-10-27": 1215.0,
       "2026-10-28": 222202.0,
-      "2026-10-29": 18024.0
+      "2026-10-29": 18024.0,
+      "2026-10-30": 57537.0
      },
      "claude-opus-4-8": {
       "2026-09-13": 10550173.0,
@@ -6932,7 +7043,8 @@
       "2026-10-26": 1260794842.0,
       "2026-10-27": 175892785.0,
       "2026-10-28": 517398827.0,
-      "2026-10-29": 261118275.0
+      "2026-10-29": 261118275.0,
+      "2026-10-30": 666133836.0
      },
      "claude-sonnet-5": {
       "2026-09-27": 28102.0,
@@ -7024,7 +7136,8 @@
       "2026-10-26": 758795.0,
       "2026-10-27": 45253.0,
       "2026-10-28": 311099.0,
-      "2026-10-29": 239631.0
+      "2026-10-29": 239631.0,
+      "2026-10-30": 749072.0
      },
      "Read": {
       "2026-08-06": 6275.0,
@@ -7070,7 +7183,8 @@
       "2026-10-26": 324428.0,
       "2026-10-27": 2777.0,
       "2026-10-28": 87151.0,
-      "2026-10-29": 71827.0
+      "2026-10-29": 71827.0,
+      "2026-10-30": 535285.0
      },
      "WebFetch": {
       "2026-08-16": 52992.0,
@@ -7097,7 +7211,8 @@
       "2026-10-24": 14600.0,
       "2026-10-25": 20827.0,
       "2026-10-26": 56984.0,
-      "2026-10-28": 17500.0
+      "2026-10-28": 17500.0,
+      "2026-10-30": 731.0
      },
      "WebSearch": {
       "2026-08-16": 44330.0,
@@ -7122,7 +7237,8 @@
       "2026-10-25": 78009.0,
       "2026-10-26": 4806.0,
       "2026-10-28": 5823.0,
-      "2026-10-29": 811.0
+      "2026-10-29": 811.0,
+      "2026-10-30": 2520.0
      },
      "mcm-engine get_entry": {
       "2026-09-13": 713.0,
@@ -7148,7 +7264,8 @@
       "2026-10-25": 40553.0,
       "2026-10-26": 38802.0,
       "2026-10-28": 7934.0,
-      "2026-10-29": 7027.0
+      "2026-10-29": 7027.0,
+      "2026-10-30": 76230.0
      },
      "mcm-engine report_error": {
       "2026-09-07": 158.0,
@@ -7195,7 +7312,8 @@
       "2026-10-26": 55368.0,
       "2026-10-27": 4120.0,
       "2026-10-28": 25197.0,
-      "2026-10-29": 24157.0
+      "2026-10-29": 24157.0,
+      "2026-10-30": 51988.0
      },
      "mcm-engine search": {
       "2026-08-06": 277.0,
@@ -7250,7 +7368,8 @@
       "2026-10-26": 855454.0,
       "2026-10-27": 22020.0,
       "2026-10-28": 391059.0,
-      "2026-10-29": 262264.0
+      "2026-10-29": 262264.0,
+      "2026-10-30": 832744.0
      },
      "other": {
       "2026-08-06": 1005.0,
@@ -7306,7 +7425,8 @@
       "2026-10-26": 61073.0,
       "2026-10-27": 2376.0,
       "2026-10-28": 27344.0,
-      "2026-10-29": 15111.0
+      "2026-10-29": 15111.0,
+      "2026-10-30": 48735.0
      }
     },
     "title": "Tool-result tokens into Claude's context",
@@ -7387,7 +7507,8 @@
       "2026-10-26": "$0.08",
       "2026-10-27": "$0.01",
       "2026-10-28": "$0.08",
-      "2026-10-29": "$0.31"
+      "2026-10-29": "$0.33",
+      "2026-10-30": "$0.12"
      }
     },
     "note": "macmon power, integrated per day; the dollar figure at the ledger's tariff is in each point's label. 2 days are left out because their CPU was not read (2026-10-17 .. 2026-10-18).",
@@ -7407,7 +7528,8 @@
       "2026-10-26": 0.545887,
       "2026-10-27": 0.051413,
       "2026-10-28": 0.503913,
-      "2026-10-29": 2.0864
+      "2026-10-29": 2.169483,
+      "2026-10-30": 0.767882
      }
     },
     "title": "Energy, kWh per day",
@@ -7430,14 +7552,16 @@
       "2026-10-24": 37.0,
       "2026-10-25": 163058.0,
       "2026-10-26": 9439.0,
-      "2026-10-28": 86320.0
+      "2026-10-28": 86320.0,
+      "2026-10-30": 2181819.0
      },
      "internal": {
       "2026-10-24": 1513368.0,
       "2026-10-26": 41885.0,
       "2026-10-27": 31226.0,
       "2026-10-28": 11700058.0,
-      "2026-10-29": 13491188.0
+      "2026-10-29": 14183703.0,
+      "2026-10-30": 641137.0
      },
      "smoke": {
       "2026-10-13": 2304.0,
@@ -7468,7 +7592,8 @@
       "2026-10-24": 51495.0,
       "2026-10-25": 16521.0,
       "2026-10-26": 185002.0,
-      "2026-10-27": 1329771.0
+      "2026-10-27": 1329771.0,
+      "2026-10-30": 585187.0
      },
      "watchdog": {
       "2026-10-18": 20296.0,
@@ -7482,7 +7607,8 @@
       "2026-10-26": 2385.0,
       "2026-10-27": 468.0,
       "2026-10-28": 1807.0,
-      "2026-10-29": 627.0
+      "2026-10-29": 627.0,
+      "2026-10-30": 1438.0
      },
      "work": {
       "2026-10-13": 3188.0,
@@ -7527,7 +7653,9 @@
       "2026-10-26": 23.0,
       "2026-10-27": 4.0,
       "2026-10-28": 15.0,
-      "2026-10-29": 8.0
+      "2026-10-29": 8.0,
+      "2026-10-30": 24.0,
+      "2026-10-31": 0.0
      },
      "7-day window, daily peak": {
       "2026-10-13": 59.0,
@@ -7546,15 +7674,17 @@
       "2026-10-26": 76.0,
       "2026-10-27": 79.0,
       "2026-10-28": 5.0,
-      "2026-10-29": 9.0
+      "2026-10-29": 9.0,
+      "2026-10-30": 17.0,
+      "2026-10-31": 17.0
      }
     },
     "title": "Plan cap used",
     "unit": "pct"
    }
   },
-  "first_day": "2026-08-02",
-  "last_day": "2026-10-30"
+  "first_day": "2026-08-03",
+  "last_day": "2026-10-31"
  },
  "vision": []
 }
