@@ -10,6 +10,7 @@ from harness import paths
 
 FAKE_MACHINE = {"fingerprint": "test/rig", "hw_model": "", "os": "", "arch": "",
                 "memory_gb": 0.0, "accelerator": "", "runtimes": "", "ceiling_gb": 0.0}
+REAL_CONNECT = ms.connect
 
 
 @pytest.fixture
@@ -93,6 +94,33 @@ def test_a_null_that_only_the_floor_makes_a_loss_records_a_cut(conn, monkeypatch
     assert rows[0]["what"] == "decide: q3-30b declined on a null that could see +0.08, above the lane's +0.05 noise"
     stored = conn.execute("SELECT power FROM verdicts ORDER BY id DESC LIMIT 1").fetchone()[0]
     assert json.loads(stored)["min_effect"] == {"noise": 0.05, "effect": 0.1, "seen": 0.08}
+
+
+def test_the_floor_evidence_rounds_seen_to_four_places_and_a_seen_at_the_noise_tolerance_is_a_plain_null(monkeypatch):
+    monkeypatch.setattr(power, "EFFECT", {"decide": 0.05})
+    assert _null_on("decide", 0.0812345).evidence["min_effect"]["seen"] == 0.0812
+    edge = _null_on("decide", power.noise_for("decide") + 1e-9)
+    assert edge.failure_class == "" and not edge.evidence and "+0.10" not in edge.why
+
+
+def test_the_lane_effect_evidence_rounds_seen_and_starts_strictly_above_the_floor(monkeypatch):
+    monkeypatch.setattr(power, "EFFECT", {"decide": 0.2})
+    assert _null_on("decide", 0.1512345).evidence == {"lane_effect": {"noise": 0.2, "seen": 0.1512}}
+    for edge in (power.MIN_EFFECT, power.MIN_EFFECT + 1e-9):
+        assert _null_on("decide", edge).evidence == {}
+
+
+def test_a_floor_cut_lands_in_the_store_the_verdict_is_recorded_in(conn, tmp_path, monkeypatch):
+    monkeypatch.setattr(power, "EFFECT", {"decide": 0.05})
+    floor = _null_on("decide", 0.08)
+    other = REAL_CONNECT(tmp_path / "other.db")
+    try:
+        adopt.record(other, adopt.Verdict("decide", "inc", "q3-30b", False, floor.why, evidence=floor.evidence))
+        assert other.execute("SELECT knob FROM limit_cuts").fetchall()[0]["knob"] == "adopt_min_effect"
+    finally:
+        other.close()
+    cuts.flush(conn)
+    assert conn.execute("SELECT COUNT(*) FROM limit_cuts").fetchone()[0] == 0
 
 
 def test_decide_carries_the_floor_evidence_from_its_null(monkeypatch):

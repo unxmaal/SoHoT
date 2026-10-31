@@ -134,7 +134,19 @@ def test_a_lane_vllm_does_not_serve_is_a_gap_not_a_run_on_its_own_runner():
     _seed()
     row = {**NEEDS_VLLM, "lane": "stt"}
     assert not screen.candidate_for("stt", REPO, card=row).startswith(serving.VLLM_PREFIX)
-    assert screen.runner_gap("stt", REPO, card=row).startswith("needs vllm, which serves only")
+    assert screen.runner_gap("stt", REPO, card=row) == (
+        f"needs vllm, which serves only the {', '.join(screen.lanes.TEXT_SERVED)} lanes here")
+
+
+def test_a_vllm_candidate_with_no_case_for_its_method_names_the_lane_s_gap(tmp_path, monkeypatch):
+    import yaml
+    d = tmp_path / "cases" / "svg"
+    d.mkdir(parents=True)
+    (d / "a.yaml").write_text(yaml.safe_dump({"id": "a", "modality": "svg", "prompt": "p", "methods": ["omnisvg"]}),
+                              encoding="utf-8")
+    monkeypatch.setattr(screen, "CASES", tmp_path / "cases")
+    _seed()
+    assert screen.runner_gap("svg", REPO, card=NEEDS_VLLM) == "no svg case fits the llm method (a takes omnisvg)"
 
 
 def test_a_caller_holding_only_the_store_routes_and_gaps_alike(tmp_path):
