@@ -126,14 +126,12 @@ def scan_file(path: Path, t: Tally) -> list[str]:
 
 
 def scan(root: Path, limit: int = 4000) -> tuple[Tally, list[str]]:
+    from harness import cuts
     t, findings = Tally(), []
-    for p in sorted(root.rglob("*.py")):
-        if SKIP & set(p.parts):
-            continue
+    files = [p for p in sorted(root.rglob("*.py")) if not SKIP & set(p.parts)]
+    for p in cuts.take(files, limit, "harness/audit.py:scan(limit)", f"python files under {root}"):
         t.files += 1
         findings += scan_file(p, t)
-        if t.files >= limit:
-            break
     return t, findings
 
 

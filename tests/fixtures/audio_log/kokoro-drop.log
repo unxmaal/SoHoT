@@ -6,20 +6,20 @@ INFO:     Uvicorn running on http://0.0.0.0:8890 (Press CTRL+C to quit)
 Creating new KokoroPipeline for language: a
 INFO:     127.0.0.1:51005 - "POST /v1/audio/speech HTTP/1.1" 200 OK
 Traceback (most recent call last):
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 470, in _make_request
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 470, in _make_request
     self._validate_conn(conn)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 1125, in _validate_conn
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 1125, in _validate_conn
     conn.connect()
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connection.py", line 878, in connect
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connection.py", line 878, in connect
     wrapped_socket, is_verified = _ssl_wrap_socket_and_match_hostname(
                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connection.py", line 1080, in _ssl_wrap_socket_and_match_hostname
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connection.py", line 1080, in _ssl_wrap_socket_and_match_hostname
     ssl_sock = ssl_wrap_socket(
                ^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/util/ssl_.py", line 437, in ssl_wrap_socket
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/util/ssl_.py", line 437, in ssl_wrap_socket
     ssl_sock = _ssl_wrap_socket_impl(sock, context, tls_in_tls, server_hostname)
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/util/ssl_.py", line 481, in _ssl_wrap_socket_impl
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/util/ssl_.py", line 481, in _ssl_wrap_socket_impl
     return ssl_context.wrap_socket(sock, server_hostname=server_hostname)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/ssl.py", line 455, in wrap_socket
@@ -34,84 +34,84 @@ TimeoutError: [Errno 60] Operation timed out
 The above exception was the direct cause of the following exception:
 
 Traceback (most recent call last):
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/adapters.py", line 696, in send
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/adapters.py", line 696, in send
     resp = conn.urlopen(
            ^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 847, in urlopen
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 847, in urlopen
     retries = retries.increment(
               ^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/util/retry.py", line 510, in increment
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/util/retry.py", line 510, in increment
     raise reraise(type(error), error, _stacktrace)
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/util/util.py", line 39, in reraise
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/util/util.py", line 39, in reraise
     raise value
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 793, in urlopen
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 793, in urlopen
     response = self._make_request(
                ^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 494, in _make_request
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 494, in _make_request
     raise new_e
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 472, in _make_request
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 472, in _make_request
     self._raise_timeout(err=e, url=url, timeout_value=conn.timeout)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 373, in _raise_timeout
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 373, in _raise_timeout
     raise ReadTimeoutError(
 urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='raw.githubusercontent.com', port=443): Read timed out. (read timeout=None)
 
 During handling of the above exception, another exception occurred:
 
 Traceback (most recent call last):
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/server_inference.py", line 247, in _run
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/server_inference.py", line 247, in _run
     adapter.run_serial(request)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/server.py", line 654, in run_serial
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/server.py", line 654, in run_serial
     for result in model.generate(speech_request.input, **generate_kwargs):
                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/tts/models/kokoro/kokoro.py", line 302, in generate
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/tts/models/kokoro/kokoro.py", line 302, in generate
     pipeline = self._get_pipeline(lang_code)
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/tts/models/kokoro/kokoro.py", line 286, in _get_pipeline
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/tts/models/kokoro/kokoro.py", line 286, in _get_pipeline
     self._pipelines[lang_code] = KokoroPipeline(
                                  ^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/tts/models/kokoro/pipeline.py", line 152, in __init__
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/tts/models/kokoro/pipeline.py", line 152, in __init__
     self.g2p = en.G2P(
                ^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/misaki/en.py", line 501, in __init__
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/misaki/en.py", line 501, in __init__
     spacy.cli.download(name)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/spacy/cli/download.py", line 96, in download
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/spacy/cli/download.py", line 96, in download
     compatibility = get_compatibility()
                     ^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/spacy/cli/download.py", line 141, in get_compatibility
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/spacy/cli/download.py", line 141, in get_compatibility
     r = requests.get(about.__compatibility__)
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/api.py", line 87, in get
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/api.py", line 87, in get
     return request("get", url, params=params, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/api.py", line 71, in request
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/api.py", line 71, in request
     return session.request(method=method, url=url, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/sessions.py", line 651, in request
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/sessions.py", line 651, in request
     resp = self.send(prep, **send_kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/sessions.py", line 784, in send
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/sessions.py", line 784, in send
     r = adapter.send(request, **kwargs)
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/adapters.py", line 742, in send
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/adapters.py", line 742, in send
     raise ReadTimeout(e, request=request)
 requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='raw.githubusercontent.com', port=443): Read timed out. (read timeout=None)
 ERROR:    Exception in ASGI application
 Traceback (most recent call last):
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 470, in _make_request
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 470, in _make_request
     self._validate_conn(conn)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 1125, in _validate_conn
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 1125, in _validate_conn
     conn.connect()
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connection.py", line 878, in connect
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connection.py", line 878, in connect
     wrapped_socket, is_verified = _ssl_wrap_socket_and_match_hostname(
                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connection.py", line 1080, in _ssl_wrap_socket_and_match_hostname
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connection.py", line 1080, in _ssl_wrap_socket_and_match_hostname
     ssl_sock = ssl_wrap_socket(
                ^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/util/ssl_.py", line 437, in ssl_wrap_socket
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/util/ssl_.py", line 437, in ssl_wrap_socket
     ssl_sock = _ssl_wrap_socket_impl(sock, context, tls_in_tls, server_hostname)
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/util/ssl_.py", line 481, in _ssl_wrap_socket_impl
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/util/ssl_.py", line 481, in _ssl_wrap_socket_impl
     return ssl_context.wrap_socket(sock, server_hostname=server_hostname)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/ssl.py", line 455, in wrap_socket
@@ -126,122 +126,122 @@ TimeoutError: [Errno 60] Operation timed out
 The above exception was the direct cause of the following exception:
 
 Traceback (most recent call last):
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/adapters.py", line 696, in send
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/adapters.py", line 696, in send
     resp = conn.urlopen(
            ^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 847, in urlopen
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 847, in urlopen
     retries = retries.increment(
               ^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/util/retry.py", line 510, in increment
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/util/retry.py", line 510, in increment
     raise reraise(type(error), error, _stacktrace)
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/util/util.py", line 39, in reraise
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/util/util.py", line 39, in reraise
     raise value
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 793, in urlopen
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 793, in urlopen
     response = self._make_request(
                ^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 494, in _make_request
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 494, in _make_request
     raise new_e
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 472, in _make_request
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 472, in _make_request
     self._raise_timeout(err=e, url=url, timeout_value=conn.timeout)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 373, in _raise_timeout
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/urllib3/connectionpool.py", line 373, in _raise_timeout
     raise ReadTimeoutError(
 urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='raw.githubusercontent.com', port=443): Read timed out. (read timeout=None)
 
 The above exception was the direct cause of the following exception:
 
 Traceback (most recent call last):
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/uvicorn/protocols/http/h11_impl.py", line 416, in run_asgi
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/uvicorn/protocols/http/h11_impl.py", line 416, in run_asgi
     result = await app(  # type: ignore[func-returns-value]
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py", line 63, in __call__
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py", line 63, in __call__
     return await self.app(scope, receive, send)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/fastapi/applications.py", line 1163, in __call__
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/fastapi/applications.py", line 1163, in __call__
     await super().__call__(scope, receive, send)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/applications.py", line 96, in __call__
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/applications.py", line 96, in __call__
     await self.middleware_stack(scope, receive, send)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
     raise exc
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
     await self.app(scope, receive, _send)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/middleware/cors.py", line 88, in __call__
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/middleware/cors.py", line 88, in __call__
     await self.app(scope, receive, send)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
     raise exc
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
     await app(scope, receive, sender)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
     await self.app(scope, receive, send)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/routing.py", line 670, in __call__
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/routing.py", line 670, in __call__
     await self.middleware_stack(scope, receive, send)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/fastapi/routing.py", line 2734, in app
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/fastapi/routing.py", line 2734, in app
     await route.handle(scope, receive, send)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/fastapi/routing.py", line 1281, in handle
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/fastapi/routing.py", line 1281, in handle
     await super().handle(scope, receive, send)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/routing.py", line 280, in handle
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/routing.py", line 280, in handle
     await self.app(scope, receive, send)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/fastapi/routing.py", line 158, in app
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/fastapi/routing.py", line 158, in app
     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
     raise exc
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
     await app(scope, receive, sender)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/fastapi/routing.py", line 145, in app
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/fastapi/routing.py", line 145, in app
     await response(scope, receive, send)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/responses.py", line 273, in __call__
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/responses.py", line 273, in __call__
     async with create_collapsing_task_group() as task_group:
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py", line 231, in __aexit__
     await self.gen.athrow(value)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/_utils.py", line 93, in create_collapsing_task_group
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/_utils.py", line 93, in create_collapsing_task_group
     raise exc from exc.__cause__ or context
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/anyio/_core/_tasks.py", line 327, in _run_coro
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/anyio/_core/_tasks.py", line 327, in _run_coro
     retval = await self._coro
              ^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/responses.py", line 276, in wrap
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/responses.py", line 276, in wrap
     await func()
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/responses.py", line 250, in stream_response
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/starlette/responses.py", line 250, in stream_response
     async for chunk in self.body_iterator:
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/server.py", line 864, in _stream_inference_results
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/server.py", line 864, in _stream_inference_results
     raise chunk.error
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/server_inference.py", line 247, in _run
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/server_inference.py", line 247, in _run
     adapter.run_serial(request)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/server.py", line 654, in run_serial
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/server.py", line 654, in run_serial
     for result in model.generate(speech_request.input, **generate_kwargs):
                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/tts/models/kokoro/kokoro.py", line 302, in generate
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/tts/models/kokoro/kokoro.py", line 302, in generate
     pipeline = self._get_pipeline(lang_code)
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/tts/models/kokoro/kokoro.py", line 286, in _get_pipeline
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/tts/models/kokoro/kokoro.py", line 286, in _get_pipeline
     self._pipelines[lang_code] = KokoroPipeline(
                                  ^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/tts/models/kokoro/pipeline.py", line 152, in __init__
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/mlx_audio/tts/models/kokoro/pipeline.py", line 152, in __init__
     self.g2p = en.G2P(
                ^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/misaki/en.py", line 501, in __init__
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/misaki/en.py", line 501, in __init__
     spacy.cli.download(name)
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/spacy/cli/download.py", line 96, in download
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/spacy/cli/download.py", line 96, in download
     compatibility = get_compatibility()
                     ^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/spacy/cli/download.py", line 141, in get_compatibility
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/spacy/cli/download.py", line 141, in get_compatibility
     r = requests.get(about.__compatibility__)
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/api.py", line 87, in get
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/api.py", line 87, in get
     return request("get", url, params=params, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/api.py", line 71, in request
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/api.py", line 71, in request
     return session.request(method=method, url=url, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/sessions.py", line 651, in request
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/sessions.py", line 651, in request
     resp = self.send(prep, **send_kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/sessions.py", line 784, in send
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/sessions.py", line 784, in send
     r = adapter.send(request, **kwargs)
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/adapters.py", line 742, in send
+  File "~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/requests/adapters.py", line 742, in send
     raise ReadTimeout(e, request=request)
 requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='raw.githubusercontent.com', port=443): Read timed out. (read timeout=None)
 Creating new KokoroPipeline for language: aINFO:     127.0.0.1:51134 - "POST /v1/audio/speech HTTP/1.1" 200 OK
@@ -251,4 +251,4 @@ Installed 1 package in 4ms
  + en-core-web-sm==3.8.0 (from https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl)
 [38;5;2m✔ Download and installation successful[0m
 You can now load the package via spacy.load('en_core_web_sm')
-/Users/eric/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/torch/jit/_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+~/.cache/uv/archive-v0/aCORJkm9b8BhT-K5/lib/python3.12/site-packages/torch/jit/_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
