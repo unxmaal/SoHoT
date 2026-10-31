@@ -250,6 +250,9 @@ def local_complete(prompt: str, lane: str = "code", system: str | None = None,
     got = _delegated(delegate.complete, lane, prompt, system=system,
                      max_tokens=max_tokens, temperature=temperature,
                      thinking=thinking, delegated=True)
+    if (got.get("completion_tokens") or 0) >= max_tokens:
+        cuts.cut("harness/mcp_server.py:local_complete(max_tokens)", f"a {lane} delegation reply at its token budget",
+                 value=max_tokens, kept=0, dropped=1)
     got["report"] = delegations.instruction(got["call_id"])
     return LocalCompletion(**{k: got[k] for k in LocalCompletion.model_fields})
 
@@ -465,8 +468,9 @@ def _local_hostname() -> str:
     import socket
     import subprocess
     try:
-        name = subprocess.run(["scutil", "--get", "LocalHostName"],
-                              capture_output=True, text=True, timeout=5).stdout.strip()
+        with cuts.timeout("harness/mcp_server.py:_local_hostname->subprocess.run(timeout)", "scutil LocalHostName"):
+            name = subprocess.run(["scutil", "--get", "LocalHostName"],
+                                  capture_output=True, text=True, timeout=5).stdout.strip()
     except (OSError, subprocess.SubprocessError):
         name = ""
     return f"{name}.local" if name else socket.gethostname()
