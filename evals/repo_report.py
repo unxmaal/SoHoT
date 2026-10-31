@@ -539,9 +539,11 @@ def cases_at(sha: str, root: Path | None = None) -> list:
 
     from evals.core import load_cases
     root = root or Path(__file__).resolve().parent.parent
+    from harness import cuts
     try:
-        got = subprocess.run(["git", "-C", str(root), "archive", sha, "evals/cases/repo"],
-                             capture_output=True, timeout=60)
+        with cuts.timeout("evals/repo_report.py:cases_at->subprocess.run(timeout)", f"git archive of the repo cases at {sha}"):
+            got = subprocess.run(["git", "-C", str(root), "archive", sha, "evals/cases/repo"],
+                                 capture_output=True, timeout=60)
     except (OSError, subprocess.TimeoutExpired):
         return []
     if got.returncode != 0:

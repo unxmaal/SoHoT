@@ -13,3 +13,12 @@ KNOBS = [
     _k("agent_steps_scale", ["evals/runners/agent.py:MAX_STEPS_SCALE"], [0.5, 1.0, 1.5, 2.0], lanes=("agent",),
        limit="agent_steps_scale", unit="factor", receipt="knobs", note="multiplies every agent case's own max_steps (#695)", unrecorded=1.0),
 ]
+
+NEVER_CUTS = {
+    "evals/agent_pad.py:CHARS_PER_TOKEN": "sizes the padding where the served tokenizer cannot count it; every module "
+                                          "generated is kept (#695)",
+    "evals/runners/agent.py:AgentRunner.__init__(max_tokens)": "0 asks at the lane's reply_budget, which records its "
+                                                               "own binding as max_tokens.agent (#695)",
+    "evals/runners/agent.py:AgentRunner.warm->self.chat(max_tokens)": "the warm-up's reply budget; a reply cut there "
+                                                                      "counts as answered (#406)",
+}

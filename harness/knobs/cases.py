@@ -55,4 +55,7 @@ NOT_GATING = {
 
 NEVER_CUTS = {
     "evals/importers/pii_synth.py:NO_PII_SHARE": "the mix of generated pii cases; every case drawn is written (#610)",
+    "evals/decide_corpus.py:THRESHOLD": "the rater fraction that labels a policy answer true or false; every picked "
+                                        "comment is written (#491)",
+    "evals/ocr_corpus.py:MAX_CER": "the pass mark written into each generated OCR case; every case is written (#603)",
 }
