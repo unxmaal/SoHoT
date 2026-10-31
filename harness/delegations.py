@@ -223,13 +223,14 @@ def calls(path: Path, wanted) -> list[dict]:
 
 
 def judge(answer: str, prompt: str, later, floor: int | None = None,
-          share: float | None = None) -> tuple[str, str] | None:
-    """(accepted|rejected, why) from the first later tool input that shows it, else None."""
+          share: float | None = None, near: list | None = None) -> tuple[str, str] | None:
+    """(accepted|rejected, why) from the first later tool input that shows it, else None; `near` gets a miss under the share."""
     share = SPAN_SHARE if share is None else share
     asked = spans(prompt, floor)
     mine = spans(answer, floor) - asked
     need, again = max(1, math.ceil(share * len(mine))), max(1, math.ceil(share * len(asked)))
     from harness.context_report import SPAWN_TOOLS
+    under = False
     for name, text in later:
         if _short(name) in DELEGATING:
             continue
@@ -239,6 +240,9 @@ def judge(answer: str, prompt: str, later, floor: int | None = None,
             return ACCEPTED, f"{hit} of {len(mine)} answer lines in a later {_short(name)} input"
         if name in SPAWN_TOOLS and asked and sum(1 for s in asked if s in flat) >= again:
             return REJECTED, f"the task was asked again of a cloud {name}"
+        under = under or hit > 0
+    if under and near is not None:
+        near.append(answer)
     return None
 
 
@@ -263,11 +267,13 @@ def close(conn, root: Path | None = None, now: float | None = None, expiry_h: fl
             got["transcripts"] += 1
             for f in calls(path, set(pending) - set(seen)):
                 seen[f["call_id"]] = (path, f)
+    near: list = []
+    expired = short = 0
     for call_id, at in sorted(pending.items()):
         what = why = None
         path, f = seen.get(call_id, (None, None))
         if f is not None:
-            verdict = judge(f["answer"], f["prompt"], f["later"])
+            verdict = judge(f["answer"], f["prompt"], f["later"], near=near)
             if verdict:
                 what, why = verdict[0], f"inferred from session {_session(path)}: {verdict[1]}"
         if what is None and now - at >= expiry_s:
@@ -275,11 +281,23 @@ def close(conn, root: Path | None = None, now: float | None = None, expiry_h: fl
                       else "no later tool input held the answer" if spans(f["answer"])
                       else "the answer has no line long enough to look for")
             what, why = UNKNOWN, f"expired after {expiry_s / 3600:g} h: {reason}"
+            expired += 1
+            short += f is not None and bool(f["answer"].strip()) and not spans(f["answer"])
         if what is None:
             got[PENDING] += 1
             continue
         cur = conn.execute("UPDATE delegations SET outcome = ?, why = ?, outcome_at = ? "
                            "WHERE call_id = ? AND outcome IS NULL", (what, why, now, call_id))
         got[what] += cur.rowcount
+    from harness import cuts
+    if expired:
+        cuts.cut("delegation_expiry", "delegations closed unknown at expiry", value=expiry_s / 3600,
+                 dropped=expired, conn=conn)
+    if short:
+        cuts.cut("delegation_span_chars", "delegation answers with no line long enough to look for", dropped=short,
+                 conn=conn)
+    if near:
+        cuts.cut("delegation_span_share", "delegation answers seen in later input below the share",
+                 dropped=len(near), conn=conn)
     conn.commit()
     return got

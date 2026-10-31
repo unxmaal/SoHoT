@@ -93,8 +93,12 @@ def sweeps(starts: list[float], killed: list[float], activity: list[tuple], span
             out.append((s, min(ends)))
             continue
         alive = [e for b, e, _ in activity if s <= b < cap]
-        out.append((s, min(cap, max([s + SWEEP_FLOOR_SECONDS, *alive]))))
+        out.append((s, min(cap, max([_charged(s), *alive]))))
     return out
+
+
+def _charged(start: float) -> float:
+    return start + SWEEP_FLOOR_SECONDS
 
 
 def refusals(text: str, tz=None) -> list[dict]:
