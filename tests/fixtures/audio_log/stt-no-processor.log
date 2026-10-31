@@ -1,23 +1,23 @@
 INFO:     127.0.0.1:60156 - "POST /v1/audio/transcriptions HTTP/1.1" 200 OK
-/Users/eric/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/stt/models/whisper/whisper.py:714: UserWarning: Could not load WhisperProcessor: Can't load feature extractor for '/Volumes/Models/hf/hub/models--mlx-community--whisper-large-v3-mlx/snapshots/49e6aa286ad60c14352c404340ded53710378a11'. If you were trying to load it from 'https://huggingface.co/models', make sure you don't have a local directory with the same name. Otherwise, make sure '/Volumes/Models/hf/hub/models--mlx-community--whisper-large-v3-mlx/snapshots/49e6aa286ad60c14352c404340ded53710378a11' is the correct path to a directory containing a preprocessor_config.json file.
+~/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/stt/models/whisper/whisper.py:714: UserWarning: Could not load WhisperProcessor: Can't load feature extractor for '/Volumes/MODELS/hf/hub/models--mlx-community--whisper-large-v3-mlx/snapshots/49e6aa286ad60c14352c404340ded53710378a11'. If you were trying to load it from 'https://huggingface.co/models', make sure you don't have a local directory with the same name. Otherwise, make sure '/Volumes/MODELS/hf/hub/models--mlx-community--whisper-large-v3-mlx/snapshots/49e6aa286ad60c14352c404340ded53710378a11' is the correct path to a directory containing a preprocessor_config.json file.
   warnings.warn(f"Could not load WhisperProcessor: {e}.")
 INFO:     127.0.0.1:61615 - "POST /v1/audio/transcriptions HTTP/1.1" 200 OK
 Traceback (most recent call last):
-  File "/Users/eric/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/server_inference.py", line 247, in _run
+  File "~/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/server_inference.py", line 247, in _run
     adapter.run_serial(request)
-  File "/Users/eric/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/server.py", line 301, in run_serial
+  File "~/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/server.py", line 301, in run_serial
     result = stt_model.generate(tmp_path, **gen_kwargs)
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/stt/models/whisper/whisper.py", line 927, in generate
+  File "~/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/stt/models/whisper/whisper.py", line 927, in generate
     language = self._detect_language(mel, language=language)
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/stt/models/whisper/whisper.py", line 796, in _detect_language
+  File "~/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/stt/models/whisper/whisper.py", line 796, in _detect_language
     _, probs = self.detect_language(mel_segment)
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/stt/models/whisper/decoding.py", line 36, in detect_language
+  File "~/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/stt/models/whisper/decoding.py", line 36, in detect_language
     tokenizer = model.get_tokenizer()
                 ^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/eric/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/stt/models/whisper/whisper.py", line 751, in get_tokenizer
+  File "~/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/stt/models/whisper/whisper.py", line 751, in get_tokenizer
     raise ValueError(
 ValueError: Processor not found. Make sure the model was loaded with a HuggingFace processor.
 INFO:     127.0.0.1:64694 - "GET /v1/models HTTP/1.1" 200 OK

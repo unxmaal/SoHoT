@@ -102,16 +102,29 @@ def vllm_engine(environ=None) -> str:
     return got
 
 
+def llamacpp_named() -> str:
+    """What scripts/serve-llamacpp.sh execs: $LLAMACPP_BIN, else llama-server. #1449."""
+    return (os.environ.get("LLAMACPP_BIN") or "").strip() or LLAMACPP
+
+
+def llamacpp_binary() -> str | None:
+    """llamacpp_named() resolved as the serve script resolves it, on PATH or an executable path; None when absent. #1449."""
+    import shutil
+    return shutil.which(llamacpp_named())
+
+
 def llamacpp_build(binary: str = "") -> str:
     """The installed llama-server's build number, or "" if it cannot say."""
     import re
     import subprocess
 
     from harness import cuts
+    binary = binary or llamacpp_binary()
+    if not binary:
+        return ""
     try:
         with cuts.timeout("harness/serving.py:llamacpp_build->subprocess.run(timeout)", "llama-server --version"):
-            out = subprocess.run([binary or os.environ.get("LLAMACPP_BIN")
-                                  or LLAMACPP, "--version"], capture_output=True,
+            out = subprocess.run([binary, "--version"], capture_output=True,
                                  text=True, timeout=10)
     except (OSError, subprocess.SubprocessError):
         return ""
