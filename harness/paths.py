@@ -27,7 +27,7 @@ import os
 import subprocess
 import sys
 import tempfile
-import threading
+from threading import local
 import time
 from pathlib import Path
 
@@ -57,7 +57,7 @@ def is_live(path: Path) -> bool:
     return Path(path).resolve() == (DEFAULT_HOME / "discovery.db").resolve()
 
 
-_asking = threading.local()
+_asking = local()
 
 
 def deploy_checkout() -> Path | None:
