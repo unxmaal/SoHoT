@@ -155,4 +155,6 @@ NEVER_CUTS = {
                                                "request or reply is dropped (#912)",
     "harness/context.py:STEP": "the granularity a context is rounded down to; the KV room or trained context that binds "
                                "records under its own knob (#498)",
+    **{f"evals/run.py:{f}(max_tokens)": "0 passes no override, so the runner asks at the lane's reply_budget, which "
+       "records its own binding (#628)" for f in ("build_runner", "_agent_runner", "_build_runner")},
 }

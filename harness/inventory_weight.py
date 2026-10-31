@@ -615,7 +615,7 @@ def score_knobs(knobs: list[dict]) -> list[dict]:
         known = "" if k.get("changes") is not None else "; site history not readable"
         out.append(_row("knobs", k["name"], 1, "knob", 1.0 if moved else 0.0,
                         (", ".join(moved) if moved else "never swept, cut, hit or changed") + known,
-                        info="folding a knob into a constant is Eric's call"))
+                        info="folding a knob into a constant is the owner's call"))
     return out
 
 
