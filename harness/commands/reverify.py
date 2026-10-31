@@ -1,6 +1,8 @@
 """`soh reverify`: re-run served models whose runtime moved, that aged, or whose real use regressed. #480, #486."""
 from __future__ import annotations
 
+import contextlib
+
 from harness.commands.common import emit, err, note
 
 
@@ -47,8 +49,10 @@ def cmd_reverify(a) -> int:
             note(f"{lane}: due again after {a.days:g} days without a passing run")
             emit(lane=lane, days=float(a.days))
             return 0
-        got = reverify.check(conn, lane=lane, dry_run=a.dry_run)
-        flags = reverify.flags(conn)
+        # A dry run's readers take this connection rather than reopen the store. #1426.
+        with ms.lend(conn) if a.dry_run else contextlib.nullcontext():
+            got = reverify.check(conn, lane=lane, dry_run=a.dry_run)
+            flags = reverify.flags(conn)
     finally:
         conn.close()
     report(got)

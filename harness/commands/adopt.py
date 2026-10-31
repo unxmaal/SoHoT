@@ -25,7 +25,7 @@ def cmd_adopt(a) -> int:
     if getattr(a, "power", False):
         return cmd_power(a)
     if getattr(a, "from_measurement", False):
-        return _from_measurement(a)
+        return _dry_run(a) if getattr(a, "dry_run", False) else _from_measurement(a)
     if not a.lane or not a.challenger:
         return err("adopt needs --lane and --challenger, or --power")
     lane = lanes.canonical(a.lane)
@@ -49,6 +49,17 @@ def argv_screen_refusal(argv) -> str:
     if got.confirm or got.power or got.from_measurement or not got.challenger:
         return ""
     return measure_cmd._screen_refusal(got, lanes.canonical(got.lane or ""), got.challenger)
+
+
+def _dry_run(a) -> int:
+    """`--from-measurement --dry-run` on one connection, lent to every reader. #1426."""
+    from harness import memory_store as ms
+    conn = ms.connect()
+    try:
+        with ms.lend(conn):
+            return _from_measurement(a)
+    finally:
+        conn.close()
 
 
 def _from_measurement(a) -> int:
