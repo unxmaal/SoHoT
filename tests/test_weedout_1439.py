@@ -194,6 +194,43 @@ def test_a_confirmation_slice_that_cannot_reach_the_gate_records_a_keep(tmp_path
     assert measure_cmd._confirm_look("code", out, ahead, 7) is None
 
 
+def test_a_confirmation_too_small_to_power_its_effect_stops_as_lane_too_small_not_a_loss(tmp_path, monkeypatch):
+    from harness import reasons
+    out = tmp_path / "confirm"
+    out.mkdir()
+    ckpt = watch.Checkpoint(out, {"modality": "code", "candidates": ["inc-spec", "org/x"], "repeat": 1,
+                                  "split": "dev"}, keep=False)
+    few = CASES[:8]
+    rates = {c: (0.0 if i < 4 else 1.0) for i, c in enumerate(few)}
+    for r in _pair({c: ((True, False) if i < 2 else (False, False)) for i, c in enumerate(few[:4])}):
+        ckpt.add({**r, "candidate": "inc-key" if r["candidate"] == INC else "ch-key"}, 1.0)
+    (out / watch.PROGRESS).write_text(json.dumps({"specs": {"inc-key": "inc-spec", "ch-key": "org/x"}}),
+                                      encoding="utf-8")
+    monkeypatch.setattr(power, "effect_for", lambda lane: 0.06)
+    pw = power.plan([rates[c] for c in few], 0.06, repeat=1, observed=40, unmeasured=False)
+    assert pw.power < pw.target and (pw.cases_needed or 0) > len(few)
+    plan = {**weedout.planned(few, rates, {}, 0.06), "cells": list(few), "repeat": 1, "effect": 0.06,
+            "power": pw.as_dict(), "incumbent": "inc-spec", "challenger": "org/x"}
+    got = measure_cmd._confirm_look("code", out, plan, 7)
+    assert got is not None and not got.adopt
+    assert got.failure_class == reasons.LANE_TOO_SMALL and got.until.startswith("cases:code>")
+
+
+def test_the_confirmation_plan_carries_the_power_its_cells_could_have(tmp_path, monkeypatch):
+    monkeypatch.setattr(power, "served_profile", lambda conn, lane, spec: ({"d1": [1, 1], "d2": [0, 1]}, None))
+    monkeypatch.setattr(weedout, "seconds_of", lambda conn, lane, spec: {"d1": 2.0, "d2": 30.0})
+
+    class Conn:
+        def close(self):
+            pass
+    from harness import memory_store as ms
+    monkeypatch.setattr(ms, "connect", lambda *a, **k: Conn())
+    split = holdout.Split("code", ("d1", "d2", "d3"), ("h1",), False)
+    got = measure_cmd._confirm_order("code", "inc-spec", split, 1, frozenset({"d3"}))
+    assert got["cells"] == ["d1", "d2"] and set(got["order"]) == {"d1", "d2", "d3"}
+    assert got["power"]["cases"] == 2 and 0.0 <= got["power"]["power"] <= 1.0 and not got["power"]["unmeasured"]
+
+
 def test_a_confirmation_runs_in_look_slices_with_its_order(tmp_path, monkeypatch):
     seen = []
 

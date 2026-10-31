@@ -1132,8 +1132,15 @@ def _confirm_order(lane: str, inc_spec: str, split, repeat: int, screened=frozen
     finally:
         store.close()
     effect = power.effect_for(lane)
-    got = weedout.planned(run, power.rates_from(draws, run)[0], secs, effect) if run else {"order": (), "rates": {}}
-    return {**got, "cells": [c for c in run if c not in screened], "repeat": int(repeat), "effect": effect}
+    rates = power.rates_from(draws, run)[0] if run else {}
+    got = weedout.planned(run, rates, secs, effect) if run else {"order": (), "rates": {}}
+    cells = [c for c in run if c not in screened]
+    # The power the cells could have, so an unpowered futility stop is lane_too_small, never a loss. #1452.
+    seen = sum(len(draws.get(c) or ()) for c in cells)
+    planned = power.plan([rates[c] for c in cells], effect, repeat=int(repeat), observed=seen,
+                         unmeasured=not seen) if cells else None
+    return {**got, "cells": cells, "repeat": int(repeat), "effect": effect,
+            "power": planned.as_dict() if planned is not None else {}}
 
 
 def _confirm_look(lane: str, out, plan: dict, vid: int):
@@ -1149,7 +1156,8 @@ def _confirm_look(lane: str, out, plan: dict, vid: int):
     if not cells:
         return None
     effect = plan["effect"]
-    asked = {"repeat": plan["repeat"], "cells": len(cells) * plan["repeat"], "cases": len(cells), "effect": effect,
+    asked = {**(plan.get("power") or {}),
+             "repeat": plan["repeat"], "cells": len(cells) * plan["repeat"], "cases": len(cells), "effect": effect,
              "odds": power._cell_odds([plan["rates"].get(c, power.UNSEEN) for c in cells], effect),
              "order": plan["order"], "rates": plan["rates"]}
     look, verdict = looks.look(rows, lane=lane, inc_key=inc_key, ch_key=ch_key,
