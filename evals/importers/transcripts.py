@@ -16,6 +16,7 @@ from pathlib import Path
 
 from evals import interface, redact, repo, session_cut
 from evals.importers import Imported, history, provenance
+from harness import paths
 
 LANE = "repo"
 SOURCE = "claude-code:transcripts"
@@ -942,6 +943,7 @@ def main(argv: list[str] | None = None) -> int:
         ap.error("--log is required unless --dry-run")
     keep = None if a.restart or not a.out.is_file() else manifest(a.out)
     known = redact.known_here(a.names)
+    paths.eval_home(reads_live=True)
     got = survey(a.root or default_root(), a.repos, a.log or Path(os.devnull), known=known, probes=a.probes,
                  run=not a.dry_run, keep=keep)
     print("\n".join(report(got)), file=sys.stderr)

@@ -227,6 +227,8 @@ def cmd_power(a) -> int:
              f"{r['observed']} rows]"
              + (f"  alpha {r['alpha']:.4f} after {r['comparisons']} verdict(s) on this holdout"
                 if r["comparisons"] else ""))
+        if power.challenger_note(r["estimate"] or {}):
+            note(f"           {power.challenger_note(r['estimate'])}")
         if r["unseen"]:
             note(f"           {r['unseen']}")
         elif r["unmeasured"]:

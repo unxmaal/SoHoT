@@ -661,11 +661,12 @@ def _no_inherited_purpose():
     """purpose.set_process writes os.environ; a cli or mcp test must not tag the next test's requests. #825."""
     import os
     from harness import purpose
-    saved = os.environ.pop(purpose.ENV, None)
+    saved = {k: os.environ.pop(k, None) for k in (purpose.ENV, paths.EVAL_ENV)}
     yield
-    os.environ.pop(purpose.ENV, None)
-    if saved is not None:
-        os.environ[purpose.ENV] = saved
+    for k, was in saved.items():
+        os.environ.pop(k, None)
+        if was is not None:
+            os.environ[k] = was
 
 
 @pytest.fixture

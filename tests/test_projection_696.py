@@ -51,7 +51,7 @@ def test_a_challenger_three_times_slower_is_priced_at_its_own_speed_and_the_inpu
     assert plan.projected_s == pytest.approx(plan.cases_run * 1 * (10.0 + 30.0))
     est = plan.as_dict()["estimate"]
     assert est["incumbent_s"] == pytest.approx(10.0) and est["incumbent_source"] == "measured"
-    assert est["challenger_s"] == pytest.approx(30.0) and est["challenger_source"] == "measured"
+    assert est["challenger_s"] == pytest.approx(30.0) and est["challenger_source"] == "exam"
 
 
 def test_a_challenger_measured_only_elsewhere_is_scaled_by_its_size(store_run):

@@ -460,6 +460,8 @@ def cmd_sensitivity(a) -> int:
     if unknown:
         return err(f"unknown probe(s) {', '.join(unknown)}; "
                    f"known: {', '.join(sorted(probes.PROBES))}")
+    from harness import paths
+    paths.eval_home(reads_live=True)
     try:
         found = probes.run(a.names or None)
     except Exception as exc:  # noqa: BLE001

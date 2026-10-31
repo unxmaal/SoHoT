@@ -14,6 +14,7 @@ from pathlib import Path
 
 from evals import interface, repo
 from evals.importers import Imported, provenance
+from harness import paths
 
 LANE = "repo"
 SOURCE = "git:unxmaal/SoHoT"
@@ -704,6 +705,7 @@ def main(argv: list[str] | None = None) -> int:
         ap.error("--log is required for a survey")
     a.out.parent.mkdir(parents=True, exist_ok=True)
     held = manifest(src.manifest) if src.manifest.is_file() else None
+    paths.eval_home(reads_live=True)
     got = survey(a.source, a.revision, a.limit, a.log, keep=None if a.restart else held,
                  probes=a.probes, run=not a.project, src=src)
     a.out.write_text(json.dumps(got, indent=1) + "\n", encoding="utf-8")
