@@ -59,19 +59,31 @@ def test_a_failed_uuid_probe_is_not_cached_as_this_machine(monkeypatch):
     assert ms.machines._THIS_FINGERPRINT is None
 
 
-def test_a_stand_in_capture_names_the_row_on_any_real_board(monkeypatch):
-    real = environment.identity
-    monkeypatch.setattr(environment, "identity", lambda: {
-        **real(), "hw_model": "Other,1", "fingerprint": "Other,1/macOS/arm64/cccccccccccc"})
-    fake = {"hw_model": "Mac17,15", "os": "macOS-27", "arch": "arm64", "host": "aaaaaaaaaaaa",
-            "memory_gb": 96, "accelerator": {}, "versions": {}}
-    monkeypatch.setattr(environment, "capture", lambda: dict(fake))
-    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
-    monkeypatch.setattr(ms.machines, "_THIS_FINGERPRINT", None)
+def _real_board_is(monkeypatch, board):
+    """The board environment.identity reads off this host, as on a runner whose board is not the developer's. #1435."""
+    monkeypatch.setattr(environment, "_sh", lambda *a: board if a[-1:] == ("hw.model",) else "")
+    assert environment.identity()["hw_model"] == board
+
+
+def test_a_stand_in_at_the_seam_names_the_row_on_any_real_board(monkeypatch, machine_is):
+    _real_board_is(monkeypatch, "Other,1")
+    machine_is({"hw_model": "Mac17,15", "os": "macOS-27", "arch": "arm64", "host": "aaaaaaaaaaaa",
+                "memory_gb": 96, "accelerator": {}, "versions": {}})
     with ms.connect() as c:
         mid = ms.remember_machine(c)
         monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
         assert ms.machine_row(c) == mid
+    assert ms.this_fingerprint() == ms.this_machine()["fingerprint"] == "Mac17,15/macOS/arm64/aaaaaaaaaaaa"
+
+
+def test_a_stand_in_capture_cannot_split_the_cheap_and_full_identity(monkeypatch):
+    _real_board_is(monkeypatch, "Other,1")
+    monkeypatch.setattr(environment, "capture", lambda: {
+        "hw_model": "Mac17,15", "os": "macOS-27", "arch": "arm64", "host": "aaaaaaaaaaaa",
+        "memory_gb": 96, "accelerator": {}, "versions": {}})
+    _fresh_process(monkeypatch)
+    cheap = ms.this_fingerprint()
+    assert ms.this_machine()["fingerprint"] == cheap and cheap.startswith("Other,1/")
 
 
 def test_importing_ds4_reads_no_case_file():

@@ -40,19 +40,16 @@ def this_machine() -> dict:
     from harness import machine as _machine
     if _PROVISIONAL is not None and _now() - _PROVISIONAL[0] < _machine.RETRY_S:
         return _PROVISIONAL[1]
+    from harness import inspect as _ins
+    # Identity comes from the one seam this_fingerprint reads too, never from capture's copy. #1435.
+    me = _identity()
     try:
         from evals import environment
-        from harness import inspect as _ins
-        from harness import machine as _machine
 
         env = environment.capture()
         mach = _machine.detect()
         acc = env.get("accelerator") or {}
         got = {
-            "hw_model": env.get("hw_model", ""),
-            "os": env.get("os", ""),
-            "arch": env.get("arch", ""),
-            "host": env.get("host", ""),
             "memory_gb": float(env.get("memory_gb") or 0),
             "accelerator": f"{acc.get('kind', '')} "
                            f"{float(acc.get('total_gb') or 0):.0f}GB".strip(),
@@ -62,16 +59,14 @@ def this_machine() -> dict:
         }
     except Exception:  # noqa: BLE001
         # A store write must never fail because a probe did; partial facts never overwrite a stored row. #747.
-        got = {"hw_model": "", "os": "", "arch": "", "host": "", "memory_gb": 0.0,
-               "accelerator": "", "runtimes": "", "ceiling_gb": 0.0,
-               "versions": {}, **_identity(), "partial": True}
-        # A failed probe is not this machine for the rest of the process: ask again next time. #747.
-        complete = False
-    else:
-        # A host read back after a failed uuid probe is not yet this machine's answer. #747.
-        complete = not _machine.uuid_failed()
-    got["fingerprint"] = _machine.fingerprint(got["hw_model"], got["os"],
-                                              got["arch"], got["host"])
+        got = {"memory_gb": 0.0, "accelerator": "", "runtimes": "", "ceiling_gb": 0.0,
+               "versions": {}, "partial": True}
+    if not me:
+        got["partial"] = True
+    # A failed probe is not this machine for the rest of the process: ask again next time. #747.
+    complete = not got.get("partial") and not _machine.uuid_failed()
+    got = {"hw_model": "", "os": "", "arch": "", "host": "",
+           "fingerprint": _machine.fingerprint("", "", "", ""), **me, **got}
     if complete:
         _THIS_MACHINE, _PROVISIONAL = got, None
     else:
@@ -89,17 +84,10 @@ def this_fingerprint() -> str:
     # A stand-in this_machine names the machine for every caller, this one too. #451.
     if _THIS_MACHINE is not None or getattr(ms.this_machine, "__module__", "") != __name__:
         return ms.this_machine()["fingerprint"]
-    from evals import environment
-    # So does a stand-in environment.capture, which this_machine() reads. #451.
-    if getattr(environment.capture, "__module__", "") != environment.__name__:
-        return ms.this_machine()["fingerprint"]
     if _THIS_FINGERPRINT is not None:
         return _THIS_FINGERPRINT
     from harness import machine as _machine
-    try:
-        fp = environment.identity()["fingerprint"]
-    except Exception:  # noqa: BLE001
-        return ms.this_machine()["fingerprint"]
+    fp = _identity().get("fingerprint")
     if not fp or _machine.uuid_failed():
         # A host from a failed uuid probe is not this machine's answer yet. #747.
         return ms.this_machine()["fingerprint"]
@@ -108,13 +96,16 @@ def this_fingerprint() -> str:
 
 
 def _identity() -> dict:
-    """hw_model, os, arch and host from the cheap probes, or {} when they fail too. #747."""
+    """hw_model, os, arch, host and fingerprint from environment.identity, the one machine-identity seam; {} on failure. #1435."""
     try:
         from evals import environment
+        from harness import machine as _machine
         me = environment.identity()
+        got = {k: me.get(k) or "" for k in ("hw_model", "os", "arch", "host")}
+        got["fingerprint"] = _machine.fingerprint(got["hw_model"], got["os"], got["arch"], got["host"])
     except Exception:  # noqa: BLE001
         return {}
-    return {k: me.get(k) or "" for k in ("hw_model", "os", "arch", "host")}
+    return got
 
 
 def remember_machine(conn: sqlite3.Connection, facts: dict | None = None) -> int:

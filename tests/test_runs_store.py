@@ -51,16 +51,14 @@ class _Runner:
                       peak_kb=7, detail="", metrics={"ink": 0.2})
 
 
-def test_evals_run_writes_the_run_and_its_rows(monkeypatch, tmp_path):
+def test_evals_run_writes_the_run_and_its_rows(monkeypatch, tmp_path, machine_is):
     cases = [Case(id="a", modality="svg", prompt="p"),
              Case(id="b", modality="svg", prompt="q")]
     monkeypatch.setattr(core, "load_cases", lambda path: cases)
     monkeypatch.setattr(er, "build_runner", lambda *a, **k: _Runner())
     monkeypatch.setattr(er, "warn_if_pressed",
                         lambda: argparse.Namespace(as_dict=lambda: {}))
-    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
-    monkeypatch.setattr(environment, "capture", lambda: {"hw_model": "Test,1",
-                                                "os": "t", "arch": "a"})
+    machine_is({"hw_model": "Test,1", "os": "t", "arch": "a"})
     out = tmp_path / "out"
     args = argparse.Namespace(
         modality="svg", candidates="fake:spec", cases="x", out=str(out),
