@@ -9,7 +9,7 @@
     "candidate": "bm25/okapi",
     "cases": 189,
     "first_s": 0.027,
-    "median_s": 0.026,
+    "median_s": 0.027,
     "metrics": {
      "retrieval_ndcg": 0.8803,
      "retrieval_recall": 0.7831
@@ -21,7 +21,7 @@
     "peak_gb": 0.01,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-22T06:14:17Z",
+    "run_at": "2026-10-30T10:31:18Z",
     "served_as": "",
     "source": "",
     "total": 189,
@@ -40,8 +40,8 @@
   },
   {
    "candidate": "rerank:cross-encoder/ettin-reranker-1b-v1",
-   "decided_at": "2026-10-30T03:02:27Z",
-   "detail": "not screened: needs 5.6 GB but only 1.0 GB is safely available (19.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "decided_at": "2026-10-31T01:06:01Z",
+   "detail": "fits: smallest variant model.safetensors: 3.8 GiB of 1 weight file",
    "exam": {
     "about": "1B params",
     "candidate": "rerank/ettin-reranker-1b-v1",
@@ -68,13 +68,13 @@
    },
    "outcome": "queued",
    "proposal": "cross-encoder/ettin-reranker-1b-v1",
-   "reason": "memory",
+   "reason": "candidate",
    "receipt_key": "rerank/ettin-reranker-1b-v1",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>5.6"
+   "tier": "inspect",
+   "until": ""
   }
  ],
  "cursor": 1793329347941493,
@@ -136,7 +136,7 @@
      "about": "",
      "candidate": "bm25/okapi",
      "first_s": 0.027,
-     "median_s": 0.026,
+     "median_s": 0.027,
      "metrics": {
       "retrieval_ndcg": 0.8803,
       "retrieval_recall": 0.7831
@@ -147,7 +147,7 @@
      "passed": 148,
      "peak_gb": 0.01,
      "reference": false,
-     "run_at": "2026-10-22T06:14:17Z",
+     "run_at": "2026-10-30T10:31:18Z",
      "served_as": "",
      "source": "",
      "total": 189,
@@ -155,8 +155,8 @@
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-10-22T06:14:17Z",
-   "runs": 3
+   "run_at": "2026-10-30T10:31:18Z",
+   "runs": 4
   },
   {
    "cases": 14,
@@ -213,7 +213,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-10-30T07:00:26Z",
+ "generated_at": "2026-10-31T09:17:36Z",
  "knobs": [],
  "lane": {
   "cases": 594,
@@ -232,8 +232,8 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-10-22T06:14:17Z",
-  "median_s": 0.026,
+  "measured_at": "2026-10-30T10:31:18Z",
+  "median_s": 0.027,
   "metrics": {
    "retrieval_ndcg": 0.8803,
    "retrieval_recall": 0.7831
@@ -244,7 +244,7 @@
   "pass_rate": 0.783,
   "serves": "bm25",
   "serves_model": "bm25",
-  "stale": true
+  "stale": false
  },
  "since": 0
 }
