@@ -5,7 +5,6 @@ import json
 import os
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -203,20 +202,16 @@ def test_a_taskkill_past_its_timeout_is_a_cut(monkeypatch):
     assert _knobs() == ["harness/checks/render.py:_kill_tree->subprocess.run(timeout)"]
 
 
-def _writer(out: Path, forever: bool) -> list[str]:
-    body = (f"import time\np = {str(out)!r}\n"
-            + ("while True:\n    open(p, 'ab').write(b'x')\n    time.sleep(0.02)\n" if forever
-               else "open(p, 'wb').write(b'png')\ntime.sleep(30)\n"))
-    return [sys.executable, "-c", body]
-
-
-def test_a_screenshot_still_growing_at_the_deadline_is_a_cut_of_the_timeout_it_was_given(tmp_path):
+def test_a_screenshot_still_growing_at_the_deadline_is_a_cut_of_the_timeout_it_was_given(tmp_path, fake_chrome):
     from harness.checks import render
     done = tmp_path / "done.png"
-    render._shoot(_writer(done, False), done, str(tmp_path), timeout=10, timeout_knob="chrome_render_timeout")
-    assert done.exists() and _spooled() == []
+    render._shoot(fake_chrome.argv(done), done, str(tmp_path), timeout=10, timeout_knob="chrome_render_timeout")
+    assert done.exists() and fake_chrome.now < 10 and _spooled() == []
+    missing, started = tmp_path / "missing.png", fake_chrome.now
+    render._shoot(fake_chrome.argv(missing, writes=False), missing, str(tmp_path), timeout=1)
+    assert not missing.exists() and fake_chrome.now - started >= 1 and _spooled() == []
     growing = tmp_path / "growing.png"
-    render._shoot(_writer(growing, True), growing, str(tmp_path), timeout=1)
+    render._shoot(fake_chrome.argv(growing, grows=True), growing, str(tmp_path), timeout=1)
     assert _knobs() == ["harness/checks/render.py:_shoot(timeout)"]
 
 
