@@ -133,6 +133,9 @@ def usable(path: str, min_free_gb: int = HF_MIN_FREE_GB) -> bool:
     if anchor is None or not _writable(anchor):
         return False
     if free_gb(path) < min_free_gb:
+        from harness import cuts
+        cuts.cut("harness/env.py:HF_MIN_FREE_GB", "weights location refused: too little free space", value=min_free_gb,
+                 kept=0, dropped=1)
         return False
     # READABILITY, which none of the above implies. Under macOS TCC a volume
     # stats fine, reports free space and appears in /Volumes while listing it

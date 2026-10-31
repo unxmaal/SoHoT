@@ -65,6 +65,21 @@ def is_degenerate(got: dict, repeat: float = REPEAT_SHARE, entropy: float = ENTR
     return got["tail_repeat"] >= repeat or got["tail_entropy"] <= entropy
 
 
+def judged(text: str) -> tuple[dict, bool]:
+    """(measure, is_degenerate) of one budget-cut reply, recording the threshold that moved or kept it."""
+    from harness import cuts
+    got = measure(text)
+    if not got:
+        if text:
+            cuts.cut("degenerate_min_chars", "budget-cut reply too short to measure, left a budget limit")
+        return got, False
+    bad = is_degenerate(got)
+    if bad:
+        knob = "degenerate_repeat" if got["tail_repeat"] >= REPEAT_SHARE else "degenerate_entropy"
+        cuts.cut(knob, "budget-cut reply classed degenerate, its budget limit dropped")
+    return got, bad
+
+
 def load(path: Path = ROWS) -> list[dict]:
     with open(path, encoding="utf-8") as fh:
         return [json.loads(line) for line in fh if line.strip()]

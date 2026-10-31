@@ -32,6 +32,11 @@ NOT_GATING = {
     f"{W}:CI_LIMIT": "CI runs gh lists; above the repo's count, and a full page is reported truncated (#1148)",}
 
 NEVER_CUTS = {
+    "harness/inventory_time.py:GPU_BUSY_RATIO": "labels a power sample busy in the time account; every sample is counted (#1152)",
+    "harness/inventory_time.py:GPU_BUSY_WATTS": "labels an older power sample busy; every sample is counted (#1152)",
+    "harness/inventory_time.py:MORNING_SPAN_SECONDS": "which delegations the account charges to the morning brief; every one is counted (#1152)",
+    "harness/inventory_time.py:RECENT_DAYS": "the recent window printed beside the whole account; nothing is dropped (#1152)",
+    "harness/inventory_time.py:SWEEP_FLOOR_SECONDS": "time charged to a sweep with no later sign of life; an estimate, nothing dropped (#1152)",
     f"{W}:MIN_MODELS": "marks a case judged; every case is listed with its candidate count either way (#1148)",
     f"{W}:SLOW_SHARE": "marks a never-failed test flagged; every test is listed with its time either way (#1148)",
 }

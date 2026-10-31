@@ -359,6 +359,9 @@ def _cloud(kind: str, announce, poll: float, deadline_s: float | None):
                          + ", ".join(describe(r) for r in records))
                 said = who
             time.sleep(poll)
+        if waited:
+            from harness import cuts
+            cuts.cut("cloud_evals", f"{kind}: waited for a cloud slot")
         try:
             _write_holder(kind, deadline_s, path=cloud_holder_path(got))
             os.environ[CLOUD_HELD_ENV] = "1"
