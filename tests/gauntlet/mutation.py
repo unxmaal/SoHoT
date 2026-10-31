@@ -34,7 +34,7 @@ MODULES = {
         "tests/test_live_screen_blame_1021.py", "tests/test_whisper_group_1024.py", "tests/test_audio_env_1030.py", "tests/test_drafters_1039.py", "tests/test_plan_refusal_1047.py",
         "tests/test_cut_sites_1202.py"],
     "harness/reasons.py": [
-        "tests/test_gguf_first_911.py", "tests/test_verdict_reasons.py", "tests/test_refusal_shapes.py", "tests/test_screen_server_death.py",
+        "tests/test_weedout_1439.py", "tests/test_gguf_first_911.py", "tests/test_verdict_reasons.py", "tests/test_refusal_shapes.py", "tests/test_screen_server_death.py",
         "tests/test_screen_evidence.py", "tests/test_harness_engines_repo_id.py",
         "tests/test_mps_backend_abort.py", "tests/test_timeouts_classed.py", "tests/test_agent_limits.py",
         "tests/test_served_ctx_limit.py", "tests/test_eval_budget.py", "tests/test_batch_lease_769.py",
@@ -131,7 +131,8 @@ LEFT_OUT = {
         "test_repo_looks_1353.py", "test_confirm_resume_1357.py",
         "test_metric_order_717.py",
         "test_served_readonly_1247.py", "test_saturation_lane_metric_1267.py", "test_gate_direction_1302.py",
-        "test_power_table_603.py", "test_store_errors_1432.py", "test_futility_lane_too_small_1452.py"),
+        "test_power_table_603.py", "test_store_errors_1432.py", "test_futility_lane_too_small_1452.py",
+        "test_weedout_1439.py"),
     "harness/serving.py": (
         "test_mlx_backlog.py", "test_runner_gap_until_950.py", "test_agent_limits.py", "test_claims_lane.py", "test_decide_lane.py",
         "test_delegate_resident.py", "test_delegations.py", "test_lane_probe_924.py", "test_machine_host.py",

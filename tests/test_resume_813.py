@@ -200,7 +200,7 @@ def test_a_run_whose_checkpoint_is_another_exam_restarts_fresh(monkeypatch, worl
         conn.close()
 
 
-def test_a_finished_resume_spends_less_alpha_and_stores_planned_and_observed_seconds(monkeypatch, world):
+def test_a_finished_resume_spends_no_alpha_an_uncovered_look_did_not_test_and_stores_planned_and_observed_seconds(monkeypatch, world):
     fake = Eval(rows=_rows(60, gained=1))
     monkeypatch.setattr(measure_cmd, "_launch", fake)
     _measure()
@@ -218,7 +218,7 @@ def test_a_finished_resume_spends_less_alpha_and_stores_planned_and_observed_sec
         conn.close()
     assert v["planned_s_per_case"] == pytest.approx(3.0)
     assert v["observed_s_per_case"] == pytest.approx(4.0)
-    assert json.loads(v["power"])["alpha"] < adopt.ALPHA
+    assert json.loads(v["power"])["alpha"] == pytest.approx(adopt.ALPHA)
     assert p["state"] == "done"
 
 
