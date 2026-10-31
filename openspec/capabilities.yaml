@@ -360,6 +360,7 @@ capabilities:
       - harness/commands/otel.py
       - harness/context_report.py
       - harness/context_class.py
+      - harness/context_mistakes.py
       - harness/commands/context.py
       - harness/agent_weight.py
       - harness/inventory_time.py
