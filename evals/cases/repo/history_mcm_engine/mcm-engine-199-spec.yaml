@@ -9,17 +9,17 @@ prompt: '# Measure retrieval bloat before/after 4.0: recorded transcript bytes v
   ## Why
 
   4.0.0 shipped the retrieval bloat fixes (#170 sanitize, #171 search caps, #172 hook injection cap) and
-  the unified entries model (#176). Before releasing 4.0.1 or flipping the default (#192) Eric wants evidence
-  that the token burn actually dropped, not a parity score. The replay harness (#182) measures agreement
-  between read paths; it does not measure size, and nothing on the server records how many bytes each
-  tool call returns.
+  the unified entries model (#176). Before releasing 4.0.1 or flipping the default (#192) the owner wants
+  evidence that the token burn actually dropped, not a parity score. The replay harness (#182) measures
+  agreement between read paths; it does not measure size, and nothing on the server records how many bytes
+  each tool call returns.
 
 
   ## Raw material
 
-  The Claude Code session transcripts under ~/.claude/projects/-Users-eric-projects/*.jsonl hold every
-  mcm tool_use together with the tool_result the client actually received from the basement (3.16.x until
-  2026-10-21). First pass over all transcripts, bytes of `search` results by day, pre-fix:
+  The Claude Code session transcripts under ~/.claude/projects/<project>/*.jsonl hold every mcm tool_use
+  together with the tool_result the client actually received from the basement (3.16.x until 2026-10-21).
+  First pass over all transcripts, bytes of `search` results by day, pre-fix:
 
 
   ```

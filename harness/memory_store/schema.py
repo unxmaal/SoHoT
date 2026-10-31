@@ -304,7 +304,7 @@ CREATE TABLE IF NOT EXISTS technique_triage (
     triaged_at   REAL NOT NULL
 );
 
--- Eric's word that this machine may run jobs all day; the watchdog's day limits and the queue's night gate lift until `until`. #1112.
+-- The owner's word that this machine may run jobs all day; the watchdog's day limits and the queue's night gate lift until `until`. #1112.
 CREATE TABLE IF NOT EXISTS day_clearances (
     id           INTEGER PRIMARY KEY,
     machine_id   INTEGER REFERENCES machines(id),

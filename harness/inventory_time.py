@@ -1,4 +1,4 @@
-"""`soh inventory time`: the machine's hours by category, the hours Eric was blocked, local work done, effort by area. #1152."""
+"""`soh inventory time`: the machine's hours by category, the hours the owner was blocked, local work done, effort by area. #1152."""
 from __future__ import annotations
 
 import datetime as _dt
@@ -15,7 +15,7 @@ LOADED_IDLE, IDLE, IDLE_UNRECORDED = "idle-but-loaded", "idle", "idle-unrecorded
 #: Busy categories in precedence order: a second two of them claim goes to the earlier.
 BUSY = (WORK, MEASUREMENT, INFOVORE, OPS, DISCOVERY, OTHER)
 CATEGORIES = BUSY + (LOADED_IDLE, IDLE, IDLE_UNRECORDED)
-#: Hour categories in which the GPU or RAM is held by something other than Eric's work.
+#: Hour categories in which the GPU or RAM is held by something other than the owner's work.
 TAKEN = (MEASUREMENT, DISCOVERY, INFOVORE, OPS, OTHER, LOADED_IDLE)
 
 HOUR = 3600
@@ -214,7 +214,7 @@ def pareto(hours: list[dict]) -> list[dict]:
     return rows
 
 
-# --- hours Eric was blocked ----------------------------------------------------------------------------
+# --- hours the owner was blocked -------------------------------------------------------------------------
 
 def _daytime(h: int, tz) -> bool:
     from harness import watchdog
@@ -222,7 +222,7 @@ def _daytime(h: int, tz) -> bool:
 
 
 def blocked(hours: list[dict], actions=(), clearances=(), paused=(), refused=(), tz=None) -> dict:
-    """Which hours something stood between Eric and the machine, by reason, and the daytime hours taken by non-work."""
+    """Which hours something stood between the owner and the machine, by reason, and the daytime hours taken by non-work."""
     reasons: dict = {h["hour"]: set() for h in hours}
 
     def mark(at: float, why: str):

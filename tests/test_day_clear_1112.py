@@ -12,7 +12,7 @@ from harness import workqueue as wq
 from harness.commands import morning as morning_cmd
 from tests.test_watchdog import EVAL, NIGHT, NOON, Fake, Hand, P, ids, run
 
-SAID = "eric: clear to run jobs all day"
+SAID = "owner: clear to run jobs all day"
 
 
 @pytest.fixture(autouse=True)
@@ -115,7 +115,7 @@ def test_a_wake_reads_the_store_clearance_records_each_skip_and_at_most_notifies
 @pytest.mark.gauntlet("state-is-whichever-row-came-last", site="harness/day_clear.py:active")
 def test_a_second_clearance_is_revoked_with_the_first_and_shows_the_latest_text():
     conn = ms.connect()
-    day_clear.clear(conn, "eric: morning", now=at(22, 9))
+    day_clear.clear(conn, "owner: morning", now=at(22, 9))
     day_clear.clear(conn, SAID, now=at(22, 10))
     assert day_clear.active(conn, at(22, 11))["said"] == SAID
     day_clear.revoke(conn, now=at(22, 12))
