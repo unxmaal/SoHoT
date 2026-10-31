@@ -59,7 +59,7 @@ MODULES = {
         "tests/test_screen_listing_984.py", "tests/test_missing_package_1008.py", "tests/test_diffusers_dtype_1013.py",
         "tests/test_live_screen_blame_1021.py", "tests/test_whisper_group_1024.py",
         "tests/test_requires_backends_1031.py", "tests/test_audio_env_1030.py", "tests/test_tts_drop_1036.py", "tests/test_drafters_1039.py", "tests/test_plan_refusal_1047.py",
-        "tests/test_stt_screen_power_1007.py"],
+        "tests/test_stt_screen_power_1007.py", "tests/test_staging_torch_1358.py"],
     "harness/adopt.py": [
         "tests/test_adopt_retest_1001.py", "tests/test_harness_adopt.py", "tests/test_harness_adopt_receipt.py", "tests/test_adopt_by_spec.py",
         "tests/test_adoptions.py", "tests/test_adopt_cmd.py", "tests/test_human_verdicts.py",
@@ -117,7 +117,7 @@ LEFT_OUT = {
         "test_remote_upstreams.py", "test_router_unload.py", "test_slots_memory.py", "test_store_card_facts.py",
         "test_store_state.py", "test_until_keys_928.py", "test_fetch_files_1040.py", "test_lane_heads_1084.py",
         "test_engine_timeout_708.py", "test_engine_timeout_1256.py",
-        "test_served_readonly_1247.py", "test_adopt_effect_confirm_725.py", "test_staging_torch_1358.py",
+        "test_served_readonly_1247.py", "test_adopt_effect_confirm_725.py",
         "test_confirm_resume_1357.py", "test_store_errors_1432.py"),
     "harness/adopt.py": (
         "test_technique_triage_993.py", "test_harness_paired.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
