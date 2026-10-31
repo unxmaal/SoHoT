@@ -296,6 +296,8 @@ def main(argv: list[str] | None = None) -> int:
         print("no local claims cases", file=sys.stderr)
         return 1
     if a.action == "calibrate":
+        from harness import paths
+        paths.eval_home(reads_live=True)
         with _holding():
             result = calibrate(cases, ask_local, judge_spec())
         write_calibration(result, claims_dir)
