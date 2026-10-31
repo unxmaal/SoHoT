@@ -17,6 +17,9 @@ def report(got: dict) -> None:
     for s in got["settled"]:
         note(f"  settled {s['lane']} {s['spec']}: {s['outcome']} ({s['reason']}"
              f"{', ' + s['failure_class'] if s['failure_class'] else ''}): {s['detail']}")
+    for s in got.get("resumed", []):
+        note(f"  resuming {s['lane']} {s['spec']}: job {s['paused']} paused; job {s['job']} continues "
+             f"{s['out'] or 'it'} at night")
     for e in got["planned"]:
         note(_line(e))
     dry = got.get("dry_run", False)

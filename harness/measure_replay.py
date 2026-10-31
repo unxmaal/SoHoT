@@ -89,7 +89,7 @@ def queue(conn, rows: list[dict], held: list[dict], want: str = "", now: float |
 
 
 def walk(rows: list[dict], window_s: float, price) -> tuple[list[dict], list[dict]]:
-    """(taken, cut): each row takes min(its minutes, one slice) of what is left, an unpriced row a slice; none past 0."""
+    """(taken, cut): each row takes min(its minutes, one slice) of what is left, an unpriced or zero-minute row a slice."""
     slice_s, left, taken, cut = power.BUDGET_MIN * 60, window_s, [], []
     for r in rows:
         if left <= 0:
@@ -171,9 +171,9 @@ def report(conn, days: int, *, now: float | None = None, want: str = "", head: i
         lines.append(f"  measured:       {_names(n['began'])}")
         for label in ("survivors", "gain"):
             o = n[label]
-            lines.append(f"  {label + ' order:':<15} {_names(o['taken'], head)}")
+            lines.append(f"  {label + ' order:':<15} {_names(o['taken'], head or None)}")
             lines.append(f"  {'minutes:':<15} {_minutes(o['taken'])}")
-            lines.append(f"  {'cut:':<15} {len(o['cut'])}: {_names(o['cut'], head)}")
+            lines.append(f"  {'cut:':<15} {len(o['cut'])}: {_names(o['cut'], head or None)}")
     return lines
 
 
