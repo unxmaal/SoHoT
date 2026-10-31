@@ -187,11 +187,18 @@ def cmd_reuse_replay(a) -> int:
         for line in got[name]["looks"]:
             note(f"    {line}")
     was, now = got["control"]["verdict"], got["replay"]["verdict"]
-    same = bool(was and now and (was["adopt"], was["decision"]) == (now["adopt"], now["decision"]))
+    same = _same_verdict(was, now)
     note(f"  {'same verdict' if same else 'VERDICT MOVED'}: control "
-         f"{was and was['decision']}, replay {now and now['decision']}")
+         f"{(was or {}).get('decision', 'no verdict')}, replay {(now or {}).get('decision', 'no verdict')}")
     emit(**got, same=same)
     return 0 if same else 1
+
+
+def _same_verdict(was: dict | None, now: dict | None) -> bool:
+    """Both walks reached the same adopt and decision, or neither reached one. #1404."""
+    if was is None or now is None:
+        return was is None and now is None
+    return (was["adopt"], was["decision"]) == (now["adopt"], now["decision"])
 
 
 def measurable(store, top: int, want: str = "", top_knob: str = "discover_top") -> list[dict]:

@@ -19,12 +19,15 @@ def _open(store: str):
 
 def cmd_measure_order(a) -> int:
     from harness import measure_replay
+    from harness import memory_store as ms
     conn = _open(a.store)
     try:
-        if a.replay:
-            lines = measure_replay.report(conn, int(a.replay), want=a.lane, head=a.head)
-        else:
-            lines = measure_replay.today(conn, want=a.lane, head=a.head)
+        # Every reader below takes this connection, so pricing never opens the live store. #1415.
+        with ms.lend(conn):
+            if a.replay:
+                lines = measure_replay.report(conn, int(a.replay), want=a.lane, head=a.head)
+            else:
+                lines = measure_replay.today(conn, want=a.lane, head=a.head)
     finally:
         conn.close()
     for line in lines:
@@ -37,8 +40,8 @@ def add_parser(sub) -> None:
     p = sub.add_parser("measure-order", help="the measure queue by expected gain per GPU-minute with each key, or "
                        "--replay DAYS of past nights against their ceiling; read-only (#1315)")
     p.add_argument("--lane", default="", help="the lane the sweep is scoped to, as `discover --lane` (default every lane)")
-    p.add_argument("--store", default="", help="a copy of the store to read instead of the live one")
+    p.add_argument("--store", default="", help="a copy of the store to read instead of the live one, for every read")
     p.add_argument("--replay", type=int, default=0, metavar="DAYS",
                    help="replay the last DAYS nights: the queue each faced, in survivors order and by gain")
-    p.add_argument("--head", type=int, default=5, help="rows per order to list (0 is all, without --replay)")
+    p.add_argument("--head", type=int, default=5, help="rows per order to list (0 is all)")
     p.set_defaults(func=cmd_measure_order)

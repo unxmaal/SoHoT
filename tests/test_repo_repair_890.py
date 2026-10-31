@@ -262,11 +262,24 @@ def test_winners_never_rank_a_repair_run_on_the_exam():
     assert not baseline.sat({**sat, "receipt": {"harness": "repair"}}, rows, "x", exam_of=exam)
 
 
-def test_a_repair_identity_never_matches_a_patch_identity_and_patch_keeps_its_knobs():
+def test_patch_settings_carry_no_repair_knob_and_repair_settings_carry_all():
     patch = identity.settings("repo", "x", 100)
     assert not set(patch["knobs"]) & set(repo_repair_knobs())
     repair = identity.settings("repo", "x", 100, repo_harness="repair")
     assert set(repo_repair_knobs()) <= set(repair["knobs"])
+
+
+def test_a_repair_identity_never_matches_a_patch_identity(monkeypatch):
+    monkeypatch.setattr(identity, "served", lambda target: {"engine": "llamacpp", "runtime": {"bin": "1"}})
+    monkeypatch.setattr(identity, "settings", lambda *a, **kw: {"knobs": {}})
+    machine = ({"hw_model": "Mac17,15", "arch": "arm64"}, {})
+
+    def of(**kw):
+        return identity.of("repo", "llamacpp:Stem", budget=100, cases=[], machine=machine, harness={}, **kw)
+    patch, repair = of(), of(repo_harness="repair")
+    assert patch["digest"] and repair["digest"]
+    assert repair["digest"] != patch["digest"], "the exam part names the repair harness"
+    assert repair["parts"]["exam"]["harness"] == "repair" and "harness" not in patch["parts"]["exam"]
 
 
 def repo_repair_knobs():
