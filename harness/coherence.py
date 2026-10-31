@@ -141,17 +141,18 @@ def changes(conn, logs=None, root=None) -> list[dict]:
 
 
 def lane_bound(conn) -> list[dict]:
-    """Adopt nulls left on a time retest or no until whose stored plan says the lane is too small: they wait on its cases. #1049."""
+    """Adopt nulls and futility stops whose stored plan says the lane is too small: they wait on its cases. #1049, #1452."""
     import json
 
     from harness import adopt, reasons
     from harness.memory_store.schema import ADOPT
     out = []
     for r in conn.execute(HELD).fetchall():
-        if (r["state"], r["tier"], r["reason"]) != ("declined", ADOPT, reasons.LIMIT) or r["until"] \
-                or r["failure_class"] == reasons.LANE_TOO_SMALL:
-            continue
         lane = r["lane"] or (r["detail"] or "").partition(":")[0].strip()
+        futile = r["reason"] == reasons.CANDIDATE and not r["failure_class"] and _futility(r["detail"], lane)
+        if (r["state"], r["tier"]) != ("declined", ADOPT) or r["until"] \
+                or (r["reason"] != reasons.LIMIT and not futile) or r["failure_class"] == reasons.LANE_TOO_SMALL:
+            continue
         try:
             plan = json.loads(r["power"] or "{}")
         except ValueError:
@@ -167,8 +168,12 @@ def lane_bound(conn) -> list[dict]:
                     "run_id": r["run_id"], "candidate_id": r["candidate_id"],
                     "failure_class": reasons.LANE_TOO_SMALL,
                     "evidence": {"power": r["power"], "split_version": r["split_version"]},
-                    "detail": f"{lane}: re-decided (#1049): {why}; {r['detail']}"[:600]})
+                    "detail": f"{lane}: re-decided ({'#1452' if futile else '#1049'}): {why}; {r['detail']}"[:600]})
     return out
+
+
+def _futility(detail: str, lane: str) -> bool:
+    return (detail or "").removeprefix(f"{lane}:").lstrip().startswith("futility:")
 
 
 def past_growth(conn) -> list[dict]:

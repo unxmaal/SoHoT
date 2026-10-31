@@ -493,7 +493,7 @@ Test: tests/test_resume_813.py::test_an_overwhelming_lead_stops_for_success_with
 Test: untested
 
 ### Requirement: Futility bound
-A look SHALL stop a run for futility only when conditional power, under the plan's per-cell odds over the cells left (both shrunk by the plan's design effect), is below `FUTILITY_CP` and the challenger has gained no more cells than it lost; the futility verdict MUST NOT adopt and its reason SHALL start `futility:`. With no cells left, or no discordant odds, conditional power SHALL be the final sign test's answer.
+A look SHALL stop a run for futility only when conditional power, under the plan's per-cell odds over the cells left (both shrunk by the plan's design effect), is below `FUTILITY_CP` and the challenger has gained no more cells than it lost; the futility verdict MUST NOT adopt and its reason SHALL start `futility:`, unless the plan's holdout could not power the lane's effect at any repeat (`adopt.lane_limit`), when it SHALL be the full gate's lane_too_small verdict, waiting on the lane's `cases:` until, with the futility reason inside it (#1452). With no cells left, or no discordant odds, conditional power SHALL be the final sign test's answer.
 
 #### Scenario: Behind with no plausible path
 - **WHEN** a look near the end of the holdout sees many cells lost and none gained
@@ -505,6 +505,16 @@ Test: tests/test_resume_813.py::test_a_challenger_behind_with_no_plausible_path_
 - **WHEN** a look sees more gained than lost with conditional power below `FUTILITY_CP`
 - **THEN** the look continues
 Test: tests/test_resume_813.py::test_a_challenger_ahead_is_never_stopped_for_futility
+
+#### Scenario: A futility stop on a holdout no repeat could power
+- **WHEN** a look stops for futility on a plan whose holdout needs more cases than it has
+- **THEN** the verdict is lane_too_small with the until the full gate would give the same plan
+Test: tests/test_futility_lane_too_small_1452.py::test_an_unpowered_futility_stop_is_lane_too_small_waiting_on_the_lanes_cases
+
+#### Scenario: A powered futility stop is a loss
+- **WHEN** a look stops for futility on a plan whose holdout reaches power at some repeat
+- **THEN** the verdict is a candidate loss whose reason starts `futility:`
+Test: tests/test_futility_lane_too_small_1452.py::test_a_powered_futility_stop_stays_a_loss
 
 #### Scenario: Nothing left to run
 - **WHEN** conditional power is asked with no cells remaining
