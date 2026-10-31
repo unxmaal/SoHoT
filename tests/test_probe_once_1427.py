@@ -59,6 +59,21 @@ def test_a_failed_uuid_probe_is_not_cached_as_this_machine(monkeypatch):
     assert ms.machines._THIS_FINGERPRINT is None
 
 
+def test_a_stand_in_capture_names_the_row_on_any_real_board(monkeypatch):
+    real = environment.identity
+    monkeypatch.setattr(environment, "identity", lambda: {
+        **real(), "hw_model": "Other,1", "fingerprint": "Other,1/macOS/arm64/cccccccccccc"})
+    fake = {"hw_model": "Mac17,15", "os": "macOS-27", "arch": "arm64", "host": "aaaaaaaaaaaa",
+            "memory_gb": 96, "accelerator": {}, "versions": {}}
+    monkeypatch.setattr(environment, "capture", lambda: dict(fake))
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
+    monkeypatch.setattr(ms.machines, "_THIS_FINGERPRINT", None)
+    with ms.connect() as c:
+        mid = ms.remember_machine(c)
+        monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
+        assert ms.machine_row(c) == mid
+
+
 def test_importing_ds4_reads_no_case_file():
     code = ("import pathlib, sys\n"
             "read = []\n"

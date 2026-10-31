@@ -89,11 +89,14 @@ def this_fingerprint() -> str:
     # A stand-in this_machine names the machine for every caller, this one too. #451.
     if _THIS_MACHINE is not None or getattr(ms.this_machine, "__module__", "") != __name__:
         return ms.this_machine()["fingerprint"]
+    from evals import environment
+    # So does a stand-in environment.capture, which this_machine() reads. #451.
+    if getattr(environment.capture, "__module__", "") != environment.__name__:
+        return ms.this_machine()["fingerprint"]
     if _THIS_FINGERPRINT is not None:
         return _THIS_FINGERPRINT
     from harness import machine as _machine
     try:
-        from evals import environment
         fp = environment.identity()["fingerprint"]
     except Exception:  # noqa: BLE001
         return ms.this_machine()["fingerprint"]
