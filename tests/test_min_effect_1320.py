@@ -103,6 +103,13 @@ def test_the_floor_evidence_rounds_seen_to_four_places_and_a_seen_at_the_noise_t
     assert edge.failure_class == "" and not edge.evidence and "+0.10" not in edge.why
 
 
+def test_the_lane_effect_evidence_rounds_seen_and_starts_strictly_above_the_floor(monkeypatch):
+    monkeypatch.setattr(power, "EFFECT", {"decide": 0.2})
+    assert _null_on("decide", 0.1512345).evidence == {"lane_effect": {"noise": 0.2, "seen": 0.1512}}
+    for edge in (power.MIN_EFFECT, power.MIN_EFFECT + 1e-9):
+        assert _null_on("decide", edge).evidence == {}
+
+
 def test_a_floor_cut_lands_in_the_store_the_verdict_is_recorded_in(conn, tmp_path, monkeypatch):
     monkeypatch.setattr(power, "EFFECT", {"decide": 0.05})
     floor = _null_on("decide", 0.08)

@@ -234,6 +234,16 @@ def test_an_unconfirmed_win_carries_an_alpha_cut_only_when_the_dev_cells_favour_
     assert not got.adopt and got.alpha_cut == (), got.why
 
 
+def test_an_unconfirmed_win_carries_its_null_s_lane_effect(monkeypatch):
+    seen = {"noise": 0.2, "seen": 0.15}
+    monkeypatch.setattr(adopt, "_null", lambda lane, i, c, got, plan: adopt.Verdict(
+        lane, i, c, False, got.why, evidence={"lane_effect": seen}))
+    tie = _rows({**{f"d{i}": (False, True) for i in range(3)}, "d3": (True, False),
+                 **{f"d{i}": (True, True) for i in range(4, 10)}})
+    got = adopt.confirm(_won(), tie, SPLIT)
+    assert not got.adopt and got.evidence["lane_effect"] == seen
+
+
 def test_the_confirmation_is_tested_at_undivided_alpha():
     won = adopt.Verdict("code", "inc", "ch", True, "won", evidence={"comparisons": 5, "alpha": adopt.alpha_for(4)})
     rows = _rows({**{f"d{i}": (False, True) for i in range(7)}, **{f"d{i}": (True, True) for i in range(7, 10)}})
