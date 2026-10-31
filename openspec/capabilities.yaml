@@ -52,7 +52,7 @@ capabilities:
   - name: screen
     summary: The rung between a ranked queue and a measurement, and the queue's ranking by what is worth learning.
     spec: written
-    untested: 9
+    untested: 8
     modules:
       - harness/screen.py
       - harness/commands/screen.py
@@ -360,6 +360,7 @@ capabilities:
       - harness/commands/otel.py
       - harness/context_report.py
       - harness/context_class.py
+      - harness/context_mistakes.py
       - harness/commands/context.py
       - harness/agent_weight.py
       - harness/inventory_time.py
