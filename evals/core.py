@@ -1628,6 +1628,18 @@ def _decide_calibration(rows: list[Result]) -> dict:
     return {"decide_ece": round(decide_check.ece(pairs), 4)}
 
 
+def ece_withheld(results: list[Result]) -> None:
+    """Record each candidate of a run whose decisions were too few for an ECE, once per run, never per summary. #1087."""
+    by: dict[str, list[Result]] = {}
+    for r in results:
+        by.setdefault(r.candidate, []).append(r)
+    for candidate, rows in by.items():
+        n = len(_decisions(rows))
+        if 0 < n < decide_check.MIN_ECE_N:
+            from harness import cuts
+            cuts.cut("harness/checks/decide.py:MIN_ECE_N", f"decide_ece of {candidate} withheld", kept=0, dropped=n)
+
+
 def _calibrated_only(metrics: dict) -> dict:
     """No Brier or ECE for a candidate any of whose rows were one-hot: they would score the engine. #701."""
     if float(metrics.get("calibrated", 1.0)) < 1.0:

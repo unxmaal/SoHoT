@@ -193,6 +193,9 @@ def cases_needed(rates, effect: float, *, rho: float, stochastic: bool = True,
         cells = {effective_cells(k, r, rho) for r in repeats}
         if any(power_cells(gain, lose, n, alpha) >= target for n in cells):
             return k
+    if most is None:
+        from harness import cuts
+        cuts.cut("harness/power.py:MAX_CASES", "holdout sizes searched for one reaching the target power", kept=0)
     return None
 
 
@@ -357,6 +360,8 @@ def plan(rates, effect: float | None = None, *, stochastic: bool = True,
                f"up to {cap} reaches {target}: power {best:.2f} at most, already "
                f"at repeat {r}; {more}")
         return made(r, powers[r - 1], False, why)
+    from harness import cuts
+    cuts.cut("harness/power.py:CAP", "repeats past the cap a plan short of its power would take", value=cap, kept=cap)
     return made(cap, powers[-1], True,
                 f"capped at repeat {cap} with power {powers[-1]:.2f}; {more}")
 
@@ -461,6 +466,9 @@ def within_budget(chosen: Plan, rates, *, cases_run: int, median_s: float | None
                        needed_repeat=chosen.repeat, **run)
     else:
         r = max(1, min(FALLBACK_REPEAT, chosen.repeat, int(budget_s // cost(1))))
+        from harness import cuts
+        cuts.cut("harness/power.py:BUDGET_MIN", "repeat of a paired run over its time budget", value=budget_s / 60,
+                 kept=r, dropped=chosen.repeat - r)
         note = (f"repeat {chosen.repeat} for power {chosen.power:.2f} would take "
                 f"{_hm(cost(chosen.repeat))}, over the {_hm(budget_s)} budget; "
                 f"ran repeat {r}")
@@ -622,6 +630,8 @@ def served_bound(conn, lane: str, spec: str, settings: tuple, machines) -> tuple
                      f"({mean:.0f}s{'' if scale == 1.0 else f' x {want}/{b}'})")
     cap = estimated_seconds(lane)
     if best is not None and cap is not None and best > cap:
+        from harness import cuts
+        cuts.cut("decode_tok_s", f"{lane}: seconds per call capped at the whole-budget estimate", value=decode_tok_s())
         best, basis = cap, f"{basis}, capped at the whole {want}-token budget ({cap:.0f}s)"
     return best, basis
 

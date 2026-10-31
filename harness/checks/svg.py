@@ -257,6 +257,13 @@ def _near(a: float, b: float) -> bool:
     return abs(a - b) <= COORD_TOLERANCE
 
 
+def _off(why: str, tolerance_knob: str = "svg_coord_tolerance") -> str:
+    """A structure miss a wider tolerance could have passed, recorded as that tolerance's cut. #1087."""
+    from harness import cuts
+    cuts.cut(tolerance_knob, f"svg structure: {why}")
+    return why
+
+
 def _heights(rects, want: dict) -> str:
     """Bars left to right stand on `base` with height value * `unit`."""
     bars = sorted(rects, key=lambda m: _position(m[0])[0])
@@ -266,8 +273,8 @@ def _heights(rects, want: dict) -> str:
     for (el, _, _), v in zip(bars, values):
         h, y = _num(el, "height"), _num(el, "y")
         if not _near(h, v * want["unit"]) or not _near(y + h, want["base"]):
-            return (f"the bar for {v} spans y={y:g} to y={y + h:g}; expected "
-                    f"{v * want['unit']:g} high standing on y={want['base']:g}")
+            return _off(f"the bar for {v} spans y={y:g} to y={y + h:g}; expected "
+                        f"{v * want['unit']:g} high standing on y={want['base']:g}")
     return ""
 
 
@@ -296,7 +303,7 @@ def _inside(root, marks) -> str:
         if box and (box[0] < vb[0] - COORD_TOLERANCE or box[1] < vb[1] - COORD_TOLERANCE
                     or box[2] > vb[0] + vb[2] + COORD_TOLERANCE
                     or box[3] > vb[1] + vb[3] + COORD_TOLERANCE):
-            return f"<{_name(el)}> spills outside the viewBox"
+            return _off(f"<{_name(el)}> spills outside the viewBox")
     return ""
 
 
@@ -311,7 +318,7 @@ def _ring(circles, want: dict) -> str:
         x, y = want["cx"] + r * math.sin(t), want["cy"] - r * math.cos(t)
         hit = next((p for p in left if _near(p[0], x) and _near(p[1], y)), None)
         if hit is None:
-            return f"no circle at ({x:.1f}, {y:.1f}), position {k + 1} on the ring"
+            return _off(f"no circle at ({x:.1f}, {y:.1f}), position {k + 1} on the ring")
         left.remove(hit)
     return ""
 
@@ -329,14 +336,14 @@ def _hands(lines, want: dict) -> str:
         ends = [(_num(el, "x1"), _num(el, "y1")), (_num(el, "x2"), _num(el, "y2"))]
         ends.sort(key=lambda p: math.dist(p, (want["cx"], want["cy"])))
         if not (_near(ends[0][0], want["cx"]) and _near(ends[0][1], want["cy"])):
-            return "a hand does not start at the centre"
+            return _off("a hand does not start at the centre")
         dx, dy = ends[1][0] - want["cx"], ends[1][1] - want["cy"]
         hands.append((math.hypot(dx, dy), _angle(dx, dy)))
     (_, hour), (_, minute) = sorted(hands)
     for name, got, exp in (("hour", hour, want["hour"]), ("minute", minute, want["minute"])):
         off = abs((got - exp + 180) % 360 - 180)
         if off > ANGLE_TOLERANCE:
-            return f"the {name} hand points at {got:.0f} degrees, expected {exp:g}"
+            return _off(f"the {name} hand points at {got:.0f} degrees, expected {exp:g}", tolerance_knob="svg_angle_tolerance")
     return ""
 
 
@@ -347,9 +354,10 @@ def _stack(circles, want: dict) -> str:
         return f"expected {len(want['radii'])} circles, drew {len(got)}"
     for (el, _, _) in circles:
         if not (_near(_num(el, "cx"), want["cx"]) and _near(_num(el, "cy"), want["cy"])):
-            return "the circles are not all centred on the given point"
+            return _off("the circles are not all centred on the given point")
     for (r, f), wr, wf in zip(got, want["radii"], want["fills"]):
         if not _near(r, wr) or f != colour(wf):
-            return (f"circles in drawing order are {[(round(r, 1), f) for r, f in got]}, "
-                    f"expected {list(zip(want['radii'], want['fills']))}")
+            why = (f"circles in drawing order are {[(round(r, 1), f) for r, f in got]}, "
+                   f"expected {list(zip(want['radii'], want['fills']))}")
+            return why if f != colour(wf) else _off(why)
     return ""

@@ -147,6 +147,16 @@ NOT_GATING = {
 }
 
 NEVER_CUTS = {
+    "scripts/h3-weights-status.sh:H3_TARGET_GIB": "the size the H3 status script reports progress against; it stops "
+                                                  "and drops no download (#1087)",
+    "scripts/router-sleep-idle.sh:LLAMACPP_SLEEP_IDLE": "seconds an idle llama-server waits before it sleeps; no request "
+                                                        "is in flight, the next one pays a load (#1087)",
+    "scripts/router-sleep-idle.sh:SERVE_IDLE_UNLOAD_S": "seconds an idle model stays loaded on a Mac; no request is in "
+                                                        "flight, the next one pays a load (#1087)",
+    "scripts/serve-llamacpp.sh:LLAMACPP_GPU_LAYERS": "layers placed on the GPU; placement sets speed, every layer still "
+                                                     "runs (#1087)",
+    "scripts/slots-sweep.sh:SWEEP_LONG": "tokens of an optional long-context probe, 0 to skip it by choice; it drops no "
+                                         "config (#1087)",
     "harness/live_audit.py:ERROR_RATE_MAX": "the error rate past which the audit names a lane; it reports and drops "
                                             "no request (#739)",
     "harness/mlx_server.py:PROMPT_CACHE_BYTES": "bytes of KV cache the mlx server keeps; an evicted prefix is "
