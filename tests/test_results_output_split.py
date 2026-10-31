@@ -6,11 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from evals import core, environment
+from evals import core
 from evals import run as er
 from evals.core import Case, Result
 from evals.runners.base import BaseRunner
 from harness import memory_store as ms, paths, runs
+from tests import conftest
 
 SVG = '<svg xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1"/></svg>'
 CANONICAL = '{"answers": {"label": "yes"}}'
@@ -44,9 +45,7 @@ def _execute(monkeypatch, tmp_path, lane, make):
     monkeypatch.setattr(er, "build_runner", lambda *a, **k: make(out))
     monkeypatch.setattr(er, "warn_if_pressed",
                         lambda: argparse.Namespace(as_dict=lambda: {}))
-    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
-    monkeypatch.setattr(environment, "capture", lambda: {"hw_model": "Test,1",
-                                                "os": "t", "arch": "a"})
+    conftest.name_machine(monkeypatch, {"hw_model": "Test,1", "os": "t", "arch": "a"})
     monkeypatch.setattr(core, "score", lambda case, art, **k: Result(
         case.id, "", True, 0.0, 0, ""))
     args = argparse.Namespace(

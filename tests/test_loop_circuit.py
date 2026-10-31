@@ -178,7 +178,7 @@ def mac():
 
 
 @pytest.fixture
-def world(monkeypatch, tmp_path, _home):
+def world(monkeypatch, tmp_path, _home, machine_is):
     from evals import core
     from harness import holdout
     real_load = core.load_cases
@@ -197,10 +197,7 @@ def world(monkeypatch, tmp_path, _home):
             "api_key": "not-needed"}}]}), encoding="utf-8")
     monkeypatch.setenv(gateway.ENV_VAR, str(config))
     w.config = config
-    from evals import environment
-    monkeypatch.setattr(environment, "capture", lambda: {
-        "hw_model": "Mac14,12", "os": "macOS-test", "arch": "arm64", "versions": {}})
-    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
+    machine_is({"hw_model": "Mac14,12", "os": "macOS-test", "arch": "arm64", "versions": {}})
     gateway.write_served(config)
     monkeypatch.setattr(urllib.request, "urlopen", w.urlopen)
     monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))

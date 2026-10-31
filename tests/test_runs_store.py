@@ -8,10 +8,11 @@ import json
 
 import pytest
 
-from evals import core, environment
+from evals import core
 from evals import run as er
 from evals.core import Case, Result
 from harness import candidates, memory_store as ms, paths, runs
+from tests import conftest
 
 
 @pytest.fixture
@@ -58,9 +59,7 @@ def test_evals_run_writes_the_run_and_its_rows(monkeypatch, tmp_path):
     monkeypatch.setattr(er, "build_runner", lambda *a, **k: _Runner())
     monkeypatch.setattr(er, "warn_if_pressed",
                         lambda: argparse.Namespace(as_dict=lambda: {}))
-    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
-    monkeypatch.setattr(environment, "capture", lambda: {"hw_model": "Test,1",
-                                                "os": "t", "arch": "a"})
+    conftest.name_machine(monkeypatch, {"hw_model": "Test,1", "os": "t", "arch": "a"})
     out = tmp_path / "out"
     args = argparse.Namespace(
         modality="svg", candidates="fake:spec", cases="x", out=str(out),
@@ -309,9 +308,7 @@ def _execute(monkeypatch, tmp_path, specs: str, runner=None):
     monkeypatch.setattr(er, "build_runner", lambda *a, **k: runner or _Runner())
     monkeypatch.setattr(er, "warn_if_pressed",
                         lambda: argparse.Namespace(as_dict=lambda: {}))
-    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
-    monkeypatch.setattr(environment, "capture", lambda: {"hw_model": "Test,1",
-                                                "os": "t", "arch": "a"})
+    conftest.name_machine(monkeypatch, {"hw_model": "Test,1", "os": "t", "arch": "a"})
     out = tmp_path / "out"
     args = argparse.Namespace(
         modality="svg", candidates=specs, cases="x", out=str(out),

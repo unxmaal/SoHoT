@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 import shells
-from evals import core, environment
+from evals import core
 from evals import run as R
 from evals.core import Case, Receipt, Result
 from harness import (context, downloads, ds4, fetching, gateway, gguf, machine,
@@ -287,16 +287,14 @@ def test_the_served_context_is_read_from_the_server(models):
     assert context.served_ctx(f"ds4:{QWEN_Q2},ctx=4096") == 4096
 
 
-def test_an_eval_run_measures_ds4_and_records_the_launch(models, monkeypatch, tmp_path):
+def test_an_eval_run_measures_ds4_and_records_the_launch(models, monkeypatch, tmp_path, machine_is):
     out = tmp_path / "out"
     out.mkdir()
     monkeypatch.setattr(core, "load_cases",
                         lambda path: [Case(id="a", modality="code", prompt="p")])
     monkeypatch.setattr(R, "warn_if_pressed",
                         lambda: argparse.Namespace(as_dict=lambda: {}))
-    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
-    monkeypatch.setattr(environment, "capture",
-                        lambda: {"hw_model": "Test,1", "os": "t", "arch": "a"})
+    machine_is({"hw_model": "Test,1", "os": "t", "arch": "a"})
     monkeypatch.setattr(core, "score", lambda case, art, **k: Result(
         case.id, "", "def f" in str(art), 0.0, 0, ""))
     log = tmp_path / "requests.jsonl"
