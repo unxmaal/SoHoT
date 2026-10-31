@@ -86,9 +86,11 @@ def reserve_for(acc: Accelerator) -> float:
 
 def _unified_total_gb() -> float:
     """Physical RAM, on a machine where that is what the GPU draws from."""
+    from harness import cuts
     try:
-        out = subprocess.run(["sysctl", "-n", "hw.memsize"], capture_output=True,
-                             text=True, timeout=5).stdout.strip()
+        with cuts.timeout("harness/memory.py:_unified_total_gb->subprocess.run(timeout)", "sysctl hw.memsize"):
+            out = subprocess.run(["sysctl", "-n", "hw.memsize"], capture_output=True,
+                                 text=True, timeout=5).stdout.strip()
         return int(out) / 1024 ** 3
     except (OSError, ValueError, subprocess.SubprocessError):
         return 0.0
@@ -242,11 +244,13 @@ def _visible(cards: list[tuple], visible: str, order: str) -> list[tuple]:
 
 def _discrete() -> Accelerator | None:
     """Every NVIDIA card CUDA_VISIBLE_DEVICES leaves visible, summed as llama-server splits across them; None if none. #699."""
+    from harness import cuts
     try:
-        out = subprocess.run(
-            ["nvidia-smi", "--query-gpu=index,uuid,name,memory.total,memory.free",
-             "--format=csv,noheader,nounits"],
-            capture_output=True, text=True, timeout=10).stdout
+        with cuts.timeout("harness/memory.py:_discrete->subprocess.run(timeout)", "nvidia-smi memory query"):
+            out = subprocess.run(
+                ["nvidia-smi", "--query-gpu=index,uuid,name,memory.total,memory.free",
+                 "--format=csv,noheader,nounits"],
+                capture_output=True, text=True, timeout=10).stdout
     except (OSError, subprocess.SubprocessError):
         return None
     cards = []
@@ -313,9 +317,11 @@ def ceiling_gb() -> float:
 
 def available_gb() -> float:
     """Free plus inactive, which is what the system can actually hand over."""
+    from harness import cuts
     try:
-        out = subprocess.run(["vm_stat"], capture_output=True, text=True,
-                             timeout=5).stdout
+        with cuts.timeout("harness/memory.py:available_gb->subprocess.run(timeout)", "vm_stat free pages"):
+            out = subprocess.run(["vm_stat"], capture_output=True, text=True,
+                                 timeout=5).stdout
     except (OSError, subprocess.SubprocessError):
         # No vm_stat means this is not a Mac. A discrete card reports its own
         # free memory directly, which is a better answer than total_gb().
@@ -523,10 +529,15 @@ def check_model(repo: str, resident_gb: float = 0.0,
     ok, why = fits(need, free, ceiling, resident_gb, reserve_gb)
     # The reserve decided it only when the weights fit without it. #1087.
     reserve_knob = ("harness/memory.py:DEFAULT_RESERVE_GB" if reserve_gb == DEFAULT_RESERVE_GB else
-                    "harness/memory.py:DISCRETE_RESERVE_GB" if reserve_gb == DISCRETE_RESERVE_GB else "")
+                    "harness/memory.py:DISCRETE_RESERVE_GB" if reserve_gb == DISCRETE_RESERVE_GB else
+                    "harness/memory.py:MIN_RESERVE_GB" if reserve_gb == MIN_RESERVE_GB else "")
     if not ok and reserve_knob and need <= budget_gb(free, ceiling, resident_gb, 0.0):
         from harness import cuts
         cuts.cut(reserve_knob, f"{repo}: {why}", value=reserve_gb, kept=0, dropped=1)
+    if not ok and ceiling < free and need <= budget_gb(free, free, resident_gb, reserve_gb) \
+            and ceiling == total_gb() * GPU_FRACTION:
+        from harness import cuts
+        cuts.cut("gpu_fraction", f"{repo}: {why}", kept=0, dropped=1)
     return ok, why
 
 

@@ -254,9 +254,11 @@ def _platform_uuid() -> str:
     import subprocess
     got, failed = "", False
     if sys.platform == "darwin":
+        from harness import cuts
         try:
-            out = subprocess.run(["ioreg", "-rd1", "-c", "IOPlatformExpertDevice"],
-                                 capture_output=True, text=True, timeout=10).stdout
+            with cuts.timeout("harness/machine.py:_platform_uuid->subprocess.run(timeout)", "ioreg platform UUID"):
+                out = subprocess.run(["ioreg", "-rd1", "-c", "IOPlatformExpertDevice"],
+                                     capture_output=True, text=True, timeout=10).stdout
         except (OSError, subprocess.SubprocessError):
             out = ""
         m = re.search(r'"IOPlatformUUID"\s*=\s*"([^"]+)"', out or "")
@@ -387,9 +389,12 @@ def _uv_with_pins(path: Path | None = None) -> dict[str, str]:
 
 def _mflux_cli() -> str:
     import subprocess
+
+    from harness import cuts
     try:
-        out = subprocess.run(["mflux-generate", "--version"],
-                             capture_output=True, text=True, timeout=10).stdout
+        with cuts.timeout("harness/machine.py:_mflux_cli->subprocess.run(timeout)", "mflux-generate --version"):
+            out = subprocess.run(["mflux-generate", "--version"],
+                                 capture_output=True, text=True, timeout=10).stdout
     except (OSError, subprocess.SubprocessError):
         return ""
     parts = out.split()

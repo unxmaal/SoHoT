@@ -21,3 +21,8 @@ KNOBS = [
     _k("population", ["harness/neighbors.py:POPULATION"], [1e5, 1e6, 5e6, 2e7, 1e8], probe="population",
        note="the world's star count, the denominator of enrichment"),
 ]
+
+NEVER_CUTS = {
+    "harness/neighbors.py:HALF_LIFE_DAYS": "push-date decay on a repo's score; it reorders the ranking and drops no repo",
+    "harness/neighbors.py:POPULATION": "the denominator of a repo's enrichment; it weights the score and drops no repo",
+}

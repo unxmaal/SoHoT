@@ -8,6 +8,13 @@ KNOBS = [
        lanes=("decide", "agent"), limit="needle_serve_start_s", unit="s", receipt="knobs", note="seconds needle --serve may take to report its address (#693)", unrecorded=60.0),
 ]
 
+NEVER_CUTS = {
+    "harness/needle.py:Chat.__call__(max_tokens)": "needle takes no reply budget; the parameter only matches "
+                                                   "completion.chat and is never read (#693)",
+    "harness/needle.py:Server.close->self.proc.wait(timeout)": "grace before a terminated needle server is killed; it "
+                                                               "is shutting down either way (#693)",
+}
+
 NOT_GATING = {
     "evals/runners/process.py:STDERR_TAIL": "lines of a failed child's stderr kept beside its artifact for a person; "
                                             "no check reads them (#601)",

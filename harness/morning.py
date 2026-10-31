@@ -198,9 +198,18 @@ def stale_lanes(conn) -> list[dict]:
 
 def stalled(conn, days: float | None = None, head: int | None = None) -> list[dict]:
     """The ranked head of a wanted lane, not downloaded, in its state past STALL_DAYS. #925."""
-    from harness import funnel
-    got = funnel.stalls(funnel.proposals(conn), STALL_DAYS if days is None else days,
-                        STALL_HEAD if head is None else head)
+    from harness import cuts, funnel
+    days, head = STALL_DAYS if days is None else days, STALL_HEAD if head is None else head
+    rows = funnel.proposals(conn)
+    got = funnel.stalls(rows, days, head)
+    below = len(funnel.stalls(rows, days, float("inf"))) - len(got)
+    if below:
+        cuts.cut("morning_stall_head", "stalled candidates ranked below the watched head", value=head,
+                 kept=len(got), dropped=below)
+    young = len(funnel.stalls(rows, 0.0, head)) - len(got)
+    if young:
+        cuts.cut("morning_stall_days", "head candidates waiting less than the stall days", value=days,
+                 kept=len(got), dropped=young)
     return [{k: r[k] for k in ("name", "lane", "lane_rank", "stage", "in_state_days", "age_days", "reason", "why")}
             for r in got]
 
@@ -224,6 +233,9 @@ def ci(now: float, gh=_gh) -> dict:
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
         return {"available": False, "why": str(exc)[:300]}
     created = datetime.fromisoformat(str(run.get("createdAt", "")).replace("Z", "+00:00")).timestamp()
+    if now - created > CI_FRESH_S:
+        from harness import cuts
+        cuts.cut("morning_ci_fresh", f"nightly run {run.get('databaseId')} too old to notify", kept=0, dropped=1)
     return {"available": True, "id": run.get("databaseId"), "status": run.get("status"),
             "conclusion": run.get("conclusion") or "", "created": created, "sha": run.get("headSha", ""),
             "url": run.get("url", ""), "fresh": now - created <= CI_FRESH_S,

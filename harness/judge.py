@@ -251,21 +251,26 @@ def mentions(text: str, *, gateway: str = "", complete=None,
         kw["gateway"] = gateway
     out: list[tuple[str, str]] = []
     seen: set[str] = set()
+    over = [0]
     for piece in _chunks(body, MENTION_CHUNK_CHARS):
-        for name, claim in _mentioned(piece, complete, kw):
+        for name, claim in _mentioned(piece, complete, kw, over):
             if name.casefold() not in seen:
                 seen.add(name.casefold())
                 out.append((name, claim))
+    if over[0]:
+        from harness import cuts
+        cuts.cut("max_mentions", "lines of a mentions reply past the cap", kept=len(out), dropped=over[0])
     return out
 
 
-def _mentioned(piece: str, complete, kw: dict) -> list[tuple[str, str]]:
+def _mentioned(piece: str, complete, kw: dict, over: list | None = None) -> list[tuple[str, str]]:
     try:
         reply = complete(MENTION_PROMPT.format(text=piece), **kw)
     except Exception:  # noqa: BLE001
         return []
     out = []
-    for line in (reply or "").splitlines():
+    lines = (reply or "").splitlines()
+    for n, line in enumerate(lines):
         line = line.strip().lstrip("-*0123456789. ").strip()
         if not line or line.upper().startswith("NONE"):
             continue
@@ -276,6 +281,8 @@ def _mentioned(piece: str, complete, kw: dict) -> list[tuple[str, str]]:
             continue
         out.append((name, claim.strip()[:160]))
         if len(out) >= MAX_MENTIONS:
+            if over is not None:
+                over[0] += sum(1 for rest in lines[n + 1:] if rest.strip())
             break
     return out
 
