@@ -78,6 +78,10 @@ def trace(image: str | Path, *, colormode: str = "color",
             from PIL import Image
             small = Path(d) / "small.png"
             with Image.open(image) as im:
+                if preset and max(im.size) > trace_at:
+                    from harness import cuts
+                    cuts.cut("harness/vector.py:TRACE_PRESETS[icon][trace_at]",
+                             f"{image.name} traced at {trace_at}px, not {max(im.size)}px", value=trace_at)
                 im.convert("RGB").resize((trace_at, trace_at),
                                          Image.LANCZOS).save(small)
             image = small
@@ -102,6 +106,8 @@ def trace(image: str | Path, *, colormode: str = "color",
         # through and let the checker downstream have the argument.
         return svg
     if drawn < MIN_INK:
+        from harness import cuts
+        cuts.cut("harness/vector.py:MIN_INK", f"{image.name} traced blank (ink {drawn:.4f})", kept=0, dropped=1)
         raise VectorError(
             f"traced {image.name} to a blank document (ink {drawn:.4f}); the "
             f"source image is probably uniform")

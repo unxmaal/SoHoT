@@ -106,3 +106,8 @@ NOT_GATING = {
     f"{W}:STOP_GRACE_S": "how long a stopped group has between TERM and KILL; the same role as "
                          "workqueue.CANCEL_GRACE_S (#814)",
 }
+
+NEVER_CUTS = {
+    "harness/workqueue.py:quiesce(wait)": "seconds between looks for a running job while the queue is paused; it waits "
+                                          "for every job and stops none (#577)",
+}

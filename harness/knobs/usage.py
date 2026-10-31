@@ -23,3 +23,8 @@ NOT_GATING = {
     **{f"harness/usage.py:_UNITS[{u}]": "seconds in a day, hour, minute or second (#706)" for u in "dhms"},
     "harness/context_report.py:rtk_gain->runner(timeout)": "how long `rtk gain` may take to report (#828)",
 }
+
+NEVER_CUTS = {
+    "harness/usage.py:SESSION_GAP_S": "the gap that starts a client's next session; it groups requests into the "
+                                      "clusters the z is taken over and drops none (#701)",
+}

@@ -79,6 +79,10 @@ NOTIFY_EVERY_S = 3600.0
 NOTIFY_TIMEOUT_S = 10.0
 NOTIFY_TITLE = "SoHoT watchdog"
 NOTIFIED = "notified"
+HELD = "notify held"
+_HELD_WHAT = {"watchdog_escalate_after": "findings escalated after repeated trips",
+              "watchdog_escalate_window": "findings not escalated: their earlier trips fell outside the window",
+              "watchdog_notify_every": "notifications held: shown too recently"}
 UNPAUSABLE = "no progress file to pause through: notified instead, and it runs on"
 
 ACT_ENV = "LH_WATCHDOG_ACT"
@@ -704,28 +708,30 @@ def _cells(run: dict):
     return order[0], by
 
 
-def _paired(by: dict, inc: str, ch: str):
+def _paired(by: dict, inc: str, ch: str, minimum: int | None = None):
     """(observed challenger/incumbent ratio, basis, pairs) on the cases both finished, or None below the minimum. #864."""
+    minimum = OVERRUN_MIN_PAIRS if minimum is None else minimum
     mine, theirs = by.get(ch) or {}, by.get(inc) or {}
     pairs = [c for c in mine if c in theirs and mine[c][2] == theirs[c][2]]
     tok = [c for c in pairs if mine[c][1] and theirs[c][1]]
-    if len(tok) >= OVERRUN_MIN_PAIRS:
+    if len(tok) >= minimum:
         a, at = sum(mine[c][0] for c in tok), sum(mine[c][1] for c in tok)
         b, bt = sum(theirs[c][0] for c in tok), sum(theirs[c][1] for c in tok)
         return ((a / at) / (b / bt) if b else None), "seconds per reply token", len(tok)
-    if len(pairs) >= OVERRUN_MIN_PAIRS:
+    if len(pairs) >= minimum:
         b = sum(theirs[c][0] for c in pairs)
         return (sum(mine[c][0] for c in pairs) / b if b else None), "seconds", len(pairs)
     return None
 
 
 def _overrun(w: World) -> list[Finding]:
-    out = []
+    out, few_cases, few_pairs = [], 0, 0
     for s in w.evals:
         run = s.progress or {}
-        if int(run.get("done") or 0) < OVERRUN_MIN_CASES:
-            continue
         planned, seen = run.get("planned_s_per_case") or {}, run.get("observed_s_per_case") or {}
+        if int(run.get("done") or 0) < OVERRUN_MIN_CASES:
+            few_cases += any(seen.get(k) and planned.get(k) and seen[k] > OVERRUN_FACTOR * planned[k] for k in seen)
+            continue
         cells = _cells(run)
         worst = []
         for k in seen:
@@ -738,6 +744,9 @@ def _overrun(w: World) -> list[Finding]:
             # A challenger is judged against the incumbent on the same cases, not its plan's mean: case time is heavy-tailed. #864.
             inc = cells[0]
             got = _paired(cells[1], inc, k) if planned.get(inc) else None
+            if got is None and planned.get(inc):
+                some = _paired(cells[1], inc, k, minimum=1)
+                few_pairs += bool(some and some[0] is not None and some[0] > OVERRUN_FACTOR * planned[k] / planned[inc])
             if got is None or got[0] is None:
                 continue
             ratio, basis, n = got
@@ -751,11 +760,19 @@ def _overrun(w: World) -> list[Finding]:
                                               "planned_s_per_case": round(planned[k], 2), "factor": OVERRUN_FACTOR,
                                               "done": run.get("done"), "total": run.get("total"),
                                               "specs": run.get("specs"), **extra}))
+    from harness import cuts
+    if out:
+        cuts.cut("watchdog_overrun_factor", "runs judged far over their plan", dropped=len(out))
+    if few_cases:
+        cuts.cut("watchdog_overrun_min_cases", "runs over their plan not judged yet: too few cases", kept=few_cases)
+    if few_pairs:
+        cuts.cut("watchdog_overrun_min_pairs", "challengers over their plan not judged yet: too few pairs",
+                 kept=few_pairs)
     return out
 
 
 def _no_progress(w: World) -> list[Finding]:
-    out = []
+    out, stalled = [], {}
     for s in w.evals:
         run = s.progress or {}
         last = run.get("last_progress_at") or run.get("started_at")
@@ -765,12 +782,21 @@ def _no_progress(w: World) -> list[Finding]:
         limit = max([STALL_S] + [STALL_CASES * v for v in plans])
         idle = w.now - float(last)
         if idle > limit:
+            stall_knob = "watchdog_stall" if limit == STALL_S else "watchdog_stall_cases"
+            stalled[stall_knob] = stalled.get(stall_knob, 0) + 1
             out.append(Finding("no_progress", s, {"since_last_case_s": round(idle), "limit_s": round(limit),
                                                   "done": run.get("done"), "total": run.get("total")}))
+    from harness import cuts
+    for stall_knob, n in stalled.items():
+        cuts.cut(stall_knob, "runs with no case finished for too long", dropped=n)
     return out
 
 
 def _orphan(w: World) -> list[Finding]:
+    young = sum(1 for s in w.top if s.orphan and (s.elapsed_s or 0) < ORPHAN_GRACE_S)
+    if young:
+        from harness import cuts
+        cuts.cut("watchdog_orphan_grace", "orphans left one more wake", kept=young)
     return [Finding("orphan", s, {"elapsed_s": round(s.elapsed_s or 0), "why": s.why,
                                   "job_state": s.detail.get("state", "")})
             for s in w.top if s.orphan and (s.elapsed_s or 0) >= ORPHAN_GRACE_S]
@@ -792,6 +818,9 @@ def _mcp_clients(probes: Probes, world: World, procs: list) -> None:
 def _stale_mcp(w: World) -> list[Finding]:
     from harness import mcp_peers
     if (w.mcp_live_s or 0) < ORPHAN_GRACE_S:
+        if w.mcp_stale:
+            from harness import cuts
+            cuts.cut("watchdog_orphan_grace", "stale MCP servers left one more wake", kept=len(w.mcp_stale))
         return []
     return [Finding("stale_mcp", s, {"elapsed_s": round(s.elapsed_s or 0), "live_pid": w.mcp_live,
                                      "stop": mcp_peers.stop_command([s.pid]),
@@ -807,12 +836,19 @@ def _on_gpu(w: World, s: Subject) -> bool:
 def _daytime_gpu(w: World) -> list[Finding]:
     if not daytime(w.now) or _cleared(w):
         return []
-    return [Finding("daytime_gpu", s, {"elapsed_s": round(s.elapsed_s), "limit_s": DAYTIME_GPU_S,
-                                       "hours": [DAY_START_HOUR, DAY_END_HOUR],
-                                       "gpu": "holds the GPU lock" if w.gpu is not None else
-                                       "the GPU lock's holder cannot be told"})
-            for s in w.top if s.elapsed_s is not None and s.elapsed_s > DAYTIME_GPU_S and not s.orphan
-            and _on_gpu(w, s)]
+    out = [Finding("daytime_gpu", s, {"elapsed_s": round(s.elapsed_s), "limit_s": DAYTIME_GPU_S,
+                                      "hours": [DAY_START_HOUR, DAY_END_HOUR],
+                                      "gpu": "holds the GPU lock" if w.gpu is not None else
+                                      "the GPU lock's holder cannot be told"})
+           for s in w.top if s.elapsed_s is not None and s.elapsed_s > DAYTIME_GPU_S and not s.orphan
+           and _on_gpu(w, s)]
+    if out:
+        from harness import cuts
+        hour = time.localtime(w.now).tm_hour
+        hour_knob = "watchdog_day_start_hour" if hour - DAY_START_HOUR < DAY_END_HOUR - hour else "watchdog_day_end_hour"
+        cuts.cut("watchdog_daytime_gpu", "GPU jobs past the day limit", dropped=len(out))
+        cuts.cut(hour_knob, "GPU jobs judged inside the day hours, at the nearer edge", dropped=len(out))
+    return out
 
 
 def _cloud_only(w: World, s: Subject) -> bool:
@@ -844,6 +880,9 @@ def _idle_lock(w: World) -> list[Finding]:
     age = w.now - float(since) if isinstance(since, (int, float)) else None
     if age is not None and age < IDLE_HOLD_S:
         return []
+    if age is not None:
+        from harness import cuts
+        cuts.cut("watchdog_idle_hold", "an eval lock held with nothing running", dropped=1)
     who = Subject("lock", f"lock pid {held.get('pid')}", "the eval lock's holder record", pid=held.get("pid"),
                   detail=dict(held))
     return [Finding("idle_lock", who, {"holder": held, "held_s": round(age) if age is not None else None})]
@@ -869,8 +908,14 @@ def _memory_state(w: World) -> tuple[dict, bool, bool]:
 
 
 def _memory(w: World) -> list[Finding]:
+    from harness import pressure
     ev, trouble, _ = _memory_state(w)
-    return [Finding("memory", s, ev) for s in w.top if not s.orphan] if trouble else []
+    out = [Finding("memory", s, ev) for s in w.top if not s.orphan] if trouble else []
+    level = ev["pressure_level"]
+    if out and not (level is not None and level >= pressure.CRITICAL):
+        from harness import cuts
+        cuts.cut("watchdog_swapout_max", "jobs judged in memory trouble by their swap rate", dropped=len(out))
+    return out
 
 
 def _in_use(w: World) -> list[str] | None:
@@ -915,6 +960,9 @@ def _idle_unload(w: World) -> list[Finding]:
                                                   "loaded, no request in flight, named by no running eval", detail=m),
                            {"server": m["server"], "model": m["model"], "idle_s": round(w.now - since),
                             "limit_s": limit, "day": daytime(w.now)}))
+    if out and daytime(w.now):
+        from harness import cuts
+        cuts.cut("serve_idle_unload_day_s", "idle models given back in the day hours", dropped=len(out))
     return out
 
 
@@ -941,10 +989,14 @@ def _mlx_dead(w: World) -> list[Finding]:
 
 
 def _node_fallbacks(w: World) -> list[Finding]:
-    return [Finding("node_fallbacks", Subject("node", f"node {f['node']}", "live_audit.node_fallbacks",
-                                              detail=f), {"requests": f["requests"], "limit": FALLBACK_MAX,
-                                                          "aliases": f.get("aliases", [])})
-            for f in w.fallbacks or [] if int(f.get("requests") or 0) >= FALLBACK_MAX]
+    out = [Finding("node_fallbacks", Subject("node", f"node {f['node']}", "live_audit.node_fallbacks",
+                                             detail=f), {"requests": f["requests"], "limit": FALLBACK_MAX,
+                                                         "aliases": f.get("aliases", [])})
+           for f in w.fallbacks or [] if int(f.get("requests") or 0) >= FALLBACK_MAX]
+    if out:
+        from harness import cuts
+        cuts.cut("watchdog_fallback_max", "serving nodes judged a fallback spike", dropped=len(out))
+    return out
 
 
 @dataclass(frozen=True)
@@ -1206,12 +1258,13 @@ def _machine(conn) -> int | None:
     return got[0] if got else None
 
 
-def repeats(conn, f: Finding, now: float, dry_run: bool) -> int:
-    """Prior trips of this criterion on this subject inside the escalation window, this machine."""
+def repeats(conn, f: Finding, now: float, dry_run: bool, windowed: bool = True) -> int:
+    """Prior trips of this criterion on this subject inside the escalation window (or ever), this machine."""
     row = conn.execute(
         "SELECT COUNT(*) AS n FROM watchdog_actions WHERE criterion = ? AND subject = ? AND dry_run = ? "
         "AND at >= ? AND (machine_id = ? OR (machine_id IS NULL AND ? IS NULL))",
-        (f.criterion, f.subject.key, int(dry_run), now - ESCALATE_WINDOW_S, _machine(conn), _machine(conn))
+        (f.criterion, f.subject.key, int(dry_run), now - ESCALATE_WINDOW_S if windowed else 0.0, _machine(conn),
+         _machine(conn))
     ).fetchone()
     return int(row["n"])
 
@@ -1242,7 +1295,7 @@ def _act(conn, hands: Hands, action: str, f: Finding, now: float) -> str:
     if action == NOTIFY:
         last = notified_since(conn, f, now)
         if last is not None:
-            return f"notify held: shown {now - last:.0f}s ago (once per {NOTIFY_EVERY_S:.0f}s per criterion and subject)"
+            return f"{HELD}: shown {now - last:.0f}s ago (once per {NOTIFY_EVERY_S:.0f}s per criterion and subject)"
     return hands.do(action, f)
 
 
@@ -1293,21 +1346,30 @@ def wake(conn, probes: Probes | None = None, hands: Hands | None = None, act: bo
             return {"acted": [], "skipped": {}, "unowned": [], "busy": True}
         world = observe(probes, conn, now)
         findings, skipped = judge(world)
-        acted = []
+        acted, held = [], {}
         for f in findings:
             c = BY_ID[f.criterion]
             escalated = repeats(conn, f, now, not act) >= ESCALATE_AFTER
+            if escalated or repeats(conn, f, now, not act, windowed=False) >= ESCALATE_AFTER:
+                held_knob = "watchdog_escalate_after" if escalated else "watchdog_escalate_window"
+                held[held_knob] = held.get(held_knob, 0) + 1
             action = c.escalation if escalated else c.action
             if action == PAUSE and not f.subject.runs():
                 # A time or memory limit never stops a job; one with nothing to pause through is told about. #1371.
                 action, f = NOTIFY, Finding(f.criterion, f.subject, {**f.evidence, "unpausable": UNPAUSABLE})
             outcome = _act(conn, hands, action, f, now) if act else "dry-run"
+            if outcome.startswith(HELD):
+                held_knob = "watchdog_notify_every"
+                held[held_knob] = held.get(held_knob, 0) + 1
             row = record(conn, f, action, escalated, not act, outcome, now)
             mark = "" if act else "[dry-run] would "
             say(f"{mark}{action}{' (escalated)' if escalated else ''} {f.subject.key}: {f.criterion} "
                 f"{json.dumps(f.evidence, default=str)} -> {outcome}")
             acted.append({"row": row, "criterion": f.criterion, "subject": f.subject.key, "action": action,
                           "escalated": escalated, "outcome": outcome})
+        from harness import cuts
+        for held_knob, n in held.items():
+            cuts.cut(held_knob, _HELD_WHAT[held_knob], dropped=n, conn=conn)
         for cid, why in skipped.items():
             say(f"skipped {cid}: {why}")
         from harness import lane_probe

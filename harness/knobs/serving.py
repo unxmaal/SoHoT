@@ -149,4 +149,6 @@ NOT_GATING = {
 NEVER_CUTS = {
     "harness/context.py:STEP": "the granularity a context is rounded down to; the KV room or trained context that binds "
                                "records under its own knob (#498)",
+    "harness/vllm.py:_probe->_DIRECT.open(timeout)": "how long one readiness probe waits; a slow answer reads as not "
+                                                     "up yet and is probed again, and served(timeout) records the cut",
 }

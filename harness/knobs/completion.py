@@ -64,3 +64,8 @@ NOT_GATING = {
     "evals/core.py:GRADED_FAILURE[repo][resolved]": "what the repo grader records on a failed reply, given to a cut one; a fact, not a setting (#1113)",
     "evals/core.py:GRADED_FAILURE[repo][patch_applied]": "what the repo grader records on an empty diff, given to a cut reply; a fact, not a setting (#1113)",
 }
+
+NEVER_CUTS = {
+    "harness/yield_stop.py:EXPLORE_SHARE": "the share of tasks drawn to run past the stop point to the budget; it only "
+                                           "lets work through, and each stop records yield_stop (#1127)",
+}
