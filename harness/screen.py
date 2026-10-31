@@ -433,8 +433,8 @@ def plan(rows, *, missing=None) -> list[dict]:
         # A method downloads its base's weights, or none when its runner finds its own. #576.
         from harness import methods
         target = methods.weights_of(name) if methods.is_method(name) else name
-        absent = [] if not spec or not target else missing(target)
         gap = runner_gap(lane, name, attached, card=row)
+        absent = [] if not spec or gap or not target else missing(target)
         if not spec or gap:
             state, why = NO_RUNNER, (
                 gap if gap
@@ -793,7 +793,7 @@ def plausible_wer(summary: dict | None, lane: str, candidate: str = "", key: str
 
 
 def working(summary: dict, lane: str, candidate: str, key: str) -> str:
-    """Why rows with no passing case still show the model working on its lane's metric, or ''; screen and reverify share it. #701, #1007, #733."""
+    """Why rows with no passing case still show the model working on its lane's metric, or ''; screen, reverify and verify share it. #701, #1007, #733, #1399."""
     # A decide case passes only when every field is right; a right field shows the model ran. #701.
     if any(float((v.get("metrics") or {}).get("decide_accuracy") or 0.0) > 0 for v in summary.values()):
         return "it answered decide fields correctly though no case was right in full"

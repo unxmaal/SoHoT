@@ -235,7 +235,7 @@ def minutes(conn, row: dict, lane: str) -> tuple[float | None, str]:
     incumbent = adopt.default_for(lane, winners.typed().get(lane, ""), conn=conn)
     if not incumbent:
         return None, f"the {lane} lane has no incumbent"
-    inc_spec = screen.candidate_for(lane, incumbent) or incumbent
+    inc_spec = screen.candidate_for(lane, incumbent, conn=conn) or incumbent
     spec = screen.candidate_for(lane, row.get("name", ""), row.get("attaches_to") or "", conn=conn) or ""
     if not spec:
         return None, "no candidate spec"

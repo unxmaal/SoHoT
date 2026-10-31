@@ -167,7 +167,25 @@ def test_a_budget_under_one_look_interval_is_one_slice(monkeypatch, world):
     assert len(fake.argvs) == 1
 
 
+class Requested(Slices):
+    """A slice that paused on request, with budget and rows left, as `soh pause` leaves it."""
+
+    def __call__(self, argv, **kw):
+        got = super().__call__(argv, **kw)
+        out = Path(argv[argv.index("--out") + 1])
+        p = json.loads((out / watch.PROGRESS).read_text(encoding="utf-8"))
+        (out / watch.PROGRESS).write_text(json.dumps({**p, "why": "paused on request"}), encoding="utf-8")
+        return got
+
+
 def test_a_pause_on_request_is_never_resumed_inside_the_run(monkeypatch, world):
+    fake = Requested([_rows(6, gained=1, lost=1), _rows(12, gained=1, lost=1)])
+    monkeypatch.setattr(measure_cmd, "_launch", fake)
+    _measure()
+    assert len(fake.argvs) == 1
+
+
+def test_a_pause_with_no_reason_is_never_resumed_inside_the_run(monkeypatch, world):
     fake = Eval(rows=_rows(6))
     monkeypatch.setattr(measure_cmd, "_launch", fake)
     _measure()
@@ -328,11 +346,21 @@ def test_a_repo_adopt_for_an_unscreened_challenger_is_refused_before_any_run(mon
     assert adopt_cmd.argv_screen_refusal(["uv", "run", "soh", "adopt", "--lane", "code", "--challenger", CH]) == ""
 
 
-def test_unscreened_passes_the_guard_through_to_the_paired_run(monkeypatch, world):
+def test_unscreened_skips_the_measure_steps_screen_guard(monkeypatch, world):
     fake = Eval(rows=[])
     monkeypatch.setattr(measure_cmd, "_launch", fake)
     measure_cmd._measure(_ns(unscreened=True), {"name": CH, "lane": "repo"}, [], None)
     assert fake.argvs and "--unscreened" in fake.argvs[0]
+
+
+def test_every_repo_pairing_the_measure_step_lets_run_carries_unscreened_to_evals_run(monkeypatch, world):
+    fake = Eval(rows=[])
+    monkeypatch.setattr(measure_cmd, "_launch", fake)
+    monkeypatch.setattr(measure_cmd, "_screen_refusal", lambda a, lane, spec: "")
+    measure_cmd._measure(_ns(), {"name": CH, "lane": "repo"}, [], None)
+    measure_cmd._measure(_ns(), {"name": CH, "lane": "code"}, [], None)
+    (repo, code) = fake.argvs
+    assert "--unscreened" in repo and "--unscreened" not in code
 
 
 def test_a_held_repo_pause_resumes_whatever_its_screen(monkeypatch, world):

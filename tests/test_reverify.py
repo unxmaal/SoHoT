@@ -358,6 +358,75 @@ def test_a_cancelled_job_is_not_a_verdict_on_the_model(upgraded):
     assert reverify.flags(conn) == {}
 
 
+def _continuation(conn, before):
+    [nxt] = [j for j in queued(conn) if j["id"] not in before]
+    return nxt
+
+
+@pytest.mark.parametrize("passed", [3, 0])
+def test_a_paused_rerun_is_resumed_from_its_checkpoint_not_judged(upgraded, passed):
+    """A watchdog pause stores the partial run; judging it settled unrun (case sets differ) or failed. #1403."""
+    conn = upgraded
+    job = _queue_and_finish(conn, cases("q3-4b", passed, total=3), rc=75, state=wq.PAUSED,
+                            failure_class="crashed")
+    got = check(conn, now=NOW + 120)
+    row = _latest(conn)
+    assert got["settled"] == [] and row["outcome"] == "" and reverify.flags(conn) == {}
+    nxt = _continuation(conn, {job["id"]})
+    assert [r["job"] for r in got["resumed"]] == [nxt["id"]]
+    assert row["job_id"] == int(nxt["id"])
+    partial = runs.for_job(conn, int(job["id"]))
+    argv = nxt["argv"]
+    assert argv[argv.index("--out") + 1] == str(runs.run_dir(partial["path"]))
+    assert argv.count("--out") == 1 and argv.count("--resume") == 1
+    assert argv[:argv.index("--out")] == job["argv"]
+    assert nxt["night_gate"] and nxt["requested_by"] == reverify.REQUESTED_BY
+
+
+def test_a_resumed_rerun_is_judged_once_its_continuation_finishes(upgraded):
+    conn = upgraded
+    job = _queue_and_finish(conn, cases("q3-4b", 3, total=3), rc=75, state=wq.PAUSED)
+    check(conn, now=NOW + 120)
+    nxt = _continuation(conn, {job["id"]})
+    wq._write({**nxt, "state": wq.DONE, "rc": 0}, conn=conn)
+    rid = runs.for_job(conn, int(job["id"]))["id"]
+    conn.execute("UPDATE runs SET job_id = ? WHERE id = ?", (int(nxt["id"]), rid))
+    record_run(conn, "code", cases("q3-4b", 10), at=NOW + 200, job_id=nxt["id"],
+               versions={**VERSIONS, "mlx-lm": "0.29.1"})
+    check(conn, now=NOW + 300)
+    assert _latest(conn)["outcome"] == reverify.PASSED
+
+
+def test_a_rerun_paused_before_storing_a_run_is_queued_again_as_it_was(upgraded):
+    conn = upgraded
+    job = _queue_and_finish(conn, None, rc=75, state=wq.PAUSED)
+    check(conn, now=NOW + 120)
+    nxt = _continuation(conn, {job["id"]})
+    assert nxt["argv"] == job["argv"] and _latest(conn)["outcome"] == ""
+
+
+def test_a_paused_continuation_keeps_one_out_and_resume(upgraded):
+    conn = upgraded
+    job = _queue_and_finish(conn, cases("q3-4b", 2, total=2), rc=75, state=wq.PAUSED)
+    check(conn, now=NOW + 120)
+    first = _continuation(conn, {job["id"]})
+    wq._write({**first, "state": wq.PAUSED, "rc": 75}, conn=conn)
+    rid = runs.for_job(conn, int(job["id"]))["id"]
+    conn.execute("UPDATE runs SET job_id = ? WHERE id = ?", (int(first["id"]), rid))
+    check(conn, now=NOW + 300)
+    second = _continuation(conn, {job["id"], first["id"]})
+    assert second["argv"] == first["argv"]
+    assert _latest(conn)["job_id"] == int(second["id"])
+
+
+def test_a_dry_run_leaves_a_paused_rerun_alone(upgraded):
+    conn = upgraded
+    job = _queue_and_finish(conn, cases("q3-4b", 3, total=3), rc=75, state=wq.PAUSED)
+    got = check(conn, now=NOW + 120, dry_run=True)
+    assert got["settled"] == [] and [j["id"] for j in queued(conn)] == [job["id"]]
+    assert _latest(conn)["job_id"] == int(job["id"])
+
+
 def test_an_incumbent_that_now_beats_the_served_model_is_flagged(conn):
     adopt.record(conn, adopt.Verdict("code", "q3-4b", "q3-8b", True, "won"))
     check(conn)
@@ -385,6 +454,8 @@ def test_a_flagged_lane_is_tried_again_after_its_age_threshold(upgraded):
     conn = upgraded
     _queue_and_finish(conn, cases("q3-4b", 0), failure_class="crashed")
     check(conn, now=NOW + 120)
+    got = check(conn, now=NOW + 120 + 2 * DAY)
+    assert got["planned"][0]["skip"].endswith("; re-run again in 5.0 days")
     check(conn, now=NOW + 8 * DAY)
     assert len(queued(conn)) == 2
 
