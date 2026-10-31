@@ -19,6 +19,13 @@ KNOBS = [
             "that vary by runner (#1146)"),
 ]
 
+NOT_GATING = {
+    "scripts/ci-retry.sh:CI_RETRY_ATTEMPTS": "how many times CI runs `uv sync` before the job fails; a network "
+                                             "blip retried is the same install, and a persistent failure still fails (#1440)",
+    "scripts/ci-retry.sh:CI_RETRY_DELAY": "seconds before CI's first `uv sync` retry, doubling after; it only "
+                                          "spaces attempts at the same install (#1440)",
+}
+
 NEVER_CUTS = {
     f"{T}:SLOWER_ADDED_S": "which tests a CI run names in a slower-test warning; every test still runs and is timed",
     f"{T}:SLOWER_RATIO": "which tests a CI run names in a slower-test warning; every test still runs and is timed",
