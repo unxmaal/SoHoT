@@ -238,6 +238,8 @@ def _fresh_read(name: str, path: Path) -> list[str]:
             capture_output=True, text=True, encoding="utf-8", timeout=120,
             cwd=Path(__file__).resolve().parents[2])
     except subprocess.TimeoutExpired as exc:
+        from harness import cuts
+        cuts.cut("harness/checks/ocr.py:_fresh_read->subprocess.run(timeout)", f"OCR retry on {path.name}", kept=0, dropped=1)
         raise OcrTransient(f"OCR retry timed out on {path}") from exc
     if done.returncode == 0:
         return json.loads(done.stdout)

@@ -107,6 +107,8 @@ def check(path: str | Path, lyrics: str, *, max_wer: float | None = None,
         return MusicResult(False, f"no audio file at {path}")
     size = path.stat().st_size
     if size < MIN_AUDIO_BYTES:
+        from harness import cuts
+        cuts.cut("harness/checks/speech.py:MIN_AUDIO_BYTES", f"music {path.name}: {size} bytes")
         return MusicResult(
             False, f"audio is {size} bytes, too small to hold music")
 
@@ -151,6 +153,8 @@ def check(path: str | Path, lyrics: str, *, max_wer: float | None = None,
         # asked, and neither a duration nor a tempo check can see it.
         got = heard_words(transcript, language)
         if got > INSTRUMENTAL_WORDS_MAX:
+            from harness import cuts
+            cuts.cut("harness/checks/music.py:INSTRUMENTAL_WORDS_MAX", f"instrumental {path.name}: {got} words heard")
             out.ok = False
             out.reason = (f"asked for no vocal and heard {got} words: "
                           f"{transcript!r}")
@@ -158,6 +162,8 @@ def check(path: str | Path, lyrics: str, *, max_wer: float | None = None,
     if out.ok and duration_s and seconds is not None:
         drift = abs(seconds - duration_s)
         if drift > DURATION_TOLERANCE * duration_s:
+            from harness import cuts
+            cuts.cut("harness/checks/music.py:DURATION_TOLERANCE", f"music {path.name}: off by {drift:.2f}s")
             out.ok = False
             out.reason = (f"asked for {duration_s:g}s and got {seconds:.2f}s, "
                           f"off by {drift:.2f}s")

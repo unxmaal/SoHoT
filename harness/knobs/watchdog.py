@@ -106,3 +106,8 @@ NOT_GATING = {
     f"{W}:STOP_GRACE_S": "how long a stopped group has between TERM and KILL; the same role as "
                          "workqueue.CANCEL_GRACE_S (#814)",
 }
+
+NEVER_CUTS = {
+    "scripts/launchd.sh:WATCHDOG_EVERY_MIN": "how often the watchdog wakes; a late wake still sees every criterion, "
+                                             "pacing (#1087)",
+}
