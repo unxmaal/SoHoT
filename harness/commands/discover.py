@@ -168,6 +168,7 @@ def _report_control(a) -> int:
     Issue #172.
     """
     from harness import judge
+    paths.eval_home(reads_live=True)
     runs = max(1, getattr(a, "runs", 3))
     try:
         got = judge.control_repeated(runs=runs, shape=getattr(a, "shape", "")
@@ -654,6 +655,8 @@ def _report_neighbors(a) -> int:
     """What the people who build what we run are looking at. Issue #58."""
     from harness import feeds, github, memory_store as ms, neighbors as nb
 
+    if getattr(a, "control", False):
+        paths.eval_home(reads_live=True)
     client = github.Client(budget=getattr(a, "budget", 900))
     try:
         people = nb.cohort(client=client, limit=getattr(a, "crowd", 250))

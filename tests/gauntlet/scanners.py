@@ -841,6 +841,71 @@ def wall_bounds(text, rel, waivers=None):
                   for line in sorted(found - waived)]
 
 
+# An option or subcommand that runs an eval or a probe; each is homed (calls paths.eval_home) or waived with a reason.
+_EVAL_NAME = re.compile(r"^(?:--)?(?:[a-z]+-)*(?:evals?|probes?|redo|controls?|calibrate|self-?test|sensitivity|canary|chaos)$")
+#: "<file> <parser variable> <option or subcommand>" -> the handler file that calls paths.eval_home. #1346
+EVAL_HOMED = {
+    "evals/analysis/demand/__main__.py p --controls": "evals/analysis/demand/__main__.py",
+    "evals/claims_judge.py ap action=calibrate": "evals/claims_judge.py",
+    "evals/importers/history.py ap --probes": "evals/importers/history.py",
+    "evals/importers/transcripts.py ap --probes": "evals/importers/transcripts.py",
+    "harness/cli.py d --control": "harness/commands/discover.py",
+    "harness/cli.py sub sensitivity": "harness/commands/lanes.py",
+    "harness/slot_probe.py __main__": "harness/slot_probe.py",
+}
+#: Same keys -> why the entry may write the store of the home it runs in. #1346
+EVAL_WAIVED = {
+    "harness/cli.py d --no-control": "skips the control: the judge's scores are the work",
+    "harness/cli.py sub canary": "plants run in their own homes (canary.child_env); the parent writes a lease only",
+    "harness/cli.py sub chaos": "scenarios run in chaos.scratch_home; the machine lock is a lease, not work",
+    "harness/cli.py bch --probe": "contamination probes are the measurement adoption reads",
+    "harness/cli.py bch --calibrate": "reads a read-only store and writes none",
+    "harness/cli.py cas action=control": "writes the case validation files evals.run reads; no store rows",
+    "harness/cli.py stg action=controls": "no store write",
+    "harness/commands/vision.py act probe": "the vision reference row: files under runs, no store write",
+    "harness/hf_task.py sub vision-probe": "a venv child that writes a predictions file",
+    "scripts/pool-full-probe.py __main__": "stdlib only; with-gpu-lock's lease is coordination, not work",
+}
+
+
+def _parser_var(call):
+    f = call.func
+    return f.value.id if isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name) else "?"
+
+
+def eval_entry_points(text, rel):
+    """(line, key) for each argparse option, subcommand or action choice that names an eval or probe."""
+    tree, _ = _parse(text, rel)
+    if tree is None:
+        return []
+    out = []
+    for n in ast.walk(tree):
+        if not isinstance(n, ast.Call) or _call_name(n) not in ("add_argument", "add_parser"):
+            continue
+        names = [s for s in _strings(n.args) if _EVAL_NAME.match(s)]
+        for k in n.keywords:
+            if k.arg == "choices" and isinstance(k.value, (ast.Tuple, ast.List, ast.Set)):
+                names += [f"{_strings(n.args)[0] if _strings(n.args) else '?'}={s}"
+                          for s in _strings(k.value.elts) if _EVAL_NAME.match(s)]
+        out += [(n.lineno, f"{rel} {_parser_var(n)} {s}") for s in names]
+    if _EVAL_NAME.match(Path(rel).stem.replace("_", "-")):
+        out += [(n.lineno, f"{rel} __main__") for n in tree.body if isinstance(n, ast.If) and _is_main(n.test)]
+    return out
+
+
+def _is_main(test):
+    return (isinstance(test, ast.Compare) and isinstance(test.left, ast.Name) and test.left.id == "__name__"
+            and _strings(test.comparators) == ["__main__"])
+
+
+def unhomed_evals(text, rel, homed=None, waived=None):
+    homed = EVAL_HOMED if homed is None else homed
+    waived = EVAL_WAIVED if waived is None else waived
+    return [f"{rel}:{line}: {key!r} runs an eval or probe in whatever home it is given, the live one by default; "
+            f"call paths.eval_home in its handler and list it in EVAL_HOMED, or waive it in EVAL_WAIVED"
+            for line, key in eval_entry_points(text, rel) if key not in homed and key not in waived]
+
+
 def _sniffs(n):
     if isinstance(n, ast.Attribute) and n.attr == "__module__":
         return True
