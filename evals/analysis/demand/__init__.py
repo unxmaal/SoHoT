@@ -189,6 +189,10 @@ def output_model(messages: list[Msg], seed: int = SEED) -> dict:
     final = [m for m in messages if m.final]
     out = {"final": len(final), "partial": len(messages) - len(final), "coef": (0.0, 0.0, 0.0)}
     if len(final) < MIN_FINAL:
+        if out["partial"]:
+            from harness import cuts
+            cuts.cut("demand_min_final", "output-token fit skipped: partial counts left unestimated",
+                     kept=len(final), dropped=out["partial"])
         return out
     shuffled = random.Random(seed).sample(final, len(final))
     train, test = shuffled[: len(final) // 2], shuffled[len(final) // 2:]
@@ -220,14 +224,16 @@ def _step(name: str, args: dict) -> str:
         arg = Path(str(next(args[k] for k in _PATH_KEYS if k in args))).name
     else:
         arg = str(args.get("description") or args.get("pattern") or args.get("query") or args.get("url") or "")
-    return f"{name}: {' '.join(arg.split())}"[:STEP_CAP]
+    return f"{name}: {' '.join(arg.split())}"
 
 
-def _add(unit: Unit, rec: dict, usage: dict, counted: set) -> None:
+def _add(unit: Unit, rec: dict, usage: dict, counted: set, capped: Counter | None = None) -> None:
     """Fold one record into `unit`: its time, tokens (once per message), tool calls and the paths they name."""
     at = tr._ts(rec.get("timestamp"))
     if at:
         if unit.end and at - unit.end > 0:
+            if capped is not None and at - unit.end > IDLE_GAP_S:
+                capped["idle"] += 1
             unit.active_s += min(at - unit.end, IDLE_GAP_S)
         unit.end = max(unit.end, at)
     if rec.get("cwd") and (r := repo_of(str(rec["cwd"]))):
@@ -284,7 +290,7 @@ def scan(root: Path | None = None, now: float | None = None, days: int = DAYS) -
     root = Path(root or tr.default_root())
     now = time.time() if now is None else now
     since = now - days * 86400
-    units, skipped, states = [], Counter(), []
+    units, skipped, states, capped = [], Counter(), [], Counter()
     for _project, main, subs in tr.sessions(root):
         if main.stat().st_mtime < since:
             skipped["stale_file"] += 1
@@ -318,7 +324,7 @@ def scan(root: Path | None = None, now: float | None = None, days: int = DAYS) -
                 cur = Unit(unit_key(session, "main", at), "main", session, "main", at, end=at)
                 mine.append(cur)
             if cur is not None:
-                _add(cur, rec, usage, counted)
+                _add(cur, rec, usage, counted, capped)
         for s, rs in sub_recs.items():
             if not (began := _began(rs)):
                 continue
@@ -326,7 +332,7 @@ def scan(root: Path | None = None, now: float | None = None, days: int = DAYS) -
             u.request = next((session_cut._clean(t) for r in rs if (t := tr._sub_text(r))), "")
             sc: set = set()
             for rec in rs:
-                _add(u, rec, sub_usage[s], sc)
+                _add(u, rec, sub_usage[s], sc, capped)
             mine.append(u)
         typed = sorted(u.start for u in mine if u.kind == "main" and u.request)
         for u in mine:
@@ -342,15 +348,28 @@ def scan(root: Path | None = None, now: float | None = None, days: int = DAYS) -
         u.tokens_out = sum(estimated(m, model["coef"]) for m in u.messages)
     _classify(units)
     facts = {"skipped": dict(sorted(skipped.items())), "output_model": model,
-             "cost_check": [cost_check(s, st, ms, model["coef"]) for s, st, ms in states]}
+             "cost_check": [cost_check(s, st, ms, model["coef"], capped) for s, st, ms in states]}
+    _scan_cuts(skipped, capped, days)
     return sorted(units, key=lambda u: (u.start, u.key)), facts
 
 
-def cost_check(session: str, state: dict, messages: list[Msg], coef) -> dict:
+def _scan_cuts(skipped: Counter, capped: Counter, days) -> None:
+    from harness import cuts
+    if old := skipped["stale_file"] + skipped["before_window"]:
+        cuts.cut("demand_days", "transcripts and units before the census window", value=days, dropped=old)
+    if capped["idle"]:
+        cuts.cut("demand_idle_gap", "record gaps counted as idle, capped in active time", dropped=capped["idle"])
+    if capped["late"]:
+        cuts.cut("demand_cost_slack", "messages past a cost-state span left out of its check", dropped=capped["late"])
+
+
+def cost_check(session: str, state: dict, messages: list[Msg], coef, capped: Counter | None = None) -> dict:
     """A session's own output-token total (its last cost-state record) beside the recorded and estimated sums of the
     messages in the span that record covers."""
     t0 = float(state.get("startTime") or 0) / 1000
     t1 = t0 + float(state.get("totalDuration") or 0) / 1000
+    if capped is not None:
+        capped["late"] += sum(m.at > t1 + COST_SLACK_S for m in messages)
     inside = [m for m in messages if t0 <= m.at <= t1 + COST_SLACK_S]
     return {"session": hashlib.sha256(session.encode()).hexdigest()[:12],
             "cost_state": sum(int(u.get("outputTokens") or 0) for u in (state.get("modelUsage") or {}).values()),
@@ -415,6 +434,9 @@ def draw(units: list[Unit], n: int = SAMPLE, seed: int = SEED, floor: int = FLOO
         by[u.stratum].append(u)
     sizes = {s: (len(v), sum(u.tokens_out_recorded for u in v)) for s, v in sorted(by.items())}
     take = allocate(sizes, n, floor)
+    if floor and (moved := sum(max(0, k - v) for k, v in zip(take.values(), allocate(sizes, n, 0).values()))):
+        from harness import cuts
+        cuts.cut("demand_floor", "census draws the floor moved off proportional shares", value=floor, dropped=moved)
     rng = random.Random(seed)
     picked, strata = [], {}
     for s in sorted(by):
@@ -443,8 +465,21 @@ def packet(u: Unit, pid: str, known: redact.Known) -> dict:
             "tool_calls": u.calls, "tools": dict(u.tools.most_common()),
             "files_read": len(u.read), "files_edited": len(u.edited),
             "edited_types": sorted({Path(f).suffix or Path(f).name for f in u.edited}),
-            "request": red(u.request, REQUEST_CAP), "steps": [red(s, STEP_CAP) for s in u.steps],
+            "request": red(u.request, REQUEST_CAP), "steps": [red(s[:STEP_CAP], STEP_CAP) for s in u.steps],
             "result": red(u.result, RESULT_CAP)}
+
+
+def _packet_cuts(sample: list[Unit]) -> None:
+    """One cut per packet cap that shortened what the labellers see of the sample."""
+    from harness import cuts
+    if n := sum(len(u.request) > REQUEST_CAP for u in sample):
+        cuts.cut("demand_request_cap", "census packet requests cut short", dropped=n)
+    if n := sum(len(u.result) > RESULT_CAP for u in sample):
+        cuts.cut("demand_result_cap", "census packet results cut short", dropped=n)
+    if n := sum(len(s) > STEP_CAP for u in sample for s in u.steps):
+        cuts.cut("demand_step_cap", "census packet tool steps cut short", dropped=n)
+    if n := sum(u.calls - len(u.steps) for u in sample):
+        cuts.cut("demand_steps", "tool steps left out of census packets", dropped=n)
 
 
 def _outside_tree(out: Path) -> None:
@@ -464,6 +499,7 @@ def census(out: Path, root: Path | None = None, now: float | None = None, days: 
     known = redact.known_here() if known is None else known
     out.mkdir(parents=True, exist_ok=True)
     rows = [packet(u, f"P{i + 1:03d}", known) for i, u in enumerate(sample)]
+    _packet_cuts(sample)
     leaks = [r["id"] for r in rows if redact.detect(json.dumps(r, ensure_ascii=False), known)]
     if leaks:
         raise ValueError(f"redaction left findings in packets {leaks}")
