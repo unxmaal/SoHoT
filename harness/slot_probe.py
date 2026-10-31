@@ -129,7 +129,8 @@ def probe(gateway: str, router: str, model: str, *, headers=None, get=_get, cloc
 def main(argv=None) -> int:
     import argparse
 
-    from harness import gateway_key, router
+    from harness import gateway_key, paths, router
+    paths.eval_home(reads_live=True)
     p = argparse.ArgumentParser(prog="python -m harness.slot_probe")
     p.add_argument("--gateway", default="http://127.0.0.1:4000")
     p.add_argument("--router", default="", help="the llama-server router (default: this machine's)")
