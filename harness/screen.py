@@ -732,19 +732,14 @@ def incumbent_measure(lane: str, case_ids, conn=None) -> tuple[float, bool]:
     """(the incumbent's mean stored pass rate on these cases, whether any row measured it); unmeasured is power.UNSEEN, said on stderr. #691."""
     import sys
 
-    from harness import power
-    from harness import memory_store as ms
-    own = conn is None
+    from harness import power, runs
     draws: dict = {}
     try:
-        conn = conn or ms.connect()
-        draws = incumbent_draws(lane, conn)
+        with runs.store(conn) as c:
+            draws = incumbent_draws(lane, c)
     except Exception as exc:  # noqa: BLE001 - no store reads as no measurement
         print(f"screen: could not read the {lane} incumbent's rows: {exc}", file=sys.stderr)
         draws = {}
-    finally:
-        if own and conn is not None:
-            conn.close()
     if not draws:
         print(f"screen: the {lane} incumbent's pass rate is unmeasured (no stored measure rows); "
               f"the screen count assumes {power.UNSEEN:g}", file=sys.stderr)

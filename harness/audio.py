@@ -121,7 +121,7 @@ def resolve_voice(name: str) -> Voice:
                      lang_code=preset["lang_code"])
     if name in KNOWN_VOICES:
         from harness import adopt
-        return Voice(model=adopt.default_for("tts", DEFAULT_TTS_MODEL), voice=name)
+        return Voice(model=adopt.serving_default("tts", DEFAULT_TTS_MODEL), voice=name)
     raise ValueError(
         f"unknown voice {name!r}; cloned: {', '.join(sorted(VOICE_PRESETS))}; "
         f"kokoro: {', '.join(KNOWN_VOICES)}")
@@ -269,7 +269,7 @@ def speak(text: str, out: str | Path, voice: str = DEFAULT_KOKORO_VOICE,
     # A default argument is bound when the function is defined, so an adoption
     # written after import could never reach a caller. Issue #201.
     from harness import adopt
-    model = model or adopt.default_for("tts", DEFAULT_TTS_MODEL)
+    model = model or adopt.serving_default("tts", DEFAULT_TTS_MODEL)
     payload = {"model": model, "input": text,
                "speed": speed, "response_format": "wav"}
     # Cloning path only: Kokoro takes neither field. Issue #6.
@@ -345,7 +345,7 @@ def transcribe(path: str | Path, model: str = "",
     """Transcribe an audio file. Returns the text, stripped."""
     from harness import adopt
     timeout = TIMEOUT_S if timeout is None else timeout
-    model = model or adopt.default_for("stt", DEFAULT_STT_MODEL)
+    model = model or adopt.serving_default("stt", DEFAULT_STT_MODEL)
     path = Path(path)
     if not path.exists():
         raise AudioError(f"no audio file at {path}")

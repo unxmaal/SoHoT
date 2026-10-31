@@ -79,13 +79,16 @@ def test_a_loss_is_recorded_too(tmp_path):
     assert [tuple(r) for r in got] == [("declined", "adopt")]
 
 
-def test_an_unreachable_store_leaves_the_lane_on_its_constant():
-    """A generation must never fail because the discovery store is missing,
-    locked, or newer than this code."""
+def test_an_unreachable_store_raises_but_a_generation_serves_the_constant_and_says_why(monkeypatch, capsys):
+    """A decision never reads an unreadable store as "nothing adopted"; a generation never fails on it. #1432."""
     class Broken:
         def execute(self, *a, **k):
             raise RuntimeError("no store")
-    assert adopt.default_for("tts", "CONST", Broken()) == "CONST"
+    with pytest.raises(RuntimeError):
+        adopt.default_for("tts", "CONST", Broken())
+    monkeypatch.setattr(adopt, "lane_defaults", lambda *a, **k: Broken().execute())
+    assert adopt.serving_default("tts", "CONST") == "CONST"
+    assert "no store" in capsys.readouterr().err
 
 
 # ---- the queue drops what no lane can test --------------------------------

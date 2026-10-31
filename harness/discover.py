@@ -321,29 +321,17 @@ def _was_measured(name: str, done: set[str], lane: str = "",
     return bool(keys & done)
 
 
-def _store():
-    from harness import memory_store as ms
-    try:
-        return ms.connect()
-    except Exception:  # noqa: BLE001
-        return None
-
-
 def annotate(caps: list[Capability] | None = None,
              conn=None) -> list[Capability]:
     """Mark each capability with whether anything has measured it."""
     caps = capabilities() if caps is None else caps
     done = measured()
-    own = conn is None
-    conn = _store() if own else conn
-    try:
+    from harness import runs
+    with runs.store(conn) as conn:  # a store that cannot be read raises; it never reads as nothing measured. #1432.
         for c in caps:
             c.measured = (_was_measured(c.name, done, c.lane, conn)
                           if c.kind == "model" else
                           _component_measured(c.name, done))
-    finally:
-        if own and conn is not None:
-            conn.close()
     return caps
 
 
@@ -604,25 +592,24 @@ def external(lane: str, limit: int = 8) -> list[Capability]:
     done = measured()
     seen: set[str] = set()
     out: list[Capability] = []
-    conn = _store()
-    for query in queries:
-        # Ask past what is already measured, or a measured head empties it. #386.
-        for m in _hf_models(query, limit + len(done)):
-            repo = m.get("id") or ""
-            if not repo or repo in seen:
-                continue
-            if _was_measured(repo, done, lane, conn):
-                continue          # already measured here
-            seen.add(repo)
-            when = (m.get("lastModified") or m.get("createdAt") or "")[:10]
-            out.append(Capability(
-                "model", repo, lane,
-                f"https://huggingface.co/{repo}",
-                how_to_measure(lane).format(id=repo),
-                note=f"registry last modified {when or 'unknown'}; "
-                     f"{m.get('downloads', 0):,} downloads"))
-    if conn is not None:
-        conn.close()
+    from harness import runs
+    with runs.store() as conn:
+        for query in queries:
+            # Ask past what is already measured, or a measured head empties it. #386.
+            for m in _hf_models(query, limit + len(done)):
+                repo = m.get("id") or ""
+                if not repo or repo in seen:
+                    continue
+                if _was_measured(repo, done, lane, conn):
+                    continue          # already measured here
+                seen.add(repo)
+                when = (m.get("lastModified") or m.get("createdAt") or "")[:10]
+                out.append(Capability(
+                    "model", repo, lane,
+                    f"https://huggingface.co/{repo}",
+                    how_to_measure(lane).format(id=repo),
+                    note=f"registry last modified {when or 'unknown'}; "
+                         f"{m.get('downloads', 0):,} downloads"))
     return cuts.take(out, limit, "harness/discover.py:external(limit)", f"{lane} registry proposals past the limit")
 
 

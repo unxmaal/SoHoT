@@ -512,14 +512,10 @@ def set_stop(runner, tokens: int | None) -> None:
 
 def yield_point(lane: str, spec: str) -> dict:
     """The stop point a measured run of `spec` uses, from the stored rows; {} where the store cannot be read. #1127."""
-    from harness import yield_stop
-    from harness import memory_store as ms
+    from harness import runs, yield_stop
     try:
-        conn = ms.connect()
-        try:
+        with runs.store() as conn:
             got = yield_stop.point(conn, lane, spec)
-        finally:
-            conn.close()
     except Exception as exc:  # noqa: BLE001 - no stop point means the reply runs to its budget
         print(f"  yield stop: the stored rows could not be read ({exc}); replies run to their budget", file=sys.stderr)
         return {}

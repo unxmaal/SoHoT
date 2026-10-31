@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 
 from harness import discover as discovery, paths, reasons
-from harness.commands.common import emit, err
+from harness.commands.common import emit, err, lent_store
 from harness.commands import judge as judge_cmd
 from harness.commands import loop as loop_cmd
 from harness.commands import report as report_cmd
@@ -84,7 +85,9 @@ def cmd_discover(a) -> int:
             print(f"    -> uv run python -m evals.run {c.how}")
         return 0
 
-    caps = discovery.annotate(discovery.capabilities())
+    with lent_store():  # the capability report reads the store and writes nothing. #1432.
+        caps = discovery.annotate(discovery.capabilities())
+        stale = _stale_sources()
     if a.lane:
         caps = [c for c in caps if c.lane == a.lane]
     if a.gap:
@@ -129,18 +132,22 @@ def cmd_discover(a) -> int:
     countable = [c for c in caps if c.kind != "decision"]
     total, done = len(countable), sum(1 for c in countable if c.measured)
     print(f"\n{done}/{total} measured. The rest have never been run here.")
-    _warn_stale_sources()
+    _warn_stale_sources(stale)
     return 0
 
 
-def _warn_stale_sources() -> None:
+def _stale_sources() -> list:
+    from harness import feeds
+    try:
+        return [r for r in feeds.staleness() if r["stale"]]
+    except Exception as exc:  # noqa: BLE001 - a warning, never the report's failure
+        print(f"\ndiscovery sources: their last reads could not be read ({exc})", file=sys.stderr)
+        return []
+
+
+def _warn_stale_sources(stale) -> None:
     """Discovery nobody remembers to run is discovery that does not happen."""
     from harness import feeds
-
-    try:
-        stale = [r for r in feeds.staleness() if r["stale"]]
-    except Exception:  # noqa: BLE001
-        return
     if not stale:
         return
     names = ", ".join(r["name"] for r in stale[:4])
@@ -195,9 +202,13 @@ def _report_revisit(a) -> int:
     a verdict made elsewhere was a dead end -- there was no way to ask which
     of them this machine could now answer.
     """
+    import contextlib
+
     from harness import inspect as ins, memory_store as ms
 
-    store = ms.connect()
+    held = contextlib.ExitStack()
+    # Only --requeue writes; without it the report reads one lent read-only connection. #1432.
+    store = held.enter_context(contextlib.closing(ms.connect()) if getattr(a, "requeue", False) else lent_store())
     ins.PACE.start()
     try:
         here = ms.this_machine()
@@ -209,7 +220,7 @@ def _report_revisit(a) -> int:
         upstream = ask(store, ins.upstream_commit)
     finally:
         ins.PACE.end()
-        store.close()
+        held.close()
     print(f"this machine: {here['fingerprint']}")
     print(f"  runtimes {here['runtimes'] or '-'}, "
           f"ceiling {here['ceiling_gb']:.0f} GiB, "
@@ -249,14 +260,11 @@ def _report_evidence(a) -> int:
     """
     from harness import memory_store as ms
 
-    store = ms.connect()
-    try:
+    with lent_store() as store:
         gone = ms.dangling_receipts(store)
         total = store.execute(
             "SELECT COUNT(*) c FROM verdicts WHERE run_path != ''"
         ).fetchone()["c"]
-    finally:
-        store.close()
     if not gone:
         print(f"every one of the {total} verdicts that names a run can still "
               f"reach it.")
@@ -274,14 +282,11 @@ def _report_evidence(a) -> int:
 
 def _report_recurrence(a) -> int:
     from harness import memory_store as ms
-    conn = ms.connect()
-    try:
+    with lent_store() as conn:
         rows = ms.recurrence(conn, minimum=2)
         stats = ms.precision(conn)
         per_source = ms.by_source(conn)
         extract = ms.extraction(conn)
-    finally:
-        conn.close()
     if a.json:
         print(json.dumps({"recurrence": rows, "totals": stats,
                           "by_source": per_source,

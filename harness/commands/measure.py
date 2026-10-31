@@ -19,13 +19,17 @@ MEMORY_PAUSES = ("memory", "memory_warn")
 
 def cmd_verify(a) -> int:
     """Establish that each lane works, by running its own default. #234."""
+    import contextlib
     import subprocess
 
     from harness import report, verify
+    from harness.commands.common import lent_store
 
-    state = report.state()
-    tasks = verify.plan(state["lanes"], only=getattr(a, "lane", ""),
-                        force=getattr(a, "all", False))
+    # Without --run it only says what it would: read-only, on one lent connection. #1432.
+    with contextlib.nullcontext() if getattr(a, "run", False) else lent_store():
+        state = report.state()
+        tasks = verify.plan(state["lanes"], only=getattr(a, "lane", ""),
+                            force=getattr(a, "all", False))
     if not tasks:
         # NOT "every lane has a receipt". A parked lane has none and is
         # excluded from the plan by design, so saying so here would report a
@@ -228,21 +232,17 @@ def resume_first(store, fresh: list[dict], want: str = "") -> list[dict]:
 
 def room_for(row: dict) -> tuple[bool, float | None, str]:
     """(fits now, GB its load needs or None, why) for one queued measurement, by the screen's headroom check. #1082."""
-    from harness import candidates, memory
-    from harness import memory_store as ms
+    from harness import candidates, memory, runs
     name = row.get("name", "")
     target = methods.weights_of(name) if methods.is_method(name) else name
     if not target:
         return True, None, f"{name}: its size is unknown; proceeding unchecked"
-    try:
-        store = ms.connect()
+    with runs.store() as store:
         try:
             spec = candidates.for_proposal(store, lanes.canonical(row.get("lane")), name,
                                            row.get("attaches_to") or "") or ""
-        finally:
-            store.close()
-    except Exception:  # noqa: BLE001 - an unbuildable spec is priced by its weights alone
-        spec = ""
+        except Exception:  # noqa: BLE001 - an unbuildable spec is priced by its weights alone
+            spec = ""
     need = memory.need_gb(target, spec=spec, parallel=1)
     ok, why = memory.check_model(target, spec=spec, parallel=1)
     return ok, need if isinstance(need, (int, float)) else None, why

@@ -217,6 +217,7 @@ def state(conn=None) -> dict:
     from harness import feeds
     from harness import memory_store as ms
 
+    conn = conn or ms.lent()
     close = conn is None
     conn = conn or ms.connect()
     try:

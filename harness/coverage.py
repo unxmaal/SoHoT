@@ -78,6 +78,20 @@ def _proposal_named(conn, name: str) -> str:
     return row["name"] if row else ""
 
 
+def _default_candidate(conn, spec: str) -> dict | None:
+    """The candidates row candidates.ensure would make for a typed default, read without writing it. #1432."""
+    sql = ("SELECT c.spec, p.name AS proposal FROM candidates c "
+           "LEFT JOIN proposals p ON p.id = c.proposal_id WHERE c.spec = ?")
+    row = conn.execute(sql, (spec,)).fetchone()
+    if row:
+        return dict(row)
+    from harness import candidates as C
+    if not C.key_of(spec):
+        return None
+    base = conn.execute(sql, (spec.split(",", 1)[0],)).fetchone()
+    return {"spec": spec, "proposal": base["proposal"] if base else None}
+
+
 def _thing(conn, cand: dict, known: dict) -> str:
     """The proposal a candidates row runs, else what its alias serves, else its spec."""
     if cand.get("proposal"):
@@ -126,8 +140,7 @@ def adopted(conn, config=None) -> dict[str, set[str]]:
         out.setdefault(name, set()).add("measured")
     for lane, name in winners.typed().items():
         spec = screen.candidate_for(lane, name, conn=conn) or name
-        C.ensure(conn, spec, lane=lane)
-        cand = C.get(conn, spec)
+        cand = _default_candidate(conn, spec)
         thing = (_thing(conn, cand, known) if cand else spec).lower()
         out.setdefault(thing, set()).add("default")
     return out

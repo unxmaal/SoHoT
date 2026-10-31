@@ -230,6 +230,13 @@ def _version_tuple(v) -> tuple | None:
     return tuple(int(x) for x in parts) if all(x.isdigit() for x in parts) else None
 
 
+def _read_only_facts(conn) -> dict:
+    """What remember_machine would store for this machine, read without writing it. #1432."""
+    here = ms.this_machine()
+    row = ms.machine_row(conn) if here.get("partial") else None
+    return recorded_facts(conn, row) if row is not None else here
+
+
 def revisitable(conn: sqlite3.Connection, facts: dict | None = None, *, spent: bool = False) -> list:
     """Verdicts decided elsewhere whose condition THIS machine now satisfies.
 
@@ -244,7 +251,8 @@ def revisitable(conn: sqlite3.Connection, facts: dict | None = None, *, spent: b
     """
     if facts is None:
         # What this machine recorded, versions included, not a second probe. #415.
-        facts = recorded_facts(conn, remember_machine(conn)) or ms.this_machine()
+        facts = recorded_facts(conn, remember_machine(conn)) if ms.lent() is None else _read_only_facts(conn)
+        facts = facts or ms.this_machine()
     rows = conn.execute("""
         SELECT p.id AS proposal_id, p.name, p.lane, v.id AS verdict_id, v.outcome, v.detail, v.until, v.tier,
                v.decided_at, m.fingerprint AS decided_on
