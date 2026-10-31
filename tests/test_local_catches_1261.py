@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from harness import inventory_weight as iw, local_catches, paths
+from tests import conftest
 
 REPO = Path(__file__).resolve().parents[1]
 DAY = 86400
@@ -37,7 +38,7 @@ def _child(tmp_path, **env):
     run_env.update({paths.ENV_VAR: str(home), **env})
     got = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:randomly", "-p", "no:cacheprovider",
                           "-o", "addopts=", "--rootdir", str(tmp_path), str(tmp_path / "test_planted.py")],
-                         capture_output=True, text=True, cwd=REPO, env=run_env, timeout=120)
+                         capture_output=True, text=True, cwd=REPO, env=run_env, timeout=conftest.HANG_DUMP_S)
     assert got.returncode == 1, got.stdout[-2000:]
     return home / local_catches.FILE
 

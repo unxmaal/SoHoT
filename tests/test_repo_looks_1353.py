@@ -105,10 +105,12 @@ def test_a_paired_run_is_cut_into_look_slices_inside_its_budget(monkeypatch, wor
     monkeypatch.setattr(measure_cmd, "_launch", fake)
     before = time.time()
     _measure()
+    after = time.time()
     first = fake.argvs[0]
     stop = float(first[first.index("--stop-at") + 1])
-    assert stop - before <= looks.LOOK_INTERVAL_S + 5
-    assert stop - before < 60 * 60 - 5
+    # --stop-at is whole seconds, stamped between before and after.
+    assert before - 1 < stop <= after + looks.LOOK_INTERVAL_S + 1
+    assert stop < after + 60 * 60 - 5
 
 
 def test_a_decided_look_mid_run_stops_it_and_records_the_verdict(monkeypatch, world):
