@@ -27,6 +27,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from pathlib import Path
 
@@ -56,17 +57,23 @@ def is_live(path: Path) -> bool:
     return Path(path).resolve() == (DEFAULT_HOME / "discovery.db").resolve()
 
 
+_asking = threading.local()
+
+
 def deploy_checkout() -> Path | None:
     """Where the services run from, as scripts/launchd.sh defines it; None without launchd."""
-    if sys.platform == "win32":
-        return None
+    if sys.platform == "win32" or getattr(_asking, "now", False):
+        return None  # the cut a timed-out lookup records asks again; it must not wait another timeout
     from harness import cuts
+    _asking.now = True
     try:
         with cuts.timeout("harness/paths.py:deploy_checkout->subprocess.run(timeout)", "the deploy path lookup"):
             out = subprocess.run(["bash", str(REPO / "scripts" / "launchd.sh"), "deploy-path"],
                                  capture_output=True, text=True, timeout=30, check=True)
     except (OSError, subprocess.SubprocessError):
         return None
+    finally:
+        _asking.now = False
     got = out.stdout.strip()
     return Path(got).resolve() if got else None
 
