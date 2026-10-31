@@ -13,7 +13,7 @@ SNAPSHOT = Path(__file__).with_name("transformers_model_types.txt")
 
 
 def code_evidence(config: dict, files) -> str:
-    """The repo's own modelling code named by config.json's auto_map, or "" when it has none."""
+    """With an auto_map in config.json, the first modeling_/configuration_ files in the listing, else "auto_map"; "" without one."""
     if not (config or {}).get("auto_map"):
         return ""
     names = sorted(b for b in (str(f).rsplit("/", 1)[-1] for f in files)

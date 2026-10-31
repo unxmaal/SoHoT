@@ -743,3 +743,99 @@ def handmade_namespaces(text, rel):
     return [f"{rel}:{line}: {key.partition(':')[2]} is handed a hand-made argparse.Namespace, which carries only "
             f"the fields its writer thought of; build it with common.parsed(<verb>, ...)"
             for key, line in namespace_handoffs(text, rel) if key not in SAME_PARSER]
+
+
+_CLOCKS = {"perf_counter", "perf_counter_ns", "monotonic", "monotonic_ns", "time", "time_ns"}
+_KEEPS_MEASURE = {"abs", "round", "float", "int", "min", "max", "sum"}
+_DURATION = re.compile(r"^(?:took|elapsed|wall\w*|seconds|duration\w*|ttft\w*|\w+_s)$")
+# Durations a fake clock or an estimate produces, so a load cannot move them: "rel:function" -> why.
+WALL_BOUND_WAIVERS = {
+    "tests/test_busy_wait_timing_776.py:test_a_best_of_row_stays_under_one_poll_when_its_pool_threads_wait":
+        "FakeTime clock: the row's seconds are fake time the replies add, never the machine's",
+    "tests/test_busy_wait_timing_776.py:test_a_craft_case_deadline_is_not_spent_by_a_busy_wait":
+        "Clock patched onto agent and craft_runner time: the wall is fake time",
+    "tests/test_busy_wait_timing_776.py:test_a_repo_repair_case_deadline_and_wall_leave_out_a_busy_wait":
+        "Clock patched onto agent and repo_repair time: the seconds are fake time",
+    "tests/test_throttle_1084.py:test_outside_the_capped_hours_it_runs_at_line_rate":
+        "clock=lambda: w.t, a simulated line: the seconds are the simulation's",
+    "tests/test_over_budget_796.py:test_a_receipt_at_a_smaller_reply_budget_bounds_the_incumbent":
+        "incumbent_s is an estimate from stored rows, compared with another estimate; nothing is timed",
+}
+
+
+def _clock_call(node):
+    f = node.func if isinstance(node, ast.Call) else None
+    if isinstance(f, ast.Attribute):
+        return f.attr in _CLOCKS and isinstance(f.value, ast.Name) and f.value.id == "time"
+    return isinstance(f, ast.Name) and f.id in _CLOCKS - {"time", "time_ns"}
+
+
+def _stamp(node, stamps):
+    if _clock_call(node) or (isinstance(node, ast.Name) and node.id in stamps):
+        return True
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Sub):
+        return _stamp(node.left, stamps) and isinstance(node.right, ast.Constant)
+    return isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add) and (
+        _stamp(node.left, stamps) != _stamp(node.right, stamps))
+
+
+def _duration_named(node):
+    key = node.slice if isinstance(node, ast.Subscript) else None
+    name = (node.id if isinstance(node, ast.Name) else node.attr if isinstance(node, ast.Attribute)
+            else key.value if isinstance(key, ast.Constant) and isinstance(key.value, str) else "")
+    return bool(_DURATION.match(name))
+
+
+def _duration(node, stamps, spans):
+    if (isinstance(node, ast.Name) and node.id in spans) or _duration_named(node):
+        return True
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Sub) and not _stamp(node, stamps) and (
+            _stamp(node.left, stamps) or _stamp(node.right, stamps)):
+        return True
+    if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Sub, ast.Mult)):
+        return _duration(node.left, stamps, spans) or _duration(node.right, stamps, spans)
+    if isinstance(node, ast.UnaryOp):
+        return _duration(node.operand, stamps, spans)
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in _KEEPS_MEASURE:
+        return any(_duration(a, stamps, spans) for a in node.args)
+    return False
+
+
+def _bound_names(fn, holds):
+    names, grew = set(), True
+    while grew:
+        grew = False
+        for n in ast.walk(fn):
+            value = n.value if isinstance(n, (ast.Assign, ast.AnnAssign)) else None
+            if value is None or not holds(value, names):
+                continue
+            targets = n.targets if isinstance(n, ast.Assign) else [n.target]
+            new = {t.id for t in targets if isinstance(t, ast.Name)} - names
+            names |= new
+            grew = grew or bool(new)
+    return names
+
+
+def wall_bounds(text, rel, waivers=None):
+    tree, out = _parse(text, rel)
+    if tree is None:
+        return out
+    waivers = WALL_BOUND_WAIVERS if waivers is None else waivers
+    found, waived = set(), set()
+    for fn in ast.walk(tree):
+        if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        stamps = _bound_names(fn, _stamp)
+        spans = _bound_names(fn, lambda v, names: _duration(v, stamps, names))
+        for a in ast.walk(fn):
+            if not isinstance(a, ast.Assert):
+                continue
+            for c in (n for n in ast.walk(a.test) if isinstance(n, ast.Compare)):
+                sides = [c.left, *c.comparators]
+                for left, op, right in zip(sides, c.ops, sides[1:]):
+                    ld, rd = _duration(left, stamps, spans), _duration(right, stamps, spans)
+                    if ld != rd and isinstance(op, (ast.Gt, ast.GtE) if rd else (ast.Lt, ast.LtE)):
+                        (waived if f"{rel}:{fn.name}" in waivers else found).add(c.lineno)
+    return out + [f"{rel}:{line}: an upper bound on measured wall time fails on a loaded machine; assert order, "
+                  f"a count, a lower bound or a structural fact, or inject the clock"
+                  for line in sorted(found - waived)]

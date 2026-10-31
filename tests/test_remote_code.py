@@ -29,7 +29,7 @@ REFUSED = ("baidu/Unlimited-OCR", "JustANormalTinkerer/hayai-ocr-v2")
     (True, [f"modeling_{c}.py" for c in "edcba"],
      "modeling_a.py, modeling_b.py, modeling_c.py"),
 ])
-def test_the_evidence_is_the_auto_map_and_the_code_files_it_names(auto_map, files, evidence):
+def test_the_evidence_is_the_auto_map_and_the_code_files_in_the_listing(auto_map, files, evidence):
     config = {"auto_map": {"AutoModel": "m.M"}} if auto_map else {}
     assert code_evidence(config, files) == evidence
 

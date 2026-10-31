@@ -342,3 +342,10 @@ def test_with_neither_set_python_uses_the_default(monkeypatch):
     monkeypatch.delenv("HF_ROOT", raising=False)
     monkeypatch.delenv("HF_HOME", raising=False)
     assert env.configured() == env.default_root()
+
+
+def test_a_script_the_suite_runs_does_not_read_the_runners_free_disk():
+    """The suite's HF_HOME is pytest tmp on the boot disk, which sat near the 20 GB floor and dipped under it mid-suite (#1423)."""
+    assert os.environ["HF_MIN_FREE_GB"] == "0"
+    got = subprocess.run([shells.BASH, "-c", f'. "{REPO}/scripts/env.sh"'], capture_output=True, text=True)
+    assert got.returncode == 0, got.stderr

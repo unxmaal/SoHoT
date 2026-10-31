@@ -61,10 +61,13 @@ def test_an_over_budget_run_is_launched_to_pause_at_its_slice(monkeypatch, tmp_p
     monkeypatch.setattr(adopt, "default_for", lambda lane, fallback, conn=None: "q3-4b")
     real = ms.connect
     monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
+    before = time.time()
     measure_cmd._measure_and_adopt(_ns(power_budget_min=1), {"name": "org/challenger", "lane": "code"})
+    after = time.time()
     assert len(launched) == 1
     stop = float(launched[0][launched[0].index("--stop-at") + 1])
-    assert 0 < stop - time.time() <= 61
+    # The one-minute budget from the launch, in whole seconds.
+    assert before + 60 - 0.5 <= stop <= after + 60 + 0.5
 
 
 def test_a_receipt_at_a_smaller_reply_budget_bounds_the_incumbent(store_run):
