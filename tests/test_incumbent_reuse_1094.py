@@ -403,3 +403,22 @@ def test_the_replay_takes_draws_only_from_earlier_runs_that_match_and_reads_the_
     assert got["control"]["looks"][0].startswith("look 1 at 4/") and len(got["control"]["looks"]) == 2
     # The incumbent failed every case in the run and passed every one in the matching earlier run.
     assert "4 gained" in got["control"]["looks"][0] and "0 gained, 0 lost" in got["replay"]["looks"][0]
+
+
+@pytest.mark.parametrize("was, now, rc", [
+    (None, None, 0),
+    ({"adopt": False, "decision": "futility"}, {"adopt": False, "decision": "futility"}, 0),
+    ({"adopt": False, "decision": "futility"}, None, 1),
+    (None, {"adopt": True, "decision": "success"}, 1),
+    ({"adopt": False, "decision": "futility"}, {"adopt": True, "decision": "success"}, 1),
+])
+def test_reuse_replay_exits_1_only_when_the_verdict_moves(tmp_path, monkeypatch, was, now, rc):
+    import argparse
+    import sqlite3
+    store = tmp_path / "copy.db"
+    sqlite3.connect(store).close()
+    walk = {"run_id": 7, "lane": "code", "challenger": CH, "incumbent": INC, "matching_runs": [], "reused": 0,
+            "runs": {}, "fresh": 0}
+    monkeypatch.setattr(reuse, "replay", lambda conn, run_id: {
+        **walk, "control": {"looks": [], "verdict": was}, "replay": {"looks": [], "verdict": now}})
+    assert measure.cmd_reuse_replay(argparse.Namespace(store=str(store), run=7)) == rc

@@ -990,7 +990,7 @@ def build_parser() -> argparse.ArgumentParser:
     rpl = sub.add_parser(
         "reuse-replay",
         help="replay a paused paired run with the incumbent's draws taken from earlier runs that "
-             "match its identity, read-only; exit 1 when the verdict moves (#1094)")
+             "match its identity, read-only; exit 1 when the verdict moves, 0 when both walks reach the same verdict or none (#1094)")
     rpl.add_argument("run", type=int, help="the stored run id")
     rpl.add_argument("--store", default="", help="a copy of the store to read instead of the live one")
     rpl.set_defaults(func=measure_cmd.cmd_reuse_replay)

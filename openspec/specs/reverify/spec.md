@@ -234,7 +234,7 @@ Test: untested
 Test: untested
 
 ### Requirement: A re-run settles from the run its job stored
-`settle` SHALL judge every unsettled reverification whose job is no longer pending or running, across all lanes whatever lane the check names, from the newest run stamped with that job's id, and write the outcome, reason, failure class, detail and run id. The outcome SHALL be `passed`, `failed`, `regressed`, `unrun` or `cancelled`. A re-run in which the served candidate did not work SHALL be `failed` with the reason of the most common failure class, unless that reason is `harness`, which MUST make it `unrun`, never a verdict on the model. A job that stored no run, or a run with no row for the served candidate, SHALL be `unrun`.
+`settle` SHALL judge every unsettled reverification whose job is no longer pending, running or paused, across all lanes whatever lane the check names, from the newest run stamped with that job's id, and write the outcome, reason, failure class, detail and run id. The outcome SHALL be `passed`, `failed`, `regressed`, `unrun` or `cancelled`. A re-run in which the served candidate did not work SHALL be `failed` with the reason of the most common failure class, unless that reason is `harness`, which MUST make it `unrun`, never a verdict on the model. A job that stored no run, or a run with no row for the served candidate, SHALL be `unrun`.
 
 #### Scenario: The re-run passes
 - **WHEN** the job is done and its run passes like the baseline
@@ -271,15 +271,38 @@ Test: tests/test_reverify.py::test_a_rerun_the_gateway_refused_is_unrun_not_fail
 - **THEN** the outcome is `unrun` naming the run and the spec
 Test: untested
 
-#### Scenario: A paused job
-- **WHEN** the job's state is `paused` and it stored a partial run
-- **THEN** the re-run is settled from that partial run like a finished one
-Test: untested
-
 #### Scenario: Settling ignores the lane filter
 - **WHEN** a check names one lane and another lane's re-run has finished
 - **THEN** the other lane's re-run is settled too
 Test: untested
+
+### Requirement: A paused re-run is resumed, never judged
+A re-run whose job is recorded `paused` MUST NOT be judged from its partial run. A check that is not a dry run SHALL queue its continuation at the night's start with the night gate, as a `reverify` job at the reverify priority: the job's command with `--out` set to the partial run's directory and `--resume`, keeping one of each, or the job's command unchanged when it stored no run. The reverification SHALL stay unsettled and point at the continuation, whose run is judged when it finishes. A dry run SHALL leave a paused re-run alone.
+
+#### Scenario: A paused job with a partial run
+- **WHEN** the job's state is `paused` and it stored a partial run, passing or failing
+- **THEN** the reverification stays unsettled and unflagged, and a night-gated continuation resumes that run's directory
+Test: tests/test_reverify.py::test_a_paused_rerun_is_resumed_from_its_checkpoint_not_judged
+
+#### Scenario: The continuation finishes
+- **WHEN** the continuation is done and its run is stamped with its id
+- **THEN** the reverification settles from that run
+Test: tests/test_reverify.py::test_a_resumed_rerun_is_judged_once_its_continuation_finishes
+
+#### Scenario: Paused before storing a run
+- **WHEN** the paused job stored no run
+- **THEN** its command is queued again unchanged
+Test: tests/test_reverify.py::test_a_rerun_paused_before_storing_a_run_is_queued_again_as_it_was
+
+#### Scenario: A continuation pauses again
+- **WHEN** a continuation is paused in turn
+- **THEN** the next continuation carries one `--out` and one `--resume`
+Test: tests/test_reverify.py::test_a_paused_continuation_keeps_one_out_and_resume
+
+#### Scenario: A dry run
+- **WHEN** a dry-run check finds a paused re-run
+- **THEN** nothing is queued and the reverification keeps its job
+Test: tests/test_reverify.py::test_a_dry_run_leaves_a_paused_rerun_alone
 
 ### Requirement: A cancelled re-run is not a verdict on the model
 A re-run whose job row is gone, or whose job is recorded `cancelled` and stored no run, SHALL settle `cancelled` with reason `harness` and SHALL NOT flag the lane. A cancelled job that stored a run is judged on that run.
@@ -383,7 +406,7 @@ Test: tests/test_reverify_lane_metric_733.py::test_the_stored_verdict_shape_is_u
 Test: untested
 
 ### Requirement: A flag never swaps the served model
-A lane whose newest settled re-run is `failed`, `regressed` or `unrun` SHALL be flagged (`flags`), and the served model MUST NOT change. A flagged lane SHALL NOT be queued again until its age threshold has passed since the re-run settled.
+A lane whose newest settled re-run is `failed`, `regressed` or `unrun` SHALL be flagged (`flags`), and the served model MUST NOT change. A flagged lane SHALL NOT be queued again until its age threshold has passed since the re-run settled, and its skip SHALL say how many days remain; it is then queued again with no one acting.
 
 #### Scenario: Flagged and kept
 - **WHEN** a re-run settles `failed`
@@ -392,7 +415,7 @@ Test: tests/test_reverify.py::test_a_flagged_lane_keeps_its_served_model_and_is_
 
 #### Scenario: Tried again after the threshold
 - **WHEN** the lane's threshold has passed since the failed re-run settled
-- **THEN** a second job is queued
+- **THEN** a second job is queued, and before then the skip says `re-run again in <days> days`
 Test: tests/test_reverify.py::test_a_flagged_lane_is_tried_again_after_its_age_threshold
 
 ### Requirement: The report shows flags and stale lanes
@@ -476,7 +499,7 @@ Test: tests/test_harness_verify.py::test_cheapest_first
 
 #### Scenario: Video only by name
 - **WHEN** video is unverified and not named
-- **THEN** it is skipped with a hint naming `--lane video` and carries no command
+- **THEN** it is skipped with its `COST_S` length and a hint naming `--lane video`, and carries no command
 Test: tests/test_harness_verify.py::test_video_is_never_started_without_being_asked_for_by_name
 
 #### Scenario: Naming video
@@ -519,8 +542,8 @@ Test: tests/test_harness_verify.py::test_all_plans_a_parked_lane_with_no_receipt
 - **THEN** it is planned with a command
 Test: untested
 
-### Requirement: The verify verdict reads the receipt alone
-`verify.verdict` SHALL call a lane `works` when its default passed every case, `partial` when it passed some, and `broken` when it passed none, had no cases, or the receipt has no summary. `verify.summarise` SHALL give one line per candidate with passes, median seconds and metrics.
+### Requirement: The verify verdict reads the receipt on the lane's metric
+`verify.verdict` SHALL call a lane `works` when its default passed every case, `partial` when it passed some, or passed none while the lane's metric shows it working as reverify reads it (`screen.working`), and `broken` when it passed none and did not work, had no cases, or the receipt has no summary. `verify.summarise` SHALL give one line per candidate with passes, median seconds and metrics.
 
 #### Scenario: Every case passes
 - **WHEN** the receipt passes every case
@@ -528,9 +551,19 @@ Test: untested
 Test: tests/test_harness_verify.py::test_a_default_that_passes_everything_works
 
 #### Scenario: No case passes
-- **WHEN** the receipt passes no case
+- **WHEN** the receipt passes no case and carries no lane metric
 - **THEN** the verdict is `broken`
 Test: tests/test_harness_verify.py::test_a_default_that_passes_nothing_is_broken
+
+#### Scenario: No case passes but the lane metric works
+- **WHEN** a decide default gets fields right, or an stt default has a plausible word error rate, with no case passed
+- **THEN** the verdict is `partial`, as reverify reads the same receipt
+Test: tests/test_harness_verify.py::test_a_default_that_passes_no_case_but_works_on_the_lane_metric_is_partial
+
+#### Scenario: No case passes and the lane metric misses
+- **WHEN** no case passed and no field is right, the word error rate is implausible, or the lane has no such metric
+- **THEN** the verdict is `broken`
+Test: tests/test_harness_verify.py::test_a_default_that_passes_nothing_and_misses_the_lane_metric_is_broken
 
 #### Scenario: Some cases pass
 - **WHEN** the receipt passes some cases

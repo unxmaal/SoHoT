@@ -213,7 +213,7 @@ CREATE TABLE IF NOT EXISTS paused_runs (
     sweeps      INTEGER NOT NULL DEFAULT 0,
     -- json list of interim looks, one per pause.
     looks       TEXT NOT NULL DEFAULT '[]',
-    -- paused, resumed, stale or done.
+    -- paused, stale or done; a resumed run stays paused until settled.
     state       TEXT NOT NULL DEFAULT 'paused',
     why         TEXT NOT NULL DEFAULT '',
     run_id      INTEGER REFERENCES runs(id),
