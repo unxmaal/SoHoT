@@ -228,7 +228,7 @@ def run_screen(ctx: Context, row: dict, server: Server, kill_now) -> screen.Verd
     from harness import candidates
     from harness.commands import measure as measure_cmd
     from harness.commands import screen as screen_cmd
-    outdir = paths.runs() / f"chaos-screen-{int(time.time())}"
+    outdir = paths.unused_run(f"chaos-screen-{int(time.time())}")
     argv = screen.argv(row, outdir=outdir) + ["--gateway", server.url]
     proc = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                             text=True, cwd=paths.REPO)
