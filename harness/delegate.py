@@ -37,7 +37,7 @@ class Refused(ValueError):
 def lane_model(lane: str, chosen: str | None = None) -> str:
     """-m when given, else the lane's adopted model here, else its typed constant. #297."""
     from harness import adopt, models, winners
-    spec = chosen or adopt.default_for(lane, winners.typed().get(lane, ""))
+    spec = chosen or adopt.serving_default(lane, winners.typed().get(lane, ""))
     models.warn(spec)
     return spec
 

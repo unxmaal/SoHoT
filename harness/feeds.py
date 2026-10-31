@@ -328,6 +328,8 @@ class _Store:
     """The given store connection, or a default one opened and closed here."""
 
     def __init__(self, conn=None):
+        from harness import memory_store as ms
+        conn = conn if conn is not None else ms.lent()
         self.conn, self.mine = conn, conn is None
 
     def __enter__(self):

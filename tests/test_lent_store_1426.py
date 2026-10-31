@@ -47,6 +47,67 @@ EXEMPT = {
 }
 FLAGS = ("--store", "--db", "--replay", "--dry-run")
 
+#: "command --flag" -> (argv lists, own ms.connect calls) for each flag that selects a read-only mode; run on a seeded home. #1432.
+READ_ONLY = {
+    "adopt --power": ([["adopt", "--power"], ["adopt", "--power", "--lane", "code"]], 0),
+    "adopt --table": ([["adopt", "--power", "--table"]], 0),
+    "discover --winners": ([["discover", "--winners"]], 0),
+    "discover --coverage": ([["discover", "--coverage"]], 0),
+    "discover --queue": ([["discover", "--queue"]], 1),
+    "discover --recurrence": ([["discover", "--recurrence"]], 1),
+    "discover --evidence": ([["discover", "--evidence"]], 1),
+    "discover --revisit": ([["discover", "--revisit"]], 1),
+    "discover --gap": ([["discover", "--gap"]], 0),
+    "knobs --by-binding": ([["knobs", "backlog", "--by-binding", "--store", S]], 0),
+    "delegated --report": ([["delegated", "--report"]], 1),
+    "sensitivity --list": ([["sensitivity", "--list"]], 0),
+    "sensitivity --sweeps": ([["sensitivity", "--sweeps"]], 0),
+    "sensitivity --inventory": ([["sensitivity", "--inventory"]], 0),
+    "specs --untested": ([["specs", "--untested"]], 0),
+    "hear --suspect": ([["hear", "--suspect", "--store", S]], 0),
+    "load-log --idle": ([["load-log", "--idle", "--db", S]], 0),
+    "repo-report --arms": ([["repo-report", "--arms", "--store", S]], 0),
+    "verify --all": ([["verify", "--all"]], 0),
+    "context --carried": ([["context", "--carried", "--root", "<tmp>"]], 0),
+    "context --referenced": ([["context", "--referenced", "--root", "<tmp>"]], 0),
+    "context --mistakes": ([["context", "--mistakes", "--root", "<tmp>"]], 0),
+}
+#: Flags that only shape another mode's output or scope; that mode is held here or below.
+MODIFIERS = {
+    "prompt --quiet", "rubric --no-browser", "judge --no-browser", "discover --platform", "discover --no-verify",
+    "discover --no-control", "discover --from-store", "discover --requeue", "discover --judge",
+    "inventory time --no-effort", "inventory time --hours", "inventory weight --no-ci", "inventory weight --markdown",
+    "context --main-only",
+    "morning --no-model", "claude-news --no-record", "benchmarks --force", "benchmarks --passages",
+    "cases --reextract", "jobs --night", "disk --yes", "fetch --hold-router", "adopt --unscreened",
+    "judge --all-machines",
+}
+#: Flags whose mode writes, downloads, runs a model or reads the network by design, so it is not run here.
+NOT_RUN = {
+    "discover --sources": "probes each feed over the network",
+    "adopt --from-measurement": "adopts the measured incumbent; its --dry-run is held in RUNS",
+    "discover --external": "asks the registries", "discover --loop": "the discovery loop",
+    "discover --sweep": "reads every source and records it", "discover --benchmarks": "sweeps the registries",
+    "discover --quants": "follows bases on the hub", "discover --papers": "reads a feed and records it",
+    "discover --posts": "reads a feed and records it", "discover --triage": "drafts with a model under --run",
+    "discover --feeds": "reads a feed and records it", "discover --control": "scores with a judge model",
+    "discover --neighbors": "reads GitHub", "discover --inspect": "clones and records",
+    "discover --screen": "screens weights", "discover --run": "runs the screen",
+    "fetch --run": "downloads", "fetch --day": "the daytime download job", "report --export": "writes a report file",
+    "report --publish": "pushes the report", "repo-screen --write": "writes the anchors file",
+    "gateway --rotate": "replaces the key", "canary --run": "plants canaries", "review --file": "files findings",
+    "claude-news --notify": "records and notifies", "ledger --record": "upserts ledger_days",
+    "ledger --sample-power": "appends a power reading", "morning --notify": "notifies (the morning unit)",
+    "sweep-check --notify": "records the check", "craft --revalidate": "runs the installed release",
+    "delegated --close": "records outcomes", "disk --record": "writes download rows",
+    "store --keep": "keeps a migrated copy", "benchmarks --sweep": "reads the registries now",
+    "degenerate --apply": "writes verdicts", "load-log --apply": "writes excerpts and verdicts",
+    "coherence --apply": "writes verdicts", "watchdog --act": "takes actions", "judge --force": "adopts",
+    "verify --run": "runs lanes", "gauntlet --offline": "audits the committed snapshot, no store",
+    "chaos --yes-break-things": "kills a scratch server", "benchmarks --calibrate": "held in RUNS",
+    "repo-report --plan": "held in RUNS", "hear --rates": "held in RUNS",
+}
+
 
 def _flagged(parser, path=()):
     for act in parser._actions:
@@ -117,6 +178,42 @@ def test_a_read_only_command_reads_only_the_store_it_is_given(name, copy, held, 
     argvs, own = RUNS[name]
     for argv in argvs:
         argv = [str(copy) if x == S else str(tmp_path / "out") if x == "<tmp>" else x for x in argv]
+        held(lambda: cli.main(argv), own)
+
+
+def _modes(parser, path=()):
+    for act in parser._actions:
+        if isinstance(act, argparse._SubParsersAction):
+            for name, sub in act.choices.items():
+                yield from _modes(sub, (*path, name))
+    for act in parser._actions if path else ():
+        flag = act.option_strings[-1] if act.option_strings else ""
+        if isinstance(act, argparse._StoreTrueAction) and flag not in ("--json", *FLAGS):
+            yield f"{' '.join(path)} {flag}"
+
+
+def test_every_mode_flag_is_held_here_or_says_why_not():
+    found = set(_modes(cli.build_parser()))
+    listed = set(READ_ONLY) | MODIFIERS | set(NOT_RUN)
+    assert not found - listed, f"a new mode flag: add it to READ_ONLY, MODIFIERS or NOT_RUN: {sorted(found - listed)}"
+    assert not listed - found, f"listed flags no command takes: {sorted(listed - found)}"
+
+
+@pytest.fixture
+def seeded_home(home_store):
+    conn = ms.connect()
+    try:
+        _decided(conn, "home", [("inspect", "declined", "machine", ba.SECOND_N + 5)], time.time() - 86400)
+    finally:
+        conn.close()
+    return home_store
+
+
+@pytest.mark.parametrize("mode", sorted(READ_ONLY))
+def test_a_read_only_mode_with_no_store_flag_writes_nothing_and_reopens_nothing(mode, seeded_home, copy, held, tmp_path):
+    argvs, own = READ_ONLY[mode]
+    for argv in argvs:
+        argv = [str(copy) if x == S else str(tmp_path) if x == "<tmp>" else x for x in argv]
         held(lambda: cli.main(argv), own)
 
 

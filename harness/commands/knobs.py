@@ -143,8 +143,10 @@ def cmd_knobs(a) -> int:
     except (OSError, FileNotFoundError) as exc:
         return err(str(exc))
     since = time.time() - a.days * DAY if a.days else None
+    from harness import memory_store as ms
     try:
-        rows = kb.by_binding(conn, since=since)
+        with ms.lend(conn):  # its cuts are about the report, never this home's store. #1432.
+            rows = kb.by_binding(conn, since=since)
     finally:
         conn.close()
     note(f"\n{'hits':>5} {'quotes':>6}  site: example")

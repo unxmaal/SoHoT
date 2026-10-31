@@ -144,13 +144,10 @@ def _report_coverage(a) -> int:
     source ever surface. A source list is not a measurement of coverage.
     """
     from harness import coverage
-    from harness import memory_store as ms
+    from harness.commands.common import lent_store
 
-    store = ms.connect()
-    try:
+    with lent_store() as store:
         got = coverage.report(store)
-    finally:
-        store.close()
     if a.json:
         print(json.dumps(got, indent=2))
         return 0
@@ -197,14 +194,11 @@ def _report_winners(a) -> int:
     """
     from harness import adopt, winners
 
-    from harness import memory_store as ms
-    store = ms.connect()
-    try:
+    from harness.commands.common import lent_store
+    with lent_store() as store:
         best = winners.beaten_in(store)
         rows = winners.disagreements(store)
         serves = adopt.lane_defaults(store)
-    finally:
-        store.close()
     if a.json:
         print(json.dumps({"typed": winners.typed(), "serves": serves,
                           "measured": best, "disagreements": rows}, indent=2))

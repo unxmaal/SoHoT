@@ -387,7 +387,8 @@ def measured_reserve_gb(conn=None) -> float:
         with runs.store(conn) as c:
             margins = [r.get("margin_gb") for r in
                        ramp.runs(c, ms.machine_row(c))]
-    except Exception:  # noqa: BLE001 - the guard must not fail on its own record
+    except Exception as exc:  # noqa: BLE001 - the guard must not fail on its own record
+        print(f"memory: the stored ramp margins could not be read ({exc}); the reserve is {default:g} GB", file=sys.stderr)
         return default
     margins = [m for m in margins if isinstance(m, (int, float))]
     return max(max(margins), MIN_RESERVE_GB) if margins else default

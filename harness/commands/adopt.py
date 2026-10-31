@@ -1,12 +1,13 @@
 """`soh adopt`: make a measured run a lane's winner, or say what power each lane's gate needs."""
 from __future__ import annotations
 
+import contextlib
 import json
 import math
 from pathlib import Path
 
 from harness import lanes, paths
-from harness.commands.common import emit, err, note
+from harness.commands.common import emit, err, lent_store, note
 from harness.commands import measure as measure_cmd
 
 
@@ -135,7 +136,6 @@ def cmd_power(a) -> int:
     """Per lane: the repeat and holdout size power 0.8 needs, and what that run would cost. #591."""
     from evals.run import STOCHASTIC_MODALITIES
     from harness import adopt, holdout, power
-    from harness import memory_store as ms
 
     receipts = _receipts(getattr(a, "receipt", None) or [])
     challenger = getattr(a, "challenger", "") or ""
@@ -146,7 +146,8 @@ def cmd_power(a) -> int:
                    f"{', '.join(sorted(every))}")
     budget = float(getattr(a, "power_budget_min", None) or power.BUDGET_MIN) * 60
     rows = []
-    conn = ms.connect()
+    held = contextlib.ExitStack()
+    conn = held.enter_context(lent_store())
     try:
         for lane in [want] if want else sorted(every):
             split = every[lane]
@@ -196,7 +197,7 @@ def cmd_power(a) -> int:
                 "fits_budget": projected is not None and projected <= budget,
                 "why": plan.why})
     finally:
-        conn.close()
+        held.close()
     if not want:
         rows += [_absent(lane) for lane in lanes.ALL if lane not in every]
     if getattr(a, "table", False):

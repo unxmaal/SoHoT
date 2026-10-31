@@ -123,7 +123,8 @@ INDEX = {
         "instances": _i(118), "scanners": []},
     "an-error-swallowed": {
         "instances": _i(477, 501),
-        "scanners": ["tests/test_gauntlet_scanners.py::test_swallowed_errors_are_an_inventory_that_only_shrinks"]},
+        "scanners": ["tests/test_gauntlet_scanners.py::test_swallowed_errors_are_an_inventory_that_only_shrinks",
+                     "tests/test_store_errors_1432.py::test_no_reader_answers_quietly_when_the_store_cannot_be_read"]},
     "success-assumed-exit-status-unchecked": {
         "instances": _i(328, 522),
         "scanners": ["tests/test_gauntlet_scanners.py::test_no_shell_script_ignores_a_failure_it_could_see"]},
@@ -188,7 +189,8 @@ INDEX = {
     "a-non-production-run-writes-live-state": {
         "instances": _i(29, 188, 290, 455, 512, 513, rules=(414,)),
         "scanners": ["tests/test_gauntlet_scanners.py::test_the_live_home_is_derived_only_in_harness_paths",
-                     "tests/test_lent_store_1426.py::test_a_read_only_command_reads_only_the_store_it_is_given"]},
+                     "tests/test_lent_store_1426.py::test_a_read_only_command_reads_only_the_store_it_is_given",
+                     "tests/test_lent_store_1426.py::test_every_mode_flag_is_held_here_or_says_why_not"]},
     "a-closed-table-fronting-an-open-set": {
         "detector": "closed_tables",
         "instances": _i(213, 228, 245, 263, 298, 318, 379, 380, 387, rules=(379, 419)), "scanners": []},

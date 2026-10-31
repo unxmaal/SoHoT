@@ -898,30 +898,13 @@ def adopted(conn, machine=HERE) -> dict[str, str]:
 
 
 def lane_defaults(conn=None, machine=HERE, typed=None) -> dict[str, str]:
-    """What every lane serves now: its adoption here, else the typed default.
-
-    Never raises: a missing, locked or older store leaves the typed defaults.
-    """
+    """What every lane serves now: its adoption here, else the typed default; a store that cannot be read raises. #1432."""
+    from harness import runs
     if typed is None:
         from harness import winners
         typed = winners.typed()
-    if conn is None:
-        from harness import memory_store as ms
-        conn = ms.lent()  # under a lend, connect() refuses and the typed defaults would stand in silently. #1426.
-    close = conn is None
-    try:
-        if conn is None:
-            from harness import memory_store as ms
-            conn = ms.connect()
-        got = adopted(conn, machine)
-    except Exception:  # noqa: BLE001
-        got = {}
-    finally:
-        if close and conn is not None:
-            try:
-                conn.close()
-            except Exception:  # noqa: BLE001
-                pass
+    with runs.store(conn) as c:
+        got = adopted(c, machine)
     return {**dict(typed), **got}
 
 
@@ -932,14 +915,20 @@ def default_for(lane: str, fallback: str, conn=None, machine=HERE) -> str:
     ARGUMENT, captured when the function is defined, so rebinding the constant
     changes nothing -- the same trap that made SpeechRunner's declared voice
     unreachable (#195). An adoption that cannot take effect without a restart
-    is a report with extra steps.
-
-    Never raises and never blocks a generation. A store that is missing,
-    locked or older than this code leaves the lane on its typed constant, which
-    is what a fresh checkout does anyway.
+    is a report with extra steps. A store that cannot be read raises (#1432).
     """
     if not lane:
         return fallback
     key = lane.strip().lower()
     return lane_defaults(conn, machine, typed={key: fallback}).get(key) \
         or fallback
+
+
+def serving_default(lane: str, fallback: str) -> str:
+    """default_for a generation: an unreadable store is said on stderr and the lane serves its constant. #1432."""
+    import sys
+    try:
+        return default_for(lane, fallback)
+    except Exception as exc:  # noqa: BLE001 - a generation never fails on the discovery store
+        print(f"adopt: the store could not be read ({exc}); {lane} serves its typed default {fallback}", file=sys.stderr)
+        return fallback

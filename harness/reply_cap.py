@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 
 from harness import completion, convertible, reasons, yield_stop
 
@@ -172,7 +173,8 @@ def budget_for(lane: str, specs) -> tuple[int, dict]:
     try:
         with runs.store() as conn:
             return cap_for(conn, lane, specs)
-    except Exception:  # noqa: BLE001 - no stored evidence means the lane's budget
+    except Exception as exc:  # noqa: BLE001 - no stored evidence means the lane's budget
+        print(f"reply cap: the stored replies could not be read ({exc}); {lane} runs at its budget", file=sys.stderr)
         return completion.budget(lane), {}
 
 

@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 
 from harness import discover as discovery, paths, reasons
-from harness.commands.common import emit, err
+from harness.commands.common import emit, err, lent_store
 from harness.commands import judge as judge_cmd
 from harness.commands import loop as loop_cmd
 from harness.commands import report as report_cmd
@@ -84,7 +85,9 @@ def cmd_discover(a) -> int:
             print(f"    -> uv run python -m evals.run {c.how}")
         return 0
 
-    caps = discovery.annotate(discovery.capabilities())
+    with lent_store():  # the capability report reads the store and writes nothing. #1432.
+        caps = discovery.annotate(discovery.capabilities())
+        stale = _stale_sources()
     if a.lane:
         caps = [c for c in caps if c.lane == a.lane]
     if a.gap:
@@ -129,18 +132,22 @@ def cmd_discover(a) -> int:
     countable = [c for c in caps if c.kind != "decision"]
     total, done = len(countable), sum(1 for c in countable if c.measured)
     print(f"\n{done}/{total} measured. The rest have never been run here.")
-    _warn_stale_sources()
+    _warn_stale_sources(stale)
     return 0
 
 
-def _warn_stale_sources() -> None:
+def _stale_sources() -> list:
+    from harness import feeds
+    try:
+        return [r for r in feeds.staleness() if r["stale"]]
+    except Exception as exc:  # noqa: BLE001 - a warning, never the report's failure
+        print(f"\ndiscovery sources: their last reads could not be read ({exc})", file=sys.stderr)
+        return []
+
+
+def _warn_stale_sources(stale) -> None:
     """Discovery nobody remembers to run is discovery that does not happen."""
     from harness import feeds
-
-    try:
-        stale = [r for r in feeds.staleness() if r["stale"]]
-    except Exception:  # noqa: BLE001
-        return
     if not stale:
         return
     names = ", ".join(r["name"] for r in stale[:4])
