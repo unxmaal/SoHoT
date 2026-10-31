@@ -18,6 +18,7 @@ for s in "$STEM" ${SECOND:+"$SECOND"}; do
   ln -sf "$MODELS_SRC/$s.gguf" "$OUT/models/$s.gguf"
 done
 START=$(date +%s)
+SKIPPED=0
 SERVER=""
 stop() {
   if [ -n "$SERVER" ] && kill "$SERVER" 2>/dev/null; then
@@ -30,7 +31,7 @@ trap stop EXIT
 for cfg in $CONFIGS; do
   IFS=: read -r slots pool mode level <<<"$cfg"
   if [ $(( $(date +%s) - START )) -gt "$BUDGET" ]; then
-    echo "== $cfg skipped: past the ${BUDGET}s budget"; continue
+    echo "== $cfg skipped: past the ${BUDGET}s budget"; SKIPPED=$((SKIPPED + 1)); continue
   fi
   ini="$OUT/preset-$slots-$pool-$mode.ini"
   {
@@ -76,4 +77,8 @@ PY
   fi
   stop
 done
+if [ "$SKIPPED" -gt 0 ]; then
+  uv run --quiet python -m harness.cuts scripts/slots-sweep.sh:SWEEP_BUDGET_S "slot configs of $STEM past the budget" \
+    --dropped "$SKIPPED" >/dev/null 2>&1 || echo "== the SWEEP_BUDGET_S cut was not recorded" >&2
+fi
 echo "== results in $OUT ($(( $(date +%s) - START ))s)"

@@ -123,7 +123,7 @@ _hf_usable() {
 
   free="$(_hf_free_gb "$cand")" || return 1
   [ -n "$free" ] || return 1
-  [ "$free" -ge "$HF_MIN_FREE_GB" ] || return 1
+  [ "$free" -ge "$HF_MIN_FREE_GB" ] || { _hf_cut "$cand: ${free}GB free"; return 1; }
 
   # READABILITY, which is not implied by any of the above. A launchd agent gets
   # "Operation not permitted" on /Volumes: macOS TCC protects removable volumes
@@ -142,6 +142,12 @@ _hf_usable() {
   done
   [ -w "$anchor" ] || return 1
   return 0
+}
+
+# The free-space refusal, recorded as a limit_cuts row (#1087); never fails the caller.
+_hf_cut() {
+  (cd "$(_hf_repo)" && uv run --quiet python -m harness.cuts scripts/env.sh:HF_MIN_FREE_GB "weights root refused: $1") \
+    >/dev/null 2>&1 || echo "env.sh: the HF_MIN_FREE_GB cut was not recorded" >&2
 }
 
 # Can we actually list this directory? See the note in _hf_usable.

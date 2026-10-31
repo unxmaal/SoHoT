@@ -61,6 +61,7 @@ def check(path: str | Path, expect: tuple[int, int] | None = None) -> ImageResul
                            warnings, width, height, stddev, size)
 
     if stddev < MIN_STDDEV:
+        _blank_cut(f"image {path.name}")
         return ImageResult(False,
                            f"uniform canvas (stddev {stddev:.2f}): the pipeline "
                            f"produced a blank image",
@@ -76,7 +77,15 @@ def spread(im: Image.Image) -> float:
 
 def blank(im: Image.Image) -> bool:
     """An image with no structure: one colour, as a NaN decode casts to black. #1013."""
-    return spread(im) < MIN_STDDEV
+    if spread(im) < MIN_STDDEV:
+        _blank_cut("generated image")
+        return True
+    return False
+
+
+def _blank_cut(what: str) -> None:
+    from harness import cuts
+    cuts.cut("harness/checks/image.py:MIN_STDDEV", f"{what}: blank")
 
 
 def _stddev(band: Image.Image) -> float:
