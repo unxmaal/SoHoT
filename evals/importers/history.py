@@ -14,7 +14,7 @@ from pathlib import Path
 
 from evals import interface, repo
 from evals.importers import Imported, provenance
-from harness import paths
+from harness import paths, privacy
 
 LANE = "repo"
 SOURCE = "git:unxmaal/SoHoT"
@@ -93,7 +93,6 @@ def graded(task: str, ids) -> list:
 _HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
 _LABEL = re.compile(r"^(?:\*\*([^*\n]{1,60}?)[:.]?\*\*:?|([A-Z][A-Za-z ]{0,40}?):(?=\s|$))")
 _LIST = re.compile(r"^(\s+|[-*+] |\d+[.)] )")
-_HOME = re.compile(r"/(?:Users|home)/[^/\s]+/")
 _HOST = re.compile(r"\b(?:10|192\.168|172\.(?:1[6-9]|2\d|3[01]))\.\d+\.\d+\b"
                    r"|(?<![\w<])(?!cluster\.local)[a-z0-9-]+\.local\b")
 
@@ -173,7 +172,7 @@ def strip_sections(body: str, names) -> str:
 
 def prompts(title: str, body: str, solution=()) -> dict[str, str]:
     """variant -> prompt text; symptom is None when it would only repeat spec or say nothing."""
-    body = _HOST.sub("<host>", _HOME.sub("~/", body))
+    body = _HOST.sub("<host>", privacy.mask_home(body))
     spec = strip_sections(body, NOT_PROMPT)
     symptom = strip_sections(body, NOT_PROMPT + SOLUTION + tuple(solution))
     head = f"# {title.strip()}\n\n"
@@ -241,7 +240,7 @@ def refresh(got: dict, mirror) -> dict:
 
 def tests_call(mirror, base: str, fix: str) -> list[str]:
     """The interface lines a task's prompts show, with home paths and LAN hosts masked as in the prompt. #1103."""
-    return [_HOST.sub("<host>", _HOME.sub("~/", line)) for line in interface.tests_call(mirror, base, fix)]
+    return [_HOST.sub("<host>", privacy.mask_home(line)) for line in interface.tests_call(mirror, base, fix)]
 
 
 def unlisted(mirror, t: dict, calls) -> dict:

@@ -124,8 +124,10 @@ def validate(name: str, params: dict) -> None:
 def _git(args, cwd=None, check=True, input=None) -> subprocess.CompletedProcess:
     timeout = GIT_TIMEOUT_S
     env = {**os.environ, "GIT_TERMINAL_PROMPT": "0", "GIT_CONFIG_NOSYSTEM": "1"}
-    got = subprocess.run(["git", *args], cwd=cwd, capture_output=True, timeout=timeout,
-                         env=env, input=input)
+    from harness import cuts
+    with cuts.timeout("repo_git_timeout", f"git {' '.join(map(str, args[:3]))}"):
+        got = subprocess.run(["git", *args], cwd=cwd, capture_output=True, timeout=timeout,
+                             env=env, input=input)
     if check and got.returncode:
         raise RepoEnvError(f"git {' '.join(map(str, args[:3]))}: "
                                 f"{got.stderr.decode(errors='replace').strip()[-400:]}")
@@ -231,6 +233,8 @@ def prepare(task: Path, extras=()) -> Path:
                              capture_output=True, text=True, timeout=ENV_TIMEOUT_S, env=env)
     except subprocess.TimeoutExpired as exc:
         shutil.rmtree(tmp, ignore_errors=True)
+        from harness import cuts
+        cuts.cut("repo_env_timeout", f"uv sync of {task.name}", kept=0, dropped=1)
         raise RepoEnvError(f"uv sync timed out after {exc.timeout:g}s") from exc
     if got.returncode:
         shutil.rmtree(tmp, ignore_errors=True)
@@ -457,6 +461,9 @@ def apply_docs_aside(task: Path, diff: str, named) -> tuple[bool, str, list]:
     applied, _ = apply(task, rest)
     if not applied:
         return False, why, []
+    from harness import cuts
+    cuts.cut("repo_doc_patterns", "documentation files whose failed hunks were left out", kept=len(chunks) - len(failed),
+             dropped=len(failed))
     return True, "", [{"path": p, "why": failed[p]} for p in sorted(failed)]
 
 

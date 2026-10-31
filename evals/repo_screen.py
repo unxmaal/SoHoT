@@ -209,9 +209,15 @@ def verdict(base_rows: list[dict], cand_rows: list[dict], cases, *, outside_vote
         state, why = "survives", f"tied on {draws} pooled draws ({w} vs {lost}), not below the base: measure it"
     else:
         state, why = "declined", f"wins {w} tasks, loses {lost} on {draws} draw(s)"
+        from harness import cuts
         if favoured:
             why += ("; outside evidence disagrees, so record this as a finding about the exam "
                     "(single shot, no tools: #922, #890)")
+            cuts.cut("screen_repeats", f"{next(iter(cands))} declined after its repo screen reruns", value=repeats,
+                     kept=draws, dropped=1)
+        elif outside_votes:
+            cuts.cut("screen_outside_votes", f"{next(iter(cands))} declined with {outside_votes} outside votes",
+                     value=need_votes, dropped=1)
     base_cases = [r for r in base_rows if holdout.base_id(r["case_id"]) in ran]
     return {"candidate": next(iter(cands)), "cases": len(ran), "tasks": len({task[k][0] for k in ran}),
             "draws": draws, "passed": sum(t[0] for t in tally["cand"].values()),
