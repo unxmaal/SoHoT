@@ -18,6 +18,46 @@ from harness.memory_store.schema import SCHEMA_VERSION, _DDL
 BUSY_TIMEOUT_SECONDS = 30.0
 
 
+def _gave_up(exc: sqlite3.OperationalError) -> None:
+    """Record a write the lock wait gave up on as a cut of BUSY_TIMEOUT_SECONDS. #1087."""
+    if "locked" in str(exc) or "busy" in str(exc):
+        from harness import cuts
+        cuts.cut("harness/memory_store/connection.py:BUSY_TIMEOUT_SECONDS", f"store statement: {exc}",
+                 kept=0, dropped=1)
+
+
+class _Store(sqlite3.Connection):
+    """A store connection that records when the lock wait runs out."""
+
+    def execute(self, *args, **kwargs):
+        try:
+            return super().execute(*args, **kwargs)
+        except sqlite3.OperationalError as exc:
+            _gave_up(exc)
+            raise
+
+    def executemany(self, *args, **kwargs):
+        try:
+            return super().executemany(*args, **kwargs)
+        except sqlite3.OperationalError as exc:
+            _gave_up(exc)
+            raise
+
+    def executescript(self, *args, **kwargs):
+        try:
+            return super().executescript(*args, **kwargs)
+        except sqlite3.OperationalError as exc:
+            _gave_up(exc)
+            raise
+
+    def commit(self):
+        try:
+            return super().commit()
+        except sqlite3.OperationalError as exc:
+            _gave_up(exc)
+            raise
+
+
 #: A read-only connection lent to this thread; while one is, nothing here may migrate. #492.
 _LENT = _thread_local()
 
@@ -67,7 +107,7 @@ def connect(path: Path | None = None):
     if not path.exists():
         _guard_live(path, lambda: 0)
     path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(path, timeout=BUSY_TIMEOUT_SECONDS)
+    conn = sqlite3.connect(path, timeout=BUSY_TIMEOUT_SECONDS, factory=_Store)
     conn.row_factory = sqlite3.Row
     try:
         _guard_live(path, lambda: _stored_schema(conn))

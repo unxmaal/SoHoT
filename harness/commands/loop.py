@@ -26,7 +26,7 @@ def _queueable(store, want: str = "") -> tuple[list[dict], int]:
     from harness import rank
     from harness import memory_store as ms
 
-    rows = ms.judgeable(store, limit=1_000_000)
+    rows = ms.judgeable(store, limit=1_000_000, limit_knob="harness/commands/loop.py:_queueable->ms.judgeable(limit)")
     if want:
         rows = [r for r in rows if methods.serves(r["name"], rank.lane_of(r), want)]
     return rows, len(rows)
