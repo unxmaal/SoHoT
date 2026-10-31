@@ -154,8 +154,8 @@ def remote_code_gap(card, evidence: str = "") -> str:
     if got:
         return got
     mtype = model_type(card, evidence)
-    # A card read before #567 has no remote_code column; its custom_code tag and an unshipped type stand in.
-    if (not (card or {}).get("remote_code") and mtype and not native_in_transformers(mtype)
+    # Inspect writes model_type with remote_code, so only a card with no stored type predates the column. RULE #506.
+    if (not (card or {}).get("model_type") and mtype and not native_in_transformers(mtype)
             and "custom_code" in [t.lower() for t in tags_of(card)]):
         return (f"its card is tagged custom_code and its model type {mtype!r} is not one "
                 f"{remote_code.native_types()[0]} ships")

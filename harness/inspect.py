@@ -32,7 +32,7 @@ from harness import memory_store as ms
 GIB = 1024 ** 3
 #: Weights above this cannot run here. 32 GB unified, and macOS gives the GPU
 #: roughly 70-75% of it by default, so the honest ceiling is well under 32.
-#: Overridable: the M5 Ultra arriving with 96 GB moves this, nothing else.
+#: Measured on the 32 GB mini; ceiling_bytes scales it by a unified machine's RAM.
 #:
 #: IT IS A WEIGHT CEILING, NOT A JOB CEILING, and the difference bit once. The
 #: default image job peaks at 11.4 GiB at 512x512 and 23.9 at 1024 (M2 Pro,
@@ -53,10 +53,8 @@ def ceiling_bytes(acc=None) -> int:
     verdicts, and both are Windows. So a discrete card is asked directly and
     its VRAM is the wall.
 
-    Unified memory deliberately keeps the measured constant. Deriving it too
-    (32 * GPU_FRACTION is 24 GiB) would move an Apple Silicon machine's ceiling from 22 to 24
-    and change which candidates it accepts -- a decision about the Mac, which a
-    Windows port has no business making on its way past.
+    Unified memory scales MEMORY_CEILING by its RAM over MEMORY_CEILING_RAM_GB,
+    so the measured mini keeps 22 GiB; with no RAM reading it is the constant. #355.
     """
     from harness import machine
 
@@ -881,7 +879,7 @@ class Card:
     category: str = ""
     #: config.json's model_type, "" when the card carried no config. #567.
     model_type: str = ""
-    #: The repo's own modelling code its auto_map names, "" for none. #567.
+    #: With an auto_map, the modeling_/configuration_ files in its listing, else "auto_map"; "" for none. #567.
     remote_code: str = ""
 
 

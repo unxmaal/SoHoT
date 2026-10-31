@@ -56,7 +56,7 @@ def test_lineage_is_read_from_the_lineage_rows_not_the_prose():
     assert value(prose_only) == value(fresh)
 
 
-def test_a_candidate_no_lane_can_measure_ranks_last():
+def test_a_candidate_no_lane_can_measure_scores_below_one_with_a_lane():
     """Not a judgement about the model: the suite has no case, no runner and no
     metric for it, so a screen cannot say anything at all."""
     unmeasurable = row("x/no-lane")
@@ -102,6 +102,14 @@ def test_the_order_is_stable_when_two_rows_tie(store_conn):
     assert [r["name"] for r in rank.rank(rows, measured_lanes=MEASURED, conn=store_conn)] == \
            ["a/first", "b/second"]
     assert rank.rank(rows, conn=store_conn) == rank.rank(rows, conn=store_conn)
+
+
+def test_the_fresher_sighting_wins_a_tie(store_conn):
+    """#252: freshness, not the alphabet, settles a tie; the later name was seen last so the name cannot pass it."""
+    rows = [row("a/older", lane="tts", last_seen=100.0), row("b/fresher", lane="tts", last_seen=200.0)]
+    got = rank.rank(rows, measured_lanes=MEASURED, conn=store_conn)
+    assert got[0]["value"] == got[1]["value"]
+    assert [r["name"] for r in got] == ["b/fresher", "a/older"]
 
 
 # --- reading the facts out of a description ------------------------------

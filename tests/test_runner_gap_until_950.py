@@ -77,6 +77,17 @@ def test_an_audited_runtime_decline_waits_on_its_cause_not_a_release(vid, candid
     assert not v.until.startswith("version:")
 
 
+def test_a_card_read_after_the_remote_code_column_is_not_refused_on_its_custom_code_tag():
+    """#1388, RULE #506: a stored type with no auto_map evidence passes; only a card with no stored type falls back."""
+    later = {**_text("nandi", ["custom_code"]), "model_type": "nandi", "remote_code": ""}
+    assert runner_gaps.pre_screen("org/nandi", later) == ("", "")
+    v = screen.decide_class(reasons.LOAD_FAILED_RUNTIME, _gateway("Model type nandi not supported."),
+                            "org/nandi", card=later)
+    assert not v.until.startswith("policy:")
+    older = {**later, "model_type": ""}
+    assert runner_gaps.remote_code_gap(older, _gateway("Model type nandi not supported."))
+
+
 def test_the_same_failure_from_stderr_alone_reaches_the_same_until():
     v = screen.outcome(1, None, candidate="LiquidAI/LFM2.5-VL-3B", stderr_class=reasons.LOAD_FAILED_RUNTIME,
                        evidence=_gateway("Model type lfm2_vl not supported."), card=_vlm("lfm2_vl"))
