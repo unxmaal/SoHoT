@@ -43,6 +43,9 @@ capabilities:
       - harness/looks.py
       - harness/measure_gain.py
       - harness/measure_replay.py
+      - harness/weedout.py
+      - harness/weedout_replay.py
+      - harness/commands/weedout.py
       - harness/reuse.py
       - harness/identity.py
       - harness/baseline.py

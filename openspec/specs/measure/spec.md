@@ -293,7 +293,7 @@ Inside its budget a paired run SHALL be launched in slices of `looks.LOOK_INTERV
 Test: tests/test_repo_looks_1353.py::test_a_paired_run_is_cut_into_look_slices_inside_its_budget
 
 #### Scenario: A look decides for success
-- **WHEN** the second slice brings an overwhelming gain
+- **WHEN** the second slice gives every holdout case a cell with an overwhelming gain
 - **THEN** that launch resumed the same directory, one verdict is recorded, and the pause is done with one continue look and one sweep, stopped for success
 Test: tests/test_repo_looks_1353.py::test_a_decided_look_mid_run_stops_it_and_records_the_verdict
 
@@ -414,8 +414,8 @@ Test: tests/test_resume_813.py::test_a_finished_resume_settles_its_pause_even_wh
 
 #### Scenario: A finished resume
 - **WHEN** a paused run is resumed to the end and its receipt is read
-- **THEN** the pause row is `done`, the verdict records the planned and observed seconds per paired case, and its power records an alpha below `adopt.ALPHA`
-Test: tests/test_resume_813.py::test_a_finished_resume_spends_less_alpha_and_stores_planned_and_observed_seconds
+- **THEN** the pause row is `done`, the verdict records the planned and observed seconds per paired case, and its power records the full `adopt.ALPHA`, because its look came before every case had a cell and tested no adopt
+Test: tests/test_resume_813.py::test_a_finished_resume_spends_no_alpha_an_uncovered_look_did_not_test_and_stores_planned_and_observed_seconds
 
 ### Requirement: Stopped runs keep their rows
 A paired run stopped by a signal (a negative exit, or a shell's exit for SIGTERM, SIGKILL or SIGINT) with checkpointed rows SHALL be kept as a pause (the measure returning `watch.PAUSED`) and resumed; a run that exits non-zero otherwise MUST be an error with no pause row. A run directory a stopped run left with no pause row SHALL be resumed from its checkpoint when its name is the lane's adopt run, its checkpoint names this lane and exactly the incumbent and challenger, its progress state is running or paused, its directory is in no pause row of any state, and its recorded process group is gone.
@@ -484,6 +484,39 @@ Test: tests/test_resume_813.py::test_a_challenger_ahead_is_never_stopped_for_fut
 - **WHEN** conditional power is asked with no cells remaining
 - **THEN** it is one when the final sign test already adopts and zero when it does not
 Test: tests/test_resume_813.py::test_conditional_power_with_nothing_left_is_the_final_answer
+
+#### Scenario: Only the winning tail is summed
+- **WHEN** conditional power is computed for any counts, cells left and odds
+- **THEN** it equals the sum over every outcome the final sign test adopts on
+Test: tests/test_weedout_1439.py::test_conditional_power_sums_only_the_winning_tail_of_each_count
+
+### Requirement: Weed-out order
+A paired measure and a confirmation run SHALL run their cases in the order `harness/weedout.py` declares before the run from the served incumbent's stored draws alone: expected discordant cells per incumbent second under the plan's effect, highest first, a case priced at no less than `MIN_S`, each repeat a pass over the order. The plan SHALL carry the order and the per-case rates behind it, so every look and resume reads the same ones. On an ordered run a look SHALL NOT test success, nor spend alpha, until every planned case has a cell from both candidates; its futility bound SHALL read the odds of the cells still to run, each case at its own rate. A confirmation run SHALL take a futility-only look every `looks.LOOK_INTERVAL_S` and record a keep when it stops.
+
+#### Scenario: Informative and cheap cases first
+- **WHEN** cases are ordered from their incumbent rates and seconds
+- **THEN** expected discordant cells per second decides the order and an always-passed case goes last
+Test: tests/test_weedout_1439.py::test_cases_go_by_expected_discordant_cells_per_second
+
+#### Scenario: The run follows the order file
+- **WHEN** evals.run is given `--order`
+- **THEN** each repeat runs the named cases in that order and the unnamed after
+Test: tests/test_weedout_1439.py::test_the_run_takes_cases_in_the_order_file_each_repeat_a_pass_and_unnamed_cases_last
+
+#### Scenario: No adopt before full coverage
+- **WHEN** an ordered run's look sees a lead that would succeed with cases still lacking a cell
+- **THEN** it continues and spends no alpha
+Test: tests/test_weedout_1439.py::test_an_ordered_run_never_adopts_before_every_case_has_a_cell_and_spends_no_alpha_there
+
+#### Scenario: Futility on the cases left
+- **WHEN** the cases left on an ordered run are ones the incumbent always passes and the challenger is not ahead
+- **THEN** the look stops for futility where holdout-average odds would continue
+Test: tests/test_weedout_1439.py::test_futility_reads_the_odds_of_the_cases_still_to_run_not_the_holdout_average
+
+#### Scenario: A confirmation stops for futility
+- **WHEN** a confirmation slice's look finds the challenger cannot reach the gate
+- **THEN** a keep verdict is recorded and nothing adopts
+Test: tests/test_weedout_1439.py::test_a_confirmation_slice_that_cannot_reach_the_gate_records_a_keep
 
 ### Requirement: Sweep ceiling
 A discover sweep SHALL run under a wall-clock ceiling, `--ceiling-h` defaulting to `SWEEP_CEILING_H`; a measurement's slice MUST end at what is left of it (a deadline at most `DEADLINE_GRACE` past it plus one case), and no measurement SHALL start once nothing is left.

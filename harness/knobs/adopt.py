@@ -68,6 +68,11 @@ KNOBS = [
        note="ceiling seconds a finished sweep may leave unused before soh morning names why (#1082)"),
     _k("unseen_rate", ["harness/power.py:UNSEEN"], [0.25, 0.5, 0.75],
        note="pass rate a plan assumes for an incumbent with no draws; such a plan is unmeasured (#698)"),
+    _k("weedout_add_s", ["harness/weedout.py:ADD_S"], [0.5, 1.0, 5.0, 10.0], unit="s",
+       note="seconds added to each case's incumbent mean when a paired run orders cases by expected discordant "
+            "cells per second, so a case timed near zero does not lead on its timing alone; Ornith's code cases "
+            "it always passes take 4.5 s, mixed 53 s, always failed 144 s; replay of 57 code paired runs and "
+            "3000 simulated challengers per effect on the code holdout (#1439)"),
     _k("zero_pass_min_cases", ["harness/baseline.py:MIN_CASES"], [20, 30, 50],
        note="distinct stored cases a typed incumbent must pass none of before its lane takes the incumbent from "
             "measurement and a paired run against it is only a screen; a model passing 1 in 10 shows none of 30 "
@@ -81,4 +86,5 @@ NEVER_CUTS = {
     "harness/effects.py:MIN_CASES": "read only when soh knobs effects derives power.EFFECT offline; no run is cut (#725)",
     "harness/holdout.py:FAMILY_SHARE": "moves holdout cases to dev, never drops one; the split version names it (#671)",
     "harness/holdout.py:SATURATED": "labels an incumbent's holdout saturated in the report; nothing is skipped (#479)",
+    "harness/weedout.py:ADD_S": "prices cases for the run's order, never drops one; an adopt waits for every case (#1439)",
 }

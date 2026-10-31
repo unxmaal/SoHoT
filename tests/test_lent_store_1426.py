@@ -39,6 +39,7 @@ RUNS = {
     "reverify": ([["reverify", "--dry-run"]], 1),
     "store": ([["store", "dry-run", S]], 1),
     "votes": ([["votes", "--store", S]], 0),
+    "weedout-replay": ([["weedout-replay", "--store", S], ["weedout-replay", "--simulate", "2", "--store", S]], 0),
     "yield-stop": ([["yield-stop", "code", "x/Model-9B", "--store", S]], 0),
 }
 #: Commands with such a flag that are not read-only, and why.

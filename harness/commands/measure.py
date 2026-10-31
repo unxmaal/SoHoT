@@ -353,6 +353,9 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
             if (getattr(plan, "reuse", None) or {}).get("reused"):
                 from harness import reuse
                 reuse.write(out, inc_spec, plan.reuse)
+            if getattr(plan, "order", None):
+                from harness import weedout
+                weedout.write(out, plan.order)
             part, last = _slice(plan, time.time() - started)
             argv = _argv(lane, part, out, inc_spec, spec, resume=bool(held),
                          unscreened=lane == "repo")
@@ -499,7 +502,7 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
     from dataclasses import replace
 
     from evals.run import STOCHASTIC_MODALITIES
-    from harness import adopt, holdout, power
+    from harness import adopt, holdout, power, weedout
     from harness import memory_store as ms
 
     split = holdout.for_lane(lane)
@@ -508,6 +511,7 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
     try:
         draws, median_s, calls, est = priced(store, lane, inc_spec, spec)
         alpha = adopt.alpha_for(adopt.comparisons(store, lane, split.version))
+        secs = weedout.seconds_of(store, lane, inc_spec)
     finally:
         store.close()
     estimated = ""
@@ -553,6 +557,9 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
                    if split.holdout else None, sweeps=sweeps,
                    why="; ".join(x for x in (spans, plan.why, power.unseen_note(draws), estimated) if x))
     plan = replace(plan, deadline_s=power.deadline(plan))
+    run = list(split.holdout) if side == "holdout" else list(dict.fromkeys([*split.holdout, *split.dev]))
+    if run:
+        plan = replace(plan, **weedout.planned(run, power.rates_from(draws, run)[0], secs, plan.effect))
     print(f"    power: repeat {plan.repeat} over {len(split.holdout)} holdout "
           f"case(s) gives {plan.power:.2f} to detect +{plan.effect:.2f} at "
           f"alpha {plan.alpha}{'; ' + plan.why if plan.why else ''}"
@@ -769,6 +776,9 @@ def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False,
             "--candidates", f"{inc_spec},{spec}"]
     if plan.side != "all":
         argv += ["--split", plan.side]
+    if getattr(plan, "order", None):
+        from harness import weedout
+        argv += ["--order", str(Path(out) / weedout.ORDER_FILE)]
     if plan.budget_s is not None:
         argv += ["--stop-at", f"{time.time() + plan.budget_s:.0f}"]
     est = plan.estimate or {}
@@ -844,6 +854,8 @@ def _resumed_plan(stored: dict, fresh):
     got = power.Plan(**{k: v for k, v in stored.items() if k in names})
     if got.odds is not None:
         got = replace(got, odds=tuple(got.odds))
+    if got.order is not None:
+        got = replace(got, order=tuple(got.order))
     # The exam is kept; its price is this sweep's, or a stale screen price judges the run. #864.
     return replace(got, budget_s=fresh.budget_s, deadline_s=fresh.deadline_s, estimate=fresh.estimate)
 
@@ -1011,11 +1023,23 @@ def confirm_job(vid: int) -> int:
     if data:
         print(f"    {out} finished without a verdict; recording it from its receipt (verdict {vid})", flush=True)
     else:
-        proc, ran = _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid)
+        plan = _confirm_order(lane, inc_spec, split, repeat, frozenset(held.get("screened") or ()))
+        before = len((watch.read(out) or ({}, []))[1]) if out is not None else 0
+        proc, ran = _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid, plan)
         if out is not None and proc.returncode == watch.STALE:
             print(f"    {out} ran another exam, so the confirmation is starting fresh", flush=True)
-            proc, ran = _confirm_run(lane, inc_spec, spec, name, repeat, split, None, vid)
+            before = 0
+            proc, ran = _confirm_run(lane, inc_spec, spec, name, repeat, split, None, vid, plan)
         out = ran
+        # A slice that stopped at its own look time: a futility look, then the next slice. #1439.
+        while proc.returncode == watch.PAUSED and _between_looks(proc, out, False, before):
+            futile = _confirm_look(lane, out, plan, vid)
+            if futile is not None:
+                print(f"    kept the incumbent: {futile.why}", flush=True)
+                _record(futile, spec, watch.read_progress(out).get("run_id"), out)
+                return 0
+            before = len((watch.read(out) or ({}, []))[1])
+            proc, out = _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid, plan)
         if proc.returncode == watch.PAUSED:
             return _confirm_paused(vid, lane, inc_spec, spec, out)
         if proc.returncode != 0:
@@ -1069,15 +1093,63 @@ def _confirm_dir(lane: str, pair: list, repeat: int, side: str, since: float = 0
     return None, None
 
 
-def _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid):
-    """(process, out dir) of the confirmation eval, resuming `out` when one is named. #1357."""
-    from harness import runner_gaps, screen
+def _confirm_order(lane: str, inc_spec: str, split, repeat: int, screened=frozenset()) -> dict:
+    """The confirmation's cases in weed-out order, and the cells and per-case rates its futility looks read. #1439."""
+    from harness import power, weedout
+    from harness import memory_store as ms
+    run = list(dict.fromkeys([*split.holdout, *split.dev])) if split.too_small else list(split.dev)
+    store = ms.connect()
+    try:
+        draws, _ = power.served_profile(store, lane, inc_spec)
+        secs = weedout.seconds_of(store, lane, inc_spec)
+    finally:
+        store.close()
+    effect = power.effect_for(lane)
+    got = weedout.planned(run, power.rates_from(draws, run)[0], secs, effect) if run else {"order": (), "rates": {}}
+    return {**got, "cells": [c for c in run if c not in screened], "repeat": int(repeat), "effect": effect}
+
+
+def _confirm_look(lane: str, out, plan: dict, vid: int):
+    """A futility look at a confirmation's slice: the keep verdict when it stops, else None; it never adopts. #1439."""
+    from harness import adopt, candidates, holdout, looks, power
+    got = watch.read(out)
+    rows = got[1] if got else []
+    specs = watch.read_progress(out).get("specs") or {}
+    keys = {s: k for k, s in specs.items()}
+    inc_key = keys.get(plan["incumbent"]) or candidates.key_of(plan["incumbent"]) or plan["incumbent"]
+    ch_key = keys.get(plan["challenger"]) or candidates.key_of(plan["challenger"]) or plan["challenger"]
+    cells = list(plan["cells"])
+    if not cells:
+        return None
+    effect = plan["effect"]
+    asked = {"repeat": plan["repeat"], "cells": len(cells) * plan["repeat"], "cases": len(cells), "effect": effect,
+             "odds": power._cell_odds([plan["rates"].get(c, power.UNSEEN) for c in cells], effect),
+             "order": plan["order"], "rates": plan["rates"]}
+    look, verdict = looks.look(rows, lane=lane, inc_key=inc_key, ch_key=ch_key,
+                               split=holdout.Split(lane, (), tuple(cells), False), plan=asked,
+                               alpha=adopt.ALPHA, spent_before=0.0, n=1)
+    print(f"    {look.text}", flush=True)
+    if look.decision != "futility":
+        return None
+    return replace(verdict, why=f"won the holdout (verdict {vid}), but its confirmation stopped for {verdict.why}",
+                   evidence={"confirm": {"look": look.as_dict()}})
+
+
+def _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid, plan=None):
+    """(process, out dir) of the confirmation eval, resuming `out` when one is named, in looks every look_interval_s. #1357, #1439."""
+    from harness import looks, runner_gaps, screen, weedout
     resume = out is not None
     out = out or paths.home() / "runs" / f"{time.strftime('%Y%m%d-%H%M%S')}-confirm-{lane}"
     argv = [*runner_gaps.launcher([inc_spec, spec], ["uv", "run", "python"], lane), "-m", "evals.run", "--modality", lane,
             "--repeat", str(repeat), "--out", str(out), "--candidates", f"{inc_spec},{spec}"]
     if not split.too_small:
         argv += ["--split", "dev"]
+    if plan is not None:
+        plan.update(incumbent=inc_spec, challenger=spec)
+        if plan.get("order"):
+            argv += ["--order", str(weedout.write(out, plan["order"]))]
+        if looks.LOOK_INTERVAL_S and plan.get("cells"):
+            argv += ["--stop-at", f"{time.time() + looks.LOOK_INTERVAL_S:.0f}"]
     if resume:
         argv += ["--resume"]
     route = screen.routed_gateway(name)
