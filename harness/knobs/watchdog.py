@@ -19,10 +19,10 @@ KNOBS = [
     _k("lane_probe_timeout", [f"{P}:TIMEOUT_S", f"{P}:TIMEOUT_DEFAULT_S"], [10.0, 30.0, 60.0, 120.0],
        note="seconds a probe waits before the lane reads as slow, never down; a busy queue or a 35B is slow (#924)"),
     _k("watchdog_day_end_hour", [f"{W}:DAY_END_HOUR"], [18, 20, 21, 22],
-       note="local hour Eric's day ends: the day limits and a day clearance end at it; the discover agent starts "
+       note="local hour the owner's day ends: the day limits and a day clearance end at it; the discover agent starts "
             "at scripts/launchd.sh DISCOVER_HOURS, which this does not move (Decision #456, #1369)"),
     _k("watchdog_day_start_hour", [f"{W}:DAY_START_HOUR"], [6, 7, 8, 9],
-       note="local hour Eric's day starts; a job holding the GPU lock past watchdog_daytime_gpu inside the day is "
+       note="local hour the owner's day starts; a job holding the GPU lock past watchdog_daytime_gpu inside the day is "
             "paused (#1370)"),
     _k("watchdog_daytime_gpu", [f"{W}:DAYTIME_GPU_S"], [1800.0, 3600.0, 7200.0],
        note="seconds a job holding the GPU lock may run inside the day hours before it is paused for the night; "
