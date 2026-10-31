@@ -87,6 +87,18 @@ def test_a_candidate_with_no_fitting_case_is_a_gap_not_a_harness_error(
     assert row["why_not"] == gap
 
 
+def test_a_spelled_row_with_a_case_gap_is_not_asked_about_weights(tmp_path, monkeypatch):
+    """#1392: the runner gap is the answer whatever is on disk, so the cache is never touched."""
+    monkeypatch.setattr(screen, "CASES", _cases(tmp_path / "cases", {"chart-bars": {"methods": ["llm"]}}),
+                        raising=False)
+    from evals.runners.omnisvg import MODELS
+    asked = []
+    row = screen.plan([{"name": MODELS["8B"][1], "lane": "svg"}],
+                      missing=lambda n: asked.append(n) or [n])[0]
+    assert row["candidate"] and row["state"] == screen.NO_RUNNER
+    assert asked == []
+
+
 def test_a_lane_with_a_fitting_case_has_no_gap(tmp_path, monkeypatch):
     monkeypatch.setattr(screen, "CASES", _cases(tmp_path / "cases", SVG),
                         raising=False)

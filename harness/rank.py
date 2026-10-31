@@ -301,7 +301,7 @@ def quantised_children(rows) -> dict[str, list[str]]:
 def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float | None = None,
          keep_laneless: bool = False, incumbents_by_lane: dict | None = None,
          bases_by_lane: dict | None = None, now: float | None = None, standing=None, passed=None, trace: bool = True, conn):
-    """Best first. Ties break on name so the order is stable across runs.
+    """Best value first, then the most recent sighting, then the name, so the order is reproducible.
 
     A candidate NO LANE CAN TEST IS DROPPED rather than ranked last. Penalising
     it left 66 of 94 queue slots holding things nothing could measure, which

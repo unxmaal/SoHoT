@@ -433,8 +433,8 @@ def plan(rows, *, missing=None) -> list[dict]:
         # A method downloads its base's weights, or none when its runner finds its own. #576.
         from harness import methods
         target = methods.weights_of(name) if methods.is_method(name) else name
-        absent = [] if not spec or not target else missing(target)
         gap = runner_gap(lane, name, attached, card=row)
+        absent = [] if not spec or gap or not target else missing(target)
         if not spec or gap:
             state, why = NO_RUNNER, (
                 gap if gap

@@ -265,12 +265,12 @@ Test: tests/test_vision_engines_1282.py::test_an_image_text_to_text_card_with_no
 Test: tests/test_vision_engines_1282.py::test_the_vision_route_is_the_same_question_as_the_text_gap
 
 ### Requirement: Remote code is a gap only for a type the pinned transformers lacks
-`code_evidence()` SHALL record remote-code evidence only when config.json carries an auto_map, naming the repo's modeling or configuration files; `remote_code.gap()` SHALL report a gap only when that evidence exists and the model type is absent from the committed transformers snapshot, whose pin MUST match the one the hf-task venv installs.
+`code_evidence()` SHALL record remote-code evidence only when config.json carries an auto_map, naming the modeling or configuration files anywhere in its listing whatever modules the auto_map names; `remote_code.gap()` SHALL report a gap only when that evidence exists and the model type is absent from the committed transformers snapshot, whose pin MUST match the one the hf-task venv installs.
 
-#### Scenario: the evidence is the auto_map and its code files
+#### Scenario: the evidence is the auto_map and the code files in the listing
 - **WHEN** config.json has no auto_map, has one with code files listed, or has one with none
 - **THEN** the evidence is empty, the sorted code file names, or the word auto_map
-Test: tests/test_remote_code.py::test_the_evidence_is_the_auto_map_and_the_code_files_it_names
+Test: tests/test_remote_code.py::test_the_evidence_is_the_auto_map_and_the_code_files_in_the_listing
 
 #### Scenario: only a type transformers lacks is a gap
 - **WHEN** the evidence names code for a model type the snapshot ships, and separately for one it does not
@@ -283,9 +283,14 @@ Test: tests/test_remote_code.py::test_only_code_for_a_model_type_transformers_la
 Test: tests/test_remote_code.py::test_the_snapshot_is_of_the_transformers_the_hf_task_venv_pins
 
 #### Scenario: an older card stands in with its custom_code tag
-- **WHEN** a card has no remote-code column, is tagged custom_code, and its type (from the card or the loader's error) is not one transformers ships
+- **WHEN** a card has no stored model type, so inspect never read its auto_map, is tagged custom_code, and the loader's error names a type transformers does not ship
 - **THEN** a runtime decline of it waits on `policy:trust_remote_code@` that type
 Test: tests/test_runner_gap_until_950.py::test_an_audited_runtime_decline_waits_on_its_cause_not_a_release
+
+#### Scenario: a later card is not refused on its custom_code tag
+- **WHEN** a card has a stored model type transformers does not ship, no auto_map evidence, and the custom_code tag
+- **THEN** `pre_screen()` passes it, a runtime decline of it does not wait on `policy:`, and the same card with no stored type still falls back on the tag
+Test: tests/test_runner_gap_until_950.py::test_a_card_read_after_the_remote_code_column_is_not_refused_on_its_custom_code_tag
 
 ### Requirement: The pre-screen card gate refuses before download
 `engines.card_gap()` SHALL refuse, before any download, an MLX conversion or a remote-code gap for any `HF_TASK_ENGINES` engine, and SHALL ask `runner_gaps.pre_screen()` for the bare text spec and the `CARD_CHECKED` engines; `pre_screen()` MUST refuse a library outside `TEXT_LIBRARIES`, a vision task the text runner cannot build, a remote-code gap, a type in `DECLINED`, a tag in `VENDOR_FORMATS`, and for a diffusers engine a foreign library, a pipeline class the pinned diffusers lacks, or a listing with no model_index.json.
@@ -544,7 +549,7 @@ Test: tests/test_harness_rank.py::test_the_order_is_stable_when_two_rows_tie
 #### Scenario: The fresher sighting wins a tie
 - **WHEN** two rows have equal value and the later name was seen more recently
 - **THEN** the more recently seen row ranks first
-Test: untested
+Test: tests/test_harness_rank.py::test_the_fresher_sighting_wins_a_tie
 
 ### Requirement: The rank takes the store and never opens one
 `rank.rank` and `rank.incumbents` SHALL require the store connection as an argument, MUST raise rather than open the live store or fall back to the typed defaults, and SHALL take a lane's incumbent from the store's adoption before its typed default.
@@ -706,7 +711,7 @@ Test: untested
 Test: untested
 
 ### Requirement: Every queued row gets a state and a reason
-The screen plan in harness/screen.py SHALL give every row it is handed one of `ready`, `waiting-on-fetch` or `no-runner` with a reason, and SHALL NOT drop a row it cannot run. A row with no spelling SHALL be answered without consulting the weights cache, and a runner gap SHALL outrank missing weights.
+The screen plan in harness/screen.py SHALL give every row it is handed one of `ready`, `waiting-on-fetch` or `no-runner` with a reason, and SHALL NOT drop a row it cannot run. A row with no spelling or with a runner gap SHALL be answered without consulting the weights cache.
 
 #### Scenario: Weights absent
 - **WHEN** a runnable candidate's own weights are not on disk
@@ -728,6 +733,12 @@ Test: tests/test_harness_screen.py::test_a_model_with_everything_present_is_read
 - **THEN** it is `no-runner` with a reason saying it has no lane
 - **AND** the weights cache is never asked about it
 Test: tests/test_harness_screen.py::test_a_lane_with_no_runner_is_not_asked_about_weights
+
+#### Scenario: A runner gap, no disk lookup
+- **WHEN** a spelled row has a runner gap, such as no case fitting its method
+- **THEN** it is `no-runner` with that gap as its reason
+- **AND** the weights cache is never asked about it
+Test: tests/test_screen_case_fit.py::test_a_spelled_row_with_a_case_gap_is_not_asked_about_weights
 
 #### Scenario: An attachment says what it is
 - **WHEN** a row's stored `attaches_to` column names a lora
@@ -781,7 +792,7 @@ Test: tests/test_screen_case_fit.py::test_the_gap_names_every_case_and_the_metho
 #### Scenario: Screen flags, one repeat, no quality metric
 - **WHEN** a ready row's command is built
 - **THEN** it carries `--screen` and `--repeat 1` and no adherence metric
-Test: tests/test_harness_screen.py::test_the_command_is_one_case_one_repeat_and_no_metrics
+Test: tests/test_harness_screen.py::test_the_command_is_a_screen_with_one_repeat_and_no_metrics
 
 #### Scenario: A repo id goes to the upstream
 - **WHEN** the candidate is a repo id and the config marks a hot-swap upstream

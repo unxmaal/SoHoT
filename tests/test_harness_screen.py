@@ -65,7 +65,7 @@ def test_a_ready_candidate_gets_the_spec_its_lane_actually_takes():
         assert kind_of(spec) == expect, (lane, spec)
 
 
-def test_the_command_is_one_case_one_repeat_and_no_metrics():
+def test_the_command_is_a_screen_with_one_repeat_and_no_metrics():
     """A screen asks whether it ran. A quality metric here would invite ranking
     a screen against a measurement, which is two different exams."""
     row = screen.plan(rows(("org/m", "image")), missing=lambda n: [])[0]
