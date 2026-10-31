@@ -269,6 +269,18 @@ def screen(c: dict) -> str | None:
     return None
 
 
+def record_cuts(big, timeouts: int, timeout: float) -> None:
+    """One cut per size limit that screened candidates out as too_big, and one for probes dropped as timeout."""
+    from harness import cuts
+    if files := sum(len(c["source_files"]) > MAX_SOURCE_FILES for c in big):
+        cuts.cut("history_max_source_files", "fix commits screened out as too_big on source files", dropped=files)
+    if lines := sum(c["lines"] > MAX_LINES for c in big):
+        cuts.cut("history_max_lines", "fix commits screened out as too_big on changed lines", dropped=lines)
+    if timeouts:
+        cuts.cut("evals/importers/history.py:TIMEOUT_S", "probed fix commits dropped as timeout", value=timeout,
+                 dropped=timeouts)
+
+
 def size_of(strata: dict) -> str:
     """small or large: a task's stratum from its source file and line counts. #997."""
     return "small" if strata["files"] <= SMALL["files"] and strata["lines"] <= SMALL["lines"] else "large"
@@ -450,7 +462,7 @@ def survey(source: str, revision: str, limit: int | None, log, get_issue=None, t
     if lost:
         raise RuntimeError(f"tasks not on {revision[:10]}'s fix history, so they cannot be kept: {lost}")
     kept, drops, pending, seen = [], [], [], {t["issue"] for t in old.values()}
-    ran = 0
+    ran, big = 0, []
     for c in pool:
         if limit is not None and len(kept) >= limit or probes is not None and ran >= probes:
             break
@@ -479,12 +491,14 @@ def survey(source: str, revision: str, limit: int | None, log, get_issue=None, t
             print(f"{c['issue']:>4} {c['fix'][:10]} {why or 'kept'} {time.monotonic() - t0:.0f}s",
                   file=sys.stderr, flush=True)
         if why:
+            big += [c] if why == "too_big" else []
             drops.append({"issue": c["issue"], "pr": c["pr"], "fix": c["fix"], "reason": why,
                           **({"cause": res["cause"]} if res and res.get("cause") else {})})
             continue
         seen.add(c["issue"])
         kept.append(task_row(src.prefix, c, res, text, tests_call(mirror, c["base"], c["fix"])))
     kept += [t for f, t in old.items() if t not in kept]
+    record_cuts(big, sum(d["reason"] == "timeout" for d in drops), timeout)
     return {"version": VERSION, "source": src.source, "repo": source, "revision": revision,
             "criteria": {"subject": src.subject.pattern, "first_parent": True, "merges": src.merges,
                          "max_source_files": MAX_SOURCE_FILES, "max_lines": MAX_LINES,
