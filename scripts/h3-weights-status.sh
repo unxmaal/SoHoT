@@ -10,7 +10,9 @@ cd "$(dirname "$0")/.." || exit 2
 
 # One place for everything this project produces; see harness/paths.py.
 LH_LOGS="${LOCALHARNESS_HOME:-$HOME/localharness}/logs"
-DEST="${H3_MODEL_DIR:-$(dirname "$HF_HOME")/MiniMax-H3}"
+# The directory the h3 engine reads (engines.h3_model_dir), never a second default. #1450.
+DEST="${H3_MODEL_DIR:-$(uv run python -c 'from harness import engines; print(engines.h3_model_dir())')}"
+[ -n "$DEST" ] || exit 2
 PIDFILE="${H3_DOWNLOAD_PIDFILE:-$LH_LOGS/h3-weights.pid}"
 TARGET_GIB="${H3_TARGET_GIB:-134.2}"
 
@@ -35,6 +37,7 @@ PCT=$(awk -v g="$GIB" -v t="$TARGET_GIB" 'BEGIN{printf "%.0f", (t>0? g/t*100 : 0
 # .incomplete files exist only while a transfer is mid-flight.
 PARTIAL=$(find "$DEST" -name '*.incomplete' 2>/dev/null | wc -l | tr -d ' ')
 
+printf 'dest         %s\n' "$DEST"
 printf 'downloaded   %s / %s GiB  (%s%%)\n' "$GIB" "$TARGET_GIB" "$PCT"
 printf 'in progress  %s partial file(s)\n' "$PARTIAL"
 printf 'process      %s\n' "$RUNNING"

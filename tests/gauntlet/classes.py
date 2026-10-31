@@ -94,7 +94,8 @@ INDEX = {
     "silent-truncation-or-a-partial-read-assumed-complete": {
         "review": r"\.read\(\d+\)|\bhead\s+-[nc]|\btail\s+-[nc]|max_(?:chars|bytes)|truncat\w*|\[:\d{3,}\]",
         "instances": _i(241),
-        "scanners": []},
+        "scanners": ["tests/test_limit_trace_1087.py::test_no_limit_leaves_no_trace_unless_the_untraced_inventory_lists_it",
+                     "tests/test_limit_cuts_1087_store.py::test_the_scan_flags_a_registered_limit_whose_binding_site_records_no_cut"]},
     "a-consumer-limits-before-it-filters-for-what-it-can-act-on": {
         "review": r"\[:\s*(?:n|limit|top|k|a\.top|a\.limit)\s*\]|\bLIMIT \?",
         "instances": _i(194, 209, 292, 376, 386, rules=(330, 377)),

@@ -233,6 +233,15 @@ def test_a_label_may_cite_its_rows_regrade_detail(run_dir, tmp_path):
     assert F.check_excerpt(run_dir, {**lab, "case": "d"}, regrades) == "no regrade of this row"
 
 
+def test_every_committed_label_that_cites_a_regrade_reads_its_excerpt_there():
+    regrades = F.load_regrades()
+    cited = [x for x in F.load_labels() + F.load_labels(F.LABELS.with_name("repo_failure_labels_blind.jsonl"))
+             if x.get("regrade")]
+    assert cited
+    bad = [(x["case"], why) for x in cited if (why := F.check_excerpt(x["run"], x, regrades))]
+    assert bad == []
+
+
 def test_every_committed_label_that_cites_a_regrade_has_one():
     regrades = F.load_regrades()
     cited = [x for x in F.load_labels() + F.load_labels(F.LABELS.with_name("repo_failure_labels_blind.jsonl"))

@@ -209,7 +209,8 @@ def measurable(store, top: int, want: str = "", top_knob: str = "discover_top") 
     """Survivors in the scoped lane, filtered before the limit; a limit that drops one is a cut. #386, #1087."""
     from harness import cuts
     from harness import memory_store as ms
-    rows = [r for r in ms.survivors(store, limit=1_000_000) if takes(r, want)]
+    every = ms.survivors(store, limit=1_000_000, limit_knob="harness/commands/measure.py:measurable->ms.survivors(limit)")
+    rows = [r for r in every if takes(r, want)]
     return cuts.take(rows, top, top_knob, "measurable survivors past --top", conn=store)
 
 
@@ -917,6 +918,7 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
     print(f"    {look.text}", flush=True)
     done = len(rows) - (taken_from or {}).get("reused", 0)
     total = int(progress.get("total") or (plan.cases_run or 0) * plan.repeat * 2 or done)
+    looks.stopped(look, lane, done, total)
     if verdict is not None:
         verdict = replace(verdict, evidence={**verdict.evidence, "split": split.as_dict(),
                                              "power": plan.as_dict(), "looks": taken,

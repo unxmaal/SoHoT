@@ -278,6 +278,28 @@ def test_soh_cases_regrade_repo_grades_a_runs_stored_diffs_again(upstream, tmp_p
                      "--out", str(tmp_path / "cases")]) == 1
 
 
+def test_a_regrade_row_is_written_without_the_graders_home_or_account(tmp_path, monkeypatch, capsys):
+    import json
+    from harness import cli
+    home = "/Users/" + "someone/"
+    monkeypatch.setattr(core, "load_cases", lambda root: [Case(id="fixture", modality="repo", prompt="p")])
+    run = tmp_path / "run"
+    run.mkdir()
+    (run / "cand--fixture.json").write_text(json.dumps({"case": "fixture", "diff": "d"}), encoding="utf-8")
+
+    class Fake:
+        def submit(self, diff):
+            return repo.Grade(detail=f"failed in {home}x.py", failures={"t": "tmp/pytest-of-someone/pytest-0/t0"})
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(repo.Attempt, "open", classmethod(lambda cls, params, env=None: Fake()))
+    assert cli.main(["cases", "regrade", "repo", "--json", "--run", str(run), "--out", str(tmp_path / "cases")]) == 0
+    got = json.loads(capsys.readouterr().out)["regraded"][0]
+    assert (got["detail"], got["failures"]) == ("failed in ~/x.py", {"t": "tmp/pytest-of-USER/pytest-0/t0"})
+
+
 @DARWIN
 def test_tests_that_outrun_the_timeout_are_our_limit_not_a_wrong_answer(upstream, monkeypatch):
     monkeypatch.setattr(repo, "TEST_TIMEOUT_S", 3.0)

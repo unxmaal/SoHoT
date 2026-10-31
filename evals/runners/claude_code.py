@@ -66,6 +66,11 @@ def stream_run(argv, *, cwd, input, timeout, encoding="utf-8", **_kw) -> Streame
         timer.cancel()
     for t in readers:
         t.join(1.0)
+    alive = sum(t.is_alive() for t in readers)
+    if alive:
+        from harness import cuts
+        cuts.cut("evals/runners/claude_code.py:stream_run->t.join(timeout)", "claude -p pipe readers left running",
+                 kept=len(readers) - alive, dropped=alive)
     if expired.is_set():
         raise subprocess.TimeoutExpired(argv, timeout)
     return Streamed(proc.returncode, lines, "".join(err))
@@ -187,6 +192,9 @@ class ClaudeCodeRunner(BaseRunner):
         text = body.get("result") or ""
         if not text.strip():
             if retries:
+                from harness import cuts
+                cuts.cut("evals/runners/claude_code.py:ClaudeCodeRunner._answer->self._once(retries)#2",
+                         f"{case.id}: claude -p empty after its retry", value=retries, kept=0, dropped=1)
                 raise RunnerError("claude -p returned an empty result twice")
             raise EmptyResult("claude -p returned an empty result")
         usage = body.get("usage") or {}

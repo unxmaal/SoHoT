@@ -21,9 +21,13 @@ def _usable(q, context: str) -> bool:
                                 for a in q.answers)
 
 
+def _long(q, context: str) -> bool:
+    return q.answerable and all(a in context for a in q.answers) and any(len(a.split()) > MAX_WORDS for a in q.answers)
+
+
 def select(data: dict, n: int = N) -> list[dict]:
     from harness import cuts
-    rows = []
+    rows, long = [], 0
     for para in squad2.shuffled(squad2.paragraphs(data), lambda p: p.pid):
         if len(rows) >= n:
             cuts.cut("squad2_cases", "SQuAD extract paragraphs past the case count", value=n, kept=len(rows))
@@ -31,9 +35,13 @@ def select(data: dict, n: int = N) -> list[dict]:
         q = next((q for q in squad2.shuffled(para.qas, lambda q: q.qid)
                   if _usable(q, para.context)), None)
         if q is None:
+            long += any(_long(q, para.context) for q in para.qas)
             continue
         rows.append({"pid": para.pid, "context": para.context, "qid": q.qid,
                      "question": q.question, "answers": list(q.answers)})
+    if long:
+        cuts.cut("evals/importers/squad2_extract.py:MAX_WORDS", "SQuAD paragraphs skipped: answers too many words",
+                 dropped=long)
     return rows
 
 

@@ -31,3 +31,7 @@ NOT_GATING = {
                                                          "the version unknown (#1005)",
     "harness/commands/ledger.py:gather_compare->_dt.timedelta(days)": "one calendar day, the compared window (#868)",
 }
+
+NEVER_CUTS = {
+    "harness/ledger.py:TARIFF_USD_PER_KWH": "the price a kWh is multiplied by; every reading is counted (#826)",
+}

@@ -25,9 +25,11 @@ from harness import memory
 
 
 def _sh(*argv: str) -> str:
+    from harness import cuts
     try:
-        return subprocess.run(argv, capture_output=True, text=True,
-                              timeout=10).stdout.strip()
+        with cuts.timeout("evals/environment.py:_sh->subprocess.run(timeout)", f"receipt probe {' '.join(argv[:3])}"):
+            return subprocess.run(argv, capture_output=True, text=True,
+                                  timeout=10).stdout.strip()
     except (OSError, subprocess.SubprocessError):
         return ""
 

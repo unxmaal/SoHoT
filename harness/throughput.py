@@ -132,8 +132,10 @@ def _phys_footprint(pid: int) -> int:
 
 
 def _descendants(pid: int) -> list[int]:
-    out = subprocess.run(["ps", "-A", "-o", "pid=,ppid="], capture_output=True,
-                         text=True, timeout=10).stdout
+    from harness import cuts
+    with cuts.timeout("harness/throughput.py:_descendants->subprocess.run(timeout)", "ps listing a server's children"):
+        out = subprocess.run(["ps", "-A", "-o", "pid=,ppid="], capture_output=True,
+                             text=True, timeout=10).stdout
     kids: dict[int, list[int]] = {}
     for line in out.splitlines():
         parts = line.split()
@@ -210,7 +212,7 @@ def sweep(model: str, texts: list[str], levels=None, max_tokens: int | None = No
     """Each level sends every text with that many requests in flight; `footprint`
     returns the server's bytes, sampled for each level's peak. A dict in `texts` is
     a chat request sent as given (messages, response_format). #665."""
-    from harness import completion
+    from harness import completion, cuts
     levels = default_levels() if levels is None else levels
     max_tokens = completion.MAX_TOKENS if max_tokens is None else max_tokens
     base = gateway or completion.gateway_url()
@@ -238,13 +240,15 @@ def sweep(model: str, texts: list[str], levels=None, max_tokens: int | None = No
                 ok = True
             except Exception as exc:  # noqa: BLE001 - a failed request is a result
                 tokens, ok, body = 0, False, {}
+                if send is not None and cuts.timed_out(exc):
+                    timed.append(text)
                 valid = False if schema_valid({}, request) is not None else None
                 why = f"{type(exc).__name__}: {str(exc).splitlines()[0] if str(exc) else ''}"[:160]
             exclusive.beat()
         # A wait for another batch on the serving machine is not this request's latency. #776.
         return clock() - t - mine.within(), tokens, ok, ttft, why, prompt, valid, body, request
 
-    out = []
+    out, timed = [], []
     with exclusive.held("eval", deadline_s=deadline_s(len(texts), levels, timeout)):
         # Untimed: a model that is not resident loads on the first request,
         # and every ratio is taken against the first level. #333.
@@ -306,4 +310,7 @@ def sweep(model: str, texts: list[str], levels=None, max_tokens: int | None = No
                 "warmup_s": round(warm_s, 2), "warmup_ok": warm_ok,
                 "busy_wait_s": round(busy, 2),
             })
+    if timed:
+        cuts.cut("harness/throughput.py:sweep(timeout)", f"{model}: requests timed out across {len(levels)} level(s)",
+                 value=timeout, dropped=len(timed))
     return out

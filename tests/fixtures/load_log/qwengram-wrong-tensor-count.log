@@ -21,7 +21,7 @@
 0.01.116.854 I srv          load:   f16
 0.01.116.854 I srv          load:   --kv-unified
 0.01.116.855 I srv          load:   --model
-0.01.116.855 I srv          load:   /Volumes/Models/hf/gguf/QwenGram-0.8B-Q4_K_M.gguf
+0.01.116.855 I srv          load:   /Volumes/MODELS/hf/gguf/QwenGram-0.8B-Q4_K_M.gguf
 0.01.116.855 I srv          load:   --n-gpu-layers
 0.01.116.855 I srv          load:   999
 0.01.116.856 I srv          load:   --parallel
@@ -32,7 +32,7 @@
 [50345] 0.00.030.737 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
 [50345] 0.00.030.910 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
 [50345] 
-[50345] 0.00.032.724 I srv    load_model: loading model '/Volumes/Models/hf/gguf/QwenGram-0.8B-Q4_K_M.gguf'
+[50345] 0.00.032.724 I srv    load_model: loading model '/Volumes/MODELS/hf/gguf/QwenGram-0.8B-Q4_K_M.gguf'
 [50345] 0.00.228.862 E llama_model_load: error loading model: done_getting_tensors: wrong number of tensors; expected 346, got 335
 [50345] 0.00.228.952 E llama_model_load_from_file_impl: failed to load model
 [50345] 0.00.228.981 E common_fit_params: encountered an error while trying to fit params to free device memory: failed to load model
@@ -53,8 +53,8 @@
 [50345] 0.00.385.085 W model has unused tensor blk.24.nextn.shared_head_norm.weight (size = 4096 bytes) -- ignoring
 [50345] 0.00.398.013 E llama_model_load: error loading model: done_getting_tensors: wrong number of tensors; expected 346, got 335
 [50345] 0.00.398.017 E llama_model_load_from_file_impl: failed to load model
-[50345] 0.00.398.019 E cmn  common_init_: failed to load model '/Volumes/Models/hf/gguf/QwenGram-0.8B-Q4_K_M.gguf'
-[50345] 0.00.398.020 E srv    load_model: failed to load model, '/Volumes/Models/hf/gguf/QwenGram-0.8B-Q4_K_M.gguf'
+[50345] 0.00.398.019 E cmn  common_init_: failed to load model '/Volumes/MODELS/hf/gguf/QwenGram-0.8B-Q4_K_M.gguf'
+[50345] 0.00.398.020 E srv    load_model: failed to load model, '/Volumes/MODELS/hf/gguf/QwenGram-0.8B-Q4_K_M.gguf'
 [50345] 0.00.398.025 I srv    operator(): operator(): cleaning up before exit...
 [50345] 0.00.398.475 E srv  llama_server: exiting due to model loading error
 0.01.597.455 I srv           run: instance name=QwenGram-0.8B-Q4_K_M exited with status 1

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import contextlib
+import json
 import os
 import signal
 import subprocess
@@ -33,15 +34,34 @@ def venv_for(engine: str) -> Path:
     return paths.home() / "venvs" / engine
 
 
+def binary(engine: str, venv=None) -> Path:
+    """The executable argv starts for `engine`."""
+    return Path(venv or venv_for(engine)) / "bin" / ("vllm-mlx" if engine == "vllm-mlx" else "vllm")
+
+
+def installed() -> tuple[str, ...]:
+    """The engines whose venv holds the executable argv would start."""
+    return tuple(e for e in ENGINES if binary(e).is_file() and os.access(binary(e), os.X_OK))
+
+
+def available() -> str:
+    """The engine a `vllm:` spec is served by here, or "" when its executable is absent: the one answer to "has vLLM". #960."""
+    from harness import serving
+    try:
+        engine = serving.vllm_engine()
+    except ValueError:
+        return ""
+    return engine if engine in installed() else ""
+
+
 def argv(engine: str, model: str, port: int, venv=None, extra=()) -> list[str]:
     """The command that serves `model` on `port`, with batching on and memory capped."""
     if engine not in ENGINES:
         raise ValueError(f"{engine} is not one of {', '.join(ENGINES)}")
-    bin_dir = Path(venv or venv_for(engine)) / "bin"
     common = ["serve", model, "--host", "127.0.0.1", "--port", str(port)]
     if engine == "vllm-mlx":
-        return [str(bin_dir / "vllm-mlx"), *common, "--continuous-batching", *extra]
-    return [str(bin_dir / "vllm"), *common,
+        return [str(binary(engine, venv)), *common, "--continuous-batching", *extra]
+    return [str(binary(engine, venv)), *common,
             "--gpu-memory-utilization", str(METAL_MEMORY_FRACTION),
             "--max-model-len", str(METAL_MAX_MODEL_LEN), *extra]
 
@@ -55,10 +75,12 @@ class Served(NamedTuple):
 _DIRECT = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
-def _probe(base: str) -> str:
-    """"" when the server answers /v1/models with 200, else why not."""
+def _probe(base: str, listed: list | None = None) -> str:
+    """"" when the server answers /v1/models with 200, else why not; the ids it lists go in `listed`."""
     try:
         with _DIRECT.open(base + "/v1/models", timeout=2) as r:
+            if r.status == 200 and listed is not None:
+                listed += [str(m.get("id")) for m in json.load(r).get("data") or []]
             return "" if r.status == 200 else f"HTTP {r.status}"
     except Exception as exc:  # noqa: BLE001 - not up yet
         return f"{type(exc).__name__}: {exc}"
@@ -95,7 +117,7 @@ def _stop(proc: subprocess.Popen, grace: float) -> None:
 
 @contextlib.contextmanager
 def served(cmd: list[str], port: int, log, env=None, timeout: float = 600.0,
-           grace: float = 30.0, poll: float = 0.5):
+           grace: float = 30.0, poll: float = 0.5, timeout_knob: str = "harness/vllm.py:served(timeout)"):
     """Run `cmd` until it answers /v1/models on `port`, yield it, then stop its process group."""
     base = f"http://127.0.0.1:{port}"
     log = Path(log)
@@ -109,11 +131,15 @@ def served(cmd: list[str], port: int, log, env=None, timeout: float = 600.0,
         deadline = time.monotonic() + timeout
         while why := _probe(base):
             if proc.poll() is not None:
-                raise RuntimeError(f"{cmd[0]} exited {proc.returncode} before serving:\n"
-                                   f"{_tail(log)}")
+                tail = _tail(log)
+                if "--gpu-memory-utilization" in cmd and "gpu_memory_utilization" in tail:
+                    from harness import cuts
+                    cuts.cut("harness/vllm.py:METAL_MEMORY_FRACTION", f"{cmd[0]} found no room for its KV cache",
+                             kept=0, dropped=1)
+                raise RuntimeError(f"{cmd[0]} exited {proc.returncode} before serving:\n{tail}")
             if time.monotonic() > deadline:
                 from harness import cuts
-                cuts.cut("harness/vllm.py:served(timeout)", f"{cmd[0]} did not serve in time", value=timeout,
+                cuts.cut(timeout_knob, f"{cmd[0]} did not serve in time", value=timeout,
                          kept=0, dropped=1)
                 raise RuntimeError(f"{cmd[0]} did not serve within {timeout:.0f}s "
                                    f"(last probe: {why}):\n{_tail(log)}")
@@ -121,3 +147,41 @@ def served(cmd: list[str], port: int, log, env=None, timeout: float = 600.0,
         yield Served(base, proc)
     finally:
         _stop(proc, grace)
+
+
+class Unservable(RuntimeError):
+    """No vLLM server here can answer the spec: the harness's gap, never the candidate's."""
+
+
+@contextlib.contextmanager
+def serving(spec: str):
+    """A server answering `vllm:<repo>`: the one already up when it lists the repo, else one started for it. #960."""
+    from harness import serving as routes
+    where = routes.route(spec)
+    listed: list[str] = []
+    if not _probe(where.base, listed):
+        if where.model not in listed:
+            raise Unservable(f"{where.base} serves {', '.join(listed) or 'nothing'}, not {where.model}")
+        yield None
+        return
+    engine = available()
+    if not engine:
+        raise Unservable(f"no vLLM engine here: {absent()}")
+    port = int(where.base.rsplit(":", 1)[1])
+    with contextlib.ExitStack() as stack:
+        try:
+            srv = stack.enter_context(served(argv(engine, where.model, port), port,
+                                             log=paths.home() / "logs" / f"{engine}-{port}.log"))
+        except RuntimeError as exc:
+            raise Unservable(str(exc)) from exc
+        yield srv
+
+
+def absent() -> str:
+    """Why `available()` is "", for a refusal to name."""
+    from harness import serving as routes
+    try:
+        engine = routes.vllm_engine()
+    except ValueError as exc:
+        return str(exc)
+    return f"{binary(engine)} is not an executable"
