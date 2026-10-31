@@ -213,15 +213,16 @@ def decide(lane: str, incumbent: dict, challenger: dict,
 
 
 def _lane_too_small(lane, name_i, name_c, got: Verdict, plan, split) -> Verdict | None:
-    """A null on a lane no repeat could power is a fact about the lane, waiting on its cases, for a model or a method. #993, #1049."""
+    """A null or a futility stop on a lane no repeat could power is a fact about the lane, waiting on its cases. #993, #1049, #1452."""
     from harness import reasons
-    limit = lane_limit(lane, plan.as_dict(), name_c)
+    plan = plan.as_dict() if hasattr(plan, "as_dict") else dict(plan)
+    limit = lane_limit(lane, plan, name_c)
     if limit is None:
         return None
     more, why = limit
     return Verdict(lane, name_i, name_c, False, f"{why} ({got.why}){_sees(plan)}",
                    failure_class=reasons.LANE_TOO_SMALL,
-                   until=cases_until(lane, _have(lane, split, plan.cases), more))
+                   until=cases_until(lane, _have(lane, split, int(plan.get("cases") or 0)), more))
 
 
 def lane_limit(lane: str, plan: dict, name_c: str = "") -> tuple[int, str] | None:
@@ -322,9 +323,10 @@ def _spent_until(conn, name: str, verdict: Verdict, reason: str) -> str:
 
 
 def _sees(plan) -> str:
-    mde = getattr(plan, "mde", None)
-    return (f"; smallest gain this run could see: +{mde:.2f} per cell at power {plan.target}"
-            if mde is not None else f"; no gain up to +1.00 is detectable at power {plan.target}")
+    mde, target = ((plan.get("mde"), plan.get("target")) if isinstance(plan, dict)
+                   else (getattr(plan, "mde", None), plan.target))
+    return (f"; smallest gain this run could see: +{mde:.2f} per cell at power {target}"
+            if mde is not None else f"; no gain up to +1.00 is detectable at power {target}")
 
 
 def _null(lane, name_i, name_c, got: Verdict, plan) -> Verdict:

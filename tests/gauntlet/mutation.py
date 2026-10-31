@@ -91,7 +91,7 @@ LEFT_OUT = {
     "harness/memory_store/transitions.py": ("test_blame_audit.py", "test_live_audit.py", "test_lane_too_small_1049.py",
                                             "test_lane_until_1053.py", "test_loop_revisit_1055.py",
                                             "test_revisit_tier_1060.py", "test_revisitable_after_deploy_1361.py",
-                                            "test_site.py"),
+                                            "test_site.py", "test_futility_lane_too_small_1452.py"),
     "harness/reasons.py": (
         "test_repo_repair_890.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_staging_torch_1358.py",
         "test_vision_engines_1282.py",
@@ -109,7 +109,8 @@ LEFT_OUT = {
         "test_engine_timeout_1256.py", "test_trocr_tokenizer_1025.py", "test_fetch_files_1040.py", "test_lane_too_small_1049.py",
         "test_lane_until_1053.py", "test_loop_revisit_1055.py", "test_revisit_tier_1060.py",
         "test_revisitable_after_deploy_1361.py", "test_adopt_effect_confirm_725.py", "test_min_effect_1320.py", "test_technique_triage_993.py",
-        "test_exam_price_1354.py", "test_limit_cuts_1087_evals.py", "test_limit_cuts_1087_harness_di.py"),
+        "test_exam_price_1354.py", "test_limit_cuts_1087_evals.py", "test_limit_cuts_1087_harness_di.py",
+        "test_futility_lane_too_small_1452.py"),
     "harness/screen.py": (
         "test_attachment_tags_949.py", "test_lane_too_small_1049.py", "test_vision_engines_1282.py",
         "test_variants_947.py", "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",
@@ -128,7 +129,8 @@ LEFT_OUT = {
         "test_repo_looks_1353.py", "test_confirm_resume_1357.py",
         "test_metric_order_717.py",
         "test_served_readonly_1247.py", "test_saturation_lane_metric_1267.py", "test_gate_direction_1302.py",
-        "test_power_table_603.py", "test_store_errors_1432.py", "test_limit_cuts_1087_harness_ac.py"),
+        "test_power_table_603.py", "test_store_errors_1432.py", "test_limit_cuts_1087_harness_ac.py",
+        "test_futility_lane_too_small_1452.py"),
     "harness/serving.py": (
         "test_mlx_backlog.py", "test_runner_gap_until_950.py", "test_agent_limits.py", "test_claims_lane.py", "test_decide_lane.py",
         "test_delegate_resident.py", "test_delegations.py", "test_lane_probe_924.py", "test_machine_host.py",
