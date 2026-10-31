@@ -110,7 +110,7 @@ def test_a_completion_carries_text_the_model_that_answered_and_its_timing(fake):
     wall = time.perf_counter() - started
     assert got["text"] == Fake.reply
     assert got["model"] == SERVED and got["spec"] == "sohot-code"
-    assert ANSWER_AT <= got["ttft_s"] <= got["seconds"] <= wall
+    assert ANSWER_AT <= got["ttft_s"] <= got["seconds"] <= round(wall, 4)   # rounded as delegate rounds seconds
     assert (got["prompt_tokens"], got["completion_tokens"]) == (9, 7)
     sent = fake.seen[0]
     assert sent["stream"] is True and sent["model"] == "sohot-code"

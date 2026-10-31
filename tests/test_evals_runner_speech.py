@@ -117,7 +117,7 @@ def test_generation_time_is_measured_not_transcription_time(tmp_path):
     r = runner(tmp_path).run(case())
     assert r.passed and len(heard) == 1
     # The timer stopped before the checker was asked, however slow the machine.
-    assert r.seconds <= heard[0] - started, (
+    assert r.seconds <= round(heard[0] - started, 3), (
         f"{r.seconds}s includes the transcription, so the column does not "
         "mean what the header says")
 

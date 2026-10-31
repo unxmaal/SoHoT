@@ -108,7 +108,7 @@ def test_the_runner_samples_concurrently_and_its_seconds_are_wall_time():
     assert len(base.made) == 4 and r.metrics["method_calls"] == 4
     assert base.live[1] == 3   # the first alone, then three at once
     # Both waves are in the row, and no more than the wall around it: a sum of samples would exceed it.
-    assert 2 * delay <= r.seconds <= wall
+    assert 2 * delay <= r.seconds <= round(wall, 3)   # the row rounds to the millisecond
     assert r.metrics["completion_tokens"] == 40
 
 
