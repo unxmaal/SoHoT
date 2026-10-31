@@ -69,10 +69,12 @@ def _training(a, conn) -> int:
 
 
 def _readme(repo: str) -> str:
+    from harness import cuts
     try:
         import httpx
-        r = httpx.get(f"https://huggingface.co/{repo}/raw/main/README.md", timeout=30,
-                      follow_redirects=True)
+        with cuts.timeout("harness/commands/benchmarks.py:_readme->httpx.get(timeout)", f"{repo} README read"):
+            r = httpx.get(f"https://huggingface.co/{repo}/raw/main/README.md", timeout=30,
+                          follow_redirects=True)
         return r.text if r.status_code == 200 else ""
     except Exception:  # noqa: BLE001
         return ""
