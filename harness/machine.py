@@ -60,15 +60,11 @@ def _has_vllm() -> bool:
 
     Probed rather than assumed absent: without this, `machine.refuses("vllm")`
     would answer "needs-vllm" on the box that HAS one, which is the mirror of
-    the mistake #228 made about GGUF.
+    the mistake #228 made about GGUF. vllm.available() is the one answer:
+    a vllm on PATH or in this interpreter is nothing harness/vllm.py starts. #960.
     """
-    if shutil.which("vllm"):
-        return True
-    try:
-        import importlib.util
-        return importlib.util.find_spec("vllm") is not None
-    except Exception:  # noqa: BLE001
-        return False
+    from harness import vllm
+    return bool(vllm.available())
 
 
 def _has_llamacpp() -> bool:
@@ -79,14 +75,11 @@ def _has_llamacpp() -> bool:
     that cannot load it, and was recorded `broken` -- our gap, written down as
     the candidate's. Issue #228.
 
-    $LLAMACPP_BIN is what the Linux runbook sets; the bare name covers a
-    package install.
+    serving.llamacpp_binary() is the one answer, the llama-server the serve
+    script execs. #1449.
     """
-    import os
-    named = os.environ.get("LLAMACPP_BIN", "").strip()
-    if named and Path(named).exists():
-        return True
-    return any(shutil.which(n) for n in ("llama-server", "llama-cli"))
+    from harness import serving
+    return serving.llamacpp_binary() is not None
 
 
 def _has_ds4() -> bool:

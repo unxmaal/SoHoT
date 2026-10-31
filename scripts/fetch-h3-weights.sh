@@ -13,7 +13,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/env.sh
 
-DEST="${H3_MODEL_DIR:-$(dirname "$HF_HOME")/MiniMax-H3}"
+# The directory the h3 engine reads (engines.h3_model_dir), never a second default. #1450.
+DEST="${H3_MODEL_DIR:-$(uv run python -c 'from harness import engines; print(engines.h3_model_dir())')}"
 mkdir -p "$DEST"
 
 # ~134 GiB needs headroom; refuse rather than fill the volume.

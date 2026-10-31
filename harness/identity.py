@@ -107,11 +107,8 @@ def runtime_files(binary) -> list[Path]:
 
 
 def llama_server() -> Path | None:
-    import shutil
-
     from harness import serving
-    name = os.environ.get("LLAMACPP_BIN") or serving.LLAMACPP
-    got = name if os.path.isfile(name) else shutil.which(name)
+    got = serving.llamacpp_binary()
     return Path(got) if got else None
 
 
