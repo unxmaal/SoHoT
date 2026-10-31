@@ -166,7 +166,7 @@ def test_a_screened_challenger_is_priced_at_the_incumbents_seconds_times_the_dec
     store_run("ch-1", "code", rows=_decode_rows("code", "ch", 7.0, 165.0), tier="screen", receipt={"max_tokens": 4000})
     conn = ms.connect()
     try:
-        s, source = power.challenger_seconds(conn, "code", "ch", incumbent="inc", incumbent_s=57.0,
+        s, source, _ = power.challenger_seconds(conn, "code", "ch", incumbent="inc", incumbent_s=57.0,
                                              settings=(completion.budget("code"), ()), machines=runs.here(conn))
     finally:
         conn.close()
