@@ -106,6 +106,8 @@ NOT_RUN = {
     "verify --run": "runs lanes", "gauntlet --offline": "audits the committed snapshot, no store",
     "chaos --yes-break-things": "kills a scratch server", "benchmarks --calibrate": "held in RUNS",
     "repo-report --plan": "held in RUNS", "hear --rates": "held in RUNS",
+    "unverified --hook": "asks a model and writes its log and block state",
+    "unverified --settings": "prints a settings block, no store",
 }
 
 

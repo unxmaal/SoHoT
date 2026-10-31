@@ -8,6 +8,7 @@ ds4-server holds one launch, so the launch is recorded on the receipt
 from __future__ import annotations
 
 import contextlib
+import functools
 import json
 import os
 import re
@@ -40,9 +41,21 @@ def prompt_room(cases=CASES) -> int:
     return max(pads, default=0) + STEP_ROOM
 
 
-PROMPT_ROOM = prompt_room()
-#: The top rung of any lane's budget ladder plus the largest prompt, so no ladder rung is cut by the context. #692.
-DEFAULT_CTX = max(max(rungs) for rungs in completion.LADDER.values()) + PROMPT_ROOM
+@functools.cache
+def default_ctx() -> int:
+    """The top rung of any lane's budget ladder plus the largest prompt, so no ladder rung is cut by the context. #692."""
+    return max(max(rungs) for rungs in completion.LADDER.values()) + prompt_room()
+
+
+def __getattr__(name: str) -> int:
+    # Read on first use: the case scan costs seconds of a cold import that only routes. #1427.
+    if name == "PROMPT_ROOM":
+        return prompt_room()
+    if name == "DEFAULT_CTX":
+        return default_ctx()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
 #: Options that change the launch; the rest of a spec's tail is sampling.
 OPTIONS = ("ssd_streaming", "expert_cache", "ctx")
 #: ds4-server has no response_format and returns no logprobs.
@@ -117,7 +130,7 @@ class Spec:
     stem: str
     ssd_streaming: bool = False
     expert_cache: str = "auto"
-    ctx: int = DEFAULT_CTX
+    ctx: int = field(default_factory=lambda: default_ctx())
     sampling: dict = field(default_factory=dict)
 
 
@@ -157,7 +170,7 @@ def parse(spec: str) -> Spec:
     if cache != "auto" and streaming != "on":
         raise ValueError(f"{spec}: expert_cache needs ssd_streaming=on")
     try:
-        ctx = int(opts.get("ctx", DEFAULT_CTX))
+        ctx = int(opts.get("ctx", default_ctx()))
     except ValueError:
         ctx = 0
     if ctx <= 0:
