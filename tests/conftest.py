@@ -619,21 +619,22 @@ def _identity_per_test(monkeypatch, _home, _no_real_metal, _no_real_runtime_prob
         (_home / machine.HOST_FILE).write_text(host, encoding="utf-8")
 
 
-@pytest.fixture
-def machine_is(monkeypatch):
+def name_machine(monkeypatch, env: dict) -> None:
     """Names this machine at the identity seam, environment.identity, so the cheap and full paths both see it. #1435."""
     from evals import environment
     from harness import machine
     from harness import memory_store as ms
+    me = {k: env.get(k) or "" for k in ("hw_model", "os", "arch", "host")}
+    me["fingerprint"] = machine.fingerprint(me["hw_model"], me["os"], me["arch"], me["host"])
+    monkeypatch.setattr(environment, "identity", lambda: dict(me))
+    monkeypatch.setattr(environment, "capture", lambda: {**env, **me})
+    for name in ("_THIS_MACHINE", "_THIS_FINGERPRINT", "_PROVISIONAL"):
+        monkeypatch.setattr(ms.machines, name, None)
 
-    def on(env: dict) -> None:
-        me = {k: env.get(k) or "" for k in ("hw_model", "os", "arch", "host")}
-        me["fingerprint"] = machine.fingerprint(me["hw_model"], me["os"], me["arch"], me["host"])
-        monkeypatch.setattr(environment, "identity", lambda: dict(me))
-        monkeypatch.setattr(environment, "capture", lambda: {**env, **me})
-        for name in ("_THIS_MACHINE", "_THIS_FINGERPRINT", "_PROVISIONAL"):
-            monkeypatch.setattr(ms.machines, name, None)
-    return on
+
+@pytest.fixture
+def machine_is(monkeypatch):
+    return lambda env: name_machine(monkeypatch, env)
 
 
 @pytest.fixture(autouse=True)
