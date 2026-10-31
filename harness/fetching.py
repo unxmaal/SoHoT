@@ -221,6 +221,7 @@ def plan(repo: str, size: int, *, free: int | None = None,
                     reasons.LIMIT, f"limit:{knobs.limit('download_gib', cap / GIB, 'GiB')}")
     have = free_bytes() if free is None else free
     if have - size < floor:
+        cuts.cut("disk_floor", f"{repo}: download refused at the disk floor", value=floor, kept=0, dropped=1)
         return Plan(repo, size, False,
                     f"{size / GIB:.1f} GiB would leave under the "
                     f"{floor / GIB:.0f} GiB floor ({have / GIB:.0f} GiB free)",
@@ -431,7 +432,10 @@ def in_rank_order(rows: list[dict], conn=None) -> list[dict]:
         return sorted(rows, key=lambda r: r["name"])
     from harness import memory_store as _ms
 
-    ranked = rank.rank(_ms.judgeable(conn, limit=1_000_000),
+    judged = cuts.filled(_ms.judgeable(conn, limit=1_000_000), 1_000_000,
+                         "harness/fetching.py:in_rank_order->_ms.judgeable(limit)",
+                         "fetch order ranked a full page of judgeable rows", conn=conn)
+    ranked = rank.rank(judged,
                        serving=rank.serving(),
                        measured_lanes=rank.lanes_with_receipts(conn),
                        keep_laneless=True, conn=conn)

@@ -251,7 +251,8 @@ def progress_at(data: dict, holder: dict | None = None) -> float:
 
 def stall_after(data: dict) -> float:
     """Seconds without a beat before this loop reads as stalled: the step's own deadline when it set one."""
-    return max(STALL_S, float(data.get("deadline_s") or 0))
+    own = float(data.get("deadline_s") or 0)
+    return own if own > STALL_S else STALL_S
 
 
 def finish(rc: int | None = None, error: str = "") -> None:
@@ -375,6 +376,5 @@ def overdue(data=None) -> str:
         return "no discovery loop has run on this machine"
     every = sweep_every_s(discover_hours())
     age = clock() - float(data["started"])
-    if age <= every + SWEEP_SLACK_S:
-        return ""
-    return f"last discovery loop started {ago(age)} ago; the schedule starts one every {ago(every)}"
+    late = age > every + SWEEP_SLACK_S
+    return f"last discovery loop started {ago(age)} ago; the schedule starts one every {ago(every)}" if late else ""

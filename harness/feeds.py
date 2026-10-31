@@ -437,6 +437,8 @@ def fetch(url: str, timeout: float = 30.0, retries: int = RETRIES,
     if unreachable <= UNREACHABLE_RETRIES:
         cuts.cut(retries_knob, f"{url}: gave up after {attempt + 1} attempts ({last})",
                  value=retries, kept=0, dropped=1)
+    else:
+        cuts.cut("feed_unreachable_retries", f"{url}: unreachable, gave up ({last})", kept=0, dropped=1)
     raise error(f"{url}: gave up after {attempt + 1} attempts ({last})")
 
 

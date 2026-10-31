@@ -1199,6 +1199,7 @@ def decide(fit: Fit, ceiling: int | None = None, dead_days: int = UPSTREAM_DEAD_
             days = ((time.time() if now is None else now) - when) / 86400.0
             fit.upstream_idle_days = days
             if days > dead_days:
+                cuts.cut("dead_days", f"{fit.repo}: refused as dead upstream", value=dead_days, kept=0, dropped=1)
                 fit.verdict = "dead"
                 fit.why = f"last commit {days / 365.0:.1f} years ago"
                 return fit
@@ -1302,6 +1303,7 @@ def inspect(repo: str, workdir: Path, *, meta: dict | None = None,
     # GitHub's size counts every commit; only the shallow clone's own weight files say weights in git. #991.
     in_git = weight_kb(tree)
     if in_git > kb_cap:
+        cuts.cut("clone_kb_cap", f"{repo}: read as weights in git", value=kb_cap, kept=0, dropped=1)
         fit.verdict = WEIGHTS_IN_GIT
         fit.why = (f"{in_git / 1000:.0f} MB of weight files in the source tree, "
                    f"which is weights in git, not a source repo")
@@ -1340,7 +1342,10 @@ def inspect(repo: str, workdir: Path, *, meta: dict | None = None,
             fit.unsized.append(model_id)
             if isinstance(got, dict) and got.get("deferred"):
                 fit.deferred.append(model_id)
-    fit.unsized += [i for i in found["hf_ids"] if i not in picked]
+    unpicked = [i for i in found["hf_ids"] if i not in picked]
+    if unpicked:
+        cuts.cut("size_limit", f"{repo}: named weights left unsized", kept=len(picked), dropped=len(unpicked))
+    fit.unsized += unpicked
     if len(cache) > before:
         try:
             _write_size_cache(cache)

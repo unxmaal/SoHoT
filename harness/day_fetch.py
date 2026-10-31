@@ -122,10 +122,13 @@ def clear(strays=None, kill=None) -> list[str]:
 def run(a, *, clock=time.time, popen=subprocess.Popen, counter=None, hold=None, backlog=None, store=None,
          running=None, environ=None) -> dict:
     """One day fetch: refuse, or start the fetch as a child and hold its rate under the cap in the capped hours."""
-    from harness import throttle
+    from harness import cuts, throttle
     now = clock()
     why = why_not_now(now, environ, running)
     if why:
+        if enabled(environ) and night(now):
+            night_knob = "day_fetch_night_end" if _hour(now) < NIGHT_END_H else "day_fetch_night_start"
+            cuts.cut(night_knob, "day fetch refused inside the night sweep's hours", kept=0, dropped=1)
         return {"started": False, "why": why}
     if store is None:
         from harness import memory_store as ms
@@ -145,7 +148,10 @@ def run(a, *, clock=time.time, popen=subprocess.Popen, counter=None, hold=None, 
     until = night_at
     if not can_hold:
         if capped(now):
+            cuts.cut("day_fetch_cap_end", "day fetch refused in the capped hours: no byte counter", kept=0, dropped=1)
             return {"started": False, "why": "no per-process byte counter here, so the capped hours start no fetch"}
+        if next_at(now, CAP_START_H) < until:
+            cuts.cut("day_fetch_cap_start", "day fetch window ends where the capped hours start: no byte counter")
         until = min(until, next_at(now, CAP_START_H))
     budget = float(getattr(a, "budget_gib", None) or budget_gib())
     proc = popen(child_argv(limit, budget, until))
@@ -163,4 +169,6 @@ def run(a, *, clock=time.time, popen=subprocess.Popen, counter=None, hold=None, 
         if read is not None and hasattr(read, "close"):
             read.close()
         _release(proc)
+    if (got or {}).get("stopped_s"):
+        cuts.cut("day_fetch_cap", "day fetch download paused to hold the capped rate")
     return {"started": True, "why": sized, "limit": limit, "budget_gib": budget, "rc": proc.returncode, **got}
