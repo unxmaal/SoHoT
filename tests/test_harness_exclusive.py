@@ -5,6 +5,7 @@ interpreter, both going at the GPU. A test that only spawns threads cannot see
 it, so the collision tests here spawn real subprocesses.
 """
 import json
+import os
 import subprocess
 import sys
 import textwrap
@@ -35,10 +36,16 @@ def test_a_cheap_lane_does_not_wait(lane):
     """`lh extract` measured 0.96s on an M2 Pro, 2026-09-12, one run. Putting
     it behind a forty-minute video would be a downgrade wearing the clothes of
     enforcement: those lanes go to servers that already serialise."""
-    started = time.perf_counter()
     with exclusive.held(lane) as waited:
         assert waited is False
-    assert time.perf_counter() - started < 1.0
+        # Took no lock and named no holder: the machine is still free to an expensive lane. #1423.
+        assert not exclusive.holder_path().exists()
+        fd = os.open(exclusive.lock_path(), os.O_RDWR | os.O_CREAT, 0o644)
+        try:
+            assert exclusive._take(fd)
+            exclusive._release(fd)
+        finally:
+            os.close(fd)
 
 
 def test_a_cheap_lane_takes_no_lock_even_while_one_is_held():
@@ -155,7 +162,6 @@ def test_the_lock_is_released_when_the_holder_is_killed(home):
     holder.kill()
     holder.wait(timeout=10)
 
-    started = time.perf_counter()
     with exclusive.held("image") as waited:
         pass
-    assert time.perf_counter() - started < 5.0, "a dead holder blocked the lock"
+    assert waited is False, "a dead holder blocked the lock"

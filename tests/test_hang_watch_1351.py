@@ -43,6 +43,8 @@ def test_the_dump_reaches_the_terminal_past_pytests_own_capture(tmp_path):
     (tmp_path / "test_slow.py").write_text(
         "import time\nfrom tests import conftest\n\n\n"
         "def test_slow():\n    conftest.HANG_DUMP_S = 0.0\n"
+        # A slow stack walk holds open the window where the flag is up and the text is not yet out. #1423.
+        "    conftest._stacks = lambda: time.sleep(1.0) or 'the stacks'\n"
         "    while not conftest._running['test']['dumped']:\n        time.sleep(0.05)\n", encoding="utf-8")
     env = {k: v for k, v in os.environ.items() if k != "PYTEST_ADDOPTS"}
     env["PYTHONPATH"] = str(ROOT)
@@ -50,7 +52,7 @@ def test_the_dump_reaches_the_terminal_past_pytests_own_capture(tmp_path):
                           "-p", "no:randomly", "-p", "no:cacheprovider", "test_slow.py"],
                          cwd=tmp_path, env=env, capture_output=True, text=True, timeout=CHILD_TIMEOUT_S)
     assert got.returncode == 0, got.stdout + got.stderr
-    assert "test_slow.py::test_slow has run" in got.stdout + got.stderr
+    assert "test_slow.py::test_slow has run" in got.stdout + got.stderr and "the stacks" in got.stdout + got.stderr
 
 
 def test_a_hung_test_is_dumped_and_ended_even_when_it_freezes_the_clock():

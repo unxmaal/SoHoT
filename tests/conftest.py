@@ -82,8 +82,9 @@ def _hang_check(running: dict, now: float, write, leave) -> None:
         write(f"\n{test['nodeid']} ran {spent:.0f} s, past {exit_s:.0f} s: exiting this test process\n")
         leave(70)
     elif spent >= dump_s and not test["dumped"]:
-        test["dumped"] = True
+        # The flag goes up only once the text is out: a test that ends on it would take this daemon thread down. #1423.
         write(f"\n{test['nodeid']} has run {spent:.0f} s; every thread's stack:\n{_stacks()}")
+        test["dumped"] = True
 
 
 def _hang_watch() -> None:
@@ -291,6 +292,10 @@ def _free_disk_is_pinned(monkeypatch):
     from harness import fetching
     monkeypatch.setattr(fetching, "free_bytes",
                         lambda path=None: 900 * fetching.GIB)
+    # Nor env.sh or harness.env: their 20 GB floor read the boot disk, which a full suite fills. #1423.
+    monkeypatch.setenv("HF_MIN_FREE_GB", "0")
+    from harness import env
+    monkeypatch.setattr(env, "free_gb", lambda path: 900)
 
 
 @pytest.fixture(autouse=True)
