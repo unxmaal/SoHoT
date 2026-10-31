@@ -257,10 +257,12 @@ def pinned_rev() -> str:
 
 def version() -> str:
     """The checkout's commit date as YYYY.MM.DD, orderable for `version:ds4>X`; "" if unbuilt."""
+    from harness import cuts
     try:
-        out = subprocess.run(["git", "-C", str(checkout()), "log", "-1", "--format=%cd",
-                              "--date=format:%Y.%m.%d"], capture_output=True, text=True,
-                             timeout=10)
+        with cuts.timeout("harness/ds4.py:version->subprocess.run(timeout)", "ds4 checkout version unread"):
+            out = subprocess.run(["git", "-C", str(checkout()), "log", "-1", "--format=%cd",
+                                  "--date=format:%Y.%m.%d"], capture_output=True, text=True,
+                                 timeout=10)
     except (OSError, subprocess.SubprocessError):
         return ""
     return out.stdout.strip() if out.returncode == 0 else ""
@@ -323,8 +325,10 @@ _DIRECT = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
 def _models(base: str) -> dict | None:
+    from harness import cuts
     try:
-        with _DIRECT.open(base + "/v1/models", timeout=3) as r:
+        with (cuts.timeout("harness/ds4.py:_models->_DIRECT.open(timeout)", f"{base}: read as down"),
+              _DIRECT.open(base + "/v1/models", timeout=3) as r):
             return json.loads(r.read() or b"{}") if r.status == 200 else None
     except Exception:  # noqa: BLE001 - not up
         return None
@@ -414,7 +418,9 @@ def serving(spec: str, port_: int | None = None, timeout: float | None = None):
     log = paths.home() / "logs" / f"ds4-{port_}.log"
     try:
         wait = start_timeout(spec) if timeout is None else timeout
-        with vllm.served(argv(spec, port_), port_, log=log, timeout=wait) as srv:
+        start_knob = ("harness/vllm.py:served(timeout)" if timeout is not None else "harness/ds4.py:START_FLOOR_S"
+                      if wait < 2 * START_FLOOR_S else "harness/ds4.py:START_S_PER_GIB")
+        with vllm.served(argv(spec, port_), port_, log=log, timeout=wait, timeout_knob=start_knob) as srv:
             state = write_state(spec, port_, srv.proc.pid)
             yield state
     except RuntimeError as exc:

@@ -427,6 +427,15 @@ def _inside(path: Path, root: Path) -> bool:
         return False
 
 
+def _graced(e: Entry, now: float) -> str:
+    """Why a rejected entry is still inside its grace, or ''."""
+    if now - e.decided_at < GRACE_SECONDS:
+        return "rejected less than 24 h ago"
+    if e.retest_at is not None and now < float(e.retest_at) + GRACE_SECONDS:
+        return "kept for the retest due then"
+    return ""
+
+
 def safe_to_delete(e: Entry, now: float, wanted: str = REJECTED,
                    roots: tuple = ()) -> tuple[bool, str]:
     """The one decision `lh disk` and discovery share."""
@@ -436,10 +445,9 @@ def safe_to_delete(e: Entry, now: float, wanted: str = REJECTED,
         return False, f"refused: {UNRECORDED}"
     if e.group != wanted or wanted not in (REJECTED, UNKNOWN):
         return False, f"{e.group}, not {wanted}"
-    if e.group == REJECTED and now - e.decided_at < GRACE_SECONDS:
-        return False, "rejected less than 24 h ago"
-    if e.group == REJECTED and e.retest_at is not None and now < float(e.retest_at) + GRACE_SECONDS:
-        return False, "kept for the retest due then"
+    held = _graced(e, now) if e.group == REJECTED else ""
+    if held:
+        return False, held
     root = next((Path(r) for r in roots if _inside(Path(e.path), Path(r))),
                 None)
     if root is None:
@@ -510,6 +518,11 @@ def delete(inv: Inventory, now: float, wanted: str = REJECTED, conn=None,
                         "bytes": e.size, "verdict_id": e.verdict_id,
                         "links": links, "at": time.time(), "hub_gguf": hub_gguf})
     gone = [r for r in removed if "error" not in r]
+    graced = sum(1 for e in inv.entries if wanted == REJECTED == e.group and not e.unrecorded and _graced(e, now))
+    if graced:
+        from harness import cuts
+        cuts.cut("harness/disk.py:GRACE_SECONDS", "rejected weights kept inside their grace", dropped=graced,
+                 conn=conn)
     record(conn, gone, source)
     _tell_router(gone, ggufs)
     return removed
@@ -533,11 +546,11 @@ def clear_incomplete(inv: Inventory, conn=None, source: str = "discover",
         return []
     hub = Path(inv.hub).resolve()
     rows = _rows(conn)
-    removed = []
+    removed, by_clock = [], []
     for blob in inv.incomplete:
         path = Path(blob["path"])
         row = rows.get(downloads.key(blob["dir"]))
-        if row is None or downloads.in_flight(row, now) or path.is_symlink():
+        if row is None or downloads.in_flight(row, now, by_clock) or path.is_symlink():
             continue
         try:
             path.resolve().relative_to(hub)
@@ -550,6 +563,10 @@ def clear_incomplete(inv: Inventory, conn=None, source: str = "discover",
         removed.append({"path": str(path), "group": "incomplete",
                         "repo": row["repo"], "bytes": blob["size"],
                         "origin": downloads.PARTIAL, "at": time.time()})
+    if by_clock:
+        from harness import cuts
+        cuts.cut("harness/downloads.py:IN_FLIGHT_SECONDS", "partial downloads with no lock kept as in flight by age",
+                 dropped=len(by_clock), conn=conn)
     record(conn, removed, source)
     return removed
 

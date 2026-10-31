@@ -493,7 +493,7 @@ def complete_hub(conn) -> list[dict]:
     return [r for r in rows if Path(r["path"]).exists()]
 
 
-def in_flight(row: dict, now: float | None = None) -> bool:
+def in_flight(row: dict, now: float | None = None, by_clock: list | None = None) -> bool:
     """Started, not finished, and a live process still holds its lock; wall time only for a row with no lock. #704."""
     now = time.time() if now is None else now
     if row.get("started_at") is None or row.get("finished_at") is not None:
@@ -501,7 +501,10 @@ def in_flight(row: dict, now: float | None = None) -> bool:
     live = held_elsewhere(row["path"])
     if live is not None:
         return live
-    return now - float(row["started_at"]) < IN_FLIGHT_SECONDS
+    young = now - float(row["started_at"]) < IN_FLIGHT_SECONDS
+    if young and by_clock is not None:
+        by_clock.append(row["path"])
+    return young
 
 
 def scan(hub: Path, ggufs: Path) -> list[tuple[str, Path]]:

@@ -105,6 +105,7 @@ def _preflight(*texts: str, max_tokens: int = 1) -> None:
         raise Refused(f"prompt is {size} characters, over the {MAX_PROMPT_CHARS} "
                       f"cap; pass less material or summarise it first")
     if int(max_tokens) < 1:
+        cuts.cut("harness/delegate.py:_preflight(max_tokens)", "a max_tokens under the floor refused", kept=0, dropped=1)
         raise Refused(f"max_tokens must be at least 1, not {max_tokens}")
 
 
@@ -135,8 +136,12 @@ def counter(spec: str):
 
 def _budget(spec: str, max_tokens: int, *texts: str) -> None:
     ctx = context.served_ctx(spec)
-    most = cap(ctx, *texts, count=counter(spec) if ctx else None)
+    counted = counter(spec) if ctx else None
+    most = cap(ctx, *texts, count=counted)
     if int(max_tokens) > most:
+        if counted is None:
+            budget_knob = "delegate_chars_per_token" if ctx else "harness/delegate.py:MAX_TOKENS"
+            cuts.cut(budget_knob, f"{spec}: a max_tokens over the request cap refused", kept=0, dropped=1)
         where = (f"the {ctx}-token context {spec} is served at, less the prompt"
                  if ctx else f"the cap while {spec}'s served context is unknown")
         raise Refused(f"max_tokens must be 1..{most} ({where}), not {max_tokens}")
@@ -352,7 +357,7 @@ def _tag(delegated: bool) -> str:
 def complete(lane: str, prompt: str, system: str | None = None,
              max_tokens: int = 2048, temperature: float | None = None,
              timeout: float | None = None, thinking: bool | None = None, delegated: bool = False,
-             model: str | None = None) -> dict:
+             model: str | None = None, max_tokens_knob: str = "harness/delegate.py:complete(max_tokens)") -> dict:
     """The lane's adopted model or method, timed; `method` is a method's cost. Raises Refused or CompletionError.
 
     `thinking` None serves the lane as it was measured; False sends enable_thinking false.
@@ -366,6 +371,7 @@ def complete(lane: str, prompt: str, system: str | None = None,
     from harness import methods
     base = methods.base_of(spec) or spec
     _budget(base, max_tokens, prompt, system or completion.SYSTEM.get(lane, ""))
+    floored = timeout is None and TIMEOUT_S >= completion.timeout_for(int(max_tokens or 0))
     timeout = _allowance(where, max_tokens, timeout)
     started = time.perf_counter()
     made = []
@@ -391,8 +397,11 @@ def complete(lane: str, prompt: str, system: str | None = None,
         except Refused as exc:
             raise Refused(f"{label}: {exc}") from exc
         except completion.CompletionError as exc:
+            if exc.failure_class == reasons.TIMEOUT and floored:
+                cuts.cut("harness/delegate.py:TIMEOUT_S", f"{spec}: no reply in time", kept=0, dropped=1)
             if exc.failure_class != reasons.TOKEN_BUDGET_EXHAUSTED:
                 raise
+            cuts.cut(max_tokens_knob, f"{spec}: reply cut at its token budget", value=max_tokens)
             hint = "" if thinking is False else " Or pass thinking=false to answer without reasoning."
             raise completion.CompletionError(
                 f"{label + ': ' if label else ''}{exc}{hint}",

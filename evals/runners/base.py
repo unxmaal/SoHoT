@@ -126,8 +126,8 @@ class BaseRunner:
             # A reply our budget or cap stopped failed on our limit, not on its answer. #628, #695.
             row.failure_class, row.limit = cls, limit
             if cls == reasons.TOKEN_BUDGET_EXHAUSTED and case.modality in degenerate.LANES:
-                tail = degenerate.measure(artifact if isinstance(artifact, str) else "")
-                if degenerate.is_degenerate(tail):
+                tail, looped = degenerate.judged(artifact if isinstance(artifact, str) else "")
+                if looped:
                     # A loop or a collapse would fill any budget, so the cut is not what failed it. #955.
                     row.failure_class, row.limit = reasons.DEGENERATE, ""
         if not row.passed and not row.failure_class:
