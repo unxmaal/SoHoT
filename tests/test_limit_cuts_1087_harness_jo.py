@@ -350,8 +350,8 @@ def test_repos_too_few_of_the_crowd_starred_are_one_cut(tmp_path):
 
 
 def test_a_delegation_reply_at_its_token_budget_is_a_cut(monkeypatch):
-    pytest.importorskip("mcp")
-    from harness import delegations, mcp_server
+    mcp_server = pytest.importorskip("harness.mcp_server")
+    from harness import delegations
 
     def reply(tokens):
         return lambda *a, **kw: {"text": "x", "lane": "code", "spec": "s", "model": "m", "ttft_s": 0.1, "seconds": 1.0,
@@ -366,8 +366,7 @@ def test_a_delegation_reply_at_its_token_budget_is_a_cut(monkeypatch):
 
 
 def test_a_hostname_lookup_that_times_out_is_a_cut(monkeypatch):
-    pytest.importorskip("mcp")
-    from harness import mcp_server
+    mcp_server = pytest.importorskip("harness.mcp_server")
     monkeypatch.setattr(subprocess, "run", _timeout)
     assert mcp_server._local_hostname()
     assert _knobs() == ["harness/mcp_server.py:_local_hostname->subprocess.run(timeout)"]

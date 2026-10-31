@@ -13,6 +13,8 @@ NEVER_CUTS = {
                                                    "completion.chat and is never read (#693)",
     "harness/needle.py:Server.close->self.proc.wait(timeout)": "grace before a terminated needle server is killed; it "
                                                                "is shutting down either way (#693)",
+    "evals/runners/claude_code.py:ClaudeCodeRunner._answer->self._once(retries)":
+        "0 on the first call sends an empty result on to the one retry; the retry's own value fails the case (#366)",
 }
 
 NOT_GATING = {
@@ -22,9 +24,4 @@ NOT_GATING = {
     "evals/runners/agent.py:AgentRunner.failed(seconds)": "how long a failed case took, as reported (#706)",
     **{f"evals/runners/chain.py:STAGE_SCALE[{s}]": "the factor a chain stage multiplies the image size by, a fact of "
        "the stage (#692)" for s in ("upscale-seedvr2", "upscale-controlnet", "controlnet")},
-}
-
-NEVER_CUTS = {
-    "evals/runners/claude_code.py:ClaudeCodeRunner._answer->self._once(retries)":
-        "0 on the first call sends an empty result on to the one retry; the retry's own value fails the case (#366)",
 }
