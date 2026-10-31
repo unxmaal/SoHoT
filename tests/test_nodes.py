@@ -185,9 +185,11 @@ def test_a_node_with_no_fingerprint_is_named_node_colon_name(tmp_path, monkeypat
 
 
 @pytest.mark.parametrize("sent", ["Qwen2.5-7B-Instruct-Q4_K_M", "Qwen2.5-7B-Instruct-Q4_K_M@local"])
-def test_a_fallback_reply_names_this_machine_and_the_node_it_skipped(tmp_path, monkeypatch, sent):
+def test_a_fallback_reply_names_this_machine_and_the_node_it_skipped(tmp_path, monkeypatch, sent, machine_is, request):
     config(tmp_path, monkeypatch, node())
-    monkeypatch.setattr(served, "this_machine", lambda: "Mac/macOS/arm64/here")
+    machine_is({"hw_model": "Mac", "os": "macOS", "arch": "arm64", "host": "here"})
+    served.this_machine.cache_clear()
+    request.addfinalizer(served.this_machine.cache_clear)
     got = headers({"model": sent}, "http://127.0.0.1:8082/v1")
     assert got["x-sohot-machine"] == "Mac/macOS/arm64/here"
     assert got["x-sohot-fallback"] == "pc"

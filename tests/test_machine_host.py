@@ -86,17 +86,17 @@ def _gateway_module():
     return mod
 
 
-def test_the_gateway_names_the_machine_that_served(monkeypatch):
+def test_the_gateway_names_the_machine_that_served(monkeypatch, machine_is):
     mod = _gateway_module()
-    monkeypatch.setattr(mod, "this_machine", lambda: B)
+    machine_is(_env(B.rsplit("/", 1)[1]))
     got = asyncio.run(mod.proxy_handler_instance.async_post_call_response_headers_hook(
         data={"model": "eval-7b"}, user_api_key_dict=None, response=None))
     assert got["x-sohot-machine"] == B
 
 
-def test_an_upstream_on_another_host_is_not_named_as_this_machine(monkeypatch):
+def test_an_upstream_on_another_host_is_not_named_as_this_machine(monkeypatch, machine_is):
     mod = _gateway_module()
-    monkeypatch.setattr(mod, "this_machine", lambda: B)
+    machine_is(_env(B.rsplit("/", 1)[1]))
     monkeypatch.setattr(mod, "upstream_host", lambda model: "<host>:8080")
     got = asyncio.run(mod.proxy_handler_instance.async_post_call_response_headers_hook(
         data={"model": "eval-7b"}, user_api_key_dict=None, response=None))
@@ -269,9 +269,9 @@ def test_an_estimate_from_other_machines_says_so():
 
 # --- review round 2 -------------------------------------------------------------------
 
-def test_the_gateway_names_its_machine_when_the_alias_does_not_resolve(monkeypatch):
+def test_the_gateway_names_its_machine_when_the_alias_does_not_resolve(monkeypatch, machine_is):
     mod = _gateway_module()
-    monkeypatch.setattr(mod, "this_machine", lambda: B)
+    machine_is(_env(B.rsplit("/", 1)[1]))
     monkeypatch.setattr(mod.models, "resolve", lambda m: (_ for _ in ()).throw(KeyError(m)))
     got = asyncio.run(mod.proxy_handler_instance.async_post_call_response_headers_hook(
         data={"model": "eval-7b"}, user_api_key_dict=None, response=None))
@@ -284,9 +284,9 @@ def test_one_loopback_list_serves_client_and_gateway():
     assert machine.is_loopback("http://[::1]:4000") and not machine.is_loopback(REMOTE)
 
 
-def test_the_gateway_names_the_context_and_slots_it_serves(monkeypatch):
+def test_the_gateway_names_the_context_and_slots_it_serves(monkeypatch, machine_is):
     mod = _gateway_module()
-    monkeypatch.setattr(mod, "this_machine", lambda: B)
+    machine_is(_env(B.rsplit("/", 1)[1]))
     monkeypatch.setattr(mod, "served_shape", lambda model: {"ctx": 32768, "slots": 4})
     got = asyncio.run(mod.proxy_handler_instance.async_post_call_response_headers_hook(
         data={"model": "eval-7b"}, user_api_key_dict=None, response=None))

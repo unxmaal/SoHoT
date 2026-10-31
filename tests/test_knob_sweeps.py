@@ -11,6 +11,7 @@ from evals import run as R
 from evals.runners.base import BaseRunner
 from harness import knobs, reverify, runs, sweeps, workqueue as wq
 from harness import memory_store as ms
+from tests import conftest
 
 DAY = 86400.0
 NOW = 1_800_000_000.0
@@ -24,7 +25,7 @@ _SEQ = iter(range(1, 10_000))
 
 @pytest.fixture
 def conn(tmp_path, monkeypatch):
-    monkeypatch.setattr(ms, "this_machine", lambda: dict(M))
+    conftest.stand_in_machine(monkeypatch, M)
     c = ms.connect(tmp_path / "d.db")
     ms.remember_machine(c, dict(M))
     yield c
@@ -246,7 +247,7 @@ def test_a_run_at_an_overridden_knob_runs_and_records_it(tmp_path, monkeypatch, 
 
 def test_sensitivity_sweeps_is_a_dry_run(monkeypatch, capsys, tmp_path):
     from harness import cli
-    monkeypatch.setattr(ms, "this_machine", lambda: dict(M))
+    conftest.stand_in_machine(monkeypatch, M)
     assert cli.main(["sensitivity", "--sweeps", "--json"]) == 0
     got = json.loads(capsys.readouterr().out)
     assert got == {"planned": [], "decided": []}
