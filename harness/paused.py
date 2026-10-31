@@ -24,12 +24,15 @@ def abandoned(conn, root, lane: str, inc_spec: str, spec: str) -> dict | None:
     from pathlib import Path
 
     from evals import watch
+    from harness import watchdog
     lane = (lane or "").strip().lower()
     known = {r["out"] for r in conn.execute("SELECT out FROM paused_runs")}
     for out in sorted(Path(root).glob(f"*-adopt-{lane}"), reverse=True):
         got = watch.read(out)
         progress = watch.read_progress(out)
         if not got or not got[1] or str(out) in known or progress.get("state") not in ("running", "paused"):
+            continue
+        if watchdog.overrun_stopped(conn, out):
             continue
         ident = got[0]
         if ident.get("modality") != lane or list(ident.get("candidates") or ()) != [inc_spec, spec]:

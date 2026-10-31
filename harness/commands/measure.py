@@ -387,6 +387,8 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         if held is None:
             return rc
         held = {**held, "identity": ident}
+    if _signalled(proc.returncode) and watch.stop_reason(out) == watch.OVERRUN:
+        return _ended(name, held, out, sweep)
     if _signalled(proc.returncode) and (watch.read(out) or ({}, []))[1]:
         # Stopped from outside (the watchdog, a TERM): its rows are kept and the next sweep resumes it. #864.
         print(f"    stopped by a signal (exit {proc.returncode}); its checkpointed cases are kept", flush=True)
@@ -789,7 +791,7 @@ def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False,
 
 def _held(lane: str, inc_spec: str, spec: str, split, name: str, sweep):
     """(the pairing's live pause if it may resume, the identity a resume needs); a changed exam is reported stale. #813."""
-    from harness import knobs, paused
+    from harness import knobs, paused, watchdog
     from harness import memory_store as ms
     ident = paused.identity(lane, inc_spec, _settings(lane, inc_spec, spec), knobs.settings(lane),
                             split.version)
@@ -797,8 +799,12 @@ def _held(lane: str, inc_spec: str, spec: str, split, name: str, sweep):
     try:
         held = paused.find(store, lane, spec)
         found = None if held else paused.abandoned(store, paths.home() / "runs", lane, inc_spec, spec)
+        stopped = bool(held) and watchdog.overrun_stopped(store, held["out"])
     finally:
         store.close()
+    if stopped:
+        _ended(name, held, held["out"], sweep)
+        return None, ident
     if found:
         # A run stopped with no pause recorded (the watchdog before #864) still has its rows. #864.
         print(f"  {name}: resuming {found['out']}, stopped at {found['done']} case(s) with no pause recorded",
@@ -823,6 +829,16 @@ def _stale(held: dict, what: str, name: str, sweep) -> None:
     print(f"  {name}: {why}", flush=True)
     if sweep is not None:
         sweep.lines.append(f"{name}: {why}")
+
+
+def _ended(name: str, held, out, sweep) -> int:
+    """A run the watchdog stopped as an overrun: ended and flagged, its rows kept, never resumed. #1409."""
+    why = f"stopped by the watchdog as an overrun: a suspected harness defect, not resumed; its rows stay in {out}"
+    if held and held.get("id") is not None:
+        _settle_pause(held["id"], "defect", why)
+    if sweep is not None:
+        sweep.lines.append(f"{name}: {why}")
+    return err(f"{name}: {why}")
 
 
 def _settle_pause(pause_id: int, state: str, why: str) -> None:
