@@ -139,16 +139,16 @@ def cmd_power(a) -> int:
 
     receipts = _receipts(getattr(a, "receipt", None) or [])
     challenger = getattr(a, "challenger", "") or ""
-    every = holdout.splits()
-    want = lanes.canonical(a.lane) if a.lane else ""
-    if want and want not in every:
-        return err(f"no cases for lane {a.lane!r}; lanes with cases: "
-                   f"{', '.join(sorted(every))}")
     budget = float(getattr(a, "power_budget_min", None) or power.BUDGET_MIN) * 60
     rows = []
     held = contextlib.ExitStack()
     conn = held.enter_context(lent_store())
     try:
+        every = holdout.splits()
+        want = lanes.canonical(a.lane) if a.lane else ""
+        if want and want not in every:
+            return err(f"no cases for lane {a.lane!r}; lanes with cases: "
+                       f"{', '.join(sorted(every))}")
         for lane in [want] if want else sorted(every):
             split = every[lane]
             key, inc_spec, draws, inc_s, settings, machines = _profile(lane, receipts, conn)

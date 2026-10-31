@@ -30,4 +30,6 @@ NEVER_CUTS = {
     "harness/ci_budget.py:MACOS_TIMEOUT_MIN": "a copy of check-macos timeout-minutes a test holds equal to ci.yml; the "
                                               "harness reads it nowhere (#1146)",
     "harness/ci_budget.py:WARN_SHARE": "when a CI job's time warns; the job runs on either way (#1146)",
+    f"{T}:SLOWER_ADDED_S": "which tests a CI run names in a slower-test warning; every test still runs and is timed",
+    f"{T}:SLOWER_RATIO": "which tests a CI run names in a slower-test warning; every test still runs and is timed",
 }

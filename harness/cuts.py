@@ -209,6 +209,19 @@ def _grouped(conn, what: str, since: float, machines) -> dict:
         return {}
 
 
+def main(argv: list[str] | None = None) -> int:
+    """`python -m harness.cuts KNOB WHAT`: a shell script's limit that bound, recorded like any other; never fails."""
+    import argparse
+    ap = argparse.ArgumentParser(prog="python -m harness.cuts", description=main.__doc__)
+    ap.add_argument("knob", help="a registered knob, or a site such as scripts/env.sh:HF_MIN_FREE_GB")
+    ap.add_argument("what", help="what the limit cut")
+    ap.add_argument("--kept", type=int)
+    ap.add_argument("--dropped", type=int)
+    a = ap.parse_args(argv)
+    cut(a.knob, a.what, kept=a.kept, dropped=a.dropped)
+    return 0
+
+
 def count(conn, since: float, machines=None) -> dict[str, int]:
     """Cuts recorded since `since`, by knob or site; machines None is every machine."""
     return {k: int(n) for k, n in _grouped(conn, "COUNT(*)", since, machines).items()}
@@ -217,3 +230,7 @@ def count(conn, since: float, machines=None) -> dict[str, int]:
 def highest(conn, since: float, machines=None) -> dict:
     """The largest value each knob or site cut at since `since`."""
     return _grouped(conn, "MAX(value)", since, machines)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -279,7 +279,7 @@ def rasterize_html(html: str, out: str | Path, width: int = 800) -> Path:
         for profile in _profiles_to_try(Path(d)):
             started = time.monotonic()
             stderr = _shoot(chrome_argv(src, out, width, profile=profile),
-                            out, d, timeout=timeout)
+                            out, d, timeout=timeout, timeout_knob="chrome_render_timeout")
             if out.exists():
                 break
             timed_out = time.monotonic() - started >= timeout
@@ -309,10 +309,12 @@ def _kill_tree(proc) -> None:
     """
     if sys.platform != "win32":
         return
+    from harness import cuts
     try:
-        subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)],
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                       timeout=15)
+        with cuts.timeout("harness/checks/render.py:_kill_tree->subprocess.run(timeout)", "taskkill of chrome's tree"):
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                           timeout=15)
     except (OSError, subprocess.SubprocessError):
         pass
 
@@ -332,12 +334,15 @@ def _remove_tree(path: Path, attempts: int = 20, delay: float = 0.1) -> None:
             return
         except OSError:
             if attempt == attempts - 1:
+                from harness import cuts
+                cuts.cut("harness/checks/render.py:_remove_tree(attempts)", f"removing {path.name}", value=attempts)
                 shutil.rmtree(path, ignore_errors=True)
                 return
             time.sleep(delay)
 
 
-def _shoot(argv: list[str], out: Path, cwd: str, timeout: float = 60.0) -> str:
+def _shoot(argv: list[str], out: Path, cwd: str, timeout: float = 60.0,
+           timeout_knob: str = "harness/checks/render.py:_shoot(timeout)") -> str:
     """Run chrome and stop once the PNG is written.
 
     With its own --user-data-dir chrome writes the screenshot and then does not
@@ -349,7 +354,7 @@ def _shoot(argv: list[str], out: Path, cwd: str, timeout: float = 60.0) -> str:
     proc = subprocess.Popen(argv, stdout=subprocess.DEVNULL, stderr=err, cwd=cwd)
     deadline = time.monotonic() + timeout
     size = -1
-    exited = False
+    exited = settled = False
     try:
         while time.monotonic() < deadline:
             if proc.poll() is not None:
@@ -357,9 +362,14 @@ def _shoot(argv: list[str], out: Path, cwd: str, timeout: float = 60.0) -> str:
                 break
             now = out.stat().st_size if out.exists() else -1
             if now > 0 and now == size:      # written and stable
+                settled = True
                 break
             size = now
             time.sleep(0.1)
+        if not (exited or settled) and out.exists():
+            # A missing PNG is a RenderTimeout the caller records; one still being written is cut here.
+            from harness import cuts
+            cuts.cut(timeout_knob, "chrome screenshot still being written", value=timeout)
         if not exited:
             proc.terminate()
             try:
@@ -388,7 +398,8 @@ def ink_html(html: str, width: int = 800) -> float:
     return round(sum(histogram[:250]) / total, 4) if total else 0.0
 
 
-def check_html(html: str, min_ink: float = 0.0005) -> CheckResult:
+def check_html(html: str, min_ink: float = 0.0005,
+               ink_knob: str = "harness/checks/render.py:check_html(min_ink)") -> CheckResult:
     """Does this page actually show anything?
 
     The threshold is lower than the SVG one: a page is mostly whitespace by
@@ -408,6 +419,8 @@ def check_html(html: str, min_ink: float = 0.0005) -> CheckResult:
     result = CheckResult(coverage >= min_ink, "")
     result.metrics = {"ink": coverage}
     if not result.ok:
+        from harness import cuts
+        cuts.cut(ink_knob, f"page ink {coverage:.4f}", value=min_ink)
         result.reason = (
             f"renders blank: {coverage:.3%} of the page is marked. The markup "
             f"parses and has content, but nothing is visible.")
@@ -468,7 +481,8 @@ def ink(svg: str, width: int = DEFAULT_WIDTH) -> float:
 
 
 def check(svg: str, min_ink: float = MIN_INK,
-          rasterizer: str | None = RASTERIZER) -> CheckResult:
+          rasterizer: str | None = RASTERIZER,
+          ink_knob: str = "harness/checks/render.py:MIN_INK") -> CheckResult:
     """Does this SVG actually draw anything?"""
     # None still disables the check outright. Otherwise resolve it the same way
     # rasterize_svg does -- gating this on PATH alone while the rasterizer runs
@@ -492,6 +506,8 @@ def check(svg: str, min_ink: float = MIN_INK,
     result = CheckResult(coverage >= min_ink, "")
     result.metrics = {"ink": coverage}
     if not result.ok:
+        from harness import cuts
+        cuts.cut(ink_knob, f"svg ink {coverage:.4f}", value=min_ink)
         result.reason = (
             f"renders blank: {coverage:.2%} of the canvas is marked. The markup "
             f"parses and has shapes in it, but nothing is visible.")

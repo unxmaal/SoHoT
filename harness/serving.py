@@ -49,7 +49,12 @@ def mlx_parallel(repo: str) -> int:
         room = memory.ceiling_gb() - memory.measured_reserve_gb() - weights - _router_gb()
     except Exception:  # noqa: BLE001 - an unsizable model keeps the default cap
         return MLX_MAX_PARALLEL
-    return max(1, min(MLX_MAX_PARALLEL, int(room * 1024 ** 3 // (per * MLX_REQUEST_CTX))))
+    fit = int(room * 1024 ** 3 // (per * MLX_REQUEST_CTX))
+    if fit != MLX_MAX_PARALLEL:
+        from harness import cuts
+        knob = "mlx_max_parallel" if fit > MLX_MAX_PARALLEL else "mlx_request_ctx"
+        cuts.cut(knob, f"{repo}: requests mlx_lm.server may hold at once", kept=max(1, min(MLX_MAX_PARALLEL, fit)))
+    return max(1, min(MLX_MAX_PARALLEL, fit))
 
 
 def _router_gb() -> float:
@@ -112,12 +117,15 @@ def llamacpp_build(binary: str = "") -> str:
     """The installed llama-server's build number, or "" if it cannot say."""
     import re
     import subprocess
+
+    from harness import cuts
     binary = binary or llamacpp_binary()
     if not binary:
         return ""
     try:
-        out = subprocess.run([binary, "--version"], capture_output=True,
-                             text=True, timeout=10)
+        with cuts.timeout("harness/serving.py:llamacpp_build->subprocess.run(timeout)", "llama-server --version"):
+            out = subprocess.run([binary, "--version"], capture_output=True,
+                                 text=True, timeout=10)
     except (OSError, subprocess.SubprocessError):
         return ""
     m = re.search(r"build (\d+)", out.stdout + out.stderr)

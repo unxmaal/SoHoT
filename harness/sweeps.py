@@ -88,12 +88,18 @@ def passing(conn, lane: str, machines) -> dict:
         got["rows"].append({"passed": bool(r["passed"]), "metrics": json.loads(r["metrics"] or "{}"),
                             "failure_class": r["failure_class"] or ""})
     out: dict = {}
+    passed_over = 0
     for key, seen in by.items():
         # A newer smoke run does not stand for a model over a run of enough cases. #1239.
         got = out[key] = next((m for m in seen.values() if m["n"] >= FALLBACK_MIN_CASES), next(iter(seen.values())))
+        passed_over += got is not next(iter(seen.values()))
         rows = got.pop("rows")
         got["working"] = bool(got["passed"]) or _working(conn, lane, got)
         got.update(_bound(rows, lane))
+    if passed_over:
+        from harness import cuts
+        cuts.cut("fallback_min_cases", f"{lane}: models whose newest run is too small to stand for them",
+                 dropped=passed_over, conn=conn)
     return out
 
 
@@ -241,6 +247,10 @@ def _night(conn, entry: dict, k, swept: dict, machines, now: float) -> str:
 def lane_evidence(row: dict, spec: str) -> dict | None:
     """Not binding for a model with no ladder of its own when at least LANE_MIN_CUTS of the lane's cuts were given more room and none passed. #1177."""
     if row.get("converted") or row.get("cuts", 0) < LANE_MIN_CUTS:
+        if not row.get("converted") and row.get("cuts", 0):
+            from harness import cuts
+            cuts.cut("lane_min_cuts", f"{spec}: lane evidence of {row['cuts']} cut(s) too thin to stop a sweep",
+                     kept=row["cuts"])
         return None
     where = ", ".join(row["where"])
     return {"binding": False, "lane": True, "cut": row["cuts"], "passed": 0, "where": row["where"],

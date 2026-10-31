@@ -189,7 +189,7 @@ def test_a_render_creates_and_cleans_up_its_own_profile(tmp_path, monkeypatch):
     """The caller should not have to know chrome needs a scratch directory."""
     seen = {}
 
-    def fake_shoot(argv, out, cwd, timeout=60.0):
+    def fake_shoot(argv, out, cwd, timeout=60.0, timeout_knob=None):
         seen["argv"] = argv
         assert any(a.startswith("--user-data-dir=") for a in argv)
         Path(out).write_bytes(b"\x89PNG\r\n\x1a\n")
@@ -323,7 +323,7 @@ def test_a_browser_that_cannot_take_a_profile_is_retried_without_one(
     monkeypatch.setattr(render, "chrome_path", lambda: "/fake/chromium")
     seen = []
 
-    def fake_shoot(argv, out, cwd, timeout=60.0):
+    def fake_shoot(argv, out, cwd, timeout=60.0, timeout_knob=None):
         had_profile = any(a.startswith("--user-data-dir") for a in argv)
         seen.append(had_profile)
         if not had_profile:
