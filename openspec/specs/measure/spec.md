@@ -119,7 +119,7 @@ Test: tests/test_harness_adopt_receipt.py::test_a_path_with_no_stored_run_is_non
 Test: tests/test_harness_adopt_receipt.py::test_a_results_json_on_disk_is_not_a_stored_run
 
 ### Requirement: The receipt must describe the run asked for
-After a finished run the measure step SHALL return 1 without a verdict when the eval exits non-zero (other than a pause, a deadline stop or a signal stop with checkpointed rows), when no receipt is stored, when the receipt's summary names neither candidate, or when either candidate contributed no summary row; a run that exits 0 SHALL settle its held pause as done before its receipt is read.
+After a finished run the measure step SHALL return 1 without a verdict when the eval exits non-zero (other than a pause, a deadline stop or a signal stop with checkpointed rows that is not an overrun stop), when no receipt is stored, when the receipt's summary names neither candidate, or when either candidate contributed no summary row; a run that exits 0 SHALL settle its held pause as done before its receipt is read.
 
 #### Scenario: A receipt naming neither candidate
 - **WHEN** the stored summary names two other candidates
@@ -418,13 +418,39 @@ Test: tests/test_resume_813.py::test_a_finished_resume_settles_its_pause_even_wh
 Test: tests/test_resume_813.py::test_a_finished_resume_spends_less_alpha_and_stores_planned_and_observed_seconds
 
 ### Requirement: Stopped runs keep their rows
-A paired run stopped by a signal (a negative exit, or a shell's exit for SIGTERM, SIGKILL or SIGINT) with checkpointed rows SHALL be kept as a pause (the measure returning `watch.PAUSED`) and resumed; a run that exits non-zero otherwise MUST be an error with no pause row. A run directory a stopped run left with no pause row SHALL be resumed from its checkpoint when its name is the lane's adopt run, its checkpoint names this lane and exactly the incumbent and challenger, its progress state is running or paused, its directory is in no pause row of any state, and its recorded process group is gone.
+A paired run stopped by a signal (a negative exit, or a shell's exit for SIGTERM, SIGKILL or SIGINT) with checkpointed rows SHALL be kept as a pause (the measure returning `watch.PAUSED`) and resumed, unless its run directory's stop file names the watchdog's `overrun` criterion; a run that exits non-zero otherwise MUST be an error with no pause row. A run the watchdog stopped as an overrun SHALL end as a suspected harness defect: the measure returns 1, its held pause row is settled `defect`, the sweep is told, its rows stay on disk, and no later sweep resumes it, whether from a pause row or as an abandoned directory. A run directory a stopped run left with no pause row SHALL be resumed from its checkpoint when its name is the lane's adopt run, its checkpoint names this lane and exactly the incumbent and challenger, its progress state is running or paused, its directory is in no pause row of any state, neither its stop file nor the watchdog's recorded actions name an overrun stop of it, and its recorded process group is gone.
 
 #### Scenario: A signal stop is a pause
 - **WHEN** evals.run exits from a signal after checkpointing rows
 - **THEN** the measure returns `watch.PAUSED` and a `paused` row holds the rows done
 - **AND** the next measure resumes the same run directory
 Test: tests/test_overrun_864.py::test_a_run_stopped_by_a_signal_is_kept_as_a_pause_and_resumed
+
+#### Scenario: An overrun stop ends the run
+- **WHEN** a resumed run is signalled after the watchdog named `overrun` in its stop file
+- **THEN** the measure returns 1, the pause row is `defect` and says suspected harness defect, and the sweep's lines say so
+- **AND** the next measure starts the pairing without `--resume`
+Test: tests/test_overrun_864.py::test_a_run_the_watchdog_stopped_as_an_overrun_ends_flagged_and_is_not_resumed
+
+#### Scenario: Any other watchdog stop is still a pause
+- **WHEN** evals.run is signalled after the watchdog named another criterion, or no reason, in its stop file
+- **THEN** the measure returns `watch.PAUSED` and the next measure resumes the same run directory
+Test: tests/test_overrun_864.py::test_a_run_the_watchdog_stopped_for_another_reason_is_still_a_pause
+
+#### Scenario: A held pause stopped as an overrun is not resumed
+- **WHEN** a `paused` row's run directory names an overrun stop
+- **THEN** the row is settled `defect` and the pairing starts without `--resume`
+Test: tests/test_overrun_864.py::test_a_paused_run_whose_directory_names_an_overrun_stop_is_not_resumed
+
+#### Scenario: An overrun stop made before stop files is read from the watchdog's record
+- **WHEN** a `paused` row's run directory has no stop file, and the watchdog's actions record a stop of its command
+- **THEN** it is not resumed only when that stop was an acted (not dry-run) overrun stop that signalled a group
+Test: tests/test_overrun_864.py::test_an_overrun_stop_only_the_store_records_is_not_resumed
+
+#### Scenario: An abandoned directory stopped as an overrun is left
+- **WHEN** an otherwise abandoned run directory of this pairing names an overrun stop
+- **THEN** it is not resumed
+Test: tests/test_overrun_864.py::test_an_abandoned_directory_the_watchdog_stopped_as_an_overrun_is_left
 
 #### Scenario: A crash is not a pause
 - **WHEN** evals.run exits with a plain failure
