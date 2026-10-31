@@ -16,7 +16,7 @@ from pathlib import Path
 
 from evals import interface, redact, repo, session_cut
 from evals.importers import Imported, history, provenance
-from harness import paths
+from harness import paths, privacy
 
 LANE = "repo"
 SOURCE = "claude-code:transcripts"
@@ -649,8 +649,8 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
     for project, main, subs in sessions(root):
         got = scan_session(main.stem, project, main, subs)
         scanned.append((main.stem, got))
-        by_dir[project]["sessions"] += 1
-        by_dir[project]["requests"] += len(got[0])
+        by_dir[privacy.mask_home(project)]["sessions"] += 1
+        by_dir[privacy.mask_home(project)]["requests"] += len(got[0])
     by_url = {u: session for session, (_, _, urls) in scanned for u in urls}
     for session, extra in trailers([r for r in repos if r.owner], by_url).items():
         next(got for s, got in scanned if s == session)[1].extend(extra)

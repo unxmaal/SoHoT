@@ -154,6 +154,12 @@ def test_a_printed_feature_commit_links_its_request_to_the_merged_squash(world):
     assert got["transcripts"]["-home-proj"] == {"sessions": 1, "requests": 2}
 
 
+def test_a_project_dir_spelled_from_a_home_path_is_written_without_its_account(world):
+    world["projects"].joinpath("-home-proj").rename(world["projects"] / "-Users-someone-proj")
+    got = _survey(world, run=False)
+    assert list(got["transcripts"]) == ["-Users-USER-proj"]
+
+
 def test_a_session_recorded_on_windows_links_its_request_too(world):
     recs = [json.loads(line) for line in world["main"].read_text(encoding="utf-8").splitlines()]
     paths = []
