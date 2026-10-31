@@ -579,8 +579,8 @@ Test: tests/test_harness_adopt.py::test_an_adoption_changes_what_the_lane_serves
 
 #### Scenario: an unreachable store
 - **WHEN** the store raises
-- **THEN** the typed constant is returned
-Test: tests/test_harness_adopt.py::test_an_unreachable_store_leaves_the_lane_on_its_constant
+- **THEN** `default_for` raises, and a generation (`serving_default`) serves the typed constant and says why on stderr
+Test: tests/test_harness_adopt.py::test_an_unreachable_store_raises_but_a_generation_serves_the_constant_and_says_why
 
 #### Scenario: lane commands read it at call time
 - **WHEN** a text lane adopts a spec after start-up

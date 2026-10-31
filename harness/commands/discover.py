@@ -202,9 +202,13 @@ def _report_revisit(a) -> int:
     a verdict made elsewhere was a dead end -- there was no way to ask which
     of them this machine could now answer.
     """
+    import contextlib
+
     from harness import inspect as ins, memory_store as ms
 
-    store = ms.connect()
+    held = contextlib.ExitStack()
+    # Only --requeue writes; without it the report reads one lent read-only connection. #1432.
+    store = held.enter_context(contextlib.closing(ms.connect()) if getattr(a, "requeue", False) else lent_store())
     ins.PACE.start()
     try:
         here = ms.this_machine()
@@ -216,7 +220,7 @@ def _report_revisit(a) -> int:
         upstream = ask(store, ins.upstream_commit)
     finally:
         ins.PACE.end()
-        store.close()
+        held.close()
     print(f"this machine: {here['fingerprint']}")
     print(f"  runtimes {here['runtimes'] or '-'}, "
           f"ceiling {here['ceiling_gb']:.0f} GiB, "
@@ -256,14 +260,11 @@ def _report_evidence(a) -> int:
     """
     from harness import memory_store as ms
 
-    store = ms.connect()
-    try:
+    with lent_store() as store:
         gone = ms.dangling_receipts(store)
         total = store.execute(
             "SELECT COUNT(*) c FROM verdicts WHERE run_path != ''"
         ).fetchone()["c"]
-    finally:
-        store.close()
     if not gone:
         print(f"every one of the {total} verdicts that names a run can still "
               f"reach it.")
@@ -281,14 +282,11 @@ def _report_evidence(a) -> int:
 
 def _report_recurrence(a) -> int:
     from harness import memory_store as ms
-    conn = ms.connect()
-    try:
+    with lent_store() as conn:
         rows = ms.recurrence(conn, minimum=2)
         stats = ms.precision(conn)
         per_source = ms.by_source(conn)
         extract = ms.extraction(conn)
-    finally:
-        conn.close()
     if a.json:
         print(json.dumps({"recurrence": rows, "totals": stats,
                           "by_source": per_source,

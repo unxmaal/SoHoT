@@ -97,15 +97,13 @@ def _report_queue(a) -> int:
     from harness import rank
     from harness import memory_store as ms
 
+    from harness.commands.common import lent_store
     want = (getattr(a, "lane", "") or "").strip().lower()
-    store = ms.connect()
-    try:
+    with lent_store() as store:  # its cuts are about the report, never this home's store. #1432.
         rows, waiting = loop_cmd._queueable(store, want)
         retests = ms.retest_counts(store)
         ranked_all = rank.rank(rows, serving=rank.serving(),
                                measured_lanes=rank.lanes_with_receipts(store), conn=store)
-    finally:
-        store.close()
     if not a.json:
         print(retest_line(retests))
     if not rows:
