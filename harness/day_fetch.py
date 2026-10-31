@@ -7,7 +7,7 @@ import sys
 import time
 from datetime import datetime, timedelta
 
-#: Off until Eric turns it on: a value given once to launchd.sh install is kept beside the store.
+#: Off until the owner turns it on: a value given once to launchd.sh install is kept beside the store.
 ENABLE = "LH_DAY_FETCH"
 #: Local hours the day fetch never runs in: the night sweep's, from the first to the second.
 NIGHT_START_H, NIGHT_END_H = 20, 8

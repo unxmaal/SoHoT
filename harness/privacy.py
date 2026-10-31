@@ -85,14 +85,32 @@ NAMES_FILE = ".privacy-names"
 ROOT = Path(__file__).resolve().parent.parent
 
 
+def main_checkout(root: Path) -> Path | None:
+    """The checkout `root`'s git worktree belongs to, or None outside git. #1308."""
+    try:
+        _, common = repo.git_dirs(root)
+    except (OSError, IndexError, UnicodeDecodeError):
+        return None
+    return common.parent if common.is_dir() else None
+
+
+def name_files(root: Path) -> list[Path]:
+    """`root`'s names file, and the main checkout's, which a worktree lacks. #1308."""
+    here = root / NAMES_FILE
+    main = main_checkout(root)
+    there = main / NAMES_FILE if main else None
+    return [here] + ([there] if there and there.resolve() != here.resolve() else [])
+
+
 def names(root: Path) -> list[str]:
     import os
 
     raw = os.environ.get("LH_PRIVATE_NAMES", "")
-    f = root / NAMES_FILE
-    if f.exists():
-        raw += "," + f.read_text(encoding="utf-8")
-    return [n.strip() for n in raw.replace("\n", ",").split(",") if n.strip()] + home_names()
+    for f in name_files(root):
+        if f.exists():
+            raw += "," + f.read_text(encoding="utf-8")
+    found = [n.strip() for n in raw.replace("\n", ",").split(",") if n.strip()]
+    return list(dict.fromkeys(found + home_names()))
 
 
 #: Names an importer learned on this machine (film titles, a library's folder), one per line. #1207.

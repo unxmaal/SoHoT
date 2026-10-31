@@ -19,6 +19,19 @@ import subprocess
 from pathlib import Path
 
 
+def git_dirs(root: Path) -> tuple[Path, Path]:
+    """(the git dir of the checkout at `root`, the main checkout's), read from .git with no git process. #1000, #1308."""
+    git = Path(root) / ".git"
+    gitdir = git
+    if git.is_file():
+        gitdir = Path(git.read_text(encoding="utf-8").split("gitdir:", 1)[1].strip())
+        gitdir = gitdir if gitdir.is_absolute() else Path(root) / gitdir
+    common = gitdir
+    if (gitdir / "commondir").is_file():
+        common = (gitdir / (gitdir / "commondir").read_text(encoding="utf-8").strip()).resolve()
+    return gitdir, common
+
+
 def publishable(root: Path) -> list[Path]:
     """Everything a push would publish: tracked, plus untracked and not ignored.
 

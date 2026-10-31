@@ -11,6 +11,7 @@ from evals import redact, session_cut
 from evals.core import load_cases
 from evals.importers import history
 from evals.importers import transcripts as tr
+from harness import privacy
 
 ROOT = Path(__file__).resolve().parents[1]
 T0 = 1_760_000_000
@@ -71,6 +72,7 @@ def world(tmp_path, monkeypatch):
     monkeypatch.setattr(tr, "MIN_CUT_BYTES", 0)
     monkeypatch.setattr(tr, "admit", lambda case, env=None: None)
     monkeypatch.setattr(redact, "known_here", lambda *a, **k: KNOWN)
+    monkeypatch.setattr(privacy, "names", lambda root: list(KNOWN.names))
     repos = tmp_path / "github"
     w = repos / "acme" / "widget"
     w.mkdir(parents=True)
@@ -329,7 +331,6 @@ def test_the_committed_manifest_matches_revision_and_the_cases():
 
 @pytest.mark.parametrize("path", COMMITTED, ids=[p.stem for p in COMMITTED])
 def test_every_committed_case_is_clean_and_loads(path):
-    from harness import privacy
     import yaml
     text = path.read_text(encoding="utf-8")
     values = tr.strings(yaml.safe_load(text))
