@@ -21,7 +21,9 @@ from dataclasses import dataclass, field
 #: decides whether a lane belongs in an unattended pass.
 COST_S = {
     "extract": 20, "code": 60, "web": 120, "svg": 30,
-    "tts": 30, "stt": 120, "image": 200, "video": 2700,
+    "tts": 30, "stt": 120, "image": 200,
+    # fox-run's first run on the Studio took 440 s (run 138, 2026-10-05); warm reruns 24-30 s (runs 139-624). #1402.
+    "video": 440,
     # 55s of model init then ~37s per 30s case. Measured 2026-09-20 on the
     # M2 Pro, turbo at 8 steps, when the lane had three cases. `cover` is the
     # fourth and is CHEAPER than the others -- it skips the LM entirely and
@@ -43,9 +45,7 @@ COST_S = {
     "repo": 300,
 }
 
-#: A lane nobody should start without meaning to. Video is ~40 minutes for ONE
-#: case and its engine carries a six-hour timeout; including it in a default
-#: pass is how a machine ends up unusable overnight.
+#: A lane nobody should start without meaning to: one video case costs COST_S["video"] behind a six-hour engine timeout.
 DELIBERATE = ("video",)
 
 
@@ -125,14 +125,9 @@ def summarise(lane: str, data: dict) -> str:
     return "; ".join(bits)
 
 
-def verdict(data: dict) -> str:
-    """works / partial / broken, from the receipt alone.
-
-    A lane whose own default passes NOTHING is broken here whatever the reason,
-    and that is the finding the pass exists to produce. Partial is kept
-    separate because a lane can legitimately fail a hard case: `web` has cases
-    no small model passes, and calling that broken would be wrong.
-    """
+def verdict(data: dict, lane: str) -> str:
+    """works / partial / broken from the receipt: no case passed is broken unless the lane's metric shows it working, as reverify reads it (#733, #1399)."""
+    from harness import screen
     summary = (data or {}).get("summary") or {}
     if not summary:
         return "broken"
@@ -141,5 +136,5 @@ def verdict(data: dict) -> str:
     if not total:
         return "broken"
     if passed == 0:
-        return "broken"
+        return "partial" if screen.working(summary, lane, "", "") else "broken"
     return "works" if passed == total else "partial"

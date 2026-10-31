@@ -50,10 +50,10 @@ def test_cheapest_first():
 
 
 def test_video_is_never_started_without_being_asked_for_by_name():
-    """~45 minutes for one case, behind a six-hour engine timeout. This is how
-    a machine ends up unusable overnight."""
+    """One case behind a six-hour engine timeout; the skip prints COST_S, the one source of the case's length. #1402."""
     got = verify.plan(_lanes(VIDEO))
     assert got[0].skip and "--lane video" in got[0].skip
+    assert f"~{verify.COST_S['video'] // 60} minutes for one case" in got[0].skip
     assert not got[0].argv, "a skipped task must carry no command"
 
 
@@ -90,23 +90,39 @@ def _receipt(passed, total):
 
 
 def test_a_default_that_passes_everything_works():
-    assert verify.verdict(_receipt(9, 9)) == "works"
+    assert verify.verdict(_receipt(9, 9), "code") == "works"
 
 
 def test_a_default_that_passes_nothing_is_broken():
-    """Whatever the reason. That is the finding this pass exists to produce."""
-    assert verify.verdict(_receipt(0, 9)) == "broken"
+    """No case passed and nothing on the lane's metric shows it working."""
+    assert verify.verdict(_receipt(0, 9), "code") == "broken"
+
+
+def _scored(lane, passed, total, **metrics):
+    return {"summary": {"c": {"passed": passed, "total": total, "metrics": metrics}}}
+
+
+@pytest.mark.parametrize("lane,metrics", [("decide", {"decide_accuracy": 0.8}), ("stt", {"wer": 0.2})])
+def test_a_default_that_passes_no_case_but_works_on_the_lane_metric_is_partial(lane, metrics):
+    """reverify reads the same receipt as working (#733); soh verify must not call it broken. #1399."""
+    assert verify.verdict(_scored(lane, 0, 9, **metrics), lane) == "partial"
+
+
+@pytest.mark.parametrize("lane,metrics", [("decide", {"decide_accuracy": 0.0}), ("stt", {"wer": 0.9}),
+                                          ("code", {"wer": 0.2})])
+def test_a_default_that_passes_nothing_and_misses_the_lane_metric_is_broken(lane, metrics):
+    assert verify.verdict(_scored(lane, 0, 9, **metrics), lane) == "broken"
 
 
 def test_a_default_that_passes_some_is_partial_not_broken():
     """A lane can legitimately fail a hard case: web has cases no small model
     passes, and calling that broken would be wrong."""
-    assert verify.verdict(_receipt(6, 9)) == "partial"
+    assert verify.verdict(_receipt(6, 9), "code") == "partial"
 
 
 def test_no_receipt_and_no_cases_are_both_broken():
-    assert verify.verdict({}) == "broken"
-    assert verify.verdict(_receipt(0, 0)) == "broken"
+    assert verify.verdict({}, "code") == "broken"
+    assert verify.verdict(_receipt(0, 0), "code") == "broken"
 
 
 def test_the_summary_line_names_the_candidate_and_its_metric():

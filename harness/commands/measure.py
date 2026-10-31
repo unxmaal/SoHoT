@@ -60,7 +60,7 @@ def cmd_verify(a) -> int:
         note(f"\n=== {t.lane} ===\n    {' '.join(argv)}", flush=True)
         proc = subprocess.run(argv, capture_output=True, text=True)
         data = _receipt_at(out) or {}
-        got = verify.verdict(data) if proc.returncode == 0 else "broken"
+        got = verify.verdict(data, t.lane) if proc.returncode == 0 else "broken"
         line = (verify.summarise(t.lane, data) if proc.returncode == 0
                 else (proc.stderr.strip().splitlines() or ["no stderr"])[-1])
         results.append((t.lane, got, line))
