@@ -223,10 +223,13 @@ def _red(text: str, known: redact.Known) -> str:
     return redact.redact(text, known).text
 
 
-def build(loc: Located, row: dict, known: redact.Known) -> dict:
+def build(loc: Located, row: dict, known: redact.Known, capped: Counter | None = None) -> dict:
     """One unit's replay packet: the redacted prompt and its hashes, the redacted record of what was done, and the
     files its edits changed."""
     context, did = split(loc)
+    last = _last_text(did)
+    if capped is not None:
+        capped["result"] += len(last.encode("utf-8")) > RESULT_CAP
     raw = HEAD + quote(session_cut.render(context, CONTEXT_BYTES)) + TAIL
     prompt = _red(raw, known)
     files = {}
@@ -240,7 +243,7 @@ def build(loc: Located, row: dict, known: redact.Known) -> dict:
             "prompt_sha256": hashlib.sha256(raw.encode("utf-8")).hexdigest(),
             "redacted_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
             "prompt": prompt, "reference": _red(session_cut.render(did, REFERENCE_BYTES), known),
-            "result": _red(session_cut._cap(_last_text(did), RESULT_CAP), known), "files": files}
+            "result": _red(session_cut._cap(last, RESULT_CAP), known), "files": files}
 
 
 def _texts(value):
@@ -290,12 +293,15 @@ def prepare(out: Path, manifest: Path, root: Path, now: float, controls: int = C
     known = redact.known_here() if known is None else known
     rows = select(_jsonl(Path(manifest)), controls, seed)
     found = locate(root, [r["key"] for r in rows], now)
-    packets, missing = [], []
+    packets, missing, capped = [], [], Counter()
     for r in rows:
         if r["key"] not in found:
             missing.append(r["id"])
             continue
-        packets.append(build(found[r["key"]], r, known))
+        packets.append(build(found[r["key"]], r, known, capped))
+    if capped["result"]:
+        from harness import cuts
+        cuts.cut("replay_result_cap", "replay packet results cut short", dropped=capped["result"])
     leaks = [p["id"] for p in packets if findings(p, known)]
     if leaks:
         raise ValueError(f"redaction left findings in packets {leaks}")
@@ -356,7 +362,9 @@ def claude(prompt: str, system: str, model: str = JUDGE_MODEL, execute=None, tim
     execute = execute or claude_code.stream_run
     argv = ["claude", "-p", "--model", model, "--output-format", "json", "--no-session-persistence",
             "--strict-mcp-config", "--setting-sources", "", "--system-prompt", system, "--tools", ""]
-    with tempfile.TemporaryDirectory(prefix="lh-replay-judge-") as cwd:
+    from harness import cuts
+    with tempfile.TemporaryDirectory(prefix="lh-replay-judge-") as cwd, \
+            cuts.timeout("replay_judge_timeout", "claude -p judge or plant call", value=timeout or JUDGE_TIMEOUT_S):
         proc = execute(argv, cwd=cwd, input=prompt, timeout=timeout or JUDGE_TIMEOUT_S, capture_output=True,
                        text=True, encoding="utf-8")
     body = claude_code.result_of(proc.stdout)
@@ -459,6 +467,9 @@ def calibrate(out: Path, packets: list[dict], ask=None, jobs: int = JUDGE_JOBS,
         add({"id": p["id"], "plant": kind, "candidate_sha256": hashlib.sha256(text.encode()).hexdigest(),
              **judge(p, text, ask)})
     _pool(jobs, one, todo)
+    if n := sum(k == "wrong" and len(p["prompt"]) > RESULT_CAP for p, k in todo):
+        from harness import cuts
+        cuts.cut("replay_result_cap", "session tails a wrong-answer plant was shown", dropped=n)
     return _jsonl(path)
 
 
