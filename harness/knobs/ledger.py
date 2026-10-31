@@ -33,6 +33,7 @@ NOT_GATING = {
 }
 
 NEVER_CUTS = {
+    "harness/ledger.py:TARIFF_USD_PER_KWH": "the price a kWh is multiplied by; every reading is counted (#826)",
     "scripts/launchd.sh:ENERGY_EVERY_MIN": "how often the energy unit samples power; pacing, it drops no reading (#1087)",
     "scripts/launchd.sh:LEDGER_HOURS": "the hour the ledger unit upserts today and yesterday; a schedule cuts no work (#1087)",
 }
