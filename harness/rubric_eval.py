@@ -163,12 +163,14 @@ def request(rubric: Rubric, text: str, model: str) -> dict:
 
 def evaluate(rubric: Rubric, text: str, model: str, gateway: str,
              post=httpx.post, timeout: float = 300.0) -> Verdict:
+    from harness import cuts
     t0 = time.monotonic()
     raw = ""
     try:
-        r = post(f"{gateway.rstrip('/')}/v1/chat/completions",
-                 json=request(rubric, text, model), timeout=timeout,
-                 headers=gateway_key.headers())
+        with cuts.timeout("harness/rubric_eval.py:evaluate(timeout)", f"rubric reply of {model}", value=timeout):
+            r = post(f"{gateway.rstrip('/')}/v1/chat/completions",
+                     json=request(rubric, text, model), timeout=timeout,
+                     headers=gateway_key.headers())
         r.raise_for_status()
         choice = r.json()["choices"][0]
         raw = choice["message"].get("content") or ""

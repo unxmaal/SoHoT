@@ -35,7 +35,11 @@ def active() -> bool:
     from evals import repo
     if sys.platform != "darwin" or not Path(repo.SANDBOX_EXEC).is_file():
         return False
-    return len(valid_tasks()) >= MIN_TASKS
+    valid = len(valid_tasks())
+    if valid < MIN_TASKS:
+        from harness import cuts
+        cuts.cut("repo_gate_min_tasks", f"repo gate off with {valid} valid task(s) here", kept=valid)
+    return valid >= MIN_TASKS
 
 
 def lane_of(row: dict, want: str = "") -> str:

@@ -165,7 +165,11 @@ def listing_kind(files, config=None, found=None) -> str | None:
     if not weights:
         return EMPTY
     largest = max(size for _, size in weights)
-    if "config.json" in root or largest < ADAPTER_FLOOR_BYTES:
+    if "config.json" in root:
+        return LOOSE
+    if largest < ADAPTER_FLOOR_BYTES:
+        from harness import cuts
+        cuts.cut("adapter_floor", f"a listing whose largest weight is {largest} bytes read as loose weights")
         return LOOSE
     return BULK
 
@@ -796,7 +800,11 @@ def plausible_wer(summary: dict | None, lane: str, candidate: str = "", key: str
     mine = [row_for(summary, candidate, key) or {}] if candidate else list(summary.values())
     rates = [float(r["metrics"]["wer"]) for r in mine
              if (r.get("metrics") or {}).get("wer") is not None and (r.get("metric_n") or {}).get("wer", 1)]
-    return max(rates) if rates and max(rates) <= SCREEN_MAX_WER else None
+    if rates and max(rates) > SCREEN_MAX_WER:
+        from harness import cuts
+        cuts.cut("stt_screen_max_wer", f"{candidate or 'a model'}: corpus WER {max(rates):.2f} not read as working")
+        return None
+    return max(rates) if rates else None
 
 
 def working(summary: dict, lane: str, candidate: str, key: str) -> str:
