@@ -1508,7 +1508,12 @@ def _execute_at(args, overrides: dict) -> int:
         identity["harness"] = harness
     if taken:
         identity["reuse"] = {k: v for k, v in taken.items() if k != "runs"}
-    had = watch.read(outdir) if getattr(args, "resume", False) else None
+    had = watch.read(outdir) if outdir else None
+    if had and had[1] and not getattr(args, "resume", False):
+        print(f"refused: the checkpoint in {outdir} holds {len(had[1])} finished case(s); "
+              f"pass --resume to continue it, or name another --out (#1441)", file=sys.stderr)
+        return 1
+    had = had if getattr(args, "resume", False) else None
     if had and watch.differs(had[0], identity):
         print(f"stale: the checkpoint in {outdir} ran another exam "
               f"({', '.join(watch.differs(had[0], identity))} changed); not resumed", file=sys.stderr)
