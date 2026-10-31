@@ -905,6 +905,9 @@ def lane_defaults(conn=None, machine=HERE, typed=None) -> dict[str, str]:
     if typed is None:
         from harness import winners
         typed = winners.typed()
+    if conn is None:
+        from harness import memory_store as ms
+        conn = ms.lent()  # under a lend, connect() refuses and the typed defaults would stand in silently. #1426.
     close = conn is None
     try:
         if conn is None:

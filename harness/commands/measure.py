@@ -1146,21 +1146,16 @@ def _per_case(by_key) -> float | None:
 
 
 def _zero_pass(lane: str, inc_spec: str) -> dict | None:
-    from harness import baseline
-    from harness import memory_store as ms
-    store = ms.connect()
-    try:
+    from harness import baseline, runs
+    with runs.store() as store:
         return baseline.zero_pass(store, lane, inc_spec)
-    finally:
-        store.close()
 
 
 def take_measured(lane: str, inc_spec: str, zero: dict, dry_run: bool = False):
     """Adopt the best measured local candidate over a zero-pass typed incumbent when it wins; the verdict if it was adopted. #1110."""
-    from harness import adopt, baseline
+    from harness import adopt, baseline, runs
     from harness import memory_store as ms
-    store = ms.connect()
-    try:
+    with runs.store() as store:
         got = baseline.take(store, lane, inc_spec, zero)
         if got is None:
             print(f"    {lane}: {inc_spec} passed 0 of {zero['cases']} stored cases and no local candidate "
@@ -1176,8 +1171,6 @@ def take_measured(lane: str, inc_spec: str, zero: dict, dry_run: bool = False):
             print(f"    not recorded: {exc}", flush=True)
             return None
         return got
-    finally:
-        store.close()
 
 
 def take_incumbents(want: str = "") -> list:

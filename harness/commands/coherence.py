@@ -20,9 +20,10 @@ def cmd_coherence(a) -> int:
     except (OSError, sqlite3.Error, RuntimeError) as exc:
         return err(f"coherence: {exc}")
     try:
-        found = coherence.changes(conn)
+        with ms.lend(conn):  # every reader takes --db, never this home's store. #1426.
+            found = coherence.changes(conn)
+            stops = _yield_stops(conn)
         ids = coherence.apply(conn, found) if a.apply else []
-        stops = _yield_stops(conn)
     except (sqlite3.Error, ms.IllegalTransition) as exc:
         return err(f"coherence: {exc}")
     finally:

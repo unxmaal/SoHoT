@@ -34,9 +34,11 @@ def cmd_blame(a) -> int:
         conn = _open(a.db)
     except (OSError, sqlite3.Error) as exc:
         return err(f"blame: {exc}")
+    from harness import memory_store as ms
     try:
         if a.action == "sample":
-            got = ba.build(conn, a.seed, since=after)
+            with ms.lend(conn):  # the second labeller's cut is a fact about this draw, not this home's store. #1426.
+                got = ba.build(conn, a.seed, since=after)
             written = ba.write(got, out)
             note(f"{len(got['queue'])} rows to label ({sum(k['role'] == 'sample' for k in got['key'])} sampled, "
                  f"{sum(k['role'] == 'plant' for k in got['key'])} planted), store max verdict "
