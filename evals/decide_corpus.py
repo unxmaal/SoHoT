@@ -279,11 +279,21 @@ def rate_case(rid: str, row: dict) -> dict:
 # ---- writing ---------------------------------------------------------------
 
 
+#: What a private name in an upstream text becomes, so the case can ship. #1308.
+NAME_MASK = "[name]"
+
+
+def unnamed(text: str) -> str:
+    from harness import privacy
+    found = privacy.name_pattern(Path(__file__).resolve().parents[1])
+    return found[1].sub(NAME_MASK, text) if found else text
+
+
 def case_yaml(case: dict) -> str:
     src = SOURCES[case["source"]]
     body = {
         "id": case["id"], "modality": "decide", "prompt": case["prompt"],
-        "context": case["context"], "params": {"schema": case["schema"]},
+        "context": unnamed(case["context"]), "params": {"schema": case["schema"]},
         "assert": {"answers": case["answers"]},
         "attribution": {
             "dataset": src["dataset"], "url": src["url"], "license": src["license"],

@@ -347,7 +347,7 @@ def test_smoke_finds_the_stored_key_when_run_from_outside_the_checkout(gateway, 
     (tmp_path / "gateway.key").write_text("sk-stored\n", encoding="utf-8")
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
-    # As from Eric's shell: no project venv on PATH, so uv resolves the project from the cwd.
+    # As from the owner's shell: no project venv on PATH, so uv resolves the project from the cwd.
     path = os.pathsep.join(p for p in os.environ.get("PATH", "").split(os.pathsep)
                            if ".venv" not in p)
     _smoke({"GATEWAY_PORT": str(gateway.server_address[1]), "VIRTUAL_ENV": "", "PATH": path}, tmp_path,

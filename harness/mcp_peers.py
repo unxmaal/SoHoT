@@ -49,7 +49,7 @@ def stale(procs, live: int, port: int | None = None) -> list:
 
 
 def stop_command(pids) -> str:
-    """What Eric runs: SIGINT is uvicorn's force-quit while it drains; SIGTERM is not."""
+    """What the owner runs: SIGINT is uvicorn's force-quit while it drains; SIGTERM is not."""
     return "kill -INT " + " ".join(str(p) for p in pids)
 
 
@@ -74,7 +74,7 @@ def clients(listing: str, port: int) -> dict:
 
 
 def describe(peer, procs) -> str:
-    """A client as Eric would find it: its pid, age and command line."""
+    """A client as the owner would find it: its pid, age and command line."""
     p = {q.pid: q for q in procs}.get(peer) if isinstance(peer, int) else None
     if p is None:
         return f"pid {peer}" if isinstance(peer, int) else peer

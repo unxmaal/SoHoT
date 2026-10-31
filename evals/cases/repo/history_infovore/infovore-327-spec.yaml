@@ -5,10 +5,10 @@ modality: repo
 prompt: '# sift seed: random sample from deeper ranks for a base rate
 
 
-  Follows #319. Eric called 49 of the top 50 seed messages valuable, which says nothing about how fast
-  value falls off further down the ranking. Add `sift seed --ranks A-B --sample N [--seed S] --out DIR`:
-  a seeded random sample of N messages from ranks A to B of the same ranking. It writes a manifest with
-  its own source_ref (`sift:seed-lexicon-deep:<date>`) and regime `value`.
+  Follows #319. The owner called 49 of the top 50 seed messages valuable, which says nothing about how
+  fast value falls off further down the ranking. Add `sift seed --ranks A-B --sample N [--seed S] --out
+  DIR`: a seeded random sample of N messages from ranks A to B of the same ranking. It writes a manifest
+  with its own source_ref (`sift:seed-lexicon-deep:<date>`) and regime `value`.
 
 
   First use: 30 from ranks 1,000-10,000. That gives #320 a base rate below the top.

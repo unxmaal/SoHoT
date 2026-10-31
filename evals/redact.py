@@ -203,9 +203,7 @@ def known_here(name_files=()) -> Known:
     from harness import privacy
     root = Path(__file__).resolve().parent.parent
     accounts = {getpass.getuser(), Path.home().name}
-    common = subprocess.run(["git", "-C", str(root), "rev-parse", "--path-format=absolute", "--git-common-dir"],
-                            capture_output=True, text=True).stdout.strip()
-    names = set(privacy.names(root)) | (set(privacy.names(Path(common).parent)) if common else set())
+    names = set(privacy.names(root))
     for f in name_files:
         names |= {n.strip() for n in Path(f).read_text(encoding="utf-8").splitlines() if n.strip()}
     got = subprocess.run(["git", "config", "--global", "user.name"], capture_output=True, text=True)

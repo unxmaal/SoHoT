@@ -43,7 +43,7 @@ DELEGATIONS_EVERY_MIN="${DELEGATIONS_EVERY_MIN:-60}"
 DEFER_WAIT_S="${LH_DEFER_WAIT_S:-120}"
 # The day's ledger row, written late each evening and rewritten the next. #826.
 LEDGER_HOURS="${LEDGER_HOURS:-23}"
-# The morning report, before Eric's day starts; it notifies only when something needs a person. #867.
+# The morning report, before the owner's day starts; it notifies only when something needs a person. #867.
 MORNING_HOURS="${MORNING_HOURS:-6}"
 MORNING_MINUTE="${MORNING_MINUTE:-30}"
 # Claude Code changelog digest, weekly: launchd Weekday 1 is Monday. #866.
@@ -133,7 +133,7 @@ _hf_root() {
   _hf_var HF_HOME
 }
 
-# The watchdog acts and files issues, the day fetch runs and the review files, only once Eric sets these; a value given once is kept. #814, #1084, #1149.
+# The watchdog acts and files issues, the day fetch runs and the review files, only once the owner sets these; a value given once is kept. #814, #1084, #1149.
 _watchdog_env() {
   local var val vars
   case "$1" in
