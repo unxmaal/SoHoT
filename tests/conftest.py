@@ -632,9 +632,28 @@ def name_machine(monkeypatch, env: dict) -> None:
         monkeypatch.setattr(ms.machines, name, None)
 
 
+def stand_in_machine(monkeypatch, facts: dict) -> dict:
+    """this_machine() answers `facts`: identity named at the seam, measured facts held as its resolved answer. #1437."""
+    from evals import environment
+    from harness import memory_store as ms
+    keys = ("hw_model", "os", "arch", "host")
+    got = {**({} if any(k in facts for k in keys) else ms.this_machine()), **facts}
+    name_machine(monkeypatch, {k: got[k] for k in (*keys, "memory_gb", "versions") if k in got})
+    me = environment.identity()
+    assert facts.get("fingerprint", me["fingerprint"]) == me["fingerprint"], f"{facts} names another machine than {me}"
+    got = {k: v for k, v in {**got, **me}.items() if k != "partial"}
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", got)
+    return got
+
+
 @pytest.fixture
 def machine_is(monkeypatch):
     return lambda env: name_machine(monkeypatch, env)
+
+
+@pytest.fixture
+def machine_has(monkeypatch):
+    return lambda facts: stand_in_machine(monkeypatch, facts)
 
 
 @pytest.fixture(autouse=True)
