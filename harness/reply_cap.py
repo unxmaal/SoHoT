@@ -168,13 +168,10 @@ def cap_for(conn, lane: str, specs) -> tuple[int, dict]:
 
 def budget_for(lane: str, specs) -> tuple[int, dict]:
     """cap_for on this home's store; the lane's budget where the store cannot be read."""
-    from harness import memory_store as ms
+    from harness import runs
     try:
-        conn = ms.connect()
-        try:
+        with runs.store() as conn:
             return cap_for(conn, lane, specs)
-        finally:
-            conn.close()
     except Exception:  # noqa: BLE001 - no stored evidence means the lane's budget
         return completion.budget(lane), {}
 

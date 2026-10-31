@@ -1,4 +1,4 @@
-"""A candidate's content identity: the bytes of its runtime and model, what it is sent, the exam, the harness and the machine. #1094."""
+"""A candidate's content identity: the bytes of its runtime and model, what it is sent, the exam and the machine; the harness commit is recorded, not matched. #1094."""
 from __future__ import annotations
 
 import ast

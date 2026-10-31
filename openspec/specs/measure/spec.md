@@ -256,10 +256,15 @@ Test: tests/test_resume_813.py::test_a_run_paused_at_its_slice_is_recorded_with_
 - **THEN** `--stop-at` falls within that minute of now
 Test: tests/test_over_budget_796.py::test_an_over_budget_run_is_launched_to_pause_at_its_slice
 
-#### Scenario: A repo pairing
+#### Scenario: A repo pairing under --unscreened
 - **WHEN** a repo pairing is measured with `--unscreened`
-- **THEN** the paired argv carries `--unscreened`
-Test: tests/test_repo_looks_1353.py::test_unscreened_passes_the_guard_through_to_the_paired_run
+- **THEN** the measure step's screen guard is skipped and the paired argv carries `--unscreened`
+Test: tests/test_repo_looks_1353.py::test_unscreened_skips_the_measure_steps_screen_guard
+
+#### Scenario: Every repo pairing the guard lets run
+- **WHEN** a repo pairing passes the measure step's screen guard without `--unscreened`, and a code pairing is measured
+- **THEN** the repo argv carries `--unscreened` and the code argv does not
+Test: tests/test_repo_looks_1353.py::test_every_repo_pairing_the_measure_step_lets_run_carries_unscreened_to_evals_run
 
 #### Scenario: Reused cells
 - **WHEN** the plan reuses stored incumbent cells
@@ -307,10 +312,15 @@ Test: tests/test_repo_looks_1353.py::test_a_slice_that_ran_nothing_ends_the_run_
 - **THEN** the run is launched once
 Test: tests/test_repo_looks_1353.py::test_a_budget_under_one_look_interval_is_one_slice
 
-#### Scenario: A pause that is not the stop time
-- **WHEN** a slice pauses without saying it stopped at its stop time
+#### Scenario: A pause on request
+- **WHEN** a slice pauses on request with budget left and new rows
 - **THEN** it is not resumed inside the launch
 Test: tests/test_repo_looks_1353.py::test_a_pause_on_request_is_never_resumed_inside_the_run
+
+#### Scenario: A pause with no reason
+- **WHEN** a slice pauses without saying why
+- **THEN** it is not resumed inside the launch
+Test: tests/test_repo_looks_1353.py::test_a_pause_with_no_reason_is_never_resumed_inside_the_run
 
 ### Requirement: Launching and stopping the eval group
 `_launch` SHALL take the named lock (waiting behind its holder's declared deadline), record its own deadline on the heartbeat, and run the eval as its own process group, starting the deadline once the lock is held; past the deadline it SHALL stop the whole group, giving every member `STOP_GRACE_S` between TERM and KILL, and a TERM to the measure step, even one landing while the eval spawns, SHALL stop the eval's group before the measure exits with the TERM status.
@@ -934,12 +944,17 @@ Test: untested
 Test: tests/test_repo_share_1323.py::test_the_replay_owes_a_code_comparison_only_from_its_repo_win
 
 ### Requirement: Both orders walked against the night's window
-For each night the replay SHALL walk the survivors order and the gain order, each through the family order, the diversity slot (memory unchecked), the held pauses and the repo gate, against the window from the first measurement to the sweep ceiling `SWEEP_CEILING_H`; each row SHALL take the least of its minutes, one `BUDGET_MIN` slice, and what is left, an unpriced row one slice, and a row reached with nothing left SHALL be cut.
+For each night the replay SHALL walk the survivors order and the gain order, each through the family order, the diversity slot (memory unchecked), the held pauses and the repo gate, against the window from the first measurement to the sweep ceiling `SWEEP_CEILING_H`, every row priced at today's seconds per call with only its evidence read as of that night; each row SHALL take the least of its minutes, one `BUDGET_MIN` slice, and what is left, an unpriced or zero-minute row one slice, and a row reached with nothing left SHALL be cut.
 
 #### Scenario: The walk cuts what the window has no time for
 - **WHEN** rows are walked against a window shorter than their summed time
 - **THEN** a row longer than a slice takes one slice, an unpriced row takes a slice or what is left, and the row reached at zero is cut
 Test: tests/test_measure_gain_1315.py::test_the_walk_cuts_what_the_window_leaves_no_time_for
+
+#### Scenario: A row priced at zero minutes
+- **WHEN** a row priced at zero minutes and an unpriced row are walked against a long window
+- **THEN** each takes one slice, and the zero-minute row has no key and reads as unpriced
+Test: tests/test_measure_gain_1315.py::test_a_row_priced_at_zero_minutes_is_charged_a_slice_like_an_unpriced_one
 
 #### Scenario: A row the gate holds that night is left out
 - **WHEN** the gate is on for a replayed night and a code row has not won its repo comparison
@@ -958,7 +973,12 @@ Test: untested
 Test: untested
 
 ### Requirement: Replay and queue reports
-The replay report SHALL say, per night, when measuring began, the minutes to the ceiling, the survivors and pauses it faced, what it measured, and for each order the rows it takes, the minutes each lane takes, and how many rows it cuts; today's report SHALL list today's survivors by gain per GPU-minute, numbered, one line per row.
+The replay report SHALL say, per night, when measuring began, the minutes to the ceiling, the survivors and pauses it faced, what it measured, and for each order the rows it takes, the minutes each lane takes, and how many rows it cuts, naming at most `--head` rows of each (every row at a head of zero); today's report SHALL list today's survivors by gain per GPU-minute, numbered, one line per row.
+
+#### Scenario: The head of a replayed night
+- **WHEN** a replayed night's orders take and cut more rows than the head, at a head of zero and at a head of two
+- **THEN** at zero every taken and cut row is named, and at two each line names two
+Test: tests/test_measure_gain_1315.py::test_the_replay_lists_every_row_at_head_0_and_head_rows_otherwise
 
 #### Scenario: Minutes each lane takes
 - **WHEN** a replayed night's orders take rows from several lanes
@@ -971,12 +991,12 @@ Test: tests/test_repo_share_1323.py::test_the_replay_says_the_minutes_each_lane_
 Test: untested
 
 ### Requirement: The measure-order command is read-only
-`soh measure-order` SHALL open the store read-only, or a copy named by `--store` opened immutable, print today's queue or, with `--replay`, the per-night replay, emit the same lines as one object under `--json`, and exit with code 0.
+`soh measure-order` SHALL open the store read-only, or a copy named by `--store` opened immutable, lend that one connection to every reader it reaches (pricing, routing, reply caps) so no other store is opened, print today's queue or, with `--replay`, the per-night replay, emit the same lines as one object under `--json`, and exit with code 0.
 
 #### Scenario: A store copy
-- **WHEN** `--store` names a copy
-- **THEN** the copy is opened immutable and nothing is written to it
-Test: untested
+- **WHEN** `--store` names a copy and today's queue and a replay are printed from it
+- **THEN** the survivor in the copy is listed and the store is never opened through `connect`
+Test: tests/test_measure_gain_1315.py::test_measure_order_reads_only_the_store_it_is_given
 
 #### Scenario: Replay or today
 - **WHEN** `--replay` is given a number of days
@@ -1110,10 +1130,15 @@ Test: tests/test_incumbent_reuse_1094.py::test_the_harness_commit_is_recorded_an
 - **THEN** the digest is unchanged and the timing records the new value
 Test: tests/test_incumbent_reuse_1094.py::test_the_digest_holds_when_only_swap_or_free_memory_or_thermal_change
 
-#### Scenario: A repair harness is another exam
+#### Scenario: Repair knobs only under the repair harness
 - **WHEN** the repo lane's settings are read under the patch harness and under the repair harness
 - **THEN** the patch settings carry none of the repair knobs and the repair settings carry all of them
-Test: tests/test_repo_repair_890.py::test_a_repair_identity_never_matches_a_patch_identity_and_patch_keeps_its_knobs
+Test: tests/test_repo_repair_890.py::test_patch_settings_carry_no_repair_knob_and_repair_settings_carry_all
+
+#### Scenario: A repair harness is another exam
+- **WHEN** a repo identity is computed under the patch harness and under the repair harness with the same settings
+- **THEN** both digests resolve and differ, and only the repair exam part names its harness
+Test: tests/test_repo_repair_890.py::test_a_repair_identity_never_matches_a_patch_identity
 
 ### Requirement: Per-case digests
 Each case SHALL have its own digest over its content, its case file's bytes and, for a text spec, the request body it is sent less the model name, so a change to one case or to how it is asked moves that case's digest without moving the run's.
@@ -1219,17 +1244,17 @@ Test: tests/test_throughput.py::test_throughput_passes_its_request_timeout_to_th
 Test: tests/test_json_everywhere.py::test_throughput_is_one_object
 
 ### Requirement: soh reuse-replay checks a past verdict read-only
-`soh reuse-replay RUN` SHALL replay a stored paired run's looks with and without the incumbent's draws from earlier matching runs, reading the live store read-only or a given store copy opened immutable, print both walks, and exit 0 when both reach the same adopt decision and 1 otherwise; a run it cannot replay SHALL be an error.
+`soh reuse-replay RUN` SHALL replay a stored paired run's looks with and without the incumbent's draws from earlier matching runs, reading the live store read-only or a given store copy opened immutable, print both walks, and exit 0 when both reach the same adopt decision or neither reaches one, and 1 otherwise; a run it cannot replay SHALL be an error.
 
 #### Scenario: The same verdict
-- **WHEN** control and replay reach the same adopt and decision
+- **WHEN** control and replay reach the same adopt and decision, or neither reaches a verdict
 - **THEN** it prints "same verdict" and exits 0
-Test: untested
+Test: tests/test_incumbent_reuse_1094.py::test_reuse_replay_exits_1_only_when_the_verdict_moves
 
 #### Scenario: A moved verdict
-- **WHEN** the replay reaches another decision, or either walk reaches none
+- **WHEN** the replay reaches another decision, or only one walk reaches a verdict
 - **THEN** it prints "VERDICT MOVED" and exits 1
-Test: untested
+Test: tests/test_incumbent_reuse_1094.py::test_reuse_replay_exits_1_only_when_the_verdict_moves
 
 #### Scenario: A store copy
 - **WHEN** `--store` names a copy
