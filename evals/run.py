@@ -35,7 +35,7 @@ from dataclasses import replace
 from evals.core import (AGENT_MODALITIES, CRAFT_MODALITIES, MODALITIES, REPO_MODALITIES, TEXT_MODALITIES,
                         TEXT_SUFFIX, TRAJECTORY_SUFFIX, Case,
                         Receipt, cases_digest, comparable, direction_of,
-                        summarize)
+                        ece_withheld, summarize)
 from evals import core, environment, private, watch
 from evals.runners.base import RunnerError
 from evals.runners.process import ProcessRunner
@@ -1607,6 +1607,7 @@ def _execute_at(args, overrides: dict) -> int:
         raise SystemExit("nothing ran: no candidate matched any case")
 
     report(summarize(results), resolved)
+    ece_withheld(results)
     if args.modality in REPO_MODALITIES:
         sized_text = size_report(cases, results)
         if sized_text:

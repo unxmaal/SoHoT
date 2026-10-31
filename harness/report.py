@@ -194,8 +194,9 @@ def queue_state(conn) -> dict:
 
 
 def ms_judgeable(conn):
-    from harness import memory_store as ms
-    return ms.judgeable(conn, limit=1_000_000)
+    from harness import cuts, memory_store as ms
+    return cuts.filled(ms.judgeable(conn, limit=1_000_000), 1_000_000,
+                       "harness/report.py:ms_judgeable->ms.judgeable(limit)", "judgeable rows the report reads", conn=conn)
 
 
 def machine_state() -> dict:

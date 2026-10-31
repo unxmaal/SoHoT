@@ -53,14 +53,17 @@ def _last(path: Path) -> dict | None:
     return got if isinstance(got, dict) else None
 
 
+def _repeat(last: dict | None, rec: dict, gap_s: float) -> bool:
+    if last is None:
+        return False
+    keys = [k for name in WINDOWS for k in (name, f"{name}_resets_at")]
+    at = last.get("at")
+    return all(last.get(k) == rec.get(k) for k in keys) and isinstance(at, (int, float)) and rec["at"] - at < gap_s
+
+
 def append(path: Path, rec: dict, min_gap_s: float = MIN_GAP_S) -> bool:
-    last = _last(path)
-    if last is not None:
-        keys = [k for name in WINDOWS for k in (name, f"{name}_resets_at")]
-        same = all(last.get(k) == rec.get(k) for k in keys)
-        at = last.get("at")
-        if same and isinstance(at, (int, float)) and rec["at"] - at < min_gap_s:
-            return False
+    if _repeat(_last(path), rec, min_gap_s):
+        return False
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(rec, sort_keys=True) + "\n")

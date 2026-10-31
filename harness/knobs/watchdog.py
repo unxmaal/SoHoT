@@ -111,4 +111,6 @@ NEVER_CUTS = {
     "harness/availability.py:TARGET": "the share a lane's availability is flagged under in the report; it drops no probe",
     "harness/workqueue.py:quiesce(wait)": "seconds between looks for a running job while the queue is paused; it waits "
                                           "for every job and stops none (#577)",
+    "scripts/launchd.sh:WATCHDOG_EVERY_MIN": "how often the watchdog wakes; a late wake still sees every criterion, "
+                                             "pacing (#1087)",
 }

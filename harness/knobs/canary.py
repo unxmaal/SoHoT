@@ -18,3 +18,8 @@ NOT_GATING = {
     f"{C}:POLL_S": "how often the canary re-reads the loop heartbeat while it waits; latency only (#919)",
     f"{C}:PLANT_DEADLINE_S": "the GPU lock's declared deadline per plant, which a watchdog reads; gates no verdict (#919)",
 }
+
+NEVER_CUTS = {
+    "scripts/launchd.sh:CANARY_HOUR": "the hour the weekly canary starts; a schedule cuts no work (#1087)",
+    "scripts/launchd.sh:CANARY_WEEKDAY": "the day the weekly canary starts; a schedule cuts no work (#1087)",
+}

@@ -46,18 +46,22 @@ class Pressure:
 
 
 def _sysctl(name: str) -> str:
+    from harness import cuts
     try:
-        out = subprocess.run(["sysctl", "-n", name], capture_output=True,
-                             text=True, timeout=5)
+        with cuts.timeout("harness/pressure.py:_sysctl->subprocess.run(timeout)", f"sysctl {name}"):
+            out = subprocess.run(["sysctl", "-n", name], capture_output=True,
+                                 text=True, timeout=5)
     except (OSError, subprocess.SubprocessError):
         return ""
     return out.stdout.strip() if out.returncode == 0 else ""
 
 
 def _vm_stat() -> str:
+    from harness import cuts
     try:
-        return subprocess.run(["vm_stat"], capture_output=True, text=True,
-                              timeout=5).stdout
+        with cuts.timeout("harness/pressure.py:_vm_stat->subprocess.run(timeout)", "vm_stat"):
+            return subprocess.run(["vm_stat"], capture_output=True, text=True,
+                                  timeout=5).stdout
     except (OSError, subprocess.SubprocessError):
         return ""
 

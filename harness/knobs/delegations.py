@@ -11,3 +11,8 @@ KNOBS = [
     _k("delegation_span_share", ["harness/delegations.py:SPAN_SHARE"], [0.1, 0.25, 0.5],
        note="share of the answer's own lines a later tool input must hold to count it accepted (#1158)"),
 ]
+
+NEVER_CUTS = {
+    "scripts/launchd.sh:DELEGATIONS_EVERY_MIN": "how often the unit closes pending outcomes; a later run closes the "
+                                                "same ones, a schedule cuts no work (#1087)",
+}

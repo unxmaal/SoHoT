@@ -200,8 +200,7 @@ def decide(lane: str, incumbent: dict, challenger: dict,
         got = Verdict(lane, name_i, name_c, False, f"{got.why}; {worse}")
     elif not got.adopt and plan is not None and rows:
         got = _lane_too_small(lane, name_i, name_c, got, plan, split) or _null(lane, name_i, name_c, got, plan)
-        if got.evidence.get("min_effect"):
-            evidence["min_effect"] = got.evidence["min_effect"]
+        evidence.update({k: got.evidence[k] for k in ("min_effect", "lane_effect") if got.evidence.get(k)})
     # A method's calls and latency travel with its verdict, won or lost. #576.
     from harness import methods
     cost = methods.cost_note(incumbent, challenger, spec) if spec else ""
@@ -359,8 +358,10 @@ def _null(lane, name_i, name_c, got: Verdict, plan) -> Verdict:
                        failure_class=reasons.UNDERPOWERED)
     noise = power.noise_for(lane)
     if seen <= noise + 1e-9:
+        over = seen > power.MIN_EFFECT + 1e-9
         return Verdict(lane, name_i, name_c, False,
-                       f"{got.why}; no gain of +{seen:.2f} or more per cell at power {plan.target}")
+                       f"{got.why}; no gain of +{seen:.2f} or more per cell at power {plan.target}",
+                       evidence={"lane_effect": {"noise": noise, "seen": round(seen, 4)}} if over else {})
     return Verdict(lane, name_i, name_c, False,
                    f"{got.why}; no gain of +{seen:.2f} or more per cell at power {plan.target}; reruns could see "
                    f"+{noise:.2f}, but a gain under adopt_min_effect +{wanted:.2f} is not worth a switch",
@@ -528,8 +529,7 @@ def confirm(verdict: Verdict, rows, split, screened=frozenset(), *, fresh: bool 
     plan = _confirm_plan(cells, name_i, lane)
     null = _null(lane, name_i, name_c, Verdict(lane, name_i, name_c, False, f"not confirmed on {head}"), plan)
     evidence["confirm"].update(power=round(plan.power, 4), effect=plan.effect, mde=plan.mde)
-    if null.evidence.get("min_effect"):
-        evidence["min_effect"] = null.evidence["min_effect"]
+    evidence.update({k: null.evidence[k] for k in ("min_effect", "lane_effect") if null.evidence.get(k)})
     return replace(verdict, adopt=False, failure_class=null.failure_class, evidence=evidence,
                    why=f"won the holdout, {null.why} ({verdict.why})", alpha_cut=(p, ALPHA) if favours else ())
 
@@ -645,6 +645,12 @@ def record(conn, verdict: Verdict, spec: str = "",
         from harness import cuts
         cuts.cut("adopt_min_effect", f"{verdict.lane}: {spec} declined on a null that could see "
                  f"+{floor['seen']:.2f}, above the lane's +{floor['noise']:.2f} noise", kept=0, dropped=1, conn=conn)
+    lane_effect = verdict.evidence.get("lane_effect")
+    if lane_effect:
+        from harness import cuts
+        cuts.cut("adopt_effect", f"{verdict.lane}: {spec} declined on a null that sees only "
+                 f"+{lane_effect['seen']:.2f}, inside the lane's +{lane_effect['noise']:.2f} noise",
+                 value=lane_effect["noise"], kept=0, dropped=1, conn=conn)
     if verdict.alpha_cut and not verdict.adopt:
         from harness import cuts
         p, alpha = verdict.alpha_cut

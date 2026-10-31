@@ -14,3 +14,8 @@ NOT_GATING = {
     "harness/claude_news.py:VERSION_TIMEOUT_S": "how long `claude --version` may take; a slow one leaves the "
                                                 "installed version unknown in the setup summary (#866)",
 }
+
+NEVER_CUTS = {
+    "scripts/launchd.sh:CLAUDE_NEWS_HOUR": "the hour the weekly digest starts; a schedule cuts no work (#1087)",
+    "scripts/launchd.sh:CLAUDE_NEWS_WEEKDAY": "the day the weekly digest starts; a schedule cuts no work (#1087)",
+}

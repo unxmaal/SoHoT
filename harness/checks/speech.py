@@ -278,6 +278,8 @@ def check(path: str | Path, reference: str, max_wer: float | None = None,
         return SpeechResult(False, f"no audio file at {path}")
     size = path.stat().st_size
     if size < MIN_AUDIO_BYTES:
+        from harness import cuts
+        cuts.cut("harness/checks/speech.py:MIN_AUDIO_BYTES", f"speech {path.name}: {size} bytes")
         return SpeechResult(
             False, f"audio is {size} bytes, too small to hold speech")
 
