@@ -14,6 +14,10 @@ concurrency:
   group: check-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
+# uv's default 3 retries span 5 s, too short for a runner DNS blip (#1440); this covers every uv download.
+env:
+  UV_HTTP_RETRIES: "8"
+
 jobs:
   check-macos:
     # Apple Silicon, and standard runners are free for public repos. Larger
@@ -65,7 +69,7 @@ jobs:
         # the checker that catches well-formed markup which draws nothing.
         run: brew install shellcheck librsvg
 
-      - run: uv sync --python 3.12
+      - run: bash scripts/ci-retry.sh uv sync --python 3.12
 
       - name: make check
         # The same command a person runs locally. CI running something else is
@@ -219,7 +223,7 @@ jobs:
           path: ${{ env.APT_ARCHIVES }}
           key: ${{ steps.aptkey.outputs.key }}
 
-      - run: uv sync --python 3.12
+      - run: bash scripts/ci-retry.sh uv sync --python 3.12
 
       - name: Which browser, and what it says
         # The html and ink lanes go through whatever browser render.py finds,
@@ -368,7 +372,7 @@ jobs:
           /c/msys64/usr/bin/pacman -Sy --noconfirm
           /c/msys64/usr/bin/pacman -S --noconfirm mingw-w64-x86_64-librsvg
 
-      - run: uv sync --python 3.12
+      - run: bash scripts/ci-retry.sh uv sync --python 3.12
 
       - name: make check
         # The same command the macOS job runs, and the same one a person runs
@@ -412,7 +416,7 @@ jobs:
         with:
           enable-cache: true
 
-      - run: uv sync --python 3.12
+      - run: bash scripts/ci-retry.sh uv sync --python 3.12
 
       - name: make mutation
         # Fails on a new surviving mutant, or on a pinned one that is now killed and still listed.
