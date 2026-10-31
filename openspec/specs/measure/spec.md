@@ -408,11 +408,11 @@ Test: tests/test_resume_813.py::test_a_finished_resume_settles_its_pause_even_wh
 Test: tests/test_resume_813.py::test_a_finished_resume_spends_less_alpha_and_stores_planned_and_observed_seconds
 
 ### Requirement: Stopped runs keep their rows
-A paired run stopped by a signal (a negative exit, or a shell's exit for SIGTERM, SIGKILL or SIGINT) with checkpointed rows SHALL be kept as a pause and resumed; a run that exits non-zero otherwise MUST be an error with no pause row. A run directory a stopped run left with no pause row SHALL be resumed from its checkpoint when its name is the lane's adopt run, its checkpoint names this lane and exactly the incumbent and challenger, its progress state is running or paused, its directory is in no pause row of any state, and its recorded process group is gone.
+A paired run stopped by a signal (a negative exit, or a shell's exit for SIGTERM, SIGKILL or SIGINT) with checkpointed rows SHALL be kept as a pause (the measure returning `watch.PAUSED`) and resumed; a run that exits non-zero otherwise MUST be an error with no pause row. A run directory a stopped run left with no pause row SHALL be resumed from its checkpoint when its name is the lane's adopt run, its checkpoint names this lane and exactly the incumbent and challenger, its progress state is running or paused, its directory is in no pause row of any state, and its recorded process group is gone.
 
 #### Scenario: A signal stop is a pause
 - **WHEN** evals.run exits from a signal after checkpointing rows
-- **THEN** the measure returns 0 and a `paused` row holds the rows done
+- **THEN** the measure returns `watch.PAUSED` and a `paused` row holds the rows done
 - **AND** the next measure resumes the same run directory
 Test: tests/test_overrun_864.py::test_a_run_stopped_by_a_signal_is_kept_as_a_pause_and_resumed
 
