@@ -57,7 +57,8 @@ def test_a_probe_dropped_as_timeout_is_one_cut_at_the_timeout_it_ran_under(tmp_p
 def test_both_size_limits_record_only_the_candidates_each_one_refused():
     small = {"source_files": ["a.py"], "lines": 1}
     history.record_cuts([small, {**small, "lines": history.MAX_LINES + 1},
-                         {"source_files": [f"{i}.py" for i in range(history.MAX_SOURCE_FILES + 1)], "lines": 1}])
+                         {"source_files": [f"{i}.py" for i in range(history.MAX_SOURCE_FILES + 1)], "lines": 1}],
+                        0, history.TIMEOUT_S)
     assert sorted((r["knob"], r["dropped"]) for r in _spooled()) == [("history_max_lines", 1),
                                                                     ("history_max_source_files", 1)]
 
@@ -229,7 +230,7 @@ def test_packet_caps_record_what_they_cut_from_the_labellers_view(census_root, t
         monkeypatch.setattr(d, name, value)
     frame = d.census(tmp_path / "b", census_root, census_t.NOW, n=4, known=census_t.KNOWN)
     assert packet_knobs <= set(_knobs())
-    packets = [json.loads(line) for line in (tmp_path / "b" / "packets-a.jsonl").read_text().splitlines()]
+    packets = [json.loads(line) for line in (tmp_path / "b" / "packets-a.jsonl").read_text(encoding="utf-8").splitlines()]
     assert frame["n"] == len(packets) and all(len(p["steps"]) <= 1 and all(len(s) <= 4 for s in p["steps"])
                                               for p in packets)
 

@@ -270,7 +270,7 @@ def screen(c: dict) -> str | None:
     return None
 
 
-def record_cuts(big, timeouts: int = 0, timeout=TIMEOUT_S) -> None:
+def record_cuts(big, timeouts: int, timeout: float) -> None:
     """One cut per size limit that screened candidates out as too_big, and one for probes dropped as timeout."""
     from harness import cuts
     if files := sum(len(c["source_files"]) > MAX_SOURCE_FILES for c in big):
