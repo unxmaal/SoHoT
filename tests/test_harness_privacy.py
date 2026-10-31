@@ -295,6 +295,16 @@ def test_a_public_corpus_is_spared_the_name_pattern_only(tmp_path, monkeypatch):
     assert got == [(spared, "home-path")]
 
 
+@pytest.mark.gauntlet("a-closed-table-fronting-an-open-set", site="harness/privacy.py:SPARED")
+def test_every_spared_file_is_tracked_and_spares_a_real_pattern():
+    """A spared path that was renamed away would spare nothing, and a misspelt pattern would spare everything else."""
+    root = Path(__file__).resolve().parent.parent
+    tracked = {p.relative_to(root).as_posix() for p in privacy.tracked(root)}
+    known = {name for name, _, _ in privacy.PATTERNS} | {"person-name"}
+    assert set(privacy.SPARED) <= tracked
+    assert all(v and v <= known for v in privacy.SPARED.values())
+
+
 @pytest.mark.parametrize("raw,masked", [
     ("/Users/someone/.cache/x.py", "~/.cache/x.py"),
     ("/home/someone/src", "~/src"),

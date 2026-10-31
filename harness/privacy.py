@@ -162,9 +162,6 @@ def name_pattern(root: Path, more=()) -> tuple[str, re.Pattern[str], str] | None
             "a real person; say the role, or restructure to passive")
 
 
-#: A tracked file with a NUL in its first bytes is binary (image, audio, video); every other one is text and is read. #1455.
-BINARY_PROBE = 8192
-
 #: Tracked text that must keep its wording, and the patterns it alone is spared: public corpora, a license's holder, package versions. #1455.
 SPARED = {
     "LICENSE": {"person-name"},
@@ -174,13 +171,12 @@ SPARED = {
 }
 
 _ESCAPE = re.compile(r"\\(u[0-9a-fA-F]{4}|.)")
-_ESCAPES = {"n": "\n", "r": "\n", "t": "\t"}
 
 
 def unescaped(line: str) -> str:
     """A line with JSON's and YAML's backslash escapes decoded, so a name after an escaped newline starts a word. #1455."""
     return _ESCAPE.sub(lambda m: chr(int(m.group(1)[1:], 16)) if len(m.group(1)) == 5
-                       else _ESCAPES.get(m.group(1), m.group(1)), line)
+                       else "\n" if m.group(1) in "nrt" else m.group(1), line)
 
 
 _HOME_DIR = re.compile(r"/(?:Users|home)/(?!(?:USER|you|user)/)[^/\s'\"`<]+/")
@@ -236,9 +232,9 @@ def tracked(root: Path) -> list[Path]:
 
 
 def text_of(p: Path) -> str | None:
-    """The file's text, or None for a binary file. #1455."""
+    """The file's text, or None for a binary file (one holding a NUL: image, audio, video). #1455."""
     raw = p.read_bytes()
-    return None if b"\0" in raw[:BINARY_PROBE] else raw.decode("utf-8", errors="replace")
+    return None if b"\0" in raw else raw.decode("utf-8", errors="replace")
 
 
 def scan_paths(root: Path) -> list[Finding]:
