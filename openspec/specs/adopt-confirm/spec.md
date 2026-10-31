@@ -168,7 +168,7 @@ Test: tests/test_min_effect_1320.py::test_a_null_that_only_the_floor_makes_a_los
 Test: tests/test_min_effect_1320.py::test_decide_carries_the_floor_evidence_from_its_null
 
 ### Requirement: Lane too small and undecidable plans
-The adopt tier SHALL record a null on a holdout no repeat could power as lane_too_small (declined, limit) waiting on `cases:<lane>>N`, and SHALL write that verdict without running the pair when the plan has power 0 even at +1.00 per cell.
+The adopt tier SHALL record a null on a holdout no repeat could power as lane_too_small (declined, limit) waiting on `cases:<lane>>N`, and SHALL write that verdict without running the pair when the plan has power 0 even at +1.00 per cell. `soh coherence` SHALL re-decide a stored futility stop whose plan meets the same condition into that verdict (#1452).
 
 #### Scenario: a null on a too-small lane
 - **WHEN** a null comes from a plan whose holdout needs more cases than the lane has
@@ -179,6 +179,11 @@ Test: tests/test_lane_too_small_1049.py::test_a_null_on_a_too_small_lane_names_b
 - **WHEN** `undecidable()` is given a plan whose max power is 0
 - **THEN** it returns a lane_too_small verdict saying it was not run
 Test: tests/test_lane_too_small_1049.py::test_a_plan_no_run_can_decide_is_a_verdict_written_without_running_it
+
+#### Scenario: a stored futility stop on a too-small lane
+- **WHEN** `soh coherence` reads a futility stop whose stored plan's holdout could not reach power at any repeat
+- **THEN** it re-decides it lane_too_small waiting on the lane's cases and leaves a powered futility stop a loss
+Test: tests/test_futility_lane_too_small_1452.py::test_soh_coherence_re_decides_a_stored_unpowered_futility_stop_and_leaves_a_powered_one
 
 ### Requirement: Dev confirmation of a holdout win
 A measured gate win SHALL serve only when its confirmation cells (dev rows, less cases the challenger's screen ran) are better on the lane metric with gained > lost at p within ALPHA (0.05, not divided by the comparison count); otherwise it SHALL be declined: a candidate loss when significantly worse, or when the cells were powered to see the lane's effect (the rule `decide()` applies to a null, with the cells planned as a holdout: the incumbent's draws on them at their repeat and ALPHA); only a null the cells could not see SHALL be underpowered, naming the smallest gain they could see. By-hand verdicts and losses SHALL pass through unchanged.
