@@ -373,7 +373,7 @@ def _report_screen(a) -> int:
                 continue
             taken += 1
             # Its own receipt directory, not the newest for the modality. #282.
-            outdir = paths.runs() / f"screen-{int(time.time())}-{r['modality']}"
+            outdir = paths.unused_run(f"screen-{int(time.time())}", f"-{r['modality']}")
             try:
                 # The lock is taken here so its wait reaches the heartbeat; the child inherits it. #705.
                 with heartbeat.held("eval", screen.deadline_s(r["candidate"]),
