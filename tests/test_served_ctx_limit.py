@@ -11,6 +11,7 @@ from evals.core import Case
 from evals.runners.text import CompletionRunner
 from harness import binding, completion, context, delegate, ds4, knobs, memory, reasons, runs
 from harness import memory_store as ms
+from tests import conftest
 
 GW = "http://gw.test"
 URL = f"{GW}/v1/chat/completions"
@@ -223,7 +224,7 @@ def test_binding_credits_served_ctx_not_the_reply_budget(tmp_path, monkeypatch):
     m = {"fingerprint": "Mac17,15/macOS/arm64", "hw_model": "Mac17,15", "os": "macOS-27.0.1-arm64-arm-64bit",
          "arch": "arm64", "memory_gb": 96.0, "accelerator": "unified 96GB", "runtimes": "cpu,mlx",
          "ceiling_gb": 66.0, "versions": {}}
-    monkeypatch.setattr(ms, "this_machine", lambda: dict(m))
+    conftest.stand_in_machine(monkeypatch, m)
     conn = ms.connect(tmp_path / "d.db")
     ms.remember_machine(conn, dict(m))
     rows = [{"candidate": "m", "case_id": f"c{i}", "passed": False, "seconds": 1.0,

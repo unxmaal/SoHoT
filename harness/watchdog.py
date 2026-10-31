@@ -437,6 +437,14 @@ class ProgressFiles:
             return f"refused: pause file {target} is outside the run directory {where}"
         return f"pause file written: {ask_pause(where, reason)}"
 
+    def mark_stop(self, run: dict, reason: str) -> str:
+        """Write the run's stop file naming why, so its measure step can tell an overrun from any other stop. #1409."""
+        from evals.watch import mark_stop
+        try:
+            return f"stop file written: {mark_stop(Path(run['_dir']), reason)}"
+        except (KeyError, OSError) as exc:
+            return f"stop file not written: {exc}"
+
 
 # --- observe ---------------------------------------------------------------------
 
@@ -1114,6 +1122,9 @@ class Hands:
         return f"group {s.pgid}: {workqueue.stop_group(s.pgid, grace=STOP_GRACE_S)}"
 
     def stop(self, f: Finding) -> str:
+        if f.subject.pgid is not None:
+            for r in f.subject.runs():
+                self.reader.mark_stop(r, f.criterion)
         return self._group(f.subject)
 
     def reap(self, f: Finding) -> str:
@@ -1203,6 +1214,18 @@ def repeats(conn, f: Finding, now: float, dry_run: bool) -> int:
         (f.criterion, f.subject.key, int(dry_run), now - ESCALATE_WINDOW_S, _machine(conn), _machine(conn))
     ).fetchone()
     return int(row["n"])
+
+
+def overrun_stopped(conn, out) -> bool:
+    """Whether the watchdog ever stopped the run in `out` as an overrun: its stop file, or its own record of a stop. #1409."""
+    from evals import watch
+    if watch.stop_reason(out) == watch.OVERRUN:
+        return True
+    row = conn.execute(
+        "SELECT 1 FROM watchdog_actions WHERE criterion = ? AND action = ? AND dry_run = 0 AND outcome LIKE 'group %' "
+        "AND (instr(evidence, ?) > 0 OR instr(evidence, ?) > 0) LIMIT 1",
+        (watch.OVERRUN, STOP, f"--out {out} ", f'--out {out}"')).fetchone()
+    return row is not None
 
 
 def notified_since(conn, f: Finding, now: float) -> float | None:

@@ -183,7 +183,9 @@ INDEX = {
     "a-test-double-that-never-reaches-the-code-under-test": {
         "instances": _i(517, 518, 519, 529, 530, 536, rules=(445,)),
         "scanners": ["tests/test_module_layout.py::test_every_patch_reaches_the_code_that_reads_it",
-                     "tests/test_no_real_runtime.py::test_a_runtime_binary_answers_as_absent_and_is_recorded"]},
+                     "tests/test_no_real_runtime.py::test_a_runtime_binary_answers_as_absent_and_is_recorded",
+                     "tests/test_gauntlet_scanners.py::test_no_production_code_sniffs_for_a_test_double",
+                     "tests/test_gauntlet_scanners.py::test_no_test_replaces_this_machine"]},
     "an-input-accepted-and-silently-ignored": {
         "detector": "ignored_options",
         "instances": _i(60, 103, 215, 315, 329, rules=(355,)),

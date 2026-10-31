@@ -7,6 +7,7 @@ import pytest
 from harness import convertible, heartbeat, reverify, runs, sweeps, workqueue as wq
 from harness import memory_store as ms
 from tests.test_knob_sweeps import ENV, M, queued
+from tests import conftest
 
 DAY_AT = datetime(2027, 1, 15, 9, 30).timestamp()
 LOW_SAMPLING = {"repo": {"temperature": 0.2}}
@@ -17,7 +18,7 @@ _SEQ = iter(range(1, 10_000))
 
 @pytest.fixture
 def conn(tmp_path, monkeypatch):
-    monkeypatch.setattr(ms, "this_machine", lambda: dict(M))
+    conftest.stand_in_machine(monkeypatch, M)
     monkeypatch.setattr(heartbeat, "discover_hours", lambda: [21])
     monkeypatch.setattr(reverify, "served", lambda c: {"repo": {
         "lane": "repo", "spec": "ornith", "candidate_id": None, "incumbent": "", "incumbent_id": None}})

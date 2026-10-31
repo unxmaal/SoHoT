@@ -390,6 +390,8 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         if held is None:
             return rc
         held = {**held, "identity": ident}
+    if _signalled(proc.returncode) and watch.stop_reason(out) == watch.OVERRUN:
+        return _ended(name, held, out, sweep)
     if _signalled(proc.returncode) and (watch.read(out) or ({}, []))[1]:
         # Stopped from outside (the watchdog, a TERM): its rows are kept and the next sweep resumes it. #864.
         print(f"    stopped by a signal (exit {proc.returncode}); its checkpointed cases are kept", flush=True)
@@ -605,29 +607,37 @@ def priced(store, lane: str, inc_spec: str, spec: str):
     return draws, median_s, calls, est
 
 
-def _with_reuse(plan, lane: str, inc_spec: str, est: dict, side: str, spec: str = ""):
-    """The plan with the incumbent cells stored draws under its identity cover, priced without them. #1094."""
+def _stored_cells(lane: str, inc_spec: str, spec: str, side: str, repeat: int) -> dict:
+    """reuse.plan of the incumbent's cells on `side` that stored draws under its identity cover. #1094."""
     from evals import run
     from harness import holdout, reuse
     from harness import memory_store as ms
     try:
         cases = run.load_selected(run.parse_args(["--modality", lane]))
     except SystemExit as exc:
-        return replace(plan, reuse={"digest": "", "unresolved": [f"cases: {exc}"]})
+        return {"digest": "", "unresolved": [f"cases: {exc}"]}
     on = holdout.only(cases, side)
     ident = run.content_identity(lane, inc_spec, _settings(lane, inc_spec, spec)[0], (), {}, on)
     if not ident["digest"]:
-        return replace(plan, reuse={"digest": "", "unresolved": ident["unresolved"]})
-    cells = [c.id for c in run.expand_cases(on, plan.repeat)]
+        return {"digest": "", "unresolved": ident["unresolved"]}
+    cells = [c.id for c in run.expand_cases(on, repeat)]
     store = ms.connect()
     try:
-        got = reuse.plan(store, lane, ident["digest"], cells, cases=ident["cases"], parts=ident["parts"])
+        return reuse.plan(store, lane, ident["digest"], cells, cases=ident["cases"], parts=ident["parts"])
     finally:
         store.close()
+
+
+def _with_reuse(plan, lane: str, inc_spec: str, est: dict, side: str, spec: str = ""):
+    """The plan with the incumbent cells stored draws under its identity cover, priced without them. #1094."""
+    got = _stored_cells(lane, inc_spec, spec, side, plan.repeat)
+    if not got["digest"]:
+        return replace(plan, reuse=got)
+    total = got["reused"] + got["fresh"]
     inc = (est.get("incumbent_s") or 0.0) * (est.get("incumbent_calls") or 1)
     ch = (est.get("challenger_s") or 0.0) * (est.get("challenger_calls") or 1)
     share = inc / (inc + ch) if inc + ch else 0.5
-    saved = share * got["reused"] / max(len(cells), 1)
+    saved = share * got["reused"] / max(total, 1)
     projected = plan.projected_s * (1 - saved) if plan.projected_s is not None else None
     return replace(plan, reuse=got, projected_s=projected)
 
@@ -799,7 +809,7 @@ def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False,
 
 def _held(lane: str, inc_spec: str, spec: str, split, name: str, sweep):
     """(the pairing's live pause if it may resume, the identity a resume needs); a changed exam is reported stale. #813."""
-    from harness import knobs, paused
+    from harness import knobs, paused, watchdog
     from harness import memory_store as ms
     ident = paused.identity(lane, inc_spec, _settings(lane, inc_spec, spec), knobs.settings(lane),
                             split.version)
@@ -807,8 +817,12 @@ def _held(lane: str, inc_spec: str, spec: str, split, name: str, sweep):
     try:
         held = paused.find(store, lane, spec)
         found = None if held else paused.abandoned(store, paths.home() / "runs", lane, inc_spec, spec)
+        stopped = bool(held) and watchdog.overrun_stopped(store, held["out"])
     finally:
         store.close()
+    if stopped:
+        _ended(name, held, held["out"], sweep)
+        return None, ident
     if found:
         # A run stopped with no pause recorded (the watchdog before #864) still has its rows. #864.
         print(f"  {name}: resuming {found['out']}, stopped at {found['done']} case(s) with no pause recorded",
@@ -833,6 +847,16 @@ def _stale(held: dict, what: str, name: str, sweep) -> None:
     print(f"  {name}: {why}", flush=True)
     if sweep is not None:
         sweep.lines.append(f"{name}: {why}")
+
+
+def _ended(name: str, held, out, sweep) -> int:
+    """A run the watchdog stopped as an overrun: ended and flagged, its rows kept, never resumed. #1409."""
+    why = f"stopped by the watchdog as an overrun: a suspected harness defect, not resumed; its rows stay in {out}"
+    if held and held.get("id") is not None:
+        _settle_pause(held["id"], "defect", why)
+    if sweep is not None:
+        sweep.lines.append(f"{name}: {why}")
+    return err(f"{name}: {why}")
 
 
 def _settle_pause(pause_id: int, state: str, why: str) -> None:
@@ -991,7 +1015,8 @@ def _confirmed(verdict, rows, split, screened, served: str, inc_spec: str, spec:
 
 def confirm_job(vid: int) -> int:
     """`soh adopt --confirm VID`: the night dev run that confirms or refuses a held holdout win. #725."""
-    from harness import adopt, candidates, holdout, screen
+    from types import SimpleNamespace
+    from harness import adopt, candidates, holdout, reuse, screen
     from harness import memory_store as ms
     store = ms.connect()
     try:
@@ -1052,10 +1077,12 @@ def confirm_job(vid: int) -> int:
     try:
         candidates.from_receipt(store, data.get("specs") or {}, lane=lane, proposals={spec: name})
         inc_key, ch_key = candidates.key_for(store, inc_spec), candidates.key_for(store, spec)
+        stored = SimpleNamespace(reuse=reuse.read(Path(out) / reuse.REUSE_FILE))
+        rows = _merge_reused(store, out, stored, data.get("rows") or [], {}, inc_key)[0]
     finally:
         store.close()
     won = adopt.Verdict(lane, inc_key, ch_key, True, f"won the holdout (verdict {vid})")
-    verdict = adopt.confirm(won, data.get("rows") or [], split, frozenset(held.get("screened") or ()), fresh=True)
+    verdict = adopt.confirm(won, rows, split, frozenset(held.get("screened") or ()), fresh=True)
     if verdict.failure_class == reasons.CONFIRMING:
         return err(f"verdict {vid}: the confirmation run has no case outside the screened ones, so it decides nothing")
     print(f"    {'ADOPTED' if verdict.adopt else 'kept the incumbent'}: {verdict.why}", flush=True)
@@ -1152,12 +1179,27 @@ def _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid, plan=None)
             argv += ["--stop-at", f"{time.time() + looks.LOOK_INTERVAL_S:.0f}"]
     if resume:
         argv += ["--resume"]
+    taken = _confirm_reuse(lane, inc_spec, spec, split, repeat, out, resume)
+    if taken:
+        argv += ["--reuse", str(taken)]
     route = screen.routed_gateway(name)
     if route:
         argv += ["--gateway", route]
     print(f"\n  {lane}: {'resuming' if resume else 'confirming'} {spec} over {inc_spec} on dev (verdict {vid})"
           f"\n    {' '.join(argv)}", flush=True)
     return _launch(argv), out
+
+
+def _confirm_reuse(lane, inc_spec, spec, split, repeat, out, resume: bool):
+    """The reuse file a confirmation passes: a resumed run keeps its own, a fresh one plans it. #1442, #1094."""
+    from harness import reuse
+    path = Path(out) / reuse.REUSE_FILE
+    if resume:
+        return path if path.is_file() else None
+    got = _stored_cells(lane, inc_spec, spec, "all" if split.too_small else "dev", repeat)
+    if reuse.line(got):
+        print(f"    reuse: {reuse.line(got)}", flush=True)
+    return reuse.write(out, inc_spec, got) if got.get("reused") else None
 
 
 def _confirm_paused(vid: int, lane: str, inc_spec: str, spec: str, out) -> int:

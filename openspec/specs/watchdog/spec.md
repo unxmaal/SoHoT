@@ -97,7 +97,7 @@ Test: tests/test_watchdog.py::test_ps_output_parses_elapsed_times_in_every_form
 Test: tests/test_sweep_guard_1000.py::test_the_guard_reads_what_the_harness_writes
 
 ### Requirement: Signal only groups that are wholly SoHoT's
-The watchdog SHALL signal a process group only when every live member is SoHoT's (an eval group of evals.run processes only, or a queue job's group), and stop and reap SHALL refuse a subject without such a group.
+The watchdog SHALL signal a process group only when every live member is SoHoT's (an eval group of evals.run processes only, or a queue job's group), and stop and reap SHALL refuse a subject without such a group; before it signals a stop it SHALL write each of the subject's run directories a stop file naming the criterion, so the measure step can tell an overrun from any other stop (#1409).
 
 #### Scenario: A mixed group
 - **WHEN** an eval's process group also holds a non-eval process
@@ -113,6 +113,16 @@ Test: tests/test_watchdog.py::test_stop_refuses_a_subject_with_no_group_of_ours
 - **WHEN** stop is asked for a subject with a group
 - **THEN** the group is sent TERM, then KILL after the stop grace, and the outcome names the group
 Test: tests/test_watchdog.py::test_stop_terminates_a_fake_process_group
+
+#### Scenario: A stop names its criterion first
+- **WHEN** stop is asked for a subject with a group and a progress file
+- **THEN** the run directory's stop file names the finding's criterion before the group is signalled
+Test: tests/test_overrun_864.py::test_the_watchdog_names_its_criterion_in_the_run_directory_before_it_signals
+
+#### Scenario: A refused stop names nothing
+- **WHEN** stop is refused for want of a group
+- **THEN** no stop file is written
+Test: tests/test_overrun_864.py::test_a_stop_refused_for_want_of_a_group_names_no_reason
 
 ### Requirement: Missing inputs skip a criterion
 The watchdog SHALL skip each criterion whose needed observation could not be made, recording why, and SHALL treat an observation that raises as a gap rather than a lost wake.

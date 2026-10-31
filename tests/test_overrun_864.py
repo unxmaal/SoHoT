@@ -1,4 +1,4 @@
-"""Overrun is judged on paired evidence against an honest plan; a run the watchdog stopped is resumed, its rows kept. #864."""
+"""Overrun is judged on paired evidence against an honest plan; an overrun stop ends the run, any other stop resumes. #864, #1409."""
 import json
 import os
 import shutil
@@ -289,3 +289,119 @@ def test_a_run_directory_that_is_not_an_abandoned_run_of_this_pairing_is_left(mo
     (argv,) = fake.argvs
     assert "--resume" not in argv and argv[argv.index("--out") + 1] != str(out)
     shutil.rmtree(out)
+
+
+# --- an overrun stop ends the run; any other stop resumes (#1409) -----------------
+
+class _Stopped(Eval):
+    """evals.run stopped by the watchdog: the watchdog names its criterion in the run directory, then signals."""
+
+    def __init__(self, why, **kw):
+        super().__init__(**kw)
+        self.why = why
+
+    def __call__(self, argv, **kw):
+        got = super().__call__(argv, **kw)
+        if self.why is not None:
+            watch.mark_stop(Path(argv[argv.index("--out") + 1]), self.why)
+        return got
+
+
+def test_a_run_the_watchdog_stopped_as_an_overrun_ends_flagged_and_is_not_resumed(monkeypatch, world):  # noqa: F811
+    from tests.test_resume_813 import _sweep
+    fake = _Stopped(None, rows=_rows(5))
+    monkeypatch.setattr(measure_cmd, "_launch", fake)
+    assert _measure() == watch.PAUSED
+    fake.why, fake.rc, fake.rows = "overrun", -15, _rows(10)
+    sweep = _sweep()
+    assert _measure(sweep) == 1
+    assert any("suspected harness defect" in line for line in sweep.lines)
+    conn = world()
+    try:
+        (p,) = _pauses(conn)
+    finally:
+        conn.close()
+    assert p["state"] == "defect" and "suspected harness defect" in p["why"]
+    fake.why, fake.rc = None, watch.PAUSED
+    _measure()
+    _, second, third = fake.argvs
+    assert "--resume" in second and "--resume" not in third
+
+
+@pytest.mark.parametrize("why", ["no_progress", ""])
+def test_a_run_the_watchdog_stopped_for_another_reason_is_still_a_pause(monkeypatch, world, why):  # noqa: F811
+    fake = _Stopped(why, rc=-15, rows=_rows(10))
+    monkeypatch.setattr(measure_cmd, "_launch", fake)
+    assert _measure() == watch.PAUSED
+    fake.why, fake.rc, fake.rows = None, watch.PAUSED, _rows(30)
+    _measure()
+    first, second = fake.argvs
+    assert "--resume" in second and second[second.index("--out") + 1] == first[first.index("--out") + 1]
+
+
+def test_a_paused_run_whose_directory_names_an_overrun_stop_is_not_resumed(monkeypatch, world):  # noqa: F811
+    fake = _Stopped(None, rows=_rows(5))
+    monkeypatch.setattr(measure_cmd, "_launch", fake)
+    _measure()
+    watch.mark_stop(Path(fake.argvs[0][fake.argvs[0].index("--out") + 1]), "overrun")
+    _measure()
+    _, second = fake.argvs
+    assert "--resume" not in second
+    conn = world()
+    try:
+        assert [p["state"] for p in _pauses(conn)][0] == "defect"
+    finally:
+        conn.close()
+
+
+def test_an_abandoned_directory_the_watchdog_stopped_as_an_overrun_is_left(monkeypatch, world, tmp_path):  # noqa: F811
+    out = _abandon(tmp_path, "20261014-232539-adopt-code", [INC, CH])
+    watch.mark_stop(out, "overrun")
+    fake = Eval(rows=_rows(10))
+    monkeypatch.setattr(measure_cmd, "_launch", fake)
+    _measure()
+    (argv,) = fake.argvs
+    assert "--resume" not in argv and argv[argv.index("--out") + 1] != str(out)
+
+
+def test_the_watchdog_names_its_criterion_in_the_run_directory_before_it_signals(monkeypatch, tmp_path):
+    from harness import workqueue
+    from tests.test_watchdog import finding, run
+    seen = []
+    monkeypatch.setattr(workqueue, "stop_group", lambda pgid, **kw: seen.append(watch.stop_reason(tmp_path)) or "term")
+    out = wd.Hands().do(wd.STOP, finding("overrun", pgid=12345, progress=run(1, tmp=tmp_path)))
+    assert out == "group 12345: term" and seen == ["overrun"]
+    assert wd.Hands().do(wd.STOP, finding("no_progress", pgid=12345, progress=run(1, tmp=tmp_path)))
+    assert seen == ["overrun", "no_progress"]
+
+
+def test_a_stop_refused_for_want_of_a_group_names_no_reason(tmp_path):
+    from tests.test_watchdog import finding, run
+    assert wd.Hands().do(wd.STOP, finding("overrun", pgid=None, progress=run(1, tmp=tmp_path))).startswith("refused")
+    assert watch.stop_reason(tmp_path) == ""
+
+
+TERM, DAY = ("overrun", 0, "group 37554: term"), ("daytime_gpu", 0, "group 3604: term")
+
+
+@pytest.mark.parametrize("stops,resumed", [
+    ([TERM], False), ([("overrun", 1, "group 37554: term")], True), ([("overrun", 0, "refused: no group")], True),
+    ([DAY], True), ([TERM, DAY], False), ([DAY, TERM], False), ([TERM], "another run")])
+def test_an_overrun_stop_only_the_store_records_is_not_resumed(monkeypatch, world, stops, resumed):  # noqa: F811
+    fake = _Stopped(None, rows=_rows(5))
+    monkeypatch.setattr(measure_cmd, "_launch", fake)
+    _measure()
+    command = " ".join(fake.argvs[0])
+    if resumed == "another run":
+        command, resumed = command.replace("-adopt-code ", "-adopt-code2 "), True
+    conn = world()
+    try:
+        for at, (criterion, dry_run, outcome) in enumerate(stops):
+            conn.execute("INSERT INTO watchdog_actions (at, criterion, subject, action, escalated, dry_run, evidence, "
+                         "outcome) VALUES (?, ?, 'eval pgid 1', 'stop', 1, ?, ?, ?)",
+                         (at, criterion, dry_run, json.dumps({"command": command}), outcome))
+        conn.commit()
+    finally:
+        conn.close()
+    _measure()
+    assert ("--resume" in fake.argvs[1]) is resumed
