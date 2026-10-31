@@ -106,3 +106,7 @@ NOT_GATING = {
     f"{W}:STOP_GRACE_S": "how long a stopped group has between TERM and KILL; the same role as "
                          "workqueue.CANCEL_GRACE_S (#814)",
 }
+
+NEVER_CUTS = {
+    "harness/availability.py:TARGET": "the share a lane's availability is flagged under in the report; it drops no probe",
+}

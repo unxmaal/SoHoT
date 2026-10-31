@@ -189,6 +189,7 @@ def _due(conn, name: str, now: float, force: bool) -> bool:
 
 def _read_hf(lane: str, get) -> list[Benchmark]:
     found: dict[str, Benchmark] = {}
+    unpopular: set[str] = set()
     for q in LANE_QUERIES[lane]["hf"]:
         for sort in HF_SORTS:
             params = {**q, "sort": sort, "direction": -1, "limit": HF_LIMIT, "full": "true"}
@@ -197,6 +198,13 @@ def _read_hf(lane: str, get) -> list[Benchmark]:
             for entry in page:
                 if entry.get("id") and _popular(entry):
                     found.setdefault(entry["id"], from_hf(entry, lane))
+                elif entry.get("id"):
+                    unpopular.add(entry["id"])
+    unpopular -= set(found)
+    if unpopular:
+        what = f"huggingface {lane} datasets under both the download and the like floor"
+        cuts.cut("harness/benchmarks.py:MIN_DOWNLOADS", what, kept=len(found), dropped=len(unpopular))
+        cuts.cut("harness/benchmarks.py:MIN_LIKES", what, kept=len(found), dropped=len(unpopular))
     return list(found.values())
 
 

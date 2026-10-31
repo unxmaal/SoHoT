@@ -159,6 +159,9 @@ def build_app():
         sf.write(buf, samples, rate, format="WAV")
         body = buf.getvalue()
         if len(body) < MIN_AUDIO_BYTES:
+            from harness import cuts
+            cuts.cut("harness/audio_server.py:MIN_AUDIO_BYTES", f"synthesis of {len(body)} bytes refused as silence",
+                     kept=0, dropped=1)
             raise HTTPException(
                 500, f"synthesis produced {len(body)} bytes, which is silence")
         return Response(content=body, media_type="audio/wav")
