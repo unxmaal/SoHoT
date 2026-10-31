@@ -23,3 +23,11 @@ KNOBS = [
             "485); the Qwopus3.6 sweep it would have stopped (jobs 0141-0145) then converted 0 of 9 cut at 8000 and "
             "0 of 5 cut at 16384. 0 of 20 bounds the lane's conversion rate under 15% at 95% (#1177)"),
 ]
+
+NEVER_CUTS = {
+    "harness/binding.py:BINDING_FRACTION": "labels a knob binding in the binding report; every hit is counted and shown",
+    "harness/binding.py:BINDING_MIN_HITS": "labels a knob binding in the binding report; every hit is counted and shown",
+    "harness/binding.py:BINDING_WINDOW_DAYS": "how far back the binding report reads results and cuts; it drops no work",
+    "harness/cuts.py:WRITE_WAIT_S": "how long a cut's own write waits for the store lock; a busy store leaves the row "
+                                    "spooled for the next flush, so no cut is lost (#1087)",
+}

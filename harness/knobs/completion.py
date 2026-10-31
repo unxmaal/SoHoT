@@ -64,3 +64,15 @@ NOT_GATING = {
     "evals/core.py:GRADED_FAILURE[repo][resolved]": "what the repo grader records on a failed reply, given to a cut one; a fact, not a setting (#1113)",
     "evals/core.py:GRADED_FAILURE[repo][patch_applied]": "what the repo grader records on an empty diff, given to a cut reply; a fact, not a setting (#1113)",
 }
+
+_LADDER = ("rungs a --budget-ladder run retries a cut reply at; a reply cut at the top rung is recorded as "
+           "max_tokens.<lane> in results.hit_limit, the lower rungs retry (#668)")
+_SAMPLING = "a sampling setting; it shapes a reply and drops nothing"
+
+NEVER_CUTS = {
+    "harness/completion.py:DEFAULT_TEMPERATURE": _SAMPLING,
+    **{f"harness/completion.py:SAMPLING[{lane}][temperature]": _SAMPLING for lane in ("claims", "decide", "svg", "web")},
+    **{f"harness/completion.py:SAMPLING[{lane}][repetition_penalty]": _SAMPLING for lane in ("svg", "web")},
+    **{f"harness/completion.py:LADDER[{lane}]": _LADDER
+       for lane in ("agent", "claims", "code", "decide", "extract", "svg", "web")},
+}

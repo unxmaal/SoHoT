@@ -17,3 +17,8 @@ KNOBS = [
        lanes=("tts",), limit="tts_budget_s", unit="s", receipt="knobs",
        note="fewest seconds a cloning request may speak; the budget is that or the text at the runaway rate, at the codec's rate (#700)", unrecorded=8.0),
 ]
+
+NEVER_CUTS = {
+    "harness/audio.py:CALIBRATION_TOKENS": "the length of the clip tokens per second are measured on; its text outruns "
+                                           "the cap by design, so nothing past it is wanted (#700)",
+}
