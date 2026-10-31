@@ -5,6 +5,7 @@ from evals.core import Case
 from evals.runners.speech import SpeechRunner
 from harness import audio, binding, knobs, reasons, runs
 from harness import memory_store as ms
+from tests import conftest
 
 DAY = 86400.0
 NOW = 1_800_000_000.0
@@ -16,7 +17,7 @@ _SEQ = iter(range(1, 10_000))
 
 @pytest.fixture
 def conn(tmp_path, monkeypatch):
-    monkeypatch.setattr(ms, "this_machine", lambda: dict(M))
+    conftest.stand_in_machine(monkeypatch, M)
     c = ms.connect(tmp_path / "d.db")
     ms.remember_machine(c, dict(M))
     yield c
@@ -125,7 +126,7 @@ def test_a_runaway_is_a_candidate_failure_not_a_harness_one():
 
 def test_the_audit_reports_binding_knobs_without_failing(tmp_path, monkeypatch):
     from harness import live_audit
-    monkeypatch.setattr(ms, "this_machine", lambda: dict(M))
+    conftest.stand_in_machine(monkeypatch, M)
     path = tmp_path / "d.db"
     c = ms.connect(path)
     ms.remember_machine(c, dict(M))

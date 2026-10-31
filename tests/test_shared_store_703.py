@@ -15,6 +15,7 @@ from harness import adopt, completion, exclusive, gateway, gateway_switch as gs
 from harness import memory_store as ms
 from harness import reasons
 from harness import workqueue as wq
+from tests import conftest
 
 REPO = Path(__file__).resolve().parent.parent
 OTHER = {"hw_model": "Other1,1", "os": "Linux", "arch": "x86_64", "host": "b-host"}
@@ -29,7 +30,7 @@ def _as_other_machine(monkeypatch):
     """This process now answers as a second machine sharing the store."""
     from harness import machine
     facts = {**OTHER, "fingerprint": machine.fingerprint(*OTHER.values())}
-    monkeypatch.setattr(ms, "this_machine", lambda: dict(facts))
+    conftest.stand_in_machine(monkeypatch, facts)
     conn = ms.connect()
     try:
         got = ms.remember_machine(conn, facts)
@@ -102,7 +103,6 @@ def test_recover_does_not_fail_an_unowned_running_job(monkeypatch):
 
 
 def test_a_machine_with_no_machines_row_recovers_nothing(monkeypatch):
-    from harness import machine
     job = wq.add([sys.executable, "-c", "pass"])
     _unowned(job)
     conn = ms.connect()
@@ -111,8 +111,7 @@ def test_a_machine_with_no_machines_row_recovers_nothing(monkeypatch):
         conn.commit()
     finally:
         conn.close()
-    facts = {**OTHER, "host": "new-host", "fingerprint": machine.fingerprint(*OTHER.values()) + "-new"}
-    monkeypatch.setattr(ms, "this_machine", lambda: dict(facts))
+    conftest.stand_in_machine(monkeypatch, {**OTHER, "host": "new-host"})
     wq._recover()
     assert wq.current() is None
     assert wq.get(job["id"])["state"] == wq.RUNNING
