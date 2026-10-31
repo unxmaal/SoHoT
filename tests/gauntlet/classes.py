@@ -160,6 +160,11 @@ INDEX = {
     "regex-over-or-under-matching": {
         "review": r"\bre\.(?:compile|search|match|fullmatch|findall|sub|split)\(",
         "instances": _i(49), "scanners": []},
+    "a-test-that-bounds-a-measured-duration": {
+        "tier": 1,
+        "tier_reason": "an assert bounding a clock difference or a duration-named value from above is found by AST (#1423)",
+        "instances": _i(349, rules=(364, 533, 702, 710, 770, 1119)),
+        "scanners": ["tests/test_gauntlet_scanners.py::test_no_test_bounds_measured_wall_time_from_above"]},
     "flaky-by-time-or-randomness": {
         "review": r"time\.time\(|datetime\.now\(|\brandom\.\w+\(|\bsleep\(\d",
         "instances": _i(349), "scanners": []},

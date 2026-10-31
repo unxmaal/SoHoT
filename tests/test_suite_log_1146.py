@@ -99,12 +99,16 @@ def test_a_refused_warm_up_in_the_suite_fails_at_once():
     from evals.runners.base import RunnerError
 
     class Refusing:
+        asked = 0
+
         def warm(self):
+            self.asked += 1
             try:
                 raise httpx.ConnectError("[Errno 61] Connection refused")
             except httpx.ConnectError as exc:
                 raise RunnerError("warm-up: gateway unreachable") from exc
-    started = time.monotonic()
+    refusing = Refusing()
     with pytest.raises(RunnerError):
-        run.warm(Refusing())
-    assert time.monotonic() - started < 1.0
+        run.warm(refusing)
+    # Asked once more and gave up: the conftest clock ends the wait, so no poll interval is slept. #1423.
+    assert refusing.asked == 2

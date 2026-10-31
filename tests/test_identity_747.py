@@ -6,6 +6,7 @@ import pytest
 
 from evals import environment
 from harness import machine
+from tests import conftest
 from harness import memory_store as ms
 
 FP = "Mac17,15/macOS/arm64/aaaaaaaaaaaa"
@@ -183,7 +184,7 @@ def test_an_identity_one_test_leaves_behind_is_not_the_next_tests(tmp_path):
     (tmp_path / "test_order.py").write_text(POISONED, encoding="utf-8")
     got = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:xdist", "-p", "no:randomly",
                           "-p", "no:cacheprovider", "-o", "addopts=", str(tmp_path / "test_order.py")],
-                         capture_output=True, text=True, cwd=Path(__file__).parents[1], timeout=120)
+                         capture_output=True, text=True, cwd=Path(__file__).parents[1], timeout=conftest.HANG_DUMP_S)
     assert got.returncode == 0, got.stdout[-2000:]
 
 
