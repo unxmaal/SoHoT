@@ -672,7 +672,7 @@ def exam_of(lane: str) -> tuple[frozenset, frozenset]:
         try:
             need = frozenset(c.id for c in repo_screen.pick(holdout.lane_cases(lane)))
         except repo_screen.Refused:
-            pass
+            need = frozenset()
     return frozenset(split.dev) | frozenset(split.holdout), need
 
 
