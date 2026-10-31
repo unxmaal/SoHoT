@@ -1228,15 +1228,23 @@ final, and how many retests then passed (recovered false negatives).
 each `--loop --run` (after the retests) also re-checks every wanted lane's
 served model. It queues a low-priority job, never an inline run, when a runtime
 that lane uses (mlx-lm, llama.cpp, mflux, LiteLLM, macOS and so on) has a
-different version than the model's last passing run recorded, when the lane
-has no passing run here within its threshold (7 days by default; `soh reverify
---lane code --days 3` changes it), or when `soh usage` saw real use regress
-after the lane's alias last moved. A lane gets one queued re-run at a time. The
-next check reads the run that job stored: no passes, or more cases lost than
-gained against the last pass at the adopt tier's significance, is recorded with
-its reason and failure class and flagged in `soh report`. The served model is
-never swapped; that is left to a person. `soh reverify --dry-run` says what
-would be queued.
+different version than the model's last working run recorded, when the lane
+has no run here within its threshold in which the model worked on the lane's
+metric (7 days by default; `soh reverify --lane code --days 3` changes it), or
+when `soh usage` saw real use regress after the lane's alias last moved.
+"Worked" is what the lane ranks on, not exact-case passes: a decide model with
+fields right but no case right in full, or an stt model with a plausible word
+error rate but no word-perfect clip, worked. A lane gets one queued re-run at a
+time. The next check reads the run that job stored. It is `failed` when the
+model did not work, `regressed` when it lost more than it gained on the lane's
+metric against that last working run at the adopt tier's significance, or when
+a measured adoption's incumbent, re-run beside it, now beats it, and `unrun`
+when the job stored no run or its most common failure is the harness's. Each
+is recorded with its reason and failure class and flagged in `soh report`; a
+flagged lane is re-run once its threshold passes again. A re-run the watchdog
+paused is not judged: the next check queues its continuation from the
+checkpoint for the night. The served model is never swapped; that is left to a
+person. `soh reverify --dry-run` says what would be queued.
 
 **Exit status.** `soh discover --loop` exits nonzero when any step did, and
 its last stderr line names them, for example `loop exit 1: sweep reported a
