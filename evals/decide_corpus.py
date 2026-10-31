@@ -244,19 +244,23 @@ LEVELS = {"0": "lowest", "1": "low", "2": "middle", "3": "high", "4": "highest"}
 MAX_CHARS = 3000
 
 
-def pick_rate(ids: list[str], rows: dict[str, dict], n: int = PER_FAMILY) -> list[str]:
-    """Manifest order, single-turn, short enough to read, one response per prompt."""
-    out, prompts = [], set()
+def pick_rate(ids: list[str], rows: dict[str, dict], n: int = PER_FAMILY, record: bool = False) -> list[str]:
+    """Manifest order, single-turn, short enough to read, one response per prompt; `record` notes the long ones skipped."""
+    out, prompts, long = [], set(), 0
     for i in ids:
         row = rows.get(i)
         if not row or "<extra_id_1>" in row["prompt"] or row["prompt"] in prompts:
             continue
         if len(row["prompt"]) + len(row["response"]) > MAX_CHARS:
+            long += 1
             continue
         out.append(i)
         prompts.add(row["prompt"])
         if len(out) == n:
             break
+    if record and long:
+        from harness import cuts
+        cuts.cut("evals/decide_corpus.py:MAX_CHARS", "HelpSteer2 rows too long to rate", kept=len(out), dropped=long)
     return out
 
 
@@ -312,11 +316,15 @@ def _get(url: str, **params):
     import time
 
     import httpx
+
+    from harness import cuts
     for attempt in range(8):
         try:
             r = httpx.get(url, params=params or None, timeout=120, follow_redirects=True)
-        except httpx.TransportError:
+        except httpx.TransportError as exc:
             # A connect timeout mid-import is the network, not the dataset: wait and ask again. #671.
+            if cuts.timed_out(exc):
+                cuts.cut("evals/decide_corpus.py:_get->httpx.get(timeout)", f"read of {url}", kept=0, dropped=1)
             if attempt == 7:
                 raise
             time.sleep(2 ** attempt)
@@ -376,12 +384,16 @@ def squad_questions() -> dict[str, dict]:
 
 
 def _indexed(ids: list[str], dataset: str, config: str, split: str,
-             enough, limit: int = 120) -> dict[str, dict]:
+             enough, limit: int = 120, limit_knob: str = "evals/decide_corpus.py:_indexed(limit)") -> dict[str, dict]:
     rows: dict[str, dict] = {}
     for rid in ids[:limit]:
         rows[rid] = hf_row(dataset, config, split, int(rid.rsplit("-", 1)[1]))
         if enough(rows):
             break
+    else:
+        if len(ids) > limit:
+            from harness import cuts
+            cuts.cut(limit_knob, f"{dataset} manifest rows read", value=limit, kept=limit, dropped=len(ids) - limit)
     return rows
 
 
@@ -403,7 +415,7 @@ def build() -> list[dict]:
     ids = manifest_ids(SOURCES["helpsteer2"]["manifest"])
     rows = _indexed(ids, "nvidia/HelpSteer2", "default", "validation",
                     lambda got: len(pick_rate(ids, got)) >= PER_FAMILY, limit=len(ids))
-    cases += [rate_case(i, rows[i]) for i in pick_rate(ids, rows)]
+    cases += [rate_case(i, rows[i]) for i in pick_rate(ids, rows, record=True)]
     return cases
 
 

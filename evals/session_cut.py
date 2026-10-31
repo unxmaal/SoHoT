@@ -246,8 +246,9 @@ def _call(e: Event, cap: int) -> str:
     return f"## tool {e.name}\n{_cap(json.dumps(a, ensure_ascii=False), 200)}"
 
 
-def _result(e: Event, call: Event | None, cap: int, whole: bool = False) -> str:
+def _result(e: Event, call: Event | None, cap: int, whole: bool = False, counts: dict | None = None) -> str:
     size = len(e.body.encode("utf-8"))
+    counts = {} if counts is None else counts
     if whole:
         return e.body
     if e.name.startswith("mcp__") or e.name in ("Agent", "Task", "WebFetch", "WebSearch"):
@@ -255,21 +256,28 @@ def _result(e: Event, call: Event | None, cap: int, whole: bool = False) -> str:
     read = e.name in READS or (e.name == "Bash" and call is not None
                                and _READ_BASH.search(str((call.input or {}).get("command") or "")))
     if read:
-        return _cap(e.body, cap)
+        out = _cap(e.body, cap)
+        counts["output"] = counts.get("output", 0) + (out is not e.body)
+        return out
     if size <= min(cap, COMMAND_CAP_BYTES):
         return e.body
+    which = "command" if size <= cap else "output"
+    counts[which] = counts.get(which, 0) + 1
     return f"[{size} bytes of output not shown]"
 
 
-def render(evs: list[Event], budget: int = BUDGET_BYTES, cap: int = OUTPUT_CAP_BYTES, pin=None) -> str:
+def render(evs: list[Event], budget: int = BUDGET_BYTES, cap: int = OUTPUT_CAP_BYTES, pin=None,
+           budget_knob: str | None = None) -> str:
     """The events as one text: the opening user turns always, then each call `pin` names with its whole output, then as
     many of the latest entries as fit in `budget` bytes."""
-    entries, pinned, at, calls = [], set(), {}, {}
+    entries, pinned, at, calls, counts = [], set(), {}, {}, {}
     for e in evs:
         if e.kind == "user":
-            entries.append(f"## user\n{_cap(e.body, cap * 4)}")
+            entries.append(f"## user\n{(body := _cap(e.body, cap * 4))}")
+            counts["output"] = counts.get("output", 0) + (body is not e.body)
         elif e.kind == "text":
-            entries.append(f"## assistant\n{_cap(e.body, cap * 2)}")
+            entries.append(f"## assistant\n{(body := _cap(e.body, cap * 2))}")
+            counts["output"] = counts.get("output", 0) + (body is not e.body)
         elif e.kind == "call":
             at[e.ref or len(entries)], calls[len(entries)] = len(entries), e
             if pin is not None and pin(e):
@@ -279,7 +287,7 @@ def render(evs: list[Event], budget: int = BUDGET_BYTES, cap: int = OUTPUT_CAP_B
             k = at.get(e.ref, len(entries) - 1) if e.ref else len(entries) - 1
             if k < 0:
                 continue
-            entries[k] = entries[k] + "\n" + _result(e, calls.get(k), cap, k in pinned and e.name == "Bash")
+            entries[k] = entries[k] + "\n" + _result(e, calls.get(k), cap, k in pinned and e.name == "Bash", counts)
     if not entries:
         return ""
     size = lambda s: len(s.encode("utf-8")) + 2  # noqa: E731
@@ -302,19 +310,35 @@ def render(evs: list[Event], budget: int = BUDGET_BYTES, cap: int = OUTPUT_CAP_B
             out.append(f"[... {gone} earlier entries not shown ...]")
             gone = 0
         out.append(entry)
+    from harness import cuts
+    if budget_knob and len(keep) < len(entries):
+        cuts.cut(budget_knob, "earlier session entries of a transcript cut", value=budget, kept=len(keep),
+                 dropped=len(entries) - len(keep))
+    if counts.get("output"):
+        cuts.cut("transcripts_cut_output_cap", "transcript entries shortened or hidden", value=cap, dropped=counts["output"])
+    if counts.get("command"):
+        cuts.cut("transcripts_cut_command_cap", "command outputs hidden from a transcript cut", dropped=counts["command"])
     return "\n\n".join(out)
 
 
 def added_lines(diff: str, base_texts: dict) -> list[str]:
     """Lines the reference diff adds that its file did not hold at base, long enough to mean something."""
-    out, path = [], ""
+    out, path, short = [], "", set()
     for line in diff.splitlines():
         if line.startswith("+++ "):
             path = line[6:] if line.startswith("+++ b/") else ""
         elif line.startswith("+") and not line.startswith("+++"):
             body = line[1:].strip()
-            if len(body) >= LEAK_MIN_CHARS and body not in base_texts.get(path, ""):
+            if body in base_texts.get(path, ""):
+                continue
+            if len(body) >= LEAK_MIN_CHARS:
                 out.append(body)
+            else:
+                short.add(body)
+    if short:
+        from harness import cuts
+        cuts.cut("transcripts_leak_min_chars", "added fix lines too short to count as a leak", kept=len(set(out)),
+                 dropped=len(short))
     return sorted(set(out))
 
 

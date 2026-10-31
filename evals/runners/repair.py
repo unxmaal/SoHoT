@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import time
 
-from harness import completion
+from harness import completion, reasons
 
 from evals import core
 from evals.core import Case
@@ -75,6 +75,10 @@ class RepairRunner(BaseRunner):
                     context=case.context if attempt == 1 else "",
                     timeout=self.timeout)
             except completion.CompletionError as exc:
+                if exc.failure_class == reasons.TIMEOUT:
+                    from harness import cuts
+                    cuts.cut("evals/runners/repair.py:RepairRunner.__init__(timeout)", f"{case.id}: repair attempt {attempt}",
+                             value=self.timeout, kept=attempt - 1, dropped=1)
                 raise _runner_error(exc) from exc
 
             # ACROSS ALL ATTEMPTS. What the workflow cost, not what the last
@@ -92,6 +96,9 @@ class RepairRunner(BaseRunner):
 
         # Out of attempts: hand back the last try and let the eval judge it,
         # rather than inventing a failure the checker did not produce.
+        from harness import cuts
+        cuts.cut("evals/runners/repair.py:RepairRunner.__init__(attempts)", f"{case.id}: repair attempts, last one failing",
+                 value=self.attempts, kept=self.attempts)
         return artifact, 0
 
     def _metrics(self, attempts: int, spent: int, started: float) -> dict:
