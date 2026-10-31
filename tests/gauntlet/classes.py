@@ -192,7 +192,8 @@ INDEX = {
         "instances": _i(266, 270, 281, 331, 341, 450, rules=(293, 356)), "scanners": []},
     "a-non-production-run-writes-live-state": {
         "instances": _i(29, 188, 290, 455, 512, 513, rules=(414,)),
-        "scanners": ["tests/test_gauntlet_scanners.py::test_the_live_home_is_derived_only_in_harness_paths"]},
+        "scanners": ["tests/test_gauntlet_scanners.py::test_the_live_home_is_derived_only_in_harness_paths",
+                     "tests/test_lent_store_1426.py::test_a_read_only_command_reads_only_the_store_it_is_given"]},
     "a-closed-table-fronting-an-open-set": {
         "detector": "closed_tables",
         "instances": _i(213, 228, 245, 263, 298, 318, 379, 380, 387, rules=(379, 419)), "scanners": []},

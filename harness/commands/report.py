@@ -242,6 +242,22 @@ def _report_winners(a) -> int:
 
 def cmd_repo_report(a) -> int:
     """The repo lane's paired report over one or two stored runs, the task as the unit. #923."""
+    from pathlib import Path
+
+    from harness import live_audit
+    from harness import memory_store as ms
+    db = Path(a.store) if a.store else ms.db_path()
+    if not db.is_file():
+        return _repo_report(a)
+    conn = live_audit.open_readonly(db)
+    try:
+        with ms.lend(conn):  # a plan's cuts are about the report, never this home's store. #1426.
+            return _repo_report(a)
+    finally:
+        conn.close()
+
+
+def _repo_report(a) -> int:
     import sqlite3
 
     from evals import arms_report, repo_report

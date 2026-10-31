@@ -138,6 +138,9 @@ def value_of(knob: str):
 def cut(knob: str, what: str, *, value=None, kept: int | None = None, dropped: int | None = None,
         conn=None) -> None:
     """Record that `knob` (a registered knob, or a backlog site) cut `what`; its value now unless given; never raises."""
+    from harness import memory_store as ms
+    if ms.lent() is not None:
+        return  # a read-only or dry run; spooled, the row would reach this home's store later. #1426.
     value = value_of(knob) if value is None else value
     try:
         number = float(value) if value is not None else None
