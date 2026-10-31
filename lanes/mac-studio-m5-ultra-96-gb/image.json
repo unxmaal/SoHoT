@@ -53,43 +53,6 @@
    "until": "runner:diffusers/single-file"
   },
   {
-   "candidate": "diffusers:Photoroom/prxpixel-t2i",
-   "decided_at": "2026-10-19T23:03:37Z",
-   "detail": "image: lane too small, needs 136 holdout cases: 3 cannot show +0.20 per cell at power 0.8 at any repeat up to 16, so about 444 more image cases are needed before a null says anything about diffusers/p",
-   "exam": {
-    "about": "",
-    "candidate": "diffusers/prxpixel-t2i",
-    "cases": 3,
-    "first_s": 73.727,
-    "median_s": 65.414,
-    "metrics": {
-     "cer": 0.0
-    },
-    "model": "diffusers/prxpixel-t2i",
-    "not_run": "",
-    "pass_rate": 1.0,
-    "passed": 3,
-    "peak_gb": 29.81,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-10-19T23:03:36Z",
-    "served_as": "",
-    "source": "",
-    "total": 3,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "declined",
-   "proposal": "Photoroom/prxpixel-t2i",
-   "reason": "limit",
-   "receipt_key": "diffusers/prxpixel-t2i",
-   "run_id": 516,
-   "serves": false,
-   "status": "rejected",
-   "tier": "adopt",
-   "until": "cases:image>446"
-  },
-  {
    "candidate": "diffusers:SupraLabs/Supra-A2A-Nano-Exp",
    "decided_at": "2026-10-18T00:42:26Z",
    "detail": "retracted: diffusers:SupraLabs/Supra-A2A-Nano-Exp's runner could not open the repo's layout, a runner gap rather than a verdict on SupraLabs/Supra-A2A-Nano-Exp: it ran and passed nothing: fox-snow: exit 1: OSError: SupraLabs/Supra-A2A-Nano-Exp does not appear to have a file named model_index.json.; product-shot: exit 1: OSError: SupraLabs/Supra-A2A-Nano-Exp does not appear to have a file named model_index.json.",
@@ -217,6 +180,43 @@
    "until": ""
   },
   {
+   "candidate": "diffusers:Photoroom/prxpixel-t2i",
+   "decided_at": "2026-10-31T01:03:31Z",
+   "detail": "retracted: cases:image>446 is met here",
+   "exam": {
+    "about": "",
+    "candidate": "diffusers/prxpixel-t2i",
+    "cases": 3,
+    "first_s": 73.727,
+    "median_s": 65.414,
+    "metrics": {
+     "cer": 0.0
+    },
+    "model": "diffusers/prxpixel-t2i",
+    "not_run": "",
+    "pass_rate": 1.0,
+    "passed": 3,
+    "peak_gb": 29.81,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-10-19T23:03:36Z",
+    "served_as": "",
+    "source": "",
+    "total": 3,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "screened",
+   "proposal": "Photoroom/prxpixel-t2i",
+   "reason": "reopened",
+   "receipt_key": "diffusers/prxpixel-t2i",
+   "run_id": null,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "diffusers:lolzinventor/Qwen3.5-4B-Base-ZitGen-V1",
    "decided_at": "",
    "detail": "",
@@ -263,8 +263,8 @@
   },
   {
    "candidate": "mflux:Tongyi-MAI/Z-Image",
-   "decided_at": "2026-10-29T01:19:40Z",
-   "detail": "19.1 GiB would take this run past its 40 GiB budget (39.7 GiB already fetched)",
+   "decided_at": "2026-10-31T01:16:13Z",
+   "detail": "19.1 GiB would take this run past its 40 GiB budget (39.1 GiB already fetched)",
    "exam": {
     "about": "by Tongyi-MAI",
     "candidate": "mflux/Tongyi-MAI/Z-Image-q8",
@@ -300,8 +300,8 @@
   },
   {
    "candidate": "mflux:filipstrand/Z-Image-Turbo-mflux-4bit",
-   "decided_at": "2026-10-29T01:19:40Z",
-   "detail": "5.5 GiB would take this run past its 40 GiB budget (39.7 GiB already fetched)",
+   "decided_at": "2026-10-31T01:16:14Z",
+   "detail": "5.5 GiB would take this run past its 40 GiB budget (39.1 GiB already fetched)",
    "exam": {
     "about": "4bit, by filipstrand",
     "candidate": "mflux/filipstrand/Z-Image-Turbo-mflux-4bit-q8",
@@ -337,12 +337,12 @@
   },
   {
    "candidate": "mflux:mlx-community/flux2-klein-9b-4bit",
-   "decided_at": "2026-10-30T01:08:49Z",
-   "detail": "8.9 GiB would take this run past its 40 GiB budget (32.6 GiB already fetched)",
+   "decided_at": "2026-10-31T01:16:13Z",
+   "detail": "downloaded",
    "exam": null,
    "outcome": "queued",
    "proposal": "mlx-community/flux2-klein-9b-4bit",
-   "reason": "limit",
+   "reason": "candidate",
    "receipt_key": "mflux/mlx-community/flux2-klein-9b-4bit-q8",
    "run_id": null,
    "serves": false,
@@ -351,7 +351,7 @@
    "until": ""
   }
  ],
- "cursor": 1792451017024217,
+ "cursor": 1793408611941052,
  "events": [
   {
    "at": "2026-09-18T22:18:09Z",
@@ -2212,6 +2212,21 @@
    "reason": "limit",
    "run_id": 516,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-10-31T01:03:31Z",
+   "candidate": "Photoroom/prxpixel-t2i",
+   "chosen": null,
+   "detail": "retracted: cases:image>446 is met here",
+   "how": "",
+   "id": 1793408611941052,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "reopened",
+   "run_id": null,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -2442,11 +2457,11 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-10-30T07:00:22Z",
+ "generated_at": "2026-10-31T09:17:33Z",
  "knobs": [],
  "lane": {
-  "cases": 31,
-  "cases_digest": "61e9525bd80627af",
+  "cases": 584,
+  "cases_digest": "fecd6e365b248fcb",
   "name": "image",
   "params": {
    "height": [
