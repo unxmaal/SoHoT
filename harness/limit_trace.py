@@ -99,17 +99,41 @@ def _modules(root):
             yield rel, path.read_text(encoding="utf-8", errors="replace")
 
 
+#: How a shell script records a cut: through harness.cuts, naming its knob or site as a literal.
+_SHELL_CUT = re.compile(r"-m harness\.cuts\s+(\S+)")
+
+
+def shell_cuts_in(text: str, rel: str) -> list[tuple[str, str]]:
+    """(name, rel:line) for each `python -m harness.cuts NAME` a shell script runs; a "$" in NAME is not a literal."""
+    return [(m[1].strip("'\""), f"{rel}:{n}") for n, line in enumerate(text.splitlines(), 1)
+            for m in _SHELL_CUT.finditer(line)]
+
+
+def _scripts(root):
+    from harness import repo
+    root = Path(root)
+    for path in repo.publishable(root):
+        rel = path.relative_to(root).as_posix()
+        if path.is_file() and re.fullmatch(r"scripts/[^/]+\.sh", rel):
+            yield rel, path.read_text(encoding="utf-8", errors="replace")
+
+
 def named(root=knobs.REPO) -> dict[str, list[str]]:
-    """Every knob or site production code hands to a cut, with where."""
+    """Every knob or site production code or a script hands to a cut, with where."""
     out: dict[str, list[str]] = {}
     for rel, text in _modules(root):
         for name, where in names_in(text, rel):
             out.setdefault(name, []).append(where)
+    for rel, text in _scripts(root):
+        for name, where in shell_cuts_in(text, rel):
+            if "$" not in name:
+                out.setdefault(name, []).append(where)
     return out
 
 
 def unnamed(root=knobs.REPO) -> list[str]:
-    return [w for rel, text in _modules(root) for w in unnamed_in(text, rel)]
+    return [w for rel, text in _modules(root) for w in unnamed_in(text, rel)] + [
+        w for rel, text in _scripts(root) for name, w in shell_cuts_in(text, rel) if "$" in name]
 
 
 def limits(root=knobs.REPO) -> dict[str, str]:

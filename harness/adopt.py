@@ -80,6 +80,8 @@ class Verdict:
     held: str = ""
     #: The predicate that reopens a verdict waiting on a fact, as memory_store.decide takes it. #993.
     until: str = ""
+    #: (p, alpha) when a challenger better on the metric was refused only by the paired gate's alpha. #1087.
+    alpha_cut: tuple = ()
 
 
 def better(incumbent: dict, challenger: dict, lane: str = "") -> bool:
@@ -128,6 +130,9 @@ def decide_by_hand(lane: str, incumbent: str, challenger: str,
     votes, agree = human.vote_stats(lane, pairs, conn=conn)
     short = votes < min_votes
     if short and not force:
+        from harness import cuts
+        cuts.cut("harness/adopt.py:MIN_VOTES", f"{lane}: {challenger} held on {votes} vote(s)", value=min_votes,
+                 kept=0, dropped=1, conn=conn)
         return Verdict(lane, incumbent, challenger, False, why, BY_HAND,
                        votes=votes, agreement=agree, held=(
                            f"held: {votes} votes, fewer than {min_votes}; "
@@ -189,11 +194,13 @@ def decide(lane: str, incumbent: dict, challenger: dict,
             evidence["dev"] = {"not_run": plan.dev_skipped}
             notes.append(plan.dev_skipped)
     got = _gates(lane, name_i, name_c, incumbent, challenger, rows, alpha)
+    alpha_cut = got.alpha_cut
     worse = _worse(rows, name_i, name_c, lane, alpha) if rows and not got.adopt else ""
     if worse:
         got = Verdict(lane, name_i, name_c, False, f"{got.why}; {worse}")
     elif not got.adopt and plan is not None and rows:
         got = _lane_too_small(lane, name_i, name_c, got, plan, split) or _null(lane, name_i, name_c, got, plan)
+        evidence.update({k: got.evidence[k] for k in ("min_effect", "lane_effect") if got.evidence.get(k)})
     # A method's calls and latency travel with its verdict, won or lost. #576.
     from harness import methods
     cost = methods.cost_note(incumbent, challenger, spec) if spec else ""
@@ -201,19 +208,20 @@ def decide(lane: str, incumbent: dict, challenger: dict,
         evidence["cost"] = methods.cost(incumbent, challenger, spec)
     why = "; ".join([got.why, *notes, *([cost] if cost else [])])
     return Verdict(lane, name_i, name_c, got.adopt, why, got.how,
-                   got.failure_class, evidence, until=got.until)
+                   got.failure_class, evidence, until=got.until, alpha_cut=alpha_cut)
 
 
 def _lane_too_small(lane, name_i, name_c, got: Verdict, plan, split) -> Verdict | None:
-    """A null on a lane no repeat could power is a fact about the lane, waiting on its cases, for a model or a method. #993, #1049."""
+    """A null or a futility stop on a lane no repeat could power is a fact about the lane, waiting on its cases. #993, #1049, #1452."""
     from harness import reasons
-    limit = lane_limit(lane, plan.as_dict(), name_c)
+    plan = plan.as_dict() if hasattr(plan, "as_dict") else dict(plan)
+    limit = lane_limit(lane, plan, name_c)
     if limit is None:
         return None
     more, why = limit
     return Verdict(lane, name_i, name_c, False, f"{why} ({got.why}){_sees(plan)}",
                    failure_class=reasons.LANE_TOO_SMALL,
-                   until=cases_until(lane, _have(lane, split, plan.cases), more))
+                   until=cases_until(lane, _have(lane, split, int(plan.get("cases") or 0)), more))
 
 
 def lane_limit(lane: str, plan: dict, name_c: str = "") -> tuple[int, str] | None:
@@ -314,9 +322,10 @@ def _spent_until(conn, name: str, verdict: Verdict, reason: str) -> str:
 
 
 def _sees(plan) -> str:
-    mde = getattr(plan, "mde", None)
-    return (f"; smallest gain this run could see: +{mde:.2f} per cell at power {plan.target}"
-            if mde is not None else f"; no gain up to +1.00 is detectable at power {plan.target}")
+    mde, target = ((plan.get("mde"), plan.get("target")) if isinstance(plan, dict)
+                   else (getattr(plan, "mde", None), plan.target))
+    return (f"; smallest gain this run could see: +{mde:.2f} per cell at power {target}"
+            if mde is not None else f"; no gain up to +1.00 is detectable at power {target}")
 
 
 def _null(lane, name_i, name_c, got: Verdict, plan) -> Verdict:
@@ -347,8 +356,16 @@ def _null(lane, name_i, name_c, got: Verdict, plan) -> Verdict:
                        f"{shown} per cell, above the +{wanted:.2f} this lane adopts for, "
                        f"so a smaller gain is still open ({got.why}){tail}",
                        failure_class=reasons.UNDERPOWERED)
+    noise = power.noise_for(lane)
+    if seen <= noise + 1e-9:
+        over = seen > power.MIN_EFFECT + 1e-9
+        return Verdict(lane, name_i, name_c, False,
+                       f"{got.why}; no gain of +{seen:.2f} or more per cell at power {plan.target}",
+                       evidence={"lane_effect": {"noise": noise, "seen": round(seen, 4)}} if over else {})
     return Verdict(lane, name_i, name_c, False,
-                   f"{got.why}; no gain of +{seen:.2f} or more per cell at power {plan.target}")
+                   f"{got.why}; no gain of +{seen:.2f} or more per cell at power {plan.target}; reruns could see "
+                   f"+{noise:.2f}, but a gain under adopt_min_effect +{wanted:.2f} is not worth a switch",
+                   evidence={"min_effect": {"noise": noise, "effect": wanted, "seen": round(seen, 4)}})
 
 
 def _summary(rows: list[dict], name: str) -> dict | None:
@@ -435,7 +452,7 @@ def _gates(lane, name_i, name_c, incumbent, challenger, rows, alpha: float = ALP
         return Verdict(lane, name_i, name_c, False,
                        f"better on the metric, but {cell.lost} lost against "
                        f"{cell.gained} gained is p={p:.2f}{shrunk}, so the "
-                       f"difference is not established")
+                       f"difference is not established", alpha_cut=(p, alpha))
     return Verdict(lane, name_i, name_c, True,
                    f"beats {name_i} on the lane's metric, {cell.gained} gained "
                    f"against {cell.lost} lost, p={p:.2f}{shrunk}")
@@ -466,14 +483,17 @@ def screened_cases(conn, lane: str, keys) -> frozenset:
     return frozenset(holdout.base_id(r[0]) for r in got)
 
 
-def _confirm_sees(cells, name_i: str, lane: str) -> str:
+def _confirm_plan(cells, name_i: str, lane: str):
+    """The power plan the confirmation cells amount to: the incumbent's draws on them, at their repeat and ALPHA. #1375."""
+    from dataclasses import replace
+
     from harness import power
     draws, _ = power.draws_from(cells, name_i, lane)
     rates = [sum(v) / len(v) for v in draws.values() if v]
     rho, repeat = power.rows_icc([{**r, "passed": power.draw(r, lane)} for r in cells], (name_i,))
-    got = power.mde(rates, max(1, round(repeat)), ALPHA, power.DEFAULT_RHO if rho is None else rho, power.TARGET)
-    return (f"; smallest gain these cells could see: +{got:.2f} per cell at power {power.TARGET}"
-            if got is not None else f"; no gain up to +1.00 is detectable on them at power {power.TARGET}")
+    got = power.plan(rates, power.effect_for(lane), repeat=max(1, round(repeat)), rho=rho, observed=len(rates))
+    # Its advice counts holdout cases, which these are not.
+    return replace(got, why="")
 
 
 def confirm(verdict: Verdict, rows, split, screened=frozenset(), *, fresh: bool = False) -> Verdict:
@@ -498,15 +518,20 @@ def confirm(verdict: Verdict, rows, split, screened=frozenset(), *, fresh: bool 
     head = (f"{cases} dev case(s): {cell.gained} gained against {cell.lost} lost, p={p:.3f}"
             f"{f' ({shrunk})' if shrunk else ''}")
     inc, ch = _summary(cells, name_i), _summary(cells, name_c)
-    if inc and ch and better(inc, ch, lane) and cell.gained > cell.lost and p <= ALPHA:
+    favours = bool(inc and ch and better(inc, ch, lane) and cell.gained > cell.lost)
+    if favours and p <= ALPHA:
         return replace(verdict, why=f"{verdict.why}; confirmed on {head}", evidence=evidence)
     worse = _worse(cells, name_i, name_c, lane)
     if worse:
         return replace(verdict, adopt=False, failure_class="", evidence=evidence,
                        why=f"won the holdout, but on {cases} dev case(s) it is {worse} ({verdict.why})")
-    return replace(verdict, adopt=False, failure_class=reasons.UNDERPOWERED, evidence=evidence,
-                   why=(f"won the holdout, not confirmed on {head}{_confirm_sees(cells, name_i, lane)}; "
-                        f"this null is not evidence of no difference ({verdict.why})"))
+    # A null the cells could see is a loss; only one they could not is underpowered, as decide() rules. #725, #1375.
+    plan = _confirm_plan(cells, name_i, lane)
+    null = _null(lane, name_i, name_c, Verdict(lane, name_i, name_c, False, f"not confirmed on {head}"), plan)
+    evidence["confirm"].update(power=round(plan.power, 4), effect=plan.effect, mde=plan.mde)
+    evidence.update({k: null.evidence[k] for k in ("min_effect", "lane_effect") if null.evidence.get(k)})
+    return replace(verdict, adopt=False, failure_class=null.failure_class, evidence=evidence,
+                   why=f"won the holdout, {null.why} ({verdict.why})", alpha_cut=(p, ALPHA) if favours else ())
 
 
 def confirm_argv(vid: int) -> list[str]:
@@ -514,20 +539,26 @@ def confirm_argv(vid: int) -> list[str]:
     return [sys.executable, "-m", "harness.cli", "adopt", "--confirm", str(int(vid))]
 
 
-def queue_confirmation(conn, vid: int, verdict: Verdict, now: float | None = None) -> dict | None:
-    """Queue tonight's dev run that confirms or refuses a held holdout win, once per verdict. #725."""
+def queue_confirmation(conn, vid: int, verdict: Verdict, now: float | None = None,
+                       start: float | None = None) -> dict | None:
+    """Queue tonight's dev run (or one at `start`) that confirms or refuses a held holdout win, once per verdict. #725."""
+    import os
     import time
 
     from harness import paths, workqueue
     argv = confirm_argv(vid)
-    have = conn.execute("SELECT id FROM jobs WHERE argv = ? AND state IN (?, ?)",
-                        (json.dumps(argv), workqueue.PENDING, workqueue.RUNNING)).fetchone()
+    # The job this runs in is not the continuation it queues. #1357.
+    mine = os.environ.get(workqueue.JOB_ENV, "").strip()
+    mine = int(mine) if mine.isdigit() else None
+    have = conn.execute("SELECT id FROM jobs WHERE argv = ? AND state IN (?, ?) AND id IS NOT ?",
+                        (json.dumps(argv), workqueue.PENDING, workqueue.RUNNING, mine)).fetchone()
     if have is not None:
         return None
     return workqueue.add(argv, title=(f"confirm {verdict.lane}: {verdict.challenger} over {verdict.incumbent} "
                                       f"on dev (verdict {vid})"),
                          cwd=str(paths.REPO), requested_by="adopt",
-                         not_before=workqueue.night_start(time.time() if now is None else now),
+                         not_before=(workqueue.night_start(time.time() if now is None else now)
+                                     if start is None else start),
                          night=True, conn=conn)
 
 
@@ -605,8 +636,26 @@ def record(conn, verdict: Verdict, spec: str = "",
                          **({"planned_alpha": verdict.evidence["planned_alpha"]}
                             if "planned_alpha" in verdict.evidence else {}),
                          **({"confirm": verdict.evidence["confirm"]}
-                            if verdict.evidence.get("confirm") else {})}), vid))
+                            if verdict.evidence.get("confirm") else {}),
+                         **({"min_effect": verdict.evidence["min_effect"]}
+                            if verdict.evidence.get("min_effect") else {})}), vid))
         conn.commit()
+    floor = verdict.evidence.get("min_effect")
+    if floor:
+        from harness import cuts
+        cuts.cut("adopt_min_effect", f"{verdict.lane}: {spec} declined on a null that could see "
+                 f"+{floor['seen']:.2f}, above the lane's +{floor['noise']:.2f} noise", kept=0, dropped=1, conn=conn)
+    lane_effect = verdict.evidence.get("lane_effect")
+    if lane_effect:
+        from harness import cuts
+        cuts.cut("adopt_effect", f"{verdict.lane}: {spec} declined on a null that sees only "
+                 f"+{lane_effect['seen']:.2f}, inside the lane's +{lane_effect['noise']:.2f} noise",
+                 value=lane_effect["noise"], kept=0, dropped=1, conn=conn)
+    if verdict.alpha_cut and not verdict.adopt:
+        from harness import cuts
+        p, alpha = verdict.alpha_cut
+        cuts.cut("adopt_alpha", f"{verdict.lane}: {spec} better on the metric at p={p:.3f}, over alpha", value=alpha,
+                 kept=0, dropped=1, conn=conn)
     if serve:
         if verdict.how not in HOW:
             raise ValueError(f"unknown adoption kind {verdict.how!r}")
@@ -869,27 +918,13 @@ def adopted(conn, machine=HERE) -> dict[str, str]:
 
 
 def lane_defaults(conn=None, machine=HERE, typed=None) -> dict[str, str]:
-    """What every lane serves now: its adoption here, else the typed default.
-
-    Never raises: a missing, locked or older store leaves the typed defaults.
-    """
+    """What every lane serves now: its adoption here, else the typed default; a store that cannot be read raises. #1432."""
+    from harness import runs
     if typed is None:
         from harness import winners
         typed = winners.typed()
-    close = conn is None
-    try:
-        if conn is None:
-            from harness import memory_store as ms
-            conn = ms.connect()
-        got = adopted(conn, machine)
-    except Exception:  # noqa: BLE001
-        got = {}
-    finally:
-        if close and conn is not None:
-            try:
-                conn.close()
-            except Exception:  # noqa: BLE001
-                pass
+    with runs.store(conn) as c:
+        got = adopted(c, machine)
     return {**dict(typed), **got}
 
 
@@ -900,14 +935,20 @@ def default_for(lane: str, fallback: str, conn=None, machine=HERE) -> str:
     ARGUMENT, captured when the function is defined, so rebinding the constant
     changes nothing -- the same trap that made SpeechRunner's declared voice
     unreachable (#195). An adoption that cannot take effect without a restart
-    is a report with extra steps.
-
-    Never raises and never blocks a generation. A store that is missing,
-    locked or older than this code leaves the lane on its typed constant, which
-    is what a fresh checkout does anyway.
+    is a report with extra steps. A store that cannot be read raises (#1432).
     """
     if not lane:
         return fallback
     key = lane.strip().lower()
     return lane_defaults(conn, machine, typed={key: fallback}).get(key) \
         or fallback
+
+
+def serving_default(lane: str, fallback: str) -> str:
+    """default_for a generation: an unreadable store is said on stderr and the lane serves its constant. #1432."""
+    import sys
+    try:
+        return default_for(lane, fallback)
+    except Exception as exc:  # noqa: BLE001 - a generation never fails on the discovery store
+        print(f"adopt: the store could not be read ({exc}); {lane} serves its typed default {fallback}", file=sys.stderr)
+        return fallback

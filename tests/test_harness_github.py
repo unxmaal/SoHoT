@@ -118,9 +118,11 @@ def test_rows_without_the_field_are_skipped(tmp_path):
 def test_the_cache_records_when_it_was_fetched(tmp_path):
     """The store is a record of facts, so each one carries its date."""
     c = github.Client(cache=tmp_path, runner=runner({}))
+    before = time.time()
     c.get("one")
+    after = time.time()
     payload = json.loads(next(tmp_path.glob("*.json")).read_text(encoding="utf-8"))
-    assert abs(payload["fetched"] - time.time()) < 60
+    assert before <= payload["fetched"] <= after
     assert payload["path"] == "one"
 
 

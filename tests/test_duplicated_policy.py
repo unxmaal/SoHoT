@@ -41,6 +41,9 @@ REGISTRY = [
     ("which gateway alias each text lane defaults to",
      ("harness/cli.py", "gateway/config.yaml"), "#160",
      "tests/test_duplicated_policy.py"),
+    ("which private names a checkout or worktree reads",
+     ("harness/privacy.py", "evals/redact.py"), "#1308",
+     "tests/test_privacy_names_1308.py"),
 ]
 
 

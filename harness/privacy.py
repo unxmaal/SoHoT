@@ -85,14 +85,32 @@ NAMES_FILE = ".privacy-names"
 ROOT = Path(__file__).resolve().parent.parent
 
 
+def main_checkout(root: Path) -> Path | None:
+    """The checkout `root`'s git worktree belongs to, or None outside git. #1308."""
+    try:
+        _, common = repo.git_dirs(root)
+    except (OSError, IndexError, UnicodeDecodeError):
+        return None
+    return common.parent if common.is_dir() else None
+
+
+def name_files(root: Path) -> list[Path]:
+    """`root`'s names file, and the main checkout's, which a worktree lacks. #1308."""
+    here = root / NAMES_FILE
+    main = main_checkout(root)
+    there = main / NAMES_FILE if main else None
+    return [here] + ([there] if there and there.resolve() != here.resolve() else [])
+
+
 def names(root: Path) -> list[str]:
     import os
 
     raw = os.environ.get("LH_PRIVATE_NAMES", "")
-    f = root / NAMES_FILE
-    if f.exists():
-        raw += "," + f.read_text(encoding="utf-8")
-    return [n.strip() for n in raw.replace("\n", ",").split(",") if n.strip()] + home_names()
+    for f in name_files(root):
+        if f.exists():
+            raw += "," + f.read_text(encoding="utf-8")
+    found = [n.strip() for n in raw.replace("\n", ",").split(",") if n.strip()]
+    return list(dict.fromkeys(found + home_names()))
 
 
 #: Names an importer learned on this machine (film titles, a library's folder), one per line. #1207.
@@ -144,9 +162,32 @@ def name_pattern(root: Path, more=()) -> tuple[str, re.Pattern[str], str] | None
             "a real person; say the role, or restructure to passive")
 
 
-#: What git tracks, because that is exactly what gets published. An ignored
-#: fixture full of local paths is nobody's business but this machine's.
-TEXT_SUFFIXES = {".md", ".py", ".sh", ".yaml", ".yml", ".toml", ".txt", ".cfg"}
+#: Tracked text that must keep its wording, and the patterns it alone is spared: public corpora, a license's holder, package versions. #1455.
+SPARED = {
+    "LICENSE": {"person-name"},
+    "evals/importers/librispeech.jsonl": {"person-name"},
+    "evals/contamination/passages.jsonl": {"person-name"},
+    "uv.lock": {"private-host"},
+}
+
+_ESCAPE = re.compile(r"\\(u[0-9a-fA-F]{4}|.)")
+
+
+def unescaped(line: str) -> str:
+    """A line with JSON's and YAML's backslash escapes decoded, so a name after an escaped newline starts a word. #1455."""
+    return _ESCAPE.sub(lambda m: chr(int(m.group(1)[1:], 16)) if len(m.group(1)) == 5
+                       else "\n" if m.group(1) in "nrt" else m.group(1), line)
+
+
+_HOME_DIR = re.compile(r"/(?:Users|home)/(?!(?:USER|you|user)/)[^/\s'\"`<]+/")
+_ACCOUNT = re.compile(r"\bpytest-of-(?!USER\b|<)[^/\s'\"`]+|(?<![\w-])-(?:Users|home)-(?!USER-|<)[^-/\s'\"`]+-")
+
+
+def mask_home(text: str) -> str:
+    """Text with each home directory as ~/ and each account name a path spells (pytest-of-X, -Users-X-) as USER. #1455."""
+    text = _HOME_DIR.sub("~/", text)
+    return _ACCOUNT.sub(lambda m: "pytest-of-USER" if m.group(0).startswith("pytest")
+                        else f"-{m.group(0).split('-')[1]}-USER-", text)
 
 
 @dataclass(frozen=True)
@@ -162,17 +203,18 @@ class Finding:
 
 
 def scan(text: str, origin: str,
-         extra: tuple[str, re.Pattern[str], str] | None = None) -> list[Finding]:
+         extra: tuple[str, re.Pattern[str], str] | None = None, spared=()) -> list[Finding]:
     out: list[Finding] = []
-    patterns = PATTERNS + ([extra] if extra else [])
+    patterns = [p for p in PATTERNS + ([extra] if extra else []) if p[0] not in spared]
     lines = text.splitlines()
     for n, raw in enumerate(lines, 1):
         if ALLOW.search(raw) or (n > 1 and ALLOW.search(lines[n - 2])):
             continue
-        for name, pat, advice in patterns:
-            m = pat.search(raw)
-            if m:
-                out.append(Finding(origin, n, name, advice, m.group(0).strip()))
+        for part in [raw] + (unescaped(raw).splitlines() if "\\" in raw else []):
+            hit = next((Finding(origin, n, name, advice, m.group(0).strip())
+                        for name, pat, advice in patterns for m in [pat.search(part)] if m), None)
+            if hit:
+                out.append(hit)
                 break
     return out
 
@@ -189,14 +231,20 @@ def tracked(root: Path) -> list[Path]:
     return repo.publishable(root)
 
 
+def text_of(p: Path) -> str | None:
+    """The file's text, or None for a binary file (one holding a NUL: image, audio, video). #1455."""
+    raw = p.read_bytes()
+    return None if b"\0" in raw else raw.decode("utf-8", errors="replace")
+
+
 def scan_paths(root: Path) -> list[Finding]:
     extra = name_pattern(root)
     out: list[Finding] = []
     for p in tracked(root):
         rel = p.relative_to(root).as_posix()
-        if p.suffix not in TEXT_SUFFIXES or rel in SELF:
-            continue
-        out.extend(scan(p.read_text(encoding="utf-8", errors="replace"), rel, extra))
+        text = None if rel in SELF else text_of(p)
+        if text is not None:
+            out.extend(scan(text, rel, extra, SPARED.get(rel, ())))
     return out
 
 

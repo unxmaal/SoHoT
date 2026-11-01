@@ -1,0 +1,469 @@
+# Every harness/ and evals/ module in exactly one capability; an entry ending in / covers that tree. Checked by harness/specs.py.
+trees: [harness, evals]
+capabilities:
+  - name: work-queue
+    summary: The jobs every caller shares, by priority then id within each lock class, one GPU job at a time and cloud jobs in free cloud slots.
+    spec: written
+    untested: 3
+    modules:
+      - harness/workqueue.py
+      - harness/commands/jobs.py
+      - harness/exclusive.py
+
+  - name: watchdog
+    summary: The periodic judge of running jobs and served models, acting from a fixed set and recording each act.
+    spec: written
+    untested: 4
+    modules:
+      - harness/watchdog.py
+      - harness/idle_unload.py
+      - harness/day_clear.py
+      - harness/commands/day.py
+
+  - name: adopt-confirm
+    summary: A measured or by-hand winner becomes a lane's served model, through the paired gate and its confirmation.
+    spec: written
+    untested: 4
+    modules:
+      - harness/adopt.py
+      - harness/commands/adopt.py
+      - harness/power.py
+      - harness/effects.py
+      - harness/paired.py
+      - harness/gateway_switch.py
+
+  - name: measure
+    summary: The measure tier, its pauses, looks and resumes, and the order the measure queue is spent in.
+    spec: written
+    untested: 40
+    modules:
+      - harness/commands/measure.py
+      - harness/commands/measure_order.py
+      - harness/paused.py
+      - harness/looks.py
+      - harness/measure_gain.py
+      - harness/measure_replay.py
+      - harness/weedout.py
+      - harness/weedout_replay.py
+      - harness/commands/weedout.py
+      - harness/reuse.py
+      - harness/identity.py
+      - harness/baseline.py
+      - harness/ceiling.py
+      - harness/engine_timeout.py
+
+  - name: screen
+    summary: The rung between a ranked queue and a measurement, and the queue's ranking by what is worth learning.
+    spec: written
+    untested: 8
+    modules:
+      - harness/screen.py
+      - harness/commands/screen.py
+      - harness/rank.py
+      - harness/family.py
+      - harness/commands/families.py
+      - harness/runner_gaps.py
+      - harness/runtime_trials.py
+      - harness/commands/runtimes.py
+      - harness/remote_code.py
+      - harness/inspect.py
+
+  - name: fetch-weights
+    summary: Downloading queued weights durably, what the cache holds, and what may be obtained or fit.
+    spec: pending
+    modules:
+      - harness/fetching.py
+      - harness/day_fetch.py
+      - harness/fetch_replay.py
+      - harness/downloads.py
+      - harness/disk.py
+      - harness/throttle.py
+      - harness/obtainable.py
+      - harness/quants.py
+      - harness/variants.py
+      - harness/gguf.py
+
+  - name: discovery-sources
+    summary: Feeds, registries, papers, posts and neighbours that propose candidates, techniques and benchmarks.
+    spec: pending
+    modules:
+      - harness/discover.py
+      - harness/commands/discover.py
+      - harness/commands/discover_why.py
+      - harness/feeds.py
+      - harness/papers.py
+      - harness/posts.py
+      - harness/neighbors.py
+      - harness/github.py
+      - harness/ratelimit.py
+      - harness/benchmarks.py
+      - harness/commands/benchmarks.py
+      - harness/coverage.py
+      - harness/technique_triage.py
+      - harness/candidates.py
+
+  - name: discovery-loop
+    summary: The nightly sweep chaining the tiers, its heartbeat, its sweep check and where each proposal waits.
+    spec: pending
+    modules:
+      - harness/commands/loop.py
+      - harness/heartbeat.py
+      - harness/sweep_check.py
+      - harness/commands/sweep_check.py
+      - harness/funnel.py
+      - harness/commands/funnel.py
+
+  - name: reverify
+    summary: Re-running served models when their runtime moves, they age or real use regresses; each lane's own check.
+    spec: written
+    untested: 14
+    modules:
+      - harness/reverify.py
+      - harness/commands/reverify.py
+      - harness/verify.py
+
+  - name: coherence-audit
+    summary: Terminal verdicts re-decided when they contradict themselves, the live store audit and the blame audit.
+    spec: pending
+    modules:
+      - harness/coherence.py
+      - harness/commands/coherence.py
+      - harness/live_audit.py
+      - harness/blame_audit.py
+      - harness/commands/blame.py
+      - harness/reasons.py
+
+  - name: store-migrations
+    summary: One store with two backends, its schema and migrations, runs and leases.
+    spec: pending
+    modules:
+      - harness/store.py
+      - harness/memory_store/
+      - harness/runs.py
+      - harness/lease.py
+      - harness/migration_check.py
+      - harness/commands/store.py
+      - harness/paths.py
+
+  - name: gateway-serving
+    summary: The gateway in front of every engine, which server produced the tokens, and serving nodes.
+    spec: pending
+    modules:
+      - harness/gateway.py
+      - harness/gateway_key.py
+      - harness/commands/gateway.py
+      - harness/serving.py
+      - harness/engines.py
+      - harness/nodes.py
+      - harness/router.py
+      - harness/batch.py
+      - harness/models.py
+      - harness/mlx_server.py
+      - harness/vllm.py
+      - harness/ds4.py
+      - harness/context.py
+      - harness/load_log.py
+      - harness/commands/load_log.py
+      - harness/lanprobe.py
+      - harness/loopback.py
+      - harness/slot_probe.py
+      - harness/throughput.py
+      - harness/purpose.py
+
+  - name: local-delegation
+    summary: local_complete and local_decide over MCP, handed to a lane's adopted local model, and what became of each answer.
+    spec: pending
+    modules:
+      - harness/delegate.py
+      - harness/delegations.py
+      - harness/commands/delegated.py
+      - harness/mcp_server.py
+      - harness/mcp_peers.py
+      - harness/unverified.py
+      - harness/commands/unverified.py
+      - harness/ask.py
+      - harness/commands/ask.py
+      - evals/ask_plants.py
+      - evals/ask_plants_fresh.py
+      - evals/ask_plants_third.py
+
+  - name: availability
+    summary: Known-answer probes of each resident text lane, and incidents and uptime derived from them.
+    spec: pending
+    modules:
+      - harness/availability.py
+      - harness/commands/availability.py
+      - harness/lane_probe.py
+
+  - name: lane-commands
+    summary: The lane verbs and the engines behind them, resolving each lane's adopted model at call time.
+    spec: pending
+    modules:
+      - harness/commands/lanes.py
+      - harness/lanes.py
+      - harness/completion.py
+      - harness/audio.py
+      - harness/audio_log.py
+      - harness/audio_server.py
+      - harness/image_diffusers.py
+      - harness/video_cuda.py
+      - harness/vector.py
+      - harness/stages.py
+      - harness/authoring.py
+      - harness/methods.py
+      - harness/proc.py
+      - harness/decider_score.py
+      - harness/nimble_score.py
+      - harness/needle.py
+      - harness/lexical_rank.py
+      - harness/pattern_pii.py
+      - harness/llama_vlm.py
+      - harness/mlx_vlm_label.py
+      - harness/hf_task.py
+      - harness/shot_detect.py
+      - harness/winners.py
+
+  - name: route-trial
+    summary: Request-routing trial arms per lane run paired against the lane's alias.
+    spec: pending
+    modules:
+      - harness/routes.py
+      - harness/commands/route_trial.py
+
+  - name: eval-runner
+    summary: The eval suite's run loop, runners, checkpoints and receipts, and the reply budget it asks at.
+    spec: pending
+    modules:
+      - evals/__init__.py
+      - evals/run.py
+      - evals/core.py
+      - evals/runners/
+      - evals/environment.py
+      - evals/watch.py
+      - evals/compare.py
+      - evals/sandbox.py
+      - evals/agent_mcp.py
+      - evals/agent_pad.py
+      - harness/reply_cap.py
+      - harness/degenerate.py
+      - harness/commands/degenerate.py
+      - harness/convertible.py
+
+  - name: lane-grading
+    summary: The checks that grade each lane's replies, and the noise floors their pass thresholds stand on.
+    spec: pending
+    modules:
+      - harness/checks/
+      - harness/floors.py
+      - harness/commands/floors.py
+
+  - name: eval-cases
+    summary: Each lane's cases, their importers and corpora, the dev and holdout split, privacy of private cases and contamination.
+    spec: pending
+    modules:
+      - evals/cases/
+      - evals/importers/
+      - evals/benchmark_import.py
+      - evals/corpora.py
+      - evals/decide_corpus.py
+      - evals/ocr_corpus.py
+      - evals/private.py
+      - evals/redact.py
+      - evals/contamination_passages.py
+      - harness/holdout.py
+      - harness/contamination.py
+      - harness/commands/cases.py
+
+  - name: repo-lane
+    summary: The repo lane's executor, screen, report and routing, its SWE-bench calibration, and its gate on code adoption.
+    spec: pending
+    modules:
+      - evals/repo.py
+      - evals/repo_report.py
+      - evals/repo_routing.py
+      - evals/repo_screen.py
+      - evals/repo_size.py
+      - evals/repo_tools.py
+      - evals/interface.py
+      - evals/swebench.py
+      - evals/fairness.py
+      - evals/session_cut.py
+      - evals/analysis/
+      - harness/repo_gate.py
+      - harness/commands/repo_screen.py
+
+  - name: claims-lane
+    summary: Claims cases imported local-only, judged by a rubric only once it separates, and read back per candidate.
+    spec: pending
+    modules:
+      - evals/claims_import.py
+      - evals/claims_judge.py
+      - evals/claims_report.py
+
+  - name: craft-lane
+    summary: A model driving a craft app over its own MCP server, checked against named requirements.
+    spec: pending
+    modules:
+      - evals/craft.py
+      - evals/craft_check.py
+      - evals/craft_mcp.py
+      - harness/commands/craft.py
+
+  - name: vision-lane
+    summary: Shot scale of frames against per-second labels, and the image lane's staging detector and its labels.
+    spec: pending
+    modules:
+      - evals/vision.py
+      - harness/commands/vision.py
+      - harness/staging_controls.py
+      - harness/staging_labels.py
+      - harness/commands/staging.py
+
+  - name: headless-claude
+    summary: Headless claude -p against the gateway, recorded jobs graded deterministically, and claude-code arms.
+    spec: pending
+    modules:
+      - harness/headless.py
+      - harness/commands/headless.py
+      - evals/headless.py
+      - harness/arms.py
+      - evals/arms_report.py
+
+  - name: human-judgement
+    summary: Verdicts a program cannot reach, from a person's votes and labels, and model judges scored against them.
+    spec: pending
+    modules:
+      - harness/human.py
+      - harness/judge.py
+      - harness/judge_server.py
+      - harness/label.py
+      - harness/label_server.py
+      - harness/rubric_eval.py
+      - harness/commands/judge.py
+
+  - name: knobs
+    summary: The knob registry, which knobs bind, the cuts they record, sweeps across their range and the backlog.
+    spec: pending
+    modules:
+      - harness/knobs/
+      - harness/knob_backlog.py
+      - harness/commands/knobs.py
+      - harness/sensitivity.py
+      - harness/binding.py
+      - harness/cuts.py
+      - harness/limit_trace.py
+      - harness/sweeps.py
+      - harness/commands/climb.py
+      - harness/yield_stop.py
+      - harness/probes.py
+
+  - name: usage-ledger
+    summary: Real use through the gateway, Claude tokens and plan headroom, API spend, context accounting and workload baselines.
+    spec: pending
+    modules:
+      - harness/usage.py
+      - harness/commands/usage.py
+      - harness/ledger.py
+      - harness/commands/ledger.py
+      - harness/api_spend.py
+      - harness/commands/api_spend.py
+      - harness/statusline.py
+      - harness/otel.py
+      - harness/commands/otel.py
+      - harness/context_report.py
+      - harness/context_class.py
+      - harness/context_mistakes.py
+      - harness/commands/context.py
+      - harness/agent_weight.py
+      - harness/inventory_time.py
+      - harness/inventory_weight.py
+      - harness/commands/inventory.py
+      - harness/trends.py
+      - harness/commands/baseline.py
+      - evals/workload_baseline.py
+
+  - name: reports-publish
+    summary: The morning report, the harness report, lane feeds and the public site built from each machine's export.
+    spec: pending
+    modules:
+      - harness/morning.py
+      - harness/commands/morning.py
+      - harness/report.py
+      - harness/commands/report.py
+      - harness/publish.py
+      - harness/site.py
+      - harness/howitworks.py
+      - harness/lane_feed.py
+      - harness/commands/lane_feed.py
+      - harness/intervals.py
+      - harness/clips.py
+
+  - name: canary
+    summary: Planted candidates with known verdicts, run for real under an isolated home.
+    spec: pending
+    modules:
+      - harness/canary.py
+      - harness/commands/canary.py
+
+  - name: review
+    summary: The weekly adversarial review and the Claude Code changelog watch.
+    spec: pending
+    modules:
+      - harness/review.py
+      - harness/commands/review.py
+      - harness/claude_news.py
+      - harness/commands/claude_news.py
+
+  - name: memory-guard
+    summary: Memory pressure, refusing a model that would take the machine down, and the models volume.
+    spec: pending
+    modules:
+      - harness/memory.py
+      - harness/pressure.py
+      - harness/ramp.py
+      - harness/volume.py
+      - harness/commands/volume.py
+
+  - name: machine-identity
+    summary: What this machine can run, where its weights live and which accelerator it has.
+    spec: pending
+    modules:
+      - harness/machine.py
+      - harness/env.py
+      - harness/torch_device.py
+
+  - name: deploy-guard
+    summary: Deploying only a green main commit, never during a sweep or eval, with runner venvs matching their pins.
+    spec: pending
+    modules:
+      - harness/deploy_guard.py
+      - harness/sweep_guard.py
+      - harness/venv_drift.py
+      - harness/ci_budget.py
+      - harness/dora.py
+
+  - name: repo-hygiene
+    summary: What a public reader gets, personal setup kept out of it, stated claims, coverage, specs and the gauntlet.
+    spec: pending
+    modules:
+      - harness/repo.py
+      - harness/privacy.py
+      - harness/assertions.py
+      - harness/covdiff.py
+      - harness/local_catches.py
+      - harness/suite_time.py
+      - harness/specs.py
+      - harness/commands/specs.py
+      - harness/commands/gauntlet.py
+      - harness/audit.py
+      - harness/chaos.py
+      - harness/commands/chaos.py
+
+  - name: cli
+    summary: The soh entry point and what every verb shares.
+    spec: pending
+    modules:
+      - harness/__init__.py
+      - harness/cli.py
+      - harness/commands/__init__.py
+      - harness/commands/common.py

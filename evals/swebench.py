@@ -105,7 +105,10 @@ def read_json(path: Path):
 
 def _fetch(url: str) -> bytes:
     import httpx
-    got = httpx.get(url, timeout=FETCH_TIMEOUT_S, follow_redirects=True)
+
+    from harness import cuts
+    with cuts.timeout("swebench_fetch_timeout", f"fetch of {url}"):
+        got = httpx.get(url, timeout=FETCH_TIMEOUT_S, follow_redirects=True)
     got.raise_for_status()
     return got.content
 
@@ -231,7 +234,10 @@ def complete(server: str, prompt: str, max_tokens: int, post=None) -> dict:
     if post:
         return post(server.rstrip("/") + "/completion", payload)
     import httpx
-    got = httpx.post(server.rstrip("/") + "/completion", json=payload, timeout=COMPLETION_TIMEOUT_S)
+
+    from harness import cuts
+    with cuts.timeout("swebench_completion_timeout", "a SWE-Llama /completion"):
+        got = httpx.post(server.rstrip("/") + "/completion", json=payload, timeout=COMPLETION_TIMEOUT_S)
     got.raise_for_status()
     return got.json()
 
@@ -266,12 +272,14 @@ def cmd_predict(a, post=None, get=None) -> int:
                "started": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
                "missing_prompts": missing}
     write_json(run / "receipt.json", receipt)
+    capped = 0
     for iid in ids:
         out = run / "replies" / f"{iid}.json"
         if out.is_file() or iid not in texts:
             continue
         started = time.perf_counter()
         got = complete(a.server, prompt_text(texts[iid]), a.max_tokens, post=post)
+        capped += bool(got.get("stopped_limit"))
         write_json(out, {"instance_id": iid, "content": got.get("content", ""),
                          "stop_type": got.get("stop_type", ""), "stopped_eos": got.get("stopped_eos"),
                          "stopped_limit": got.get("stopped_limit"), "truncated": got.get("truncated"),
@@ -280,6 +288,9 @@ def cmd_predict(a, post=None, get=None) -> int:
                          "generation_settings": got.get("generation_settings", {}),
                          "timings": got.get("timings", {}), "wall_s": round(time.perf_counter() - started, 3)})
         print(f"predict: {iid} {got.get('tokens_predicted')} tokens", flush=True)
+    if capped:
+        from harness import cuts
+        cuts.cut("swebench_max_tokens", "SWE-Llama replies stopped at n_predict", value=a.max_tokens, dropped=capped)
     stored = [run / "replies" / f"{i}.json" for i in ids if (run / "replies" / f"{i}.json").is_file()]
     receipt["served_sampling"] = read_json(stored[0]).get("generation_settings", {}) if stored else {}
     ours, upstream = build_predictions(run, ids, a.model)
@@ -526,6 +537,11 @@ def paired(ids: list[str], ours: dict, theirs: dict, field: str) -> dict:
     k_ours, k_theirs = both + only_ours, both + only_theirs
     p = sign_test(only_ours, only_ours + only_theirs)
     diff = (k_ours - k_theirs) / n if n else 0.0
+    from harness import cuts
+    if n and abs(diff) > MARGIN:
+        cuts.cut("swebench_margin", f"{field}: calibration refused agreement on the rate gap", kept=0, dropped=1)
+    if n and p <= ALPHA:
+        cuts.cut("swebench_alpha", f"{field}: calibration refused agreement on McNemar p", kept=0, dropped=1)
     return {"n": n, "ours": k_ours, "theirs": k_theirs, "ours_ci": wilson(k_ours, n),
             "theirs_ci": wilson(k_theirs, n), "both": both, "only_ours": only_ours,
             "only_theirs": only_theirs, "neither": n - both - only_ours - only_theirs,

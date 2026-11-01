@@ -97,14 +97,18 @@ def _replay(a) -> int:
         rank.PASSED_OVER = a.passed_over
     if a.passed_over_max is not None:
         rank.PASSED_OVER_MAX = a.passed_over_max
-    from harness import fetching
-    store = ms.connect()
+    from harness import fetching, ledger
+    # A replay reads; every reader takes this read-only connection, so nothing migrates or writes. #1426.
+    if not ms.db_path().is_file():
+        return err(f"fetch --replay: no store at {ms.db_path()}")
+    store = ledger.open_ro(ms.db_path())
     try:
-        kw = {"serving": rank.serving(), "measured_lanes": rank.lanes_with_receipts(store)}
-        lines = fetch_replay.report(store, a.replay, **kw)
-        if getattr(a, "project", None):
-            lines += fetch_replay.projection(store, a.project, budget_gib=fetching.budget_gib(a.budget_gib),
-                                             arrivals=a.arrivals, watch=a.watch or (), **kw)
+        with ms.lend(store):
+            kw = {"serving": rank.serving(), "measured_lanes": rank.lanes_with_receipts(store)}
+            lines = fetch_replay.report(store, a.replay, **kw)
+            if getattr(a, "project", None):
+                lines += fetch_replay.projection(store, a.project, budget_gib=fetching.budget_gib(a.budget_gib),
+                                                 arrivals=a.arrivals, watch=a.watch or (), **kw)
         for line in lines:
             note(line)
     finally:
@@ -369,7 +373,7 @@ def _report_screen(a) -> int:
                 continue
             taken += 1
             # Its own receipt directory, not the newest for the modality. #282.
-            outdir = paths.runs() / f"screen-{int(time.time())}-{r['modality']}"
+            outdir = paths.unused_run(f"screen-{int(time.time())}", f"-{r['modality']}")
             try:
                 # The lock is taken here so its wait reaches the heartbeat; the child inherits it. #705.
                 with heartbeat.held("eval", screen.deadline_s(r["candidate"]),

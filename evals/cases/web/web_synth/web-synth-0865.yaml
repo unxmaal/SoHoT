@@ -1,0 +1,58 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0865
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Dry
+  dock equipment". The page holds a table with the caption "Water temperature", the header cells "Station",
+  "Celsius", and these rows given as Station / Celsius: Boathouse, -2; East dock, 35; Harbor office, -26;
+  Lighthouse, 1; Dry dock, 4; Net shed, 12; North pier, 13. Keep the rows in this order and add a third
+  column with the header "Fahrenheit" holding each Celsius value converted (F = C x 9/5 + 32), written
+  with exactly one decimal place, such as 50.0, and a plain hyphen for a negative number. Put the header
+  in one row of <th> cells and each value in its own <td>, with no units or extra characters.'
+assert:
+  structure:
+    title: Dry dock equipment
+    tables:
+    - caption: Water temperature
+      head:
+      - Station
+      - Celsius
+      - Fahrenheit
+      rows:
+      - - Boathouse
+        - '-2'
+        - '28.4'
+      - - East dock
+        - '35'
+        - '95.0'
+      - - Harbor office
+        - '-26'
+        - '-14.8'
+      - - Lighthouse
+        - '1'
+        - '33.8'
+      - - Dry dock
+        - '4'
+        - '39.2'
+      - - Net shed
+        - '12'
+        - '53.6'
+      - - North pier
+        - '13'
+        - '55.4'
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '865'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: convert
+  stratum: hard

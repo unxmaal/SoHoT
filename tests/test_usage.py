@@ -2,7 +2,6 @@
 import asyncio
 import importlib.util
 import threading
-import time
 from pathlib import Path
 
 import pytest
@@ -218,19 +217,20 @@ def test_a_store_that_cannot_be_opened_never_raises_into_the_caller():
 
 def test_put_does_not_wait_for_the_store():
     """The gateway's event loop must not block on SQLite: put only enqueues."""
-    gate = threading.Event()
+    gate, connected = threading.Event(), []
 
     def slow():
-        gate.wait(5)
+        gate.wait(30)
+        gate.set()
+        connected.append(True)
         return ms.connect()
     w = _writer(connect=slow)
-    t = time.perf_counter()
     for _ in range(200):
         w.put(usage.row(payload(), response()))
-    took = time.perf_counter() - t
+    # Every put returned while the store was still unreachable: a put that waited would see it connect. #1423.
+    assert connected == []
     gate.set()
     w.close()
-    assert took < 0.5
     assert len(_rows()) == 200
 
 

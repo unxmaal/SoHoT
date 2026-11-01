@@ -88,27 +88,23 @@ REWROTE_RUNNER_GAPS = "rewrote_runner_gaps_950"
 REOPENED_REVISITABLE = "reopened_revisitable_1055"
 #: When a loop last moved past-screen reopens from inspect to the measure queue. #1060.
 MOVED_PAST_SCREEN = "moved_past_screen_1060"
+#: The {lane: cases} that last requeue judged cases: untils by. #1361.
+REVISIT_CASES = "revisit_cases_1361"
 KEPT = (REOPENED_TOO_BIG, REDERIVED_ATTACHMENTS, REQUEUED_OLD_SIZING, REOPENED_UNRANKED, REWROTE_RUNNER_GAPS,
-        REOPENED_REVISITABLE, MOVED_PAST_SCREEN)
+        REOPENED_REVISITABLE, MOVED_PAST_SCREEN, REVISIT_CASES)
 
 
 def code_commit(repo: Path | None = None) -> str:
     """The commit the checkout this code was imported from has checked out, read from .git; '' when unreadable. #1000."""
     from harness import paths
+    from harness import repo as checkout
     repo = paths.REPO if repo is None else Path(repo)
     try:
-        git = repo / ".git"
-        gitdir = git
-        if git.is_file():
-            gitdir = Path(git.read_text(encoding="utf-8").split("gitdir:", 1)[1].strip())
-            gitdir = gitdir if gitdir.is_absolute() else repo / gitdir
+        gitdir, common = checkout.git_dirs(repo)
         head = (gitdir / "HEAD").read_text(encoding="utf-8").strip()
         if not head.startswith("ref:"):
             return head
         ref = head[4:].strip()
-        common = gitdir
-        if (gitdir / "commondir").is_file():
-            common = (gitdir / (gitdir / "commondir").read_text(encoding="utf-8").strip()).resolve()
         for d in (gitdir, common):
             if (d / ref).is_file():
                 return (d / ref).read_text(encoding="utf-8").strip()
@@ -249,7 +245,17 @@ def progress_at(data: dict, holder: dict | None = None) -> float:
 
 def stall_after(data: dict) -> float:
     """Seconds without a beat before this loop reads as stalled: the step's own deadline when it set one."""
-    return max(STALL_S, float(data.get("deadline_s") or 0))
+    own = float(data.get("deadline_s") or 0)
+    return own if own > STALL_S else STALL_S
+
+
+#: Why and before which step a loop paused itself, or absent. #1481.
+PAUSED = "paused"
+
+
+def pause(tier: str, reason: str) -> None:
+    """Record that this loop paused itself before `tier`, and why; a no-op unless this process started it."""
+    note(PAUSED, {"at": clock(), "tier": tier, "reason": reason})
 
 
 def finish(rc: int | None = None, error: str = "") -> None:
@@ -300,7 +306,10 @@ def summary(alive=alive) -> dict | None:
     now = clock()
     age = now - (progress_at(d) if d.get("updated") else now)
     lane = f" ({d['lane']} lane)" if d.get("lane") else ""
-    if st == "finished":
+    if st == "finished" and d.get(PAUSED):
+        p = d[PAUSED]
+        line = f"last discovery loop{lane} paused {ago(age)} ago before {p.get('tier')}: {p.get('reason')}"
+    elif st == "finished":
         rc = d.get("rc")
         how = f"rc {rc}" if rc is not None else f"error: {d.get('error', '')}"
         line = f"last discovery loop{lane} finished {ago(age)} ago, {how}"
@@ -373,6 +382,5 @@ def overdue(data=None) -> str:
         return "no discovery loop has run on this machine"
     every = sweep_every_s(discover_hours())
     age = clock() - float(data["started"])
-    if age <= every + SWEEP_SLACK_S:
-        return ""
-    return f"last discovery loop started {ago(age)} ago; the schedule starts one every {ago(every)}"
+    late = age > every + SWEEP_SLACK_S
+    return f"last discovery loop started {ago(age)} ago; the schedule starts one every {ago(every)}" if late else ""

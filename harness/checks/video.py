@@ -71,13 +71,15 @@ def probe(path: str | Path) -> VideoInfo:
     if shutil.which("ffprobe") is None:
         raise VideoError("ffprobe is not installed (brew install ffmpeg)")
 
-    proc = subprocess.run(
-        ["ffprobe", "-v", "error", "-select_streams", "v:0",
-         "-count_frames", "-show_entries",
-         "stream=width,height,nb_read_frames,codec_name,duration",
-         "-show_entries", "format=duration",
-         "-of", "json", str(path)],
-        capture_output=True, text=True, timeout=300)
+    from harness import cuts
+    with cuts.timeout("harness/checks/video.py:probe->subprocess.run(timeout)", f"ffprobe of {path.name}"):
+        proc = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "v:0",
+             "-count_frames", "-show_entries",
+             "stream=width,height,nb_read_frames,codec_name,duration",
+             "-show_entries", "format=duration",
+             "-of", "json", str(path)],
+            capture_output=True, text=True, timeout=300)
     if proc.returncode != 0:
         raise VideoError(f"not a decodable video: {proc.stderr.strip()[:200]}")
 
@@ -102,7 +104,9 @@ def _sample(path: Path, count: int = SAMPLE_FRAMES) -> list:
     """Decode `count` evenly spaced frames as greyscale images."""
     from PIL import Image
 
-    with tempfile.TemporaryDirectory() as d:
+    from harness import cuts
+    with tempfile.TemporaryDirectory() as d, cuts.timeout("harness/checks/video.py:_sample->subprocess.run(timeout)",
+                                                          f"frames of {path.name}"):
         proc = subprocess.run(
             ["ffmpeg", "-v", "error", "-i", str(path),
              "-vf", f"select='not(mod(n\\,{max(1, count // 2)}))'",
@@ -153,7 +157,9 @@ def _stddev(image) -> float:
 
 def check(path: str | Path, expect: tuple[int, int] | None = None,
           frames: int | None = None,
-          min_motion: float = MIN_MOTION) -> VideoResult:
+          min_motion: float = MIN_MOTION,
+          motion_knob: str = "harness/checks/video.py:MIN_MOTION") -> VideoResult:
+    from harness import cuts
     path = Path(path)
     try:
         info = probe(path)
@@ -167,6 +173,7 @@ def check(path: str | Path, expect: tuple[int, int] | None = None,
             info=info)
 
     if frames is not None and abs(info.frames - frames) > FRAME_TOLERANCE:
+        cuts.cut("harness/checks/video.py:FRAME_TOLERANCE", f"video {path.name}: {info.frames} frames for {frames}")
         return VideoResult(
             False, f"expected {frames} frames, got {info.frames}", info=info)
 
@@ -188,6 +195,7 @@ def check(path: str | Path, expect: tuple[int, int] | None = None,
 
     moved = motion(path)
     if moved < min_motion:
+        cuts.cut(motion_knob, f"video {path.name}: motion {moved:.4f}", value=min_motion)
         return VideoResult(
             False,
             f"static: nothing changes between frames (motion {moved:.4f}). "

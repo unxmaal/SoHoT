@@ -416,6 +416,59 @@ def models_max_path(preset) -> Path:
     return Path(f"{preset}.models-max")
 
 
+def _sized(meta: dict, weights: int, alone: int, room: int, fixed, n: int, cache_type: str,
+           kv_cap: int | None) -> tuple[int, Choice]:
+    """(slots, choice) for one GGUF: its own slot plan when it has one, else the most slots up to `n` that fit."""
+    if fixed:
+        # The slots it serves alone, sharing whatever pool the k-resident room holds. #748.
+        n, got = fitting_slots(meta, weights, alone, *fixed, cache_type, kv_cap)
+        pooled = shared_pool(meta, weights, room, n, fixed[1], cache_type, kv_cap) if got.ctx else got
+        return n, (got if pooled.ctx == got.ctx else pooled)
+    got = choose(meta, weights, room, n, cache_type, kv_cap=kv_cap)
+    while not got.ctx and n > 1:
+        n -= 1
+        got = choose(meta, weights, room, n, cache_type, kv_cap=kv_cap)
+    return n, got
+
+
+def _bound(meta: dict, weights: int, alone: int, room: int, fixed, n: int, cache_type: str, kv_cap: int | None,
+           got: Choice) -> str:
+    """The limit that made this plan smaller than the room allows: cap, floor, plan, pool, slots; "" for none."""
+    if _sized(meta, weights, alone, room, fixed, n, cache_type, None)[1].ctx > got.ctx:
+        return "cap"
+    if not got.ctx:
+        if fixed:
+            return "plan" if choose(meta, weights, room, 1, cache_type).ctx else ""
+        return "floor" if got.why.endswith("-token floor") else ""
+    if fixed and n > 1 and got.ctx < n * fixed[1]:
+        return "pool"
+    if not fixed and n > 1 and choose(meta, weights, room, 1, cache_type, kv_cap=kv_cap).slot_ctx > got.slot_ctx:
+        return "slots"
+    return ""
+
+
+def _cuts(conn, bound: dict, slots: int) -> None:
+    """One limit_cuts row per limit that shrank or refused a planned GGUF context."""
+    from harness import cuts
+    if bound.get("floor"):
+        cuts.cut("harness/context.py:FLOOR", f"GGUFs refused under the context floor: {', '.join(bound['floor'])}",
+                 kept=0, dropped=len(bound["floor"]), conn=conn)
+    if bound.get("cap"):
+        cuts.cut("kv_cap", f"GGUF contexts the KV cap shrank or refused: {', '.join(bound['cap'])}",
+                 dropped=len(bound["cap"]), conn=conn)
+    for stem in bound.get("plan", ()):
+        slot_knob = "eval7b_slot_ctx" if stem == EVAL_7B_STEM else "ornith_slot_ctx"
+        cuts.cut(slot_knob, f"{stem}: its slot plan does not fit, though a smaller context would", kept=0, dropped=1,
+                 conn=conn)
+    for stem in bound.get("pool", ()):
+        slots_knob = "eval7b_slots" if stem == EVAL_7B_STEM else "ornith_slots"
+        cuts.cut(slots_knob, f"{stem}: its slots share a pool smaller than each one's context, so busy slots can run "
+                 "out of room", conn=conn)
+    if bound.get("slots"):
+        cuts.cut("llamacpp_slots", f"GGUFs whose slots split the context one request may use: "
+                 f"{', '.join(bound['slots'])}", value=slots, conn=conn)
+
+
 def plan(conn, budget: int | None = None, slots: int = 1,
          cache_type: str = "f16", kv_cap: int | None = None,
          models_max: int = 1, record: bool = True) -> list[dict]:
@@ -437,6 +490,7 @@ def plan(conn, budget: int | None = None, slots: int = 1,
     k = max(min(models_max, len(sizes)), 1)
     heaviest = sum(sorted(sizes, reverse=True)[:k])
     out = []
+    bound: dict[str, list[str]] = {}
     for row in rows:
         path = Path(row["path"])
         stem = path.name[:-len(".gguf")]
@@ -446,16 +500,11 @@ def plan(conn, budget: int | None = None, slots: int = 1,
             meta, weights = read_meta(path), _weights(path)
             # With k resident, each gets an equal share of what the k heaviest weights leave. #699.
             room = budget - beside if k == 1 else weights + max(budget - beside - heaviest, 0) // k
-            if fixed:
-                # The slots it serves alone, sharing whatever pool the k-resident room holds. #748.
-                n, got = fitting_slots(meta, weights, budget - beside, *fixed, cache_type, kv_cap)
-                pooled = shared_pool(meta, weights, room, n, fixed[1], cache_type, kv_cap) if got.ctx else got
-                got = got if pooled.ctx == got.ctx else pooled
-            else:
-                got = choose(meta, weights, room, n, cache_type, kv_cap=kv_cap)
-                while not got.ctx and n > 1:
-                    n -= 1
-                    got = choose(meta, weights, room, n, cache_type, kv_cap=kv_cap)
+            asked = n
+            n, got = _sized(meta, weights, budget - beside, room, fixed, n, cache_type, kv_cap)
+            if record:
+                bound.setdefault(_bound(meta, weights, budget - beside, room, fixed, asked, cache_type, kv_cap, got),
+                                 []).append(stem)
         except (OSError, ValueError, KeyError, struct.error) as exc:
             got = Choice(0, 0, 0, f"refused: unreadable GGUF header ({exc})")
         if k > 1 and got.ctx:
@@ -470,6 +519,7 @@ def plan(conn, budget: int | None = None, slots: int = 1,
                      (got.ctx, got.trained, got.kv_per_token, n, got.why,
                       time.time(), kv_cap, beside, row["id"]))
     if record:
+        _cuts(conn, bound, slots)
         conn.commit()
     return out
 
@@ -499,9 +549,11 @@ def served(conn, stem: str) -> dict | None:
 def _get_json(url: str, key: str = "") -> dict:
     import json
     import urllib.request
+    from harness import cuts
     req = urllib.request.Request(url, headers={"Authorization": f"Bearer {key}"} if key else {})
-    with urllib.request.urlopen(req, timeout=5.0) as r:
-        return json.loads(r.read() or b"{}")
+    with cuts.timeout("harness/context.py:_get_json->urllib.request.urlopen(timeout)", f"{url}: no answer in time"):
+        with urllib.request.urlopen(req, timeout=5.0) as r:
+            return json.loads(r.read() or b"{}")
 
 
 def _entry_for(spec: str, config=None) -> dict | None:

@@ -54,7 +54,7 @@ def plant(home, conn):
     for at, crit, action, dry in acts:
         conn.execute("INSERT INTO watchdog_actions (at, machine_id, criterion, subject, action, dry_run) "
                      "VALUES (?, ?, ?, 'job 0001', ?, ?)", (at, mid, crit, action, dry))
-    conn.execute("INSERT INTO day_clearances (machine_id, cleared_at, said, until) VALUES (?, ?, 'eric', ?)",
+    conn.execute("INSERT INTO day_clearances (machine_id, cleared_at, said, until) VALUES (?, ?, 'owner', ?)",
                  (mid, T0 + 3 * H, T0 + 5 * H))
     conn.commit()
     logs = home / "logs"

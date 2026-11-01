@@ -1,0 +1,14 @@
+trees: [harness, evals]
+capabilities:
+  - name: widget
+    summary: The widget and its parts.
+    spec: written
+    untested: 1
+    modules:
+      - harness/widget.py
+      - harness/sub/
+  - name: gadget
+    summary: The gadget.
+    spec: pending
+    modules:
+      - evals/gadget.py

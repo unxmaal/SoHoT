@@ -220,7 +220,7 @@ def cloud_days(days: list[str], cloud_doc: dict, events=(), messages=(), tz=None
             api.setdefault(day_of(e["at"], tz), []).append(e)
     for m in messages:
         msgs.setdefault(day_of(m["at"], tz), []).append(m)
-    out = {}
+    out, slack = {}, 0
     for day in days:
         cc = cdays.get(day)
         tr_total, _ = _by_model(msgs.get(day, ()), _msg_tokens)
@@ -229,6 +229,7 @@ def cloud_days(days: list[str], cloud_doc: dict, events=(), messages=(), tz=None
         if api.get(day):
             ot, om = _by_model(api[day], _event_tokens)
             rest = [m for m in msgs.get(day, ()) if not exported(m, sp)]
+            slack += sum(1 for m in msgs.get(day, ()) if exported(m, sp) and not exported(m, sp, 0.0))
             rt, rm = _by_model(rest, _msg_tokens)
             models = {k: _plus(om.get(k, _zero()), rm.get(k, _zero())) for k in sorted(set(om) | set(rm))}
             d.update(tokens=_plus(ot, rt), models=models, otel=ot, outside=rt if rest else None,
@@ -241,6 +242,9 @@ def cloud_days(days: list[str], cloud_doc: dict, events=(), messages=(), tz=None
         else:
             d.update(tokens=None, models={}, source=None, lower_bound=False)
         out[day] = d
+    if slack:
+        from harness import cuts
+        cuts.cut("ledger_span_slack", "transcript messages outside an exported span counted as exported", dropped=slack)
     return out
 
 
@@ -400,6 +404,9 @@ def sample_power(runner=subprocess.run, which=shutil.which, now=None, path: Path
     try:
         proc = runner(macmon_argv(), capture_output=True, text=True, timeout=POWER_WINDOW_MS / 1000 + 30)
     except (OSError, subprocess.TimeoutExpired) as e:
+        if isinstance(e, subprocess.TimeoutExpired):
+            from harness import cuts
+            cuts.cut("ledger_power_window", "a macmon reading that outran its window", kept=0, dropped=1)
         return {"ok": False, "why": f"macmon did not run: {type(e).__name__}"}
     if proc.returncode != 0:
         return {"ok": False, "why": f"macmon exited {proc.returncode}"}
@@ -441,9 +448,10 @@ def integrate_power(samples: list[dict], max_gap_s: float, tz=None, ceiling: flo
     """Trapezoid energy over samples no further apart than max_gap_s; kWh in all and per local day."""
     ceiling = POWER_CEILING_W if ceiling is None else ceiling
     ordered = sorted((s for s in samples if _plausible(s, ceiling)), key=lambda s: s["at"])
-    joules, covered, days = 0.0, 0.0, {}
+    joules, covered, days, gaps = 0.0, 0.0, {}, 0
     for a, b in zip(ordered, ordered[1:]):
         dt = b["at"] - a["at"]
+        gaps += dt > max_gap_s
         if 0 < dt <= max_gap_s:
             j = (a["watts"] + b["watts"]) / 2 * dt
             joules += j
@@ -451,7 +459,7 @@ def integrate_power(samples: list[dict], max_gap_s: float, tz=None, ceiling: flo
             key = day_of((a["at"] + b["at"]) / 2, tz)
             days[key] = days.get(key, 0.0) + j / 3.6e6
     return {"kwh": joules / 3.6e6, "covered_s": covered, "samples": len(ordered),
-            "mean_watts": joules / covered if covered else None, "days": days}
+            "mean_watts": joules / covered if covered else None, "days": days, "gaps": gaps}
 
 
 def cpu_unread(samples: list[dict], tz=None) -> dict:
@@ -525,7 +533,20 @@ def energy(samples: list[dict], since: float, tariff: float, installed: bool, tz
     if partial:
         out.update(kwh=None, usd=None, mean_watts=None, lower_bound_kwh=lower,
                    why=partial_why(zero, counted, macmon_version))
+    _energy_cuts(out, len(days))
     return out
+
+
+def _energy_cuts(out: dict, ndays: int) -> None:
+    from harness import cuts
+    if out["gaps"]:
+        cuts.cut("ledger_power_gap", "power sample gaps left out of the energy", dropped=out["gaps"])
+    if out["implausible"]:
+        cuts.cut("ledger_power_ceiling", "power samples above the ceiling", dropped=out["implausible"])
+    partial = sum(1 for v in out["days"].values() if v.get("partial"))
+    if partial:
+        cuts.cut("ledger_cpu_unread_share", "days whose energy reads only as a lower bound",
+                 kept=ndays - partial, dropped=partial)
 
 
 # --- the join -------------------------------------------------------------------------------------

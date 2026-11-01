@@ -1,0 +1,46 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0825
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "East
+  dock events". The page holds a table with the caption "Fish market orders", the header cells "Item",
+  "Count", and these rows given as Item / Count: linen towel, 785; steel bolt, 870; pine tar, 347; cedar
+  shingle, 888; tin can, 816; paper roll, 470. List the rows sorted by Count, largest first. Put the header
+  in one row of <th> cells and each value in its own <td>, with no units or extra characters.'
+assert:
+  structure:
+    title: East dock events
+    tables:
+    - caption: Fish market orders
+      head:
+      - Item
+      - Count
+      rows:
+      - - cedar shingle
+        - '888'
+      - - steel bolt
+        - '870'
+      - - tin can
+        - '816'
+      - - linen towel
+        - '785'
+      - - paper roll
+        - '470'
+      - - pine tar
+        - '347'
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '825'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: sorted
+  stratum: hard

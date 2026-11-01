@@ -3,10 +3,11 @@ import argparse
 
 import pytest
 
-from evals import core, environment
+from evals import core
 from evals import run as er
 from evals.core import Case, Receipt, Result, comparable
 from harness import memory_store as ms, runs
+from tests import conftest
 
 
 class _Runner:
@@ -25,8 +26,7 @@ def _execute(monkeypatch, tmp_path, modality, repeat):
     monkeypatch.setattr(core, "load_cases", lambda path: cases)
     monkeypatch.setattr(er, "build_runner", lambda *a, **k: _Runner())
     monkeypatch.setattr(er, "warn_if_pressed", lambda: argparse.Namespace(as_dict=lambda: {}))
-    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
-    monkeypatch.setattr(environment, "capture", lambda: {"hw_model": "Test,1", "os": "t", "arch": "a"})
+    conftest.name_machine(monkeypatch, {"hw_model": "Test,1", "os": "t", "arch": "a"})
     out = tmp_path / "out"
     args = argparse.Namespace(modality=modality, candidates="fake:spec", cases="x", out=str(out), screen=False,
                               repeat=repeat, adherence="", gateway="http://gw", from_winners=False)

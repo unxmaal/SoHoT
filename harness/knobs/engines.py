@@ -43,4 +43,6 @@ NOT_GATING: dict = {}
 
 NEVER_CUTS = {
     "harness/engines.py:H3_STEPS": "a sampler setting h3 is passed when nothing names one; it stops nothing (#735)",
+    "harness/proc.py:_JOB_EXTENDED_LIMIT_INFORMATION": "the Windows job information class a peak-memory read asks "
+                                                       "for; an API constant, not a limit",
 }

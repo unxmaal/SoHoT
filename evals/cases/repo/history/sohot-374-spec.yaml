@@ -5,9 +5,9 @@ modality: repo
 prompt: '# A reference model (claude-code:) can be adopted as a lane default by hand-judging
 
 
-  \`lh judge <run>\` records every challenger the person prefers through \`adopt.record\`. If Eric preferred
-  \`claude-code:claude-opus-5-5\` on the svg lane (which is in \`HUMAN_JUDGED\`), it would become the
-  svg default. That would route a local lane to a cloud model through a subscription login. The \`claude-code:\`
+  \`lh judge <run>\` records every challenger the person prefers through \`adopt.record\`. If the owner
+  preferred \`claude-code:claude-opus-5-5\` on the svg lane (which is in \`HUMAN_JUDGED\`), it would become
+  the svg default. That would route a local lane to a cloud model through a subscription login. The \`claude-code:\`
   candidates exist as a ceiling to measure local models against (#359), never as a default.
 
 

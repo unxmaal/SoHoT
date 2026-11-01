@@ -205,7 +205,7 @@ def target():
     """The store to write, or None: the live store only from the deploy checkout."""
     from harness import memory_store as ms
     path = ms.db_path()
-    if paths.is_live(path) and paths.runs_elsewhere() is not None:
+    if paths.evaluating() or paths.live_from_elsewhere(path):
         return None
     return path
 
@@ -284,6 +284,7 @@ class Writer:
         self._stop = threading.Event()
         self.dropped = 0
         self._unsaved = 0
+        self._full = 0
         self._lock = threading.Lock()
         self.disabled = ""
         self.specs: dict = {}
@@ -307,12 +308,17 @@ class Writer:
             first = self.dropped == 0
             self.dropped += n
             self._unsaved += n
+            self._full += n
         if first:
             self._log(f"dropping usage rows: {why}")
 
     def _save_drops(self, conn) -> None:
         with self._lock:
             n, self._unsaved = self._unsaved, 0
+            full, self._full = self._full, 0
+        if full:
+            from harness import cuts
+            cuts.cut("usage_queue", "usage rows dropped at a full queue", dropped=full, conn=conn)
         if n:
             try:
                 record_dropped(conn, n)
@@ -388,6 +394,10 @@ class Writer:
         self._stop.set()
         if self._thread is not None:
             self._thread.join(timeout)
+            if self._thread.is_alive():
+                from harness import cuts
+                cuts.cut("harness/usage.py:Writer.close(timeout)", "usage writer still draining at close",
+                         value=timeout, dropped=self._q.qsize())
 
 
 
@@ -558,33 +568,42 @@ def _rate_var(clusters: list[tuple[int, int]]) -> tuple[float, float, int]:
     return p, g / (g - 1) * sum((k - p * n) ** 2 for k, n in used) / total ** 2, total
 
 
-def _worse(before: list[tuple[int, int]], after: list[tuple[int, int]]) -> tuple[float, float] | None:
+def _worse(before: list[tuple[int, int]], after: list[tuple[int, int]],
+           held: dict | None = None) -> tuple[float, float] | None:
     """(before rate, after rate) when after is above before by more than Z_WARN clustered standard errors, else None."""
     p1, v1, n1 = _rate_var(before)
     p2, v2, n2 = _rate_var(after)
-    if n1 < MIN_REQUESTS or n2 < MIN_REQUESTS or p2 <= p1:
+    if p2 <= p1:
         return None
     se = (v1 + v2) ** 0.5
-    return (p1, p2) if se == 0 or (p2 - p1) / se > Z_WARN else None
+    rose = se == 0 or (p2 - p1) / se > Z_WARN
+    few = n1 < MIN_REQUESTS or n2 < MIN_REQUESTS
+    if held is not None and rose == few:
+        held_knob = "usage_min_requests" if few else "usage_z_warn"
+        held[held_knob] = held.get(held_knob, 0) + 1
+    return (p1, p2) if rose and not few else None
 
 
 def regressions(comparisons: list[dict]) -> list[str]:
     """A warning per switch after which model errors or invalid tool calls rose beyond session-clustered noise."""
-    out = []
+    out, held = [], {}
     for c in comparisons:
         sw, b, a = c["switch"], c["sessions"]["before"], c["sessions"]["after"]
         named = (f"sohot-{sw['lane']} after switch #{sw['id']} "
                  f"({sw['old_spec']} -> {sw['new_spec']}, "
                  f"{time.strftime('%Y-%m-%d %H:%M', time.localtime(sw['switched_at']))})")
-        got = _worse([(s[1], s[0]) for s in b], [(s[1], s[0]) for s in a])
+        got = _worse([(s[1], s[0]) for s in b], [(s[1], s[0]) for s in a], held)
         if got:
             out.append(f"{named}: error rate {got[0]:.1%} -> {got[1]:.1%} "
                        f"over {c['before']['requests']} / {c['after']['requests']} requests "
                        f"in {len(b)} / {len(a)} sessions")
-        got = _worse([(s[3], s[2]) for s in b], [(s[3], s[2]) for s in a])
+        got = _worse([(s[3], s[2]) for s in b], [(s[3], s[2]) for s in a], held)
         if got:
             out.append(f"{named}: invalid tool-call rate {got[0]:.1%} -> {got[1]:.1%} "
                        f"over {c['before']['tool_calls']} / {c['after']['tool_calls']} calls")
+    from harness import cuts
+    for held_knob, n in held.items():
+        cuts.cut(held_knob, "rate rises after a switch not called a regression", dropped=n)
     return out
 
 

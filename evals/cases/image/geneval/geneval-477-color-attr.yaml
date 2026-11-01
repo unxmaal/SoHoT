@@ -1,0 +1,59 @@
+# GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023), MIT (https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl).
+# Imported by evals/importers from github:djghosh13/geneval/prompts/evaluation_metadata.jsonl@af4902f24d3ca90ebbb446dd9891a59e0f82725f; re-import, do not edit.
+id: geneval-477-color-attr
+modality: image
+prompt: a photo of a brown bed and a pink cell phone
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      bed: a bed
+      cell_phone: a cell phone
+    require:
+    - type: count
+      object: bed
+      min: 1
+    - type: count
+      object: cell_phone
+      min: 1
+    - type: attribute
+      object: bed
+      is: a brown bed
+      not:
+      - a red bed
+      - a orange bed
+      - a yellow bed
+      - a green bed
+      - a blue bed
+      - a purple bed
+      - a pink bed
+      - a black bed
+      - a white bed
+    - type: attribute
+      object: cell_phone
+      is: a pink cell phone
+      not:
+      - a red cell phone
+      - a orange cell phone
+      - a yellow cell phone
+      - a green cell phone
+      - a blue cell phone
+      - a purple cell phone
+      - a brown cell phone
+      - a black cell phone
+      - a white cell phone
+attribution:
+  dataset: GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023)
+  url: https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl
+  license: MIT
+  source: github:djghosh13/geneval/prompts/evaluation_metadata.jsonl
+  revision: af4902f24d3ca90ebbb446dd9891a59e0f82725f
+  item: '477'
+  date: '2023-08-22'
+  transform: 'GenEval include/exclude spec as staging requirements: include count at least, include plus
+    exclude exactly, position relative to the named object, colour against the nine others'
+  importer: evals.importers.geneval
+  tag: color_attr

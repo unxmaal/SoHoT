@@ -65,18 +65,31 @@ def measured(conn, since: float, until: float) -> list[dict]:
     return sorted(got.values(), key=lambda r: r["at"])
 
 
+def owed_at(conn, at: float) -> list[dict]:
+    """Proposals whose newest adopt verdict before `at` is a repo-lane win: owed their code comparison that night."""
+    from harness import adopt, lanes, repo_gate
+    rows = conn.execute(
+        "SELECT p.name, p.lane, p.attaches_to FROM proposals p JOIN verdicts v ON v.id = "
+        "(SELECT MAX(w.id) FROM verdicts w WHERE w.proposal_id = p.id AND w.decided_at < ?) "
+        "WHERE v.outcome = 'measured' AND v.tier = ? AND v.detail LIKE ? ORDER BY v.id",
+        (at, adopt.TIER, f"{repo_gate.GATE}:%")).fetchall()
+    return [{"name": r["name"], "lane": repo_gate.GATED[0], "attaches_to": r["attaches_to"]} for r in rows
+            if any(lanes.serves(r["lane"], g) for g in repo_gate.GATED)]
+
+
 def queue(conn, rows: list[dict], held: list[dict], want: str = "", now: float | None = None,
           gate: bool | None = None) -> list[dict]:
-    """The measure step's later stages on `rows` as given: families, the slot (memory unchecked), pauses, repo rows."""
+    """Families, the slot (memory unchecked), pauses, repo rows on `rows`; a row the gate holds that night is left out."""
     from harness import family, repo_gate
     st = family.standing(conn)
     ordered, _, _ = family.reserve(family.measure_order(rows, st), st, now=now, fits=lambda r: (True, ""))
     names = {r["name"] for r in held}
-    return repo_gate.order(held + [r for r in ordered if r.get("name") not in names], conn, want, on=gate)
+    got = repo_gate.order(held + [r for r in ordered if r.get("name") not in names], conn, want, on=gate, before=now)
+    return [r for r in got if not (gate and repo_gate.needs(conn, r, want, before=now))]
 
 
 def walk(rows: list[dict], window_s: float, price) -> tuple[list[dict], list[dict]]:
-    """(taken, cut): each row takes min(its minutes, one slice) of what is left, an unpriced row a slice; none past 0."""
+    """(taken, cut): each row takes min(its minutes, one slice) of what is left, an unpriced or zero-minute row a slice."""
     slice_s, left, taken, cut = power.BUDGET_MIN * 60, window_s, [], []
     for r in rows:
         if left <= 0:
@@ -99,7 +112,7 @@ def nights(now: float, days: int, hour: int) -> list[float]:
 def replay(conn, days: int, *, now: float | None = None, want: str = "", hour: int | None = None) -> list[dict]:
     """Per night: the queue it faced, both orders walked against its measure window, and what it measured; a night that
     measured in the repo lane replays with the repo gate on."""
-    from harness import ceiling, heartbeat
+    from harness import ceiling, heartbeat, repo_gate
     from harness.commands import measure as measure_cmd
     now = time.time() if now is None else now
     hour = heartbeat.discover_hours()[0] if hour is None else hour
@@ -110,8 +123,13 @@ def replay(conn, days: int, *, now: float | None = None, want: str = "", hour: i
         at = began[0]["at"] if began else start + power.SWEEP_CEILING_H * 3600 * ceiling.SCREEN_FRACTION
         gate = any(b["lane"] == "repo" for b in began) or None
         rows = [r for r in survivors_at(conn, at) if measure_cmd.takes(r, want)]
+        names = {r["name"] for r in rows}
+        rows += [r for r in owed_at(conn, at) if gate and r["name"] not in names and measure_cmd.takes(r, want)]
         ctx = measure_gain.context(conn, before=at)
-        by_gain, gains = measure_gain.order(conn, rows, want, ctx=ctx)
+
+        def gated(r, at=at):
+            return bool(gate) and repo_gate.needs(conn, r, want, before=at)
+        by_gain, gains = measure_gain.order(conn, rows, want, ctx=ctx, gated=gated)
         held = [r for r in held_at(conn, at) if measure_cmd.takes(r, want)]
 
         def price(r, ctx=ctx):
@@ -125,6 +143,14 @@ def replay(conn, days: int, *, now: float | None = None, want: str = "", hour: i
     return out
 
 
+def _minutes(rows) -> str:
+    """GPU-minutes each lane takes in `rows`, most first."""
+    got: dict = {}
+    for r in rows:
+        got[r.get("lane", "")] = got.get(r.get("lane", ""), 0.0) + r.get("spend_s", 0.0) / 60
+    return ", ".join(f"{k} {v:.0f}" for k, v in sorted(got.items(), key=lambda kv: -kv[1])) or "-"
+
+
 def _names(rows, n=None) -> str:
     got = [f"{r['name']} ({r.get('lane', '')}{', %dm' % round(r['spend_s'] / 60) if 'spend_s' in r else ''})"
            for r in rows[:n]]
@@ -134,7 +160,7 @@ def _names(rows, n=None) -> str:
 def report(conn, days: int, *, now: float | None = None, want: str = "", head: int = 5) -> list[str]:
     """Lines for `soh measure-order --replay`: per night, what each order starts and what the ceiling cuts."""
     lines = [f"replay of {days} night(s): survivors as of each night's first measurement, ordered newest screen "
-             f"first (as run) and by gain per GPU-minute (as of that night's evidence), each walked against the "
+             f"first (the order before #1315) and by gain per GPU-minute (as of that night's evidence), each walked against the "
              f"window to the {power.SWEEP_CEILING_H:g} h ceiling at up to {power.BUDGET_MIN:g} min a measurement; "
              f"cost from today's stored seconds per call"]
     for n in replay(conn, days, now=now, want=want):
@@ -145,8 +171,9 @@ def report(conn, days: int, *, now: float | None = None, want: str = "", head: i
         lines.append(f"  measured:       {_names(n['began'])}")
         for label in ("survivors", "gain"):
             o = n[label]
-            lines.append(f"  {label + ' order:':<15} {_names(o['taken'], head)}")
-            lines.append(f"  {'cut:':<15} {len(o['cut'])}: {_names(o['cut'], head)}")
+            lines.append(f"  {label + ' order:':<15} {_names(o['taken'], head or None)}")
+            lines.append(f"  {'minutes:':<15} {_minutes(o['taken'])}")
+            lines.append(f"  {'cut:':<15} {len(o['cut'])}: {_names(o['cut'], head or None)}")
     return lines
 
 

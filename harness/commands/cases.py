@@ -67,6 +67,7 @@ def _repo_regrade(root: Path, run: Path, only: list[str], reextract: bool = Fals
     import json
     from evals import repo
     from evals.core import load_cases
+    from harness import privacy
     cases = {c.id: c for c in load_cases(root / "repo")}
     rows, seen, same = [], set(), 0
     for path in sorted(run.glob("*--*.json")):
@@ -91,8 +92,8 @@ def _repo_regrade(root: Path, run: Path, only: list[str], reextract: bool = Fals
         rows.append({"run": run.name, "file": path.name, "case": cid,
                      "was_resolved": bool(was.get("resolved")), "was_applied": bool(was.get("patch_applied")),
                      "resolved": g.resolved,
-                     "patch_applied": g.patch_applied, "detail": g.detail, "skipped": g.skipped,
-                     "failures": g.failures,
+                     "patch_applied": g.patch_applied, "detail": privacy.mask_home(g.detail), "skipped": g.skipped,
+                     "failures": {t: privacy.mask_home(f) for t, f in (g.failures or {}).items()},
                      **({"stored_lines": len(stored["diff"].splitlines()), "lines": len(diff.splitlines())}
                         if reextract else {})})
         note(f"  {path.name}: {'resolved' if g.resolved else 'applied, unresolved' if g.patch_applied else 'invalid_patch'}"

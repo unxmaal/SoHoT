@@ -1,4 +1,4 @@
-"""Generated cases for the ocr, pii, tts and svg lanes: deterministic, attributed, controlled. #603, #1050."""
+"""Generated cases for the ocr, pii, tts, svg and web lanes: deterministic, attributed, controlled. #603, #1050."""
 import functools
 import importlib
 import json
@@ -12,7 +12,7 @@ from evals.core import load_cases, score, summarize
 from harness import holdout, privacy
 
 ROOT = Path(__file__).resolve().parents[1]
-GENERATORS = ("ocr_synth", "pii_synth", "tts_synth", "svg_synth")
+GENERATORS = ("ocr_synth", "pii_synth", "tts_synth", "svg_synth", "web_synth")
 #: #595: about 132 holdout cases give power 0.8 at +0.20 when a case is the unit.
 HOLDOUT_TARGET = 130
 #: CER ceiling for the positive control, per OCR instrument; windows measured 0.148 on windows-latest (#623).
@@ -117,6 +117,7 @@ def test_an_imported_file_is_written_beside_its_case_and_may_not_escape(tmp_path
     ("pii_synth", {"reference": 540, "nothing": 120, "everything": 0}),
     ("tts_synth", {"reference": 460, "silence": 0, "fixed": 0}),
     ("svg_synth", {"reference": 920, "square": 0, "other-case": 0}),
+    ("web_synth", {"reference": 1300, "blank": 0, "other-case": 0}),
 ])
 def test_the_registered_negative_control_separates_reference_from_responders(committed, name,
                                                                               want):
@@ -322,3 +323,67 @@ def test_svg_reference_fails_once_one_asserted_property_is_broken(committed):
         if kind == "clock":
             broken = _re.sub(r'x2="[^"]+"', 'x2="0"', ref, count=1)
         assert svg.structure(broken, c.assertions["structure"]), kind
+
+
+# --- web -------------------------------------------------------------------
+
+def _broken(key, value):
+    """One asserted property of a web spec moved off its value."""
+    if key == "title":
+        return value + " notes"
+    if key == "headings":
+        return value[:1] + value[1:][::-1]
+    if key == "tables":
+        t = value[0]
+        return [{**t, "rows": t["rows"][::-1]}] + value[1:]
+    if key == "sections":
+        first = next(iter(value))
+        return {**value, first: value[first] + " notes"}
+    if key == "lists":
+        return [{**value[0], "items": value[0]["items"][::-1]}]
+    if key == "form":
+        f = value["fields"][0]
+        return {**value, "fields": [{**f, "required": not f["required"]}] + value["fields"][1:]}
+    return value[::-1]
+
+
+def test_web_cases_cover_every_kind_and_stratum(committed):
+    mod = _mod("web_synth")
+    cases = committed["web_synth"]
+    assert {_prov(c)["kind"] for c in cases} == set(mod.KINDS)
+    assert {_prov(c)["stratum"] for c in cases} == {"easy", "medium", "hard"}
+    assert all(c.assertions["structure"]["self_contained"] for c in cases)
+
+
+def test_web_reference_fails_once_one_asserted_property_is_broken(committed):
+    """Each kind's reference page, built with one property moved, is refused on the case's own spec."""
+    from harness.checks import html
+    mod = _mod("web_synth")
+    seen = {}
+    for c in committed["web_synth"]:
+        seen.setdefault(_prov(c)["kind"], c)
+    for kind, c in seen.items():
+        spec = c.assertions["structure"]
+        for key in set(spec) - {"self_contained", "nav"}:
+            assert html.structure(mod.page({**spec, key: _broken(key, spec[key])}), spec), (kind, key)
+
+
+def test_the_hard_table_kinds_need_the_rows_computed(committed):
+    """The rows as the prompt gives them, unsorted, unfiltered, untotalled or unconverted, fail."""
+    from harness.checks import html
+    mod = _mod("web_synth")
+    hard = [c for c in committed["web_synth"] if _prov(c)["kind"] in ("sorted", "total", "filter", "convert", "mix")]
+    assert len(hard) >= 500
+    failed = [c.id for c in hard if not html.structure(mod.untransformed(c), c.assertions["structure"])]
+    assert failed == []
+
+
+def test_every_web_reference_renders_in_a_browser(committed):
+    """Positive control through score(): a sample of reference pages parse, meet their structure and paint."""
+    from harness.checks import render
+    mod = _mod("web_synth")
+    if render.chrome_path() is None:
+        pytest.skip("no browser on this machine")
+    sample = committed["web_synth"][::50]
+    failed = [(c.id, r.failure_class, r.detail) for c in sample if not (r := score(c, mod.reference(c))).passed]
+    assert failed == []

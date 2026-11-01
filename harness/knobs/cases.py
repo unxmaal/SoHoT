@@ -40,8 +40,30 @@ KNOBS = [
 NOT_GATING = {
     "evals/importers/svg_synth.py:ATTEMPTS": "redraws of one row before the generator refuses a kind too small "
                                              "for its share; it raises, it never changes a case (#1050)",
+    "evals/importers/geneval.py:PARAMS[width]": "the picture size every staging case asks for, as the hand cases "
+                                                "do; exam content, not a threshold (#603)",
+    "evals/importers/geneval.py:PARAMS[height]": "the picture size every staging case asks for, as the hand cases "
+                                                 "do; exam content, not a threshold (#603)",
+    "evals/importers/geneval.py:PARAMS[seed]": "the generation seed every staging case asks for, as the hand cases "
+                                               "do; exam content, not a threshold (#603)",
+    "evals/importers/geneval.py:download->urllib.request.urlopen(timeout)": "network timeout of a by-hand refresh "
+                                                                           "of the recorded copy; it raises, it never "
+                                                                           "changes a case (#603)",
+    "evals/importers/web_synth.py:ATTEMPTS": "redraws of one row before the generator refuses a kind too small "
+                                             "for its share; it raises, it never changes a case (#603)",
 }
 
 NEVER_CUTS = {
+    "evals/importers/librispeech.py:MAX_WER": "the pass mark written into each case's assert; the grade it sets is the result row, and the import drops nothing (#1087)",
+    "evals/importers/ocr_synth.py:MAX_CER": "the pass mark written into each case's assert; the grade it sets is the result row, and the import drops nothing (#1087)",
+    "evals/importers/ocr_synth.py:STRENGTH[ghost]": "how hard one degradation is, applied to every case drawn with it; it shapes the picture and drops nothing (#1087)",
+    "evals/importers/ocr_synth.py:STRENGTH[lowres]": "how hard one degradation is, applied to every case drawn with it; it shapes the picture and drops nothing (#1087)",
+    "evals/importers/ocr_synth.py:STRENGTH[skew]": "how hard one degradation is, applied to every case drawn with it; it shapes the picture and drops nothing (#1087)",
+    "evals/importers/ocr_synth.py:STRENGTH[smear]": "how hard one degradation is, applied to every case drawn with it; it shapes the picture and drops nothing (#1087)",
+    "evals/importers/ocr_synth.py:STRENGTH[speckle]": "how hard one degradation is, applied to every case drawn with it; it shapes the picture and drops nothing (#1087)",
     "evals/importers/pii_synth.py:NO_PII_SHARE": "the mix of generated pii cases; every case drawn is written (#610)",
+    "evals/importers/tts_synth.py:MAX_WER": "the pass mark written into each case's assert; the grade it sets is the result row, and the import drops nothing (#1087)",
+    "evals/decide_corpus.py:THRESHOLD": "the rater fraction that labels a policy answer true or false; every picked "
+                                        "comment is written (#491)",
+    "evals/ocr_corpus.py:MAX_CER": "the pass mark written into each generated OCR case; every case is written (#603)",
 }

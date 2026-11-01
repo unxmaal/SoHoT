@@ -259,9 +259,9 @@ def _skip(conn, item: dict, found: list, now: float) -> str:
         return f"already queued as job {last['job_id'] or '(gone)'}"
     if not found:
         return "nothing moved"
-    if last and last["outcome"] in FLAGGED and \
-            now - (last["settled_at"] or 0) < days_for(conn, item["lane"]) * 86400.0:
-        return f"flagged {last['outcome']}: {last['detail']}; waiting for a person"
+    due = (last["settled_at"] or 0) + days_for(conn, item["lane"]) * 86400.0 if last else 0.0
+    if last and last["outcome"] in FLAGGED and now < due:
+        return f"flagged {last['outcome']}: {last['detail']}; re-run again in {(due - now) / 86400.0:.1f} days"
     return ""
 
 
@@ -270,7 +270,7 @@ def argv(item: dict, base: dict | None = None) -> list[str]:
     from harness import screen
     specs = [item["spec"]] + ([item["incumbent"]] if item["incumbent"] else [])
     from harness import runner_gaps
-    out = [*runner_gaps.launcher(specs, ["uv", "run", "python"]), "-m", "evals.run", "--modality", item["lane"],
+    out = [*runner_gaps.launcher(specs, ["uv", "run", "python"], item["lane"]), "-m", "evals.run", "--modality", item["lane"],
            "--candidates", ",".join(specs)]
     route = screen.routed_gateway(item["spec"])
     if route:
@@ -369,6 +369,8 @@ def judge(conn, rv: dict, job: dict | None) -> tuple[str, str, str, str, int | N
         return CANCELLED, reasons.HARNESS, "", "the job was cancelled before it ran", None
     run = conn.execute("SELECT * FROM runs WHERE job_id = ? ORDER BY id DESC LIMIT 1",
                        (job["id"],)).fetchone()
+    if run is None and job["state"] == CANCELLED:
+        return CANCELLED, reasons.HARNESS, "", f"job {job['id']} was cancelled and stored no run", None
     if run is None:
         return (UNRUN, reasons.HARNESS, "",
                 f"job {job['id']} {job['state']} rc={job['rc']} and stored no run", None)
@@ -410,14 +412,47 @@ def judge(conn, rv: dict, job: dict | None) -> tuple[str, str, str, str, int | N
             f"{rv['spec']} passed {passed} of {len(mine)}{_scored(mine, lane)}", rid)
 
 
-def settle(conn, *, now: float, write: bool = True) -> list[dict]:
-    """Judge every queued re-run whose job is no longer pending or running."""
+def _resume_argv(argv: list, out) -> list[str]:
+    """argv without any --out or --resume, then --out `out` --resume."""
+    got, skip = [], False
+    for a in map(str, argv):
+        if skip:
+            skip = False
+        elif a == "--out":
+            skip = True
+        elif a != "--resume" and not a.startswith("--out="):
+            got.append(a)
+    return [*got, "--out", str(out), "--resume"]
+
+
+def _resume(conn, rv: dict, job: dict, now: float, add) -> dict:
+    """Queue a paused re-run's continuation from its checkpoint for the night, and point the reverification at it. #1403."""
+    from harness import paths, runs
+    from harness import workqueue as wq
+    run = runs.for_job(conn, int(job["id"]))
+    argv = job["argv"] if run is None else _resume_argv(job["argv"], runs.run_dir(run["path"]))
+    nxt = add(argv, title=job["title"] or f"reverify {rv['lane']}: {rv['spec']}",
+              cwd=job["cwd"] or str(paths.REPO), priority=PRIORITY, requested_by=REQUESTED_BY,
+              not_before=wq.night_start(now), night=True, conn=conn)
+    conn.execute("UPDATE reverifications SET job_id = ? WHERE id = ?", (int(nxt["id"]), rv["id"]))
+    return {"id": rv["id"], "lane": rv["lane"], "spec": rv["spec"], "paused": job["id"], "job": nxt["id"],
+            "out": None if run is None else str(runs.run_dir(run["path"]))}
+
+
+def settle(conn, *, now: float, write: bool = True, add=None, resumed: list | None = None) -> list[dict]:
+    """Judge every queued re-run whose job finished; a paused one is resumed into `resumed`, never judged. #1403."""
     from harness import workqueue as wq
     out = []
     for r in conn.execute("SELECT * FROM reverifications WHERE outcome = '' ORDER BY id").fetchall():
         rv = dict(r)
         job = wq.get(rv["job_id"], conn=conn) if rv["job_id"] is not None else None
         if job is not None and job["state"] in (wq.PENDING, wq.RUNNING):
+            continue
+        if job is not None and job["state"] == wq.PAUSED:
+            if write:
+                got = _resume(conn, rv, job, now, add or wq.add)
+                if resumed is not None:
+                    resumed.append(got)
             continue
         outcome, reason, cls, detail, rid = judge(conn, rv, job)
         if write:
@@ -433,7 +468,7 @@ def settle(conn, *, now: float, write: bool = True) -> list[dict]:
 
 
 def flags(conn) -> dict[str, dict]:
-    """lane -> its newest settled re-run, for lanes whose served model it failed or regressed."""
+    """lane -> its newest settled re-run, for lanes where that re-run is FLAGGED: failed, regressed or unrun."""
     found = served(conn)
     out = {}
     for lane, item in found.items():
@@ -452,11 +487,12 @@ def check(conn, *, now: float | None = None, facts: dict | None = None, lane: st
     facts = facts if facts is not None else ms.this_machine()
     if not dry_run:
         ms.remember_machine(conn, facts)
-    settled = settle(conn, now=now, write=not dry_run)
+    resumed: list[dict] = []
+    settled = settle(conn, now=now, write=not dry_run, add=add, resumed=resumed)
     planned = plan(conn, now=now, facts=facts, lane=lane)
     queued = []
     if not dry_run:
         for entry in planned:
             if entry["triggers"] and not entry["skip"]:
                 queued.append(_queue(conn, entry, now, add or wq.add))
-    return {"settled": settled, "planned": planned, "queued": queued, "dry_run": dry_run}
+    return {"settled": settled, "resumed": resumed, "planned": planned, "queued": queued, "dry_run": dry_run}

@@ -1,0 +1,53 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0945
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Net
+  shed overview". The page holds a table with the caption "North pier orders", the header cells "Item",
+  "Count", and these rows given as Item / Count: glass jar, 841; pine tar, 629; tin can, 267; beeswax,
+  552; canvas sheet, 781; wool blanket, 680; clay pot, 315; rye flour, 280; copper wire, 103. List the
+  rows sorted by Count, largest first. Put the header in one row of <th> cells and each value in its own
+  <td>, with no units or extra characters.'
+assert:
+  structure:
+    title: Net shed overview
+    tables:
+    - caption: North pier orders
+      head:
+      - Item
+      - Count
+      rows:
+      - - glass jar
+        - '841'
+      - - canvas sheet
+        - '781'
+      - - wool blanket
+        - '680'
+      - - pine tar
+        - '629'
+      - - beeswax
+        - '552'
+      - - clay pot
+        - '315'
+      - - rye flour
+        - '280'
+      - - tin can
+        - '267'
+      - - copper wire
+        - '103'
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '945'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: sorted
+  stratum: hard

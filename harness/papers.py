@@ -30,7 +30,8 @@ def due_dates(last_read: float | None, now: float, force: bool = False) -> list[
     while _day(t) > _day(last_read):
         days.append(_day(t))
         t -= 86400
-    return sorted(days)[:MAX_DAYS]
+    from harness import cuts
+    return cuts.take(sorted(days), MAX_DAYS, "harness/papers.py:MAX_DAYS", "missed days of daily papers, read next sweep")
 
 
 def read_through(days: list, now: float) -> float:

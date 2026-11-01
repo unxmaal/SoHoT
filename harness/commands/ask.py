@@ -1,7 +1,6 @@
 """`soh ask PATH... -q QUESTION`: a local model reads the files and answers, the way local_complete does with paths. #1335."""
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 from harness.commands.common import emit, note
@@ -32,28 +31,14 @@ def add_parser(sub) -> None:
     p.set_defaults(func=cmd_ask)
 
 
-def scratch_home(a, scratch: Path) -> str:
-    """Point this process at `scratch` unless the home was named; an error when that is the live home. #1346"""
-    from harness import paths
-    if a.live_home:
-        return ""
-    named = os.environ.get(paths.ENV_VAR)
-    if named:
-        live = paths.is_live(paths.home() / "discovery.db")
-        return f"{paths.ENV_VAR} names the live home; pass --live-home to write its store" if live else ""
-    scratch.mkdir(parents=True, exist_ok=True)
-    os.environ[paths.ENV_VAR] = str(scratch)
-    return ""
-
-
 def cmd_ask(a) -> int:
     if a.redo or a.eval:
-        import tempfile
-        scratch = Path(a.eval).expanduser().resolve() / "home" if a.eval else Path(tempfile.mkdtemp(prefix="soh-redo-"))
-        refused = scratch_home(a, scratch)
-        if refused:
-            note(refused)
-            emit(False, error=refused)
+        from harness import paths
+        try:
+            paths.eval_home(Path(a.eval).expanduser().resolve() / "home" if a.eval else None, live=a.live_home)
+        except paths.LiveHomeRefused as exc:
+            note(str(exc))
+            emit(False, error=str(exc))
             return 2
         return _redo(a) if a.redo else _eval(a)
     from harness import ask, completion

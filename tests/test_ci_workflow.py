@@ -196,11 +196,20 @@ def test_the_test_log_variable_is_the_one_conftest_reads():
 
 def test_a_hung_test_names_itself_before_the_job_timeout():
     """A stack dump per hung test, well under the job timeout and over the slowest real test (#712)."""
+    from tests import conftest
+    doc, _ = _ci()
+    job_s = doc["jobs"]["check-macos"]["timeout-minutes"] * 60
+    assert 60 <= conftest.HANG_DUMP_S < job_s / 4
+    assert 2 * conftest.HANG_DUMP_S <= conftest.HANG_EXIT_S < job_s / 3
+
+
+def test_faulthandler_never_dumps_on_a_timer():
+    """Its timed dump of a running thread spun forever in dump_frame and held check-macos to the job timeout (#1351)."""
     import tomllib
     ini = tomllib.loads((CI.parents[2] / "pyproject.toml").read_text(encoding="utf-8"))
-    limit = int(ini["tool"]["pytest"]["ini_options"]["faulthandler_timeout"])
-    doc, _ = _ci()
-    assert 60 <= limit < doc["jobs"]["check-macos"]["timeout-minutes"] * 60 / 4
+    assert float(ini["tool"]["pytest"]["ini_options"].get("faulthandler_timeout", 0)) == 0
+    for f in (CI, CI.parents[2] / "Makefile"):
+        assert "faulthandler_timeout" not in f.read_text(encoding="utf-8")
 
 
 def test_the_nightly_runs_the_litellm_suite_after_make_check():

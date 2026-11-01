@@ -6,6 +6,7 @@ import json
 import re
 import sys
 import warnings
+from collections import Counter
 
 from evals.importers import MARK, Imported, provenance
 
@@ -110,7 +111,9 @@ _ALLOWED = {"candidate", "True", "False", "None"}
 
 def _get(url: str, headers=None) -> bytes:
     import httpx
-    r = httpx.get(url, headers=headers or {}, timeout=300, follow_redirects=True)
+    from harness import cuts
+    with cuts.timeout("evals/importers/leetcode.py:_get->httpx.get(timeout)", f"LeetCodeDataset download {url}"):
+        r = httpx.get(url, headers=headers or {}, timeout=300, follow_redirects=True)
     r.raise_for_status()
     return r.content
 
@@ -161,14 +164,25 @@ def checks_of(row: dict) -> list[str]:
         warnings.simplefilter("ignore", SyntaxWarning)
         tree = ast.parse(row["test"])
     fn = next((n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "check"), None)
-    out = []
-    for stmt in fn.body if fn else []:
-        c = assert_to_check(stmt, row["entry_point"])
-        if c and len(c) <= MAX_CHECK_CHARS:
-            out.append(c)
-        if len(out) >= MAX_CHECKS:
-            break
-    return out
+    usable = [c for c in (assert_to_check(stmt, row["entry_point"]) for stmt in (fn.body if fn else [])) if c]
+    fits = [c for c in usable if len(c) <= MAX_CHECK_CHARS]
+    _CUT["chars"] += len(usable) - len(fits)
+    _CUT["checks"] += max(0, len(fits) - MAX_CHECKS)
+    return fits[:MAX_CHECKS]
+
+
+#: Checks the two check limits left out since the last converted(), so an import records one cut per limit.
+_CUT: Counter = Counter()
+
+
+def converted() -> None:
+    """Record what MAX_CHECK_CHARS and MAX_CHECKS left out of the rows just converted, then start the tally again."""
+    from harness import cuts
+    if _CUT["chars"]:
+        cuts.cut("evals/importers/leetcode.py:MAX_CHECK_CHARS", "check asserts too long to keep", dropped=_CUT["chars"])
+    if _CUT["checks"]:
+        cuts.cut("evals/importers/leetcode.py:MAX_CHECKS", "check asserts past the per-case count", dropped=_CUT["checks"])
+    _CUT.clear()
 
 
 def convert(row: dict) -> Imported | None:

@@ -130,8 +130,10 @@ def passes(case, answer: str) -> bool:
 
 def _get(params: dict) -> dict:
     import httpx
+    from harness import cuts
     for attempt in range(8):
-        r = httpx.get(ROWS_API, params=params, timeout=120)
+        with cuts.timeout("evals/importers/librispeech.py:_get->httpx.get(timeout)", "LibriSpeech rows API page"):
+            r = httpx.get(ROWS_API, params=params, timeout=120)
         if r.status_code != 429 and r.status_code < 500:
             r.raise_for_status()
             return r.json()
@@ -156,6 +158,7 @@ def _src(row: dict) -> str:
 def audio_getter():
     """get(row) -> bytes, reading the rows API a page at a time: single-row reads hit rate limits."""
     import httpx
+    from harness import cuts
     srcs: dict[int, str] = {}
 
     def get(row: int) -> bytes:
@@ -165,12 +168,15 @@ def audio_getter():
                 srcs[r["row_idx"]] = _src(r["row"])
         if row not in srcs:
             raise ValueError(f"{HF_ID} has no row {row}")
-        return httpx.get(srcs.pop(row), timeout=120).raise_for_status().content
+        with cuts.timeout("evals/importers/librispeech.py:audio_getter.get->httpx.get(timeout)",
+                          f"LibriSpeech clip of row {row}"):
+            return httpx.get(srcs.pop(row), timeout=120).raise_for_status().content
     return get
 
 
 def build_manifest(cache: Path, n: int = N) -> list[dict]:
     import httpx
+    from harness import cuts
     got, offset = [], 0
     while True:
         page = _page(offset, PAGE)
@@ -182,8 +188,12 @@ def build_manifest(cache: Path, n: int = N) -> list[dict]:
     srcs = {idx: _src(r) for idx, r in got}
     for e in entries:
         held = Path(cache) / f"{e['uid']}.flac"
-        blob = held.read_bytes() if held.is_file() else (
-            httpx.get(srcs[e["row"]], timeout=120).raise_for_status().content)
+        if held.is_file():
+            blob = held.read_bytes()
+        else:
+            with cuts.timeout("evals/importers/librispeech.py:build_manifest->httpx.get(timeout)",
+                              f"LibriSpeech clip {e['uid']}"):
+                blob = httpx.get(srcs[e["row"]], timeout=120).raise_for_status().content
         e["sha256"], e["bytes"] = hashlib.sha256(blob).hexdigest(), len(blob)
         Path(cache).mkdir(parents=True, exist_ok=True)
         held.write_bytes(blob)

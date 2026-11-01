@@ -8,6 +8,7 @@ from pathlib import Path
 
 from harness import holdout
 
+LANE = "repo"
 #: Cases the screening subset draws from the repo exam.
 CASES = 24
 #: Independent third-party benchmarks ranking a candidate above the base before a failed screen is rerun.
@@ -208,9 +209,15 @@ def verdict(base_rows: list[dict], cand_rows: list[dict], cases, *, outside_vote
         state, why = "survives", f"tied on {draws} pooled draws ({w} vs {lost}), not below the base: measure it"
     else:
         state, why = "declined", f"wins {w} tasks, loses {lost} on {draws} draw(s)"
+        from harness import cuts
         if favoured:
             why += ("; outside evidence disagrees, so record this as a finding about the exam "
                     "(single shot, no tools: #922, #890)")
+            cuts.cut("screen_repeats", f"{next(iter(cands))} declined after its repo screen reruns", value=repeats,
+                     kept=draws, dropped=1)
+        elif outside_votes:
+            cuts.cut("screen_outside_votes", f"{next(iter(cands))} declined with {outside_votes} outside votes",
+                     value=need_votes, dropped=1)
     base_cases = [r for r in base_rows if holdout.base_id(r["case_id"]) in ran]
     return {"candidate": next(iter(cands)), "cases": len(ran), "tasks": len({task[k][0] for k in ran}),
             "draws": draws, "passed": sum(t[0] for t in tally["cand"].values()),
@@ -220,3 +227,71 @@ def verdict(base_rows: list[dict], cand_rows: list[dict], cases, *, outside_vote
             "task_wins": w, "task_losses": lost, "sign_p": round(p, 4),
             "outside_votes": outside_votes, "votes_needed": need_votes, "repeats": repeats,
             "speed": _speed(cand_rows), "base_speed": _speed(base_cases), "verdict": state, "why": why}
+
+
+def stored(conn, spec: str, ids) -> list[dict]:
+    """The candidate's patch-harness repo rows on `ids`, pooled from every stored run that ran all of them. #1353."""
+    from harness import reasons
+    want = set(ids)
+    out: list[dict] = []
+    for run in conn.execute("SELECT id, specs, receipt FROM runs WHERE lane = ? ORDER BY id", (LANE,)):
+        try:
+            specs, receipt = json.loads(run["specs"] or "{}"), json.loads(run["receipt"] or "{}")
+        except ValueError:
+            continue
+        keys = [k for k, v in specs.items() if spec in (k, v)]
+        if not keys or (receipt.get("harness") or "patch") != "patch":
+            continue
+        got = []
+        for r in conn.execute(f"SELECT case_id, passed, seconds, metrics, failure_class FROM results "
+                              f"WHERE run_id = ? AND candidate IN ({','.join('?' * len(keys))})", (run["id"], *keys)):
+            if holdout.base_id(r["case_id"]) not in want or (r["failure_class"] or "") in reasons.NEVER_RAN:
+                continue
+            try:
+                metrics = json.loads(r["metrics"] or "{}")
+            except ValueError:
+                metrics = {}
+            got.append({"case_id": r["case_id"], "candidate": spec, "passed": bool(r["passed"]),
+                        "seconds": r["seconds"], "metrics": metrics if isinstance(metrics, dict) else {}})
+        if {holdout.base_id(r["case_id"]) for r in got} >= want:
+            out += got
+    return out
+
+
+def served() -> set:
+    """The repo lane's served model by name and spec: reverify and knob sweeps rerun it, and it holds the lane already."""
+    from harness import adopt, screen, winners
+    name = adopt.default_for(LANE, winners.typed().get(LANE, ""))
+    return {name, screen.candidate_for(LANE, name) or name} if name else set()
+
+
+def refusal(conn, specs, cases, anchors: dict | None = None) -> str:
+    """Why a repo exam larger than the screen waits for a spec's screen (none stored, or not survived), or "". #1353."""
+    anchors = load_anchors() if anchors is None else anchors
+    try:
+        chosen = pick(cases, None, anchors)
+    except Refused:
+        return ""
+    ids = [c.id for c in chosen]
+    base = anchors.get("base") or {}
+    passed = base.get("passed") or {}
+    base_rows = [{"case_id": i, "candidate": base.get("candidate") or "base", "passed": bool(passed[i]),
+                  "seconds": None} for i in ids if i in passed]
+    anchored = {(anchors.get(side) or {}).get("candidate") for side in ("base", "reference")} | served()
+    for spec in specs:
+        if spec in anchored:
+            continue
+        rows = stored(conn, spec, ids)
+        if not rows:
+            return (f"{spec} has no repo screen result, so a full repo exam would spend hours on a question "
+                    f"{len(ids)} cases can answer first: uv run python -m evals.run --modality repo "
+                    f"--repo-screen --candidates {spec} --out <dir>, then soh repo-screen verdict <run>; "
+                    f"--unscreened runs it anyway (#1353)")
+        if len(base_rows) < len(ids):
+            continue
+        got = verdict(base_rows, rows, cases)
+        if got["verdict"] != "survives":
+            return (f"{spec}: its repo screen {got['verdict']} ({got['why']}), so a full repo exam waits; "
+                    f"soh repo-screen verdict <runs> --outside-votes N weighs outside evidence; "
+                    f"--unscreened runs it anyway (#1353)")
+    return ""

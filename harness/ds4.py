@@ -8,6 +8,7 @@ ds4-server holds one launch, so the launch is recorded on the receipt
 from __future__ import annotations
 
 import contextlib
+import functools
 import json
 import os
 import re
@@ -40,9 +41,21 @@ def prompt_room(cases=CASES) -> int:
     return max(pads, default=0) + STEP_ROOM
 
 
-PROMPT_ROOM = prompt_room()
-#: The top rung of any lane's budget ladder plus the largest prompt, so no ladder rung is cut by the context. #692.
-DEFAULT_CTX = max(max(rungs) for rungs in completion.LADDER.values()) + PROMPT_ROOM
+@functools.cache
+def default_ctx() -> int:
+    """The top rung of any lane's budget ladder plus the largest prompt, so no ladder rung is cut by the context. #692."""
+    return max(max(rungs) for rungs in completion.LADDER.values()) + prompt_room()
+
+
+def __getattr__(name: str) -> int:
+    # Read on first use: the case scan costs seconds of a cold import that only routes. #1427.
+    if name == "PROMPT_ROOM":
+        return prompt_room()
+    if name == "DEFAULT_CTX":
+        return default_ctx()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
 #: Options that change the launch; the rest of a spec's tail is sampling.
 OPTIONS = ("ssd_streaming", "expert_cache", "ctx")
 #: ds4-server has no response_format and returns no logprobs.
@@ -117,7 +130,7 @@ class Spec:
     stem: str
     ssd_streaming: bool = False
     expert_cache: str = "auto"
-    ctx: int = DEFAULT_CTX
+    ctx: int = field(default_factory=lambda: default_ctx())
     sampling: dict = field(default_factory=dict)
 
 
@@ -157,7 +170,7 @@ def parse(spec: str) -> Spec:
     if cache != "auto" and streaming != "on":
         raise ValueError(f"{spec}: expert_cache needs ssd_streaming=on")
     try:
-        ctx = int(opts.get("ctx", DEFAULT_CTX))
+        ctx = int(opts.get("ctx", default_ctx()))
     except ValueError:
         ctx = 0
     if ctx <= 0:
@@ -244,10 +257,12 @@ def pinned_rev() -> str:
 
 def version() -> str:
     """The checkout's commit date as YYYY.MM.DD, orderable for `version:ds4>X`; "" if unbuilt."""
+    from harness import cuts
     try:
-        out = subprocess.run(["git", "-C", str(checkout()), "log", "-1", "--format=%cd",
-                              "--date=format:%Y.%m.%d"], capture_output=True, text=True,
-                             timeout=10)
+        with cuts.timeout("harness/ds4.py:version->subprocess.run(timeout)", "ds4 checkout version unread"):
+            out = subprocess.run(["git", "-C", str(checkout()), "log", "-1", "--format=%cd",
+                                  "--date=format:%Y.%m.%d"], capture_output=True, text=True,
+                                 timeout=10)
     except (OSError, subprocess.SubprocessError):
         return ""
     return out.stdout.strip() if out.returncode == 0 else ""
@@ -310,8 +325,10 @@ _DIRECT = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
 def _models(base: str) -> dict | None:
+    from harness import cuts
     try:
-        with _DIRECT.open(base + "/v1/models", timeout=3) as r:
+        with (cuts.timeout("harness/ds4.py:_models->_DIRECT.open(timeout)", f"{base}: read as down"),
+              _DIRECT.open(base + "/v1/models", timeout=3) as r):
             return json.loads(r.read() or b"{}") if r.status == 200 else None
     except Exception:  # noqa: BLE001 - not up
         return None
@@ -401,7 +418,9 @@ def serving(spec: str, port_: int | None = None, timeout: float | None = None):
     log = paths.home() / "logs" / f"ds4-{port_}.log"
     try:
         wait = start_timeout(spec) if timeout is None else timeout
-        with vllm.served(argv(spec, port_), port_, log=log, timeout=wait) as srv:
+        start_knob = ("harness/vllm.py:served(timeout)" if timeout is not None else "harness/ds4.py:START_FLOOR_S"
+                      if wait < 2 * START_FLOOR_S else "harness/ds4.py:START_S_PER_GIB")
+        with vllm.served(argv(spec, port_), port_, log=log, timeout=wait, timeout_knob=start_knob) as srv:
             state = write_state(spec, port_, srv.proc.pid)
             yield state
     except RuntimeError as exc:
@@ -503,7 +522,7 @@ def resident_bytes(spec: str, file_bytes: int) -> int | None:
 
 def fetch(repo: str, filename: str, hf_download=None, conn=None) -> str:
     """Download one ds4 file into the ds4 models dir and record it. By hand only."""
-    from harness import downloads
+    from harness import downloads, env
     if not any(m.repo.lower() == repo.lower() and m.file == filename for m in MODELS):
         raise ValueError(f"ds4 lists no {filename} in {repo} at {pinned_rev()[:7]}: "
                          f"{', '.join(m.file for m in MODELS if m.repo == repo)}")
@@ -518,7 +537,8 @@ def fetch(repo: str, filename: str, hf_download=None, conn=None) -> str:
         rid = downloads.start(c, repo, downloads.GGUF, dest / filename, file=filename,
                               origin=downloads.SCRIPT)
         try:
-            where = hf_download(repo, filename, str(dest))
+            with env.online():
+                where = hf_download(repo, filename, str(dest))
         except BaseException:
             downloads.finish(c, rid, failed=True)
             raise

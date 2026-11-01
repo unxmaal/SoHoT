@@ -35,7 +35,7 @@ from dataclasses import replace
 from evals.core import (AGENT_MODALITIES, CRAFT_MODALITIES, MODALITIES, REPO_MODALITIES, TEXT_MODALITIES,
                         TEXT_SUFFIX, TRAJECTORY_SUFFIX, Case,
                         Receipt, cases_digest, comparable, direction_of,
-                        summarize)
+                        ece_withheld, summarize)
 from evals import core, environment, private, watch
 from evals.runners.base import RunnerError
 from evals.runners.process import ProcessRunner
@@ -409,14 +409,31 @@ def server_sampling(specs: dict) -> dict:
     return out
 
 
-def run_budget(modality: str, asked: int | None) -> int:
-    """The reply budget a run records: the one it was given, else its lane's; 0 where no text is generated. #628."""
+def run_budget(modality: str, asked: int | None, candidates=(), harness: str = "patch") -> int:
+    """The reply budget a run records: the one it was given, else its candidates' derived cap; 0 where no text is generated. #628, #1352."""
+    return reply_budget(modality, asked, candidates, harness)[0]
+
+
+def reply_budget(modality: str, asked: int | None, candidates=(), harness: str = "patch") -> tuple[int, dict]:
+    """(the reply budget a run records, spec -> the cap it came from); a run of no candidate or another harness asks at its lane's. #1352."""
     if asked is not None and int(asked) < 1:
         raise SystemExit(f"--max-tokens must be at least 1, not {asked}")
     lane = completion.budget(modality)
     if modality != "all" and not lane:
-        return 0
-    return int(asked) if asked is not None else lane
+        return 0, {}
+    if asked is not None:
+        return int(asked), {}
+    if modality == "all" or harness != "patch" or not candidates:
+        return lane, {}
+    from harness import reply_cap
+    return reply_cap.budget_for(modality, candidates)
+
+
+def reply_caps(specs: dict, caps: dict) -> dict:
+    """receipt key -> the cap its model derived, for the receipt; a screen's greedy spec keys by its base model. #1352."""
+    from harness import convertible
+    by = {convertible.base_of(s): c for s, c in caps.items()}
+    return {key: by[b] for key, spec in specs.items() if (b := convertible.base_of(spec)) in by}
 
 
 def run_ladder(modality: str, asked: str | None) -> tuple[int, ...]:
@@ -495,14 +512,10 @@ def set_stop(runner, tokens: int | None) -> None:
 
 def yield_point(lane: str, spec: str) -> dict:
     """The stop point a measured run of `spec` uses, from the stored rows; {} where the store cannot be read. #1127."""
-    from harness import yield_stop
-    from harness import memory_store as ms
+    from harness import runs, yield_stop
     try:
-        conn = ms.connect()
-        try:
+        with runs.store() as conn:
             got = yield_stop.point(conn, lane, spec)
-        finally:
-            conn.close()
     except Exception as exc:  # noqa: BLE001 - no stop point means the reply runs to its budget
         print(f"  yield stop: the stored rows could not be read ({exc}); replies run to their budget", file=sys.stderr)
         return {}
@@ -1199,6 +1212,9 @@ def _parser():
     ap.add_argument("--repo-screen", action="store_true",
                     help="repo lane: only the screening subset, repo_screen_cases cases stratified by group "
                          "and variant (evals/repo_screen.py, #1176)")
+    ap.add_argument("--unscreened", action="store_true",
+                    help="repo lane: run more cases than the screen for a candidate whose repo screen has not "
+                         "survived, or has not run (#1353)")
     ap.add_argument("--harness", choices=("patch", "repair"), default="patch",
                     help="repo lane: patch asks for one diff; repair runs a bounded tool loop (list, search, "
                          "read, apply_patch, visible run_tests, finish) graded the same way (#890)")
@@ -1231,6 +1247,9 @@ def _parser():
                          "stored mean on this machine, else --budget-min over the cases")
     ap.add_argument("--budget-min", type=float, default=None,
                     help="a stated budget for the whole run, the plan where no receipt gives one (#810)")
+    ap.add_argument("--order", default=None, metavar="ORDER.JSON",
+                    help="a JSON list of case ids to run first, in that order, each repeat a pass over them; "
+                         "a paired measure writes it from the incumbent's draws (harness/weedout.py, #1439)")
     ap.add_argument("--reuse", default=None, metavar="REUSE.JSON",
                     help="incumbent cells a paired measure takes from stored draws under the same "
                          "content identity; not run here, refused if the identity changed (#1094)")
@@ -1349,7 +1368,21 @@ def _plan(args) -> tuple[str, list, list]:
         print(f"--repeat {args.repeat} ignored: {args.modality} is deterministic, so each case runs once and the "
               f"receipt says repeat {ran} (#1272)", file=sys.stderr)
         args.repeat = ran
-    return side, chosen, expand_cases(pool, args.repeat)
+    return side, chosen, ordered(expand_cases(pool, args.repeat), getattr(args, "order", None))
+
+
+def ordered(cases: list[Case], path) -> list[Case]:
+    """Cases by repeat, then by their place in the --order file; cases it does not name keep their order after. #1439."""
+    if not path:
+        return cases
+    from harness import holdout, paired
+    try:
+        ids = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise SystemExit(f"--order {path}: {exc}") from None
+    at = {str(c): i for i, c in enumerate(ids)}
+    return [c for _, c in sorted(enumerate(cases), key=lambda x: (
+        paired.repeat_index(x[1].id), at.get(holdout.base_id(x[1].id), len(at)), x[0]))]
 
 
 def rows_per_case(cases: list[Case], repeat: int) -> int:
@@ -1397,6 +1430,47 @@ def argv_spend_refusal(argv) -> str:
     return got["refuse"] if got else ""
 
 
+def screen_refusal(args, candidates: list[str], cases: list) -> str:
+    """Why a repo run larger than the screen waits for a candidate's repo screen, or "". #1353."""
+    from evals import repo_screen
+    from harness import holdout
+    from harness import memory_store as ms
+    if (args.modality != repo_screen.LANE or args.screen or getattr(args, "repo_screen", False)
+            or getattr(args, "unscreened", False)):
+        return ""
+    if len({holdout.base_id(c.id) for c in cases}) <= int(repo_screen.CASES):
+        return ""
+    if getattr(args, "resume", False) and args.out and (Path(args.out) / watch.CHECKPOINT).is_file():
+        return ""
+    local = [c for c in candidates if not hosted(c)]
+    if not local:
+        return ""
+    conn = ms.connect()
+    try:
+        return repo_screen.refusal(conn, local, load_selected(args))
+    finally:
+        conn.close()
+
+
+def screen_first(args, candidates: list[str], cases: list) -> None:
+    why = screen_refusal(args, candidates, cases)
+    if why:
+        raise SystemExit(f"evals.run: {why}")
+
+
+def argv_screen_refusal(argv) -> str:
+    """Why a queued `-m evals.run ...` repo exam must wait for a screen, or "". #1353."""
+    args = queued_args(argv)
+    if args is None or args.compare or args.modality != "repo" or not args.candidates:
+        return ""
+    try:
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            _, _, cases = _plan(args)
+    except SystemExit:
+        return ""
+    return screen_refusal(args, split_candidates(args.candidates), cases)
+
+
 def _execute_at(args, overrides: dict) -> int:
     from harness import holdout
     side, chosen, cases = _plan(args)
@@ -1417,12 +1491,18 @@ def _execute_at(args, overrides: dict) -> int:
         print(f"── {api_spend.describe(spend)}", flush=True)
         if spend["refuse"]:
             raise SystemExit(f"evals.run: {spend['refuse']}")
+    screen_first(args, candidates, cases)
     effective_template(args.modality, candidates)
     ladder = run_ladder(args.modality, getattr(args, "budget_ladder", None))
     if ladder and getattr(args, "max_tokens", None) is not None:
         raise SystemExit("--budget-ladder and --max-tokens say two things about the reply "
                          "budget; pass one")
-    budget = ladder[-1] if ladder else run_budget(args.modality, getattr(args, "max_tokens", None))
+    budget, caps = ((ladder[-1], {}) if ladder else
+                    reply_budget(args.modality, getattr(args, "max_tokens", None), candidates, harness))
+    if any(c["from"] != "budget" for c in caps.values()):
+        from harness import reply_cap
+        print(f"── reply budget {budget}: " + "; ".join(f"{s}: {reply_cap.said(c)}" for s, c in caps.items()),
+              flush=True)
     pool, counts, untils, caveat = cases, {}, {}, ""
     if args.screen:
         candidates = greedy(candidates)
@@ -1445,7 +1525,12 @@ def _execute_at(args, overrides: dict) -> int:
         identity["harness"] = harness
     if taken:
         identity["reuse"] = {k: v for k, v in taken.items() if k != "runs"}
-    had = watch.read(outdir) if getattr(args, "resume", False) else None
+    had = watch.read(outdir) if outdir else None
+    if had and had[1] and not getattr(args, "resume", False):
+        print(f"refused: the checkpoint in {outdir} holds {len(had[1])} finished case(s); "
+              f"pass --resume to continue it, or name another --out (#1441)", file=sys.stderr)
+        return 1
+    had = had if getattr(args, "resume", False) else None
     if had and watch.differs(had[0], identity):
         print(f"stale: the checkpoint in {outdir} ran another exam "
               f"({', '.join(watch.differs(had[0], identity))} changed); not resumed", file=sys.stderr)
@@ -1528,6 +1613,8 @@ def _execute_at(args, overrides: dict) -> int:
                                    eye, ckpt, progress, kept[i], block != 1, pooled)
     except watch.Stop as exc:
         stopped = exc
+        if isinstance(exc, watch.Deferred) and outdir:
+            watch.ask_pause(outdir, exc.reason)
         print(f"\n{exc.why}", file=sys.stderr, flush=True)
     state, why = ("paused", stopped.why) if stopped else ("done", "")
     code = watch.PAUSED if stopped else 0
@@ -1539,6 +1626,7 @@ def _execute_at(args, overrides: dict) -> int:
         raise SystemExit("nothing ran: no candidate matched any case")
 
     report(summarize(results), resolved)
+    ece_withheld(results)
     if args.modality in REPO_MODALITIES:
         sized_text = size_report(cases, results)
         if sized_text:
@@ -1579,6 +1667,7 @@ def _execute_at(args, overrides: dict) -> int:
             pool_full=pooled,
             budget_ladder=ladder,
             yield_stop={todo[i][1].candidate: k["stop"] for i, k in enumerate(kept) if k.get("stop")},
+            reply_cap=reply_caps(specs, caps),
             engine_timeout=engine_reruns(clocks, planned),
             resolved=resolved,
             machine=serving,
@@ -1771,7 +1860,12 @@ def served_shapes(specs: dict, resolved: dict, seen: dict, away: bool,
 
 
 def _servable(candidate: str) -> None:
-    """Refuse before anything runs when ds4-server cannot serve this candidate. #611."""
+    """Refuse before anything runs when ds4-server or vLLM cannot serve this candidate. #611, #960."""
+    if kind_of(candidate) == VLLM_KIND:
+        from harness import vllm
+        if not vllm.available():
+            raise SystemExit(f"{candidate} is not served: no vLLM engine here: {vllm.absent()}")
+        return
     if kind_of(candidate) != DS4_KIND:
         return
     try:
@@ -1782,7 +1876,15 @@ def _servable(candidate: str) -> None:
 
 @contextlib.contextmanager
 def _served(candidate: str):
-    """The ds4-server launch a ds4 candidate runs against, started for it if none is up."""
+    """The ds4-server launch a ds4 candidate runs against, started for it if none is up; a vLLM one's server likewise."""
+    if kind_of(candidate) == VLLM_KIND:
+        from harness import vllm
+        try:
+            with vllm.serving(candidate.partition(",")[0]):
+                yield None
+        except vllm.Unservable as exc:
+            raise SystemExit(f"{candidate} is not served: {exc}") from None
+        return
     if kind_of(candidate) != DS4_KIND:
         yield None
         return
@@ -1814,8 +1916,8 @@ def _home(candidate: str, gateway: str) -> tuple[str, str, int | None]:
 
 def pair_block(candidates, gateway: str, home=_home) -> int | None:
     """Cases per candidate in turn: 1 when every model stays resident, PAIR_BLOCK when a turn reloads, None for candidate-major. #816."""
-    if any(kind_of(c) == DS4_KIND for c in candidates):
-        return None   # one ds4-server per candidate, started and stopped around its cases
+    if any(kind_of(c) in (DS4_KIND, VLLM_KIND) for c in candidates):
+        return None   # one ds4-server or vLLM server per candidate, started and stopped around its cases
     held: dict = {}
     for c in candidates:
         base, model, cap = home(c, gateway)
@@ -1933,6 +2035,9 @@ def warm(runner, clock=None, sleep=None) -> None:
                 print(f"  {exc}; waiting up to {GATEWAY_DOWN_WAIT_S:g} s for it to answer",
                       file=sys.stderr, flush=True)
             if now >= end:
+                from harness import cuts
+                cuts.cut("gateway_down_wait", f"warm-up of {getattr(runner, 'candidate', '')} at a refusing gateway",
+                         kept=0, dropped=1)
                 raise
             sleep(GATEWAY_DOWN_POLL_S)
 

@@ -13,7 +13,6 @@ had to stop being an opinion.
 """
 import multiprocessing as mp
 import sqlite3
-import time
 from pathlib import Path
 
 import pytest
@@ -78,10 +77,10 @@ def test_a_reader_is_not_blocked_by_a_writer(tmp_path):
     reader = memory_store.connect(db)
     writer.execute("BEGIN IMMEDIATE")
     writer.execute("INSERT OR REPLACE INTO meta VALUES ('held', '1')")
-    started = time.perf_counter()
+    assert reader.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
+    # No wait allowed, so a blocked read raises rather than being timed. #1423.
+    reader.execute("PRAGMA busy_timeout = 0")
     reader.execute("SELECT count(*) FROM meta").fetchone()
-    assert time.perf_counter() - started < 1.0, \
-        "the reader waited for an open write transaction, so WAL is not on"
     writer.rollback()
 
 

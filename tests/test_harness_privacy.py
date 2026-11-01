@@ -5,6 +5,7 @@ mention of hardware would be turned off within a week, and the rule this
 project actually wants is narrower: a measurement keeps its instrument, and
 the household around it goes.
 """
+import re
 from pathlib import Path
 
 import pytest
@@ -251,3 +252,69 @@ def test_an_edit_history_hit_is_reported_with_its_revision(tmp_path, monkeypatch
     assert [(f.origin, f.name) for f in found] == [
         ("#922 edit 2026-10-17T12:22:54Z", "person-name"),
         ("#922 comment 55 edit 2026-10-17T13:00:00Z", "private-host")]
+
+
+# ---- every tracked text format, read as its strings (#1455) ----------------
+
+def _tree(tmp_path, monkeypatch, files: dict) -> list:
+    monkeypatch.setenv("LH_PRIVATE_NAMES", FAKE_NAME)
+    for rel, body in files.items():
+        p = tmp_path / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(body if isinstance(body, bytes) else body.encode("utf-8"))
+    monkeypatch.setattr(privacy, "tracked", lambda root: sorted(p for p in root.rglob("*") if p.is_file()))
+    return sorted((f.origin, f.name) for f in privacy.scan_paths(tmp_path))
+
+
+def test_json_jsonl_csv_and_a_suffixless_file_are_scanned(tmp_path, monkeypatch):
+    got = _tree(tmp_path, monkeypatch, {
+        "a.json": '{"path": "/Users/someone/run"}\n',
+        "b.jsonl": '{"t": "fine"}\n{"t": "/home/someone/x"}\n',
+        "c.csv": "id,where\n1,/Volumes/Models/hf\n",
+        "NOTICE": f"set up by {FAKE_NAME}\n",
+    })
+    assert got == [("NOTICE", "person-name"), ("a.json", "home-path"), ("b.jsonl", "home-path"),
+                   ("c.csv", "named-volume")]
+
+
+def test_a_binary_file_is_not_read(tmp_path, monkeypatch):
+    assert _tree(tmp_path, monkeypatch, {"x.png": b"\x89PNG\r\n\x1a\n\0\0 /Users/someone/x\n"}) == []
+
+
+def test_a_name_after_an_escaped_newline_is_found():
+    """Raw JSON spells the newline `\\n`, so the name would sit in one word with the n before it."""
+    extra = ("person-name", re.compile(rf"\b{FAKE_NAME}\b", re.I), "")
+    assert [f.name for f in privacy.scan(f'{{"r": "a run by\\n{FAKE_NAME}"}}', "t", extra)] == ["person-name"]
+    assert [f.line for f in privacy.scan(f'{{}}\n{{"r": "ok\\t{FAKE_NAME}"}}', "t", extra)] == [2]
+    assert privacy.scan(f'{{"r": "a run by\\n{FAKE_NAME}ian"}}', "t", extra) == []
+
+
+def test_a_public_corpus_is_spared_the_name_pattern_only(tmp_path, monkeypatch):
+    spared = next(k for k, v in privacy.SPARED.items() if v == {"person-name"} and k.endswith(".jsonl"))
+    got = _tree(tmp_path, monkeypatch, {spared: f'{{"text": "{FAKE_NAME.upper()} SAID"}}\n{{"p": "/Users/someone/x"}}\n'})
+    assert got == [(spared, "home-path")]
+
+
+@pytest.mark.gauntlet("a-closed-table-fronting-an-open-set", site="harness/privacy.py:SPARED")
+def test_every_spared_file_is_tracked_and_spares_a_real_pattern():
+    """A spared path that was renamed away would spare nothing, and a misspelt pattern would spare everything else."""
+    root = Path(__file__).resolve().parent.parent
+    tracked = {p.relative_to(root).as_posix() for p in privacy.tracked(root)}
+    known = {name for name, _, _ in privacy.PATTERNS} | {"person-name"}
+    assert set(privacy.SPARED) <= tracked
+    assert all(v and v <= known for v in privacy.SPARED.values())
+
+
+@pytest.mark.parametrize("raw,masked", [
+    ("/Users/someone/.cache/x.py", "~/.cache/x.py"),
+    ("/home/someone/src", "~/src"),
+    ("/tmp/pytest-of-someone/pytest-0/t0", "/tmp/pytest-of-USER/pytest-0/t0"),
+    ("~/.claude/projects/-Users-someone-projects/s.jsonl", "~/.claude/projects/-Users-USER-projects/s.jsonl"),
+    ("/private/tmp/claude-504/-home-someone-src/x", "/private/tmp/claude-504/-home-USER-src/x"),
+    ("/Users/USER/x and pytest-of-USER and -Users-USER-p", "/Users/USER/x and pytest-of-USER and -Users-USER-p"),
+    ("/Users/<ACCOUNT_1>/x -Users-<ACCOUNT_1>-p", "/Users/<ACCOUNT_1>/x -Users-<ACCOUNT_1>-p"),
+    ("a well-Users-ish word", "a well-Users-ish word"),
+])
+def test_mask_home_hides_the_account_a_path_spells(raw, masked):
+    assert privacy.mask_home(raw) == masked
+    assert privacy.mask_home(masked) == masked

@@ -116,20 +116,26 @@ def probe(gateway: str, router: str, model: str, *, headers=None, get=_get, cloc
     if idle_open is None:
         return False, (f"slot probe: {router}/slots told nothing about {model}'s slots; start llama-server "
                        f"with --slots so the check can see them")
+    from harness import cuts
     if idle_open:
+        cuts.cut("slot_probe_busy_wait", f"{model}: slot never seen busy with its stream open", value=busy_wait_s)
+        cuts.cut("slot_probe_max_tokens", f"{model}: an idle slot under an open stream had ended its capped reply",
+                 value=max_tokens)
         return False, f"slot probe: {model}'s slot was idle while its stream was open, so the probe proves nothing"
     closed = clock()
     while clock() - closed < settle_s:
         if idle(slots()):
             return True, f"a closed stream freed {model}'s slot in {clock() - closed:.1f}s"
         sleep(POLL_S)
+    cuts.cut("slot_probe_settle", f"{model}: slot still decoding after its stream closed", value=settle_s)
     return False, f"slot probe: {model}'s slot still decoding {settle_s:g}s after its stream closed: {FIX}"
 
 
 def main(argv=None) -> int:
     import argparse
 
-    from harness import gateway_key, router
+    from harness import gateway_key, paths, router
+    paths.eval_home(reads_live=True)
     p = argparse.ArgumentParser(prog="python -m harness.slot_probe")
     p.add_argument("--gateway", default="http://127.0.0.1:4000")
     p.add_argument("--router", default="", help="the llama-server router (default: this machine's)")

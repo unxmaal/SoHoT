@@ -24,6 +24,11 @@ KNOBS = [
             "served context, which binds as served_ctx (#692)"),
     _k("llamacpp_slots", ["harness/context.py:LLAMACPP_SLOTS"], [1, 2, 4, 8],
        note="llama-server slots every GGUF without its own slot plan batches across; throughput, not a grade (#699)"),
+    _k("min_headroom_gb", ["harness/memory.py:MIN_HEADROOM_GB"], [0.0, 2.0, 4.0, 8.0], limit="min_headroom_gb",
+       unit="GiB",
+       note="memory fits() must still leave safely available after a load: a sweep takes no new measurement under "
+            "it, and an MLX case whose KV would take it there is deferred; the 2026-10-31 sweep kept loading at "
+            "-2.7 GB and the Studio hung (#1482)"),
     _k("mlx_max_parallel", ["harness/serving.py:MLX_MAX_PARALLEL"], [4, 8, 16, 32],
        note="most requests the gateway lets mlx_lm.server hold; fewer when their KV does not fit (#542, #699)"),
     _k("mlx_prompt_cache_bytes", ["harness/mlx_server.py:PROMPT_CACHE_BYTES"], ["4GB", "8GB", "16GB"],
@@ -32,7 +37,10 @@ KNOBS = [
        note="distinct KV caches mlx_lm.server keeps; at mlx-lm's 10 Metal's 499000-buffer limit killed its "
             "generation thread (#912)"),
     _k("mlx_request_ctx", ["harness/serving.py:MLX_REQUEST_CTX"], [8192, 16384, 32768, 65536],
-       note="context one MLX request's KV is priced at when the parallel cap is sized (#699)"),
+       limit="mlx_request_ctx", unit="tokens",
+       note="context one MLX request's KV is priced at when the parallel cap is sized (#699), and the longest "
+            "prompt sent to mlx_lm.server, which has no context limit of its own: a 59,278-token repo prompt "
+            "reached it on 2026-10-31 (#1482)"),
     _k("mlx_swap_timeout", ["harness/mlx_server.py:SWAP_TIMEOUT_S"], [30.0, 120.0, 300.0],
        note="seconds a swap of the mlx server back to its boot model may take before the idle model is kept (#1082)"),
     _k("ornith_slot_ctx", ["harness/context.py:ORNITH_SLOT_CTX"], [131072, 262144],
@@ -147,6 +155,26 @@ NOT_GATING = {
 }
 
 NEVER_CUTS = {
+    "scripts/h3-weights-status.sh:H3_TARGET_GIB": "the size the H3 status script reports progress against; it stops "
+                                                  "and drops no download (#1087)",
+    "scripts/router-sleep-idle.sh:LLAMACPP_SLEEP_IDLE": "seconds an idle llama-server waits before it sleeps; no request "
+                                                        "is in flight, the next one pays a load (#1087)",
+    "scripts/router-sleep-idle.sh:SERVE_IDLE_UNLOAD_S": "seconds an idle model stays loaded on a Mac; no request is in "
+                                                        "flight, the next one pays a load (#1087)",
+    "scripts/serve-llamacpp.sh:LLAMACPP_GPU_LAYERS": "layers placed on the GPU; placement sets speed, every layer still "
+                                                     "runs (#1087)",
+    "scripts/slots-sweep.sh:SWEEP_LONG": "tokens of an optional long-context probe, 0 to skip it by choice; it drops no "
+                                         "config (#1087)",
+    "harness/live_audit.py:ERROR_RATE_MAX": "the error rate past which the audit names a lane; it reports and drops "
+                                            "no request (#739)",
+    "harness/mlx_server.py:PROMPT_CACHE_BYTES": "bytes of KV cache the mlx server keeps; an evicted prefix is "
+                                                "recomputed, so no request or reply is dropped (#912)",
+    "harness/mlx_server.py:PROMPT_CACHE_SIZE": "KV caches the mlx server keeps; an evicted prefix is recomputed, so no "
+                                               "request or reply is dropped (#912)",
     "harness/context.py:STEP": "the granularity a context is rounded down to; the KV room or trained context that binds "
                                "records under its own knob (#498)",
+    **{f"evals/run.py:{f}(max_tokens)": "0 passes no override, so the runner asks at the lane's reply_budget, which "
+       "records its own binding (#628)" for f in ("build_runner", "_agent_runner", "_build_runner")},
+    "harness/vllm.py:_probe->_DIRECT.open(timeout)": "how long one readiness probe waits; a slow answer reads as not "
+                                                     "up yet and is probed again, and served(timeout) records the cut",
 }

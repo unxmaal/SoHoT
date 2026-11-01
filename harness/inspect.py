@@ -32,7 +32,7 @@ from harness import memory_store as ms
 GIB = 1024 ** 3
 #: Weights above this cannot run here. 32 GB unified, and macOS gives the GPU
 #: roughly 70-75% of it by default, so the honest ceiling is well under 32.
-#: Overridable: the M5 Ultra arriving with 96 GB moves this, nothing else.
+#: Measured on the 32 GB mini; ceiling_bytes scales it by a unified machine's RAM.
 #:
 #: IT IS A WEIGHT CEILING, NOT A JOB CEILING, and the difference bit once. The
 #: default image job peaks at 11.4 GiB at 512x512 and 23.9 at 1024 (M2 Pro,
@@ -53,10 +53,8 @@ def ceiling_bytes(acc=None) -> int:
     verdicts, and both are Windows. So a discrete card is asked directly and
     its VRAM is the wall.
 
-    Unified memory deliberately keeps the measured constant. Deriving it too
-    (32 * GPU_FRACTION is 24 GiB) would move an Apple Silicon machine's ceiling from 22 to 24
-    and change which candidates it accepts -- a decision about the Mac, which a
-    Windows port has no business making on its way past.
+    Unified memory scales MEMORY_CEILING by its RAM over MEMORY_CEILING_RAM_GB,
+    so the measured mini keeps 22 GiB; with no RAM reading it is the constant. #355.
     """
     from harness import machine
 
@@ -881,7 +879,7 @@ class Card:
     category: str = ""
     #: config.json's model_type, "" when the card carried no config. #567.
     model_type: str = ""
-    #: The repo's own modelling code its auto_map names, "" for none. #567.
+    #: With an auto_map, the modeling_/configuration_ files in its listing, else "auto_map"; "" for none. #567.
     remote_code: str = ""
 
 
@@ -1201,6 +1199,7 @@ def decide(fit: Fit, ceiling: int | None = None, dead_days: int = UPSTREAM_DEAD_
             days = ((time.time() if now is None else now) - when) / 86400.0
             fit.upstream_idle_days = days
             if days > dead_days:
+                cuts.cut("dead_days", f"{fit.repo}: refused as dead upstream", value=dead_days, kept=0, dropped=1)
                 fit.verdict = "dead"
                 fit.why = f"last commit {days / 365.0:.1f} years ago"
                 return fit
@@ -1304,6 +1303,7 @@ def inspect(repo: str, workdir: Path, *, meta: dict | None = None,
     # GitHub's size counts every commit; only the shallow clone's own weight files say weights in git. #991.
     in_git = weight_kb(tree)
     if in_git > kb_cap:
+        cuts.cut("clone_kb_cap", f"{repo}: read as weights in git", value=kb_cap, kept=0, dropped=1)
         fit.verdict = WEIGHTS_IN_GIT
         fit.why = (f"{in_git / 1000:.0f} MB of weight files in the source tree, "
                    f"which is weights in git, not a source repo")
@@ -1342,7 +1342,10 @@ def inspect(repo: str, workdir: Path, *, meta: dict | None = None,
             fit.unsized.append(model_id)
             if isinstance(got, dict) and got.get("deferred"):
                 fit.deferred.append(model_id)
-    fit.unsized += [i for i in found["hf_ids"] if i not in picked]
+    unpicked = [i for i in found["hf_ids"] if i not in picked]
+    if unpicked:
+        cuts.cut("size_limit", f"{repo}: named weights left unsized", kept=len(picked), dropped=len(unpicked))
+    fit.unsized += unpicked
     if len(cache) > before:
         try:
             _write_size_cache(cache)

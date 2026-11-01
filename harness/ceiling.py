@@ -35,10 +35,14 @@ class Sweep:
     def remaining(self) -> float:
         return max(0.0, self.started + self.ceiling_s - self.clock())
 
-    def unused(self) -> dict | None:
+    def unused(self, record: bool = True) -> dict | None:
         """The ceiling this sweep left unused and why, when it is more than UNUSED_S; None otherwise."""
         left = self.remaining()
         if left <= UNUSED_S:
+            if record and left > 0:
+                from harness import cuts
+                cuts.cut("sweep_unused_s", f"{left:.0f} s of the sweep ceiling left unused, too little to report",
+                         kept=0, dropped=1)
             return None
         return {"ceiling_s": self.ceiling_s, "left_s": round(left), "waiting": self.waiting,
                 "why": self.stopped or "the measure step ran out of measurements"}
@@ -49,7 +53,7 @@ class Sweep:
         out = ["\n=== sweep ceiling ===",
                f"  {power._hm(self.ceiling_s)} from {at}, {power._hm(self.remaining())} left"]
         out += [f"  {line}" for line in self.lines]
-        got = self.unused()
+        got = self.unused(record=False)
         if got:
             out.append(f"  unused: {power._hm(got['left_s'])} of the ceiling: {got['why']}")
         return out

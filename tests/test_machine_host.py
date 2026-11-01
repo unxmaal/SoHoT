@@ -10,7 +10,7 @@ import httpx
 import pytest
 import respx
 
-from evals import core, environment
+from evals import core
 from evals import run as R
 from evals.core import Case, Receipt, comparable
 from evals.runners.base import BaseRunner
@@ -29,19 +29,11 @@ def _env(host, memory_gb=96, hw="Mac17,15"):
             "memory_gb": memory_gb, "accelerator": {}, "versions": {}}
 
 
-@pytest.fixture
-def be(monkeypatch):
-    def on(env):
-        monkeypatch.setattr(environment, "capture", lambda: dict(env))
-        monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
-    return on
-
-
-def test_two_hosts_with_one_board_keep_two_rows(tmp_path, be):
+def test_two_hosts_with_one_board_keep_two_rows(tmp_path, machine_is):
     conn = ms.connect(tmp_path / "s.db")
-    be(_env("aaaaaaaaaaaa", 96))
+    machine_is(_env("aaaaaaaaaaaa", 96))
     a = ms.remember_machine(conn)
-    be(_env("bbbbbbbbbbbb", 256))
+    machine_is(_env("bbbbbbbbbbbb", 256))
     b = ms.remember_machine(conn)
     assert a != b
     got = {r["id"]: r["memory_gb"] for r in conn.execute("SELECT * FROM machines")}
@@ -62,24 +54,24 @@ def test_a_host_with_no_platform_uuid_persists_one(tmp_path):
     assert (tmp_path / machine.HOST_FILE).read_text(encoding="utf-8").strip() == first
 
 
-def test_the_first_host_to_ask_claims_the_rows_from_before_hosts(tmp_path, be):
+def test_the_first_host_to_ask_claims_the_rows_from_before_hosts(tmp_path, machine_is):
     conn = ms.connect(tmp_path / "s.db")
     old = runs.machine_for(conn, {"hw_model": "Mac17,15", "os": OS, "arch": "arm64"})
-    be(_env("aaaaaaaaaaaa"))
+    machine_is(_env("aaaaaaaaaaaa"))
     assert ms.machine_row(conn) == old
     assert ms.remember_machine(conn) == old
     # A receipt from before hosts still lands on the row it always did.
     assert runs.machine_for(conn, {"hw_model": "Mac17,15", "os": OS, "arch": "arm64"}) == old
-    be(_env("bbbbbbbbbbbb"))
+    machine_is(_env("bbbbbbbbbbbb"))
     assert ms.machine_row(conn) is None
     assert ms.remember_machine(conn) != old
     conn.close()
 
 
-def test_two_hosts_are_not_reported_as_one_machine(tmp_path, be):
+def test_two_hosts_are_not_reported_as_one_machine(tmp_path, machine_is):
     conn = ms.connect(tmp_path / "s.db")
     for host in ("aaaaaaaaaaaa", "bbbbbbbbbbbb"):
-        be(_env(host))
+        machine_is(_env(host))
         ms.remember_machine(conn)
     assert migration_check._machines(conn) == []
     conn.close()
@@ -94,17 +86,17 @@ def _gateway_module():
     return mod
 
 
-def test_the_gateway_names_the_machine_that_served(monkeypatch):
+def test_the_gateway_names_the_machine_that_served(monkeypatch, machine_is):
     mod = _gateway_module()
-    monkeypatch.setattr(mod, "this_machine", lambda: B)
+    machine_is(_env(B.rsplit("/", 1)[1]))
     got = asyncio.run(mod.proxy_handler_instance.async_post_call_response_headers_hook(
         data={"model": "eval-7b"}, user_api_key_dict=None, response=None))
     assert got["x-sohot-machine"] == B
 
 
-def test_an_upstream_on_another_host_is_not_named_as_this_machine(monkeypatch):
+def test_an_upstream_on_another_host_is_not_named_as_this_machine(monkeypatch, machine_is):
     mod = _gateway_module()
-    monkeypatch.setattr(mod, "this_machine", lambda: B)
+    machine_is(_env(B.rsplit("/", 1)[1]))
     monkeypatch.setattr(mod, "upstream_host", lambda model: "<host>:8080")
     got = asyncio.run(mod.proxy_handler_instance.async_post_call_response_headers_hook(
         data={"model": "eval-7b"}, user_api_key_dict=None, response=None))
@@ -122,14 +114,14 @@ class Asks(BaseRunner):
 
 
 @pytest.fixture
-def quiet(monkeypatch, be):
+def quiet(monkeypatch, machine_is):
     for name, value in (("accelerator_id", "unified:client"), ("where_id", "host"),
                         ("swap_used_mb", 7), ("instruments", {}), ("engines", {})):
         monkeypatch.setattr(R, name, lambda *a, _v=value, **k: _v)
     monkeypatch.setattr(R, "warn_if_pressed", lambda *a, **k: SimpleNamespace(
         as_dict=lambda: {"level": 1}))
     monkeypatch.setattr(completion, "SERVED", {}, raising=False)
-    be(_env("aaaaaaaaaaaa"))
+    machine_is(_env("aaaaaaaaaaaa"))
 
 
 def _run(tmp_path, monkeypatch, gateway):
@@ -277,9 +269,9 @@ def test_an_estimate_from_other_machines_says_so():
 
 # --- review round 2 -------------------------------------------------------------------
 
-def test_the_gateway_names_its_machine_when_the_alias_does_not_resolve(monkeypatch):
+def test_the_gateway_names_its_machine_when_the_alias_does_not_resolve(monkeypatch, machine_is):
     mod = _gateway_module()
-    monkeypatch.setattr(mod, "this_machine", lambda: B)
+    machine_is(_env(B.rsplit("/", 1)[1]))
     monkeypatch.setattr(mod.models, "resolve", lambda m: (_ for _ in ()).throw(KeyError(m)))
     got = asyncio.run(mod.proxy_handler_instance.async_post_call_response_headers_hook(
         data={"model": "eval-7b"}, user_api_key_dict=None, response=None))
@@ -292,9 +284,9 @@ def test_one_loopback_list_serves_client_and_gateway():
     assert machine.is_loopback("http://[::1]:4000") and not machine.is_loopback(REMOTE)
 
 
-def test_the_gateway_names_the_context_and_slots_it_serves(monkeypatch):
+def test_the_gateway_names_the_context_and_slots_it_serves(monkeypatch, machine_is):
     mod = _gateway_module()
-    monkeypatch.setattr(mod, "this_machine", lambda: B)
+    machine_is(_env(B.rsplit("/", 1)[1]))
     monkeypatch.setattr(mod, "served_shape", lambda model: {"ctx": 32768, "slots": 4})
     got = asyncio.run(mod.proxy_handler_instance.async_post_call_response_headers_hook(
         data={"model": "eval-7b"}, user_api_key_dict=None, response=None))
@@ -325,19 +317,19 @@ def test_a_llamacpp_spec_takes_the_local_shape_because_llama_server_sends_no_hea
     assert got == {"k": {"model": "Ornith-Q4", "ctx": 8192, "slots": 2}}
 
 
-def test_a_receipt_from_another_host_does_not_take_this_stores_old_row(tmp_path, be):
+def test_a_receipt_from_another_host_does_not_take_this_stores_old_row(tmp_path, machine_is):
     conn = ms.connect(tmp_path / "s.db")
     old = runs.machine_for(conn, {"hw_model": "Mac17,15", "os": OS, "arch": "arm64"})
-    be(_env("aaaaaaaaaaaa"))
+    machine_is(_env("aaaaaaaaaaaa"))
     b = runs.machine_for(conn, _env("bbbbbbbbbbbb"))
     assert b != old
     assert ms.remember_machine(conn) == old
     conn.close()
 
 
-def test_asking_for_the_client_machine_writes_nothing(tmp_path, be):
+def test_asking_for_the_client_machine_writes_nothing(tmp_path, machine_is):
     conn = ms.connect(tmp_path / "s.db")
-    be(_env("aaaaaaaaaaaa"))
+    machine_is(_env("aaaaaaaaaaaa"))
     run_id = runs.record(conn, tmp_path / "r.json", {
         "generated": "2026-10-11T00:00:00", "environment": {**_env("bbbbbbbbbbbb"), "client": _env("cccccccccccc")},
         "receipt": {"modality": "code"}, "rows": [{"case_id": "c1", "passed": True, "candidate": "k"}]})

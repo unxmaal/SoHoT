@@ -8,6 +8,7 @@ from harness import engines, live_audit, machine, reasons, runner_gaps, screen
 from harness import memory_store as ms
 from harness.memory_store import revisit
 from harness.memory_store.migrations import retractions
+from tests import conftest
 
 INSTALLED = {"versions": {"mlx-lm": "0.32.0", "diffusers": "0.40.0", "transformers": "5.16.1",
                           "hf-task/transformers": "5.17.0", "ace-step": "1.5.0"}}
@@ -15,8 +16,7 @@ INSTALLED = {"versions": {"mlx-lm": "0.32.0", "diffusers": "0.40.0", "transforme
 
 @pytest.fixture(autouse=True)
 def _installed(monkeypatch):
-    real = ms.this_machine()
-    monkeypatch.setattr(ms, "this_machine", lambda: {**real, **INSTALLED})
+    conftest.stand_in_machine(monkeypatch, INSTALLED)
 
 
 def _gateway(error: str) -> str:
@@ -75,6 +75,17 @@ def test_an_audited_runtime_decline_waits_on_its_cause_not_a_release(vid, candid
     assert (v.outcome, v.reason, v.failure_class) == ("declined", reasons.RUNTIME, cls)
     assert v.until == want
     assert not v.until.startswith("version:")
+
+
+def test_a_card_read_after_the_remote_code_column_is_not_refused_on_its_custom_code_tag():
+    """#1388, RULE #506: a stored type with no auto_map evidence passes; only a card with no stored type falls back."""
+    later = {**_text("nandi", ["custom_code"]), "model_type": "nandi", "remote_code": ""}
+    assert runner_gaps.pre_screen("org/nandi", later) == ("", "")
+    v = screen.decide_class(reasons.LOAD_FAILED_RUNTIME, _gateway("Model type nandi not supported."),
+                            "org/nandi", card=later)
+    assert not v.until.startswith("policy:")
+    older = {**later, "model_type": ""}
+    assert runner_gaps.remote_code_gap(older, _gateway("Model type nandi not supported."))
 
 
 def test_the_same_failure_from_stderr_alone_reaches_the_same_until():

@@ -1,12 +1,13 @@
 """`soh adopt`: make a measured run a lane's winner, or say what power each lane's gate needs."""
 from __future__ import annotations
 
+import contextlib
 import json
 import math
 from pathlib import Path
 
 from harness import lanes, paths
-from harness.commands.common import emit, err, note
+from harness.commands.common import emit, err, lent_store, note
 from harness.commands import measure as measure_cmd
 
 
@@ -25,13 +26,41 @@ def cmd_adopt(a) -> int:
     if getattr(a, "power", False):
         return cmd_power(a)
     if getattr(a, "from_measurement", False):
-        return _from_measurement(a)
+        return _dry_run(a) if getattr(a, "dry_run", False) else _from_measurement(a)
     if not a.lane or not a.challenger:
         return err("adopt needs --lane and --challenger, or --power")
     lane = lanes.canonical(a.lane)
     if lane not in lanes.ALL:
         return err(f"unknown lane {a.lane!r}; known: {', '.join(lanes.ALL)}")
     return measure_cmd._measure_and_adopt(a, {"name": a.challenger, "lane": lane})
+
+
+def argv_screen_refusal(argv) -> str:
+    """Why a queued `soh adopt --lane repo --challenger X` waits for X's repo screen, or "". #1353."""
+    import argparse
+    argv = [str(x) for x in argv]
+    if "adopt" not in argv:
+        return ""
+    ap = argparse.ArgumentParser(add_help=False)
+    for flag in ("--lane", "--challenger", "--confirm"):
+        ap.add_argument(flag, default="")
+    for flag in ("--unscreened", "--power", "--from-measurement"):
+        ap.add_argument(flag, action="store_true")
+    got, _ = ap.parse_known_args(argv[argv.index("adopt") + 1:])
+    if got.confirm or got.power or got.from_measurement or not got.challenger:
+        return ""
+    return measure_cmd._screen_refusal(got, lanes.canonical(got.lane or ""), got.challenger)
+
+
+def _dry_run(a) -> int:
+    """`--from-measurement --dry-run` on one connection, lent to every reader. #1426."""
+    from harness import memory_store as ms
+    conn = ms.connect()
+    try:
+        with ms.lend(conn):
+            return _from_measurement(a)
+    finally:
+        conn.close()
 
 
 def _from_measurement(a) -> int:
@@ -74,14 +103,14 @@ def _row(r: dict) -> dict:
 
 def _profile(lane: str, receipts: dict, conn) -> tuple[str, str, dict, float | None, tuple, list]:
     """(incumbent key, its spec, its draws per case, its median seconds here at the lane's budget, settings, machines)."""
-    from harness import adopt, candidates, completion, power, runs, screen, winners
+    from harness import adopt, candidates, power, reply_cap, runs, screen, winners
     served = adopt.default_for(lane, winners.typed().get(lane, ""))
     spec = (screen.candidate_for(lane, served) or served) if served else ""
     try:
         key = candidates.key_of(spec) if spec else ""
     except Exception:  # noqa: BLE001
         key = ""
-    settings = (completion.budget(lane), ())
+    settings = (reply_cap.cap_for(conn, lane, [spec or served])[0], ())
     machines = runs.here(conn)
     if lane in receipts:
         sets = [[_row(r) for r in got["rows"]] for got in receipts[lane]]
@@ -107,19 +136,19 @@ def cmd_power(a) -> int:
     """Per lane: the repeat and holdout size power 0.8 needs, and what that run would cost. #591."""
     from evals.run import STOCHASTIC_MODALITIES
     from harness import adopt, holdout, power
-    from harness import memory_store as ms
 
     receipts = _receipts(getattr(a, "receipt", None) or [])
     challenger = getattr(a, "challenger", "") or ""
-    every = holdout.splits()
-    want = lanes.canonical(a.lane) if a.lane else ""
-    if want and want not in every:
-        return err(f"no cases for lane {a.lane!r}; lanes with cases: "
-                   f"{', '.join(sorted(every))}")
     budget = float(getattr(a, "power_budget_min", None) or power.BUDGET_MIN) * 60
     rows = []
-    conn = ms.connect()
+    held = contextlib.ExitStack()
+    conn = held.enter_context(lent_store())
     try:
+        every = holdout.splits()
+        want = lanes.canonical(a.lane) if a.lane else ""
+        if want and want not in every:
+            return err(f"no cases for lane {a.lane!r}; lanes with cases: "
+                       f"{', '.join(sorted(every))}")
         for lane in [want] if want else sorted(every):
             split = every[lane]
             key, inc_spec, draws, inc_s, settings, machines = _profile(lane, receipts, conn)
@@ -159,20 +188,22 @@ def cmd_power(a) -> int:
                 "cases_needed": plan.cases_needed,
                 "more_holdout": more,
                 "more_cases": None if more is None else math.ceil(more / holdout.FRACTION),
+                "noise_effect": power.noise_for(lane),
                 "effect_from": ("given" if getattr(a, "effect", None) else
+                                "floor" if effect > power.noise_for(lane) else
                                 "measured" if lane in power.EFFECT else "default"),
                 "status": _status(plan, more, [rates[c] for c in split.holdout], effect),
                 "median_s": median, "calls": calls, "projected_s": projected, "estimate": est,
                 "fits_budget": projected is not None and projected <= budget,
                 "why": plan.why})
     finally:
-        conn.close()
+        held.close()
     if not want:
         rows += [_absent(lane) for lane in lanes.ALL if lane not in every]
     if getattr(a, "table", False):
         return _table(rows)
     effect = getattr(a, "effect", None)
-    wanted = f"+{effect:.2f}" if effect else "each lane's effect"
+    wanted = f"+{effect:.2f}" if effect else f"each lane's effect (its rerun noise, never under +{power.MIN_EFFECT:.2f})"
     note(f"power to detect {wanted} per cell at alpha {power._alpha()}, "
          f"target {power.TARGET}, repeat cap {power.CAP}, budget {_hm(budget)}; "
          f"the case is the unit when repeats correlate (rho)")
@@ -196,6 +227,8 @@ def cmd_power(a) -> int:
              f"{r['observed']} rows]"
              + (f"  alpha {r['alpha']:.4f} after {r['comparisons']} verdict(s) on this holdout"
                 if r["comparisons"] else ""))
+        if power.challenger_note(r["estimate"] or {}):
+            note(f"           {power.challenger_note(r['estimate'])}")
         if r["unseen"]:
             note(f"           {r['unseen']}")
         elif r["unmeasured"]:
@@ -221,25 +254,29 @@ def _status(plan, more, rates, effect) -> str:
 
 def _absent(lane: str) -> dict:
     """A lane with no case files in this checkout, such as one whose cases are imported at deploy."""
-    return {"lane": lane, "cases": 0, "holdout": 0, "effect": None, "effect_from": "", "rho": None,
+    return {"lane": lane, "cases": 0, "holdout": 0, "noise_effect": None, "effect": None, "effect_from": "", "rho": None,
             "rho_measured": False, "observed": 0, "power": None, "cases_needed": None,
             "more_holdout": None, "more_cases": None, "status": "no cases here"}
 
 
 def _table(rows) -> int:
     """One fixed-column row per lane; `soh adopt --json --power` carries the same fields."""
-    head = ("lane", "cases", "holdout", "effect", "from", "rho", "rows", "power", "needed",
+    from harness import power
+    head = ("lane", "cases", "holdout", "noise", "effect", "from", "rho", "rows", "power", "needed",
             "more_holdout", "more_cases", "status")
     def cell(v, fmt="{}"):
         return "-" if v is None or v == "" else fmt.format(v)
     lines = [head]
     for r in rows:
         rho = None if r["rho"] is None else f"{r['rho']:.2f}" + ("" if r["rho_measured"] else "?")
-        lines.append((r["lane"], str(r["cases"]), str(r["holdout"]), cell(r["effect"], "{:.2f}"),
+        lines.append((r["lane"], str(r["cases"]), str(r["holdout"]), cell(r["noise_effect"], "{:.2f}"),
+                      cell(r["effect"], "{:.2f}"),
                       cell(r["effect_from"]), cell(rho), str(r["observed"]), cell(r["power"], "{:.2f}"),
                       cell(r["cases_needed"]), cell(r["more_holdout"]), cell(r["more_cases"]), r["status"]))
     widths = [max(len(line[i]) for line in lines) for i in range(len(head) - 1)]
     for line in lines:
         print("  ".join(c.ljust(w) for c, w in zip(line, widths)) + "  " + line[-1])
+    note("noise is the gain the lane's reruns let the gate see; effect is what it powers for, never under "
+         f"adopt_min_effect +{power.MIN_EFFECT:.2f} (from floor)")
     note("rho? is assumed until a repeated case measures it; rows 0 means the incumbent's rates are assumed")
     return 0

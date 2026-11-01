@@ -5,10 +5,10 @@ modality: repo
 prompt: '# Cascade: measure short conversations with no tech words (short-report)
 
 
-  Eric''s idea: between the word list and the embedding check, short conversations with no tech words
+  The owner''s idea: between the word list and the embedding check, short conversations with no tech words
   are likely irrelevant. Step 1: add ''infovore relevance short-report'' bucketing by length and word-list
-  hits with Eric''s labels. Step 2: add stage short_no_tech only if a cutoff reaches 0.95 labelled precision
-  with at least 20 labels.
+  hits with the owner''s labels. Step 2: add stage short_no_tech only if a cutoff reaches 0.95 labelled
+  precision with at least 20 labels.
 
 
   The hidden tests call these names from the repository (signatures as a correct fix defines them):

@@ -288,6 +288,12 @@ def test_the_unseen_rate_knob_sets_both_an_unmeasured_screen_count_and_an_unmeas
         assert power.plan(rates.values(), observed=observed).unmeasured
 
 
+def test_the_incumbent_measure_reads_the_connection_it_is_given(monkeypatch):
+    given = object()
+    monkeypatch.setattr(screen, "incumbent_draws", lambda lane, conn: {"c1": [1, 0]} if conn is given else {})
+    assert screen.incumbent_measure("decide", ["c1"], conn=given) == (0.5, True)
+
+
 def test_a_child_s_limit_and_a_sidecar_s_steps_both_reach_the_row(tmp_path):
     from harness import hf_task
     out = tmp_path / "fox-snow.png"
