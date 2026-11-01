@@ -1622,7 +1622,7 @@ mlx and tts units (alert after `monitor_service_down`; launchd restarts them).
 They live in `harness/knobs/monitor.py`, each with its range and evidence.
 
 An alert runs `scripts/monit-alert.sh`: a desktop notification
-(terminal-notifier, else osascript), a line in `monit/alerts.jsonl` that
+(terminal-notifier; osascript when it is missing or fails), a line in `monit/alerts.jsonl` that
 `soh morning` shows, and a post to a Discord webhook. A disk alert then runs a
 `du` of runs, the repo cache, the queue and runtime trials, stopped after
 `monitor_du_timeout`, and posts what it found. The webhook is

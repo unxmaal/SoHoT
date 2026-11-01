@@ -8,7 +8,9 @@ import shutil
 import socket
 import subprocess
 import sys
+import tempfile
 import threading
+import time
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 
@@ -242,6 +244,29 @@ def test_the_desktop_notice_uses_terminal_notifier_when_installed(tmp_path):
     assert seen[1][0] == "osascript"
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="the notifier stubs are POSIX shell scripts")
+@pytest.mark.parametrize("osa_rc", [0, 1])
+def test_a_terminal_notifier_that_exits_3_falls_back_to_osascript_and_reports_both(tmp_path, monkeypatch, osa_rc):
+    bin_ = tmp_path / "bin"
+    bin_.mkdir()
+    calls = tmp_path / "calls"
+    for name, rc in (("terminal-notifier", 3), ("osascript", osa_rc)):
+        (bin_ / name).write_text(f'#!/bin/sh\necho {name} >> "{calls}"\nexit {rc}\n', encoding="utf-8")
+        (bin_ / name).chmod(0o755)
+    monkeypatch.setenv("PATH", f"{bin_}:/usr/bin:/bin")
+    out = monitor.desktop("t", "m", platform="darwin")
+    assert calls.read_text(encoding="utf-8").split() == ["terminal-notifier", "osascript"]
+    if osa_rc == 0:
+        assert out == "notified by osascript after terminal-notifier rc 3"
+    else:
+        assert out.startswith("notify failed: terminal-notifier rc 3; osascript rc 1")
+
+
+def test_an_alert_with_no_check_name_says_manual(tmp_path):
+    entry = monitor.alert("recovered", {}, notify=lambda t, m: "notified", send=lambda *a: "posted")
+    assert entry["service"] == "manual" and entry["message"].startswith("recovered: manual:")
+
+
 def test_the_morning_brief_shows_the_monit_summary_and_open_alerts(tmp_path):
     monitor.record({"at": SINCE - 60, "kind": "memory", "service": "memory_pressure", "description": "old"})
     monitor.record({"at": NOW - 7200, "kind": "disk", "service": "system_data", "description": "space free 40 GB"})
@@ -300,3 +325,59 @@ def test_the_pressure_check_fails_past_normal_only(tmp_path, level, rc):
     got = subprocess.run([shells.resolve("bash"), str(REPO / "scripts" / "monit-pressure.sh")], capture_output=True, text=True,
                          env={**os.environ, "PATH": f"{tmp_path}:/usr/bin:/bin"}, timeout=30)
     assert got.returncode == rc and (level or "unknown") in got.stdout
+
+
+@pytest.mark.skipif(shutil.which("monit") is None, reason="monit is not installed")
+def test_monit_started_on_the_rendered_httpd_lines_answers_on_its_socket():
+    """#1492: monit -t accepts an httpd block monit 6 then refuses to start; start it to see."""
+    monit = shutil.which("monit")
+    (REPO / "tmp").mkdir(exist_ok=True)
+    home = Path(tempfile.mkdtemp(prefix="m", dir=REPO / "tmp"))
+    sock = home / "s"
+    if len(str(sock).encode()) > 100:
+        pytest.skip("this checkout's path is too long for a unix socket")
+    text = monitor.render(_spec(home, home=str(home)))
+    head = text[:text.index("\ncheck ")].replace(f"{home}/monit/monit.sock", str(sock))
+    assert str(sock) in head and "check " not in head and f"set daemon {monitor.CYCLE_S}\n" in head
+    head = head.replace(f"set daemon {monitor.CYCLE_S}\n", "set daemon 1\n")
+    quiet = 'then exec "/usr/bin/true"'
+    head += (f"\ncheck filesystem scratch_fs with path {monitor.mount_point(str(home))}\n"
+             f"    if space free < 1 GB {quiet}\n"
+             f'check program scratch_prog with path "/usr/bin/true"\n    if status != 0 {quiet}\n')
+    (home / "monit").mkdir()
+    (home / "logs").mkdir()
+    rc = home / "rc"
+    rc.write_text(head + "\n", encoding="utf-8")
+    rc.chmod(0o600)
+    pid = home / "monit" / "monit.pid"
+    try:
+        started = subprocess.run([monit, "-c", str(rc)], capture_output=True, text=True, timeout=30)
+        assert started.returncode == 0, started.stdout + started.stderr
+        deadline = time.monotonic() + 15
+        while not sock.exists() and time.monotonic() < deadline:
+            time.sleep(0.2)
+        log = home / "logs" / "monit.log"
+        said = log.read_text(encoding="utf-8", errors="replace")[-600:] if log.exists() else ""
+        assert sock.exists(), f"monit opened no socket; its log says: {said}"
+        rows, deadline = {}, time.monotonic() + 20
+        while time.monotonic() < deadline:
+            summary = subprocess.run([monit, "-c", str(rc), "summary"], capture_output=True, text=True, timeout=30)
+            assert summary.returncode == 0, summary.stdout + summary.stderr
+            rows = {ln.split()[0]: " ".join(ln.split()[1:-1]) for ln in summary.stdout.splitlines()
+                    if ln.split()[:1] in (["scratch_fs"], ["scratch_prog"])}
+            if rows and all(v == "OK" for v in rows.values()) and len(rows) == 2:
+                break
+            time.sleep(0.5)
+        assert rows == {"scratch_fs": "OK", "scratch_prog": "OK"}, summary.stdout
+    finally:
+        subprocess.run([monit, "-c", str(rc), "quit"], capture_output=True, text=True, timeout=30)
+        deadline = time.monotonic() + 10
+        while pid.exists() and time.monotonic() < deadline:
+            time.sleep(0.2)
+        left = pid.read_text(encoding="utf-8").strip() if pid.exists() else ""
+        if left.isdigit():
+            try:
+                os.kill(int(left), 15)
+            except ProcessLookupError:
+                left = ""
+        shutil.rmtree(home, ignore_errors=True)

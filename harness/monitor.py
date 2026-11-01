@@ -169,7 +169,8 @@ def render(s: dict) -> str:
         return f'then exec "{alert} {kind}"{back}'
 
     out = [HEADER, f"set daemon {CYCLE_S}", f"set log {home}/logs/monit.log", f"set pidfile {st}/monit.pid",
-           f"set idfile {st}/monit.id", f"set statefile {st}/monit.state", f"set httpd unixsocket {st}/monit.sock", "",
+           f"set idfile {st}/monit.id", f"set statefile {st}/monit.state",
+           f"set httpd unixsocket {st}/monit.sock", "    allow localhost", "",
            f"check filesystem system_data with path {_word(s['data'])}",
            f"    if space free < {DISK_ALERT_GIB} GB {then('disk')}",
            f"    if space free < {DISK_PAUSE_GIB} GB {then('disk-pause', recover=False)}", ""]
@@ -298,18 +299,24 @@ def status(run=subprocess.run, which=shutil.which, expected: str | None = None) 
 
 
 def desktop(title: str, message: str, run=subprocess.run, which=shutil.which, platform: str | None = None) -> str:
-    """terminal-notifier when installed, else the watchdog's osascript notice."""
+    """terminal-notifier when installed; the watchdog's osascript notice when it is absent or fails."""
+    from harness import watchdog
     platform = platform or sys.platform
     tn = which("terminal-notifier") if platform == "darwin" else None
     if not tn:
-        from harness import watchdog
         return watchdog.desktop(title, message, run=run, platform=platform)
     try:
         got = run([tn, "-title", title, "-message", message[:200], "-group", LABEL], capture_output=True, text=True,
                   timeout=CLI_TIMEOUT_S)
+        if got.returncode == 0:
+            return "notified"
+        first = f"terminal-notifier rc {got.returncode}"
     except (OSError, subprocess.SubprocessError) as exc:
-        return f"notify failed: {type(exc).__name__}"
-    return "notified" if got.returncode == 0 else f"notify failed: terminal-notifier rc {got.returncode}"
+        first = f"terminal-notifier {type(exc).__name__}"
+    second = watchdog.desktop(title, message, run=run, platform=platform)
+    if second.startswith(watchdog.NOTIFIED):
+        return f"notified by osascript after {first}"
+    return f"notify failed: {first}; {second.removeprefix('notify failed: ')}"
 
 
 def post(text: str, url: str, opener=urllib.request.urlopen) -> str:
@@ -396,8 +403,8 @@ def alert(kind: str, environ=None, *, notify=desktop, send=post, pause=pause_all
         raise ValueError(f"unknown alert kind {kind!r}; one of {', '.join(KINDS)}")
     environ = os.environ if environ is None else environ
     url = read_env(env_path(home)).get(WEBHOOK, "")
-    service, event, desc = (_scrub(environ.get(k, d), url) for k, d in
-                            (("MONIT_SERVICE", "?"), ("MONIT_EVENT", ""), ("MONIT_DESCRIPTION", "")))
+    service, event, desc = (_scrub(environ.get(k) or d, url) for k, d in
+                            (("MONIT_SERVICE", "manual"), ("MONIT_EVENT", ""), ("MONIT_DESCRIPTION", "")))
     entry = {"at": clock(), "kind": kind, "service": service, "event": event, "description": desc}
     if kind == "disk-pause":
         entry["paused"] = pause(f"monit: {service} {desc}")
