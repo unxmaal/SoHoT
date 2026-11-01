@@ -45,7 +45,7 @@ def _drafter(*answers):
 
 
 def _triage(conn, draft, **kw):
-    return tt.triage(conn, draft=draft, incumbent_of=INCUMBENTS.get, **kw)
+    return tt.triage(conn, draft=draft, incumbent_of=INCUMBENTS.get, canary=lambda m: "", **kw)
 
 
 def _state(conn, name):
@@ -105,7 +105,7 @@ def test_a_planted_non_prompt_technique_stays_in_wanted(conn):
     _technique(conn, "arxiv:2610.00002", "A fused attention kernel for faster LLM decoding on GPUs")
     draft = _drafter(KERNEL)
     (got,) = _triage(conn, draft)
-    assert got.outcome == tt.OTHER and got.crossings == []
+    assert got.outcome == tt.NOT_A_METHOD and got.crossings == []
     assert conn.execute("SELECT COUNT(*) FROM proposals WHERE kind = ?", (methods.CROSSING_KIND,)).fetchone()[0] == 0
     assert "arxiv:2610.00002" in {r["name"] for r in ms.techniques(conn)}
     assert _triage(conn, draft) == [] and draft.calls == ["arxiv:2610.00002"]
@@ -254,22 +254,26 @@ def test_a_draft_cut_at_its_budget_is_refused_and_the_run_goes_on(conn):
     cut = completion.CompletionError("cut", reasons.TOKEN_BUDGET_EXHAUSTED)
     draft = _drafter(cut, KERNEL)
     got = _triage(conn, draft)
-    assert sorted(g.outcome for g in got) == [tt.OTHER, tt.REFUSED] and not got.stopped
+    assert sorted(g.outcome for g in got) == [tt.NOT_A_METHOD, tt.REFUSED] and not got.stopped
     assert any(f"past {tt.DRAFT_TOKENS} tokens" in g.why for g in got)
 
 
-def test_a_technique_in_no_text_lane_is_never_drafted(conn):
+def test_a_technique_in_another_lane_is_never_drafted_and_a_serving_one_goes_to_the_engine_path(conn):
     _technique(conn, "arxiv:2610.00010", "Faster diffusion image generation with fewer steps")
     _technique(conn, "arxiv:2610.00011", "Continuous batching and KV cache paging for LLM serving")
-    draft = _drafter(EDGE_CASES)
-    assert _triage(conn, draft) == [] and draft.calls == []
+    draft = _drafter({"mechanism": "engine", "why": "a serving change"})
+    (got,) = _triage(conn, draft)
+    assert draft.calls == ["arxiv:2610.00011"] and (got.outcome, got.crossings) == (tt.ENGINE, [])
+    assert tt.handed_to_engines(conn) == ["arxiv:2610.00011"]
+    assert _state(conn, "arxiv:2610.00011") is None
 
 
 def test_a_parked_lane_or_one_with_no_incumbent_gets_no_crossing(conn, monkeypatch):
     from harness import lanes
     monkeypatch.setattr(lanes, "parked", lambda lane: (lane == "extract", "parked"))
     _technique(conn, "arxiv:2610.00012", "Edge cases first for LLM prompting")
-    (got,) = tt.triage(conn, draft=_drafter(EDGE_CASES), incumbent_of={"code": "", "extract": "inc-ext"}.get)
+    (got,) = tt.triage(conn, draft=_drafter(EDGE_CASES), incumbent_of={"code": "", "extract": "inc-ext"}.get,
+                         canary=lambda m: "")
     assert got.outcome == tt.PROMPT and got.crossings == []
 
 
@@ -280,7 +284,7 @@ def test_the_loop_reports_what_triage_did(conn):
     got = _triage(conn, _drafter(EDGE_CASES, KERNEL), limit=2)
     text = "\n".join(tt.lines(conn, got))
     assert "=== technique triage ===" in text
-    assert "1 prompt, 1 other, 0 refused" in text and "1 still to triage" in text
+    assert "1 prompt, 0 decoding" in text and "1 not-a-method, 0 refused" in text and "1 still to triage" in text
     assert "queued   code     t-edge-cases-first:inc-code" in text
 
 

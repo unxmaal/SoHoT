@@ -386,6 +386,20 @@ _SLOT = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
 _NAME = re.compile(r"[a-z][a-z0-9-]*")
 
 
+#: What a template changes about the calls it makes; each kind is measured the same way. #1476.
+PROMPT_KIND, DECODING_KIND, MULTI_CALL_KIND, CONTEXT_KIND = "prompt", "decoding", "multi-call", "context"
+KINDS = (PROMPT_KIND, DECODING_KIND, MULTI_CALL_KIND, CONTEXT_KIND)
+#: Sampling a step may set, each with the range a server accepts.
+SAMPLING_RANGES = {"temperature": (0.0, 2.0), "top_p": (0.0, 1.0), "min_p": (0.0, 1.0), "typical_p": (0.0, 1.0),
+                   "top_k": (0, 1000), "repetition_penalty": (0.5, 2.0), "presence_penalty": (-2.0, 2.0),
+                   "frequency_penalty": (-2.0, 2.0)}
+#: Replies one step may draw for a later step to read, as self-consistency does.
+MAX_SAMPLES = 8
+#: Where a case's material goes in one step's request; "before" is how every lane sends it.
+CONTEXT_SHAPES = ("before", "after", "sandwich", "numbered", "none")
+_SEP = "\n\n---\n\n"
+
+
 @dataclass(frozen=True)
 class Step:
     prompt: str
@@ -393,11 +407,77 @@ class Step:
     name: str = ""
     #: Sent with the lane's modality, as an answer is; the last step always is.
     answers: bool = False
+    #: Sampling over the lane's own for this step's calls. #1476.
+    sampling: tuple = ()
+    #: Replies drawn; a later step reads them numbered.
+    samples: int = 1
+    #: One of CONTEXT_SHAPES.
+    context: str = "before"
+
+    def knobs(self) -> dict:
+        return dict(self.sampling)
 
 
 def fill(prompt: str, values: dict) -> str:
     """`prompt` with each {slot} replaced once; text put in is never read for slots again."""
     return _SLOT.sub(lambda m: values[m.group(1)], prompt)
+
+
+def shape(prompt: str, context: str, how: str) -> tuple[str, str]:
+    """(prompt, context) one step sends: the case's material where `how` puts it. #1476."""
+    if not context or how == "before":
+        return prompt, context or ""
+    if how == "none":
+        return prompt, ""
+    if how == "after":
+        return f"{prompt}{_SEP}{context.rstrip()}", ""
+    if how == "sandwich":
+        return f"{prompt}{_SEP}{context.rstrip()}{_SEP}{prompt}", ""
+    if how == "numbered":
+        return prompt, "\n".join(f"{i:>5}  {line}" for i, line in enumerate(context.splitlines(), 1))
+    raise ValueError(f"no context shape {how!r}; known: {', '.join(CONTEXT_SHAPES)}")
+
+
+def joined(replies: list) -> str:
+    """Several replies of one step as a later step reads them."""
+    if len(replies) == 1:
+        return replies[0].strip()
+    return "\n\n".join(f"Reply {i}:\n{r.strip()}" for i, r in enumerate(replies, 1))
+
+
+def _sampling(name: str, i: int, raw) -> tuple:
+    if raw in (None, {}):
+        return ()
+    if not isinstance(raw, dict):
+        raise ValueError(f"{name}: step {i}'s sampling must map knob names to numbers")
+    out = []
+    for k, v in sorted(raw.items()):
+        if k not in SAMPLING_RANGES:
+            raise ValueError(f"{name}: step {i} sets sampling {k!r}; known: {', '.join(SAMPLING_RANGES)}")
+        lo, hi = SAMPLING_RANGES[k]
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or not lo <= v <= hi:
+            raise ValueError(f"{name}: step {i}'s {k} {v!r} is not a number from {lo} to {hi}")
+        out.append((k, int(v) if k == "top_k" else float(v)))
+    return tuple(out)
+
+
+def _samples(name: str, i: int, raw, last: bool) -> int:
+    n = 1 if raw is None else raw
+    if isinstance(n, bool) or not isinstance(n, int) or not 1 <= n <= MAX_SAMPLES:
+        raise ValueError(f"{name}: step {i}'s samples {raw!r} is not a whole number from 1 to {MAX_SAMPLES}")
+    if n > 1 and last:
+        raise ValueError(f"{name}: the last step is the one answer, so it cannot draw {n} samples")
+    return n
+
+
+def _kind_holds(name: str, kind: str, steps: list) -> None:
+    """A kind the steps do not show is a mislabelled draft."""
+    if kind == DECODING_KIND and not any(s.sampling for s in steps):
+        raise ValueError(f"{name}: a decoding template sets sampling on at least one step")
+    if kind == MULTI_CALL_KIND and sum(s.samples for s in steps) < 2:
+        raise ValueError(f"{name}: a multi-call template makes more than one call")
+    if kind == CONTEXT_KIND and all(s.context == "before" for s in steps):
+        raise ValueError(f"{name}: a context template shapes the material on at least one step")
 
 
 def steps_of(spec: str) -> tuple:
@@ -448,20 +528,30 @@ def from_template(row: dict, where: str = "a template") -> Method:
                 raise ValueError(f"{name}: step {i}'s `as` {label!r} is taken or not a name")
             known.add(label)
             unread[label] = i
-        steps.append(Step(prompt, label, bool(s.get("answers")) or last))
+        how = str(s.get("context") or "before")
+        if how not in CONTEXT_SHAPES:
+            raise ValueError(f"{name}: step {i}'s context {how!r} is not one of {', '.join(CONTEXT_SHAPES)}")
+        steps.append(Step(prompt, label, bool(s.get("answers")) or last, _sampling(name, i, s.get("sampling")),
+                          _samples(name, i, s.get("samples"), last), how))
     unread.pop(steps[-1].name, None)
     if not any("task" in _SLOT.findall(s.prompt) for s in steps):
         raise ValueError(f"{name}: no step reads {{task}}, so the template never sees the task")
     if unread:
         raise ValueError(f"{name}: no later step reads step {min(unread.values())}'s reply")
-    body = json.dumps([[s.prompt, s.name, s.answers] for s in steps])
+    kind = str(row.get("kind") or PROMPT_KIND)
+    if kind not in KINDS:
+        raise ValueError(f"{name}: kind {kind!r} is not one of {', '.join(KINDS)}")
+    _kind_holds(name, kind, steps)
+    # A step at the defaults digests as it did before #1476, so stored receipts keep their digest.
+    body = json.dumps([[s.prompt, s.name, s.answers] + ([[list(p) for p in s.sampling], s.samples, s.context]
+                       if (s.sampling, s.samples, s.context) != ((), 1, "before") else []) for s in steps])
     digest = hashlib.sha256(body.encode("utf-8")).hexdigest()[:12]
     control = bool(row.get("control"))
     return Method(name, f"{name}:<base>", lanes, "", str(row.get("note") or ""), _template,
-                  serve=_serve_template, per_attempt=lambda p: len(p.method.extra["steps"]),
+                  serve=_serve_template, per_attempt=lambda p: sum(s.samples for s in p.method.extra["steps"]),
                   crosses=bool(row.get("crosses", True)),
                   extra={"steps": tuple(steps), "digest": digest, "control": control,
-                         "source": str(row.get("source") or "")})
+                         "source": str(row.get("source") or ""), "kind": kind})
 
 
 def load_templates(path: Path = TEMPLATES) -> list[Method]:
@@ -471,14 +561,19 @@ def load_templates(path: Path = TEMPLATES) -> list[Method]:
             for i, r in enumerate(data.get("templates") or [], 1)]
 
 
-def _serve_template(parsed: Parsed, lane: str, prompt: str, ask, slots=None) -> tuple[str, dict]:
+def _serve_template(parsed: Parsed, lane: str, prompt: str, ask, slots=None, context: str = "") -> tuple[str, dict]:
+    """A template served by ask(text, modality, **kw); kw carries a step's sampling and context only when it sets them."""
     steps = parsed.method.extra["steps"]
-    values, text = {"task": prompt}, ""
+    values, text, made = {"task": prompt}, "", 0
     for step in steps:
-        text = ask(fill(step.prompt, values), lane if step.answers else "")
+        sent, material = shape(fill(step.prompt, values), context, step.context)
+        kw = {**({"sampling": step.knobs()} if step.sampling else {}), **({"context": material} if material else {})}
+        replies = [ask(sent, lane if step.answers else "", **kw) for _ in range(step.samples)]
+        made += len(replies)
+        text = replies[-1]
         if step.name:
-            values[step.name] = text.strip()
-    return text, {"method": parsed.method.name, "base": parsed.base, "calls": len(steps),
+            values[step.name] = joined(replies)
+    return text, {"method": parsed.method.name, "base": parsed.base, "calls": made,
                   "template": parsed.method.extra["digest"]}
 
 

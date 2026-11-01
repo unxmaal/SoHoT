@@ -10,6 +10,7 @@ KNOBS = [
        note="GETs an upstream answering 429 gets before the caller defers the rest of its batch (#630, #1085)"),
     _k("triage_draft_tokens", ["harness/technique_triage.py:DRAFT_TOKENS"], [800, 1500, 3000],
        note="reply budget of one triage draft, a JSON template of a few steps (#993)"),
-    _k("triage_per_run", ["harness/technique_triage.py:PER_RUN"], [0, 4, 12, 40],
-       note="model calls one technique triage makes to draft templates; 220 of 632 unsettled techniques route to a text lane or the general bucket (#993)"),
+    _k("triage_per_run", ["harness/technique_triage.py:PER_RUN"], [0, 12, 40, 80, 160],
+       note="drafts one technique triage makes a night: about 530 triageable techniques drain in a week at 80, "
+            "and a warm draft measured 0.5-0.9 s on 2026-10-31, a canary a few calls more (#993, #1476)"),
 ]
