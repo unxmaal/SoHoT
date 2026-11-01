@@ -1108,6 +1108,18 @@ soh context --since 7d --carried
 soh context --since 7d --carried --by class --referenced
 ```
 
+`soh kb-filter --eval --dir DIR` asks whether a local model can keep only the
+KB search hits a session goes on to reference (#1334). It builds the labelled
+set from transcripts (query, the caller's last text block, the hits shown, the
+ones referenced later), holds out the newest week, and scores the decide and
+extract lanes against a position cut at the same kept tokens and the first two
+hits of each type. It also scores searches with a planted hit whose title is the
+need. Scores are appended per search, so a stopped run resumes. `--no-model`
+reports from what is stored. `--strict` counts a reference only when the kind is
+named beside the id. The filter keeps every hit when in doubt, keeps every hit
+whose id the caller named, and is not wired into any session until the
+held-out gate passes.
+
 `soh ledger` joins cloud and local per day (#826). Cloud is Claude Code's
 input, output and cache tokens from
 `npx ccusage@<CCUSAGE_PIN version> daily --json --mode calculate --offline`,
