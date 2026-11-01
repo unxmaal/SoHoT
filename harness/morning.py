@@ -189,6 +189,12 @@ def api_spend(conn) -> dict | None:
     return spend.status(conn)
 
 
+def runtimes(conn, since: float) -> list[dict]:
+    """Every runtime upgrade verdict since `since`. #1474."""
+    from harness import runtime_trials
+    return runtime_trials.verdicts(conn, since)
+
+
 def stale_lanes(conn) -> list[dict]:
     """What `soh verify` would run: lanes with no recent receipt here."""
     from harness import report, verify
@@ -350,6 +356,8 @@ def needs(r: dict) -> list[str]:
             for s in r["stalled"]))
     if r.get("canary"):
         out.append(r["canary"])
+    from harness import runtime_trials
+    out += [f"runtime {runtime_trials.line(v)}" for v in r.get("runtimes") or [] if v["outcome"] in runtime_trials.PUSHED]
     return out
 
 
@@ -369,7 +377,8 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "canary": canary(now) if canary else "", "incidents": incidents(conn, since, now),
          "parked": parked() if parked else [], "checks": sweep_checks(conn, since),
          "incumbent": incumbent(conn) if incumbent else None, "clearances": clearances(conn, since, now),
-         "families": families(conn), "yield": yield_stops(conn), "api_spend": api_spend(conn)}
+         "families": families(conn), "yield": yield_stops(conn), "api_spend": api_spend(conn),
+         "runtimes": runtimes(conn, since)}
     if r["sweep"]["loop"] is not None:
         from harness import heartbeat
         r["sweep"]["loop"]["code_moved"] = heartbeat.code_moved(beat, r["deploy"].get("head", ""))

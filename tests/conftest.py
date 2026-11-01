@@ -321,6 +321,17 @@ def _no_real_registry(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_runtime_channel(monkeypatch):
+    """No test reads PyPI or GitHub releases, or installs a runtime; tests pass fakes. #1474."""
+    from harness import runtime_trials
+
+    def refuse(*a, **k):
+        raise RuntimeError(f"a test asked a real runtime release channel or install: {a}")
+    for name in ("_get_json", "_gh", "_get_text", "_run"):
+        monkeypatch.setattr(runtime_trials, name, refuse)
+
+
+@pytest.fixture(autouse=True)
 def _no_real_hub_download(request, monkeypatch):
     """No test downloads from the Hub: one fetched a whole GGUF every run (#1146)."""
     if request.node.get_closest_marker("network") or request.node.get_closest_marker("slow"):
