@@ -119,24 +119,36 @@ def _writable(anchor: Path) -> bool:
     return True
 
 
-def usable(path: str, min_free_gb: int = HF_MIN_FREE_GB) -> bool:
-    """Whether weights may be written here. Asked of ONE location.
+NOT_MOUNTED = "is not mounted"
 
-    The ancestor walk below is safe now in a way it was not as part of a
-    search. A guessed candidate on an unmounted volume climbed to the
-    filesystem root, and on a machine whose root is writable -- a CI runner,
-    or Windows -- it was accepted, so weights went into a tree invented under
-    it. Nothing is guessed any more: this path was either configured by a
-    person or is the in-tree default, and creating it is the intent either way.
-    """
+
+def unmounted(path: str) -> str:
+    """The volume `path` lives on when its parent is missing (the topmost missing directory above it), else ''; env.sh's _hf_unmounted. #1481."""
+    p = Path(path).parent
+    if p.is_dir():
+        return ""
+    while p.parent != p and not p.parent.exists():
+        p = p.parent
+    return str(p)
+
+
+def problem(path: str, min_free_gb: int, record: bool = True) -> str:
+    """Why weights may not be written here, in env.sh's words, '' when they may; a missing parent is a volume not mounted."""
+    vol = unmounted(path)
+    if vol:
+        return f"{vol} {NOT_MOUNTED}"
     anchor = _anchor(path)
-    if anchor is None or not _writable(anchor):
-        return False
-    if free_gb(path) < min_free_gb:
-        from harness import cuts
-        cuts.cut("harness/env.py:HF_MIN_FREE_GB", "weights location refused: too little free space", value=min_free_gb,
-                 kept=0, dropped=1)
-        return False
+    if anchor is None:
+        return f"{path} cannot be read"
+    if not _writable(anchor):
+        return f"{path} is not writable"
+    free = free_gb(path)
+    if free < min_free_gb:
+        if record:
+            from harness import cuts
+            cuts.cut("harness/env.py:HF_MIN_FREE_GB", "weights location refused: too little free space",
+                     value=min_free_gb, kept=0, dropped=1)
+        return f"{path} has {free}GB free, under the {min_free_gb}GB it needs"
     # READABILITY, which none of the above implies. Under macOS TCC a volume
     # stats fine, reports free space and appears in /Volumes while listing it
     # raises -- and mlx_lm then hangs forever inside os.listdir with no log and
@@ -144,8 +156,13 @@ def usable(path: str, min_free_gb: int = HF_MIN_FREE_GB) -> bool:
     try:
         next(os.scandir(anchor), None)
     except OSError:
-        return False
-    return True
+        return f"{path} cannot be read"
+    return ""
+
+
+def usable(path: str, min_free_gb: int = HF_MIN_FREE_GB) -> bool:
+    """Whether weights may be written here: problem() has nothing to say."""
+    return not problem(path, min_free_gb)
 
 
 def resolve(root: str | None = None,
@@ -174,9 +191,10 @@ def guard(stream=None, environ=None, root: str | None = None,
 
     got = apply(environ=environ, root=root, min_free_gb=min_free_gb)
     if got is None:
-        print(f"warning: no weights location with {min_free_gb}GB free "
-              f"(tried {configured()}); set HF_ROOT or HF_HOME",
-              file=stream if stream is not None else _sys.stderr)
+        environ = os.environ if environ is None else environ
+        tried = environ.get("HF_HOME") or (root if root is not None else environ.get(ROOT_VAR)) or configured()
+        print(f"warning: no usable weights location: {problem(tried, min_free_gb, record=False) or tried}; "
+              "set HF_ROOT or HF_HOME", file=stream if stream is not None else _sys.stderr)
     return got
 
 
