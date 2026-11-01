@@ -68,6 +68,7 @@ from harness.commands import inventory as inventory_cmd
 from harness.commands import ledger as ledger_cmd
 from harness.commands import families as families_cmd
 from harness.commands import funnel as funnel_cmd
+from harness.commands import monitor as monitor_cmd
 from harness.commands import morning as morning_cmd
 from harness.commands import sweep_check as sweep_check_cmd
 from harness.commands import runtimes as runtimes_cmd
@@ -711,6 +712,13 @@ def build_parser() -> argparse.ArgumentParser:
     mor.add_argument("--no-model", action="store_true",
                      help="deterministic headline; do not ask the local model to condense it")
     mor.set_defaults(func=morning_cmd.cmd_morning)
+    mon = sub.add_parser("monitor", help="machine monitoring through monit: render or install its config, its "
+                         "status, and the alert action monit runs (#1485)")
+    mon.add_argument("action", choices=("render", "install", "status", "alert"))
+    mon.add_argument("kind", nargs="?", default="", help="with alert: what monit saw (disk, disk-pause, volume, "
+                     "volume-low, memory, service, recovered)")
+    mon.add_argument("--problems", action="store_true", help="with status: one line per problem, nothing when well")
+    mon.set_defaults(func=monitor_cmd.cmd_monitor)
     swc = sub.add_parser("sweep-check", help="whether tonight's discovery sweep is running and progressing, "
                          "read from launchd and the loop heartbeat; --notify records a row and notifies on a change")
     swc.add_argument("--notify", action="store_true",
@@ -1109,6 +1117,7 @@ VERB_PURPOSE = {
     "watchdog": "watchdog",
     "morning": "watchdog",
     "sweep-check": "watchdog",
+    "monitor": "watchdog",
     "runtimes": "discover",
     "availability": "watchdog",
 }

@@ -360,6 +360,8 @@ def needs(r: dict) -> list[str]:
         out.append(r["canary"])
     from harness import runtime_trials
     out += [f"runtime {runtime_trials.line(v)}" for v in r.get("runtimes") or [] if v["outcome"] in runtime_trials.PUSHED]
+    from harness import monitor
+    out += [f"monit {monitor.line(a)}" for a in monitor.still_open((r.get("monitor") or {}).get("alerts") or [])]
     return out
 
 
@@ -370,7 +372,7 @@ def parked_nodes() -> list[str]:
 
 
 def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, where=None, lanes=None,
-           health=None, stalls=None, canary=None, parked=None, incumbent=None) -> dict:
+           health=None, stalls=None, canary=None, parked=None, incumbent=None, monitor=None) -> dict:
     """`health` probes the headline's lane (lane_health), `canary` reads its receipts (canary.morning_line); None skips either."""
     r = {"lane": health(MODEL_LANE) if health else {"lane": MODEL_LANE, "generating": None, "why": "not probed"},
          "generated": now, "since": since, "sweep": sweep(conn, since, beat), "watchdog": watchdog(conn, since),
@@ -380,7 +382,7 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "parked": parked() if parked else [], "checks": sweep_checks(conn, since),
          "incumbent": incumbent(conn) if incumbent else None, "clearances": clearances(conn, since, now),
          "families": families(conn), "yield": yield_stops(conn), "api_spend": api_spend(conn),
-         "runtimes": runtimes(conn, since)}
+         "runtimes": runtimes(conn, since), "monitor": monitor(since) if monitor else None}
     if r["sweep"]["loop"] is not None:
         from harness import heartbeat
         r["sweep"]["loop"]["code_moved"] = heartbeat.code_moved(beat, r["deploy"].get("head", ""))

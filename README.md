@@ -1554,6 +1554,34 @@ remount is needed. Each run appends one row to `disk-speed.jsonl` under the
 home: volume, device and bus, bytes, block size, method, read and write rates.
 `--mib` sets the size.
 
+### Watching the machine (monit)
+
+```bash
+brew install monit
+soh monitor install      # render the config, monit -t it, load it under launchd
+soh monitor status       # installed, running, config current, webhook set; monit summary
+```
+
+[monit](https://mmonit.com/monit/) is an external tool, not vendored. `install`
+renders `monit/monitrc` under the home (mode 600) from this machine's paths and
+loads `com.unxmaal.localharness.monit`. Every `monitor_cycle` it checks free
+space on the system Data volume (alert under `monitor_disk_alert`; at
+`monitor_disk_pause` it pauses the job queue and every running eval, then
+alerts), the weights volume when it is a separate disk (alert when it is
+unmounted or under the fetch floor), memory pressure (alert after
+`monitor_memory_warn` at warn or worse), and the ports of the installed gateway,
+mlx and tts units (alert after `monitor_service_down`; launchd restarts them).
+They live in `harness/knobs/monitor.py`, each with its range and evidence.
+
+An alert runs `scripts/monit-alert.sh`: a desktop notification
+(terminal-notifier, else osascript), a line in `monit/alerts.jsonl` that
+`soh morning` shows, and a post to a Discord webhook. A disk alert then runs a
+`du` of runs, the repo cache, the queue and runtime trials, stopped after
+`monitor_du_timeout`, and posts what it found. The webhook is
+`SOH_ALERT_WEBHOOK=...` in `monitor.env` under the home, a file you create at
+owner-only mode. Nothing in the repo writes or prints it. Without it, alerts go to the
+desktop and the morning brief only, and `smoke.sh` warns.
+
 ### On a machine with an NVIDIA card
 
 ```bash
