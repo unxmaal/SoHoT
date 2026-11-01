@@ -24,6 +24,11 @@ KNOBS = [
             "served context, which binds as served_ctx (#692)"),
     _k("llamacpp_slots", ["harness/context.py:LLAMACPP_SLOTS"], [1, 2, 4, 8],
        note="llama-server slots every GGUF without its own slot plan batches across; throughput, not a grade (#699)"),
+    _k("min_headroom_gb", ["harness/memory.py:MIN_HEADROOM_GB"], [0.0, 2.0, 4.0, 8.0], limit="min_headroom_gb",
+       unit="GiB",
+       note="memory fits() must still leave safely available after a load: a sweep takes no new measurement under "
+            "it, and an MLX case whose KV would take it there is deferred; the 2026-10-31 sweep kept loading at "
+            "-2.7 GB and the Studio hung (#1482)"),
     _k("mlx_max_parallel", ["harness/serving.py:MLX_MAX_PARALLEL"], [4, 8, 16, 32],
        note="most requests the gateway lets mlx_lm.server hold; fewer when their KV does not fit (#542, #699)"),
     _k("mlx_prompt_cache_bytes", ["harness/mlx_server.py:PROMPT_CACHE_BYTES"], ["4GB", "8GB", "16GB"],
@@ -32,7 +37,10 @@ KNOBS = [
        note="distinct KV caches mlx_lm.server keeps; at mlx-lm's 10 Metal's 499000-buffer limit killed its "
             "generation thread (#912)"),
     _k("mlx_request_ctx", ["harness/serving.py:MLX_REQUEST_CTX"], [8192, 16384, 32768, 65536],
-       note="context one MLX request's KV is priced at when the parallel cap is sized (#699)"),
+       limit="mlx_request_ctx", unit="tokens",
+       note="context one MLX request's KV is priced at when the parallel cap is sized (#699), and the longest "
+            "prompt sent to mlx_lm.server, which has no context limit of its own: a 59,278-token repo prompt "
+            "reached it on 2026-10-31 (#1482)"),
     _k("mlx_swap_timeout", ["harness/mlx_server.py:SWAP_TIMEOUT_S"], [30.0, 120.0, 300.0],
        note="seconds a swap of the mlx server back to its boot model may take before the idle model is kept (#1082)"),
     _k("ornith_slot_ctx", ["harness/context.py:ORNITH_SLOT_CTX"], [131072, 262144],

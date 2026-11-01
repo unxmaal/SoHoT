@@ -193,6 +193,13 @@ def _no_real_metal(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_headroom(monkeypatch):
+    """No sweep test stops on this machine's free memory; a test of the gate hands in its own. #1482."""
+    from harness.commands import measure
+    monkeypatch.setattr(measure, "headroom_gb", lambda: 1e6)
+
+
+@pytest.fixture(autouse=True)
 def _cli_output_mode(monkeypatch):
     """cli.main sets common._JSON per call; a --json test must not turn the next test's output into JSON. #720."""
     from harness.commands import common

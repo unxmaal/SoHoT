@@ -80,6 +80,11 @@ KNOBS = [
        note="planned cases' worth of time with no case finished that reads as wedged, when longer than watchdog_stall"),
     _k("watchdog_swapout_max", [f"{W}:SWAPOUT_MAX_PER_MIN"], [500.0, 2000.0, 10000.0],
        note="swapouts per minute while a job runs that read as memory trouble"),
+    _k("watchdog_warn_sustained", [f"{W}:WARN_SUSTAINED"], [2, 3, 6, 12], limit="watchdog_warn_sustained",
+       unit="samples",
+       note="consecutive wakes at memory warn with nothing idle before served models no eval uses are given back, "
+            "then the sweep pauses; store 2026-11-01: 29 warn runs, 23 ended by the 2nd wake, the 6 that reached "
+            "the 3rd ran 3, 3, 6, 6, 10 and 11, one of them the 2026-10-31 hang (#1482)"),
 ]
 
 NOT_GATING = {

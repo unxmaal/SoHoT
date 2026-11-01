@@ -14,7 +14,7 @@ from harness.commands.common import emit, err, note
 from harness.commands import jobs as jobs_cmd
 
 #: The watchdog criteria whose pause frees memory rather than asking the sweep to stop. #1082.
-MEMORY_PAUSES = ("memory", "memory_warn")
+MEMORY_PAUSES = ("memory", "memory_warn", "memory_stuck", watch.MEMORY_HEADROOM)
 
 
 def cmd_verify(a) -> int:
@@ -229,6 +229,12 @@ def resume_first(store, fresh: list[dict], want: str = "") -> list[dict]:
             if takes(r, want)]
     names = {r["name"] for r in held}
     return held + [r for r in fresh if r.get("name") not in names]
+
+
+def headroom_gb() -> float:
+    """What fits() would budget here now with nothing more loaded; negative once the reserve is spent. #1482."""
+    from harness import memory
+    return memory.room_gb()
 
 
 def room_for(row: dict) -> tuple[bool, float | None, str]:
