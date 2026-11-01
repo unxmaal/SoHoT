@@ -463,6 +463,9 @@ def _sampling(name: str, i: int, raw) -> tuple:
 
 def _samples(name: str, i: int, raw, last: bool) -> int:
     n = 1 if raw is None else raw
+    if isinstance(n, int) and not isinstance(n, bool) and n > MAX_SAMPLES:
+        from harness import cuts
+        cuts.cut("template_max_samples", f"{name}: step {i} asked for {n} samples")
     if isinstance(n, bool) or not isinstance(n, int) or not 1 <= n <= MAX_SAMPLES:
         raise ValueError(f"{name}: step {i}'s samples {raw!r} is not a whole number from 1 to {MAX_SAMPLES}")
     if n > 1 and last:

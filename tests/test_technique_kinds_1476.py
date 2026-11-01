@@ -246,6 +246,17 @@ def test_a_template_step_outside_what_a_server_accepts_is_refused(step, last, sa
         methods.from_template({"name": "x", "steps": steps})
 
 
+def test_a_step_asking_past_the_sample_limit_records_the_cut(monkeypatch):
+    from harness import cuts
+    got = []
+    monkeypatch.setattr(cuts, "cut", lambda knob, what, **kw: got.append((knob, what)))
+    with pytest.raises(ValueError):
+        methods.from_template({"name": "x", "steps": [{"as": "a", "prompt": "{task}", "samples": 99},
+                                                      {"prompt": "{a}"}]})
+    assert got == [("template_max_samples", "x: step 1 asked for 99 samples")]
+    assert knobs.KNOBS["template_max_samples"].default() == methods.MAX_SAMPLES
+
+
 @pytest.mark.parametrize("kind", [methods.DECODING_KIND, methods.MULTI_CALL_KIND, methods.CONTEXT_KIND])
 def test_a_kind_the_steps_do_not_show_is_refused(kind):
     with pytest.raises(ValueError, match=f"a {kind} template"):
