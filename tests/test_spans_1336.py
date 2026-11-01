@@ -266,11 +266,12 @@ def live_home(tmp_path, monkeypatch):
     return live / "discovery.db"
 
 
-def test_the_redo_and_eval_run_from_a_scratch_home(live_home, tmp_path):
+def test_the_redo_and_eval_run_from_a_scratch_home(live_home, tmp_path, monkeypatch):
     from harness import cli, paths
     before = live_home.read_bytes()
     assert cli.main(["spans", "--redo", "--root", str(tmp_path / "none")]) == 0
     assert not paths.is_live(paths.home() / "discovery.db")
+    monkeypatch.delenv(paths.ENV_VAR)
     cli.main(["spans", "--eval", str(tmp_path / "ev"), "--root", str(tmp_path / "none"), "--n", "1"])
     assert paths.home() == (tmp_path / "ev" / "home").resolve() and live_home.read_bytes() == before
 
