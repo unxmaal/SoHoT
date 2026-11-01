@@ -365,6 +365,14 @@ def needs(r: dict) -> list[str]:
     return out
 
 
+def techniques(conn, since: float) -> dict | None:
+    """Technique triage since `since`: measured, won or lost, and the unmeasurable by reason; None before schema 85. #1476."""
+    if not _has(conn, "technique_triage"):
+        return None
+    from harness import technique_triage
+    return technique_triage.morning(conn, since)
+
+
 def parked_nodes() -> list[str]:
     """Serving nodes nodes.yaml keeps parked, named so a parked node is not forgotten. #1061."""
     from harness import nodes
@@ -382,7 +390,8 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "parked": parked() if parked else [], "checks": sweep_checks(conn, since),
          "incumbent": incumbent(conn) if incumbent else None, "clearances": clearances(conn, since, now),
          "families": families(conn), "yield": yield_stops(conn), "api_spend": api_spend(conn),
-         "runtimes": runtimes(conn, since), "monitor": monitor(since) if monitor else None}
+         "runtimes": runtimes(conn, since), "techniques": techniques(conn, since),
+         "monitor": monitor(since) if monitor else None}
     if r["sweep"]["loop"] is not None:
         from harness import heartbeat
         r["sweep"]["loop"]["code_moved"] = heartbeat.code_moved(beat, r["deploy"].get("head", ""))

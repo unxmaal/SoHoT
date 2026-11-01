@@ -1,4 +1,4 @@
-"""Technique proposals triaged into methods: a prompt technique becomes a template crossed with each lane's incumbent. #993."""
+"""Technique proposals triaged into methods: a measurable technique becomes a template crossed with each lane's incumbent. #993, #1476."""
 from __future__ import annotations
 
 import json
@@ -8,28 +8,57 @@ from dataclasses import dataclass, field
 
 from harness import methods
 
-PROMPT, OTHER, REFUSED = "prompt", "other", "refused"
-#: Model calls one triage run makes at most; a technique a registered method's source names costs none.
-PER_RUN = 12
+PROMPT, DECODING, MULTI_CALL, CONTEXT = methods.KINDS
+#: Kinds a template measures here; each is crossed with the incumbent once its canary passes. #1476.
+MEASURABLE = methods.KINDS
+ENGINE, TRAINING, NOT_A_METHOD, REFUSED = "engine", "training", "not-a-method", "refused"
+#: Why a technique is not measured here, by outcome.
+UNMEASURABLE = {ENGINE: "an engine or serving change, handed to the engine path (#1475)",
+                TRAINING: "needs training or new weights, which this harness does not do",
+                NOT_A_METHOD: "changes nothing a local model is sent or how it samples",
+                REFUSED: "the draft or its canary failed"}
+#: What #993 wrote for every technique that was not a prompt one; such a row is triaged again.
+LEGACY_OTHER = "other"
+#: Drafts one triage run makes at most; a technique a registered method's source names costs none.
+PER_RUN = 80
 DRAFT_TOKENS = 1500
-#: The lanes a technique routed to no one text lane is drafted for.
+#: The lanes a technique routed to no one lane is drafted for.
 DEFAULT_LANES = ("code", "extract", "web")
+#: The lane whose adopted model drafts and answers the canary.
+DRAFT_LANE = "extract"
+#: Nights the backlog should drain in at the knob's size; the triage report says how far off it is.
+DRAIN_NIGHTS = 7
+#: (task, material, answer) a drafted template must carry to its answer before it is crossed: the #993 canary.
+CANARY = (("What is 17 multiplied by 3? Reply with the number only.", "", "51"),
+          ("What is the vault code in the note? Reply with the code only.",
+           "Note from the night shift: the vault code is 4417. The lights are on a timer.", "4417"))
 
 DRAFT_SYSTEM = "You read one proposed technique and reply with one JSON object and nothing else."
-DRAFT_PROMPT = """A technique was proposed for a local language model. Decide whether it is a PROMPT technique: one that works only by changing what is sent to the model (a pre-prompt, a rewrite of the task, a plan, critique or revise step), with no training, no new weights and no change to the serving software.
+DRAFT_PROMPT = """A technique was proposed for a local language model. Classify how it works:
+- "prompt": it changes only what is sent (a pre-prompt, a rewrite of the task, a plan step)
+- "decoding": it changes how replies are sampled (temperature, top_p, min_p, top_k, penalties)
+- "multi-call": it makes several calls and combines them (self-consistency, verify then revise, plan then act)
+- "context": it changes where or how the given material is placed (after the task, task repeated after it, numbered lines)
+- "engine": it needs a change to the serving software (a kernel, a cache, speculative or draft-model decoding, quantization)
+- "training": it needs training, fine-tuning or new weights
+- "other": none of these (a benchmark, a dataset, a survey, an architecture study)
 
 Registered methods: {known}
 
 Reply with one JSON object:
-{{"mechanism": "prompt" or "other",
+{{"mechanism": one of the seven words above,
  "why": "one sentence",
  "same_as": "" or the registered method it is,
  "name": "two to four words naming it",
  "note": "one line on what the steps do",
  "lanes": the subset of {lanes} it would help,
- "steps": [{{"as": "a name a later step reads", "prompt": "..."}}, {{"prompt": "the last call, whose reply is the answer"}}]}}
+ "steps": [{{"as": "a name a later step reads", "prompt": "...", "samples": 1, "sampling": {{}}, "context": "before"}}, {{"prompt": "the last call, whose reply is the answer"}}]}}
 
-Each step is one model call. Write {{task}} where the task goes; a later step reads an earlier step's reply as {{<its as>}}. Leave steps empty when the mechanism is other.
+Each step is one model call. Write {{task}} where the task goes; a later step reads an earlier step's reply as {{<its as>}}.
+"samples" (1 to {samples}) draws that many replies of a step, and a later step reads them numbered; the last step answers once.
+"sampling" sets any of {sampling} for that step.
+"context" puts the material: {shapes}.
+Leave steps empty when the mechanism is engine, training or other.
 
 TECHNIQUE
 title: {title}
@@ -75,21 +104,22 @@ def known_method(row: dict) -> str:
 
 
 def lanes_for(row: dict) -> tuple:
-    """The text lanes a technique is drafted for: its routed lane, the defaults for a general one, else none."""
+    """The text lanes a technique is drafted for: its routed text lane, none for another lane, else the defaults."""
     from harness import lanes, rank
     got = rank.technique_route(row)
     if got in methods.TEXT_LANES:
         return (got,)
-    return DEFAULT_LANES if got == lanes.GENERAL else ()
+    return () if got in lanes.ALL else DEFAULT_LANES
 
 
 def _triaged(conn) -> set:
     return {r[0] for r in conn.execute(
-        "SELECT p.name FROM technique_triage t JOIN proposals p ON p.id = t.proposal_id")}
+        "SELECT p.name FROM technique_triage t JOIN proposals p ON p.id = t.proposal_id WHERE t.outcome <> ?",
+        (LEGACY_OTHER,))}
 
 
 def pending(conn) -> list[dict]:
-    """Unsettled techniques never triaged that a template could serve, in ms.techniques order."""
+    """Unsettled techniques not yet triaged (or triaged before #1476 as other) a template could serve."""
     from harness import memory_store as ms
     done = _triaged(conn)
     return [r for r in ms.techniques(conn)
@@ -113,10 +143,37 @@ def draft(row: dict, known=()) -> dict:
     """The extract lane's model reads the technique and drafts a template; raises delegate.Refused or CompletionError."""
     from harness import delegate
     prompt = DRAFT_PROMPT.format(known=", ".join(known) or "none", lanes=json.dumps(list(DEFAULT_LANES)),
+                                 samples=methods.MAX_SAMPLES, sampling=", ".join(methods.SAMPLING_RANGES),
+                                 shapes=", ".join(methods.CONTEXT_SHAPES),
                                  title=row.get("title") or row["name"], url=row.get("url") or "",
                                  description=row.get("description") or "")
-    got = delegate.complete("extract", prompt, system=DRAFT_SYSTEM, max_tokens=DRAFT_TOKENS)
+    got = delegate.complete(DRAFT_LANE, prompt, system=DRAFT_SYSTEM, max_tokens=DRAFT_TOKENS)
     return {**parse_draft(got.get("text") or ""), "drafted_by": got.get("spec") or ""}
+
+
+def canary(method) -> str:
+    """Why `method` fails the known-answer canary on the drafting lane's model, "" when it carries every answer.
+    Raises delegate.Refused or a CompletionError other than a cut reply, which ends the run."""
+    from harness import completion, delegate, reasons
+    for task, material, answer in CANARY:
+        try:
+            got = delegate.complete(DRAFT_LANE, task, max_tokens=DRAFT_TOKENS, method=method, context=material,
+                                    max_tokens_knob="triage_draft_tokens")
+        except completion.CompletionError as exc:
+            if exc.failure_class != reasons.TOKEN_BUDGET_EXHAUSTED:
+                raise
+            return f"its canary ran past {DRAFT_TOKENS} tokens on {task!r}"
+        miss = missed(got.get("text") or "", answer)
+        if miss:
+            return f"failed its known-answer canary: {task!r} {miss}"
+    return ""
+
+
+def missed(text: str, answer: str) -> str:
+    """Why `text` does not carry `answer` as a whole word, "" when it does."""
+    if re.search(rf"(?<![\w.]){re.escape(answer)}(?![\w])", text or ""):
+        return ""
+    return f"answered {(text or '').strip()[:80]!r}, not {answer}"
 
 
 def _slug(name: str) -> str:
@@ -151,28 +208,30 @@ def _lanes(method, row: dict, d: dict) -> tuple:
 def _resolve(conn, row: dict, d: dict, taken: set):
     """(outcome, method or None, why, template row or None) for one draft."""
     mech, why = d.get("mechanism"), str(d.get("why") or "")
-    if mech == OTHER:
-        return OTHER, None, why or "not a prompt transform", None
-    if mech != PROMPT:
-        return REFUSED, None, f"the draft's mechanism is {mech!r}, not prompt or other", None
+    if mech == LEGACY_OTHER:
+        return NOT_A_METHOD, None, why or UNMEASURABLE[NOT_A_METHOD], None
+    if mech in (ENGINE, TRAINING):
+        return mech, None, why or UNMEASURABLE[mech], None
+    if mech not in MEASURABLE:
+        return REFUSED, None, f"the draft's mechanism is {mech!r}, not one of the seven", None
     same = str(d.get("same_as") or "")
     if same and dict.__contains__(methods.REGISTRY, same):
-        return PROMPT, methods.REGISTRY[same], why or f"the registered method {same}", None
+        return mech, methods.REGISTRY[same], why or f"the registered method {same}", None
     route = lanes_for(row)
     asked = [x for x in d.get("lanes") or () if isinstance(x, str)] if isinstance(d.get("lanes"), list) else []
     want = [x for x in (asked or route) if x in methods.TEXT_LANES and (not route or x in route)]
     if not want:
         return REFUSED, None, f"the draft names no text lane this technique routes to ({asked or 'none'})", None
     t = {"name": _free_name(d.get("name") or row["name"], taken), "note": str(d.get("note") or why)[:200],
-         "source": row.get("url") or row["name"], "lanes": want, "steps": d.get("steps") or []}
+         "source": row.get("url") or row["name"], "lanes": want, "kind": mech, "steps": d.get("steps") or []}
     try:
         m = methods.from_template(t, f"the draft for {row['name']}")
     except (ValueError, TypeError, AttributeError) as exc:
         return REFUSED, None, str(exc), None
     for r in [*_registered(), *_stored_drafts(conn).values()]:
         if r.extra.get("digest") == m.extra["digest"]:
-            return PROMPT, r, why or f"the same steps as {r.name}", None
-    return PROMPT, m, why, t
+            return mech, r, why or f"the same steps as {r.name}", None
+    return mech, m, why, t
 
 
 def stored_loss(conn, method: str, lane: str) -> str:
@@ -232,8 +291,17 @@ def cross(conn, method, want, technique: str, incumbent_of) -> list:
     return out
 
 
+def _final(conn, row: dict, why: str) -> None:
+    """A technique that needs training is declined at inspect with the reason: final, nothing reopens it."""
+    from harness import reasons
+    from harness import memory_store as ms
+    ms.decide(conn, row["name"], "declined", tier=ms.INSPECT, reason=reasons.CANDIDATE,
+              detail=f"{UNMEASURABLE[TRAINING]}: {why}"[:500])
+
+
 def _record(conn, row: dict, got: Triaged, template, drafted_by: str, now: float) -> None:
     pid = conn.execute("SELECT id FROM proposals WHERE name = ?", (row["name"],)).fetchone()[0]
+    conn.execute("DELETE FROM technique_triage WHERE proposal_id = ? AND outcome = ?", (pid, LEGACY_OTHER))
     conn.execute("INSERT INTO technique_triage (proposal_id, outcome, method, why, template, drafted_by, "
                  "triaged_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
                  (pid, got.outcome, got.method, got.why[:500], json.dumps(template) if template else "",
@@ -243,11 +311,18 @@ def _record(conn, row: dict, got: Triaged, template, drafted_by: str, now: float
         methods.forget_drafted()
 
 
-def triage(conn, draft=None, limit: int = PER_RUN, incumbent_of=None, want: str = "",
-           now: float | None = None) -> Run:
-    """Triage pending techniques, at most `limit` model calls; a refused or failed call ends the run."""
+def _known_kind(method) -> str:
+    return method.extra.get("kind") or PROMPT
+
+
+def triage(conn, draft=None, limit: int | None = None, incumbent_of=None, want: str = "",
+           now: float | None = None, canary=None) -> Run:
+    """Triage pending techniques, at most `limit` drafts; a refused or failed call ends the run.
+    A new template is crossed only once `canary(method)` returns ""; a training one is made final."""
     from harness import completion, delegate, reasons
     draft = draft or globals()["draft"]
+    canary = canary or globals()["canary"]
+    limit = PER_RUN if limit is None else int(limit)
     incumbent_of = incumbent_of or _incumbents(conn)
     now = time.time() if now is None else float(now)
     taken = {*dict.keys(methods.REGISTRY), *_stored_drafts(conn)}
@@ -256,31 +331,36 @@ def triage(conn, draft=None, limit: int = PER_RUN, incumbent_of=None, want: str 
     for row in pending(conn):
         known, d, drafted_by = known_method(row), {}, ""
         if known:
-            outcome, method, why, template = PROMPT, methods.REGISTRY[known], "its link is this method's source", None
+            method = methods.REGISTRY[known]
+            outcome, why, template = _known_kind(method), "its link is this method's source", None
         else:
             if calls >= limit:
                 from harness import cuts
-                out.stopped = f"the limit of {limit} model call(s) this run"
-                cuts.cut("triage_per_run", f"{limit} draft(s) this run; {row['name']} and later wait", conn=conn)
+                out.stopped = f"the limit of {limit} draft(s) this run"
+                cuts.cut("triage_per_run", f"{limit} draft(s) this run; {row['name']} and later wait",
+                         value=limit, conn=conn)
                 break
             calls += 1
             try:
                 d = draft(row, names)
+                drafted_by = str(d.get("drafted_by") or "")
+                outcome, method, why, template = _resolve(conn, row, d, taken)
+                miss = canary(method) if template else ""
             except completion.CompletionError as exc:
                 if exc.failure_class != reasons.TOKEN_BUDGET_EXHAUSTED:
-                    out.stopped = f"the extract lane's model did not answer: {str(exc)[:160]}"
+                    out.stopped = f"the {DRAFT_LANE} lane's model did not answer: {str(exc)[:160]}"
                     break
                 from harness import cuts
                 cuts.cut("triage_draft_tokens", f"the draft for {row['name']} ran past its reply budget", conn=conn)
                 outcome, method, why, template = REFUSED, None, f"the draft ran past {DRAFT_TOKENS} tokens", None
             except delegate.Refused as exc:
-                out.stopped = f"the extract lane's model did not answer: {str(exc)[:160]}"
+                out.stopped = f"the {DRAFT_LANE} lane's model did not answer: {str(exc)[:160]}"
                 break
             except ValueError as exc:
                 outcome, method, why, template = REFUSED, None, str(exc), None
             else:
-                drafted_by = str(d.get("drafted_by") or "")
-                outcome, method, why, template = _resolve(conn, row, d, taken)
+                if miss:
+                    outcome, method, why, template = REFUSED, None, f"{template['name']} {miss}", None
         got = Triaged(row["name"], outcome, method.name if method else "", why)
         if method is not None and method.extra.get("control"):
             got.why = f"{method.name} is the negative control; it is crossed only beside its method"
@@ -291,36 +371,104 @@ def triage(conn, draft=None, limit: int = PER_RUN, incumbent_of=None, want: str 
             got.crossings = cross(conn, method, lanes, row["name"], incumbent_of)
         if template:
             taken.add(template["name"])
+        if outcome == TRAINING:
+            _final(conn, row, why)
         _record(conn, row, got, template, drafted_by, now)
         out.append(got)
     return out
 
 
-def counts(conn) -> dict:
-    """Every triage row by outcome, and the crossings triage queued, for the loop's report."""
-    got = {k: 0 for k in (PROMPT, OTHER, REFUSED)}
-    for outcome, n in conn.execute("SELECT outcome, COUNT(*) FROM technique_triage GROUP BY outcome"):
+def handed_to_engines(conn) -> list[str]:
+    """Techniques triage found to be engine or serving changes, for the engine path (#1475) to take."""
+    return [r[0] for r in conn.execute(
+        "SELECT p.name FROM technique_triage t JOIN proposals p ON p.id = t.proposal_id WHERE t.outcome = ? "
+        "ORDER BY t.id", (ENGINE,))]
+
+
+OUTCOMES = (*MEASURABLE, *UNMEASURABLE)
+
+
+def counts(conn, since: float | None = None) -> dict:
+    """Triage rows by outcome, every one or those triaged since `since`."""
+    got = {k: 0 for k in OUTCOMES}
+    q, args = "SELECT outcome, COUNT(*) FROM technique_triage", ()
+    if since is not None:
+        q, args = q + " WHERE triaged_at >= ?", (since,)
+    for outcome, n in conn.execute(q + " GROUP BY outcome", args):
         got[outcome] = n
     return got
 
 
-def lines(conn, got: list | None, per_run: int = PER_RUN) -> list[str]:
+def crossings(conn) -> dict:
+    """Every crossing of a triaged method by where it stands: measured (won, lost), declined unmeasured, waiting."""
+    got = {"measured": 0, "won": 0, "lost": 0, "declined": 0, "waiting": 0}
+    rows = conn.execute(
+        "SELECT p.id, p.name, p.state FROM proposals p WHERE p.kind = ? AND EXISTS (SELECT 1 FROM technique_triage t "
+        "WHERE t.method <> '' AND p.name LIKE t.method || ':%')", (methods.CROSSING_KIND,)).fetchall()
+    for pid, name, state in rows:
+        tiers = {r[0] for r in conn.execute("SELECT DISTINCT tier FROM verdicts WHERE proposal_id = ?", (pid,))}
+        won = conn.execute("SELECT 1 FROM adoptions a JOIN candidates c ON c.id = a.candidate_id WHERE c.spec = ?",
+                           (name,)).fetchone()
+        if tiers & {"measure", "adopt"} or won:
+            got["measured"] += 1
+            if won:
+                got["won"] += 1
+            elif state == "declined":
+                got["lost"] += 1
+        elif state == "declined":
+            got["declined"] += 1
+        else:
+            got["waiting"] += 1
+    return got
+
+
+def nights(waiting: int, per_run: int) -> int:
+    """Nightly runs the backlog takes at `per_run` drafts a night; 0 for none waiting."""
+    return 0 if waiting <= 0 else -(-waiting // max(1, per_run))
+
+
+def _tally(by: dict, keys) -> str:
+    return ", ".join(f"{by.get(k, 0)} {k}" for k in keys)
+
+
+def lines(conn, got: list | None, per_run: int | None = None) -> list[str]:
     """The loop's `technique triage` section: this run's outcomes and crossings, and what is still to triage."""
+    per_run = PER_RUN if per_run is None else per_run
     waiting = len(pending(conn))
+    took = nights(waiting, per_run)
+    drain = f"; about {took} night(s) at {per_run} a night" + (
+        f", past the {DRAIN_NIGHTS} the knob is sized for" if took > DRAIN_NIGHTS else "") if waiting else ""
     out = ["\n=== technique triage ==="]
     if got is None:
-        out.append(f"  {waiting} technique(s) to triage; --run drafts up to {per_run} with the extract lane's model")
+        out.append(f"  {waiting} technique(s) to triage{drain}; --run drafts up to {per_run} with the "
+                   f"{DRAFT_LANE} lane's model")
         return out
-    by = {k: sum(1 for g in got if g.outcome == k) for k in (PROMPT, OTHER, REFUSED)}
-    out.append(f"  {len(got)} triaged this run: {by[PROMPT]} prompt, {by[OTHER]} other, "
-               f"{by[REFUSED]} refused; {waiting} still to triage")
+    by = {k: sum(1 for g in got if g.outcome == k) for k in OUTCOMES}
+    out.append(f"  {len(got)} triaged this run: {_tally(by, OUTCOMES)}; {waiting} still to triage{drain}")
     if getattr(got, "stopped", ""):
         out.append(f"  stopped at {got.stopped}")
-    total = counts(conn)
-    out.append(f"  in all: {total[PROMPT]} prompt, {total[OTHER]} other, {total[REFUSED]} refused")
+    out.append(f"  in all: {_tally(counts(conn), OUTCOMES)}")
     for g in got:
-        out.append(f"  {g.outcome:8} {g.name}{f'  -> {g.method}' if g.method else ''}"
+        out.append(f"  {g.outcome:12} {g.name}{f'  -> {g.method}' if g.method else ''}"
                    f"{f'  ({g.why[:120]})' if g.why and not g.crossings else ''}")
         for lane, spec, what in g.crossings:
             out.append(f"    {what:8} {lane:8} {spec}")
     return out
+
+
+def morning(conn, since: float) -> dict:
+    """The brief's technique facts: what was triaged since `since`, how crossings fared, and why the rest are not measured."""
+    return {"triaged": counts(conn, since), "all": counts(conn), "crossings": crossings(conn),
+            "waiting": len(pending(conn)), "per_run": PER_RUN}
+
+
+def morning_lines(t: dict | None) -> list[str]:
+    """The brief's `techniques` lines; none before the triage table exists."""
+    if not t:
+        return []
+    night, c = t["triaged"], t["crossings"]
+    return [f"techniques {sum(night.values())} triaged: {_tally(night, MEASURABLE)} measurable; "
+            f"{t['waiting']} waiting ({nights(t['waiting'], t['per_run'])} night(s) at {t['per_run']})",
+            f"           crossings: {c['measured']} measured ({c['won']} won, {c['lost']} lost), "
+            f"{c['declined']} declined on a stored loss, {c['waiting']} waiting",
+            "           unmeasurable in all: " + ", ".join(f"{t['all'][k]} {k} ({why})" for k, why in UNMEASURABLE.items())]
