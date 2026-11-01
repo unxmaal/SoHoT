@@ -289,9 +289,10 @@ def test_both_tools_are_registered_with_their_signatures(mcp_server):
     tools = {t.name: t for t in mcp_server.SERVER._tool_manager.list_tools()}
     props = tools["local_complete"].parameters["properties"]
     assert set(props) == {"lane", "prompt", "system", "max_tokens", "temperature",
-                          "thinking"}
+                          "thinking", "paths", "question"}
     assert props["thinking"]["default"] is None
-    assert props["lane"]["default"] == "code" and props["max_tokens"]["default"] == 2048
+    # "" is code for a prompt and extract for paths (#1335); None is 2048 for a prompt.
+    assert props["lane"]["default"] == "" and props["max_tokens"]["default"] is None
     assert set(tools["local_decide"].parameters["properties"]) == {
         "question", "schema", "context"}
 

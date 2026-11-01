@@ -181,6 +181,11 @@ capabilities:
       - harness/mcp_peers.py
       - harness/unverified.py
       - harness/commands/unverified.py
+      - harness/ask.py
+      - harness/commands/ask.py
+      - evals/ask_plants.py
+      - evals/ask_plants_fresh.py
+      - evals/ask_plants_third.py
       - harness/kb_filter.py
       - harness/commands/kb_filter.py
 

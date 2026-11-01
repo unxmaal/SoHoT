@@ -82,7 +82,7 @@ MODIFIERS = {
     "context --main-only",
     "morning --no-model", "claude-news --no-record", "benchmarks --force", "benchmarks --passages",
     "cases --reextract", "jobs --night", "disk --yes", "fetch --hold-router", "adopt --unscreened",
-    "judge --all-machines", "kb-filter --no-model", "kb-filter --rebuild", "kb-filter --strict",
+    "judge --all-machines", "ask --live-home", "kb-filter --no-model", "kb-filter --rebuild", "kb-filter --strict",
 }
 #: Flags whose mode writes, downloads, runs a model or reads the network by design, so it is not run here.
 NOT_RUN = {
@@ -112,6 +112,7 @@ NOT_RUN = {
     "repo-report --plan": "held in RUNS", "hear --rates": "held in RUNS",
     "unverified --hook": "asks a model and writes its log and block state",
     "unverified --settings": "prints a settings block, no store",
+    "ask --redo": "moves to a scratch home (paths.eval_home) before reading transcripts",
     "kb-filter --eval": "asks the decide and extract lanes; reads transcripts, no store",
 }
 

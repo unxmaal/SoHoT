@@ -363,7 +363,8 @@ def _tag(delegated: bool) -> str:
 def complete(lane: str, prompt: str, system: str | None = None,
              max_tokens: int = 2048, temperature: float | None = None,
              timeout: float | None = None, thinking: bool | None = None, delegated: bool = False,
-             model: str | None = None, max_tokens_knob: str = "harness/delegate.py:complete(max_tokens)",
+             model: str | None = None, tag: str | None = None,
+             max_tokens_knob: str = "harness/delegate.py:complete(max_tokens)",
              method=None, context: str = "") -> dict:
     """The lane's adopted model or method, timed; `method` is a method's cost. Raises Refused or CompletionError.
 
@@ -415,7 +416,7 @@ def complete(lane: str, prompt: str, system: str | None = None,
             raise completion.CompletionError(
                 f"{label + ': ' if label else ''}{exc}{hint}",
                 exc.failure_class, exc.limit) from exc
-    with (as_work(lane, spec, where, stream=True, delegation=delegated, tag=_tag(delegated)) as out,
+    with (as_work(lane, spec, where, stream=True, delegation=delegated, tag=tag or _tag(delegated)) as out,
           completion.measuring()):
         text, cost, replies = generate(spec, where, lane, prompt, call, method=method, context=context)
         got = replies[-1]

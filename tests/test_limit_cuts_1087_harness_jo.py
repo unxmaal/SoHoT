@@ -362,7 +362,7 @@ def test_a_delegation_reply_at_its_token_budget_is_a_cut(monkeypatch):
     assert _spooled() == []
     monkeypatch.setattr(mcp_server.delegate, "complete", reply(64))
     mcp_server.local_complete(prompt="p", max_tokens=64)
-    assert _spooled() == [("harness/mcp_server.py:local_complete(max_tokens)", 0, 1)]
+    assert _spooled() == [("harness/mcp_server.py:_prompted(max_tokens)", 0, 1)]
 
 
 def test_a_hostname_lookup_that_times_out_is_a_cut(monkeypatch):

@@ -87,7 +87,6 @@ harness/machine.py:_mflux_cli->subprocess.run(timeout)
 harness/machine.py:_platform_uuid->subprocess.run(timeout)
 harness/mcp_server.py:DEFAULT_TIMEOUT
 harness/mcp_server.py:_local_hostname->subprocess.run(timeout)
-harness/mcp_server.py:local_complete(max_tokens)
 harness/memory.py:DEFAULT_RESERVE_GB
 harness/memory.py:DISCRETE_RESERVE_GB
 harness/memory.py:MIN_RESERVE_GB
