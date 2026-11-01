@@ -57,6 +57,8 @@ CONTEXT_EXCEEDED = "context_exceeded"
 PLAN_REFUSED = "plan_refused"
 #: llama-server's shared KV pool filled and it failed every request in flight; says nothing about the model. #748.
 POOL_FULL = "pool_full"
+#: A case whose KV would leave less than memory.MIN_HEADROOM_GB safely available: deferred, never sent. #1482.
+MEMORY_DEFERRED = "memory_deferred"
 MISSING_FILE_IN_SNAPSHOT = "missing_file_in_snapshot"
 CRASHED = "crashed"
 CONTENT_FAILED = "content_failed"
@@ -94,6 +96,7 @@ CLASSES = {
     LOAD_LOG_UNREAD: ("queued", HARNESS),
     SHORT_COPY: ("queued", HARNESS),
     INCOMPLETE_COPY: ("queued", HARNESS),
+    MEMORY_DEFERRED: ("queued", MEMORY),
     POOL_FULL: ("queued", LIMIT),
     TIMEOUT: ("declined", LIMIT),
     TOKEN_BUDGET_EXHAUSTED: ("declined", LIMIT),
@@ -124,7 +127,7 @@ STOPS = (SERVER_DEAD, GPU_FAULT)
 REFETCH = (SHORT_COPY, INCOMPLETE_COPY)
 
 #: Classes that mean the request never reached a model.
-NEVER_RAN = tuple(c for c, (_, r) in CLASSES.items() if r == HARNESS)
+NEVER_RAN = tuple(c for c, (_, r) in CLASSES.items() if r in (HARNESS, MEMORY))
 
 #: Classes of a reply cut at the token budget, which the lane's grader never saw. #1113.
 CUT = (TOKEN_BUDGET_EXHAUSTED, DEGENERATE, STOPPED_LOW_YIELD)

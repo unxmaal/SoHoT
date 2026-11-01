@@ -56,6 +56,9 @@ class CompletionRunner(BaseRunner):
         self.served_ctx = served_ctx
         #: count(text) -> tokens by the served tokenizer; None estimates. #692.
         self.count = count
+        #: () -> GB fits() would budget now, for the MLX KV check; None asks memory.room_gb. #1482.
+        self.headroom = None
+        self._mlx: bool | None = None
         #: Generated tokens past which a reply is stopped as low yield; None runs every reply to its budget. #1127.
         self.stop_tokens: int | None = None
         #: Overrides on top of completion.SAMPLING for this run. Empty means
@@ -102,6 +105,7 @@ class CompletionRunner(BaseRunner):
                 f"unrunnable here: the prompt fills the {self.served_ctx}-token served context",
                 reasons.CONTEXT_EXCEEDED, knobs.hit("served_ctx", self.served_ctx, "tokens"))
         # The served context, not the reply budget, is what stops a reply the room was clamped to. #692.
+        self._fits_mlx(case, system, budget)
         limit = (knobs.limit("served_ctx", self.served_ctx, "tokens") if budget < asked
                  else knobs.limit(f"max_tokens.{case.modality}", budget, "tokens"))
         timeout = max(self.timeout, completion.timeout_for(budget))
@@ -240,6 +244,43 @@ class CompletionRunner(BaseRunner):
         spent = int(usage.get("prompt_tokens") or 0) + int(usage.get("completion_tokens") or 0)
         row.metrics = {**(row.metrics or {}), "routed_cloud": int(cloud), "cloud_tokens": spent if cloud else 0}
         routes.report(self.last_call_id, routes.verdict(row.passed, row.failure_class))
+
+    def on_mlx(self) -> bool:
+        """Whether this runner's requests reach mlx_lm.server, which takes a prompt of any length. #1482."""
+        if getattr(self, "_mlx", None) is None:
+            from harness import serving
+            engine = serving.engine_at(self.gateway)
+            self._mlx = engine == serving.DEFAULT if engine else serving.engine_for(self.candidate) == serving.DEFAULT
+        return self._mlx
+
+    def _fits_mlx(self, case: Case, system: str | None, budget: int) -> None:
+        """Refuse an MLX prompt past mlx_request_ctx; defer a case whose KV would leave less than min_headroom_gb. #1482."""
+        if not self.on_mlx():
+            return
+        from harness import cuts, memory, serving
+        system = system or completion.SYSTEM.get(case.modality, completion.NEUTRAL_SYSTEM)
+        tokens = delegate.prompt_tokens(system, completion.user_message(case.prompt, case.context), count=self.count)
+        if tokens > serving.MLX_REQUEST_CTX:
+            cuts.cut("mlx_request_ctx", f"{self.model}: {case.id}: a {tokens}-token prompt not sent", kept=0, dropped=1)
+            raise completion.CompletionError(
+                f"not sent: a {tokens}-token prompt is past the {serving.MLX_REQUEST_CTX} tokens an mlx_lm.server "
+                f"request is priced at", reasons.CONTEXT_EXCEEDED,
+                knobs.hit("mlx_request_ctx", serving.MLX_REQUEST_CTX, "tokens"))
+        per = memory.mlx_kv_bytes_per_token(self.model)
+        if not per:
+            return
+        need = (tokens + budget) * per / 1024 ** 3
+        room = (getattr(self, "headroom", None) or memory.room_gb)()
+        if room - need >= memory.MIN_HEADROOM_GB:
+            return
+        why = (f"{case.id} needs {need:.1f} GB of KV on mlx_lm.server but {room:.1f} GB is safely available "
+               f"(at least {memory.MIN_HEADROOM_GB:g} GB must stay)")
+        cuts.cut("min_headroom_gb", f"{self.model}: {why}", kept=0, dropped=1)
+        if getattr(self, "screening", False):
+            raise completion.CompletionError(f"deferred: {why}", reasons.MEMORY_DEFERRED,
+                                             knobs.hit("min_headroom_gb", memory.MIN_HEADROOM_GB, "GiB"))
+        from evals import watch
+        raise watch.Deferred(why, watch.MEMORY_HEADROOM)
 
     def budget(self, case: Case) -> int:
         return self.max_tokens or completion.budget(case.modality) or completion.MAX_TOKENS

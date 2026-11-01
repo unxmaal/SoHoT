@@ -1247,6 +1247,9 @@ def _parser():
                          "stored mean on this machine, else --budget-min over the cases")
     ap.add_argument("--budget-min", type=float, default=None,
                     help="a stated budget for the whole run, the plan where no receipt gives one (#810)")
+    ap.add_argument("--order", default=None, metavar="ORDER.JSON",
+                    help="a JSON list of case ids to run first, in that order, each repeat a pass over them; "
+                         "a paired measure writes it from the incumbent's draws (harness/weedout.py, #1439)")
     ap.add_argument("--reuse", default=None, metavar="REUSE.JSON",
                     help="incumbent cells a paired measure takes from stored draws under the same "
                          "content identity; not run here, refused if the identity changed (#1094)")
@@ -1365,7 +1368,21 @@ def _plan(args) -> tuple[str, list, list]:
         print(f"--repeat {args.repeat} ignored: {args.modality} is deterministic, so each case runs once and the "
               f"receipt says repeat {ran} (#1272)", file=sys.stderr)
         args.repeat = ran
-    return side, chosen, expand_cases(pool, args.repeat)
+    return side, chosen, ordered(expand_cases(pool, args.repeat), getattr(args, "order", None))
+
+
+def ordered(cases: list[Case], path) -> list[Case]:
+    """Cases by repeat, then by their place in the --order file; cases it does not name keep their order after. #1439."""
+    if not path:
+        return cases
+    from harness import holdout, paired
+    try:
+        ids = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise SystemExit(f"--order {path}: {exc}") from None
+    at = {str(c): i for i, c in enumerate(ids)}
+    return [c for _, c in sorted(enumerate(cases), key=lambda x: (
+        paired.repeat_index(x[1].id), at.get(holdout.base_id(x[1].id), len(at)), x[0]))]
 
 
 def rows_per_case(cases: list[Case], repeat: int) -> int:
@@ -1596,6 +1613,8 @@ def _execute_at(args, overrides: dict) -> int:
                                    eye, ckpt, progress, kept[i], block != 1, pooled)
     except watch.Stop as exc:
         stopped = exc
+        if isinstance(exc, watch.Deferred) and outdir:
+            watch.ask_pause(outdir, exc.reason)
         print(f"\n{exc.why}", file=sys.stderr, flush=True)
     state, why = ("paused", stopped.why) if stopped else ("done", "")
     code = watch.PAUSED if stopped else 0

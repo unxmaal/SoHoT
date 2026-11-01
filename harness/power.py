@@ -286,6 +286,9 @@ class Plan:
     max_power: float | None = None
     #: Incumbent cells taken from stored draws under its content identity (harness.reuse.plan). #1094.
     reuse: dict | None = None
+    #: The run's case order and the incumbent rate per case behind it (harness.weedout). #1439.
+    order: tuple | None = None
+    rates: dict | None = None
 
     def as_dict(self) -> dict:
         return asdict(self)

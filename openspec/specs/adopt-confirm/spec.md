@@ -98,10 +98,10 @@ Test: tests/test_lane_too_small_1049.py::test_measure_does_not_run_a_plan_that_c
 - **THEN** evidence carries planned_alpha and the tested alpha, and the reason says so
 Test: tests/test_adopt_assumptions.py::test_a_verdict_landing_mid_run_is_recorded_beside_the_alpha_the_plan_used
 
-#### Scenario: interim looks spend alpha
-- **WHEN** a paused paired run with a recorded look finishes and is decided
-- **THEN** the verdict's stored alpha is below ALPHA
-Test: tests/test_resume_813.py::test_a_finished_resume_spends_less_alpha_and_stores_planned_and_observed_seconds
+#### Scenario: interim looks spend alpha only when they test an adopt
+- **WHEN** a paused paired run whose only look came before every case had a cell finishes and is decided
+- **THEN** the verdict's stored alpha is ALPHA, since that look tested no adopt (#1439)
+Test: tests/test_resume_813.py::test_a_finished_resume_spends_no_alpha_an_uncovered_look_did_not_test_and_stores_planned_and_observed_seconds
 
 ### Requirement: Holdout decides and dev is reported
 With a split the adopt tier SHALL run both gates on holdout rows only and report the dev comparison beside the verdict without gating on it; a lane too small to split SHALL use every case as its holdout and record the caveat.

@@ -39,6 +39,7 @@ RUNS = {
     "reverify": ([["reverify", "--dry-run"]], 1),
     "store": ([["store", "dry-run", S]], 1),
     "votes": ([["votes", "--store", S]], 0),
+    "weedout-replay": ([["weedout-replay", "--store", S], ["weedout-replay", "--simulate", "2", "--store", S]], 0),
     "yield-stop": ([["yield-stop", "code", "x/Model-9B", "--store", S]], 0),
 }
 #: Commands with such a flag that are not read-only, and why.
@@ -97,6 +98,8 @@ NOT_RUN = {
     "report --publish": "pushes the report", "repo-screen --write": "writes the anchors file",
     "gateway --rotate": "replaces the key", "canary --run": "plants canaries", "review --file": "files findings",
     "claude-news --notify": "records and notifies", "ledger --record": "upserts ledger_days",
+    "runtimes --watch": "reads PyPI and GitHub releases and records proposals",
+    "runtimes --trial": "trial-installs a runtime release",
     "ledger --sample-power": "appends a power reading", "morning --notify": "notifies (the morning unit)",
     "sweep-check --notify": "records the check", "craft --revalidate": "runs the installed release",
     "delegated --close": "records outcomes", "disk --record": "writes download rows",

@@ -115,7 +115,7 @@ def test_a_paired_run_is_cut_into_look_slices_inside_its_budget(monkeypatch, wor
 
 def test_a_decided_look_mid_run_stops_it_and_records_the_verdict(monkeypatch, world):
     n = len(holdout.for_lane("code").holdout)
-    fake = Slices([_rows(6, gained=1, lost=1), _rows(n // 2, gained=n // 2)])
+    fake = Slices([_rows(6, gained=1, lost=1), _rows(n, gained=n // 2)])
     monkeypatch.setattr(measure_cmd, "_launch", fake)
     assert _measure() == 0
     assert len(fake.argvs) == 2 and "--resume" in fake.argvs[1]
