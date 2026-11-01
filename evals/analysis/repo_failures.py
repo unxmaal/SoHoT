@@ -285,7 +285,8 @@ AS_RUN = (reasons.STOPPED_LOW_YIELD, reasons.TOOL_CALL, reasons.ENVIRONMENT_ERRO
           reasons.POOL_FULL, reasons.BLANK_OUTPUT, reasons.BACKEND_FAULT, reasons.SERVER_DEAD, reasons.GPU_FAULT,
           reasons.REFUSED_BY_GATEWAY, reasons.HARNESS_ERROR, reasons.LOAD_LOG_UNREAD, reasons.SHORT_COPY,
           reasons.INCOMPLETE_COPY, reasons.ATTACHMENT, reasons.MISSING_PACKAGE, reasons.LOAD_FAILED_RUNTIME,
-          reasons.LOAD_FAILED_FILE, reasons.LOAD_FAILED_LAYOUT, reasons.MISSING_FILE_IN_SNAPSHOT)
+          reasons.LOAD_FAILED_FILE, reasons.LOAD_FAILED_LAYOUT, reasons.MISSING_FILE_IN_SNAPSHOT,
+          reasons.MEMORY_DEFERRED)
 CAUSES = ("pass", "budget_no_answer", "budget_cut_answer", "no_diff", "malformed_hunk", "missing_file",
           "context_mismatch", "wrong_fix", "regression", "provider_refused", "crashed", *AS_RUN, "unclassed")
 #: Causes of a reply cut before the grader saw it.

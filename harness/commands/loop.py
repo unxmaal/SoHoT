@@ -519,9 +519,10 @@ def _sized(top: int, sweep) -> dict:
                     f"of the {power._hm(left)} left of the sweep ceiling")}
 
 
-def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=None) -> int:
-    """Each measurement in turn; after a memory pause, only those that fit now, smallest first. #813, #1082."""
+def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=None, headroom=None) -> int:
+    """Each measurement in turn, none while memory is short; after a memory pause, only those that fit now, smallest first. #813, #1082, #1482."""
     room = room or measure_cmd.room_for
+    headroom = headroom or measure_cmd.headroom_gb
     queue, total, i, tight = list(fresh), len(fresh), 0, False
     while queue:
         held = _held_back(sweep, len(queue))
@@ -531,6 +532,15 @@ def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=No
             if not sweep.halted:
                 from harness import cuts
                 cuts.cut("sweep_ceiling_h", held, value=sweep.ceiling_s / 3600, kept=total - len(queue), dropped=len(queue))
+            break
+        short = _short_of_room(headroom(), len(queue))
+        if short:
+            from harness import cuts
+            print(f"  {short}", flush=True)
+            cuts.cut("min_headroom_gb", short, kept=total - len(queue), dropped=len(queue))
+            if sweep is not None:
+                sweep.lines.append(short)
+                sweep.stopped, sweep.waiting = short, len(queue)
             break
         if tight:
             row, why = _next_fitting(queue, room)
@@ -558,6 +568,15 @@ def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=No
                   flush=True)
             sweep.squeezed, tight = "", True
     return rc
+
+
+def _short_of_room(room: float, waiting: int) -> str:
+    """Why no new measurement starts: fits() would budget under memory.MIN_HEADROOM_GB now, else "". #1482."""
+    from harness import memory
+    if room >= memory.MIN_HEADROOM_GB:
+        return ""
+    return (f"memory: only {room:.1f} GB is safely available, under the {memory.MIN_HEADROOM_GB:g} GB a new "
+            f"measurement needs; {waiting} measurement(s) wait for the next sweep")
 
 
 def _gated(row: dict, want: str) -> str:
