@@ -95,7 +95,7 @@ LEFT_OUT = {
                                             "test_revisit_tier_1060.py", "test_revisitable_after_deploy_1361.py",
                                             "test_site.py", "test_futility_lane_too_small_1452.py"),
     "harness/reasons.py": (
-        "test_repo_repair_890.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_staging_torch_1358.py",
+        "test_runtime_trials_1474.py", "test_repo_repair_890.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_staging_torch_1358.py",
         "test_vision_engines_1282.py",
         "test_shots_check_1208.py",
         "test_adopt_retest_1001.py", "test_attachment_tags_949.py", "test_canary_919.py",
@@ -112,7 +112,7 @@ LEFT_OUT = {
         "test_lane_until_1053.py", "test_loop_revisit_1055.py", "test_revisit_tier_1060.py",
         "test_revisitable_after_deploy_1361.py", "test_adopt_effect_confirm_725.py", "test_min_effect_1320.py", "test_technique_triage_993.py",
         "test_exam_price_1354.py", "test_limit_cuts_1087_evals.py", "test_limit_cuts_1087_harness_di.py",
-        "test_futility_lane_too_small_1452.py", "test_technique_kinds_1476.py"),
+        "test_futility_lane_too_small_1452.py", "test_sustained_warn_1482.py", "test_technique_kinds_1476.py"),
     "harness/screen.py": (
         "test_attachment_tags_949.py", "test_lane_too_small_1049.py", "test_vision_engines_1282.py",
         "test_variants_947.py", "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",
@@ -134,15 +134,15 @@ LEFT_OUT = {
         "test_power_table_603.py", "test_store_errors_1432.py", "test_futility_lane_too_small_1452.py",
         "test_weedout_1439.py"),
     "harness/serving.py": (
-        "test_mlx_backlog.py", "test_runner_gap_until_950.py", "test_agent_limits.py", "test_claims_lane.py", "test_decide_lane.py",
+        "test_runtime_trials_1474.py", "test_mlx_backlog.py", "test_runner_gap_until_950.py", "test_agent_limits.py", "test_claims_lane.py", "test_decide_lane.py",
         "test_delegate_resident.py", "test_delegations.py", "test_lane_probe_924.py", "test_machine_host.py",
         "test_machine_identity.py", "test_mlx_dead_912.py", "test_purpose_825.py", "test_usage_gateway.py",
         "test_vllm.py", "test_repo_failures_921.py", "test_presence_960.py", "test_limit_cuts_1087_harness_di.py",
-        "test_limit_cuts_1087_harness_ps.py"),
+        "test_limit_cuts_1087_harness_ps.py", "test_sustained_warn_1482.py"),
     "harness/router.py": (
         "test_delegate_resident.py", "test_machine_host.py", "test_router_ready_1012.py", "test_sweep_ceiling_806.py",
         "test_watchdog.py", "test_memory_warn_1082.py", "test_idle_unload_1157.py", "test_router_down_1181.py",
-        "test_limit_cuts_1087_harness_ac.py"),
+        "test_limit_cuts_1087_harness_ac.py", "test_sustained_warn_1482.py"),
 }
 
 # mutmut 3 exit codes: survived and untested are gaps; anything unrecognised means the run is not trustworthy.

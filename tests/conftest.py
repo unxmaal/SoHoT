@@ -193,6 +193,13 @@ def _no_real_metal(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_headroom(monkeypatch):
+    """No sweep test stops on this machine's free memory; a test of the gate hands in its own. #1482."""
+    from harness.commands import measure
+    monkeypatch.setattr(measure, "headroom_gb", lambda: 1e6)
+
+
+@pytest.fixture(autouse=True)
 def _cli_output_mode(monkeypatch):
     """cli.main sets common._JSON per call; a --json test must not turn the next test's output into JSON. #720."""
     from harness.commands import common
@@ -318,6 +325,17 @@ def _no_real_registry(monkeypatch):
             refuse(url)
         return real_get(url, *a, **k)
     monkeypatch.setattr(httpx, "get", hub_refused)
+
+
+@pytest.fixture(autouse=True)
+def _no_real_runtime_channel(monkeypatch):
+    """No test reads PyPI or GitHub releases, or installs a runtime; tests pass fakes. #1474."""
+    from harness import runtime_trials
+
+    def refuse(*a, **k):
+        raise RuntimeError(f"a test asked a real runtime release channel or install: {a}")
+    for name in ("_get_json", "_gh", "_get_text", "_run"):
+        monkeypatch.setattr(runtime_trials, name, refuse)
 
 
 @pytest.fixture(autouse=True)

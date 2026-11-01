@@ -22,6 +22,8 @@ PAUSE_FILE = "pause"
 STOP_FILE = "stopped"
 #: The one stop that ends a run as a suspected harness defect rather than pausing it. #1409.
 OVERRUN = "overrun"
+#: The pause reason of a case whose KV would leave less than memory.MIN_HEADROOM_GB safely available. #1482.
+MEMORY_HEADROOM = "memory_headroom"
 
 
 def clock() -> float:
@@ -66,6 +68,14 @@ class Stop(Exception):
     def __init__(self, why: str):
         super().__init__(why)
         self.why = why
+
+
+class Deferred(Stop):
+    """The run pauses before a case that does not fit now; `reason` goes in its pause file. #1482."""
+
+    def __init__(self, why: str, reason: str):
+        super().__init__(f"paused on request ({reason}): {why}")
+        self.reason = reason
 
 
 @dataclass
