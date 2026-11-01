@@ -1,4 +1,4 @@
-"""A candidate's content identity: the bytes of its runtime and model, what it is sent, the exam, the harness and the machine. #1094."""
+"""A candidate's content identity: the bytes of its runtime and model, what it is sent, the exam and the machine; the harness commit is recorded, not matched. #1094."""
 from __future__ import annotations
 
 import ast
@@ -107,11 +107,8 @@ def runtime_files(binary) -> list[Path]:
 
 
 def llama_server() -> Path | None:
-    import shutil
-
     from harness import serving
-    name = os.environ.get("LLAMACPP_BIN") or serving.LLAMACPP
-    got = name if os.path.isfile(name) else shutil.which(name)
+    got = serving.llamacpp_binary()
     return Path(got) if got else None
 
 
@@ -261,6 +258,19 @@ def settings(lane: str, spec: str, budget: int, ladder=(), overrides=None, repo_
 
 def digest_of(parts) -> str:
     return hashlib.sha256(json.dumps(parts, sort_keys=True, default=str).encode("utf-8")).hexdigest()
+
+
+def as_now(stored: dict, now: dict) -> str:
+    """The digest of stored parts with each knob now recorded but absent there filled at its unrecorded value. #1353."""
+    from harness import knobs
+    have = ((stored.get("settings") or {}).get("knobs"))
+    want = ((now.get("settings") or {}).get("knobs")) or {}
+    if not isinstance(have, dict):
+        return ""
+    fill = {k: knobs.UNRECORDED[k] for k in want if k not in have and k in knobs.UNRECORDED}
+    if not fill:
+        return ""
+    return digest_of({**stored, "settings": {**stored["settings"], "knobs": {**have, **fill}}})
 
 
 def _text_sha(text: str) -> str:

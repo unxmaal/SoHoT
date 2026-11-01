@@ -230,7 +230,7 @@ def test_ask_returns_the_answer_paths_and_bytes_never_the_file(root, monkeypatch
         return {"text": "test_q", "spec": "s", "model": "m", "ttft_s": 0.1,
                 "prompt_tokens": 5, "completion_tokens": 2}
     got = ask.ask([str(f)], "what failed?", roots=_roots(root), complete=complete)
-    assert got["text"] == "test_q" and "secret filler" not in json.dumps(got)
+    assert got["text"] == "FAILED tests/t.py::test_q" and "secret filler" not in json.dumps(got)
     assert got["files"] == [{"path": os.path.realpath(f), "bytes": f.stat().st_size}]
     assert calls[0][0] == "extract" and calls[0][1]["system"] == ask.SYSTEM
     assert calls[0][1]["tag"] == purpose.INTERNAL
@@ -269,7 +269,7 @@ def test_ask_goes_through_the_lanes_real_completion(fake, root):  # noqa: F811
     fake.reply = "test_q"
     (root / "a.log").write_text("FAILED test_q\n", encoding="utf-8")
     got = ask.ask([str(root / "a.log")], "what failed?", roots=_roots(root))
-    assert got["text"] == "test_q" and set(fake.routed) == {"extract"}
+    assert got["text"] == "FAILED test_q" and set(fake.routed) == {"extract"}
     assert fake.seen[-1]["messages"][0]["content"] == ask.SYSTEM
 
 
@@ -373,7 +373,7 @@ def test_a_plant_is_named_only_by_its_own_token(answer, expect, hit):
     assert ask_plants.named(answer, expect) is hit
 
 
-def _oracle(path: str) -> str:
+def _oracle(path: str, question: str) -> str:
     text = Path(path).read_text(encoding="utf-8")
     for c in ask_plants.cases(8, seed=3):
         if c["text"] == text:
@@ -384,14 +384,14 @@ def _oracle(path: str) -> str:
 def test_a_perfect_reader_passes_the_bars_and_a_silent_one_fails(tmp_path):
     good = ask_plants.run(tmp_path / "good", _oracle, n=8, seed=3)
     assert good["hits"] == 8 and good["nones"] == 8
-    silent = ask_plants.run(tmp_path / "silent", lambda p: "none", n=8, seed=3)
+    silent = ask_plants.run(tmp_path / "silent", lambda p, q: "none", n=8, seed=3)
     assert silent["hits"] == 0 and not silent["passes"]
     rows = [json.loads(x) for x in (tmp_path / "silent" / "results.jsonl").read_text(encoding="utf-8").splitlines()]
     assert len(rows) == 8 and "text" not in rows[0]
 
 
 def test_a_reader_that_names_everything_fails_on_the_clean_twins(tmp_path):
-    got = ask_plants.run(tmp_path, lambda p: "FAILED test_everything; 3 errors", n=8, seed=3)
+    got = ask_plants.run(tmp_path, lambda p, q: "FAILED test_everything; 3 errors", n=8, seed=3)
     assert got["nones"] == 0 and not got["passes"]
 
 
@@ -438,7 +438,7 @@ def test_the_tool_answers_from_paths_with_the_files_it_read(fake, mcp_server, ro
     fake.reply = "test_q"
     (root / "a.log").write_text("FAILED test_q\n", encoding="utf-8")
     got = mcp_server.local_complete(paths=[str(root / "a.log")], question="what failed?")
-    assert got.text == "test_q" and got.lane == "extract" and got.parts == 1
+    assert got.text == "FAILED test_q" and got.lane == "extract" and got.parts == 1
     assert got.files == [{"path": os.path.realpath(root / "a.log"), "bytes": 14}]
     assert fake.seen[-1]["max_tokens"] == ask.REPLY_TOKENS and got.call_id
 
@@ -495,8 +495,102 @@ def test_answer_lines_the_files_never_hold_are_dropped_as_made_up():
     text = "tests/a.py::test_ok PASSED\nFAILED tests/b.py::test_real - assert 1 == 2\n"
     got = ask.ground("FAILED tests/b.py::test_real - assert 1 == 2\nFAILED tests/a.py::test_invented\n3",
                      text, "what failed?")
-    assert got == "FAILED tests/b.py::test_real - assert 1 == 2\n3"
+    assert got == "FAILED tests/b.py::test_real - assert 1 == 2"
     assert ask.ground("- `FAILED tests/b.py::test_real`", text, "q") == "- `FAILED tests/b.py::test_real`"
+    assert ask.ground("3", text, "how many tests ran?") == "3"
+
+
+def test_a_count_of_tests_that_did_not_fail_is_dropped_from_a_failure_answer():
+    text = "===== 3000 passed, 3 xfailed, 12 warnings in 30.1s =====\n"
+    assert ask.ground("3 xfailed\n12 warnings", text, "Did anything fail?") == ask.NONE
+    assert ask.ground("3 xfailed", text, "how many xfailed?") == "3 xfailed"
+    assert ask.ground("1 failed, 3000 passed", "1 failed, 3000 passed\n", "what failed?") == "1 failed, 3000 passed"
+
+
+@pytest.mark.parametrize("line", [
+    "Found 59 errors.", "finished: 300 cases, 46 errors, exit 1", "##[error]Process completed with exit code 2.",
+    "make: *** [check] Error 1", "FAILED tests/b.py::test_real - assert 1 == 2", "tests/b.py::test_real FAILED [ 40%]",
+    "RuntimeError: ledger_shard could not be resolved", "E   KeyError: 'slot'", "--- FAIL: TestQuota (0.02s)",
+    "sqlite3.OperationalError: database is locked", "panic: shard closed", "error[E0425]: cannot find value `x`",
+    "src/a.ts(3,5): error TS2339: Property 'x' does not exist", "Tests:       2 failed, 40 passed, 42 total",
+    "Exception in thread \"main\" java.lang.IllegalStateException: closed", "FAILED (failures=2)",
+    "2026-10-20T01:02:03.1234567Z Found 3 errors in 2 files"])
+def test_a_failure_shaped_line_is_found(line):
+    assert ask.failure_lines(f"ok\n{line}\nok\n")
+
+
+@pytest.mark.parametrize("line", [
+    "pressure level 1, swap 860 MiB, 0 errors so far", "finished: 300 cases, 0 errors, exit 0",
+    "tests/test_error_x.py::test_raises_y PASSED [ 40%]", "tests/c.py::test_x XFAIL (known drift)",
+    "  harness/a.py:12: DeprecationWarning: utcnow() is deprecated", "== 3000 passed, 3 xfailed, 2 warnings in 3.1s ==",
+    "✖ 2 problems (0 errors, 2 warnings)", "test result: ok. 41 passed; 0 failed; 1 ignored",
+    "retry route: HTTP 503 busy, attempt 1 of 3, waiting 2s", "--- PASS: TestErrorPath (0.01s)",
+    "All checks passed!", "Success: no issues found in 212 source files", "OK (skipped=3, expected failures=1)",
+    "tests/t.py::test_exit_code[exit 1] PASSED [ 40%]"])
+def test_a_line_that_did_not_fail_is_not_found(line):
+    assert ask.failure_lines(f"{line}\n") == []
+
+
+def test_the_scan_adds_failure_lines_the_model_skipped_and_only_once():
+    text = "ok\nFound 59 errors.\nFound 59 errors.\nFAILED tests/b.py::test_q - boom\n"
+    assert ask.with_failures(ask.NONE, text) == ("Found 59 errors.\nFAILED tests/b.py::test_q - boom", 2)
+    assert ask.with_failures("FAILED tests/b.py::test_q - boom", text) == (
+        "FAILED tests/b.py::test_q - boom\nFound 59 errors.", 1)
+    assert ask.with_failures(ask.NONE, "ok\nall good\n") == (ask.NONE, 0)
+    stamped = "2026-10-20T01:02:03.1Z Found 3 errors."
+    assert ask.with_failures(stamped, stamped + "\n") == (stamped, 0)
+
+
+def test_a_quoted_fragment_does_not_hide_the_whole_failure_line():
+    assert ask.with_failures("FAILED", "x FAILED\nFound 3 errors.\n") == ("x FAILED\nFound 3 errors.", 1)
+    assert ask.with_failures("RuntimeError", "RuntimeError: slot_lane gone\n") == ("RuntimeError: slot_lane gone", 0)
+
+
+def test_the_scan_keeps_its_first_lines_and_leaves_a_cut(monkeypatch):
+    from harness import cuts
+    seen = []
+    monkeypatch.setattr(cuts, "cut", lambda knob, what, **kw: seen.append((knob, kw["dropped"])))
+    text = "".join(f"FAILED tests/t.py::test_{i}\n" for i in range(ask.FAILURE_LINES + 5))
+    got, added = ask.with_failures(ask.NONE, text)
+    assert added == ask.FAILURE_LINES and got.splitlines()[0] == "FAILED tests/t.py::test_0"
+    assert seen == [("harness/ask.py:FAILURE_LINES", 5)]
+
+
+def test_a_long_line_is_clipped_around_its_failure_and_leaves_a_cut(monkeypatch):
+    from harness import cuts
+    seen = []
+    monkeypatch.setattr(cuts, "cut", lambda knob, what, **kw: seen.append(knob))
+    got = ask.failure_lines("x" * 2000 + " Found 7 errors. " + "y" * 2000 + "\nFound 2 errors.\n")
+    assert len(got[0]) == ask.LINE_CHARS and "Found 7 errors." in got[0] and got[1] == "Found 2 errors."
+    assert seen == ["harness/ask.py:LINE_CHARS"]
+
+
+def test_ask_adds_the_scan_only_to_a_question_about_failures(root):
+    (root / "a.log").write_text("ok\nFound 4 errors.\n", encoding="utf-8")
+    reply = lambda lane, p, **kw: {"text": "none", "spec": "s", "model": "m"}  # noqa: E731
+    got = ask.ask([str(root / "a.log")], "Did anything fail?", roots=_roots(root), complete=reply)
+    assert got["text"] == "Found 4 errors." and got["scanned"] == 1
+    got = ask.ask([str(root / "a.log")], "which python ran?", roots=_roots(root), complete=reply)
+    assert got["text"] == ask.NONE and got["scanned"] == 0
+
+
+@pytest.mark.parametrize("family", ["pytest", "fresh", "third"])
+def test_each_eval_set_is_the_same_for_a_seed_and_its_clean_twins_hold_no_plant(family):
+    from evals import ask_plants
+    a, q = ask_plants.generated(family, 15, None)
+    b, _ = ask_plants.generated(family, 15, None)
+    c, _ = ask_plants.generated(family, 15, 7)
+    assert a == b and a != c and q
+    for r in a:
+        assert ask_plants.named(r["text"], r["expect"], r.get("word") or "error")
+        assert r["planted"] not in r["clean"]
+
+
+def test_the_fresh_set_uses_other_tools_than_the_pytest_set():
+    from evals import ask_plants, ask_plants_fresh, ask_plants_third
+    sets = (ask_plants, ask_plants_fresh, ask_plants_third)
+    assert len({k for s in sets for k in s.KINDS}) == sum(len(s.KINDS) for s in sets)
+    assert len({s.QUESTION for s in sets}) == 3
 
 
 def test_passing_status_lines_are_dropped_only_from_an_answer_about_failures():
@@ -517,3 +611,58 @@ def test_a_passing_line_quoted_without_its_status_word_is_still_dropped():
     text = "tests/a.py::test_ok PASSED [ 10%]\nFAILED tests/b.py::test_bad - assert 1 == 2\n"
     assert ask.ground("tests/a.py::test_ok", text, "what failed?") == ask.NONE
     assert ask.ground("tests/b.py::test_bad", text, "what failed?") == "tests/b.py::test_bad"
+
+
+# ---- evals and the redo measure never write the live store (#1346) ------------
+
+@pytest.fixture
+def live_home(tmp_path, monkeypatch):
+    """A fixture home standing in for the live one: a migrated store with the limit_cuts table."""
+    from harness import memory_store as ms, paths
+    live = tmp_path / "live"
+    live.mkdir()
+    monkeypatch.setenv(paths.ENV_VAR, str(live))
+    ms.connect().close()
+    monkeypatch.setattr(paths, "DEFAULT_HOME", live)
+    monkeypatch.delenv(paths.ENV_VAR)
+    return live / "discovery.db"
+
+
+def _writes_to(monkeypatch, store: Path) -> list:
+    import sqlite3
+    seen, real = [], sqlite3.connect
+
+    def spy(db, *args, **kw):
+        raw = str(db)
+        plain = raw.removeprefix("file:").split("?")[0]
+        if Path(plain).resolve() == store.resolve() and "mode=ro" not in raw:
+            seen.append(raw)
+        return real(db, *args, **kw)
+    monkeypatch.setattr(sqlite3, "connect", spy)
+    return seen
+
+
+def test_the_eval_runs_from_a_scratch_home_and_never_opens_the_live_store_to_write(live_home, tmp_path, monkeypatch):
+    from harness import cli
+    before = live_home.read_bytes()
+    writes = _writes_to(monkeypatch, live_home)
+    monkeypatch.setattr(delegate, "complete", lambda lane, p, **kw: {"text": "none", "spec": "s", "model": "m"})
+    cli.main(["ask", "--eval", str(tmp_path / "ev"), "--n", "4", "--chunk", "2000"])
+    assert writes == [] and live_home.read_bytes() == before
+    assert (tmp_path / "ev" / "home").is_dir() and (tmp_path / "ev" / "results.jsonl").exists()
+
+
+def test_the_redo_measure_runs_from_a_scratch_home(live_home, tmp_path, monkeypatch):
+    from harness import cli, paths
+    writes = _writes_to(monkeypatch, live_home)
+    assert cli.main(["ask", "--redo", "--root", str(tmp_path)]) == 0
+    assert writes == [] and not paths.is_live(paths.home() / "discovery.db")
+
+
+def test_naming_the_live_home_is_refused_unless_asked_for(live_home, tmp_path, monkeypatch, capsys):
+    from harness import cli, paths
+    monkeypatch.setenv(paths.ENV_VAR, str(live_home.parent))
+    assert cli.main(["ask", "--redo", "--root", str(tmp_path)]) == 2
+    assert "--live-home" in capsys.readouterr().out
+    assert cli.main(["ask", "--redo", "--root", str(tmp_path), "--live-home"]) == 0
+    assert paths.is_live(paths.home() / "discovery.db")

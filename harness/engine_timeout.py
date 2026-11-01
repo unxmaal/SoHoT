@@ -94,13 +94,10 @@ def for_runner(runner, lane: str) -> dict:
     """apply() on this machine's store; a store that cannot be read leaves the engine's ceiling."""
     if not any(getattr(r, "ceiling", None) is not None for r in runners(runner)):
         return {}
-    from harness import memory_store as ms
+    from harness import runs
     try:
-        conn = ms.connect()
-        try:
+        with runs.store() as conn:
             got = apply(conn, runner, lane)
-        finally:
-            conn.close()
     except Exception as exc:  # noqa: BLE001 - no measurement means the engine's own ceiling
         print(f"  engine timeout: the stored rows could not be read ({exc}); its ceiling stands", file=sys.stderr)
         return {}
@@ -110,14 +107,12 @@ def for_runner(runner, lane: str) -> dict:
 
 def for_engine(engine, lane: str = "") -> float:
     """The seconds `engine` runs at on this machine, for a deadline set before a runner exists."""
-    from harness import memory_store as ms
+    from harness import runs
     try:
-        conn = ms.connect()
-        try:
+        with runs.store() as conn:
             return basis(conn, lane or engine.modality, engine.name, engine.timeout)["seconds"]
-        finally:
-            conn.close()
-    except Exception:  # noqa: BLE001 - no measurement means the engine's own ceiling
+    except Exception as exc:  # noqa: BLE001 - no measurement means the engine's own ceiling
+        print(f"  engine timeout: the stored rows could not be read ({exc}); its ceiling stands", file=sys.stderr)
         return float(engine.timeout)
 
 

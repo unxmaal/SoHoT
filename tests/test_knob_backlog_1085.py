@@ -17,7 +17,7 @@ CARRIES = {
     "harness/funnel.py": {"p": "", "position": "", "said": "", "skipped": "", "top": DISCOVER_TOP, "when": ""},
     "harness/fetching.py": {
         "attachment": "", "backlog": "", "budget": DOWNLOAD_BUDGET, "dep": "", "exc": "", "gap": "", "have": "",
-        "lane": "", "name": "", "names": "", "needs": "", "other": "", "p.why": "", "row": "", "size": "",
+        "lane": "", "name": "", "names": "", "needs": "", "other": "", "p.why": "", "repo": "", "row": "", "size": "",
         "spent": "", "spent_now": "", "status": "", "top": DISCOVER_TOP, "until": "", "what": "", "when": "", "whose": ""},
 }
 

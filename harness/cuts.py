@@ -138,6 +138,11 @@ def value_of(knob: str):
 def cut(knob: str, what: str, *, value=None, kept: int | None = None, dropped: int | None = None,
         conn=None) -> None:
     """Record that `knob` (a registered knob, or a backlog site) cut `what`; its value now unless given; never raises."""
+    from harness import memory_store as ms
+    if ms.lent() is not None:
+        return  # a read-only or dry run; spooled, the row would reach this home's store later. #1426.
+    if paths.evaluating():
+        return  # an eval or probe's limits are not the work's. #1346.
     value = value_of(knob) if value is None else value
     try:
         number = float(value) if value is not None else None
@@ -148,6 +153,8 @@ def cut(knob: str, what: str, *, value=None, kept: int | None = None, dropped: i
     if conn is not None and _write(conn, [row]):
         flush(conn)
         return
+    if paths.live_from_elsewhere(ms.db_path()):
+        return  # a worktree's cut in the live home would pass for the deploy's work. #1346.
     _spool(row)
     flush()
 
@@ -202,6 +209,19 @@ def _grouped(conn, what: str, since: float, machines) -> dict:
         return {}
 
 
+def main(argv: list[str] | None = None) -> int:
+    """`python -m harness.cuts KNOB WHAT`: a shell script's limit that bound, recorded like any other; never fails."""
+    import argparse
+    ap = argparse.ArgumentParser(prog="python -m harness.cuts", description=main.__doc__)
+    ap.add_argument("knob", help="a registered knob, or a site such as scripts/env.sh:HF_MIN_FREE_GB")
+    ap.add_argument("what", help="what the limit cut")
+    ap.add_argument("--kept", type=int)
+    ap.add_argument("--dropped", type=int)
+    a = ap.parse_args(argv)
+    cut(a.knob, a.what, kept=a.kept, dropped=a.dropped)
+    return 0
+
+
 def count(conn, since: float, machines=None) -> dict[str, int]:
     """Cuts recorded since `since`, by knob or site; machines None is every machine."""
     return {k: int(n) for k, n in _grouped(conn, "COUNT(*)", since, machines).items()}
@@ -210,3 +230,7 @@ def count(conn, since: float, machines=None) -> dict[str, int]:
 def highest(conn, since: float, machines=None) -> dict:
     """The largest value each knob or site cut at since `since`."""
     return _grouped(conn, "MAX(value)", since, machines)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

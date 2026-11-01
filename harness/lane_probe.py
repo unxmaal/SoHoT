@@ -138,6 +138,8 @@ def _send(req: dict) -> dict:
         out.update(status=exc.code, body=exc.read().decode("utf-8", "replace"))
     except (TimeoutError, socket.timeout) as exc:
         out.update(error=f"no answer after {req['hold']:.0f}s: {exc}", timed_out=True)
+        from harness import cuts
+        cuts.cut("lane_probe_hold", f"a probe request to {req['url']} given up", value=req["hold"], kept=0, dropped=1)
     except (OSError, ValueError) as exc:
         out["error"] = f"{type(exc).__name__}: {getattr(exc, 'reason', exc)}"
     out["seconds"] = round(time.perf_counter() - started, 4)
@@ -326,7 +328,7 @@ def wake(conn, now: float, lanes=None, sender: Sender | None = None, machine_id=
     """Probe each text lane once at the same `now`, all in parallel, and record every row."""
     from harness import gateway, paths
     sender = sender or Sender(paths.home() / "watchdog")
-    rows, out = [], []
+    rows, out, slow = [], [], []
     for lane in lanes or gateway.TEXT_LANES:
         row, req = prepare(lane, sender, **kw)
         handle = sender.start(lane, req["url"], req["headers"], req["body"], HOLD_S) if req else None
@@ -335,11 +337,25 @@ def wake(conn, now: float, lanes=None, sender: Sender | None = None, machine_id=
         if handle is not None:
             sent = sender.collect(handle, deadline - time.monotonic())
             row = finish(row, sent, timeout(row["lane"]))
+            slow += [row["lane"]] if sent is None else []
             if sent is not None and not sent.get("failed") and not req["gateway"]:
                 row["_direct"] = sent
         row["id"] = record(conn, row, now, machine_id) if conn is not None else None
         out.append(row)
+    _cuts(out, slow)
     return out
+
+
+def _cuts(rows: list[dict], slow: list[str]) -> None:
+    """One cut per wake for the lanes the wait ran out on, one for replies that used the whole token allowance."""
+    from harness import cuts
+    if slow:
+        cuts.cut("lane_probe_timeout", f"probes of {', '.join(slow)} read as slow",
+                 value=max(timeout(lane) for lane in slow), kept=len(rows) - len(slow), dropped=len(slow))
+    full = [r["lane"] for r in rows if (r.get("completion_tokens") or 0) >= max_tokens(r["lane"])]
+    if full:
+        cuts.cut("lane_probe_max_tokens", f"probe replies of {', '.join(full)} at their token allowance",
+                 value=max(max_tokens(lane) for lane in full), kept=len(rows) - len(full), dropped=len(full))
 
 
 def line(row: dict) -> str:

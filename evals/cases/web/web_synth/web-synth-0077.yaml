@@ -1,0 +1,42 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0077
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Fish
+  market safety". The page needs an <h1> reading "Fish market safety" followed by these <h2> headings
+  in order: "Events", "Volunteers", "Prices", "Repairs", "Rules", "Overview". Use no other h1, h2 or h3
+  headings.'
+assert:
+  structure:
+    title: Fish market safety
+    headings:
+    - - 1
+      - Fish market safety
+    - - 2
+      - Events
+    - - 2
+      - Volunteers
+    - - 2
+      - Prices
+    - - 2
+      - Repairs
+    - - 2
+      - Rules
+    - - 2
+      - Overview
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '77'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: headings
+  stratum: easy

@@ -22,16 +22,25 @@ def add_parser(sub) -> None:
     p.add_argument("--root", default="", help="--redo transcripts root (default $SOH_CLAUDE_PROJECTS or ~/.claude/projects)")
     p.add_argument("--eval", default="", metavar="DIR", help="write the synthesized logs to DIR and score the lane on them")
     p.add_argument("--n", type=int, default=60, help="--eval: logs, each with a clean twin")
-    p.add_argument("--seed", type=int, default=1335)
+    p.add_argument("--seed", type=int, default=None, help="--eval: the set's generator seed (pytest 1335, fresh 2026, third 4711)")
+    p.add_argument("--set", default="pytest", choices=("pytest", "fresh", "third"), help="--eval: pytest-shaped "
+                   "logs, fresh go/jest/cargo/lint/gradle logs, or third unittest/rspec/C/terraform logs")
     p.add_argument("--chunk", type=int, default=0, help="characters per part (default: the lane's, see ask_chunk_chars)")
+    p.add_argument("--live-home", action="store_true", help="--eval/--redo: run in the live home and write its "
+                   "store; without it they run from a scratch home (DIR/home for --eval) #1346")
     p.set_defaults(func=cmd_ask)
 
 
 def cmd_ask(a) -> int:
-    if a.redo:
-        return _redo(a)
-    if a.eval:
-        return _eval(a)
+    if a.redo or a.eval:
+        from harness import paths
+        try:
+            paths.eval_home(Path(a.eval).expanduser().resolve() / "home" if a.eval else None, live=a.live_home)
+        except paths.LiveHomeRefused as exc:
+            note(str(exc))
+            emit(False, error=str(exc))
+            return 2
+        return _redo(a) if a.redo else _eval(a)
     from harness import ask, completion
     if not a.paths or not a.question.strip():
         note("give one or more paths and -q QUESTION")
@@ -77,14 +86,14 @@ def _eval(a) -> int:
     from harness import ask
     out = Path(a.eval).expanduser().resolve()
 
-    def answer(path: str) -> str:
-        return ask.ask([path], ask_plants.QUESTION, lane=a.lane, roots=[ask.Root(out)],
+    def answer(path: str, question: str) -> str:
+        return ask.ask([path], question, lane=a.lane, roots=[ask.Root(out)],
                        max_tokens=a.max_tokens, size=a.chunk or None)["text"]
 
     def progress(r) -> None:
         note(f"{r['id']:<28} {'hit ' if r['hit'] else 'MISS'} {'none' if r['clean_none'] else 'NOISE'}"
              + (f"  {r['error']}" if r.get("error") else ""))
-    got = ask_plants.run(out, answer, n=a.n, seed=a.seed, progress=progress)
+    got = ask_plants.run(out, answer, n=a.n, seed=a.seed, progress=progress, family=a.set)
     note(f"planted named {got['hits']}/{got['logs']} ({got['hit_rate']:.0%}, Wilson lower {got['hit_lower']:.2f}); "
          f"clean answered none {got['nones']}/{got['clean']} ({got['none_rate']:.0%}); "
          f"{'passes' if got['passes'] else 'does not pass'} the bars; rows in {out / 'results.jsonl'}")

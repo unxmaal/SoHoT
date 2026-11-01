@@ -14,7 +14,7 @@ KNOBS = [
        note="consecutive same-need memory deferrals after which a screen stops recording another (#910)"),
     _k("screen_outside_votes", ["evals/repo_screen.py:OUTSIDE_VOTES"], [2, 3, 4],
        note="independent third-party benchmarks ranking a candidate above Ornith before its failed repo screen "
-            "is rerun rather than declined; Eric's rule on #1176, unmeasured"),
+            "is rerun rather than declined; the owner's rule on #1176, unmeasured"),
     _k("screen_repeats", ["evals/repo_screen.py:REPEATS"], [2, 3, 5],
        note="extra draws of a failed repo screen the outside votes disagree with, pooled before declining; "
             "same-config Ornith runs 466/472 differ on 4 of 39 cases (FINDING #597), so one draw is noisy (#1176)"),

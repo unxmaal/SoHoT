@@ -39,6 +39,7 @@ from harness.commands import context as context_cmd
 from harness.commands import day as day_cmd
 from harness.commands import degenerate as degenerate_cmd
 from harness.commands import floors as floors_cmd
+from harness.commands import specs as specs_cmd
 from harness.commands import staging as staging_cmd
 from harness.commands import discover as discover_cmd
 from harness.commands import gateway as gateway_cmd
@@ -61,6 +62,7 @@ from harness.commands import store as store_cmd
 from harness.commands import headless as headless_cmd
 from harness.commands import knobs as knobs_cmd
 from harness.commands import measure_order as measure_order_cmd
+from harness.commands import weedout as weedout_cmd
 from harness.commands import climb as climb_cmd
 from harness.commands import availability as availability_cmd
 from harness.commands import inventory as inventory_cmd
@@ -69,9 +71,11 @@ from harness.commands import families as families_cmd
 from harness.commands import funnel as funnel_cmd
 from harness.commands import morning as morning_cmd
 from harness.commands import sweep_check as sweep_check_cmd
+from harness.commands import runtimes as runtimes_cmd
 from harness.commands import otel as otel_cmd
 from harness.commands import route_trial as route_trial_cmd
 from harness.commands import ask as ask_cmd
+from harness.commands import unverified as unverified_cmd
 from harness.commands import usage as usage_cmd
 from harness.commands import canary as canary_cmd
 from harness.commands import review as review_cmd
@@ -415,8 +419,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="what the stored runs say won each lane, against the "
                         "defaults this CLI has typed in")
     d.add_argument("--screen", action="store_true",
-                   help="run the cheapest real thing on the top of the queue "
-                        "and record whether it ran at all. Says what it would "
+                   help="screen the highest-ranked rows whose weights are on "
+                        "disk, up to --limit, and record whether each ran at "
+                        "all. Says what it would "
                         "do unless given --run, and NEVER downloads")
     d.add_argument("--run", action="store_true",
                    help="with --screen, actually run it")
@@ -535,7 +540,7 @@ def build_parser() -> argparse.ArgumentParser:
     bl.add_argument("--gate", type=float, default=None, help="decide: confidence under which a field goes to Claude "
                     "(default: workload_baseline.DECIDE_GATE)")
     bl.add_argument("--candidate", default="adopted", help="the replay candidate the local arm reads")
-    bl.add_argument("--bar", type=float, default=None, metavar="RATE", help="Eric's bar: keep or return per row")
+    bl.add_argument("--bar", type=float, default=None, metavar="RATE", help="the owner's bar: keep or return per row")
     bl.set_defaults(func=baseline_cmd.cmd_baseline)
     rs = sub.add_parser("repo-screen", help="the repo exam's screening subset: pick prints it, anchors writes "
                         "its base/reference outcomes from two stored runs, verdict judges screen runs (#1176)")
@@ -640,7 +645,8 @@ def build_parser() -> argparse.ArgumentParser:
     cn.set_defaults(func=claude_news_cmd.cmd_claude_news)
     ctx = sub.add_parser("context", help="tool-result tokens entering Claude's context, "
                          "per tool or day, from Claude Code transcripts (chars/4 estimate)")
-    ctx.add_argument("--since", default="7d", help="7d, 12h, or a date such as 2026-10-06")
+    ctx.add_argument("--since", default=None, help="7d, 12h, or a date such as 2026-10-06 (default 7d; "
+                     "every session with --mistakes)")
     ctx.add_argument("--until", default="", help="same forms as --since; default now")
     ctx.add_argument("--by", choices=("tool", "day", "category", "class"), default="tool",
                      help="class (with --carried): what the output was, Read by file kind and edited later (#1333)")
@@ -653,6 +659,10 @@ def build_parser() -> argparse.ArgumentParser:
                      help="tokens each result is carried into later API calls, as a share of all input (#828)")
     ctx.add_argument("--referenced", action="store_true",
                      help="--by class: per KB search, hits shown and hits Claude referenced later (#1333)")
+    ctx.add_argument("--mistakes", action="store_true",
+                     help="KB mistakes after compaction and per context band vs messages, exact p-values (#1381)")
+    ctx.add_argument("--kb", default="",
+                     help="--mistakes: mcm-engine MCP URL or a file of its scroll_entries pages (default $SOH_MCM_URL)")
     ctx.add_argument("--root", default="",
                      help="transcript root (default $SOH_CLAUDE_PROJECTS or ~/.claude/projects)")
     ctx.set_defaults(func=context_cmd.cmd_context)
@@ -669,7 +679,7 @@ def build_parser() -> argparse.ArgumentParser:
     led.set_defaults(func=ledger_cmd.cmd_ledger)
     inv = sub.add_parser("inventory", help="read-only accounts of what the machine and the project spent")
     invsub = inv.add_subparsers(dest="inventory", required=True)
-    itm = invsub.add_parser("time", help="the machine's hours by category, hours Eric was blocked, local work "
+    itm = invsub.add_parser("time", help="the machine's hours by category, hours the owner was blocked, local work "
                             "and engineering effort by area; the store read with mode=ro (#1152)")
     itm.add_argument("--since", default="", help="window start: 14d, or a date (default: this machine's first day)")
     itm.add_argument("--no-effort", action="store_true", help="skip the GitHub effort account")
@@ -708,6 +718,13 @@ def build_parser() -> argparse.ArgumentParser:
     swc.add_argument("--notify", action="store_true",
                      help="record the check for soh morning and notify when it is not healthy (the sweep-check unit)")
     swc.set_defaults(func=sweep_check_cmd.cmd_sweep_check)
+    rtm = sub.add_parser("runtimes", help="newer releases of pinned runtimes (llama.cpp, mlx-lm, mlx-vlm, mlx-audio, "
+                         "transformers, diffusers, mflux), their sandboxed trial installs and verdicts")
+    rtm.add_argument("--watch", action="store_true", help="read each runtime's official channel and propose newer releases")
+    rtm.add_argument("--trial", action="store_true",
+                     help="also trial-install the next proposed release sandboxed and record its verdict")
+    rtm.add_argument("--limit", type=int, default=20, help="recorded releases to list")
+    rtm.set_defaults(func=runtimes_cmd.cmd_runtimes)
     fun = sub.add_parser("funnel", help="every proposal's stage, time in it, age since first seen, and why "
                          "it waits; read from a copy of the store")
     fun.add_argument("--since", default="", help="only proposals first seen since: 30d, or a date")
@@ -737,6 +754,7 @@ def build_parser() -> argparse.ArgumentParser:
     headless_cmd.add_parser(sub)
     knobs_cmd.add_parser(sub)
     measure_order_cmd.add_parser(sub)
+    weedout_cmd.add_parser(sub)
     lane_feed_cmd.add_parser(sub)
     craft_cmd.add_parser(sub)
     spans_cmd.add_parser(sub)
@@ -745,6 +763,7 @@ def build_parser() -> argparse.ArgumentParser:
     otel_cmd.add_parser(sub)
     route_trial_cmd.add_parser(sub)
     ask_cmd.add_parser(sub)
+    unverified_cmd.add_parser(sub)
     dlg = sub.add_parser("delegated", help="record what became of a local_complete or "
                          "local_decide answer, or --report the rates per lane")
     dlg.add_argument("call_id", nargs="?", default="", help="the call_id the delegation returned")
@@ -904,8 +923,8 @@ def build_parser() -> argparse.ArgumentParser:
     wd.add_argument("--act", action="store_true", help="take the actions this once")
     wd.add_argument("--dry-run", action="store_true", help="only print and record what it would do")
     wd.set_defaults(func=_watchdog)
-    jobs = sub.add_parser("jobs", help="the work queue: runs in order while "
-                          "memory pressure is normal")
+    jobs = sub.add_parser("jobs", help="the work queue: by priority then id, one GPU job at a time and "
+                          "cloud jobs in free cloud slots, while memory pressure is normal")
     jobs.add_argument("action", choices=("add", "list", "pause", "resume",
                                          "cancel", "priority"))
     jobs.add_argument("rest", nargs=argparse.REMAINDER,
@@ -916,14 +935,18 @@ def build_parser() -> argparse.ArgumentParser:
     jobs.add_argument("--cwd", default="",
                       help="add: run here instead of the deploy checkout. #645")
     jobs.add_argument("--not-before", default="", metavar="WHEN",
-                      help="add: start no earlier than the next local HH:MM, or a local YYYY-MM-DD HH:MM. #900, #1297")
+                      help="add: start no earlier than the next local HH:MM, or a local YYYY-MM-DD[T]HH:MM[:SS]. #900, #1297")
     jobs.add_argument("--night", action="store_true",
-                      help="add: start no earlier than the night window discovery runs in. #900")
-    jobs.set_defaults(func=jobs_cmd.cmd_jobs)
+                      help="add: start no earlier than the night window discovery runs in; with --not-before, the first night moment after it. #900, #1347")
+    jobs.set_defaults(func=jobs_cmd.cmd_jobs, show_help=jobs.print_help)
     day = sub.add_parser("day", help="clear this machine to run jobs all day, until the watchdog's day end. #1112")
     day.add_argument("action", choices=("clear", "status", "revoke"))
-    day.add_argument("said", nargs="*", help='clear: who cleared it and why, e.g. "eric: the #1110 baseline"')
+    day.add_argument("said", nargs="*", help='clear: who cleared it and why, e.g. "owner: the #1110 baseline"')
     day.set_defaults(func=day_cmd.cmd_day)
+    spc = sub.add_parser("specs", help="per capability in openspec/: scenarios, bound to a test, untested; "
+                         "non-zero when a spec names a missing test or a module has no capability. #1363")
+    spc.add_argument("--untested", action="store_true", help="also list each untested scenario")
+    spc.set_defaults(func=specs_cmd.cmd_specs)
     jud = sub.add_parser(
         "judge",
         help="decide a human-judged lane by looking and listening. Issue #273")
@@ -980,12 +1003,14 @@ def build_parser() -> argparse.ArgumentParser:
                           "detect --effect on the holdout, capped (#479)")
     ado.add_argument("--effect", type=float, default=None,
                      help="the smallest per-cell pass-rate gain worth adopting for")
+    ado.add_argument("--unscreened", action="store_true",
+                     help="repo lane: measure a challenger whose repo screen has not survived, or has not run (#1353)")
     ado.set_defaults(func=adopt_cmd.cmd_adopt)
 
     rpl = sub.add_parser(
         "reuse-replay",
         help="replay a paused paired run with the incumbent's draws taken from earlier runs that "
-             "match its identity, read-only; exit 1 when the verdict moves (#1094)")
+             "match its identity, read-only; exit 1 when the verdict moves, 0 when both walks reach the same verdict or none (#1094)")
     rpl.add_argument("run", type=int, help="the stored run id")
     rpl.add_argument("--store", default="", help="a copy of the store to read instead of the live one")
     rpl.set_defaults(func=measure_cmd.cmd_reuse_replay)
@@ -1088,6 +1113,7 @@ VERB_PURPOSE = {
     "watchdog": "watchdog",
     "morning": "watchdog",
     "sweep-check": "watchdog",
+    "runtimes": "discover",
     "availability": "watchdog",
 }
 

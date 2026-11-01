@@ -39,6 +39,21 @@ _NONE_WORDS = {"none", "not found", "none found", "nothing", "n/a", "no"}
 #: Status words of a line that did not fail, dropped from an answer to a question about failures.
 _NOT_FAILING = re.compile(r"\b(PASSED|SKIPPED|XFAIL|XPASS|DeprecationWarning)\b")
 _ABOUT_FAILURE = re.compile(r"\b(fail|error|broke|traceback|exception|wrong)", re.I)
+_CALM_COUNT = re.compile(r"\b\d+ (?:passed|skipped|xfailed|xpassed|deselected|warnings?|ignored)\b", re.I)
+_FAILING_WORD = re.compile(r"\b(?:fail\w*|errors?|exception|traceback|panic\w*)\b", re.I)
+#: Failure-shaped lines a scan adds to a failure answer; a small model skips count and exception lines (#1335).
+FAILURE_LINES = 20
+#: Characters kept of a failure-shaped line, around its match.
+LINE_CHARS = 300
+_STAMP = re.compile(r"^\s*(?:\d{4}-\d\d-\d\d[T ][\d:.,]+Z?|\[?\d\d:\d\d:\d\d[\d.,]*\]?)\s+")
+_FAILURE = (
+    re.compile(r"(?<![\w.,])[1-9]\d*\s+(?:errors?|failed|failures?|failing|broken)\b", re.I),
+    re.compile(r"(?<!expected )\b(?:errors?|failures?|failed)\s*[=:]\s*[1-9]", re.I),
+    re.compile(r"(?:^|\s)(?:FAILED|FAIL|FAILURE|ERROR|ERR!|FATAL)(?=[\s:(\[]|$)"),
+    re.compile(r"^(?:E\s+)?(?:[A-Za-z_][\w$]*[.:])*(?:[A-Z]\w*)?(?:Error|Exception|Exit|Interrupt|Fault)\b(?![\w.])"),
+    re.compile(r"^(?:panic|fatal|error)(?:\[\w+\])?:|^##\[error\]|(?::\d+(?::\d+)?:|\(\d+,\d+\):)\s*(?:fatal )?error\b", re.I),
+    re.compile(r"\bexit(?:ed)?(?: with)?(?: code| status)?\s+[1-9]\d*\b|\bError [1-9]\d*\s*$", re.I),
+)
 
 
 @dataclass(frozen=True)
@@ -231,13 +246,68 @@ def ground(answer: str, text: str, question: str) -> str:
     for line in clean(answer).splitlines():
         bare = _flat(line.strip().lstrip("-*\u2022 ").strip().strip("`\"'"))
         if not re.search(r"[A-Za-z]", bare):
-            kept.append(line)
+            if not failing:
+                kept.append(line)
+            continue
+        if failing and _CALM_COUNT.search(bare) and not _FAILING_WORD.search(bare):
             continue
         holding = [ln for ln in source if bare in ln]
         if not holding or (failing and all(_NOT_FAILING.search(ln) for ln in holding)):
             continue
         kept.append(line)
     return "\n".join(kept) if kept else NONE
+
+
+def _clip(line: str, at: int) -> str:
+    if len(line) <= LINE_CHARS:
+        return line
+    start = max(0, min(at - LINE_CHARS // 3, len(line) - LINE_CHARS))
+    return line[start:start + LINE_CHARS]
+
+
+def failure_lines(text: str) -> list[str]:
+    """Each distinct line of `text` shaped like a failure (nonzero count, FAILED/ERROR, exception, error mark, nonzero exit)."""
+    out, seen, clipped = [], set(), 0
+    for raw in text.splitlines():
+        line = _STAMP.sub("", raw).strip()
+        if not line or _NOT_FAILING.search(line):
+            continue
+        hit = next((m for m in (p.search(line) for p in _FAILURE) if m), None)
+        if hit is None:
+            continue
+        clipped += len(line) > LINE_CHARS
+        line = _clip(line, hit.start())
+        if line not in seen:
+            seen.add(line)
+            out.append(line)
+    if clipped:
+        cuts.cut("harness/ask.py:LINE_CHARS", f"{clipped} failure line(s) clipped", value=LINE_CHARS,
+                 kept=len(out), dropped=clipped)
+    return out
+
+
+def with_failures(answer: str, text: str) -> tuple[str, int]:
+    """The answer with the scan's failure lines it does not already quote, a quoted fragment widened to its line;
+    (answer, lines added)."""
+    kept = [] if is_none(answer) else answer.splitlines()
+    have = [_flat(ln.strip().lstrip("-*• ").strip("`\"'")) for ln in kept]
+    widened, found = set(), []
+    for ln in failure_lines(text):
+        flat = _flat(ln)
+        if any(flat in h for h in have):
+            continue
+        at = next((i for i, h in enumerate(have) if i not in widened and re.search(r"[A-Za-z]", h) and h in flat), None)
+        if at is None:
+            found.append(ln)
+        else:
+            widened.add(at)
+            kept[at] = ln
+    if len(found) > FAILURE_LINES:
+        cuts.cut("harness/ask.py:FAILURE_LINES", "a digest's failure scan kept its first lines", value=FAILURE_LINES,
+                 kept=FAILURE_LINES, dropped=len(found) - FAILURE_LINES)
+        found = found[:FAILURE_LINES]
+    lines = kept + found
+    return ("\n".join(lines) if lines else NONE), len(found)
 
 
 def _ask_one(question: str, part: str) -> str:
@@ -322,12 +392,16 @@ def ask(raws, question: str, lane: str = "extract", roots: list[Root] | None = N
         return got["text"]
     started = time.perf_counter()
     text, parts, calls = digest(files, question, call, size or chunk_chars(lane, max_tokens))
+    scanned = 0
+    if _ABOUT_FAILURE.search(question):
+        text, scanned = with_failures(text, "\n".join(f.text for f in files))
     last = replies[-1]
     out = {"text": text, "lane": lane, "spec": last.get("spec", ""), "model": last.get("model", ""),
            "ttft_s": replies[0].get("ttft_s"), "seconds": round(time.perf_counter() - started, 4),
            "prompt_tokens": _total(replies, "prompt_tokens"),
            "completion_tokens": _total(replies, "completion_tokens"), "method": None, "call_id": "",
-           "files": [{"path": f.path, "bytes": f.size} for f in files], "parts": parts, "calls": calls}
+           "files": [{"path": f.path, "bytes": f.size} for f in files], "parts": parts, "calls": calls,
+           "scanned": scanned}
     if delegated:
         from harness import delegations
         out = delegations.note(out, delegations.new_id())

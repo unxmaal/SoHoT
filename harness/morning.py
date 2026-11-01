@@ -92,7 +92,7 @@ def sweep(conn, since: float, beat: dict | None) -> dict:
                        "started": started, "finished": beat.get("finished"),
                        "in_window": started >= since, "line": beat.get("line", ""),
                        "commit": beat.get("commit", ""), "finished_commit": beat.get("finished_commit", ""),
-                       "ceiling_unused": beat.get(heartbeat.CEILING_UNUSED),
+                       "ceiling_unused": beat.get(heartbeat.CEILING_UNUSED), "paused": beat.get(heartbeat.PAUSED),
                        "diversity": beat.get(heartbeat.DIVERSITY)}
     return out
 
@@ -189,6 +189,12 @@ def api_spend(conn) -> dict | None:
     return spend.status(conn)
 
 
+def runtimes(conn, since: float) -> list[dict]:
+    """Every runtime upgrade verdict since `since`. #1474."""
+    from harness import runtime_trials
+    return runtime_trials.verdicts(conn, since)
+
+
 def stale_lanes(conn) -> list[dict]:
     """What `soh verify` would run: lanes with no recent receipt here."""
     from harness import report, verify
@@ -198,9 +204,18 @@ def stale_lanes(conn) -> list[dict]:
 
 def stalled(conn, days: float | None = None, head: int | None = None) -> list[dict]:
     """The ranked head of a wanted lane, not downloaded, in its state past STALL_DAYS. #925."""
-    from harness import funnel
-    got = funnel.stalls(funnel.proposals(conn), STALL_DAYS if days is None else days,
-                        STALL_HEAD if head is None else head)
+    from harness import cuts, funnel
+    days, head = STALL_DAYS if days is None else days, STALL_HEAD if head is None else head
+    rows = funnel.proposals(conn)
+    got = funnel.stalls(rows, days, head)
+    below = len(funnel.stalls(rows, days, float("inf"))) - len(got)
+    if below:
+        cuts.cut("morning_stall_head", "stalled candidates ranked below the watched head", value=head,
+                 kept=len(got), dropped=below)
+    young = len(funnel.stalls(rows, 0.0, head)) - len(got)
+    if young:
+        cuts.cut("morning_stall_days", "head candidates waiting less than the stall days", value=days,
+                 kept=len(got), dropped=young)
     return [{k: r[k] for k in ("name", "lane", "lane_rank", "stage", "in_state_days", "age_days", "reason", "why")}
             for r in got]
 
@@ -224,6 +239,9 @@ def ci(now: float, gh=_gh) -> dict:
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
         return {"available": False, "why": str(exc)[:300]}
     created = datetime.fromisoformat(str(run.get("createdAt", "")).replace("Z", "+00:00")).timestamp()
+    if now - created > CI_FRESH_S:
+        from harness import cuts
+        cuts.cut("morning_ci_fresh", f"nightly run {run.get('databaseId')} too old to notify", kept=0, dropped=1)
     return {"available": True, "id": run.get("databaseId"), "status": run.get("status"),
             "conclusion": run.get("conclusion") or "", "created": created, "sha": run.get("headSha", ""),
             "url": run.get("url", ""), "fresh": now - created <= CI_FRESH_S,
@@ -305,6 +323,8 @@ def needs(r: dict) -> list[str]:
         out.append("no discovery sweep ran last night")
     elif loop["status"] == "stalled":
         out.append(f"the sweep stalled: {loop['line']}")
+    elif loop["status"] == "finished" and loop.get("paused"):
+        out.append(f"the sweep paused before {loop['paused'].get('tier')}: {loop['paused'].get('reason')}")
     elif loop["status"] == "finished" and loop["rc"] != 0:
         out.append(f"the sweep exited {loop['rc'] if loop['rc'] is not None else 'with ' + loop['error']}")
     from harness import sweep_check
@@ -338,7 +358,17 @@ def needs(r: dict) -> list[str]:
             for s in r["stalled"]))
     if r.get("canary"):
         out.append(r["canary"])
+    from harness import runtime_trials
+    out += [f"runtime {runtime_trials.line(v)}" for v in r.get("runtimes") or [] if v["outcome"] in runtime_trials.PUSHED]
     return out
+
+
+def techniques(conn, since: float) -> dict | None:
+    """Technique triage since `since`: measured, won or lost, and the unmeasurable by reason; None before schema 85. #1476."""
+    if not _has(conn, "technique_triage"):
+        return None
+    from harness import technique_triage
+    return technique_triage.morning(conn, since)
 
 
 def parked_nodes() -> list[str]:
@@ -357,7 +387,8 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "canary": canary(now) if canary else "", "incidents": incidents(conn, since, now),
          "parked": parked() if parked else [], "checks": sweep_checks(conn, since),
          "incumbent": incumbent(conn) if incumbent else None, "clearances": clearances(conn, since, now),
-         "families": families(conn), "yield": yield_stops(conn), "api_spend": api_spend(conn)}
+         "families": families(conn), "yield": yield_stops(conn), "api_spend": api_spend(conn),
+         "runtimes": runtimes(conn, since), "techniques": techniques(conn, since)}
     if r["sweep"]["loop"] is not None:
         from harness import heartbeat
         r["sweep"]["loop"]["code_moved"] = heartbeat.code_moved(beat, r["deploy"].get("head", ""))

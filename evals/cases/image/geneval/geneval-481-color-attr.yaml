@@ -1,0 +1,59 @@
+# GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023), MIT (https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl).
+# Imported by evals/importers from github:djghosh13/geneval/prompts/evaluation_metadata.jsonl@af4902f24d3ca90ebbb446dd9891a59e0f82725f; re-import, do not edit.
+id: geneval-481-color-attr
+modality: image
+prompt: a photo of a blue vase and a black banana
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      vase: a vase
+      banana: a banana
+    require:
+    - type: count
+      object: vase
+      min: 1
+    - type: count
+      object: banana
+      min: 1
+    - type: attribute
+      object: vase
+      is: a blue vase
+      not:
+      - a red vase
+      - a orange vase
+      - a yellow vase
+      - a green vase
+      - a purple vase
+      - a pink vase
+      - a brown vase
+      - a black vase
+      - a white vase
+    - type: attribute
+      object: banana
+      is: a black banana
+      not:
+      - a red banana
+      - a orange banana
+      - a yellow banana
+      - a green banana
+      - a blue banana
+      - a purple banana
+      - a pink banana
+      - a brown banana
+      - a white banana
+attribution:
+  dataset: GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023)
+  url: https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl
+  license: MIT
+  source: github:djghosh13/geneval/prompts/evaluation_metadata.jsonl
+  revision: af4902f24d3ca90ebbb446dd9891a59e0f82725f
+  item: '481'
+  date: '2023-08-22'
+  transform: 'GenEval include/exclude spec as staging requirements: include count at least, include plus
+    exclude exactly, position relative to the named object, colour against the nine others'
+  importer: evals.importers.geneval
+  tag: color_attr

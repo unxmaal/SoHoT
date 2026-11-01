@@ -1,0 +1,59 @@
+# GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023), MIT (https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl).
+# Imported by evals/importers from github:djghosh13/geneval/prompts/evaluation_metadata.jsonl@af4902f24d3ca90ebbb446dd9891a59e0f82725f; re-import, do not edit.
+id: geneval-516-color-attr
+modality: image
+prompt: a photo of an orange motorcycle and a pink donut
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      motorcycle: a motorcycle
+      donut: a donut
+    require:
+    - type: count
+      object: motorcycle
+      min: 1
+    - type: count
+      object: donut
+      min: 1
+    - type: attribute
+      object: motorcycle
+      is: a orange motorcycle
+      not:
+      - a red motorcycle
+      - a yellow motorcycle
+      - a green motorcycle
+      - a blue motorcycle
+      - a purple motorcycle
+      - a pink motorcycle
+      - a brown motorcycle
+      - a black motorcycle
+      - a white motorcycle
+    - type: attribute
+      object: donut
+      is: a pink donut
+      not:
+      - a red donut
+      - a orange donut
+      - a yellow donut
+      - a green donut
+      - a blue donut
+      - a purple donut
+      - a brown donut
+      - a black donut
+      - a white donut
+attribution:
+  dataset: GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023)
+  url: https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl
+  license: MIT
+  source: github:djghosh13/geneval/prompts/evaluation_metadata.jsonl
+  revision: af4902f24d3ca90ebbb446dd9891a59e0f82725f
+  item: '516'
+  date: '2023-08-22'
+  transform: 'GenEval include/exclude spec as staging requirements: include count at least, include plus
+    exclude exactly, position relative to the named object, colour against the nine others'
+  importer: evals.importers.geneval
+  tag: color_attr

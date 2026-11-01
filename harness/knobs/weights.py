@@ -31,3 +31,7 @@ NOT_GATING = {
     "harness/variants.py:LORA_FRACTION": "tells an add-on file from a checkpoint in one listing; no size, run or machine gates on it (#947)",
     "harness/memory_store/revisit.py:STALE_CEILING_GB":"absorbs rounding of one machine's probed ceiling; a real ceiling change is GiBs (#880)",
 }
+
+NEVER_CUTS = {
+    "harness/inspect.py:Fit.upstream_idle_days": "a measured age recorded on the verdict; 0 means unmeasured (#1087)",
+}

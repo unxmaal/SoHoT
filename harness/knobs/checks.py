@@ -39,6 +39,20 @@ NOT_GATING = {
 }
 
 NEVER_CUTS = {
+    "harness/checks/claims.py:RECALL_WEIGHT": "weighs recall against specificity in the balanced score; every case "
+                                              "still counts (#1087)",
+    "harness/checks/render.py:_shoot->proc.wait(timeout)": "grace for a terminated chrome before it is killed; the "
+                                                           "screenshot is already taken or not (#1087)",
+    "harness/checks/render.py:_shoot->proc.wait(timeout)#2": "grace for a killed chrome to be reaped; the screenshot is "
+                                                             "already taken or not (#1087)",
+    "harness/checks/similarity.py:CONTROL_FLOOR": "a measured reference only a test compares against; no check reads "
+                                                  "it (#1087)",
     "evals/claims_report.py:CONTROL_RECALL": "labels the claims report's matcher suspect; every claim is still scored (#661)",
     "evals/claims_judge.py:AGREE_MIN": "decides whether stored judgments count in scoring; no claim or case is dropped (#655)",
+    "harness/rubric_eval.py:TEMPERATURE": "the rubric judge's sampling temperature; it shapes a reply and drops none",
+    "harness/vector.py:TRACE_PRESETS[icon][path_precision]": "decimal places vtracer writes each path coordinate "
+                                                             "with; a rounding step, no path is dropped (#4)",
+    "harness/vector.py:TRACE_PRESETS[illustration][path_precision]": "decimal places vtracer writes each path "
+                                                                     "coordinate with; a rounding step, no path is "
+                                                                     "dropped (#4)",
 }

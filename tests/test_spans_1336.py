@@ -252,3 +252,32 @@ def test_the_tool_returns_spans_of_one_path_through_the_same_boundary(mcp_server
     with pytest.raises(ToolError, match="mode is"):
         mcp_server.local_complete(prompt="p", mode="digest")
     assert len(fake.calls) == 1
+
+
+@pytest.fixture
+def live_home(tmp_path, monkeypatch):
+    from harness import memory_store as ms, paths
+    live = tmp_path / "live"
+    live.mkdir()
+    monkeypatch.setenv(paths.ENV_VAR, str(live))
+    ms.connect().close()
+    monkeypatch.setattr(paths, "DEFAULT_HOME", live)
+    monkeypatch.delenv(paths.ENV_VAR)
+    return live / "discovery.db"
+
+
+def test_the_redo_and_eval_run_from_a_scratch_home(live_home, tmp_path):
+    from harness import cli, paths
+    before = live_home.read_bytes()
+    assert cli.main(["spans", "--redo", "--root", str(tmp_path / "none")]) == 0
+    assert not paths.is_live(paths.home() / "discovery.db")
+    cli.main(["spans", "--eval", str(tmp_path / "ev"), "--root", str(tmp_path / "none"), "--n", "1"])
+    assert paths.home() == (tmp_path / "ev" / "home").resolve() and live_home.read_bytes() == before
+
+
+def test_naming_the_live_home_is_refused_unless_asked_for(live_home, tmp_path, monkeypatch, capsys):
+    from harness import cli, paths
+    monkeypatch.setenv(paths.ENV_VAR, str(live_home.parent))
+    assert cli.main(["spans", "--redo", "--root", str(tmp_path)]) == 2
+    assert "--live-home" in capsys.readouterr().out
+    assert cli.main(["spans", "--redo", "--root", str(tmp_path), "--live-home"]) == 0

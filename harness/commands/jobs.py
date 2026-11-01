@@ -37,13 +37,13 @@ def cmd_jobs(a) -> int:
     rest, title = list(a.rest), a.title
     # REMAINDER swallows options written after the action.
     priority, cwd = a.priority, a.cwd
-    start = "night" if getattr(a, "night", False) else getattr(a, "not_before", "")
+    night, start = bool(getattr(a, "night", False)), getattr(a, "not_before", "")
     while rest[:1] in (["--title"], ["--json"], ["--priority"], ["--cwd"], ["--night"],
                        ["--not-before"]):
         if rest[0] == "--json":
             common._JSON, rest = True, rest[1:]
         elif rest[0] == "--night":
-            start, rest = "night", rest[1:]
+            night, rest = True, rest[1:]
         elif len(rest) > 1 and rest[0] == "--not-before":
             start, rest = rest[1], rest[2:]
         elif len(rest) > 1 and rest[0] == "--title":
@@ -58,6 +58,11 @@ def cmd_jobs(a) -> int:
             rest = rest[2:]
         else:
             break
+    asks = {"-h", "--help"}
+    if rest[:1] and rest[0] in asks or a.action != "add" and asks & set(rest):
+        # REMAINDER keeps argparse from seeing --help; only add's command after -- may carry one. #1366.
+        a.show_help()
+        return 0
     if rest[:1] == ["--"]:
         rest = rest[1:]
     elif a.action != "add" and "--json" in rest:
@@ -68,8 +73,9 @@ def cmd_jobs(a) -> int:
         if a.action == "add":
             import os
             where = wq.queue_cwd(os.getcwd(), wq.deployed(), explicit=cwd)
+            not_before, gated = wq.start_with_night(start, night)
             job = wq.add(rest, title=a.title, cwd=where, priority=priority,
-                         requested_by="cli", not_before=wq.start_at(start), night=start == "night")
+                         requested_by="cli", not_before=not_before, night=gated)
             after = f" (not before {job['not_before']})" if job["not_before"] else ""
             note(f"queued {job['id']}{after}: {job['title']}")
             emit(job=job)
@@ -115,7 +121,7 @@ def cmd_jobs(a) -> int:
          f"{'may start' if ok else 'waits'}: {why}")
     shown = ([j for j in got if j["state"] == wq.RUNNING] + wq.order(
         [j for j in got if j["state"] == wq.PENDING])
-             + [j for j in got if j["state"] in (wq.DONE, wq.FAILED, wq.CANCELLED)])
+             + [j for j in got if j["state"] in (wq.DONE, wq.PAUSED, wq.FAILED, wq.CANCELLED)])
     locks = exclusive.holders()
     loose = held_locks(got, locks)
     for j in shown:

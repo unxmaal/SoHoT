@@ -5,6 +5,7 @@ import pytest
 
 from harness import adopt, candidates, gateway, live_audit, report, reverify, runs, screen, sweeps, winners
 from harness import memory_store as ms
+from tests import conftest
 
 NOW = 1_800_000_000.0
 MAC = gateway.REPO / "gateway" / "config.yaml"
@@ -16,7 +17,7 @@ M2 = {"fingerprint": "Mac14,12/macOS/arm64", "hw_model": "Mac14,12",
 
 @pytest.fixture
 def path(tmp_path, monkeypatch):
-    monkeypatch.setattr(ms, "this_machine", lambda: dict(M2))
+    conftest.stand_in_machine(monkeypatch, M2)
     p = tmp_path / "d.db"
     conn = ms.connect(p)
     ms.remember_machine(conn, M2)
@@ -100,7 +101,7 @@ def test_a_renamed_model_resolves_to_its_old_row_read_only(tmp_path):
 
 
 def test_a_queued_reverify_creates_the_row_the_lookup_did_not(tmp_path, monkeypatch):
-    monkeypatch.setattr(ms, "this_machine", lambda: dict(M2))
+    conftest.stand_in_machine(monkeypatch, M2)
     conn = ms.connect(tmp_path / "d.db")
     spec = reverify.served(conn)["code"]["spec"]
     assert candidates.get(conn, spec) is None

@@ -64,7 +64,9 @@ def load(cache: Path | None = None) -> dict:
         except ValueError:
             path.unlink()
     import httpx
-    blob = httpx.get(URL, timeout=120, follow_redirects=True).raise_for_status().content
+    from harness import cuts
+    with cuts.timeout("evals/importers/squad2.py:load->httpx.get(timeout)", "SQuAD 2.0 dev download"):
+        blob = httpx.get(URL, timeout=120, follow_redirects=True).raise_for_status().content
     data = verified(blob)
     cache.mkdir(parents=True, exist_ok=True)
     path.write_bytes(blob)

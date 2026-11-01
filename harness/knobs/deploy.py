@@ -20,5 +20,8 @@ NOT_GATING = {
 }
 
 NEVER_CUTS = {
+    "scripts/launchd.sh:AUDIT_HOURS": "the hour the nightly audit unit starts; a schedule cuts no work (#1087)",
+    "scripts/launchd.sh:DISCOVER_HOURS": "the hour the discovery loop starts; its ceiling, not its start, bounds it, "
+                                         "a schedule cuts no work (#1087)",
     "harness/lanprobe.py:INSTANT_MS": "classes a failed connect as a denial or no route; the probe ran either way (#739)",
 }

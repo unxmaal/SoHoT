@@ -105,14 +105,19 @@ def test_generation_time_is_measured_not_transcription_time(tmp_path):
     respx.post(f"{BASE}/audio/speech").mock(
         return_value=httpx.Response(200, content=wav()))
 
+    heard = []
+
     def slow_transcribe(request):
+        heard.append(time.perf_counter())
         time.sleep(0.4)
         return httpx.Response(200, json={"text": case().prompt})
 
     respx.post(f"{BASE}/audio/transcriptions").mock(side_effect=slow_transcribe)
+    started = time.perf_counter()
     r = runner(tmp_path).run(case())
-    assert r.passed
-    assert r.seconds < 0.4, (
+    assert r.passed and len(heard) == 1
+    # The timer stopped before the checker was asked, however slow the machine.
+    assert r.seconds <= round(heard[0] - started, 3), (
         f"{r.seconds}s includes the transcription, so the column does not "
         "mean what the header says")
 

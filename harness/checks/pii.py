@@ -57,6 +57,9 @@ def check(answer: str, text: str, gold) -> CheckResult:
     den = 2 * tp + fp + fn
     f1 = 2 * tp / den if den else 1.0
     ok = (fp == 0) if not (tp + fn) else f1 >= PASS_F1
+    if tp + fn and not ok:
+        from harness import cuts
+        cuts.cut("harness/checks/pii.py:PASS_F1", f"pii reply at token F1 {f1:.2f}")
     out = CheckResult(ok, "")
     out.metrics = {"pii_f1": round(f1, 4), "pii_2tp": 2 * tp, "pii_f1_den": den,
                    "pii_precision": round(tp / (tp + fp), 4) if tp + fp else float(not (tp + fn)),

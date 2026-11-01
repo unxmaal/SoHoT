@@ -18,7 +18,8 @@ REAL_HF_HOME = os.environ.get("HF_HOME", "")
 
 
 def _cases():
-    return [c for c in core.load_cases(IMAGE_CASES) if "staging" in c.assertions]
+    """The hand-written staging cases; imported families live in subdirectories (#603)."""
+    return [c for c in core.load_cases(IMAGE_CASES) if "staging" in c.assertions and c.source.parent == IMAGE_CASES]
 
 
 def _box(label, x0, y0, x1, y1, score=0.9, **probes):
@@ -27,19 +28,18 @@ def _box(label, x0, y0, x1, y1, score=0.9, **probes):
 
 def test_box_level_controls_pass_without_the_detector():
     rows = staging_controls.run(detector=False)
-    assert len(rows) == 15
-    assert [r["scene"] for r in rows if not r["expected"]] == ["layout", "sizes", "attributes"]
+    assert len(rows) == 19
+    assert [r["scene"] for r in rows if not r["expected"]] == ["layout", "sizes", "attributes", "relations"]
     bad = [(r["scene"], r["expected"], r["failed"]) for r in rows if not r["ok"]]
     assert not bad
 
 
 def test_every_requirement_of_every_reference_has_a_planted_break():
-    broken = {(s.spec["require"] is staging_controls.LAYOUT["require"] and "layout"
-               or s.spec["require"] is staging_controls.SIZES["require"] and "sizes" or "attributes", i)
+    refs = (("layout", staging_controls.LAYOUT), ("sizes", staging_controls.SIZES),
+            ("attributes", staging_controls.ATTRIBUTES), ("relations", staging_controls.RELATIONS))
+    broken = {(next(name for name, spec in refs if s.spec is spec), i)
               for s in staging_controls.scenes() for i in s.fails}
-    wanted = {(name, i) for name, spec in (("layout", staging_controls.LAYOUT), ("sizes", staging_controls.SIZES),
-                                           ("attributes", staging_controls.ATTRIBUTES))
-              for i in range(len(spec["require"]))}
+    wanted = {(name, i) for name, spec in refs for i in range(len(spec["require"]))}
     assert broken == wanted
     assert all(len(s.fails) <= 1 for s in staging_controls.scenes())
 
@@ -202,7 +202,8 @@ def test_the_staging_cases_spread_over_every_requirement_type():
     cases = _cases()
     assert 20 <= len(cases) <= 30
     per_type = Counter(t for c in cases for t in {r["type"] for r in c.assertions["staging"]["require"]})
-    assert set(per_type) == set(staging.TYPES)
+    # left_of came with the GenEval import (#603), whose position rows cover it.
+    assert set(per_type) == set(staging.TYPES) - {"left_of"}
     assert min(per_type.values()) >= 6, per_type
     assert all(c.params["width"] == c.params["height"] == 512 and isinstance(c.params["seed"], int) for c in cases)
     assert all(c.id.startswith("staging-") for c in cases)

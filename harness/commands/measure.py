@@ -14,18 +14,22 @@ from harness.commands.common import emit, err, note
 from harness.commands import jobs as jobs_cmd
 
 #: The watchdog criteria whose pause frees memory rather than asking the sweep to stop. #1082.
-MEMORY_PAUSES = ("memory", "memory_warn")
+MEMORY_PAUSES = ("memory", "memory_warn", "memory_stuck", watch.MEMORY_HEADROOM)
 
 
 def cmd_verify(a) -> int:
     """Establish that each lane works, by running its own default. #234."""
+    import contextlib
     import subprocess
 
     from harness import report, verify
+    from harness.commands.common import lent_store
 
-    state = report.state()
-    tasks = verify.plan(state["lanes"], only=getattr(a, "lane", ""),
-                        force=getattr(a, "all", False))
+    # Without --run it only says what it would: read-only, on one lent connection. #1432.
+    with contextlib.nullcontext() if getattr(a, "run", False) else lent_store():
+        state = report.state()
+        tasks = verify.plan(state["lanes"], only=getattr(a, "lane", ""),
+                            force=getattr(a, "all", False))
     if not tasks:
         # NOT "every lane has a receipt". A parked lane has none and is
         # excluded from the plan by design, so saying so here would report a
@@ -60,7 +64,7 @@ def cmd_verify(a) -> int:
         note(f"\n=== {t.lane} ===\n    {' '.join(argv)}", flush=True)
         proc = subprocess.run(argv, capture_output=True, text=True)
         data = _receipt_at(out) or {}
-        got = verify.verdict(data) if proc.returncode == 0 else "broken"
+        got = verify.verdict(data, t.lane) if proc.returncode == 0 else "broken"
         line = (verify.summarise(t.lane, data) if proc.returncode == 0
                 else (proc.stderr.strip().splitlines() or ["no stderr"])[-1])
         results.append((t.lane, got, line))
@@ -187,18 +191,26 @@ def cmd_reuse_replay(a) -> int:
         for line in got[name]["looks"]:
             note(f"    {line}")
     was, now = got["control"]["verdict"], got["replay"]["verdict"]
-    same = bool(was and now and (was["adopt"], was["decision"]) == (now["adopt"], now["decision"]))
+    same = _same_verdict(was, now)
     note(f"  {'same verdict' if same else 'VERDICT MOVED'}: control "
-         f"{was and was['decision']}, replay {now and now['decision']}")
+         f"{(was or {}).get('decision', 'no verdict')}, replay {(now or {}).get('decision', 'no verdict')}")
     emit(**got, same=same)
     return 0 if same else 1
+
+
+def _same_verdict(was: dict | None, now: dict | None) -> bool:
+    """Both walks reached the same adopt and decision, or neither reached one. #1404."""
+    if was is None or now is None:
+        return was is None and now is None
+    return (was["adopt"], was["decision"]) == (now["adopt"], now["decision"])
 
 
 def measurable(store, top: int, want: str = "", top_knob: str = "discover_top") -> list[dict]:
     """Survivors in the scoped lane, filtered before the limit; a limit that drops one is a cut. #386, #1087."""
     from harness import cuts
     from harness import memory_store as ms
-    rows = [r for r in ms.survivors(store, limit=1_000_000) if takes(r, want)]
+    every = ms.survivors(store, limit=1_000_000, limit_knob="harness/commands/measure.py:measurable->ms.survivors(limit)")
+    rows = [r for r in every if takes(r, want)]
     return cuts.take(rows, top, top_knob, "measurable survivors past --top", conn=store)
 
 
@@ -219,23 +231,25 @@ def resume_first(store, fresh: list[dict], want: str = "") -> list[dict]:
     return held + [r for r in fresh if r.get("name") not in names]
 
 
+def headroom_gb() -> float:
+    """What fits() would budget here now with nothing more loaded; negative once the reserve is spent. #1482."""
+    from harness import memory
+    return memory.room_gb()
+
+
 def room_for(row: dict) -> tuple[bool, float | None, str]:
     """(fits now, GB its load needs or None, why) for one queued measurement, by the screen's headroom check. #1082."""
-    from harness import candidates, memory
-    from harness import memory_store as ms
+    from harness import candidates, memory, runs
     name = row.get("name", "")
     target = methods.weights_of(name) if methods.is_method(name) else name
     if not target:
         return True, None, f"{name}: its size is unknown; proceeding unchecked"
-    try:
-        store = ms.connect()
+    with runs.store() as store:
         try:
             spec = candidates.for_proposal(store, lanes.canonical(row.get("lane")), name,
                                            row.get("attaches_to") or "") or ""
-        finally:
-            store.close()
-    except Exception:  # noqa: BLE001 - an unbuildable spec is priced by its weights alone
-        spec = ""
+        except Exception:  # noqa: BLE001 - an unbuildable spec is priced by its weights alone
+            spec = ""
     need = memory.need_gb(target, spec=spec, parallel=1)
     ok, why = memory.check_model(target, spec=spec, parallel=1)
     return ok, need if isinstance(need, (int, float)) else None, why
@@ -272,7 +286,7 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
     Two separate runs would be two receipts that comparable() would refuse, and
     rightly.
     """
-    from harness import adopt, candidates, screen, winners
+    from harness import adopt, candidates, paused, screen, winners
     from harness import memory_store as ms
 
     name = row["name"]
@@ -307,6 +321,13 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         print(f"  {name}: already the {lane} lane's default ({spec})")
         _settle(name, "measured", f"{lane}: already the lane's default")
         return 0
+    unscreened = _screen_refusal(a, lane, spec)
+    if unscreened:
+        if sweep is None:
+            return err(f"{name}: not measured: {unscreened}")
+        print(f"  {name}: not measured: {unscreened}", flush=True)
+        sweep.lines.append(f"{name}: not measured: {unscreened}")
+        return 0
     # THE PAIR MUST REACH THE SAME SERVER. One --gateway serves the whole run,
     # so when the challenger's repo id sends it to mlx_lm.server the incumbent
     # cannot travel as a LiteLLM alias: :8081 has never heard of `q3-4b`, the
@@ -329,30 +350,58 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
     if sweep is not None and sweep.remaining() <= 0:
         print(f"  {name}: not started, the sweep ceiling is reached; it waits for the next sweep", flush=True)
         return 0
-    for _ in range(2):
-        # NAME THE DIRECTORY, DO NOT GUESS AT IT AFTERWARDS: a newest-receipt read
-        # took a stranger's run (`legacy-...` sorts above timestamps). #222.
-        out = (Path(held["out"]) if held else paths.home() / "runs"
-               / f"{time.strftime('%Y%m%d-%H%M%S')}-adopt-{lane}")
-        if (getattr(plan, "reuse", None) or {}).get("reused"):
-            from harness import reuse
-            reuse.write(out, inc_spec, plan.reuse)
-        argv = _argv(lane, plan, out, inc_spec, spec, resume=bool(held))
-        # ROUTE IT THE WAY THE SCREEN DOES: LiteLLM refuses a repo id it has no alias for. #223, #206.
-        route = screen.routed_gateway(name)
-        if route:
-            argv += ["--gateway", route]
-        print(f"\n  {lane}: {name} against {incumbent}")
-        print(f"    {' '.join(argv)}", flush=True)
-        loaded.append(spec)
-        proc = _launch(argv, deadline_s=plan.deadline_s)
-        if proc.returncode == watch.STALE and held:
-            _stale(held, "the run's own checkpoint is another exam", name, sweep)
-            held = None
-            continue
-        break
-    if getattr(proc, "timed_out", False) or proc.returncode == watch.PAUSED:
-        return _paused(name, lane, inc_spec, spec, split, plan, out, held, ident, sweep)
+    started, spans = time.time(), 1
+    while True:
+        for _ in range(2):
+            # NAME THE DIRECTORY, DO NOT GUESS AT IT AFTERWARDS: a newest-receipt read
+            # took a stranger's run (`legacy-...` sorts above timestamps). #222.
+            out = (Path(held["out"]) if held else paths.home() / "runs"
+                   / f"{time.strftime('%Y%m%d-%H%M%S')}-adopt-{lane}")
+            if (getattr(plan, "reuse", None) or {}).get("reused"):
+                from harness import reuse
+                reuse.write(out, inc_spec, plan.reuse)
+            if getattr(plan, "order", None):
+                from harness import weedout
+                weedout.write(out, plan.order)
+            part, last = _slice(plan, time.time() - started)
+            argv = _argv(lane, part, out, inc_spec, spec, resume=bool(held),
+                         unscreened=lane == "repo")
+            # ROUTE IT THE WAY THE SCREEN DOES: LiteLLM refuses a repo id it has no alias for. #223, #206.
+            route = screen.routed_gateway(name)
+            if route:
+                argv += ["--gateway", route]
+            print(f"\n  {lane}: {name} against {incumbent}")
+            print(f"    {' '.join(argv)}", flush=True)
+            if spec not in loaded:
+                loaded.append(spec)
+            proc = _launch(argv, deadline_s=part.deadline_s)
+            if proc.returncode == watch.STALE and held:
+                _stale(held, "the run's own checkpoint is another exam", name, sweep)
+                held = None
+                continue
+            break
+        if getattr(proc, "timed_out", False):
+            from harness import cuts
+            cuts.cut("deadline_grace", f"{lane}: {name} stopped at its deadline past the budget", kept=0, dropped=1)
+        if not (getattr(proc, "timed_out", False) or proc.returncode == watch.PAUSED):
+            break
+        before = int((held or {}).get("done") or 0)
+        between = _between_looks(proc, out, last, before)
+        rc = _paused(name, lane, inc_spec, spec, split, plan, out, held, ident, sweep,
+                     interim=between, spans=spans)
+        spans = 0
+        if not between:
+            return rc
+        store = ms.connect()
+        try:
+            held = paused.find(store, lane, spec)
+        finally:
+            store.close()
+        if held is None:
+            return rc
+        held = {**held, "identity": ident}
+    if _signalled(proc.returncode) and watch.stop_reason(out) == watch.OVERRUN:
+        return _ended(name, held, out, sweep)
     if _signalled(proc.returncode) and (watch.read(out) or ({}, []))[1]:
         # Stopped from outside (the watchdog, a TERM): its rows are kept and the next sweep resumes it. #864.
         print(f"    stopped by a signal (exit {proc.returncode}); its checkpointed cases are kept", flush=True)
@@ -465,15 +514,16 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
     from dataclasses import replace
 
     from evals.run import STOCHASTIC_MODALITIES
-    from harness import adopt, completion, holdout, power
+    from harness import adopt, holdout, power, weedout
     from harness import memory_store as ms
 
     split = holdout.for_lane(lane)
-    settings = (completion.budget(lane), ())
+    settings = _settings(lane, inc_spec, spec)
     store = ms.connect()
     try:
         draws, median_s, calls, est = priced(store, lane, inc_spec, spec)
         alpha = adopt.alpha_for(adopt.comparisons(store, lane, split.version))
+        secs = weedout.seconds_of(store, lane, inc_spec)
     finally:
         store.close()
     estimated = ""
@@ -506,10 +556,8 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
         plan, [rates[c] for c in split.holdout],
         cases_run=every if side == "all" else len(split.holdout), median_s=median_s,
         budget_s=per, explicit=bool(explicit), calls=calls)
-    plan = _with_reuse(plan, lane, inc_spec, est, side)
-    if est["challenger_source"] not in ("measured", "like incumbent", "bounded") and est["challenger_s"] is not None:
-        estimated = "; ".join(x for x in (estimated, f"challenger seconds per call "
-                                          f"{est['challenger_s']:.0f}s by {est['challenger_source']}") if x)
+    plan = _with_reuse(plan, lane, inc_spec, est, side, spec)
+    estimated = "; ".join(x for x in (estimated, power.challenger_note(est)) if x)
     # Longer than one budget is paused and resumed, never refused for length. #813.
     sweeps = (math.ceil(plan.projected_s / per) if plan.projected_s and per else None)
     spans = (f"projected {sweeps} sweep(s) at {power._hm(per)} each, paused and resumed"
@@ -519,6 +567,9 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
                    if split.holdout else None, sweeps=sweeps,
                    why="; ".join(x for x in (spans, plan.why, power.unseen_note(draws), estimated) if x))
     plan = replace(plan, deadline_s=power.deadline(plan))
+    run = list(split.holdout) if side == "holdout" else list(dict.fromkeys([*split.holdout, *split.dev]))
+    if run:
+        plan = replace(plan, **weedout.planned(run, power.rates_from(draws, run)[0], secs, plan.effect))
     print(f"    power: repeat {plan.repeat} over {len(split.holdout)} holdout "
           f"case(s) gives {plan.power:.2f} to detect +{plan.effect:.2f} at "
           f"alpha {plan.alpha}{'; ' + plan.why if plan.why else ''}"
@@ -543,10 +594,16 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
     return split, plan
 
 
+def _settings(lane: str, inc_spec: str, spec: str = "") -> tuple[int, tuple]:
+    """(reply budget, ladder) the paired evals.run of `inc_spec` and `spec` asks at, as that run derives it. #1352."""
+    from evals import run
+    return run.run_budget(lane, None, [s for s in (inc_spec, spec) if s]), ()
+
+
 def priced(store, lane: str, inc_spec: str, spec: str):
     """(incumbent draws, mean seconds per call, calls per case, estimate) for one paired run here; the queue order prices with it too. #696, #1315."""
-    from harness import candidates, completion, power, runs
-    settings = (completion.budget(lane), ())
+    from harness import candidates, power, runs
+    settings = _settings(lane, inc_spec, spec)
     machines = runs.here(store)
     draws, inc_s = power.served_profile(store, lane, inc_spec, settings, machines)
     basis = ""
@@ -558,29 +615,37 @@ def priced(store, lane: str, inc_spec: str, spec: str):
     return draws, median_s, calls, est
 
 
-def _with_reuse(plan, lane: str, inc_spec: str, est: dict, side: str):
-    """The plan with the incumbent cells stored draws under its identity cover, priced without them. #1094."""
+def _stored_cells(lane: str, inc_spec: str, spec: str, side: str, repeat: int) -> dict:
+    """reuse.plan of the incumbent's cells on `side` that stored draws under its identity cover. #1094."""
     from evals import run
     from harness import holdout, reuse
     from harness import memory_store as ms
     try:
         cases = run.load_selected(run.parse_args(["--modality", lane]))
     except SystemExit as exc:
-        return replace(plan, reuse={"digest": "", "unresolved": [f"cases: {exc}"]})
+        return {"digest": "", "unresolved": [f"cases: {exc}"]}
     on = holdout.only(cases, side)
-    ident = run.content_identity(lane, inc_spec, run.run_budget(lane, None), (), {}, on)
+    ident = run.content_identity(lane, inc_spec, _settings(lane, inc_spec, spec)[0], (), {}, on)
     if not ident["digest"]:
-        return replace(plan, reuse={"digest": "", "unresolved": ident["unresolved"]})
-    cells = [c.id for c in run.expand_cases(on, plan.repeat)]
+        return {"digest": "", "unresolved": ident["unresolved"]}
+    cells = [c.id for c in run.expand_cases(on, repeat)]
     store = ms.connect()
     try:
-        got = reuse.plan(store, lane, ident["digest"], cells, cases=ident["cases"])
+        return reuse.plan(store, lane, ident["digest"], cells, cases=ident["cases"], parts=ident["parts"])
     finally:
         store.close()
+
+
+def _with_reuse(plan, lane: str, inc_spec: str, est: dict, side: str, spec: str = ""):
+    """The plan with the incumbent cells stored draws under its identity cover, priced without them. #1094."""
+    got = _stored_cells(lane, inc_spec, spec, side, plan.repeat)
+    if not got["digest"]:
+        return replace(plan, reuse=got)
+    total = got["reused"] + got["fresh"]
     inc = (est.get("incumbent_s") or 0.0) * (est.get("incumbent_calls") or 1)
     ch = (est.get("challenger_s") or 0.0) * (est.get("challenger_calls") or 1)
     share = inc / (inc + ch) if inc + ch else 0.5
-    saved = share * got["reused"] / max(len(cells), 1)
+    saved = share * got["reused"] / max(total, 1)
     projected = plan.projected_s * (1 - saved) if plan.projected_s is not None else None
     return replace(plan, reuse=got, projected_s=projected)
 
@@ -682,14 +747,56 @@ def _stop_group(proc, grace_s: float) -> None:
     workqueue.stop_group(proc.pid, grace=grace_s, proc=proc)
 
 
-def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False) -> list[str]:
+def _screen_refusal(a, lane: str, spec: str) -> str:
+    """Why a repo pairing waits for the challenger's repo screen, or ""; a held pause resumes. #1353."""
+    from evals import repo_screen
+    from harness import identity, paused
+    from harness import memory_store as ms
+    if lane != repo_screen.LANE or getattr(a, "unscreened", False):
+        return ""
+    store = ms.connect()
+    try:
+        if paused.find(store, lane, spec):
+            return ""
+        return repo_screen.refusal(store, [spec], identity.lane_cases(lane))
+    finally:
+        store.close()
+
+
+def _slice(plan, elapsed: float):
+    """(this launch's share of the plan, whether it is the budget's last): one look interval of what is left. #1353."""
+    from harness import looks
+    if plan.budget_s is None:
+        return plan, True
+    left = max(0.0, plan.budget_s - elapsed)
+    step = float(looks.LOOK_INTERVAL_S or 0.0)
+    deadline = None if plan.deadline_s is None else max(0.0, plan.deadline_s - elapsed)
+    last = step <= 0 or step >= left
+    return replace(plan, budget_s=left if last else step, deadline_s=deadline), last
+
+
+def _between_looks(proc, out, last: bool, before: int) -> bool:
+    """Whether a slice stopped at its own look time, with budget left and new rows, so the run goes on after a look."""
+    if last or getattr(proc, "timed_out", False) or proc.returncode != watch.PAUSED:
+        return False
+    progress = watch.read_progress(out)
+    if not str(progress.get("why") or "").startswith("paused at its stop time"):
+        return False
+    return len((watch.read(out) or ({}, []))[1]) > before
+
+
+def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False,
+          unscreened: bool = False) -> list[str]:
     """The paired evals.run: pause at this sweep's slice, a plan per case for a watchdog, resume when held. #813, #810."""
     from harness import runner_gaps
-    argv = [*runner_gaps.launcher([inc_spec, spec], ["uv", "run", "python"]), "-m", "evals.run", "--modality", lane,
+    argv = [*runner_gaps.launcher([inc_spec, spec], ["uv", "run", "python"], lane), "-m", "evals.run", "--modality", lane,
             "--repeat", str(plan.repeat), "--out", str(out),
             "--candidates", f"{inc_spec},{spec}"]
     if plan.side != "all":
         argv += ["--split", plan.side]
+    if getattr(plan, "order", None):
+        from harness import weedout
+        argv += ["--order", str(Path(out) / weedout.ORDER_FILE)]
     if plan.budget_s is not None:
         argv += ["--stop-at", f"{time.time() + plan.budget_s:.0f}"]
     est = plan.estimate or {}
@@ -702,21 +809,28 @@ def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False) 
         argv += ["--reuse", str(Path(out) / reuse.REUSE_FILE)]
     if resume:
         argv.append("--resume")
+    if unscreened:
+        # The measure step judged the challenger's screen itself; the lane's incumbent needs none. #1353.
+        argv.append("--unscreened")
     return argv
 
 
 def _held(lane: str, inc_spec: str, spec: str, split, name: str, sweep):
     """(the pairing's live pause if it may resume, the identity a resume needs); a changed exam is reported stale. #813."""
-    from harness import completion, knobs, paused
+    from harness import knobs, paused, watchdog
     from harness import memory_store as ms
-    ident = paused.identity(lane, inc_spec, (completion.budget(lane), ()), knobs.settings(lane),
+    ident = paused.identity(lane, inc_spec, _settings(lane, inc_spec, spec), knobs.settings(lane),
                             split.version)
     store = ms.connect()
     try:
         held = paused.find(store, lane, spec)
         found = None if held else paused.abandoned(store, paths.home() / "runs", lane, inc_spec, spec)
+        stopped = bool(held) and watchdog.overrun_stopped(store, held["out"])
     finally:
         store.close()
+    if stopped:
+        _ended(name, held, held["out"], sweep)
+        return None, ident
     if found:
         # A run stopped with no pause recorded (the watchdog before #864) still has its rows. #864.
         print(f"  {name}: resuming {found['out']}, stopped at {found['done']} case(s) with no pause recorded",
@@ -743,6 +857,16 @@ def _stale(held: dict, what: str, name: str, sweep) -> None:
         sweep.lines.append(f"{name}: {why}")
 
 
+def _ended(name: str, held, out, sweep) -> int:
+    """A run the watchdog stopped as an overrun: ended and flagged, its rows kept, never resumed. #1409."""
+    why = f"stopped by the watchdog as an overrun: a suspected harness defect, not resumed; its rows stay in {out}"
+    if held and held.get("id") is not None:
+        _settle_pause(held["id"], "defect", why)
+    if sweep is not None:
+        sweep.lines.append(f"{name}: {why}")
+    return err(f"{name}: {why}")
+
+
 def _settle_pause(pause_id: int, state: str, why: str) -> None:
     from harness import paused
     from harness import memory_store as ms
@@ -762,6 +886,8 @@ def _resumed_plan(stored: dict, fresh):
     got = power.Plan(**{k: v for k, v in stored.items() if k in names})
     if got.odds is not None:
         got = replace(got, odds=tuple(got.odds))
+    if got.order is not None:
+        got = replace(got, order=tuple(got.order))
     # The exam is kept; its price is this sweep's, or a stale screen price judges the run. #864.
     return replace(got, budget_s=fresh.budget_s, deadline_s=fresh.deadline_s, estimate=fresh.estimate)
 
@@ -779,8 +905,12 @@ def _signalled(rc) -> bool:
     return rc is not None and (rc < 0 or rc - 128 in stops)
 
 
-def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, held, ident, sweep) -> int:
-    """A run paused at its slice: take an interim look, then stop early on it or keep the pause for the next sweep. #813."""
+def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, held, ident, sweep,
+            interim: bool = False, spans: int = 1) -> int:
+    """A run paused at its slice: take an interim look, then stop early on it or keep the pause for the next sweep. #813.
+
+    `interim` is a look between slices of one launch (#1353): the pause is kept for a crash, the sweep is not told.
+    """
     import math
 
     from harness import adopt, candidates, looks, paused, power
@@ -809,6 +939,7 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
     print(f"    {look.text}", flush=True)
     done = len(rows) - (taken_from or {}).get("reused", 0)
     total = int(progress.get("total") or (plan.cases_run or 0) * plan.repeat * 2 or done)
+    looks.stopped(look, lane, done, total)
     if verdict is not None:
         verdict = replace(verdict, evidence={**verdict.evidence, "split": split.as_dict(),
                                              "power": plan.as_dict(), "looks": taken,
@@ -830,9 +961,11 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
         paused.save(store, lane=lane, inc_spec=inc_spec, spec=spec, proposal=name, out=str(out),
                     ident=ident, plan=plan.as_dict(), done=done, total=total, looks=taken,
                     run_id=progress.get("run_id"), machine_id=ms.remember_machine(store),
-                    pause_id=held["id"] if held else None, why=why)
+                    pause_id=held["id"] if held else None, why=why, spans=spans)
     finally:
         store.close()
+    if interim:
+        return 0
     print(f"  {name}: {why}", flush=True)
     if sweep is not None:
         sweep.lines.append(f"{name}: {why}")
@@ -842,7 +975,8 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
                 sweep.squeezed = why
             else:
                 sweep.halted = why
-    return 0
+    # Paused, as a paused --confirm exits, so the queue records it paused, not done. #1374.
+    return watch.PAUSED
 
 
 def _stopped_at(out, key: str) -> int | None:
@@ -890,11 +1024,13 @@ def _confirmed(verdict, rows, split, screened, served: str, inc_spec: str, spec:
 
 def confirm_job(vid: int) -> int:
     """`soh adopt --confirm VID`: the night dev run that confirms or refuses a held holdout win. #725."""
-    from harness import adopt, candidates, holdout, runner_gaps, screen
+    from types import SimpleNamespace
+    from harness import adopt, candidates, holdout, reuse, screen
     from harness import memory_store as ms
     store = ms.connect()
     try:
-        row = store.execute("SELECT v.failure_class, v.power, v.detail, p.name, p.state_verdict_id FROM verdicts v "
+        row = store.execute("SELECT v.failure_class, v.power, v.detail, v.decided_at, p.name, p.state_verdict_id "
+                            "FROM verdicts v "
                             "LEFT JOIN proposals p ON p.id = v.proposal_id WHERE v.id = ?", (vid,)).fetchone()
     finally:
         store.close()
@@ -915,35 +1051,187 @@ def confirm_job(vid: int) -> int:
               f"it decides nothing; the adopt retest measures {spec} against {now}", flush=True)
         return 0
     split = holdout.for_lane(lane)
-    out = paths.home() / "runs" / f"{time.strftime('%Y%m%d-%H%M%S')}-confirm-{lane}"
-    argv = [*runner_gaps.launcher([inc_spec, spec], ["uv", "run", "python"]), "-m", "evals.run", "--modality", lane,
-            "--repeat", str(int(held.get("repeat") or 1)), "--out", str(out), "--candidates", f"{inc_spec},{spec}"]
-    if not split.too_small:
-        argv += ["--split", "dev"]
-    route = screen.routed_gateway(name)
-    if route:
-        argv += ["--gateway", route]
-    print(f"\n  {lane}: confirming {spec} over {inc_spec} on dev (verdict {vid})\n    {' '.join(argv)}", flush=True)
-    proc = _launch(argv)
-    if proc.returncode != 0:
-        err(proc.stderr.strip()[-400:] or "no stderr")
-        return 1
-    data = _receipt_at(out)
-    if not data:
-        return err(f"verdict {vid}: the confirmation run stored no receipt at {out}")
+    repeat = int(held.get("repeat") or 1)
+    side = "all" if split.too_small else "dev"
+    out, data = _confirm_dir(lane, [inc_spec, spec], repeat, side, since=float(row["decided_at"] or 0))
+    if data:
+        print(f"    {out} finished without a verdict; recording it from its receipt (verdict {vid})", flush=True)
+    else:
+        plan = _confirm_order(lane, inc_spec, split, repeat, frozenset(held.get("screened") or ()))
+        before = len((watch.read(out) or ({}, []))[1]) if out is not None else 0
+        proc, ran = _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid, plan)
+        if out is not None and proc.returncode == watch.STALE:
+            print(f"    {out} ran another exam, so the confirmation is starting fresh", flush=True)
+            before = 0
+            proc, ran = _confirm_run(lane, inc_spec, spec, name, repeat, split, None, vid, plan)
+        out = ran
+        # A slice that stopped at its own look time: a futility look, then the next slice. #1439.
+        while proc.returncode == watch.PAUSED and _between_looks(proc, out, False, before):
+            futile = _confirm_look(lane, out, plan, vid)
+            if futile is not None:
+                print(f"    kept the incumbent: {futile.why}", flush=True)
+                _record(futile, spec, watch.read_progress(out).get("run_id"), out)
+                return 0
+            before = len((watch.read(out) or ({}, []))[1])
+            proc, out = _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid, plan)
+        if proc.returncode == watch.PAUSED:
+            return _confirm_paused(vid, lane, inc_spec, spec, out)
+        if proc.returncode != 0:
+            err(proc.stderr.strip()[-400:] or "no stderr")
+            return 1
+        data = _receipt_at(out)
+        if not data:
+            return err(f"verdict {vid}: the confirmation run stored no receipt at {out}")
     store = ms.connect()
     try:
         candidates.from_receipt(store, data.get("specs") or {}, lane=lane, proposals={spec: name})
         inc_key, ch_key = candidates.key_for(store, inc_spec), candidates.key_for(store, spec)
+        stored = SimpleNamespace(reuse=reuse.read(Path(out) / reuse.REUSE_FILE))
+        rows = _merge_reused(store, out, stored, data.get("rows") or [], {}, inc_key)[0]
     finally:
         store.close()
     won = adopt.Verdict(lane, inc_key, ch_key, True, f"won the holdout (verdict {vid})")
-    verdict = adopt.confirm(won, data.get("rows") or [], split, frozenset(held.get("screened") or ()), fresh=True)
+    verdict = adopt.confirm(won, rows, split, frozenset(held.get("screened") or ()), fresh=True)
     if verdict.failure_class == reasons.CONFIRMING:
         return err(f"verdict {vid}: the confirmation run has no case outside the screened ones, so it decides nothing")
     print(f"    {'ADOPTED' if verdict.adopt else 'kept the incumbent'}: {verdict.why}", flush=True)
     _record(verdict, spec, data.get("run_id"), out)
     return 0
+
+
+def _confirm_dir(lane: str, pair: list, repeat: int, side: str, since: float = 0.0) -> tuple:
+    """(dir, None) for the newest unfinished confirmation of this pair and exam, to resume; (dir, receipt) for one
+    finished since `since` that no verdict was read from, to record; (None, None) for neither. #1357."""
+    from harness import holdout
+    from harness import memory_store as ms
+    for out in sorted((paths.home() / "runs").glob(f"*-confirm-{lane}"), reverse=True):
+        had = watch.read(out)
+        ident = had[0] if had else {}
+        if not (had and list(ident.get("candidates") or ()) == list(pair) and int(ident.get("repeat") or 1) == repeat
+                and (ident.get("split") or "all") == side):
+            continue
+        if watch.read_progress(out).get("state") != "done":
+            return out, None
+        if ident.get("split_version", holdout.version(lane)) != holdout.version(lane):
+            continue
+        if (out / watch.PROGRESS).stat().st_mtime < since:
+            continue
+        data = _receipt_at(out)
+        if not data or data.get("run_id") is None:
+            continue
+        store = ms.connect()
+        try:
+            judged = store.execute("SELECT 1 FROM verdicts WHERE run_id = ?", (int(data["run_id"]),)).fetchone()
+        finally:
+            store.close()
+        if judged is None:
+            return out, data
+    return None, None
+
+
+def _confirm_order(lane: str, inc_spec: str, split, repeat: int, screened=frozenset()) -> dict:
+    """The confirmation's cases in weed-out order, and the cells and per-case rates its futility looks read. #1439."""
+    from harness import power, weedout
+    from harness import memory_store as ms
+    run = list(dict.fromkeys([*split.holdout, *split.dev])) if split.too_small else list(split.dev)
+    store = ms.connect()
+    try:
+        draws, _ = power.served_profile(store, lane, inc_spec)
+        secs = weedout.seconds_of(store, lane, inc_spec)
+    finally:
+        store.close()
+    effect = power.effect_for(lane)
+    rates = power.rates_from(draws, run)[0] if run else {}
+    got = weedout.planned(run, rates, secs, effect) if run else {"order": (), "rates": {}}
+    cells = [c for c in run if c not in screened]
+    # The power the cells could have, so an unpowered futility stop is lane_too_small, never a loss. #1452.
+    seen = sum(len(draws.get(c) or ()) for c in cells)
+    planned = power.plan([rates[c] for c in cells], effect, repeat=int(repeat), observed=seen,
+                         unmeasured=not seen) if cells else None
+    return {**got, "cells": cells, "repeat": int(repeat), "effect": effect,
+            "power": planned.as_dict() if planned is not None else {}}
+
+
+def _confirm_look(lane: str, out, plan: dict, vid: int):
+    """A futility look at a confirmation's slice: the keep verdict when it stops, else None; it never adopts. #1439."""
+    from harness import adopt, candidates, holdout, looks, power
+    got = watch.read(out)
+    rows = got[1] if got else []
+    specs = watch.read_progress(out).get("specs") or {}
+    keys = {s: k for k, s in specs.items()}
+    inc_key = keys.get(plan["incumbent"]) or candidates.key_of(plan["incumbent"]) or plan["incumbent"]
+    ch_key = keys.get(plan["challenger"]) or candidates.key_of(plan["challenger"]) or plan["challenger"]
+    cells = list(plan["cells"])
+    if not cells:
+        return None
+    effect = plan["effect"]
+    asked = {**(plan.get("power") or {}),
+             "repeat": plan["repeat"], "cells": len(cells) * plan["repeat"], "cases": len(cells), "effect": effect,
+             "odds": power._cell_odds([plan["rates"].get(c, power.UNSEEN) for c in cells], effect),
+             "order": plan["order"], "rates": plan["rates"]}
+    look, verdict = looks.look(rows, lane=lane, inc_key=inc_key, ch_key=ch_key,
+                               split=holdout.Split(lane, (), tuple(cells), False), plan=asked,
+                               alpha=adopt.ALPHA, spent_before=0.0, n=1)
+    print(f"    {look.text}", flush=True)
+    if look.decision != "futility":
+        return None
+    return replace(verdict, why=f"won the holdout (verdict {vid}), but its confirmation stopped for {verdict.why}",
+                   evidence={"confirm": {"look": look.as_dict()}})
+
+
+def _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid, plan=None):
+    """(process, out dir) of the confirmation eval, resuming `out` when one is named, in looks every look_interval_s. #1357, #1439."""
+    from harness import looks, runner_gaps, screen, weedout
+    resume = out is not None
+    out = out or paths.home() / "runs" / f"{time.strftime('%Y%m%d-%H%M%S')}-confirm-{lane}"
+    argv = [*runner_gaps.launcher([inc_spec, spec], ["uv", "run", "python"], lane), "-m", "evals.run", "--modality", lane,
+            "--repeat", str(repeat), "--out", str(out), "--candidates", f"{inc_spec},{spec}"]
+    if not split.too_small:
+        argv += ["--split", "dev"]
+    if plan is not None:
+        plan.update(incumbent=inc_spec, challenger=spec)
+        if plan.get("order"):
+            argv += ["--order", str(weedout.write(out, plan["order"]))]
+        if looks.LOOK_INTERVAL_S and plan.get("cells"):
+            argv += ["--stop-at", f"{time.time() + looks.LOOK_INTERVAL_S:.0f}"]
+    if resume:
+        argv += ["--resume"]
+    taken = _confirm_reuse(lane, inc_spec, spec, split, repeat, out, resume)
+    if taken:
+        argv += ["--reuse", str(taken)]
+    route = screen.routed_gateway(name)
+    if route:
+        argv += ["--gateway", route]
+    print(f"\n  {lane}: {'resuming' if resume else 'confirming'} {spec} over {inc_spec} on dev (verdict {vid})"
+          f"\n    {' '.join(argv)}", flush=True)
+    return _launch(argv), out
+
+
+def _confirm_reuse(lane, inc_spec, spec, split, repeat, out, resume: bool):
+    """The reuse file a confirmation passes: a resumed run keeps its own, a fresh one plans it. #1442, #1094."""
+    from harness import reuse
+    path = Path(out) / reuse.REUSE_FILE
+    if resume:
+        return path if path.is_file() else None
+    got = _stored_cells(lane, inc_spec, spec, "all" if split.too_small else "dev", repeat)
+    if reuse.line(got):
+        print(f"    reuse: {reuse.line(got)}", flush=True)
+    return reuse.write(out, inc_spec, got) if got.get("reused") else None
+
+
+def _confirm_paused(vid: int, lane: str, inc_spec: str, spec: str, out) -> int:
+    """A paused confirmation records no verdict and queues its own continuation for the next night. #1357."""
+    from harness import adopt, workqueue
+    from harness import memory_store as ms
+    store = ms.connect()
+    try:
+        job = adopt.queue_confirmation(store, vid, adopt.Verdict(lane, inc_spec, spec, False, ""),
+                                       start=workqueue.next_night(time.time()))
+    finally:
+        store.close()
+    then = f"; it resumes as job {job['id']}" if job else ""
+    print(f"    paused at {out}: {watch.pause_reason(out) or 'on request'}{then}", flush=True)
+    return watch.PAUSED
 
 
 def _record(verdict, spec: str, run_id, out) -> None:
@@ -989,21 +1277,16 @@ def _per_case(by_key) -> float | None:
 
 
 def _zero_pass(lane: str, inc_spec: str) -> dict | None:
-    from harness import baseline
-    from harness import memory_store as ms
-    store = ms.connect()
-    try:
+    from harness import baseline, runs
+    with runs.store() as store:
         return baseline.zero_pass(store, lane, inc_spec)
-    finally:
-        store.close()
 
 
 def take_measured(lane: str, inc_spec: str, zero: dict, dry_run: bool = False):
     """Adopt the best measured local candidate over a zero-pass typed incumbent when it wins; the verdict if it was adopted. #1110."""
-    from harness import adopt, baseline
+    from harness import adopt, baseline, runs
     from harness import memory_store as ms
-    store = ms.connect()
-    try:
+    with runs.store() as store:
         got = baseline.take(store, lane, inc_spec, zero)
         if got is None:
             print(f"    {lane}: {inc_spec} passed 0 of {zero['cases']} stored cases and no local candidate "
@@ -1019,8 +1302,6 @@ def take_measured(lane: str, inc_spec: str, zero: dict, dry_run: bool = False):
             print(f"    not recorded: {exc}", flush=True)
             return None
         return got
-    finally:
-        store.close()
 
 
 def take_incumbents(want: str = "") -> list:

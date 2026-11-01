@@ -49,8 +49,8 @@ def graph(conn) -> dict[str, list[str]]:
     return out
 
 
-def root(name: str, parents_of: dict, parents=()) -> str:
-    """The end of `name`'s first-parent lineage chain; `name` itself when no lineage is known."""
+def root(name: str, parents_of: dict, parents=(), stops: set | None = None) -> str:
+    """The end of `name`'s first-parent lineage chain; `name` itself when no lineage is known; `stops` gets a size stop."""
     cur = (name or "").strip().lower()
     ups = parents_of.get(cur) or [str(p[0] if isinstance(p, (tuple, list)) else p).strip().lower()
                                   for p in parents if p]
@@ -62,6 +62,8 @@ def root(name: str, parents_of: dict, parents=()) -> str:
     if ups and ups[0] not in seen and len(seen) > HOPS and _same_size(cur, ups[0]):
         from harness import cuts
         cuts.cut("family_hops", f"lineage of {name} past the hops")
+    elif stops is not None and ups and ups[0] not in seen and len(seen) <= HOPS:
+        stops.add(cur)
     return cur
 
 
@@ -164,11 +166,12 @@ def standing(conn, losses_to_demote: int | None = None) -> Standing:
         # An order hint never fails the ranking or the sweep; no record is the answer.
         return Standing(losses_to_demote=need)
     out = Standing(parents_of=parents_of, losses_to_demote=need)
+    stops: set = set()
     for at, outcome, detail, name, lane in rows:
         if _method(name):
             continue
         lane = _lane(detail, lane)
-        k = key(root(name, parents_of))
+        k = key(root(name, parents_of, stops=stops))
         fam = out.families.setdefault((lane, k), Family(lane, k, root(name, parents_of)))
         fam.verdicts += 1
         fam.last_compared = max(fam.last_compared, float(at or 0))
@@ -178,6 +181,9 @@ def standing(conn, losses_to_demote: int | None = None) -> Standing:
             fam.lost.append(name)
     for fam in out.families.values():
         fam.demoted = need > 0 and len(fam.lost) >= need
+    if stops:
+        from harness import cuts
+        cuts.cut("family_size_ratio", "lineage chains ended at a parent of another size", dropped=len(stops))
     return out
 
 
@@ -185,7 +191,27 @@ def measure_order(rows, st: Standing) -> list[dict]:
     """The measure queue with a demoted family's members after the rest, each part in its own order."""
     rows = list(rows)
     low = [bool(st.demotion(r, r.get("lane", ""))[0]) for r in rows]
+    if any(low):
+        from harness import cuts
+        cuts.cut("family_losses_to_demote", "demoted family members moved after the rest of the measure queue",
+                 value=st.losses_to_demote, dropped=sum(low))
     return [r for r, d in zip(rows, low) if not d] + [r for r, d in zip(rows, low) if d]
+
+
+def _full(rest, st: Standing, families: set, since: float, slots: int) -> None:
+    """Record the slots binding when a row after the last pick would have qualified for one."""
+    left = set()
+    for r in rest:
+        lane = lanes.canonical(r.get("lane"))
+        fam = st.of(r, lane)
+        if _method(r.get("name", "")) or (fam and fam.demoted) or st.compared_since(r, lane, since):
+            continue
+        left.add((lane, st.key_of(r)))
+    left -= families
+    if left:
+        from harness import cuts
+        cuts.cut("diversity_slots", "unmeasured families left without a diversity slot", value=slots,
+                 kept=len(families), dropped=len(left))
 
 
 def reserve(rows, st: Standing, *, now: float | None = None, slots: int | None = None,
@@ -199,14 +225,18 @@ def reserve(rows, st: Standing, *, now: float | None = None, slots: int | None =
     if slots <= 0:
         return rows, [], [f"diversity: {slots} slot(s) reserved, so none is held"]
     since = now - days * DAY
-    for r in rows:
+    recent = 0
+    for i, r in enumerate(rows):
         if len(picks) >= slots:
+            _full(rows[i:], st, families, since, slots)
             break
         lane = lanes.canonical(r.get("lane"))
         k = st.key_of(r)
         fam = st.of(r, lane)
-        if _method(r.get("name", "")) or (lane, k) in families or (fam and fam.demoted) \
-                or st.compared_since(r, lane, since):
+        if _method(r.get("name", "")) or (lane, k) in families or (fam and fam.demoted):
+            continue
+        if st.compared_since(r, lane, since):
+            recent += 1
             continue
         ok, why = fits(r) if fits else (True, "")
         if not ok:
@@ -218,6 +248,10 @@ def reserve(rows, st: Standing, *, now: float | None = None, slots: int | None =
         picks.append({"name": r.get("name", ""), "lane": lane, "family": k, "why": f"{k} in {lane}: {last}"})
         lines.append(f"diversity: {r.get('name', '')} takes a reserved slot, family {k} in {lane} "
                      f"has no paired comparison in {days:g} days ({last})")
+    if recent:
+        from harness import cuts
+        cuts.cut("diversity_family_window_days", "rows passed over for a diversity slot: family compared in the window",
+                 value=days, dropped=recent)
     if len(picks) < slots:
         lines.append(f"diversity: {slots - len(picks)} reserved slot(s) return to the normal queue: no other "
                      f"candidate of a family unmeasured in {days:g} days fits")

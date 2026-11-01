@@ -1,0 +1,59 @@
+# GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023), MIT (https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl).
+# Imported by evals/importers from github:djghosh13/geneval/prompts/evaluation_metadata.jsonl@af4902f24d3ca90ebbb446dd9891a59e0f82725f; re-import, do not edit.
+id: geneval-484-color-attr
+modality: image
+prompt: a photo of a white handbag and a red giraffe
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      handbag: a handbag
+      giraffe: a giraffe
+    require:
+    - type: count
+      object: handbag
+      min: 1
+    - type: count
+      object: giraffe
+      min: 1
+    - type: attribute
+      object: handbag
+      is: a white handbag
+      not:
+      - a red handbag
+      - a orange handbag
+      - a yellow handbag
+      - a green handbag
+      - a blue handbag
+      - a purple handbag
+      - a pink handbag
+      - a brown handbag
+      - a black handbag
+    - type: attribute
+      object: giraffe
+      is: a red giraffe
+      not:
+      - a orange giraffe
+      - a yellow giraffe
+      - a green giraffe
+      - a blue giraffe
+      - a purple giraffe
+      - a pink giraffe
+      - a brown giraffe
+      - a black giraffe
+      - a white giraffe
+attribution:
+  dataset: GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023)
+  url: https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl
+  license: MIT
+  source: github:djghosh13/geneval/prompts/evaluation_metadata.jsonl
+  revision: af4902f24d3ca90ebbb446dd9891a59e0f82725f
+  item: '484'
+  date: '2023-08-22'
+  transform: 'GenEval include/exclude spec as staging requirements: include count at least, include plus
+    exclude exactly, position relative to the named object, colour against the nine others'
+  importer: evals.importers.geneval
+  tag: color_attr

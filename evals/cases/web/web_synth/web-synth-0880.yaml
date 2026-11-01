@@ -1,0 +1,54 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0880
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Signal
+  tower history". The page holds a form with an <input> of type "text" named "display_name" labelled "Display
+  name" with a <label> element, required; an <input> of type "number" named "berth_length" labelled "Berth
+  length" with a <label> element, required; an <input> of type "url" named "website" labelled "Website"
+  with a <label> element, required; an <input> of type "color" named "colour" labelled "Favourite colour"
+  with a <label> element, not required; an <input> of type "date" named "start_date" labelled "Start date"
+  with a <label> element, not required; and a submit button reading "Save changes". Mark only the controls
+  asked as required.'
+assert:
+  structure:
+    title: Signal tower history
+    form:
+      fields:
+      - label: Display name
+        name: display_name
+        type: text
+        required: true
+      - label: Berth length
+        name: berth_length
+        type: number
+        required: true
+      - label: Website
+        name: website
+        type: url
+        required: true
+      - label: Favourite colour
+        name: colour
+        type: color
+        required: false
+      - label: Start date
+        name: start_date
+        type: date
+        required: false
+      submit: Save changes
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '880'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: form
+  stratum: medium

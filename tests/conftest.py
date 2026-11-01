@@ -59,8 +59,70 @@ def _without_junitxml(addopts: str) -> str:
     return shlex.join(out)
 
 
+#: Past HANG_DUMP_S a test prints every thread's stack; past HANG_EXIT_S its process exits so xdist names it (#1351).
+HANG_DUMP_S, HANG_EXIT_S = 180.0, 450.0
+_running: dict = {}
+
+
+def _stacks() -> str:
+    import sys
+    import threading
+    import traceback
+    names = {t.ident: t.name for t in threading.enumerate()}
+    return "".join(f"Thread {names.get(ident, ident)}:\n{''.join(traceback.format_stack(frame))}\n"
+                   for ident, frame in sys._current_frames().items())
+
+
+def _hang_check(running: dict, now: float, write, leave) -> None:
+    test = running.get("test")
+    if test is None:
+        return
+    spent, dump_s, exit_s = now - test["began"], HANG_DUMP_S, HANG_EXIT_S
+    if spent >= exit_s:
+        write(f"\n{test['nodeid']} ran {spent:.0f} s, past {exit_s:.0f} s: exiting this test process\n")
+        leave(70)
+    elif spent >= dump_s and not test["dumped"]:
+        # The flag goes up only once the text is out: a test that ends on it would take this daemon thread down. #1423.
+        write(f"\n{test['nodeid']} has run {spent:.0f} s; every thread's stack:\n{_stacks()}")
+        test["dumped"] = True
+
+
+def _hang_watch() -> None:
+    import os
+    import sys
+    import threading
+    import time
+    # Bound now, so a test that patches time.monotonic or os._exit cannot fire or silence this.
+    clock, leave, tick, put = time.monotonic, os._exit, threading.Event(), os.write
+    # A copy of stderr taken before any test's capture, as pytest's faulthandler plugin does.
+    fd = os.dup(sys.__stderr__.fileno())
+
+    def write(text):
+        put(fd, text.encode("utf-8", "replace"))
+
+    def loop():
+        while not tick.wait(1.0):
+            _hang_check(_running, clock(), write, leave)
+    threading.Thread(target=loop, name="hang-watch", daemon=True).start()
+    _running["clock"] = clock
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_protocol(item, nextitem):
+    clock = _running.get("clock")
+    if clock is not None:
+        _running["test"] = {"nodeid": item.nodeid, "began": clock(), "dumped": False}
+    try:
+        yield
+    finally:
+        _running.pop("test", None)
+
+
 def pytest_configure(config):
     import os
+    # faulthandler's timed dump of a running thread can spin forever in CPython 3.12 and wedge the worker (#1351).
+    if not _running:
+        _hang_watch()
     path = os.environ.pop(TEST_LOG_ENV, "")
     # A pytest a test starts inherits PYTEST_ADDOPTS and overwrote CI's JUnit XML with its own 2 tests (#1146).
     if "--junit" in os.environ.get("PYTEST_ADDOPTS", ""):
@@ -128,6 +190,13 @@ def _no_real_metal(monkeypatch):
     """No test budgets against this Mac's Metal working set. #699."""
     from harness import memory
     monkeypatch.setattr(memory, "_metal_info", lambda: {})
+
+
+@pytest.fixture(autouse=True)
+def _no_real_headroom(monkeypatch):
+    """No sweep test stops on this machine's free memory; a test of the gate hands in its own. #1482."""
+    from harness.commands import measure
+    monkeypatch.setattr(measure, "headroom_gb", lambda: 1e6)
 
 
 @pytest.fixture(autouse=True)
@@ -230,6 +299,10 @@ def _free_disk_is_pinned(monkeypatch):
     from harness import fetching
     monkeypatch.setattr(fetching, "free_bytes",
                         lambda path=None: 900 * fetching.GIB)
+    # Nor env.sh or harness.env: their 20 GB floor read the boot disk, which a full suite fills. #1423.
+    monkeypatch.setenv("HF_MIN_FREE_GB", "0")
+    from harness import env
+    monkeypatch.setattr(env, "free_gb", lambda path: 900)
 
 
 @pytest.fixture(autouse=True)
@@ -252,6 +325,17 @@ def _no_real_registry(monkeypatch):
             refuse(url)
         return real_get(url, *a, **k)
     monkeypatch.setattr(httpx, "get", hub_refused)
+
+
+@pytest.fixture(autouse=True)
+def _no_real_runtime_channel(monkeypatch):
+    """No test reads PyPI or GitHub releases, or installs a runtime; tests pass fakes. #1474."""
+    from harness import runtime_trials
+
+    def refuse(*a, **k):
+        raise RuntimeError(f"a test asked a real runtime release channel or install: {a}")
+    for name in ("_get_json", "_gh", "_get_text", "_run"):
+        monkeypatch.setattr(runtime_trials, name, refuse)
 
 
 @pytest.fixture(autouse=True)
@@ -544,6 +628,7 @@ def _identity_per_test(monkeypatch, _home, _no_real_metal, _no_real_runtime_prob
     monkeypatch.setattr(ms.machines, "_PROVISIONAL", None)
     monkeypatch.setattr(machine, "_UUID_FAILED_AT", None)
     monkeypatch.setattr(ms.machines, "_THIS_MACHINE", copy.deepcopy(_IDENTITY.get("facts")))
+    monkeypatch.setattr(ms.machines, "_THIS_FINGERPRINT", None)
     monkeypatch.setattr(machine, "_UUID", _IDENTITY.get("uuid"))
     # With no platform uuid (Windows) host_id reads LH_HOME, so the gateway's identity must find the pinned host there. #852.
     host = (_IDENTITY.get("facts") or {}).get("host")
@@ -552,16 +637,54 @@ def _identity_per_test(monkeypatch, _home, _no_real_metal, _no_real_runtime_prob
         (_home / machine.HOST_FILE).write_text(host, encoding="utf-8")
 
 
+def name_machine(monkeypatch, env: dict) -> None:
+    """Names this machine at the identity seam, environment.identity, so the cheap and full paths both see it. #1435."""
+    from evals import environment
+    from harness import machine
+    from harness import memory_store as ms
+    me = {k: env.get(k) or "" for k in ("hw_model", "os", "arch", "host")}
+    me["fingerprint"] = machine.fingerprint(me["hw_model"], me["os"], me["arch"], me["host"])
+    monkeypatch.setattr(environment, "identity", lambda: dict(me))
+    monkeypatch.setattr(environment, "capture", lambda: {**env, **me})
+    for name in ("_THIS_MACHINE", "_THIS_FINGERPRINT", "_PROVISIONAL"):
+        monkeypatch.setattr(ms.machines, name, None)
+
+
+def stand_in_machine(monkeypatch, facts: dict) -> dict:
+    """this_machine() answers `facts`: identity named at the seam, measured facts held as its resolved answer. #1437."""
+    from evals import environment
+    from harness import memory_store as ms
+    keys = ("hw_model", "os", "arch", "host")
+    got = {**({} if any(k in facts for k in keys) else ms.this_machine()), **facts}
+    name_machine(monkeypatch, {k: got[k] for k in (*keys, "memory_gb", "versions") if k in got})
+    me = environment.identity()
+    assert facts.get("fingerprint", me["fingerprint"]) == me["fingerprint"], f"{facts} names another machine than {me}"
+    got = {k: v for k, v in {**got, **me}.items() if k != "partial"}
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", got)
+    return got
+
+
+@pytest.fixture
+def machine_is(monkeypatch):
+    return lambda env: name_machine(monkeypatch, env)
+
+
+@pytest.fixture
+def machine_has(monkeypatch):
+    return lambda facts: stand_in_machine(monkeypatch, facts)
+
+
 @pytest.fixture(autouse=True)
 def _no_inherited_purpose():
     """purpose.set_process writes os.environ; a cli or mcp test must not tag the next test's requests. #825."""
     import os
     from harness import purpose
-    saved = os.environ.pop(purpose.ENV, None)
+    saved = {k: os.environ.pop(k, None) for k in (purpose.ENV, paths.EVAL_ENV)}
     yield
-    os.environ.pop(purpose.ENV, None)
-    if saved is not None:
-        os.environ[purpose.ENV] = saved
+    for k, was in saved.items():
+        os.environ.pop(k, None)
+        if was is not None:
+            os.environ[k] = was
 
 
 @pytest.fixture
@@ -571,3 +694,54 @@ def windows_relative_paths(monkeypatch):
     cls = type(pathlib.Path())
     real = cls.relative_to
     monkeypatch.setattr(cls, "relative_to", lambda self, *a, **k: pathlib.PureWindowsPath(real(self, *a, **k).as_posix()))
+
+
+class _FakeChrome:
+    """A chrome that never exits, on a clock that moves only when render._shoot sleeps. #1471."""
+    pid = 1
+
+    def __init__(self):
+        self.now = 0.0
+        self.terminated = 0
+        self._growing: list[Path] = []
+
+    def argv(self, out, writes=True, grows=False):
+        if grows:
+            self._growing.append(Path(out))
+        return ["chrome", str(out) if writes else ""]
+
+    def monotonic(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.now += seconds
+        for p in self._growing:
+            with open(p, "ab") as f:
+                f.write(b"x")
+
+    def Popen(self, argv, **kw):
+        if argv[1]:
+            Path(argv[1]).write_bytes(b"png")
+        return self
+
+    def poll(self):
+        return None
+
+    def terminate(self):
+        self.terminated += 1
+
+    def wait(self, timeout=None):
+        return 0
+
+    def kill(self):
+        pass
+
+
+@pytest.fixture
+def fake_chrome(monkeypatch):
+    import types
+    from harness.checks import render
+    chrome = _FakeChrome()
+    monkeypatch.setattr(render, "time", types.SimpleNamespace(monotonic=chrome.monotonic, sleep=chrome.sleep))
+    monkeypatch.setattr(render.subprocess, "Popen", chrome.Popen)
+    return chrome

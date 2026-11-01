@@ -25,6 +25,8 @@ def add_parser(sub) -> None:
     p.add_argument("--seed", type=int, default=1336)
     p.add_argument("--since", default="", help="--redo/--eval window: 7d, 12h (default 7d, 30d for --eval)")
     p.add_argument("--root", default="", help="transcripts root (default $SOH_CLAUDE_PROJECTS or ~/.claude/projects)")
+    p.add_argument("--live-home", action="store_true", help="--eval/--redo: run in the live home and write its "
+                   "store; without it they run from a scratch home (DIR/home for --eval) #1346")
     p.set_defaults(func=cmd_spans)
 
 
@@ -41,11 +43,15 @@ def _root(a) -> Path:
 
 
 def cmd_spans(a) -> int:
-    from harness import spans
-    if a.redo:
-        return _redo(a)
-    if a.eval:
-        return _eval(a)
+    from harness import paths, spans
+    if a.redo or a.eval:
+        try:
+            paths.eval_home(Path(a.eval).expanduser().resolve() / "home" if a.eval else None, live=a.live_home)
+        except paths.LiveHomeRefused as exc:
+            note(str(exc))
+            emit(False, error=str(exc))
+            return 2
+        return _redo(a) if a.redo else _eval(a)
     if not a.path or not a.question.strip():
         note("give a path and -q QUESTION")
         emit(False, error="a path and a question")

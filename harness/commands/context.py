@@ -102,13 +102,59 @@ def _by_class(a, root: Path, since, until) -> int:
     return 0
 
 
+def _p(p: float) -> str:
+    return f"{p:.2g}" if p < 0.001 else f"{p:.3f}"
+
+
+def _mistakes(a, root: Path, since, until) -> int:
+    """`soh context --mistakes`: KB mistakes after a compaction and per context band, against messages. #1381."""
+    import os
+    from harness import context_mistakes as cm
+    source = a.kb or os.environ.get("SOH_MCM_URL", "")
+    if not source:
+        why = "--mistakes needs --kb: the mcm-engine MCP URL or a file of its scroll_entries pages (or $SOH_MCM_URL)"
+        note(why)
+        emit(False, error=why)
+        return 2
+    try:
+        rows = cm.load_rows(source)
+    except (OSError, ValueError) as exc:
+        why = f"cannot read the KB rows: {type(exc).__name__}"
+        note(why)
+        emit(False, error=why)
+        return 1
+    got = cm.measure(root, rows, since=since, until=until)
+    note("messages: assistant API messages of interactive main transcripts; mistakes: KB negative and error rows "
+         f"joined to their main-stream call within {cm.MATCH_S} s; control: add_knowledge and add_rule calls")
+    note(f"{got['messages']:,} messages in {got['sessions']} sessions, {got['compactions']} compactions; "
+         f"{got['kb_rows']} KB rows, {got['joined']} joined, left out "
+         + (", ".join(f"{k} {v}" for k, v in sorted(got["left_out"].items())) or "none")
+         + f"; control {got['control']}")
+    note("p: one-sided exact upper tails; binomial pools all messages, session puts each event over its own "
+         f"session's messages; {got['tests']} tests, Bonferroni 0.05 = {0.05 / got['tests']:.2g}")
+    for title, key, rows_ in (("after compaction", "window", got["windows"]), ("context band", "band", got["bands"])):
+        note(f"\n{title:<16} {'class':<9} {'msgs':>7} {'share':>6} {'events':>8} {'share':>6} {'lift':>5} "
+             f"{'p binom':>8} {'p sess':>8}")
+        for r in rows_:
+            label = f"<= {r[key]}" if key == "window" else r[key]
+            lift = f"{r['lift']:.2f}" if r["lift"] is not None else "-"
+            note(f"{label:<16} {r['class']:<9} {r['messages']:>7,} {r['message_share']:>6.1%} "
+                 f"{r['events']:>3}/{r['events_total']:<4} {r['event_share']:>6.1%} {lift:>5} "
+                 f"{_p(r['p_binomial']):>8} {_p(r['p_session']):>8}")
+    emit(source="url" if source.startswith(("http://", "https://")) else "file", root=str(root), since=since,
+         until=until, window_sizes=list(cm.WINDOWS), band_edges=list(cm.BANDS), match_s=cm.MATCH_S, **got)
+    return 0
+
+
 def cmd_context(a) -> int:
     """Estimated tool-result tokens from Claude Code transcripts (chars / 4). #828."""
     from harness import context_report as cr
 
     now = time.time()
     try:
-        since = cr.parse_when(a.since, now) if a.since else None
+        mistakes = getattr(a, "mistakes", False)
+        when = a.since if a.since is not None else ("" if mistakes else "7d")
+        since = cr.parse_when(when, now) if when else None
         until = cr.parse_when(a.until, now) if a.until else None
     except ValueError as exc:
         note(str(exc))
@@ -116,6 +162,8 @@ def cmd_context(a) -> int:
         return 2
     root = Path(a.root) if a.root else cr.default_root()
     source = getattr(a, "source", "transcripts")
+    if mistakes:
+        return _mistakes(a, root, since, until)
     if getattr(a, "carried", False):
         if a.by == "class" and source == "transcripts":
             return _by_class(a, root, since, until)

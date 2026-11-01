@@ -37,7 +37,7 @@ class Refused(ValueError):
 def lane_model(lane: str, chosen: str | None = None) -> str:
     """-m when given, else the lane's adopted model here, else its typed constant. #297."""
     from harness import adopt, models, winners
-    spec = chosen or adopt.default_for(lane, winners.typed().get(lane, ""))
+    spec = chosen or adopt.serving_default(lane, winners.typed().get(lane, ""))
     models.warn(spec)
     return spec
 
@@ -53,18 +53,24 @@ def route(lane: str, chosen: str | None = None, via: str = "") -> tuple[str, ser
 
 
 def generate(spec: str, where: serving.Route, lane: str, prompt: str,
-             call) -> tuple[str, dict, list]:
+             call, method=None, context: str = "") -> tuple[str, dict, list]:
     """(text, cost, replies): `spec` served over `where`, each call made by
-    call(prompt, model=, gateway=, modality=, sampling=) -> Completion. #581."""
+    call(prompt, model=, gateway=, modality=, sampling=) -> Completion; `method` serves over `spec`'s base. #581."""
     from harness import methods
     replies: list = []
 
-    def ask(text: str, modality: str) -> str:
+    def ask(text: str, modality: str, sampling: dict | None = None, context: str = "") -> str:
         got = call(text, model=where.model, gateway=where.base, modality=modality,
-                   sampling=where.sampling or None)
+                   sampling={**(where.sampling or {}), **(sampling or {})} or None,
+                   **({"context": context} if context else {}))
         replies.append(got)
         return got.text
-    text, cost = methods.run(spec, lane, prompt, ask)
+    if method is None:
+        text, cost = methods.run(spec, lane, prompt, ask)
+        return text, cost, replies
+    base = methods.base_of(spec) or spec
+    parsed = methods.Parsed(method, (), base, method.compose(base))
+    text, cost = method.serve(parsed, lane, prompt, ask, None, **({"context": context} if context else {}))
     return text, cost, replies
 
 
@@ -76,8 +82,15 @@ def check_lane(lane: str) -> str:
     return lane
 
 
+def _mine(record: dict) -> bool:
+    """Whether the lock's holder is this process's own queued job. #1349."""
+    from harness import workqueue as wq
+    me = os.environ.get(wq.JOB_ENV, "").strip()
+    return bool(me) and str(record.get("job") or "").strip() == me
+
+
 def busy() -> str:
-    """What holds the machine lock, or "" when nobody does. Never waits."""
+    """What other than this process's own job holds the machine lock, or "". Never waits."""
     if os.environ.get(exclusive.HELD_ENV) == "1":
         return ""
     fd = os.open(exclusive.lock_path(), os.O_RDWR | os.O_CREAT, 0o644)
@@ -87,7 +100,8 @@ def busy() -> str:
             return ""
     finally:
         os.close(fd)
-    return exclusive.describe(exclusive.holder())
+    record = exclusive.holder()
+    return "" if _mine(record) else exclusive.describe(record)
 
 
 def _preflight(*texts: str, max_tokens: int = 1) -> None:
@@ -97,6 +111,7 @@ def _preflight(*texts: str, max_tokens: int = 1) -> None:
         raise Refused(f"prompt is {size} characters, over the {MAX_PROMPT_CHARS} "
                       f"cap; pass less material or summarise it first")
     if int(max_tokens) < 1:
+        cuts.cut("harness/delegate.py:_preflight(max_tokens)", "a max_tokens under the floor refused", kept=0, dropped=1)
         raise Refused(f"max_tokens must be at least 1, not {max_tokens}")
 
 
@@ -127,8 +142,12 @@ def counter(spec: str):
 
 def _budget(spec: str, max_tokens: int, *texts: str) -> None:
     ctx = context.served_ctx(spec)
-    most = cap(ctx, *texts, count=counter(spec) if ctx else None)
+    counted = counter(spec) if ctx else None
+    most = cap(ctx, *texts, count=counted)
     if int(max_tokens) > most:
+        if counted is None:
+            budget_knob = "delegate_chars_per_token" if ctx else "harness/delegate.py:MAX_TOKENS"
+            cuts.cut(budget_knob, f"{spec}: a max_tokens over the request cap refused", kept=0, dropped=1)
         where = (f"the {ctx}-token context {spec} is served at, less the prompt"
                  if ctx else f"the cap while {spec}'s served context is unknown")
         raise Refused(f"max_tokens must be 1..{most} ({where}), not {max_tokens}")
@@ -180,11 +199,13 @@ def admit(holder: str, resident: bool | None, level: int | None) -> tuple[bool, 
     return True, f"the model is resident, so nothing loads beside {holder}"
 
 
-def running_job(conn=None) -> str:
-    """The queued job running here, with how long earlier runs of it took, or ""."""
+def running_job(conn=None, job_id=None) -> str:
+    """Queued job `job_id`, else the one running here, with how long earlier runs of it took, or ""."""
     from harness import workqueue as wq
     try:
-        job = wq.current(conn)
+        job = wq.get(job_id, conn) if job_id else wq.current(conn)
+        if job is not None and job.get("state") != wq.RUNNING:
+            job = None
         took = wq.durations(job["title"], conn) if job else []
         # Another machine's speed is a weaker estimate, so it says whose it is. #697.
         elsewhere = bool(job) and not took
@@ -265,7 +286,9 @@ def _gate(where: serving.Route) -> bool | None:
     held = busy()
     if not held:
         return None
-    job = running_job()
+    # The holder's own job, never the queue's current one: that may be this caller. #1349.
+    owner = str(exclusive.holder().get("job") or "").strip()
+    job = running_job(job_id=owner) if owner else ""
     holder = f"{held} under {job}" if job else held
     resident = loaded(where)
     level = None
@@ -340,8 +363,12 @@ def _tag(delegated: bool) -> str:
 def complete(lane: str, prompt: str, system: str | None = None,
              max_tokens: int = 2048, temperature: float | None = None,
              timeout: float | None = None, thinking: bool | None = None, delegated: bool = False,
-             model: str | None = None, tag: str | None = None) -> dict:
+             model: str | None = None, tag: str | None = None,
+             max_tokens_knob: str = "harness/delegate.py:complete(max_tokens)",
+             method=None, context: str = "") -> dict:
     """The lane's adopted model or method, timed; `method` is a method's cost. Raises Refused or CompletionError.
+
+    A `method` given is served over the lane's base though no registry holds it: a drafted template's canary. #1476.
 
     `thinking` None serves the lane as it was measured; False sends enable_thinking false.
     Only `delegated` (an agent's local_complete) is work with a delegations row; a program's call is internal. #1158.
@@ -354,6 +381,7 @@ def complete(lane: str, prompt: str, system: str | None = None,
     from harness import methods
     base = methods.base_of(spec) or spec
     _budget(base, max_tokens, prompt, system or completion.SYSTEM.get(lane, ""))
+    floored = timeout is None and TIMEOUT_S >= completion.timeout_for(int(max_tokens or 0))
     timeout = _allowance(where, max_tokens, timeout)
     started = time.perf_counter()
     made = []
@@ -379,15 +407,18 @@ def complete(lane: str, prompt: str, system: str | None = None,
         except Refused as exc:
             raise Refused(f"{label}: {exc}") from exc
         except completion.CompletionError as exc:
+            if exc.failure_class == reasons.TIMEOUT and floored:
+                cuts.cut("harness/delegate.py:TIMEOUT_S", f"{spec}: no reply in time", kept=0, dropped=1)
             if exc.failure_class != reasons.TOKEN_BUDGET_EXHAUSTED:
                 raise
+            cuts.cut(max_tokens_knob, f"{spec}: reply cut at its token budget", value=max_tokens)
             hint = "" if thinking is False else " Or pass thinking=false to answer without reasoning."
             raise completion.CompletionError(
                 f"{label + ': ' if label else ''}{exc}{hint}",
                 exc.failure_class, exc.limit) from exc
     with (as_work(lane, spec, where, stream=True, delegation=delegated, tag=tag or _tag(delegated)) as out,
           completion.measuring()):
-        text, cost, replies = generate(spec, where, lane, prompt, call)
+        text, cost, replies = generate(spec, where, lane, prompt, call, method=method, context=context)
         got = replies[-1]
         out.update({"text": text, "lane": lane, "spec": spec,
                     "model": _answered_by(got.model or where.model), "method": cost or None,

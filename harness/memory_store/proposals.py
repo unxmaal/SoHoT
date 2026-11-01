@@ -157,7 +157,7 @@ def settled(conn: sqlite3.Connection) -> set[str]:
 
 
 def pending(conn, limit: int = 50, registry: str | None = None,
-            screened: bool = True) -> list[str]:
+            screened: bool = True, limit_knob: str = "harness/memory_store/proposals.py:pending(limit)") -> list[str]:
     """Proposals nothing has answered yet, most-corroborated first.
 
     THE MISSING RUNG. The sweep writes proposals and every later tier read a
@@ -197,7 +197,9 @@ def pending(conn, limit: int = 50, registry: str | None = None,
         ORDER BY times DESC, last_seen DESC
         LIMIT ?
     """
-    return [r["name"] for r in conn.execute(q, args)]
+    from harness import cuts
+    rows = cuts.filled(conn.execute(q, args), limit, limit_knob, "pending proposals past the limit", conn=conn)
+    return [r["name"] for r in rows]
 
 
 def latest(conn, name: str) -> dict | None:
@@ -224,7 +226,7 @@ def set_registry(conn, name: str, registry: str) -> None:
     conn.commit()
 
 
-def survivors(conn, limit: int = 10) -> list[dict]:
+def survivors(conn, limit: int = 10, limit_knob: str = "harness/memory_store/proposals.py:survivors(limit)") -> list[dict]:
     """Candidates whose LATEST verdict is a passed screen, newest first.
 
     The latest verdict, not any verdict: a candidate that screened green and
@@ -237,7 +239,8 @@ def survivors(conn, limit: int = 10) -> list[dict]:
         WHERE p.state = 'screened' AND v.tier = ?
         ORDER BY v.id DESC LIMIT ?
     """, (SCREEN, limit)).fetchall()
-    return [dict(r) for r in rows]
+    from harness import cuts
+    return [dict(r) for r in cuts.filled(rows, limit, limit_knob, "screened survivors past the limit", conn=conn)]
 
 
 def by_registry(conn) -> dict[str, int]:
@@ -254,7 +257,7 @@ def by_registry(conn) -> dict[str, int]:
     return out
 
 
-def judgeable(conn, limit: int = 50, names=None) -> list[dict]:
+def judgeable(conn, limit: int = 50, names=None, limit_knob: str = "harness/memory_store/proposals.py:judgeable(limit)") -> list[dict]:
     """What the inspect tier queued and no judge has scored, best-corroborated
     first, with everything judge.describe() is shown.
 
@@ -318,16 +321,17 @@ def judgeable(conn, limit: int = 50, names=None) -> list[dict]:
         ORDER BY times DESC, last_seen DESC
         LIMIT ?
     """
-    return with_lineage(conn, [dict(r) for r in conn.execute(
-        q, (ms.machine_row(conn), INSPECT, INSPECT, JUDGE, *TERMINAL,
-            "screened", limit))])
+    rows = conn.execute(q, (ms.machine_row(conn), INSPECT, INSPECT, JUDGE, *TERMINAL, "screened", limit))
+    from harness import cuts
+    rows = cuts.filled(rows, limit, limit_knob, "judgeable candidates past the limit", conn=conn)
+    return with_lineage(conn, [dict(r) for r in rows])
 
 
 def judgeable_total(conn) -> int:
     """How many candidates are waiting, whatever one run's budget is. A tier
     that takes the top 25 of a backlog and says nothing about the rest reads as
     finished."""
-    return len(ms.judgeable(conn, limit=1_000_000))
+    return len(ms.judgeable(conn, limit=1_000_000, limit_knob="harness/memory_store/proposals.py:judgeable_total->ms.judgeable(limit)"))
 
 
 def techniques(conn) -> list[dict]:
@@ -358,7 +362,7 @@ def techniques(conn) -> list[dict]:
     return out
 
 
-def ranked(conn, limit: int = 50) -> list[dict]:
+def ranked(conn, limit: int = 50, limit_knob: str = "harness/memory_store/proposals.py:ranked(limit)") -> list[dict]:
     """Everything a judge has scored, best first. What the tier is FOR."""
     q = """
         SELECT p.name, p.lane, v.score, v.rubric, v.judge, v.detail,
@@ -368,7 +372,9 @@ def ranked(conn, limit: int = 50) -> list[dict]:
         ORDER BY v.score DESC, v.id DESC
         LIMIT ?
     """
-    return [dict(r) for r in conn.execute(q, (JUDGE, limit))]
+    from harness import cuts
+    return [dict(r) for r in cuts.filled(conn.execute(q, (JUDGE, limit)), limit, limit_knob,
+                                          "judged proposals past the limit", conn=conn)]
 
 
 def recurrence(conn: sqlite3.Connection, minimum: int = 2) -> list[dict]:

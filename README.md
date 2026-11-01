@@ -734,12 +734,17 @@ adopted here, through the same route `soh code` uses:
   context is smaller) are asked part by part
   and the answers merged. An answer line survives only if some line of the files holds it
   verbatim; for a question about failures, a line found only on PASSED, SKIPPED, XFAIL, XPASS
-  or warning lines is dropped too. Only a caller on this machine may pass `paths`: loopback, or a
+  or warning lines is dropped too, and so is a bare number. For such a question a fixed scan
+  then adds each failure-shaped line the model left out (a nonzero error or failure count,
+  FAILED/ERROR, an exception line, an error mark, a nonzero exit), at most `ask_failure_lines`
+  of them; a small model skips count lines. Only a caller on this machine may pass `paths`: loopback, or a
   connection from the server's own address. `soh ask PATH... -q QUESTION` does the same from
   a shell, with the caller's checkout as a root too; `soh ask --redo` counts digests that a
   full Read of the same path followed within 10 tool calls (the bar is 15%), and
   `soh ask --eval DIR` scores the lane on synthesized make check, pytest, CI and queue logs,
-  each with one planted failure and a clean twin.
+  each with one planted failure and a clean twin; `--set fresh` (go, jest, cargo, lint,
+  gradle) and `--set third` (unittest, rspec, C build, terraform) use other tools, plant
+  wording and question, and `--seed` regenerates any set.
 - `local_complete(paths=[one file], question="...", mode="spans")` is for a source or doc
   file you will read but not edit. The code lane (thinking off) names the line ranges that
   answer the question and quotes each range's first line; every quote is checked against the
@@ -1143,6 +1148,19 @@ soh ledger --compare 2026-10-14        # OTel events, OTel metrics, ccusage, tra
 soh context --source otel --by category
 ```
 
+`soh unverified` is a Claude Code Stop hook, off until a project turns it on
+(#1380). At the end of each turn it asks the decide lane's local model, for
+each factual sentence of the final message, whether a tool result in the same
+turn shows it, and blocks the stop once, naming the claims that none does, so
+the assistant cites, checks or marks them unverified. Any error or the
+`unverified_turn_timeout_s` deadline allows the stop. It logs counts and the
+flagged claims to `logs/unverified.jsonl`, never other transcript text.
+
+```bash
+soh unverified --settings                          # the block to add to .claude/settings.json
+soh unverified --transcript session.jsonl --json   # check a transcript's last turn; writes nothing
+```
+
 Each watchdog wake also asks every text lane a known-answer completion on the
 route `local_complete` takes (#924), but only when the lane's model is
 resident and, for a server on this machine, nobody holds the eval lock. Each
@@ -1206,7 +1224,8 @@ MiniMax-H3's 134 GiB checkpoint is read from `$H3_MODEL_DIR`, else
 video lane streams it from disk, so its speed is the disk's: on a Mac Studio an
 external USB volume read 376 MB/s with the GPU idle, against 5.27 GB/s from the
 internal SSD. A copy or symlink at the home path moves it without moving the
-cache.
+cache. `fetch-h3-weights.sh` and `h3-weights-status.sh` ask the engine for that
+directory rather than computing their own (#1450).
 
 `HF_MIN_FREE_GB` is 20, which is enough for a normal model and deliberately not
 enough for MiniMax-H3. `fetch-h3-weights.sh` demands its own 160GB and
@@ -1259,15 +1278,23 @@ final, and how many retests then passed (recovered false negatives).
 each `--loop --run` (after the retests) also re-checks every wanted lane's
 served model. It queues a low-priority job, never an inline run, when a runtime
 that lane uses (mlx-lm, llama.cpp, mflux, LiteLLM, macOS and so on) has a
-different version than the model's last passing run recorded, when the lane
-has no passing run here within its threshold (7 days by default; `soh reverify
---lane code --days 3` changes it), or when `soh usage` saw real use regress
-after the lane's alias last moved. A lane gets one queued re-run at a time. The
-next check reads the run that job stored: no passes, or more cases lost than
-gained against the last pass at the adopt tier's significance, is recorded with
-its reason and failure class and flagged in `soh report`. The served model is
-never swapped; that is left to a person. `soh reverify --dry-run` says what
-would be queued.
+different version than the model's last working run recorded, when the lane
+has no run here within its threshold in which the model worked on the lane's
+metric (7 days by default; `soh reverify --lane code --days 3` changes it), or
+when `soh usage` saw real use regress after the lane's alias last moved.
+"Worked" is what the lane ranks on, not exact-case passes: a decide model with
+fields right but no case right in full, or an stt model with a plausible word
+error rate but no word-perfect clip, worked. A lane gets one queued re-run at a
+time. The next check reads the run that job stored. It is `failed` when the
+model did not work, `regressed` when it lost more than it gained on the lane's
+metric against that last working run at the adopt tier's significance, or when
+a measured adoption's incumbent, re-run beside it, now beats it, and `unrun`
+when the job stored no run or its most common failure is the harness's. Each
+is recorded with its reason and failure class and flagged in `soh report`; a
+flagged lane is re-run once its threshold passes again. A re-run the watchdog
+paused is not judged: the next check queues its continuation from the
+checkpoint for the night. The served model is never swapped; that is left to a
+person. `soh reverify --dry-run` says what would be queued.
 
 **Exit status.** `soh discover --loop` exits nonzero when any step did, and
 its last stderr line names them, for example `loop exit 1: sweep reported a
@@ -2704,6 +2731,26 @@ tracer or OmniSVG emits paths only. The attribution records kind and stratum
 (easy, medium, hard). The negative control: the reference passes, one black
 square and the next case's drawing do not.
 
+The image lane's imported source is `geneval` (#603): GenEval's prompts (MIT,
+pinned commit, recorded copy checked by sha256) as staging cases for the
+pinned detector. An include count reads "at least", a counting row's include
+plus exclude reads "exactly", a position becomes `above` or `left_of` against
+the named object, and a colour must beat GenEval's other colours on the
+object's box. The negative control: boxes meeting the spec pass, no boxes and
+the next case's boxes do not.
+
+The web lane's generated source is `web_synth` (#603). Each row draws a page
+spec, and the spec gives the prompt and a `structure` assertion that
+`structure()` in `harness/checks/html.py` reads from the parsed page before
+any browser renders it: the title, the heading outline, table captions,
+headers and rows in order, nav links and the sections they point at, nested
+lists, definition lists, article cards, form controls with their labels,
+types and required flags, and no remote loads. Hard kinds need the content
+computed from the prompt: rows sorted, filtered, totalled or converted. The
+negative control: the page built from the spec passes, a bare page and the
+next case's page do not, and a hard kind's rows left as the prompt gives them
+fail.
+
 `repair` costs nothing extra, so it is the one to understand. Everything already
 checks its own output. It runs the code it wrote, draws the SVG to see whether
 anything is visible, opens the web page in a browser. All of that was
@@ -2797,7 +2844,7 @@ commits, since `uv run` there would run that checkout's code instead; pass
 `--cwd DIR` to run somewhere on purpose. Without a deploy checkout the job runs
 where it was queued.
 
-`soh jobs cancel` drops a pending job. On a running one it signals the job's
+`soh jobs cancel` records a pending job `cancelled` without running it. On a running one it signals the job's
 process group (each job is started as its own), waits for it to exit, kills
 what is left after a grace period, and records the job `cancelled` with a note.
 It works on the machine running the job.
@@ -2819,7 +2866,10 @@ normal, whether or not someone is at the machine; under pressure it waits,
 and an unreadable pressure level does not block it. Jobs are rows in the
 store's `jobs` table, so they survive a restart, and output goes to
 `~/localharness/logs/jobs/<id>.log`. A failed job is recorded and the next
-starts. A job cut off by a reboot is marked failed rather than rerun. An eval
+starts. A job whose eval paused with its cases checkpointed is recorded
+paused, not failed; a paused `soh adopt --confirm` queues itself for
+the next night and resumes the same run directory. A job cut off by a reboot
+is marked failed rather than rerun. An eval
 run a job produced is linked to it (`runs.job_id`).
 
 Over MCP, `image` and `video` are queued at priority 10, ahead of batch work
@@ -2930,7 +2980,11 @@ stops it. vllm-metal always gets `--gpu-memory-utilization 0.2 --max-model-len
 for a 4B model. A `vllm:` spec
 works anywhere a text spec does (evals, lane commands, an adoption the
 generated gateway config fronts); `VLLM_ENGINE` names which implementation it
-is on the receipt's `engines` map.
+is on the receipt's `engines` map. This machine has vLLM only when that engine's
+executable is in its venv, the one answer `harness/vllm.py:available()` gives
+every caller; a vllm on PATH is nothing the harness starts. A candidate whose
+weights only vLLM loads screens as `vllm:<repo id>` on a text lane, and
+evals.run starts the server for it (#960).
 
 Measured 2026-10-07 on the M5 Ultra, Qwen3-4B-Instruct-2507 (MLX 4-bit; Q4_K_M
 GGUF for llama-server with 16 slots), 32 texts, 300-token budget, total tokens

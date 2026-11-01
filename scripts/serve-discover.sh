@@ -11,7 +11,6 @@
 # KeepAlive, or launchd would restart a finished sweep immediately. #625.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-source scripts/env.sh
 
 LH_LOGS="${LOCALHARNESS_HOME:-$HOME/localharness}/logs"
 mkdir -p "$LH_LOGS"
@@ -27,6 +26,8 @@ BUDGET="${DISCOVER_BUDGET_GIB:-40}"
 REPEAT="${DISCOVER_REPEAT:-}"
 
 echo "=== sweep $(date -u +%Y-%m-%dT%H:%M:%SZ) top=${TOP/#0/ceiling} budget=${BUDGET}GiB ==="
+# After the header, so a refusal is logged under it. #1481.
+source scripts/env.sh
 # Not exec: a sweep killed by a bootout or ^C must leave a line in discover.log. #794.
 child=""
 _killed() {

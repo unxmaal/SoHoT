@@ -24,12 +24,15 @@ def abandoned(conn, root, lane: str, inc_spec: str, spec: str) -> dict | None:
     from pathlib import Path
 
     from evals import watch
+    from harness import watchdog
     lane = (lane or "").strip().lower()
     known = {r["out"] for r in conn.execute("SELECT out FROM paused_runs")}
     for out in sorted(Path(root).glob(f"*-adopt-{lane}"), reverse=True):
         got = watch.read(out)
         progress = watch.read_progress(out)
         if not got or not got[1] or str(out) in known or progress.get("state") not in ("running", "paused"):
+            continue
+        if watchdog.overrun_stopped(conn, out):
             continue
         ident = got[0]
         if ident.get("modality") != lane or list(ident.get("candidates") or ()) != [inc_spec, spec]:
@@ -65,12 +68,12 @@ def _row(r) -> dict:
 
 def save(conn, *, lane: str, inc_spec: str, spec: str, proposal: str, out: str, ident: dict,
          plan: dict, done: int, total: int, looks: list, run_id=None, machine_id=None,
-         pause_id: int | None = None, why: str = "") -> int:
-    """Record or update the pause; each save is one more sweep the run has spanned."""
+         pause_id: int | None = None, why: str = "", spans: int = 1) -> int:
+    """Record or update the pause; a save adds `spans` sweeps, 0 for a later look slice in the same sweep (#1353)."""
     if pause_id is not None:
-        conn.execute("UPDATE paused_runs SET done = ?, total = ?, looks = ?, run_id = ?, sweeps = sweeps + 1, "
+        conn.execute("UPDATE paused_runs SET done = ?, total = ?, looks = ?, run_id = ?, sweeps = sweeps + ?, "
                      "state = 'paused', why = ?, paused_at = ? WHERE id = ?",
-                     (done, total, json.dumps(looks), run_id, why, time.time(), pause_id))
+                     (done, total, json.dumps(looks), run_id, int(spans), why, time.time(), pause_id))
         conn.commit()
         return pause_id
     cur = conn.execute(

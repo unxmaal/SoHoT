@@ -83,14 +83,19 @@ def _gateway_errors(conn) -> list:
     from harness import usage
     # Rates over a window the writer dropped rows from are not rates of real use. #700.
     out = usage.drop_warning(conn, time.time() - usage.parse_since(usage.DEFAULT_SINCE))
+    few = []
     for lane, s in sorted(usage.real_use(conn).items()):
         if s["requests"] < MIN_REQUESTS:
+            few.append(lane)
             continue
         if (s["error_rate"] or 0) > ERROR_RATE_MAX:
             out.append(f"sohot-{lane}: {s['error_rate']:.0%} of {s['requests']} requests failed in the model")
         if (s.get("gateway_error_rate") or 0) > ERROR_RATE_MAX:
             out.append(f"sohot-{lane}: the gateway or client refused {s['gateway_error_rate']:.0%} "
                        f"of {s['requests']} requests (rate limit, auth, budget or bad request)")
+    if few:
+        from harness import cuts
+        cuts.cut("harness/live_audit.py:MIN_REQUESTS", f"error rates of {', '.join(few)} left unjudged", dropped=len(few))
     return out
 
 
@@ -189,11 +194,28 @@ def _facts_here(conn) -> dict:
     return (ms.recorded_facts(conn, mid) if mid is not None else {}) or ms.this_machine()
 
 
-def _revisitable(conn, facts=None, reopened_at=...) -> tuple[list, list]:
+def _met_at_sweep(row: dict, data: dict | None) -> bool:
+    """Whether a row's cases: until was already met when the loop's requeue ran; other untils are judged by time. #1361."""
+    from harness import memory_store as ms
+    if not row["until"].startswith("cases:"):
+        return True
+    counts = (data or {}).get(heartbeat.REVISIT_CASES)
+    if isinstance(counts, dict):
+        return ms.until_met(row["until"], {"cases": counts})
+    # A requeue that recorded no counts: a deploy since it may have brought the cases.
+    ran = (data or {}).get("finished_commit") or (data or {}).get("commit") or ""
+    head = heartbeat.code_commit()
+    return not ran or not head or ran == head
+
+
+def _revisitable(conn, facts=None, reopened_at=..., data=...) -> tuple[list, list]:
     """(failures, warnings): state-holding refusals whose until is met here; one the loop's requeue left fails. #1055."""
     from harness import memory_store as ms
     facts = _facts_here(conn) if facts is None else facts
     survived, fresh, swept = _survived("revisitable", ms.revisitable(conn, facts), reopened_at)
+    data = heartbeat.read() if data is ... else data
+    fresh += [r for r in survived if not _met_at_sweep(r, data)]
+    survived = [r for r in survived if r not in fresh]
 
     def say(r):
         return f"verdict {r['verdict_id']} {r['name']}: {r['until']} is met here"

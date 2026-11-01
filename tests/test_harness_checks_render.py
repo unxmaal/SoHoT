@@ -8,7 +8,6 @@ rect. The only way to catch that is to draw it and look.
 
 rsvg-convert is librsvg's CLI and is already installed here.
 """
-import sys
 import shutil
 from pathlib import Path
 
@@ -189,7 +188,7 @@ def test_a_render_creates_and_cleans_up_its_own_profile(tmp_path, monkeypatch):
     """The caller should not have to know chrome needs a scratch directory."""
     seen = {}
 
-    def fake_shoot(argv, out, cwd, timeout=60.0):
+    def fake_shoot(argv, out, cwd, timeout=60.0, timeout_knob=None):
         seen["argv"] = argv
         assert any(a.startswith("--user-data-dir=") for a in argv)
         Path(out).write_bytes(b"\x89PNG\r\n\x1a\n")
@@ -202,23 +201,13 @@ def test_a_render_creates_and_cleans_up_its_own_profile(tmp_path, monkeypatch):
     assert not Path(prof.split("=", 1)[1]).exists(), "scratch profile left behind"
 
 
-def test_the_shot_does_not_wait_for_chrome_to_exit(tmp_path):
+def test_the_shot_does_not_wait_for_chrome_to_exit(tmp_path, fake_chrome):
     """Issue #29: with its own profile chrome writes the PNG and then hangs, so
     waiting on the process is waiting for the timeout."""
     out = tmp_path / "shot.png"
-    # The stand-in is python, not `/bin/sh`: there is no /bin/sh to exec on
-    # Windows, and a path interpolated into a shell string arrives with
-    # backslashes, which sh reads as escapes. !r lets the child receive the
-    # path exactly as written on either platform.
-    argv = [sys.executable, "-c",
-            f"import pathlib, time; "
-            f"pathlib.Path({str(out)!r}).write_bytes(b'x'); "
-            f"time.sleep(30)"]
-    import time as _t
-    start = _t.monotonic()
-    render._shoot(argv, out, str(tmp_path), timeout=20.0)
-    assert _t.monotonic() - start < 10, "waited for a process that never exits"
-    assert out.exists()
+    render._shoot(fake_chrome.argv(out), out, str(tmp_path), timeout=20.0)
+    assert fake_chrome.now < 1, "waited for a process that never exits"
+    assert out.exists() and fake_chrome.terminated == 1
 
 
 def test_a_chromium_family_browser_is_found_where_this_os_puts_it():
@@ -323,7 +312,7 @@ def test_a_browser_that_cannot_take_a_profile_is_retried_without_one(
     monkeypatch.setattr(render, "chrome_path", lambda: "/fake/chromium")
     seen = []
 
-    def fake_shoot(argv, out, cwd, timeout=60.0):
+    def fake_shoot(argv, out, cwd, timeout=60.0, timeout_knob=None):
         had_profile = any(a.startswith("--user-data-dir") for a in argv)
         seen.append(had_profile)
         if not had_profile:

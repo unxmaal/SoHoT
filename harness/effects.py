@@ -5,7 +5,7 @@ import json
 import math
 from collections import defaultdict
 
-#: The smallest per-cell gain worth a model switch on a lane whose reruns never flip.
+#: The least noise effect a lane registers, however rarely its reruns flip; the gate powers for power.used(it).
 FLOOR = 0.05
 #: Cases measured twice under one config before a lane's churn sets its effect.
 MIN_CASES = 30
@@ -162,7 +162,7 @@ def _alpha() -> float:
 
 
 def replay(conn, effects: dict) -> list[dict]:
-    """Every stored adopt verdict's class as stored and under `effects` (lane -> effect) with the confirmation step."""
+    """Every stored adopt verdict's class as stored, under `effects` (lane -> noise effect) alone and floored by power.used, with the confirmation step."""
     from harness import power
     rows = conn.execute(
         "SELECT v.id, v.outcome, v.failure_class, v.detail, v.power, c.lane AS cand_lane, a.how "
@@ -173,10 +173,12 @@ def replay(conn, effects: dict) -> list[dict]:
         lane = _lane(r["detail"], r["cand_lane"])
         plan = _plan(r["power"])
         stored = _stored(r, plan)
-        effect = float(effects.get(lane, power.DEFAULT_EFFECT))
+        noise = float(effects.get(lane, power.DEFAULT_EFFECT))
+        effect = power.used(noise)
         r = {**dict(r), "mde": None if plan.get("mde") is not None or stored != "candidate" or not plan
              else _run_mde(conn, r["id"], lane, plan)}
+        under_noise, _ = _replayed(r, plan, stored, noise, r["how"] or "")
         replayed, why = _replayed(r, plan, stored, effect, r["how"] or "")
-        out.append({"id": r["id"], "lane": lane, "stored": stored, "replayed": replayed, "effect": effect,
-                    "why": why, "detail": (r["detail"] or "")[:120]})
+        out.append({"id": r["id"], "lane": lane, "stored": stored, "under_noise": under_noise, "replayed": replayed,
+                    "noise": noise, "effect": effect, "why": why, "detail": (r["detail"] or "")[:120]})
     return out

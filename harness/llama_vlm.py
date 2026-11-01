@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import base64
 import contextlib
-import os
 import socket
 import subprocess
 import time
@@ -87,7 +86,8 @@ def argv_for(model: Path, mmproj: Path, port: int, device: str = "gpu", ctx: int
     from evals.vision import LLAMACPP_CTX
     ctx = LLAMACPP_CTX if ctx is None else ctx
     place = ["-ngl", "0", "--device", "none", "--no-mmproj-offload"] if device == "cpu" else ["-ngl", "999"]
-    return [os.environ.get("LLAMACPP_BIN", "llama-server"), "-m", str(model), "--mmproj", str(mmproj),
+    from harness import serving
+    return [serving.llamacpp_binary() or serving.llamacpp_named(), "-m", str(model), "--mmproj", str(mmproj),
             "--host", "127.0.0.1", "--port", str(port), "-c", str(ctx), "-np", "1", "--offline",
             "--no-webui", *place]
 

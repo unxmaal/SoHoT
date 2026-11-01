@@ -16,8 +16,8 @@ the caller wants the first-token time and the model that answered; they share
 the lane commands' route rather than their argv.
 
 svg, web and code answer directly. image and video go on the shared work
-queue (harness/workqueue.py, #353): they return a job id at once, run in order
-while memory pressure is normal, and job_result hands back the file.
+queue (harness/workqueue.py, #353): they return a job id at once, run by priority
+then id, one GPU job at a time, while memory pressure is normal, and job_result hands back the file.
 
     ./scripts/serve-mcp.sh          # 0.0.0.0, no auth, trusted LAN only
 
@@ -78,7 +78,8 @@ SERVER = MCPServer(
     instructions=(
         "Local media generation on Apple Silicon. svg, web and code answer "
         "directly, in seconds once the model is loaded. image and video go on this machine's work queue and "
-        "return a job id at once: jobs run in order, and wait while the "
+        "return a job id at once: jobs run by priority then id, one GPU job at a time with "
+        "all-hosted evals beside it in free cloud slots, and wait while the "
         "machine is short of memory. Poll job_status; when it is "
         "done, job_result returns the file itself. local_complete and "
         "local_decide hand a text subtask to this machine's adopted local "
@@ -282,11 +283,18 @@ def local_complete(prompt: str = "", lane: str = "", system: str | None = None,
     else:
         if question and not prompt:
             raise ToolError("`question` asks about `paths`; pass the files, or put the task in `prompt`")
-        got = _delegated(delegate.complete, lane or "code", prompt, system=system,
-                         max_tokens=2048 if max_tokens is None else max_tokens,
-                         temperature=temperature, thinking=thinking, delegated=True)
+        given = {} if max_tokens is None else {"max_tokens": max_tokens}
+        got = _prompted(prompt, lane or "code", system, temperature=temperature, thinking=thinking, **given)
     got["report"] = delegations.instruction(got["call_id"])
     return LocalCompletion(**{k: got[k] for k in LocalCompletion.model_fields if k in got})
+
+
+def _prompted(prompt: str, lane: str, system: str | None, max_tokens: int = 2048, **kw) -> dict:
+    got = _delegated(delegate.complete, lane, prompt, system=system, max_tokens=max_tokens, delegated=True, **kw)
+    if (got.get("completion_tokens") or 0) >= max_tokens:
+        cuts.cut("harness/mcp_server.py:_prompted(max_tokens)", f"a {lane} delegation reply at its token budget",
+                 value=max_tokens, kept=0, dropped=1)
+    return got
 
 
 def _from_here(ctx) -> None:
@@ -474,7 +482,7 @@ def _describe(job: dict) -> JobInfo:
                 info.waiting_for = exclusive.holder().get("kind")
     if job["state"] == workqueue.DONE:
         info.path = job.get("output") or None
-    if job["state"] in (workqueue.FAILED, workqueue.CANCELLED):
+    if job["state"] in (workqueue.FAILED, workqueue.PAUSED, workqueue.CANCELLED):
         info.error = job.get("note") or f"exited {job.get('rc')}; log {job.get('log')}"
     return info
 
@@ -511,8 +519,9 @@ def _local_hostname() -> str:
     import socket
     import subprocess
     try:
-        name = subprocess.run(["scutil", "--get", "LocalHostName"],
-                              capture_output=True, text=True, timeout=5).stdout.strip()
+        with cuts.timeout("harness/mcp_server.py:_local_hostname->subprocess.run(timeout)", "scutil LocalHostName"):
+            name = subprocess.run(["scutil", "--get", "LocalHostName"],
+                                  capture_output=True, text=True, timeout=5).stdout.strip()
     except (OSError, subprocess.SubprocessError):
         name = ""
     return f"{name}.local" if name else socket.gethostname()

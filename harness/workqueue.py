@@ -1,4 +1,4 @@
-"""Jobs from any caller, run in order under the machine lock while memory pressure is normal. #353, #573.
+"""Jobs from any caller, by priority then id within each lock class: one GPU job at a time, cloud jobs in free cloud slots, while memory pressure is normal. #353, #573, #1153.
 
 Jobs are rows in the store's `jobs` table (#418). The runner flock and the
 paused flag stay files: a kernel lock and an operator switch.
@@ -20,6 +20,8 @@ from harness import exclusive, paths
 
 PENDING, RUNNING, DONE, FAILED = "pending", "running", "done", "failed"
 CANCELLED = "cancelled"
+#: A job whose command paused on request with its work checkpointed (evals.watch.PAUSED). #1357.
+PAUSED = "paused"
 #: The lock class a job waits for before the worker starts it. #1153.
 GPU, CLOUD = "gpu", "cloud"
 #: How often a worker with jobs running looks for one it can start beside them. #1153.
@@ -108,9 +110,11 @@ def jobs(conn=None) -> list[dict]:
 
 
 def _git(path: Path, *args: str) -> str | None:
+    from harness import cuts
     try:
-        out = subprocess.run(["git", "-C", str(path), *args], capture_output=True,
-                             text=True, timeout=30)
+        with cuts.timeout("harness/workqueue.py:_git->subprocess.run(timeout)", f"git {' '.join(args)}"):
+            out = subprocess.run(["git", "-C", str(path), *args], capture_output=True,
+                                 text=True, timeout=30)
     except (OSError, subprocess.SubprocessError):
         return None
     return out.stdout.strip() if out.returncode == 0 else None
@@ -167,6 +171,12 @@ def night_start(now: float) -> float:
     return min(later).timestamp()
 
 
+def next_night(now: float) -> float:
+    """When the night after this one starts: night_start(now) by day, the following night's start at night. #1357."""
+    start = night_start(now)
+    return start if start > now else night_start(night_window(now)[1])
+
+
 def night_window(now: float) -> tuple[float, float]:
     """(start, end) of the night a job queued now runs in: night_start(now) until the watchdog's next day start. #1020."""
     from datetime import datetime, timedelta
@@ -194,10 +204,16 @@ def at_clock(hhmm: str, now: float) -> float:
 def at_date(spec: str, now: float) -> float:
     """A local 'YYYY-MM-DD HH:MM' as that exact time; one already past is refused. #1297."""
     from datetime import datetime
-    try:
-        at = datetime.strptime(spec.strip().replace("T", " "), "%Y-%m-%d %H:%M")
-    except ValueError:
-        raise ValueError(f"a start time is HH:MM, YYYY-MM-DD HH:MM or 'night', not {spec!r}") from None
+    text = spec.strip().replace("T", " ")
+    at = None
+    for form in ("%Y-%m-%d %H:%M", "%Y-%m-%d %H:%M:%S"):
+        try:
+            at = datetime.strptime(text, form)
+            break
+        except ValueError:
+            continue
+    if at is None:
+        raise ValueError(f"a start time is HH:MM, YYYY-MM-DD HH:MM[:SS] or 'night', not {spec!r}")
     if at.timestamp() < now:
         raise ValueError(f"the start {spec!r} is in the past")
     return at.timestamp()
@@ -214,6 +230,44 @@ def start_at(spec: str, now: float | None = None) -> float | None:
     return at_date(spec, now) if re.match(r"\d{4}-", spec) else at_clock(spec, now)
 
 
+def start_with_night(spec: str, night: bool, now: float | None = None) -> tuple[float | None, bool]:
+    """(not_before, night_gate) for --not-before spec and --night: both means the first night moment at or after spec. #1347."""
+    spec = (spec or "").strip()
+    if not night or not spec or spec == "night":
+        start = "night" if night else spec
+        return start_at(start, now), start == "night"
+    return night_start(start_at(spec, now)), False
+
+
+def _schema_file(cwd) -> Path | None:
+    here = Path(cwd).resolve()
+    return next((f for f in (t / "harness" / "memory_store" / "schema.py" for t in (here, *here.parents))
+                 if f.is_file()), None)
+
+
+def code_schema(cwd) -> int | None:
+    """The SCHEMA_VERSION the nearest checkout at or above cwd speaks, read as text; None outside one. #1348."""
+    schema = _schema_file(cwd)
+    m = schema and re.search(r"^SCHEMA_VERSION\s*=\s*(\d+)", schema.read_text(encoding="utf-8"), re.M)
+    return int(m.group(1)) if m else None
+
+
+def stale_schema(cwd, conn) -> str:
+    """Why a job in cwd would refuse this store (its code speaks an older schema), or ''. #1348."""
+    code = code_schema(cwd)
+    row = conn.execute("SELECT value FROM meta WHERE key='schema'").fetchone()
+    store = int(row["value"]) if row else 0
+    if code is None or code >= store:
+        return ""
+    top = _schema_file(cwd).parents[2]
+    return (f"the job's code ({top}) speaks schema {code} but the store is schema {store}, "
+            f"so it would refuse the store when it starts; queue from the deploy or update that checkout")
+
+
+#: Planners that rerun a model the lane already measured (a knob sweep, a reverify), so no repo screen comes first. #1353
+REMEASURES = ("sweep", "reverify")
+
+
 def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
         output: str = "", priority: int = 0, requested_by: str = "",
         not_before: float | None = None, night: bool = False, conn=None) -> dict:
@@ -228,10 +282,19 @@ def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
                          f"split it into words (zsh does not word-split $VAR). #363")
     if "evals.run" in [str(a) for a in argv]:
         from evals import run
-        spend = run.argv_spend_refusal(argv)
+        spend = run.argv_spend_refusal(argv) or (
+            "" if requested_by in REMEASURES else run.argv_screen_refusal(argv))
         if spend:
             raise ValueError(f"not queued: {spend}")
+    if "adopt" in [str(a) for a in argv]:
+        from harness.commands import adopt as adopt_cmd
+        unscreened = adopt_cmd.argv_screen_refusal(argv)
+        if unscreened:
+            raise ValueError(f"not queued: {unscreened}")
     with _store(conn) as c:
+        stale = stale_schema(cwd or os.getcwd(), c)
+        if stale:
+            raise ValueError(f"not queued: {stale}")
         machine = _machine(c)
         # The store assigns the id inside the insert, so two writers cannot collide. #418.
         cur = c.execute(
@@ -358,12 +421,14 @@ def set_priority(job_id: str, priority: int, conn=None) -> dict:
 
 
 def cancel(job_id: str, conn=None, grace: float = CANCEL_GRACE_S) -> dict:
-    """Drop a pending job; stop a running one's process group, wait, and record it cancelled. #628."""
+    """Record a pending job cancelled; stop a running one's process group, wait, and record it cancelled. #628, #1364."""
     with _store(conn) as c:
         job = get(job_id, conn=c)
         if job is None or job["state"] != RUNNING:
-            _only_pending(c, job_id, "DELETE FROM jobs", verb="cancelled")
-            return job
+            note = f"cancelled by soh jobs cancel at {time.strftime(_STAMP)}; before it started"
+            _only_pending(c, job_id, "UPDATE jobs SET state = ?, finished_at = ?, note = ?",
+                          (CANCELLED, time.time(), note), verb="cancelled")
+            return get(job_id, conn=c)
     pid = _pid_of(job["id"])
     if pid is None:
         raise ValueError(f"job {job['id']} is running but no process of it is on this "
@@ -562,9 +627,12 @@ def resume() -> None:
 
 def gate(sample=None) -> tuple[bool, str]:
     """(open, why): may the next job start now? A running job always finishes. #573."""
-    from harness import pressure
+    from harness import env, pressure
     if paused():
         return False, "paused (soh jobs resume)"
+    vol = env.unmounted(env.configured())
+    if vol:
+        return False, f"paused until it returns: the weights volume {vol} {env.NOT_MOUNTED}"
     now = (sample or pressure.sample)()
     if now.alarming:
         return False, f"memory pressure level {now.level}"
@@ -637,6 +705,13 @@ def run_one(job: dict, popen=None) -> dict | None:
     log = log_dir() / f"{job['id']}.log"
     if not _claim(job, log):
         return None
+    with _store() as c:
+        stale = stale_schema(job["cwd"] or ".", c)
+    if stale:
+        log.write_text(f"not started: {stale}\n", encoding="utf-8")
+        job.update(rc=None, state=FAILED, note=f"not started: {stale}", finished=time.strftime(_STAMP))
+        _write(job)
+        return get(job["id"]) or job
     env = {**os.environ, JOB_ENV: str(int(job["id"]))}
     _cancel_flag(job["id"]).unlink(missing_ok=True)
     popen = popen or _in_group(job)
@@ -655,7 +730,8 @@ def run_one(job: dict, popen=None) -> dict | None:
         flag.unlink(missing_ok=True)
         _settle_cancelled(job, rc=rc)
     else:
-        job.update(state=DONE if rc == 0 else FAILED)
+        from evals import watch
+        job.update(state=DONE if rc == 0 else PAUSED if rc == watch.PAUSED else FAILED)
         _write(job)
     return get(job["id"]) or job
 

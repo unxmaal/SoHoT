@@ -62,6 +62,15 @@ _LAYOUT = (_s("circle", "circle", "red", (40, 330, 140, 430)), _s("circle", "cir
            _s("square", "square", "blue", (330, 260, 450, 380)), _s("triangle", "triangle", "green", (340, 90, 440, 190)))
 _SIZES = (_s("circle", "circle", "red", (20, 20, 250, 250)), _s("square", "square", "blue", (340, 360, 420, 440)),
           _s("triangle", "triangle", "green", (400, 40, 460, 100)))
+RELATIONS = {
+    "objects": {"circle": "a circle", "square": "a blue square", "triangle": "a green triangle"},
+    "require": [{"type": "count", "object": "circle", "min": 2},
+                {"type": "left_of", "object": "triangle", "of": "square"},
+                {"type": "attribute", "object": "circle", "is": "a red circle",
+                 "not": ["a blue circle", "a yellow circle"]}],
+}
+_RELATIONS = (_s("circle", "circle", "red", (190, 40, 260, 110)), _s("circle", "circle", "red", (290, 40, 360, 110)),
+              _s("triangle", "triangle", "green", (40, 260, 160, 380)), _s("square", "square", "blue", (350, 260, 470, 380)))
 _ATTRIBUTES = (_s("circle", "circle", "red", (60, 200, 180, 320)), _s("square", "square", "blue", (280, 180, 480, 380)),
                _s("star", "star", "yellow", (330, 230, 430, 330)))
 
@@ -71,8 +80,8 @@ def _swap(shapes, i, shape):
 
 
 def scenes() -> list[Scene]:
-    """Three references, then one break per requirement of each, each failing exactly that requirement."""
-    lay, siz, att = _LAYOUT, _SIZES, _ATTRIBUTES
+    """Four references, then one break per requirement of each, each failing exactly that requirement."""
+    lay, siz, att, rel = _LAYOUT, _SIZES, _ATTRIBUTES, _RELATIONS
     return [
         Scene("layout", LAYOUT, lay),
         Scene("layout-three-circles", LAYOUT, lay + (_s("circle", "circle", "red", (60, 180, 130, 250)),), (0,)),
@@ -92,6 +101,12 @@ def scenes() -> list[Scene]:
         Scene("attributes-a-triangle", ATTRIBUTES, att + (_s("triangle", "triangle", "green", (60, 40, 160, 140)),),
               (2,)),
         Scene("attributes-two-circles", ATTRIBUTES, att + (_s("circle", "circle", "red", (200, 400, 280, 480)),), (3,)),
+        Scene("relations", RELATIONS, rel),
+        Scene("relations-one-circle", RELATIONS, rel[1:], (0,)),
+        Scene("relations-triangle-on-the-right", RELATIONS,
+              _swap(_swap(rel, 2, replace(rel[2], box=(350, 260, 470, 380))), 3, replace(rel[3], box=(40, 260, 160, 380))),
+              (1,)),
+        Scene("relations-blue-circle", RELATIONS, _swap(rel, 0, replace(rel[0], colour="blue")), (2,)),
     ]
 
 

@@ -1,0 +1,49 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-1108
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Lighthouse
+  tours". The page holds a form with an <input> of type "url" named "website" labelled "Website" with
+  a <label> element, not required; an <input> of type "time" named "arrival" labelled "Arrival time" with
+  a <label> element, not required; an <input> of type "text" named "display_name" labelled "Display name"
+  with a <label> element, not required; an <input> of type "password" named "password" labelled "Password"
+  with a <label> element, not required; and a submit button reading "Submit order". Mark only the controls
+  asked as required.'
+assert:
+  structure:
+    title: Lighthouse tours
+    form:
+      fields:
+      - label: Website
+        name: website
+        type: url
+        required: false
+      - label: Arrival time
+        name: arrival
+        type: time
+        required: false
+      - label: Display name
+        name: display_name
+        type: text
+        required: false
+      - label: Password
+        name: password
+        type: password
+        required: false
+      submit: Submit order
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '1108'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: form
+  stratum: medium

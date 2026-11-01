@@ -288,8 +288,8 @@ def test_no_code_adds_up_a_listing_outside_variants():
 
 
 # Inventories: reported, never grown. Lower a pin when a fix lands.
-SWALLOWED_PIN = 60
-CONFIG_LESS_PIN = 150
+SWALLOWED_PIN = 59
+CONFIG_LESS_PIN = 148
 
 
 def test_swallowed_errors_are_an_inventory_that_only_shrinks():
@@ -344,3 +344,85 @@ def test_every_live_audit_check_a_loop_step_repairs_waits_on_that_steps_heartbea
                                          (REPO / scanners.LOOP_FILE).read_text(encoding="utf-8"), stores),
                "a check whose backlog a loop step repairs is an inventory until that step has run; it gated the "
                "deploy smoke on the backlog it started with (#972, #904, gauntlet a-rule-change-leaves-old-decisions-standing)")
+
+
+_TIMED = "import time\n\ndef test_x(r):\n    started = time.perf_counter()\n    r.go()\n    after = time.perf_counter()\n"
+
+
+def test_an_upper_bound_on_measured_wall_time_is_found():
+    for bad in ("    assert time.perf_counter() - started < 1.0\n",
+                "    took = after - started\n    assert took <= 2\n",
+                "    assert r.seconds < 0.4\n",
+                "    assert 15 > after - started\n",
+                "    assert abs(r.stamp - time.time()) < 60\n",
+                "    assert 0 < r.out['wall_s'] < 3 * 0.5\n"):
+        assert len(scanners.wall_bounds(_TIMED + bad, "tests/test_t.py")) == 1, bad
+
+
+def test_order_lower_bounds_and_brackets_of_measured_time_are_left_alone():
+    innocent = _TIMED + ("    assert r.seconds >= 0.4 and after - started >= r.seconds\n"
+                         "    assert started <= r.stamp <= after + 60 - 0.5\n"
+                         "    assert r.first_s < r.ttft_s <= after - started\n"
+                         "    assert r.rate / r.capped_s < 5\n")
+    _quiet_then_fires(scanners.wall_bounds, innocent, "    assert after - started < 5\n", "tests/test_t.py")
+
+
+def test_a_waived_fake_clock_test_is_left_alone_and_only_that_test():
+    src = _TIMED + "    assert r.seconds < 0.4\n"
+    assert scanners.wall_bounds(src, "tests/test_t.py", waivers={"tests/test_t.py:test_x": "fake clock"}) == []
+    assert scanners.wall_bounds(src, "tests/test_t.py", waivers={"tests/test_t.py:test_y": "fake clock"}) != []
+
+
+def test_every_wall_bound_waiver_names_a_test_that_exists():
+    import ast
+    for site in scanners.WALL_BOUND_WAIVERS:
+        rel, name = site.split(":")
+        tree = ast.parse((REPO / rel).read_text(encoding="utf-8"))
+        assert name in {n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)}, site
+
+
+def test_no_test_bounds_measured_wall_time_from_above():
+    _fail_with(scanners.scan_tree(REPO, scanners.wall_bounds, scanners.is_python, _tests_only),
+               "a loaded machine (make check -n auto beside other suites) overruns any upper bound on wall time; "
+               "assert order, a count, a lower bound or a structural fact, or inject the clock (#1423)")
+
+
+def test_production_code_that_tells_a_stand_in_from_the_real_function_is_found():
+    for bad in ("if getattr(ms.this_machine, \"__module__\", \"\") != __name__:\n    pass\n",
+                "if ms.this_machine.__module__ == __name__:\n    pass\n",
+                "if ms.this_machine is not this_machine:\n    pass\n",
+                "ok = hasattr(fn, \"__module__\")\n"):
+        assert len(scanners.double_sniffs(bad, "harness/m.py")) == 1, bad
+
+
+def test_identity_checks_that_do_not_sniff_for_a_double_are_left_alone():
+    innocent = ("if fn is None or self.conn is not conn_b:\n    pass\n"
+                "name = getattr(fn, \"__name__\", \"\")\nkind = type(e).__qualname__\n")
+    _quiet_then_fires(scanners.double_sniffs, innocent, "if ms.this_fingerprint is this_fingerprint:\n    pass\n",
+                      "harness/m.py")
+
+
+def test_no_production_code_sniffs_for_a_test_double():
+    _fail_with(scanners.scan_tree(REPO, scanners.double_sniffs, scanners.is_python, lambda rel: not _tests_only(rel)),
+               "production code that checks whether a name was replaced runs one path under test and another live; "
+               "tests name the machine at environment.identity instead (#1437, #451)")
+
+
+def test_a_test_that_replaces_this_machine_is_found():
+    src = ("def test_x(monkeypatch):\n    monkeypatch.setattr(ms, \"this_machine\", lambda: {})\n"
+           "    monkeypatch.setattr(\"harness.memory_store.this_fingerprint\", lambda: \"f\")\n")
+    assert [f.split(":")[1] for f in scanners.machine_stand_ins(src, "tests/test_x.py")] == ["2", "3"]
+
+
+def test_a_test_that_names_the_machine_at_the_seam_is_left_alone():
+    innocent = ("def test_x(monkeypatch, machine_is):\n    machine_is({\"hw_model\": \"T,1\"})\n"
+                "    monkeypatch.setattr(ms.machines, \"_THIS_MACHINE\", None)\n"
+                "    monkeypatch.setattr(environment, \"identity\", lambda: {})\n")
+    _quiet_then_fires(scanners.machine_stand_ins, innocent,
+                      "    monkeypatch.setattr(served, \"this_machine\", lambda: \"f\")\n", "tests/test_x.py")
+
+
+def test_no_test_replaces_this_machine():
+    _fail_with(scanners.scan_tree(REPO, scanners.machine_stand_ins, scanners.is_python, _tests_only),
+               "a replaced this_machine reaches some callers and not this_fingerprint or the gateway; "
+               "use conftest machine_is / machine_has (#1437)")

@@ -178,7 +178,7 @@ def mac():
 
 
 @pytest.fixture
-def world(monkeypatch, tmp_path, _home):
+def world(monkeypatch, tmp_path, _home, machine_is):
     from evals import core
     from harness import holdout
     real_load = core.load_cases
@@ -197,10 +197,7 @@ def world(monkeypatch, tmp_path, _home):
             "api_key": "not-needed"}}]}), encoding="utf-8")
     monkeypatch.setenv(gateway.ENV_VAR, str(config))
     w.config = config
-    from evals import environment
-    monkeypatch.setattr(environment, "capture", lambda: {
-        "hw_model": "Mac14,12", "os": "macOS-test", "arch": "arm64", "versions": {}})
-    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
+    machine_is({"hw_model": "Mac14,12", "os": "macOS-test", "arch": "arm64", "versions": {}})
     gateway.write_served(config)
     monkeypatch.setattr(urllib.request, "urlopen", w.urlopen)
     monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))
@@ -304,7 +301,7 @@ def test_a_method_crossed_with_the_incumbent_climbs_the_same_ladder(world, monke
     monkeypatch.setattr(family, "SLOTS", 0)
     # #1315's gain order would too: with no evidence, the one-call model is the cheaper measurement.
     from harness.commands import loop as loop_cmd
-    monkeypatch.setattr(loop_cmd, "_by_gain", lambda store, rows, want, say=print: rows)
+    monkeypatch.setattr(loop_cmd, "_by_gain", lambda store, rows, want, say=print, gated=None: rows)
     loop("--top", "5")
     assert adopted() == {"code": CHALLENGER}
     for spec in (f"plan:{INCUMBENT_UPSTREAM}", f"best-of:3:{INCUMBENT_UPSTREAM}",
@@ -339,7 +336,7 @@ def test_a_drafted_crossing_climbs_the_same_ladder(world, monkeypatch):
     monkeypatch.setattr(family, "SLOTS", 0)
     # #1315's gain order would measure the one-call model first and adopt it before the crossing.
     from harness.commands import loop as loop_cmd
-    monkeypatch.setattr(loop_cmd, "_by_gain", lambda store, rows, want, say=print: rows)
+    monkeypatch.setattr(loop_cmd, "_by_gain", lambda store, rows, want, say=print, gated=None: rows)
     conn = ms.connect()
     try:
         ms.record(conn, ms.Seen(name="arxiv:2610.00001", source="hf-daily-papers",
@@ -352,6 +349,7 @@ def test_a_drafted_crossing_climbs_the_same_ladder(world, monkeypatch):
         "mechanism": "prompt", "name": "edge cases first", "lanes": ["code"],
         "steps": [{"as": "cases", "prompt": "List the edge cases of this task. Do not solve it.\n\n{task}"},
                   {"prompt": "{task}\n\nHandle these edge cases:\n{cases}"}]})
+    monkeypatch.setattr(tt, "canary", lambda method: "")
     loop("--top", "7")
     spec = f"t-edge-cases-first:{INCUMBENT_UPSTREAM}"
     conn = ms.connect()

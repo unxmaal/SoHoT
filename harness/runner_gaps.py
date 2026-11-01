@@ -50,6 +50,8 @@ WHISPER_PACKAGE = "mlx-whisper"
 WHISPER_VENV = "whisper"
 #: Runner venvs uv syncs from this project's lock plus one dependency group when a run first needs them: venv -> group. #1024.
 GROUP_VENVS = {WHISPER_VENV: "whisper"}
+#: The uv group a case assertion's grader imports beyond the base env: staging's detector needs torch. #1358.
+ASSERTION_GROUPS = {"staging": "metrics"}
 _VENV_ENV = {"diffusers-cuda": "DIFFUSERS_VENV", "hf-task": "HF_TASK_VENV", WHISPER_VENV: "WHISPER_VENV",
              "nimble": "NIMBLE_VENV", "decider": "DECIDER_VENV", "shots": "SHOTS_VENV"}
 #: Venvs kept at <home>/<name>/venv beside the checkout their script clones, and the env var that moves that home. #1037.
@@ -152,8 +154,8 @@ def remote_code_gap(card, evidence: str = "") -> str:
     if got:
         return got
     mtype = model_type(card, evidence)
-    # A card read before #567 has no remote_code column; its custom_code tag and an unshipped type stand in.
-    if (not (card or {}).get("remote_code") and mtype and not native_in_transformers(mtype)
+    # Inspect writes model_type with remote_code, so only a card with no stored type predates the column. RULE #506.
+    if (not (card or {}).get("model_type") and mtype and not native_in_transformers(mtype)
             and "custom_code" in [t.lower() for t in tags_of(card)]):
         return (f"its card is tagged custom_code and its model type {mtype!r} is not one "
                 f"{remote_code.native_types()[0]} ships")
@@ -334,13 +336,21 @@ def venv_of(spec: str) -> str:
     return RUNNER_VENVS.get(head, "")
 
 
-def launcher(specs, default: list[str]) -> list[str]:
-    """The interpreter an evals.run over `specs` starts with: a group venv's uv run when a spec needs one, else `default`. #1024."""
+def lane_groups(lane: str, root=None) -> tuple[str, ...]:
+    """The uv groups a lane's own graders import: metrics wherever one of its cases asserts staging. #1358."""
+    from harness import holdout
+    return tuple(sorted({group for c in holdout.lane_cases(lane, root) for key, group in ASSERTION_GROUPS.items()
+                         if key in c.assertions}))
+
+
+def launcher(specs, default: list[str], lane: str = "") -> list[str]:
+    """The interpreter an evals.run over `specs` starts with: uv run with each group a spec or the lane needs, else `default`. #1024, #1358."""
     venv = next((v for v in map(venv_of, specs) if v in GROUP_VENVS), "")
+    groups = [arg for g in (lane_groups(lane) if lane else ()) for arg in ("--group", g)]
     if not venv:
-        return list(default)
+        return ["uv", "run", *groups, "python"] if groups else list(default)
     return ["env", "-u", "VIRTUAL_ENV", f"UV_PROJECT_ENVIRONMENT={venv_path(venv)}",
-            "uv", "run", "--group", GROUP_VENVS[venv], "python"]
+            "uv", "run", "--group", GROUP_VENVS[venv], *groups, "python"]
 
 
 def _requirements(names) -> frozenset:
@@ -490,6 +500,23 @@ def cause_until(cls: str, evidence: str, candidate: str, card=None) -> str:
     return ""
 
 
+def _remapped(utils: Path) -> set[str]:
+    """The MODEL_REMAPPING keys a package's utils.py declares, read without importing it."""
+    names: set[str] = set()
+    if not utils.is_file():
+        return names
+    for node in ast.walk(ast.parse(utils.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.Assign) and any(getattr(t, "id", "") == "MODEL_REMAPPING" for t in node.targets):
+            names |= {k.value for k in getattr(node.value, "keys", ()) if isinstance(k, ast.Constant)}
+    return names
+
+
+def mlx_lm_names(package: Path) -> set[str]:
+    """Model types an mlx_lm package source builds: its models/ modules and MODEL_REMAPPING keys. #1474."""
+    names = {p.stem for p in (package / "models").glob("*.py") if not p.stem.startswith("_")}
+    return names | _remapped(package / "utils.py")
+
+
 def write_mlx_lm(path: Path = MLX_LM_SNAPSHOT) -> int:
     """Rewrite the mlx-lm snapshot from this interpreter's mlx_lm, read as source so mlx is never imported."""
     import importlib.util
@@ -498,12 +525,7 @@ def write_mlx_lm(path: Path = MLX_LM_SNAPSHOT) -> int:
     if spec is None or not spec.submodule_search_locations:
         print("mlx_lm is not installed in this interpreter", file=sys.stderr)
         return 1
-    root = Path(next(iter(spec.submodule_search_locations)))
-    names = {p.stem for p in (root / "models").glob("*.py") if not p.stem.startswith("_")}
-    tree = ast.parse((root / "utils.py").read_text(encoding="utf-8"))
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Assign) and any(getattr(t, "id", "") == "MODEL_REMAPPING" for t in node.targets):
-            names |= {k.value for k in node.value.keys if isinstance(k, ast.Constant)}
+    names = mlx_lm_names(Path(next(iter(spec.submodule_search_locations))))
     version = metadata.version("mlx-lm")
     path.write_text(f"# mlx-lm=={version}\n" + "\n".join(sorted(names)) + "\n", encoding="utf-8")
     print(f"{path.name}: {len(names)} model types from mlx-lm {version}")
@@ -513,11 +535,7 @@ def write_mlx_lm(path: Path = MLX_LM_SNAPSHOT) -> int:
 def mlx_vlm_names(package: Path) -> set[str]:
     """Model types an mlx_vlm package source builds, read without importing it."""
     names = {p.name for p in (package / "models").iterdir() if p.is_dir() and (p / "__init__.py").is_file()}
-    tree = ast.parse((package / "utils.py").read_text(encoding="utf-8"))
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Assign) and any(getattr(t, "id", "") == "MODEL_REMAPPING" for t in node.targets):
-            names |= {k.value for k in node.value.keys if isinstance(k, ast.Constant)}
-    return names
+    return names | _remapped(package / "utils.py")
 
 
 def write_mlx_vlm(venv: Path | None = None, path: Path = MLX_VLM_SNAPSHOT) -> int:

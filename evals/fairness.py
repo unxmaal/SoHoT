@@ -59,7 +59,7 @@ def kappa(a: list, b: list) -> float | None:
 
 
 def summary(labels: dict, case_ids) -> dict:
-    """{kappa, flagged: case -> axes both flag (or Eric settled high), disputed: case -> axes only one flags}."""
+    """{kappa, flagged: case -> axes both flag (or the owner settled high), disputed: case -> axes only one flags}."""
     a, b = labels["labellers"]
     rows = [(cid, labels["labels"][cid]) for cid in sorted(case_ids)]
     out = {"kappa": {}, "flagged": {}, "disputed": {}}

@@ -79,6 +79,15 @@ def _embedding(out):
     return out if hasattr(out, "norm") else out.pooler_output
 
 
+def _truncated(processor, prompt: str, kept: int) -> None:
+    """Record a prompt PickScore read only the head of: CLIP's text window cut the rest. #1087."""
+    whole = len(processor.tokenizer(prompt)["input_ids"])
+    if whole > kept:
+        from harness import cuts
+        cuts.cut("harness/checks/adherence.py:_score_pickscore->processor(max_length)", "pickscore prompt tokens",
+                 kept=kept, dropped=whole - kept)
+
+
 def _score_pickscore(path: Path, prompt: str) -> float:
     from PIL import Image
     processor, model, torch = _pickscore()
@@ -88,6 +97,7 @@ def _score_pickscore(path: Path, prompt: str) -> float:
         pixels = processor(images=[image], return_tensors="pt")["pixel_values"]
         text = processor(text=[prompt], padding=True, truncation=True,
                          max_length=77, return_tensors="pt")
+        _truncated(processor, prompt, len(text["input_ids"][0]))
         image_emb = _embedding(
             model.get_image_features(pixel_values=pixels.to(_device())))
         text_emb = _embedding(model.get_text_features(

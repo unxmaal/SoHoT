@@ -48,6 +48,8 @@ for i in $(seq 1 "$READY_TIMEOUT"); do
 done
 if [ "$ready" -ne 1 ]; then
   printf '\nFAIL  gateway not serving after %ss\n' "$READY_TIMEOUT"
+  uv run --quiet python -m harness.cuts scripts/smoke.sh:READY_TIMEOUT "smoke: gateway at $G not serving" \
+    >/dev/null 2>&1 || printf 'note  the READY_TIMEOUT cut was not recorded\n' >&2
   exit 1
 fi
 

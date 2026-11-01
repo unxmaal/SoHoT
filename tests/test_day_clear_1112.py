@@ -12,7 +12,7 @@ from harness import workqueue as wq
 from harness.commands import morning as morning_cmd
 from tests.test_watchdog import EVAL, NIGHT, NOON, Fake, Hand, P, ids, run
 
-SAID = "eric: clear to run jobs all day"
+SAID = "owner: clear to run jobs all day"
 
 
 @pytest.fixture(autouse=True)
@@ -39,12 +39,16 @@ def clearance(until=None):
             "until": day_clear.day_end(NOON) if until is None else until}
 
 
+#: The GPU lock, held by job 0134's evals.run. #1370.
+GPU = {"kind": "eval", "pid": 510, "pgid": 510}
+
+
 def two_jobs(tmp_path, elapsed, c=None, progress=()):
-    """Queue jobs 0134 and 0135 (groups 500, 600), each running an evals.run for `elapsed` seconds."""
+    """Queue jobs 0134 (group 500, its evals.run holding the GPU lock) and 0135 (group 600, another command)."""
     return Cleared(tmp_path, procs=[P(500, 400, 500, elapsed, "uv run python -m evals.run --modality repo"),
                                     P(510, 500, 510, elapsed, EVAL),
                                     P(600, 400, 600, elapsed, "uv run soh something")],
-                   jobs={"0134": 500, "0135": 600}, progress=progress, clearance=c)
+                   jobs={"0134": 500, "0135": 600}, progress=progress, clearance=c, lock=GPU)
 
 
 def judged(fake, now):
@@ -53,21 +57,20 @@ def judged(fake, now):
 
 
 def test_a_clearance_lets_every_job_past_both_day_limits_and_names_each_skip(tmp_path):
-    found = judged(two_jobs(tmp_path, wd.LONG_RUN_DAY_S + 60, clearance()), NOON)
+    found = judged(two_jobs(tmp_path, max(d for _, d in wd.long_run_limits().values()) + 60, clearance()), NOON)
     assert ids(found, "daytime_gpu") == [] and ids(found, "long_run") == []
     skips = [(f.subject.key, f.evidence["skipped"]) for f in found if f.criterion == "day_clear"]
-    assert sorted(skips) == [("job 0134", "daytime_gpu"), ("job 0134", "long_run"),
-                             ("job 0135", "daytime_gpu"), ("job 0135", "long_run")]
+    assert sorted(skips) == [("job 0134", "daytime_gpu"), ("job 0134", "long_run"), ("job 0135", "long_run")]
     assert all(f.evidence["said"] == SAID for f in found if f.criterion == "day_clear")
 
 
-def test_without_a_clearance_the_day_limit_pauses_them(tmp_path):
+def test_without_a_clearance_the_day_limit_pauses_the_gpu_holder_only(tmp_path):
     found = judged(two_jobs(tmp_path, wd.DAYTIME_GPU_S + 60), NOON)
-    assert ids(found, "daytime_gpu") == ["job 0134", "job 0135"] and ids(found, "day_clear") == []
+    assert ids(found, "daytime_gpu") == ["job 0134"] and ids(found, "day_clear") == []
 
 
 def test_a_clearance_never_lifts_the_night_limit(tmp_path):
-    found = judged(two_jobs(tmp_path, wd.LONG_RUN_S + 60, clearance(until=NIGHT + 3600)), NIGHT)
+    found = judged(two_jobs(tmp_path, max(n for n, _ in wd.long_run_limits().values()) + 60, clearance(until=NIGHT + 3600)), NIGHT)
     assert ids(found, "long_run") == ["job 0134", "job 0135"] and ids(found, "day_clear") == []
 
 
@@ -93,7 +96,8 @@ def test_the_store_clearance_expires_at_day_end_and_revoke_ends_it(tmp_path):
 
 def test_a_wake_reads_the_store_clearance_records_each_skip_and_at_most_notifies(tmp_path):
     conn = ms.connect()
-    fake = Fake(tmp_path, procs=[P(500, 400, 500, wd.DAYTIME_GPU_S + 60, "uv run soh a")], jobs={"0134": 500})
+    fake = Fake(tmp_path, procs=[P(500, 400, 500, wd.DAYTIME_GPU_S + 60, "uv run soh a")], jobs={"0134": 500},
+                lock={"kind": "external", "pid": 500, "pgid": 500})
     day_clear.clear(conn, SAID, now=NOON - 60)
     hand = Hand()
     for i in range(wd.ESCALATE_AFTER + 2):
@@ -105,13 +109,13 @@ def test_a_wake_reads_the_store_clearance_records_each_skip_and_at_most_notifies
     day_clear.revoke(conn, now=NOON + 3000)
     wd.wake(conn, fake, hand, act=True, now=NOON + 3300, say=lambda *_: None)
     last = dict(conn.execute("SELECT * FROM watchdog_actions ORDER BY id DESC LIMIT 1").fetchone())
-    assert (last["criterion"], last["action"]) == ("daytime_gpu", wd.PAUSE)
+    assert (last["criterion"], last["action"]) == ("daytime_gpu", wd.NOTIFY), "nothing to pause through: told"
 
 
 @pytest.mark.gauntlet("state-is-whichever-row-came-last", site="harness/day_clear.py:active")
 def test_a_second_clearance_is_revoked_with_the_first_and_shows_the_latest_text():
     conn = ms.connect()
-    day_clear.clear(conn, "eric: morning", now=at(22, 9))
+    day_clear.clear(conn, "owner: morning", now=at(22, 9))
     day_clear.clear(conn, SAID, now=at(22, 10))
     assert day_clear.active(conn, at(22, 11))["said"] == SAID
     day_clear.revoke(conn, now=at(22, 12))
@@ -148,7 +152,8 @@ def test_the_cli_clears_shows_and_revokes(capsys, monkeypatch):
 
 def test_morning_shows_the_clearance_once_not_every_skip(tmp_path):
     conn = ms.connect()
-    fake = Fake(tmp_path, procs=[P(500, 400, 500, wd.DAYTIME_GPU_S + 60, "uv run soh a")], jobs={"0134": 500})
+    fake = Fake(tmp_path, procs=[P(500, 400, 500, wd.DAYTIME_GPU_S + 60, "uv run soh a")], jobs={"0134": 500},
+                lock={"kind": "external", "pid": 500, "pgid": 500})
     day_clear.clear(conn, SAID, now=NOON - 60)
     for i in range(3):
         wd.wake(conn, fake, Hand(), act=True, now=NOON + i * 300, say=lambda *_: None)

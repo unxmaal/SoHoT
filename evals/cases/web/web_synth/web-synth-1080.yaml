@@ -1,0 +1,39 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-1080
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Tide
+  gauge prices". The page holds exactly 5 <article> elements, in this order, each with one <h2> heading
+  and one <p> paragraph: "Ferry slip" with "The bell rings at noon."; "Rope walk" with "Open at dawn.";
+  "Boathouse" with "Repairs take two days."; "North pier" with "Open at dawn."; "Dry dock" with "Bring
+  your own gloves.". Use <article> for nothing else.'
+assert:
+  structure:
+    title: Tide gauge prices
+    articles:
+    - - Ferry slip
+      - The bell rings at noon.
+    - - Rope walk
+      - Open at dawn.
+    - - Boathouse
+      - Repairs take two days.
+    - - North pier
+      - Open at dawn.
+    - - Dry dock
+      - Bring your own gloves.
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '1080'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: articles
+  stratum: medium

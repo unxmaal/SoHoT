@@ -7,7 +7,6 @@ import operator
 import pytest
 
 from evals import core
-from evals import environment
 from evals import run as er
 from evals.core import Case, Result
 from harness import baseline, runs, winners
@@ -132,13 +131,12 @@ class _Runner:
 
 
 @pytest.mark.parametrize("split, repeat", [("all", 2), ("holdout", 1)])
-def test_the_exam_a_run_records_is_the_one_baseline_recomputes(monkeypatch, tmp_path, split, repeat):
+def test_the_exam_a_run_records_is_the_one_baseline_recomputes(monkeypatch, tmp_path, split, repeat, machine_is):
     cases = [Case(id=f"c{i}", modality="svg", prompt=f"p{i}") for i in range(12)]
     monkeypatch.setattr(core, "load_cases", lambda path: cases)
     monkeypatch.setattr(er, "build_runner", lambda *a, **k: _Runner())
     monkeypatch.setattr(er, "warn_if_pressed", lambda: argparse.Namespace(as_dict=lambda: {}))
-    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
-    monkeypatch.setattr(environment, "capture", lambda: {"hw_model": "Test,1", "os": "t", "arch": "a"})
+    machine_is({"hw_model": "Test,1", "os": "t", "arch": "a"})
     out = tmp_path / "out"
     args = argparse.Namespace(modality="svg", candidates="fake:spec", cases="x", out=str(out), screen=False,
                               repeat=repeat, split=split, adherence="", gateway="http://gw", from_winners=False)

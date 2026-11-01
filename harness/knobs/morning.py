@@ -24,3 +24,8 @@ NOT_GATING = {
     f"{M}:MODEL_TIMEOUT_S": "how long the local model may take to condense the headline; past it the deterministic one is used (#867)",
     f"{M}:MODEL_MAX_TOKENS": "reply budget for the condensed headline; presentation only (#867)",
 }
+
+NEVER_CUTS = {
+    "scripts/launchd.sh:MORNING_HOURS": "the hour the morning report runs; a schedule cuts no work (#1087)",
+    "scripts/launchd.sh:MORNING_MINUTE": "the minute past the hour the morning report runs; a schedule cuts no work (#1087)",
+}

@@ -49,3 +49,12 @@ NOT_GATING = {
     f"{_SRC}:Unit.tokens_in": "a unit's measured input tokens, summed from its messages (#1151)",
     f"{_SRC}:Unit.tokens_out": "a unit's measured output tokens, summed from its messages (#1151)",
 }
+
+NEVER_CUTS = {
+    f"{_REPLAY}:AGREE_MIN": "the pass bar of the report's agreement verdict; the report records the rate and PASS or FAIL, "
+                            "and no grade or reply is dropped (#1087)",
+    f"{_REPLAY}:CONTROL_MAX": "the bar of the report's control-near-zero verdict; the report records the rate beside it, "
+                              "and no unit is dropped (#1087)",
+    f"{_REPLAY}:REJECT_MIN": "the pass bar of the judge calibration verdict; the report records the rate and PASS or "
+                             "FAIL, and every grade is kept (#1087)",
+}

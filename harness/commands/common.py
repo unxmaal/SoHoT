@@ -2,10 +2,25 @@
 from __future__ import annotations
 
 from pathlib import Path
+import contextlib
 import json
 import sys
 
 from harness import paths
+
+
+@contextlib.contextmanager
+def lent_store():
+    """This home's store read-only (a fresh home's is created), lent to every reader for the block. #1432."""
+    from harness import ledger, store
+    from harness import memory_store as ms
+    db = ms.db_path()
+    conn = ledger.open_ro(db) if store.backend() != store.POSTGRES and db.is_file() else ms.connect()
+    try:
+        with ms.lend(conn):
+            yield conn
+    finally:
+        conn.close()
 
 
 #: Set by main() from --json. A module global because every verb reports

@@ -88,8 +88,10 @@ def _slug(path: str) -> str:
 
 def _gh(path: str) -> str:
     """One `gh api` call. Replaced wholesale in tests."""
-    proc = subprocess.run(["gh", "api", path], capture_output=True, text=True,
-                          timeout=60)
+    from harness import cuts
+    with cuts.timeout("harness/github.py:_gh->subprocess.run(timeout)", f"gh api {path}"):
+        proc = subprocess.run(["gh", "api", path], capture_output=True, text=True,
+                              timeout=60)
     if proc.returncode != 0:
         detail = proc.stderr.strip()[:200]
         if "Not Found" in detail or "404" in detail:
@@ -106,6 +108,7 @@ class Client:
     ttl_hours: float | None = None
     runner: Callable[[str], str] = _gh
     budget: int = 400
+    budget_knob: str = "harness/github.py:Client.budget"
     #: Requests actually sent. Cache hits are free and do not count.
     spent: int = 0
     #: Paths served from a cache entry older than the TTL because the fetch
@@ -137,7 +140,8 @@ class Client:
             if age < ttl * 3600:
                 return payload["data"]
         if self.spent >= self.budget:
-            cuts.cut("harness/github.py:Client.budget", f"{api_path}: request budget spent, "
+            budget_knob = self.budget_knob
+            cuts.cut(budget_knob, f"{api_path}: request budget spent, "
                      + ("the cached answer served stale" if payload is not None else "refused"),
                      value=self.budget, kept=self.spent, dropped=1)
             if payload is not None:

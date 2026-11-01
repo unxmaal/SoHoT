@@ -26,7 +26,11 @@ def cmd_delegated(a) -> int:
         note(str(exc))
         emit(False, error=str(exc))
         return 2
-    conn = ms.connect()
+    import contextlib
+
+    from harness.commands.common import lent_store
+    held = contextlib.ExitStack()
+    conn = held.enter_context(lent_store() if a.report else contextlib.closing(ms.connect()))
     try:
         if not a.report:
             try:
@@ -41,7 +45,7 @@ def cmd_delegated(a) -> int:
             return 0
         rows = delegations.report(conn, since)
     finally:
-        conn.close()
+        held.close()
     if not rows:
         note(f"no delegations in the last {a.since}")
     else:

@@ -209,26 +209,31 @@ def start_stub_server(where: Path) -> Server:
 def kill(server: Server) -> None:
     if server.proc.poll() is None:
         server.proc.kill()
-    with contextlib.suppress(subprocess.TimeoutExpired):
+    from harness import cuts
+    with contextlib.suppress(subprocess.TimeoutExpired), \
+            cuts.timeout("harness/chaos.py:kill->server.proc.wait(timeout)", "a killed scratch server still running"):
         server.proc.wait(10)
     if server.proc.stdout:
         server.proc.stdout.close()
 
 
 def answers(server: Server) -> bool:
+    from harness import cuts
     try:
-        with urllib.request.urlopen(f"{server.url}/v1/models", timeout=2) as r:
-            return r.status == 200
+        with cuts.timeout("harness/chaos.py:answers->urllib.request.urlopen(timeout)",
+                          f"{server.url}: no model list in time, taken as down"):
+            with urllib.request.urlopen(f"{server.url}/v1/models", timeout=2) as r:
+                return r.status == 200
     except OSError:
         return False
 
 
 def run_screen(ctx: Context, row: dict, server: Server, kill_now) -> screen.Verdict:
     """The real screen against the scratch server, killed once the request is in flight."""
-    from harness import candidates
+    from harness import candidates, cuts
     from harness.commands import measure as measure_cmd
     from harness.commands import screen as screen_cmd
-    outdir = paths.runs() / f"chaos-screen-{int(time.time())}"
+    outdir = paths.unused_run(f"chaos-screen-{int(time.time())}")
     argv = screen.argv(row, outdir=outdir) + ["--gateway", server.url]
     proc = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                             text=True, cwd=paths.REPO)
@@ -239,11 +244,13 @@ def run_screen(ctx: Context, row: dict, server: Server, kill_now) -> screen.Verd
             time.sleep(0.1)
         reached = bool(server.marker and server.marker.exists())
         kill_now()
-        _, stderr = proc.communicate(timeout=600)
+        with cuts.timeout("harness/chaos.py:run_screen->proc.communicate(timeout)", "a chaos screen still running"):
+            _, stderr = proc.communicate(timeout=600)
     finally:
         if proc.poll() is None:
             proc.kill()
-            proc.wait(10)
+            with cuts.timeout("harness/chaos.py:run_screen->proc.wait(timeout)", "a killed chaos screen still running"):
+                proc.wait(10)
     if not reached:
         raise ChaosError("the screen never reached the scratch server, so nothing "
                          "was killed mid-request")
@@ -282,6 +289,10 @@ def _server_kill(ctx: Context, m: ServerKill) -> tuple[bool, str]:
     while not back and time.time() < deadline:
         time.sleep(0.5)
         back = m.alive(server)
+    if not back:
+        from harness import cuts
+        cuts.cut("harness/chaos.py:ServerKill.recover_seconds", f"{server.url}: reported down, not back in time",
+                 value=m.recover_seconds, kept=0, dropped=1)
     lane = "server came back" if back else (
         f"lane reported down: {server.url} did not answer within "
         f"{m.recover_seconds:g}s")
@@ -343,7 +354,8 @@ def _disk_fill(ctx: Context, m: DiskFill) -> tuple[bool, str]:
             have = m.free(scratch)
             if have - m.size >= floor:
                 return False, "the fill did not take the scratch disk below the floor"
-            got = m.fetch(conn, free=have, floor=floor, snapshot=m.snapshot, limit=1)
+            got = m.fetch(conn, free=have, floor=floor, snapshot=m.snapshot, limit=1,
+                          limit_knob="harness/chaos.py:_disk_fill->m.fetch(limit)")
         finally:
             if filler is not None:
                 filler.unlink(missing_ok=True)
@@ -393,6 +405,10 @@ def resetting_endpoint():
     finally:
         stop.set()
         t.join(5)
+        if t.is_alive():
+            from harness import cuts
+            cuts.cut("harness/chaos.py:resetting_endpoint->t.join(timeout)", "a resetting endpoint's thread left running",
+                     kept=0, dropped=1)
         srv.close()
 
 
@@ -401,7 +417,9 @@ def _registry_for(url: str):
 
     def fetch(u: str) -> str:
         return feeds.fetch(u.replace("https://huggingface.co", url), timeout=5,
-                           retries=1, delay=0.0)
+                           retries=1, delay=0.0,
+                           retries_knob="harness/chaos.py:_registry_for.fetch->feeds.fetch(retries)",
+                           timeout_knob="harness/chaos.py:_registry_for.fetch->feeds.fetch(timeout)")
     return fetch
 
 
@@ -409,8 +427,9 @@ def _snapshot_for(url: str):
     def snapshot(repo_id: str):
         from huggingface_hub import snapshot_download
 
-        from harness import env
-        with env.online():
+        from harness import cuts, env
+        with env.online(), cuts.timeout("harness/chaos.py:_snapshot_for.snapshot->snapshot_download(etag_timeout)",
+                                        f"{repo_id}: no etag in time"):
             return snapshot_download(repo_id=repo_id, endpoint=url, etag_timeout=5)
     return snapshot
 
@@ -436,7 +455,7 @@ def _network_drop(ctx: Context, m: NetworkDrop) -> tuple[bool, str]:
             except ins.InspectError as exc:
                 inspected = str(exc)
             got = fetching.run(conn, free=1 << 60, snapshot=m.snapshot_for(url),
-                               limit=1)
+                               limit=1, limit_knob="harness/chaos.py:_network_drop->fetching.run(limit)")
         state = _state(conn, CANDIDATE)
         still = any(r["name"] == CANDIDATE for r in fetching.queued(conn))
         failed = conn.execute(

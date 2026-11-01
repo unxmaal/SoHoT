@@ -141,14 +141,14 @@ def test_a_group_with_anything_but_evals_in_it_cannot_be_signalled(tmp_path):
 # --- criteria: each red on a job built to trip it, green on one that should not --
 
 def test_long_run_trips_past_the_night_limit_and_not_before(tmp_path):
-    long = owned_eval(tmp_path, elapsed=wd.LONG_RUN_S + 60)
-    short = owned_eval(tmp_path, elapsed=wd.LONG_RUN_S - 60)
+    long = owned_eval(tmp_path, elapsed=wd.LONG_RUN_OTHER_S + 60)
+    short = owned_eval(tmp_path, elapsed=wd.LONG_RUN_OTHER_S - 60)
     assert ids(judged(long)[1], "long_run") == ["job 0007"]
     assert ids(judged(short)[1], "long_run") == []
 
 
 def test_long_run_is_tighter_during_the_day(tmp_path):
-    fake = owned_eval(tmp_path, elapsed=wd.LONG_RUN_DAY_S + 60)
+    fake = owned_eval(tmp_path, elapsed=wd.LONG_RUN_DAY_OTHER_S + 60)
     assert ids(judged(fake, NOON)[1], "long_run") == ["job 0007"]
     assert ids(judged(fake, NIGHT)[1], "long_run") == []
 
@@ -201,11 +201,17 @@ def test_a_queue_job_with_no_worker_or_a_settled_row_is_an_orphan(tmp_path):
     assert ids(judged(Fake(tmp_path, procs=procs, jobs={"0007": 500}))[1], "orphan") == []
 
 
+#: The GPU lock held by the evals.run under owned_eval's job.
+GPU = {"kind": "eval", "pid": 511, "pgid": 510}
+
+
 def test_daytime_gpu_trips_inside_the_day_and_not_at_night(tmp_path):
     fake = owned_eval(tmp_path, elapsed=wd.DAYTIME_GPU_S + 60)
+    fake._lock = GPU
     assert ids(judged(fake, NOON)[1], "daytime_gpu") == ["job 0007"]
     assert ids(judged(fake, NIGHT)[1], "daytime_gpu") == []
     short = owned_eval(tmp_path, elapsed=wd.DAYTIME_GPU_S - 60)
+    short._lock = GPU
     assert ids(judged(short, NOON)[1], "daytime_gpu") == []
 
 

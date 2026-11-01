@@ -1,0 +1,44 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0624
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Fish
+  market moorings". The page holds exactly 7 <article> elements, in this order, each with one <h2> heading
+  and one <p> paragraph: "East dock" with "Closed on Sundays."; "Harbor office" with "Members park for
+  free."; "Signal tower" with "Tours leave on the hour."; "Fish market" with "Check the board for changes.";
+  "Lighthouse" with "Tours leave on the hour."; "North pier" with "Tours leave on the hour."; "Boathouse"
+  with "Open at dawn.". Use <article> for nothing else.'
+assert:
+  structure:
+    title: Fish market moorings
+    articles:
+    - - East dock
+      - Closed on Sundays.
+    - - Harbor office
+      - Members park for free.
+    - - Signal tower
+      - Tours leave on the hour.
+    - - Fish market
+      - Check the board for changes.
+    - - Lighthouse
+      - Tours leave on the hour.
+    - - North pier
+      - Tours leave on the hour.
+    - - Boathouse
+      - Open at dawn.
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '624'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: articles
+  stratum: medium
