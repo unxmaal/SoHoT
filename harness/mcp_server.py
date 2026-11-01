@@ -36,7 +36,7 @@ from mcp.server.mcpserver import Context, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import BaseModel
 
-from harness import ask, completion, cuts, delegate, delegations, env, exclusive, paths, workqueue
+from harness import ask, completion, cuts, delegate, delegations, env, exclusive, paths, spans, workqueue
 
 
 class JobInfo(BaseModel):
@@ -205,6 +205,9 @@ class LocalCompletion(BaseModel):
     files: list[dict] | None = None
     parts: int | None = None
     calls: int | None = None
+    #: With mode "spans": "spans" or "whole", and the (first, last) line ranges quoted. #1336.
+    mode: str | None = None
+    spans: list | None = None
 
 
 class LocalDecision(BaseModel):
@@ -247,7 +250,12 @@ def _delegated(call, *args, **kw) -> dict:
     "the files hold none), with each path and its byte count so you can still "
     "Read one. Paths must sit under Claude Code's tool-results or task output, "
     "this machine's SoHoT logs, or a root in SOHOT_ASK_ROOTS; 1 MiB in all. "
-    "`lane` defaults to code for a prompt and extract for paths. "
+    "For a source or doc file you will read but not edit, pass one path, `question` "
+    "and mode \"spans\": a local model picks the lines that answer it, each "
+    "checked against the file, and you get those lines numbered as Read shows "
+    "them (then Read with offset/limit for more), or the whole file when it "
+    "doubts. "
+    "`lane` defaults to code for a prompt and for spans, and extract for paths. "
     "`system` replaces the lane's own system prompt. "
     "While a batch run holds the machine it answers only if the model is "
     "already loaded; otherwise it refuses rather than waits. `thinking` false "
@@ -258,8 +266,16 @@ def _delegated(call, *args, **kw) -> dict:
 def local_complete(prompt: str = "", lane: str = "", system: str | None = None,
                    max_tokens: int | None = None, temperature: float | None = None,
                    thinking: bool | None = None, paths: list[str] | None = None,
-                   question: str = "", ctx: Context | None = None) -> LocalCompletion:
-    if paths:
+                   question: str = "", mode: str = "", ctx: Context | None = None) -> LocalCompletion:
+    if mode not in ("", "spans"):
+        raise ToolError(f"mode is \"spans\" or left out, not {mode!r}")
+    if mode == "spans":
+        if not paths:
+            raise ToolError("mode \"spans\" reads one file: pass it in `paths`")
+        _from_here(ctx)
+        got = _delegated(spans.ask_file, paths, question or prompt, lane=lane or "code",
+                         max_tokens=max_tokens, delegated=True)
+    elif paths:
         _from_here(ctx)
         got = _delegated(ask.ask, paths, question or prompt, lane=lane or "extract",
                          max_tokens=max_tokens or ask.REPLY_TOKENS, system=system,

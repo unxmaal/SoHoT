@@ -852,6 +852,8 @@ EVAL_HOMED = {
     "harness/cli.py d --control": "harness/commands/discover.py",
     "harness/commands/ask.py p --eval": "harness/commands/ask.py",
     "harness/commands/ask.py p --redo": "harness/commands/ask.py",
+    "harness/commands/spans.py p --eval": "harness/commands/spans.py",
+    "harness/commands/spans.py p --redo": "harness/commands/spans.py",
     "harness/cli.py kbf --eval": "harness/commands/kb_filter.py",
     "harness/cli.py sub sensitivity": "harness/commands/lanes.py",
     "harness/slot_probe.py __main__": "harness/slot_probe.py",

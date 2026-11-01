@@ -186,6 +186,9 @@ capabilities:
       - evals/ask_plants.py
       - evals/ask_plants_fresh.py
       - evals/ask_plants_third.py
+      - harness/spans.py
+      - harness/commands/spans.py
+      - evals/spans_recall.py
       - harness/kb_filter.py
       - harness/commands/kb_filter.py
 

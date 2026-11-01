@@ -745,6 +745,18 @@ adopted here, through the same route `soh code` uses:
   each with one planted failure and a clean twin; `--set fresh` (go, jest, cargo, lint,
   gradle) and `--set third` (unittest, rspec, C build, terraform) use other tools, plant
   wording and question, and `--seed` regenerates any set.
+- `local_complete(paths=[one file], question="...", mode="spans")` is for a source or doc
+  file you will read but not edit. The code lane (thinking off) names the line ranges that
+  answer the question and quotes each range's first line; every quote is checked against the
+  file, and the reply is those ranges as Read numbers them (`spans: ...` header), so a Read with
+  offset/limit can fetch more. Any doubt returns the whole file (`whole: ...` with the reason):
+  a quote that is not on its line, `insufficient`, `none`, a range outside the file, a failed
+  call, a reply at its token budget, or spans quoting more than half the file. Files under
+  4,000 characters come back whole with no call. Paths go through the same boundary as above.
+  `soh spans PATH -q QUESTION` does the same from a shell; `soh spans --redo` counts spans
+  answers a full Read of the same file followed within 10 tool calls (the bar is 20%), and
+  `soh spans --eval DIR [--kind python]` samples past Reads that were never edited and scores
+  recall of what the session later used from the file (bar 90%); its rows hold numbers only.
 - `local_decide(question, schema, context="")` is `soh decide`: the same flat
   schema, answers plus a probability per choice, from the decide lane's model.
   It is not streamed, so `ttft_s` is empty: through the gateway a streamed

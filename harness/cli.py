@@ -58,6 +58,7 @@ from harness.commands import report as report_cmd
 from harness.commands import repo_screen as repo_screen_cmd
 from harness.commands import reverify as reverify_cmd
 from harness.commands import screen as screen_cmd
+from harness.commands import spans as spans_cmd
 from harness.commands import store as store_cmd
 from harness.commands import headless as headless_cmd
 from harness.commands import knobs as knobs_cmd
@@ -785,6 +786,7 @@ def build_parser() -> argparse.ArgumentParser:
     weedout_cmd.add_parser(sub)
     lane_feed_cmd.add_parser(sub)
     craft_cmd.add_parser(sub)
+    spans_cmd.add_parser(sub)
     vision_cmd.add_parser(sub)
     climb_cmd.add_parser(sub)
     otel_cmd.add_parser(sub)
