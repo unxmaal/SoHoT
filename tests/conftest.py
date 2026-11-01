@@ -676,3 +676,54 @@ def windows_relative_paths(monkeypatch):
     cls = type(pathlib.Path())
     real = cls.relative_to
     monkeypatch.setattr(cls, "relative_to", lambda self, *a, **k: pathlib.PureWindowsPath(real(self, *a, **k).as_posix()))
+
+
+class _FakeChrome:
+    """A chrome that never exits, on a clock that moves only when render._shoot sleeps. #1471."""
+    pid = 1
+
+    def __init__(self):
+        self.now = 0.0
+        self.terminated = 0
+        self._growing: list[Path] = []
+
+    def argv(self, out, writes=True, grows=False):
+        if grows:
+            self._growing.append(Path(out))
+        return ["chrome", str(out) if writes else ""]
+
+    def monotonic(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.now += seconds
+        for p in self._growing:
+            with open(p, "ab") as f:
+                f.write(b"x")
+
+    def Popen(self, argv, **kw):
+        if argv[1]:
+            Path(argv[1]).write_bytes(b"png")
+        return self
+
+    def poll(self):
+        return None
+
+    def terminate(self):
+        self.terminated += 1
+
+    def wait(self, timeout=None):
+        return 0
+
+    def kill(self):
+        pass
+
+
+@pytest.fixture
+def fake_chrome(monkeypatch):
+    import types
+    from harness.checks import render
+    chrome = _FakeChrome()
+    monkeypatch.setattr(render, "time", types.SimpleNamespace(monotonic=chrome.monotonic, sleep=chrome.sleep))
+    monkeypatch.setattr(render.subprocess, "Popen", chrome.Popen)
+    return chrome
