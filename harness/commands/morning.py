@@ -137,6 +137,12 @@ def render(r: dict) -> list[str]:
     out.append(f"runtimes  {len(r.get('runtimes') or [])} upgrade verdict(s)")
     from harness import runtime_trials
     out.extend(f"          {runtime_trials.line(v)}" for v in r.get("runtimes") or [])
+    mon = r.get("monitor")
+    if mon is not None:
+        from harness import monitor
+        out.append(f"monit     {len(mon['alerts'])} alert line(s)" + (f"; {mon['why']}" if mon["why"] else ""))
+        out.extend(f"          {monitor.line(x)}" for x in mon["alerts"])
+        out.extend(f"          {ln}" for ln in mon["summary"])
     if r.get("canary"):
         out.append(f"canary    {r['canary']}")
     if r.get("parked"):
@@ -152,7 +158,7 @@ def render(r: dict) -> list[str]:
 
 
 def cmd_morning(a) -> int:
-    from harness import canary, context_report as cr, heartbeat, morning, paths
+    from harness import canary, context_report as cr, heartbeat, monitor, morning, paths
 
     now = time.time()
     try:
@@ -165,7 +171,7 @@ def cmd_morning(a) -> int:
     try:
         r = morning.gather(conn, now, since, beat=heartbeat.summary(), where=paths.deploy_checkout(),
                            health=morning.lane_health, canary=canary.morning_line, parked=morning.parked_nodes,
-                           incumbent=morning.repo_incumbent)
+                           incumbent=morning.repo_incumbent, monitor=monitor.morning)
     finally:
         conn.close()
     lines = render(r)
