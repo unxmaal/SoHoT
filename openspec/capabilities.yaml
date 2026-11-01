@@ -63,6 +63,8 @@ capabilities:
       - harness/family.py
       - harness/commands/families.py
       - harness/runner_gaps.py
+      - harness/runtime_trials.py
+      - harness/commands/runtimes.py
       - harness/remote_code.py
       - harness/inspect.py
 

@@ -70,6 +70,7 @@ from harness.commands import families as families_cmd
 from harness.commands import funnel as funnel_cmd
 from harness.commands import morning as morning_cmd
 from harness.commands import sweep_check as sweep_check_cmd
+from harness.commands import runtimes as runtimes_cmd
 from harness.commands import otel as otel_cmd
 from harness.commands import route_trial as route_trial_cmd
 from harness.commands import unverified as unverified_cmd
@@ -715,6 +716,13 @@ def build_parser() -> argparse.ArgumentParser:
     swc.add_argument("--notify", action="store_true",
                      help="record the check for soh morning and notify when it is not healthy (the sweep-check unit)")
     swc.set_defaults(func=sweep_check_cmd.cmd_sweep_check)
+    rtm = sub.add_parser("runtimes", help="newer releases of pinned runtimes (llama.cpp, mlx-lm, mlx-vlm, mlx-audio, "
+                         "transformers, diffusers, mflux), their sandboxed trial installs and verdicts")
+    rtm.add_argument("--watch", action="store_true", help="read each runtime's official channel and propose newer releases")
+    rtm.add_argument("--trial", action="store_true",
+                     help="also trial-install the next proposed release sandboxed and record its verdict")
+    rtm.add_argument("--limit", type=int, default=20, help="recorded releases to list")
+    rtm.set_defaults(func=runtimes_cmd.cmd_runtimes)
     fun = sub.add_parser("funnel", help="every proposal's stage, time in it, age since first seen, and why "
                          "it waits; read from a copy of the store")
     fun.add_argument("--since", default="", help="only proposals first seen since: 30d, or a date")
@@ -1101,6 +1109,7 @@ VERB_PURPOSE = {
     "watchdog": "watchdog",
     "morning": "watchdog",
     "sweep-check": "watchdog",
+    "runtimes": "discover",
     "availability": "watchdog",
 }
 

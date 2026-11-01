@@ -500,6 +500,23 @@ def cause_until(cls: str, evidence: str, candidate: str, card=None) -> str:
     return ""
 
 
+def _remapped(utils: Path) -> set[str]:
+    """The MODEL_REMAPPING keys a package's utils.py declares, read without importing it."""
+    names: set[str] = set()
+    if not utils.is_file():
+        return names
+    for node in ast.walk(ast.parse(utils.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.Assign) and any(getattr(t, "id", "") == "MODEL_REMAPPING" for t in node.targets):
+            names |= {k.value for k in getattr(node.value, "keys", ()) if isinstance(k, ast.Constant)}
+    return names
+
+
+def mlx_lm_names(package: Path) -> set[str]:
+    """Model types an mlx_lm package source builds: its models/ modules and MODEL_REMAPPING keys. #1474."""
+    names = {p.stem for p in (package / "models").glob("*.py") if not p.stem.startswith("_")}
+    return names | _remapped(package / "utils.py")
+
+
 def write_mlx_lm(path: Path = MLX_LM_SNAPSHOT) -> int:
     """Rewrite the mlx-lm snapshot from this interpreter's mlx_lm, read as source so mlx is never imported."""
     import importlib.util
@@ -508,12 +525,7 @@ def write_mlx_lm(path: Path = MLX_LM_SNAPSHOT) -> int:
     if spec is None or not spec.submodule_search_locations:
         print("mlx_lm is not installed in this interpreter", file=sys.stderr)
         return 1
-    root = Path(next(iter(spec.submodule_search_locations)))
-    names = {p.stem for p in (root / "models").glob("*.py") if not p.stem.startswith("_")}
-    tree = ast.parse((root / "utils.py").read_text(encoding="utf-8"))
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Assign) and any(getattr(t, "id", "") == "MODEL_REMAPPING" for t in node.targets):
-            names |= {k.value for k in node.value.keys if isinstance(k, ast.Constant)}
+    names = mlx_lm_names(Path(next(iter(spec.submodule_search_locations))))
     version = metadata.version("mlx-lm")
     path.write_text(f"# mlx-lm=={version}\n" + "\n".join(sorted(names)) + "\n", encoding="utf-8")
     print(f"{path.name}: {len(names)} model types from mlx-lm {version}")
@@ -523,11 +535,7 @@ def write_mlx_lm(path: Path = MLX_LM_SNAPSHOT) -> int:
 def mlx_vlm_names(package: Path) -> set[str]:
     """Model types an mlx_vlm package source builds, read without importing it."""
     names = {p.name for p in (package / "models").iterdir() if p.is_dir() and (p / "__init__.py").is_file()}
-    tree = ast.parse((package / "utils.py").read_text(encoding="utf-8"))
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Assign) and any(getattr(t, "id", "") == "MODEL_REMAPPING" for t in node.targets):
-            names |= {k.value for k in node.value.keys if isinstance(k, ast.Constant)}
-    return names
+    return names | _remapped(package / "utils.py")
 
 
 def write_mlx_vlm(venv: Path | None = None, path: Path = MLX_VLM_SNAPSHOT) -> int:
