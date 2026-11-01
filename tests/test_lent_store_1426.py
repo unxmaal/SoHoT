@@ -98,6 +98,8 @@ NOT_RUN = {
     "report --publish": "pushes the report", "repo-screen --write": "writes the anchors file",
     "gateway --rotate": "replaces the key", "canary --run": "plants canaries", "review --file": "files findings",
     "claude-news --notify": "records and notifies", "ledger --record": "upserts ledger_days",
+    "runtimes --watch": "reads PyPI and GitHub releases and records proposals",
+    "runtimes --trial": "trial-installs a runtime release",
     "ledger --sample-power": "appends a power reading", "morning --notify": "notifies (the morning unit)",
     "sweep-check --notify": "records the check", "craft --revalidate": "runs the installed release",
     "delegated --close": "records outcomes", "disk --record": "writes download rows",

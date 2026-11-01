@@ -266,7 +266,7 @@ def _run_loop_held(a, keep=None) -> int:
             for repair, args in ((_reopen_stale_too_big, ()), (_reopen_unranked, ()),
                                  (_reopen_upstream_committed, ()), (_reread_runtime_declines, (a,)),
                                  (_move_past_screen, ()), (_reopen_revisitable, ()),
-                                 (_rederive_attachments, ()), (_relane_vision, ())):
+                                 (_rederive_attachments, ()), (_relane_vision, ()), (_trial_runtimes, ())):
                 rc = _repair(label, repair, args, failed) or rc
         sub = _ap.Namespace(**{**vars(a), **flags, **extra, "loop": False})
         rc = _step(label, discover_cmd.cmd_discover(sub), failed) or rc
@@ -827,6 +827,19 @@ def _reread_runtime_declines(a) -> list[str]:
     for n in moved:
         print(f"    {n}")
     return moved
+
+
+def _trial_runtimes() -> list[dict]:
+    """Propose each pinned runtime's newer release, trial the next one sandboxed, and print every verdict. #1474."""
+    from harness import memory_store as ms, runtime_trials
+    store = ms.connect()
+    try:
+        watched = runtime_trials.watch(store)
+        tried = runtime_trials.trial(store)
+    finally:
+        store.close()
+    print("\n".join(runtime_trials.lines(watched, tried)))
+    return tried
 
 
 def _cross_methods(store, want: str = "") -> list[tuple[str, str, bool]]:
