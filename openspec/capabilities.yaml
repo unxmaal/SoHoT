@@ -186,6 +186,8 @@ capabilities:
       - evals/ask_plants.py
       - evals/ask_plants_fresh.py
       - evals/ask_plants_third.py
+      - harness/kb_filter.py
+      - harness/commands/kb_filter.py
 
   - name: availability
     summary: Known-answer probes of each resident text lane, and incidents and uptime derived from them.
