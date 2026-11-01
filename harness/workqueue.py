@@ -627,9 +627,12 @@ def resume() -> None:
 
 def gate(sample=None) -> tuple[bool, str]:
     """(open, why): may the next job start now? A running job always finishes. #573."""
-    from harness import pressure
+    from harness import env, pressure
     if paused():
         return False, "paused (soh jobs resume)"
+    vol = env.unmounted(env.configured())
+    if vol:
+        return False, f"paused until it returns: the weights volume {vol} {env.NOT_MOUNTED}"
     now = (sample or pressure.sample)()
     if now.alarming:
         return False, f"memory pressure level {now.level}"

@@ -54,8 +54,23 @@ SPEND_STEPS = ("retests", "reverify", "knob sweeps", "disk", "fetch", "screen", 
 LOOP_TOTAL = len(LOOP_STEPS) + len(SPEND_STEPS)
 
 
+#: A sweep that stopped because the weights volume went away exits as a paused eval does. #1481.
+PAUSED = watch.PAUSED
+
+
+class WeightsGone(Exception):
+    """The weights volume went away between steps: the sweep pauses before `tier`. #1481."""
+
+    def __init__(self, tier: str, reason: str):
+        super().__init__(reason)
+        self.tier, self.reason = tier, reason
+
+
 def _beat(tier: str, **kw) -> None:
-    from harness import heartbeat
+    from harness import env, heartbeat
+    vol = env.unmounted(env.configured())
+    if vol:
+        raise WeightsGone(tier, f"the weights volume {vol} {env.NOT_MOUNTED}")
     names = [label for label, _, _ in LOOP_STEPS] + list(SPEND_STEPS)
     heartbeat.beat(tier, step=names.index(tier) + 1, **kw)
 
@@ -152,6 +167,11 @@ def _report_loop(a) -> int:
                     total=LOOP_TOTAL if run else len(LOOP_STEPS))
     try:
         rc = _run_loop(a)
+    except WeightsGone as gone:
+        import sys
+        heartbeat.pause(gone.tier, gone.reason)
+        print(f"\n=== sweep paused before {gone.tier}: {gone.reason} ===", file=sys.stderr, flush=True)
+        rc = PAUSED
     except BaseException as exc:
         heartbeat.finish(None, error=f"{type(exc).__name__}: {exc}")
         raise

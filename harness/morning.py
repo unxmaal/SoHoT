@@ -92,7 +92,7 @@ def sweep(conn, since: float, beat: dict | None) -> dict:
                        "started": started, "finished": beat.get("finished"),
                        "in_window": started >= since, "line": beat.get("line", ""),
                        "commit": beat.get("commit", ""), "finished_commit": beat.get("finished_commit", ""),
-                       "ceiling_unused": beat.get(heartbeat.CEILING_UNUSED),
+                       "ceiling_unused": beat.get(heartbeat.CEILING_UNUSED), "paused": beat.get(heartbeat.PAUSED),
                        "diversity": beat.get(heartbeat.DIVERSITY)}
     return out
 
@@ -317,6 +317,8 @@ def needs(r: dict) -> list[str]:
         out.append("no discovery sweep ran last night")
     elif loop["status"] == "stalled":
         out.append(f"the sweep stalled: {loop['line']}")
+    elif loop["status"] == "finished" and loop.get("paused"):
+        out.append(f"the sweep paused before {loop['paused'].get('tier')}: {loop['paused'].get('reason')}")
     elif loop["status"] == "finished" and loop["rc"] != 0:
         out.append(f"the sweep exited {loop['rc'] if loop['rc'] is not None else 'with ' + loop['error']}")
     from harness import sweep_check
