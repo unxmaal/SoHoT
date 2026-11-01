@@ -204,4 +204,15 @@ else
   no "stt transcription round trip (no audio to transcribe)"
 fi
 
+# Machine monitoring through monit (#1485): warns, never fails, and never prints the webhook.
+MONITOR_CHECK="${SMOKE_MONITOR_CHECK:-uv run --quiet python -m harness.cli monitor status --problems}"
+if [ "$LOCAL" -eq 1 ]; then
+  probs="$($MONITOR_CHECK 2>/dev/null)"
+  if [ -n "$probs" ]; then
+    while IFS= read -r p; do printf 'WARN  %s\n' "$p"; done <<<"$probs"
+  else
+    ok "monit running on the current config, alerts to the webhook"
+  fi
+fi
+
 exit $FAIL

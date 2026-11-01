@@ -72,6 +72,7 @@ READ_ONLY = {
     "context --carried": ([["context", "--carried", "--root", "<tmp>"]], 0),
     "context --referenced": ([["context", "--referenced", "--root", "<tmp>"]], 0),
     "context --mistakes": ([["context", "--mistakes", "--root", "<tmp>"]], 0),
+    "monitor --problems": ([["monitor", "status", "--problems"]], 0),
 }
 #: Flags that only shape another mode's output or scope; that mode is held here or below.
 MODIFIERS = {
