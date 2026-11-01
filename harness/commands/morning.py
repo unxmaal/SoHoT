@@ -132,6 +132,9 @@ def render(r: dict) -> list[str]:
     for t in r.get("stalled") or []:
         out.append(f"          {t['lane']:<9} #{t['lane_rank']} {t['name'][:40]} {t['stage']} "
                    f"{t['in_state_days']:.0f}d: {t['reason']}: {t['why']}")
+    out.append(f"runtimes  {len(r.get('runtimes') or [])} upgrade verdict(s)")
+    from harness import runtime_trials
+    out.extend(f"          {runtime_trials.line(v)}" for v in r.get("runtimes") or [])
     if r.get("canary"):
         out.append(f"canary    {r['canary']}")
     if r.get("parked"):

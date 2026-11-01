@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 85
+SCHEMA_VERSION = 86
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -302,6 +302,24 @@ CREATE TABLE IF NOT EXISTS technique_triage (
     template     TEXT NOT NULL DEFAULT '',
     drafted_by   TEXT NOT NULL DEFAULT '',
     triaged_at   REAL NOT NULL
+);
+
+-- One newer release of a pinned runtime, from its proposal to its verdict. #1474.
+CREATE TABLE IF NOT EXISTS runtime_trials (
+    id           INTEGER PRIMARY KEY,
+    runtime      TEXT NOT NULL,
+    version      TEXT NOT NULL,
+    pinned       TEXT NOT NULL DEFAULT '',
+    channel      TEXT NOT NULL DEFAULT '',
+    seen_at      REAL NOT NULL,
+    -- proposed, blocked, unmeasured, kept, regressed or held.
+    outcome      TEXT NOT NULL DEFAULT 'proposed',
+    detail       TEXT NOT NULL DEFAULT '',
+    lane         TEXT NOT NULL DEFAULT '',
+    dir          TEXT NOT NULL DEFAULT '',
+    evidence     TEXT NOT NULL DEFAULT '{}',
+    decided_at   REAL,
+    UNIQUE (runtime, version)
 );
 
 -- The owner's word that this machine may run jobs all day; the watchdog's day limits and the queue's night gate lift until `until`. #1112.
