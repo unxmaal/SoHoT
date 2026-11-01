@@ -17,7 +17,9 @@ def _row(name: str, r: dict) -> str:
 def cmd_kb_filter(a) -> int:
     from harness import context_report as cr
     from harness import kb_filter as kf
+    from harness import paths
 
+    paths.eval_home(reads_live=True)
     out = Path(a.dir)
     out.mkdir(parents=True, exist_ok=True)
     tag = "-strict" if a.strict else ""
