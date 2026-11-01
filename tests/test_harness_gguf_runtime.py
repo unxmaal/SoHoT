@@ -9,6 +9,8 @@ THE MACHINE IS PINNED IN EVERY VERDICT TEST. decide() asks the real machine
 through machine.detect(), so a fixture that does not pin one tests the runner.
 RULE #249, and RULE #267 for the same reason one layer up.
 """
+import sys
+
 import pytest
 
 from harness import inspect as ins
@@ -72,9 +74,12 @@ def test_needs_llamacpp_is_a_verdict_the_store_will_accept():
 
 
 def test_the_probe_reads_the_variable_the_runbook_sets(monkeypatch, tmp_path):
-    binary = tmp_path / "llama-server"
+    """An executable, as scripts/serve-llamacpp.sh requires of it (#1449)."""
+    binary = tmp_path / "bin" / ("llama-server.exe" if sys.platform == "win32" else "llama-server")
+    binary.parent.mkdir()
     binary.write_text("", encoding="utf-8")
-    monkeypatch.setattr("shutil.which", lambda n: None)
+    binary.chmod(0o755)
+    monkeypatch.setenv("PATH", str(tmp_path / "empty"))
     monkeypatch.setenv("LLAMACPP_BIN", str(binary))
     assert mach._has_llamacpp()
 

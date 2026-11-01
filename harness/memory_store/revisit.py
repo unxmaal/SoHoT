@@ -82,6 +82,21 @@ UNTIL = {
 }
 
 
+def lane_cases(lane: str) -> int:
+    """How many distinct cases a lane ships, the count a cases: until is judged by. #691."""
+    from harness import holdout
+    split = holdout.for_lane(lane)
+    return len(set(split.dev) | set(split.holdout))
+
+
+def case_counts(conn: sqlite3.Connection) -> dict:
+    """{lane: cases} for every lane a state-holding cases: until names, as a requeue judged them. #1361."""
+    rows = conn.execute("SELECT v.until FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
+                        "WHERE v.until LIKE 'cases:%'").fetchall()
+    lanes = {r[0][len("cases:"):].partition(">")[0] for r in rows}
+    return {lane: lane_cases(lane) for lane in sorted(lanes) if lane}
+
+
 def until_met(until: str, facts: dict | None = None) -> bool:
     """Whether `facts` satisfies the condition a verdict is waiting on.
 
@@ -143,9 +158,7 @@ def until_met(until: str, facts: dict | None = None) -> bool:
         if "cases" in facts:
             have = (facts.get("cases") or {}).get(lane)
         else:
-            from harness import holdout
-            split = holdout.for_lane(lane)
-            have = len(set(split.dev) | set(split.holdout))
+            have = lane_cases(lane)
         try:
             return have is not None and int(have) > int(floor)
         except ValueError:
@@ -217,6 +230,13 @@ def _version_tuple(v) -> tuple | None:
     return tuple(int(x) for x in parts) if all(x.isdigit() for x in parts) else None
 
 
+def _read_only_facts(conn) -> dict:
+    """What remember_machine would store for this machine, read without writing it. #1432."""
+    here = ms.this_machine()
+    row = ms.machine_row(conn) if here.get("partial") else None
+    return recorded_facts(conn, row) if row is not None else here
+
+
 def revisitable(conn: sqlite3.Connection, facts: dict | None = None, *, spent: bool = False) -> list:
     """Verdicts decided elsewhere whose condition THIS machine now satisfies.
 
@@ -231,7 +251,8 @@ def revisitable(conn: sqlite3.Connection, facts: dict | None = None, *, spent: b
     """
     if facts is None:
         # What this machine recorded, versions included, not a second probe. #415.
-        facts = recorded_facts(conn, remember_machine(conn)) or ms.this_machine()
+        facts = recorded_facts(conn, remember_machine(conn)) if ms.lent() is None else _read_only_facts(conn)
+        facts = facts or ms.this_machine()
     rows = conn.execute("""
         SELECT p.id AS proposal_id, p.name, p.lane, v.id AS verdict_id, v.outcome, v.detail, v.until, v.tier,
                v.decided_at, m.fingerprint AS decided_on

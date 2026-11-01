@@ -276,7 +276,7 @@ def test_the_untraced_inventory_only_shrinks():
 
 def test_each_untraced_file_is_sorted_unique_and_holds_only_its_own_directory():
     files = sorted((REPO / limit_trace.DIR).glob("*.txt"))
-    assert files
+    assert files or not limit_trace.untraced(), "no inventory file left, yet limits are untraced"
     for path in files:
         text = path.read_text(encoding="utf-8")
         lines = text.splitlines()

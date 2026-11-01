@@ -328,6 +328,8 @@ class _Store:
     """The given store connection, or a default one opened and closed here."""
 
     def __init__(self, conn=None):
+        from harness import memory_store as ms
+        conn = conn if conn is not None else ms.lent()
         self.conn, self.mine = conn, conn is None
 
     def __enter__(self):
@@ -399,7 +401,8 @@ def staleness(sources: list[Source] | None = None, now: float | None = None,
 
 def fetch(url: str, timeout: float = 30.0, retries: int = RETRIES,
           delay: float = RETRY_DELAY, sleep=time.sleep, headers: dict | None = None,
-          on_limit=None, retries_knob: str = "harness/feeds.py:RETRIES") -> str:
+          on_limit=None, retries_knob: str = "harness/feeds.py:RETRIES",
+          timeout_knob: str = "harness/feeds.py:fetch(timeout)") -> str:
     """GET `url` as text, retrying on the rate limit with ratelimit's backoff; an unreachable host is retried once."""
     from harness import ratelimit
     last = ""
@@ -422,7 +425,7 @@ def fetch(url: str, timeout: float = 30.0, retries: int = RETRIES,
             last = str(exc)
             unreachable += 1
             if cuts.timed_out(exc):
-                cuts.cut("harness/feeds.py:fetch(timeout)", f"{url}: no answer in time", value=timeout,
+                cuts.cut(timeout_knob, f"{url}: no answer in time", value=timeout,
                          kept=0, dropped=1)
             if unreachable > UNREACHABLE_RETRIES:
                 break
@@ -435,6 +438,8 @@ def fetch(url: str, timeout: float = 30.0, retries: int = RETRIES,
     if unreachable <= UNREACHABLE_RETRIES:
         cuts.cut(retries_knob, f"{url}: gave up after {attempt + 1} attempts ({last})",
                  value=retries, kept=0, dropped=1)
+    else:
+        cuts.cut("feed_unreachable_retries", f"{url}: unreachable, gave up ({last})", kept=0, dropped=1)
     raise error(f"{url}: gave up after {attempt + 1} attempts ({last})")
 
 

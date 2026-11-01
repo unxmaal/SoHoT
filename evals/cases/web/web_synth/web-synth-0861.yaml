@@ -1,0 +1,51 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0861
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Ferry
+  slip supplies". The page holds a table with the caption "Harbor office orders", the header cells "Item",
+  "Count", and these rows given as Item / Count: tin can, 588; garden hose, 953; copper wire, 321; cotton
+  rope, 473; linen towel, 183; cedar shingle, 341; wool blanket, 893; paper roll, 78. List the rows sorted
+  by Count, largest first. Put the header in one row of <th> cells and each value in its own <td>, with
+  no units or extra characters.'
+assert:
+  structure:
+    title: Ferry slip supplies
+    tables:
+    - caption: Harbor office orders
+      head:
+      - Item
+      - Count
+      rows:
+      - - garden hose
+        - '953'
+      - - wool blanket
+        - '893'
+      - - tin can
+        - '588'
+      - - cotton rope
+        - '473'
+      - - cedar shingle
+        - '341'
+      - - copper wire
+        - '321'
+      - - linen towel
+        - '183'
+      - - paper roll
+        - '78'
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '861'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: sorted
+  stratum: hard

@@ -150,8 +150,10 @@ def release(model: str, why: str, *, base: str = "", keep=None, timeout: float |
         return False
     if model in keep:
         return False
+    from harness import cuts
     try:
-        _swap_to_boot(base, timeout, opener)
+        with cuts.timeout("mlx_swap_timeout", f"unloading {model}", value=timeout):
+            _swap_to_boot(base, timeout, opener)
     except (OSError, ValueError) as exc:
         say(f"  mlx: could not unload {model}: {exc}")
         return False

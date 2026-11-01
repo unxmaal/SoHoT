@@ -90,3 +90,24 @@ def test_stale_pidfile_is_not_running(tmp_path):
     code, out = run_status(tmp_path, {"H3_DOWNLOAD_PIDFILE": str(pidfile)})
     assert "RUNNING" not in out
     assert code == 2
+
+
+@pytest.mark.parametrize("named", [False, True])
+def test_it_reports_the_directory_the_h3_engine_reads(tmp_path, monkeypatch, named):
+    """#1450: the script said dirname(HF_HOME)/MiniMax-H3 while the engine read <home>/MiniMax-H3 first."""
+    from harness import engines, paths
+    home_copy = paths.home() / "MiniMax-H3"
+    home_copy.mkdir(parents=True)
+    (home_copy / "a.incomplete").write_bytes(b"x")
+    monkeypatch.setenv("HF_HOME", str(tmp_path / "hf"))
+    monkeypatch.delenv("HF_ROOT", raising=False)
+    monkeypatch.delenv("H3_MODEL_DIR", raising=False)
+    if named:
+        monkeypatch.setenv("H3_MODEL_DIR", str(tmp_path / "named"))
+    env = dict(os.environ)
+    env.pop("H3_DOWNLOAD_PIDFILE", None)
+    out = subprocess.run([shells.BASH, str(SCRIPT)], capture_output=True, text=True, env=env).stdout
+    dest = next(line.split(None, 1)[1] for line in out.splitlines() if line.startswith("dest"))
+    assert Path(dest) == Path(engines.h3_model_dir())
+    assert Path(dest) == (tmp_path / "named" if named else home_copy)
+    assert ("1 partial" in out) is not named

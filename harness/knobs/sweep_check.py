@@ -15,3 +15,8 @@ KNOBS = [
 NOT_GATING = {
     f"{S}:PROBE_TIMEOUT_S": "how long launchctl print may take; a timeout reads as unknown, which notifies (#1062)",
 }
+
+NEVER_CUTS = {
+    "harness/heartbeat.py:STALL_S": "labels a loop stalled in status lines; nothing stops or waits on it (#1087)",
+    "harness/heartbeat.py:SWEEP_SLACK_S": "words the live audit's late-sweep warning; nothing is skipped (#1087)",
+}

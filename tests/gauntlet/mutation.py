@@ -34,7 +34,7 @@ MODULES = {
         "tests/test_live_screen_blame_1021.py", "tests/test_whisper_group_1024.py", "tests/test_audio_env_1030.py", "tests/test_drafters_1039.py", "tests/test_plan_refusal_1047.py",
         "tests/test_cut_sites_1202.py"],
     "harness/reasons.py": [
-        "tests/test_gguf_first_911.py", "tests/test_verdict_reasons.py", "tests/test_refusal_shapes.py", "tests/test_screen_server_death.py",
+        "tests/test_weedout_1439.py", "tests/test_gguf_first_911.py", "tests/test_verdict_reasons.py", "tests/test_refusal_shapes.py", "tests/test_screen_server_death.py",
         "tests/test_screen_evidence.py", "tests/test_harness_engines_repo_id.py",
         "tests/test_mps_backend_abort.py", "tests/test_timeouts_classed.py", "tests/test_agent_limits.py",
         "tests/test_served_ctx_limit.py", "tests/test_eval_budget.py", "tests/test_batch_lease_769.py",
@@ -59,7 +59,8 @@ MODULES = {
         "tests/test_screen_listing_984.py", "tests/test_missing_package_1008.py", "tests/test_diffusers_dtype_1013.py",
         "tests/test_live_screen_blame_1021.py", "tests/test_whisper_group_1024.py",
         "tests/test_requires_backends_1031.py", "tests/test_audio_env_1030.py", "tests/test_tts_drop_1036.py", "tests/test_drafters_1039.py", "tests/test_plan_refusal_1047.py",
-        "tests/test_stt_screen_power_1007.py"],
+        "tests/test_stt_screen_power_1007.py", "tests/test_staging_torch_1358.py",
+        "tests/test_presence_960.py", "tests/test_limit_cuts_1087_harness_ps.py"],
     "harness/adopt.py": [
         "tests/test_adopt_retest_1001.py", "tests/test_harness_adopt.py", "tests/test_harness_adopt_receipt.py", "tests/test_adopt_by_spec.py",
         "tests/test_adoptions.py", "tests/test_adopt_cmd.py", "tests/test_human_verdicts.py",
@@ -71,7 +72,8 @@ MODULES = {
         "tests/test_shared_store_703.py", "tests/test_screen_evidence.py", "tests/test_harness_winners.py",
         "tests/test_lane_routes.py", "tests/test_remote_upstreams.py", "tests/test_deepen_993.py",
         "tests/test_lane_too_small_1049.py", "tests/test_lane_until_1053.py", "tests/test_reverify_lane_metric_733.py",
-        "tests/test_adopt_effect_confirm_725.py"],
+        "tests/test_adopt_effect_confirm_725.py", "tests/test_min_effect_1320.py",
+        "tests/test_limit_cuts_1087_harness_ac.py", "tests/test_limit_cuts_1087_harness_ps.py"],
     "harness/serving.py": [
         "tests/test_harness_serving.py", "tests/test_lane_routes.py", "tests/test_gguf_route.py",
         "tests/test_schema_lanes.py", "tests/test_ds4.py", "tests/test_remote_upstreams.py",
@@ -90,9 +92,11 @@ MODULES = {
 LEFT_OUT = {
     "harness/memory_store/transitions.py": ("test_blame_audit.py", "test_live_audit.py", "test_lane_too_small_1049.py",
                                             "test_lane_until_1053.py", "test_loop_revisit_1055.py",
-                                            "test_revisit_tier_1060.py", "test_site.py"),
+                                            "test_revisit_tier_1060.py", "test_revisitable_after_deploy_1361.py",
+                                            "test_site.py", "test_futility_lane_too_small_1452.py"),
     "harness/reasons.py": (
-        "test_repo_repair_890.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_vision_engines_1282.py",
+        "test_runtime_trials_1474.py", "test_repo_repair_890.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_staging_torch_1358.py",
+        "test_vision_engines_1282.py",
         "test_shots_check_1208.py",
         "test_adopt_retest_1001.py", "test_attachment_tags_949.py", "test_canary_919.py",
         "test_chaos.py", "test_claims_lane.py", "test_gateway_key.py", "test_harness_checks_ocr.py",
@@ -103,10 +107,12 @@ LEFT_OUT = {
         "test_power_budget.py", "test_quants_882.py", "test_repo_claude_905.py", "test_repo_doc_hunk_1107.py", "test_repo_lane.py", "test_repo_no_tools_1129.py", "test_runner_base_weights.py", "test_schema_lanes.py",
         "test_fetch_needs_1091.py", "test_planted_919.py", "test_trajectory_921.py", "test_unranked_weight_954.py", "test_inventory_heartbeat_972.py",
         "test_silent_truncation.py", "test_slots_memory.py", "test_store_downloads.py", "test_sweep_settle_1178.py", "test_sweep_lane_metric_1219.py", "test_sweep_fallback_metric_1230.py", "test_yield_stop_1127.py",
-        "test_repo_causes_1170.py", "test_pool_full_retry_755.py", "test_engine_timeout_708.py",
+        "test_repo_causes_1170.py", "test_pool_full_retry_755.py", "test_engine_timeout_708.py", "test_reply_cap_1352.py",
         "test_engine_timeout_1256.py", "test_trocr_tokenizer_1025.py", "test_fetch_files_1040.py", "test_lane_too_small_1049.py",
         "test_lane_until_1053.py", "test_loop_revisit_1055.py", "test_revisit_tier_1060.py",
-        "test_adopt_effect_confirm_725.py", "test_technique_triage_993.py"),
+        "test_revisitable_after_deploy_1361.py", "test_adopt_effect_confirm_725.py", "test_min_effect_1320.py", "test_technique_triage_993.py",
+        "test_exam_price_1354.py", "test_limit_cuts_1087_evals.py", "test_limit_cuts_1087_harness_di.py",
+        "test_futility_lane_too_small_1452.py", "test_sustained_warn_1482.py", "test_technique_kinds_1476.py"),
     "harness/screen.py": (
         "test_attachment_tags_949.py", "test_lane_too_small_1049.py", "test_vision_engines_1282.py",
         "test_variants_947.py", "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",
@@ -115,23 +121,28 @@ LEFT_OUT = {
         "test_remote_upstreams.py", "test_router_unload.py", "test_slots_memory.py", "test_store_card_facts.py",
         "test_store_state.py", "test_until_keys_928.py", "test_fetch_files_1040.py", "test_lane_heads_1084.py",
         "test_engine_timeout_708.py", "test_engine_timeout_1256.py",
-        "test_served_readonly_1247.py", "test_adopt_effect_confirm_725.py"),
+        "test_served_readonly_1247.py", "test_adopt_effect_confirm_725.py",
+        "test_confirm_resume_1357.py", "test_store_errors_1432.py"),
     "harness/adopt.py": (
         "test_technique_triage_993.py", "test_harness_paired.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
         "test_over_budget_796.py", "test_planted_919.py", "test_projection_696.py", "test_rank_893.py", "test_router_unload.py",
         "test_store_state.py", "test_stt_screen_power_1007.py", "test_sweep_ceiling_806.py", "test_loop_revisit_1055.py",
         "test_incumbent_from_measurement_1110.py", "test_env_error_coverage_1116.py", "test_site.py",
+        "test_repo_looks_1353.py", "test_confirm_resume_1357.py",
         "test_metric_order_717.py",
         "test_served_readonly_1247.py", "test_saturation_lane_metric_1267.py", "test_gate_direction_1302.py",
-        "test_power_table_603.py"),
+        "test_power_table_603.py", "test_store_errors_1432.py", "test_futility_lane_too_small_1452.py",
+        "test_weedout_1439.py"),
     "harness/serving.py": (
-        "test_mlx_backlog.py", "test_runner_gap_until_950.py", "test_agent_limits.py", "test_claims_lane.py", "test_decide_lane.py",
+        "test_runtime_trials_1474.py", "test_mlx_backlog.py", "test_runner_gap_until_950.py", "test_agent_limits.py", "test_claims_lane.py", "test_decide_lane.py",
         "test_delegate_resident.py", "test_delegations.py", "test_lane_probe_924.py", "test_machine_host.py",
         "test_machine_identity.py", "test_mlx_dead_912.py", "test_purpose_825.py", "test_usage_gateway.py",
-        "test_vllm.py", "test_repo_failures_921.py"),
+        "test_vllm.py", "test_repo_failures_921.py", "test_presence_960.py", "test_limit_cuts_1087_harness_di.py",
+        "test_limit_cuts_1087_harness_ps.py", "test_sustained_warn_1482.py"),
     "harness/router.py": (
         "test_delegate_resident.py", "test_machine_host.py", "test_router_ready_1012.py", "test_sweep_ceiling_806.py",
-        "test_watchdog.py", "test_memory_warn_1082.py", "test_idle_unload_1157.py", "test_router_down_1181.py"),
+        "test_watchdog.py", "test_memory_warn_1082.py", "test_idle_unload_1157.py", "test_router_down_1181.py",
+        "test_limit_cuts_1087_harness_ac.py", "test_sustained_warn_1482.py"),
 }
 
 # mutmut 3 exit codes: survived and untested are gaps; anything unrecognised means the run is not trustworthy.

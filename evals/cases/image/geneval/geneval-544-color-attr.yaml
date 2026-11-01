@@ -1,0 +1,59 @@
+# GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023), MIT (https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl).
+# Imported by evals/importers from github:djghosh13/geneval/prompts/evaluation_metadata.jsonl@af4902f24d3ca90ebbb446dd9891a59e0f82725f; re-import, do not edit.
+id: geneval-544-color-attr
+modality: image
+prompt: a photo of an orange cow and a purple sandwich
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      cow: a cow
+      sandwich: a sandwich
+    require:
+    - type: count
+      object: cow
+      min: 1
+    - type: count
+      object: sandwich
+      min: 1
+    - type: attribute
+      object: cow
+      is: a orange cow
+      not:
+      - a red cow
+      - a yellow cow
+      - a green cow
+      - a blue cow
+      - a purple cow
+      - a pink cow
+      - a brown cow
+      - a black cow
+      - a white cow
+    - type: attribute
+      object: sandwich
+      is: a purple sandwich
+      not:
+      - a red sandwich
+      - a orange sandwich
+      - a yellow sandwich
+      - a green sandwich
+      - a blue sandwich
+      - a pink sandwich
+      - a brown sandwich
+      - a black sandwich
+      - a white sandwich
+attribution:
+  dataset: GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023)
+  url: https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl
+  license: MIT
+  source: github:djghosh13/geneval/prompts/evaluation_metadata.jsonl
+  revision: af4902f24d3ca90ebbb446dd9891a59e0f82725f
+  item: '544'
+  date: '2023-08-22'
+  transform: 'GenEval include/exclude spec as staging requirements: include count at least, include plus
+    exclude exactly, position relative to the named object, colour against the nine others'
+  importer: evals.importers.geneval
+  tag: color_attr

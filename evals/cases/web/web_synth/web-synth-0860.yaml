@@ -1,0 +1,44 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0860
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Harbor
+  office safety". The page holds an unordered list (<ul>) with these items in order: "Check the ropes";
+  "Hang the nets" (sub-items: "count the floats", "read the gauge", "coil the line"); "Raise the flag"
+  (sub-items: "lock the shed"); "Log the tide" (sub-items: "sweep the deck", "clear the drain", "stow
+  the fenders"); "Oil the winch". Where sub-items are given, put them in a nested <ul> inside that item,
+  in the order given.'
+assert:
+  structure:
+    title: Harbor office safety
+    lists:
+    - ordered: false
+      items:
+      - Check the ropes
+      - - Hang the nets
+        - - count the floats
+          - read the gauge
+          - coil the line
+      - - Raise the flag
+        - - lock the shed
+      - - Log the tide
+        - - sweep the deck
+          - clear the drain
+          - stow the fenders
+      - Oil the winch
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '860'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: outline
+  stratum: medium

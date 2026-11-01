@@ -13,7 +13,7 @@ LIMIT, MACHINE = "limit", "machine"
 #: The units a knob's limit value is in; a recorded limit must be in its knob's unit (#752).
 UNITS = frozenset({"s", "tokens", "GiB", "share", "factor", "turns", "cases", "pixels", "s/word", "bytes", "calls", "usd", "pages",
                    "kappa", "sd", "frames", "marks", "draws", "steps", "chars", "score",
-                   "issues"})
+                   "issues", "samples"})
 
 #: The lanes an eval asks for a text reply, the ones a reply budget is set for.
 TEXT_LANES = tuple(completion.BUDGET)

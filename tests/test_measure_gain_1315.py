@@ -200,6 +200,51 @@ def test_the_walk_cuts_what_the_window_leaves_no_time_for():
     assert [x["name"] for x in cut] == ["d"]
 
 
+def test_a_row_priced_at_zero_minutes_is_charged_a_slice_like_an_unpriced_one():
+    taken, _ = measure_replay.walk([r("zero"), r("none")], 5 * 3600, lambda row: {"zero": 0.0}.get(row["name"]))
+    from harness import power
+    assert [x["spend_s"] for x in taken] == [power.BUDGET_MIN * 60] * 2
+    gain = measure_gain.Gain("zero", "code", 0.1, 0.1, 0.0, 0.1, 0.0)
+    assert gain.key is None and "unpriced" in gain.line()
+
+
+def _night(names):
+    rows = [{"name": n, "lane": "code", "spend_s": 600.0} for n in names]
+    return {"start": NOW, "measure_at": NOW, "window_s": 3600.0, "queued": len(names), "held": [], "began": [],
+            "gains": [], "survivors": {"taken": rows, "cut": rows}, "gain": {"taken": rows, "cut": rows}}
+
+
+@pytest.mark.parametrize("head, shown", [(0, 7), (2, 2)])
+def test_the_replay_lists_every_row_at_head_0_and_head_rows_otherwise(monkeypatch, head, shown):
+    names_ = [f"m/Model-{i}" for i in range(7)]
+    monkeypatch.setattr(measure_replay, "replay", lambda conn, days, **kw: [_night(names_)])
+    lines = measure_replay.report(None, 1, head=head)
+    orders = [x for x in lines if x.lstrip().startswith(("survivors order:", "gain order:", "cut:"))]
+    assert len(orders) == 4
+    for line in orders:
+        assert sum(n in line for n in names_) == shown, line
+
+
+def test_measure_order_reads_only_the_store_it_is_given(tmp_path, monkeypatch, capsys):
+    import argparse
+    import time
+
+    from harness.commands import measure_order
+    copy = ms.connect(tmp_path / "copy.db")
+    try:
+        screen(copy, "x/Early-9B", [1], at=time.time() - DAY)
+    finally:
+        copy.close()
+    opened = []
+    real = ms.connect
+    monkeypatch.setattr(ms, "connect", lambda *a, **kw: opened.append(a) or real(*a, **kw))
+    for days in (0, 2):
+        assert measure_order.cmd_measure_order(argparse.Namespace(store=str(tmp_path / "copy.db"), lane="",
+                                                                  replay=days, head=0)) == 0
+    assert "x/Early-9B" in capsys.readouterr().out
+    assert opened == [], "pricing opened a store other than --store"
+
+
 def test_the_replay_reads_survivors_as_they_stood_that_night(conn):
     screen(conn, "x/Early-9B", [1], at=NOW - 3 * DAY)
     screen(conn, "y/Late-9B", [1], at=NOW - DAY)

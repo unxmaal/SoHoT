@@ -1,0 +1,59 @@
+# GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023), MIT (https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl).
+# Imported by evals/importers from github:djghosh13/geneval/prompts/evaluation_metadata.jsonl@af4902f24d3ca90ebbb446dd9891a59e0f82725f; re-import, do not edit.
+id: geneval-476-color-attr
+modality: image
+prompt: a photo of a green couch and an orange umbrella
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      couch: a couch
+      umbrella: a umbrella
+    require:
+    - type: count
+      object: couch
+      min: 1
+    - type: count
+      object: umbrella
+      min: 1
+    - type: attribute
+      object: couch
+      is: a green couch
+      not:
+      - a red couch
+      - a orange couch
+      - a yellow couch
+      - a blue couch
+      - a purple couch
+      - a pink couch
+      - a brown couch
+      - a black couch
+      - a white couch
+    - type: attribute
+      object: umbrella
+      is: a orange umbrella
+      not:
+      - a red umbrella
+      - a yellow umbrella
+      - a green umbrella
+      - a blue umbrella
+      - a purple umbrella
+      - a pink umbrella
+      - a brown umbrella
+      - a black umbrella
+      - a white umbrella
+attribution:
+  dataset: GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023)
+  url: https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl
+  license: MIT
+  source: github:djghosh13/geneval/prompts/evaluation_metadata.jsonl
+  revision: af4902f24d3ca90ebbb446dd9891a59e0f82725f
+  item: '476'
+  date: '2023-08-22'
+  transform: 'GenEval include/exclude spec as staging requirements: include count at least, include plus
+    exclude exactly, position relative to the named object, colour against the nine others'
+  importer: evals.importers.geneval
+  tag: color_attr

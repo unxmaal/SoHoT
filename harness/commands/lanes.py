@@ -460,6 +460,8 @@ def cmd_sensitivity(a) -> int:
     if unknown:
         return err(f"unknown probe(s) {', '.join(unknown)}; "
                    f"known: {', '.join(sorted(probes.PROBES))}")
+    from harness import paths
+    paths.eval_home(reads_live=True)
     try:
         found = probes.run(a.names or None)
     except Exception as exc:  # noqa: BLE001
@@ -486,15 +488,13 @@ def _knob_row(k) -> dict:
 
 def _knob_sweeps(a) -> int:
     """What a loop would sweep now, and every decision recorded. #636."""
-    from harness import memory_store as ms, sweeps
-    store = ms.connect()
-    try:
+    from harness import sweeps
+    from harness.commands.common import lent_store
+    with lent_store() as store:
         got = sweeps.check(store, dry_run=True)
         done = [dict(r) for r in store.execute(
             "SELECT knob, lane, spec, outcome, chosen, detail, settled_at FROM knob_sweeps "
             "WHERE outcome != '' ORDER BY id").fetchall()]
-    finally:
-        store.close()
     if a.json:
         print(json.dumps({"planned": [{k: v for k, v in p.items() if k != "argv"} for p in got["planned"]],
                           "decided": done}, indent=2, default=str))

@@ -222,8 +222,10 @@ def ask_field(spec: Spec, command: list[str], weights: str, name: str, field: di
     from harness import proc
     tools = Path(workdir) / f"tools-{name}.json"
     tools.write_text(json.dumps(field_tools(name, field)), encoding="utf-8")
-    r = proc.run(argv(spec, command, weights, tools, field_input(task, context, field)),
-                 timeout=FIELD_TIMEOUT_S, env=child_env({}))
+    from harness import cuts
+    with cuts.timeout("harness/needle.py:FIELD_TIMEOUT_S", f"needle field {name}"):
+        r = proc.run(argv(spec, command, weights, tools, field_input(task, context, field)),
+                     timeout=FIELD_TIMEOUT_S, env=child_env({}))
     try:
         body = json.loads(r.stdout.strip().splitlines()[-1]) if r.stdout.strip() else {}
     except ValueError:
@@ -408,6 +410,9 @@ class Chat:
                                              knobs.hit("needle_serve_start_s", SERVE_START_S, "s")) from exc
         except (OSError, RuntimeError, ValueError) as exc:
             if isinstance(exc, TimeoutError) or isinstance(getattr(exc, "reason", None), TimeoutError):
+                from harness import cuts
+                cuts.cut("harness/needle.py:Chat.__call__(timeout)", "a needle agent turn", value=timeout,
+                         kept=0, dropped=1)
                 raise completion.CompletionError(f"needle: timed out after {timeout:g}s", reasons.TIMEOUT,
                                                  knobs.hit("timeout_s", timeout, "s")) from exc
             raise completion.CompletionError(f"needle: {exc}") from exc

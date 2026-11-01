@@ -306,6 +306,24 @@
   "test_shape": "migrate a historical store on a machine whose present state differs from the past (no weights, different adoptions) and assert the backfilled decision matches its receipt."
  },
  {
+  "id": "a-retraction-never-reaches-the-actor",
+  "heading": "A retraction never reaches the actor",
+  "source": "SKILL.md",
+  "tier": 3,
+  "bitten": 2,
+  "trigger": "has a command, plan or instruction been handed to someone who will act on it later? If it is withdrawn, what guarantees they see the withdrawal before they act?",
+  "test_shape": "none mechanical. Put any retraction first, in bold, on the channel the actor reads at the moment of acting; never reverse a handed-out command mid-message. Assume an actor who read the first version acts on it."
+ },
+ {
+  "id": "a-result-produced-never-read",
+  "heading": "A result produced, never read",
+  "source": "SKILL.md",
+  "tier": 1,
+  "bitten": 2,
+  "trigger": "did a job, eval or probe finish? Is anything waiting on its output, and has anyone opened the output since it landed?",
+  "test_shape": "finish a job with a planted report, assert the status lists it as unread until it is acknowledged."
+ },
+ {
   "id": "boundary-and-fencepost",
   "heading": "1. Boundary and fencepost",
   "source": "general-corpus.md",

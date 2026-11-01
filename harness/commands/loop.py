@@ -1,6 +1,7 @@
 """`soh discover --loop`: the tiers chained, the queue they share, and the spend that settles them."""
 from __future__ import annotations
 
+from evals import watch
 from harness import lanes, methods, repo_gate
 from harness.commands import discover as discover_cmd
 from harness.commands import measure as measure_cmd
@@ -25,7 +26,7 @@ def _queueable(store, want: str = "") -> tuple[list[dict], int]:
     from harness import rank
     from harness import memory_store as ms
 
-    rows = ms.judgeable(store, limit=1_000_000)
+    rows = ms.judgeable(store, limit=1_000_000, limit_knob="harness/commands/loop.py:_queueable->ms.judgeable(limit)")
     if want:
         rows = [r for r in rows if methods.serves(r["name"], rank.lane_of(r), want)]
     return rows, len(rows)
@@ -53,8 +54,23 @@ SPEND_STEPS = ("retests", "reverify", "knob sweeps", "disk", "fetch", "screen", 
 LOOP_TOTAL = len(LOOP_STEPS) + len(SPEND_STEPS)
 
 
+#: A sweep that stopped because the weights volume went away exits as a paused eval does. #1481.
+PAUSED = watch.PAUSED
+
+
+class WeightsGone(Exception):
+    """The weights volume went away between steps: the sweep pauses before `tier`. #1481."""
+
+    def __init__(self, tier: str, reason: str):
+        super().__init__(reason)
+        self.tier, self.reason = tier, reason
+
+
 def _beat(tier: str, **kw) -> None:
-    from harness import heartbeat
+    from harness import env, heartbeat
+    vol = env.unmounted(env.configured())
+    if vol:
+        raise WeightsGone(tier, f"the weights volume {vol} {env.NOT_MOUNTED}")
     names = [label for label, _, _ in LOOP_STEPS] + list(SPEND_STEPS)
     heartbeat.beat(tier, step=names.index(tier) + 1, **kw)
 
@@ -151,6 +167,11 @@ def _report_loop(a) -> int:
                     total=LOOP_TOTAL if run else len(LOOP_STEPS))
     try:
         rc = _run_loop(a)
+    except WeightsGone as gone:
+        import sys
+        heartbeat.pause(gone.tier, gone.reason)
+        print(f"\n=== sweep paused before {gone.tier}: {gone.reason} ===", file=sys.stderr, flush=True)
+        rc = PAUSED
     except BaseException as exc:
         heartbeat.finish(None, error=f"{type(exc).__name__}: {exc}")
         raise
@@ -245,7 +266,7 @@ def _run_loop_held(a, keep=None) -> int:
             for repair, args in ((_reopen_stale_too_big, ()), (_reopen_unranked, ()),
                                  (_reopen_upstream_committed, ()), (_reread_runtime_declines, (a,)),
                                  (_move_past_screen, ()), (_reopen_revisitable, ()),
-                                 (_rederive_attachments, ()), (_relane_vision, ())):
+                                 (_rederive_attachments, ()), (_relane_vision, ()), (_trial_runtimes, ())):
                 rc = _repair(label, repair, args, failed) or rc
         sub = _ap.Namespace(**{**vars(a), **flags, **extra, "loop": False})
         rc = _step(label, discover_cmd.cmd_discover(sub), failed) or rc
@@ -457,16 +478,18 @@ EVERY = 1_000_000
 
 
 def measure_queue(store, want: str, top: int, sweep=None, room=None, slots=None, say=print) -> list[dict]:
-    """What the measure step takes, in order: paused runs, repo-lane comparisons, then the families' order of gain per minute. #1100, #1111, #1315."""
-    gained = _by_gain(store, measure_cmd.measurable(store, top or EVERY, want), want, say)
+    """Paused runs, then the families' order of gain per minute, each gated row's repo comparison just ahead of it. #1323."""
+    on = repo_gate.active()
+    rows = repo_gate.join(measure_cmd.measurable(store, top or EVERY, want), store, want, on=on)
+    gained = _by_gain(store, rows, want, say, gated=(lambda r: repo_gate.needs(store, r, want)) if on else None)
     queue = _by_family(store, gained, sweep, room, slots, say)
-    return repo_gate.order(measure_cmd.resume_first(store, queue, want), store, want)
+    return repo_gate.order(measure_cmd.resume_first(store, queue, want), store, want, on=on)
 
 
-def _by_gain(store, rows: list[dict], want: str, say=print) -> list[dict]:
+def _by_gain(store, rows: list[dict], want: str, say=print, gated=None) -> list[dict]:
     """Rows by expected gain per GPU-minute, each key said; ties and unpriced rows keep the survivors order. #1315."""
     from harness import measure_gain
-    ordered, gains = measure_gain.order(store, rows, want)
+    ordered, gains = measure_gain.order(store, rows, want, gated=gated)
     for i, g in enumerate(gains):
         say(f"  gain: {i + 1}. {g.line()}")
     return ordered
@@ -516,9 +539,10 @@ def _sized(top: int, sweep) -> dict:
                     f"of the {power._hm(left)} left of the sweep ceiling")}
 
 
-def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=None) -> int:
-    """Each measurement in turn; after a memory pause, only those that fit now, smallest first. #813, #1082."""
+def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=None, headroom=None) -> int:
+    """Each measurement in turn, none while memory is short; after a memory pause, only those that fit now, smallest first. #813, #1082, #1482."""
     room = room or measure_cmd.room_for
+    headroom = headroom or measure_cmd.headroom_gb
     queue, total, i, tight = list(fresh), len(fresh), 0, False
     while queue:
         held = _held_back(sweep, len(queue))
@@ -528,6 +552,15 @@ def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=No
             if not sweep.halted:
                 from harness import cuts
                 cuts.cut("sweep_ceiling_h", held, value=sweep.ceiling_s / 3600, kept=total - len(queue), dropped=len(queue))
+            break
+        short = _short_of_room(headroom(), len(queue))
+        if short:
+            from harness import cuts
+            print(f"  {short}", flush=True)
+            cuts.cut("min_headroom_gb", short, kept=total - len(queue), dropped=len(queue))
+            if sweep is not None:
+                sweep.lines.append(short)
+                sweep.stopped, sweep.waiting = short, len(queue)
             break
         if tight:
             row, why = _next_fitting(queue, room)
@@ -546,14 +579,24 @@ def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=No
             print(f"  {why}", flush=True)
             continue
         _beat("measure", candidate=row.get("name", ""), item=i, items=total)
-        rc = _step(f"measure {row.get('name', '')}".strip(),
-                   measure_cmd._measure_and_adopt(repo_gate.args_for(a, row), row, sweep), failed) or rc
+        got = measure_cmd._measure_and_adopt(repo_gate.args_for(a, row), row, sweep)
+        # A paused pair resumes next sweep; it is not a failed step. #1374.
+        rc = _step(f"measure {row.get('name', '')}".strip(), 0 if got == watch.PAUSED else got, failed) or rc
         if sweep is not None and sweep.squeezed:
             # Its model is released by now: re-sample memory before each start from here on.
             print(f"  {row.get('name', '')} was paused for memory; going on with what fits, smallest first",
                   flush=True)
             sweep.squeezed, tight = "", True
     return rc
+
+
+def _short_of_room(room: float, waiting: int) -> str:
+    """Why no new measurement starts: fits() would budget under memory.MIN_HEADROOM_GB now, else "". #1482."""
+    from harness import memory
+    if room >= memory.MIN_HEADROOM_GB:
+        return ""
+    return (f"memory: only {room:.1f} GB is safely available, under the {memory.MIN_HEADROOM_GB:g} GB a new "
+            f"measurement needs; {waiting} measurement(s) wait for the next sweep")
 
 
 def _gated(row: dict, want: str) -> str:
@@ -688,11 +731,13 @@ def _reopen_revisitable() -> list[dict]:
     began = heartbeat.clock()
     store = ms.connect()
     try:
+        counts = ms.case_counts(store)
         rows = ms.revisitable(store)
         ms.requeue_revisitable(store, rows=rows)
         spent = ms.revisitable(store, spent=True)
     finally:
         store.close()
+    heartbeat.note(heartbeat.REVISIT_CASES, counts)
     heartbeat.mark(heartbeat.REOPENED_REVISITABLE, began)
     print(f"  requeued {len(rows)} refusal(s) whose until is met here")
     for r in rows:
@@ -801,6 +846,19 @@ def _reread_runtime_declines(a) -> list[str]:
     for n in moved:
         print(f"    {n}")
     return moved
+
+
+def _trial_runtimes() -> list[dict]:
+    """Propose each pinned runtime's newer release, trial the next one sandboxed, and print every verdict. #1474."""
+    from harness import memory_store as ms, runtime_trials
+    store = ms.connect()
+    try:
+        watched = runtime_trials.watch(store)
+        tried = runtime_trials.trial(store)
+    finally:
+        store.close()
+    print("\n".join(runtime_trials.lines(watched, tried)))
+    return tried
 
 
 def _cross_methods(store, want: str = "") -> list[tuple[str, str, bool]]:

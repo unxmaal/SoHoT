@@ -1,0 +1,43 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0071
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Dry
+  dock repairs". The page holds a table with the caption "Sail loft tally", the header cells "Item", "Count",
+  and these rows given as Item / Count: pine tar, 119; linen towel, 85; rubber seal, 332. Keep the rows
+  in this order and end the table with one more row whose first cell is "Total" and whose second cell
+  is the sum of the counts. Put the header in one row of <th> cells and each value in its own <td>, with
+  no units or extra characters.'
+assert:
+  structure:
+    title: Dry dock repairs
+    tables:
+    - caption: Sail loft tally
+      head:
+      - Item
+      - Count
+      rows:
+      - - pine tar
+        - '119'
+      - - linen towel
+        - '85'
+      - - rubber seal
+        - '332'
+      - - Total
+        - '536'
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '71'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: total
+  stratum: hard

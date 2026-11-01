@@ -1,6 +1,8 @@
 """`soh reverify`: re-run served models whose runtime moved, that aged, or whose real use regressed. #480, #486."""
 from __future__ import annotations
 
+import contextlib
+
 from harness.commands.common import emit, err, note
 
 
@@ -17,6 +19,9 @@ def report(got: dict) -> None:
     for s in got["settled"]:
         note(f"  settled {s['lane']} {s['spec']}: {s['outcome']} ({s['reason']}"
              f"{', ' + s['failure_class'] if s['failure_class'] else ''}): {s['detail']}")
+    for s in got.get("resumed", []):
+        note(f"  resuming {s['lane']} {s['spec']}: job {s['paused']} paused; job {s['job']} continues "
+             f"{s['out'] or 'it'} at night")
     for e in got["planned"]:
         note(_line(e))
     dry = got.get("dry_run", False)
@@ -44,8 +49,10 @@ def cmd_reverify(a) -> int:
             note(f"{lane}: due again after {a.days:g} days without a passing run")
             emit(lane=lane, days=float(a.days))
             return 0
-        got = reverify.check(conn, lane=lane, dry_run=a.dry_run)
-        flags = reverify.flags(conn)
+        # A dry run's readers take this connection rather than reopen the store. #1426.
+        with ms.lend(conn) if a.dry_run else contextlib.nullcontext():
+            got = reverify.check(conn, lane=lane, dry_run=a.dry_run)
+            flags = reverify.flags(conn)
     finally:
         conn.close()
     report(got)

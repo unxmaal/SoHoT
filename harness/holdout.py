@@ -104,6 +104,12 @@ def _cap(held: list) -> tuple[list, list]:
     return [c for c in held if c in keep], [c for c in held if c not in keep]
 
 
+def _unsplit(lane: str, short_holdout: bool) -> None:
+    from harness import cuts
+    split_knob = "harness/holdout.py:MIN_HOLDOUT" if short_holdout else "harness/holdout.py:MIN_DEV"
+    cuts.cut(split_knob, f"{lane}: too few cases to split, decided on all of them", kept=0, dropped=1)
+
+
 def _assign_tasks(lane: str, cases) -> Split:
     """A task's variants share one side, frozen by the manifest's seed; a lone case draws as any other. #995."""
     from evals.importers import history
@@ -112,6 +118,7 @@ def _assign_tasks(lane: str, cases) -> Split:
     hold = tuple(sorted(k for k, v in sides.items() if v == "holdout"))
     dev = tuple(sorted(k for k, v in sides.items() if v == "dev"))
     if len(hold) < MIN_HOLDOUT or len(dev) < MIN_DEV:
+        _unsplit(lane, len(hold) < MIN_HOLDOUT)
         every = tuple(sorted(sides))
         return Split(lane, every, every, True, version(lane))
     return Split(lane, dev, hold, False, version(lane))
@@ -125,6 +132,8 @@ def assign(lane: str, cases) -> Split:
     drawn = sorted(((_draw(c), c.id) for c in cases), key=lambda t: (t[0], t[1]))
     ids = [cid for _, cid in drawn]
     if len(ids) < MIN_HOLDOUT + MIN_DEV:
+        if ids:
+            _unsplit(lane, len(ids) < MIN_HOLDOUT)
         return Split(lane, tuple(sorted(ids)), tuple(sorted(ids)), True, version(lane))
     n = sum(1 for d, _ in drawn if d < FRACTION)
     n = min(max(n, MIN_HOLDOUT), len(ids) - MIN_DEV)
@@ -155,15 +164,25 @@ def _splits(roots: tuple) -> dict:
     return {lane: assign(lane, cases) for lane, cases in by.items()}
 
 
-def splits(root=None) -> dict:
-    """lane -> the split of its shipped cases (evals/cases by default) plus local-only ones. #654."""
+def _roots(root=None) -> tuple:
     from evals.core import local_root
     roots = [(Path(root) if root is not None else
               Path(__file__).resolve().parent.parent / "evals" / "cases", False)]
     if root is None and local_root().is_dir():
         roots.append((local_root(), True))
     # Keyed on every file's mtime, so an edited case is drawn again.
-    return _splits(tuple((str(r), private, _stamp(r)) for r, private in roots))
+    return tuple((str(r), private, _stamp(r)) for r, private in roots)
+
+
+def splits(root=None) -> dict:
+    """lane -> the split of its shipped cases (evals/cases by default) plus local-only ones. #654."""
+    return _splits(_roots(root))
+
+
+def lane_cases(lane: str, root=None) -> list:
+    """Every case of one lane, shipped and local-only, from the same per-root cache. #1358."""
+    key = (lane or "").strip().lower()
+    return [c for r, private, stamp in _roots(root) for c in _cases(r, private, stamp) if c.modality == key]
 
 
 def for_lane(lane: str, root=None) -> Split:

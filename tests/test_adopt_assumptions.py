@@ -175,7 +175,8 @@ def test_effect_alpha_and_the_unseen_rate_are_registered_knobs():
     sites = {s for k in knobs.KNOBS.values() for s in k.sites}
     assert {"harness/power.py:EFFECT", "harness/power.py:DEFAULT_EFFECT",
             "harness/power.py:UNSEEN", "harness/adopt.py:ALPHA"} <= sites
-    assert knobs.KNOBS["adopt_effect"].default("code") == power.effect_for("code")
+    assert knobs.KNOBS["adopt_effect"].default("code") == power.noise_for("code")
+    assert knobs.KNOBS["adopt_min_effect"].default() == power.MIN_EFFECT
 
 
 def test_an_underpowered_null_names_the_smallest_gain_the_run_could_see():

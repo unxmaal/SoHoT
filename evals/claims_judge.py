@@ -64,9 +64,16 @@ def judge_spec() -> str:
 
 def ask_local(case, user: str, claim: str, refs) -> str:
     """The decide lane's verdict on one claim, read against the whole transcript."""
-    from harness import delegate
+    from harness import delegate, exclusive
     got = delegate.decide(question(user, claim, refs), SCHEMA, context=case.prompt)
+    exclusive.beat()
     return str((got.get("answers") or {}).get("verdict") or "")
+
+
+def _holding():
+    """The machine lock for a run of asks, so a queued run waits behind a router restart rather than being refused. #1349."""
+    from harness import exclusive
+    return exclusive.held("eval", announce=lambda m: print(m, file=sys.stderr, flush=True))
 
 
 def negative(verdict: str) -> bool:
@@ -289,7 +296,10 @@ def main(argv: list[str] | None = None) -> int:
         print("no local claims cases", file=sys.stderr)
         return 1
     if a.action == "calibrate":
-        result = calibrate(cases, ask_local, judge_spec())
+        from harness import paths
+        paths.eval_home(reads_live=True)
+        with _holding():
+            result = calibrate(cases, ask_local, judge_spec())
         write_calibration(result, claims_dir)
         print(render(result))
         return 0
@@ -308,7 +318,8 @@ def main(argv: list[str] | None = None) -> int:
         if not run_id:
             print("no claims run stored", file=sys.stderr)
             return 1
-        made = judge_run(conn, int(run_id), cases, ask_local, cal["judge"], claims_dir)
+        with _holding():
+            made = judge_run(conn, int(run_id), cases, ask_local, cal["judge"], claims_dir)
     finally:
         conn.close()
     record(made, claims_dir)

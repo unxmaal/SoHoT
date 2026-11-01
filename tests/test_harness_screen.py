@@ -65,7 +65,7 @@ def test_a_ready_candidate_gets_the_spec_its_lane_actually_takes():
         assert kind_of(spec) == expect, (lane, spec)
 
 
-def test_the_command_is_one_case_one_repeat_and_no_metrics():
+def test_the_command_is_a_screen_with_one_repeat_and_no_metrics():
     """A screen asks whether it ran. A quality metric here would invite ranking
     a screen against a measurement, which is two different exams."""
     row = screen.plan(rows(("org/m", "image")), missing=lambda n: [])[0]
@@ -346,3 +346,24 @@ def test_a_screen_without_a_receipt_keeps_its_stderr_less_warnings():
     got = screen_detail("the screen exited 1", WARNED + "Traceback\nValueError: bad config\n", None)
     assert got == "the screen exited 1 || Traceback ValueError: bad config"
     assert screen_detail("the screen exited 1", WARNED, None) == "the screen exited 1"
+
+
+def test_a_by_hand_lane_says_it_runs_by_hand_under_its_canonical_name():
+    """#1282: a BY_HAND lane is answered before any spec is built, by its canonical name."""
+    assert screen.by_hand(" Craft ", "org/m") == "the craft lane runs by hand"
+    assert screen.runner_gap(" Shots ", "org/m") == "the shots lane runs by hand"
+
+
+def test_the_vision_lane_names_its_labeller_from_the_card_given_or_the_stored_one(monkeypatch):
+    """#1282: a given card wins; with none, the store's card for that model is read."""
+    asked = []
+    monkeypatch.setattr(ms, "card_of", lambda conn, model: asked.append((conn, model)) or {"library": "mlx"})
+    head = "the vision lane runs by hand: soh vision run --candidate "
+    assert screen.by_hand("Vision", "org/m", card={"library": "gguf"}) == head + "llamacpp-vlm:org/m"
+    assert screen.by_hand("vision", "org/m", conn="c", card={"library": "gguf"}) == head + "llamacpp-vlm:org/m"
+    assert asked == []
+    assert screen.by_hand("vision", "org/m", conn="c") == head + "mlx-vlm:org/m"
+    assert asked == [("c", "org/m")]
+    assert screen.runner_gap("vision", "org/v", card={"library": "gguf"}) == head + "llamacpp-vlm:org/v"
+    assert screen.runner_gap("vision", "org/v", conn="d") == head + "mlx-vlm:org/v"
+    assert asked[-1] == ("d", "org/v")

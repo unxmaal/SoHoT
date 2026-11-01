@@ -1,0 +1,74 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0762
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Net
+  shed overview". The page holds a <nav> holding exactly these links in this order: "Supplies" to #supplies,
+  "Rules" to #rules, "Repairs" to #repairs, "Overview" to #overview; and, for each link, a <section> whose
+  id is the link''s target without the # and which starts with an <h2> reading the link text. It also
+  holds a table with the caption "Boathouse tally", the header cells "Item", "Count", and these rows given
+  as Item / Count: brass hinge, 215; rubber seal, 221; steel bolt, 40. Keep those rows in order and end
+  the table with a row whose first cell is "Total" and whose second cell is the sum of the counts. Put
+  the header in one row of <th> cells and each value in its own <td>, with no units or extra characters.
+  Last, it holds a form with an <input> of type "date" named "start_date" labelled "Start date" with a
+  <label> element, not required; an <input> of type "email" named "email" labelled "Email address" with
+  a <label> element, not required; and a submit button reading "Submit order". Mark only the controls
+  asked as required.'
+assert:
+  structure:
+    title: Net shed overview
+    nav:
+    - - Supplies
+      - '#supplies'
+    - - Rules
+      - '#rules'
+    - - Repairs
+      - '#repairs'
+    - - Overview
+      - '#overview'
+    sections:
+      supplies: Supplies
+      rules: Rules
+      repairs: Repairs
+      overview: Overview
+    tables:
+    - caption: Boathouse tally
+      head:
+      - Item
+      - Count
+      rows:
+      - - brass hinge
+        - '215'
+      - - rubber seal
+        - '221'
+      - - steel bolt
+        - '40'
+      - - Total
+        - '476'
+    form:
+      fields:
+      - label: Start date
+        name: start_date
+        type: date
+        required: false
+      - label: Email address
+        name: email
+        type: email
+        required: false
+      submit: Submit order
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '762'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: mix
+  stratum: hard

@@ -24,4 +24,8 @@ NEVER_CUTS = {
     "harness/measure_gain.py:PRIOR_MEAN": "a queue-order weight; it orders the measure step and never refuses a row",
     "harness/measure_gain.py:PRIOR_SD": "a queue-order weight; it orders the measure step and never refuses a row",
     "harness/measure_gain.py:RELATED_CELLS": "a queue-order weight; it orders the measure step and never refuses a row",
+    "harness/verify.py:COST_S": "a lane's estimated seconds per verify pass; it orders the plan cheapest first and "
+                                "prints its total, and every planned lane still runs",
+    "harness/verify.py:Task.cost_s": "a task's estimated seconds; it orders the verify plan and prints, and never "
+                                     "skips a task",
 }

@@ -108,3 +108,23 @@ def test_an_mcp_job_with_a_start_says_it_waits_for_it(monkeypatch):
     assert "start time" in mcp_server.job_status(job.job).waiting_for
     with pytest.raises(Exception, match="HH:MM"):
         mcp_server.video("a fox", start="later")
+
+
+@pytest.mark.parametrize("spec", ["2026-10-18T21:00:00", "2026-10-18 21:00:00"])
+def test_a_dated_start_takes_seconds_and_the_iso_t(spec):
+    assert wq.start_at(spec, now=at(16, 10)) == at(18, 21)
+
+
+@pytest.mark.parametrize("now, spec, want", [
+    (at(16, 23), "2026-10-17T21:00", at(17, 21)),
+    (at(16, 23), "2026-10-17 10:00", at(17, 21)),
+    (at(16, 15), "2026-10-17 02:30", at(17, 2, 30)),
+    (at(16, 15), "16:30", at(16, 21)),
+])
+def test_night_with_a_start_keeps_the_later_of_the_two(monkeypatch, capsys, now, spec, want):
+    monkeypatch.setattr(wq.time, "time", lambda: now)
+    assert cli.main(["jobs", "--night", "--not-before", spec, "add", "--json", "--", "true"]) == 0
+    job = json.loads(capsys.readouterr().out)["job"]
+    assert wq._epoch(job["not_before"]) == want and job["night_gate"] is False
+    assert cli.main(["jobs", "add", "--night", "--not-before", spec, "--json", "--", "true"]) == 0
+    assert wq._epoch(json.loads(capsys.readouterr().out)["job"]["not_before"]) == want

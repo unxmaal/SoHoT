@@ -187,7 +187,7 @@ def _store_incumbent(store_run, lane, spec, by_case, seconds):
 
 
 #: A text lane still too small to split, so power has to come from repeat (svg grew past this in #1050).
-SMALL = "web"
+SMALL = "music"
 
 
 def _small_rates(store_run, seconds):

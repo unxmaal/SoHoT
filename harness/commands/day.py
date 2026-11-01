@@ -1,4 +1,4 @@
-"""`soh day clear|status|revoke`: Eric's word that this machine may run jobs all day. #1112."""
+"""`soh day clear|status|revoke`: the owner's word that this machine may run jobs all day. #1112."""
 from __future__ import annotations
 
 from harness.commands.common import emit, err, note

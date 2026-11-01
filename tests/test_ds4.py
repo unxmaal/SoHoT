@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 import shells
-from evals import core, environment
+from evals import core
 from evals import run as R
 from evals.core import Case, Receipt, Result
 from harness import (context, downloads, ds4, fetching, gateway, gguf, machine,
@@ -287,16 +287,14 @@ def test_the_served_context_is_read_from_the_server(models):
     assert context.served_ctx(f"ds4:{QWEN_Q2},ctx=4096") == 4096
 
 
-def test_an_eval_run_measures_ds4_and_records_the_launch(models, monkeypatch, tmp_path):
+def test_an_eval_run_measures_ds4_and_records_the_launch(models, monkeypatch, tmp_path, machine_is):
     out = tmp_path / "out"
     out.mkdir()
     monkeypatch.setattr(core, "load_cases",
                         lambda path: [Case(id="a", modality="code", prompt="p")])
     monkeypatch.setattr(R, "warn_if_pressed",
                         lambda: argparse.Namespace(as_dict=lambda: {}))
-    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
-    monkeypatch.setattr(environment, "capture",
-                        lambda: {"hw_model": "Test,1", "os": "t", "arch": "a"})
+    machine_is({"hw_model": "Test,1", "os": "t", "arch": "a"})
     monkeypatch.setattr(core, "score", lambda case, art, **k: Result(
         case.id, "", "def f" in str(art), 0.0, 0, ""))
     log = tmp_path / "requests.jsonl"
@@ -496,6 +494,23 @@ def test_the_by_hand_fetch_puts_the_file_in_the_ds4_dir_and_records_it(models, m
     assert gguf.fetched(QWEN) == "Qwen3.8-Flash-Next-Q4"
     with pytest.raises(ValueError, match="ds4 lists"):
         ds4.fetch(QWEN, "Qwen3.8-Flash-Next-Q3_K_M.gguf", hf_download=hf_download)
+
+
+def test_the_by_hand_fetch_lifts_the_offline_guard(models, monkeypatch):
+    """A shell that sourced env.sh imports huggingface_hub offline; the fetch must lift it. #1457, RULE #813."""
+    from huggingface_hub import constants
+    monkeypatch.setenv("HF_HUB_OFFLINE", "1")
+    monkeypatch.setattr(constants, "HF_HUB_OFFLINE", True)
+    seen = []
+
+    def hf_download(repo, filename, local_dir):
+        seen.append((constants.HF_HUB_OFFLINE, os.environ["HF_HUB_OFFLINE"]))
+        (Path(local_dir) / filename).write_bytes(b"GGUF")
+        return str(Path(local_dir) / filename)
+    ds4.fetch(QWEN, "Qwen3.8-Flash-Next-Q4.gguf", hf_download=hf_download)
+    assert seen == [(False, "0")]
+    assert constants.HF_HUB_OFFLINE is True
+    assert os.environ["HF_HUB_OFFLINE"] == "1"
 
 
 # ---- the runtime, its version, and the pin ---------------------------------

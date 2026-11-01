@@ -282,6 +282,9 @@ def _check_web(artifact, case: Case) -> CheckResult:
     r = html_check.check(artifact)
     if not r.ok:
         return r
+    missed = html_check.structure(artifact, case.assertions.get("structure") or {})
+    if missed:
+        return CheckResult(False, missed, r.warnings, shape_count=r.shape_count, has_title=r.has_title)
 
     drawn = render_check.check_html(extract(artifact, ("html", "!doctype")))
     out = CheckResult(drawn.ok, drawn.reason, r.warnings + drawn.warnings,
@@ -449,6 +452,9 @@ METRIC_DIRECTION = {
     # all: an intelligible clone in the wrong voice scores a perfect 0.
     "speaker_similarity": "higher",
     "tokens_per_s": "higher",
+    # A routing arm's row: whether it went to the cloud alias, and the tokens it spent there. #1338
+    "routed_cloud": "neutral",
+    "cloud_tokens": "lower",
     # How far a track missed the length it was asked for. The only music axis
     # with a direction: it is a request the artifact either honoured or did
     # not, and unlike a tempo estimate it has no prior to be dragged by.
@@ -635,7 +641,7 @@ def contains(artifact: str, needle: str) -> bool:
 #: `equals` is the narrowest and most useful shape for a delegated lookup: one
 #: token out and nothing else, so the answer can be used without parsing.
 EXTRACT_ASSERTIONS = {"must_contain", "must_not_contain", "equals"}
-ASSERTION_KEYS = {"svg": TEXT_ASSERTIONS | {"structure"}, "web": TEXT_ASSERTIONS,
+ASSERTION_KEYS = {"svg": TEXT_ASSERTIONS | {"structure"}, "web": TEXT_ASSERTIONS | {"structure"},
                   "extract": EXTRACT_ASSERTIONS,
                   "code": {"checks"},
                   # `text` is OCR'd out of the produced image; `max_cer` is how
@@ -860,6 +866,8 @@ class Receipt:
     harness: str = ""
     #: receipt key -> {"retried", "lost"} requests a full shared llama-server pool failed. Not an axis. #755.
     pool_full: dict = field(default_factory=dict)
+    #: receipt key -> the reply cap its stored runs derived and where it came from. Not an axis; max_tokens is. #1352.
+    reply_cap: dict = field(default_factory=dict)
 
     @property
     def rows_per_case(self) -> int:
@@ -896,7 +904,8 @@ class Receipt:
                 "yield_stop": {k: dict(v) for k, v in self.yield_stop.items()},
                 "engine_timeout": {k: dict(v) for k, v in self.engine_timeout.items()},
                 **({"harness": self.harness} if self.harness else {}),
-                **({"pool_full": {k: dict(v) for k, v in self.pool_full.items()}} if self.pool_full else {})}
+                **({"pool_full": {k: dict(v) for k, v in self.pool_full.items()}} if self.pool_full else {}),
+                **({"reply_cap": {k: dict(v) for k, v in self.reply_cap.items()}} if self.reply_cap else {})}
 
     @classmethod
     def from_dict(cls, raw: dict) -> "Receipt":
@@ -928,7 +937,8 @@ class Receipt:
                    yield_stop=raw.get("yield_stop") or {},
                    engine_timeout=raw.get("engine_timeout") or {},
                    harness=raw.get("harness") or "",
-                   pool_full=raw.get("pool_full") or {})
+                   pool_full=raw.get("pool_full") or {},
+                   reply_cap=raw.get("reply_cap") or {})
 
 
 def legacy_knobs(raw: dict) -> dict:
@@ -1244,7 +1254,7 @@ def load_case(path: Path, private: bool = False) -> Case:
         raise ValueError(f"{path.name}: a case asserting text needs assert.max_cer; no lenient default (#701)")
     if "structure" in assertions:
         try:
-            svg_check.validate_structure(assertions["structure"])
+            (html_check if modality == "web" else svg_check).validate_structure(assertions["structure"])
         except ValueError as exc:
             raise ValueError(f"{path.name}: {exc}") from exc
     if modality == "retrieval":
@@ -1616,6 +1626,18 @@ def _decide_calibration(rows: list[Result]) -> dict:
     if len(pairs) < decide_check.MIN_ECE_N:
         return {}
     return {"decide_ece": round(decide_check.ece(pairs), 4)}
+
+
+def ece_withheld(results: list[Result]) -> None:
+    """Record each candidate of a run whose decisions were too few for an ECE, once per run, never per summary. #1087."""
+    by: dict[str, list[Result]] = {}
+    for r in results:
+        by.setdefault(r.candidate, []).append(r)
+    for candidate, rows in by.items():
+        n = len(_decisions(rows))
+        if 0 < n < decide_check.MIN_ECE_N:
+            from harness import cuts
+            cuts.cut("harness/checks/decide.py:MIN_ECE_N", f"decide_ece of {candidate} withheld", kept=0, dropped=n)
 
 
 def _calibrated_only(metrics: dict) -> dict:

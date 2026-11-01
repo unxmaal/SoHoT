@@ -33,6 +33,8 @@ REGISTRY = [
     Source("tts_synth", "tts"),
     Source("svg_synth", "svg"),
     Source("shots_synth", "shots"),
+    Source("geneval", "image"),
+    Source("web_synth", "web"),
     Source("squad2_check", "decide"),
     Source("squad2_extract", "extract"),
     Source("squad2_retrieval", "retrieval"),
@@ -107,6 +109,8 @@ def run(name: str, root: Path = CASES, rows=None) -> list[Path]:
     if mod.LICENSE not in ALLOWED_LICENSES:
         raise ValueError(f"{name} is {mod.LICENSE}, which is not an allowed license")
     made = [m for m in (mod.convert(r) for r in (mod.fetch() if rows is None else rows)) if m]
+    if hasattr(mod, "converted"):
+        mod.converted()
     ids = [m.case["id"] for m in made]
     if len(ids) != len(set(ids)):
         raise ValueError(f"{name}: duplicate case ids")

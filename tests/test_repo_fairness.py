@@ -54,7 +54,7 @@ def test_every_committed_repo_case_has_two_valid_labels():
 
 
 def test_unfair_cases_stay_committed_and_only_validity_failures_are_dropped():
-    """Eric on #944: keep and tag. A flagged or disputed case stays, outside the fair subset. #920."""
+    """The owner on #944: keep and tag. A flagged or disputed case stays, outside the fair subset. #920."""
     cases = [c.id for c in load_cases(ROOT / "evals" / "cases" / "repo")]
     labels = fairness.load()
     got = fairness.summary(labels, cases)

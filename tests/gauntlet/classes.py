@@ -94,7 +94,8 @@ INDEX = {
     "silent-truncation-or-a-partial-read-assumed-complete": {
         "review": r"\.read\(\d+\)|\bhead\s+-[nc]|\btail\s+-[nc]|max_(?:chars|bytes)|truncat\w*|\[:\d{3,}\]",
         "instances": _i(241),
-        "scanners": []},
+        "scanners": ["tests/test_limit_trace_1087.py::test_no_limit_leaves_no_trace_unless_the_untraced_inventory_lists_it",
+                     "tests/test_limit_cuts_1087_store.py::test_the_scan_flags_a_registered_limit_whose_binding_site_records_no_cut"]},
     "a-consumer-limits-before-it-filters-for-what-it-can-act-on": {
         "review": r"\[:\s*(?:n|limit|top|k|a\.top|a\.limit)\s*\]|\bLIMIT \?",
         "instances": _i(194, 209, 292, 376, 386, rules=(330, 377)),
@@ -123,7 +124,8 @@ INDEX = {
         "instances": _i(118), "scanners": []},
     "an-error-swallowed": {
         "instances": _i(477, 501),
-        "scanners": ["tests/test_gauntlet_scanners.py::test_swallowed_errors_are_an_inventory_that_only_shrinks"]},
+        "scanners": ["tests/test_gauntlet_scanners.py::test_swallowed_errors_are_an_inventory_that_only_shrinks",
+                     "tests/test_store_errors_1432.py::test_no_reader_answers_quietly_when_the_store_cannot_be_read"]},
     "success-assumed-exit-status-unchecked": {
         "instances": _i(328, 522),
         "scanners": ["tests/test_gauntlet_scanners.py::test_no_shell_script_ignores_a_failure_it_could_see"]},
@@ -159,6 +161,11 @@ INDEX = {
     "regex-over-or-under-matching": {
         "review": r"\bre\.(?:compile|search|match|fullmatch|findall|sub|split)\(",
         "instances": _i(49), "scanners": []},
+    "a-test-that-bounds-a-measured-duration": {
+        "tier": 1,
+        "tier_reason": "an assert bounding a clock difference or a duration-named value from above is found by AST (#1423)",
+        "instances": _i(349, rules=(364, 533, 702, 710, 770, 1119)),
+        "scanners": ["tests/test_gauntlet_scanners.py::test_no_test_bounds_measured_wall_time_from_above"]},
     "flaky-by-time-or-randomness": {
         "review": r"time\.time\(|datetime\.now\(|\brandom\.\w+\(|\bsleep\(\d",
         "instances": _i(349), "scanners": []},
@@ -177,7 +184,9 @@ INDEX = {
     "a-test-double-that-never-reaches-the-code-under-test": {
         "instances": _i(517, 518, 519, 529, 530, 536, rules=(445,)),
         "scanners": ["tests/test_module_layout.py::test_every_patch_reaches_the_code_that_reads_it",
-                     "tests/test_no_real_runtime.py::test_a_runtime_binary_answers_as_absent_and_is_recorded"]},
+                     "tests/test_no_real_runtime.py::test_a_runtime_binary_answers_as_absent_and_is_recorded",
+                     "tests/test_gauntlet_scanners.py::test_no_production_code_sniffs_for_a_test_double",
+                     "tests/test_gauntlet_scanners.py::test_no_test_replaces_this_machine"]},
     "an-input-accepted-and-silently-ignored": {
         "detector": "ignored_options",
         "instances": _i(60, 103, 215, 315, 329, rules=(355,)),
@@ -187,7 +196,9 @@ INDEX = {
         "instances": _i(266, 270, 281, 331, 341, 450, rules=(293, 356)), "scanners": []},
     "a-non-production-run-writes-live-state": {
         "instances": _i(29, 188, 290, 455, 512, 513, rules=(414,)),
-        "scanners": ["tests/test_gauntlet_scanners.py::test_the_live_home_is_derived_only_in_harness_paths"]},
+        "scanners": ["tests/test_gauntlet_scanners.py::test_the_live_home_is_derived_only_in_harness_paths",
+                     "tests/test_lent_store_1426.py::test_a_read_only_command_reads_only_the_store_it_is_given",
+                     "tests/test_lent_store_1426.py::test_every_mode_flag_is_held_here_or_says_why_not"]},
     "a-closed-table-fronting-an-open-set": {
         "detector": "closed_tables",
         "instances": _i(213, 228, 245, 263, 298, 318, 379, 380, 387, rules=(379, 419)), "scanners": []},

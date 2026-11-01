@@ -165,7 +165,11 @@ def listing_kind(files, config=None, found=None) -> str | None:
     if not weights:
         return EMPTY
     largest = max(size for _, size in weights)
-    if "config.json" in root or largest < ADAPTER_FLOOR_BYTES:
+    if "config.json" in root:
+        return LOOSE
+    if largest < ADAPTER_FLOOR_BYTES:
+        from harness import cuts
+        cuts.cut("adapter_floor", f"a listing whose largest weight is {largest} bytes read as loose weights")
         return LOOSE
     return BULK
 
@@ -221,7 +225,7 @@ def takes_attachment(lane: str, kind: str) -> bool:
 
 
 #: A GGUF file served by llama-server's router, named by its stem. #295.
-from harness.serving import LLAMACPP_PREFIX  # noqa: E402
+from harness.serving import LLAMACPP_PREFIX, VLLM_PREFIX  # noqa: E402
 
 
 def candidate_for(lane: str, model: str, attaches_to: str = "",
@@ -253,8 +257,15 @@ def candidate_for(lane: str, model: str, attaches_to: str = "",
     """
     specs = LANE_CANDIDATES.get(lanes.canonical(lane), ())
     from harness import ds4
-    if model.startswith(ds4.PREFIX):
+    if model.startswith((ds4.PREFIX, VLLM_PREFIX)):
         return model
+    if not attaches_to and lanes.canonical(lane) in lanes.TEXT_SERVED:
+        if card is None and conn is not None:
+            from harness import memory_store as ms
+            card = ms.card_of(conn, model)
+        if (card or {}).get("runtime_needed") == "vllm":
+            # Weights only vLLM loads go to its server, never to mlx_lm.server. #960.
+            return f"{VLLM_PREFIX}{model}"
     if not attaches_to and lanes.canonical(lane) in lanes.GGUF_SERVED and ds4.recognised(model, card):
         # ds4's own GGUFs load in ds4-server and nowhere else. #611.
         return ds4.spec_for(model, (card or {}).get("siblings"), conn=conn)
@@ -394,11 +405,16 @@ def runner_gap(lane: str, model: str, attaches_to: str = "",
         except ValueError as exc:
             return str(exc)
         return case_gap(lane, spec)
+    if spec.startswith(VLLM_PREFIX):
+        from harness import vllm
+        return case_gap(lane, spec) if vllm.available() else f"needs-vllm: {vllm.absent()}"
     if spec:
         from harness import engines
         if card is None and conn is not None:
             from harness import memory_store as ms
             card = ms.card_of(conn, model)
+        if (card or {}).get("runtime_needed") == "vllm":
+            return f"needs vllm, which serves only the {', '.join(lanes.TEXT_SERVED)} lanes here"
         library = str((card or {}).get("library") or (card or {}).get("library_name") or "").strip().lower()
         if library in FOREIGN_LIBRARIES:
             return f"needs its own runner: its card names the {library} library, {FOREIGN_LIBRARIES[library]}"
@@ -433,8 +449,8 @@ def plan(rows, *, missing=None) -> list[dict]:
         # A method downloads its base's weights, or none when its runner finds its own. #576.
         from harness import methods
         target = methods.weights_of(name) if methods.is_method(name) else name
-        absent = [] if not spec or not target else missing(target)
         gap = runner_gap(lane, name, attached, card=row)
+        absent = [] if not spec or gap or not target else missing(target)
         if not spec or gap:
             state, why = NO_RUNNER, (
                 gap if gap
@@ -542,7 +558,7 @@ def argv(row: dict, outdir=None) -> list[str]:
     metrics: the screen answers whether it runs, and a metric here would invite
     ranking a screen against a measurement."""
     from harness import runner_gaps
-    out = [*runner_gaps.launcher([row["candidate"]], [sys.executable or "python"]), "-m", "evals.run",
+    out = [*runner_gaps.launcher([row["candidate"]], [sys.executable or "python"], row["modality"]), "-m", "evals.run",
            "--modality", row["modality"],
            "--screen", "--repeat", "1", "--candidates", row["candidate"]]
     upstream = routed_gateway(row.get("name") or "")
@@ -732,19 +748,14 @@ def incumbent_measure(lane: str, case_ids, conn=None) -> tuple[float, bool]:
     """(the incumbent's mean stored pass rate on these cases, whether any row measured it); unmeasured is power.UNSEEN, said on stderr. #691."""
     import sys
 
-    from harness import power
-    from harness import memory_store as ms
-    own = conn is None
+    from harness import power, runs
     draws: dict = {}
     try:
-        conn = conn or ms.connect()
-        draws = incumbent_draws(lane, conn)
+        with runs.store(conn) as c:
+            draws = incumbent_draws(lane, c)
     except Exception as exc:  # noqa: BLE001 - no store reads as no measurement
         print(f"screen: could not read the {lane} incumbent's rows: {exc}", file=sys.stderr)
         draws = {}
-    finally:
-        if own and conn is not None:
-            conn.close()
     if not draws:
         print(f"screen: the {lane} incumbent's pass rate is unmeasured (no stored measure rows); "
               f"the screen count assumes {power.UNSEEN:g}", file=sys.stderr)
@@ -789,11 +800,15 @@ def plausible_wer(summary: dict | None, lane: str, candidate: str = "", key: str
     mine = [row_for(summary, candidate, key) or {}] if candidate else list(summary.values())
     rates = [float(r["metrics"]["wer"]) for r in mine
              if (r.get("metrics") or {}).get("wer") is not None and (r.get("metric_n") or {}).get("wer", 1)]
-    return max(rates) if rates and max(rates) <= SCREEN_MAX_WER else None
+    if rates and max(rates) > SCREEN_MAX_WER:
+        from harness import cuts
+        cuts.cut("stt_screen_max_wer", f"{candidate or 'a model'}: corpus WER {max(rates):.2f} not read as working")
+        return None
+    return max(rates) if rates else None
 
 
 def working(summary: dict, lane: str, candidate: str, key: str) -> str:
-    """Why rows with no passing case still show the model working on its lane's metric, or ''; screen and reverify share it. #701, #1007, #733."""
+    """Why rows with no passing case still show the model working on its lane's metric, or ''; screen, reverify and verify share it. #701, #1007, #733, #1399."""
     # A decide case passes only when every field is right; a right field shows the model ran. #701.
     if any(float((v.get("metrics") or {}).get("decide_accuracy") or 0.0) > 0 for v in summary.values()):
         return "it answered decide fields correctly though no case was right in full"

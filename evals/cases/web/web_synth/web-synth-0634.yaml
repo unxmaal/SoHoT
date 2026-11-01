@@ -1,0 +1,47 @@
+# SoHoT generated web cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py).
+# Imported by evals/importers from generated:evals.importers.web_synth v1 seed 603@5e0a3379420ba93e907001a2a695eff138e2a469; re-import, do not edit.
+id: web-synth-0634
+modality: web
+prompt: 'Write one complete, self-contained HTML page: no external scripts, stylesheets, fonts or images.
+  Use every given text exactly as written, with nothing added to it. The page title (<title>) is "Boathouse
+  history". The page holds a table with the caption "Dry dock stock", the header cells "Item", "Count",
+  "Shelf", and these rows given as Item / Count / Shelf: canvas sheet, 772, A1; brass hinge, 498, D1;
+  wool blanket, 971, C2; cotton rope, 517, A2. Keep the rows in this order. Put the header in one row
+  of <th> cells and each value in its own <td>, with no units or extra characters.'
+assert:
+  structure:
+    title: Boathouse history
+    tables:
+    - caption: Dry dock stock
+      head:
+      - Item
+      - Count
+      - Shelf
+      rows:
+      - - canvas sheet
+        - '772'
+        - A1
+      - - brass hinge
+        - '498'
+        - D1
+      - - wool blanket
+        - '971'
+        - C2
+      - - cotton rope
+        - '517'
+        - A2
+    self_contained: true
+attribution:
+  dataset: SoHoT generated web cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/web_synth.py
+  license: generated
+  source: generated:evals.importers.web_synth v1 seed 603
+  revision: 5e0a3379420ba93e907001a2a695eff138e2a469
+  item: '634'
+  date: ''
+  transform: a seeded page spec described as a prompt, asserted on its parsed structure
+  importer: evals.importers.web_synth
+  version: '1'
+  seed: 603
+  kind: table
+  stratum: easy

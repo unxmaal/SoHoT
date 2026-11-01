@@ -80,7 +80,7 @@ def test_a_run_paused_at_its_slice_is_recorded_with_progress_and_a_look(monkeypa
     fake = Eval(rows=_rows(20, gained=2, lost=2))
     monkeypatch.setattr(measure_cmd, "_launch", fake)
     sweep = _sweep()
-    assert _measure(sweep) == 0
+    assert _measure(sweep) == watch.PAUSED
     argv = fake.argvs[0]
     assert "--stop-at" in argv and "--resume" not in argv
     assert argv.count("--plan-s") == 2
@@ -96,9 +96,32 @@ def test_a_run_paused_at_its_slice_is_recorded_with_progress_and_a_look(monkeypa
     assert any(line.startswith(f"{CH}: paused at 40/") and "look 1" in line for line in sweep.lines)
 
 
+def test_a_paused_adopt_command_exits_75_as_a_paused_confirmation_does(monkeypatch, world):
+    from harness.commands import adopt as adopt_cmd
+    monkeypatch.setattr(measure_cmd, "_launch", Eval(rows=_rows(5)))
+    a = _ns(lane="code", challenger=CH, confirm=None, power=False, from_measurement=False)
+    assert adopt_cmd.cmd_adopt(a) == watch.PAUSED == 75
+    conn = world()
+    try:
+        assert [p["state"] for p in _pauses(conn)] == ["paused"]
+    finally:
+        conn.close()
+
+
+def test_a_sweep_counts_a_paused_pair_as_neither_failed_nor_done(monkeypatch):
+    from harness.commands import loop as loop_cmd
+    got = iter([watch.PAUSED, 1])
+    monkeypatch.setattr(measure_cmd, "_measure_and_adopt", lambda a, row, sweep: next(got))
+    monkeypatch.setattr(loop_cmd.repo_gate, "args_for", lambda a, row: a)
+    failed = []
+    rows = [{"name": "paused-one", "lane": "code"}, {"name": "broken-one", "lane": "code"}]
+    assert loop_cmd._measure_all(argparse.Namespace(lane=""), rows, None, failed) == 1
+    assert failed == ["measure broken-one"]
+
+
 def test_a_deadline_kill_is_a_pause_not_a_verdict(monkeypatch, world):
     monkeypatch.setattr(measure_cmd, "_launch", Eval(rows=_rows(5), timed_out=True))
-    _measure()
+    assert _measure() == watch.PAUSED
     conn = world()
     try:
         assert [p["state"] for p in _pauses(conn)] == ["paused"]
@@ -177,7 +200,7 @@ def test_a_run_whose_checkpoint_is_another_exam_restarts_fresh(monkeypatch, worl
         conn.close()
 
 
-def test_a_finished_resume_spends_less_alpha_and_stores_planned_and_observed_seconds(monkeypatch, world):
+def test_a_finished_resume_spends_no_alpha_an_uncovered_look_did_not_test_and_stores_planned_and_observed_seconds(monkeypatch, world):
     fake = Eval(rows=_rows(60, gained=1))
     monkeypatch.setattr(measure_cmd, "_launch", fake)
     _measure()
@@ -195,7 +218,7 @@ def test_a_finished_resume_spends_less_alpha_and_stores_planned_and_observed_sec
         conn.close()
     assert v["planned_s_per_case"] == pytest.approx(3.0)
     assert v["observed_s_per_case"] == pytest.approx(4.0)
-    assert json.loads(v["power"])["alpha"] < adopt.ALPHA
+    assert json.loads(v["power"])["alpha"] == pytest.approx(adopt.ALPHA)
     assert p["state"] == "done"
 
 

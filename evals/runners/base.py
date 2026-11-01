@@ -114,6 +114,7 @@ class BaseRunner:
                 row = self.failed(case, exc, completion.since(started))
                 row.metrics = core.as_graded(case.modality, row.failure_class,
                                              {**(row.metrics or {}), **_waited(waits)})
+                self.graded(case, row)
                 return row
             elapsed = completion.since(started)
 
@@ -125,8 +126,8 @@ class BaseRunner:
             # A reply our budget or cap stopped failed on our limit, not on its answer. #628, #695.
             row.failure_class, row.limit = cls, limit
             if cls == reasons.TOKEN_BUDGET_EXHAUSTED and case.modality in degenerate.LANES:
-                tail = degenerate.measure(artifact if isinstance(artifact, str) else "")
-                if degenerate.is_degenerate(tail):
+                tail, looped = degenerate.judged(artifact if isinstance(artifact, str) else "")
+                if looped:
                     # A loop or a collapse would fill any budget, so the cut is not what failed it. #955.
                     row.failure_class, row.limit = reasons.DEGENERATE, ""
         if not row.passed and not row.failure_class:
@@ -147,7 +148,11 @@ class BaseRunner:
         row.prefill_s = t.get("prefill_s")
         row.cold = t.get("cold")
         row.runtime = dict(getattr(self, "last_runtime", None) or {})
+        self.graded(case, row)
         return row
+
+    def graded(self, case: Case, row: Result) -> None:
+        """Called with each scored row; a runner whose server learns from verdicts reports it here. #1338."""
 
     def timing(self) -> dict:
         """First-token timings of the last generate(); {} where unmeasured. #468."""

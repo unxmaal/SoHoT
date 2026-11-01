@@ -26,6 +26,8 @@ import itertools
 import os
 import subprocess
 import sys
+import tempfile
+from threading import local
 import time
 from pathlib import Path
 
@@ -55,15 +57,23 @@ def is_live(path: Path) -> bool:
     return Path(path).resolve() == (DEFAULT_HOME / "discovery.db").resolve()
 
 
+_asking = local()
+
+
 def deploy_checkout() -> Path | None:
     """Where the services run from, as scripts/launchd.sh defines it; None without launchd."""
-    if sys.platform == "win32":
-        return None
+    if sys.platform == "win32" or getattr(_asking, "now", False):
+        return None  # the cut a timed-out lookup records asks again; it must not wait another timeout
+    from harness import cuts
+    _asking.now = True
     try:
-        out = subprocess.run(["bash", str(REPO / "scripts" / "launchd.sh"), "deploy-path"],
-                             capture_output=True, text=True, timeout=30, check=True)
+        with cuts.timeout("harness/paths.py:deploy_checkout->subprocess.run(timeout)", "the deploy path lookup"):
+            out = subprocess.run(["bash", str(REPO / "scripts" / "launchd.sh"), "deploy-path"],
+                                 capture_output=True, text=True, timeout=30, check=True)
     except (OSError, subprocess.SubprocessError):
         return None
+    finally:
+        _asking.now = False
     got = out.stdout.strip()
     return Path(got).resolve() if got else None
 
@@ -74,6 +84,46 @@ def runs_elsewhere() -> Path | None:
     if deploy is None or deploy == REPO or not (deploy / ".git").exists():
         return None
     return deploy
+
+
+def live_from_elsewhere(path: Path) -> bool:
+    """Is `path` the live store while this code is not the deploy checkout: rows written here would pass for its work."""
+    return is_live(path) and runs_elsewhere() is not None
+
+
+class LiveHomeRefused(RuntimeError):
+    """An eval or probe was pointed at the live home without saying it means to write it. #1346"""
+
+
+#: Set by an eval or probe that must read this home: it then records no cut or usage rows. #1346
+EVAL_ENV = "LH_EVAL_RUN"
+
+
+def evaluating() -> bool:
+    return os.environ.get(EVAL_ENV) == "1"
+
+
+def eval_home(scratch: Path | None = None, *, live: bool = False, reads_live: bool = False) -> Path:
+    """The home an eval or probe runs in: a scratch one unless a non-live home was named, `live`, or `reads_live`. #1346"""
+    from harness import purpose
+    purpose.set_process(purpose.EVAL)
+    if live:
+        return home()
+    if reads_live:
+        os.environ[EVAL_ENV] = "1"
+        return home()
+    if os.environ.get(ENV_VAR):
+        if is_live(home() / "discovery.db"):
+            raise LiveHomeRefused(f"{ENV_VAR} names the live home {home()}; an eval or probe writes only a "
+                                  f"scratch home unless told to write the live one (--live-home)")
+        return home()
+    where = Path(scratch).expanduser() if scratch else Path(tempfile.mkdtemp(prefix="soh-eval-"))
+    where = where.resolve()
+    if is_live(where / "discovery.db"):
+        raise LiveHomeRefused(f"{where} is the live home, not a scratch one")
+    where.mkdir(parents=True, exist_ok=True)
+    os.environ[ENV_VAR] = str(where)
+    return where
 
 
 def _sub(name: str) -> Path:
@@ -90,6 +140,18 @@ def outputs() -> Path:
 def runs() -> Path:
     """Eval runs, one directory each."""
     return _sub("runs")
+
+
+def unused_run(stamp: str, suffix: str = "") -> Path:
+    """A run directory under runs() that no other run holds, created here: stamp, then stamp.2, stamp.3, ... #1443."""
+    n = 1
+    while True:
+        got = runs() / f"{stamp}{f'.{n}' if n > 1 else ''}{suffix}"
+        try:
+            got.mkdir(parents=True)
+            return got
+        except FileExistsError:
+            n += 1
 
 
 def logs() -> Path:

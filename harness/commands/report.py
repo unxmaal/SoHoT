@@ -97,15 +97,13 @@ def _report_queue(a) -> int:
     from harness import rank
     from harness import memory_store as ms
 
+    from harness.commands.common import lent_store
     want = (getattr(a, "lane", "") or "").strip().lower()
-    store = ms.connect()
-    try:
+    with lent_store() as store:  # its cuts are about the report, never this home's store. #1432.
         rows, waiting = loop_cmd._queueable(store, want)
         retests = ms.retest_counts(store)
         ranked_all = rank.rank(rows, serving=rank.serving(),
                                measured_lanes=rank.lanes_with_receipts(store), conn=store)
-    finally:
-        store.close()
     if not a.json:
         print(retest_line(retests))
     if not rows:
@@ -144,13 +142,10 @@ def _report_coverage(a) -> int:
     source ever surface. A source list is not a measurement of coverage.
     """
     from harness import coverage
-    from harness import memory_store as ms
+    from harness.commands.common import lent_store
 
-    store = ms.connect()
-    try:
+    with lent_store() as store:
         got = coverage.report(store)
-    finally:
-        store.close()
     if a.json:
         print(json.dumps(got, indent=2))
         return 0
@@ -197,14 +192,11 @@ def _report_winners(a) -> int:
     """
     from harness import adopt, winners
 
-    from harness import memory_store as ms
-    store = ms.connect()
-    try:
+    from harness.commands.common import lent_store
+    with lent_store() as store:
         best = winners.beaten_in(store)
         rows = winners.disagreements(store)
         serves = adopt.lane_defaults(store)
-    finally:
-        store.close()
     if a.json:
         print(json.dumps({"typed": winners.typed(), "serves": serves,
                           "measured": best, "disagreements": rows}, indent=2))
@@ -242,6 +234,22 @@ def _report_winners(a) -> int:
 
 def cmd_repo_report(a) -> int:
     """The repo lane's paired report over one or two stored runs, the task as the unit. #923."""
+    from pathlib import Path
+
+    from harness import live_audit
+    from harness import memory_store as ms
+    db = Path(a.store) if a.store else ms.db_path()
+    if not db.is_file():
+        return _repo_report(a)
+    conn = live_audit.open_readonly(db)
+    try:
+        with ms.lend(conn):  # a plan's cuts are about the report, never this home's store. #1426.
+            return _repo_report(a)
+    finally:
+        conn.close()
+
+
+def _repo_report(a) -> int:
     import sqlite3
 
     from evals import arms_report, repo_report

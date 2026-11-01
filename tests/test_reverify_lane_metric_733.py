@@ -4,6 +4,7 @@ import pytest
 from harness import adopt, paired, reverify, runs, workqueue as wq
 from harness import memory_store as ms
 from harness.checks import claims as claims_check
+from tests import conftest
 
 DAY = 86400.0
 NOW = 1_800_000_000.0
@@ -22,7 +23,7 @@ SERVED = "imajev-4b-Q8_0"
 def on(monkeypatch):
     def be(**changes):
         facts = {**M2, **changes}
-        monkeypatch.setattr(ms, "this_machine", lambda: dict(facts))
+        conftest.stand_in_machine(monkeypatch, facts)
     be()
     return be
 

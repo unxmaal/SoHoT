@@ -15,19 +15,19 @@
   "probes": 20
  },
  "transcripts": {
-  "-Users-eric-Library-Application-Support-Claude-scratch-workspaces-e9a5df98-1bed-466c-b7fc-c47255006dc5-6e1115b6-e3dd-4ace-a78f-1d864e7bf117-scratch-2026-10-22-074853": {
+  "-Users-USER-Library-Application-Support-Claude-scratch-workspaces-e9a5df98-1bed-466c-b7fc-c47255006dc5-6e1115b6-e3dd-4ace-a78f-1d864e7bf117-scratch-2026-10-22-074853": {
    "sessions": 1,
    "requests": 4
   },
-  "-Users-eric-Library-Application-Support-Claude-scratch-workspaces-e9a5df98-1bed-466c-b7fc-c47255006dc5-6e1115b6-e3dd-4ace-a78f-1d864e7bf117-scratch-2026-10-22-59bad7": {
+  "-Users-USER-Library-Application-Support-Claude-scratch-workspaces-e9a5df98-1bed-466c-b7fc-c47255006dc5-6e1115b6-e3dd-4ace-a78f-1d864e7bf117-scratch-2026-10-22-59bad7": {
    "sessions": 1,
    "requests": 2
   },
-  "-Users-eric-projects": {
+  "-Users-USER-projects": {
    "sessions": 13,
    "requests": 1169
   },
-  "-Users-eric-projects-github-unxmaal-instahelp": {
+  "-Users-USER-projects-github-unxmaal-instahelp": {
    "sessions": 2,
    "requests": 0
   },

@@ -198,9 +198,10 @@ def test_an_inherited_hf_home_that_is_usable_still_wins(tmp_path):
 
 
 def test_a_path_that_does_not_exist_yet_is_still_usable(tmp_path):
-    """The ./hf_root case on a fresh clone. Validation must not break it."""
-    environ = {"HF_HOME": str(tmp_path / "not" / "made" / "yet")}
+    """The ./hf_root case on a fresh clone; a missing parent is a volume not mounted, as env.sh says (#1481)."""
+    environ = {"HF_HOME": str(tmp_path / "hf_root")}
     assert env.apply(environ, min_free_gb=0) is not None
+    assert env.apply({"HF_HOME": str(tmp_path / "not" / "made" / "yet")}, min_free_gb=0) is None
 
 
 def test_validation_does_not_rewrite_what_the_caller_set(tmp_path):

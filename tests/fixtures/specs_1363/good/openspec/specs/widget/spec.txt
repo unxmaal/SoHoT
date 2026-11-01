@@ -1,0 +1,28 @@
+# Widget Specification
+
+## Purpose
+The widget turns.
+
+## Requirements
+
+### Requirement: Turning
+The widget SHALL turn when pushed.
+
+#### Scenario: Pushed
+- **WHEN** the widget is pushed
+- **THEN** it turns
+Test: tests/proof.py::test_widget_turns
+
+#### Scenario: Pushed by a gadget
+- **WHEN** a gadget pushes the widget
+- **THEN** it turns
+- **AND** the gadget hums
+Test: tests/proof.py::TestGadget::test_gadget_hums
+
+### Requirement: Resting
+The widget MUST rest when left alone.
+
+#### Scenario: Left alone
+- **WHEN** nothing pushes the widget
+- **THEN** it rests
+Test: untested

@@ -1,0 +1,59 @@
+# GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023), MIT (https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl).
+# Imported by evals/importers from github:djghosh13/geneval/prompts/evaluation_metadata.jsonl@af4902f24d3ca90ebbb446dd9891a59e0f82725f; re-import, do not edit.
+id: geneval-520-color-attr
+modality: image
+prompt: a photo of a white dog and a blue potted plant
+params:
+  width: 512
+  height: 512
+  seed: 42
+assert:
+  staging:
+    objects:
+      dog: a dog
+      potted_plant: a potted plant
+    require:
+    - type: count
+      object: dog
+      min: 1
+    - type: count
+      object: potted_plant
+      min: 1
+    - type: attribute
+      object: dog
+      is: a white dog
+      not:
+      - a red dog
+      - a orange dog
+      - a yellow dog
+      - a green dog
+      - a blue dog
+      - a purple dog
+      - a pink dog
+      - a brown dog
+      - a black dog
+    - type: attribute
+      object: potted_plant
+      is: a blue potted plant
+      not:
+      - a red potted plant
+      - a orange potted plant
+      - a yellow potted plant
+      - a green potted plant
+      - a purple potted plant
+      - a pink potted plant
+      - a brown potted plant
+      - a black potted plant
+      - a white potted plant
+attribution:
+  dataset: GenEval prompts (Ghosh, Hajishirzi, Schmidt 2023)
+  url: https://github.com/djghosh13/geneval/blob/af4902f24d3ca90ebbb446dd9891a59e0f82725f/prompts/evaluation_metadata.jsonl
+  license: MIT
+  source: github:djghosh13/geneval/prompts/evaluation_metadata.jsonl
+  revision: af4902f24d3ca90ebbb446dd9891a59e0f82725f
+  item: '520'
+  date: '2023-08-22'
+  transform: 'GenEval include/exclude spec as staging requirements: include count at least, include plus
+    exclude exactly, position relative to the named object, colour against the nine others'
+  importer: evals.importers.geneval
+  tag: color_attr

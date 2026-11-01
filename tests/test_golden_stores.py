@@ -3,12 +3,12 @@ import importlib.util
 import json
 import sqlite3
 import subprocess
-import time
 from pathlib import Path
 
 import pytest
 
 from harness import memory_store as ms
+from harness.memory_store import connection
 from harness import migration_check as mc
 from harness import paths, privacy
 
@@ -44,10 +44,10 @@ def open_golden(version, tmp_path, monkeypatch):
 @pytest.fixture(params=ERAS, ids=[f"v{v}" for v in ERAS])
 def migrated(request, tmp_path, monkeypatch):
     db, home = open_golden(request.param, tmp_path, monkeypatch)
-    start = time.monotonic()
+    # A migration that waits on a lock raises here instead of being timed. #495, #1423.
+    monkeypatch.setattr(connection, "BUSY_TIMEOUT_SECONDS", 0.0)
     conn = ms.connect(db)
-    took = time.monotonic() - start
-    yield request.param, conn, db, took
+    yield request.param, conn, db
     conn.close()
 
 
@@ -68,13 +68,13 @@ def test_a_golden_is_at_its_schema(version, tmp_path, monkeypatch):
         raw.close()
 
 
-def test_migrates_in_seconds(migrated):
-    _, _, _, took = migrated
-    assert took < 20
+def test_a_migration_never_waits_on_a_lock(migrated):
+    _, conn, _ = migrated
+    assert conn.execute("SELECT value FROM meta WHERE key = 'schema'").fetchone()[0] == str(ms.SCHEMA_VERSION)
 
 
 def test_holds_every_invariant(migrated):
-    _, conn, _, _ = migrated
+    _, conn, _ = migrated
     assert [c for c in mc.invariants(conn) if not c.ok] == []
 
 
@@ -97,7 +97,7 @@ def test_a_migration_missing_a_step_is_caught(version, home, step, caught, tmp_p
 
 
 def test_every_proposal_lands_in_the_same_state(migrated):
-    v, conn, _, _ = migrated
+    v, conn, _ = migrated
     got = {r["name"]: r["state"] for r in conn.execute(
         "SELECT name, state FROM proposals")}
     want = dict(STATES)
@@ -107,7 +107,7 @@ def test_every_proposal_lands_in_the_same_state(migrated):
 
 
 def test_legacy_json_is_imported_exactly_once(migrated):
-    v, conn, _, _ = migrated
+    v, conn, _ = migrated
     votes = conn.execute("SELECT COUNT(*) FROM human_votes WHERE run = ''").fetchone()[0]
     assert votes == len(gb.VOTES)
     assert conn.execute("SELECT COUNT(*) FROM memory_limits").fetchone()[0] == 1
@@ -120,7 +120,7 @@ def test_legacy_json_is_imported_exactly_once(migrated):
 
 
 def test_migrating_again_changes_nothing(migrated):
-    v, conn, db, _ = migrated
+    v, conn, db = migrated
     before = list(conn.iterdump())
     conn.close()
     again = ms.connect(db)
@@ -131,12 +131,12 @@ def test_migrating_again_changes_nothing(migrated):
 
 
 def test_rerunning_every_step_imports_nothing_twice(migrated):
-    v, conn, _, _ = migrated
+    v, conn, _ = migrated
     assert mc.rerun(conn, v) == {}
 
 
 def test_runs_and_results_in_the_head_shape(migrated):
-    v, conn, _, _ = migrated
+    v, conn, _ = migrated
     runs = {r["path"]: r["lane"] for r in conn.execute("SELECT path, lane FROM runs")}
     assert runs == {name: lane for name, lane, *_ in gb.RUNS}
     rows = conn.execute("SELECT r.lane, x.candidate, x.case_id, x.output, "
@@ -157,7 +157,7 @@ def test_runs_and_results_in_the_head_shape(migrated):
 
 
 def test_adoptions_resolve_to_their_candidates(migrated):
-    v, conn, _, _ = migrated
+    v, conn, _ = migrated
     got = {(r["lane"], r["name"], r["how"]): r["spec"] for r in conn.execute(
         "SELECT a.lane, p.name, c.spec, a.how FROM adoptions a "
         "JOIN candidates c ON c.id = a.candidate_id "
@@ -178,7 +178,7 @@ def test_adoptions_resolve_to_their_candidates(migrated):
 
 
 def test_one_row_per_machine(migrated):
-    v, conn, _, _ = migrated
+    v, conn, _ = migrated
     got = {r[0] for r in conn.execute("SELECT fingerprint FROM machines")}
     want = {"Mac14,12/macOS/arm64", "Mac17,15/macOS/arm64"}
     if v >= 12:
@@ -187,7 +187,7 @@ def test_one_row_per_machine(migrated):
 
 
 def test_downloads_are_one_row_per_path(migrated):
-    v, conn, _, _ = migrated
+    v, conn, _ = migrated
     got = conn.execute("SELECT repo, kind, path, removed_at IS NOT NULL AS gone "
                        "FROM downloads ORDER BY repo, path").fetchall()
     paths_ = [r["path"] for r in got]

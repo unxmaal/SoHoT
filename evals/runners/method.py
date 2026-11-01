@@ -123,23 +123,38 @@ class TemplateRunner(PlanRunner):
     def generate(self, case: Case):
         self.base.screening = self.screening
         sampling = {**completion.SAMPLING.get(case.modality, {}), **(self.base.sampling or {})}
-        values, spent = {"task": case.prompt}, 0
+        values, spent, made = {"task": case.prompt}, 0, 0
         for i, step in enumerate(self.steps[:-1], 1):
-            try:
-                text, usage = completion.complete_with_usage(
-                    methods.fill(step.prompt, values), model=self.base.model,
-                    gateway=self.base.gateway, modality=case.modality if step.answers else "",
-                    context=case.context,
-                    timeout=max(self.timeout, completion.timeout_for(self.base.budget(case))),
-                    max_tokens=self.base.budget(case), sampling=sampling or None)
-            except completion.CompletionError as exc:
-                raise _runner_error(exc, f"{self.method.name} step {i} ({step.name}): ") from exc
-            spent += int(usage.get("completion_tokens") or 0)
-            values[step.name] = text.strip()
-        artifact, peak = self.base.generate(
-            replace(case, prompt=methods.fill(self.steps[-1].prompt, values)))
-        spent += int(self.base.extra_metrics().get("completion_tokens") or 0)
-        self.last_metrics = {"method_calls": len(self.steps)}
+            sent, material = methods.shape(methods.fill(step.prompt, values), case.context, step.context)
+            replies = []
+            for _ in range(step.samples):
+                try:
+                    text, usage = completion.complete_with_usage(
+                        sent, model=self.base.model,
+                        gateway=self.base.gateway, modality=case.modality if step.answers else "",
+                        context=material,
+                        timeout=max(self.timeout, completion.timeout_for(self.base.budget(case))),
+                        max_tokens=self.base.budget(case), sampling={**sampling, **step.knobs()} or None)
+                except completion.CompletionError as exc:
+                    raise _runner_error(exc, f"{self.method.name} step {i} ({step.name}): ") from exc
+                spent += int(usage.get("completion_tokens") or 0)
+                replies.append(text)
+            made += len(replies)
+            values[step.name] = methods.joined(replies)
+        last = self.steps[-1]
+        # The answer is the base's own call, with the last step's sampling over its own.
+        answerer = self.base
+        if last.sampling:
+            answerer = copy.copy(self.base)
+            answerer.sampling = {**(self.base.sampling or {}), **last.knobs()}
+        sent, material = methods.shape(methods.fill(last.prompt, values), case.context, last.context)
+        artifact, peak = answerer.generate(replace(case, prompt=sent, context=material))
+        self.answerer = answerer
+        spent += int(answerer.extra_metrics().get("completion_tokens") or 0)
+        self.last_metrics = {"method_calls": made + 1}
         if spent:
             self.last_metrics["completion_tokens"] = spent
         return artifact, peak
+
+    def cut_off(self) -> str:
+        return getattr(self, "answerer", self.base).cut_off()

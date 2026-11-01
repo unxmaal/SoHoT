@@ -1,5 +1,6 @@
 """Per-lane effect from same-config rerun churn, and a dev confirmation before a gate win serves. #725."""
 import argparse
+import itertools
 import json
 import time
 
@@ -10,6 +11,8 @@ from harness import memory_store as ms
 from harness import paths, screen, workqueue
 from harness.commands import adopt as adopt_cmd
 from harness.commands import measure as measure_cmd
+
+_PATHS = itertools.count()
 
 FAKE_MACHINE = {"fingerprint": "test/rig", "hw_model": "", "os": "", "arch": "",
                 "memory_gb": 0.0, "accelerator": "", "runtimes": "", "ceiling_gb": 0.0}
@@ -29,7 +32,7 @@ def conn(tmp_path, monkeypatch):
 def _run(c, lane, key, draws, *, tier="measure", budget=4096, path=None):
     """One stored run of `key`: draws is case -> list of pass bits, one per repeat."""
     rid = c.execute("INSERT INTO runs (path, lane, tier, receipt, recorded_at) VALUES (?,?,?,?,?)",
-                    (path or f"r{time.monotonic_ns()}", lane, tier,
+                    (path or f"r{next(_PATHS)}", lane, tier,
                      json.dumps({"modality": lane, "max_tokens": budget}), time.time())).lastrowid
     seq = 0
     for case, bits in draws.items():
@@ -103,7 +106,8 @@ def test_the_effect_knob_registers_each_lane_effect_with_its_unit_and_range():
     assert power.EFFECT, "the per-lane effects are registered"
     for lane, value in power.EFFECT.items():
         assert value >= effects.FLOOR
-        assert k.default(lane) == value == power.effect_for(lane)
+        assert k.default(lane) == value == power.noise_for(lane)
+        assert power.effect_for(lane) == max(value, power.MIN_EFFECT)
         assert value in k.values_for(lane), lane
     assert power.effect_for("no-such-lane") == power.DEFAULT_EFFECT
     for name in ("adopt_effect_floor", "adopt_effect_min_cases"):
@@ -116,7 +120,7 @@ def test_a_lane_the_effect_table_does_not_name_plans_at_the_default():
     assert set(power.EFFECT) <= set(lanes.ALL)
     for lane in set(lanes.ALL) - set(power.EFFECT):
         assert power.effect_for(lane) == power.DEFAULT_EFFECT
-    assert power.effect_for(" Code ") == power.EFFECT["code"]
+    assert power.noise_for(" Code ") == power.EFFECT["code"]
 
 
 def _verdict(c, lane, outcome, detail, failure_class="", plan=None, name="org/x"):
@@ -183,18 +187,69 @@ def test_a_holdout_win_whose_dev_cells_confirm_it_is_adopted():
     assert got.evidence["confirm"]["gained"] == 8
 
 
-def test_a_holdout_win_that_dev_does_not_confirm_is_not_served():
+def test_a_holdout_win_that_dev_cells_too_few_to_see_it_do_not_confirm_is_underpowered():
     tie = _rows({**{f"d{i}": (False, True) for i in range(3)}, **{f"d{i}": (True, False) for i in range(3, 4)},
                  **{f"d{i}": (True, True) for i in range(4, 10)}})
     got = adopt.confirm(_won(), tie, SPLIT)
     assert not got.adopt
     assert got.failure_class == reasons.UNDERPOWERED, got.why
+    assert "underpowered: power 0.00 < 0.8 to detect +0.10 per cell" in got.why
     assert "not confirmed on 10 dev case(s): 3 gained against 1 lost" in got.why and "detectable" in got.why
+    assert "holdout cases" not in got.why
+    assert got.evidence["confirm"]["effect"] == 0.1 and got.evidence["confirm"]["power"] < power.TARGET
+
+
+def test_a_holdout_win_that_dev_cells_powered_to_see_it_do_not_confirm_is_a_loss():
+    wide = holdout.Split("code", dev=tuple(f"d{i}" for i in range(100)), holdout=("h1", "h2", "h3"), too_small=False)
+    rows = _rows({**{f"d{i}": (False, False) for i in range(95)}, "d95": (False, True), "d96": (False, True),
+                  "d97": (True, False), "d98": (True, True), "d99": (True, True)})
+    plan = adopt._confirm_plan(adopt.confirmation_cells(rows, wide), "inc", "code")
+    assert plan.enough and plan.mde == pytest.approx(0.081)
+    got = adopt.confirm(_won(), rows, wide)
+    assert not got.adopt and got.failure_class == "", got.why
+    assert adopt.outcome_of(got) == ("declined", reasons.CANDIDATE)
+    assert "not confirmed on 100 dev case(s): 2 gained against 1 lost" in got.why
+    assert "no gain of +0.08 or more per cell at power 0.8" in got.why and "underpowered" not in got.why
+    assert got.evidence["min_effect"] == {"noise": 0.06, "effect": 0.1, "seen": 0.081}
+    assert got.evidence["confirm"]["mde"] == pytest.approx(0.081)
     worse = _rows({f"d{i}": (True, False) for i in range(10)})
     got = adopt.confirm(_won(), worse, SPLIT)
     assert not got.adopt and got.failure_class == ""
     assert "significantly worse" in got.why
     assert adopt.outcome_of(got) == ("declined", reasons.CANDIDATE)
+
+
+def test_an_unconfirmed_win_carries_an_alpha_cut_only_when_the_dev_cells_favour_the_challenger():
+    tie = _rows({**{f"d{i}": (False, True) for i in range(3)}, "d3": (True, False),
+                 **{f"d{i}": (True, True) for i in range(4, 10)}})
+    got = adopt.confirm(_won(), tie, SPLIT)
+    assert not got.adopt and got.alpha_cut == (got.evidence["confirm"]["p"], adopt.ALPHA)
+    even = _rows({"d0": (False, True), "d1": (False, True), "d2": (True, False), "d3": (True, False),
+                  **{f"d{i}": (True, True) for i in range(4, 10)}})
+    for r in even:
+        r["seconds"] = 0.5 if r["candidate"] == "ch" else 1.0
+    cells = adopt.confirmation_cells(even, SPLIT)
+    assert adopt.better(adopt._summary(cells, "inc"), adopt._summary(cells, "ch"), "code")
+    got = adopt.confirm(_won(), even, SPLIT)
+    assert not got.adopt and got.alpha_cut == (), got.why
+
+
+def test_an_unconfirmed_win_carries_its_null_s_lane_effect(monkeypatch):
+    seen = {"noise": 0.2, "seen": 0.15}
+    monkeypatch.setattr(adopt, "_null", lambda lane, i, c, got, plan: adopt.Verdict(
+        lane, i, c, False, got.why, evidence={"lane_effect": seen}))
+    tie = _rows({**{f"d{i}": (False, True) for i in range(3)}, "d3": (True, False),
+                 **{f"d{i}": (True, True) for i in range(4, 10)}})
+    got = adopt.confirm(_won(), tie, SPLIT)
+    assert not got.adopt and got.evidence["lane_effect"] == seen
+
+
+def test_the_confirmation_is_tested_at_undivided_alpha():
+    won = adopt.Verdict("code", "inc", "ch", True, "won", evidence={"comparisons": 5, "alpha": adopt.alpha_for(4)})
+    rows = _rows({**{f"d{i}": (False, True) for i in range(7)}, **{f"d{i}": (True, True) for i in range(7, 10)}})
+    got = adopt.confirm(won, rows, SPLIT)
+    assert adopt.alpha_for(4) < got.evidence["confirm"]["p"] <= adopt.ALPHA
+    assert got.adopt and "confirmed on 10 dev case(s): 7 gained against 0 lost" in got.why
 
 
 def test_cases_the_challenger_was_screened_on_are_not_confirmation_cells(conn):
@@ -233,6 +288,23 @@ def test_a_holdout_win_with_no_dev_rows_is_held_and_queues_a_night_confirmation(
     assert job["not_before"] == pytest.approx(workqueue.night_start(now), abs=5)
     adopt.queue_confirmation(conn, vid, got)
     assert conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0] == 1
+
+
+def test_a_confirmation_job_does_not_count_itself_and_a_continuation_starts_when_named(conn, monkeypatch):
+    held = adopt.Verdict("code", "inc-spec", "org/x", False, "", failure_class=reasons.CONFIRMING)
+    monkeypatch.delenv(workqueue.JOB_ENV, raising=False)
+    job = adopt.queue_confirmation(conn, 7, held, now=0.0)
+    conn.execute("UPDATE jobs SET state = ? WHERE id = ?", (workqueue.RUNNING, int(job["id"])))
+    conn.commit()
+    assert adopt.queue_confirmation(conn, 7, held) is None
+    monkeypatch.setenv(workqueue.JOB_ENV, " 7x")
+    assert adopt.queue_confirmation(conn, 7, held) is None
+    monkeypatch.setenv(workqueue.JOB_ENV, f" {int(job['id'])} ")
+    later = adopt.queue_confirmation(conn, 7, held, start=123.0)
+    assert later is not None and later["id"] != job["id"]
+    row = conn.execute("SELECT not_before, night_gate FROM jobs WHERE id = ?", (int(later["id"]),)).fetchone()
+    assert (row["not_before"], row["night_gate"]) == (123.0, 1)
+    assert adopt.queue_confirmation(conn, 7, held, start=123.0) is None
 
 
 def _confirming(conn, tmp_path, monkeypatch, incumbent="inc-spec"):
@@ -361,11 +433,13 @@ def test_an_unconfirmed_win_names_the_smallest_gain_its_cells_could_see():
         rows += [_row("inc", f"d{i}", False, inc), _row("ch", f"d{i}", False, ch)]
     got = adopt.confirm(_plain(), rows, split)
     assert got.adopt is False and got.failure_class == reasons.UNDERPOWERED
-    assert got.why == ("won the holdout, not confirmed on 40 dev case(s): 12 gained against 8 lost, p=0.503; smallest "
-                       "gain these cells could see: +0.38 per cell at power 0.8; this null is not evidence of no "
-                       "difference (won)")
+    assert got.why == ("won the holdout, underpowered: power 0.01 < 0.8 to detect +0.10 per cell at alpha 0.05 over 40 "
+                       "effective cells, so this null is not evidence of no difference (not confirmed on 40 dev "
+                       "case(s): 12 gained against 8 lost, p=0.503); smallest gain this run could see: +0.38 per cell "
+                       "at power 0.8 (won)")
     assert got.evidence["confirm"] == {"screened": [], "cases": 40, "gained": 12, "lost": 8,
-                                       "p": pytest.approx(0.5034, abs=1e-4)}
+                                       "p": pytest.approx(0.5034, abs=1e-4), "power": 0.0139, "effect": 0.1,
+                                       "mde": 0.381}
 
 
 def test_the_smallest_gain_reads_lane_metric_draws_and_their_correlation():
@@ -375,14 +449,14 @@ def test_the_smallest_gain_reads_lane_metric_draws_and_their_correlation():
             cells += [_row("inc", f"d{i}#1", False, 0.0), _row("inc", f"d{i}#2", False, 1.0)]
         else:
             cells += [_row("inc", f"d{i}", False, 0.0 if i < 25 else 1.0)]
-    assert adopt._confirm_sees(cells, "inc", "decide") == "; smallest gain these cells could see: +0.36 per cell at power 0.8"
+    assert adopt._confirm_plan(cells, "inc", "decide").mde == pytest.approx(0.36, abs=0.005)
     two = []
     for i in range(40):
         a, b = (0.0, 1.0) if i < 10 else ((0.0, 0.0) if i < 25 else (1.0, 1.0))
         two += [_row("inc", f"d{i}#1", False, a), _row("inc", f"d{i}#2", False, b)]
     assert power.rows_icc([{**r, "passed": power.draw(r, "decide")} for r in two], ("inc",)) == (
         pytest.approx(0.5094, abs=1e-4), 2.0)
-    assert adopt._confirm_sees(two, "inc", "decide") == "; smallest gain these cells could see: +0.30 per cell at power 0.8"
+    assert adopt._confirm_plan(two, "inc", "decide").mde == pytest.approx(0.30, abs=0.005)
 
 
 def test_a_confirmation_worse_on_the_lane_metric_alone_is_a_loss():

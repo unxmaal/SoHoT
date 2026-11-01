@@ -7,12 +7,12 @@ prompt: '# Audit guessed hardcoded constants: provenance, env-override, and evid
 
   ## Thesis
 
-  The hook thresholds (`WARN_THRESHOLD`, `BLOCK_THRESHOLD`) were acknowledged by Eric as numbers guessed
-  with no backing evidence, which happened not to need changing until #144/#146. They are almost certainly
-  not the only ones. The codebase carries many module-level numeric constants that shape behavior — scoring
-  weights, similarity thresholds, decay windows — and the KB already records, repeatedly, that invented
-  thresholds mislead (FINDING #163 "any threshold chosen now is invented"; RULE #303 "measuring a configuration
-  nobody runs"; FINDING #5 dedup-threshold false positives).
+  The hook thresholds (`WARN_THRESHOLD`, `BLOCK_THRESHOLD`) were acknowledged by the owner as numbers
+  guessed with no backing evidence, which happened not to need changing until #144/#146. They are almost
+  certainly not the only ones. The codebase carries many module-level numeric constants that shape behavior
+  — scoring weights, similarity thresholds, decay windows — and the KB already records, repeatedly, that
+  invented thresholds mislead (FINDING #163 "any threshold chosen now is invented"; RULE #303 "measuring
+  a configuration nobody runs"; FINDING #5 dedup-threshold false positives).
 
 
   This issue is the durable inventory + a triage, not a one-time list in a chat.

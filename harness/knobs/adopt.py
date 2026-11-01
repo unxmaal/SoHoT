@@ -16,11 +16,19 @@ KNOBS = [
             "cases are under adopt_effect_min_cases and keep 0.20. Replaying the 220 stored adopt verdicts changes "
             "one: 11228 (code, MDE +0.14) becomes underpowered. `soh knobs effects --store COPY` re-derives (#725)"),
     _k("adopt_effect_floor", ["harness/effects.py:FLOOR"], [0.02, 0.05, 0.1],
-       note="the smallest per-cell gain worth a model switch on a lane whose same-config reruns never flip "
-            "(decide, pii, retrieval churn 0): a value choice, not a measurement (#725)"),
+       note="the least noise effect a lane registers when its same-config reruns never flip (decide, pii, "
+            "retrieval churn 0); the gate still powers for adopt_min_effect when that is larger (#725, #1320)"),
     _k("adopt_effect_min_cases", ["harness/effects.py:MIN_CASES"], [10, 30, 100],
        note="cases measured twice under one config before a lane's churn sets its effect; at 30 the churn's "
             "relative standard error is about a quarter (#725)"),
+    _k("adopt_min_effect", ["harness/power.py:MIN_EFFECT"], [0.05, 0.1, 0.15, 0.2], unit="share",
+       note="the smallest per-cell gain worth a model switch; the gate powers for max(lane noise effect, this). "
+            "Holdout cases power 0.8 needs on each incumbent's measured rates and rho, store 2026-10-26, against "
+            "holdouts of 134-189: at 0.05 code 947 (noise 0.06), decide 293, extract 1160, ocr 690, pii 700, "
+            "retrieval 836, tts over 2000; at 0.10 code 384, decide 146, extract 423, ocr 320, pii 349, retrieval "
+            "417, tts 1734; at 0.15 code 196, decide 134 (enough), extract 249, ocr 208, pii 233, retrieval 278, "
+            "tts 835; at 0.20 code 135 (enough), extract 175, ocr 154, pii 174, retrieval 208, tts 510. Replaying "
+            "the 221 stored adopt verdicts, none changes class because of it (#1320)"),
     _k("deadline_grace", ["harness/power.py:DEADLINE_GRACE"], [1.0, 1.25, 1.5, 2.0],
        note="how far past its budget a paired run's slice may go before it is stopped; its rows are checkpointed and it resumes (#673, #813)"),
     _k("decode_tok_s", ["harness/power.py:DECODE_TOK_S", "harness/completion.py:MIN_DECODE_TOK_S"],
@@ -39,6 +47,11 @@ KNOBS = [
             "not run on it; 1 because the paired gate pairs one incumbent draw with each challenger draw "
             "(paired.head_to_head, power.plan per cell) and a draw under the same bytes is exchangeable with a "
             "fresh one; replay of run 521 on a store copy keeps the futility verdict (#1094)"),
+    _k("look_interval_s", ["harness/looks.py:LOOK_INTERVAL_S"], [600.0, 1800.0, 3600.0, 7200.0], unit="s",
+       note="seconds of a paired run between interim looks inside its budget; each look restarts evals.run "
+            "with --resume, about 23 s before its first case on a repo resume (job 0196), so 1800 costs ~1.3% "
+            "of the slice and looks every ~4-6 repo cells (Ornith 164 s + Qwen3.6 294 s a pair) or ~8-10 code "
+            "cells (Ornith 56 s + Swift-Qwen3.8 174 s, job 0199); at 7200 (the 2 h power_budget_min) the run looks only when its budget ends, as before (#1353)"),
     _k("power_fallback_repeat", ["harness/power.py:FALLBACK_REPEAT"], [1, 2, 3, 5],
        note="repeat a paired run takes when the powered one does not fit its budget (#591)"),
     _k("power_measuring_repeat", ["harness/power.py:MEASURING_REPEAT"], [2, 3, 4],
@@ -55,6 +68,11 @@ KNOBS = [
        note="ceiling seconds a finished sweep may leave unused before soh morning names why (#1082)"),
     _k("unseen_rate", ["harness/power.py:UNSEEN"], [0.25, 0.5, 0.75],
        note="pass rate a plan assumes for an incumbent with no draws; such a plan is unmeasured (#698)"),
+    _k("weedout_add_s", ["harness/weedout.py:ADD_S"], [0.5, 1.0, 5.0, 10.0], unit="s",
+       note="seconds added to each case's incumbent mean when a paired run orders cases by expected discordant "
+            "cells per second, so a case timed near zero does not lead on its timing alone; Ornith's code cases "
+            "it always passes take 4.5 s, mixed 53 s, always failed 144 s; replay of 57 code paired runs and "
+            "3000 simulated challengers per effect on the code holdout (#1439)"),
     _k("zero_pass_min_cases", ["harness/baseline.py:MIN_CASES"], [20, 30, 50],
        note="distinct stored cases a typed incumbent must pass none of before its lane takes the incumbent from "
             "measurement and a paired run against it is only a screen; a model passing 1 in 10 shows none of 30 "
@@ -63,7 +81,16 @@ KNOBS = [
 ]
 
 NEVER_CUTS = {
+    "harness/looks.py:LOOK_INTERVAL_S": "sets when a paired run stops for an interim look; it resumes after the look "
+                                        "unless the look decides, so no case is dropped (#1353)",
     "harness/effects.py:MIN_CASES": "read only when soh knobs effects derives power.EFFECT offline; no run is cut (#725)",
+    "harness/holdout.py:FRACTION": "draws each case to holdout or dev; every case lands on one side (#1087)",
     "harness/holdout.py:FAMILY_SHARE": "moves holdout cases to dev, never drops one; the split version names it (#671)",
     "harness/holdout.py:SATURATED": "labels an incumbent's holdout saturated in the report; nothing is skipped (#479)",
+    "harness/intervals.py:wilson(z)": "the confidence level of a reported interval; it widens the interval, drops nothing (#1087)",
+    "harness/power.py:UNSEEN": "the pass rate a plan assumes for a case with no stored rows; the plan is marked "
+                               "unmeasured and no case is dropped (#698)",
+    "harness/reverify.py:DEFAULT_DAYS": "days between re-runs of a served model; a due model is re-run, never "
+                                        "skipped (#408)",
+    "harness/weedout.py:ADD_S": "prices cases for the run's order, never drops one; an adopt waits for every case (#1439)",
 }

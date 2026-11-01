@@ -18,6 +18,12 @@ CHECKPOINT = "checkpoint.jsonl"
 PROGRESS = "progress.json"
 #: Touch this file in a run's directory, or send the run SIGUSR1, and it pauses after the case in flight.
 PAUSE_FILE = "pause"
+#: The watchdog writes this, naming its criterion, before it signals a run to stop. #1409.
+STOP_FILE = "stopped"
+#: The one stop that ends a run as a suspected harness defect rather than pausing it. #1409.
+OVERRUN = "overrun"
+#: The pause reason of a case whose KV would leave less than memory.MIN_HEADROOM_GB safely available. #1482.
+MEMORY_HEADROOM = "memory_headroom"
 
 
 def clock() -> float:
@@ -33,8 +39,24 @@ def ask_pause(outdir, reason: str = "") -> Path:
 
 def pause_reason(outdir) -> str:
     """The reason a pause file names after its timestamp; "" for a bare touch, SIGUSR1 or no file. #1082."""
+    return _reason(outdir, PAUSE_FILE)
+
+
+def mark_stop(outdir, reason: str) -> Path:
+    """Write the run's stop file: a timestamp, then why the watchdog stopped it. #1409."""
+    target = Path(outdir) / STOP_FILE
+    target.write_text(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {reason}".strip(), encoding="utf-8")
+    return target
+
+
+def stop_reason(outdir) -> str:
+    """Why the watchdog stopped the run in `outdir`; "" when it named none or never stopped it. #1409."""
+    return _reason(outdir, STOP_FILE)
+
+
+def _reason(outdir, name: str) -> str:
     try:
-        text = (Path(outdir) / PAUSE_FILE).read_text(encoding="utf-8").strip()
+        text = (Path(outdir) / name).read_text(encoding="utf-8").strip()
     except (OSError, ValueError):
         return ""
     return text.partition(" ")[2].strip()
@@ -46,6 +68,14 @@ class Stop(Exception):
     def __init__(self, why: str):
         super().__init__(why)
         self.why = why
+
+
+class Deferred(Stop):
+    """The run pauses before a case that does not fit now; `reason` goes in its pause file. #1482."""
+
+    def __init__(self, why: str, reason: str):
+        super().__init__(f"paused on request ({reason}): {why}")
+        self.reason = reason
 
 
 @dataclass

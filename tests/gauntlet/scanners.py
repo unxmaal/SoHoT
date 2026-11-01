@@ -743,3 +743,205 @@ def handmade_namespaces(text, rel):
     return [f"{rel}:{line}: {key.partition(':')[2]} is handed a hand-made argparse.Namespace, which carries only "
             f"the fields its writer thought of; build it with common.parsed(<verb>, ...)"
             for key, line in namespace_handoffs(text, rel) if key not in SAME_PARSER]
+
+
+_CLOCKS = {"perf_counter", "perf_counter_ns", "monotonic", "monotonic_ns", "time", "time_ns"}
+_KEEPS_MEASURE = {"abs", "round", "float", "int", "min", "max", "sum"}
+_DURATION = re.compile(r"^(?:took|elapsed|wall\w*|seconds|duration\w*|ttft\w*|\w+_s)$")
+# Durations a fake clock or an estimate produces, so a load cannot move them: "rel:function" -> why.
+WALL_BOUND_WAIVERS = {
+    "tests/test_busy_wait_timing_776.py:test_a_best_of_row_stays_under_one_poll_when_its_pool_threads_wait":
+        "FakeTime clock: the row's seconds are fake time the replies add, never the machine's",
+    "tests/test_busy_wait_timing_776.py:test_a_craft_case_deadline_is_not_spent_by_a_busy_wait":
+        "Clock patched onto agent and craft_runner time: the wall is fake time",
+    "tests/test_busy_wait_timing_776.py:test_a_repo_repair_case_deadline_and_wall_leave_out_a_busy_wait":
+        "Clock patched onto agent and repo_repair time: the seconds are fake time",
+    "tests/test_throttle_1084.py:test_outside_the_capped_hours_it_runs_at_line_rate":
+        "clock=lambda: w.t, a simulated line: the seconds are the simulation's",
+    "tests/test_over_budget_796.py:test_a_receipt_at_a_smaller_reply_budget_bounds_the_incumbent":
+        "incumbent_s is an estimate from stored rows, compared with another estimate; nothing is timed",
+}
+
+
+def _clock_call(node):
+    f = node.func if isinstance(node, ast.Call) else None
+    if isinstance(f, ast.Attribute):
+        return f.attr in _CLOCKS and isinstance(f.value, ast.Name) and f.value.id == "time"
+    return isinstance(f, ast.Name) and f.id in _CLOCKS - {"time", "time_ns"}
+
+
+def _stamp(node, stamps):
+    if _clock_call(node) or (isinstance(node, ast.Name) and node.id in stamps):
+        return True
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Sub):
+        return _stamp(node.left, stamps) and isinstance(node.right, ast.Constant)
+    return isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add) and (
+        _stamp(node.left, stamps) != _stamp(node.right, stamps))
+
+
+def _duration_named(node):
+    key = node.slice if isinstance(node, ast.Subscript) else None
+    name = (node.id if isinstance(node, ast.Name) else node.attr if isinstance(node, ast.Attribute)
+            else key.value if isinstance(key, ast.Constant) and isinstance(key.value, str) else "")
+    return bool(_DURATION.match(name))
+
+
+def _duration(node, stamps, spans):
+    if (isinstance(node, ast.Name) and node.id in spans) or _duration_named(node):
+        return True
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Sub) and not _stamp(node, stamps) and (
+            _stamp(node.left, stamps) or _stamp(node.right, stamps)):
+        return True
+    if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Sub, ast.Mult)):
+        return _duration(node.left, stamps, spans) or _duration(node.right, stamps, spans)
+    if isinstance(node, ast.UnaryOp):
+        return _duration(node.operand, stamps, spans)
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in _KEEPS_MEASURE:
+        return any(_duration(a, stamps, spans) for a in node.args)
+    return False
+
+
+def _bound_names(fn, holds):
+    names, grew = set(), True
+    while grew:
+        grew = False
+        for n in ast.walk(fn):
+            value = n.value if isinstance(n, (ast.Assign, ast.AnnAssign)) else None
+            if value is None or not holds(value, names):
+                continue
+            targets = n.targets if isinstance(n, ast.Assign) else [n.target]
+            new = {t.id for t in targets if isinstance(t, ast.Name)} - names
+            names |= new
+            grew = grew or bool(new)
+    return names
+
+
+def wall_bounds(text, rel, waivers=None):
+    tree, out = _parse(text, rel)
+    if tree is None:
+        return out
+    waivers = WALL_BOUND_WAIVERS if waivers is None else waivers
+    found, waived = set(), set()
+    for fn in ast.walk(tree):
+        if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        stamps = _bound_names(fn, _stamp)
+        spans = _bound_names(fn, lambda v, names: _duration(v, stamps, names))
+        for a in ast.walk(fn):
+            if not isinstance(a, ast.Assert):
+                continue
+            for c in (n for n in ast.walk(a.test) if isinstance(n, ast.Compare)):
+                sides = [c.left, *c.comparators]
+                for left, op, right in zip(sides, c.ops, sides[1:]):
+                    ld, rd = _duration(left, stamps, spans), _duration(right, stamps, spans)
+                    if ld != rd and isinstance(op, (ast.Gt, ast.GtE) if rd else (ast.Lt, ast.LtE)):
+                        (waived if f"{rel}:{fn.name}" in waivers else found).add(c.lineno)
+    return out + [f"{rel}:{line}: an upper bound on measured wall time fails on a loaded machine; assert order, "
+                  f"a count, a lower bound or a structural fact, or inject the clock"
+                  for line in sorted(found - waived)]
+
+
+# An option or subcommand that runs an eval or a probe; each is homed (calls paths.eval_home) or waived with a reason.
+_EVAL_NAME = re.compile(r"^(?:--)?(?:[a-z]+-)*(?:evals?|probes?|redo|controls?|calibrate|self-?test|sensitivity|canary|chaos)$")
+#: "<file> <parser variable> <option or subcommand>" -> the handler file that calls paths.eval_home. #1346
+EVAL_HOMED = {
+    "evals/analysis/demand/__main__.py p --controls": "evals/analysis/demand/__main__.py",
+    "evals/claims_judge.py ap action=calibrate": "evals/claims_judge.py",
+    "evals/importers/history.py ap --probes": "evals/importers/history.py",
+    "evals/importers/transcripts.py ap --probes": "evals/importers/transcripts.py",
+    "harness/cli.py d --control": "harness/commands/discover.py",
+    "harness/cli.py sub sensitivity": "harness/commands/lanes.py",
+    "harness/slot_probe.py __main__": "harness/slot_probe.py",
+}
+#: Same keys -> why the entry may write the store of the home it runs in. #1346
+EVAL_WAIVED = {
+    "harness/cli.py d --no-control": "skips the control: the judge's scores are the work",
+    "harness/cli.py sub canary": "plants run in their own homes (canary.child_env); the parent writes a lease only",
+    "harness/cli.py sub chaos": "scenarios run in chaos.scratch_home; the machine lock is a lease, not work",
+    "harness/cli.py bch --probe": "contamination probes are the measurement adoption reads",
+    "harness/cli.py bch --calibrate": "reads a read-only store and writes none",
+    "harness/cli.py cas action=control": "writes the case validation files evals.run reads; no store rows",
+    "harness/cli.py stg action=controls": "no store write",
+    "harness/commands/vision.py act probe": "the vision reference row: files under runs, no store write",
+    "harness/hf_task.py sub vision-probe": "a venv child that writes a predictions file",
+    "scripts/pool-full-probe.py __main__": "stdlib only; with-gpu-lock's lease is coordination, not work",
+}
+
+
+def _parser_var(call):
+    f = call.func
+    return f.value.id if isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name) else "?"
+
+
+def eval_entry_points(text, rel):
+    """(line, key) for each argparse option, subcommand or action choice that names an eval or probe."""
+    tree, _ = _parse(text, rel)
+    if tree is None:
+        return []
+    out = []
+    for n in ast.walk(tree):
+        if not isinstance(n, ast.Call) or _call_name(n) not in ("add_argument", "add_parser"):
+            continue
+        names = [s for s in _strings(n.args) if _EVAL_NAME.match(s)]
+        for k in n.keywords:
+            if k.arg == "choices" and isinstance(k.value, (ast.Tuple, ast.List, ast.Set)):
+                names += [f"{_strings(n.args)[0] if _strings(n.args) else '?'}={s}"
+                          for s in _strings(k.value.elts) if _EVAL_NAME.match(s)]
+        out += [(n.lineno, f"{rel} {_parser_var(n)} {s}") for s in names]
+    if _EVAL_NAME.match(Path(rel).stem.replace("_", "-")):
+        out += [(n.lineno, f"{rel} __main__") for n in tree.body if isinstance(n, ast.If) and _is_main(n.test)]
+    return out
+
+
+def _is_main(test):
+    return (isinstance(test, ast.Compare) and isinstance(test.left, ast.Name) and test.left.id == "__name__"
+            and _strings(test.comparators) == ["__main__"])
+
+
+def unhomed_evals(text, rel, homed=None, waived=None):
+    homed = EVAL_HOMED if homed is None else homed
+    waived = EVAL_WAIVED if waived is None else waived
+    return [f"{rel}:{line}: {key!r} runs an eval or probe in whatever home it is given, the live one by default; "
+            f"call paths.eval_home in its handler and list it in EVAL_HOMED, or waive it in EVAL_WAIVED"
+            for line, key in eval_entry_points(text, rel) if key not in homed and key not in waived]
+
+
+def _sniffs(n):
+    if isinstance(n, ast.Attribute) and n.attr == "__module__":
+        return True
+    if (isinstance(n, ast.Call) and _call_name(n) in ("getattr", "hasattr") and len(n.args) > 1
+            and isinstance(n.args[1], ast.Constant) and n.args[1].value == "__module__"):
+        return True
+    if isinstance(n, ast.Compare) and any(isinstance(o, (ast.Is, ast.IsNot)) for o in n.ops):
+        sides = [n.left, *n.comparators]
+        return bool({s.attr for s in sides if isinstance(s, ast.Attribute)}
+                    & {s.id for s in sides if isinstance(s, ast.Name)})
+    return False
+
+
+def double_sniffs(text, rel):
+    """Production code that asks whether a name is a test double: a __module__ read, or `pkg.f is f`. #1437."""
+    tree, out = _parse(text, rel)
+    if tree is None:
+        return out
+    return out + [f"{rel}:{line}: tells a stand-in from the real function; name the machine (or the fact) at its seam "
+                  f"instead, so production code has one path" for line in sorted({n.lineno for n in ast.walk(tree) if _sniffs(n)})]
+
+
+#: The names a test once replaced to change which machine this is; the seam is environment.identity. #1437.
+MACHINE_STAND_INS = ("this_machine", "this_fingerprint")
+
+
+def machine_stand_ins(text, rel):
+    """A test that replaces this_machine or this_fingerprint instead of naming the machine at the seam. #1437."""
+    tree, out = _parse(text, rel)
+    if tree is None:
+        return out
+    for n in ast.walk(tree):
+        if not (isinstance(n, ast.Call) and _call_name(n) == "setattr" and n.args):
+            continue
+        name = n.args[1] if len(n.args) > 1 and not isinstance(n.args[0], ast.Constant) else n.args[0]
+        if isinstance(name, ast.Constant) and str(name.value).rsplit(".", 1)[-1] in MACHINE_STAND_INS:
+            out.append(f"{rel}:{n.lineno}: replaces {name.value}; name the machine with conftest machine_is or "
+                       f"machine_has, which reach it through environment.identity")
+    return out
