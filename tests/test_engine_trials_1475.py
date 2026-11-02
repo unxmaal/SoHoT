@@ -317,7 +317,7 @@ def test_no_test_reaches_a_real_channel_through_the_default_hooks(conn, tmp_path
     with pytest.raises(RuntimeError, match="real engine-trial channel"):
         et.gather(FAKE_ENGINE, client=object())
     with pytest.raises(RuntimeError, match="real engine-trial channel"):
-        et.sweep(conn, [_tool(conn, FAKE_ENGINE)], [], evidence=EVIDENCE.__getitem__, root=tmp_path)
+        et.sweep(conn, [_tool(conn, FAKE_ENGINE)], [], evidence=EVIDENCE.__getitem__, gh=FakeGh(), root=tmp_path)
 
 
 def test_a_candidate_whose_type_the_trial_does_not_list_is_not_screened(conn, tmp_path):
