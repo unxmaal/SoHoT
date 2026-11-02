@@ -1,13 +1,17 @@
 """Issue #190: which server produced the tokens is part of the exam."""
+import json
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
 
 from evals.core import Receipt, comparable
-from harness import serving
+from harness import cuts, memory, serving
 
 REPO = Path(__file__).parent.parent
+LLAMACPP_BUILD = serving.llamacpp_build
 
 
 def receipt(**kw):
@@ -197,3 +201,97 @@ def test_a_template_flag_that_is_not_true_or_false_is_refused_naming_the_spec(op
 def test_a_spec_route_refuses_says_which_spec(spec, message):
     with pytest.raises(ValueError, match="^" + re.escape(message) + "$"):
         serving.route(spec)
+
+
+# ---- llama.cpp binary and build, MLX parallel cap (#1456, #1467, #1498) ----
+
+def _cut_rows(monkeypatch) -> list[dict]:
+    monkeypatch.setattr(cuts, "_own_store", lambda: None)
+    path = cuts._spool_path()
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()] if path.exists() else []
+
+
+def test_llamacpp_named_is_llamacpp_bin_stripped_else_llama_server(monkeypatch):
+    monkeypatch.delenv("LLAMACPP_BIN", raising=False)
+    assert serving.llamacpp_named() == "llama-server"
+    monkeypatch.setenv("LLAMACPP_BIN", "   ")
+    assert serving.llamacpp_named() == "llama-server"
+    monkeypatch.setenv("LLAMACPP_BIN", "  /opt/own/llama-server \n")
+    assert serving.llamacpp_named() == "/opt/own/llama-server"
+
+
+def test_llamacpp_binary_looks_up_the_named_binary(monkeypatch):
+    asked = []
+    monkeypatch.setattr(shutil, "which", lambda name: asked.append(name) or f"/found/{name}")
+    monkeypatch.setenv("LLAMACPP_BIN", "own-server")
+    assert serving.llamacpp_binary() == "/found/own-server"
+    assert asked == ["own-server"]
+
+
+def _version_run(monkeypatch, stdout="", stderr="", raises=None) -> list:
+    calls = []
+
+    def run(*a, **k):
+        calls.append((a, k))
+        if raises is not None:
+            raise raises
+        return subprocess.CompletedProcess(a[0], 0, stdout, stderr)
+    monkeypatch.setattr(subprocess, "run", run)
+    return calls
+
+
+def test_llamacpp_build_asks_the_given_binary_for_its_version(monkeypatch):
+    monkeypatch.setattr(serving, "llamacpp_binary", lambda: "/never/asked")
+    calls = _version_run(monkeypatch, stdout="llama.cpp\n", stderr="version: 7015 build 42 (abc)\n")
+    assert LLAMACPP_BUILD("/opt/own/llama-server") == "42"
+    assert calls == [((["/opt/own/llama-server", "--version"],), {"capture_output": True, "text": True, "timeout": 10})]
+    assert _cut_rows(monkeypatch) == []
+    _version_run(monkeypatch, stdout="build 7\n")
+    assert LLAMACPP_BUILD("x") == "7"
+
+
+def test_llamacpp_build_without_a_binary_asks_the_resolved_one(monkeypatch):
+    monkeypatch.setattr(serving, "llamacpp_binary", lambda: "/found/llama-server")
+    calls = _version_run(monkeypatch, stderr="build 9")
+    assert LLAMACPP_BUILD() == "9"
+    assert calls[0][0] == (["/found/llama-server", "--version"],)
+
+
+def test_llamacpp_build_is_empty_when_there_is_no_binary(monkeypatch):
+    monkeypatch.setattr(serving, "llamacpp_binary", lambda: None)
+    calls = _version_run(monkeypatch, stderr="build 9")
+    assert LLAMACPP_BUILD() == ""
+    assert calls == []
+
+
+@pytest.mark.parametrize("kw", [{"raises": OSError("no exec")}, {"raises": subprocess.CalledProcessError(1, "x")},
+                                {"stdout": "llama.cpp", "stderr": "version: 7015"}])
+def test_llamacpp_build_is_empty_when_the_binary_cannot_say(monkeypatch, kw):
+    _version_run(monkeypatch, **kw)
+    assert LLAMACPP_BUILD("x") == ""
+    assert _cut_rows(monkeypatch) == []
+
+
+def test_a_llamacpp_version_that_times_out_is_one_cut_naming_its_site(monkeypatch):
+    _version_run(monkeypatch, raises=subprocess.TimeoutExpired("x", 10))
+    assert LLAMACPP_BUILD("x") == ""
+    assert [(r["knob"], r["what"], r["kept"], r["dropped"]) for r in _cut_rows(monkeypatch)] == [
+        ("harness/serving.py:llamacpp_build->subprocess.run(timeout)", "llama-server --version", 0, 1)]
+
+
+@pytest.mark.parametrize("room,want,cut", [
+    (16.0, 16, None), (17.0, 16, ("mlx_max_parallel", 16)), (1000.0, 16, ("mlx_max_parallel", 16)),
+    (15.0, 15, ("mlx_request_ctx", 15)), (3.0, 3, ("mlx_request_ctx", 3)), (0.5, 1, ("mlx_request_ctx", 1)),
+])
+def test_mlx_parallel_records_which_knob_bound_the_cap(monkeypatch, room, want, cut):
+    gib = 1024 ** 3
+    monkeypatch.setattr(serving, "MLX_MAX_PARALLEL", 16)
+    monkeypatch.setattr(memory, "mlx_kv_bytes_per_token", lambda repo: gib // serving.MLX_REQUEST_CTX)
+    monkeypatch.setattr(memory, "cache_path", lambda repo: "x")
+    monkeypatch.setattr(memory, "size_gb", lambda path: 0.0)
+    monkeypatch.setattr(memory, "measured_reserve_gb", lambda: 0.0)
+    monkeypatch.setattr(memory, "ceiling_gb", lambda: room)
+    monkeypatch.setattr(serving, "_router_gb", lambda: 0.0)
+    assert serving.mlx_parallel("org/m") == want
+    rows = [(r["knob"], r["what"], r["kept"], r["dropped"]) for r in _cut_rows(monkeypatch)]
+    assert rows == ([] if cut is None else [(cut[0], "org/m: requests mlx_lm.server may hold at once", cut[1], None)])
