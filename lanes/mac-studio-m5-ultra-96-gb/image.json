@@ -83,6 +83,21 @@
    "until": "policy:trust_remote_code@SupraDiT"
   },
   {
+   "candidate": "diffusers:Vaelico/Wulver",
+   "decided_at": "2026-11-01T01:49:26Z",
+   "detail": "needs its own runner: the stock loader could not assemble it: fox-snow: exit 1: OSError: Vaelico/Wulver does not appear to have a file named model_index.json.; geneval-000-single-object: exit 1: OSError: Vaelico/Wulver does not appear to have a file named model_index.json.",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "Vaelico/Wulver",
+   "reason": "runtime",
+   "receipt_key": "diffusers/Wulver",
+   "run_id": 634,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "runner:diffusers/single-file"
+  },
+  {
    "candidate": "diffusers:inclusionAI/Ming-Image-0.1-Design",
    "decided_at": "2026-10-18T00:42:26Z",
    "detail": "retracted: diffusers:inclusionAI/Ming-Image-0.1-Design's runner could not open the repo's layout, a runner gap rather than a verdict on inclusionAI/Ming-Image-0.1-Design: it ran and passed nothing: fox-snow: exit 1: OSError: inclusionAI/Ming-Image-0.1-Design does not appear to have a file named model_index.json.",
@@ -180,6 +195,21 @@
    "until": ""
   },
   {
+   "candidate": "mflux:mlx-community/flux2-klein-9b-4bit",
+   "decided_at": "2026-11-01T01:23:06Z",
+   "detail": "it ran and passed nothing: fox-snow: exit 1: ValueError: [reshape] Cannot reshape array of size 1048576 into shape (1,256,24,128).; geneval-000-single-object: exit 1: ValueError: [reshape] Cannot reshape array of size 1048576 into shape (1,256,24,128).",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "mlx-community/flux2-klein-9b-4bit",
+   "reason": "candidate",
+   "receipt_key": "mflux/mlx-community/flux2-klein-9b-4bit-q8",
+   "run_id": 632,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "diffusers:Photoroom/prxpixel-t2i",
    "decided_at": "2026-10-31T01:03:31Z",
    "detail": "retracted: cases:image>446 is met here",
@@ -263,8 +293,8 @@
   },
   {
    "candidate": "mflux:Tongyi-MAI/Z-Image",
-   "decided_at": "2026-10-31T01:16:13Z",
-   "detail": "19.1 GiB would take this run past its 40 GiB budget (39.1 GiB already fetched)",
+   "decided_at": "2026-11-02T07:28:33Z",
+   "detail": "19.1 GiB would take this run past its 40 GiB budget (38.0 GiB already fetched)",
    "exam": {
     "about": "by Tongyi-MAI",
     "candidate": "mflux/Tongyi-MAI/Z-Image-q8",
@@ -300,8 +330,8 @@
   },
   {
    "candidate": "mflux:filipstrand/Z-Image-Turbo-mflux-4bit",
-   "decided_at": "2026-10-31T01:16:14Z",
-   "detail": "5.5 GiB would take this run past its 40 GiB budget (39.1 GiB already fetched)",
+   "decided_at": "2026-11-02T07:28:33Z",
+   "detail": "5.5 GiB would take this run past its 40 GiB budget (38.0 GiB already fetched)",
    "exam": {
     "about": "4bit, by filipstrand",
     "candidate": "mflux/filipstrand/Z-Image-Turbo-mflux-4bit-q8",
@@ -334,24 +364,9 @@
    "status": "pending",
    "tier": "fetch",
    "until": ""
-  },
-  {
-   "candidate": "mflux:mlx-community/flux2-klein-9b-4bit",
-   "decided_at": "2026-10-31T01:16:13Z",
-   "detail": "downloaded",
-   "exam": null,
-   "outcome": "queued",
-   "proposal": "mlx-community/flux2-klein-9b-4bit",
-   "reason": "candidate",
-   "receipt_key": "mflux/mlx-community/flux2-klein-9b-4bit-q8",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "fetch",
-   "until": ""
   }
  ],
- "cursor": 1793408611941052,
+ "cursor": 1793497766735117,
  "events": [
   {
    "at": "2026-09-18T22:18:09Z",
@@ -2214,6 +2229,21 @@
    "tier": "adopt"
   },
   {
+   "at": "2026-10-30T01:09:27Z",
+   "candidate": "Vaelico/Wulver",
+   "chosen": null,
+   "detail": "not screened: needs 7.2 GB but only 4.9 GB is safely available (22.9 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1793322567525314,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-10-31T01:03:31Z",
    "candidate": "Photoroom/prxpixel-t2i",
    "chosen": null,
@@ -2226,6 +2256,36 @@
    "outcome": "screened",
    "reason": "reopened",
    "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-01T01:23:06Z",
+   "candidate": "mflux:mlx-community/flux2-klein-9b-4bit",
+   "chosen": null,
+   "detail": "it ran and passed nothing: fox-snow: exit 1: ValueError: [reshape] Cannot reshape array of size 1048576 into shape (1,256,24,128).; geneval-000-single-object: exit 1: ValueError: [reshape] Cannot reshape array of size 1048576 into shape (1,256,24,128).",
+   "how": "",
+   "id": 1793496186187939,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 632,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-01T01:49:26Z",
+   "candidate": "diffusers:Vaelico/Wulver",
+   "chosen": null,
+   "detail": "needs its own runner: the stock loader could not assemble it: fox-snow: exit 1: OSError: Vaelico/Wulver does not appear to have a file named model_index.json.; geneval-000-single-object: exit 1: OSError: Vaelico/Wulver does not appear to have a file named model_index.json.",
+   "how": "",
+   "id": 1793497766735117,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "runtime",
+   "run_id": 634,
    "tier": "screen"
   }
  ],
@@ -2457,7 +2517,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-10-31T09:17:33Z",
+ "generated_at": "2026-11-02T08:00:23Z",
  "knobs": [],
  "lane": {
   "cases": 584,
