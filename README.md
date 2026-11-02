@@ -1301,7 +1301,10 @@ time. The next check reads the run that job stored. It is `failed` when the
 model did not work, `regressed` when it lost more than it gained on the lane's
 metric against that last working run at the adopt tier's significance, or when
 a measured adoption's incumbent, re-run beside it, now beats it, and `unrun`
-when the job stored no run or its most common failure is the harness's. Each
+when the job stored no run or its most common failure is the harness's. When
+the lane's cases were added or dropped since that run, the two are paired on
+the cases both ran; when the case sets only partly overlap or share none, the
+re-run is `unrun` and becomes the baseline for the next one. Each
 is recorded with its reason and failure class and flagged in `soh report`; a
 flagged lane is re-run once its threshold passes again. A re-run the watchdog
 paused is not judged: the next check queues its continuation from the

@@ -128,6 +128,13 @@ def moved(before: dict, after: dict, keys) -> list[str]:
             if before.get(k) and after.get(k) and before[k] != after[k]]
 
 
+def _never_worked(conn, lane: str, spec: str, cid) -> bool:
+    """The lane's own incumbent passed none of baseline.MIN_CASES or more stored cases, so it cannot beat what serves. #1497."""
+    from harness import baseline, power
+    draws, _ = power.served_profile(conn, lane, spec, cid=cid)
+    return len(draws) >= baseline.MIN_CASES and not any(any(d) for d in draws.values())
+
+
 def served(conn) -> dict[str, dict]:
     """lane -> what each wanted, unparked lane serves here, with any incumbent to re-run beside it."""
     from harness import adopt, candidates, report, winners
@@ -146,7 +153,8 @@ def served(conn) -> dict[str, dict]:
         if row.get("how") == adopt.MEASURED and row.get("incumbent_id"):
             inc = conn.execute("SELECT spec FROM candidates WHERE id = ?",
                                (row["incumbent_id"],)).fetchone()
-            if inc and inc["spec"] != spec and not adopt.is_reference(inc["spec"]):
+            if (inc and inc["spec"] != spec and not adopt.is_reference(inc["spec"])
+                    and not _never_worked(conn, lane, inc["spec"], row["incumbent_id"])):
                 incumbent = inc["spec"]
         from harness import screen
         run_spec = row.get("spec") or screen.candidate_for(lane, spec) or spec
@@ -157,10 +165,14 @@ def served(conn) -> dict[str, dict]:
     return out
 
 
+#: Re-runs never taken as a baseline; an unrun one that worked only could not be paired, so it is the next baseline. #1496.
+_NO_BASELINE = (FAILED, REGRESSED)
+
+
 def _flagged_runs(conn) -> set[int]:
     return {r["run_id"] for r in conn.execute(
         "SELECT run_id FROM reverifications WHERE run_id IS NOT NULL AND outcome IN "
-        f"({','.join('?' * len(FLAGGED))})", FLAGGED)}
+        f"({','.join('?' * len(_NO_BASELINE))})", _NO_BASELINE)}
 
 
 def _metric(lane: str) -> str:
@@ -191,7 +203,7 @@ def _scored(rows: list[dict], lane: str) -> str:
 
 
 def baseline(conn, lane: str, cid, machines) -> dict | None:
-    """The newest run here in which the served candidate worked (see _working) and was not flagged."""
+    """The newest run here in which the served candidate worked (see _working) and that did not fail or regress."""
     from harness import runs
     if cid is None:
         return None
@@ -293,6 +305,10 @@ def argv(item: dict, base: dict | None = None) -> list[str]:
     route = screen.routed_gateway(item["spec"])
     if route:
         out += ["--gateway", route]
+    from evals import repo_screen
+    if item["lane"] == repo_screen.LANE:
+        # The repo screen gates a new candidate's first full exam; what serves and its measured incumbent are past it. #1497.
+        out.append("--unscreened")
     if base is not None:
         out += ["--repeat", str(int(base.get("repeat_count") or 1)),
                 "--split", base.get("split") or "all"]
@@ -354,9 +370,12 @@ def _lost(before: list[dict], after: list[dict], metric: str = "") -> list[dict]
 
 
 def _paired(before: list[dict], after: list[dict], lane: str = ""):
-    """The served candidate against itself across two runs, by base case and repeat on what the lane ranks, and its lost rows. #733."""
+    """The served candidate against itself across two runs on the cases both ran (see paired.nested), its lost rows, and how many cases only one ran. #733, #1496."""
     from harness import adopt, holdout, paired, winners
     metric = _metric(lane)
+    before, after, left = paired.nested(before, after)
+    note = (f"; paired on the {len({holdout.base_id(r['case_id']) for r in before})} cases both runs ran, "
+            f"{left} only one ran left out" if left else "")
     cell = paired.pair(before, after, same_repeat=True, metric=metric)
     if lane in winners.STRATIFIED and not cell.refused:
         def as_(name, rows):
@@ -366,7 +385,7 @@ def _paired(before: list[dict], after: list[dict], lane: str = ""):
         got = adopt.lane_cell(as_("baseline", before) + as_("rerun", after), "baseline", "rerun",
                               lane, against="incumbent")
         cell = dataclasses.replace(got, deff=cell.deff)
-    return cell, _lost(before, after, metric)
+    return cell, _lost(before, after, metric), note
 
 
 def _class_of(rows: list[dict]) -> str:
@@ -402,18 +421,20 @@ def judge(conn, rv: dict, job: dict | None) -> tuple[str, str, str, str, int | N
         why = _reason(cls)
         return (UNRUN if why == reasons.HARNESS else FAILED, why, cls,
                 f"{rv['spec']} passed 0 of {len(mine)} in run {rid}", rid)
+    shared = ""
     if rv["baseline_run_id"]:
         before = runs.rows(conn, rv["baseline_run_id"], rv["candidate_id"])
-        cell, lost = _paired(before, mine, lane)
+        cell, lost, shared = _paired(before, mine, lane)
         if cell.refused:
             return (UNRUN, reasons.HARNESS, "", f"run {rid} cannot be paired with baseline run "
-                    f"{rv['baseline_run_id']}: {cell.refused}", rid)
+                    f"{rv['baseline_run_id']}: {cell.refused}; run {rid} is the baseline for the "
+                    "next re-run", rid)
         if cell.lost > cell.gained and cell.p <= adopt.ALPHA:
             cls = _class_of(lost)
             on = f" on {_compared_on(lane)}" if _compared_on(lane) else ""
             return (REGRESSED, _reason(cls), cls,
                     f"{rv['spec']} {cell.lost} lost against {cell.gained} gained{on} vs run "
-                    f"{rv['baseline_run_id']}, p={cell.p:.3f}", rid)
+                    f"{rv['baseline_run_id']}, p={cell.p:.3f}{shared}", rid)
     inc = conn.execute("SELECT id FROM candidates WHERE spec = ?",
                        (rv["incumbent"],)).fetchone() if rv["incumbent"] else None
     theirs = runs.rows(conn, rid, inc["id"]) if inc else []
@@ -427,7 +448,7 @@ def judge(conn, rv: dict, job: dict | None) -> tuple[str, str, str, str, int | N
                     f"{cell.gained} gained against {cell.lost} lost{on}, p={p:.3f}", rid)
     passed = sum(r["passed"] for r in mine)
     return (PASSED, reasons.CANDIDATE, "",
-            f"{rv['spec']} passed {passed} of {len(mine)}{_scored(mine, lane)}", rid)
+            f"{rv['spec']} passed {passed} of {len(mine)}{_scored(mine, lane)}{shared}", rid)
 
 
 def _resume_argv(argv: list, out) -> list[str]:

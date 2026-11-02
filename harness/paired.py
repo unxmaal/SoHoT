@@ -159,6 +159,19 @@ def pair(before: list[dict], after: list[dict], candidate: str | None = None, *,
     return Cell(label, lost, gained, same, off, deff=deff)
 
 
+def nested(before: list[dict], after: list[dict]) -> tuple[list[dict], list[dict], int]:
+    """Both runs' rows on the base cases they share and how many cases only one ran, when one case set holds the other; else unchanged and 0. #1496."""
+    from harness import holdout
+    a = {holdout.base_id(r.get("case_id")) for r in before}
+    b = {holdout.base_id(r.get("case_id")) for r in after}
+    keep = a & b
+    if not keep or a == b or not (a <= b or b <= a):
+        return before, after, 0
+    def on(rows):
+        return [r for r in rows if holdout.base_id(r.get("case_id")) in keep]
+    return on(before), on(after), len(a ^ b)
+
+
 def _cell(candidate: str, a: dict, b: dict) -> Cell:
     keys = a.keys() & b.keys()
     off = {k for k in keys if a[k] is None or b[k] is None}
