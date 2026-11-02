@@ -1,47 +1,9 @@
 {
  "candidates": [
   {
-   "candidate": "bm25",
-   "decided_at": "",
-   "detail": "",
-   "exam": {
-    "about": "",
-    "candidate": "bm25/okapi",
-    "cases": 189,
-    "first_s": 0.027,
-    "median_s": 0.027,
-    "metrics": {
-     "retrieval_ndcg": 0.8803,
-     "retrieval_recall": 0.7831
-    },
-    "model": "bm25/okapi",
-    "not_run": "",
-    "pass_rate": 0.783,
-    "passed": 148,
-    "peak_gb": 0.01,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-10-30T10:31:18Z",
-    "served_as": "",
-    "source": "",
-    "total": 189,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "",
-   "proposal": "",
-   "reason": "",
-   "receipt_key": "bm25/okapi",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "",
-   "until": ""
-  },
-  {
    "candidate": "rerank:cross-encoder/ettin-reranker-1b-v1",
-   "decided_at": "2026-10-31T01:06:01Z",
-   "detail": "fits: smallest variant model.safetensors: 3.8 GiB of 1 weight file",
+   "decided_at": "2026-11-01T01:52:06Z",
+   "detail": "it ran and passed nothing: retrieval-agent-workspace: exit 1: ValueError: Could not find 'model.safetensors' or 'pytorch_model.bin' in cross-encoder/ettin-reranker-1b-v1.; retrieval-decision-calibration: exit 1: ValueError: Could not find 'model.safetensors' or 'pytorch_model.bin' in cross-encoder/ettin-reranker-1b-v1.; retri",
    "exam": {
     "about": "1B params",
     "candidate": "rerank/ettin-reranker-1b-v1",
@@ -66,18 +28,56 @@
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
-   "outcome": "queued",
+   "outcome": "broken",
    "proposal": "cross-encoder/ettin-reranker-1b-v1",
    "reason": "candidate",
    "receipt_key": "rerank/ettin-reranker-1b-v1",
+   "run_id": 644,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "bm25",
+   "decided_at": "",
+   "detail": "",
+   "exam": {
+    "about": "",
+    "candidate": "bm25/okapi",
+    "cases": 189,
+    "first_s": 0.022,
+    "median_s": 0.022,
+    "metrics": {
+     "retrieval_ndcg": 0.8803,
+     "retrieval_recall": 0.7831
+    },
+    "model": "bm25/okapi",
+    "not_run": "",
+    "pass_rate": 0.783,
+    "passed": 148,
+    "peak_gb": 0.01,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-02T07:32:12Z",
+    "served_as": "",
+    "source": "",
+    "total": 189,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "",
+   "proposal": "",
+   "reason": "",
+   "receipt_key": "bm25/okapi",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
+   "tier": "",
    "until": ""
   }
  ],
- "cursor": 1793329347941493,
+ "cursor": 1793497926045467,
  "events": [
   {
    "at": "2026-10-07T15:20:06Z",
@@ -123,6 +123,21 @@
    "reason": "memory",
    "run_id": null,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-01T01:52:06Z",
+   "candidate": "rerank:cross-encoder/ettin-reranker-1b-v1",
+   "chosen": null,
+   "detail": "it ran and passed nothing: retrieval-agent-workspace: exit 1: ValueError: Could not find 'model.safetensors' or 'pytorch_model.bin' in cross-encoder/ettin-reranker-1b-v1.; retrieval-decision-calibration: exit 1: ValueError: Could not find 'model.safetensors' or 'pytorch_model.bin' in cross-encoder/ettin-reranker-1b-v1.; retri",
+   "how": "",
+   "id": 1793497926045467,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 644,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -135,8 +150,8 @@
     {
      "about": "",
      "candidate": "bm25/okapi",
-     "first_s": 0.027,
-     "median_s": 0.027,
+     "first_s": 0.022,
+     "median_s": 0.022,
      "metrics": {
       "retrieval_ndcg": 0.8803,
       "retrieval_recall": 0.7831
@@ -147,7 +162,7 @@
      "passed": 148,
      "peak_gb": 0.01,
      "reference": false,
-     "run_at": "2026-10-30T10:31:18Z",
+     "run_at": "2026-11-02T07:32:12Z",
      "served_as": "",
      "source": "",
      "total": 189,
@@ -155,8 +170,8 @@
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-10-30T10:31:18Z",
-   "runs": 4
+   "run_at": "2026-11-02T07:32:12Z",
+   "runs": 5
   },
   {
    "cases": 14,
@@ -213,7 +228,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-10-31T09:17:36Z",
+ "generated_at": "2026-11-02T08:00:27Z",
  "knobs": [],
  "lane": {
   "cases": 594,
@@ -232,8 +247,8 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-10-30T10:31:18Z",
-  "median_s": 0.027,
+  "measured_at": "2026-11-02T07:32:12Z",
+  "median_s": 0.022,
   "metrics": {
    "retrieval_ndcg": 0.8803,
    "retrieval_recall": 0.7831
