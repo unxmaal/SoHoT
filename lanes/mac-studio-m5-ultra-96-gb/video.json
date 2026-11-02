@@ -1,21 +1,6 @@
 {
  "candidates": [
   {
-   "candidate": "diffusers-video:LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
-   "decided_at": "2026-10-26T01:28:46Z",
-   "detail": "it ran and passed nothing: fox-run: exit 1",
-   "exam": null,
-   "outcome": "broken",
-   "proposal": "LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
-   "reason": "candidate",
-   "receipt_key": "diffusers-video/Minimax-H3-ref2v_Anime_2_Realism",
-   "run_id": 593,
-   "serves": false,
-   "status": "rejected",
-   "tier": "screen",
-   "until": ""
-  },
-  {
    "candidate": "diffusers-video:Motif-Technologies/Motif-Video-2B",
    "decided_at": "2026-10-30T03:03:25Z",
    "detail": "1 case(s) passed a screen",
@@ -46,6 +31,21 @@
    "until": "layout:audio_vae/*.safetensors,text_encoder/*.safetensors,transformer/*.safetensors,vae/*.safetensors"
   },
   {
+   "candidate": "diffusers-video:LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
+   "decided_at": "2026-11-02T02:15:57Z",
+   "detail": "retest 1/3: broken at screen",
+   "exam": null,
+   "outcome": "queued",
+   "proposal": "LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
+   "reason": "reopened",
+   "receipt_key": "diffusers-video/Minimax-H3-ref2v_Anime_2_Realism",
+   "run_id": null,
+   "serves": false,
+   "status": "pending",
+   "tier": "inspect",
+   "until": ""
+  },
+  {
    "candidate": "h3",
    "decided_at": "",
    "detail": "",
@@ -53,8 +53,8 @@
     "about": "",
     "candidate": "h3/minimax-h3",
     "cases": 1,
-    "first_s": 23.645,
-    "median_s": 23.645,
+    "first_s": 102.514,
+    "median_s": 102.514,
     "metrics": {
      "motion": 0.0418
     },
@@ -62,10 +62,10 @@
     "not_run": "",
     "pass_rate": 1.0,
     "passed": 1,
-    "peak_gb": 5.59,
+    "peak_gb": 3.2,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-30T10:23:12Z",
+    "run_at": "2026-11-02T07:27:17Z",
     "served_as": "",
     "source": "",
     "total": 1,
@@ -161,8 +161,8 @@
     {
      "about": "",
      "candidate": "h3/minimax-h3",
-     "first_s": 23.645,
-     "median_s": 23.645,
+     "first_s": 102.514,
+     "median_s": 102.514,
      "metrics": {
       "motion": 0.0418
      },
@@ -170,9 +170,9 @@
      "not_run": "",
      "pass_rate": 1.0,
      "passed": 1,
-     "peak_gb": 5.59,
+     "peak_gb": 3.2,
      "reference": false,
-     "run_at": "2026-10-30T10:23:12Z",
+     "run_at": "2026-11-02T07:27:17Z",
      "served_as": "",
      "source": "",
      "total": 1,
@@ -180,8 +180,8 @@
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-10-30T10:23:12Z",
-   "runs": 1
+   "run_at": "2026-11-02T07:27:17Z",
+   "runs": 2
   },
   {
    "cases": 1,
@@ -260,7 +260,7 @@
    "runs": 7
   }
  ],
- "generated_at": "2026-10-31T09:17:34Z",
+ "generated_at": "2026-11-02T08:00:25Z",
  "knobs": [],
  "lane": {
   "cases": 1,
@@ -292,8 +292,8 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-10-30T10:23:12Z",
-  "median_s": 23.645,
+  "measured_at": "2026-11-02T07:27:17Z",
+  "median_s": 102.514,
   "metrics": {
    "motion": 0.0418
   },
