@@ -461,6 +461,57 @@ def test_a_flagged_lane_is_tried_again_after_its_age_threshold(upgraded):
     assert len(queued(conn)) == 2
 
 
+def test_a_job_that_crashed_before_the_harness_moved_is_tried_again_at_once(upgraded, monkeypatch):
+    conn = upgraded
+    monkeypatch.setattr(reverify, "_committed_at", lambda: NOW + 60)
+    _queue_and_finish(conn, None, rc=1, state=wq.FAILED)
+    got = check(conn, now=NOW + 120)
+    assert [s["outcome"] for s in got["settled"]] == [reverify.UNRUN]
+    assert got["planned"][0]["skip"] == ""
+    assert len(queued(conn)) == 2
+
+
+def test_a_job_that_crashed_on_the_current_harness_waits_its_age_threshold(upgraded, monkeypatch):
+    conn = upgraded
+    monkeypatch.setattr(reverify, "_committed_at", lambda: NOW - 60)
+    _queue_and_finish(conn, None, rc=1, state=wq.FAILED)
+    got = check(conn, now=NOW + 120)
+    assert got["planned"][0]["skip"].startswith("flagged unrun: job ")
+    assert len(queued(conn)) == 1
+
+
+def test_an_unrun_that_stored_a_run_is_not_retried_when_the_harness_moves(upgraded, monkeypatch):
+    conn = upgraded
+    monkeypatch.setattr(reverify, "_committed_at", lambda: NOW + 60)
+    _queue_and_finish(conn, cases("q3-4b", 0), failure_class="refused_by_gateway")
+    got = check(conn, now=NOW + 120)
+    assert got["planned"][0]["skip"].startswith("flagged unrun: ")
+    assert len(queued(conn)) == 1
+
+
+def test_the_job_start_not_its_queueing_is_what_the_commit_is_read_against(upgraded, monkeypatch):
+    conn = upgraded
+    monkeypatch.setattr(reverify, "_committed_at", lambda: NOW + 30)
+    job = _queue_and_finish(conn, None, rc=1, state=wq.FAILED)
+    conn.execute("UPDATE jobs SET started_at = ? WHERE id = ?", (NOW + 90, int(job["id"])))
+    conn.commit()
+    got = check(conn, now=NOW + 120)
+    assert got["planned"][0]["skip"].startswith("flagged unrun: ")
+
+
+def test_committed_at_reads_the_checkouts_head_commit_time(tmp_path, monkeypatch):
+    import subprocess
+    from harness import paths
+    monkeypatch.setattr(paths, "REPO", tmp_path)
+    assert reverify._committed_at() is None
+    env = {"GIT_COMMITTER_DATE": "1790000000 +0000", "GIT_AUTHOR_DATE": "1790000000 +0000",
+           "GIT_CONFIG_GLOBAL": "/dev/null", "HOME": str(tmp_path), "PATH": "/usr/bin:/bin"}
+    for argv in (["init", "-q"], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q",
+                                  "--allow-empty", "-m", "x"]):
+        subprocess.run(["git", "-C", str(tmp_path), *argv], check=True, env=env)
+    assert reverify._committed_at() == 1790000000.0
+
+
 def test_a_regressed_run_is_not_the_next_baseline(upgraded):
     conn = upgraded
     _queue_and_finish(conn, cases("q3-4b", 2))
