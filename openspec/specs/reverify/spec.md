@@ -6,7 +6,7 @@ A served model is measured once, when it is adopted. Reverify queues a normal jo
 ## Requirements
 
 ### Requirement: Every wanted, unparked lane with a served model takes part
-`reverify.served` SHALL list each lane in `lanes.WANTED` that is not parked and serves a model on this machine: the adopted spec (`adopt.current`) when there is one, else the typed default resolved through `screen.candidate_for`. A measured adoption SHALL be re-run beside its incumbent unless the incumbent is the served spec or a reference; a by-hand adoption SHALL be re-run alone. The lookup MUST NOT write to the store; the candidate row a re-run names is created when it is queued.
+`reverify.served` SHALL list each lane in `lanes.WANTED` that is not parked and serves a model on this machine: the adopted spec (`adopt.current`) when there is one, else the typed default resolved through `screen.candidate_for`. A measured adoption SHALL be re-run beside the incumbent its own lane's adoption names, never another lane's served model, unless the incumbent is the served spec, a reference, or passed none of `baseline.MIN_CASES` or more stored cases on the lane (it cannot beat what serves); a by-hand adoption SHALL be re-run alone. The lookup MUST NOT write to the store; the candidate row a re-run names is created when it is queued.
 
 #### Scenario: Every lane takes part
 - **WHEN** a dry-run check covers every lane
@@ -28,6 +28,16 @@ Test: tests/test_reverify.py::test_a_measured_adoption_is_re_run_beside_its_incu
 - **THEN** the job's `--candidates` lists the served spec alone
 Test: tests/test_reverify.py::test_a_by_hand_adoption_is_re_run_alone
 
+#### Scenario: The incumbent is the lane's own
+- **WHEN** another lane serves a model and this lane's measured adoption names its own incumbent
+- **THEN** the incumbent re-run beside it is the one this lane's adoption names
+Test: tests/test_reverify_case_sets_1496.py::test_the_repo_incumbent_is_the_repo_lanes_own_and_never_another_lanes_served_model
+
+#### Scenario: An incumbent that never passed on the lane
+- **WHEN** the incumbent passed none of `baseline.MIN_CASES` stored cases on the lane
+- **THEN** the served model is re-run alone
+Test: tests/test_reverify_case_sets_1496.py::test_an_incumbent_that_never_passed_on_the_lane_is_not_rerun_beside_it
+
 #### Scenario: A reference or identical incumbent
 - **WHEN** a measured adoption's incumbent is a reference model or the same spec as the served one
 - **THEN** no incumbent is re-run beside it
@@ -43,8 +53,8 @@ Test: tests/test_served_readonly_1247.py::test_served_answers_every_lane_on_a_re
 - **THEN** the lookup reports no candidate id, and queuing creates the row the reverification names
 Test: tests/test_served_readonly_1247.py::test_a_queued_reverify_creates_the_row_the_lookup_did_not
 
-### Requirement: The baseline is the newest working, unflagged run here
-The baseline SHALL be the newest measure-tier run on this machine in which the served candidate worked and which no flagged reverification settled on. Worked MUST mean a case passed, or the lane's metric shows the model working where none passed (`screen.working`), never exact-case pass bits alone.
+### Requirement: The baseline is the newest working run here that did not fail or regress
+The baseline SHALL be the newest measure-tier run on this machine in which the served candidate worked and which no reverification settled `failed` or `regressed` on. A re-run that worked but could not be paired (settled `unrun`) SHALL be the next baseline. Worked MUST mean a case passed, or the lane's metric shows the model working where none passed (`screen.working`), never exact-case pass bits alone.
 
 #### Scenario: The last working run, not the newest
 - **WHEN** a passing run is followed by a newer run that passed nothing
@@ -70,6 +80,11 @@ Test: tests/test_reverify_lane_metric_733.py::test_a_decide_run_with_no_exact_ca
 - **WHEN** a re-run settled regressed
 - **THEN** the baseline stays the earlier passing run
 Test: tests/test_reverify.py::test_a_regressed_run_is_not_the_next_baseline
+
+#### Scenario: A re-run that could not be paired is the next baseline
+- **WHEN** a re-run worked but shares no case with its baseline
+- **THEN** it settles `unrun` saying it is the baseline for the next re-run, and the next re-run pairs with it
+Test: tests/test_reverify_case_sets_1496.py::test_after_a_disjoint_refusal_the_next_rerun_pairs_with_it
 
 ### Requirement: A runtime the lane uses moved since the baseline
 The versions trigger SHALL fire for each version key the lane's spec runs through (`runtimes_for`, plus `macos`) that the baseline's environment and this machine both record and that differ, and for each runtime or model file whose bytes changed since the baseline recorded the spec's content identity. A key missing on either side is unknown, not a change. Text lanes MUST watch the runtimes of the engine `serving.engine_for` names, every text runtime when it names none, and a lane no table names MUST watch every watched runtime.
@@ -181,7 +196,7 @@ Test: tests/test_reverify.py::test_a_usage_regression_already_reverified_since_t
 Test: untested
 
 ### Requirement: A fired trigger queues one low-priority job and runs nothing inline
-`check` SHALL queue, for each lane with a trigger and no reason to skip, one `evals.run` job through `workqueue.add` with `requested_by` `REQUESTED_BY`, priority `PRIORITY`, this machine's id and the checkout as cwd, and record a `reverifications` row. A lane with an unsettled re-run SHALL be skipped as already queued. The job MUST run at the baseline's repeat and split, with the uv groups its lane's cases need and the gateway the served spec routes to. A dry run SHALL plan and judge and write nothing.
+`check` SHALL queue, for each lane with a trigger and no reason to skip, one `evals.run` job through `workqueue.add` with `requested_by` `REQUESTED_BY`, priority `PRIORITY`, this machine's id and the checkout as cwd, and record a `reverifications` row. A lane with an unsettled re-run SHALL be skipped as already queued. The job MUST run at the baseline's repeat and split, with the uv groups its lane's cases need and the gateway the served spec routes to. A repo-lane job MUST carry `--unscreened`: the repo screen gates a new candidate's first full exam, and what serves is past it. A dry run SHALL plan and judge and write nothing.
 
 #### Scenario: Nothing moved
 - **WHEN** versions match and the pass is fresh
@@ -222,6 +237,11 @@ Test: tests/test_staging_torch_1358.py::test_every_evals_run_launch_of_the_image
 - **WHEN** a repo exam is added with `requested_by` a re-measuring planner
 - **THEN** the queue accepts it with no repo screen result
 Test: tests/test_repo_looks_1353.py::test_a_knob_sweep_or_reverify_of_a_measured_model_is_queued_without_a_screen
+
+#### Scenario: A repo re-run runs without a screen
+- **WHEN** the repo lane's re-run is planned
+- **THEN** its argv carries `--unscreened`, and another lane's does not
+Test: tests/test_reverify_case_sets_1496.py::test_a_repo_rerun_runs_past_the_repo_screen
 
 #### Scenario: A spec routed to another gateway
 - **WHEN** `screen.routed_gateway` names a gateway for the served spec
@@ -323,7 +343,7 @@ Test: untested
 Test: untested
 
 ### Requirement: A loss beyond the paired noise is a regression
-When the re-run worked and has a baseline, `judge` SHALL pair the served candidate against itself across the two runs by base case and repeat, on the lane's metric (`winners.PRIMARY`), or per stratum at the lane's weights for a stratified lane, and SHALL settle `regressed` when more draws were lost than gained at `adopt.ALPHA` or below. Timeouts and harness failures MUST be neither lost nor gained, and repeats MUST shrink by the design effect. A pairing the cells refuse SHALL settle `unrun`. When an incumbent was re-run beside it and now beats it at `adopt.ALPHA`, the re-run SHALL settle `regressed` naming the incumbent.
+When the re-run worked and has a baseline, `judge` SHALL pair the served candidate against itself across the two runs by base case and repeat, on the lane's metric (`winners.PRIMARY`), or per stratum at the lane's weights for a stratified lane, and SHALL settle `regressed` when more draws were lost than gained at `adopt.ALPHA` or below. Timeouts and harness failures MUST be neither lost nor gained, and repeats MUST shrink by the design effect. When one run's case set holds the other's, the pairing SHALL run on the cases both ran and the detail SHALL say how many only one ran. Case sets that only partly overlap or share no case, and another repeat, SHALL be refused and settle `unrun`. When an incumbent was re-run beside it and now beats it at `adopt.ALPHA`, the re-run SHALL settle `regressed` naming the incumbent.
 
 #### Scenario: Beyond the noise
 - **WHEN** the re-run loses most cases its baseline passed
@@ -349,6 +369,26 @@ Test: tests/test_reverify.py::test_two_deterministic_failures_at_repeat_3_are_no
 - **WHEN** the re-run ran each case once against a repeated baseline
 - **THEN** the cells refuse the pairing and the re-run settles `unrun` naming the repeat
 Test: tests/test_reverify.py::test_a_rerun_at_another_repeat_than_its_baseline_is_not_a_pass
+
+#### Scenario: More cases than the baseline
+- **WHEN** the re-run ran every baseline case and more
+- **THEN** it pairs on the baseline's cases and settles `passed`, naming how many only one ran
+Test: tests/test_reverify_case_sets_1496.py::test_a_rerun_over_more_cases_than_its_baseline_pairs_on_the_ones_both_ran
+
+#### Scenario: Fewer cases than the baseline
+- **WHEN** the re-run ran some of the baseline's cases and no others
+- **THEN** it pairs on those and settles `passed`
+Test: tests/test_reverify_case_sets_1496.py::test_a_rerun_over_fewer_cases_than_its_baseline_pairs_on_the_ones_both_ran
+
+#### Scenario: A regression on the shared cases of a larger re-run
+- **WHEN** the re-run ran more cases and lost most shared cases
+- **THEN** it settles `regressed`
+Test: tests/test_reverify_case_sets_1496.py::test_a_regression_on_the_shared_cases_of_a_larger_rerun_is_still_flagged
+
+#### Scenario: Case sets that partly overlap
+- **WHEN** each run has cases the other lacks
+- **THEN** the pairing is refused and the re-run settles `unrun` naming how many each lacks
+Test: tests/test_reverify_case_sets_1496.py::test_case_sets_that_only_partly_overlap_are_refused_with_the_reason
 
 #### Scenario: Field accuracy drops at an equal exact count
 - **WHEN** a decide re-run keeps its exact-case count but loses field accuracy on most cases
