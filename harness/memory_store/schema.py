@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 85
+SCHEMA_VERSION = 86
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -302,6 +302,45 @@ CREATE TABLE IF NOT EXISTS technique_triage (
     template     TEXT NOT NULL DEFAULT '',
     drafted_by   TEXT NOT NULL DEFAULT '',
     triaged_at   REAL NOT NULL
+);
+
+-- A tooling repo the loop classified and trialed as an engine, or filed when it could not. #1475.
+CREATE TABLE IF NOT EXISTS engine_trials (
+    id            INTEGER PRIMARY KEY,
+    proposal_id   INTEGER NOT NULL UNIQUE REFERENCES proposals(id) ON DELETE CASCADE,
+    -- engine, runner, technique or unrelated, as the local model read the README.
+    kind          TEXT NOT NULL,
+    -- classified, installed, blocked, deferred or dropped.
+    state         TEXT NOT NULL,
+    why           TEXT NOT NULL DEFAULT '',
+    interface     TEXT NOT NULL DEFAULT '',
+    channel       TEXT NOT NULL DEFAULT '',
+    package       TEXT NOT NULL DEFAULT '',
+    version       TEXT NOT NULL DEFAULT '',
+    serve         TEXT NOT NULL DEFAULT '',
+    model_types   TEXT NOT NULL DEFAULT '',
+    blocker       TEXT NOT NULL DEFAULT '',
+    dir           TEXT NOT NULL DEFAULT '',
+    issue         INTEGER,
+    filed_at      REAL,
+    classified_by TEXT NOT NULL DEFAULT '',
+    classified_at REAL NOT NULL,
+    updated_at    REAL NOT NULL
+);
+
+-- One waiting candidate screened on one trial engine. #1475.
+CREATE TABLE IF NOT EXISTS engine_screens (
+    id           INTEGER PRIMARY KEY,
+    trial_id     INTEGER NOT NULL REFERENCES engine_trials(id) ON DELETE CASCADE,
+    candidate    TEXT NOT NULL,
+    lane         TEXT NOT NULL DEFAULT '',
+    -- pass, fail or load_failed.
+    verdict      TEXT NOT NULL,
+    passed       INTEGER NOT NULL DEFAULT 0,
+    total        INTEGER NOT NULL DEFAULT 0,
+    detail       TEXT NOT NULL DEFAULT '',
+    screened_at  REAL NOT NULL,
+    UNIQUE (trial_id, candidate)
 );
 
 -- The owner's word that this machine may run jobs all day; the watchdog's day limits and the queue's night gate lift until `until`. #1112.

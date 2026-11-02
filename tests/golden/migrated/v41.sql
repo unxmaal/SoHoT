@@ -39,6 +39,10 @@ table edges [('id', 'INTEGER', 0, None, 1), ('src', 'INTEGER', 1, None, 0), ('ds
   index ix_edges_src unique=0 ['src']
   index sqlite_autoindex_edges_1 unique=1 ['src', 'dst', 'relation']
   (1, 1, 8, 'crowd', '', 3, 12, 0.25)
+table engine_screens [('id', 'INTEGER', 0, None, 1), ('trial_id', 'INTEGER', 1, None, 0), ('candidate', 'TEXT', 1, None, 0), ('lane', 'TEXT', 1, "''", 0), ('verdict', 'TEXT', 1, None, 0), ('passed', 'INTEGER', 1, '0', 0), ('total', 'INTEGER', 1, '0', 0), ('detail', 'TEXT', 1, "''", 0), ('screened_at', 'REAL', 1, None, 0)]
+  index sqlite_autoindex_engine_screens_1 unique=1 ['trial_id', 'candidate']
+table engine_trials [('id', 'INTEGER', 0, None, 1), ('proposal_id', 'INTEGER', 1, None, 0), ('kind', 'TEXT', 1, None, 0), ('state', 'TEXT', 1, None, 0), ('why', 'TEXT', 1, "''", 0), ('interface', 'TEXT', 1, "''", 0), ('channel', 'TEXT', 1, "''", 0), ('package', 'TEXT', 1, "''", 0), ('version', 'TEXT', 1, "''", 0), ('serve', 'TEXT', 1, "''", 0), ('model_types', 'TEXT', 1, "''", 0), ('blocker', 'TEXT', 1, "''", 0), ('dir', 'TEXT', 1, "''", 0), ('issue', 'INTEGER', 0, None, 0), ('filed_at', 'REAL', 0, None, 0), ('classified_by', 'TEXT', 1, "''", 0), ('classified_at', 'REAL', 1, None, 0), ('updated_at', 'REAL', 1, None, 0)]
+  index sqlite_autoindex_engine_trials_1 unique=1 ['proposal_id']
 table extractions [('id', 'INTEGER', 0, None, 1), ('name', 'TEXT', 1, None, 0), ('source', 'TEXT', 1, None, 0), ('reason', 'TEXT', 1, None, 0), ('at', 'REAL', 1, None, 0)]
   index sqlite_autoindex_extractions_1 unique=1 ['name', 'source', 'reason']
   (1, 'not-a-model', 'hf-trending', 'not-a-repo', 1788618000.0)
@@ -82,7 +86,7 @@ table memory_limits [('id', 'INTEGER', 0, None, 1), ('machine_id', 'INTEGER', 1,
 table meta [('key', 'TEXT', 0, None, 1), ('value', 'TEXT', 0, None, 0)]
   index sqlite_autoindex_meta_1 unique=1 ['key']
   ('candidate_guesses', '[{"adoption": 2, "from": "the adopt verdict/'s machine; no vote or judged run names one", "lane": "svg", "machine": 2, "proposal": "org-l/svg-thing", "spec": "mlx:org-l/svg-thing"}]')
-  ('schema', '85')
+  ('schema', '86')
 table otel_events [('id', 'INTEGER', 0, None, 1), ('key', 'TEXT', 1, None, 0), ('received_at', 'REAL', 1, None, 0), ('at', 'REAL', 1, None, 0), ('session_id', 'TEXT', 1, "''", 0), ('prompt_id', 'TEXT', 1, "''", 0), ('name', 'TEXT', 1, None, 0), ('tool', 'TEXT', 1, "''", 0), ('model', 'TEXT', 1, "''", 0), ('query_source', 'TEXT', 1, "''", 0), ('success', 'INTEGER', 0, None, 0), ('duration_ms', 'REAL', 0, None, 0), ('input_tokens', 'REAL', 0, None, 0), ('output_tokens', 'REAL', 0, None, 0), ('cache_read_tokens', 'REAL', 0, None, 0), ('cache_creation_tokens', 'REAL', 0, None, 0), ('cache_creation_5m_tokens', 'REAL', 0, None, 0), ('cache_creation_1h_tokens', 'REAL', 0, None, 0), ('cost_usd', 'REAL', 0, None, 0), ('result_bytes', 'REAL', 0, None, 0), ('attrs', 'TEXT', 1, "'{}'", 0)]
   index ix_otel_events_at unique=0 ['at', 'name']
   index ix_otel_events_session unique=0 ['session_id', 'at']

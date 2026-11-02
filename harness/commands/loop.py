@@ -264,28 +264,17 @@ def _run_loop_held(a, keep=None) -> int:
         for line in _lanes_wanted_lines(rows, ms.this_machine()["ceiling_gb"]):
             print(line)
         tools = rank.tools_wanted(rows)
-        if tools:
-            print(f"\n=== engines/tools wanted ===")
-            print(f"{len(tools)} tooling repo(s) recur with no model task. An "
-                  f"engine entry is a decision for a person, not a lane:")
-            for row in tools[:10]:
-                print(f"  {row.get('times', 0)}x  {row['name']}")
-        for line in _techniques_wanted_lines(ms.techniques(store), want):
-            print(line)
         stuck = rank.runnerless(rows)
         named = {r["name"] for r in stuck}
         stuck += [r for r in fetching.format_wanted(store, want) if r["name"] not in named]
         named = {r["name"] for r in stuck}
         stuck += [r for r in ms.runner_waits(store, want) if r["name"] not in named]
-        if stuck:
-            print(f"\n=== runners wanted ===")
-            print(f"{len(stuck)} candidate(s) have a lane and no runner that "
-                  f"can load them. An engine entry is a decision for a person "
-                  f"-- a guessed one is a binary that refuses the model "
-                  f"several seconds into loading:")
-            for row in stuck[:10]:
-                print(f"  {row.get('lane', ''):8} {row['name']}\n"
-                      f"           {row['why_not']}")
+        got, trial_rc = _engines_lines(store, tools, stuck, bool(getattr(a, "run", False)), failed)
+        rc = trial_rc or rc
+        for line in got:
+            print(line)
+        for line in _techniques_wanted_lines(ms.techniques(store), want):
+            print(line)
         _report_binding(store)
         print(f"\n=== adopted ===")
         current = adopt.current(store)
@@ -845,6 +834,22 @@ def _triage_lines(store, want: str = "", run: bool = False) -> list[str]:
     from harness import technique_triage as tt
     got = tt.triage(store, want=lanes.canonical(want) if want else "") if run else None
     return tt.lines(store, got)
+
+
+def _engines_lines(store, tools: list, stuck: list, run: bool = False,
+                   failed: list | None = None) -> tuple[list[str], int]:
+    """Engines and runners wanted, trialed with --run; a crashed trial pass is a failed step, never the end of the sweep. #1475."""
+    import traceback
+    from harness import engine_trials as et
+    got, rc = None, 0
+    if run and (tools or stuck):
+        try:
+            got = et.sweep(store, tools, stuck)
+        except Exception as exc:
+            traceback.print_exc()
+            print(f"  engine trials failed ({type(exc).__name__}: {exc}); going on", flush=True)
+            rc = _step("engine trials", 1, failed if failed is not None else [])
+    return et.lines(store, tools, stuck, got), rc
 
 
 def _methods_lines(crossed) -> list[str]:
