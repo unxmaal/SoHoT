@@ -68,21 +68,6 @@
    "until": "version:mlx-audio>0.5.3"
   },
   {
-   "candidate": "tts:SpragAI/qwen3-tts-emotion-tags",
-   "decided_at": "2026-10-26T01:28:54Z",
-   "detail": "it ran and passed nothing: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: ValueError: CustomVoice model requires 'voice' (speaker name) (e.g., ['serena', 'vivian', 'uncle_fu', 'ryan', 'aiden', 'ono_anna', 'sohee', '",
-   "exam": null,
-   "outcome": "broken",
-   "proposal": "SpragAI/qwen3-tts-emotion-tags",
-   "reason": "candidate",
-   "receipt_key": "qwen3-tts-emotion-tags",
-   "run_id": 594,
-   "serves": false,
-   "status": "rejected",
-   "tier": "screen",
-   "until": ""
-  },
-  {
    "candidate": "tts:Supertone/supertonic-3",
    "decided_at": "2026-10-18T00:42:26Z",
    "detail": "retracted: tts:Supertone/supertonic-3's runner could not open the repo's layout, a runner gap rather than a verdict on Supertone/supertonic-3: it ran and passed nothing: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'Supertone/supertonic-3': Could not determine model type for Supertone/supertonic-3\"} || not run, no candidate for them -- tts: fr-liaison",
@@ -297,6 +282,21 @@
    "status": "pending",
    "tier": "inspect",
    "until": "format:.bin"
+  },
+  {
+   "candidate": "tts:SpragAI/qwen3-tts-emotion-tags",
+   "decided_at": "2026-11-02T02:15:57Z",
+   "detail": "retest 1/3: broken at screen",
+   "exam": null,
+   "outcome": "queued",
+   "proposal": "SpragAI/qwen3-tts-emotion-tags",
+   "reason": "reopened",
+   "receipt_key": "qwen3-tts-emotion-tags",
+   "run_id": null,
+   "serves": false,
+   "status": "pending",
+   "tier": "inspect",
+   "until": ""
   },
   {
    "candidate": "tts:nvidia/magpie_tts_multilingual_357m",
@@ -853,7 +853,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-10-30T07:00:28Z",
+ "generated_at": "2026-11-02T08:00:29Z",
  "knobs": [],
  "lane": {
   "cases": 470,
@@ -883,7 +883,7 @@
   "pass_rate": 0.865,
   "serves": "mlx-community/Kokoro-82M-bf16",
   "serves_model": "mlx-community/Kokoro-82M-bf16; family yl4579/StyleTTS2-LJSpeech, 82M params, bf16, by mlx-community",
-  "stale": false
+  "stale": true
  },
  "since": 0
 }
