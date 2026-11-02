@@ -413,3 +413,95 @@ def test_morning_lists_a_closed_incident_without_calling_a_person(tmp_path, lane
     assert len(r["incidents"]) == 1 and not r["incidents"][0]["open"]
     assert not any("extract" in n for n in r["needs"])
     assert any("up again" in s for s in morning_cmd.render(r))
+
+
+def test_an_open_incident_with_only_skips_since_its_last_down_is_not_probed_since_not_still_down(tmp_path, lane):
+    conn, f = ms.connect(), lane()
+    here = availability.here(conn)
+    for k, mode in enumerate(["ok", "dead", "dead"]):
+        f.wake(conn, k, mode, machine_id=here)
+    f.state["loaded"] = False
+    for k in (3, 4, 5):
+        assert f.wake(conn, k, "ok", machine_id=here, level=lambda: 1)["outcome"] == "skipped"
+    assert len(f.state["posts"]) == 3
+    r = _gather(conn, T0 + 6 * WAKE)
+    [i] = r["incidents"]
+    assert i["open"] and not availability.still_down(i)
+    assert (i["unprobed"]["since"], i["unprobed"]["at"], i["unprobed"]["skipped"]) == (T0 + 3 * WAKE, T0 + 5 * WAKE, 3)
+    line = availability.incident_line(i)
+    assert "not probed since" in line and "still down" not in line and "not resident" in line
+    assert not any("extract" in n for n in r["needs"])
+    assert "still down" not in morning.deterministic_headline(r) and not morning.lane_dead(r)
+    assert any("not probed since" in s for s in morning_cmd.render(r))
+
+
+def test_a_down_after_the_skips_is_still_down_and_an_up_closes_the_incident():
+    rows = [{"lane": "x", "at": float(t), "outcome": o, "error": "", "reason": ""} for t, o in
+            enumerate(["up", "down", "skipped", "down"])]
+    [i] = availability.incidents(rows)
+    assert availability.still_down(i) and "still down" in availability.incident_line(i)
+    [i] = availability.incidents(rows + [{"lane": "x", "at": 4.0, "outcome": "skipped", "reason": "cold"},
+                                         {"lane": "x", "at": 5.0, "outcome": "up"}])
+    assert not i["open"] and i["up_at"] == 5.0 and i["unprobed"] is None and "up again" in availability.incident_line(i)
+
+
+def _night(now):
+    return False
+
+
+def _cold_past_the_limit(tmp_path, lane):
+    conn, f = _store(tmp_path), lane()
+    f.wake(conn, 0, "dead", day=_night)
+    f.state["loaded"] = False
+    return conn, f, int(lp.UNPROBED_S // WAKE) + 1
+
+
+def test_a_night_wake_loads_a_lane_whose_open_incident_went_unprobed_past_the_limit(tmp_path, lane):
+    conn, f, k = _cold_past_the_limit(tmp_path, lane)
+    assert f.wake(conn, k - 2, "ok", day=_night, level=lambda: 1)["outcome"] == "skipped"
+    assert len(f.state["posts"]) == 1
+    row = f.wake(conn, k, "ok", day=_night, level=lambda: 1)
+    assert row["outcome"] == "up" and row["reason"].startswith(lp.DELIBERATE) and len(f.state["posts"]) == 2
+    [i] = availability.incidents(_rows(conn))
+    assert not i["open"]
+
+
+def test_a_deliberate_probe_is_sent_once_per_limit_and_never_by_day_or_under_pressure(tmp_path, lane):
+    conn, f, k = _cold_past_the_limit(tmp_path, lane)
+    assert "level 2" in f.wake(conn, k, day=_night, level=lambda: 2)["reason"]
+    assert f.wake(conn, k, day=lambda now: True, level=lambda: 1)["outcome"] == "skipped"
+    assert len(f.state["posts"]) == 1
+    assert f.wake(conn, k, "dead", day=_night, level=lambda: 1)["reason"].startswith(lp.DELIBERATE)
+    assert f.wake(conn, k + 1, "ok", day=_night, level=lambda: 1)["outcome"] == "skipped"
+    assert len(f.state["posts"]) == 2
+
+
+def test_a_deliberate_probe_that_ran_slow_waits_the_limit_before_the_next(tmp_path, lane):
+    conn, f, k = _cold_past_the_limit(tmp_path, lane)
+    [down] = _rows(conn)
+    slow = {**down, "outcome": "slow", "reason": f"{lp.DELIBERATE}: x; no answer in 30s"}
+    lp.record(conn, slow, T0 + k * WAKE, None)
+    assert f.wake(conn, k + 1, "ok", day=_night, level=lambda: 1)["outcome"] == "skipped"
+    assert len(f.state["posts"]) == 1
+
+
+@pytest.mark.gauntlet("state-is-whichever-row-came-last", site="harness/lane_probe.py:due")
+def test_due_reads_the_newest_probe_by_its_time_not_its_insertion(tmp_path):
+    conn = _store(tmp_path)
+    row = {"lane": "extract", "spec": "s", "base": "b", "upstream": "u", "model": "m", "engine": "e", "reason": "",
+           "http_status": None, "error": "", "seconds": None, "prompt_tokens": None, "completion_tokens": None}
+    later = T0 + 2 * lp.UNPROBED_S
+    lp.record(conn, {**row, "outcome": "up"}, T0 + WAKE, None)
+    lp.record(conn, {**row, "outcome": "down"}, T0, None)
+    assert lp.due(conn, "extract", None, later, day=_night) == ""
+    lp.record(conn, {**row, "outcome": "down"}, T0 + 2 * WAKE, None)
+    lp.record(conn, {**row, "outcome": "up"}, T0 - WAKE, None)
+    assert lp.due(conn, "extract", None, later, day=_night).startswith(lp.DELIBERATE)
+    assert lp.due(conn, "extract", 99, later, day=_night) == ""
+
+
+def test_a_deliberate_probe_that_runs_slow_keeps_its_mark():
+    row = {"lane": "extract", "reason": f"{lp.DELIBERATE}: x"}
+    assert lp.finish(row, None, 1.0)["reason"].startswith(lp.DELIBERATE)
+    assert lp.finish(row, {"failed": True, "error": "gone"}, 1.0)["reason"].startswith(lp.DELIBERATE)
+    assert lp.finish({"lane": "extract", "reason": ""}, None, 1.0)["reason"].startswith("no answer")

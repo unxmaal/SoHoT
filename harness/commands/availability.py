@@ -7,6 +7,12 @@ from harness.availability import hm, incident_line
 from harness.commands.common import emit, note
 
 
+def _open(u: dict) -> str:
+    if not u["open"]:
+        return ""
+    return " (one open)" if u.get("down_now", True) else " (one open, not probed since its last down)"
+
+
 def render(r: dict) -> list[str]:
     out = [f"since {hm(r['since'])}, target {r['target']:.0%} per lane"]
     if not r["lanes"]:
@@ -15,7 +21,7 @@ def render(r: dict) -> list[str]:
         rate = "n/a" if u["rate"] is None else f"{u['rate']:.2%}"
         flag = "" if u["rate"] is None or u["rate"] >= r["target"] else "  BELOW TARGET"
         out.append(f"{lane:<8} {rate:>7} of {u['judged']} judged (up {u['up']}, down {u['down']}, slow {u['slow']}); "
-                   f"skipped {u['skipped']}; incidents {u['incidents']}{' (one open)' if u['open'] else ''}{flag}")
+                   f"skipped {u['skipped']}; incidents {u['incidents']}{_open(u)}{flag}")
     for i in r["incidents"]:
         out.append(f"  incident {incident_line(i)}")
     return out
