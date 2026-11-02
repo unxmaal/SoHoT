@@ -265,6 +265,24 @@ def triggers(conn, item: dict, *, now: float, current: dict, machines) -> tuple[
     return out, base
 
 
+def _committed_at() -> float | None:
+    """The commit time of the checkout this code runs from, None when git cannot say."""
+    from evals.environment import _sh
+    from harness import paths
+    got = _sh("git", "-C", str(paths.REPO), "log", "-1", "--format=%ct", "HEAD")
+    return float(got) if got.isdigit() else None
+
+
+def _harness_moved(conn, last: dict) -> bool:
+    """An unrun re-run whose job stored no run, and this checkout was committed after that job started. #1495."""
+    if last["outcome"] != UNRUN or last["run_id"] is not None or last["job_id"] is None:
+        return False
+    job = conn.execute("SELECT started_at FROM jobs WHERE id = ?", (last["job_id"],)).fetchone()
+    ran = (job["started_at"] if job else None) or last["queued_at"]
+    code = _committed_at()
+    return code is not None and code > ran
+
+
 def _skip(conn, item: dict, found: list, now: float) -> str:
     last = _latest(conn, item["lane"], item["candidate_id"])
     if last and not last["outcome"]:
@@ -272,7 +290,7 @@ def _skip(conn, item: dict, found: list, now: float) -> str:
     if not found:
         return "nothing moved"
     due = (last["settled_at"] or 0) + days_for(conn, item["lane"]) * 86400.0 if last else 0.0
-    if last and last["outcome"] in FLAGGED and now < due:
+    if last and last["outcome"] in FLAGGED and now < due and not _harness_moved(conn, last):
         return f"flagged {last['outcome']}: {last['detail']}; re-run again in {(due - now) / 86400.0:.1f} days"
     return ""
 
