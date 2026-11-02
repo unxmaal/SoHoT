@@ -31,6 +31,10 @@ def incidents(probes: list[dict]) -> list[dict]:
                        "downs": 0, "error": r.get("error") or r.get("reason") or ""}
             cur["last_down"] = r["at"]
             cur["downs"] += 1
+            cur["unprobed"] = None
+        elif r["outcome"] in (SKIPPED, SLOW) and cur is not None:
+            u = cur["unprobed"] or {"since": r["at"], SKIPPED: 0, SLOW: 0}
+            cur["unprobed"] = {**u, "at": r["at"], r["outcome"]: u[r["outcome"]] + 1, "reason": r.get("reason") or ""}
         elif r["outcome"] == UP:
             if cur is not None:
                 cur["up_at"] = r["at"]
@@ -41,6 +45,8 @@ def incidents(probes: list[dict]) -> list[dict]:
         out.append(cur)
     for i in out:
         i["open"] = i["up_at"] is None
+        if not i["open"]:
+            i["unprobed"] = None
         i["at_least_s"] = i["last_down"] - i["first_down"]
         i["at_most_s"] = None if i["open"] or i["after"] is None else i["up_at"] - i["after"]
     return out
@@ -56,6 +62,11 @@ def uptime(probes: list[dict], since: float) -> dict:
     return {**n, "judged": judged, "rate": n[UP] / judged if judged else None}
 
 
+def still_down(i: dict) -> bool:
+    """An open incident whose newest row is a down: one with only skipped or slow rows since is unknown, not down (#1499)."""
+    return i["open"] and not i.get("unprobed")
+
+
 def lanes_seen(conn, machine_id, since: float) -> list[str]:
     return [r["lane"] for r in conn.execute(
         "SELECT DISTINCT lane FROM lane_probes WHERE at >= ? AND (machine_id = ? OR (machine_id IS NULL AND ? IS NULL)) "
@@ -69,7 +80,7 @@ def report(conn, since: float, now: float, machine_id=None, lanes=None) -> dict:
         got = rows(conn, lane, machine_id, since, now)
         seen = [i for i in incidents(got) if i["open"] or i["up_at"] >= since]
         out["lanes"][lane] = {**uptime(got, since), "incidents": len(seen),
-                              "open": any(i["open"] for i in seen)}
+                              "open": any(i["open"] for i in seen), "down_now": any(still_down(i) for i in seen)}
         out["incidents"].extend(seen)
     out["incidents"].sort(key=lambda i: i["first_down"])
     return out
@@ -104,7 +115,12 @@ def incident_line(i: dict) -> str:
     """One incident: lane, both bounds of its start and end, how long, open or closed, its error."""
     start = f"down after {hm(i['after'])}, by {hm(i['first_down'])}" if i["after"] is not None else \
         f"down by {hm(i['first_down'])} (no up before it)"
-    if i["open"]:
+    u = i.get("unprobed")
+    if i["open"] and u:
+        what = "not probed since" if not u[SLOW] else "no up or down since"
+        end = (f"last seen down at {hm(i['last_down'])}; {what} ({u[SKIPPED]} skipped, {u[SLOW]} slow to "
+               f"{hm(u['at'])}; newest: {(u['reason'] or '-')[:120]})")
+    elif i["open"]:
         end = f"still down at {hm(i['last_down'])} (open, {span(i['at_least_s'])} at least)"
     else:
         most = f" to {span(i['at_most_s'])}" if i["at_most_s"] is not None else ""

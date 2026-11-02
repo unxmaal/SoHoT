@@ -18,6 +18,12 @@ KNOBS = [
             "reads as down (#924)"),
     _k("lane_probe_timeout", [f"{P}:TIMEOUT_S", f"{P}:TIMEOUT_DEFAULT_S"], [10.0, 30.0, 60.0, 120.0],
        note="seconds a probe waits before the lane reads as slow, never down; a busy queue or a 35B is slow (#924)"),
+    _k("lane_probe_unprobed", [f"{P}:UNPROBED_S"], [12 * 3600.0, 24 * 3600.0, 72 * 3600.0],
+       limit="lane_probe_unprobed", unit="s",
+       note="seconds a lane's open incident may go with no up or down row before a night wake sends it one probe "
+            "that loads its model, at most once per this span; store 2026-11-02: svg's incident opened 10-24 08:35 "
+            "on 56 refused residency queries, then 1642 not-resident and 789 machine-held skips over 9 days with no "
+            "judged row, while the shared :8081 server answered extract's probes (#1499)"),
     _k("watchdog_day_end_hour", [f"{W}:DAY_END_HOUR"], [18, 20, 21, 22],
        note="local hour the owner's day ends: the day limits and a day clearance end at it; the discover agent starts "
             "at scripts/launchd.sh DISCOVER_HOURS, which this does not move (Decision #456, #1369)"),

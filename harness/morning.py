@@ -310,7 +310,9 @@ def incidents(conn, since: float, now: float) -> list[dict]:
 
 
 def open_incident(r: dict, lane: str) -> dict | None:
-    return next((i for i in r.get("incidents") or [] if i["lane"] == lane and i["open"]), None)
+    """The lane's open incident whose newest row is a down; one not probed since is no dead lane (#1499)."""
+    from harness.availability import still_down
+    return next((i for i in r.get("incidents") or [] if i["lane"] == lane and still_down(i)), None)
 
 
 def lane_dead(r: dict) -> bool:
@@ -320,8 +322,8 @@ def lane_dead(r: dict) -> bool:
 
 def needs(r: dict) -> list[str]:
     """What needs a person, one line each; empty on a quiet night."""
-    from harness.availability import incident_line
-    out = [f"lane {incident_line(i)}" for i in r.get("incidents") or [] if i["open"]]
+    from harness.availability import incident_line, still_down
+    out = [f"lane {incident_line(i)}" for i in r.get("incidents") or [] if still_down(i)]
     h = r.get("lane") or {}
     if h.get("generating") is False and open_incident(r, h["lane"]) is None:
         out.append(f"the {h['lane']} lane cannot generate: {h['spec']} at {h['base']} says its generation thread "

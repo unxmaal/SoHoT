@@ -35,6 +35,10 @@ TIMEOUT_DEFAULT_S = 30.0
 HOLD_S = 1800.0
 #: Characters of a server's error kept on the row.
 ERROR_CHARS = 300
+#: Seconds a lane's open incident may go with no up or down row before a night wake sends one probe that loads it (#1499).
+UNPROBED_S = 24 * 3600.0
+#: How a deliberate probe's reason starts; the next one waits UNPROBED_S after it.
+DELIBERATE = "a deliberate night probe"
 
 COLUMNS = ("at", "machine_id", "lane", "spec", "base", "upstream", "model", "engine", "outcome", "reason",
            "http_status", "error", "seconds", "prompt_tokens", "completion_tokens")
@@ -243,8 +247,37 @@ def _timed_out(exc) -> bool:
     return isinstance(reason, (TimeoutError, socket.timeout)) or isinstance(exc, (TimeoutError, socket.timeout))
 
 
-def prepare(lane: str, sender: Sender, resolve=None, resident=None, busy=None, headers=None):
-    """(row, request): a finished row when no completion may be sent, else the row so far and what to send."""
+_MINE = "(machine_id = ? OR (machine_id IS NULL AND ? IS NULL))"
+
+
+def due(conn, lane: str, machine_id, now: float, day=None) -> str:
+    """Why this wake may load `lane`'s model to probe it: at night, its open incident unprobed past UNPROBED_S; else ""."""
+    if conn is None:
+        return ""
+    if day is None:
+        from harness.watchdog import daytime as day
+    if day(now):
+        return ""
+    last = conn.execute(f"SELECT outcome, at FROM lane_probes WHERE lane = ? AND {_MINE} AND outcome IN (?, ?) "
+                        "ORDER BY at DESC, id DESC LIMIT 1", (lane, machine_id, machine_id, UP, DOWN)).fetchone()
+    if last is None or last["outcome"] != DOWN:
+        return ""
+    tried = conn.execute(f"SELECT MAX(at) AS at FROM lane_probes WHERE lane = ? AND {_MINE} AND reason LIKE ?",
+                         (lane, machine_id, machine_id, DELIBERATE + "%")).fetchone()
+    since = max(last["at"], tried["at"] if tried and tried["at"] is not None else last["at"])
+    if now - since < UNPROBED_S:
+        return ""
+    return (f"{DELIBERATE}: last down {time.strftime('%m-%d %H:%M', time.localtime(last['at']))}, "
+            f"no up or down for {(now - last['at']) / 3600:.0f} h")
+
+
+def _level():
+    from harness import pressure
+    return pressure.sample().level
+
+
+def prepare(lane: str, sender: Sender, resolve=None, resident=None, busy=None, headers=None, load="", level=None):
+    """(row, request): a finished row when no completion may be sent, else the row so far and what to send; `load` may load a cold model."""
     from harness import delegate, serving
     row = {"lane": lane, "spec": "", "base": "", "upstream": "", "model": "", "engine": "", "reason": "",
            "http_status": None, "error": "", "seconds": None, "prompt_tokens": None, "completion_tokens": None}
@@ -272,7 +305,13 @@ def prepare(lane: str, sender: Sender, resolve=None, resident=None, busy=None, h
                     f"{row['upstream']}: {getattr(exc, 'reason', exc)}")
     if loaded is None and exc is not None and _timed_out(exc):
         return done(SLOW, "the residency query timed out; no completion sent", str(exc))
-    if loaded is not True:
+    if loaded is False and load and serving.loopback(row["upstream"]):
+        from harness.pressure import NORMAL
+        got = (level or _level)()
+        if got is not None and got > NORMAL:
+            return done(SKIPPED, f"the model is not resident and memory pressure is level {got}; {load} waits")
+        row["reason"] = load[:ERROR_CHARS]
+    elif loaded is not True:
         why = "residency unknown" if loaded is None else "the model is not resident"
         return done(SKIPPED, f"{why}; a probe would load it" + (f" ({type(exc).__name__}: {exc})" if exc else ""))
     if headers is None:
@@ -288,13 +327,17 @@ def _via_gateway(base: str) -> bool:
     return completion.is_gateway(base)
 
 
+def _after(row: dict, why: str) -> str:
+    return "; ".join(w for w in (row.get("reason"), why) if w)[:ERROR_CHARS]
+
+
 def finish(row: dict, sent: dict | None, wait: float) -> dict:
     if sent is None:
         return {**row, "outcome": SLOW, "seconds": wait,
-                "reason": f"no answer in {wait:g}s; the request is left to finish, and this lane is not "
-                          "probed again until it does"}
+                "reason": _after(row, f"no answer in {wait:g}s; the request is left to finish, and this lane is not "
+                                      "probed again until it does")}
     if sent.get("failed"):
-        return {**row, "outcome": SKIPPED, "reason": str(sent["error"])[:ERROR_CHARS]}
+        return {**row, "outcome": SKIPPED, "reason": _after(row, str(sent["error"]))}
     row = {**row, **judge(row["lane"], sent), "seconds": sent.get("seconds")}
     row["error"] = (row["error"] or "")[:ERROR_CHARS]
     return row
@@ -324,13 +367,13 @@ def record(conn, row: dict, at: float, machine_id) -> int:
     return cur.lastrowid
 
 
-def wake(conn, now: float, lanes=None, sender: Sender | None = None, machine_id=None, **kw) -> list[dict]:
+def wake(conn, now: float, lanes=None, sender: Sender | None = None, machine_id=None, day=None, **kw) -> list[dict]:
     """Probe each text lane once at the same `now`, all in parallel, and record every row."""
     from harness import gateway, paths
     sender = sender or Sender(paths.home() / "watchdog")
     rows, out, slow = [], [], []
     for lane in lanes or gateway.TEXT_LANES:
-        row, req = prepare(lane, sender, **kw)
+        row, req = prepare(lane, sender, load=due(conn, lane, machine_id, now, day=day), **kw)
         handle = sender.start(lane, req["url"], req["headers"], req["body"], HOLD_S) if req else None
         rows.append((row, req, handle, time.monotonic() + timeout(lane)))
     for row, req, handle, deadline in rows:
