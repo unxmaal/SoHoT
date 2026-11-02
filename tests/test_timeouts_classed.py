@@ -321,7 +321,7 @@ def test_reverify_pairing_leaves_a_timeout_out_of_lost():
     from harness import reverify
     before = [_row("a", True), _row("b", True)]
     after = [_row("a", False, reasons.TIMEOUT), _row("b", False, reasons.CONTENT_FAILED)]
-    cell, lost = reverify._paired(before, after)
+    cell, lost, _ = reverify._paired(before, after)
     assert (cell.lost, cell.unjudged, [r["case_id"] for r in lost]) == (1, 1, ["b"])
 
 

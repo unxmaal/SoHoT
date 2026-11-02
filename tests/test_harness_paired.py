@@ -168,6 +168,6 @@ def test_repeats_pair_by_base_case_and_shrink_while_timeouts_stay_unjudged():
     got = paired.cells(before, after)[0]
     assert (got.lost, got.gained, got.unchanged, got.unjudged) == (4, 0, 0, 2)
     assert got.deff > 1.0 and got.p > paired.sign_test(0, 4)
-    cell, lost = reverify._paired(before, after)
+    cell, lost, _ = reverify._paired(before, after)
     assert (cell.lost, cell.unjudged) == (4, 2)
     assert [r["case_id"] for r in lost] == ["c0#1", "c0#3", "c1#1", "c1#2"]
