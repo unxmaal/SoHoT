@@ -34,6 +34,16 @@ def conn(tmp_path, on):
     c.close()
 
 
+@pytest.fixture
+def powered(monkeypatch):
+    """Any shared case set has the power to see a loss; test_reverify_power_1504 tests the rule itself."""
+    from harness import power
+    monkeypatch.setattr(power, "TARGET", 0.0)
+
+
+pytestmark = pytest.mark.usefixtures("powered")
+
+
 _SEQ = iter(range(1, 10_000))
 
 

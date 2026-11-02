@@ -5,6 +5,9 @@ from harness import adopt, paired, reverify, runs, workqueue as wq
 from harness import memory_store as ms
 from harness.checks import claims as claims_check
 from tests import conftest
+from tests.test_reverify import powered  # noqa: F401
+
+pytestmark = pytest.mark.usefixtures("powered")
 
 DAY = 86400.0
 NOW = 1_800_000_000.0

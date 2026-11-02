@@ -391,16 +391,9 @@ def _standing(rows: list[dict], lane: str, metric: str, floor: float) -> tuple:
 
 def _power_to_see_a_loss(best_rows, cell, alpha: float, effect: float, metric: str, floor: float) -> float:
     """Power of the paired test to see this value lose `effect` per cell against the best; a draw can lose when it scores above the floor. #690, #1178, #1219."""
-    from harness import paired, power
-    got = {k: j for k, v in paired.draws(best_rows, unjudged=paired.UNJUDGED_ON_A_TIMEOUT_AXIS, metric=metric).items()
-           if (j := [x > floor for x in v if x is not None])}
-    if not got:
-        return 0.0
-    repeat = sum(map(len, got.values())) / len(got)
-    rho = (cell.deff - 1.0) / (repeat - 1.0) if repeat > 1 else 0.0
-    # A loss of d from rate p has the odds of a gain of d from rate 1-p.
-    flipped = [1.0 - sum(v) / len(v) for v in got.values()]
-    return power.power(flipped, effect, repeat=max(1, round(repeat)), alpha=alpha, rho=rho)
+    from harness import power
+    flipped, repeat, rho = power.loss_odds(best_rows, cell.deff, metric, floor)
+    return power.power(flipped, effect, repeat=repeat, alpha=alpha, rho=rho)
 
 
 def decide(values, outcomes: dict, alpha: float, effect: float | None = None, lane: str = "") -> tuple[object, dict]:

@@ -25,6 +25,8 @@ VERSIONS, AGE, USAGE = "versions", "age", "usage"
 PASSED, FAILED, REGRESSED, CANCELLED = "passed", "failed", "regressed", "cancelled"
 #: The harness could not deliver the re-run: flagged, but never a verdict on the model. #408.
 UNRUN = "unrun"
+#: Passed on fewer shared cases than power.TARGET needs to see a loss of power.effect_for(lane); never a plain pass. #1504.
+UNDERPOWERED = "underpowered"
 FLAGGED = (FAILED, REGRESSED, UNRUN)
 
 _TEXT_MLX = ("mlx", "mlx-lm", "litellm")
@@ -388,6 +390,24 @@ def _paired(before: list[dict], after: list[dict], lane: str = ""):
     return cell, _lost(before, after, metric), note
 
 
+def _loss_power(before: list[dict], after: list[dict], cell, lane: str) -> str:
+    """Why the self-pairing could not see a loss of the lane's adopt effect at power.TARGET, naming the shared cases and the minimum; '' when it could. #1504."""
+    from harness import adopt, holdout, paired, power, sweeps
+    metric = _metric(lane)
+    shared = paired.nested(before, after)[0]
+    rates, repeat, rho = power.loss_odds(shared, cell.deff, metric, sweeps._floor({"": shared}, metric))
+    effect, target = power.effect_for(lane), power.TARGET
+    got = power.power(rates, effect, repeat, adopt.ALPHA, rho)
+    if got >= target:
+        return ""
+    need = power.cases_needed(rates, effect, rho=rho, stochastic=repeat > 1, alpha=adopt.ALPHA,
+                              target=target, cap=repeat)
+    k = len({holdout.base_id(r["case_id"]) for r in shared})
+    least = f"needs {need}" if need else f"no {power.MAX_CASES} reach it"
+    return (f"; power {got:.2f} under {target} to see a loss of {effect:.2f} per cell on {k} shared cases "
+            f"at repeat {repeat}, {least}")
+
+
 def _class_of(rows: list[dict]) -> str:
     got = Counter(r.get("failure_class") or "" for r in rows if not r["passed"])
     got.pop("", None)
@@ -421,7 +441,7 @@ def judge(conn, rv: dict, job: dict | None) -> tuple[str, str, str, str, int | N
         why = _reason(cls)
         return (UNRUN if why == reasons.HARNESS else FAILED, why, cls,
                 f"{rv['spec']} passed 0 of {len(mine)} in run {rid}", rid)
-    shared = ""
+    shared = weak = ""
     if rv["baseline_run_id"]:
         before = runs.rows(conn, rv["baseline_run_id"], rv["candidate_id"])
         cell, lost, shared = _paired(before, mine, lane)
@@ -435,7 +455,8 @@ def judge(conn, rv: dict, job: dict | None) -> tuple[str, str, str, str, int | N
             return (REGRESSED, _reason(cls), cls,
                     f"{rv['spec']} {cell.lost} lost against {cell.gained} gained{on} vs run "
                     f"{rv['baseline_run_id']}, p={cell.p:.3f}{shared}", rid)
-    inc = conn.execute("SELECT id FROM candidates WHERE spec = ?",
+        weak = _loss_power(before, mine, cell, lane)
+    inc =conn.execute("SELECT id FROM candidates WHERE spec = ?",
                        (rv["incumbent"],)).fetchone() if rv["incumbent"] else None
     theirs = runs.rows(conn, rid, inc["id"]) if inc else []
     if theirs:
@@ -447,8 +468,11 @@ def judge(conn, rv: dict, job: dict | None) -> tuple[str, str, str, str, int | N
                     f"the incumbent {rv['incumbent']} now beats {rv['spec']}, "
                     f"{cell.gained} gained against {cell.lost} lost{on}, p={p:.3f}", rid)
     passed = sum(r["passed"] for r in mine)
-    return (PASSED, reasons.CANDIDATE, "",
-            f"{rv['spec']} passed {passed} of {len(mine)}{_scored(mine, lane)}{shared}", rid)
+    said = f"{rv['spec']} passed {passed} of {len(mine)}{_scored(mine, lane)}{shared}"
+    if weak:
+        return (UNDERPOWERED, reasons.CANDIDATE, "",
+                f"{said}{weak}; run {rid} is the next baseline", rid)
+    return PASSED, reasons.CANDIDATE, "", said, rid
 
 
 def _resume_argv(argv: list, out) -> list[str]:
