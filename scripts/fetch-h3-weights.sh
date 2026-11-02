@@ -33,9 +33,10 @@ PIDFILE="${H3_DOWNLOAD_PIDFILE:-$LH_LOGS/h3-weights.pid}"
 echo $$ > "$PIDFILE"
 trap 'rm -f "$PIDFILE"' EXIT
 
-uv run --no-project --with 'huggingface_hub[hf_transfer]' python - "$DEST" <<'PY'
-import os, sys, time
-os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
+# env.sh exported HF_HUB_OFFLINE=1; the fresh interpreter reads it at import (#1457, RULE #813).
+HF_HUB_OFFLINE=0 HF_XET_HIGH_PERFORMANCE=1 \
+  uv run --no-project --with huggingface_hub python - "$DEST" <<'PY'
+import sys, time
 from huggingface_hub import snapshot_download
 
 dest = sys.argv[1]

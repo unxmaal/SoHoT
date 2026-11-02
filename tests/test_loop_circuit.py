@@ -349,6 +349,7 @@ def test_a_drafted_crossing_climbs_the_same_ladder(world, monkeypatch):
         "mechanism": "prompt", "name": "edge cases first", "lanes": ["code"],
         "steps": [{"as": "cases", "prompt": "List the edge cases of this task. Do not solve it.\n\n{task}"},
                   {"prompt": "{task}\n\nHandle these edge cases:\n{cases}"}]})
+    monkeypatch.setattr(tt, "canary", lambda method: "")
     loop("--top", "7")
     spec = f"t-edge-cases-first:{INCUMBENT_UPSTREAM}"
     conn = ms.connect()

@@ -249,6 +249,15 @@ def stall_after(data: dict) -> float:
     return own if own > STALL_S else STALL_S
 
 
+#: Why and before which step a loop paused itself, or absent. #1481.
+PAUSED = "paused"
+
+
+def pause(tier: str, reason: str) -> None:
+    """Record that this loop paused itself before `tier`, and why; a no-op unless this process started it."""
+    note(PAUSED, {"at": clock(), "tier": tier, "reason": reason})
+
+
 def finish(rc: int | None = None, error: str = "") -> None:
     data = _mine()
     if data is None:
@@ -297,7 +306,10 @@ def summary(alive=alive) -> dict | None:
     now = clock()
     age = now - (progress_at(d) if d.get("updated") else now)
     lane = f" ({d['lane']} lane)" if d.get("lane") else ""
-    if st == "finished":
+    if st == "finished" and d.get(PAUSED):
+        p = d[PAUSED]
+        line = f"last discovery loop{lane} paused {ago(age)} ago before {p.get('tier')}: {p.get('reason')}"
+    elif st == "finished":
         rc = d.get("rc")
         how = f"rc {rc}" if rc is not None else f"error: {d.get('error', '')}"
         line = f"last discovery loop{lane} finished {ago(age)} ago, {how}"

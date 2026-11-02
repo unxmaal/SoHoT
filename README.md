@@ -723,6 +723,40 @@ adopted here, through the same route `soh code` uses:
   llama-server router's launch args or the stored context; when that is unknown
   the cap is 8192. A reply that spends the whole budget reasoning is an error
   that says how many tokens went to reasoning and suggests `thinking=false`.
+- `local_complete(paths=[...], question="...")` reads the files itself and returns only the
+  answer (`none` when they hold none), with `files` (each real path and its byte count),
+  `parts` and `calls`, so a long log or tool-output file never has to be pasted or Read. The
+  lane is extract unless given; the code lane answers with thinking off. Paths must resolve,
+  symlinks followed, under Claude Code's `tool-results` or background `tasks` output, SoHoT's
+  logs, or a root in `SOHOT_ASK_ROOTS` (`os.pathsep`-separated, for worktrees); hard links,
+  non-regular files, binary files and more bytes in all than the `ask_max_bytes` knob are refused.
+  Files longer than a part (`ask_chunk_chars`, 8,000 characters, less when the served
+  context is smaller) are asked part by part
+  and the answers merged. An answer line survives only if some line of the files holds it
+  verbatim; for a question about failures, a line found only on PASSED, SKIPPED, XFAIL, XPASS
+  or warning lines is dropped too, and so is a bare number. For such a question a fixed scan
+  then adds each failure-shaped line the model left out (a nonzero error or failure count,
+  FAILED/ERROR, an exception line, an error mark, a nonzero exit), at most `ask_failure_lines`
+  of them; a small model skips count lines. Only a caller on this machine may pass `paths`: loopback, or a
+  connection from the server's own address. `soh ask PATH... -q QUESTION` does the same from
+  a shell, with the caller's checkout as a root too; `soh ask --redo` counts digests that a
+  full Read of the same path followed within 10 tool calls (the bar is 15%), and
+  `soh ask --eval DIR` scores the lane on synthesized make check, pytest, CI and queue logs,
+  each with one planted failure and a clean twin; `--set fresh` (go, jest, cargo, lint,
+  gradle) and `--set third` (unittest, rspec, C build, terraform) use other tools, plant
+  wording and question, and `--seed` regenerates any set.
+- `local_complete(paths=[one file], question="...", mode="spans")` is for a source or doc
+  file you will read but not edit. The code lane (thinking off) names the line ranges that
+  answer the question and quotes each range's first line; every quote is checked against the
+  file, and the reply is those ranges as Read numbers them (`spans: ...` header), so a Read with
+  offset/limit can fetch more. Any doubt returns the whole file (`whole: ...` with the reason):
+  a quote that is not on its line, `insufficient`, `none`, a range outside the file, a failed
+  call, a reply at its token budget, or spans quoting more than half the file. Files under
+  4,000 characters come back whole with no call. Paths go through the same boundary as above.
+  `soh spans PATH -q QUESTION` does the same from a shell; `soh spans --redo` counts spans
+  answers a full Read of the same file followed within 10 tool calls (the bar is 20%), and
+  `soh spans --eval DIR [--kind python]` samples past Reads that were never edited and scores
+  recall of what the session later used from the file (bar 90%); its rows hold numbers only.
 - `local_decide(question, schema, context="")` is `soh decide`: the same flat
   schema, answers plus a probability per choice, from the decide lane's model.
   It is not streamed, so `ttft_s` is empty: through the gateway a streamed
@@ -748,6 +782,8 @@ A snippet to paste into a project's CLAUDE.md:
 Delegate to `local_complete` / `local_decide` when the work is cheap and checkable:
 boilerplate, test scaffolding, docstrings, summaries of material you pass in,
 bulk rewrites, and classifying many items against a fixed schema.
+For a long log or tool-output file, pass its path, `local_complete(paths=[...], question=...)`,
+rather than its contents.
 Do it yourself when it needs judgment, touches security-sensitive code (auth,
 crypto, input handling, secrets), or needs repo-wide context you cannot pass in
 the prompt. Review what comes back before using it; the local model sees only
@@ -1071,6 +1107,18 @@ soh context --since 2026-10-13 --by day --json
 soh context --since 7d --carried
 soh context --since 7d --carried --by class --referenced
 ```
+
+`soh kb-filter --eval --dir DIR` asks whether a local model can keep only the
+KB search hits a session goes on to reference (#1334). It builds the labelled
+set from transcripts (query, the caller's last text block, the hits shown, the
+ones referenced later), holds out the newest week, and scores the decide and
+extract lanes against a position cut at the same kept tokens and the first two
+hits of each type. It also scores searches with a planted hit whose title is the
+need. Scores are appended per search, so a stopped run resumes. `--no-model`
+reports from what is stored. `--strict` counts a reference only when the kind is
+named beside the id. The filter keeps every hit when in doubt, keeps every hit
+whose id the caller named, and is not wired into any session until the
+held-out gate passes.
 
 `soh ledger` joins cloud and local per day (#826). Cloud is Claude Code's
 input, output and cache tokens from
@@ -1553,6 +1601,34 @@ sequentially with the page cache off (`F_NOCACHE` on macOS), so no `purge` or
 remount is needed. Each run appends one row to `disk-speed.jsonl` under the
 home: volume, device and bus, bytes, block size, method, read and write rates.
 `--mib` sets the size.
+
+### Watching the machine (monit)
+
+```bash
+brew install monit
+soh monitor install      # render the config, monit -t it, load it under launchd
+soh monitor status       # installed, running, config current, webhook set; monit summary
+```
+
+[monit](https://mmonit.com/monit/) is an external tool, not vendored. `install`
+renders `monit/monitrc` under the home (mode 600) from this machine's paths and
+loads `com.unxmaal.localharness.monit`. Every `monitor_cycle` it checks free
+space on the system Data volume (alert under `monitor_disk_alert`; at
+`monitor_disk_pause` it pauses the job queue and every running eval, then
+alerts), the weights volume when it is a separate disk (alert when it is
+unmounted or under the fetch floor), memory pressure (alert after
+`monitor_memory_warn` at warn or worse), and the ports of the installed gateway,
+mlx and tts units (alert after `monitor_service_down`; launchd restarts them).
+They live in `harness/knobs/monitor.py`, each with its range and evidence.
+
+An alert runs `scripts/monit-alert.sh`: a desktop notification
+(terminal-notifier; osascript when it is missing or fails), a line in `monit/alerts.jsonl` that
+`soh morning` shows, and a post to a Discord webhook. A disk alert then runs a
+`du` of runs, the repo cache, the queue and runtime trials, stopped after
+`monitor_du_timeout`, and posts what it found. The webhook is
+`SOH_ALERT_WEBHOOK=...` in `monitor.env` under the home, a file you create at
+owner-only mode. Nothing in the repo writes or prints it. Without it, alerts go to the
+desktop and the morning brief only, and `smoke.sh` warns.
 
 ### On a machine with an NVIDIA card
 

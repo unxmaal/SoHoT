@@ -1613,6 +1613,8 @@ def _execute_at(args, overrides: dict) -> int:
                                    eye, ckpt, progress, kept[i], block != 1, pooled)
     except watch.Stop as exc:
         stopped = exc
+        if isinstance(exc, watch.Deferred) and outdir:
+            watch.ask_pause(outdir, exc.reason)
         print(f"\n{exc.why}", file=sys.stderr, flush=True)
     state, why = ("paused", stopped.why) if stopped else ("done", "")
     code = watch.PAUSED if stopped else 0

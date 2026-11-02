@@ -54,8 +54,23 @@ SPEND_STEPS = ("retests", "reverify", "knob sweeps", "disk", "fetch", "screen", 
 LOOP_TOTAL = len(LOOP_STEPS) + len(SPEND_STEPS)
 
 
+#: A sweep that stopped because the weights volume went away exits as a paused eval does. #1481.
+PAUSED = watch.PAUSED
+
+
+class WeightsGone(Exception):
+    """The weights volume went away between steps: the sweep pauses before `tier`. #1481."""
+
+    def __init__(self, tier: str, reason: str):
+        super().__init__(reason)
+        self.tier, self.reason = tier, reason
+
+
 def _beat(tier: str, **kw) -> None:
-    from harness import heartbeat
+    from harness import env, heartbeat
+    vol = env.unmounted(env.configured())
+    if vol:
+        raise WeightsGone(tier, f"the weights volume {vol} {env.NOT_MOUNTED}")
     names = [label for label, _, _ in LOOP_STEPS] + list(SPEND_STEPS)
     heartbeat.beat(tier, step=names.index(tier) + 1, **kw)
 
@@ -152,6 +167,11 @@ def _report_loop(a) -> int:
                     total=LOOP_TOTAL if run else len(LOOP_STEPS))
     try:
         rc = _run_loop(a)
+    except WeightsGone as gone:
+        import sys
+        heartbeat.pause(gone.tier, gone.reason)
+        print(f"\n=== sweep paused before {gone.tier}: {gone.reason} ===", file=sys.stderr, flush=True)
+        rc = PAUSED
     except BaseException as exc:
         heartbeat.finish(None, error=f"{type(exc).__name__}: {exc}")
         raise
@@ -246,7 +266,7 @@ def _run_loop_held(a, keep=None) -> int:
             for repair, args in ((_reopen_stale_too_big, ()), (_reopen_unranked, ()),
                                  (_reopen_upstream_committed, ()), (_reread_runtime_declines, (a,)),
                                  (_move_past_screen, ()), (_reopen_revisitable, ()),
-                                 (_rederive_attachments, ()), (_relane_vision, ())):
+                                 (_rederive_attachments, ()), (_relane_vision, ()), (_trial_runtimes, ())):
                 rc = _repair(label, repair, args, failed) or rc
         sub = _ap.Namespace(**{**vars(a), **flags, **extra, "loop": False})
         rc = _step(label, discover_cmd.cmd_discover(sub), failed) or rc
@@ -508,9 +528,10 @@ def _sized(top: int, sweep) -> dict:
                     f"of the {power._hm(left)} left of the sweep ceiling")}
 
 
-def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=None) -> int:
-    """Each measurement in turn; after a memory pause, only those that fit now, smallest first. #813, #1082."""
+def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=None, headroom=None) -> int:
+    """Each measurement in turn, none while memory is short; after a memory pause, only those that fit now, smallest first. #813, #1082, #1482."""
     room = room or measure_cmd.room_for
+    headroom = headroom or measure_cmd.headroom_gb
     queue, total, i, tight = list(fresh), len(fresh), 0, False
     while queue:
         held = _held_back(sweep, len(queue))
@@ -520,6 +541,15 @@ def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=No
             if not sweep.halted:
                 from harness import cuts
                 cuts.cut("sweep_ceiling_h", held, value=sweep.ceiling_s / 3600, kept=total - len(queue), dropped=len(queue))
+            break
+        short = _short_of_room(headroom(), len(queue))
+        if short:
+            from harness import cuts
+            print(f"  {short}", flush=True)
+            cuts.cut("min_headroom_gb", short, kept=total - len(queue), dropped=len(queue))
+            if sweep is not None:
+                sweep.lines.append(short)
+                sweep.stopped, sweep.waiting = short, len(queue)
             break
         if tight:
             row, why = _next_fitting(queue, room)
@@ -547,6 +577,15 @@ def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=No
                   flush=True)
             sweep.squeezed, tight = "", True
     return rc
+
+
+def _short_of_room(room: float, waiting: int) -> str:
+    """Why no new measurement starts: fits() would budget under memory.MIN_HEADROOM_GB now, else "". #1482."""
+    from harness import memory
+    if room >= memory.MIN_HEADROOM_GB:
+        return ""
+    return (f"memory: only {room:.1f} GB is safely available, under the {memory.MIN_HEADROOM_GB:g} GB a new "
+            f"measurement needs; {waiting} measurement(s) wait for the next sweep")
 
 
 def _gated(row: dict, want: str) -> str:
@@ -796,6 +835,19 @@ def _reread_runtime_declines(a) -> list[str]:
     for n in moved:
         print(f"    {n}")
     return moved
+
+
+def _trial_runtimes() -> list[dict]:
+    """Propose each pinned runtime's newer release, trial the next one sandboxed, and print every verdict. #1474."""
+    from harness import memory_store as ms, runtime_trials
+    store = ms.connect()
+    try:
+        watched = runtime_trials.watch(store)
+        tried = runtime_trials.trial(store)
+    finally:
+        store.close()
+    print("\n".join(runtime_trials.lines(watched, tried)))
+    return tried
 
 
 def _cross_methods(store, want: str = "") -> list[tuple[str, str, bool]]:

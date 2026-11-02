@@ -20,6 +20,8 @@ FAKE_ENGINE = "fakeorg/fast-serve"
 UNTESTABLE = "fakeorg/c-only-engine"
 UNRELATED = "fakeorg/awesome-list"
 CANDIDATE = "fakeorg/Odd-Arch-1B"
+#: The real process runner, taken before the conftest guard replaces it.
+REAL_RUN = et._run
 
 OPENAI_READING = {"kind": "engine", "why": "an OpenAI-compatible server for Apple Silicon", "interface": "openai",
                   "serve": ["fast-serve", "--model", "{model}", "--port", "{port}"], "model_types": ["oddarch"]}
@@ -308,7 +310,14 @@ def test_an_install_past_its_timeout_blocks_the_trial_with_why(tmp_path, monkeyp
         raise subprocess.TimeoutExpired(argv, kw["timeout"])
     monkeypatch.setattr(et.subprocess, "run", run)
     with pytest.raises(et.TrialError, match=f"install ran past {et.INSTALL_TIMEOUT_S:.0f}s"):
-        et._run(["uv", "pip", "install", "x==1"], {}, tmp_path)
+        REAL_RUN(["uv", "pip", "install", "x==1"], {}, tmp_path)
+
+
+def test_no_test_reaches_a_real_channel_through_the_default_hooks(conn, tmp_path):
+    with pytest.raises(RuntimeError, match="real engine-trial channel"):
+        et.gather(FAKE_ENGINE, client=object())
+    with pytest.raises(RuntimeError, match="real engine-trial channel"):
+        et.sweep(conn, [_tool(conn, FAKE_ENGINE)], [], evidence=EVIDENCE.__getitem__, root=tmp_path)
 
 
 def test_a_candidate_whose_type_the_trial_does_not_list_is_not_screened(conn, tmp_path):

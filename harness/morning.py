@@ -92,7 +92,7 @@ def sweep(conn, since: float, beat: dict | None) -> dict:
                        "started": started, "finished": beat.get("finished"),
                        "in_window": started >= since, "line": beat.get("line", ""),
                        "commit": beat.get("commit", ""), "finished_commit": beat.get("finished_commit", ""),
-                       "ceiling_unused": beat.get(heartbeat.CEILING_UNUSED),
+                       "ceiling_unused": beat.get(heartbeat.CEILING_UNUSED), "paused": beat.get(heartbeat.PAUSED),
                        "diversity": beat.get(heartbeat.DIVERSITY)}
     return out
 
@@ -195,6 +195,12 @@ def api_spend(conn) -> dict | None:
         return None
     from harness import api_spend as spend
     return spend.status(conn)
+
+
+def runtimes(conn, since: float) -> list[dict]:
+    """Every runtime upgrade verdict since `since`. #1474."""
+    from harness import runtime_trials
+    return runtime_trials.verdicts(conn, since)
 
 
 def stale_lanes(conn) -> list[dict]:
@@ -325,6 +331,8 @@ def needs(r: dict) -> list[str]:
         out.append("no discovery sweep ran last night")
     elif loop["status"] == "stalled":
         out.append(f"the sweep stalled: {loop['line']}")
+    elif loop["status"] == "finished" and loop.get("paused"):
+        out.append(f"the sweep paused before {loop['paused'].get('tier')}: {loop['paused'].get('reason')}")
     elif loop["status"] == "finished" and loop["rc"] != 0:
         out.append(f"the sweep exited {loop['rc'] if loop['rc'] is not None else 'with ' + loop['error']}")
     from harness import sweep_check
@@ -360,7 +368,19 @@ def needs(r: dict) -> list[str]:
         out.append(r["canary"])
     out.extend(f"engine {e['name']} could not be trialed (#{e['issue']}): {e['blocker'][:160]}"
                for e in r.get("engines") or [])
+    from harness import runtime_trials
+    out += [f"runtime {runtime_trials.line(v)}" for v in r.get("runtimes") or [] if v["outcome"] in runtime_trials.PUSHED]
+    from harness import monitor
+    out += [f"monit {monitor.line(a)}" for a in monitor.still_open((r.get("monitor") or {}).get("alerts") or [])]
     return out
+
+
+def techniques(conn, since: float) -> dict | None:
+    """Technique triage since `since`: measured, won or lost, and the unmeasurable by reason; None before schema 85. #1476."""
+    if not _has(conn, "technique_triage"):
+        return None
+    from harness import technique_triage
+    return technique_triage.morning(conn, since)
 
 
 def parked_nodes() -> list[str]:
@@ -370,7 +390,7 @@ def parked_nodes() -> list[str]:
 
 
 def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, where=None, lanes=None,
-           health=None, stalls=None, canary=None, parked=None, incumbent=None) -> dict:
+           health=None, stalls=None, canary=None, parked=None, incumbent=None, monitor=None) -> dict:
     """`health` probes the headline's lane (lane_health), `canary` reads its receipts (canary.morning_line); None skips either."""
     r = {"lane": health(MODEL_LANE) if health else {"lane": MODEL_LANE, "generating": None, "why": "not probed"},
          "generated": now, "since": since, "sweep": sweep(conn, since, beat), "watchdog": watchdog(conn, since),
@@ -380,7 +400,9 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "parked": parked() if parked else [], "checks": sweep_checks(conn, since),
          "incumbent": incumbent(conn) if incumbent else None, "clearances": clearances(conn, since, now),
          "families": families(conn), "yield": yield_stops(conn), "api_spend": api_spend(conn),
-         "engines": engines(conn, since)}
+         "engines": engines(conn, since),
+         "runtimes": runtimes(conn, since), "techniques": techniques(conn, since),
+         "monitor": monitor(since) if monitor else None}
     if r["sweep"]["loop"] is not None:
         from harness import heartbeat
         r["sweep"]["loop"]["code_moved"] = heartbeat.code_moved(beat, r["deploy"].get("head", ""))

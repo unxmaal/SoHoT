@@ -63,6 +63,8 @@ capabilities:
       - harness/family.py
       - harness/commands/families.py
       - harness/runner_gaps.py
+      - harness/runtime_trials.py
+      - harness/commands/runtimes.py
       - harness/remote_code.py
       - harness/inspect.py
 
@@ -180,6 +182,16 @@ capabilities:
       - harness/mcp_peers.py
       - harness/unverified.py
       - harness/commands/unverified.py
+      - harness/ask.py
+      - harness/commands/ask.py
+      - evals/ask_plants.py
+      - evals/ask_plants_fresh.py
+      - evals/ask_plants_third.py
+      - harness/spans.py
+      - harness/commands/spans.py
+      - evals/spans_recall.py
+      - harness/kb_filter.py
+      - harness/commands/kb_filter.py
 
   - name: availability
     summary: Known-answer probes of each resident text lane, and incidents and uptime derived from them.
@@ -409,7 +421,7 @@ capabilities:
       - harness/commands/claude_news.py
 
   - name: memory-guard
-    summary: Memory pressure, refusing a model that would take the machine down, and the models volume.
+    summary: Memory pressure, refusing a model that would take the machine down, the models volume, and monit watching the disk.
     spec: pending
     modules:
       - harness/memory.py
@@ -417,6 +429,8 @@ capabilities:
       - harness/ramp.py
       - harness/volume.py
       - harness/commands/volume.py
+      - harness/monitor.py
+      - harness/commands/monitor.py
 
   - name: machine-identity
     summary: What this machine can run, where its weights live and which accelerator it has.

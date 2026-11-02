@@ -51,6 +51,9 @@ DEFAULT_RESERVE_GB = 6.0
 #: and refuse models that fit with room to spare.
 DISCRETE_RESERVE_GB = 2.0
 
+#: What fits() must still leave safely available after a load; a sweep takes nothing new under it. #1482.
+MIN_HEADROOM_GB = 0.0
+
 
 @dataclass(frozen=True)
 class Accelerator:

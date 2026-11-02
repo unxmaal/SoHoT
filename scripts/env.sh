@@ -112,18 +112,22 @@ _hf_free_gb() {
 # should not litter empty directories on the volumes that lose the race.
 _hf_usable() {
   local cand="$1" mp anchor free parent
+  _hf_why="not mounted"
   # The PARENT must exist. Without this, walking up to the nearest existing
   # ancestor reaches the filesystem root, and any candidate at all is accepted
   # on a machine where the root is writable. harness/env.py carries the same
   # rule; test_the_shipped_candidates_match_the_ones_env_sh_searches is what
   # catches the two drifting apart.
   [ -d "$(dirname "$cand")" ] || return 1
+  _hf_why="unreadable"
   mp="$(_hf_mountpoint "$cand")" || return 1
   [ -n "$mp" ] || return 1
 
   free="$(_hf_free_gb "$cand")" || return 1
   [ -n "$free" ] || return 1
+  _hf_why="low space"
   [ "$free" -ge "$HF_MIN_FREE_GB" ] || { _hf_cut "$cand: ${free}GB free"; return 1; }
+  _hf_why="unreadable"
 
   # READABILITY, which is not implied by any of the above. A launchd agent gets
   # "Operation not permitted" on /Volumes: macOS TCC protects removable volumes
@@ -140,8 +144,23 @@ _hf_usable() {
     [ "$parent" = "$anchor" ] && break
     anchor="$parent"
   done
+  _hf_why="not writable"
   [ -w "$anchor" ] || return 1
+  _hf_why=""
   return 0
+}
+
+# The volume a root lives on when it is not mounted: the topmost missing directory above it. #1481.
+_hf_unmounted() {
+  local p parent
+  p="$(dirname "$1")"
+  [ -d "$p" ] && return 1
+  while :; do
+    parent="$(dirname "$p")"
+    { [ "$parent" = "$p" ] || [ -e "$parent" ]; } && break
+    p="$parent"
+  done
+  printf '%s' "$p"
 }
 
 # The free-space refusal, recorded as a limit_cuts row (#1087); never fails the caller.
@@ -157,18 +176,34 @@ _hf_readable() {
 
 _hf_fatal() {
   echo "FATAL: $1" >&2
-  echo "       A location needs ${HF_MIN_FREE_GB}GB free (HF_MIN_FREE_GB)." >&2
-  echo "       Point HF_ROOT at a drive with room, or lower the threshold if" >&2
-  echo "       you know what you are fetching. The default is ./hf_root in the" >&2
-  echo "       checkout; this machine sets HF_ROOT=/Volumes/FAST/hf." >&2
-  echo >&2
-  echo "       If the volume IS attached and this still fails, it is probably" >&2
-  echo "       macOS TCC. A launchd agent or other background process gets" >&2
-  echo "       \"Operation not permitted\" on /Volumes even though the volume" >&2
-  echo "       stats fine. Grant Full Disk Access to the program launchd runs" >&2
-  echo "       (System Settings > Privacy & Security > Full Disk Access), or" >&2
-  echo "       start the services from a terminal that already has it." >&2
+  case "${_hf_why:-}" in
+    "not mounted")
+      echo "       Attach that volume, or point HF_ROOT at a location that exists." >&2
+      return 1 2>/dev/null || exit 1 ;;
+    "low space")
+      echo "       A location needs ${HF_MIN_FREE_GB}GB free (HF_MIN_FREE_GB)." >&2
+      echo "       Point HF_ROOT at a drive with room, or lower the threshold if" >&2
+      echo "       you know what you are fetching. The default is ./hf_root in the" >&2
+      echo "       checkout; this machine sets HF_ROOT=/Volumes/FAST/hf." >&2
+      return 1 2>/dev/null || exit 1 ;;
+  esac
+  echo "       The volume is attached, so this is probably macOS TCC. A launchd" >&2
+  echo "       agent or other background process gets \"Operation not permitted\"" >&2
+  echo "       on /Volumes even though the volume stats fine. Grant Full Disk Access" >&2
+  echo "       to the program launchd runs (System Settings > Privacy & Security >" >&2
+  echo "       Full Disk Access), or start the services from a terminal that already" >&2
+  echo "       has it. HF_ROOT and HF_HOME say where the weights live." >&2
   return 1 2>/dev/null || exit 1
+}
+
+# What _hf_usable refused, in words: not mounted, short of room, unreadable, or not writable. #1481.
+_hf_refusal() {
+  case "${_hf_why:-}" in
+    "not mounted") echo "$1 is on $(_hf_unmounted "$1"), and $(_hf_unmounted "$1") is not mounted." ;;
+    "low space") echo "$1 has $(_hf_free_gb "$1")GB free, under the ${HF_MIN_FREE_GB}GB it needs." ;;
+    "not writable") echo "$1 is not writable." ;;
+    *) echo "$1 cannot be read." ;;
+  esac
 }
 
 # WHAT IS SAID IS STILL CHECKED. An explicit HF_ROOT does not bypass the
@@ -191,7 +226,7 @@ else
   HF_ROOT="$_HF_DEFAULT"
 fi
 _hf_usable "$HF_ROOT" \
-  || _hf_fatal "$_hf_said=$HF_ROOT is not writable or has under ${HF_MIN_FREE_GB}GB free." \
+  || _hf_fatal "$_hf_said=$(_hf_refusal "$HF_ROOT")" \
   || return 1 2>/dev/null || exit 1
 
 # THERE IS NO SILENT FALLBACK TO GUARD AGAINST ANY MORE.

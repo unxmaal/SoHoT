@@ -60,6 +60,10 @@ IDLE_UNLOAD_DAY_S = 600.0
 IDLE_UNLOAD_SITE = "scripts/router-sleep-idle.sh:SERVE_IDLE_UNLOAD_S"
 #: Swapouts per minute while a job runs that read as memory trouble.
 SWAPOUT_MAX_PER_MIN = 2000.0
+#: Consecutive wakes at warn with nothing idle after which served models nothing uses go, then the sweep pauses. #1482.
+WARN_SUSTAINED = 3
+#: How often the watchdog wakes; a gap past 1.5 of it ends a run of warn samples.
+EVERY_SITE = "scripts/launchd.sh:WATCHDOG_EVERY_MIN"
 #: Requests a serving node handed back to this machine in live_audit's window that read as a spike.
 FALLBACK_MAX = 20
 #: Prior trips of the same criterion on the same subject inside the window before the escalation is taken.
@@ -165,6 +169,8 @@ class World:
     served: list = field(default_factory=list)
     #: "server:model" -> when it was last asked, seen first, or last named by a running eval. #1157.
     idle_since: dict = field(default_factory=dict)
+    #: Earlier wakes in an unbroken run that found memory at warn; None when the store could not say. #1482.
+    warn_samples: int | None = 0
     #: observation -> why it could not be made.
     gaps: dict = field(default_factory=dict)
 
@@ -564,6 +570,11 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
         world.idle_since = _idle_since(probes, world, probes.last_use(conn, now - unload_after(now)), now)
     except Exception as exc:  # noqa: BLE001 - an unreadable server or store gives nothing back this wake
         world.gaps["served"] = f"the served models could not be read: {type(exc).__name__}: {exc}"[:300]
+    try:
+        world.warn_samples = warn_samples(conn, now) if conn is not None else 0
+    except Exception as exc:  # noqa: BLE001 - an unreadable history is a gap: a warn stays a warn
+        world.warn_samples = None
+        world.gaps["warn_samples"] = f"the earlier warn samples could not be read: {type(exc).__name__}: {exc}"[:300]
     try:
         world.clearance = probes.clearance(conn, now)
     except Exception as exc:  # noqa: BLE001 - an unreadable clearance is none: the day limits stand
@@ -968,10 +979,64 @@ def _idle_unload(w: World) -> list[Finding]:
 
 def _memory_warn(w: World) -> list[Finding]:
     ev, _, warn = _memory_state(w)
-    if not warn:
+    if not warn or _sustained(w) is not None:
         return []
     ev = {**ev, "idle": idle(w)}
     return [Finding("memory_warn", s, ev) for s in w.top if not s.orphan]
+
+
+#: The criteria whose rows are samples of memory at warn. #1482.
+WARN_CRITERIA = ("memory_warn", "memory_sustained", "memory_stuck")
+
+
+def _every_s() -> float:
+    from harness import knobs
+    return float(knobs.resolve(EVERY_SITE) or 5) * 60.0
+
+
+def warn_samples(conn, now: float) -> int:
+    """Earlier wakes, back from `now` with no wake between them missing, that recorded memory at warn here. #1482."""
+    gap = 1.5 * _every_s()
+    m = _machine(conn)
+    rows = conn.execute(
+        f"SELECT DISTINCT at FROM watchdog_actions WHERE criterion IN ({','.join('?' * len(WARN_CRITERIA))}) "
+        "AND at < ? AND at >= ? AND (machine_id = ? OR (machine_id IS NULL AND ? IS NULL)) ORDER BY at DESC",
+        (*WARN_CRITERIA, now, now - WARN_SUSTAINED * gap, m, m)).fetchall()
+    n, last = 0, now
+    for r in rows:
+        if last - float(r["at"]) > gap:
+            break
+        n, last = n + 1, float(r["at"])
+    return n
+
+
+def spare(w: World) -> list[dict]:
+    """Loaded models with no request in flight that no running eval names: what a sustained warn gives back. #1482."""
+    used = _in_use(w)
+    if used is None:
+        return []
+    return [{"server": m["server"], "model": m["model"]} for m in w.served
+            if m.get("in_flight") is False and not any(m["model"] in u for u in used)]
+
+
+def _sustained(w: World) -> dict | None:
+    """The evidence when memory has sat at warn for WARN_SUSTAINED wakes with nothing idle, else None. #1482."""
+    ev, _, warn = _memory_state(w)
+    if not warn or w.warn_samples is None or "served" in w.gaps or w.warn_samples + 1 < WARN_SUSTAINED or idle(w):
+        return None
+    return {**ev, "samples": w.warn_samples + 1, "limit_samples": WARN_SUSTAINED, "spare": spare(w)}
+
+
+def _warn_findings(w: World, criterion: str, with_spare: bool) -> list[Finding]:
+    ev = _sustained(w)
+    if ev is None or bool(ev["spare"]) != with_spare:
+        return []
+    out = [Finding(criterion, s, ev) for s in w.top if not s.orphan]
+    if out:
+        from harness import cuts
+        cuts.cut("watchdog_warn_sustained", f"memory at warn for {ev['samples']} wakes with nothing idle: "
+                                            f"{criterion}", dropped=len(ev["spare"]) or len(out))
+    return out
 
 
 def _gateway_down(w: World) -> list[Finding]:
@@ -1043,6 +1108,12 @@ CRITERIA = (
               "swapping or critical memory pressure while a job runs"),
     Criterion("memory_warn", ("watchdog_swapout_max",), NOTIFY, UNLOAD, ("processes", "pressure"), _memory_warn,
               "memory pressure at warn with no swapping while a job runs: give back idle models, never pause"),
+    Criterion("memory_sustained", ("watchdog_warn_sustained", "watchdog_every"), UNLOAD, NOTIFY,
+              ("processes", "pressure", "warn_samples"), lambda w: _warn_findings(w, "memory_sustained", True),
+              "memory at warn for several wakes with nothing idle: give back served models no running eval uses"),
+    Criterion("memory_stuck", ("watchdog_warn_sustained", "watchdog_every"), PAUSE, NOTIFY,
+              ("processes", "pressure", "warn_samples"), lambda w: _warn_findings(w, "memory_stuck", False),
+              "memory at warn for several wakes with nothing to give back: pause the sweep, told once"),
     Criterion("gateway_down", (), NOTIFY, RESTART, ("gateway",), _gateway_down,
               "the gateway's liveliness probe fails"),
     Criterion("mlx_dead", (), RESTART, NOTIFY, ("mlx",), _mlx_dead,
@@ -1060,14 +1131,15 @@ def _gap(w: World, need: str) -> str:
         return "no running eval has written a progress file"
     value = {"lock": w.lock, "resident": w.resident, "pressure": w.pressure,
              "gateway": w.gateway_up, "mlx": w.mlx_generating, "fallbacks": w.fallbacks,
-             "mcp_unit": w.mcp_live}.get(need, True)
+             "mcp_unit": w.mcp_live, "warn_samples": w.warn_samples}.get(need, True)
     if value is None:
         return {"lock": "the eval lock could not be read", "resident": "the router or its defaults could not be read",
                 "pressure": "memory pressure could not be sampled",
                 "gateway": "no gateway unit is loaded here, or launchd cannot be asked",
                 "mlx": "no mlx unit is loaded here, or its /health did not answer",
                 "fallbacks": "the store or the served config could not be read",
-                "mcp_unit": "no mcp unit is loaded here, or launchd cannot be asked"}[need]
+                "mcp_unit": "no mcp unit is loaded here, or launchd cannot be asked",
+                "warn_samples": "the earlier warn samples could not be read"}[need]
     return ""
 
 
@@ -1188,6 +1260,11 @@ class Hands:
         from harness import router
         if f.criterion == "memory_warn":
             return self._unload_idle(f.evidence.get("idle") or [])
+        if f.criterion == "memory_sustained":
+            # A lane's own model goes too: the memory is what keeps the machine up, not its adoption. #1482.
+            return self._unload_idle(f.evidence.get("spare") or [], keep=set(),
+                                     why=f"watchdog: memory at warn for {f.evidence.get('samples')} wakes, "
+                                         "loaded with no request in flight")
         if f.criterion == "idle_unload":
             # A lane's own model is given back too: the limit is what keeps it, not its adoption. #1157.
             return self._unload_idle([f.evidence], keep=set(),
@@ -1284,11 +1361,15 @@ def overrun_stopped(conn, out) -> bool:
 def notified_since(conn, f: Finding, now: float) -> float | None:
     """When this criterion last put a notification on this subject's desktop inside NOTIFY_EVERY_S, this machine."""
     row = conn.execute(
-        "SELECT MAX(at) AS at FROM watchdog_actions WHERE criterion = ? AND subject = ? AND action = ? "
-        "AND dry_run = 0 AND outcome LIKE ? AND at >= ? AND (machine_id = ? OR (machine_id IS NULL AND ? IS NULL))",
-        (f.criterion, f.subject.key, NOTIFY, f"{NOTIFIED}:%", now - NOTIFY_EVERY_S, _machine(conn), _machine(conn))
+        "SELECT MAX(at) AS at FROM watchdog_actions WHERE criterion = ? AND subject = ? AND dry_run = 0 "
+        "AND instr(outcome, ?) > 0 AND at >= ? AND (machine_id = ? OR (machine_id IS NULL AND ? IS NULL))",
+        (f.criterion, f.subject.key, f"{NOTIFIED}:", now - NOTIFY_EVERY_S, _machine(conn), _machine(conn))
     ).fetchone()
     return None if row["at"] is None else float(row["at"])
+
+
+#: Criteria whose pause is also put on the desktop, once. #1482.
+PUSHED = ("memory_stuck",)
 
 
 def _act(conn, hands: Hands, action: str, f: Finding, now: float) -> str:
@@ -1296,7 +1377,10 @@ def _act(conn, hands: Hands, action: str, f: Finding, now: float) -> str:
         last = notified_since(conn, f, now)
         if last is not None:
             return f"{HELD}: shown {now - last:.0f}s ago (once per {NOTIFY_EVERY_S:.0f}s per criterion and subject)"
-    return hands.do(action, f)
+    done = hands.do(action, f)
+    if action == PAUSE and f.criterion in PUSHED and notified_since(conn, f, now) is None:
+        done = f"{done}; {hands.do(NOTIFY, f)}"
+    return done
 
 
 def record(conn, f: Finding, action: str, escalated: bool, dry_run: bool, outcome: str, now: float) -> int:

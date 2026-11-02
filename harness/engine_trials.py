@@ -139,11 +139,11 @@ def _links_back(info: dict, name: str) -> bool:
     return any(want in re.sub(r"\.git$", "", str(u).lower().rstrip("/")) + "/" for u in urls)
 
 
-def pypi_channel(name: str, pypi=_pypi_json) -> dict:
+def pypi_channel(name: str, pypi=None) -> dict:
     """The PyPI project named after the repo that links back to it, at its current version; {} when none."""
     base = name.split("/")[-1]
     for package in dict.fromkeys((base, base.lower(), base.lower().replace("_", "-"))):
-        got = pypi(package)
+        got = (pypi or _pypi_json)(package)
         if not got or not _links_back(got.get("info") or {}, name):
             continue
         version = str((got.get("info") or {}).get("version") or "")
@@ -153,7 +153,7 @@ def pypi_channel(name: str, pypi=_pypi_json) -> dict:
     return {}
 
 
-def gather(name: str, client=None, pypi=_pypi_json) -> Evidence:
+def gather(name: str, client=None, pypi=None) -> Evidence:
     """README, PyPI project and latest release of a GitHub repo; each part empty when it cannot be read."""
     if client is None:
         from harness import github
@@ -179,14 +179,14 @@ def ask_model(prompt: str) -> dict:
     return delegate.complete("extract", prompt, system=SYSTEM, max_tokens=CLASSIFY_TOKENS, thinking=False)
 
 
-def classify(row: dict, ev: Evidence, ask=ask_model) -> dict:
+def classify(row: dict, ev: Evidence, ask=None) -> dict:
     """The model's reading of one repo, checked as data; ValueError when the reply is not a usable answer."""
     from harness import technique_triage
     prompt = PROMPT.format(name=row["name"], description=row.get("description") or "",
                            pypi=json.dumps(ev.pypi) if ev.pypi else "none",
                            release=json.dumps(ev.release) if ev.release else "none",
                            readme=ev.readme or "(none)")
-    got = ask(prompt)
+    got = (ask or ask_model)(prompt)
     d = technique_triage.parse_draft(got.get("text") or "")
     if d.get("kind") not in KINDS:
         raise ValueError(f"the reply's kind is {d.get('kind')!r}, not one of {', '.join(KINDS)}")
@@ -281,8 +281,9 @@ def _run(argv: list, env: dict, cwd: Path, timeout: float | None = None) -> None
         raise TrialError(f"install exited {got.returncode}: " + " | ".join(tail)[:600])
 
 
-def install(t: Trial, root: Path, run=_run) -> Path:
+def install(t: Trial, root: Path, run=None) -> Path:
     """The trial's own venv with its package at the exact version, installed under the sandbox; TrialError says why not."""
+    run = run or _run
     d = Path(root) / f"{slug(t.name)}-{slug(t.version)}"
     d.mkdir(parents=True, exist_ok=True)
     done = d / "installed.json"
@@ -497,11 +498,12 @@ def existing_issue(gh, name: str) -> int | None:
     return None
 
 
-def file_issue(conn, t: Trial, row: dict, waiting: list, gh=gh_run, known=None, now: float | None = None,
+def file_issue(conn, t: Trial, row: dict, waiting: list, gh=None, known=None, now: float | None = None,
                roots=()) -> int:
     """One issue per blocked engine: the stored number, else one found by its marker, else a new one. Idempotent."""
     from harness import privacy
     now = time.time() if now is None else float(now)
+    gh = gh or gh_run
     if t.issue:
         return int(t.issue)
     got = existing_issue(gh, t.name)
@@ -546,10 +548,12 @@ class Sweep:
     stopped: str = ""
 
 
-def sweep(conn, tools: list, waiting: list, *, ask=ask_model, evidence=gather, installer=install, screener=screen,
-          gh=gh_run, root: Path | None = None, now: float | None = None, known=None) -> Sweep:
+def sweep(conn, tools: list, waiting: list, *, ask=None, evidence=None, installer=None, screener=None,
+          gh=None, root: Path | None = None, now: float | None = None, known=None) -> Sweep:
     """One pass: classify new tooling repos, install trials, screen waiting candidates on them, file what cannot be tried."""
     from harness import completion, cuts, delegate, paths, reasons
+    ask, evidence, installer = ask or ask_model, evidence or gather, installer or install
+    screener, gh = screener or screen, gh or gh_run
     now = time.time() if now is None else float(now)
     root = Path(root) if root is not None else paths.home() / "engine-trials"
     out = Sweep()

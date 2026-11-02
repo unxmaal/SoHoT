@@ -53,18 +53,24 @@ def route(lane: str, chosen: str | None = None, via: str = "") -> tuple[str, ser
 
 
 def generate(spec: str, where: serving.Route, lane: str, prompt: str,
-             call) -> tuple[str, dict, list]:
+             call, method=None, context: str = "") -> tuple[str, dict, list]:
     """(text, cost, replies): `spec` served over `where`, each call made by
-    call(prompt, model=, gateway=, modality=, sampling=) -> Completion. #581."""
+    call(prompt, model=, gateway=, modality=, sampling=) -> Completion; `method` serves over `spec`'s base. #581."""
     from harness import methods
     replies: list = []
 
-    def ask(text: str, modality: str) -> str:
+    def ask(text: str, modality: str, sampling: dict | None = None, context: str = "") -> str:
         got = call(text, model=where.model, gateway=where.base, modality=modality,
-                   sampling=where.sampling or None)
+                   sampling={**(where.sampling or {}), **(sampling or {})} or None,
+                   **({"context": context} if context else {}))
         replies.append(got)
         return got.text
-    text, cost = methods.run(spec, lane, prompt, ask)
+    if method is None:
+        text, cost = methods.run(spec, lane, prompt, ask)
+        return text, cost, replies
+    base = methods.base_of(spec) or spec
+    parsed = methods.Parsed(method, (), base, method.compose(base))
+    text, cost = method.serve(parsed, lane, prompt, ask, None, **({"context": context} if context else {}))
     return text, cost, replies
 
 
@@ -357,8 +363,12 @@ def _tag(delegated: bool) -> str:
 def complete(lane: str, prompt: str, system: str | None = None,
              max_tokens: int = 2048, temperature: float | None = None,
              timeout: float | None = None, thinking: bool | None = None, delegated: bool = False,
-             model: str | None = None, max_tokens_knob: str = "harness/delegate.py:complete(max_tokens)") -> dict:
+             model: str | None = None, tag: str | None = None,
+             max_tokens_knob: str = "harness/delegate.py:complete(max_tokens)",
+             method=None, context: str = "") -> dict:
     """The lane's adopted model or method, timed; `method` is a method's cost. Raises Refused or CompletionError.
+
+    A `method` given is served over the lane's base though no registry holds it: a drafted template's canary. #1476.
 
     `thinking` None serves the lane as it was measured; False sends enable_thinking false.
     Only `delegated` (an agent's local_complete) is work with a delegations row; a program's call is internal. #1158.
@@ -406,9 +416,9 @@ def complete(lane: str, prompt: str, system: str | None = None,
             raise completion.CompletionError(
                 f"{label + ': ' if label else ''}{exc}{hint}",
                 exc.failure_class, exc.limit) from exc
-    with (as_work(lane, spec, where, stream=True, delegation=delegated, tag=_tag(delegated)) as out,
+    with (as_work(lane, spec, where, stream=True, delegation=delegated, tag=tag or _tag(delegated)) as out,
           completion.measuring()):
-        text, cost, replies = generate(spec, where, lane, prompt, call)
+        text, cost, replies = generate(spec, where, lane, prompt, call, method=method, context=context)
         got = replies[-1]
         out.update({"text": text, "lane": lane, "spec": spec,
                     "model": _answered_by(got.model or where.model), "method": cost or None,

@@ -496,6 +496,23 @@ def test_the_by_hand_fetch_puts_the_file_in_the_ds4_dir_and_records_it(models, m
         ds4.fetch(QWEN, "Qwen3.8-Flash-Next-Q3_K_M.gguf", hf_download=hf_download)
 
 
+def test_the_by_hand_fetch_lifts_the_offline_guard(models, monkeypatch):
+    """A shell that sourced env.sh imports huggingface_hub offline; the fetch must lift it. #1457, RULE #813."""
+    from huggingface_hub import constants
+    monkeypatch.setenv("HF_HUB_OFFLINE", "1")
+    monkeypatch.setattr(constants, "HF_HUB_OFFLINE", True)
+    seen = []
+
+    def hf_download(repo, filename, local_dir):
+        seen.append((constants.HF_HUB_OFFLINE, os.environ["HF_HUB_OFFLINE"]))
+        (Path(local_dir) / filename).write_bytes(b"GGUF")
+        return str(Path(local_dir) / filename)
+    ds4.fetch(QWEN, "Qwen3.8-Flash-Next-Q4.gguf", hf_download=hf_download)
+    assert seen == [(False, "0")]
+    assert constants.HF_HUB_OFFLINE is True
+    assert os.environ["HF_HUB_OFFLINE"] == "1"
+
+
 # ---- the runtime, its version, and the pin ---------------------------------
 
 def test_the_runtime_is_present_when_the_built_binary_is(tmp_path, monkeypatch):

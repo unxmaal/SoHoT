@@ -72,6 +72,7 @@ READ_ONLY = {
     "context --carried": ([["context", "--carried", "--root", "<tmp>"]], 0),
     "context --referenced": ([["context", "--referenced", "--root", "<tmp>"]], 0),
     "context --mistakes": ([["context", "--mistakes", "--root", "<tmp>"]], 0),
+    "monitor --problems": ([["monitor", "status", "--problems"]], 0),
 }
 #: Flags that only shape another mode's output or scope; that mode is held here or below.
 MODIFIERS = {
@@ -81,7 +82,8 @@ MODIFIERS = {
     "context --main-only",
     "morning --no-model", "claude-news --no-record", "benchmarks --force", "benchmarks --passages",
     "cases --reextract", "jobs --night", "disk --yes", "fetch --hold-router", "adopt --unscreened",
-    "judge --all-machines",
+    "judge --all-machines", "ask --live-home", "spans --live-home", "kb-filter --no-model", "kb-filter --rebuild",
+    "kb-filter --strict",
 }
 #: Flags whose mode writes, downloads, runs a model or reads the network by design, so it is not run here.
 NOT_RUN = {
@@ -98,6 +100,8 @@ NOT_RUN = {
     "report --publish": "pushes the report", "repo-screen --write": "writes the anchors file",
     "gateway --rotate": "replaces the key", "canary --run": "plants canaries", "review --file": "files findings",
     "claude-news --notify": "records and notifies", "ledger --record": "upserts ledger_days",
+    "runtimes --watch": "reads PyPI and GitHub releases and records proposals",
+    "runtimes --trial": "trial-installs a runtime release",
     "ledger --sample-power": "appends a power reading", "morning --notify": "notifies (the morning unit)",
     "sweep-check --notify": "records the check", "craft --revalidate": "runs the installed release",
     "delegated --close": "records outcomes", "disk --record": "writes download rows",
@@ -109,6 +113,9 @@ NOT_RUN = {
     "repo-report --plan": "held in RUNS", "hear --rates": "held in RUNS",
     "unverified --hook": "asks a model and writes its log and block state",
     "unverified --settings": "prints a settings block, no store",
+    "ask --redo": "moves to a scratch home (paths.eval_home) before reading transcripts",
+    "spans --redo": "moves to a scratch home (paths.eval_home) before reading transcripts",
+    "kb-filter --eval": "asks the decide and extract lanes; reads transcripts, no store",
 }
 
 

@@ -36,6 +36,7 @@ from harness.commands import cases as cases_cmd
 from harness.commands import chaos as chaos_cmd
 from harness.commands import common
 from harness.commands import context as context_cmd
+from harness.commands import kb_filter as kb_filter_cmd
 from harness.commands import day as day_cmd
 from harness.commands import degenerate as degenerate_cmd
 from harness.commands import floors as floors_cmd
@@ -57,6 +58,7 @@ from harness.commands import report as report_cmd
 from harness.commands import repo_screen as repo_screen_cmd
 from harness.commands import reverify as reverify_cmd
 from harness.commands import screen as screen_cmd
+from harness.commands import spans as spans_cmd
 from harness.commands import store as store_cmd
 from harness.commands import headless as headless_cmd
 from harness.commands import knobs as knobs_cmd
@@ -68,10 +70,13 @@ from harness.commands import inventory as inventory_cmd
 from harness.commands import ledger as ledger_cmd
 from harness.commands import families as families_cmd
 from harness.commands import funnel as funnel_cmd
+from harness.commands import monitor as monitor_cmd
 from harness.commands import morning as morning_cmd
 from harness.commands import sweep_check as sweep_check_cmd
+from harness.commands import runtimes as runtimes_cmd
 from harness.commands import otel as otel_cmd
 from harness.commands import route_trial as route_trial_cmd
+from harness.commands import ask as ask_cmd
 from harness.commands import unverified as unverified_cmd
 from harness.commands import usage as usage_cmd
 from harness.commands import canary as canary_cmd
@@ -663,6 +668,26 @@ def build_parser() -> argparse.ArgumentParser:
     ctx.add_argument("--root", default="",
                      help="transcript root (default $SOH_CLAUDE_PROJECTS or ~/.claude/projects)")
     ctx.set_defaults(func=context_cmd.cmd_context)
+    kbf = sub.add_parser("kb-filter", help="--eval: does a local model keep the KB search hits sessions "
+                         "referenced later, against a position cut, on the newest week (#1334)")
+    kbf.add_argument("--eval", action="store_true", required=True, help="build the labelled set, score, report")
+    kbf.add_argument("--dir", required=True, help="working directory: set.jsonl, <arm>.jsonl scores, report.json")
+    kbf.add_argument("--since", default="30d", help="transcripts from here build the labelled set")
+    kbf.add_argument("--days", type=float, default=7.0, help="the newest DAYS of searches are held out")
+    kbf.add_argument("--tune", type=int, default=300, help="earlier searches the decide threshold is tuned on")
+    kbf.add_argument("--arms", default="decide,extract", help="model arms to score: decide, extract")
+    kbf.add_argument("--no-model", action="store_true", help="report from the stored scores only")
+    kbf.add_argument("--rebuild", action="store_true", help="rebuild set.jsonl from the transcripts")
+    kbf.add_argument("--strict", action="store_true", help="gold counts a later '#n' only with its kind named "
+                     "beside it ('RULE #12'); bare ids collide with issue numbers. set-strict.jsonl")
+    kbf.add_argument("--root", default="", help="transcript root (default ~/.claude/projects)")
+    kbf.add_argument("--min-hits", type=int, default=4, help="a search with fewer hits is shown whole")
+    kbf.add_argument("--floor", type=int, default=2, help="hits kept at the least, whatever the model says")
+    kbf.add_argument("--hit-chars", type=int, default=600, help="characters of each hit the model reads")
+    kbf.add_argument("--need-chars", type=int, default=2000, help="characters of the caller's need, from its end")
+    kbf.add_argument("--chunk", type=int, default=12, help="hits per decide call, one field per hit")
+    kbf.add_argument("--reply", type=int, default=200, help="reply tokens of the extract arm")
+    kbf.set_defaults(func=kb_filter_cmd.cmd_kb_filter)
     led = sub.add_parser("ledger", help="Claude Code tokens (ccusage), plan headroom, local use by purpose, "
                          "displaced tokens and energy, per day")
     led.add_argument("--since", default="7d", help="7d, 12h, or a date such as 2026-10-06")
@@ -710,11 +735,25 @@ def build_parser() -> argparse.ArgumentParser:
     mor.add_argument("--no-model", action="store_true",
                      help="deterministic headline; do not ask the local model to condense it")
     mor.set_defaults(func=morning_cmd.cmd_morning)
+    mon = sub.add_parser("monitor", help="machine monitoring through monit: render or install its config, its "
+                         "status, and the alert action monit runs (#1485)")
+    mon.add_argument("action", choices=("render", "install", "status", "alert"))
+    mon.add_argument("kind", nargs="?", default="", help="with alert: what monit saw (disk, disk-pause, volume, "
+                     "volume-low, memory, service, recovered)")
+    mon.add_argument("--problems", action="store_true", help="with status: one line per problem, nothing when well")
+    mon.set_defaults(func=monitor_cmd.cmd_monitor)
     swc = sub.add_parser("sweep-check", help="whether tonight's discovery sweep is running and progressing, "
                          "read from launchd and the loop heartbeat; --notify records a row and notifies on a change")
     swc.add_argument("--notify", action="store_true",
                      help="record the check for soh morning and notify when it is not healthy (the sweep-check unit)")
     swc.set_defaults(func=sweep_check_cmd.cmd_sweep_check)
+    rtm = sub.add_parser("runtimes", help="newer releases of pinned runtimes (llama.cpp, mlx-lm, mlx-vlm, mlx-audio, "
+                         "transformers, diffusers, mflux), their sandboxed trial installs and verdicts")
+    rtm.add_argument("--watch", action="store_true", help="read each runtime's official channel and propose newer releases")
+    rtm.add_argument("--trial", action="store_true",
+                     help="also trial-install the next proposed release sandboxed and record its verdict")
+    rtm.add_argument("--limit", type=int, default=20, help="recorded releases to list")
+    rtm.set_defaults(func=runtimes_cmd.cmd_runtimes)
     fun = sub.add_parser("funnel", help="every proposal's stage, time in it, age since first seen, and why "
                          "it waits; read from a copy of the store")
     fun.add_argument("--since", default="", help="only proposals first seen since: 30d, or a date")
@@ -747,10 +786,12 @@ def build_parser() -> argparse.ArgumentParser:
     weedout_cmd.add_parser(sub)
     lane_feed_cmd.add_parser(sub)
     craft_cmd.add_parser(sub)
+    spans_cmd.add_parser(sub)
     vision_cmd.add_parser(sub)
     climb_cmd.add_parser(sub)
     otel_cmd.add_parser(sub)
     route_trial_cmd.add_parser(sub)
+    ask_cmd.add_parser(sub)
     unverified_cmd.add_parser(sub)
     dlg = sub.add_parser("delegated", help="record what became of a local_complete or "
                          "local_decide answer, or --report the rates per lane")
@@ -1101,6 +1142,8 @@ VERB_PURPOSE = {
     "watchdog": "watchdog",
     "morning": "watchdog",
     "sweep-check": "watchdog",
+    "monitor": "watchdog",
+    "runtimes": "discover",
     "availability": "watchdog",
 }
 
