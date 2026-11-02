@@ -339,6 +339,17 @@ def _no_real_runtime_channel(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_engine_trial(monkeypatch):
+    """No test reads GitHub or PyPI, installs an engine, files an issue or asks the model for an engine trial; tests pass fakes. #1475."""
+    from harness import engine_trials
+
+    def refuse(*a, **k):
+        raise RuntimeError(f"a test reached a real engine-trial channel: {a}")
+    for name in ("_gh_json", "_pypi_json", "_run", "gh_run", "ask_model"):
+        monkeypatch.setattr(engine_trials, name, refuse)
+
+
+@pytest.fixture(autouse=True)
 def _no_real_hub_download(request, monkeypatch):
     """No test downloads from the Hub: one fetched a whole GGUF every run (#1146)."""
     if request.node.get_closest_marker("network") or request.node.get_closest_marker("slow"):

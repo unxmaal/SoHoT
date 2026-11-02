@@ -181,6 +181,14 @@ def ledger_row(conn, now: float) -> dict | None:
             "cloud_lower_bound": bool((d.get("cloud") or {}).get("lower_bound")), "plan": d.get("headroom") or {}, "displaced": displaced}
 
 
+def engines(conn, since: float) -> list[dict]:
+    """Engines the loop could not trial and filed an issue for since `since`; [] before schema 86. #1475."""
+    if not _has(conn, "engine_trials"):
+        return []
+    from harness import engine_trials
+    return engine_trials.filed_since(conn, since)
+
+
 def api_spend(conn) -> dict | None:
     """The API credit ledger in dollars, the only one reported in dollars (#1214); None before schema 83."""
     if not _has(conn, "api_spend"):
@@ -358,6 +366,8 @@ def needs(r: dict) -> list[str]:
             for s in r["stalled"]))
     if r.get("canary"):
         out.append(r["canary"])
+    out.extend(f"engine {e['name']} could not be trialed (#{e['issue']}): {e['blocker'][:160]}"
+               for e in r.get("engines") or [])
     from harness import runtime_trials
     out += [f"runtime {runtime_trials.line(v)}" for v in r.get("runtimes") or [] if v["outcome"] in runtime_trials.PUSHED]
     from harness import monitor
@@ -390,6 +400,7 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "parked": parked() if parked else [], "checks": sweep_checks(conn, since),
          "incumbent": incumbent(conn) if incumbent else None, "clearances": clearances(conn, since, now),
          "families": families(conn), "yield": yield_stops(conn), "api_spend": api_spend(conn),
+         "engines": engines(conn, since),
          "runtimes": runtimes(conn, since), "techniques": techniques(conn, since),
          "monitor": monitor(since) if monitor else None}
     if r["sweep"]["loop"] is not None:
