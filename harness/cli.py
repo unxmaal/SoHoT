@@ -39,6 +39,7 @@ from harness.commands import context as context_cmd
 from harness.commands import kb_filter as kb_filter_cmd
 from harness.commands import day as day_cmd
 from harness.commands import degenerate as degenerate_cmd
+from harness.commands import deploy as deploy_cmd
 from harness.commands import floors as floors_cmd
 from harness.commands import specs as specs_cmd
 from harness.commands import staging as staging_cmd
@@ -972,6 +973,13 @@ def build_parser() -> argparse.ArgumentParser:
     day.add_argument("action", choices=("clear", "status", "revoke"))
     day.add_argument("said", nargs="*", help='clear: who cleared it and why, e.g. "owner: the #1110 baseline"')
     day.set_defaults(func=day_cmd.cmd_day)
+    dep = sub.add_parser("deploy", help="deploys as queue jobs: each green main commit built alongside, switched, "
+                         "verified or rolled back, day-only. #1506")
+    dep.add_argument("action", nargs="?", default="status",
+                     choices=("status", "poll", "now", "pause", "resume", "run", "migrate"),
+                     help="now [SHA] queues origin/main (or SHA) at once; run and migrate are the job's own steps")
+    dep.add_argument("sha", nargs="?", default="")
+    dep.set_defaults(func=deploy_cmd.cmd_deploy)
     spc = sub.add_parser("specs", help="per capability in openspec/: scenarios, bound to a test, untested; "
                          "non-zero when a spec names a missing test or a module has no capability. #1363")
     spc.add_argument("--untested", action="store_true", help="also list each untested scenario")
@@ -1143,6 +1151,7 @@ VERB_PURPOSE = {
     "morning": "watchdog",
     "sweep-check": "watchdog",
     "monitor": "watchdog",
+    "deploy": "watchdog",
     "runtimes": "discover",
     "availability": "watchdog",
 }

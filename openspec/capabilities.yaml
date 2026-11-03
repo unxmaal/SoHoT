@@ -441,9 +441,12 @@ capabilities:
       - harness/torch_device.py
 
   - name: deploy-guard
-    summary: Deploying only a green main commit, never during a sweep or eval, with runner venvs matching their pins.
+    summary: Deploying only a green main commit, never during a sweep or eval, with runner venvs matching their pins; each one a queue job built alongside, switched, verified or rolled back.
     spec: pending
     modules:
+      - harness/deploy.py
+      - harness/deploy_switch.py
+      - harness/commands/deploy.py
       - harness/deploy_guard.py
       - harness/sweep_guard.py
       - harness/venv_drift.py

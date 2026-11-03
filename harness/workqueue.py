@@ -22,8 +22,8 @@ PENDING, RUNNING, DONE, FAILED = "pending", "running", "done", "failed"
 CANCELLED = "cancelled"
 #: A job whose command paused on request with its work checkpointed (evals.watch.PAUSED). #1357.
 PAUSED = "paused"
-#: The lock class a job waits for before the worker starts it. #1153.
-GPU, CLOUD = "gpu", "cloud"
+#: The lock class a job waits for before the worker starts it; a deploy runs alone. #1153, #1506.
+GPU, CLOUD, DEPLOY = "gpu", "cloud", "deploy"
 #: How often a worker with jobs running looks for one it can start beside them. #1153.
 WATCH_S = 5.0
 #: How long a cancelled job's process group gets to exit before it is killed. #628.
@@ -343,10 +343,15 @@ def cleared(conn=None, now: float | None = None) -> dict | None:
 
 
 def ready(conn=None, now: float | None = None) -> list[dict]:
-    """Pending jobs whose start time has come, in run order; a later job runs while an earlier one waits. #900."""
+    """Pending jobs whose start time has come, in run order; a deploy only inside its window with no sweep running. #900, #1506."""
     with _store(conn) as c:
         lifted = cleared(c, now) is not None
-        return [j for j in pending(c) if due(j, now, lifted)]
+        got = [j for j in pending(c) if due(j, now, lifted)]
+    if any(j["kind"] == DEPLOY for j in got):
+        from harness import deploy
+        if deploy.blocked(time.time() if now is None else now):
+            got = [j for j in got if j["kind"] != DEPLOY]
+    return got
 
 
 def _claimed(c) -> tuple[str, tuple]:
@@ -731,6 +736,10 @@ def run_one(job: dict, popen=None) -> dict | None:
         _settle_cancelled(job, rc=rc)
     else:
         from evals import watch
+        from harness import deploy
+        if job.get("kind") == DEPLOY and rc == deploy.HANDED_OFF:
+            # Left running and unwritten: the store may be migrated past this code; settle closes it. #1506.
+            return {**job, "state": RUNNING, "handed_off": True}
         job.update(state=DONE if rc == 0 else PAUSED if rc == watch.PAUSED else FAILED)
         _write(job)
     return get(job["id"]) or job
@@ -738,16 +747,34 @@ def run_one(job: dict, popen=None) -> dict | None:
 
 def _recover() -> None:
     """Only the runner-lock holder calls this, so nothing here is really running:
-    a job still marked running was cut off (a reboot) and may be half done."""
+    a job still marked running was cut off (a reboot) and may be half done; a deploy settles from its record. #1506"""
+    settle_deploys()
     with _store() as c:
         where, args = _claimed(c)
-        c.execute(f"UPDATE jobs SET state = ?, note = ? WHERE state = ? AND {where}",
-                  (FAILED, "interrupted; add it again to retry", RUNNING, *args))
+        c.execute(f"UPDATE jobs SET state = ?, note = ? WHERE state = ? AND kind != ? AND {where}",
+                  (FAILED, "interrupted; add it again to retry", RUNNING, DEPLOY, *args))
         c.commit()
 
 
+def settle_deploys() -> list:
+    """deploy.settle, logged rather than raised: a settle error must not stop the worker. #1506."""
+    import sqlite3
+
+    from harness import deploy
+    try:
+        got = deploy.settle()
+    except (OSError, ValueError, RuntimeError, sqlite3.Error) as exc:
+        print(f"{time.strftime('%H:%M:%S')} deploy settle failed: {exc}", flush=True)
+        return []
+    for d in got:
+        print(f"{time.strftime('%H:%M:%S')} settled {d}", flush=True)
+    return got
+
+
 def needs(job: dict) -> str:
-    """The lock class a job waits for: CLOUD for an eval evals.run would run in a cloud slot, else GPU. #1153."""
+    """The lock class a job waits for: DEPLOY for a deploy, CLOUD for an eval evals.run would run in a cloud slot, else GPU. #1153."""
+    if job.get("kind") == DEPLOY:
+        return DEPLOY
     try:
         from evals import run
         kind = run.argv_lock_kind(job.get("argv") or [])
@@ -758,6 +785,8 @@ def needs(job: dict) -> str:
 
 def _free(cls: str, live: dict) -> bool:
     """Whether a job of this class may start beside the jobs in `live` (thread -> (class, id)). #1153."""
+    if cls == DEPLOY or any(c == DEPLOY for c, _ in live.values()):
+        return not live
     mine = sum(1 for c, _ in live.values() if c == cls)
     if cls == GPU:
         return mine == 0
@@ -775,6 +804,8 @@ def _startable(live: dict, now: float) -> tuple[dict, str] | None:
         cls = needs(job)
         if _free(cls, live):
             return job, cls
+        if cls == DEPLOY:
+            return None  # a ready deploy waits for the running jobs, and nothing new starts ahead of it. #1506
     return None
 
 
@@ -784,13 +815,15 @@ def run_pending(popen=None, gate=lambda: (True, ""), clock=time.time, watch: flo
     if fd is None:
         return []
     done, errors, live = [], [], {}
-    finished = threading.Event()
+    finished, handed = threading.Event(), threading.Event()
 
     def work(job):
         try:
             ran = run_one(job, popen=popen)
             if ran is not None:
                 done.append(ran)
+                if ran.get("handed_off"):
+                    handed.set()
         except BaseException as exc:  # noqa: BLE001 - raised again once the other jobs finish
             errors.append(exc)
         finally:
@@ -801,7 +834,7 @@ def run_pending(popen=None, gate=lambda: (True, ""), clock=time.time, watch: flo
         while True:
             finished.clear()
             live = {t: c for t, c in live.items() if t.is_alive()}
-            nxt = None if errors else _startable(live, clock())
+            nxt = None if errors or handed.is_set() else _startable(live, clock())
             if nxt is not None and gate()[0]:
                 t = threading.Thread(target=work, args=(nxt[0],), name=f"job-{nxt[0]['id']}")
                 live[t] = (nxt[1], nxt[0]["id"])
@@ -888,7 +921,14 @@ def serve(poll: float = 30.0, sleep=time.sleep, popen=None,
     gate_fn = gate_fn or gate
     said = ""
     while True:
-        if ready(now=clock()):
+        settle_deploys()
+        try:
+            waiting = ready(now=clock())
+        except RuntimeError as exc:
+            # A deploy migrated the store past this worker's code; its switch reloads the worker. #1506.
+            print(f"{time.strftime('%H:%M:%S')} waiting for a reload: {exc}", flush=True)
+            waiting = []
+        if waiting:
             ok, why = gate_fn()
             if why != said:
                 print(f"{time.strftime('%H:%M:%S')} {'running' if ok else 'waiting'}: {why}",

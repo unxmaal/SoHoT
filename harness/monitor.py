@@ -42,7 +42,7 @@ LABEL = "com.unxmaal.localharness.monit"
 TITLE = "SoHoT monit"
 RECOVERED = "recovered"
 DISK_KINDS = ("disk", "disk-pause")
-KINDS = DISK_KINDS + ("volume", "volume-low", "memory", "service", RECOVERED)
+KINDS = DISK_KINDS + ("volume", "volume-low", "memory", "service", "deploy", RECOVERED)
 #: (monit name, launchd unit, port variable, the launcher's default port): read as scripts/serve-*.sh read them.
 SERVICES = (("gateway", "gateway", "GATEWAY_PORT", 4000), ("mlx", "mlx", "MLX_PORT", 8081),
             ("tts", "tts", "TTS_PORT", 8890))
