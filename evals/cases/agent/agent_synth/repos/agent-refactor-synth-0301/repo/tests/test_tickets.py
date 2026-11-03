@@ -1,0 +1,13 @@
+import unittest
+
+from foundry import tickets
+
+
+class Tickets(unittest.TestCase):
+    def test_pallet_entry(self):
+        self.assertEqual(tickets.pallet_entry('4539 1488 0343 6467'), {'pallet_entry': True})
+        self.assertEqual(tickets.pallet_entry('79927398713'), {'pallet_entry': True})
+
+    def test_weighted_mean(self):
+        self.assertEqual(tickets.weighted_mean([1, 2, 3], [1, 1, 1]), 2.0)
+        self.assertEqual(tickets.weighted_mean([10, 20], [1, 3]), 17.5)

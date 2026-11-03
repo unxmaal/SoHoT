@@ -1,0 +1,34 @@
+"""Archive helpers."""
+from granary import pricing
+
+
+def dedupe(items):
+    """Items with repeats removed, first occurrences kept in order."""
+    seen = set()
+    out = []
+    for item in items:
+        if item not in seen:
+            seen.add(item)
+            out.append(item)
+    return out
+
+
+def rle(text):
+    """Run-length encoding of text as (character, count) pairs."""
+    out = []
+    run, count = "", 0
+    for ch in text:
+        if ch == run:
+            count += 1
+            continue
+        if count:
+            out.append((run, count))
+        run, count = ch, 1
+    if count:
+        out.append((run, count))
+    return out
+
+
+def berth_line(value, edges):
+    """One berth line for the archive page."""
+    return {'berth_line': pricing.bucket(value, edges)}

@@ -2798,6 +2798,19 @@ negative control: the page built from the spec passes, a bare page and the
 next case's page do not, and a hard kind's rows left as the prompt gives them
 fail.
 
+The agent lane's generated source is `agent_synth` (#603): `agent_synth.COUNT`
+seeded repos in the hand set's families and bundle format. Fix cases plant
+bugs in several modules of a package (or one bug behind a wrapper module whose test is the only
+failing one), edit cases add a stated keyword or check, refactor cases rename
+or move a function every caller imports, and read cases ask for a setting
+resolved through ini layers and code overrides, the file that defines a
+function among importers and a `_legacy` twin, or a constant re-exported
+through star imports. Every expected value is computed by running the
+reference function, every bug is caught by a visible input, and read cases
+carry the repo's other values as decoys. Negative control: the reference
+passes, the untouched repo fails. The code is new, so no served model has seen
+these repos, though the helper functions are textbook ones.
+
 `repair` costs nothing extra, so it is the one to understand. Everything already
 checks its own output. It runs the code it wrote, draws the SVG to see whether
 anything is visible, opens the web page in a browser. All of that was

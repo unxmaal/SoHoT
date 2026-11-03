@@ -1,0 +1,23 @@
+"""Fleet helpers."""
+from tally import tickets
+
+
+def clamp(value, low, high):
+    """Limit value to the closed range from low to high."""
+    return max(low, min(value, high))
+
+
+def dedupe(items):
+    """Items with repeats removed, first occurrences kept in order."""
+    seen = set()
+    out = []
+    for item in items:
+        if item not in seen:
+            seen.add(item)
+            out.append(item)
+    return out
+
+
+def dock_summary(text):
+    """One dock summary for the fleet page."""
+    return {'dock_summary': tickets.count_words(text)}

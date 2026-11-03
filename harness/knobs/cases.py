@@ -51,6 +51,8 @@ NOT_GATING = {
                                                                            "changes a case (#603)",
     "evals/importers/web_synth.py:ATTEMPTS": "redraws of one row before the generator refuses a kind too small "
                                              "for its share; it raises, it never changes a case (#603)",
+    "evals/importers/agent_synth.py:MAX_STEPS": "the step cap written into each generated case's params, as the hand "
+                                                "cases set theirs; the runner scales it by agent_steps_scale (#603)",
 }
 
 NEVER_CUTS = {

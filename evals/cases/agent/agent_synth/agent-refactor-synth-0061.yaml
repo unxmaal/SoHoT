@@ -1,0 +1,30 @@
+# SoHoT generated agent cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/agent_synth.py).
+# Imported by evals/importers from generated:evals.importers.agent_synth v1 seed 603@fc1d598d5bbe74a0cd538c8c5d6479a366d787f3; re-import, do not edit.
+id: agent-refactor-synth-0061
+modality: agent
+prompt: Move clamp out of compass/tickets.py into a new module compass/core_math.py and update every import
+  of it in compass/ and tests/. compass/tickets.py must neither define nor import clamp afterwards. Output
+  must not change. Run the tests.
+params:
+  repo: repos/agent-refactor-synth-0061
+  tools:
+  - read_file
+  - write_file
+  - list_dir
+  - run_tests
+  max_steps: 16
+assert:
+  hidden: true
+attribution:
+  dataset: SoHoT generated agent cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/agent_synth.py
+  license: generated
+  source: generated:evals.importers.agent_synth v1 seed 603
+  revision: fc1d598d5bbe74a0cd538c8c5d6479a366d787f3
+  item: '61'
+  date: ''
+  transform: a seeded repo with its task, graded by hidden tests or the answer it computes
+  importer: evals.importers.agent_synth
+  version: '1'
+  seed: 603
+  kind: move

@@ -1,0 +1,30 @@
+# SoHoT generated agent cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/agent_synth.py).
+# Imported by evals/importers from generated:evals.importers.agent_synth v1 seed 603@fc1d598d5bbe74a0cd538c8c5d6479a366d787f3; re-import, do not edit.
+id: agent-refactor-synth-0157
+modality: agent
+prompt: Move rle out of harbor/archive.py into a new module harbor/helpers.py and update every import
+  of it in harbor/ and tests/. harbor/archive.py must neither define nor import rle afterwards. Output
+  must not change. Run the tests.
+params:
+  repo: repos/agent-refactor-synth-0157
+  tools:
+  - read_file
+  - write_file
+  - list_dir
+  - run_tests
+  max_steps: 16
+assert:
+  hidden: true
+attribution:
+  dataset: SoHoT generated agent cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/agent_synth.py
+  license: generated
+  source: generated:evals.importers.agent_synth v1 seed 603
+  revision: fc1d598d5bbe74a0cd538c8c5d6479a366d787f3
+  item: '157'
+  date: ''
+  transform: a seeded repo with its task, graded by hidden tests or the answer it computes
+  importer: evals.importers.agent_synth
+  version: '1'
+  seed: 603
+  kind: move
