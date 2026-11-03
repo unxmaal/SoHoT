@@ -48,6 +48,11 @@ for i in $(seq 1 "$READY_TIMEOUT"); do
 done
 if [ "$ready" -ne 1 ]; then
   printf '\nFAIL  gateway not serving after %ss\n' "$READY_TIMEOUT"
+  # Name the MLX upstream when it is the part that is down, so a deploy log does not blame the gateway (#1515).
+  case "$H" in 127.0.0.1|localhost)
+    code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$E/v1/models" 2>/dev/null)"
+    [ "$code" = 200 ] || printf 'FAIL  the MLX engine at %s answers HTTP %s to /v1/models\n' "$E" "${code:-none}" ;;
+  esac
   uv run --quiet python -m harness.cuts scripts/smoke.sh:READY_TIMEOUT "smoke: gateway at $G not serving" \
     >/dev/null 2>&1 || printf 'note  the READY_TIMEOUT cut was not recorded\n' >&2
   exit 1

@@ -25,6 +25,7 @@ SMOKE = """#!/bin/bash
 # Fails everywhere with fail-smoke, and only on the live release with fail-smoke-live.
 [ -f fail-smoke ] && exit 1
 if [ -f fail-smoke-live ] && [ "$(cd "$DEPLOY_LINK" && pwd -P)" = "$(pwd -P)" ]; then exit 1; fi
+if [ -f "${MACHINE_BROKEN:-/nonexistent}" ] && [ "$(cd "$DEPLOY_LINK" && pwd -P)" = "$(pwd -P)" ]; then exit 1; fi
 echo "smoke $(basename "$(pwd -P)")" >> "$DEPLOY_LOG"
 """
 INSTALL = 'echo "reinstall $(basename "$(pwd -P)")" >> "$DEPLOY_LOG"\n'
