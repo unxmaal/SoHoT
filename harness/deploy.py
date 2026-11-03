@@ -263,8 +263,9 @@ def _order(p: Path) -> int:
     return int(head) if head.isdigit() else -1
 
 
-def prune(keep: set, src: Path, room: int = 0) -> list[str]:
-    """Remove the oldest release directories past KEEP_RELEASES less `room` for the ones about to be built, never one in keep."""
+def prune(keep: set, src: Path, room: int = 0, log=None, holding=None) -> list[str]:
+    """Remove the oldest release directories past KEEP_RELEASES less `room`, never one in keep or one a live process runs from."""
+    from harness import cuts, holders
     root = releases_dir()
     if not root.is_dir():
         return []
@@ -272,6 +273,16 @@ def prune(keep: set, src: Path, room: int = 0) -> list[str]:
     keep = {Path(k).resolve() for k in keep}
     spare = [p for p in have if p.resolve() not in keep]
     drop = spare[:max(0, len(have) - max(1, KEEP_RELEASES - room))]
+    held = (holding or holders.holding)(drop) if drop else {}
+    for p in list(drop):
+        if held is not None and not held.get(p):
+            continue
+        why = ("no way to tell on this platform which live processes run from it" if held is None
+               else f"{len(held[p])} live process(es) run from it: {'; '.join(held[p][:3])}")
+        if log is not None:
+            log.write(f"kept release {p.name} past KEEP_RELEASES: {why}\n")
+        cuts.cut("harness/deploy.py:KEEP_RELEASES", f"release {p.name} kept: {why}", kept=1, dropped=0)
+        drop.remove(p)
     gone = []
     for p in drop:
         try:
@@ -280,7 +291,6 @@ def prune(keep: set, src: Path, room: int = 0) -> list[str]:
             shutil.rmtree(p, ignore_errors=True)
         gone.append(p.name)
     if drop:
-        from harness import cuts
         cuts.cut("harness/deploy.py:KEEP_RELEASES", "release directories", kept=len(have) - len(drop),
                  dropped=len(drop))
     return gone
@@ -393,7 +403,7 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
                     previous = adopt(link)
                     _update(c, deploy_id, previous=str(previous))
                 release = releases_dir() / f"{deploy_id}-{sha[:12]}"
-                prune({previous, link.resolve()}, previous, room=1)
+                prune({previous, link.resolve()}, previous, room=1, log=log)
                 prune_backups()
                 _git(previous, "fetch", "-q", "origin", "main")
                 _git(previous, "worktree", "add", "-q", "--detach", str(release), sha)
