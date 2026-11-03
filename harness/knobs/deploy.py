@@ -53,6 +53,8 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    "harness/holders.py:_FILEINFO": "byte size of libproc's struct proc_fileinfo, fixed by <sys/proc_info.h> (#1523)",
+    "harness/holders.py:_REGIONINFO": "byte size of libproc's struct proc_regioninfo, fixed by <sys/proc_info.h> (#1523)",
     f"{Q}:LAUNCHCTL_TIMEOUT_S": "how long launchctl may take to load the switch's one-shot unit; a timeout fails "
                                 "the deploy before the switch and restores the store (#1506)",
     f"{X}:REAP_TIMEOUT_S": "how long a timed-out step's killed process group has to exit; the step already counts "
