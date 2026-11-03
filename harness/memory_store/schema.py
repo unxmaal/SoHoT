@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 87
+SCHEMA_VERSION = 88
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -370,6 +370,29 @@ CREATE TABLE IF NOT EXISTS day_clearances (
     said         TEXT NOT NULL,
     until        REAL NOT NULL,
     revoked_at   REAL
+);
+
+-- One deploy of a main commit through the work queue: built alongside, switched, verified or rolled back. #1506.
+CREATE TABLE IF NOT EXISTS deploys (
+    id           INTEGER PRIMARY KEY,
+    sha          TEXT NOT NULL,
+    job_id       INTEGER REFERENCES jobs(id),
+    machine_id   INTEGER REFERENCES machines(id),
+    release      TEXT NOT NULL DEFAULT '',
+    previous     TEXT NOT NULL DEFAULT '',
+    previous_sha TEXT NOT NULL DEFAULT '',
+    -- The store's .backup taken before a migration; '' when none ran.
+    backup       TEXT NOT NULL DEFAULT '',
+    schema_from  INTEGER,
+    schema_to    INTEGER,
+    -- building, smoking, migrating, switching, then the outcome's stage.
+    stage        TEXT NOT NULL DEFAULT '',
+    started_at   REAL NOT NULL,
+    finished_at  REAL,
+    -- '' while it runs; deployed, rolled_back, failed or interrupted.
+    outcome      TEXT NOT NULL DEFAULT '',
+    rolled_back_from TEXT NOT NULL DEFAULT '',
+    detail       TEXT NOT NULL DEFAULT ''
 );
 
 -- One eval run, written by evals.run; results.json is its export. #410.

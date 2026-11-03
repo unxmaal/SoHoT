@@ -67,6 +67,7 @@ UNIT_OUTPUTS = {
     "fetch": ("downloads", "started_at", "origin = 'fetch'", ("downloads",)),
     "delegations": ("delegations", "outcome_at", "", ("delegations",)),
     "review": ("", "", "", ("review",)),
+    "deploy": ("deploys", "started_at", "", ("deploys", "deploy.log")),
 }
 #: Where a person or a report reads a unit's output: commands, the morning brief, the audit, the published reports.
 REPORT_SURFACES = ("harness/commands/*.py", "harness/morning.py", "harness/live_audit.py", "harness/publish.py",

@@ -98,7 +98,6 @@ harness/needle.py:Chat.__call__(timeout)
 harness/needle.py:FIELD_TIMEOUT_S
 harness/needle.py:Server.close->self.proc.wait(timeout)
 harness/papers.py:MAX_DAYS
-harness/paths.py:deploy_checkout->subprocess.run(timeout)
 harness/power.py:BUDGET_MIN
 harness/power.py:CAP
 harness/power.py:MAX_CASES
