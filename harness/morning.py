@@ -360,6 +360,8 @@ def needs(r: dict) -> list[str]:
     d = r["deploy"]
     if d.get("available") and d["behind"]:
         out.append(f"deploy is {d['behind']} commit(s) behind origin/main")
+    from harness import deploy as deploys
+    out.extend(deploys.line(x) for x in r.get("deploys") or [] if x["outcome"] not in ("", deploys.DEPLOYED))
     if r["stale"]:
         out.append(f"stale lanes: {', '.join(s['lane'] for s in r['stale'])}")
     if r.get("stalled"):
@@ -404,12 +406,21 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "families": families(conn), "yield": yield_stops(conn), "api_spend": api_spend(conn),
          "engines": engines(conn, since),
          "runtimes": runtimes(conn, since), "techniques": techniques(conn, since),
-         "monitor": monitor(since) if monitor else None}
+         "monitor": monitor(since) if monitor else None, "deploys": deploys_since(conn, since)}
     if r["sweep"]["loop"] is not None:
         from harness import heartbeat
         r["sweep"]["loop"]["code_moved"] = heartbeat.code_moved(beat, r["deploy"].get("head", ""))
     r["needs"] = needs(r)
     return r
+
+
+def deploys_since(conn, since: float) -> list[dict]:
+    """Queue deploys started since `since`; [] on a store from before schema 88. #1506."""
+    from harness import deploy
+    try:
+        return deploy.since(conn, since)
+    except sqlite3.OperationalError:
+        return []
 
 
 def repo_incumbent(conn) -> dict:

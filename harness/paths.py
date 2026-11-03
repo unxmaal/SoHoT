@@ -62,12 +62,18 @@ _asking = local()
 
 def deploy_checkout() -> Path | None:
     """Where the services run from, as scripts/launchd.sh defines it; None without launchd."""
+    link = deploy_link()
+    return link.resolve() if link is not None else None
+
+
+def deploy_link() -> Path | None:
+    """scripts/launchd.sh's DEPLOY as it names it: a release link once queue deploys run (#1506); None without launchd."""
     if sys.platform == "win32" or getattr(_asking, "now", False):
         return None  # the cut a timed-out lookup records asks again; it must not wait another timeout
     from harness import cuts
     _asking.now = True
     try:
-        with cuts.timeout("harness/paths.py:deploy_checkout->subprocess.run(timeout)", "the deploy path lookup"):
+        with cuts.timeout("harness/paths.py:deploy_link->subprocess.run(timeout)", "the deploy path lookup"):
             out = subprocess.run(["bash", str(REPO / "scripts" / "launchd.sh"), "deploy-path"],
                                  capture_output=True, text=True, timeout=30, check=True)
     except (OSError, subprocess.SubprocessError):
@@ -75,7 +81,7 @@ def deploy_checkout() -> Path | None:
     finally:
         _asking.now = False
     got = out.stdout.strip()
-    return Path(got).resolve() if got else None
+    return Path(got) if got else None
 
 
 def runs_elsewhere() -> Path | None:

@@ -154,6 +154,8 @@ def render(r: dict) -> list[str]:
         out.append(f"deploy    {d['head'][:8]} vs origin/main {d['main'][:8]}: "
                    + (f"{d['behind']} commit(s) behind" if d["behind"] else "current"))
         out.extend(f"          {m}" for m in d["missing"])
+    from harness import deploy
+    out.extend(f"          {deploy.line(x)}" for x in r.get("deploys") or [])
     return out
 
 

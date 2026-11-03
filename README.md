@@ -1527,6 +1527,21 @@ start time: a running loop keeps the code it imported, so a deploy under it leav
 `LH_DEPLOY_DURING_SWEEP=1` stops it first; a paused measurement resumes next sweep. The loop records
 the commit it started on, and `soh morning` and `soh audit` say when a sweep ran under a deploy.
 
+Once that is installed, a deploy is a job in the work queue (#1506). Every 10 minutes the
+`deploy` agent (`soh deploy poll`) looks at `origin/main`; a head whose check-macos passed gets one
+deploy job, and a newer green head cancels a pending one. The job starts only from the watchdog's
+day start until 20:00, with no discover loop or eval running and no other job running, and ahead
+of every pending measurement. It checks the commit out into a new release under
+`$LOCALHARNESS_HOME/releases`, carries over the deploy's untracked files (imported cases,
+generated config; not `.venv`), runs `uv sync` and `scripts/smoke.sh` there, takes a `.backup` of
+the store and migrates it when the schema moves, then hands the switch to `harness/deploy_switch.py`
+under a one-shot launchd unit. That points `$LOCALHARNESS_HOME/deploy`, now a link, at the release,
+runs `launchd.sh reinstall` (install without a checkout), then smoke and `soh coherence`. A failure
+points the link back, restores the backup and alerts through `scripts/monit-alert.sh deploy`. The
+first queue deploy moves the old deploy worktree to `releases/adopted-<sha>` and leaves the link.
+The worker settles the job from the switch's record; each attempt is a `deploys` row that
+`soh deploy` and `soh morning` show. `soh deploy pause|resume|now [SHA]`.
+
 **Before deploying to a machine that has not deployed in a while, run
 `soh store dry-run` there from a checkout of the commit you are about to deploy.**
 It migrates a read-only copy of that machine's store with this checkout's code,

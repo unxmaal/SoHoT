@@ -25,12 +25,12 @@ SRC="${LH_REPO:-$REPO}"
 DEPLOY="${LH_DEPLOY:-$LH_HOME/deploy}"
 # `discover` is not a server. It is the scheduled sweep, and it is in this
 # list because the thing that must survive a reboot is the SCHEDULE. #261.
-SERVICES="gateway mlx eval tts mcp discover worker audit ds4 watchdog energy ledger morning claude-news otel canary sweep-check fetch delegations review"
+SERVICES="gateway mlx eval tts mcp discover worker audit ds4 watchdog energy ledger morning claude-news otel canary sweep-check fetch delegations review deploy"
 
 #: Services that RUN AND EXIT rather than serve, at fixed local hours. KeepAlive
 #: would rerun a finished sweep at once; StartInterval counts from load, so a day
 #: of installs never lets it fire (#625). harness/heartbeat reads the installed hours (#705).
-declare -a PERIODIC=(discover audit watchdog energy ledger morning claude-news canary sweep-check fetch delegations review)
+declare -a PERIODIC=(discover audit watchdog energy ledger morning claude-news canary sweep-check fetch delegations review deploy)
 DISCOVER_HOURS="${DISCOVER_HOURS:-21}"
 AUDIT_HOURS="${AUDIT_HOURS:-3}"                   # nightly, #492
 # The watchdog watches this machine's own jobs, so every role runs it. #814.
@@ -39,6 +39,8 @@ WATCHDOG_EVERY_MIN="${WATCHDOG_EVERY_MIN:-5}"
 ENERGY_EVERY_MIN="${ENERGY_EVERY_MIN:-1}"
 # Delegation outcomes inferred from the callers' transcripts, or expired to unknown, every N minutes. #1158.
 DELEGATIONS_EVERY_MIN="${DELEGATIONS_EVERY_MIN:-60}"
+# A green origin/main commit becomes a deploy job within N minutes; the job itself waits for its day window. #1506.
+DEPLOY_EVERY_MIN="${DEPLOY_EVERY_MIN:-10}"
 # How long install waits for a deferred periodic run to end before leaving it on the old unit. #1058.
 DEFER_WAIT_S="${LH_DEFER_WAIT_S:-120}"
 # The day's ledger row, written late each evening and rewritten the next. #826.
@@ -158,7 +160,7 @@ _watchdog_env() {
 }
 
 usage() {
-  echo "usage: $0 {deploy|deploy-path|generate [DIR]|install|uninstall|status|probe}" >&2
+  echo "usage: $0 {deploy|deploy-path|generate [DIR]|install|reinstall|uninstall|status|probe}" >&2
   exit 2
 }
 
@@ -168,11 +170,12 @@ usage() {
 _schedule() {
   local service="$1" p
   for p in "${PERIODIC[@]}"; do
-    if [ "$p" = "$service" ] && { [ "$service" = watchdog ] || [ "$service" = energy ] || [ "$service" = delegations ]; }; then
+    if [ "$p" = "$service" ] && { [ "$service" = watchdog ] || [ "$service" = energy ] || [ "$service" = delegations ] || [ "$service" = deploy ]; }; then
       # Every N minutes of every hour: a calendar, since an interval restarts at each load (#625).
       local m every="$WATCHDOG_EVERY_MIN"
       [ "$service" = energy ] && every="$ENERGY_EVERY_MIN"
       [ "$service" = delegations ] && every="$DELEGATIONS_EVERY_MIN"
+      [ "$service" = deploy ] && every="$DEPLOY_EVERY_MIN"
       printf '  <key>StartCalendarInterval</key>\n  <array>\n'
       for m in $(seq 0 "$every" 59); do
         printf '    <dict><key>Minute</key><integer>%s</integer></dict>\n' "$m"
@@ -393,8 +396,11 @@ _run_deployed() {
 }
 
 install_units() {
-  deploy
-  _run_deployed install
+  # reinstall: a queue deploy already switched DEPLOY to this release, so nothing is checked out. #1506.
+  if [ "${1:-}" != reinstall ]; then
+    deploy
+    _run_deployed install
+  fi
   preflight
   mkdir -p "$AGENTS"
   generate "$AGENTS" >/dev/null
@@ -459,7 +465,8 @@ install_units() {
   fi
   # A launchd job can be refused the LAN while Terminal is not: Local Network privacy. #739.
   local blocked=0
-  [ -z "$deferred" ] || blocked=1
+  # A queue deploy's units run through the link, so a periodic run left on its old unit is not a failed switch. #1506.
+  [ -z "$deferred" ] || [ "${1:-}" = reinstall ] || blocked=1
   if ! /bin/bash "$DEPLOY/scripts/lan-probe.sh"; then
     echo "the gateway is loaded but launchd cannot reach a serving node; see above" >&2
     blocked=1
@@ -530,6 +537,12 @@ case "${1:-}" in
       exec "$REPO/scripts/with-gpu-lock" "$0" install
     fi
     install_units ;;
+  reinstall)
+    if [ "${LH_GPU_LOCK_HELD:-}" != 1 ]; then
+      sweep_guard
+      exec "$REPO/scripts/with-gpu-lock" "$0" reinstall
+    fi
+    install_units reinstall ;;
   restart)
     # One loaded service, after any model-loading run. A no-op when the
     # service is not loaded (another machine, or not installed). #319.

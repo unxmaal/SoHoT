@@ -46,7 +46,7 @@ def test_a_timed_out_deploy_lookup_is_one_cut_even_when_the_cut_asks_again(monke
     monkeypatch.setattr(paths, "is_live", lambda p: True)
     assert paths.deploy_checkout() is None
     assert len(calls) == 1
-    assert _knobs() == ["harness/paths.py:deploy_checkout->subprocess.run(timeout)"]
+    assert _knobs() == ["harness/paths.py:deploy_link->subprocess.run(timeout)"]
 
 
 def test_pressure_reads_that_time_out_are_cuts_and_answers_are_not(monkeypatch):

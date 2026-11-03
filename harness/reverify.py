@@ -276,12 +276,14 @@ def _committed_at() -> float | None:
 
 
 def _harness_moved(conn, last: dict) -> bool:
-    """An unrun re-run whose job stored no run, and this checkout was committed after that job started. #1495."""
+    """An unrun re-run whose job stored no run, and the code here was committed or deployed after that job started. #1495, #1506."""
     if last["outcome"] != UNRUN or last["run_id"] is not None or last["job_id"] is None:
         return False
     job = conn.execute("SELECT started_at FROM jobs WHERE id = ?", (last["job_id"],)).fetchone()
     ran = (job["started_at"] if job else None) or last["queued_at"]
-    code = _committed_at()
+    from harness import deploy
+    # A queue deploy's finish is when the code changed here; a commit can predate the job and deploy after it. #1506.
+    code = max((t for t in (deploy.deployed_at(conn), _committed_at()) if t is not None), default=None)
     return code is not None and code > ran
 
 
