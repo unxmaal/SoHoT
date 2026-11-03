@@ -16,6 +16,36 @@
    "until": "version:mlx-lm>0.32.0"
   },
   {
+   "candidate": "ggml-org/Laya-GGUF",
+   "decided_at": "2026-11-03T03:00:33Z",
+   "detail": "it ran and passed nothing: check-squad2-56dddf4066d3e219004dad5f: warm-up: gateway returned HTTP 501: {\"error\":{\"code\":501,\"message\":\"This model is a decision model without text generation, use systemone\",\"type\":\"not_supported_error\"}}; guard-browsesafe-1130: warm-up: gateway returned HTTP 501: {\"error\":{\"code\":501,\"messa",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "ggml-org/Laya-GGUF",
+   "reason": "candidate",
+   "receipt_key": "ggml-org/Laya-GGUF",
+   "run_id": 672,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "ggml-org/Laya-GGUF,temperature=0",
+   "decided_at": "2026-11-03T03:00:33Z",
+   "detail": "it ran and passed nothing: check-squad2-56dddf4066d3e219004dad5f: warm-up: gateway returned HTTP 501: {\"error\":{\"code\":501,\"message\":\"This model is a decision model without text generation, use systemone\",\"type\":\"not_supported_error\"}}; guard-browsesafe-1130: warm-up: gateway returned HTTP 501: {\"error\":{\"code\":501,\"messa",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "ggml-org/Laya-GGUF",
+   "reason": "candidate",
+   "receipt_key": "ggml-org/Laya-GGUF",
+   "run_id": 672,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "nimble:bespokelabs/Bespoke-Nimble-9B",
    "decided_at": "2026-10-22T01:40:38Z",
    "detail": "2 case(s) passed a screen",
@@ -107,33 +137,33 @@
   },
   {
    "candidate": "akhilaaa3/Jev-Omni",
-   "decided_at": "2026-11-02T02:15:48Z",
-   "detail": "fits: smallest variant model.safetensors: 22.3 GiB of 1 weight file",
+   "decided_at": "2026-11-03T03:00:23Z",
+   "detail": "not screened: needs 34.3 GB but only -3.6 GB is safely available (14.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
-   "reason": "candidate",
+   "reason": "memory",
    "receipt_key": "akhilaaa3/Jev-Omni",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
-   "until": ""
+   "tier": "screen",
+   "until": "room_gb:>34.3"
   },
   {
    "candidate": "akhilaaa3/Jev-Omni,temperature=0",
-   "decided_at": "2026-11-02T02:15:48Z",
-   "detail": "fits: smallest variant model.safetensors: 22.3 GiB of 1 weight file",
+   "decided_at": "2026-11-03T03:00:23Z",
+   "detail": "not screened: needs 34.3 GB but only -3.6 GB is safely available (14.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
-   "reason": "candidate",
+   "reason": "memory",
    "receipt_key": "akhilaaa3/Jev-Omni",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
-   "until": ""
+   "tier": "screen",
+   "until": "room_gb:>34.3"
   },
   {
    "candidate": "apus-ailab/APUS-OpenJev-v1-4B-GGUF",
@@ -207,8 +237,8 @@
   },
   {
    "candidate": "decider:StrandsAgents/strands-decider-2B-hobson-v21",
-   "decided_at": "2026-11-01T18:21:34Z",
-   "detail": "downloaded",
+   "decided_at": "2026-11-03T03:01:09Z",
+   "detail": "not screened: our snapshot lacks files its runner opens; refetch: check-squad2-56dddf4066d3e219004dad5f: exit 1: huggingface_hub.errors.IncompleteSnapshotError: The cached snapshot for 'StrandsAgents/strands-decider-2B-hobson-v21' (revision 'main', commit 2b52a6235c1b8306bbfa30b00b9d4b74b63a39f5) is incomplete: 1 file(s) are missing (lora/adapter_model.safetensors",
    "exam": {
     "about": "2B params",
     "candidate": "decider/strands-decider-2B-hobson-v21",
@@ -237,9 +267,9 @@
    },
    "outcome": "queued",
    "proposal": "StrandsAgents/strands-decider-2B-hobson-v21",
-   "reason": "candidate",
+   "reason": "harness",
    "receipt_key": "decider/strands-decider-2B-hobson-v21",
-   "run_id": null,
+   "run_id": 675,
    "serves": false,
    "status": "pending",
    "tier": "fetch",
@@ -285,36 +315,6 @@
    "serves": false,
    "status": "pending",
    "tier": "",
-   "until": ""
-  },
-  {
-   "candidate": "ggml-org/Laya-GGUF",
-   "decided_at": "2026-11-02T05:34:22Z",
-   "detail": "downloaded",
-   "exam": null,
-   "outcome": "queued",
-   "proposal": "ggml-org/Laya-GGUF",
-   "reason": "candidate",
-   "receipt_key": "ggml-org/Laya-GGUF",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "fetch",
-   "until": ""
-  },
-  {
-   "candidate": "ggml-org/Laya-GGUF,temperature=0",
-   "decided_at": "2026-11-02T05:34:22Z",
-   "detail": "downloaded",
-   "exam": null,
-   "outcome": "queued",
-   "proposal": "ggml-org/Laya-GGUF",
-   "reason": "candidate",
-   "receipt_key": "ggml-org/Laya-GGUF",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "fetch",
    "until": ""
   },
   {
@@ -598,7 +598,7 @@
    "until": ""
   }
  ],
- "cursor": 1793497823529673,
+ "cursor": 1793674833729718,
  "events": [
   {
    "at": "2026-09-22T13:14:31Z",
@@ -808,6 +808,36 @@
    "outcome": "queued",
    "reason": "harness",
    "run_id": 638,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-03T03:00:23Z",
+   "candidate": "akhilaaa3/Jev-Omni",
+   "chosen": null,
+   "detail": "not screened: needs 34.3 GB but only -3.6 GB is safely available (14.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1793674823729451,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-03T03:00:33Z",
+   "candidate": "ggml-org/Laya-GGUF",
+   "chosen": null,
+   "detail": "it ran and passed nothing: check-squad2-56dddf4066d3e219004dad5f: warm-up: gateway returned HTTP 501: {\"error\":{\"code\":501,\"message\":\"This model is a decision model without text generation, use systemone\",\"type\":\"not_supported_error\"}}; guard-browsesafe-1130: warm-up: gateway returned HTTP 501: {\"error\":{\"code\":501,\"messa",
+   "how": "",
+   "id": 1793674833729718,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 672,
    "tier": "screen"
   }
  ],
@@ -1316,7 +1346,7 @@
    "runs": 4
   }
  ],
- "generated_at": "2026-11-02T08:00:26Z",
+ "generated_at": "2026-11-03T04:27:03Z",
  "knobs": [],
  "lane": {
   "cases": 661,
