@@ -32,18 +32,18 @@
   },
   {
    "candidate": "diffusers-video:LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
-   "decided_at": "2026-11-02T02:15:57Z",
-   "detail": "retest 1/3: broken at screen",
+   "decided_at": "2026-11-03T03:00:23Z",
+   "detail": "not screened: needs 0.3 GB but only -4.0 GB is safely available (14.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
    "exam": null,
    "outcome": "queued",
    "proposal": "LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
-   "reason": "reopened",
+   "reason": "memory",
    "receipt_key": "diffusers-video/Minimax-H3-ref2v_Anime_2_Realism",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
-   "until": ""
+   "tier": "screen",
+   "until": "room_gb:>0.3"
   },
   {
    "candidate": "h3",
@@ -83,7 +83,7 @@
    "until": ""
   }
  ],
- "cursor": 1793329405596317,
+ "cursor": 1793674823635713,
  "events": [
   {
    "at": "2026-09-19T23:24:35Z",
@@ -143,6 +143,21 @@
    "outcome": "screened",
    "reason": "candidate",
    "run_id": 617,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-03T03:00:23Z",
+   "candidate": "LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
+   "chosen": null,
+   "detail": "not screened: needs 0.3 GB but only -4.0 GB is safely available (14.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1793674823635713,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
    "tier": "screen"
   }
  ],
@@ -260,7 +275,7 @@
    "runs": 7
   }
  ],
- "generated_at": "2026-11-02T08:00:25Z",
+ "generated_at": "2026-11-03T04:27:02Z",
  "knobs": [],
  "lane": {
   "cases": 1,
