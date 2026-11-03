@@ -475,6 +475,8 @@ install_units() {
   preflight
   [ "${1:-}" = reinstall ] || _record_install_env
   mkdir -p "$AGENTS"
+  local before
+  before="$(_unit_sums)"
   generate "$AGENTS" >/dev/null
   local failed="" deferred=""
   local was="" pid
@@ -525,9 +527,24 @@ install_units() {
     done
   fi
   [ "$LH_ROLE" = node ] && drop_periodic
+  # A deferral is not a failure: the unit runs the deploy path, so its next run starts the deployed code. #1521.
   if [ -n "$deferred" ]; then
+    local now same="" stale=""
+    now="$(_unit_sums)"
+    for service in $deferred; do
+      if [ "$(_sum_of "$service" "$before")" = "$(_sum_of "$service" "$now")" ]; then
+        same="$same $service"
+      else
+        stale="$stale $service"
+      fi
+    done
     echo >&2
-    echo "deferred:$deferred -- mid-run, still on the old unit. Re-run install after it finishes." >&2
+    [ -z "$same" ] || echo "deferred:$same -- mid-run; its unit is unchanged, so its next run starts the deployed code." >&2
+    [ -z "$stale" ] || echo "deferred:$stale -- mid-run, and its unit changed: it keeps the old unit until the next install. Re-run install after it finishes." >&2
+  fi
+  # monit watches the machine through every deploy, so an install leaves it loaded or says it is not. #1521.
+  if [ -f "$AGENTS/$PREFIX.monit.plist" ] && ! (cd "$DEPLOY" && uv run --quiet soh monitor install); then
+    failed="$failed monit"
   fi
   if [ -n "$failed" ]; then
     echo >&2
@@ -537,8 +554,6 @@ install_units() {
   fi
   # A launchd job can be refused the LAN while Terminal is not: Local Network privacy. #739.
   local blocked=0
-  # A queue deploy's units run through the link, so a periodic run left on its old unit is not a failed switch. #1506.
-  [ -z "$deferred" ] || [ "${1:-}" = reinstall ] || blocked=1
   if ! /bin/bash "$DEPLOY/scripts/lan-probe.sh"; then
     echo "the gateway is loaded but launchd cannot reach a serving node; see above" >&2
     blocked=1
@@ -556,6 +571,19 @@ install_units() {
   [ "$blocked" -eq 0 ] || return 1
   echo
   echo "Give them a moment, then: ./scripts/smoke.sh"
+}
+
+# "service=cksum" per periodic unit file, so install can tell whether a deferred unit's definition changed.
+_unit_sums() {
+  local p
+  for p in "${PERIODIC[@]}"; do
+    [ -f "$AGENTS/$PREFIX.$p.plist" ] && printf '%s=%s\n' "$p" "$(cksum < "$AGENTS/$PREFIX.$p.plist" | tr ' ' _)"
+  done
+  return 0
+}
+
+_sum_of() {
+  printf '%s\n' "$2" | awk -F= -v s="$1" '$1 == s {print $2; exit}'
 }
 
 # bootout first so `install` is re-runnable: bootstrap on an already-loaded label fails.

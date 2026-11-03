@@ -23,8 +23,8 @@ def cmd_monitor(a) -> int:
             return err(str(exc))
         s = got["spec"]
         note(f"wrote {got['rc']} and {got['plist']}; "
-             + ("monit was still loaded, so it reloaded the new config" if got["reloaded"] else
-                "monit loaded under launchd"))
+             + (f"monit already runs this config (pid {got['pid']}), left alone" if got["unchanged"] else
+                f"monit loaded under launchd (pid {got['pid']})"))
         note(f"watching {s['data']}" + (f", {s['models']}" if s["models"] else "")
              + ", memory pressure" + "".join(f", {n} :{p}" for n, p in s["services"]))
         note(f"alerts post to {monitor.WEBHOOK}" if got["webhook"] else

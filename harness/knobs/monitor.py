@@ -29,6 +29,10 @@ NOT_GATING = {
     f"{M}:POST_TIMEOUT_S": "how long the Discord webhook post may take; a timeout is reported in the alert line (#1485)",
     f"{M}:CLI_TIMEOUT_S": "how long monit -t, monit summary, launchctl or the notifier may take; a hang only (#1485)",
     f"{M}:POST_CHARS": "Discord's message length limit; presentation only (#1485)",
+    f"{M}:UNLOAD_WAIT_S": "how long install waits for the old monit to leave launchd; past it install fails loudly (#1521)",
+    f"{M}:START_WAIT_S": "how long install waits for launchd to list the new monit's pid; past it install fails (#1521)",
+    f"{M}:BOOTSTRAP_TRIES": "bootstraps install tries before it says monit is not loaded; a failure is loud (#1521)",
+    f"{M}:POLL_S": "the pause between launchctl polls; a pace only (#1521)",
 }
 
 NEVER_CUTS = {

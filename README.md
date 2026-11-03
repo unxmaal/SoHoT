@@ -1526,6 +1526,9 @@ PRs that were green apart but break main together never reach the agents.
 start time: a running loop keeps the code it imported, so a deploy under it leaves it on the old code.
 `LH_DEPLOY_DURING_SWEEP=1` stops it first; a paused measurement resumes next sweep. The loop records
 the commit it started on, and `soh morning` and `soh audit` say when a sweep ran under a deploy.
+A periodic unit with a live run (a daytime `fetch`) is not reloaded: install waits `LH_DEFER_WAIT_S`
+for it, then prints `deferred:` and still exits 0, since the unit starts the deployed code on its
+next run. When that unit's definition changed, the line says so; run `install` again after the run ends.
 
 Once that is installed, a deploy is a job in the work queue (#1506). Every 10 minutes the
 `deploy` agent (`soh deploy poll`) looks at `origin/main`; a head whose check-macos passed gets one
@@ -1643,7 +1646,9 @@ soh monitor status       # installed, running, config current, webhook set; moni
 
 [monit](https://mmonit.com/monit/) is an external tool, not vendored. `install`
 renders `monit/monitrc` under the home (mode 600) from this machine's paths and
-loads `com.unxmaal.localharness.monit`. Every `monitor_cycle` it checks free
+loads `com.unxmaal.localharness.monit`. It bootstraps only once the old monit has left launchd, tries twice,
+and fails unless launchd then lists a running monit; one already on the same config is left running.
+`scripts/launchd.sh install` and `reinstall` run it wherever monit was set up and fail when it is not loaded. Every `monitor_cycle` it checks free
 space on the system Data volume (alert under `monitor_disk_alert`; at
 `monitor_disk_pause` it pauses the job queue and every running eval, then
 alerts), the weights volume when it is a separate disk (alert when it is
