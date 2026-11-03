@@ -3,7 +3,9 @@ import pytest
 
 from harness import adopt, baseline, paired, reverify, runs
 from tests.test_reverify import (DAY, NOW, VERSIONS, _latest, _queue_and_finish, check, conn, on,  # noqa: F401
-                                 queued, record_run, upgraded)
+                                 powered, queued, record_run, upgraded)
+
+pytestmark = pytest.mark.usefixtures("powered")
 
 
 def _cases(spec, ids, passing=None):

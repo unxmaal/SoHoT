@@ -125,7 +125,7 @@ LEFT_OUT = {
         "test_served_readonly_1247.py", "test_adopt_effect_confirm_725.py",
         "test_confirm_resume_1357.py", "test_store_errors_1432.py"),
     "harness/adopt.py": (
-        "test_technique_triage_993.py", "test_harness_paired.py", "test_reverify_case_sets_1496.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
+        "test_technique_triage_993.py", "test_harness_paired.py", "test_reverify_case_sets_1496.py", "test_reverify_power_1504.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
         "test_over_budget_796.py", "test_planted_919.py", "test_projection_696.py", "test_rank_893.py", "test_router_unload.py",
         "test_store_state.py", "test_stt_screen_power_1007.py", "test_sweep_ceiling_806.py", "test_loop_revisit_1055.py",
         "test_incumbent_from_measurement_1110.py", "test_env_error_coverage_1116.py", "test_site.py",

@@ -254,7 +254,7 @@ Test: untested
 Test: untested
 
 ### Requirement: A re-run settles from the run its job stored
-`settle` SHALL judge every unsettled reverification whose job is no longer pending, running or paused, across all lanes whatever lane the check names, from the newest run stamped with that job's id, and write the outcome, reason, failure class, detail and run id. The outcome SHALL be `passed`, `failed`, `regressed`, `unrun` or `cancelled`. A re-run in which the served candidate did not work SHALL be `failed` with the reason of the most common failure class, unless that reason is `harness`, which MUST make it `unrun`, never a verdict on the model. A job that stored no run, or a run with no row for the served candidate, SHALL be `unrun`.
+`settle` SHALL judge every unsettled reverification whose job is no longer pending, running or paused, across all lanes whatever lane the check names, from the newest run stamped with that job's id, and write the outcome, reason, failure class, detail and run id. The outcome SHALL be `passed`, `underpowered`, `failed`, `regressed`, `unrun` or `cancelled`. A re-run in which the served candidate did not work SHALL be `failed` with the reason of the most common failure class, unless that reason is `harness`, which MUST make it `unrun`, never a verdict on the model. A job that stored no run, or a run with no row for the served candidate, SHALL be `unrun`.
 
 #### Scenario: The re-run passes
 - **WHEN** the job is done and its run passes like the baseline
@@ -343,7 +343,7 @@ Test: untested
 Test: untested
 
 ### Requirement: A loss beyond the paired noise is a regression
-When the re-run worked and has a baseline, `judge` SHALL pair the served candidate against itself across the two runs by base case and repeat, on the lane's metric (`winners.PRIMARY`), or per stratum at the lane's weights for a stratified lane, and SHALL settle `regressed` when more draws were lost than gained at `adopt.ALPHA` or below. Timeouts and harness failures MUST be neither lost nor gained, and repeats MUST shrink by the design effect. When one run's case set holds the other's, the pairing SHALL run on the cases both ran and the detail SHALL say how many only one ran. Case sets that only partly overlap or share no case, and another repeat, SHALL be refused and settle `unrun`. When an incumbent was re-run beside it and now beats it at `adopt.ALPHA`, the re-run SHALL settle `regressed` naming the incumbent.
+When the re-run worked and has a baseline, `judge` SHALL pair the served candidate against itself across the two runs by base case and repeat, on the lane's metric (`winners.PRIMARY`), or per stratum at the lane's weights for a stratified lane, and SHALL settle `regressed` when more draws were lost than gained at `adopt.ALPHA` or below. Timeouts and harness failures MUST be neither lost nor gained, and repeats MUST shrink by the design effect. When one run's case set holds the other's, the pairing SHALL run on the cases both ran and the detail SHALL say how many only one ran. Case sets that only partly overlap or share no case, and another repeat, SHALL be refused and settle `unrun`. When an incumbent was re-run beside it and now beats it at `adopt.ALPHA`, the re-run SHALL settle `regressed` naming the incumbent. A re-run that is neither SHALL settle `underpowered`, never `passed`, when its pairing had power under `power.TARGET` to see a loss of `power.effect_for(lane)` per cell at `adopt.ALPHA`; the detail MUST name the shared cases and the minimum `power.cases_needed` gives, and its run SHALL be the next baseline.
 
 #### Scenario: Beyond the noise
 - **WHEN** the re-run loses most cases its baseline passed
@@ -389,6 +389,16 @@ Test: tests/test_reverify_case_sets_1496.py::test_a_regression_on_the_shared_cas
 - **WHEN** each run has cases the other lacks
 - **THEN** the pairing is refused and the re-run settles `unrun` naming how many each lacks
 Test: tests/test_reverify_case_sets_1496.py::test_case_sets_that_only_partly_overlap_are_refused_with_the_reason
+
+#### Scenario: A pass on too few shared cases
+- **WHEN** the re-run passes on fewer shared cases than `power.cases_needed` gives
+- **THEN** it settles `underpowered`, naming the shared count and the minimum, and its run is the next baseline
+Test: tests/test_reverify_power_1504.py::test_a_pass_on_a_shared_set_below_the_minimum_is_underpowered_and_names_the_count_and_minimum
+
+#### Scenario: A pass at the minimum
+- **WHEN** the shared cases reach the minimum
+- **THEN** it settles `passed` as before
+Test: tests/test_reverify_power_1504.py::test_the_verdict_turns_at_the_minimum
 
 #### Scenario: Field accuracy drops at an equal exact count
 - **WHEN** a decide re-run keeps its exact-case count but loses field accuracy on most cases

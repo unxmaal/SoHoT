@@ -155,6 +155,19 @@ def power(rates, effect: float, repeat: int = 1, alpha: float | None = None,
     return power_cells(gain, lose, effective_cells(len(rates), repeat, rho), alpha)
 
 
+def loss_odds(rows, deff: float, metric: str, floor: float) -> tuple[list[float], int, float]:
+    """Per-case rates that make power() read a loss as a gain (a draw can lose when it scores above `floor`), with their repeat and rho. #690, #1504."""
+    from harness import paired
+    got = {k: j for k, v in paired.draws(rows, unjudged=paired.UNJUDGED_ON_A_TIMEOUT_AXIS, metric=metric).items()
+           if (j := [x > floor for x in v if x is not None])}
+    if not got:
+        return [], 1, 0.0
+    repeat = sum(map(len, got.values())) / len(got)
+    rho = (deff - 1.0) / (repeat - 1.0) if repeat > 1 else 0.0
+    # A loss of d from rate p has the odds of a gain of d from rate 1-p.
+    return [1.0 - sum(v) / len(v) for v in got.values()], max(1, round(repeat)), rho
+
+
 def mde(rates, repeat: int, alpha: float, rho: float, target: float) -> float | None:
     """Smallest per-cell gain in (0, 1] this many cases and repeats detect at `target`, rounded up to 0.001."""
     rates = list(rates)
