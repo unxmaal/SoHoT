@@ -19,6 +19,77 @@ AGENTS="$HOME/Library/LaunchAgents"
 LH_HOME="${LOCALHARNESS_HOME:-$HOME/localharness}"
 LH_LOGS="$LH_HOME/logs"
 PREFIX="com.unxmaal.localharness"
+# What a manual install read from the owner's shell, so a launchd reinstall renders the same units. #1518.
+INSTALL_ENV="$LH_HOME/install.env"
+RECORDED="HF_HOME HF_MIN_FREE_GB PATH LH_WATCHDOG_ACT LH_WATCHDOG_FILE LH_DAY_FETCH LH_REVIEW_FILE DISCOVER_HOURS AUDIT_HOURS WATCHDOG_EVERY_MIN ENERGY_EVERY_MIN DELEGATIONS_EVERY_MIN DEPLOY_EVERY_MIN LEDGER_HOURS MORNING_HOURS MORNING_MINUTE CLAUDE_NEWS_WEEKDAY CLAUDE_NEWS_HOUR CANARY_WEEKDAY CANARY_HOUR REVIEW_WEEKDAY REVIEW_HOUR SWEEP_CHECK_HOURS FETCH_HOURS"
+
+# One variable's recorded value; rc 1 when the record does not hold it.
+_recorded() {
+  local line
+  [ -f "$INSTALL_ENV" ] || return 1
+  line="$(grep -m1 "^$1=" "$INSTALL_ENV")" || return 1
+  printf '%s' "${line#*=}"
+}
+
+# reinstall takes the record and nothing from its caller; install takes its caller, else the last record.
+_install_env() {
+  local var val
+  case "$1" in
+    reinstall)
+      if [ ! -f "$INSTALL_ENV" ]; then
+        echo "FATAL: no recorded install environment at $INSTALL_ENV, so reinstall would render units from" >&2
+        echo "       launchd's empty environment. Run ./scripts/launchd.sh install once from the owner's shell." >&2
+        exit 1
+      fi
+      for var in $RECORDED; do
+        if val="$(_recorded "$var")" && [ -n "$val" ]; then
+          export "$var=$val"
+        elif [ "$var" = PATH ]; then
+          export PATH="/usr/bin:/bin:/usr/sbin:/sbin"
+        else
+          unset "$var"
+        fi
+      done
+      unset HF_ROOT
+      if [ -z "${HF_HOME:-}" ] || ! ls "$HF_HOME" >/dev/null 2>&1; then
+        echo "FATAL: the weights location recorded in $INSTALL_ENV (HF_HOME=${HF_HOME:-nothing}) cannot be read." >&2
+        echo "       reinstall will not fall back to another location; attach the volume, or run install again." >&2
+        exit 1
+      fi ;;
+    install)
+      for var in $RECORDED; do
+        [ -n "${!var:-}" ] && continue
+        [ "$var" = HF_HOME ] && [ -n "${HF_ROOT:-}" ] && continue
+        val="$(_recorded "$var")" || val=""
+        if [ -z "$val" ] && [ -f "$LH_HOME/$var" ]; then val="$(tr -d '[:space:]' < "$LH_HOME/$var")"; fi
+        if [ -n "$val" ]; then export "$var=$val"; fi
+      done
+      for var in $RECORDED; do
+        if [ -n "${!var:-}" ]; then GIVEN="$GIVEN $var"; fi
+      done ;;
+  esac
+  return 0
+}
+# What install was given, before the defaults below fill the rest: only these are recorded.
+GIVEN=""
+_install_env "${1:-}"
+
+# Write the record from what this install resolved; HF_HOME is env.sh's answer, as the units get it.
+_record_install_env() {
+  local var val tmp="$INSTALL_ENV.$$"
+  mkdir -p "$LH_HOME"
+  {
+    echo "# Written by scripts/launchd.sh install; reinstall and the deploy switch read it (#1518)."
+    printf 'HF_HOME=%s\n' "$(_hf_root)"
+    for var in $GIVEN; do
+      [ "$var" = HF_HOME ] && continue
+      val="${!var:-}"
+      if [ -n "$val" ]; then printf '%s=%s\n' "$var" "$val"; fi
+    done
+  } > "$tmp"
+  mv "$tmp" "$INSTALL_ENV"
+  echo "recorded the install environment in $INSTALL_ENV"
+}
 # The agents run DEPLOY, a worktree that only ever holds origin/main, so branch
 # work in the checkout this script lives in never becomes production. #290.
 SRC="${LH_REPO:-$REPO}"
@@ -402,6 +473,7 @@ install_units() {
     _run_deployed install
   fi
   preflight
+  [ "${1:-}" = reinstall ] || _record_install_env
   mkdir -p "$AGENTS"
   generate "$AGENTS" >/dev/null
   local failed="" deferred=""

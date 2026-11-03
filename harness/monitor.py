@@ -216,7 +216,7 @@ def syntax(monit: str, rc: Path, run=subprocess.run) -> str:
     return "" if got.returncode == 0 else (got.stdout + got.stderr).strip()[-600:]
 
 
-def install(run=subprocess.run, which=shutil.which, platform: str | None = None) -> dict:
+def install(run=subprocess.run, which=shutil.which, platform: str | None = None, sleep=time.sleep) -> dict:
     """Render this machine's config, check it, and load monit under launchd. The webhook is never written."""
     if (platform or sys.platform) != "darwin":
         raise InstallError("soh monitor install is macOS-only: it loads a launchd agent")
@@ -232,13 +232,25 @@ def install(run=subprocess.run, which=shutil.which, platform: str | None = None)
     unit = plist_path()
     unit.parent.mkdir(parents=True, exist_ok=True)
     unit.write_bytes(plist(monit, paths.home()))
-    run(["launchctl", "bootout", f"{volume._domain()}/{LABEL}"], capture_output=True, text=True,
-        timeout=CLI_TIMEOUT_S)
-    got = run(["launchctl", "bootstrap", volume._domain(), str(unit)], capture_output=True, text=True,
-              timeout=CLI_TIMEOUT_S)
+    def quiet(argv, **kw):
+        return run(argv, capture_output=True, text=True, timeout=CLI_TIMEOUT_S)
+
+    quiet(["launchctl", "bootout", f"{volume._domain()}/{LABEL}"])
+    # bootout returns before the job is gone; a bootstrap then fails with I/O error 5. #1518.
+    volume._await_unload(LABEL, volume.Ops(run=quiet, sleep=sleep))
+    got = quiet(["launchctl", "bootstrap", volume._domain(), str(unit)])
+    reloaded = False
     if got.returncode != 0:
-        raise InstallError(f"launchctl bootstrap {unit} failed: {(got.stderr or got.stdout).strip()[:300]}")
-    return {"rc": str(rc), "plist": str(unit), "spec": s, "webhook": webhook_set()}
+        said = (got.stderr or got.stdout).strip()[:300]
+        if quiet(["launchctl", "print", f"{volume._domain()}/{LABEL}"]).returncode != 0:
+            raise InstallError(f"launchctl bootstrap {unit} failed: {said}")
+        # Still loaded, so the monit running keeps its old config until it rereads this one.
+        again = quiet([monit, "-c", str(rc), "reload"])
+        if again.returncode != 0:
+            raise InstallError(f"launchctl bootstrap {unit} failed ({said}) with monit still loaded, and "
+                               f"monit reload failed: {(again.stderr or again.stdout).strip()[:300]}")
+        reloaded = True
+    return {"rc": str(rc), "plist": str(unit), "spec": s, "webhook": webhook_set(), "reloaded": reloaded}
 
 
 def webhook_set(home: Path | None = None) -> bool:
@@ -290,6 +302,12 @@ def status(run=subprocess.run, which=shutil.which, expected: str | None = None) 
         out["running"], out["summary"] = summary(monit, rc, run=run)
         if not out["running"]:
             probs.append("monit is not running: soh monitor install loads it")
+        else:
+            seen = {ln.split()[0] for ln in out["summary"] if ln.split()}
+            lost = [n for n in re.findall(r"^check \S+ (\S+)", rc.read_text(encoding="utf-8"), re.M) if n not in seen]
+            if lost:
+                probs.append(f"monit is running an older config (its summary has no {', '.join(lost)}): "
+                             "soh monitor install reloads it")
     if not out["webhook"]:
         probs.append(f"no {WEBHOOK} in {env_path()}: alerts go to the desktop and the morning brief only")
     mode = env_mode_problem()

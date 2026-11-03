@@ -446,6 +446,8 @@ capabilities:
     modules:
       - harness/deploy.py
       - harness/deploy_switch.py
+      - harness/engine_smoke.py
+      - harness/install_env.py
       - harness/commands/deploy.py
       - harness/deploy_guard.py
       - harness/sweep_guard.py

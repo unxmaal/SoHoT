@@ -297,7 +297,8 @@ def _smoke(env_extra: dict, tmp_path, cwd=REPO, script="scripts/smoke.sh"):
         pytest.skip("needs bash and curl")
     env = {**os.environ, "LOCALHARNESS_HOME": str(tmp_path),
            "SOHOT_GATEWAY_STORE": "file", "READY_TIMEOUT": "2",
-           "MLX_PORT": "9", "TTS_PORT": "9", "SMOKE_G2P_CHECK": "true", **env_extra}
+           "MLX_PORT": "9", "TTS_PORT": "9", "SMOKE_G2P_CHECK": "true",
+           "SMOKE_INSTALL_CHECK": "true", "SMOKE_ENGINES_CHECK": "true", **env_extra}
     if "SOHOT_GATEWAY_KEY" not in env_extra:
         env.pop("SOHOT_GATEWAY_KEY", None)
     return subprocess.run([BASH, str(script)], cwd=cwd, env=env,

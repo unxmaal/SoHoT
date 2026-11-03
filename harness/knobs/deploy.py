@@ -11,6 +11,9 @@ SMOKE = ("scripts/smoke.sh's own bounds: READY_TIMEOUT 120 s, then curl --max-ti
          "before its uv runs")
 
 KNOBS = [
+    _k("deploy_engine_smoke_timeout", ["harness/engine_smoke.py:ASK_TIMEOUT_S"], [120.0, 300.0, 600.0], unit="s",
+       note="seconds smoke's one completion per upstream engine may take, a cold model load included; it asks "
+            "each engine's first model in the served config, 0.5B MLX and 4B GGUF on the Studio (#1518)"),
     _k("deploy_every", ["scripts/launchd.sh:DEPLOY_EVERY_MIN"], [5, 10, 30], unit="minutes",
        note="minutes between polls of origin/main for a green commit to queue; how late a merge becomes a deploy "
             "job. 2026-11-02: #1500-#1503 merged and waited a night with no deploy at all (#1506)"),

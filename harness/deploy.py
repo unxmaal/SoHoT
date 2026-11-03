@@ -384,6 +384,10 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
                 _alert(steps, previous, f"deploy of {sha[:12]} failed before the switch: {why}", log)
                 return 1
 
+            from harness import install_env
+            why = install_env.problem()
+            if why:
+                return stop(f"reinstall would refuse: {why}")
             try:
                 if not link.is_symlink():
                     previous = adopt(link)
@@ -422,7 +426,8 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
                    "backup": saved, "migrated": migrated, "queue_was_paused": wq.paused(),
                    "queue_flag": str(wq._pause_flag()), "install": steps.install,
                    "rollback_install": steps.install, "verify": [steps.smoke, steps.coherence],
-                   "alert": steps.alert, "log": str(log_path), "stage": "handed_off", "outcome": "",
+                   "alert": steps.alert, "log": str(log_path), "install_env": str(install_env.path()),
+                   "stage": "handed_off", "outcome": "",
                    "handed_at": now()}
             wq.pause()
             path = record_path(deploy_id)

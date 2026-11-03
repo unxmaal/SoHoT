@@ -1542,6 +1542,15 @@ first queue deploy moves the old deploy worktree to `releases/adopted-<sha>` and
 The worker settles the job from the switch's record; each attempt is a `deploys` row that
 `soh deploy` and `soh morning` show. `soh deploy pause|resume|now [SHA]`.
 
+A launchd job has no shell profile, so `reinstall` never reads its caller's environment (#1518).
+A manual `launchd.sh install` from the owner's shell records what it read (`HF_HOME` as `env.sh`
+resolved it, `PATH`, the `LH_*` switches, any schedule override) in `$LOCALHARNESS_HOME/install.env`;
+a later install keeps a recorded value it is not given again. `reinstall` and the deploy switch run
+in that record, and refuse when it is missing or its weights location cannot be read; a deploy job
+checks the same before it builds. Smoke compares each installed unit's `HF_HOME` with the record and
+asks each upstream engine for one real completion. Run one manual install on a machine before its
+first queue deploy.
+
 **Before deploying to a machine that has not deployed in a while, run
 `soh store dry-run` there from a checkout of the commit you are about to deploy.**
 It migrates a read-only copy of that machine's store with this checkout's code,
