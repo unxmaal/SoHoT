@@ -19,6 +19,77 @@ AGENTS="$HOME/Library/LaunchAgents"
 LH_HOME="${LOCALHARNESS_HOME:-$HOME/localharness}"
 LH_LOGS="$LH_HOME/logs"
 PREFIX="com.unxmaal.localharness"
+# What a manual install read from the owner's shell, so a launchd reinstall renders the same units. #1518.
+INSTALL_ENV="$LH_HOME/install.env"
+RECORDED="HF_HOME HF_MIN_FREE_GB PATH LH_WATCHDOG_ACT LH_WATCHDOG_FILE LH_DAY_FETCH LH_REVIEW_FILE DISCOVER_HOURS AUDIT_HOURS WATCHDOG_EVERY_MIN ENERGY_EVERY_MIN DELEGATIONS_EVERY_MIN DEPLOY_EVERY_MIN LEDGER_HOURS MORNING_HOURS MORNING_MINUTE CLAUDE_NEWS_WEEKDAY CLAUDE_NEWS_HOUR CANARY_WEEKDAY CANARY_HOUR REVIEW_WEEKDAY REVIEW_HOUR SWEEP_CHECK_HOURS FETCH_HOURS"
+
+# One variable's recorded value; rc 1 when the record does not hold it.
+_recorded() {
+  local line
+  [ -f "$INSTALL_ENV" ] || return 1
+  line="$(grep -m1 "^$1=" "$INSTALL_ENV")" || return 1
+  printf '%s' "${line#*=}"
+}
+
+# reinstall takes the record and nothing from its caller; install takes its caller, else the last record.
+_install_env() {
+  local var val
+  case "$1" in
+    reinstall)
+      if [ ! -f "$INSTALL_ENV" ]; then
+        echo "FATAL: no recorded install environment at $INSTALL_ENV, so reinstall would render units from" >&2
+        echo "       launchd's empty environment. Run ./scripts/launchd.sh install once from the owner's shell." >&2
+        exit 1
+      fi
+      for var in $RECORDED; do
+        if val="$(_recorded "$var")" && [ -n "$val" ]; then
+          export "$var=$val"
+        elif [ "$var" = PATH ]; then
+          export PATH="/usr/bin:/bin:/usr/sbin:/sbin"
+        else
+          unset "$var"
+        fi
+      done
+      unset HF_ROOT
+      if [ -z "${HF_HOME:-}" ] || ! ls "$HF_HOME" >/dev/null 2>&1; then
+        echo "FATAL: the weights location recorded in $INSTALL_ENV (HF_HOME=${HF_HOME:-nothing}) cannot be read." >&2
+        echo "       reinstall will not fall back to another location; attach the volume, or run install again." >&2
+        exit 1
+      fi ;;
+    install)
+      for var in $RECORDED; do
+        [ -n "${!var:-}" ] && continue
+        [ "$var" = HF_HOME ] && [ -n "${HF_ROOT:-}" ] && continue
+        val="$(_recorded "$var")" || val=""
+        if [ -z "$val" ] && [ -f "$LH_HOME/$var" ]; then val="$(tr -d '[:space:]' < "$LH_HOME/$var")"; fi
+        if [ -n "$val" ]; then export "$var=$val"; fi
+      done
+      for var in $RECORDED; do
+        if [ -n "${!var:-}" ]; then GIVEN="$GIVEN $var"; fi
+      done ;;
+  esac
+  return 0
+}
+# What install was given, before the defaults below fill the rest: only these are recorded.
+GIVEN=""
+_install_env "${1:-}"
+
+# Write the record from what this install resolved; HF_HOME is env.sh's answer, as the units get it.
+_record_install_env() {
+  local var val tmp="$INSTALL_ENV.$$"
+  mkdir -p "$LH_HOME"
+  {
+    echo "# Written by scripts/launchd.sh install; reinstall and the deploy switch read it (#1518)."
+    printf 'HF_HOME=%s\n' "$(_hf_root)"
+    for var in $GIVEN; do
+      [ "$var" = HF_HOME ] && continue
+      val="${!var:-}"
+      if [ -n "$val" ]; then printf '%s=%s\n' "$var" "$val"; fi
+    done
+  } > "$tmp"
+  mv "$tmp" "$INSTALL_ENV"
+  echo "recorded the install environment in $INSTALL_ENV"
+}
 # The agents run DEPLOY, a worktree that only ever holds origin/main, so branch
 # work in the checkout this script lives in never becomes production. #290.
 SRC="${LH_REPO:-$REPO}"
@@ -402,7 +473,10 @@ install_units() {
     _run_deployed install
   fi
   preflight
+  [ "${1:-}" = reinstall ] || _record_install_env
   mkdir -p "$AGENTS"
+  local before
+  before="$(_unit_sums)"
   generate "$AGENTS" >/dev/null
   local failed="" deferred=""
   local was="" pid
@@ -453,9 +527,24 @@ install_units() {
     done
   fi
   [ "$LH_ROLE" = node ] && drop_periodic
+  # A deferral is not a failure: the unit runs the deploy path, so its next run starts the deployed code. #1521.
   if [ -n "$deferred" ]; then
+    local now same="" stale=""
+    now="$(_unit_sums)"
+    for service in $deferred; do
+      if [ "$(_sum_of "$service" "$before")" = "$(_sum_of "$service" "$now")" ]; then
+        same="$same $service"
+      else
+        stale="$stale $service"
+      fi
+    done
     echo >&2
-    echo "deferred:$deferred -- mid-run, still on the old unit. Re-run install after it finishes." >&2
+    [ -z "$same" ] || echo "deferred:$same -- mid-run; its unit is unchanged, so its next run starts the deployed code." >&2
+    [ -z "$stale" ] || echo "deferred:$stale -- mid-run, and its unit changed: it keeps the old unit until the next install. Re-run install after it finishes." >&2
+  fi
+  # monit watches the machine through every deploy, so an install leaves it loaded or says it is not. #1521.
+  if [ -f "$AGENTS/$PREFIX.monit.plist" ] && ! (cd "$DEPLOY" && uv run --quiet soh monitor install); then
+    failed="$failed monit"
   fi
   if [ -n "$failed" ]; then
     echo >&2
@@ -465,8 +554,6 @@ install_units() {
   fi
   # A launchd job can be refused the LAN while Terminal is not: Local Network privacy. #739.
   local blocked=0
-  # A queue deploy's units run through the link, so a periodic run left on its old unit is not a failed switch. #1506.
-  [ -z "$deferred" ] || [ "${1:-}" = reinstall ] || blocked=1
   if ! /bin/bash "$DEPLOY/scripts/lan-probe.sh"; then
     echo "the gateway is loaded but launchd cannot reach a serving node; see above" >&2
     blocked=1
@@ -484,6 +571,19 @@ install_units() {
   [ "$blocked" -eq 0 ] || return 1
   echo
   echo "Give them a moment, then: ./scripts/smoke.sh"
+}
+
+# "service=cksum" per periodic unit file, so install can tell whether a deferred unit's definition changed.
+_unit_sums() {
+  local p
+  for p in "${PERIODIC[@]}"; do
+    [ -f "$AGENTS/$PREFIX.$p.plist" ] && printf '%s=%s\n' "$p" "$(cksum < "$AGENTS/$PREFIX.$p.plist" | tr ' ' _)"
+  done
+  return 0
+}
+
+_sum_of() {
+  printf '%s\n' "$2" | awk -F= -v s="$1" '$1 == s {print $2; exit}'
 }
 
 # bootout first so `install` is re-runnable: bootstrap on an already-loaded label fails.

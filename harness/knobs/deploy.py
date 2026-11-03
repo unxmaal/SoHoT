@@ -11,6 +11,9 @@ SMOKE = ("scripts/smoke.sh's own bounds: READY_TIMEOUT 120 s, then curl --max-ti
          "before its uv runs")
 
 KNOBS = [
+    _k("deploy_engine_smoke_timeout", ["harness/engine_smoke.py:ASK_TIMEOUT_S"], [120.0, 300.0, 600.0], unit="s",
+       note="seconds smoke's one completion per upstream engine may take, a cold model load included; it asks "
+            "each engine's first model in the served config, 0.5B MLX and 4B GGUF on the Studio (#1518)"),
     _k("deploy_every", ["scripts/launchd.sh:DEPLOY_EVERY_MIN"], [5, 10, 30], unit="minutes",
        note="minutes between polls of origin/main for a green commit to queue; how late a merge becomes a deploy "
             "job. 2026-11-02: #1500-#1503 merged and waited a night with no deploy at all (#1506)"),
@@ -36,19 +39,27 @@ KNOBS = [
             "It sources nothing and prints one variable (#455, #1506)"),
     _k("deploy_smoke_timeout", [f"{Q}:SMOKE_TIMEOUT_S"], [900.0, 1200.0, 1800.0], unit="s",
        note=f"seconds smoke may take in the new release before the switch; {SMOKE} (#1506)"),
+    _k("deploy_switch_deadline", [f"{X}:SWITCH_DEADLINE_S"], [1800.0, 3600.0, 7200.0], unit="s",
+       note="seconds the whole switch (reinstall, smoke, coherence) may take before it rolls back and alerts; the "
+            "rollback gets as long again. Deploy 1's smoke took 41 s on 2026-11-03 and its switch then sat 30+ min "
+            "in a reinstall that never started (#1515)"),
     _k("deploy_sync_timeout", [f"{Q}:SYNC_TIMEOUT_S"], [600.0, 1800.0, 3600.0], unit="s",
        note="seconds `uv sync --frozen` may take in a new release; measured 2026-11-03 on the Studio: 0.57 s into an "
             "empty env from a warm uv cache (400 MB); a cold cache downloads every wheel (#1506)"),
-    _k("deploy_verify_timeout", [f"{X}:VERIFY_TIMEOUT_S"], [900.0, 1800.0, 3600.0], unit="s",
+    _k("deploy_verify_timeout",[f"{X}:VERIFY_TIMEOUT_S"], [900.0, 1800.0, 3600.0], unit="s",
        note=f"seconds smoke or soh coherence may take on the live system after the switch; {SMOKE} (#1506)"),
     _k("lanprobe_instant_ms", ["harness/lanprobe.py:INSTANT_MS"], [100, 500, 2000],
        note="milliseconds under which a failed LAN connect reads as a denial, not a real no-route, which waits on ARP (#739)"),
 ]
 
 NOT_GATING = {
+    "harness/holders.py:_FILEINFO": "byte size of libproc's struct proc_fileinfo, fixed by <sys/proc_info.h> (#1523)",
+    "harness/holders.py:_REGIONINFO": "byte size of libproc's struct proc_regioninfo, fixed by <sys/proc_info.h> (#1523)",
     f"{Q}:LAUNCHCTL_TIMEOUT_S": "how long launchctl may take to load the switch's one-shot unit; a timeout fails "
                                 "the deploy before the switch and restores the store (#1506)",
-    f"{X}:ALERT_TIMEOUT_S": "how long the deploy alert script may take; the outcome is already recorded (#1506)",
+    f"{X}:REAP_TIMEOUT_S": "how long a timed-out step's killed process group has to exit; the step already counts "
+                           "as timed out and the switch moves on either way (#1515)",
+    f"{X}:ALERT_TIMEOUT_S":"how long the deploy alert script may take; the outcome is already recorded (#1506)",
     f"{X}:restore->sqlite3.connect(timeout)": "how long the restore waits for the store's lock; a timeout leaves "
                                               "the rollback saying the restore FAILED and alerts (#1506)",
     f"{Q}:recent(days)": "how far back soh deploy lists deploys; a listing, it gates nothing (#1506)",

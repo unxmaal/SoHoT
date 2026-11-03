@@ -1521,11 +1521,18 @@ running and the current `origin/main`. `deploy` refuses to overwrite local
 edits made inside the deploy worktree, and refuses a commit until check-macos
 has passed in that commit's own push run on main (asked through `gh`), so two
 PRs that were green apart but break main together never reach the agents.
+A push run whose check-macos hits its job timeout on main's tip is rerun once by
+`.github/workflows/rerun-cancelled.yml`, and its report says "slow suite at N%" or names the hung
+test; `uv run python -m harness.ci_history --cache DIR` tabulates check-macos minutes (p50/p95 by
+runner class) and the slowest tests over recent runs.
 `LH_DEPLOY_UNCHECKED=1` deploys without asking, with a warning.
 `deploy` and `install` also refuse while a discover loop or an eval is running, naming its pid and
 start time: a running loop keeps the code it imported, so a deploy under it leaves it on the old code.
 `LH_DEPLOY_DURING_SWEEP=1` stops it first; a paused measurement resumes next sweep. The loop records
 the commit it started on, and `soh morning` and `soh audit` say when a sweep ran under a deploy.
+A periodic unit with a live run (a daytime `fetch`) is not reloaded: install waits `LH_DEFER_WAIT_S`
+for it, then prints `deferred:` and still exits 0, since the unit starts the deployed code on its
+next run. When that unit's definition changed, the line says so; run `install` again after the run ends.
 
 Once that is installed, a deploy is a job in the work queue (#1506). Every 10 minutes the
 `deploy` agent (`soh deploy poll`) looks at `origin/main`; a head whose check-macos passed gets one
@@ -1541,6 +1548,15 @@ points the link back, restores the backup and alerts through `scripts/monit-aler
 first queue deploy moves the old deploy worktree to `releases/adopted-<sha>` and leaves the link.
 The worker settles the job from the switch's record; each attempt is a `deploys` row that
 `soh deploy` and `soh morning` show. `soh deploy pause|resume|now [SHA]`.
+
+A launchd job has no shell profile, so `reinstall` never reads its caller's environment (#1518).
+A manual `launchd.sh install` from the owner's shell records what it read (`HF_HOME` as `env.sh`
+resolved it, `PATH`, the `LH_*` switches, any schedule override) in `$LOCALHARNESS_HOME/install.env`;
+a later install keeps a recorded value it is not given again. `reinstall` and the deploy switch run
+in that record, and refuse when it is missing or its weights location cannot be read; a deploy job
+checks the same before it builds. Smoke compares each installed unit's `HF_HOME` with the record and
+asks each upstream engine for one real completion. Run one manual install on a machine before its
+first queue deploy.
 
 **Before deploying to a machine that has not deployed in a while, run
 `soh store dry-run` there from a checkout of the commit you are about to deploy.**
@@ -1634,7 +1650,9 @@ soh monitor status       # installed, running, config current, webhook set; moni
 
 [monit](https://mmonit.com/monit/) is an external tool, not vendored. `install`
 renders `monit/monitrc` under the home (mode 600) from this machine's paths and
-loads `com.unxmaal.localharness.monit`. Every `monitor_cycle` it checks free
+loads `com.unxmaal.localharness.monit`. It bootstraps only once the old monit has left launchd, tries twice,
+and fails unless launchd then lists a running monit; one already on the same config is left running.
+`scripts/launchd.sh install` and `reinstall` run it wherever monit was set up and fail when it is not loaded. Every `monitor_cycle` it checks free
 space on the system Data volume (alert under `monitor_disk_alert`; at
 `monitor_disk_pause` it pauses the job queue and every running eval, then
 alerts), the weights volume when it is a separate disk (alert when it is

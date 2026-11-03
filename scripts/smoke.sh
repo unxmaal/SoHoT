@@ -48,6 +48,11 @@ for i in $(seq 1 "$READY_TIMEOUT"); do
 done
 if [ "$ready" -ne 1 ]; then
   printf '\nFAIL  gateway not serving after %ss\n' "$READY_TIMEOUT"
+  # Name the MLX upstream when it is the part that is down, so a deploy log does not blame the gateway (#1515).
+  case "$H" in 127.0.0.1|localhost)
+    code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$E/v1/models" 2>/dev/null)"
+    [ "$code" = 200 ] || printf 'FAIL  the MLX engine at %s answers HTTP %s to /v1/models\n' "$E" "${code:-none}" ;;
+  esac
   uv run --quiet python -m harness.cuts scripts/smoke.sh:READY_TIMEOUT "smoke: gateway at $G not serving" \
     >/dev/null 2>&1 || printf 'note  the READY_TIMEOUT cut was not recorded\n' >&2
   exit 1
@@ -136,6 +141,19 @@ if [ "$LOCAL" -eq 1 ]; then
   printf '%s\n' "$NODES_OUT"
 else
   printf 'SKIP  node checks: the node list lives on the serving machine\n'
+fi
+
+# Each installed unit carries the weights location the owner's install recorded (#1518).
+INSTALL_CHECK="${SMOKE_INSTALL_CHECK:-uv run --quiet python -m harness.install_env units}"
+# One real completion per upstream engine, so an engine that lists nothing cannot hide behind another (#1518).
+ENGINES_CHECK="${SMOKE_ENGINES_CHECK:-uv run --quiet python -m harness.engine_smoke --gateway $G}"
+if [ "$LOCAL" -eq 1 ]; then
+  if [ "$(uname -s)" = "Darwin" ]; then
+    $INSTALL_CHECK 2>&1 || FAIL=1
+  fi
+  SOHOT_GATEWAY_KEY="$KEY" $ENGINES_CHECK 2>&1 || FAIL=1
+else
+  printf 'SKIP  unit and engine checks: they read the serving machine\n'
 fi
 
 # A yield-stopped reply closes its stream; unless that frees the llama-server slot the stop saves no GPU (#1127).

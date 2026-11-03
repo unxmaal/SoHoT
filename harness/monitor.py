@@ -33,6 +33,14 @@ DU_TIMEOUT_S = 30
 POST_TIMEOUT_S = 10
 #: Seconds a local command (monit -t, monit summary, launchctl, the notifier) may take.
 CLI_TIMEOUT_S = 30
+#: Seconds install waits for the old monit to leave launchd after bootout before it refuses to bootstrap. #1521.
+UNLOAD_WAIT_S = 30.0
+#: Seconds install waits for launchd to list a pid for the monit it bootstrapped.
+START_WAIT_S = 10.0
+#: Bootstraps install tries before it says monit is not loaded.
+BOOTSTRAP_TRIES = 2
+#: Seconds between launchctl polls.
+POLL_S = 0.2
 #: Discord refuses a message longer than this.
 POST_CHARS = 2000
 
@@ -216,7 +224,7 @@ def syntax(monit: str, rc: Path, run=subprocess.run) -> str:
     return "" if got.returncode == 0 else (got.stdout + got.stderr).strip()[-600:]
 
 
-def install(run=subprocess.run, which=shutil.which, platform: str | None = None) -> dict:
+def install(run=subprocess.run, which=shutil.which, platform: str | None = None, sleep=time.sleep) -> dict:
     """Render this machine's config, check it, and load monit under launchd. The webhook is never written."""
     if (platform or sys.platform) != "darwin":
         raise InstallError("soh monitor install is macOS-only: it loads a launchd agent")
@@ -225,20 +233,53 @@ def install(run=subprocess.run, which=shutil.which, platform: str | None = None)
         raise InstallError("monit is not installed: brew install monit")
     from harness import volume
     s = spec_here(run=run)
-    rc = write_rc(render(s))
+    text = render(s)
+    try:
+        same = rc_path().read_text(encoding="utf-8") == text
+    except OSError:
+        same = False
+    rc = write_rc(text)
     said = syntax(monit, rc, run=run)
     if said:
         raise InstallError(f"monit -t refused {rc}: {said}")
     unit = plist_path()
     unit.parent.mkdir(parents=True, exist_ok=True)
-    unit.write_bytes(plist(monit, paths.home()))
-    run(["launchctl", "bootout", f"{volume._domain()}/{LABEL}"], capture_output=True, text=True,
-        timeout=CLI_TIMEOUT_S)
-    got = run(["launchctl", "bootstrap", volume._domain(), str(unit)], capture_output=True, text=True,
-              timeout=CLI_TIMEOUT_S)
-    if got.returncode != 0:
-        raise InstallError(f"launchctl bootstrap {unit} failed: {(got.stderr or got.stdout).strip()[:300]}")
-    return {"rc": str(rc), "plist": str(unit), "spec": s, "webhook": webhook_set()}
+    body = plist(monit, paths.home())
+    def quiet(argv, **kw):
+        return run(argv, capture_output=True, text=True, timeout=CLI_TIMEOUT_S)
+
+    target = f"{volume._domain()}/{LABEL}"
+    out = {"rc": str(rc), "plist": str(unit), "spec": s, "webhook": webhook_set(), "unchanged": False}
+    # A deploy runs this every install; a monit already on this config and plist is left running. #1521.
+    if same and unit.is_file() and unit.read_bytes() == body and running_pid(quiet, target):
+        return {**out, "unchanged": True, "pid": running_pid(quiet, target)}
+    unit.write_bytes(body)
+    ops, said = volume.Ops(run=quiet, sleep=sleep), ""
+    for attempt in range(1, BOOTSTRAP_TRIES + 1):
+        quiet(["launchctl", "bootout", target])
+        # Bootstrapping into a teardown launchd has not finished loses the new job with the old one. #1518, #1521.
+        if not volume._await_unload(LABEL, ops, tries=math.ceil(UNLOAD_WAIT_S / POLL_S)):
+            raise InstallError(f"monit is NOT loaded: {target} was still listed {UNLOAD_WAIT_S:.0f} s after bootout, "
+                               "so nothing was bootstrapped; see launchctl print " + target)
+        got = quiet(["launchctl", "bootstrap", volume._domain(), str(unit)])
+        if got.returncode != 0:
+            said = f"launchctl bootstrap {unit} failed: {(got.stderr or got.stdout).strip()[:300]}"
+            continue
+        for _ in range(math.ceil(START_WAIT_S / POLL_S)):
+            pid = running_pid(quiet, target)
+            if pid:
+                return {**out, "pid": pid, "attempts": attempt}
+            sleep(POLL_S)
+        said = f"launchd shows no running monit {START_WAIT_S:.0f} s after bootstrap"
+    raise InstallError(f"monit is NOT loaded after {BOOTSTRAP_TRIES} bootstraps ({said}): nothing watches the disk, "
+                       "memory pressure or the models volume until soh monitor install succeeds")
+
+
+def running_pid(quiet, target: str) -> int | None:
+    """The pid launchd lists for a loaded, running label; None when it is unloaded or not running."""
+    got = quiet(["launchctl", "print", target])
+    m = re.search(r"^\tpid = (\d+)", got.stdout or "", re.M) if got.returncode == 0 else None
+    return int(m.group(1)) if m else None
 
 
 def webhook_set(home: Path | None = None) -> bool:
@@ -290,6 +331,12 @@ def status(run=subprocess.run, which=shutil.which, expected: str | None = None) 
         out["running"], out["summary"] = summary(monit, rc, run=run)
         if not out["running"]:
             probs.append("monit is not running: soh monitor install loads it")
+        else:
+            seen = {ln.split()[0] for ln in out["summary"] if ln.split()}
+            lost = [n for n in re.findall(r"^check \S+ (\S+)", rc.read_text(encoding="utf-8"), re.M) if n not in seen]
+            if lost:
+                probs.append(f"monit is running an older config (its summary has no {', '.join(lost)}): "
+                             "soh monitor install reloads it")
     if not out["webhook"]:
         probs.append(f"no {WEBHOOK} in {env_path()}: alerts go to the desktop and the morning brief only")
     mode = env_mode_problem()

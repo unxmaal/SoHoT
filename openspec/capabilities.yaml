@@ -446,11 +446,15 @@ capabilities:
     modules:
       - harness/deploy.py
       - harness/deploy_switch.py
+      - harness/holders.py
+      - harness/engine_smoke.py
+      - harness/install_env.py
       - harness/commands/deploy.py
       - harness/deploy_guard.py
       - harness/sweep_guard.py
       - harness/venv_drift.py
       - harness/ci_budget.py
+      - harness/ci_rerun.py
       - harness/dora.py
 
   - name: repo-hygiene
@@ -463,6 +467,7 @@ capabilities:
       - harness/covdiff.py
       - harness/local_catches.py
       - harness/suite_time.py
+      - harness/ci_history.py
       - harness/specs.py
       - harness/commands/specs.py
       - harness/commands/gauntlet.py

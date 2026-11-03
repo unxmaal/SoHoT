@@ -25,6 +25,7 @@ SMOKE = """#!/bin/bash
 # Fails everywhere with fail-smoke, and only on the live release with fail-smoke-live.
 [ -f fail-smoke ] && exit 1
 if [ -f fail-smoke-live ] && [ "$(cd "$DEPLOY_LINK" && pwd -P)" = "$(pwd -P)" ]; then exit 1; fi
+if [ -f "${MACHINE_BROKEN:-/nonexistent}" ] && [ "$(cd "$DEPLOY_LINK" && pwd -P)" = "$(pwd -P)" ]; then exit 1; fi
 echo "smoke $(basename "$(pwd -P)")" >> "$DEPLOY_LOG"
 """
 INSTALL = 'echo "reinstall $(basename "$(pwd -P)")" >> "$DEPLOY_LOG"\n'
@@ -83,11 +84,15 @@ def world(tmp_path, monkeypatch):
     log = tmp_path / "deploy-steps.log"
     monkeypatch.setenv("DEPLOY_LINK", str(link))
     monkeypatch.setenv("DEPLOY_LOG", str(log))
+    hf = tmp_path / "hf"
+    hf.mkdir()
+    monkeypatch.setenv("HF_HOME", str(hf))
+    (paths.home() / deploy_switch.INSTALL_ENV).write_text(f"HF_HOME={hf}\n", encoding="utf-8")
     ms.connect().close()
     steps = deploy.Steps(sync=NOOP, smoke=[BASH, "scripts/smoke.sh"],
                          migrate=[sys.executable, "migrate.py", str(ms.db_path()), str(ms.SCHEMA_VERSION + 1)],
                          coherence=NOOP, install=[BASH, "scripts/launchd.sh"], alert=[BASH, "scripts/monit-alert.sh"])
-    return {"origin": origin, "work": work, "link": link, "first": first, "log": log, "steps": steps}
+    return {"origin": origin, "work": work, "link": link, "first": first, "log": log, "steps": steps, "hf": hf}
 
 
 def _green(sha):
@@ -296,6 +301,40 @@ def test_a_release_whose_smoke_fails_before_the_switch_never_switches_or_migrate
     assert _git(world["link"], "rev-parse", "HEAD") == world["first"]
     assert "reinstall" not in world["log"].read_text(encoding="utf-8")
     assert not wq.paused()
+
+
+@posix
+def test_the_switch_steps_run_in_the_recorded_install_environment_not_the_workers(world, monkeypatch):
+    """#1518: launchd gave the switch no profile, so reinstall rendered units from an in-release hf_root."""
+    rec = paths.home() / deploy_switch.INSTALL_ENV
+    rec.write_text(rec.read_text(encoding="utf-8") + "LH_DAY_FETCH=1\n", encoding="utf-8")
+    monkeypatch.setenv("LH_DAY_FETCH", "0")
+    job = _queue(world, {"scripts/launchd.sh": 'echo "reinstall hf=$HF_HOME fetch=$LH_DAY_FETCH" >> "$DEPLOY_LOG"\n'})
+    monkeypatch.setenv("HF_HOME", str(world["link"] / "hf_root"))
+    _worker_runs(job, world)
+    assert [d["outcome"] for d in wq.settle_deploys()] == [deploy.DEPLOYED]
+    said = [ln for ln in world["log"].read_text(encoding="utf-8").splitlines() if ln.startswith("reinstall")]
+    assert said == [f"reinstall hf={world['hf']} fetch=1"]
+
+
+@posix
+@pytest.mark.parametrize("record", ["missing", "unreadable"])
+def test_a_deploy_without_a_usable_install_record_stops_before_it_builds(world, record):
+    rec = paths.home() / deploy_switch.INSTALL_ENV
+    if record == "missing":
+        rec.unlink()
+    else:
+        rec.write_text(f"HF_HOME={world['hf'] / 'gone'}\n", encoding="utf-8")
+    job = _queue(world, {"f": "two\n"})
+    ran = _worker_runs(job, world)
+    assert ran["state"] == wq.FAILED and ran["rc"] == 1
+    d = _deploys()[0]
+    assert d["outcome"] == deploy.FAILED and "reinstall would refuse" in d["detail"]
+    assert ("no recorded install environment" if record == "missing" else "cannot be read") in d["detail"]
+    assert not world["link"].is_symlink()
+    said = world["log"].read_text(encoding="utf-8").splitlines()
+    assert len(said) == 1 and said[0].startswith("alert ") and "reinstall would refuse" in said[0], said
+    assert not deploy.releases_dir().exists() or not any(deploy.releases_dir().iterdir())
 
 
 # --- the worker restarting mid-deploy ------------------------------------------------------------------------------

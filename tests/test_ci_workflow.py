@@ -134,19 +134,51 @@ def test_apt_packages_are_cached_on_the_package_list():
     assert "cache-hit" in steps[save]["if"]
 
 
-#: The slowest normal full check-macos push job on the 3-vCPU M1 class, 2026-10-23 (run 40005198738, #1146).
-MACOS_3_VCPU_RUN_MINUTES = 12.7
-#: How much slower a slow M1 host ran the same code: run 40020366592 attempt 1 against attempt 2 (#1146).
-MACOS_SLOW_HOST = 2.0
+#: check-macos job p95 and max on the 3-vCPU M1 class, 20 full runs 2026-10-31..11-03 (harness.ci_history, #1520).
+MACOS_3_VCPU_JOB_P95, MACOS_3_VCPU_JOB_MAX = 23.6, 25.3
+#: A slow M1 host ran 1.4x the run before it (41692522061 vs 41687128099, #1520); 2.0x on 40020366592 (#1146).
+MACOS_SLOW_HOST = 1.4
 
 
 def test_macos_leaves_room_for_a_slow_host_and_is_still_a_hang_detector():
-    """A slow host on the slow class passes; 35 min hid a regression (#720, #724, #1146)."""
+    """A slow host on the slow class passes; twice the slowest run would hide a regression (#720, #1146, #1520)."""
     from harness import ci_budget
     doc, _ = _ci()
     limit = doc["jobs"]["check-macos"]["timeout-minutes"]
     assert limit == ci_budget.MACOS_TIMEOUT_MIN
-    assert MACOS_SLOW_HOST * MACOS_3_VCPU_RUN_MINUTES <= limit <= 3 * MACOS_3_VCPU_RUN_MINUTES
+    assert MACOS_SLOW_HOST * MACOS_3_VCPU_JOB_P95 <= limit < 2 * MACOS_3_VCPU_JOB_MAX
+
+
+RERUN = CI.parent / "rerun-cancelled.yml"
+
+
+def test_a_cancelled_main_run_reruns_once_from_a_workflow_that_runs_after_it():
+    """A run cannot rerun itself while in progress; workflow_run fires when the check run completes (#1520)."""
+    doc = yaml.safe_load(RERUN.read_text(encoding="utf-8"))
+    on = doc.get("on", doc.get(True))
+    assert on["workflow_run"]["workflows"] == [yaml.safe_load(CI.read_text(encoding="utf-8"))["name"]]
+    assert on["workflow_run"]["types"] == ["completed"]
+    (job,) = doc["jobs"].values()
+    cond = " ".join(job["if"].split())
+    for part in ("github.event.workflow_run.event == 'push'", "github.event.workflow_run.head_branch == 'main'",
+                 "github.event.workflow_run.conclusion == 'cancelled'", "github.event.workflow_run.run_attempt <= 1"):
+        assert part in cond, part
+    assert job["permissions"] == {"contents": "read", "actions": "write"}
+    run = "\n".join(s.get("run", "") for s in job["steps"])
+    assert "harness/ci_rerun.py" in run and "github.event.workflow_run.id" in run
+
+
+def test_the_rerun_bound_in_the_workflow_is_the_registered_one():
+    from harness import ci_rerun
+    doc = yaml.safe_load(RERUN.read_text(encoding="utf-8"))
+    (job,) = doc["jobs"].values()
+    assert f"run_attempt <= {ci_rerun.RERUNS}" in " ".join(job["if"].split())
+
+
+def test_a_cancelled_runs_report_is_given_the_moment_it_ended():
+    doc, _ = _ci()
+    report = next(s for s in doc["jobs"]["check-macos"]["steps"] if "harness.suite_time" in s.get("run", ""))
+    assert '--now "$(date +%s)"' in report["run"]
 
 
 FAST = "SOHOT_FAST_PATH"
