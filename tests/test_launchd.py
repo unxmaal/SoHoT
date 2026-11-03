@@ -10,6 +10,7 @@ import os
 import plistlib
 import re
 import shutil
+import shlex
 import signal
 import subprocess
 import sys
@@ -422,24 +423,31 @@ case "$1" in
          [ -f "$FAKE_STATE/$l.running" ] && printf '\tpid = 4242\n'
          printf '}\n' ;;
   bootout) rm -f "$FAKE_STATE/${2##*/}" ;;
-  bootstrap) touch "$FAKE_STATE/$(basename "$3" .plist)" ;;
+  bootstrap) l="$(basename "$3" .plist)"
+             if [ "$l" = "${FAKE_FAIL_ONCE:-}" ] && [ ! -f "$FAKE_STATE/$l.failed" ]; then
+               touch "$FAKE_STATE/$l.failed"; echo "Bootstrap failed: 5: Input/output error" >&2; exit 5
+             fi
+             touch "$FAKE_STATE/$l"
+             if [ "$l" = "${FAKE_FAIL_ONCE:-}" ]; then : > "$FAKE_STATE/$l.running"; fi ;;
 esac
 exit 0
 """
 
 
-def _install(tmp_path, role="scheduler", running=(), defer_wait=0):
-    """install_units against a fake launchctl, with deploy and preflight stubbed out."""
+def _install(tmp_path, role="scheduler", running=(), defer_wait=0, mode="", then="", uv="#!/bin/sh\nexit 0\n",
+             extra_env=None, run=True):
+    """install_units against a fake launchctl, with deploy and preflight stubbed out; rerunnable on one tmp_path."""
     scripts, bin_, state, deploy = (tmp_path / d for d in ("scripts", "bin", "state", "deploy"))
     for d in (scripts, bin_, state, deploy / "scripts"):
-        d.mkdir(parents=True)
+        d.mkdir(parents=True, exist_ok=True)
+    (state / "log").write_text("", encoding="utf-8")
     text = GEN.read_text(encoding="utf-8")
     (scripts / "lib.sh").write_text(text[:text.index('case "${1:-}" in')], encoding="utf-8")
     (scripts / "env.sh").write_text("", encoding="utf-8")
     (scripts / "run.sh").write_text(
-        'source "$(dirname "$0")/lib.sh"\ndeploy() { :; }\n_run_deployed() { :; }\npreflight() { :; }\ninstall_units\n',
-        encoding="utf-8")
-    for name, body in (("launchctl", FAKE_LAUNCHCTL_794), ("uv", "#!/bin/sh\nexit 0\n")):
+        'source "$(dirname "$0")/lib.sh"\ndeploy() { :; }\n_run_deployed() { :; }\npreflight() { :; }\n'
+        f'install_units {mode}\n', encoding="utf-8")
+    for name, body in (("launchctl", FAKE_LAUNCHCTL_794), ("uv", uv)):
         (bin_ / name).write_text(body, encoding="utf-8")
         (bin_ / name).chmod(0o755)
     for name in ("lan-probe.sh", "serve-audit.sh"):
@@ -453,9 +461,13 @@ def _install(tmp_path, role="scheduler", running=(), defer_wait=0):
         live.write_text("" if prints is None else str(prints), encoding="utf-8")
     env = {**os.environ, "PATH": f"{bin_}{os.pathsep}{os.environ['PATH']}", "HOME": str(tmp_path / "home"),
            "LOCALHARNESS_HOME": str(tmp_path / "lh"), "LH_DEPLOY": str(deploy), "LH_ROLE": role,
-           "FAKE_STATE": str(state), "LH_DEFER_WAIT_S": str(defer_wait)}
-    got = subprocess.run([shells.BASH, str(scripts / "run.sh")], env=env, capture_output=True,
-                         text=True, timeout=120)
+           "FAKE_STATE": str(state), "LH_DEFER_WAIT_S": str(defer_wait), **(extra_env or {})}
+    argv = [shells.BASH, str(scripts / "run.sh")]
+    if then:
+        argv = [shells.BASH, "-c", f'"{shells.BASH}" "{scripts / "run.sh"}" && {then}']
+    if not run:
+        return argv, env
+    got = subprocess.run(argv, env=env, capture_output=True, text=True, timeout=120)
     return got, (state / "log").read_text(encoding="utf-8").splitlines()
 
 
@@ -464,7 +476,7 @@ def test_install_does_not_kill_a_sweep_that_is_running(tmp_path):
     assert not [c for c in calls if c.startswith("bootout") and c.endswith(".discover")], calls
     assert "pid 4242" in got.stderr and "deferred: discover" in got.stderr, got.stderr
     assert "Re-run install after it finishes" in got.stderr
-    assert got.returncode != 0, "a deferred unit is still on the old plist, so install is not done"
+    assert got.returncode == 0, "a deferral is not a failure: the unit starts the deployed code next run (#1521)"
     for service in ("gateway", "audit", "worker"):
         assert f"loaded com.unxmaal.localharness.{service}" in got.stdout, (service, got.stdout)
 
@@ -487,9 +499,95 @@ def test_install_reloads_a_deferred_unit_once_its_run_ends(tmp_path):
 
 def test_install_defers_a_unit_still_live_at_the_deadline(tmp_path):
     got, calls = _install(tmp_path, running=("energy",), defer_wait=1)
-    assert got.returncode != 0
+    assert got.returncode == 0, got.stderr
     assert "deferred: energy" in got.stderr, got.stderr
     assert not [c for c in calls if c.startswith("bootout") and c.endswith(".energy")], calls
+
+
+def test_a_live_day_fetch_lets_the_deploy_chain_run_smoke(tmp_path):
+    # `install && smoke.sh && soh coherence` skipped both checks on every daytime install. #1521.
+    got, calls = _install(tmp_path, running=("fetch",), defer_wait=1, then="echo smoke-ran")
+    assert "deferred: fetch" in got.stderr, got.stderr
+    assert got.returncode == 0 and "smoke-ran" in got.stdout, (got.returncode, got.stderr[-800:])
+    assert not [c for c in calls if c.startswith("bootout") and c.endswith(".fetch")], calls
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the switch runs its steps in their own POSIX session")
+def test_a_queue_deploy_during_a_day_fetch_deploys_and_does_not_roll_back(tmp_path):
+    from harness import deploy_switch
+    argv, env = _install(tmp_path / "w", running=("fetch",), defer_wait=1, mode="reinstall", run=False)
+    # The switch drops LH_DEPLOY and friends from its own environment, so the step names them itself.
+    keys = ("PATH", "HOME", "LOCALHARNESS_HOME", "LH_DEPLOY", "LH_ROLE", "FAKE_STATE", "LH_DEFER_WAIT_S")
+    step = "env " + " ".join(shlex.quote(f"{k}={env[k]}") for k in keys) + " " + shlex.join(argv)
+    for d in ("release", "previous"):
+        (tmp_path / d).mkdir()
+    rec = {"link": str(tmp_path / "deploy"), "release": str(tmp_path / "release"), "sha": "a" * 40,
+           "previous": str(tmp_path / "previous"), "previous_sha": "b" * 40,
+           "install": [shells.BASH, "-c", step], "verify": [[shells.BASH, "-c", "echo smoke-ran"]],
+           "rollback_install": [shells.BASH, "-c", "echo ROLLED-BACK"], "alert": [shells.BASH, "-c", "echo ALERT"],
+           "log": str(tmp_path / "deploy.log"), "queue_flag": str(tmp_path / "flag")}
+    deploy_switch.save(tmp_path / "1.json", rec)
+    got = deploy_switch.switch(tmp_path / "1.json")
+    log = (tmp_path / "deploy.log").read_text(encoding="utf-8")
+    assert "deferred: fetch" in log, log[-1500:]
+    assert got["outcome"] == deploy_switch.DEPLOYED, got.get("detail")
+    assert "smoke-ran" in log and "ROLLED-BACK" not in log and "ALERT" not in log
+
+
+def test_a_deferred_unit_whose_definition_did_not_change_needs_no_rerun(tmp_path):
+    first, _ = _install(tmp_path)
+    assert first.returncode == 0, first.stderr
+    got, _ = _install(tmp_path, running=("fetch",), defer_wait=1)
+    assert got.returncode == 0, got.stderr
+    assert "deferred: fetch -- mid-run; its unit is unchanged" in got.stderr, got.stderr
+    assert "Re-run install" not in got.stderr, got.stderr
+
+
+def test_a_deferred_unit_whose_definition_changed_says_to_rerun(tmp_path):
+    first, _ = _install(tmp_path)
+    assert first.returncode == 0, first.stderr
+    got, _ = _install(tmp_path, running=("fetch",), defer_wait=1, extra_env={"FETCH_HOURS": "5"})
+    assert got.returncode == 0, got.stderr
+    assert "deferred: fetch -- mid-run, and its unit changed" in got.stderr, got.stderr
+    assert "Re-run install after it finishes" in got.stderr
+
+
+MONIT = "com.unxmaal.localharness.monit"
+FAKE_UV_SOH = '#!/bin/sh\n[ "$1 $2 $3" = "run --quiet soh" ] || exit 0\nshift 3\nexec "$FAKE_PY" -m harness.cli "$@"\n'
+
+
+def _monit_set_up(tmp_path):
+    """A machine where soh monitor install ran once: its plist, a live monit, and a monit binary that checks fine."""
+    for d in ("bin", "state", "home/Library/LaunchAgents"):
+        (tmp_path / d).mkdir(parents=True, exist_ok=True)
+    (tmp_path / "bin" / "monit").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    (tmp_path / "bin" / "monit").chmod(0o755)
+    (tmp_path / "home" / "Library" / "LaunchAgents" / f"{MONIT}.plist").write_text("old", encoding="utf-8")
+    (tmp_path / "state" / MONIT).touch()
+    (tmp_path / "state" / f"{MONIT}.running").write_text("", encoding="utf-8")
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="soh monitor install loads a launchd agent")
+def test_install_leaves_monit_loaded_when_its_first_bootstrap_fails(tmp_path):
+    # Monit was left unloaded after the ba38b746 install; a deploy must leave it loaded or fail. #1521.
+    _monit_set_up(tmp_path)
+    env = {"FAKE_FAIL_ONCE": MONIT, "FAKE_PY": sys.executable, "PYTHONPATH": str(REPO)}
+    got, calls = _install(tmp_path, uv=FAKE_UV_SOH, extra_env=env)
+    assert shutil.which("launchctl", path=f"{tmp_path / 'bin'}") == str(tmp_path / "bin" / "launchctl")
+    monit = [c for c in calls if c.endswith(MONIT) or c.endswith(f"{MONIT}.plist")]
+    assert [c.split()[0] for c in monit if not c.startswith("print")] == ["bootout", "bootstrap", "bootout",
+                                                                          "bootstrap"], monit
+    assert (tmp_path / "state" / MONIT).exists() and (tmp_path / "state" / f"{MONIT}.running").exists()
+    assert got.returncode == 0, got.stderr[-1500:]
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="soh monitor install loads a launchd agent")
+def test_install_fails_when_monit_cannot_be_loaded(tmp_path):
+    _monit_set_up(tmp_path)
+    (tmp_path / "bin" / "monit").write_text("#!/bin/sh\necho 'syntax error' >&2\nexit 1\n", encoding="utf-8")
+    env = {"FAKE_PY": sys.executable, "PYTHONPATH": str(REPO)}
+    got, _ = _install(tmp_path, uv=FAKE_UV_SOH, extra_env=env)
+    assert got.returncode != 0 and "not loaded: monit" in got.stderr, got.stderr[-1500:]
 
 
 def test_a_node_still_drops_the_periodic_units(tmp_path):

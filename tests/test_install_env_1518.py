@@ -227,18 +227,40 @@ def test_smoke_asks_each_engine_for_a_real_completion(tmp_path):
     assert {b.get("model") for b in g.bodies} >= {"small-mlx", "gguf"}
 
 
-def _fake_run(calls, bootstrap_rc: int, loaded: bool, reload_rc: int = 0):
-    def run(argv, **kw):
-        calls.append(argv)
-        rc = 0
-        if argv[:2] == ["launchctl", "bootstrap"]:
-            rc = bootstrap_rc
-        elif argv[:2] == ["launchctl", "print"]:
-            rc = 0 if loaded else 113
-        elif argv[-1] == "reload":
-            rc = reload_rc
-        return subprocess.CompletedProcess(argv, rc, "", "Bootstrap failed: 5: Input/output error" if rc else "")
-    return run
+EIO = "Bootstrap failed: 5: Input/output error"
+
+
+class FakeLaunchd:
+    """launchctl for one label: bootout lists it for `teardown` more prints (None: forever), bootstrap fails `fail` times."""
+
+    def __init__(self, state="up", teardown=0, fail=0, starts=True):
+        self.state, self.left, self.teardown, self.fail, self.starts, self.calls = state, 0, teardown, fail, starts, []
+
+    def __call__(self, argv, **kw):
+        self.calls.append(argv)
+        rc, out, err = 0, "", ""
+        verb = argv[1] if argv[0] == "launchctl" else argv[-1]
+        if verb == "bootout" and self.state == "up":
+            self.state, self.left = ("dying", self.teardown) if self.teardown != 0 else ("gone", 0)
+        elif verb == "print":
+            if self.state == "dying" and self.left is not None:
+                if self.left == 0:
+                    self.state = "gone"
+                else:
+                    self.left -= 1
+            if self.state == "gone":
+                rc = 113
+            else:
+                pid = "\tpid = 4242\n" if self.starts or self.state == "dying" else ""
+                out = f"{argv[2]} = {{\n\tstate = running\n{pid}}}\n"
+        elif verb == "bootstrap":
+            if self.state != "gone":
+                rc, err = 5, EIO
+            elif self.fail:
+                self.fail, rc, err = self.fail - 1, 5, EIO
+            else:
+                self.state = "up"
+        return subprocess.CompletedProcess(argv, rc, out, err)
 
 
 def _install(monkeypatch, run, tmp_path):
@@ -249,26 +271,53 @@ def _install(monkeypatch, run, tmp_path):
     return monitor.install(run=run, which=lambda n: "/x/monit", platform="darwin", sleep=lambda s: None)
 
 
-def test_monitor_install_reloads_a_monit_that_stayed_loaded(monkeypatch, tmp_path):
-    calls = []
-    got = _install(monkeypatch, _fake_run(calls, bootstrap_rc=5, loaded=True), tmp_path)
-    assert got["reloaded"] is True
-    assert ["/x/monit", "-c", str(monitor.rc_path()), "reload"] in calls
+def _verbs(fake):
+    return [c[1] for c in fake.calls if c[0] == "launchctl"]
 
 
-def test_monitor_install_fails_when_bootstrap_fails_and_nothing_is_loaded(monkeypatch, tmp_path):
-    calls = []
-    with pytest.raises(monitor.InstallError, match="Input/output error"):
-        _install(monkeypatch, _fake_run(calls, bootstrap_rc=5, loaded=False), tmp_path)
-    assert not [c for c in calls if c[-1] == "reload"]
+def test_monitor_install_bootstraps_again_when_the_first_bootstrap_fails(monkeypatch, tmp_path):
+    fake = FakeLaunchd(fail=1)
+    got = _install(monkeypatch, fake, tmp_path)
+    assert fake.state == "up" and got["pid"] == 4242 and got["attempts"] == 2, fake.calls
+    assert _verbs(fake).count("bootstrap") == 2
 
 
-def test_monitor_install_waits_for_the_old_monit_to_unload_before_bootstrap(monkeypatch, tmp_path):
-    calls = []
-    got = _install(monkeypatch, _fake_run(calls, bootstrap_rc=0, loaded=False), tmp_path)
-    assert got["reloaded"] is False
-    verbs = [c[1] for c in calls if c[0] == "launchctl"]
+def test_monitor_install_never_bootstraps_into_an_unfinished_teardown(monkeypatch, tmp_path):
+    # 2026-11-03 12:31:45: bootstrap 5 ms after bootout, then launchd removed the label for good. #1521.
+    fake = FakeLaunchd(teardown=4)
+    got = _install(monkeypatch, fake, tmp_path)
+    verbs = _verbs(fake)
+    assert fake.state == "up" and got["attempts"] == 1, fake.calls
     assert verbs.index("bootout") < verbs.index("print") < verbs.index("bootstrap")
+
+
+def test_monitor_install_fails_loudly_when_the_old_monit_never_unloads(monkeypatch, tmp_path):
+    fake = FakeLaunchd(teardown=None)
+    with pytest.raises(monitor.InstallError, match="monit is NOT loaded.*still listed"):
+        _install(monkeypatch, fake, tmp_path)
+    assert "bootstrap" not in _verbs(fake)
+    assert not [c for c in fake.calls if c[-1] == "reload"], "a dying monit is not reloaded"
+
+
+def test_monitor_install_fails_loudly_when_every_bootstrap_fails(monkeypatch, tmp_path):
+    fake = FakeLaunchd(fail=monitor.BOOTSTRAP_TRIES)
+    with pytest.raises(monitor.InstallError, match="monit is NOT loaded.*Input/output error"):
+        _install(monkeypatch, fake, tmp_path)
+
+
+def test_monitor_install_fails_loudly_when_launchd_never_starts_it(monkeypatch, tmp_path):
+    fake = FakeLaunchd(starts=False)
+    with pytest.raises(monitor.InstallError, match="no running monit"):
+        _install(monkeypatch, fake, tmp_path)
+
+
+def test_monitor_install_leaves_a_monit_already_on_this_config_running(monkeypatch, tmp_path):
+    first = FakeLaunchd()
+    _install(monkeypatch, first, tmp_path)
+    again = FakeLaunchd()
+    got = _install(monkeypatch, again, tmp_path)
+    assert got["unchanged"] is True and got["pid"] == 4242
+    assert "bootout" not in _verbs(again), again.calls
 
 
 def test_status_says_a_running_monit_is_on_an_older_config():
