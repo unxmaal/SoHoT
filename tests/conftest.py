@@ -138,6 +138,7 @@ def pytest_configure(config):
 
 def pytest_unconfigure(config):
     f = _test_log.pop("file", None)
+    _test_log.pop("collected", None)
     if f is not None:
         f.close()
 
@@ -151,6 +152,19 @@ def _log_line(event: str, nodeid: str, seconds: str = "") -> None:
 
 def pytest_runtest_logstart(nodeid, location):
     _log_line("start", nodeid)
+
+
+def pytest_collection_finish(session):
+    if session.items:
+        _log_line("collected", "", str(len(session.items)))
+
+
+@pytest.hookimpl(optionalhook=True)
+def pytest_xdist_node_collection_finished(node, ids):
+    # Every worker collects the whole suite; the first one's count is the run's. #1520.
+    if not _test_log.get("collected"):
+        _test_log["collected"] = True
+        _log_line("collected", "", str(len(ids)))
 
 
 def pytest_sessionfinish(session, exitstatus):
