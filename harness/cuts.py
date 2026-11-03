@@ -33,13 +33,13 @@ def _spool_path():
     return paths.home() / SPOOL
 
 
-def _spool(row: dict) -> bool:
-    """Append a row to the spool; False when the home cannot be written, and then the cut is lost."""
+def _spool(*rows: dict) -> bool:
+    """Append rows to the spool in one write; False when the home cannot be written, and then the cuts are lost."""
     try:
         path = _spool_path()
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(row) + "\n")
+            f.write("".join(json.dumps(r) + "\n" for r in rows))
     except OSError:
         return False
     return True
@@ -107,23 +107,25 @@ def _own_store():
 
 def flush(conn=None) -> int:
     """Move spooled cuts into the store; the number moved."""
-    rows = _spooled()
-    if not rows:
+    if not _spool_path().exists():
         return 0
     own = conn is None
     try:
         conn = _own_store() if own else conn
     except Exception:  # noqa: BLE001
         conn = None
+    if conn is None:
+        return 0  # no store to move them into: taking and re-spooling every row per cut was quadratic. #1520.
     try:
-        if conn is not None and _write(conn, rows):
+        rows = _spooled()
+        if rows and _write(conn, rows):
             return len(rows)
+        if rows:
+            _spool(*rows)
+        return 0
     finally:
-        if own and conn is not None:
+        if own:
             conn.close()
-    for r in rows:
-        _spool(r)
-    return 0
 
 
 def value_of(knob: str):

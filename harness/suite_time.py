@@ -11,6 +11,8 @@ from pathlib import Path
 SLOWER_RATIO = 5.0
 #: How many seconds more than on the earlier run a test must take to be named slower. #1146.
 SLOWER_ADDED_S = 30.0
+#: A cancelled run with a test in flight, or no test starting or ending, this long was a hang; tests/conftest HANG_DUMP_S. #1520.
+HANG_S = 180.0
 
 
 def times(path) -> dict[str, float]:
@@ -74,6 +76,29 @@ def log_times(path) -> tuple[dict[str, float], dict[str, float], float]:
     return done, running, last
 
 
+def collected(path) -> int | None:
+    """How many tests the run collected, from the test log's `collected` line; None when it has none."""
+    n = None
+    for line in Path(path).read_text(encoding="utf-8", errors="replace").splitlines():
+        parts = line.split("\t", 3)
+        if len(parts) == 4 and parts[1] == "collected" and parts[2].isdigit():
+            n = int(parts[2])
+    return n
+
+
+def verdict(done: dict, running: dict, last: float, total: int | None, now: float, hang_s: float = HANG_S) -> str:
+    """Why a run that did not finish ended: a hang (a test or the whole suite stuck past hang_s) or a slow suite at N%."""
+    at = f"{len(done) / total:.0%} ({len(done)} of {total} tests)" if total else f"{len(done)} tests done, total unknown"
+    stuck = max(((now - start, t) for t, start in running.items()), default=None)
+    quiet = now - last
+    if stuck and stuck[0] >= hang_s:
+        return f"hang: {stuck[1]} in flight {stuck[0]:.0f} s, past {hang_s:g} s, at {at}"
+    if quiet >= hang_s:
+        return f"hang: no test started or ended for {quiet:.0f} s, past {hang_s:g} s, at {at}"
+    longest = f"; longest in flight {stuck[0]:.0f} s" if stuck else ""
+    return f"slow suite at {at}: tests were still finishing {quiet:.0f} s before the end{longest}"
+
+
 def slower(now: dict[str, float], before: dict[str, float], ratio: float = SLOWER_RATIO,
            added_s: float = SLOWER_ADDED_S) -> list[tuple[str, float, float]]:
     """(test, seconds before, seconds now) for each test that ran in both and got `ratio` times and `added_s` slower."""
@@ -88,6 +113,7 @@ def main(argv=None) -> int:
     ap.add_argument("--top", type=int, default=15)
     ap.add_argument("--log", type=Path, help="the test log conftest writes under SOHOT_TEST_LOG; read when the run "
                                              "left no JUnit XML, and for the tests still running when it ended")
+    ap.add_argument("--now", type=float, help="epoch seconds the run ended; default the log's last line")
     ap.add_argument("--against", type=Path, help="an earlier run's JUnit XML; name the tests that got much slower")
     a = ap.parse_args(argv)
     logged = log_times(a.log) if a.log and a.log.is_file() else None
@@ -104,6 +130,9 @@ def main(argv=None) -> int:
         print(f"\nstill running when the log ends: {len(logged[1])}")
         for test, start in sorted(logged[1].items(), key=lambda kv: kv[1]):
             print(f"  {logged[2] - start:8.1f}s  {test}")
+    if logged is not None and not a.junit.is_file():
+        why = verdict(*logged, collected(a.log), a.now if a.now is not None else logged[2])
+        print(f"\n::warning title=Did not finish::{why} (#1520)")
     if a.against:
         if not a.against.is_file():
             print(f"\nno earlier run to compare at {a.against}")

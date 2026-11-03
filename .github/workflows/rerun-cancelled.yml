@@ -1,0 +1,34 @@
+name: rerun-cancelled
+
+# A run cannot rerun itself while in progress, so this runs after the check run completes (#1520).
+on:
+  workflow_run:
+    workflows: [check]
+    types: [completed]
+
+jobs:
+  rerun-once:
+    if: >-
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.conclusion == 'cancelled' &&
+      github.event.workflow_run.run_attempt <= 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github
+            harness/ci_rerun.py
+          sparse-checkout-cone-mode: false
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Rerun a check-macos that hit its timeout on main's tip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: uv run --no-project --with pyyaml python -I harness/ci_rerun.py "${{ github.event.workflow_run.id }}"

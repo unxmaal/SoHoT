@@ -1521,6 +1521,10 @@ running and the current `origin/main`. `deploy` refuses to overwrite local
 edits made inside the deploy worktree, and refuses a commit until check-macos
 has passed in that commit's own push run on main (asked through `gh`), so two
 PRs that were green apart but break main together never reach the agents.
+A push run whose check-macos hits its job timeout on main's tip is rerun once by
+`.github/workflows/rerun-cancelled.yml`, and its report says "slow suite at N%" or names the hung
+test; `uv run python -m harness.ci_history --cache DIR` tabulates check-macos minutes (p50/p95 by
+runner class) and the slowest tests over recent runs.
 `LH_DEPLOY_UNCHECKED=1` deploys without asking, with a warning.
 `deploy` and `install` also refuse while a discover loop or an eval is running, naming its pid and
 start time: a running loop keeps the code it imported, so a deploy under it leaves it on the old code.
