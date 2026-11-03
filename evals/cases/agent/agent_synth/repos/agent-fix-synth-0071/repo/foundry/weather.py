@@ -1,0 +1,14 @@
+"""Weather helpers."""
+
+def format_cents(cents):
+    """Cents as dollars with thousands separators, such as -$1,234.56."""
+    sign = "-" if cents < 0 else ""
+    cents = abs(cents)
+    return f"{sign}${cents // 100:,}.{cents % 100:02d}"
+
+
+def chunk(items, size):
+    """Split items into lists of size items; the last may be shorter."""
+    if size < 1:
+        raise ValueError("size must be at least 1")
+    return [items[i:i + size] for i in range(0, len(items), size)]

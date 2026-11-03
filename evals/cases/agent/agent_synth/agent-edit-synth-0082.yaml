@@ -1,0 +1,30 @@
+# SoHoT generated agent cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/agent_synth.py).
+# Imported by evals/importers from generated:evals.importers.agent_synth v1 seed 603@fc1d598d5bbe74a0cd538c8c5d6479a366d787f3; re-import, do not edit.
+id: agent-edit-synth-0082
+modality: agent
+prompt: 'Change compass.shipping.grade: add a keyword argument plus (default False); when it is true,
+  a B, C or D score in the top three points of its band gets a + (88 is B+). Other behaviour must not
+  change. Run the tests when done.'
+params:
+  repo: repos/agent-edit-synth-0082
+  tools:
+  - read_file
+  - write_file
+  - list_dir
+  - run_tests
+  max_steps: 12
+assert:
+  hidden: true
+attribution:
+  dataset: SoHoT generated agent cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/agent_synth.py
+  license: generated
+  source: generated:evals.importers.agent_synth v1 seed 603
+  revision: fc1d598d5bbe74a0cd538c8c5d6479a366d787f3
+  item: '82'
+  date: ''
+  transform: a seeded repo with its task, graded by hidden tests or the answer it computes
+  importer: evals.importers.agent_synth
+  version: '1'
+  seed: 603
+  kind: edit

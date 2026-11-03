@@ -1,0 +1,27 @@
+# SoHoT generated agent cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/agent_synth.py).
+# Imported by evals/importers from generated:evals.importers.agent_synth v1 seed 603@fc1d598d5bbe74a0cd538c8c5d6479a366d787f3; re-import, do not edit.
+id: agent-read-synth-0164
+modality: agent
+prompt: Which file defines the function load_dock? Answer with its path relative to the repository root.
+params:
+  repo: repos/agent-read-synth-0164
+  tools:
+  - read_file
+  - list_dir
+  max_steps: 12
+assert:
+  answer:
+  - foundry/jobs/sensors.py
+attribution:
+  dataset: SoHoT generated agent cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/agent_synth.py
+  license: generated
+  source: generated:evals.importers.agent_synth v1 seed 603
+  revision: fc1d598d5bbe74a0cd538c8c5d6479a366d787f3
+  item: '164'
+  date: ''
+  transform: a seeded repo with its task, graded by hidden tests or the answer it computes
+  importer: evals.importers.agent_synth
+  version: '1'
+  seed: 603
+  kind: locate

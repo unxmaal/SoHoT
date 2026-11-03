@@ -1,0 +1,10 @@
+import unittest
+
+from atlas.weather import window_means
+
+
+class Weather(unittest.TestCase):
+    def test_window_means(self):
+        self.assertEqual(window_means([1, 2, 3, 4], 2), [1.5, 2.5, 3.5])
+        self.assertEqual(window_means([5], 1), [5.0])
+        self.assertEqual(window_means([1, 2, 3], 3), [2.0])

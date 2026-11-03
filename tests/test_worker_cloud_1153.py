@@ -15,6 +15,8 @@ ORNITH = ["uv", "run", "python", "-m", "evals.run", "--modality", "repo", "--can
 OPUS = ["uv", "run", "python", "-m", "evals.run", "--modality", "repo", "--candidates",
         "claude-code:claude-opus-5-5", "--repeat", "1", "--split", "all", "--out", "runs/opus"]
 SONNET = [*OPUS[:8], "claude-code:claude-sonnet-5-5", *OPUS[9:]]
+#: A held fake job outlasts the test's own wq.add calls, which load every shipped case; teardown releases it.
+HELD_S = 120.0
 
 
 class Fake:
@@ -34,7 +36,7 @@ class Fake:
             self.events.append(("start", argv[8]))
         gate = self.gates.get(tuple(argv))
         if gate is not None:
-            assert gate.wait(10), f"{argv[8]} never released"
+            assert gate.wait(HELD_S), f"{argv[8]} never released"
         with self.lock:
             self.events.append(("end", argv[8]))
         return types.SimpleNamespace(returncode=0)

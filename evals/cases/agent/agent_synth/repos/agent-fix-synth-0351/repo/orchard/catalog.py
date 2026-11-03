@@ -1,0 +1,26 @@
+"""Catalog helpers."""
+
+def format_cents(cents):
+    """Cents as dollars with thousands separators, such as -$1,234.56."""
+    sign = "-" if cents < 0 else ""
+    cents = abs(cents)
+    return f"{sign}${cents // 100:,}.{cents % 100:02d}"
+
+
+def grade(score):
+    """Letter grade: A from 90, B from 80, C from 70, D from 60, else F."""
+    for floor, letter in ((90, "A"), (80, "B"), (70, "C"), (60, "D")):
+        if score >= floor:
+            return letter
+    return "F"
+
+
+def dedupe(items):
+    """Items with repeats removed, first occurrences kept in order."""
+    seen = set()
+    out = []
+    for item in items:
+        if item not in seen:
+            seen.add(item)
+            out.append(item)
+    return out
