@@ -68,6 +68,36 @@
    "until": "version:mlx-audio>0.5.3"
   },
   {
+   "candidate": "tts:ScenemaAI/scenema-audio",
+   "decided_at": "2026-11-03T02:35:52Z",
+   "detail": "needs its own runner: the stock loader could not assemble it: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'ScenemaAI/scenema-audio': Could not determine model type for ScenemaAI/scenema-audio\"}; numbers-and-units: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'ScenemaAI/scenema-audio': Could not determine model type for ScenemaAI",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "ScenemaAI/scenema-audio",
+   "reason": "runtime",
+   "receipt_key": "scenema-audio",
+   "run_id": 668,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "runner:tts/scenema-audio"
+  },
+  {
+   "candidate": "tts:SpragAI/qwen3-tts-emotion-tags",
+   "decided_at": "2026-11-03T03:00:30Z",
+   "detail": "it ran and passed nothing: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: ValueError: CustomVoice model requires 'voice' (speaker name) (e.g., ['serena', 'vivian', 'uncle_fu', 'ryan', 'aiden', 'ono_anna', 'sohee', '",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "SpragAI/qwen3-tts-emotion-tags",
+   "reason": "candidate",
+   "receipt_key": "qwen3-tts-emotion-tags",
+   "run_id": 671,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "tts:Supertone/supertonic-3",
    "decided_at": "2026-10-18T00:42:26Z",
    "detail": "retracted: tts:Supertone/supertonic-3's runner could not open the repo's layout, a runner gap rather than a verdict on Supertone/supertonic-3: it ran and passed nothing: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'Supertone/supertonic-3': Could not determine model type for Supertone/supertonic-3\"} || not run, no candidate for them -- tts: fr-liaison",
@@ -92,6 +122,21 @@
    "reason": "runtime",
    "receipt_key": "sanoTTS",
    "run_id": 508,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "version:mlx-audio>0.5.3"
+  },
+  {
+   "candidate": "tts:litert-community/Inflect-Nano-v2",
+   "decided_at": "2026-11-03T03:01:13Z",
+   "detail": "the installed runtime could not load it: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'litert-community/Inflect-Nano-v2': Config not found at 5c184d02d4d1a7aacfa1e54f791f1e495cf52124\"}; numbers-and-units: tts failed: HTTP 500: {\"detail\":\"Failed",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "litert-community/Inflect-Nano-v2",
+   "reason": "runtime",
+   "receipt_key": "Inflect-Nano-v2",
+   "run_id": 676,
    "serves": false,
    "status": "rejected",
    "tier": "screen",
@@ -284,18 +329,18 @@
    "until": "format:.bin"
   },
   {
-   "candidate": "tts:SpragAI/qwen3-tts-emotion-tags",
-   "decided_at": "2026-11-02T02:15:57Z",
-   "detail": "retest 1/3: broken at screen",
+   "candidate": "tts:OpenMOSS-Team/MOSS-TTS-v1.5",
+   "decided_at": "2026-11-03T03:00:56Z",
+   "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local dis",
    "exam": null,
    "outcome": "queued",
-   "proposal": "SpragAI/qwen3-tts-emotion-tags",
-   "reason": "reopened",
-   "receipt_key": "qwen3-tts-emotion-tags",
-   "run_id": null,
+   "proposal": "OpenMOSS-Team/MOSS-TTS-v1.5",
+   "reason": "harness",
+   "receipt_key": "MOSS-TTS-v1.5",
+   "run_id": 673,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
+   "tier": "screen",
    "until": ""
   },
   {
@@ -329,7 +374,7 @@
    "until": "format:.pt"
   }
  ],
- "cursor": 1793341312223836,
+ "cursor": 1793674873090593,
  "events": [
   {
    "at": "2026-09-19T21:17:40Z",
@@ -735,6 +780,81 @@
    "reason": "runtime",
    "run_id": 621,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-01T01:22:53Z",
+   "candidate": "OpenMOSS-Team/MOSS-TTS-v1.5",
+   "chosen": null,
+   "detail": "not screened: needs 15.8 GB but only 10.2 GB is safely available (28.2 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1793496173820479,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-03T02:35:52Z",
+   "candidate": "tts:ScenemaAI/scenema-audio",
+   "chosen": null,
+   "detail": "needs its own runner: the stock loader could not assemble it: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'ScenemaAI/scenema-audio': Could not determine model type for ScenemaAI/scenema-audio\"}; numbers-and-units: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'ScenemaAI/scenema-audio': Could not determine model type for ScenemaAI",
+   "how": "",
+   "id": 1793673352627593,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "runtime",
+   "run_id": 668,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-03T03:00:30Z",
+   "candidate": "tts:SpragAI/qwen3-tts-emotion-tags",
+   "chosen": null,
+   "detail": "it ran and passed nothing: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: ValueError: CustomVoice model requires 'voice' (speaker name) (e.g., ['serena', 'vivian', 'uncle_fu', 'ryan', 'aiden', 'ono_anna', 'sohee', '",
+   "how": "",
+   "id": 1793674830461728,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 671,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-03T03:00:56Z",
+   "candidate": "tts:OpenMOSS-Team/MOSS-TTS-v1.5",
+   "chosen": null,
+   "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local dis",
+   "how": "",
+   "id": 1793674856128588,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "harness",
+   "run_id": 673,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-03T03:01:13Z",
+   "candidate": "tts:litert-community/Inflect-Nano-v2",
+   "chosen": null,
+   "detail": "the installed runtime could not load it: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'litert-community/Inflect-Nano-v2': Config not found at 5c184d02d4d1a7aacfa1e54f791f1e495cf52124\"}; numbers-and-units: tts failed: HTTP 500: {\"detail\":\"Failed",
+   "how": "",
+   "id": 1793674873090593,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "runtime",
+   "run_id": 676,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -853,7 +973,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-02T08:00:29Z",
+ "generated_at": "2026-11-03T04:27:06Z",
  "knobs": [],
  "lane": {
   "cases": 470,
