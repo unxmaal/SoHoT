@@ -143,6 +143,19 @@ else
   printf 'SKIP  node checks: the node list lives on the serving machine\n'
 fi
 
+# Each installed unit carries the weights location the owner's install recorded (#1518).
+INSTALL_CHECK="${SMOKE_INSTALL_CHECK:-uv run --quiet python -m harness.install_env units}"
+# One real completion per upstream engine, so an engine that lists nothing cannot hide behind another (#1518).
+ENGINES_CHECK="${SMOKE_ENGINES_CHECK:-uv run --quiet python -m harness.engine_smoke --gateway $G}"
+if [ "$LOCAL" -eq 1 ]; then
+  if [ "$(uname -s)" = "Darwin" ]; then
+    $INSTALL_CHECK 2>&1 || FAIL=1
+  fi
+  SOHOT_GATEWAY_KEY="$KEY" $ENGINES_CHECK 2>&1 || FAIL=1
+else
+  printf 'SKIP  unit and engine checks: they read the serving machine\n'
+fi
+
 # A yield-stopped reply closes its stream; unless that frees the llama-server slot the stop saves no GPU (#1127).
 if [ "$LOCAL" -eq 1 ]; then
   SOHOT_GATEWAY_KEY="$KEY" uv run python -m harness.slot_probe --gateway "$G" || FAIL=1

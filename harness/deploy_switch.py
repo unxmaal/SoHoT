@@ -29,6 +29,24 @@ ALERT_TIMEOUT_S = 120.0
 #: Variables a deploy run must not hand to the release's scripts: they would pin the old checkout or its venv.
 DROP_ENV = ("LH_DEPLOY", "LH_REPO", "LH_REEXECED", "LH_GPU_LOCK_HELD", "VIRTUAL_ENV", "LH_JOB_ID")
 DEPLOYED, ROLLED_BACK, FAILED = "deployed", "rolled_back", "failed"
+#: The file under the harness home where scripts/launchd.sh install records the environment it read. #1518.
+INSTALL_ENV = "install.env"
+
+
+def read_install_env(path) -> dict:
+    """KEY=VALUE lines of the install record; {} when it is missing."""
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+    except OSError:
+        return {}
+    out = {}
+    for line in text.splitlines():
+        if line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        if key and key not in out:
+            out[key] = value
+    return out
 
 
 def load(path: Path) -> dict:
@@ -188,6 +206,8 @@ def alert(rec: dict, message: str, log) -> None:
 def switch(path: Path) -> dict:
     path = Path(path)
     rec = load(path)
+    # Launchd gave this process no shell profile; every step runs in what the owner's install recorded. #1518.
+    os.environ.update(read_install_env(rec["install_env"]) if rec.get("install_env") else {})
     rec.update(stage="switching", pid=os.getpid(), switch_started=time.time())
     save(path, rec)
     Path(rec["log"]).parent.mkdir(parents=True, exist_ok=True)
