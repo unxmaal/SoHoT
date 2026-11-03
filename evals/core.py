@@ -1291,10 +1291,10 @@ def _agent_params(path: Path, params: dict, assertions: dict) -> dict:
     if assertions.get("hidden") and not (bundle / "hidden").is_dir():
         raise ValueError(f"{path.name}: assert.hidden needs {params['repo']}/hidden/")
     h = hashlib.sha256()
-    for f in sorted(p for p in bundle.rglob("*") if p.is_file()
-                    and "__pycache__" not in p.parts
-                    and p.relative_to(bundle).parts[0] in ("repo", "hidden")):
-        h.update(f.relative_to(bundle).as_posix().encode("utf-8") + b"\x00")
+    cut = len(bundle.as_posix()) + 1
+    for f in sorted(p for sub in ("repo", "hidden") for p in (bundle / sub).rglob("*")
+                    if "__pycache__" not in p.parts and p.is_file()):
+        h.update(f.as_posix()[cut:].encode("utf-8") + b"\x00")
         h.update(f.read_bytes().replace(b"\r\n", b"\n") + b"\x00")
     return {"repo_digest": h.hexdigest()[:16]}
 
