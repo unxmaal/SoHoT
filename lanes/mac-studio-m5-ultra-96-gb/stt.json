@@ -113,6 +113,43 @@
    "until": "version:mlx-audio>0.5.3"
   },
   {
+   "candidate": "stt:mlx-community/nemotron-3.5-asr-streaming-0.6b-8bit",
+   "decided_at": "2026-11-03T03:22:25Z",
+   "detail": "stt: does not beat the incumbent on the lane's metric; significantly worse: 19 lost against 5 gained, p=0.01; comparison 3 on this holdout, so alpha 0.05/3 = 0.0167; dev: 8 gained, 77 lost, p=0.00",
+   "exam": {
+    "about": "0.6B params, 8bit",
+    "candidate": "nemotron-3.5-asr-streaming-0.6b-8bit",
+    "cases": 480,
+    "first_s": 1.283,
+    "median_s": 0.149,
+    "metrics": {
+     "wer": 0.0329
+    },
+    "model": "nemotron-3.5-asr-streaming-0.6b-8bit",
+    "not_run": "",
+    "pass_rate": 0.967,
+    "passed": 464,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-03T03:22:25Z",
+    "served_as": "",
+    "source": "",
+    "total": 480,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "declined",
+   "proposal": "mlx-community/nemotron-3.5-asr-streaming-0.6b-8bit",
+   "reason": "candidate",
+   "receipt_key": "nemotron-3.5-asr-streaming-0.6b-8bit",
+   "run_id": 679,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
    "candidate": "stt:mlx-community/whisper-large-v3-mlx",
    "decided_at": "2026-10-19T22:58:04Z",
    "detail": "stt: lane too small, needs 261 holdout cases: 133 cannot show +0.20 per cell at power 0.8 at any repeat up to 16, so about 427 more stt cases are needed before a null says anything about whisper-large",
@@ -343,8 +380,8 @@
     "about": "0.6B params",
     "candidate": "parakeet-tdt-0.6b-v2",
     "cases": 480,
-    "first_s": 0.169,
-    "median_s": 0.113,
+    "first_s": 6.193,
+    "median_s": 0.071,
     "metrics": {
      "wer": 0.0145
     },
@@ -355,7 +392,7 @@
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-02T07:47:31Z",
+    "run_at": "2026-11-03T03:22:25Z",
     "served_as": "",
     "source": "",
     "total": 480,
@@ -403,21 +440,6 @@
    "until": ""
   },
   {
-   "candidate": "stt:mlx-community/nemotron-3.5-asr-streaming-0.6b-8bit",
-   "decided_at": "2026-10-25T04:53:57Z",
-   "detail": "it transcribed the screen at corpus WER 0.11, under the 0.5 plausibility limit, though no clip was word-perfect",
-   "exam": null,
-   "outcome": "screened",
-   "proposal": "mlx-community/nemotron-3.5-asr-streaming-0.6b-8bit",
-   "reason": "candidate",
-   "receipt_key": "nemotron-3.5-asr-streaming-0.6b-8bit",
-   "run_id": 584,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
    "candidate": "stt:mlx-community/Qwen3-ASR-0.6B-4bit",
    "decided_at": "2026-10-19T11:51:28Z",
    "detail": "fits: MLX-native, smallest variant model.safetensors: 0.7 GiB of 1 weight file",
@@ -433,7 +455,7 @@
    "until": ""
   }
  ],
- "cursor": 1793605651502747,
+ "cursor": 1793676145851683,
  "events": [
   {
    "at": "2026-09-08T02:00:21Z",
@@ -1064,6 +1086,21 @@
    "reason": "candidate",
    "run_id": 664,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-03T03:22:25Z",
+   "candidate": "stt:mlx-community/nemotron-3.5-asr-streaming-0.6b-8bit",
+   "chosen": null,
+   "detail": "stt: does not beat the incumbent on the lane's metric; significantly worse: 19 lost against 5 gained, p=0.01; comparison 3 on this holdout, so alpha 0.05/3 = 0.0167; dev: 8 gained, 77 lost, p=0.00",
+   "how": "",
+   "id": 1793676145851683,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": 679,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -1081,8 +1118,8 @@
     {
      "about": "0.6B params",
      "candidate": "parakeet-tdt-0.6b-v2",
-     "first_s": 0.169,
-     "median_s": 0.113,
+     "first_s": 6.193,
+     "median_s": 0.071,
      "metrics": {
       "wer": 0.0145
      },
@@ -1092,7 +1129,28 @@
      "passed": 473,
      "peak_gb": 0.0,
      "reference": false,
-     "run_at": "2026-11-02T07:47:31Z",
+     "run_at": "2026-11-03T03:22:25Z",
+     "served_as": "",
+     "source": "",
+     "total": 480,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "about": "0.6B params, 8bit",
+     "candidate": "nemotron-3.5-asr-streaming-0.6b-8bit",
+     "first_s": 1.283,
+     "median_s": 0.149,
+     "metrics": {
+      "wer": 0.0329
+     },
+     "model": "nemotron-3.5-asr-streaming-0.6b-8bit",
+     "not_run": "",
+     "pass_rate": 0.967,
+     "passed": 464,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-03T03:22:25Z",
      "served_as": "",
      "source": "",
      "total": 480,
@@ -1121,8 +1179,8 @@
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-11-02T07:47:31Z",
-   "runs": 1
+   "run_at": "2026-11-03T03:22:25Z",
+   "runs": 2
   },
   {
    "cases": 480,
@@ -1286,7 +1344,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-02T08:00:29Z",
+ "generated_at": "2026-11-03T04:27:06Z",
  "knobs": [],
  "lane": {
   "cases": 480,
@@ -1305,8 +1363,8 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-11-02T07:47:31Z",
-  "median_s": 0.113,
+  "measured_at": "2026-11-03T03:22:25Z",
+  "median_s": 0.071,
   "metrics": {
    "wer": 0.0145
   },
