@@ -40,6 +40,21 @@
    "until": ""
   },
   {
+   "candidate": "acestep:ChrisColeTech/scenema-audio",
+   "decided_at": "2026-11-03T03:01:07Z",
+   "detail": "needs its own runner: the stock loader could not assemble it: cover: exit 3; instrumental: exit 3",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "ChrisColeTech/scenema-audio",
+   "reason": "runtime",
+   "receipt_key": "acestep/scenema-audio",
+   "run_id": 674,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "runner:acestep/layout"
+  },
+  {
    "candidate": "acestep:acestep-v15-turbo,steps=16",
    "decided_at": "2026-09-23T00:05:10Z",
    "detail": "music: the incumbent was preferred: won 2 of 4 case(s) (cover: steps=8, instrumental: no preference, lyrics-dense: steps=16, lyrics-plain: steps=8), 1 with no preference",
@@ -124,7 +139,7 @@
    "until": ""
   }
  ],
- "cursor": 1792633191042097,
+ "cursor": 1793674867137267,
  "events": [
   {
    "at": "2026-09-23T00:05:10Z",
@@ -230,6 +245,21 @@
    "reason": "runtime",
    "run_id": 530,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-03T03:01:07Z",
+   "candidate": "acestep:ChrisColeTech/scenema-audio",
+   "chosen": null,
+   "detail": "needs its own runner: the stock loader could not assemble it: cover: exit 3; instrumental: exit 3",
+   "how": "",
+   "id": 1793674867137267,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "runtime",
+   "run_id": 674,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -323,7 +353,7 @@
    "runs": 6
   }
  ],
- "generated_at": "2026-11-02T08:00:25Z",
+ "generated_at": "2026-11-03T04:27:02Z",
  "knobs": [],
  "lane": {
   "cases": 4,
