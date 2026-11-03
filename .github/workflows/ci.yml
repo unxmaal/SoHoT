@@ -23,8 +23,8 @@ jobs:
     # Apple Silicon, and standard runners are free for public repos. Larger
     # runners are NOT free, so this label must stay standard.
     runs-on: macos-latest
-    # harness/ci_budget.MACOS_TIMEOUT_MIN, knob ci_macos_timeout: 2x the slowest normal run on the slow runner class (#1146).
-    timeout-minutes: 26
+    # harness/ci_budget.MACOS_TIMEOUT_MIN, knob ci_macos_timeout: 1.4x the measured M1 job p95, a slow host's factor (#1520).
+    timeout-minutes: 35
     permissions:
       contents: read
       # Where the time went downloads the last main run's per-test times (#1146).
@@ -93,7 +93,7 @@ jobs:
             echo "### Test time (fast path: $SOHOT_FAST_PATH)"
             echo
             echo '```'
-            uv run python -m harness.suite_time /tmp/junit.xml --log /tmp/test-times.tsv --against /tmp/prev/junit.xml 2>&1 || true
+            uv run python -m harness.suite_time /tmp/junit.xml --log /tmp/test-times.tsv --now "$(date +%s)" --against /tmp/prev/junit.xml 2>&1 || true
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"
 

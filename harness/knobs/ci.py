@@ -1,16 +1,23 @@
-"""Knobs of the check-macos CI job: its timeout, its budget warning, and the per-test slowdown it names (#1146)."""
+"""Knobs of the check-macos CI job: its timeout, budget warning, one rerun, and what a slow run names (#1146, #1520)."""
 from harness.knobs.base import _k
 
 B = "harness/ci_budget.py"
 T = "harness/suite_time.py"
+R = "harness/ci_rerun.py"
 
 KNOBS = [
     _k("ci_budget_warn", [f"{B}:WARN_SHARE"], [0.7, 0.8, 0.9],
        note="share of its timeout a CI job may use before ci_budget prints a GitHub warning (#1146)"),
-    _k("ci_macos_timeout", [f"{B}:MACOS_TIMEOUT_MIN"], [15, 20, 26, 30],
-       note="check-macos timeout-minutes: 2x the slowest normal full push run on the 3-vCPU M1 class (12.7 min, "
-            "run 40005198738); a slow M1 host ran the same code 2.0x slower (run 40020366592 attempt 1 vs 2); "
-            "M2 Pro runs take 4.6-5.1 (#724, #1146)"),
+    _k("ci_hang_s", [f"{T}:HANG_S"], [120.0, 180.0, 300.0],
+       note="seconds a test in flight, or a suite with nothing starting or ending, makes a cancelled run a hang "
+            "rather than a slow suite; equal to tests/conftest HANG_DUMP_S (#1520)"),
+    _k("ci_macos_reruns", [f"{R}:RERUNS"], [0, 1, 2],
+       note="automatic reruns of a push-to-main check run whose check-macos hit its timeout on main's tip; one, "
+            "so runner variance cannot block a deploy and a suite that is simply too slow still fails (#1520)"),
+    _k("ci_macos_timeout", [f"{B}:MACOS_TIMEOUT_MIN"], [26, 30, 35, 40],
+       note="check-macos timeout-minutes: 1.4x the job p95 on the 3-vCPU M1 class (23.6 min over 20 full runs "
+            "2026-10-31..11-03, python -m harness.ci_history); a slow M1 host ran 1.4x the run before it "
+            "(41692522061 vs 41687128099) and 2.0x in #1146; the spool fix cut suite CPU 20%, #1513 adds 3% (#1520)"),
     _k("ci_slower_added", [f"{T}:SLOWER_ADDED_S"], [10.0, 30.0, 60.0],
        note="seconds more than on the last main run a test must take to be named slower; with ci_slower_ratio, "
             "42 ordered pairs of 7 runs named only the two tests #1181 made wait 120 s (#1146)"),
@@ -20,6 +27,10 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    "harness/ci_history.py:_gh->subprocess.run(timeout)": "how long one gh call of a CI history read may take; it "
+                                                          "measures past runs and gates nothing (#1520)",
+    "harness/ci_rerun.py:_gh->subprocess.run(timeout)": "how long one gh call deciding a rerun may take; a stuck "
+                                                        "call fails the rerun job, never a check (#1520)",
     "scripts/ci-retry.sh:CI_RETRY_ATTEMPTS": "how many times CI runs `uv sync` before the job fails; a network "
                                              "blip retried is the same install, and a persistent failure still fails (#1440)",
     "scripts/ci-retry.sh:CI_RETRY_DELAY": "seconds before CI's first `uv sync` retry, doubling after; it only "
@@ -27,6 +38,8 @@ NOT_GATING = {
 }
 
 NEVER_CUTS = {
+    f"{R}:RERUNS": "whether a timed-out main run is retried; the check still reports what it found (#1520)",
+    f"{T}:HANG_S": "which words a cancelled run's report uses, slow suite or hang; every test still runs (#1520)",
     "harness/ci_budget.py:MACOS_TIMEOUT_MIN": "a copy of check-macos timeout-minutes a test holds equal to ci.yml; the "
                                               "harness reads it nowhere (#1146)",
     "harness/ci_budget.py:WARN_SHARE": "when a CI job's time warns; the job runs on either way (#1146)",

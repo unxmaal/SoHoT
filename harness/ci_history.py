@@ -1,0 +1,189 @@
+"""check-macos wall time over recent runs, by path and runner class, and the slowest tests in their logs. #1520."""
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import statistics
+import subprocess
+import sys
+from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
+
+REPO = "unxmaal/SoHoT"
+WORKFLOW = "ci.yml"
+JOB = "check-macos"
+STEP = "make check"
+_STAMP = r"^\S+Z "
+_RUNNER = re.compile(r"Apple (M\d[\w ]*?) \(Virtual\)\s*\n" + _STAMP + r"(\d+)", re.M)
+_REAL = re.compile(_STAMP + r"real (\d+(?:\.\d+)?)\s*$", re.M)
+_PCT = re.compile(r"\[\s*(\d{1,3})%\]")
+_FAST = re.compile(r"^\S+Z\s+SOHOT_FAST_PATH: 1\s*$", re.M)
+_DUR = re.compile(_STAMP + r"(\d+\.\d+)s (?:call|setup|teardown) +(\S+::\S+)", re.M)
+_ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+
+
+def _ts(s: str | None) -> float | None:
+    return datetime.fromisoformat(s.replace("Z", "+00:00")).timestamp() if s else None
+
+
+def _gh(argv: list[str]) -> str:
+    for attempt in (1, 2):
+        got = subprocess.run(["gh", *argv], capture_output=True, text=True, timeout=300)
+        if got.returncode == 0:
+            return got.stdout
+    raise RuntimeError(f"gh {' '.join(argv[:3])} failed: {(got.stderr or got.stdout).strip()[:300]}")
+
+
+def _cached(f: Path, fetch) -> str | None:
+    if not f.is_file():
+        try:
+            f.write_text(fetch(), encoding="utf-8")
+        except RuntimeError as exc:
+            print(exc, file=sys.stderr)
+            return None
+    return f.read_text(encoding="utf-8", errors="replace")
+
+
+def from_log(log: str) -> dict:
+    """runner class, `time -p` real seconds, last progress %, fast path, and per-test call seconds from a job log."""
+    log = _ANSI.sub("", log)
+    m = _RUNNER.search(log)
+    real = _REAL.findall(log)
+    pct = _PCT.findall(log)
+    tests: dict[str, float] = defaultdict(float)
+    for sec, test in _DUR.findall(log):
+        tests[test] += float(sec)
+    return {"runner": f"{m.group(1).strip()} {m.group(2)}cpu" if m else "unknown",
+            "real_s": float(real[-1]) if real else None, "pct": int(pct[-1]) if pct else None,
+            "fast": bool(_FAST.search(log)), "tests": dict(tests)}
+
+
+def from_job(job: dict, run: dict) -> dict | None:
+    """One row for a completed check-macos job attempt, or None when it never ran make check."""
+    if job.get("name") != JOB or job.get("status") != "completed" or job.get("conclusion") == "skipped":
+        return None
+    step = next((s for s in job.get("steps") or [] if s.get("name") == STEP), None)
+    start, end = _ts(job.get("started_at")), _ts(job.get("completed_at"))
+    s0, s1 = (_ts(step.get("started_at")), _ts(step.get("completed_at"))) if step else (None, None)
+    return {"run": run["databaseId"], "attempt": job.get("run_attempt", 1), "job": job["id"],
+            "event": run.get("event", ""), "sha": run.get("headSha", "")[:8], "conclusion": job.get("conclusion"),
+            "job_min": round((end - start) / 60, 2) if start and end else None,
+            "check_min": round((s1 - s0) / 60, 2) if s0 and s1 else None}
+
+
+def outcome(row: dict, limit_min: float) -> str:
+    """passed, failed, timeout (cancelled at the job limit), or superseded (cancelled earlier, by a newer push)."""
+    c = row.get("conclusion")
+    if c == "success":
+        return "passed"
+    if c == "cancelled":
+        return "timeout" if (row.get("job_min") or 0) >= limit_min else "superseded"
+    return "failed"
+
+
+def path(row: dict) -> str:
+    return "fast (PR)" if row.get("fast") else "full (main)"
+
+
+def pctl(xs: list[float], q: float) -> float:
+    xs = sorted(xs)
+    if len(xs) == 1:
+        return xs[0]
+    return statistics.quantiles(xs, n=100, method="inclusive")[round(q * 100) - 1]
+
+
+def table(rows: list[dict], limit_min: float) -> list[dict]:
+    """Per (path, runner): runs, outcomes, and make check minutes p50/p95/max over runs that ran to an end or the limit."""
+    groups: dict[tuple, list[dict]] = defaultdict(list)
+    for r in rows:
+        groups[(path(r), r.get("runner", "unknown"))].append(r)
+    out = []
+    for (p, runner), rs in sorted(groups.items()):
+        kinds = defaultdict(int)
+        for r in rs:
+            kinds[outcome(r, limit_min)] += 1
+        ended = [r for r in rs if outcome(r, limit_min) in ("passed", "failed")]
+        mins = [r["check_min"] for r in ended if r.get("check_min")]
+        jobs = [r["job_min"] for r in ended if r.get("job_min")]
+        out.append({"path": p, "runner": runner, "runs": len(rs), **{k: kinds.get(k, 0) for k in
+                    ("passed", "failed", "timeout", "superseded")},
+                    "p50": round(statistics.median(mins), 1) if mins else None,
+                    "p95": round(pctl(mins, 0.95), 1) if mins else None, "max": round(max(mins), 1) if mins else None,
+                    "job_p95": round(pctl(jobs, 0.95), 1) if jobs else None,
+                    "job_max": round(max(jobs), 1) if jobs else None})
+    return out
+
+
+def slowest(rows: list[dict], top: int = 30, full_only: bool = True) -> list[tuple[str, float, float, int]]:
+    """(test, median s, max s, runs seen) over the logs that printed --durations."""
+    seen: dict[str, list[float]] = defaultdict(list)
+    for r in rows:
+        if full_only and r.get("fast"):
+            continue
+        for t, s in (r.get("tests") or {}).items():
+            seen[t].append(s)
+    ranked = sorted(((t, statistics.median(v), max(v), len(v)) for t, v in seen.items()), key=lambda x: -x[1])
+    return [(t, round(m, 1), round(x, 1), n) for t, m, x, n in ranked[:top]]
+
+
+def render(tab: list[dict], slow: list, limit_min: float) -> str:
+    lines = [f"check-macos `make check` minutes (job limit {limit_min:g} min; p50/p95/max over runs that finished)", "",
+             "| path | runner | runs | passed | failed | timeout | superseded | p50 | p95 | max | job p95 | job max |",
+             "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    for t in tab:
+        lines.append("| " + " | ".join(str(t[k] if t[k] is not None else "-") for k in
+                     ("path", "runner", "runs", "passed", "failed", "timeout", "superseded", "p50", "p95", "max", "job_p95",
+                      "job_max")) + " |")
+    if slow:
+        lines += ["", "slowest tests on full runs (call+setup+teardown seconds, median over runs):", "",
+                  "| median s | max s | runs | test |", "|---|---|---|---|"]
+        lines += [f"| {m} | {x} | {n} | `{t}` |" for t, m, x, n in slow]
+    return "\n".join(lines)
+
+
+def collect(limit: int, cache: Path, gh=_gh, branch: str = "") -> list[dict]:
+    """Every check-macos job attempt in the newest `limit` runs, with its log parsed; logs cached under `cache`."""
+    cache.mkdir(parents=True, exist_ok=True)
+    argv = ["run", "list", "-R", REPO, "--workflow", WORKFLOW, "-L", str(limit), "--status", "completed",
+            "--json", "databaseId,event,headSha,conclusion"]
+    rows = []
+    for run in json.loads(gh(argv + (["--branch", branch] if branch else [])) or "[]"):
+        jobs = _cached(cache / f"run-{run['databaseId']}.json", lambda: gh(
+            ["api", f"repos/{REPO}/actions/runs/{run['databaseId']}/jobs?filter=all&per_page=100"]))
+        listed = (json.loads(jobs).get("jobs") or []) if jobs else []
+        for job in listed:
+            row = from_job(job, run)
+            if row is None:
+                continue
+            log = _cached(cache / f"{job['id']}.log", lambda: gh(
+                ["api", "--allow-escape-sequences", f"repos/{REPO}/actions/jobs/{job['id']}/logs"]))
+            if log is not None:
+                row.update(from_log(log))
+            rows.append(row)
+    return rows
+
+
+def main(argv=None) -> int:
+    from harness import ci_budget
+    ap = argparse.ArgumentParser(prog="python -m harness.ci_history", description=__doc__)
+    ap.add_argument("--limit", type=int, default=30, help="newest completed workflow runs to read")
+    ap.add_argument("--branch", default="", help="only runs on this branch")
+    ap.add_argument("--cache", type=Path, required=True, help="directory for downloaded job logs")
+    ap.add_argument("--top", type=int, default=30)
+    ap.add_argument("--json", action="store_true")
+    a = ap.parse_args(argv)
+    limit_min = ci_budget.limit_minutes(JOB)
+    rows = collect(a.limit, a.cache, branch=a.branch)
+    tab, slow = table(rows, limit_min), slowest(rows, a.top)
+    if a.json:
+        print(json.dumps({"rows": [{k: v for k, v in r.items() if k != "tests"} for r in rows],
+                          "table": tab, "slowest": slow}, indent=1))
+    else:
+        print(render(tab, slow, limit_min))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
