@@ -32,18 +32,18 @@
   },
   {
    "candidate": "diffusers-video:LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
-   "decided_at": "2026-11-03T03:00:23Z",
-   "detail": "not screened: needs 0.3 GB but only -4.0 GB is safely available (14.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "decided_at": "2026-11-04T02:11:40Z",
+   "detail": "fits: smallest variant Anime2Realsim__H3.safetensors: 0.3 GiB of 1 weight file",
    "exam": null,
    "outcome": "queued",
    "proposal": "LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
-   "reason": "memory",
+   "reason": "candidate",
    "receipt_key": "diffusers-video/Minimax-H3-ref2v_Anime_2_Realism",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>0.3"
+   "tier": "inspect",
+   "until": ""
   },
   {
    "candidate": "h3",
@@ -275,7 +275,7 @@
    "runs": 7
   }
  ],
- "generated_at": "2026-11-03T04:27:02Z",
+ "generated_at": "2026-11-04T08:02:08Z",
  "knobs": [],
  "lane": {
   "cases": 1,
