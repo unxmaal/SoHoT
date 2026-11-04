@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from harness import canary, cli, exclusive, heartbeat, morning, paths
+from harness import canary, cli, exclusive, heartbeat, holdout, morning, paths
 from harness import memory_store as ms
 from harness.commands import morning as morning_cmd
 from tests import conftest
@@ -122,7 +122,7 @@ def test_the_known_better_incumbent_is_adopted_by_hand_in_the_isolated_store(tmp
         got = canary.observe(conn, plant)
     finally:
         conn.close()
-    assert "v3" in got["serves"] and got["outcome"] == "", got
+    assert "nemotron" in got["serves"] and got["outcome"] == "", got
 
 
 @pytest.mark.gauntlet("one-default-tuned-for-one-member-applied-to-all", site="harness/canary.py:run(wait_h)")
@@ -179,13 +179,21 @@ def _stored_pair(conn, lane, better, worse, n=40, path="r1"):
     conn.commit()
 
 
-def test_check_says_whether_the_stored_results_separate_each_pair(tmp_path):
+SPLIT40 = holdout.Split("stt", (), tuple(f"c{i}" for i in range(40)), False)
+
+
+def _known_pair():
     from harness import screen
+    worse = next(p for p in canary.PLANTS if p.name == "stt-known-worse")
+    return screen.candidate_for("stt", worse.incumbent), screen.candidate_for("stt", worse.challenger)
+
+
+def test_check_says_whether_the_stored_results_separate_each_pair(tmp_path):
     conn = ms.connect(tmp_path / "s.db")
     try:
-        v2, v3 = (screen.candidate_for("stt", f"mlx-community/parakeet-tdt-{v}") for v in ("1.1b", "0.6b-v3"))
+        v2, v3 = _known_pair()
         _stored_pair(conn, "stt", v2, v3)
-        got = {p.name: canary.separable(conn, p) for p in canary.PLANTS}
+        got = {p.name: canary.separable(conn, p, SPLIT40) for p in canary.PLANTS}
     finally:
         conn.close()
     assert got["stt-known-worse"]["ok"] and got["stt-known-better"]["ok"], got
@@ -193,12 +201,11 @@ def test_check_says_whether_the_stored_results_separate_each_pair(tmp_path):
 
 
 def test_check_misses_a_pair_the_gate_cannot_separate(tmp_path):
-    from harness import screen
     conn = ms.connect(tmp_path / "s.db")
     try:
-        v2, v3 = (screen.candidate_for("stt", f"mlx-community/parakeet-tdt-{v}") for v in ("1.1b", "0.6b-v3"))
+        v2, v3 = _known_pair()
         _stored_pair(conn, "stt", v3, v2)
-        got = canary.separable(conn, next(p for p in canary.PLANTS if p.name == "stt-known-worse"))
+        got = canary.separable(conn, next(p for p in canary.PLANTS if p.name == "stt-known-worse"), SPLIT40)
     finally:
         conn.close()
     assert not got["ok"], got
@@ -221,17 +228,16 @@ def test_dry_run_lists_every_plant(capsys):
     assert all(p.name in out for p in canary.PLANTS) and "canary spend" in out
 
 
-@pytest.mark.gauntlet("state-is-whichever-row-came-last", site="harness/canary.py:separable")
+@pytest.mark.gauntlet("state-is-whichever-row-came-last", site="harness/canary.py:_pair_rows")
 def test_check_reads_the_newest_run_holding_both(tmp_path):
-    from harness import screen
     conn = ms.connect(tmp_path / "s.db")
     try:
-        v2, v3 = (screen.candidate_for("stt", f"mlx-community/parakeet-tdt-{v}") for v in ("1.1b", "0.6b-v3"))
+        v2, v3 = _known_pair()
         # Inserted first, generated last: recency is the run's own time, not its row id.
         _stored_pair(conn, "stt", v2, v3, path="old")
         _stored_pair(conn, "stt", v3, v2, path="new")
         _stored_pair(conn, "stt", v3, v2, path="screen")
-        got = canary.separable(conn, next(p for p in canary.PLANTS if p.name == "stt-known-worse"))
+        got = canary.separable(conn, next(p for p in canary.PLANTS if p.name == "stt-known-worse"), SPLIT40)
     finally:
         conn.close()
     assert got["ok"] and got["run_id"] == 1, got
