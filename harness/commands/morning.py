@@ -65,6 +65,17 @@ def render_ci(c: dict) -> list[str]:
     return out
 
 
+def render_prs(p: dict | None) -> list[str]:
+    """Open PRs whose newest check-macos is cancelled or failed; nothing when the read was skipped. #1540."""
+    if p is None:
+        return []
+    if not p.get("available"):
+        return [f"prs       unavailable: {p.get('why')}"]
+    from harness import morning
+    return ([f"prs       {len(p['prs'])} open PR(s) with check-macos cancelled or failed"]
+            + [f"          {morning.pr_line(x)}" for x in p["prs"]])
+
+
 def render(r: dict) -> list[str]:
     """The deterministic report, one line per fact."""
     s = r["sweep"]
@@ -118,6 +129,7 @@ def render(r: dict) -> list[str]:
                    f"{w['outcome']}")
         out.extend(f"            client {c}" for c in w.get("clients") or [])
     out.extend(render_ci(r["ci"]))
+    out.extend(render_prs(r.get("pulls")))
     led = r["ledger"]
     if led is None:
         out.append("ledger    no ledger_days table")
@@ -184,7 +196,7 @@ def cmd_morning(a) -> int:
     try:
         r = morning.gather(conn, now, since, beat=heartbeat.summary(), where=paths.deploy_checkout(),
                            health=morning.lane_health, canary=canary.morning_line, parked=morning.parked_nodes,
-                           incumbent=morning.repo_incumbent, monitor=monitor.morning)
+                           incumbent=morning.repo_incumbent, monitor=monitor.morning, pulls=morning.stuck_prs)
     finally:
         conn.close()
     lines = render(r)

@@ -8,16 +8,19 @@ on:
 
 jobs:
   rerun-once:
+    # A check-macos no runner picked up concludes its run failure, so failure passes here and ci_rerun.py decides (#1540).
     if: >-
-      github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_branch == 'main' &&
-      github.event.workflow_run.conclusion == 'cancelled' &&
+      ((github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main') ||
+       (github.event.workflow_run.event == 'pull_request' &&
+        github.event.workflow_run.head_repository.full_name == github.repository)) &&
+      (github.event.workflow_run.conclusion == 'cancelled' || github.event.workflow_run.conclusion == 'failure') &&
       github.event.workflow_run.run_attempt <= 1
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
       actions: write
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,7 +31,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@v5
 
-      - name: Rerun a check-macos that hit its timeout on main's tip
+      - name: Rerun a check-macos that hit its timeout on main's tip or never got a runner
         env:
           GH_TOKEN: ${{ github.token }}
         run: uv run --no-project --with pyyaml python -I harness/ci_rerun.py "${{ github.event.workflow_run.id }}"
