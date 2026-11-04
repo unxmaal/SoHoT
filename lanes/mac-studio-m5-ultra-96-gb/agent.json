@@ -569,11 +569,11 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-02T08:00:26Z",
+ "generated_at": "2026-11-04T08:02:10Z",
  "knobs": [],
  "lane": {
-  "cases": 14,
-  "cases_digest": "3082669b88e726bc",
+  "cases": 374,
+  "cases_digest": "af27cf87dacc533b",
   "name": "agent",
   "params": {
    "max_steps": [
