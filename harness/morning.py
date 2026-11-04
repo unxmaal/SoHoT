@@ -353,6 +353,38 @@ def cancelled(jobs: list[dict]) -> list[str]:
     return out
 
 
+def stuck_prs(now: float, gh=_gh) -> dict:
+    """Open PRs whose newest check-macos ended cancelled or failed, so auto-merge waits on them. #1540."""
+    from harness import ci_history, ci_rerun
+    try:
+        prs = json.loads(gh(["pr", "list", "--state", "open", "-L", "100",
+                             "--json", "number,title,url,statusCheckRollup"]) or "[]")
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
+        return {"available": False, "why": str(exc)[:300], "prs": []}
+    out = []
+    for p in prs:
+        runs = [c for c in p.get("statusCheckRollup") or [] if c.get("name") == ci_rerun.JOB]
+        c = max(runs, key=lambda c: c.get("startedAt") or "", default=None)
+        verdict = (c or {}).get("conclusion", "").lower()
+        if verdict not in FAILED + CANCELLED:
+            continue
+        done = ci_history._ts(c.get("completedAt"))
+        out.append({"number": p["number"], "title": p.get("title", ""), "url": p.get("url", ""),
+                    "conclusion": verdict, "completed": done, "ago_s": now - done if done else None})
+    return {"available": True, "why": "", "prs": sorted(out, key=lambda x: x["number"])}
+
+
+def _ago(s: float | None) -> str:
+    if s is None:
+        return "at a time not recorded"
+    return f"{s / 60:.0f} min ago" if s < 5400 else f"{s / 3600:.1f} h ago" if s < 2 * 86400 else f"{s / 86400:.0f} d ago"
+
+
+def pr_line(p: dict) -> str:
+    """One stuck PR: its newest check-macos verdict and how long ago. #1540."""
+    return f"PR #{p['number']} check-macos {p['conclusion']} {_ago(p['ago_s'])}: {p['title'][:80]}"
+
+
 def _git(argv: list[str]) -> str:
     got = subprocess.run(["git", *argv], capture_output=True, text=True, timeout=GIT_TIMEOUT_S)
     if got.returncode != 0:
@@ -454,6 +486,7 @@ def needs(r: dict) -> list[str]:
         if bad:
             out.append(f"nightly CI failed: {', '.join(bad)}")
         out.extend(cancelled(c["jobs"]))
+    out.extend(pr_line(p) for p in (r.get("pulls") or {}).get("prs") or [])
     d = r["deploy"]
     if d.get("available") and d["behind"]:
         out.append(f"deploy is {d['behind']} commit(s) behind origin/main")
@@ -491,7 +524,7 @@ def parked_nodes() -> list[str]:
 
 
 def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, where=None, lanes=None,
-           health=None, stalls=None, canary=None, parked=None, incumbent=None, monitor=None) -> dict:
+           health=None, stalls=None, canary=None, parked=None, incumbent=None, monitor=None, pulls=None) -> dict:
     """`health` probes the headline's lane (lane_health), `canary` reads its receipts (canary.morning_line); None skips either."""
     r = {"lane": health(MODEL_LANE) if health else {"lane": MODEL_LANE, "generating": None, "why": "not probed"},
          "generated": now, "since": since, "sweep": sweep(conn, since, beat), "watchdog": watchdog(conn, since),
@@ -503,7 +536,8 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "families": families(conn), "yield": yield_stops(conn), "api_spend": api_spend(conn),
          "engines": engines(conn, since), "idle": _idle(conn, since),
          "runtimes": runtimes(conn, since), "techniques": techniques(conn, since),
-         "monitor": monitor(since) if monitor else None, "deploys": deploys_since(conn, since)}
+         "monitor": monitor(since) if monitor else None, "deploys": deploys_since(conn, since),
+         "pulls": pulls(now) if pulls else None}
     if r["sweep"]["loop"] is not None:
         from harness import heartbeat
         r["sweep"]["loop"]["code_moved"] = heartbeat.code_moved(beat, r["deploy"].get("head", ""))

@@ -1,0 +1,189 @@
+{
+ "id": 40865841515,
+ "name": "check",
+ "event": "pull_request",
+ "head_branch": "jobs-guards",
+ "head_sha": "0ee253b8f406293285f45dce7ed3f3d6aa13789f",
+ "status": "completed",
+ "conclusion": "cancelled",
+ "run_attempt": 1,
+ "run_started_at": "2026-10-29T11:29:57Z",
+ "updated_at": "2026-10-29T12:01:02Z",
+ "head_repository": {
+  "full_name": "unxmaal/SoHoT",
+  "owner": {
+   "login": "unxmaal"
+  }
+ },
+ "pull_requests": [],
+ "jobs": [
+  {
+   "name": "check-macos",
+   "status": "completed",
+   "conclusion": "cancelled",
+   "created_at": "2026-10-29T11:29:57Z",
+   "started_at": "2026-10-29T11:30:01Z",
+   "completed_at": "2026-10-29T12:01:01Z",
+   "runner_name": "GitHub Actions 1000005948",
+   "runner_id": 1000005948,
+   "steps": [
+    {
+     "name": "Set up job",
+     "status": "completed",
+     "conclusion": "success",
+     "number": 1,
+     "started_at": "2026-10-29T11:30:02Z",
+     "completed_at": "2026-10-29T11:30:04Z"
+    },
+    {
+     "name": "Run actions/checkout@v4",
+     "status": "completed",
+     "conclusion": "success",
+     "number": 2,
+     "started_at": "2026-10-29T11:30:04Z",
+     "completed_at": "2026-10-29T11:30:09Z"
+    },
+    {
+     "name": "Refuse to run on x86",
+     "status": "completed",
+     "conclusion": "success",
+     "number": 3,
+     "started_at": "2026-10-29T11:30:09Z",
+     "completed_at": "2026-10-29T11:30:09Z"
+    },
+    {
+     "name": "Which runner this is",
+     "status": "completed",
+     "conclusion": "success",
+     "number": 4,
+     "started_at": "2026-10-29T11:30:09Z",
+     "completed_at": "2026-10-29T11:30:09Z"
+    },
+    {
+     "name": "Run astral-sh/setup-uv@v5",
+     "status": "completed",
+     "conclusion": "success",
+     "number": 5,
+     "started_at": "2026-10-29T11:30:09Z",
+     "completed_at": "2026-10-29T11:30:13Z"
+    },
+    {
+     "name": "Tools make check needs",
+     "status": "completed",
+     "conclusion": "success",
+     "number": 6,
+     "started_at": "2026-10-29T11:30:13Z",
+     "completed_at": "2026-10-29T11:30:43Z"
+    },
+    {
+     "name": "Run uv sync --python 3.12",
+     "status": "completed",
+     "conclusion": "success",
+     "number": 7,
+     "started_at": "2026-10-29T11:30:43Z",
+     "completed_at": "2026-10-29T11:30:46Z"
+    },
+    {
+     "name": "make check",
+     "status": "in_progress",
+     "conclusion": null,
+     "number": 8,
+     "started_at": "2026-10-29T11:30:46Z",
+     "completed_at": null
+    },
+    {
+     "name": "Where the time went",
+     "status": "pending",
+     "conclusion": null,
+     "number": 9,
+     "started_at": null,
+     "completed_at": null
+    },
+    {
+     "name": "What did not run",
+     "status": "pending",
+     "conclusion": null,
+     "number": 10,
+     "started_at": null,
+     "completed_at": null
+    },
+    {
+     "name": "Keep the per-test times",
+     "status": "pending",
+     "conclusion": null,
+     "number": 11,
+     "started_at": null,
+     "completed_at": null
+    },
+    {
+     "name": "How much of the timeout this job used",
+     "status": "pending",
+     "conclusion": null,
+     "number": 12,
+     "started_at": null,
+     "completed_at": null
+    },
+    {
+     "name": "Post Run astral-sh/setup-uv@v5",
+     "status": "pending",
+     "conclusion": null,
+     "number": 23,
+     "started_at": null,
+     "completed_at": null
+    },
+    {
+     "name": "Post Run actions/checkout@v4",
+     "status": "pending",
+     "conclusion": null,
+     "number": 24,
+     "started_at": null,
+     "completed_at": null
+    }
+   ]
+  },
+  {
+   "name": "mutation",
+   "status": "completed",
+   "conclusion": "skipped",
+   "created_at": "2026-10-29T11:29:58Z",
+   "started_at": "2026-10-29T11:29:58Z",
+   "completed_at": "2026-10-29T11:29:57Z",
+   "runner_name": null,
+   "runner_id": null,
+   "steps": []
+  },
+  {
+   "name": "check-windows",
+   "status": "completed",
+   "conclusion": "skipped",
+   "created_at": "2026-10-29T11:29:58Z",
+   "started_at": "2026-10-29T11:29:58Z",
+   "completed_at": "2026-10-29T11:29:57Z",
+   "runner_name": null,
+   "runner_id": null,
+   "steps": []
+  },
+  {
+   "name": "check-linux",
+   "status": "completed",
+   "conclusion": "skipped",
+   "created_at": "2026-10-29T11:30:07Z",
+   "started_at": "2026-10-29T11:30:07Z",
+   "completed_at": "2026-10-29T11:29:57Z",
+   "runner_name": null,
+   "runner_id": null,
+   "steps": []
+  },
+  {
+   "name": "report-nightly",
+   "status": "completed",
+   "conclusion": "skipped",
+   "created_at": "2026-10-29T12:01:02Z",
+   "started_at": "2026-10-29T12:01:02Z",
+   "completed_at": "2026-10-29T12:01:01Z",
+   "runner_name": null,
+   "runner_id": null,
+   "steps": []
+  }
+ ]
+}

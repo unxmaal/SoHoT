@@ -163,7 +163,7 @@ def test_a_cancelled_main_run_reruns_once_from_a_workflow_that_runs_after_it():
     for part in ("github.event.workflow_run.event == 'push'", "github.event.workflow_run.head_branch == 'main'",
                  "github.event.workflow_run.conclusion == 'cancelled'", "github.event.workflow_run.run_attempt <= 1"):
         assert part in cond, part
-    assert job["permissions"] == {"contents": "read", "actions": "write"}
+    assert job["permissions"] == {"contents": "read", "actions": "write", "pull-requests": "read"}
     run = "\n".join(s.get("run", "") for s in job["steps"])
     assert "harness/ci_rerun.py" in run and "github.event.workflow_run.id" in run
 
