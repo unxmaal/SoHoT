@@ -11,7 +11,10 @@ KNOBS = [
     _k("disk_floor", ["harness/fetching.py:DISK_FLOOR"], [10 * GIB, 25 * GIB, 50 * GIB, 100 * GIB],
        note="room a download must leave free on the volume; one that would go under it waits (#1085)"),
     _k("download_budget", ["scripts/serve-discover.sh:DISCOVER_BUDGET_GIB"], [20, 40, 80, 160],
-       limit="download_budget_gib", unit="GiB", note="GiB one scheduled sweep may download in all (#704)"),
+       limit="download_budget_gib", unit="GiB",
+       note="GiB one scheduled sweep may download in all; 40 bound most nights with fitting candidates refused "
+            "for days, so 80 from 2026-11-03 with the models volume at 429 of 1862 GiB free, disk_floor "
+            "still stopping a download under the floor (#704, #1288, #1526)"),
     _k("download_cap", ["harness/fetching.py:MAX_DOWNLOAD"],
        [20 * GIB, 40 * GIB, 60 * GIB, 120 * GIB], limit="download_gib", unit="GiB", scale=GIB,
        note="the largest download one fetch may take"),

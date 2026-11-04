@@ -405,10 +405,17 @@ def test_install_lets_a_running_job_finish_before_reloading_the_worker():
         "the queue is resumed after the reload only if the owner had not paused it")
 
 
-def test_the_sweep_downloads_up_to_40_gib_by_default():
-    # 12 GiB skipped every 13-17 GiB candidate in the 2026-10-10 sweep. #678.
+def test_the_sweep_downloads_up_to_80_gib_by_default_and_the_knob_agrees(monkeypatch):
+    # The old default bound most nights (#1288); this is the next registered rung. #678, #1526.
+    from harness import fetching, knobs
+    for var in ("DISCOVER_BUDGET_GIB", "DAY_FETCH_GIB"):
+        monkeypatch.delenv(var, raising=False)
     text = (REPO / "scripts" / "serve-discover.sh").read_text(encoding="utf-8")
-    assert 'BUDGET="${DISCOVER_BUDGET_GIB:-40}"' in text
+    script = float(re.search(r'BUDGET="\$\{DISCOVER_BUDGET_GIB:-(\d+)\}"', text).group(1))
+    knob = knobs.KNOBS["download_budget"]
+    assert (script, float(knob.default()), knobs.limits()["download_budget_gib"], fetching.budget_gib(None)) \
+        == (80, 80, 80, 80)
+    assert 80 in knob.values and knobs.KNOBS["day_fetch_budget"].default() == 40
 
 
 # --- install leaves a live periodic run alone. #794 ---------------------------
