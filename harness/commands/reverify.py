@@ -1,4 +1,4 @@
-"""`soh reverify`: re-run served models whose runtime moved, that aged, or whose real use regressed. #480, #486."""
+"""`soh reverify`: re-run served models whose runtime moved, that aged, whose real use regressed, or whose cases grew. #480, #486, #1535."""
 from __future__ import annotations
 
 import contextlib

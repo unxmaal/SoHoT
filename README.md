@@ -1292,8 +1292,11 @@ served model. It queues a low-priority job, never an inline run, when a runtime
 that lane uses (mlx-lm, llama.cpp, mflux, LiteLLM, macOS and so on) has a
 different version than the model's last working run recorded, when the lane
 has no run here within its threshold in which the model worked on the lane's
-metric (7 days by default; `soh reverify --lane code --days 3` changes it), or
-when `soh usage` saw real use regress after the lane's alias last moved.
+metric (7 days by default; `soh reverify --lane code --days 3` changes it),
+when `soh usage` saw real use regress after the lane's alias last moved, or
+when the lane, at that run's split, has cases the model was never measured on
+here and that run shares cases with it to pair on. A re-run queued for new
+cases that still leaves some unrun waits for another trigger.
 "Worked" is what the lane ranks on, not exact-case passes: a decide model with
 fields right but no case right in full, or an stt model with a plausible word
 error rate but no word-perfect clip, worked. A lane gets one queued re-run at a
