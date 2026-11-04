@@ -250,8 +250,28 @@ def _timed_out(exc) -> bool:
 _MINE = "(machine_id = ? OR (machine_id IS NULL AND ? IS NULL))"
 
 
+#: Step and horizon of the scan for where tonight ends and the next night begins.
+_SCAN_STEP_S = 300.0
+_SCAN_SPAN_S = 2 * 86400.0
+
+
+def _lands_by_day(deadline: float, now: float, day) -> bool:
+    """Whether `deadline` falls in the day after tonight, when no deliberate probe may load, so tonight is its last chance. #1533."""
+    t = now
+    while not day(t):
+        t += _SCAN_STEP_S
+        if t - now > _SCAN_SPAN_S:
+            return False
+    ends = t
+    while day(t):
+        t += _SCAN_STEP_S
+        if t - now > _SCAN_SPAN_S:
+            return False
+    return ends <= deadline <= t
+
+
 def due(conn, lane: str, machine_id, now: float, day=None) -> str:
-    """Why this wake may load `lane`'s model to probe it: at night, its open incident unprobed past UNPROBED_S; else ""."""
+    """Why this wake may load `lane`'s model: at night, its open incident unprobed past UNPROBED_S, or past it by tomorrow's day; else ""."""
     if conn is None:
         return ""
     if day is None:
@@ -265,7 +285,7 @@ def due(conn, lane: str, machine_id, now: float, day=None) -> str:
     tried = conn.execute(f"SELECT MAX(at) AS at FROM lane_probes WHERE lane = ? AND {_MINE} AND reason LIKE ?",
                          (lane, machine_id, machine_id, DELIBERATE + "%")).fetchone()
     since = max(last["at"], tried["at"] if tried and tried["at"] is not None else last["at"])
-    if now - since < UNPROBED_S:
+    if now - since < UNPROBED_S and not _lands_by_day(since + UNPROBED_S, now, day):
         return ""
     return (f"{DELIBERATE}: last down {time.strftime('%m-%d %H:%M', time.localtime(last['at']))}, "
             f"no up or down for {(now - last['at']) / 3600:.0f} h")

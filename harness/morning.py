@@ -26,7 +26,9 @@ STALL_DAYS = 14.0
 STALL_HEAD = 10
 HEADLINE_CHARS = 400
 NOTIFY_TITLE = "SoHoT morning"
-FAILED = ("failure", "cancelled", "timed_out", "startup_failure", "action_required")
+FAILED = ("failure", "startup_failure")
+#: Job conclusions that stopped a job rather than failed it; the brief says which kind. #1534.
+CANCELLED = ("cancelled", "timed_out")
 SYSTEM = ("You condense a machine's overnight report for its owner. Use only facts in the report. "
           "Cover every item that needs a person, grouping alike items into one phrase (three watchdog stops "
           "are one phrase). Write 2 or 3 short plain lines, most urgent first, no preamble, no markdown, no advice.")
@@ -95,6 +97,47 @@ def sweep(conn, since: float, beat: dict | None) -> dict:
                        "ceiling_unused": beat.get(heartbeat.CEILING_UNUSED), "paused": beat.get(heartbeat.PAUSED),
                        "diversity": beat.get(heartbeat.DIVERSITY)}
     return out
+
+
+def idle_lanes(conn, since: float) -> list[dict]:
+    """Each wanted lane with no measure run since `since`, with its waiting challengers and reverify state. #1533."""
+    from harness import lanes, reverify
+    from harness.commands import measure as measure_cmd
+    if not _has(conn, "runs"):
+        return []
+    ran = {r["lane"] for r in conn.execute("SELECT DISTINCT lane FROM runs WHERE tier = 'measure' AND recorded_at >= ?",
+                                           (since,))}
+    from harness.commands import loop as loop_cmd
+    waiting: dict[str, int] = {}
+    if _has(conn, "proposals"):
+        for r in measure_cmd.measurable(conn, loop_cmd.EVERY):
+            lane = measure_cmd.lane_for(r)
+            waiting[lane] = waiting.get(lane, 0) + 1
+    out = []
+    for lane in lanes.WANTED:
+        if lane in ran or lanes.parked(lane)[0]:
+            continue
+        last = conn.execute("SELECT MAX(recorded_at) AS t FROM runs WHERE lane = ? AND tier = 'measure'",
+                            (lane,)).fetchone()["t"]
+        rv = conn.execute("SELECT job_id, queued_at, outcome FROM reverifications WHERE lane = ? AND queued_at >= ? "
+                          "ORDER BY queued_at DESC, id DESC LIMIT 1", (lane, since)).fetchone() \
+            if _has(conn, "reverifications") else None
+        n = waiting.get(lane, 0)
+        if rv is not None:
+            again = (f"reverify job {rv['job_id']} queued {_hm(rv['queued_at'])}, "
+                     f"{rv['outcome'] or 'not settled'}")
+        else:
+            seen = f"last measured {_hm(last)}" if last else "never measured here"
+            again = f"no reverify queued ({seen}, an age trigger after {reverify.days_for(conn, lane):g}d)"
+        out.append({"lane": lane, "waiting": n, "last_measured": last,
+                    "reverify_job": rv["job_id"] if rv is not None else None,
+                    "line": f"{lane}: no measure run; "
+                            f"{f'{n} challenger(s) waiting' if n else 'no challenger waiting'}; {again}"})
+    return out
+
+
+def _hm(t) -> str:
+    return datetime.fromtimestamp(float(t)).strftime("%m-%d %H:%M")
 
 
 def families(conn) -> list[dict]:
@@ -253,8 +296,61 @@ def ci(now: float, gh=_gh) -> dict:
     return {"available": True, "id": run.get("databaseId"), "status": run.get("status"),
             "conclusion": run.get("conclusion") or "", "created": created, "sha": run.get("headSha", ""),
             "url": run.get("url", ""), "fresh": now - created <= CI_FRESH_S,
-            "jobs": [{"name": j.get("name", ""), "status": j.get("status", ""),
-                      "conclusion": j.get("conclusion") or "", "url": j.get("url", "")} for j in jobs]}
+            "jobs": [_job(j) for j in jobs]}
+
+
+def _job(j: dict) -> dict:
+    """One job's conclusion and minutes against its timeout-minutes; a cancel is timeout or superseded (ci_history.outcome). #1534."""
+    from harness import ci_budget, ci_history
+    start, end = ci_history._ts(j.get("startedAt")), ci_history._ts(j.get("completedAt"))
+    mins = round((end - start) / 60, 1) if start and end and end >= start else None
+    name, c = j.get("name", ""), j.get("conclusion") or ""
+    try:
+        limit = ci_budget.limit_minutes(name.split(" (")[0])
+    except (KeyError, OSError, ValueError):
+        limit = None
+    cancel = ""
+    if c == "timed_out":
+        cancel = "timeout"
+    elif c == "cancelled" and limit is not None and mins is not None:
+        cancel = ci_history.outcome({"conclusion": c, "job_min": mins}, limit)
+    elif c == "cancelled":
+        cancel = "unknown"
+    return {"name": name, "status": j.get("status", ""), "conclusion": c, "url": j.get("url", ""),
+            "minutes": mins, "limit": limit, "cancel": cancel}
+
+
+def cancel_why(j: dict) -> str:
+    """Why a cancelled job stopped, from its minutes against its timeout-minutes. #1534."""
+    used = f"{j['minutes']:g} min" if j.get("minutes") is not None else "time unknown"
+    if j["cancel"] == "timeout":
+        return f"at its {j['limit']:g} min timeout ({used})" if j.get("limit") else "at its timeout"
+    if j["cancel"] == "superseded":
+        return f"after {used} of its {j['limit']:g} min timeout: by a person or a newer run"
+    return f"{used}; no timeout-minutes known for it"
+
+
+def _mins(j: dict) -> str:
+    return f"{j['minutes']:.0f}" if j.get("minutes") is not None else "?"
+
+
+def cancelled(jobs: list[dict]) -> list[str]:
+    """The needs lines for cancelled nightly jobs: at their timeout, before it, or with no timeout known. #1534."""
+    stopped = [j for j in jobs if j["conclusion"] in CANCELLED]
+    out = []
+    late = [j for j in stopped if j["cancel"] == "timeout"]
+    if late:
+        out.append("nightly CI cancelled at its timeout: " + ", ".join(
+            f"{j['name']} ({_mins(j)} of {j['limit']:g} min)" if j.get("limit") else j["name"] for j in late))
+    early = [j for j in stopped if j["cancel"] == "superseded"]
+    if early:
+        out.append("nightly CI cancelled before its timeout (by a person or a newer run): " + ", ".join(
+            f"{j['name']} ({_mins(j)} of {j['limit']:g} min)" for j in early))
+    rest = [j for j in stopped if j["cancel"] not in ("timeout", "superseded")]
+    if rest:
+        out.append("nightly CI cancelled: " + ", ".join(
+            f"{j['name']} ({_mins(j)} min; no timeout-minutes known for it)" for j in rest))
+    return out
 
 
 def _git(argv: list[str]) -> str:
@@ -357,6 +453,7 @@ def needs(r: dict) -> list[str]:
         bad = [j["name"] for j in c["jobs"] if j["conclusion"] in FAILED]
         if bad:
             out.append(f"nightly CI failed: {', '.join(bad)}")
+        out.extend(cancelled(c["jobs"]))
     d = r["deploy"]
     if d.get("available") and d["behind"]:
         out.append(f"deploy is {d['behind']} commit(s) behind origin/main")
@@ -404,7 +501,7 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "parked": parked() if parked else [], "checks": sweep_checks(conn, since),
          "incumbent": incumbent(conn) if incumbent else None, "clearances": clearances(conn, since, now),
          "families": families(conn), "yield": yield_stops(conn), "api_spend": api_spend(conn),
-         "engines": engines(conn, since),
+         "engines": engines(conn, since), "idle": _idle(conn, since),
          "runtimes": runtimes(conn, since), "techniques": techniques(conn, since),
          "monitor": monitor(since) if monitor else None, "deploys": deploys_since(conn, since)}
     if r["sweep"]["loop"] is not None:
@@ -412,6 +509,13 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
         r["sweep"]["loop"]["code_moved"] = heartbeat.code_moved(beat, r["deploy"].get("head", ""))
     r["needs"] = needs(r)
     return r
+
+
+def _idle(conn, since: float) -> list[dict]:
+    try:
+        return idle_lanes(conn, since)
+    except Exception as exc:  # noqa: BLE001 - the report says it could not tell rather than failing
+        return [{"lane": "", "waiting": 0, "line": f"not read: {type(exc).__name__}: {exc}"[:300]}]
 
 
 def deploys_since(conn, since: float) -> list[dict]:

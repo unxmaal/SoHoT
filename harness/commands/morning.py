@@ -47,6 +47,24 @@ def diversity_lines(got) -> list[str]:
     return [f"diversity {ln.split(': ', 1)[-1]}" for ln in (got.get("lines") or [])[-1:]]
 
 
+def idle_lines(r: dict) -> list[str]:
+    """Why each wanted lane got no measure run last night. #1533."""
+    return [f"idle      {i['line']}" for i in r.get("idle") or []]
+
+
+def render_ci(c: dict) -> list[str]:
+    """The nightly run and each job's conclusion; a cancelled job says at its timeout or before it. #1534."""
+    if not c.get("available"):
+        return [f"nightly   unavailable: {c.get('why')}"]
+    from harness import morning
+    age = "" if c["fresh"] else " (not last night's)"
+    out = [f"nightly   run {c['id']} {c['status']} {c['conclusion'] or '-'} at {_hm(c['created'])}{age} on {c['sha'][:8]}"]
+    for j in c["jobs"]:
+        why = f": {morning.cancel_why(j)}" if j.get("cancel") else ""
+        out.append(f"          {j['conclusion'] or j['status']:<10} {j['name']}{why}")
+    return out
+
+
 def render(r: dict) -> list[str]:
     """The deterministic report, one line per fact."""
     s = r["sweep"]
@@ -80,6 +98,7 @@ def render(r: dict) -> list[str]:
     runs = s["measured"]["runs"]
     out.append(f"measured  {len(runs)} run(s){': ' + ', '.join(x['lane'] for x in runs) if runs else ''}; "
                f"verdicts {_tally(s['measured']['verdicts'])}")
+    out.extend(idle_lines(r))
     for p in s["paused"]:
         out.append(f"paused    #{p['id']} {p['lane']} {p['challenger']} {p['state']} at {p['done']}/{p['total']} "
                    f"({_hm(p['paused_at'])})")
@@ -98,15 +117,7 @@ def render(r: dict) -> list[str]:
         out.append(f"          {_hm(w['at'])} {w['action']:<6} {w['criterion']} on {w['subject']} [{flags}]: "
                    f"{w['outcome']}")
         out.extend(f"            client {c}" for c in w.get("clients") or [])
-    c = r["ci"]
-    if not c.get("available"):
-        out.append(f"nightly   unavailable: {c.get('why')}")
-    else:
-        age = "" if c["fresh"] else " (not last night's)"
-        out.append(f"nightly   run {c['id']} {c['status']} {c['conclusion'] or '-'} at {_hm(c['created'])}{age} "
-                   f"on {c['sha'][:8]}")
-        for j in c["jobs"]:
-            out.append(f"          {j['conclusion'] or j['status']:<10} {j['name']}")
+    out.extend(render_ci(r["ci"]))
     led = r["ledger"]
     if led is None:
         out.append("ledger    no ledger_days table")
