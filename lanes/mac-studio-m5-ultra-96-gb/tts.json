@@ -330,17 +330,17 @@
   },
   {
    "candidate": "tts:OpenMOSS-Team/MOSS-TTS-v1.5",
-   "decided_at": "2026-11-03T03:00:56Z",
-   "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local dis",
+   "decided_at": "2026-11-04T02:11:42Z",
+   "detail": "fits: smallest variant model-00001-of-00004.safetensors (+3): 15.8 GiB of 4 weight files",
    "exam": null,
    "outcome": "queued",
    "proposal": "OpenMOSS-Team/MOSS-TTS-v1.5",
-   "reason": "harness",
+   "reason": "candidate",
    "receipt_key": "MOSS-TTS-v1.5",
-   "run_id": 673,
+   "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
+   "tier": "inspect",
    "until": ""
   },
   {
@@ -973,7 +973,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-03T04:27:06Z",
+ "generated_at": "2026-11-04T08:02:14Z",
  "knobs": [],
  "lane": {
   "cases": 470,
