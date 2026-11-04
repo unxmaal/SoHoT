@@ -21,7 +21,7 @@ mkdir -p "$LH_LOGS"
 # the place that sets the schedule.
 # 0: the sweep ceiling sizes the fetch, screen and measure; a count overrides it. #1084.
 TOP="${DISCOVER_TOP:-0}"
-BUDGET="${DISCOVER_BUDGET_GIB:-40}"
+BUDGET="${DISCOVER_BUDGET_GIB:-80}"
 # Unset, the loop's power plan picks the repeat per lane within its time budget (#479, #591, #696).
 REPEAT="${DISCOVER_REPEAT:-}"
 

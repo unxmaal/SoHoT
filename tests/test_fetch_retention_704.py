@@ -48,7 +48,7 @@ def test_the_download_budget_is_a_registered_knob_with_a_limit():
     k = knobs.KNOBS["download_budget"]
     assert k.limit == "download_budget_gib"
     assert "scripts/serve-discover.sh:DISCOVER_BUDGET_GIB" in k.sites
-    assert knobs.limits()["download_budget_gib"] == 40
+    assert knobs.limits()["download_budget_gib"] == 80
 
 
 def test_a_429_on_the_small_variants_only_is_unknown_not_too_big(tmp_path):
@@ -263,7 +263,7 @@ def test_a_manual_run_with_no_budget_uses_the_registered_budget(tmp_path, monkey
     from harness.commands import screen as screen_cmd
     monkeypatch.delenv("DISCOVER_BUDGET_GIB", raising=False)
     a = cli.build_parser().parse_args(["discover"])
-    assert a.budget_gib is None or a.budget_gib == 40
+    assert a.budget_gib is None or a.budget_gib == 80
     seen = {}
 
     def run(conn, *args, budget=None, **kw):
@@ -273,7 +273,7 @@ def test_a_manual_run_with_no_budget_uses_the_registered_budget(tmp_path, monkey
     monkeypatch.setattr(fetching, "queued", lambda *a, **k: [{"name": "org/x", "lane": "code"}])
     screen_cmd.cmd_fetch(type("A", (), {"run": True, "limit": 1, "lane": "", "budget_gib": a.budget_gib,
                                         "json": False})())
-    assert seen["budget"] == 40 * GIB
+    assert seen["budget"] == 80 * GIB
 
 
 def test_a_candidate_waiting_on_a_bigger_budget_is_not_retried_at_the_same_budget(store):
@@ -315,5 +315,5 @@ def test_a_loop_run_with_no_budget_fetches_with_the_registered_budget(monkeypatc
     monkeypatch.setattr(discover_cmd, "cmd_discover", lambda a: 0)
     monkeypatch.setattr(measure_cmd, "measurable", lambda store, top, want="": [])
     loop_cmd._loop_spend(argparse.Namespace(top=1, budget_gib=None, lane=""), 0)
-    assert seen["budget"] == 40 * GIB
-    assert "budget 40 GiB" in capsys.readouterr().out
+    assert seen["budget"] == 80 * GIB
+    assert "budget 80 GiB" in capsys.readouterr().out
