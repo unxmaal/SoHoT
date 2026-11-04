@@ -101,6 +101,36 @@
    "until": ""
   },
   {
+   "candidate": "sky7350/Mica-v0.5-4B",
+   "decided_at": "2026-11-04T05:45:24Z",
+   "detail": "2 case(s) passed a screen",
+   "exam": null,
+   "outcome": "screened",
+   "proposal": "sky7350/Mica-v0.5-4B",
+   "reason": "candidate",
+   "receipt_key": "sky7350/Mica-v0.5-4B",
+   "run_id": 688,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "sky7350/Mica-v0.5-4B,temperature=0",
+   "decided_at": "2026-11-04T05:45:24Z",
+   "detail": "2 case(s) passed a screen",
+   "exam": null,
+   "outcome": "screened",
+   "proposal": "sky7350/Mica-v0.5-4B",
+   "reason": "candidate",
+   "receipt_key": "sky7350/Mica-v0.5-4B",
+   "run_id": 688,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "Mapika/decider-4b-GGUF",
    "decided_at": "",
    "detail": "",
@@ -137,33 +167,33 @@
   },
   {
    "candidate": "akhilaaa3/Jev-Omni",
-   "decided_at": "2026-11-03T03:00:23Z",
-   "detail": "not screened: needs 34.3 GB but only -3.6 GB is safely available (14.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "decided_at": "2026-11-04T02:11:40Z",
+   "detail": "fits: smallest variant model.safetensors: 22.3 GiB of 1 weight file",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
-   "reason": "memory",
+   "reason": "candidate",
    "receipt_key": "akhilaaa3/Jev-Omni",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>34.3"
+   "tier": "inspect",
+   "until": ""
   },
   {
    "candidate": "akhilaaa3/Jev-Omni,temperature=0",
-   "decided_at": "2026-11-03T03:00:23Z",
-   "detail": "not screened: needs 34.3 GB but only -3.6 GB is safely available (14.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "decided_at": "2026-11-04T02:11:40Z",
+   "detail": "fits: smallest variant model.safetensors: 22.3 GiB of 1 weight file",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
-   "reason": "memory",
+   "reason": "candidate",
    "receipt_key": "akhilaaa3/Jev-Omni",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>34.3"
+   "tier": "inspect",
+   "until": ""
   },
   {
    "candidate": "apus-ailab/APUS-OpenJev-v1-4B-GGUF",
@@ -237,8 +267,8 @@
   },
   {
    "candidate": "decider:StrandsAgents/strands-decider-2B-hobson-v21",
-   "decided_at": "2026-11-03T03:01:09Z",
-   "detail": "not screened: our snapshot lacks files its runner opens; refetch: check-squad2-56dddf4066d3e219004dad5f: exit 1: huggingface_hub.errors.IncompleteSnapshotError: The cached snapshot for 'StrandsAgents/strands-decider-2B-hobson-v21' (revision 'main', commit 2b52a6235c1b8306bbfa30b00b9d4b74b63a39f5) is incomplete: 1 file(s) are missing (lora/adapter_model.safetensors",
+   "decided_at": "2026-11-03T13:08:57Z",
+   "detail": "downloaded",
    "exam": {
     "about": "2B params",
     "candidate": "decider/strands-decider-2B-hobson-v21",
@@ -267,9 +297,9 @@
    },
    "outcome": "queued",
    "proposal": "StrandsAgents/strands-decider-2B-hobson-v21",
-   "reason": "harness",
+   "reason": "candidate",
    "receipt_key": "decider/strands-decider-2B-hobson-v21",
-   "run_id": 675,
+   "run_id": null,
    "serves": false,
    "status": "pending",
    "tier": "fetch",
@@ -598,7 +628,7 @@
    "until": ""
   }
  ],
- "cursor": 1793674833729718,
+ "cursor": 1793771124589898,
  "events": [
   {
    "at": "2026-09-22T13:14:31Z",
@@ -838,6 +868,21 @@
    "outcome": "broken",
    "reason": "candidate",
    "run_id": 672,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-04T05:45:24Z",
+   "candidate": "sky7350/Mica-v0.5-4B",
+   "chosen": null,
+   "detail": "2 case(s) passed a screen",
+   "how": "",
+   "id": 1793771124589898,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 688,
    "tier": "screen"
   }
  ],
@@ -1346,7 +1391,7 @@
    "runs": 4
   }
  ],
- "generated_at": "2026-11-03T04:27:03Z",
+ "generated_at": "2026-11-04T08:02:09Z",
  "knobs": [],
  "lane": {
   "cases": 661,
