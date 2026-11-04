@@ -41,15 +41,18 @@ class Plant:
 PRECONDITIONS = {
     "loads": ("the GGUF loads under this llama.cpp build", "llama.cpp",
               (reasons.LOAD_FAILED_FILE, reasons.LOAD_FAILED_RUNTIME)),
+    # Judged on the plant's own measured holdout rows, never on the gate's answer. #1531.
+    "separates": ("today's holdout separates the pair", "", ()),
 }
 
 
 PLANTS = (
-    # The 133-clip holdout separates tdt-1.1b from tdt-0.6b-v3 (12 gained, 2 lost) but not v2 from v3 (7, 3). #1007.
-    Plant("stt-known-worse", "stt", "mlx-community/parakeet-tdt-0.6b-v3",
-          ("declined", "adopt", "candidate"), incumbent="mlx-community/parakeet-tdt-1.1b"),
+    # Normaliser 2 and the re-imported split left tdt-0.6b-v3 inseparable from tdt-1.1b on the holdout. #1531.
+    Plant("stt-known-worse", "stt", "mlx-community/nemotron-3.5-asr-streaming-0.6b-8bit",
+          ("declined", "adopt", "candidate"), incumbent="mlx-community/parakeet-tdt-1.1b", requires="separates"),
     Plant("stt-known-better", "stt", "mlx-community/parakeet-tdt-1.1b",
-          ("measured", "adopt", ""), incumbent="mlx-community/parakeet-tdt-0.6b-v3"),
+          ("measured", "adopt", ""), incumbent="mlx-community/nemotron-3.5-asr-streaming-0.6b-8bit",
+          requires="separates"),
     Plant("gguf-first", "code", "HauhauCS/Nemotron3-Nano-4B-Uncensored-HauhauCS-Aggressive",
           ("screened", "screen", ""), through="screen", requires="loads"),
 )
@@ -288,9 +291,9 @@ def run_plant(plant: Plant, home: Path, run=subprocess.run, say=print, prior: di
     conn = ms.connect(home / "discovery.db")
     try:
         got = observe(conn, plant)
+        bad = violated(plant, got, version) or (apart(conn, plant) if plant.requires == "separates" else "")
     finally:
         conn.close()
-    bad = violated(plant, got, version)
     return {**base, "observed": got, "rcs": rcs, "invalid": bad, "ok": not bad and matches(plant, got)}
 
 
@@ -377,11 +380,9 @@ def morning_line(now: float | None = None) -> str:
     return ""
 
 
-def separable(conn, plant: Plant) -> dict:
-    """Whether the adopt gate, on the newest stored run holding both candidates, gives the plant's expected answer."""
-    from harness import adopt, screen
-    if plant.through != "adopt":
-        return {"plant": plant.name, "ok": True, "why": "screened only, nothing to separate"}
+def _pair_rows(conn, plant: Plant) -> tuple:
+    """(run id, rows, incumbent spec, challenger spec) of the newest stored measure run holding both; run id None if none."""
+    from harness import screen
     inc, ch = (screen.candidate_for(plant.lane, n) for n in (plant.incumbent, plant.challenger))
     run_row = conn.execute(
         "SELECT r.run_id FROM results r JOIN candidates c ON c.id = r.candidate_id "
@@ -389,17 +390,46 @@ def separable(conn, plant: Plant) -> dict:
         "GROUP BY r.run_id HAVING count(DISTINCT c.spec) = 2 ORDER BY u.generated_at DESC, r.run_id DESC LIMIT 1",
         (inc, ch)).fetchone()
     if not run_row:
-        return {"plant": plant.name, "ok": False, "why": f"no stored measure run holds both {inc} and {ch}"}
+        return None, [], inc, ch
     rows = [{"case_id": r[0], "candidate": r[1], "passed": bool(r[2]), "metrics": json.loads(r[3] or "{}"),
              "seconds": r[4], "repeat_index": r[5]} for r in conn.execute(
         "SELECT r.case_id, c.spec, r.passed, r.metrics, r.seconds, r.repeat_index FROM results r "
         "JOIN candidates c ON c.id = r.candidate_id WHERE r.run_id = ? AND c.spec IN (?, ?)",
         (run_row[0], inc, ch))]
-    v = adopt.decide(plant.lane, adopt._summary(rows, inc), adopt._summary(rows, ch), rows)
+    return run_row[0], rows, inc, ch
+
+
+def apart(conn, plant: Plant, split=None) -> str:
+    """Why the plant's measured holdout rows do not show its known direction at the gate's alpha, else ""; no run, no judgement. #1531."""
+    from harness import adopt, holdout
+    run_id, rows, inc, ch = _pair_rows(conn, plant)
+    split = holdout.for_lane(plant.lane) if split is None else split
+    held = holdout.rows_on(rows, split, "holdout")
+    if run_id is None or not held:
+        return ""
+    cell, p, _ = adopt.paired_p(held, inc, ch, plant.lane)
+    ahead, behind = (cell.gained, cell.lost) if plant.expect[0] == "measured" else (cell.lost, cell.gained)
+    if ahead > behind and p <= adopt.ALPHA:
+        return ""
+    cases = len({holdout.base_id(r["case_id"]) for r in held})
+    return (f"today's holdout does not separate the pair: on {cases} {plant.lane} holdout cases of run {run_id}, "
+            f"{ch} {cell.gained} gained, {cell.lost} lost against {inc}, p={p:.2f} (alpha {adopt.ALPHA})")
+
+
+def separable(conn, plant: Plant, split=None) -> dict:
+    """Whether the adopt gate, on the newest stored run holding both candidates and today's split, gives the plant's expected answer."""
+    from harness import adopt, holdout
+    if plant.through != "adopt":
+        return {"plant": plant.name, "ok": True, "why": "screened only, nothing to separate"}
+    run_id, rows, inc, ch = _pair_rows(conn, plant)
+    if run_id is None:
+        return {"plant": plant.name, "ok": False, "why": f"no stored measure run holds both {inc} and {ch}"}
+    split = holdout.for_lane(plant.lane) if split is None else split
+    v = adopt.decide(plant.lane, adopt._summary(rows, inc), adopt._summary(rows, ch), rows, split=split)
     outcome, reason = adopt.outcome_of(v)
     want, _, want_reason = plant.expect
     ok = outcome == want and (not want_reason or reason == want_reason)
-    return {"plant": plant.name, "run_id": run_row[0], "ok": ok, "why": f"{outcome}/{reason}: {v.why}"}
+    return {"plant": plant.name, "run_id": run_id, "ok": ok, "why": f"{outcome}/{reason}: {v.why}"}
 
 
 def plant_rows() -> list[dict]:
