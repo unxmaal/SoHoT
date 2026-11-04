@@ -195,6 +195,44 @@ Test: tests/test_reverify.py::test_a_usage_regression_already_reverified_since_t
 - **THEN** the usage trigger does not fire and the check goes on
 Test: untested
 
+### Requirement: A lane whose cases grew past what its model was measured on is due
+The cases trigger SHALL fire when the cases a re-run would run today (`lane_now`: the lane's cases at the baseline's split that the served spec's method takes) include cases no measure run of the served candidate on this machine has a row for, and the baseline shares at least one case with them to pair on. A baseline that stopped early is no gap when an older run measured the rest. When the baseline is the run of a re-run queued for new cases and the cases trigger is the only one, the lane SHALL be skipped, so cases a run cannot deliver never requeue it. A flagged lane MUST keep its `days_for` spacing.
+
+#### Scenario: Cases added after the baseline
+- **WHEN** the lane has cases the served model was never measured on and the baseline shares the rest
+- **THEN** a job is queued with trigger `cases` reading `<new> of <total> <split> cases never measured here`
+Test: tests/test_reverify_cases_1535.py::test_cases_added_after_the_baseline_queue_a_rerun
+
+#### Scenario: The baseline's split
+- **WHEN** the lane grew only outside the baseline's split
+- **THEN** the cases trigger does not fire
+Test: tests/test_reverify_cases_1535.py::test_the_cases_are_counted_on_the_baselines_split
+
+#### Scenario: A baseline that stopped early
+- **WHEN** the baseline ran fewer cases but an older measure run covered the rest
+- **THEN** the cases trigger does not fire
+Test: tests/test_reverify_cases_1535.py::test_a_baseline_that_stopped_early_is_no_gap_when_an_older_run_measured_the_rest
+
+#### Scenario: Nothing to pair on
+- **WHEN** the baseline shares no case with the lane today
+- **THEN** the cases trigger does not fire
+Test: tests/test_reverify_cases_1535.py::test_a_baseline_that_shares_no_case_with_the_lane_has_nothing_to_pair_on
+
+#### Scenario: The re-run measured the new cases
+- **WHEN** the re-run for new cases ran every case
+- **THEN** it pairs on the shared cases, becomes the baseline, and the trigger clears
+Test: tests/test_reverify_cases_1535.py::test_the_rerun_pairs_on_the_shared_cases_and_its_new_cases_are_the_next_baseline
+
+#### Scenario: Cases the re-run could not run
+- **WHEN** the baseline is a re-run for new cases that left some unrun
+- **THEN** the cases trigger alone queues nothing, and any other trigger still queues
+Test: tests/test_reverify_cases_1535.py::test_cases_a_rerun_for_new_cases_could_not_run_do_not_requeue_it
+
+#### Scenario: A flagged lane
+- **WHEN** a flagged lane has new cases
+- **THEN** it waits `days_for` like any flagged lane
+Test: tests/test_reverify_cases_1535.py::test_a_flagged_lane_whose_cases_grew_keeps_its_rerun_spacing
+
 ### Requirement: A fired trigger queues one low-priority job and runs nothing inline
 `check` SHALL queue, for each lane with a trigger and no reason to skip, one `evals.run` job through `workqueue.add` with `requested_by` `REQUESTED_BY`, priority `PRIORITY`, this machine's id and the checkout as cwd, and record a `reverifications` row. A lane with an unsettled re-run SHALL be skipped as already queued. The job MUST run at the baseline's repeat and split, with the uv groups its lane's cases need and the gateway the served spec routes to. A repo-lane job MUST carry `--unscreened`: the repo screen gates a new candidate's first full exam, and what serves is past it. A dry run SHALL plan and judge and write nothing.
 

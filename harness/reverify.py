@@ -1,4 +1,4 @@
-"""Re-run each wanted lane's served model when its runtime moves, when it ages, or when real use regresses. #480, #486.
+"""Re-run each wanted lane's served model when its runtime moves, when it ages, when real use regresses, or when its cases grow. #480, #486, #1535.
 
 A served model is measured once, at adoption. This queues a normal job to run it
 again, reads the run that job stores, and flags the lane when it failed or lost
@@ -21,7 +21,7 @@ REQUESTED_BY = "reverify"
 #: Below the default 0, so anything a person queued runs first.
 PRIORITY = -10
 
-VERSIONS, AGE, USAGE = "versions", "age", "usage"
+VERSIONS, AGE, USAGE, CASES = "versions", "age", "usage", "cases"
 PASSED, FAILED, REGRESSED, CANCELLED = "passed", "failed", "regressed", "cancelled"
 #: The harness could not deliver the re-run: flagged, but never a verdict on the model. #408.
 UNRUN = "unrun"
@@ -244,6 +244,34 @@ def _usage_trigger(conn, lane: str, now: float) -> tuple[str, float] | None:
     return (warn[0], comps[-1]["switch"]["switched_at"]) if warn else None
 
 
+def lane_now(lane: str, spec: str, split: str) -> set[str]:
+    """The case ids a re-run of `spec` at `split` would run today, as evals.run picks them."""
+    from evals import run as er
+    from harness import holdout
+    return {c.id for c in er.cases_for(spec, holdout.only(holdout.lane_cases(lane), split or "all"))}
+
+
+def _measured(conn, lane: str, cid, machines) -> set[str]:
+    """Every base case the candidate has a measure row for in this lane here; a challenger's early stop is no gap. #1535."""
+    from harness import holdout, runs
+    clause, ids = runs._in("r.machine_id", machines)
+    got = conn.execute("SELECT DISTINCT x.case_id FROM results x JOIN runs r ON r.id = x.run_id "
+                       f"WHERE r.lane = ? AND r.tier = ? AND x.candidate_id = ?{clause}",
+                       (lane, runs.MEASURE, cid, *ids)).fetchall()
+    return {holdout.base_id(r[0]) for r in got}
+
+
+def _cases_trigger(conn, item: dict, base: dict, machines) -> str:
+    """Why the lane is due: cases the served model was never measured on here, when its baseline shares some to pair on; else ''. #1535."""
+    from harness import holdout, runs
+    split = base.get("split") or "all"
+    now = lane_now(item["lane"], item["spec"], split)
+    if not now & {holdout.base_id(r["case_id"]) for r in runs.rows(conn, base["id"], item["candidate_id"])}:
+        return ""
+    new = now - _measured(conn, item["lane"], item["candidate_id"], machines)
+    return f"{len(new)} of {len(now)} {split} cases never measured here" if new else ""
+
+
 def triggers(conn, item: dict, *, now: float, current: dict, machines) -> tuple[list, dict | None]:
     """[[kind, why], ...] for one lane, and the baseline run they were read against."""
     lane, cid = item["lane"], item["candidate_id"]
@@ -252,6 +280,9 @@ def triggers(conn, item: dict, *, now: float, current: dict, machines) -> tuple[
     if base is not None:
         changed = moved(versions_of(base), current, runtimes_for(lane, item["spec"]))
         out += [[VERSIONS, why] for why in changed + bytes_moved(base, item["spec"])]
+        grown = _cases_trigger(conn, item, base, machines)
+        if grown:
+            out.append([CASES, grown])
     days = days_for(conn, lane)
     if base is None:
         out.append([AGE, "no passing run on this machine"])
@@ -287,7 +318,14 @@ def _harness_moved(conn, last: dict) -> bool:
     return code is not None and code > ran
 
 
-def _skip(conn, item: dict, found: list, now: float) -> str:
+def _reran_for_cases(last: dict | None, base_id) -> bool:
+    """The baseline is the run of a re-run queued for new cases, so the ones it still lacks are cases it could not run. #1535."""
+    if not last or base_id is None or last["run_id"] != base_id:
+        return False
+    return any(k == CASES for k, *_ in json.loads(last["triggers"] or "[]"))
+
+
+def _skip(conn, item: dict, found: list, now: float, base_id=None) -> str:
     last = _latest(conn, item["lane"], item["candidate_id"])
     if last and not last["outcome"]:
         return f"already queued as job {last['job_id'] or '(gone)'}"
@@ -296,6 +334,9 @@ def _skip(conn, item: dict, found: list, now: float) -> str:
     due = (last["settled_at"] or 0) + days_for(conn, item["lane"]) * 86400.0 if last else 0.0
     if last and last["outcome"] in FLAGGED and now < due and not _harness_moved(conn, last):
         return f"flagged {last['outcome']}: {last['detail']}; re-run again in {(due - now) / 86400.0:.1f} days"
+    if all(k == CASES for k, _ in found) and _reran_for_cases(last, base_id):
+        from harness import workqueue as wq
+        return f"job {wq.label(last['job_id'])} already re-ran for new cases and its run {base_id} is the baseline"
     return ""
 
 
@@ -330,7 +371,7 @@ def plan(conn, *, now: float, facts: dict, lane: str = "") -> list[dict]:
         if want and name != want:
             continue
         found, base = triggers(conn, item, now=now, current=current, machines=machines)
-        out.append({**item, "triggers": found, "skip": _skip(conn, item, found, now),
+        out.append({**item, "triggers": found, "skip": _skip(conn, item, found, now, base["id"] if base else None),
                     "baseline_run_id": base["id"] if base else None,
                     "last_pass_days": None if base is None
                     else round((now - base["generated_at"]) / 86400.0, 1),
