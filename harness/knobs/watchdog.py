@@ -96,6 +96,10 @@ KNOBS = [
 NOT_GATING = {
     f"{P}:ERROR_CHARS": "characters of a server's reason and error kept on the lane_probes row; the outcome is "
                         "classed before the cut (#924)",
+    f"{P}:_SCAN_STEP_S": "resolution of the scan for where tonight ends and the next night begins; the day hours "
+                         "decide, this only finds them (#1533)",
+    f"{P}:_SCAN_SPAN_S": "how far ahead that scan looks; a day predicate with no day in it falls back to "
+                         "lane_probe_unprobed alone (#1533)",
     "harness/workqueue.py:WATCH_S": "how soon a worker with jobs running sees a job it may start beside them; "
                                     "it decides when, never whether (#1153)",
     "harness/workqueue.py:at_clock->timedelta(days)": "one calendar day: a clock time already past today means tomorrow (#900)",
