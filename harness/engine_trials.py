@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import base64
+import configparser
 import contextlib
 import json
 import re
@@ -9,11 +10,12 @@ import socket
 import subprocess
 import sys
 import time
+import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
-ENGINE, RUNNER, TECHNIQUE, UNRELATED = "engine", "runner", "technique", "unrelated"
-KINDS = (ENGINE, RUNNER, TECHNIQUE, UNRELATED)
+ENGINE, RUNNER, TECHNIQUE, LIBRARY, UNRELATED = "engine", "runner", "technique", "library", "unrelated"
+KINDS = (ENGINE, RUNNER, TECHNIQUE, LIBRARY, UNRELATED)
 OPENAI, CLI = "openai", "cli"
 PYPI, RELEASE = "pypi", "github-release"
 #: Trial states: what the next sweep does with the row.
@@ -42,6 +44,11 @@ MARKER = "engine-trial:"
 PLACEHOLDERS = ("{model}", "{port}", "{host}")
 #: The follow-up issue for the trial adapters this slice does not build.
 FOLLOW_UP = "#1477"
+#: Root files whose packaging metadata can declare the commands a repo installs.
+METADATA = ("pyproject.toml", "setup.cfg", "setup.py", "package.json", "Cargo.toml", "CMakeLists.txt")
+#: Release assets that are no runnable binary.
+NOT_BINARY = (".whl", ".sha256", ".sha512", ".sig", ".asc", ".pem", ".txt", ".md", ".json", ".sbom", ".jsonl",
+              ".gguf", ".safetensors", ".bin", ".pt", ".onnx")
 
 PROFILE = """(version 1)
 (allow default)
@@ -61,6 +68,7 @@ kinds:
 - "engine": an inference engine or server that loads model weights and answers requests, through an OpenAI-compatible HTTP API or a command line
 - "runner": a library or CLI that runs one model family that an existing engine cannot load
 - "technique": a decoding, serving or prompting technique, not a program that serves models
+- "library": examples, a cookbook or tutorials, skills or prompts for agents, or a component library a runner or app imports; not a program that serves or runs models itself
 - "unrelated": anything else (a list of links, an app, a toolkit with no model serving)
 
 Reply with one JSON object:
@@ -74,6 +82,7 @@ REPOSITORY: {name}
 description: {description}
 PyPI: {pypi}
 release: {release}
+packaged commands: {scripts}
 
 README (cut):
 {readme}
@@ -85,8 +94,10 @@ class Evidence:
     readme: str = ""
     #: {"package", "version", "wheels"} when PyPI holds a project that links back to the repo.
     pypi: dict = field(default_factory=dict)
-    #: {"tag", "wheels"} for the latest GitHub release.
+    #: {"tag", "wheels", "binaries"} for the latest GitHub release.
     release: dict = field(default_factory=dict)
+    #: Commands the packaging metadata declares: console scripts, bin entries, executables.
+    scripts: list = field(default_factory=list)
 
 
 @dataclass
@@ -153,6 +164,59 @@ def pypi_channel(name: str, pypi=None) -> dict:
     return {}
 
 
+def _toml_scripts(text: str) -> list:
+    try:
+        d = tomllib.loads(text)
+    except tomllib.TOMLDecodeError:
+        return []
+    proj, tool = d.get("project") or {}, d.get("tool") or {}
+    tables = [proj.get("scripts"), proj.get("gui-scripts"), (proj.get("entry-points") or {}).get("console_scripts"),
+              (tool.get("poetry") or {}).get("scripts")]
+    names = [k for t in tables if isinstance(t, dict) for k in t]
+    return names + [b["name"] for b in d.get("bin") or [] if isinstance(b, dict) and b.get("name")]
+
+
+def entry_points(path: str, text: str) -> list:
+    """The command names one packaging file declares, sorted; [] when it declares none or cannot be read."""
+    names: list = []
+    if path.endswith(".toml"):
+        names = _toml_scripts(text)
+    elif path == "setup.cfg":
+        cfg = configparser.ConfigParser()
+        try:
+            cfg.read_string(text)
+            raw = cfg.get("options.entry_points", "console_scripts", fallback="")
+        except configparser.Error:
+            raw = ""
+        names = [ln.split("=")[0].strip() for ln in raw.splitlines() if "=" in ln]
+    elif path == "setup.py" and "console_scripts" in text:
+        names = re.findall(r"['\"]\s*([A-Za-z0-9_.-]+)\s*=\s*[\w.]+:\w+", text)
+    elif path == "package.json":
+        try:
+            pkg = json.loads(text)
+        except ValueError:
+            pkg = {}
+        b = pkg.get("bin") if isinstance(pkg, dict) else None
+        names = list(b) if isinstance(b, dict) else [pkg.get("name")] if isinstance(b, str) and pkg.get("name") else []
+    elif path == "CMakeLists.txt":
+        names = re.findall(r"add_executable\(\s*([\w.-]+)", text)
+    return sorted({str(n) for n in names if str(n).strip()})
+
+
+def _scripts(client, name: str) -> list:
+    listing = _gh_json(client, f"repos/{name}/contents")
+    have = {r.get("name") for r in listing if isinstance(r, dict)} if isinstance(listing, list) else set()
+    out: set = set()
+    for path in (p for p in METADATA if p in have):
+        got = _gh_json(client, f"repos/{name}/contents/{path}") or {}
+        try:
+            text = base64.b64decode(got.get("content") or "").decode("utf-8", "replace")
+        except ValueError:
+            continue
+        out.update(entry_points(path, text))
+    return sorted(out)
+
+
 def gather(name: str, client=None, pypi=None) -> Evidence:
     """README, PyPI project and latest release of a GitHub repo; each part empty when it cannot be read."""
     if client is None:
@@ -167,8 +231,10 @@ def gather(name: str, client=None, pypi=None) -> Evidence:
             ev.readme = ""
     rel = _gh_json(client, f"repos/{name}/releases/latest") or {}
     if rel.get("tag_name"):
-        ev.release = {"tag": rel["tag_name"],
-                      "wheels": [a["name"] for a in rel.get("assets") or [] if str(a.get("name", "")).endswith(".whl")]}
+        assets = [str(a.get("name") or "") for a in rel.get("assets") or []]
+        ev.release = {"tag": rel["tag_name"], "wheels": [a for a in assets if a.endswith(".whl")],
+                      "binaries": [a for a in assets if a and not a.lower().endswith(NOT_BINARY)]}
+    ev.scripts = _scripts(client, name)
     ev.pypi = pypi_channel(name, pypi)
     return ev
 
@@ -185,6 +251,7 @@ def classify(row: dict, ev: Evidence, ask=None) -> dict:
     prompt = PROMPT.format(name=row["name"], description=row.get("description") or "",
                            pypi=json.dumps(ev.pypi) if ev.pypi else "none",
                            release=json.dumps(ev.release) if ev.release else "none",
+                           scripts=", ".join(ev.scripts) or "none",
                            readme=ev.readme or "(none)")
     got = (ask or ask_model)(prompt)
     d = technique_triage.parse_draft(got.get("text") or "")
@@ -217,9 +284,38 @@ def _version_key(v) -> tuple:
     return tuple(int(x) for x in re.findall(r"\d+", str(v or "")))
 
 
+def entry_point(c: dict, ev: Evidence) -> str:
+    """What shows the repo runs as a program (a declared command, a release binary, a command or endpoint its README names), else ""."""
+    if ev.scripts:
+        return f"its packaging declares {', '.join(ev.scripts[:3])}"
+    if ev.release.get("binaries"):
+        return f"release {ev.release['tag']} ships {ev.release['binaries'][0]}"
+    exe = (c.get("serve") or [""])[0]
+    if exe and re.search(rf"(?<![\w.-]){re.escape(exe)}(?![\w.-])", ev.readme):
+        return f"its README runs {exe}"
+    if c.get("interface") == OPENAI and re.search(r"/v1/(chat/)?completions", ev.readme):
+        return "its README documents an OpenAI-compatible endpoint"
+    return ""
+
+
+def not_fileable(c: dict, ev: Evidence) -> str:
+    """Why a blocked reading asks no person to act, or "" when it should be filed."""
+    if c["interface"] not in (OPENAI, CLI) and not c["serve"]:
+        return "not filed: the reading names no server or command line that runs a model"
+    if not entry_point(c, ev):
+        return "not filed: neither the README nor the packaging metadata shows a command, server or release binary"
+    return ""
+
+
 def plan(c: dict, ev: Evidence) -> tuple[str, str, str, str, str]:
-    """(state, channel, package, version, blocker) for one classified repo."""
-    if c["kind"] in (TECHNIQUE, UNRELATED):
+    """(state, channel, package, version, blocker) for one classified repo; a blocked one nobody could act on is dropped."""
+    got = _plan(c, ev)
+    why = not_fileable(c, ev) if got[0] == BLOCKED else ""
+    return (DROPPED, "", "", "", why) if why else got
+
+
+def _plan(c: dict, ev: Evidence) -> tuple[str, str, str, str, str]:
+    if c["kind"] in (TECHNIQUE, LIBRARY, UNRELATED):
         return DROPPED, "", "", "", ""
     if c["interface"] == CLI:
         return DEFERRED, "", "", "", f"a command-line engine needs the process-runner adapter ({FOLLOW_UP})"
@@ -579,7 +675,7 @@ def sweep(conn, tools: list, waiting: list, *, ask=None, evidence=None, installe
             break
         except ValueError as exc:
             c = {"kind": ENGINE, "why": "", "interface": "", "serve": [], "model_types": [], "by": ""}
-            state, channel, package, version, blocker = BLOCKED, "", "", "", f"the model's reading was unusable: {exc}"
+            state, channel, package, version, blocker = DEFERRED, "", "", "", f"the model's reading was unusable: {exc}"
         else:
             state, channel, package, version, blocker = plan(c, ev)
         if state == CLASSIFIED and not can_sandbox():
@@ -620,7 +716,7 @@ def sweep(conn, tools: list, waiting: list, *, ask=None, evidence=None, installe
 
 def dropped(conn) -> dict:
     """Repos classified out of the engines list, with the model's reason."""
-    return {t.name: f"{t.kind}: {t.why}" for t in trials(conn, DROPPED)}
+    return {t.name: f"{t.kind}: {t.blocker or t.why}" for t in trials(conn, DROPPED)}
 
 
 def lines(conn, tools: list, stuck: list, got: Sweep | None) -> list[str]:

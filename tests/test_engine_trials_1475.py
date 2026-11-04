@@ -66,7 +66,7 @@ EVIDENCE = {
     FAKE_ENGINE: et.Evidence(readme="fast-serve serves models over /v1/chat/completions",
                              pypi={"package": "fast-serve", "version": "1.4.2",
                                    "wheels": ["fast_serve-1.4.2-py3-none-any.whl"]}),
-    UNTESTABLE: et.Evidence(readme="build with cmake"),
+    UNTESTABLE: et.Evidence(readme="build with cmake, then run c-serve -m <model> --port 8080"),
     UNRELATED: et.Evidence(readme="a list"),
 }
 
@@ -265,7 +265,7 @@ def test_a_github_release_newer_than_the_pypi_project_is_the_one_trialed():
 
 
 def test_an_sdist_only_release_is_blocked_rather_than_built_outside_the_sandbox():
-    ev = et.Evidence(pypi={"package": "fast-serve", "version": "1.0", "wheels": []})
+    ev = et.Evidence(pypi={"package": "fast-serve", "version": "1.0", "wheels": []}, scripts=["fast-serve"])
     state, *_, blocker = et.plan(OPENAI_READING, ev)
     assert state == et.BLOCKED and "no wheel" in blocker
 
