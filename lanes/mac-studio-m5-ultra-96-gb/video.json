@@ -1,6 +1,21 @@
 {
  "candidates": [
   {
+   "candidate": "diffusers-video:LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
+   "decided_at": "2026-11-05T03:41:35Z",
+   "detail": "it ran and passed nothing: fox-run: exit 1",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
+   "reason": "candidate",
+   "receipt_key": "diffusers-video/Minimax-H3-ref2v_Anime_2_Realism",
+   "run_id": 705,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "diffusers-video:Motif-Technologies/Motif-Video-2B",
    "decided_at": "2026-10-30T03:03:25Z",
    "detail": "1 case(s) passed a screen",
@@ -29,21 +44,6 @@
    "status": "pending",
    "tier": "inspect",
    "until": "layout:audio_vae/*.safetensors,text_encoder/*.safetensors,transformer/*.safetensors,vae/*.safetensors"
-  },
-  {
-   "candidate": "diffusers-video:LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
-   "decided_at": "2026-11-04T02:11:40Z",
-   "detail": "fits: smallest variant Anime2Realsim__H3.safetensors: 0.3 GiB of 1 weight file",
-   "exam": null,
-   "outcome": "queued",
-   "proposal": "LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
-   "reason": "candidate",
-   "receipt_key": "diffusers-video/Minimax-H3-ref2v_Anime_2_Realism",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "inspect",
-   "until": ""
   },
   {
    "candidate": "h3",
@@ -83,7 +83,7 @@
    "until": ""
   }
  ],
- "cursor": 1793674823635713,
+ "cursor": 1793850095157360,
  "events": [
   {
    "at": "2026-09-19T23:24:35Z",
@@ -158,6 +158,21 @@
    "outcome": "queued",
    "reason": "memory",
    "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-05T03:41:35Z",
+   "candidate": "diffusers-video:LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
+   "chosen": null,
+   "detail": "it ran and passed nothing: fox-run: exit 1",
+   "how": "",
+   "id": 1793850095157360,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 705,
    "tier": "screen"
   }
  ],
@@ -275,7 +290,7 @@
    "runs": 7
   }
  ],
- "generated_at": "2026-11-04T08:02:08Z",
+ "generated_at": "2026-11-05T08:00:19Z",
  "knobs": [],
  "lane": {
   "cases": 1,
