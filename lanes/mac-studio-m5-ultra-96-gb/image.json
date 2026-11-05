@@ -361,8 +361,8 @@
   },
   {
    "candidate": "mflux:filipstrand/Z-Image-Turbo-mflux-4bit",
-   "decided_at": "2026-11-03T20:28:46Z",
-   "detail": "5.5 GiB would take this run past its 40 GiB budget (38.1 GiB already fetched)",
+   "decided_at": "2026-11-04T13:05:46Z",
+   "detail": "5.5 GiB would take this run past its 40 GiB budget (36.7 GiB already fetched)",
    "exam": {
     "about": "4bit, by filipstrand",
     "candidate": "mflux/filipstrand/Z-Image-Turbo-mflux-4bit-q8",
@@ -398,21 +398,21 @@
   },
   {
    "candidate": "mflux:szwagros/Lens-Turbo",
-   "decided_at": "2026-11-04T05:51:34Z",
+   "decided_at": "2026-11-05T03:36:23Z",
    "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: fox-snow: exit 1: huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local disk and outgoing traffic has been disabled. To enable repo look-ups and downloads online, set 'HF_HUB_OFFLINE=0' as environment variable.; gene",
    "exam": null,
    "outcome": "queued",
    "proposal": "szwagros/Lens-Turbo",
    "reason": "harness",
    "receipt_key": "mflux/szwagros/Lens-Turbo-q8",
-   "run_id": 692,
+   "run_id": 701,
    "serves": false,
    "status": "pending",
    "tier": "screen",
    "until": ""
   }
  ],
- "cursor": 1793771494271421,
+ "cursor": 1793849783895202,
  "events": [
   {
    "at": "2026-09-18T22:18:09Z",
@@ -2573,6 +2573,21 @@
    "reason": "harness",
    "run_id": 692,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-05T03:36:23Z",
+   "candidate": "mflux:szwagros/Lens-Turbo",
+   "chosen": null,
+   "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: fox-snow: exit 1: huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local disk and outgoing traffic has been disabled. To enable repo look-ups and downloads online, set 'HF_HUB_OFFLINE=0' as environment variable.; gene",
+   "how": "",
+   "id": 1793849783895202,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "harness",
+   "run_id": 701,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -2835,7 +2850,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-04T08:02:06Z",
+ "generated_at": "2026-11-05T08:00:17Z",
  "knobs": [],
  "lane": {
   "cases": 584,
