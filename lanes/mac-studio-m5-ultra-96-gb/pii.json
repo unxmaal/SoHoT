@@ -2,18 +2,42 @@
  "candidates": [
   {
    "candidate": "hf-pii:LH-Tech-AI/Shield-82M",
-   "decided_at": "2026-10-22T01:40:12Z",
-   "detail": "2 case(s) passed a screen",
-   "exam": null,
-   "outcome": "screened",
+   "decided_at": "2026-11-05T05:34:03Z",
+   "detail": "pii: lane too small, needs 349 holdout cases: 166 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 610 more pii cases are needed before a null says anything about hf-pii/Shield",
+   "exam": {
+    "about": "82M params",
+    "candidate": "hf-pii/Shield-82M",
+    "cases": 556,
+    "first_s": 5.818,
+    "median_s": 2.102,
+    "metrics": {
+     "pii_f1": 0.8261,
+     "pii_precision": 0.7346,
+     "pii_recall": 0.9437
+    },
+    "model": "hf-pii/Shield-82M",
+    "not_run": "",
+    "pass_rate": 0.642,
+    "passed": 357,
+    "peak_gb": 1.61,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-05T05:34:03Z",
+    "served_as": "",
+    "source": "",
+    "total": 556,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "declined",
    "proposal": "LH-Tech-AI/Shield-82M",
-   "reason": "candidate",
+   "reason": "limit",
    "receipt_key": "hf-pii/Shield-82M",
-   "run_id": 531,
+   "run_id": 710,
    "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:pii>1165"
   },
   {
    "candidate": "hf-pii:openai/privacy-filter",
@@ -61,25 +85,25 @@
    "exam": {
     "about": "",
     "candidate": "pii-regex/patterns",
-    "cases": 166,
-    "first_s": 0.023,
-    "median_s": 0.021,
+    "cases": 556,
+    "first_s": 0.025,
+    "median_s": 0.025,
     "metrics": {
-     "pii_f1": 0.7778,
+     "pii_f1": 0.7964,
      "pii_precision": 1.0,
-     "pii_recall": 0.6364
+     "pii_recall": 0.6616
     },
     "model": "pii-regex/patterns",
     "not_run": "",
-    "pass_rate": 0.741,
-    "passed": 123,
+    "pass_rate": 0.739,
+    "passed": 411,
     "peak_gb": 0.01,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-02T07:32:18Z",
+    "run_at": "2026-11-05T05:34:03Z",
     "served_as": "",
     "source": "",
-    "total": 166,
+    "total": 556,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -94,7 +118,7 @@
    "until": ""
   }
  ],
- "cursor": 1792633325318125,
+ "cursor": 1793856843233612,
  "events": [
   {
    "at": "2026-10-07T15:26:32Z",
@@ -170,9 +194,80 @@
    "reason": "candidate",
    "run_id": 538,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-05T05:34:03Z",
+   "candidate": "hf-pii:LH-Tech-AI/Shield-82M",
+   "chosen": null,
+   "detail": "pii: lane too small, needs 349 holdout cases: 166 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 610 more pii cases are needed before a null says anything about hf-pii/Shield",
+   "how": "",
+   "id": 1793856843233612,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 710,
+   "tier": "adopt"
   }
  ],
  "exams": [
+  {
+   "cases": 556,
+   "differs": [],
+   "first_run_at": "2026-11-05T05:34:03Z",
+   "repeat": 1,
+   "rows": [
+    {
+     "about": "",
+     "candidate": "pii-regex/patterns",
+     "first_s": 0.025,
+     "median_s": 0.025,
+     "metrics": {
+      "pii_f1": 0.7964,
+      "pii_precision": 1.0,
+      "pii_recall": 0.6616
+     },
+     "model": "pii-regex/patterns",
+     "not_run": "",
+     "pass_rate": 0.739,
+     "passed": 411,
+     "peak_gb": 0.01,
+     "reference": false,
+     "run_at": "2026-11-05T05:34:03Z",
+     "served_as": "",
+     "source": "",
+     "total": 556,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "about": "82M params",
+     "candidate": "hf-pii/Shield-82M",
+     "first_s": 5.818,
+     "median_s": 2.102,
+     "metrics": {
+      "pii_f1": 0.8261,
+      "pii_precision": 0.7346,
+      "pii_recall": 0.9437
+     },
+     "model": "hf-pii/Shield-82M",
+     "not_run": "",
+     "pass_rate": 0.642,
+     "passed": 357,
+     "peak_gb": 1.61,
+     "reference": false,
+     "run_at": "2026-11-05T05:34:03Z",
+     "served_as": "",
+     "source": "",
+     "total": 556,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    }
+   ],
+   "run_at": "2026-11-05T05:34:03Z",
+   "runs": 1
+  },
   {
    "cases": 166,
    "differs": [],
@@ -263,7 +358,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-02T08:00:27Z",
+ "generated_at": "2026-11-05T08:00:22Z",
  "knobs": [],
  "lane": {
   "cases": 556,
@@ -282,17 +377,17 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-11-02T07:32:18Z",
-  "median_s": 0.021,
+  "measured_at": "2026-11-05T05:34:03Z",
+  "median_s": 0.025,
   "metrics": {
-   "pii_f1": 0.7778,
+   "pii_f1": 0.7964,
    "pii_precision": 1.0,
-   "pii_recall": 0.6364
+   "pii_recall": 0.6616
   },
   "not_run": "",
   "parked": "",
   "parked_until": "",
-  "pass_rate": 0.741,
+  "pass_rate": 0.739,
   "serves": "pii-regex",
   "serves_model": "pii-regex",
   "stale": false
