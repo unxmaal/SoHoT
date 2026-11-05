@@ -37,23 +37,25 @@
    "exam": {
     "about": "",
     "candidate": "hf-ocr/PaddleOCR-VL-1.6",
-    "cases": 8,
-    "first_s": 7.94,
-    "median_s": 8.822,
+    "cases": 448,
+    "first_s": 19.746,
+    "median_s": 7.61,
     "metrics": {
-     "cer": 0.0
+     "busy_wait_s": 64.006,
+     "cer": 2.1308,
+     "engine_rerun_wait_s": 64.006
     },
     "model": "hf-ocr/PaddleOCR-VL-1.6",
     "not_run": "",
-    "pass_rate": 1.0,
-    "passed": 8,
+    "pass_rate": 0.519,
+    "passed": 68,
     "peak_gb": 0.01,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-07T17:32:13Z",
+    "run_at": "2026-11-05T08:00:11Z",
     "served_as": "",
     "source": "",
-    "total": 8,
+    "total": 131,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -75,22 +77,22 @@
     "about": "",
     "candidate": "osocr/auto",
     "cases": 448,
-    "first_s": 0.414,
-    "median_s": 0.287,
+    "first_s": 0.304,
+    "median_s": 0.302,
     "metrics": {
-     "cer": 0.1696
+     "cer": 0.5278
     },
     "model": "osocr/auto",
     "not_run": "",
-    "pass_rate": 0.721,
-    "passed": 323,
+    "pass_rate": 0.046,
+    "passed": 6,
     "peak_gb": 0.25,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-02T07:32:06Z",
+    "run_at": "2026-11-05T08:00:11Z",
     "served_as": "",
     "source": "",
-    "total": 448,
+    "total": 131,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -312,28 +314,51 @@
    "rows": [
     {
      "about": "",
-     "candidate": "osocr/auto",
-     "first_s": 0.414,
-     "median_s": 0.287,
+     "candidate": "hf-ocr/PaddleOCR-VL-1.6",
+     "first_s": 19.746,
+     "median_s": 7.61,
      "metrics": {
-      "cer": 0.1696
+      "busy_wait_s": 64.006,
+      "cer": 2.1308,
+      "engine_rerun_wait_s": 64.006
+     },
+     "model": "hf-ocr/PaddleOCR-VL-1.6",
+     "not_run": "",
+     "pass_rate": 0.519,
+     "passed": 68,
+     "peak_gb": 0.01,
+     "reference": false,
+     "run_at": "2026-11-05T08:00:11Z",
+     "served_as": "",
+     "source": "",
+     "total": 131,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "about": "",
+     "candidate": "osocr/auto",
+     "first_s": 0.304,
+     "median_s": 0.302,
+     "metrics": {
+      "cer": 0.5278
      },
      "model": "osocr/auto",
      "not_run": "",
-     "pass_rate": 0.721,
-     "passed": 323,
+     "pass_rate": 0.046,
+     "passed": 6,
      "peak_gb": 0.25,
      "reference": false,
-     "run_at": "2026-11-02T07:32:06Z",
+     "run_at": "2026-11-05T08:00:11Z",
      "served_as": "",
      "source": "",
-     "total": 448,
+     "total": 131,
      "ttft_median_s": null,
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-11-02T07:32:06Z",
-   "runs": 1
+   "run_at": "2026-11-05T08:00:11Z",
+   "runs": 2
   },
   {
    "cases": 450,
@@ -481,7 +506,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-02T08:00:26Z",
+ "generated_at": "2026-11-05T08:00:21Z",
  "knobs": [],
  "lane": {
   "cases": 448,
@@ -500,15 +525,15 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-11-02T07:32:06Z",
-  "median_s": 0.287,
+  "measured_at": "2026-11-05T08:00:11Z",
+  "median_s": 0.302,
   "metrics": {
-   "cer": 0.1696
+   "cer": 0.5278
   },
   "not_run": "",
   "parked": "",
   "parked_until": "",
-  "pass_rate": 0.721,
+  "pass_rate": 0.046,
   "serves": "osocr:auto",
   "serves_model": "osocr:auto",
   "stale": false
