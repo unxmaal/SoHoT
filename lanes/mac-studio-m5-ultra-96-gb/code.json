@@ -1141,36 +1141,6 @@
    "until": "cases:code>1197"
   },
   {
-   "candidate": "llamacpp:Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-Q4_K_M",
-   "decided_at": "2026-10-29T10:16:55Z",
-   "detail": "the screen exited 75",
-   "exam": null,
-   "outcome": "broken",
-   "proposal": "HauhauCS/Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced",
-   "reason": "candidate",
-   "receipt_key": "llamacpp:Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-Q4_K_M",
-   "run_id": 609,
-   "serves": false,
-   "status": "rejected",
-   "tier": "screen",
-   "until": ""
-  },
-  {
-   "candidate": "llamacpp:Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-Q4_K_M,temperature=0",
-   "decided_at": "2026-10-29T10:16:55Z",
-   "detail": "the screen exited 75",
-   "exam": null,
-   "outcome": "broken",
-   "proposal": "HauhauCS/Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced",
-   "reason": "candidate",
-   "receipt_key": "llamacpp:Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-Q4_K_M",
-   "run_id": 609,
-   "serves": false,
-   "status": "rejected",
-   "tier": "screen",
-   "until": ""
-  },
-  {
    "candidate": "llamacpp:Holo-3.1-0.8B.Q4_K_M",
    "decided_at": "2026-10-30T03:07:59Z",
    "detail": "it ran and passed nothing: chunk-bytes: 3/6 checks passed; chunks(b'abcdefg', 3) == [b'abc', b'def', b'g'] -> returned False; evaluate-expr: 4/11 checks passed; evaluate('1 + 2 * 3') == 7.0 -> ValueError: Invalid character; glob-match: 5/10 checks passed; match('a*b*c', 'abxbc') is True -> returned False; hevalpro-0: 0/3 chec",
@@ -2679,6 +2649,36 @@
    "until": ""
   },
   {
+   "candidate": "apple/LensVLM-9B",
+   "decided_at": "2026-11-06T02:17:55Z",
+   "detail": "1 case(s) passed a screen",
+   "exam": null,
+   "outcome": "screened",
+   "proposal": "apple/LensVLM-9B",
+   "reason": "candidate",
+   "receipt_key": "apple/LensVLM-9B",
+   "run_id": 720,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "apple/LensVLM-9B,temperature=0",
+   "decided_at": "2026-11-06T02:17:55Z",
+   "detail": "1 case(s) passed a screen",
+   "exam": null,
+   "outcome": "screened",
+   "proposal": "apple/LensVLM-9B",
+   "reason": "candidate",
+   "receipt_key": "apple/LensVLM-9B",
+   "run_id": 720,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "best-of:3:llamacpp:Ornith-1.5-35B-Q4_K_M",
    "decided_at": "2026-10-21T02:13:07Z",
    "detail": "5 case(s) passed a screen",
@@ -2867,6 +2867,36 @@
    "reason": "candidate",
    "receipt_key": "llamacpp:Gemma-4-12B-OBLITERATED-Q4_K_M",
    "run_id": 694,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "llamacpp:Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-Q4_K_M",
+   "decided_at": "2026-11-06T02:16:07Z",
+   "detail": "3 case(s) passed a screen",
+   "exam": null,
+   "outcome": "screened",
+   "proposal": "HauhauCS/Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced",
+   "reason": "candidate",
+   "receipt_key": "llamacpp:Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-Q4_K_M",
+   "run_id": 718,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "llamacpp:Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-Q4_K_M,temperature=0",
+   "decided_at": "2026-11-06T02:16:07Z",
+   "detail": "3 case(s) passed a screen",
+   "exam": null,
+   "outcome": "screened",
+   "proposal": "HauhauCS/Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced",
+   "reason": "candidate",
+   "receipt_key": "llamacpp:Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-Q4_K_M",
+   "run_id": 718,
    "serves": false,
    "status": "screened",
    "tier": "screen",
@@ -3930,7 +3960,7 @@
   },
   {
    "candidate": "CohereLabs/North-Micro-Vision-Instruct",
-   "decided_at": "2026-11-05T02:13:08Z",
+   "decided_at": "2026-11-06T02:02:47Z",
    "detail": "fits: smallest variant model.safetensors: 4.6 GiB of 1 weight file",
    "exam": null,
    "outcome": "queued",
@@ -3945,38 +3975,38 @@
   },
   {
    "candidate": "Hcompany/Holo-3.1-0.8B",
-   "decided_at": "2026-11-05T03:00:39Z",
-   "detail": "the vision lane runs by hand: soh vision run --candidate hf-vlm:Hcompany/Holo-3.1-0.8B",
+   "decided_at": "2026-11-06T02:02:43Z",
+   "detail": "fits: smallest variant model-00001-of-00001.safetensors: 2.1 GiB of 1 weight file",
    "exam": null,
    "outcome": "queued",
    "proposal": "Hcompany/Holo-3.1-0.8B",
-   "reason": "harness",
+   "reason": "candidate",
    "receipt_key": "Hcompany/Holo-3.1-0.8B",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "fetch",
+   "tier": "inspect",
    "until": ""
   },
   {
    "candidate": "Hcompany/Holo-3.1-0.8B,temperature=0",
-   "decided_at": "2026-11-05T03:00:39Z",
-   "detail": "the vision lane runs by hand: soh vision run --candidate hf-vlm:Hcompany/Holo-3.1-0.8B",
+   "decided_at": "2026-11-06T02:02:43Z",
+   "detail": "fits: smallest variant model-00001-of-00001.safetensors: 2.1 GiB of 1 weight file",
    "exam": null,
    "outcome": "queued",
    "proposal": "Hcompany/Holo-3.1-0.8B",
-   "reason": "harness",
+   "reason": "candidate",
    "receipt_key": "Hcompany/Holo-3.1-0.8B",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "fetch",
+   "tier": "inspect",
    "until": ""
   },
   {
    "candidate": "LiquidAI/LFM2.5-1.2B-Instruct",
-   "decided_at": "2026-11-03T20:34:59Z",
-   "detail": "2.2 GiB would take this run past its 40 GiB budget (39.5 GiB already fetched)",
+   "decided_at": "2026-11-05T13:06:48Z",
+   "detail": "2.2 GiB would take this run past its 40 GiB budget (39.9 GiB already fetched)",
    "exam": {
     "about": "family LiquidAI/LFM2.5-1.2B-Base, 1.2B params, by LiquidAI",
     "candidate": "LiquidAI/LFM2.5-1.2B-Instruct",
@@ -4014,8 +4044,8 @@
   },
   {
    "candidate": "LiquidAI/LFM2.5-1.2B-Instruct,temperature=0",
-   "decided_at": "2026-11-03T20:34:59Z",
-   "detail": "2.2 GiB would take this run past its 40 GiB budget (39.5 GiB already fetched)",
+   "decided_at": "2026-11-05T13:06:48Z",
+   "detail": "2.2 GiB would take this run past its 40 GiB budget (39.9 GiB already fetched)",
    "exam": {
     "about": "family LiquidAI/LFM2.5-1.2B-Base, 1.2B params, by LiquidAI",
     "candidate": "LiquidAI/LFM2.5-1.2B-Instruct",
@@ -4053,37 +4083,37 @@
   },
   {
    "candidate": "LiquidAI/LFM2.5-VL-3B",
-   "decided_at": "2026-11-05T02:22:51Z",
-   "detail": "the vision lane runs by hand: soh vision run --candidate hf-vlm:LiquidAI/LFM2.5-VL-3B",
+   "decided_at": "2026-11-06T02:02:43Z",
+   "detail": "fits: smallest variant model.safetensors: 5.8 GiB of 1 weight file",
    "exam": null,
    "outcome": "queued",
    "proposal": "LiquidAI/LFM2.5-VL-3B",
-   "reason": "harness",
+   "reason": "candidate",
    "receipt_key": "LiquidAI/LFM2.5-VL-3B",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "fetch",
+   "tier": "inspect",
    "until": ""
   },
   {
    "candidate": "LiquidAI/LFM2.5-VL-3B,temperature=0",
-   "decided_at": "2026-11-05T02:22:51Z",
-   "detail": "the vision lane runs by hand: soh vision run --candidate hf-vlm:LiquidAI/LFM2.5-VL-3B",
+   "decided_at": "2026-11-06T02:02:43Z",
+   "detail": "fits: smallest variant model.safetensors: 5.8 GiB of 1 weight file",
    "exam": null,
    "outcome": "queued",
    "proposal": "LiquidAI/LFM2.5-VL-3B",
-   "reason": "harness",
+   "reason": "candidate",
    "receipt_key": "LiquidAI/LFM2.5-VL-3B",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "fetch",
+   "tier": "inspect",
    "until": ""
   },
   {
    "candidate": "LiquidAI/LFM2.5-VL-450M",
-   "decided_at": "2026-11-05T02:13:08Z",
+   "decided_at": "2026-11-06T02:02:47Z",
    "detail": "fits: smallest variant model.safetensors: 0.8 GiB of 1 weight file",
    "exam": null,
    "outcome": "queued",
@@ -4098,7 +4128,7 @@
   },
   {
    "candidate": "LiquidAI/LFM2.5-VL-450M,temperature=0",
-   "decided_at": "2026-11-05T02:13:08Z",
+   "decided_at": "2026-11-06T02:02:47Z",
    "detail": "fits: smallest variant model.safetensors: 0.8 GiB of 1 weight file",
    "exam": null,
    "outcome": "queued",
@@ -4113,7 +4143,7 @@
   },
   {
    "candidate": "NemoStation/Marlin-2B",
-   "decided_at": "2026-11-05T02:13:00Z",
+   "decided_at": "2026-11-06T02:02:38Z",
    "detail": "fits: smallest variant model-00001-of-00002.safetensors (+1): 5.1 GiB of 2 weight files",
    "exam": null,
    "outcome": "queued",
@@ -4128,7 +4158,7 @@
   },
   {
    "candidate": "NemoStation/Marlin-2B,temperature=0",
-   "decided_at": "2026-11-05T02:13:00Z",
+   "decided_at": "2026-11-06T02:02:38Z",
    "detail": "fits: smallest variant model-00001-of-00002.safetensors (+1): 5.1 GiB of 2 weight files",
    "exam": null,
    "outcome": "queued",
@@ -4143,7 +4173,7 @@
   },
   {
    "candidate": "Qwen/Qwen-Drive-1.0-4B",
-   "decided_at": "2026-11-05T02:13:07Z",
+   "decided_at": "2026-11-06T02:02:43Z",
    "detail": "fits: smallest variant model.safetensors: 8.5 GiB of 1 weight file",
    "exam": null,
    "outcome": "queued",
@@ -4158,7 +4188,7 @@
   },
   {
    "candidate": "Qwen/Qwen-Drive-1.0-4B,temperature=0",
-   "decided_at": "2026-11-05T02:13:07Z",
+   "decided_at": "2026-11-06T02:02:43Z",
    "detail": "fits: smallest variant model.safetensors: 8.5 GiB of 1 weight file",
    "exam": null,
    "outcome": "queued",
@@ -4173,7 +4203,7 @@
   },
   {
    "candidate": "Qwen/Qwen-Image-Bench",
-   "decided_at": "2026-11-04T02:10:59Z",
+   "decided_at": "2026-11-06T02:02:50Z",
    "detail": "fits: smallest variant model-00001-of-00002.safetensors (+1): 51.0 GiB of 2 weight files",
    "exam": null,
    "outcome": "queued",
@@ -4188,7 +4218,7 @@
   },
   {
    "candidate": "Qwen/Qwen-Image-Bench,temperature=0",
-   "decided_at": "2026-11-04T02:10:59Z",
+   "decided_at": "2026-11-06T02:02:50Z",
    "detail": "fits: smallest variant model-00001-of-00002.safetensors (+1): 51.0 GiB of 2 weight files",
    "exam": null,
    "outcome": "queued",
@@ -4203,14 +4233,14 @@
   },
   {
    "candidate": "Qwen/Qwen3.5-4B",
-   "decided_at": "2026-11-05T03:46:02Z",
+   "decided_at": "2026-11-06T02:22:27Z",
    "detail": "not screened: server_dead. The harness could not deliver the request, which says nothing about the candidate: chunk-bytes: gateway returned HTTP 404: {\"error\": \"generation thread died\"}; evaluate-expr: gateway returned HTTP 404: {\"error\": \"generation thread died\"}; glob-match: gateway returned HTTP 404: {\"error\": \"generation thread died\"}; hevalpro-0: gateway returned HTTP 404: {\"error\": \"generation thread ",
    "exam": null,
    "outcome": "queued",
    "proposal": "Qwen/Qwen3.5-4B",
    "reason": "harness",
    "receipt_key": "Qwen/Qwen3.5-4B",
-   "run_id": 706,
+   "run_id": 722,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -4218,14 +4248,14 @@
   },
   {
    "candidate": "Qwen/Qwen3.5-4B,temperature=0",
-   "decided_at": "2026-11-05T03:46:02Z",
+   "decided_at": "2026-11-06T02:22:27Z",
    "detail": "not screened: server_dead. The harness could not deliver the request, which says nothing about the candidate: chunk-bytes: gateway returned HTTP 404: {\"error\": \"generation thread died\"}; evaluate-expr: gateway returned HTTP 404: {\"error\": \"generation thread died\"}; glob-match: gateway returned HTTP 404: {\"error\": \"generation thread died\"}; hevalpro-0: gateway returned HTTP 404: {\"error\": \"generation thread ",
    "exam": null,
    "outcome": "queued",
    "proposal": "Qwen/Qwen3.5-4B",
    "reason": "harness",
    "receipt_key": "Qwen/Qwen3.5-4B",
-   "run_id": 706,
+   "run_id": 722,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -4278,7 +4308,7 @@
   },
   {
    "candidate": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
-   "decided_at": "2026-11-05T02:13:01Z",
+   "decided_at": "2026-11-06T02:02:39Z",
    "detail": "fits: smallest variant acervo-extractor-qwen3.5-9b-Q4_K_M.gguf: 5.2 GiB of 1 weight file",
    "exam": null,
    "outcome": "queued",
@@ -4293,7 +4323,7 @@
   },
   {
    "candidate": "ibm-granite/granite-4.1-8b",
-   "decided_at": "2026-11-04T02:10:51Z",
+   "decided_at": "2026-11-06T02:02:40Z",
    "detail": "fits: smallest variant model-00001-of-00004.safetensors (+3): 16.4 GiB of 4 weight files",
    "exam": {
     "about": "family granite, 8B params, by ibm-granite",
@@ -4332,7 +4362,7 @@
   },
   {
    "candidate": "ibm-granite/granite-4.1-8b,temperature=0",
-   "decided_at": "2026-11-04T02:10:51Z",
+   "decided_at": "2026-11-06T02:02:40Z",
    "detail": "fits: smallest variant model-00001-of-00004.safetensors (+3): 16.4 GiB of 4 weight files",
    "exam": {
     "about": "family granite, 8B params, by ibm-granite",
@@ -4371,14 +4401,14 @@
   },
   {
    "candidate": "kishida/Q3-8B-KVA-Projector",
-   "decided_at": "2026-11-05T03:36:26Z",
+   "decided_at": "2026-11-06T02:16:10Z",
    "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: chunk-bytes: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2] No such file or directory: 'config.json'\"}; evaluate-expr: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2] No ",
    "exam": null,
    "outcome": "queued",
    "proposal": "kishida/Q3-8B-KVA-Projector",
    "reason": "harness",
    "receipt_key": "kishida/Q3-8B-KVA-Projector",
-   "run_id": 702,
+   "run_id": 719,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -4386,14 +4416,14 @@
   },
   {
    "candidate": "kishida/Q3-8B-KVA-Projector,temperature=0",
-   "decided_at": "2026-11-05T03:36:26Z",
+   "decided_at": "2026-11-06T02:16:10Z",
    "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: chunk-bytes: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2] No such file or directory: 'config.json'\"}; evaluate-expr: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2] No ",
    "exam": null,
    "outcome": "queued",
    "proposal": "kishida/Q3-8B-KVA-Projector",
    "reason": "harness",
    "receipt_key": "kishida/Q3-8B-KVA-Projector",
-   "run_id": 702,
+   "run_id": 719,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -4401,7 +4431,7 @@
   },
   {
    "candidate": "llamacpp:K2-Horizon-7B-Q4_K_M",
-   "decided_at": "2026-11-04T02:10:54Z",
+   "decided_at": "2026-11-06T02:02:43Z",
    "detail": "fits: smallest variant K2-Horizon-7B-Q4_K_M.gguf: 5.2 GiB of 1 weight file",
    "exam": null,
    "outcome": "queued",
@@ -4416,7 +4446,7 @@
   },
   {
    "candidate": "llamacpp:K2-Horizon-7B-Q4_K_M,temperature=0",
-   "decided_at": "2026-11-04T02:10:54Z",
+   "decided_at": "2026-11-06T02:02:43Z",
    "detail": "fits: smallest variant K2-Horizon-7B-Q4_K_M.gguf: 5.2 GiB of 1 weight file",
    "exam": null,
    "outcome": "queued",
@@ -4446,7 +4476,7 @@
   },
   {
    "candidate": "llamacpp:Nemotron3-Nano-4B-Uncensored-HauhauCS-Aggressive-Q4_K_M",
-   "decided_at": "2026-11-04T02:10:51Z",
+   "decided_at": "2026-11-06T02:02:41Z",
    "detail": "fits: smallest variant Nemotron3-Nano-4B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf: 2.6 GiB of 1 weight file",
    "exam": {
     "about": "family nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16, 4B params, Q4_K_M, by HauhauCS",
@@ -4485,7 +4515,7 @@
   },
   {
    "candidate": "llamacpp:Nemotron3-Nano-4B-Uncensored-HauhauCS-Aggressive-Q4_K_M,temperature=0",
-   "decided_at": "2026-11-04T02:10:51Z",
+   "decided_at": "2026-11-06T02:02:41Z",
    "detail": "fits: smallest variant Nemotron3-Nano-4B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf: 2.6 GiB of 1 weight file",
    "exam": {
     "about": "family nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16, 4B params, Q4_K_M, by HauhauCS",
@@ -4524,7 +4554,7 @@
   },
   {
    "candidate": "llamacpp:Qwen3.5-9B-DeepSeek-V4-Flash-Q4_K_M",
-   "decided_at": "2026-11-04T02:10:51Z",
+   "decided_at": "2026-11-06T02:02:40Z",
    "detail": "fits: smallest variant Qwen3.5-9B-DeepSeek-V4-Flash-Q4_K_M.gguf: 5.2 GiB of 1 weight file",
    "exam": {
     "about": "family unsloth/Qwen3.5-9B, 9B params, Q4_K_M, by Jackrong",
@@ -4563,7 +4593,7 @@
   },
   {
    "candidate": "llamacpp:Qwen3.5-9B-DeepSeek-V4-Flash-Q4_K_M,temperature=0",
-   "decided_at": "2026-11-04T02:10:51Z",
+   "decided_at": "2026-11-06T02:02:40Z",
    "detail": "fits: smallest variant Qwen3.5-9B-DeepSeek-V4-Flash-Q4_K_M.gguf: 5.2 GiB of 1 weight file",
    "exam": {
     "about": "family unsloth/Qwen3.5-9B, 9B params, Q4_K_M, by Jackrong",
@@ -4602,7 +4632,7 @@
   },
   {
    "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
-   "decided_at": "2026-11-04T02:10:54Z",
+   "decided_at": "2026-11-06T02:02:43Z",
    "detail": "fits: smallest variant Tiel-Coder-35B-A3B-UD-Q4_K_S.gguf: 19.5 GiB of 1 weight file",
    "exam": {
     "about": "family ornith-ai/Ornith-1.5-35B-A3B, 35B (3B active) params, Q4_K_S, by peculiar-ragdoll",
@@ -4641,7 +4671,7 @@
   },
   {
    "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S,temperature=0",
-   "decided_at": "2026-11-04T02:10:54Z",
+   "decided_at": "2026-11-06T02:02:43Z",
    "detail": "fits: smallest variant Tiel-Coder-35B-A3B-UD-Q4_K_S.gguf: 19.5 GiB of 1 weight file",
    "exam": {
     "about": "family ornith-ai/Ornith-1.5-35B-A3B, 35B (3B active) params, Q4_K_S, by peculiar-ragdoll",
@@ -4680,7 +4710,7 @@
   },
   {
    "candidate": "llamacpp:acervo-extractor-qwen3.5-9b-Q4_K_M",
-   "decided_at": "2026-11-05T02:13:01Z",
+   "decided_at": "2026-11-06T02:02:39Z",
    "detail": "fits: smallest variant acervo-extractor-qwen3.5-9b-Q4_K_M.gguf: 5.2 GiB of 1 weight file",
    "exam": null,
    "outcome": "queued",
@@ -4695,7 +4725,7 @@
   },
   {
    "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
-   "decided_at": "2026-11-04T02:11:01Z",
+   "decided_at": "2026-11-06T02:02:53Z",
    "detail": "fits: smallest variant command-a-plus-05-2026-IQ1_S.gguf: 45.9 GiB of 1 weight file",
    "exam": {
     "about": "family CohereLabs/command-a-plus-05-2026-bf16, IQ1_S, by bartowski",
@@ -4734,7 +4764,7 @@
   },
   {
    "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S,temperature=0",
-   "decided_at": "2026-11-04T02:11:01Z",
+   "decided_at": "2026-11-06T02:02:53Z",
    "detail": "fits: smallest variant command-a-plus-05-2026-IQ1_S.gguf: 45.9 GiB of 1 weight file",
    "exam": {
     "about": "family CohereLabs/command-a-plus-05-2026-bf16, IQ1_S, by bartowski",
@@ -4773,7 +4803,7 @@
   },
   {
    "candidate": "llamacpp:ornith15-trained-head",
-   "decided_at": "2026-11-05T02:13:02Z",
+   "decided_at": "2026-11-06T02:02:40Z",
    "detail": "fits: smallest variant ornith15-trained-head.gguf: 16.2 GiB of 1 weight file",
    "exam": {
     "about": "family ornith-ai/Ornith-1.5-35B-A3B, 35B (3B active) params, by conFIGur8tor",
@@ -4812,7 +4842,7 @@
   },
   {
    "candidate": "llamacpp:ornith15-trained-head,temperature=0",
-   "decided_at": "2026-11-05T02:13:02Z",
+   "decided_at": "2026-11-06T02:02:40Z",
    "detail": "fits: smallest variant ornith15-trained-head.gguf: 16.2 GiB of 1 weight file",
    "exam": {
     "about": "family ornith-ai/Ornith-1.5-35B-A3B, 35B (3B active) params, by conFIGur8tor",
@@ -4851,8 +4881,8 @@
   },
   {
    "candidate": "llamacpp:supergemma4-26b-uncensored-fast-v2-Q4_K_M",
-   "decided_at": "2026-11-05T03:36:14Z",
-   "detail": "not screened: needs 15.6 GB but only 15.2 GB is safely available (33.2 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "decided_at": "2026-11-06T02:16:07Z",
+   "detail": "not screened: needs 15.6 GB but only 1.8 GB is safely available (19.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
    "exam": {
     "about": "family google/gemma-4-26B-A4B-it, 26B (4B active) params, Q4_K_M, by Jiunsong",
     "candidate": "llamacpp:supergemma4-26b-uncensored-fast-v2-Q4_K_M",
@@ -4890,8 +4920,8 @@
   },
   {
    "candidate": "llamacpp:supergemma4-26b-uncensored-fast-v2-Q4_K_M,temperature=0",
-   "decided_at": "2026-11-05T03:36:14Z",
-   "detail": "not screened: needs 15.6 GB but only 15.2 GB is safely available (33.2 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "decided_at": "2026-11-06T02:16:07Z",
+   "detail": "not screened: needs 15.6 GB but only 1.8 GB is safely available (19.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
    "exam": {
     "about": "family google/gemma-4-26B-A4B-it, 26B (4B active) params, Q4_K_M, by Jiunsong",
     "candidate": "llamacpp:supergemma4-26b-uncensored-fast-v2-Q4_K_M",
@@ -4959,7 +4989,7 @@
   },
   {
    "candidate": "microsoft/Fara-7B",
-   "decided_at": "2026-11-05T02:13:08Z",
+   "decided_at": "2026-11-06T02:02:43Z",
    "detail": "fits: smallest variant model-00001-of-00004.safetensors (+3): 15.4 GiB of 4 weight files",
    "exam": null,
    "outcome": "queued",
@@ -4974,7 +5004,7 @@
   },
   {
    "candidate": "microsoft/Fara-7B,temperature=0",
-   "decided_at": "2026-11-05T02:13:08Z",
+   "decided_at": "2026-11-06T02:02:43Z",
    "detail": "fits: smallest variant model-00001-of-00004.safetensors (+3): 15.4 GiB of 4 weight files",
    "exam": null,
    "outcome": "queued",
@@ -4989,7 +5019,7 @@
   },
   {
    "candidate": "microsoft/Mage-VL",
-   "decided_at": "2026-11-05T02:13:08Z",
+   "decided_at": "2026-11-06T02:02:47Z",
    "detail": "fits: smallest variant model-00001-of-00002.safetensors (+2): 9.8 GiB of 3 weight files",
    "exam": null,
    "outcome": "queued",
@@ -5004,7 +5034,7 @@
   },
   {
    "candidate": "microsoft/Mage-VL,temperature=0",
-   "decided_at": "2026-11-05T02:13:08Z",
+   "decided_at": "2026-11-06T02:02:47Z",
    "detail": "fits: smallest variant model-00001-of-00002.safetensors (+2): 9.8 GiB of 3 weight files",
    "exam": null,
    "outcome": "queued",
@@ -5034,7 +5064,7 @@
   },
   {
    "candidate": "nvidia/LocateAnything-3B",
-   "decided_at": "2026-11-05T02:13:08Z",
+   "decided_at": "2026-11-06T02:02:47Z",
    "detail": "fits: smallest variant model-00001-of-00002.safetensors (+1): 7.1 GiB of 2 weight files",
    "exam": null,
    "outcome": "queued",
@@ -5049,7 +5079,7 @@
   },
   {
    "candidate": "nvidia/LocateAnything-3B,temperature=0",
-   "decided_at": "2026-11-05T02:13:08Z",
+   "decided_at": "2026-11-06T02:02:47Z",
    "detail": "fits: smallest variant model-00001-of-00002.safetensors (+1): 7.1 GiB of 2 weight files",
    "exam": null,
    "outcome": "queued",
@@ -5064,7 +5094,7 @@
   },
   {
    "candidate": "openbmb/MiniCPM-V-4.6",
-   "decided_at": "2026-11-05T02:13:08Z",
+   "decided_at": "2026-11-06T02:02:47Z",
    "detail": "fits: smallest variant model.safetensors: 2.4 GiB of 1 weight file",
    "exam": null,
    "outcome": "queued",
@@ -5079,7 +5109,7 @@
   },
   {
    "candidate": "openbmb/MiniCPM-V-4.6,temperature=0",
-   "decided_at": "2026-11-05T02:13:08Z",
+   "decided_at": "2026-11-06T02:02:47Z",
    "detail": "fits: smallest variant model.safetensors: 2.4 GiB of 1 weight file",
    "exam": null,
    "outcome": "queued",
@@ -5133,7 +5163,7 @@
   },
   {
    "candidate": "zhengmh/OmniVTG-7B",
-   "decided_at": "2026-11-04T02:10:51Z",
+   "decided_at": "2026-11-06T02:02:41Z",
    "detail": "fits: smallest variant model-00001-of-00004.safetensors (+3): 15.4 GiB of 4 weight files",
    "exam": {
     "about": "family qwen2_5_vl, 7B params, by zhengmh",
@@ -5172,7 +5202,7 @@
   },
   {
    "candidate": "zhengmh/OmniVTG-7B,temperature=0",
-   "decided_at": "2026-11-04T02:10:51Z",
+   "decided_at": "2026-11-06T02:02:41Z",
    "detail": "fits: smallest variant model-00001-of-00004.safetensors (+3): 15.4 GiB of 4 weight files",
    "exam": {
     "about": "family qwen2_5_vl, 7B params, by zhengmh",
@@ -5210,7 +5240,7 @@
    "until": ""
   }
  ],
- "cursor": 1793863199461209,
+ "cursor": 1793931747296143,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -13673,6 +13703,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-05T03:22:45Z",
+   "candidate": "apple/LensVLM-9B",
+   "chosen": null,
+   "detail": "not screened: needs 21.5 GB but only 5.1 GB is safely available (23.1 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1793848965621965,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-05T03:31:04Z",
    "candidate": "openbmb/MiniCPM5-1B",
    "chosen": null,
@@ -13881,6 +13926,81 @@
    "reason": "limit",
    "run_id": 714,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-06T02:16:07Z",
+   "candidate": "llamacpp:Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-Q4_K_M",
+   "chosen": null,
+   "detail": "3 case(s) passed a screen",
+   "how": "",
+   "id": 1793931367069362,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 718,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-06T02:16:07Z",
+   "candidate": "Jiunsong/supergemma4-26b-uncensored-gguf-v2",
+   "chosen": null,
+   "detail": "not screened: needs 15.6 GB but only 1.8 GB is safely available (19.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1793931367255418,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-06T02:16:10Z",
+   "candidate": "kishida/Q3-8B-KVA-Projector",
+   "chosen": null,
+   "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: chunk-bytes: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2] No such file or directory: 'config.json'\"}; evaluate-expr: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2] No ",
+   "how": "",
+   "id": 1793931370685295,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "harness",
+   "run_id": 719,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-06T02:17:55Z",
+   "candidate": "apple/LensVLM-9B",
+   "chosen": null,
+   "detail": "1 case(s) passed a screen",
+   "how": "",
+   "id": 1793931475407434,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 720,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-06T02:22:27Z",
+   "candidate": "Qwen/Qwen3.5-4B",
+   "chosen": null,
+   "detail": "not screened: server_dead. The harness could not deliver the request, which says nothing about the candidate: chunk-bytes: gateway returned HTTP 404: {\"error\": \"generation thread died\"}; evaluate-expr: gateway returned HTTP 404: {\"error\": \"generation thread died\"}; glob-match: gateway returned HTTP 404: {\"error\": \"generation thread died\"}; hevalpro-0: gateway returned HTTP 404: {\"error\": \"generation thread ",
+   "how": "",
+   "id": 1793931747296143,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "harness",
+   "run_id": 722,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -15542,7 +15662,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-05T08:00:17Z",
+ "generated_at": "2026-11-06T02:54:10Z",
  "knobs": [],
  "lane": {
   "cases": 451,
