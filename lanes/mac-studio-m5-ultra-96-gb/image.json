@@ -174,6 +174,36 @@
    "until": "runner:diffusers/ZImagePipeline-layout"
   },
   {
+   "candidate": "mflux:Comfy-Org/Boogu-Image",
+   "decided_at": "2026-11-06T02:18:05Z",
+   "detail": "it ran and passed nothing: fox-snow: exit 1: FileNotFoundError: No safetensors files found in transformer; geneval-000-single-object: exit 1: FileNotFoundError: No safetensors files found in models--",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "Comfy-Org/Boogu-Image",
+   "reason": "candidate",
+   "receipt_key": "mflux/Comfy-Org/Boogu-Image-q8",
+   "run_id": 721,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "mflux:Comfy-Org/ERNIE-Image",
+   "decided_at": "2026-11-06T02:05:59Z",
+   "detail": "it ran and passed nothing: fox-snow: exit 1: FileNotFoundError: No safetensors files found in transformer; geneval-000-single-object: exit 1: FileNotFoundError: No safetensors files found in models--",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "Comfy-Org/ERNIE-Image",
+   "reason": "candidate",
+   "receipt_key": "mflux/Comfy-Org/ERNIE-Image-q8",
+   "run_id": 717,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "mflux:Comfy-Org/Qwen-Image-2.1",
    "decided_at": "2026-11-04T05:51:26Z",
    "detail": "it ran and passed nothing: fox-snow: exit 1: FileNotFoundError: No safetensors files found in transformer; geneval-000-single-object: exit 1: FileNotFoundError: No safetensors files found in model",
@@ -223,6 +253,21 @@
    "serves": false,
    "status": "rejected",
    "tier": "adopt",
+   "until": ""
+  },
+  {
+   "candidate": "mflux:jimmycarter/krea2-turbo-bbox",
+   "decided_at": "2026-11-06T02:05:52Z",
+   "detail": "it ran and passed nothing: fox-snow: exit 1: FileNotFoundError: No safetensors files found in vae; geneval-000-single-object: exit 1: FileNotFoundError: No safetensors files found in models--j",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "jimmycarter/krea2-turbo-bbox",
+   "reason": "candidate",
+   "receipt_key": "mflux/jimmycarter/krea2-turbo-bbox-q8",
+   "run_id": 716,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
    "until": ""
   },
   {
@@ -361,8 +406,8 @@
   },
   {
    "candidate": "mflux:filipstrand/Z-Image-Turbo-mflux-4bit",
-   "decided_at": "2026-11-04T13:05:46Z",
-   "detail": "5.5 GiB would take this run past its 40 GiB budget (36.7 GiB already fetched)",
+   "decided_at": "2026-11-05T13:06:47Z",
+   "detail": "5.5 GiB would take this run past its 40 GiB budget (39.9 GiB already fetched)",
    "exam": {
     "about": "4bit, by filipstrand",
     "candidate": "mflux/filipstrand/Z-Image-Turbo-mflux-4bit-q8",
@@ -398,21 +443,21 @@
   },
   {
    "candidate": "mflux:szwagros/Lens-Turbo",
-   "decided_at": "2026-11-05T03:36:23Z",
-   "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: fox-snow: exit 1: huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local disk and outgoing traffic has been disabled. To enable repo look-ups and downloads online, set 'HF_HUB_OFFLINE=0' as environment variable.; gene",
+   "decided_at": "2026-11-06T02:16:07Z",
+   "detail": "not screened: needs 14.6 GB but only 1.8 GB is safely available (19.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
    "exam": null,
    "outcome": "queued",
    "proposal": "szwagros/Lens-Turbo",
-   "reason": "harness",
+   "reason": "memory",
    "receipt_key": "mflux/szwagros/Lens-Turbo-q8",
-   "run_id": 701,
+   "run_id": null,
    "serves": false,
    "status": "pending",
    "tier": "screen",
-   "until": ""
+   "until": "room_gb:>14.6"
   }
  ],
- "cursor": 1793849783895202,
+ "cursor": 1793931485528880,
  "events": [
   {
    "at": "2026-09-18T22:18:09Z",
@@ -2575,6 +2620,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-05T03:22:45Z",
+   "candidate": "Comfy-Org/Boogu-Image",
+   "chosen": null,
+   "detail": "not screened: needs 19.6 GB but only 5.1 GB is safely available (23.1 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1793848965702269,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-05T03:36:23Z",
    "candidate": "mflux:szwagros/Lens-Turbo",
    "chosen": null,
@@ -2587,6 +2647,66 @@
    "outcome": "queued",
    "reason": "harness",
    "run_id": 701,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-06T02:05:52Z",
+   "candidate": "mflux:jimmycarter/krea2-turbo-bbox",
+   "chosen": null,
+   "detail": "it ran and passed nothing: fox-snow: exit 1: FileNotFoundError: No safetensors files found in vae; geneval-000-single-object: exit 1: FileNotFoundError: No safetensors files found in models--j",
+   "how": "",
+   "id": 1793930752334560,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 716,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-06T02:05:59Z",
+   "candidate": "mflux:Comfy-Org/ERNIE-Image",
+   "chosen": null,
+   "detail": "it ran and passed nothing: fox-snow: exit 1: FileNotFoundError: No safetensors files found in transformer; geneval-000-single-object: exit 1: FileNotFoundError: No safetensors files found in models--",
+   "how": "",
+   "id": 1793930759705268,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 717,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-06T02:16:07Z",
+   "candidate": "szwagros/Lens-Turbo",
+   "chosen": null,
+   "detail": "not screened: needs 14.6 GB but only 1.8 GB is safely available (19.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1793931367309538,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-06T02:18:05Z",
+   "candidate": "mflux:Comfy-Org/Boogu-Image",
+   "chosen": null,
+   "detail": "it ran and passed nothing: fox-snow: exit 1: FileNotFoundError: No safetensors files found in transformer; geneval-000-single-object: exit 1: FileNotFoundError: No safetensors files found in models--",
+   "how": "",
+   "id": 1793931485528880,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 721,
    "tier": "screen"
   }
  ],
@@ -2850,7 +2970,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-05T08:00:17Z",
+ "generated_at": "2026-11-06T02:54:09Z",
  "knobs": [],
  "lane": {
   "cases": 584,
