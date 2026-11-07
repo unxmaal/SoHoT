@@ -1,6 +1,45 @@
 {
  "candidates": [
   {
+   "candidate": "hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6",
+   "decided_at": "2026-11-07T06:29:12Z",
+   "detail": "ocr: beats osocr/auto on the lane's metric, 21 gained against 5 lost, p=0.00; comparison 2 on this holdout, so alpha 0.05/2 = 0.0250; dev: 41 gained, 9 lost, p=0.00; confirmed on 213 dev case(s): 41 g",
+   "exam": {
+    "about": "",
+    "candidate": "hf-ocr/PaddleOCR-VL-1.6",
+    "cases": 448,
+    "first_s": 19.746,
+    "median_s": 7.476,
+    "metrics": {
+     "busy_wait_s": 64.006,
+     "cer": 0.8116,
+     "engine_rerun_wait_s": 64.006
+    },
+    "model": "hf-ocr/PaddleOCR-VL-1.6",
+    "not_run": "",
+    "pass_rate": 0.784,
+    "passed": 279,
+    "peak_gb": 0.01,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-07T06:29:12Z",
+    "served_as": "",
+    "source": "",
+    "total": 356,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "measured",
+   "proposal": "PaddlePaddle/PaddleOCR-VL-1.6",
+   "reason": "candidate",
+   "receipt_key": "hf-ocr/PaddleOCR-VL-1.6",
+   "run_id": 715,
+   "serves": true,
+   "status": "adopted",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
    "candidate": "hf-ocr:JustANormalTinkerer/hayai-ocr-v2",
    "decided_at": "2026-10-07T15:16:27Z",
    "detail": "needs its own runner: the stock loader could not assemble it: ocr-invoice-line: exit 3: needs its own runner: JustANormalTinkerer/hayai-ocr-v2 ships its own modelling code (trust_remote_code), which hf-task never executes",
@@ -31,45 +70,6 @@
    "until": "policy:trust_remote_code@unlimited_ocr"
   },
   {
-   "candidate": "hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6",
-   "decided_at": "2026-10-22T01:41:41Z",
-   "detail": "3 case(s) passed a screen",
-   "exam": {
-    "about": "",
-    "candidate": "hf-ocr/PaddleOCR-VL-1.6",
-    "cases": 448,
-    "first_s": 19.746,
-    "median_s": 7.61,
-    "metrics": {
-     "busy_wait_s": 64.006,
-     "cer": 2.1308,
-     "engine_rerun_wait_s": 64.006
-    },
-    "model": "hf-ocr/PaddleOCR-VL-1.6",
-    "not_run": "",
-    "pass_rate": 0.519,
-    "passed": 68,
-    "peak_gb": 0.01,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-05T08:00:11Z",
-    "served_as": "",
-    "source": "",
-    "total": 131,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "screened",
-   "proposal": "PaddlePaddle/PaddleOCR-VL-1.6",
-   "reason": "candidate",
-   "receipt_key": "hf-ocr/PaddleOCR-VL-1.6",
-   "run_id": 536,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
    "candidate": "osocr:auto",
    "decided_at": "",
    "detail": "",
@@ -78,21 +78,21 @@
     "candidate": "osocr/auto",
     "cases": 448,
     "first_s": 0.304,
-    "median_s": 0.302,
+    "median_s": 0.303,
     "metrics": {
-     "cer": 0.5278
+     "cer": 0.2104
     },
     "model": "osocr/auto",
     "not_run": "",
-    "pass_rate": 0.046,
-    "passed": 6,
+    "pass_rate": 0.649,
+    "passed": 231,
     "peak_gb": 0.25,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-05T08:00:11Z",
+    "run_at": "2026-11-07T06:29:12Z",
     "served_as": "",
     "source": "",
-    "total": 131,
+    "total": 356,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -107,7 +107,7 @@
    "until": ""
   }
  ],
- "cursor": 1792633301840676,
+ "cursor": 1794032952814914,
  "events": [
   {
    "at": "2026-10-06T02:09:51Z",
@@ -303,6 +303,21 @@
    "reason": "candidate",
    "run_id": 536,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-07T06:29:12Z",
+   "candidate": "hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6",
+   "chosen": null,
+   "detail": "ocr: beats osocr/auto on the lane's metric, 21 gained against 5 lost, p=0.00; comparison 2 on this holdout, so alpha 0.05/2 = 0.0250; dev: 41 gained, 9 lost, p=0.00; confirmed on 213 dev case(s): 41 g",
+   "how": "measured",
+   "id": 1794032952814914,
+   "incumbent": "osocr:auto",
+   "kind": "adoption",
+   "knob": "",
+   "outcome": "measured",
+   "reason": "candidate",
+   "run_id": 715,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -316,22 +331,22 @@
      "about": "",
      "candidate": "hf-ocr/PaddleOCR-VL-1.6",
      "first_s": 19.746,
-     "median_s": 7.61,
+     "median_s": 7.476,
      "metrics": {
       "busy_wait_s": 64.006,
-      "cer": 2.1308,
+      "cer": 0.8116,
       "engine_rerun_wait_s": 64.006
      },
      "model": "hf-ocr/PaddleOCR-VL-1.6",
      "not_run": "",
-     "pass_rate": 0.519,
-     "passed": 68,
+     "pass_rate": 0.784,
+     "passed": 279,
      "peak_gb": 0.01,
      "reference": false,
-     "run_at": "2026-11-05T08:00:11Z",
+     "run_at": "2026-11-07T06:29:12Z",
      "served_as": "",
      "source": "",
-     "total": 131,
+     "total": 356,
      "ttft_median_s": null,
      "ttft_p95_s": null
     },
@@ -339,25 +354,25 @@
      "about": "",
      "candidate": "osocr/auto",
      "first_s": 0.304,
-     "median_s": 0.302,
+     "median_s": 0.303,
      "metrics": {
-      "cer": 0.5278
+      "cer": 0.2104
      },
      "model": "osocr/auto",
      "not_run": "",
-     "pass_rate": 0.046,
-     "passed": 6,
+     "pass_rate": 0.649,
+     "passed": 231,
      "peak_gb": 0.25,
      "reference": false,
-     "run_at": "2026-11-05T08:00:11Z",
+     "run_at": "2026-11-07T06:29:12Z",
      "served_as": "",
      "source": "",
-     "total": 131,
+     "total": 356,
      "ttft_median_s": null,
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-11-05T08:00:11Z",
+   "run_at": "2026-11-07T06:29:12Z",
    "runs": 2
   },
   {
@@ -506,7 +521,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-05T08:00:21Z",
+ "generated_at": "2026-11-07T08:04:22Z",
  "knobs": [],
  "lane": {
   "cases": 448,
@@ -521,21 +536,23 @@
  },
  "schema_version": 2,
  "served": {
-  "adopted": false,
-  "adopted_at": "",
-  "adopted_how": "",
-  "incumbent": "",
-  "measured_at": "2026-11-05T08:00:11Z",
-  "median_s": 0.302,
+  "adopted": true,
+  "adopted_at": "2026-11-07T06:29:12Z",
+  "adopted_how": "measured",
+  "incumbent": "osocr:auto",
+  "measured_at": "2026-11-07T06:29:12Z",
+  "median_s": 7.476,
   "metrics": {
-   "cer": 0.5278
+   "busy_wait_s": 64.006,
+   "cer": 0.8116,
+   "engine_rerun_wait_s": 64.006
   },
   "not_run": "",
   "parked": "",
   "parked_until": "",
-  "pass_rate": 0.046,
-  "serves": "osocr:auto",
-  "serves_model": "osocr:auto",
+  "pass_rate": 0.784,
+  "serves": "hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6",
+  "serves_model": "hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6",
   "stale": false
  },
  "since": 0
