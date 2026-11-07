@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import ast
+import functools
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -33,6 +34,12 @@ def py_files(roots, root: Path = REPO):
 
 def code_modules(root: Path = REPO) -> dict[str, str]:
     """Every module under the code roots: dotted name -> source."""
+    return dict(_code_modules(Path(root)))
+
+
+@functools.cache
+def _code_modules(root: Path) -> dict[str, str]:
+    """Read once a process: walking every case directory under evals/ is most of the scan's time. #1571."""
     return {module_name(p, root): p.read_text(encoding="utf-8")
             for p in py_files(CODE_ROOTS, root)}
 

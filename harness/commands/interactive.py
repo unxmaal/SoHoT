@@ -4,6 +4,7 @@ from __future__ import annotations
 import math
 import time
 
+from harness import serve_lease
 from harness.commands.common import emit, note
 
 #: The owner's LAN target for decide and extract, warm (KB decision #1035).
@@ -14,7 +15,7 @@ QUESTION = "Is the sky blue on a clear day?"
 PROMPT = "From: 'the build failed at 14:02 with exit code 2'. Reply with the exit code only."
 CODE_PROMPT = "Write a Python function that returns the sum of a list of numbers. Reply with the code only."
 #: Lanes TARGET_P95_S holds; the code lane is timed and reported beside them (#1570).
-TARGETED = ("decide", "extract")
+TARGETED = serve_lease.TARGET_LANES
 
 
 def p95(seconds: list[float]) -> float | None:

@@ -72,13 +72,16 @@ jobs:
       - run: bash scripts/ci-retry.sh uv sync --python 3.12
 
       - name: Which tests this change can reach
-        # The fast path runs the test files the change reaches by import or name, plus the ratchets (#1567).
+        # The fast path runs the tests the change reaches (nightly coverage map, else import or name) and the ratchets (#1567, #1571).
         if: env.SOHOT_FAST_PATH == '1'
         env:
           BASE_REF: ${{ github.base_ref }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           listing="$RUNNER_TEMP/selected.txt"
-          if ! uv run python -m tests.gauntlet.scope --base "origin/$BASE_REF" --out "$listing"; then
+          map="$RUNNER_TEMP/coverage-map.json"
+          uv run python -m tests.gauntlet.covmap fetch --out "$map" || echo "::warning::no coverage map; tracing by import"
+          if ! uv run python -m tests.gauntlet.scope --base "origin/$BASE_REF" --map "$map" --out "$listing"; then
             echo "::warning::test selection failed; running the full suite"
             rm -f "$listing"
           fi
@@ -454,8 +457,46 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
+  coverage-map:
+    # Which test files execute each function, for choosing a pull request's tests; the PR job downloads it (#1571).
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: macos-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Tools make check needs
+        run: brew install shellcheck librsvg
+
+      - run: bash scripts/ci-retry.sh uv sync --python 3.12
+
+      - name: Every test under coverage, one context per test
+        # check-macos gates on the same tests; a failing test still records what it executed.
+        continue-on-error: true
+        env:
+          SOHOT_COVERAGE_MAP: "1"
+        run: >-
+          uv run --group mcp pytest tests/ -q -n auto -p no:cacheprovider
+          --cov=harness --cov=evals --cov=gateway --cov=tests --cov-context=test --cov-report=
+
+      - name: Reduce it to the map
+        run: uv run python -m tests.gauntlet.covmap build --data .coverage --out coverage-map.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-map
+          path: coverage-map.json
+          retention-days: 7
+
   report-nightly:
-    needs: [check-macos, check-linux, check-windows, mutation]
+    needs: [check-macos, check-linux, check-windows, mutation, coverage-map]
     if: failure() && github.event_name == 'schedule'
     runs-on: ubuntu-latest
     permissions:
@@ -465,7 +506,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          RESULTS: "macos=${{ needs.check-macos.result }} linux=${{ needs.check-linux.result }} windows=${{ needs.check-windows.result }} mutation=${{ needs.mutation.result }}"
+          RESULTS: "macos=${{ needs.check-macos.result }} linux=${{ needs.check-linux.result }} windows=${{ needs.check-windows.result }} mutation=${{ needs.mutation.result }} coverage-map=${{ needs.coverage-map.result }}"
         run: |
           title="Nightly CI is failing on main"
           body="$RESULTS at ${GITHUB_SHA::7}: $RUN"

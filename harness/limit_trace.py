@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import ast
+import functools
 import re
 from pathlib import Path
 
@@ -27,6 +28,12 @@ def _knob_param(name: str | None) -> bool:
 
 def names_in(text: str, rel: str) -> list[tuple[str, str]]:
     """(name, rel:line) for each knob or site a module hands to a cut: a cuts call, a *_knob name, argument or default, a --*-knob option."""
+    return list(_names_in(text, rel))
+
+
+@functools.cache
+def _names_in(text: str, rel: str) -> tuple:
+    """By source text, so the ratchets that rescan the tree analyse each file once a process. #1571."""
     out = []
     for node in ast.walk(ast.parse(text)):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -51,7 +58,7 @@ def names_in(text: str, rel: str) -> list[tuple[str, str]]:
         for kw in node.keywords:
             if _knob_param(kw.arg) or (option and kw.arg == "default"):
                 out += [(t, f"{rel}:{node.lineno}") for t in _texts(kw.value)]
-    return out
+    return tuple(out)
 
 
 def _texts(node) -> list[str]:
@@ -76,6 +83,11 @@ def _name_arg(node):
 
 def unnamed_in(text: str, rel: str) -> list[str]:
     """rel:line of each cuts call whose name is neither a literal nor a *_knob variable, which no scan can read."""
+    return list(_unnamed_in(text, rel))
+
+
+@functools.cache
+def _unnamed_in(text: str, rel: str) -> tuple:
     out = []
     for node in ast.walk(ast.parse(text)):
         if not isinstance(node, ast.Call):
@@ -87,7 +99,7 @@ def unnamed_in(text: str, rel: str) -> list[str]:
         if name is not None and (_texts(name) or (isinstance(name, ast.Name) and _knob_param(name.id))):
             continue
         out.append(f"{rel}:{node.lineno}")
-    return out
+    return tuple(out)
 
 
 def _modules(root):
