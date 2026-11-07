@@ -207,7 +207,8 @@ def test_a_server_listening_with_a_key_is_asked_and_warmed_with_it(pinned, tmp_p
 def test_an_interactive_node_renders_only_the_interactive_unit_listening_with_a_key(tmp_path):
     env = {k: v for k, v in os.environ.items() if not k.startswith("LH_WATCHDOG_") and k != "LH_ROLE"}
     env.update(LH_ROLE="interactive", LOCALHARNESS_HOME=str(tmp_path / "home"), LLAMACPP_HOST="0.0.0.0",
-               LLAMACPP_API_KEY_FILE=str(tmp_path / "key"), INTERACTIVE_LANES="decide,extract")
+               LLAMACPP_API_KEY_FILE=str(tmp_path / "key"), INTERACTIVE_LANES="decide,extract",
+               LLAMACPP_BIN=str(tmp_path / "llama-b11960" / "llama-server"))
     out = tmp_path / "out"
     proc = subprocess.run([shells.BASH, str(GEN), "generate", str(out)], capture_output=True, text=True, env=env)
     assert proc.returncode == 0, proc.stderr
@@ -216,6 +217,8 @@ def test_an_interactive_node_renders_only_the_interactive_unit_listening_with_a_
     got = units["interactive"]["EnvironmentVariables"]
     assert (got["LLAMACPP_HOST"], got["INTERACTIVE_LANES"]) == ("0.0.0.0", "decide,extract")
     assert got["LLAMACPP_API_KEY_FILE"] == str(tmp_path / "key")
+    # A node can pin the llama.cpp build its scheduler serves.
+    assert got["LLAMACPP_BIN"] == str(tmp_path / "llama-b11960" / "llama-server")
     # Kept for a later plain install, like the role itself.
     env = {k: v for k, v in env.items() if k not in ("LH_ROLE", "LLAMACPP_HOST", "INTERACTIVE_LANES")}
     proc = subprocess.run([shells.BASH, str(GEN), "generate", str(tmp_path / "again")], capture_output=True,

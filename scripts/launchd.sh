@@ -214,7 +214,7 @@ _watchdog_env() {
   local var val vars
   case "$1" in
     watchdog) vars="LH_WATCHDOG_ACT LH_WATCHDOG_FILE" ;;
-    interactive) vars="LLAMACPP_HOST LLAMACPP_API_KEY_FILE INTERACTIVE_LANES" ;;
+    interactive) vars="LLAMACPP_HOST LLAMACPP_API_KEY_FILE INTERACTIVE_LANES LLAMACPP_BIN" ;;
     fetch) vars="LH_DAY_FETCH" ;;
     review) vars="LH_REVIEW_FILE" ;;
     *) return 0 ;;
