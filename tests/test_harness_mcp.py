@@ -255,6 +255,94 @@ def test_an_extra_host_can_be_allowed():
     assert any("other-host.local:8899" == h for h in s.allowed_hosts)
 
 
+def _has_ipv6_loopback() -> bool:
+    import socket
+    try:
+        with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+            s.bind(("::1", 0))
+    except OSError:
+        return False
+    return True
+
+
+needs_ipv6 = pytest.mark.skipif(not _has_ipv6_loopback(), reason="this host has no IPv6 loopback")
+
+
+@needs_ipv6
+def test_a_host_header_naming_the_ipv6_loopback_passes_the_rebinding_allowlist():
+    """A client that resolves `localhost` to ::1 sends `Host: [::1]:8899`; the allowlist is an exact match."""
+    import asyncio
+
+    from mcp.server.transport_security import TransportSecurityMiddleware
+    from starlette.requests import Request
+
+    guard = TransportSecurityMiddleware(mcp_server.transport_security("0.0.0.0", 8899))
+
+    def refused(host):
+        scope = {"type": "http", "method": "GET", "headers": [(b"host", host.encode())]}
+        return asyncio.run(guard.validate_request(Request(scope)))
+
+    assert refused("[::1]:8899") is None
+    assert refused("[::1]") is None
+    assert refused("[::2]:8899").status_code == 421  # the guard is still on for anything else
+
+
+@needs_ipv6
+@pytest.mark.parametrize("host", ["0.0.0.0", "127.0.0.1"])
+def test_the_server_accepts_a_connection_on_127_0_0_1_and_on_the_ipv6_loopback(host):
+    """`lsof` showed `IPv4 *:8899` only, so `http://localhost:8899` refused when localhost resolved to ::1."""
+    import socket
+
+    import uvicorn
+
+    socks = mcp_server.bind_sockets(uvicorn.Config(lambda *a: None, host=host, port=0))
+    try:
+        port = socks[0].getsockname()[1]
+        for sock in socks:
+            sock.listen()
+        for family, addr in ((socket.AF_INET, "127.0.0.1"), (socket.AF_INET6, "::1")):
+            with socket.socket(family, socket.SOCK_STREAM) as client:
+                client.settimeout(2)
+                client.connect((addr, port))  # ConnectionRefusedError names the family that is not listening
+    finally:
+        for sock in socks:
+            sock.close()
+
+
+def test_the_ipv6_listener_is_the_loopback_only_not_the_lan(monkeypatch):
+    """`::` would open the server to the LAN's IPv6 addresses, which the IPv4 bind never promised."""
+    import uvicorn
+
+    socks = mcp_server.bind_sockets(uvicorn.Config(lambda *a: None, host="0.0.0.0", port=0))
+    try:
+        v6 = [s.getsockname()[0] for s in socks if s.family.name == "AF_INET6"]
+        assert v6 in ([], ["::1"])
+    finally:
+        for sock in socks:
+            sock.close()
+
+
+def test_a_host_with_no_ipv6_loopback_keeps_the_ipv4_listener(monkeypatch, capsys):
+    import socket
+
+    import uvicorn
+
+    real = socket.socket
+
+    def no_ipv6(family=socket.AF_INET, *a, **kw):
+        if family == socket.AF_INET6:
+            raise OSError(97, "Address family not supported by protocol")
+        return real(family, *a, **kw)
+
+    monkeypatch.setattr(socket, "socket", no_ipv6)
+    socks = mcp_server.bind_sockets(uvicorn.Config(lambda *a: None, host="0.0.0.0", port=0))
+    try:
+        assert [s.family.name for s in socks] == ["AF_INET"]
+    finally:
+        for sock in socks:
+            sock.close()
+
+
 def test_a_job_comes_back_as_fields_not_json_in_a_string():
     """The consumer is an agent. Without a declared return type the SDK sends
     the dict as a JSON blob inside a text block and structured_content is None,

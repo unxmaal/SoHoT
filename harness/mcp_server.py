@@ -502,7 +502,8 @@ def transport_security(host: str, port: int, extra=()):
     """
     from mcp.server.transport_security import TransportSecuritySettings
 
-    names = ["localhost", "127.0.0.1", _local_hostname(), *extra]
+    # `[::1]` is how a client writes the IPv6 loopback in a Host header: `localhost` resolves to it first on some machines
+    names = ["localhost", "127.0.0.1", "[::1]", _local_hostname(), *extra]
     if host not in ("0.0.0.0", "::", ""):
         names.append(host)
     allowed = []
@@ -561,10 +562,40 @@ def serve(host: str, port: int, allow=(), grace: float = SHUTDOWN_GRACE_S) -> No
     app = SERVER.streamable_http_app(transport_security=transport_security(host, port, allow), host=host)
     config = uvicorn.Config(app, host=host, port=port, log_level=SERVER.settings.log_level.lower(),
                             timeout_graceful_shutdown=max(1, round(grace)))
-    sock = config.bind_socket()
+    socks = bind_sockets(config)
     for line in stale_report(port, pid=os.getpid()):
         print(line, file=sys.stderr, flush=True)
-    uvicorn.Server(config).run(sockets=[sock])
+    uvicorn.Server(config).run(sockets=socks)
+
+
+def bind_sockets(config) -> list:
+    """The listener for `config`, plus one on ::1 when it binds IPv4 only.
+
+    `localhost` resolves to ::1 first on some machines, and a client that is refused there reports the server as
+    down while it is up. The second listener is the IPv6 loopback and nothing wider: `::` would also open the
+    server to the LAN's IPv6 addresses, which the IPv4 bind never promised. A host with no IPv6 loopback keeps the
+    IPv4 listener alone.
+    """
+    import socket
+
+    sock = config.bind_socket()
+    if config.host not in ("0.0.0.0", "127.0.0.1"):
+        return [sock]
+    loopback = None
+    try:
+        loopback = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        loopback.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        loopback.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+        # port 0 asks for any free port: the IPv4 listener's is the one to repeat
+        loopback.bind(("::1", sock.getsockname()[1]))
+        loopback.set_inheritable(True)
+    except OSError as e:
+        if loopback is not None:
+            loopback.close()
+        print(f"mcp   no listener on [::1]:{sock.getsockname()[1]} ({e}); a client that resolves localhost to ::1 "
+              "will be refused", file=sys.stderr, flush=True)
+        return [sock]
+    return [sock, loopback]
 
 
 def stale_report(port: int, pid: int, procs=None, probes=None) -> list[str]:
