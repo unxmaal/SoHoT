@@ -20,15 +20,20 @@ def url() -> str:
     return f"{LLAMACPP_URL.rsplit(':', 1)[0]}:{port}" if port.isdigit() else LLAMACPP_URL
 
 
-def _get(path: str, base: str = "") -> dict:
+def _auth(key: str) -> dict:
+    return {"Authorization": f"Bearer {key}"} if key else {}
+
+
+def _get(path: str, base: str = "", key: str = "") -> dict:
+    req = urllib.request.Request((base or url()) + path, headers=_auth(key))
     with cuts.timeout("harness/router.py:TIMEOUT", f"router GET {path}"):
-        with urllib.request.urlopen((base or url()) + path, timeout=TIMEOUT) as r:
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
             return json.loads(r.read() or b"{}")
 
 
-def _post(path: str, body: dict, base: str = "") -> dict:
+def _post(path: str, body: dict, base: str = "", key: str = "") -> dict:
     req = urllib.request.Request((base or url()) + path, data=json.dumps(body).encode(),
-                                 headers={"Content-Type": "application/json"},
+                                 headers={"Content-Type": "application/json", **_auth(key)},
                                  method="POST")
     with cuts.timeout("harness/router.py:TIMEOUT", f"router POST {path}"):
         with urllib.request.urlopen(req, timeout=TIMEOUT) as r:

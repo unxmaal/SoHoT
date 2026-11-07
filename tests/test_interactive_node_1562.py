@@ -185,6 +185,25 @@ def test_interactive_lanes_pins_only_those_lanes_and_names_the_rest(monkeypatch,
         interactive.here()
 
 
+def test_a_server_listening_with_a_key_is_asked_and_warmed_with_it(pinned, tmp_path, monkeypatch):
+    from harness import paths, router
+    keyfile = tmp_path / "node-api-key"
+    keyfile.write_text("﻿ab12\r\n", encoding="utf-8")
+    (paths.home() / interactive.KEY_ENV).write_text(f"{keyfile}\n", encoding="utf-8")
+    monkeypatch.delenv(interactive.KEY_ENV, raising=False)
+    assert interactive.key() == "ab12"
+    asked = []
+    monkeypatch.setattr(router, "_get", lambda path, base="", key="": asked.append((base + path, key)) or {
+        "data": [{"id": DECIDE, "status": {"value": "loaded"}}]})
+    monkeypatch.setattr(router, "_post", lambda path, body, base="", key="": asked.append((base + path, key)) or {})
+    assert interactive.health()["up"] is True
+    assert interactive.load([DECIDE], URL) == [DECIDE]
+    assert asked == [(f"{URL}/models", "ab12"), (f"{URL}/models/load", "ab12")]
+    assert router._auth("ab12") == {"Authorization": "Bearer ab12"} and router._auth("") == {}
+    monkeypatch.setenv(interactive.KEY_ENV, str(tmp_path / "missing"))
+    assert interactive.key() == ""
+
+
 def test_an_interactive_node_renders_only_the_interactive_unit_listening_with_a_key(tmp_path):
     env = {k: v for k, v in os.environ.items() if not k.startswith("LH_WATCHDOG_") and k != "LH_ROLE"}
     env.update(LH_ROLE="interactive", LOCALHARNESS_HOME=str(tmp_path / "home"), LLAMACPP_HOST="0.0.0.0",

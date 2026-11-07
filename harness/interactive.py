@@ -17,6 +17,8 @@ PORT_ENV = "INTERACTIVE_PORT"
 URL_ENV = "INTERACTIVE_URL"
 #: The lanes this machine pins, comma separated; another machine's interactive server answers the rest. #1562.
 LANES_ENV = "INTERACTIVE_LANES"
+#: scripts/serve-llamacpp.sh's key file for a server on a LAN address; launchd.sh keeps it in $LH_HOME by this name.
+KEY_ENV = "LLAMACPP_API_KEY_FILE"
 BUDGET_GB = 35.0
 #: Slots a pinned model gets when its lane has no request history here.
 SLOTS = 2
@@ -54,6 +56,30 @@ def here(environ=None) -> tuple[str, ...]:
     if stray:
         raise ValueError(f"{LANES_ENV} names {', '.join(stray)}; the interactive lanes are {', '.join(LANES)}")
     return tuple(lane for lane in LANES if lane in got)
+
+
+def key(environ=None) -> str:
+    """The key a LAN-listening server here demands: LLAMACPP_API_KEY_FILE, else the file an install kept; "" for none."""
+    from harness import paths
+    environ = os.environ if environ is None else environ
+    named = (environ.get(KEY_ENV) or "").strip()
+    if not named:
+        try:
+            named = (paths.home() / KEY_ENV).read_text(encoding="utf-8").strip()
+        except OSError:
+            return ""
+    try:
+        raw = Path(named).expanduser().read_text(encoding="utf-8-sig")
+    except OSError:
+        return ""
+    return "".join(raw.split())
+
+
+def _ask(base: str, get=None):
+    """get(path) for the interactive server at `base`: `get`, else one sending its key when it listens with one."""
+    from harness import router
+    secret = key()
+    return get or ((lambda path: router._get(path, base, secret)) if secret else None)
 
 
 def plan_path() -> Path:
@@ -237,7 +263,7 @@ def holds(lane: str, get=None) -> dict | None:
     if not entry:
         return None
     base = serving.bare(str(plan.get("url") or url()))
-    got = router.statuses(get, base=base)
+    got = router.statuses(_ask(base, get), base=base)
     if not got or got.get(entry["stem"]) not in router.RESIDENT:
         return None
     return {**entry, "url": base}
@@ -382,7 +408,7 @@ def health(plan: dict | None = None, get=None) -> dict:
     if not stems:
         return {"planned": False}
     base = serving.bare(str(plan.get("url") or url()))
-    got = router.statuses(get, base=base)
+    got = router.statuses(_ask(base, get), base=base)
     return {"planned": True, "url": base, "up": got is not None, "pinned": stems,
             "missing": [s for s in stems if (got or {}).get(s) not in router.RESIDENT]}
 
@@ -418,10 +444,11 @@ def finding(w) -> list:
 def load(stems, base: str, post=None) -> list[str]:
     """Ask the server to load each stem; the ones it took."""
     from harness import router
-    done = []
+    done, secret = [], key()
     for stem in stems:
         try:
-            (post or (lambda p, b: router._post(p, b, base)))("/models/load", {"model": stem})
+            (post or (lambda p, b: router._post(p, b, base, **({"key": secret} if secret else {}))))(
+                "/models/load", {"model": stem})
         except Exception as exc:  # noqa: BLE001 - one refused load leaves the rest to try
             print(f"interactive: {stem} did not load: {exc}", file=sys.stderr)
             continue
