@@ -12,6 +12,9 @@ PROBES = 20
 SCHEMA = {"answer": {"type": "enum", "choices": ["yes", "no"], "description": "whether the sky is blue on a clear day"}}
 QUESTION = "Is the sky blue on a clear day?"
 PROMPT = "From: 'the build failed at 14:02 with exit code 2'. Reply with the exit code only."
+CODE_PROMPT = "Write a Python function that returns the sum of a list of numbers. Reply with the code only."
+#: Lanes TARGET_P95_S holds; the code lane is timed and reported beside them (#1570).
+TARGETED = ("decide", "extract")
 
 
 def p95(seconds: list[float]) -> float | None:
@@ -20,12 +23,14 @@ def p95(seconds: list[float]) -> float | None:
     return got[math.ceil(0.95 * len(got)) - 1] if got else None
 
 
-def probe(n: int = PROBES, decide=None, complete=None, sample=None, busy=None, clock=time.perf_counter) -> dict:
-    """n warm decide and extract calls each after one untimed warm-up, with pressure and the lock's holder at every call."""
+def probe(n: int = PROBES, decide=None, complete=None, sample=None, busy=None, clock=time.perf_counter,
+          code=None) -> dict:
+    """n warm decide, extract and code calls each after one untimed warm-up, with pressure and the lock's holder at every call."""
     from harness import delegate, pressure
     decide = decide or (lambda: delegate.decide(QUESTION, SCHEMA))
     complete = complete or (lambda: delegate.complete("extract", PROMPT))
-    calls = {"decide": decide, "extract": complete}
+    code = code or (lambda: delegate.complete("code", CODE_PROMPT))
+    calls = {"decide": decide, "extract": complete, "code": code}
     sample, busy = sample or pressure.sample, busy or delegate.busy
     rows: list[dict] = []
     for lane, call in calls.items():
@@ -52,7 +57,8 @@ def probe(n: int = PROBES, decide=None, complete=None, sample=None, busy=None, c
                        "pressure": sorted({r["pressure"] for r in timed if r["pressure"] is not None}),
                        "while_busy": sum(1 for r in timed if r["busy"]),
                        "served": sorted({str(r.get("spec")) for r in timed if r.get("spec")})}
-    ok = all(v["errors"] == 0 and v["p95_s"] is not None and v["p95_s"] < TARGET_P95_S for v in lanes.values())
+    ok = all(v["errors"] == 0 and v["p95_s"] is not None and v["p95_s"] < TARGET_P95_S
+             for lane, v in lanes.items() if lane in TARGETED)
     return {"ok": ok, "target_p95_s": TARGET_P95_S, "lanes": lanes, "rows": rows}
 
 
