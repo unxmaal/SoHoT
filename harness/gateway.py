@@ -112,8 +112,14 @@ def served(config=None, defaults=None, nodes=None) -> dict:
         from harness import adopt
         defaults = adopt.lane_defaults()
     added = []
-    from harness import methods
+    from harness import interactive, methods
+    held = interactive.pinned()
     for lane in TEXT_LANES:
+        if lane in held:
+            # A pinned lane is answered by the interactive server, which evals never load into. #1561.
+            added.append({"model_name": LANE_ALIAS.format(lane), serving.ENGINE_KEY: serving.LLAMACPP,
+                          "litellm_params": interactive.params(held[lane])})
+            continue
         spec = defaults.get(lane) or ""
         try:
             # A LiteLLM alias cannot run a method, so an adopted method's alias serves its base. #581.

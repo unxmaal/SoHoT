@@ -160,6 +160,8 @@ capabilities:
       - harness/engines.py
       - harness/nodes.py
       - harness/router.py
+      - harness/interactive.py
+      - harness/commands/interactive.py
       - harness/batch.py
       - harness/models.py
       - harness/mlx_server.py

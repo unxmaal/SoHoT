@@ -16,7 +16,7 @@ import urllib.request
 
 import httpx
 
-from harness import completion, context, cuts, exclusive, gateway, purpose, reasons, serving
+from harness import completion, context, cuts, exclusive, gateway, interactive, purpose, reasons, serving
 
 #: Lanes a delegated completion may name: the ones the gateway aliases as sohot-<lane>.
 LANES = gateway.TEXT_LANES
@@ -49,7 +49,9 @@ def route(lane: str, chosen: str | None = None, via: str = "") -> tuple[str, ser
     if methods.is_method(spec) and not methods.text_method(spec):
         raise Refused(f"the {lane} lane serves {spec}, which draws with an image engine "
                       f"rather than answering in text; run `soh svg` for it")
-    return spec, serving.route(methods.base_of(spec) or spec, via)
+    # A lane the interactive server holds is answered there, never on the eval router. #1561.
+    pinned = None if chosen or via or methods.is_method(spec) else interactive.route(lane)
+    return pinned or (spec, serving.route(methods.base_of(spec) or spec, via))
 
 
 def generate(spec: str, where: serving.Route, lane: str, prompt: str,
@@ -140,9 +142,10 @@ def counter(spec: str):
     return completion.token_counter(*where) if where else None
 
 
-def _budget(spec: str, max_tokens: int, *texts: str) -> None:
-    ctx = context.served_ctx(spec)
-    counted = counter(spec) if ctx else None
+def _budget(spec: str, max_tokens: int, *texts: str, where=None) -> None:
+    pinned = interactive.upstream(where)
+    ctx = interactive.served_ctx(pinned[1]) if pinned else context.served_ctx(spec)
+    counted = (completion.token_counter(*pinned) if pinned else counter(spec)) if ctx else None
     most = cap(ctx, *texts, count=counted)
     if int(max_tokens) > most:
         if counted is None:
@@ -276,6 +279,9 @@ def loaded(where: serving.Route, get=None, config=None) -> bool | None:
 
 def _gate(where: serving.Route) -> bool | None:
     """Refuse a call that would load a model while another job holds the machine lock; its residency, None unasked."""
+    # The interactive server keeps its models whatever evals load: never wait, never yield. #1561.
+    if interactive.upstream(where):
+        return True
     try:
         base, _ = upstream(where)
     except Exception:  # noqa: BLE001
@@ -380,7 +386,7 @@ def complete(lane: str, prompt: str, system: str | None = None,
     spec, where = route(lane, model)
     from harness import methods
     base = methods.base_of(spec) or spec
-    _budget(base, max_tokens, prompt, system or completion.SYSTEM.get(lane, ""))
+    _budget(base, max_tokens, prompt, system or completion.SYSTEM.get(lane, ""), where=where)
     floored = timeout is None and TIMEOUT_S >= completion.timeout_for(int(max_tokens or 0))
     timeout = _allowance(where, max_tokens, timeout)
     started = time.perf_counter()
@@ -393,7 +399,7 @@ def complete(lane: str, prompt: str, system: str | None = None,
         try:
             # Each call of a method gets the whole cap and the thinking switch. #581.
             if label:
-                _budget(base, max_tokens, text, mine or completion.SYSTEM.get(modality, ""))
+                _budget(base, max_tokens, text, mine or completion.SYSTEM.get(modality, ""), where=where)
             if modality == "claims":
                 from harness.checks import claims
                 try:

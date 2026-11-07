@@ -96,7 +96,7 @@ SRC="${LH_REPO:-$REPO}"
 DEPLOY="${LH_DEPLOY:-$LH_HOME/deploy}"
 # `discover` is not a server. It is the scheduled sweep, and it is in this
 # list because the thing that must survive a reboot is the SCHEDULE. #261.
-SERVICES="gateway mlx eval tts mcp discover worker audit ds4 watchdog energy ledger morning claude-news otel canary sweep-check fetch delegations review deploy"
+SERVICES="interactive gateway mlx eval tts mcp discover worker audit ds4 watchdog energy ledger morning claude-news otel canary sweep-check fetch delegations review deploy"
 
 #: Services that RUN AND EXIT rather than serve, at fixed local hours. KeepAlive
 #: would rerun a finished sweep at once; StartInterval counts from load, so a day
@@ -280,8 +280,8 @@ _schedule() {
       return
     fi
   done
-  if [ "$service" = ds4 ]; then
-    # Restart on a crash, not after a clean "nothing to serve" exit. #611.
+  if [ "$service" = ds4 ] || [ "$service" = interactive ]; then
+    # Restart on a crash, not after a clean "nothing to serve" exit. #611, #1561.
     printf '  <key>RunAtLoad</key><true/>\n  <key>KeepAlive</key>\n  <dict><key>SuccessfulExit</key><false/></dict>\n'
     return
   fi
@@ -478,7 +478,7 @@ install_units() {
   local before
   before="$(_unit_sums)"
   generate "$AGENTS" >/dev/null
-  local failed="" deferred=""
+  local failed="" deferred="" refused=""
   local was="" pid
   for service in $(units); do
     # A bootout signals a periodic job mid-run, and the run is lost without a trace. #794.
@@ -487,6 +487,14 @@ install_units() {
     if [ -n "$pid" ]; then
       deferred="$deferred $service"
       echo "NOT reloading $PREFIX.$service: a run is live (pid $pid) and bootout would kill it" >&2
+      continue
+    fi
+    if [ "$service" = interactive ] && ! (cd "$DEPLOY" && uv run python -m harness.interactive check); then
+      # The pinned set must fit beside the largest eval pair, or it is not served at all. #1561.
+      if launchctl print "gui/$UID/$PREFIX.$service" >/dev/null 2>&1; then
+        launchctl bootout "gui/$UID/$PREFIX.$service"
+      fi
+      refused="$refused $service"
       continue
     fi
     if [ "$service" = worker ]; then
@@ -556,6 +564,10 @@ install_units() {
   local blocked=0
   if ! /bin/bash "$DEPLOY/scripts/lan-probe.sh"; then
     echo "the gateway is loaded but launchd cannot reach a serving node; see above" >&2
+    blocked=1
+  fi
+  if [ -n "$refused" ]; then
+    echo "refused:$refused -- the pinned set does not fit; see above" >&2
     blocked=1
   fi
   # A node with no machine fingerprint files every run it serves under no machine. #781.

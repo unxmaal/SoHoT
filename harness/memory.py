@@ -528,7 +528,8 @@ def check_model(repo: str, resident_gb: float = 0.0,
         return True, need
     if reserve_gb is None:
         reserve_gb = measured_reserve_gb()
-    free, ceiling = available_gb(), ceiling_gb()
+    free, whole = available_gb(), ceiling_gb()
+    ceiling = whole - pinned_gb()
     ok, why = fits(need, free, ceiling, resident_gb, reserve_gb)
     # The reserve decided it only when the weights fit without it. #1087.
     reserve_knob = ("harness/memory.py:DEFAULT_RESERVE_GB" if reserve_gb == DEFAULT_RESERVE_GB else
@@ -538,7 +539,7 @@ def check_model(repo: str, resident_gb: float = 0.0,
         from harness import cuts
         cuts.cut(reserve_knob, f"{repo}: {why}", value=reserve_gb, kept=0, dropped=1)
     if not ok and ceiling < free and need <= budget_gb(free, free, resident_gb, reserve_gb) \
-            and ceiling == total_gb() * GPU_FRACTION:
+            and whole == total_gb() * GPU_FRACTION:
         from harness import cuts
         cuts.cut("gpu_fraction", f"{repo}: {why}", kept=0, dropped=1)
     return ok, why
@@ -572,9 +573,15 @@ def need_gb(repo: str, quantize: int | None = None, spec: str = "",
     return need
 
 
+def pinned_gb() -> float:
+    """The working set the interactive server's pinned models hold for good. #1561."""
+    from harness import interactive
+    return interactive.reserved_bytes() / 1024 ** 3
+
+
 def room_gb() -> float:
     """What fits() would budget here now with nothing resident: the quantity `room_gb:>n` reads. #928."""
-    return budget_gb(available_gb(), ceiling_gb(), 0.0, measured_reserve_gb())
+    return budget_gb(available_gb(), ceiling_gb() - pinned_gb(), 0.0, measured_reserve_gb())
 
 
 def wait_for(repo: str, spec: str = "", parallel: int = 0, resident_gb: float = 0.0,

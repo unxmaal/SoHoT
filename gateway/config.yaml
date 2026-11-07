@@ -82,6 +82,8 @@ model_list:
   - model_name: Qwen3-4B-Instruct-2507-Q4_K_M
     source_repo: unsloth/Qwen3-4B-Instruct-2507-GGUF
     source_file: Qwen3-4B-Instruct-2507-Q4_K_M.gguf
+    # interactive_for: the MLX lane model this GGUF stands in for on the interactive server. #1561.
+    interactive_for: mlx-community/Qwen3-4B-Instruct-2507-4bit
     litellm_params: &eval4b
       model: openai/Qwen3-4B-Instruct-2507-Q4_K_M
       api_base: http://127.0.0.1:8082/v1
@@ -97,6 +99,7 @@ model_list:
   - model_name: Qwen2.5-7B-Instruct-Q4_K_M
     source_repo: bartowski/Qwen2.5-7B-Instruct-GGUF
     source_file: Qwen2.5-7B-Instruct-Q4_K_M.gguf
+    interactive_for: mlx-community/Qwen2.5-7B-Instruct-4bit
     litellm_params: &eval7b
       model: openai/Qwen2.5-7B-Instruct-Q4_K_M
       api_base: http://127.0.0.1:8082/v1

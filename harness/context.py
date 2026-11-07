@@ -485,6 +485,9 @@ def plan(conn, budget: int | None = None, slots: int = 1,
         raise
     except Exception:  # noqa: BLE001
         beside = 0
+    from harness import interactive
+    # The interactive server's pinned set is resident for good, so evals plan around it. #1561.
+    beside += interactive.reserved_bytes()
     rows = router_rows(conn)
     sizes = [_weights(r["path"]) for r in rows]
     k = max(min(models_max, len(sizes)), 1)

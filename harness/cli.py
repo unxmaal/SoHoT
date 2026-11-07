@@ -40,6 +40,7 @@ from harness.commands import kb_filter as kb_filter_cmd
 from harness.commands import day as day_cmd
 from harness.commands import hold as hold_cmd
 from harness.commands import decline as decline_cmd
+from harness.commands import interactive as interactive_cmd
 from harness.commands import degenerate as degenerate_cmd
 from harness.commands import deploy as deploy_cmd
 from harness.commands import floors as floors_cmd
@@ -990,6 +991,11 @@ def build_parser() -> argparse.ArgumentParser:
     hld.add_argument("--until", default="", metavar="WHEN",
                      help="benchmarks: end the hold at the next local HH:MM or at YYYY-MM-DD[T]HH:MM")
     hld.set_defaults(func=hold_cmd.cmd_hold)
+    pin = sub.add_parser("interactive", help="the pinned interactive server: its plan, health, and warm decide and "
+                         "extract p95 against the 10 s target, with pressure at every call. #1561")
+    pin.add_argument("action", nargs="?", default="plan", choices=("plan", "health", "probe"))
+    pin.add_argument("-n", type=int, default=interactive_cmd.PROBES, help="probe: timed calls per lane")
+    pin.set_defaults(func=interactive_cmd.cmd_interactive)
     dep = sub.add_parser("deploy", help="deploys as queue jobs: each green main commit built alongside, switched, "
                          "verified or rolled back, day-only. #1506")
     dep.add_argument("action", nargs="?", default="status",
