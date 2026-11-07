@@ -211,9 +211,11 @@ _NEEDS_TARGET = ("requires ctx_other",)
 #: What a newer llama.cpp can add. #953.
 _LLAMACPP_GAPS = ("unknown model architecture", "unknown pre-tokenizer type", "invalid ggml type")
 _DIFFUSERS_LAYOUT_GAPS = ("can't find a pipeline linked to", "were passed")
+#: mlx-lm's and mflux's words for a weights directory the repo's layout lacks. #951, #1545.
+NO_SAFETENSORS = ("no safetensors found", "no safetensors files found")
 #: A lane's runner that cannot open the repo's layout: a runner gap, never a fault of the repo. #951.
 _RUNNER_LAYOUT_GAPS = ("does not appear to have a file named model_index.json",
-                       "no safetensors found", "could not determine model type",
+                       *NO_SAFETENSORS, "could not determine model type",
                        # scripts/acestep_generate.py's own exit for a checkpoint ACE-Step cannot build.
                        "dit init failed")
 _NO_PIPELINE_CLASS = re.compile(r"has no attribute \w+pipeline\b")
