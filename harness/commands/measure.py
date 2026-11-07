@@ -9,7 +9,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from evals import watch
-from harness import lanes, methods, paths, reasons
+from harness import lanes, methods, paths, reasons, runs
 from harness.commands.common import emit, err, note
 from harness.commands import jobs as jobs_cmd
 
@@ -291,15 +291,13 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
 
     name = row["name"]
     lane = lane_for(row, getattr(a, "lane", ""))
+    dry = bool(getattr(a, "dry_run", False))
     if not methods.runs_in(name, lane):
         print(f"  {name}: its method does not run the {lane} lane, so it is not measured there (#1134)", flush=True)
         return 0
-    store = ms.connect()
-    try:
-        spec = candidates.for_proposal(store, lane, name,
-                                       row.get("attaches_to") or "")
-    finally:
-        store.close()
+    with runs.store() as store:
+        spec = (screen.candidate_for(lane, name, row.get("attaches_to") or "", conn=store) if dry else
+                candidates.for_proposal(store, lane, name, row.get("attaches_to") or ""))
     if not spec:
         return err(f"{name}: screened in the {lane} lane and no candidate "
                    f"spec can be built for it")
@@ -311,7 +309,7 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
     inc_spec = screen.candidate_for(lane, incumbent) or incumbent
     zero = _zero_pass(lane, inc_spec)
     if zero:
-        taken = take_measured(lane, inc_spec, zero)
+        taken = take_measured(lane, inc_spec, zero, dry_run=dry)
         if taken is not None:
             incumbent, zero = taken.challenger, None
             inc_spec = screen.candidate_for(lane, incumbent) or incumbent
@@ -319,7 +317,8 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         # An adopted winner is the incumbent; measuring it against itself
         # wrote `declined` for the lane's own default. #393.
         print(f"  {name}: already the {lane} lane's default ({spec})")
-        _settle(name, "measured", f"{lane}: already the lane's default")
+        if not dry:
+            _settle(name, "measured", f"{lane}: already the lane's default")
         return 0
     unscreened = _screen_refusal(a, lane, spec)
     if unscreened:
@@ -345,11 +344,14 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
     blank = None if held else adopt.undecidable(lane, inc_spec, spec, plan, split)
     if blank is not None:
         print(f"\n  {lane}: {name} against {incumbent}: not run, {blank.why}", flush=True)
-        _record_unrun(blank, spec)
+        if not dry:
+            _record_unrun(blank, spec)
         return 0
     if sweep is not None and sweep.remaining() <= 0:
         print(f"  {name}: not started, the sweep ceiling is reached; it waits for the next sweep", flush=True)
         return 0
+    if dry:
+        return _dry_argv(lane, name, incumbent, plan, held, inc_spec, spec)
     started, spans = time.time(), 1
     while True:
         for _ in range(2):
@@ -515,17 +517,13 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
 
     from evals.run import STOCHASTIC_MODALITIES
     from harness import adopt, holdout, power, weedout
-    from harness import memory_store as ms
 
     split = holdout.for_lane(lane)
     settings = _settings(lane, inc_spec, spec)
-    store = ms.connect()
-    try:
+    with runs.store() as store:
         draws, median_s, calls, est = priced(store, lane, inc_spec, spec)
         alpha = adopt.alpha_for(adopt.comparisons(store, lane, split.version))
         secs = weedout.seconds_of(store, lane, inc_spec)
-    finally:
-        store.close()
     estimated = ""
     if est["incumbent_source"] == "estimated":
         estimated = (f"seconds per call estimated at {est['incumbent_s']:.0f}s: no incumbent "
@@ -619,7 +617,6 @@ def _stored_cells(lane: str, inc_spec: str, spec: str, side: str, repeat: int) -
     """reuse.plan of the incumbent's cells on `side` that stored draws under its identity cover. #1094."""
     from evals import run
     from harness import holdout, reuse
-    from harness import memory_store as ms
     try:
         cases = run.load_selected(run.parse_args(["--modality", lane]))
     except SystemExit as exc:
@@ -629,11 +626,8 @@ def _stored_cells(lane: str, inc_spec: str, spec: str, side: str, repeat: int) -
     if not ident["digest"]:
         return {"digest": "", "unresolved": ident["unresolved"]}
     cells = [c.id for c in run.expand_cases(on, repeat)]
-    store = ms.connect()
-    try:
+    with runs.store() as store:
         return reuse.plan(store, lane, ident["digest"], cells, cases=ident["cases"], parts=ident["parts"])
-    finally:
-        store.close()
 
 
 def _with_reuse(plan, lane: str, inc_spec: str, est: dict, side: str, spec: str = ""):
@@ -751,16 +745,12 @@ def _screen_refusal(a, lane: str, spec: str) -> str:
     """Why a repo pairing waits for the challenger's repo screen, or ""; a held pause resumes. #1353."""
     from evals import repo_screen
     from harness import identity, paused
-    from harness import memory_store as ms
     if lane != repo_screen.LANE or getattr(a, "unscreened", False):
         return ""
-    store = ms.connect()
-    try:
+    with runs.store() as store:
         if paused.find(store, lane, spec):
             return ""
         return repo_screen.refusal(store, [spec], identity.lane_cases(lane))
-    finally:
-        store.close()
 
 
 def _slice(plan, elapsed: float):
@@ -818,16 +808,12 @@ def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False,
 def _held(lane: str, inc_spec: str, spec: str, split, name: str, sweep):
     """(the pairing's live pause if it may resume, the identity a resume needs); a changed exam is reported stale. #813."""
     from harness import knobs, paused, watchdog
-    from harness import memory_store as ms
     ident = paused.identity(lane, inc_spec, _settings(lane, inc_spec, spec), knobs.settings(lane),
                             split.version)
-    store = ms.connect()
-    try:
+    with runs.store() as store:
         held = paused.find(store, lane, spec)
         found = None if held else paused.abandoned(store, paths.home() / "runs", lane, inc_spec, spec)
         stopped = bool(held) and watchdog.overrun_stopped(store, held["out"])
-    finally:
-        store.close()
     if stopped:
         _ended(name, held, held["out"], sweep)
         return None, ident
@@ -867,9 +853,23 @@ def _ended(name: str, held, out, sweep) -> int:
     return err(f"{name}: {why}")
 
 
+def _dry_argv(lane: str, name: str, incumbent: str, plan, held, inc_spec: str, spec: str) -> int:
+    """`soh adopt --dry-run`: the first slice's evals.run argv, printed and never launched. #1548."""
+    from harness import screen
+    out = (Path(held["out"]) if held else paths.home() / "runs"
+           / f"{time.strftime('%Y%m%d-%H%M%S')}-adopt-{lane}")
+    argv = _argv(lane, _slice(plan, 0.0)[0], out, inc_spec, spec, resume=bool(held), unscreened=lane == "repo")
+    route = screen.routed_gateway(name)
+    print(f"\n  {lane}: {name} against {incumbent} (dry run: nothing launched, nothing recorded)")
+    print(f"    {' '.join(argv + (['--gateway', route] if route else []))}", flush=True)
+    return 0
+
+
 def _settle_pause(pause_id: int, state: str, why: str) -> None:
     from harness import paused
     from harness import memory_store as ms
+    if ms.lent() is not None:
+        return
     store = ms.connect()
     try:
         paused.settle(store, pause_id, state, why)

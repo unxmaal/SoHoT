@@ -1026,7 +1026,7 @@ def build_parser() -> argparse.ArgumentParser:
     ado.add_argument("--from-measurement", action="store_true",
                      help="with --lane: a typed incumbent that passed none of its stored cases gives way to the "
                           "best measured local candidate on the current exam, if it wins the paired gate (#1110)")
-    ado.add_argument("--dry-run", action="store_true", help="with --from-measurement: say it, record nothing")
+    ado.add_argument("--dry-run", action="store_true", help="print the plan and argv; run and record nothing (#1548)")
     ado.add_argument("--confirm", type=int, default=None, metavar="VERDICT",
                      help="run a held holdout win's dev confirmation and adopt or decline it; the adopt step "
                           "queues this for the night (#725)")
