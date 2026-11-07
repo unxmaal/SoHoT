@@ -597,8 +597,11 @@ def check(conn, *, now: float | None = None, facts: dict | None = None, lane: st
     settled = settle(conn, now=now, write=not dry_run, add=add, resumed=resumed)
     planned = plan(conn, now=now, facts=facts, lane=lane)
     queued = []
-    if not dry_run:
+    from harness import hold
+    held = hold.active(conn, now)
+    if not dry_run and held is None:
         for entry in planned:
             if entry["triggers"] and not entry["skip"]:
                 queued.append(_queue(conn, entry, now, add or wq.add))
-    return {"settled": settled, "resumed": resumed, "planned": planned, "queued": queued, "dry_run": dry_run}
+    return {"settled": settled, "resumed": resumed, "planned": planned, "queued": queued, "dry_run": dry_run,
+            "held": hold.line(held, now) if held else ""}

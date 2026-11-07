@@ -457,7 +457,9 @@ def needs(r: dict) -> list[str]:
         out.append(f"the {h['lane']} lane cannot generate: {h['spec']} at {h['base']} says its generation thread "
                    "died; the watchdog restarts the mlx unit, or run `scripts/launchd.sh restart mlx`")
     loop = r["sweep"].get("loop")
-    if loop is None or not loop["in_window"]:
+    if r.get("hold"):
+        out.append(f"{r['hold']}; no sweep or measurement job starts until soh hold release")
+    elif loop is None or not loop["in_window"]:
         out.append("no discovery sweep ran last night")
     elif loop["status"] == "stalled":
         out.append(f"the sweep stalled: {loop['line']}")
@@ -538,6 +540,8 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "runtimes": runtimes(conn, since), "techniques": techniques(conn, since),
          "monitor": monitor(since) if monitor else None, "deploys": deploys_since(conn, since),
          "pulls": pulls(now) if pulls else None}
+    from harness import hold
+    r["hold"] = hold.held(conn, now)
     if r["sweep"]["loop"] is not None:
         from harness import heartbeat
         r["sweep"]["loop"]["code_moved"] = heartbeat.code_moved(beat, r["deploy"].get("head", ""))

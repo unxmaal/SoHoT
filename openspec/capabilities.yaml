@@ -9,6 +9,8 @@ capabilities:
       - harness/workqueue.py
       - harness/commands/jobs.py
       - harness/exclusive.py
+      - harness/hold.py
+      - harness/commands/hold.py
 
   - name: watchdog
     summary: The periodic judge of running jobs and served models, acting from a fixed set and recording each act.
@@ -90,6 +92,7 @@ capabilities:
       - harness/discover.py
       - harness/commands/discover.py
       - harness/commands/discover_why.py
+      - harness/commands/decline.py
       - harness/feeds.py
       - harness/papers.py
       - harness/posts.py

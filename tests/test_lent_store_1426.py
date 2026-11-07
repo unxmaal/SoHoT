@@ -81,7 +81,7 @@ MODIFIERS = {
     "inventory time --no-effort", "inventory time --hours", "inventory weight --no-ci", "inventory weight --markdown",
     "context --main-only",
     "morning --no-model", "claude-news --no-record", "benchmarks --force", "benchmarks --passages",
-    "cases --reextract", "jobs --night", "disk --yes", "fetch --hold-router", "adopt --unscreened",
+    "cases --reextract", "jobs --night", "jobs --despite-hold","disk --yes", "fetch --hold-router", "adopt --unscreened",
     "judge --all-machines", "ask --live-home", "spans --live-home", "kb-filter --no-model", "kb-filter --rebuild",
     "kb-filter --strict",
 }

@@ -8,11 +8,11 @@ import subprocess
 import sys
 from datetime import datetime, time as dtime, timedelta
 
-RUNNING, STALLED, EXITED, FINISHED, EARLY, NEVER, UNLOADED, UNKNOWN, UNSUPPORTED = (
+RUNNING, STALLED, EXITED, FINISHED, EARLY, NEVER, UNLOADED, UNKNOWN, UNSUPPORTED, HELD = (
     "running", "stalled", "exited", "finished", "finished_early", "never_started", "not_loaded", "unknown",
-    "unsupported")
+    "unsupported", "held")
 #: Verdicts a healthy night gives; every other one notifies, once per change.
-QUIET = (RUNNING, FINISHED, UNSUPPORTED)
+QUIET = (RUNNING, FINISHED, UNSUPPORTED, HELD)
 CRITERION = "sweep_check"
 SUBJECT = "discover sweep"
 SERVICE = "discover"
@@ -131,8 +131,8 @@ def verdict(unit: dict | None, beat: dict | None, now: float, start: float, aliv
                                        f"{heartbeat.ago(age)} ago"}
 
 
-def check(now: float | None = None, unit=None, beat=None, hours=None, alive=None) -> dict:
-    """One reading: launchd, heartbeat, tonight's start and the verdict; every read injectable."""
+def check(now: float | None = None, unit=None, beat=None, hours=None, alive=None, held: str = "") -> dict:
+    """One reading: launchd, heartbeat, tonight's start and the verdict; every read injectable; `held` is a benchmark hold's line."""
     import time
 
     from harness import heartbeat
@@ -141,6 +141,8 @@ def check(now: float | None = None, unit=None, beat=None, hours=None, alive=None
     beat = heartbeat.read() if beat is None else beat
     start = tonight(now, heartbeat.discover_hours() if hours is None else hours)
     got = verdict(unit, beat, now, start, alive=alive)
+    if held and got["verdict"] in (NEVER, UNLOADED):
+        got = {"verdict": HELD, "line": f"no sweep by design: {held}"}
     keep = ("state", "pid", "started", "updated", "finished", "rc", "error", "tier", "step", "total", "candidate")
     return {**got, "at": now, "start": start, "launchd": unit,
             "heartbeat": {k: (beat or {}).get(k) for k in keep} if beat else None}

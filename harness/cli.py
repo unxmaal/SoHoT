@@ -38,6 +38,8 @@ from harness.commands import common
 from harness.commands import context as context_cmd
 from harness.commands import kb_filter as kb_filter_cmd
 from harness.commands import day as day_cmd
+from harness.commands import hold as hold_cmd
+from harness.commands import decline as decline_cmd
 from harness.commands import degenerate as degenerate_cmd
 from harness.commands import deploy as deploy_cmd
 from harness.commands import floors as floors_cmd
@@ -896,6 +898,11 @@ def build_parser() -> argparse.ArgumentParser:
                      "(YYYY-MM-DD or 'YYYY-MM-DD HH:MM'). #1293")
     bla.add_argument("--against", default="", help="report: an earlier audit's directory, printed beside this one")
     bla.set_defaults(func=blame_cmd.cmd_blame)
+    dcl = sub.add_parser("decline", help="the owner declines a candidate by name: terminal, never retested, never "
+                         "fetched or screened again, nor its runner bases. #1564")
+    dcl.add_argument("repo", help="the proposal's name or resolved repo, e.g. szwagros/Lens-Turbo")
+    dcl.add_argument("said", nargs="*", help='who declined it and why, e.g. "owner: not wanted"')
+    dcl.set_defaults(func=decline_cmd.cmd_decline)
     prop = sub.add_parser("propose", help="file a technique a person names, for the next triage to read (#993)")
     prop.add_argument("url", help="the post, paper or page describing the technique")
     prop.add_argument("--title", default="", help="its title; without one the page is fetched for it")
@@ -966,6 +973,8 @@ def build_parser() -> argparse.ArgumentParser:
                       help="add: run here instead of the deploy checkout. #645")
     jobs.add_argument("--not-before", default="", metavar="WHEN",
                       help="add: start no earlier than the next local HH:MM, or a local YYYY-MM-DD[T]HH:MM[:SS]. #900, #1297")
+    jobs.add_argument("--despite-hold", action="store_true",
+                      help="add: may start while benchmarks are held (soh hold). #1564")
     jobs.add_argument("--night", action="store_true",
                       help="add: start no earlier than the night window discovery runs in; with --not-before, the first night moment after it. #900, #1347")
     jobs.set_defaults(func=jobs_cmd.cmd_jobs, show_help=jobs.print_help)
@@ -973,6 +982,14 @@ def build_parser() -> argparse.ArgumentParser:
     day.add_argument("action", choices=("clear", "status", "revoke"))
     day.add_argument("said", nargs="*", help='clear: who cleared it and why, e.g. "owner: the #1110 baseline"')
     day.set_defaults(func=day_cmd.cmd_day)
+    hld = sub.add_parser("hold", help="hold benchmarking: no sweep, reverify or measurement job starts until "
+                         "released; deploys and serving still run. #1564")
+    hld.add_argument("action", choices=("benchmarks", "release", "status", "let"))
+    hld.add_argument("said", nargs="*", help='benchmarks: who holds it and why, e.g. "owner: the #1558 rebuild"; '
+                     "let: a job id")
+    hld.add_argument("--until", default="", metavar="WHEN",
+                     help="benchmarks: end the hold at the next local HH:MM or at YYYY-MM-DD[T]HH:MM")
+    hld.set_defaults(func=hold_cmd.cmd_hold)
     dep = sub.add_parser("deploy", help="deploys as queue jobs: each green main commit built alongside, switched, "
                          "verified or rolled back, day-only. #1506")
     dep.add_argument("action", nargs="?", default="status",

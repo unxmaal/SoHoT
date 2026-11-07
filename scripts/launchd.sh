@@ -586,10 +586,21 @@ _sum_of() {
   printf '%s\n' "$2" | awk -F= -v s="$1" '$1 == s {print $2; exit}'
 }
 
+# print-disabled says "label" => disabled (macOS 13+) or => true (older).
+_disabled() {
+  launchctl print-disabled "gui/$UID" 2>/dev/null |
+    awk -v l="\"$1\"" '$1 == l && ($3 == "disabled" || $3 == "true") {f = 1} END {exit !f}'
+}
+
 # bootout first so `install` is re-runnable: bootstrap on an already-loaded label fails.
 _reload() {
   launchctl bootout "gui/$UID/$PREFIX.$1" 2>/dev/null || true
   _await_unload "$PREFIX.$1" || true
+  # `launchctl disable` is someone's deliberate choice, not a failed load. #1564.
+  if _disabled "$PREFIX.$1"; then
+    echo "NOT loading $PREFIX.$1: launchctl disable is in force. Re-enable with: launchctl enable gui/$UID/$PREFIX.$1 && scripts/launchd.sh install" >&2
+    return 0
+  fi
   if launchctl bootstrap "gui/$UID" "$AGENTS/$PREFIX.$1.plist"; then
     echo "loaded $PREFIX.$1"
     return 0

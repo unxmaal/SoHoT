@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 89
+SCHEMA_VERSION = 90
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -287,7 +287,9 @@ CREATE TABLE IF NOT EXISTS jobs (
     -- Epoch before which the worker leaves this job alone; NULL means as soon as it can. #900.
     not_before   REAL,
     -- 1 when not_before is the night start (--night), which a day clearance lifts. #1112.
-    night_gate   INTEGER NOT NULL DEFAULT 0
+    night_gate   INTEGER NOT NULL DEFAULT 0,
+    -- 1 when the owner let this measurement job start through a benchmark hold. #1564.
+    despite_hold INTEGER NOT NULL DEFAULT 0
 );
 
 -- One technique proposal triaged once: into a method (a registered one, or a drafted template), or left wanted. #993.
@@ -370,6 +372,19 @@ CREATE TABLE IF NOT EXISTS day_clearances (
     said         TEXT NOT NULL,
     until        REAL NOT NULL,
     revoked_at   REAL
+);
+
+-- The owner's hold on benchmarking: no sweep, reverify or measurement job starts while one is in force. #1564.
+CREATE TABLE IF NOT EXISTS holds (
+    id           INTEGER PRIMARY KEY,
+    machine_id   INTEGER REFERENCES machines(id),
+    kind         TEXT NOT NULL,
+    held_at      REAL NOT NULL,
+    -- Who held it and why, as given to `soh hold`.
+    said         TEXT NOT NULL,
+    -- NULL holds until released.
+    until        REAL,
+    released_at  REAL
 );
 
 -- One deploy of a main commit through the work queue: built alongside, switched, verified or rolled back. #1506.

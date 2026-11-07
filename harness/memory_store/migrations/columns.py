@@ -233,6 +233,12 @@ def _add_job_night_gate(conn) -> None:
         conn.execute("ALTER TABLE jobs ADD COLUMN night_gate INTEGER NOT NULL DEFAULT 0")
 
 
+def _add_job_despite_hold(conn) -> None:
+    """jobs.despite_hold on an older store. #1564."""
+    if "despite_hold" not in _columns(conn, "jobs"):
+        conn.execute("ALTER TABLE jobs ADD COLUMN despite_hold INTEGER NOT NULL DEFAULT 0")
+
+
 def _add_request_purpose(conn) -> None:
     """gateway_requests.purpose on an older store; every earlier row is 'unknown'. #825."""
     if "purpose" not in _columns(conn, "gateway_requests"):
