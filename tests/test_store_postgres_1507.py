@@ -564,7 +564,7 @@ def test_the_container_the_switch_and_the_owner_name_the_same_postgres(tmp_path)
 
 
 #: Tests still red on Postgres when this was counted (#1507); the inventory may only shrink.
-POSTGRES_KNOWN_PIN = 251
+POSTGRES_KNOWN_PIN = 245
 
 
 def test_the_tests_still_red_on_postgres_only_shrink():

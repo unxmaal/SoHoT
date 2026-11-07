@@ -97,7 +97,9 @@ def _own_store():
         return None
     if store.backend() == store.POSTGRES:
         conn = store.postgres_connect()
-        if store.has_table(conn, TABLE):
+        has = store.has_table(conn, TABLE)
+        conn.commit()
+        if has:
             return conn
         conn.close()
         return None

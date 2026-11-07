@@ -9,6 +9,8 @@ services:
       POSTGRES_USER: discovery
       POSTGRES_DB: discovery
       POSTGRES_PASSWORD: ${SOHOT_PG_PASSWORD:?run through soh store pg-up, which reads the Keychain}
+      # Byte order, as SQLite sorts text; a locale collation would put 'best' before 'OmniSVG'.
+      POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"
     ports:
       - "127.0.0.1:${SOHOT_PG_PORT:-5433}:5432"
     volumes:

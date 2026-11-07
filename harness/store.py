@@ -472,6 +472,11 @@ class PostgresConnection:
             cur2.execute("RELEASE SAVEPOINT sohot_statement")
         return cur
 
+    @property
+    def in_transaction(self) -> bool:
+        from psycopg.pq import TransactionStatus
+        return self._conn.info.transaction_status in (TransactionStatus.INTRANS, TransactionStatus.INERROR)
+
     def executemany(self, sql: str, rows):
         for row in rows:
             self.execute(sql, row)

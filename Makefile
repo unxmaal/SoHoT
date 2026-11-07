@@ -66,7 +66,7 @@ metrics:                  ## the four DORA numbers, from git and gh
 test-postgres:            ## the whole suite on a REAL Postgres, in docker (#1507)
 	@docker rm -f $(PG_TEST) >/dev/null 2>&1 || true
 	@docker run -d --name $(PG_TEST) -e POSTGRES_PASSWORD=test \
-	  -e POSTGRES_USER=discovery -e POSTGRES_DB=discovery \
+	  -e POSTGRES_USER=discovery -e POSTGRES_DB=discovery -e POSTGRES_INITDB_ARGS="--locale=C --encoding=UTF8" \
 	  -p 127.0.0.1::5432 $(PG_IMAGE) -c max_connections=500 -c fsync=off >/dev/null
 	@for i in $$(seq 1 30); do \
 	  docker exec $(PG_TEST) pg_isready -U discovery >/dev/null 2>&1 && break; \

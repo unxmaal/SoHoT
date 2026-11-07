@@ -169,7 +169,7 @@ jobs:
       - name: Start Postgres
         run: |
           bin="$(brew --prefix postgresql@16)/bin"
-          "$bin/initdb" -D "$RUNNER_TEMP/pg" -U discovery --auth=trust >/dev/null
+          "$bin/initdb" -D "$RUNNER_TEMP/pg" -U discovery --auth=trust --locale=C --encoding=UTF8 >/dev/null
           "$bin/pg_ctl" -D "$RUNNER_TEMP/pg" -l "$RUNNER_TEMP/pg.log" -w \
             -o "-c max_connections=500 -c fsync=off -p 5432 -k $RUNNER_TEMP" start
           "$bin/createdb" -h 127.0.0.1 -U discovery discovery
