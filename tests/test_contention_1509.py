@@ -91,15 +91,16 @@ def test_the_gate_says_each_change_of_decision_once(gate, monkeypatch):
 # --- the owner's hold, in place of soh day clear ---------------------------------------------------------
 
 def test_an_owner_hold_closes_the_gate_until_released_or_its_end(gate, capsys):
-    assert cli.main(["gate", "hold"]) != 0, "a hold says who and why"
-    assert cli.main(["gate", "hold", "owner:", "a", "video", "render"]) == 0
+    from harness import hold
+    assert cli.main(["hold", "gpu"]) != 0, "a hold says who and why"
+    assert cli.main(["hold", "gpu", "owner:", "a", "video", "render"]) == 0
     conn = ms.connect()
     v = contention.verdict(conn)
-    assert not v["open"] and v["why"] == "held by the owner: owner: a video render (soh gate release)"
+    assert not v["open"] and v["why"] == "held by the owner: owner: a video render (soh hold release gpu)"
     capsys.readouterr()
-    assert cli.main(["gate"]) == 0 and "held: owner: a video render, until a release" in capsys.readouterr().out
-    assert cli.main(["gate", "release"]) == 0 and contention.verdict(conn)["open"]
-    contention.hold("owner: lunch", until=time.time() + 60)
+    assert cli.main(["gate"]) == 0 and "gpu held since" in capsys.readouterr().out
+    assert cli.main(["hold", "release", "gpu"]) == 0 and contention.verdict(conn)["open"]
+    hold.hold(conn, "owner: lunch", until=time.time() + 60, scope=hold.GPU)
     assert not contention.verdict(conn)["open"] and contention.verdict(conn, time.time() + 61)["open"]
     with pytest.raises(SystemExit):
         cli.main(["day", "clear", "owner: all day"])

@@ -840,7 +840,9 @@ def _contention(w: World) -> list[Finding]:
         if s.orphan or s.elapsed_s is None or not _on_gpu(w, s) or not contention.batch(s.detail):
             continue
         since = w.now - s.elapsed_s
-        seen = [(a, at) for a, at in c["requests"] if at >= since]
+        # A client the eval already yielded to was served; pausing for it too would hold measurement twice. #1558.
+        seen = [(a, at) for a, at in c["requests"]
+                if at >= since and not any(serve_lease.during_yield(r, at, w.now) for r in s.runs())]
         if c["hold"] is None and not seen:
             continue
         by: dict = {}

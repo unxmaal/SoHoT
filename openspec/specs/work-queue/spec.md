@@ -217,8 +217,26 @@ Test: tests/test_workqueue_start_900.py::test_a_job_queued_for_the_night_at_15_r
 - **THEN** one pass of the service never asks the gate and the job stays pending
 Test: tests/test_workqueue_start_900.py::test_the_worker_does_not_wake_for_a_job_that_is_not_due
 
+### Requirement: One owner hold, by scope
+The owner's hold SHALL be one row per hold in `holds`, its kind the scope: `benchmarks` holds measurement jobs, sweeps, reverifies and fetches; `gpu` holds every batch GPU job and deploy and pauses a running one. `soh hold status` SHALL show every scope in force; a bare `soh hold release` SHALL be refused while more than one scope is held, so one release never lifts another; an unknown scope SHALL be refused. A `queue/hold` file left by `soh gate hold` SHALL read as a gpu hold until `soh hold release gpu` removes it, and `soh gate hold|release` SHALL name `soh hold gpu`.
+
+#### Scenario: Each scope holds its own jobs
+- **WHEN** benchmarks are held, then gpu too, then gpu is released
+- **THEN** only the measurement job waits, then no GPU job starts, then the GPU job starts and the measurement job still waits
+Test: tests/test_hold_scopes_1558.py::test_each_scope_holds_its_own_jobs
+
+#### Scenario: A bare release with both held
+- **WHEN** both scopes are held and the owner releases with no scope
+- **THEN** it is refused naming both, and releasing gpu leaves benchmarks held
+Test: tests/test_hold_scopes_1558.py::test_a_bare_release_is_refused_while_both_scopes_are_held
+
+#### Scenario: A hold file from before
+- **WHEN** a `queue/hold` file is left by `soh gate hold`
+- **THEN** it holds GPU work until released, and the release removes it
+Test: tests/test_hold_scopes_1558.py::test_a_hold_file_left_by_soh_gate_hold_still_holds_gpu_work_until_released
+
 ### Requirement: GPU jobs and deploys wait for the contention gate
-A GPU job or a deploy SHALL start only when no owner hold is in force, memory pressure is normal and no client request the gateway answered (purpose work or unknown) ended inside the last `contention_idle` seconds; a held deploy SHALL let nothing start ahead of it, a cloud job and a job a client waits on (requested through the MCP) SHALL never be held, and the worker SHALL say each change of the gate's decision once.
+A GPU job or a deploy SHALL start only when no owner hold of scope `gpu` (`soh hold gpu`) is in force, memory pressure is normal and no client request the gateway answered (purpose work or unknown) ended inside the last `contention_idle` seconds; a held deploy SHALL let nothing start ahead of it, a cloud job and a job a client waits on (requested through the MCP) SHALL never be held, and the worker SHALL say each change of the gate's decision once.
 
 #### Scenario: Memory pressure
 - **WHEN** a GPU job is pending at memory warn, then at normal

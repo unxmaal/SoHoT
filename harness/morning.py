@@ -441,8 +441,10 @@ def needs(r: dict) -> list[str]:
         out.append(f"the {h['lane']} lane cannot generate: {h['spec']} at {h['base']} says its generation thread "
                    "died; the watchdog restarts the mlx unit, or run `scripts/launchd.sh restart mlx`")
     loop = r["sweep"].get("loop")
+    if r.get("gpu_hold"):
+        out.append(f"{r['gpu_hold']}; no batch GPU job or deploy starts until soh hold release gpu")
     if r.get("hold"):
-        out.append(f"{r['hold']}; no sweep or measurement job starts until soh hold release")
+        out.append(f"{r['hold']}; no sweep or measurement job starts until soh hold release benchmarks")
     elif loop is None or not loop["in_window"]:
         out.append("no discovery sweep ran last night")
     elif loop["status"] == "stalled":
@@ -525,7 +527,7 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "monitor": monitor(since) if monitor else None, "deploys": deploys_since(conn, since),
          "pulls": pulls(now) if pulls else None}
     from harness import hold
-    r["hold"] = hold.held(conn, now)
+    r["hold"], r["gpu_hold"] = hold.held(conn, now), hold.held(conn, now, hold.GPU)
     if r["sweep"]["loop"] is not None:
         from harness import heartbeat
         r["sweep"]["loop"]["code_moved"] = heartbeat.code_moved(beat, r["deploy"].get("head", ""))

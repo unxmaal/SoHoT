@@ -99,6 +99,8 @@ class Watch:
     yield_since_case_s: float = 0.0
     yielding_since: float | None = None
     yielding_to: str = ""
+    #: [start, end] of each yield, so the watchdog does not pause a run for a client it already yielded to. #1558.
+    yield_spans: list = field(default_factory=list)
     cuts: list = field(default_factory=list)
     changed: object = None
 
@@ -150,6 +152,7 @@ class Watch:
             self.yields += 1
             self.yield_s += span
             self.yield_since_case_s += span
+            self.yield_spans.append([start, start + span])
             self.yielding_since, self.yielding_to = None, ""
             self.yielder.between()
             _hidden(mark)
@@ -165,7 +168,8 @@ class Watch:
         """This run's yields to serving so far, for progress.json and the run's evidence. #1556."""
         return {"count": self.yields, "seconds": round(self.yield_s, 3),
                 "since_case_s": round(self.yield_since_case_s, 3),
-                "yielding_since": self.yielding_since, "to": self.yielding_to, "cut": list(self.cuts)}
+                "yielding_since": self.yielding_since, "to": self.yielding_to, "cut": list(self.cuts),
+                "spans": [list(x) for x in self.yield_spans]}
 
     def lap(self, key: str) -> float:
         wall = max(0.0, clock() - self.began)

@@ -1,11 +1,9 @@
 """The contention gate in place of the night rule: GPU work runs when no hold, normal memory and idle served lanes. #1509."""
 from __future__ import annotations
 
-import json
 import time
-from pathlib import Path
 
-from harness import paths, purpose
+from harness import purpose
 
 #: Seconds the served lanes must go with no client request before a GPU job or a deploy starts. #1509.
 IDLE_S = 600.0
@@ -17,44 +15,6 @@ CRITERION = "contention"
 SERVING = ("mcp",)
 
 _said = ""
-
-
-def _hold_path() -> Path:
-    d = paths.home() / "queue"
-    d.mkdir(parents=True, exist_ok=True)
-    return d / "hold"
-
-
-def hold(said: str, until: float | None = None, now: float | None = None) -> dict:
-    """The owner's word that GPU jobs keep off this machine, until `until` or a release."""
-    said, now = " ".join((said or "").split()), time.time() if now is None else now
-    if not said:
-        raise ValueError('a hold says who holds the machine and why, e.g. soh gate hold "owner: a video render"')
-    if until is not None and until <= now:
-        raise ValueError("a hold's end is already past")
-    got = {"said": said, "at": now, "until": until}
-    _hold_path().write_text(json.dumps(got), encoding="utf-8")
-    return got
-
-
-def held(now: float | None = None) -> dict | None:
-    """The hold in force at now, or None; an unreadable hold file is a hold, so a torn write never opens the gate."""
-    path, now = _hold_path(), time.time() if now is None else now
-    if not path.exists():
-        return None
-    try:
-        got = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
-        return {"said": f"unreadable hold file {path}: {exc}", "at": None, "until": None}
-    until = got.get("until")
-    return None if until is not None and float(until) <= now else got
-
-
-def release() -> dict | None:
-    """End the hold; the one that was in force, or None."""
-    got = held()
-    _hold_path().unlink(missing_ok=True)
-    return got
 
 
 def requests(conn, since: float) -> list[tuple[str, float]]:
@@ -76,21 +36,22 @@ def served(conn, since: float) -> dict:
 
 
 def reading(conn, now: float) -> dict:
-    """What the watchdog judges a running job by: the hold and the requests of the last IDLE_S."""
-    return {"hold": held(now), "requests": requests(conn, now - IDLE_S)}
+    """What the watchdog judges a running job by: the gpu hold and the requests of the last IDLE_S."""
+    from harness import hold
+    return {"hold": hold.active(conn, now, hold.GPU), "requests": requests(conn, now - IDLE_S)}
 
 
 def verdict(conn, now: float | None = None, sample=None) -> dict:
     """Whether a GPU job may start now, why, and each signal read."""
-    from harness import cuts, pressure
+    from harness import cuts, hold, pressure
     now = time.time() if now is None else now
     p = (sample or pressure.sample)()
-    hold_now = held(now)
+    hold_now = hold.active(conn, now, hold.GPU) if conn is not None else hold._legacy(now)
     use = served(conn, now - IDLE_S) if conn is not None else {"requests": None, "by_alias": {}, "last": None}
     got = {"open": False, "pressure_level": p.level, "served": use["requests"], "by_alias": use["by_alias"],
            "last_served": use["last"], "hold": hold_now, "idle_s": IDLE_S}
     if hold_now is not None:
-        return {**got, "why": f"held by the owner: {hold_now['said']} (soh gate release)"}
+        return {**got, "why": f"held by the owner: {hold_now['said']} ({hold.RELEASE} {hold.GPU})"}
     if p.alarming:
         return {**got, "why": f"memory pressure level {p.level}, not normal"}
     if use["requests"]:

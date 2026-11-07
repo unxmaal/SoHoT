@@ -1002,25 +1002,24 @@ def build_parser() -> argparse.ArgumentParser:
     jobs.add_argument("--night", action="store_true",
                       help="add: ignored since #1509; GPU jobs wait for the contention gate (soh gate), not the night")
     jobs.set_defaults(func=jobs_cmd.cmd_jobs, show_help=jobs.print_help)
-    hld = sub.add_parser("hold", help="hold benchmarking: no sweep, reverify or measurement job starts until "
-                         "released; deploys and serving still run. #1564")
-    hld.add_argument("action", choices=("benchmarks", "release", "status", "let"))
-    hld.add_argument("said", nargs="*", help='benchmarks: who holds it and why, e.g. "owner: the #1558 rebuild"; '
-                     "let: a job id")
+    hld = sub.add_parser("hold", help="the owner's hold, by scope: benchmarks (no sweep, reverify or measurement "
+                         "job starts) or gpu (no batch GPU job or deploy starts); serving still runs. #1564, #1509")
+    hld.add_argument("action", nargs="?", default="status", choices=("benchmarks", "gpu", "release", "status", "let"))
+    hld.add_argument("said", nargs="*", help='benchmarks|gpu: who holds it and why, e.g. "owner: the #1558 rebuild"; '
+                     "release: the scope, needed when both are held; let: a job id")
     hld.add_argument("--until", default="", metavar="WHEN",
-                     help="benchmarks: end the hold at the next local HH:MM or at YYYY-MM-DD[T]HH:MM")
+                     help="benchmarks|gpu: end the hold at the next local HH:MM or at YYYY-MM-DD[T]HH:MM")
     hld.set_defaults(func=hold_cmd.cmd_hold)
     pin = sub.add_parser("interactive", help="the pinned interactive server: its plan, health, and warm decide and "
                          "extract p95 against the 10 s target, with pressure at every call. #1561")
     pin.add_argument("action", nargs="?", default="plan", choices=("plan", "health", "probe"))
     pin.add_argument("-n", type=int, default=interactive_cmd.PROBES, help="probe: timed calls per lane")
     pin.set_defaults(func=interactive_cmd.cmd_interactive)
-    gat = sub.add_parser("gate", help="the contention gate GPU jobs and deploys wait for: status, or the owner's "
-                         "hold that keeps GPU work off this machine and pauses it. #1509")
+    gat = sub.add_parser("gate", help="the contention gate GPU jobs and deploys wait for; the owner's hold on "
+                         "them is soh hold gpu. #1509")
     gat.add_argument("action", nargs="?", default="status", choices=("status", "hold", "release"))
-    gat.add_argument("said", nargs="*", help='hold: who holds the machine and why, e.g. "owner: a video render"')
-    gat.add_argument("--until", default="", metavar="WHEN",
-                     help="hold: end the hold at the next local HH:MM, or a local YYYY-MM-DD[T]HH:MM[:SS]")
+    gat.add_argument("said", nargs="*", help="hold|release: folded into soh hold gpu")
+    gat.add_argument("--until", default="", metavar="WHEN", help="folded into soh hold gpu --until")
     gat.set_defaults(func=gate_cmd.cmd_gate)
     dep = sub.add_parser("deploy", help="deploys as queue jobs: each green main commit built alongside, switched, "
                          "verified or rolled back, behind the contention gate. #1506, #1509")
