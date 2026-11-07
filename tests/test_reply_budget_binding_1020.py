@@ -1,10 +1,10 @@
-"""A reply-budget sweep asks the stored runs first, counts only cuts that pass with more room, and queues for the night (#1020)."""
+"""A reply-budget sweep asks the stored runs first, counts only cuts that pass with more room, and is refused past its budget (#1020, #1509)."""
 import json
 from datetime import datetime
 
 import pytest
 
-from harness import convertible, heartbeat, reverify, runs, sweeps, workqueue as wq
+from harness import convertible, reverify, runs, sweeps, workqueue as wq
 from harness import memory_store as ms
 from tests.test_knob_sweeps import ENV, M, queued
 from tests import conftest
@@ -19,7 +19,6 @@ _SEQ = iter(range(1, 10_000))
 @pytest.fixture
 def conn(tmp_path, monkeypatch):
     conftest.stand_in_machine(monkeypatch, M)
-    monkeypatch.setattr(heartbeat, "discover_hours", lambda: [21])
     monkeypatch.setattr(reverify, "served", lambda c: {"repo": {
         "lane": "repo", "spec": "ornith", "candidate_id": None, "incumbent": "", "incumbent_id": None}})
     c = ms.connect(tmp_path / "d.db")
@@ -87,7 +86,7 @@ def test_the_ladder_of_the_swept_spec_is_the_unconfounded_answer(conn, monkeypat
     assert f"run {high}'s ladder" in skip
 
 
-def test_cut_replies_that_pass_with_more_room_queue_a_sweep_for_the_night(conn):
+def test_cut_replies_that_pass_with_more_room_queue_a_sweep_behind_the_contention_gate(conn):
     cases = [f"c{i}" for i in range(20)]
     record(conn, "ornith", {c: "cut" for c in cases[:10]} | {c: "pass" for c in cases[10:]},
            top=32768, sampling=LOW_SAMPLING, at=DAY_AT - 7200)
@@ -97,23 +96,20 @@ def test_cut_replies_that_pass_with_more_room_queue_a_sweep_for_the_night(conn):
     assert got["planned"][0]["skip"] == ""
     assert got["planned"][0]["evidence"]["detail"].startswith("binding: 4 of 10 cut replies pass at 65536")
     assert got["planned"][0]["trigger"]["convertible"] == 4
-    start, _ = wq.night_window(DAY_AT)
     jobs = queued(conn)
-    assert len(jobs) == 6 and start > DAY_AT
-    assert {j["not_before"] for j in jobs} == {datetime.fromtimestamp(start).isoformat(timespec="seconds")}
-    assert not wq.ready(conn=conn, now=DAY_AT) and len(wq.ready(conn=conn, now=start)) == 6
-    assert "to start" in sweeps.render(got)
+    assert len(jobs) == 6 and {j["not_before"] for j in jobs} == {""}
+    assert len(wq.ready(conn=conn, now=DAY_AT)) == 6 and "to start" not in sweeps.render(got)
 
 
-def test_a_sweep_projected_past_the_night_is_refused_with_the_projection(conn):
+def test_a_sweep_projected_past_its_budget_is_refused_with_the_projection(conn):
     cases = [f"c{i}" for i in range(20)]
     record(conn, "ornith", {c: "cut" for c in cases[:10]} | {c: "pass" for c in cases[10:]},
            top=32768, sampling=LOW_SAMPLING, at=DAY_AT - 7200, seconds=1000.0)
     got = sweeps.check(conn, now=DAY_AT)
     assert got["queued"] == [] and queued(conn) == []
     skip = got["planned"][0]["skip"]
-    assert skip.startswith("projected ") and "over the night's 11h 00m (21:00 to 08:00)" in skip
-    assert got["planned"][0]["projected_s"] > 11 * 3600
+    assert skip.startswith("projected ") and skip.endswith("over the 11h 00m sweep budget")
+    assert got["planned"][0]["projected_s"] > sweeps.BUDGET_S == 11 * 3600
 
 
 def test_conversions_under_other_sampling_cannot_tell_budget_from_sampling_and_still_sweep(conn):
@@ -148,11 +144,3 @@ def test_no_stored_run_with_more_room_still_sweeps(conn):
     assert "no stored run of ornith in repo gave a reply cut at 32768 more room" in sweeps.render(got)
     assert len(queued(conn)) == 6
 
-
-def test_the_night_window_runs_from_the_discover_hour_to_the_day_start(monkeypatch):
-    monkeypatch.setattr(heartbeat, "discover_hours", lambda: [21])
-    start, end = wq.night_window(DAY_AT)
-    assert datetime.fromtimestamp(start) == datetime(2027, 1, 15, 21, 0)
-    assert datetime.fromtimestamp(end) == datetime(2027, 1, 16, 8, 0)
-    late = datetime(2027, 1, 15, 23, 15).timestamp()
-    assert wq.night_window(late) == (late, datetime(2027, 1, 16, 8, 0).timestamp())

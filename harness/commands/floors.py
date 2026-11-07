@@ -38,7 +38,7 @@ def _plant(a) -> int:
     written = floors.plant(out)
     note(f"{len(written)} clean ocr cases under {out}; queue each night run from the deploy checkout:")
     for argv in floors.night(out.resolve()):
-        note(f"  soh jobs --title 'floors #730' add --night -- {shlex.join(argv)}")
+        note(f"  soh jobs --title 'floors #730' add -- {shlex.join(argv)}")
     emit(True, cases=len(written), night=floors.night(out.resolve()))
     return 0
 

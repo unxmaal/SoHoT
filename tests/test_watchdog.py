@@ -18,8 +18,10 @@ EVAL = "/usr/bin/python3 -m evals.run --modality code --candidates a"
 
 class Fake(wd.Probes):
     def __init__(self, tmp_path, procs=(), discover=None, beat=None, jobs=None, rows=None, worker=True,
-                 progress=(), lock=None, resident=None, pressure=None, gateway=None, fallbacks=None, mlx=None):
+                 progress=(), lock=None, resident=None, pressure=None, gateway=None, fallbacks=None, mlx=None,
+                 contention=None):
         self.tmp, self.procs, self.discover, self.beat = tmp_path, list(procs), discover, beat
+        self._contention = contention
         self.jobs, self.rows, self.worker = jobs or {}, rows or {}, worker
         self.runs, self._lock, self._resident = list(progress), lock if lock is not None else {}, resident
         self._pressure, self._gateway, self._fallbacks, self._mlx = pressure, gateway, fallbacks, mlx
@@ -65,6 +67,9 @@ class Fake(wd.Probes):
 
     def mcp_connections(self, port):
         return getattr(self, "connections", None)
+
+    def contention(self, conn, now):
+        return self._contention if self._contention is not None else super().contention(conn, now)
 
     def state(self):
         d = self.tmp / "wd"
@@ -140,17 +145,18 @@ def test_a_group_with_anything_but_evals_in_it_cannot_be_signalled(tmp_path):
 
 # --- criteria: each red on a job built to trip it, green on one that should not --
 
-def test_long_run_trips_past_the_night_limit_and_not_before(tmp_path):
+def test_long_run_trips_past_its_limit_and_not_before(tmp_path):
     long = owned_eval(tmp_path, elapsed=wd.LONG_RUN_OTHER_S + 60)
     short = owned_eval(tmp_path, elapsed=wd.LONG_RUN_OTHER_S - 60)
     assert ids(judged(long)[1], "long_run") == ["job 0007"]
     assert ids(judged(short)[1], "long_run") == []
 
 
-def test_long_run_is_tighter_during_the_day(tmp_path):
-    fake = owned_eval(tmp_path, elapsed=wd.LONG_RUN_DAY_OTHER_S + 60)
-    assert ids(judged(fake, NOON)[1], "long_run") == ["job 0007"]
-    assert ids(judged(fake, NIGHT)[1], "long_run") == []
+def test_long_run_is_the_same_by_day_and_at_night(tmp_path):
+    fake = owned_eval(tmp_path, elapsed=wd.LONG_RUN_OTHER_S - 60)
+    assert ids(judged(fake, NOON)[1], "long_run") == [] == ids(judged(fake, NIGHT)[1], "long_run")
+    fake = owned_eval(tmp_path, elapsed=wd.LONG_RUN_OTHER_S + 60)
+    assert ids(judged(fake, NOON)[1], "long_run") == ["job 0007"] == ids(judged(fake, NIGHT)[1], "long_run")
 
 
 def test_overrun_trips_at_the_factor_over_plan_and_not_under_it(tmp_path):
@@ -205,14 +211,15 @@ def test_a_queue_job_with_no_worker_or_a_settled_row_is_an_orphan(tmp_path):
 GPU = {"kind": "eval", "pid": 511, "pgid": 510}
 
 
-def test_daytime_gpu_trips_inside_the_day_and_not_at_night(tmp_path):
-    fake = owned_eval(tmp_path, elapsed=wd.DAYTIME_GPU_S + 60)
-    fake._lock = GPU
-    assert ids(judged(fake, NOON)[1], "daytime_gpu") == ["job 0007"]
-    assert ids(judged(fake, NIGHT)[1], "daytime_gpu") == []
-    short = owned_eval(tmp_path, elapsed=wd.DAYTIME_GPU_S - 60)
-    short._lock = GPU
-    assert ids(judged(short, NOON)[1], "daytime_gpu") == []
+def test_contention_trips_on_a_client_served_since_the_job_started_by_day_or_night(tmp_path):
+    for now in (NOON, NIGHT):
+        fake = owned_eval(tmp_path, elapsed=600)
+        fake._lock, fake._contention = GPU, {"hold": None, "requests": [("sohot-decide", now - 30)]}
+        assert ids(judged(fake, now)[1], "contention") == ["job 0007"]
+        fake._contention = {"hold": None, "requests": [("sohot-decide", now - 700)]}
+        assert ids(judged(fake, now)[1], "contention") == [], "served before the job started"
+        fake._contention = {"hold": None, "requests": []}
+        assert ids(judged(fake, now)[1], "contention") == []
 
 
 def test_idle_lock_trips_only_when_nothing_runs_and_it_is_old(tmp_path):

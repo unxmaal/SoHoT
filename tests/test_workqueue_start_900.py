@@ -1,4 +1,4 @@
-"""A queued job can name its earliest start, so long work queued by day waits for night. #900."""
+"""A queued job can name its earliest start; "night" is no start since the contention gate replaced the night rule. #900, #1509."""
 import json
 import sys
 from datetime import datetime
@@ -24,17 +24,14 @@ def py(code):
     return [sys.executable, "-c", code]
 
 
-def test_a_night_job_queued_at_15_waits_while_the_gate_is_open_and_runs_at_21(tmp_path):
-    night, day = tmp_path / "night", tmp_path / "day"
-    wq.add(py(f"open({str(night)!r}, 'w')"), title="long",
-           not_before=wq.start_at("night", now=at(16, 15)))
-    wq.add(py(f"open({str(day)!r}, 'w')"), title="short")
+def test_a_job_queued_for_the_night_at_15_runs_at_15_and_a_clock_start_still_waits(tmp_path):
+    night, later = tmp_path / "night", tmp_path / "later"
+    wq.add(py(f"open({str(night)!r}, 'w')"), title="long", not_before=wq.start_at("night", now=at(16, 15)))
+    wq.add(py(f"open({str(later)!r}, 'w')"), title="later", not_before=wq.start_at("16:45", now=at(16, 15)))
     got = wq.run_pending(clock=lambda: at(16, 15, 1))
-    assert [j["title"] for j in got] == ["short"] and day.exists() and not night.exists()
-    assert [j["title"] for j in wq.pending()] == ["long"]
-    assert wq.run_pending(clock=lambda: at(16, 20, 59)) == []
-    got = wq.run_pending(clock=lambda: at(16, 21))
-    assert [(j["title"], j["state"]) for j in got] == [("long", wq.DONE)] and night.exists()
+    assert [j["title"] for j in got] == ["long"] and night.exists() and not later.exists()
+    got = wq.run_pending(clock=lambda: at(16, 16, 45))
+    assert [(j["title"], j["state"]) for j in got] == [("later", wq.DONE)] and later.exists()
 
 
 def test_the_worker_does_not_wake_for_a_job_that_is_not_due(tmp_path):
@@ -45,20 +42,10 @@ def test_the_worker_does_not_wake_for_a_job_that_is_not_due(tmp_path):
     assert asked == [] and wq.pending()[0]["state"] == wq.PENDING
 
 
-@pytest.mark.parametrize("now, want", [
-    (at(16, 15), at(16, 21)),
-    (at(16, 8), at(16, 21)),
-    (at(16, 23), at(16, 23)),
-    (at(17, 3), at(17, 3)),
-    (at(17, 7, 59), at(17, 7, 59)),
-])
-def test_night_is_from_the_discover_hour_until_the_day_starts(now, want):
-    assert wq.night_start(now) == want
-
-
-def test_night_follows_the_installed_discover_hours(monkeypatch):
-    monkeypatch.setattr(heartbeat, "discover_hours", lambda: [22, 12])
-    assert wq.night_start(at(16, 21, 30)) == at(16, 22)
+@pytest.mark.parametrize("now", [at(16, 15), at(16, 8), at(16, 23), at(17, 3)])
+def test_night_is_no_start_at_any_hour(now):
+    assert wq.start_at("night", now=now) is None
+    assert not hasattr(wq, "night_start") and not hasattr(wq, "next_night") and not hasattr(wq, "night_window")
 
 
 def test_a_clock_time_already_past_today_means_tomorrow():
@@ -86,10 +73,11 @@ def test_a_clock_time_still_means_its_next_occurrence():
     assert wq.start_at("09:00", now=at(16, 10)) == at(17, 9)
 
 
-def test_the_cli_takes_night_and_not_before_and_lists_the_start(capsys, monkeypatch):
+def test_the_cli_ignores_night_takes_not_before_and_lists_the_start(capsys, monkeypatch):
     monkeypatch.setattr(wq.time, "time", lambda: at(16, 15))
     assert cli.main(["jobs", "add", "--night", "--json", "--", "true"]) == 0
-    assert json.loads(capsys.readouterr().out)["job"]["not_before"] == "2026-10-16T21:00:00"
+    shown = capsys.readouterr()
+    assert json.loads(shown.out)["job"]["not_before"] == "" and "--night is ignored" in shown.err
     assert cli.main(["jobs", "add", "--not-before", "16:45", "--json", "--", "true"]) == 0
     assert json.loads(capsys.readouterr().out)["job"]["not_before"] == "2026-10-16T16:45:00"
     assert cli.main(["jobs", "add", "--not-before", "noon", "--", "true"]) != 0
@@ -97,14 +85,16 @@ def test_the_cli_takes_night_and_not_before_and_lists_the_start(capsys, monkeypa
     assert cli.main(["jobs", "list"]) == 0
     shown = capsys.readouterr()
     text = shown.out + shown.err
-    assert "from 2026-10-16 21:00" in text and "2 waiting for their start time" in text
+    assert "from 2026-10-16 16:45" in text and "1 waiting for their start time" in text
+    assert "contention gate is" in text
 
 
 def test_an_mcp_job_with_a_start_says_it_waits_for_it(monkeypatch):
     mcp_server = pytest.importorskip("harness.mcp_server")
     monkeypatch.setattr(wq.time, "time", lambda: at(16, 15))
-    job = mcp_server.image("a fox", start="night")
-    assert wq.get(job.job)["not_before"] == "2026-10-16T21:00:00"
+    assert wq.get(mcp_server.image("a fox", start="night").job)["not_before"] == ""
+    job = mcp_server.image("a fox", start="16:45")
+    assert wq.get(job.job)["not_before"] == "2026-10-16T16:45:00"
     assert "start time" in mcp_server.job_status(job.job).waiting_for
     with pytest.raises(Exception, match="HH:MM"):
         mcp_server.video("a fox", start="later")
@@ -116,15 +106,13 @@ def test_a_dated_start_takes_seconds_and_the_iso_t(spec):
 
 
 @pytest.mark.parametrize("now, spec, want", [
-    (at(16, 23), "2026-10-17T21:00", at(17, 21)),
-    (at(16, 23), "2026-10-17 10:00", at(17, 21)),
-    (at(16, 15), "2026-10-17 02:30", at(17, 2, 30)),
-    (at(16, 15), "16:30", at(16, 21)),
+    (at(16, 23), "2026-10-17 10:00", at(17, 10)),
+    (at(16, 15), "16:30", at(16, 16, 30)),
 ])
-def test_night_with_a_start_keeps_the_later_of_the_two(monkeypatch, capsys, now, spec, want):
+def test_night_with_a_start_keeps_the_start_alone(monkeypatch, capsys, now, spec, want):
     monkeypatch.setattr(wq.time, "time", lambda: now)
     assert cli.main(["jobs", "--night", "--not-before", spec, "add", "--json", "--", "true"]) == 0
     job = json.loads(capsys.readouterr().out)["job"]
-    assert wq._epoch(job["not_before"]) == want and job["night_gate"] is False
+    assert wq._epoch(job["not_before"]) == want and "night_gate" not in job
     assert cli.main(["jobs", "add", "--night", "--not-before", spec, "--json", "--", "true"]) == 0
     assert wq._epoch(json.loads(capsys.readouterr().out)["job"]["not_before"]) == want

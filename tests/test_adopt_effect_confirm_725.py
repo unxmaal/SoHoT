@@ -282,10 +282,10 @@ def test_a_holdout_win_with_no_dev_rows_is_held_and_queues_a_night_confirmation(
     assert conn.execute("SELECT COUNT(*) FROM adoptions").fetchone()[0] == 0
     jobs = workqueue.pending(conn)
     assert len(jobs) == 1
-    job = conn.execute("SELECT argv, not_before, night_gate FROM jobs").fetchone()
+    job = conn.execute("SELECT argv, not_before FROM jobs").fetchone()
     assert json.loads(job["argv"])[-2:] == ["--confirm", str(vid)]
-    assert job["night_gate"] == 1
-    assert job["not_before"] == pytest.approx(workqueue.night_start(now), abs=5)
+    assert job["not_before"] is None, "it waits for the contention gate, not a clock (#1509)"
+    assert now
     adopt.queue_confirmation(conn, vid, got)
     assert conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0] == 1
 
@@ -302,8 +302,8 @@ def test_a_confirmation_job_does_not_count_itself_and_a_continuation_starts_when
     monkeypatch.setenv(workqueue.JOB_ENV, f" {int(job['id'])} ")
     later = adopt.queue_confirmation(conn, 7, held, start=123.0)
     assert later is not None and later["id"] != job["id"]
-    row = conn.execute("SELECT not_before, night_gate FROM jobs WHERE id = ?", (int(later["id"]),)).fetchone()
-    assert (row["not_before"], row["night_gate"]) == (123.0, 1)
+    row = conn.execute("SELECT not_before FROM jobs WHERE id = ?", (int(later["id"]),)).fetchone()
+    assert row["not_before"] == 123.0
     assert adopt.queue_confirmation(conn, 7, held, start=123.0) is None
 
 
@@ -506,6 +506,6 @@ def test_the_confirmation_job_is_the_adopt_command_and_lands_in_the_given_store(
     assert adopt.queue_confirmation(conn, 12, v, now=0.0) is not None
     row = conn.execute("SELECT title, cwd, requested_by, not_before FROM jobs").fetchone()
     assert dict(row) == {"title": "confirm code: ch over inc on dev (verdict 12)", "cwd": str(paths.REPO),
-                         "requested_by": "adopt", "not_before": workqueue.night_start(0.0)}
+                         "requested_by": "adopt", "not_before": None}
     conn.execute("UPDATE jobs SET state = ?", (workqueue.DONE,))
     assert adopt.queue_confirmation(conn, 12, v, now=0.0) is not None, "a finished confirmation does not block a new one"

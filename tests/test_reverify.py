@@ -391,7 +391,7 @@ def test_a_paused_rerun_is_resumed_from_its_checkpoint_not_judged(upgraded, pass
     assert argv[argv.index("--out") + 1] == str(runs.run_dir(partial["path"]))
     assert argv.count("--out") == 1 and argv.count("--resume") == 1
     assert argv[:argv.index("--out")] == job["argv"]
-    assert nxt["night_gate"] and nxt["requested_by"] == reverify.REQUESTED_BY
+    assert nxt["not_before"] == "" and nxt["requested_by"] == reverify.REQUESTED_BY
 
 
 def test_a_resumed_rerun_is_judged_once_its_continuation_finishes(upgraded):

@@ -292,6 +292,17 @@ def _no_real_strays(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_contention(monkeypatch):
+    """No queue test waits on this machine's memory pressure; a test of the gate restores workqueue._contended.real. #1509."""
+    from harness import workqueue
+
+    def calm(now):
+        return False
+    calm.real = workqueue._contended
+    monkeypatch.setattr(workqueue, "_contended", calm)
+
+
+@pytest.fixture(autouse=True)
 def _no_real_lane_probes(monkeypatch):
     """No watchdog wake sends a real lane a completion; a test that wants the real probe restores Probes.lanes.real. #924."""
     from harness import watchdog

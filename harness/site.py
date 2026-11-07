@@ -525,7 +525,7 @@ def front(machines: list[dict], now: float | None = None, model: dict | None = N
         ("Other tools can use it", "butter",
          "<p>An MCP server, <code>scripts/serve-mcp.sh</code>, gives an agent these tools: "
          f"{tools}. {_esc(_and(mcp_queued()).capitalize())} go on a work queue that runs one "
-         "GPU job at a time, and a job can be held for the night. Each lane's state, from what "
+         "GPU job at a time, started when no client is being served. Each lane's state, from what "
          "it serves to every candidate's verdict, is one document: <code>soh lane-feed "
          f"&lt;lane&gt;</code>, or the MCP resource {feeds}.</p>"),
     ]

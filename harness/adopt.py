@@ -541,9 +541,8 @@ def confirm_argv(vid: int) -> list[str]:
 
 def queue_confirmation(conn, vid: int, verdict: Verdict, now: float | None = None,
                        start: float | None = None) -> dict | None:
-    """Queue tonight's dev run (or one at `start`) that confirms or refuses a held holdout win, once per verdict. #725."""
+    """Queue the dev run (at `start`, else when the contention gate opens) that confirms or refuses a held holdout win, once per verdict. #725, #1509."""
     import os
-    import time
 
     from harness import paths, workqueue
     argv = confirm_argv(vid)
@@ -556,10 +555,7 @@ def queue_confirmation(conn, vid: int, verdict: Verdict, now: float | None = Non
         return None
     return workqueue.add(argv, title=(f"confirm {verdict.lane}: {verdict.challenger} over {verdict.incumbent} "
                                       f"on dev (verdict {vid})"),
-                         cwd=str(paths.REPO), requested_by="adopt",
-                         not_before=(workqueue.night_start(time.time() if now is None else now)
-                                     if start is None else start),
-                         night=True, conn=conn)
+                         cwd=str(paths.REPO), requested_by="adopt", not_before=start, conn=conn)
 
 
 #: Candidates that exist to measure local models against. #374.

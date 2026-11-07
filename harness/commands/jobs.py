@@ -102,9 +102,10 @@ def cmd_jobs(a) -> int:
         if a.action == "add":
             import os
             where = wq.queue_cwd(os.getcwd(), wq.deployed(), explicit=cwd)
-            not_before, gated = wq.start_with_night(start, night)
+            if night:
+                note("--night is ignored since #1509: a GPU job starts when the contention gate opens (soh gate)")
             job = wq.add(rest, title=a.title, cwd=where, priority=priority,
-                         requested_by="cli", not_before=not_before, night=gated)
+                         requested_by="cli", not_before=wq.start_at(start))
             if despite:
                 _let(job)
             after = f" (not before {job['not_before']})" if job["not_before"] else ""
@@ -136,19 +137,23 @@ def cmd_jobs(a) -> int:
         note(f"{a.action}d; next job {'may start' if ok else 'waits'}: {why}")
         emit(paused=wq.paused(), gate_open=ok, why=why)
         return 0
-    from harness import day_clear, exclusive, heartbeat
+    from harness import contention, exclusive, heartbeat
+    from harness import memory_store as ms
     got = wq.jobs()
     ok, why = wq.gate()
     loop = heartbeat.summary()
     if loop:
         note(loop["line"])
-    clearance = wq.cleared()
-    if clearance:
-        note(f"{day_clear.line(clearance)}; the watchdog's day limits are off and night-start jobs may run now")
+    conn = ms.connect()
+    try:
+        gpu = contention.verdict(conn)
+    finally:
+        conn.close()
+    note(f"GPU jobs and deploys: the contention gate is {'open' if gpu['open'] else 'closed'}: {gpu['why']}")
+    later = sum(j["state"] == wq.PENDING and not wq.due(j) for j in got)
     held, waiting = _held(got)
     if held:
         note(f"{held}; {len(waiting)} measurement job(s) wait for soh hold release")
-    later = sum(j["state"] == wq.PENDING and not wq.due(j, cleared=clearance is not None) for j in got)
     note(f"{'a job is running' if wq.running() else 'nothing running'}; "
          f"{sum(j['state'] == wq.PENDING for j in got)} pending"
          f"{f' ({later} waiting for their start time)' if later else ''}; next job "
@@ -162,12 +167,12 @@ def cmd_jobs(a) -> int:
         rc = "" if j["rc"] is None else f" rc={j['rc']}"
         pri = int(j.get("priority") or 0)
         at = (f"from {j['not_before'].replace('T', ' ')[:16]} "
-              if j["state"] == wq.PENDING and not wq.due(j, cleared=clearance is not None) else "")
+              if j["state"] == wq.PENDING and not wq.due(j) else "")
         lock = f" [holds the {j['lock']} lock]" if j.get("lock") else ""
         lock += " [held: benchmarks]" if j["id"] in waiting else ""
         note(f"  {j['id']}  {j['state']:8}{rc:7}  p{pri:<3} {at}{j['title']}{lock}")
     for h in loose:
         note(f"  {h['lock']} lock held by {exclusive.describe(h)}, outside the queue")
-    emit(running=wq.running(), gate_open=ok, why=why, jobs=got, loop=loop, clearance=clearance, locks=locks,
+    emit(running=wq.running(), gate_open=ok, why=why, jobs=got, loop=loop, contention=gpu, locks=locks,
          hold=held, held=sorted(waiting))
     return 0

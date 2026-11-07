@@ -274,16 +274,15 @@ def _gpu_job(elapsed):
     return wd.Subject("job", "job 0007", "test", pid=5, pgid=5, elapsed_s=float(elapsed))
 
 
-@pytest.mark.parametrize("now, edge", [(NOON, "watchdog_day_start_hour"), (EVENING, "watchdog_day_end_hour")])
-def test_a_gpu_job_past_the_day_limit_is_a_cut_with_the_nearer_day_edge(now, edge):
-    if not wd.daytime(now):
-        pytest.skip("the default day hours moved")
-    long = wd.World(now=now, top=[_gpu_job(wd.DAYTIME_GPU_S + 1)], gpu="job 0007")
-    assert wd._daytime_gpu(wd.World(now=now, top=[_gpu_job(60)], gpu="job 0007")) == []
-    assert wd._daytime_gpu(wd.World(now=NIGHT, top=[_gpu_job(wd.DAYTIME_GPU_S + 1)], gpu="job 0007")) == []
+@pytest.mark.parametrize("now", [NOON, EVENING, NIGHT])
+def test_a_gpu_job_paused_for_a_served_client_is_a_contention_idle_cut(now):
+    def world(requests, hold=None):
+        return wd.World(now=now, top=[_gpu_job(60)], gpu="job 0007", contention={"hold": hold, "requests": requests})
+    assert wd._contention(world([("sohot-code", now - 120)])) == []
+    assert len(wd._contention(world([], hold={"said": "owner"}))) == 1
     assert _cuts() == []
-    assert len(wd._daytime_gpu(long)) == 1
-    assert _cuts() == [("watchdog_daytime_gpu", None, 1), (edge, None, 1)]
+    assert len(wd._contention(world([("sohot-code", now - 10)]))) == 1
+    assert _cuts() == [("contention_idle", None, 1)]
 
 
 def test_an_old_idle_lock_is_a_cut_and_a_young_one_is_not():
@@ -311,7 +310,7 @@ def test_an_idle_model_given_back_in_the_day_is_a_cut():
     assert wd._idle_unload(wd.World(now=NOON, served=served, idle_since={"router:m": NOON - 1})) == []
     assert _cuts() == []
     assert len(wd._idle_unload(wd.World(now=NOON, served=served, idle_since=idle))) == 1
-    assert _cuts() == [("serve_idle_unload_day_s", None, 1)]
+    assert _cuts() == [("serve_idle_unload_day_s", None, 1), ("watchdog_day_start_hour", None, 1)]
 
 
 def test_a_fallback_spike_is_a_cut_and_fewer_requests_are_not():

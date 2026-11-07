@@ -4,9 +4,6 @@ from harness.knobs.base import _k
 W = "harness/watchdog.py"
 P = "harness/lane_probe.py"
 NIGHT = [4 * 3600.0, 6 * 3600.0, 8 * 3600.0, 12 * 3600.0]
-DAY = [3600.0, 2 * 3600.0, 4 * 3600.0]
-DAY_EVIDENCE = ("store 2026-10-30: no long_run trip recorded inside the day hours; 152 were let off under a day "
-                "clearance")
 
 KNOBS = [
     _k("availability_target", ["harness/availability.py:TARGET"], [0.95, 0.99, 0.999],
@@ -25,15 +22,12 @@ KNOBS = [
             "on 56 refused residency queries, then 1642 not-resident and 789 machine-held skips over 9 days with no "
             "judged row, while the shared :8081 server answered extract's probes (#1499)"),
     _k("watchdog_day_end_hour", [f"{W}:DAY_END_HOUR"], [18, 20, 21, 22],
-       note="local hour the owner's day ends: the day limits and a day clearance end at it; the discover agent starts "
-            "at scripts/launchd.sh DISCOVER_HOURS, which this does not move (Decision #456, #1369)"),
+       note="local hour the owner's day ends, after which an idle served model waits for the router's own sleep; "
+            "no GPU limit reads it since #1509; the discover agent starts at scripts/launchd.sh DISCOVER_HOURS, "
+            "which this does not move (Decision #456, #1157)"),
     _k("watchdog_day_start_hour", [f"{W}:DAY_START_HOUR"], [6, 7, 8, 9],
-       note="local hour the owner's day starts; a job holding the GPU lock past watchdog_daytime_gpu inside the day is "
-            "paused (#1370)"),
-    _k("watchdog_daytime_gpu", [f"{W}:DAYTIME_GPU_S"], [1800.0, 3600.0, 7200.0],
-       note="seconds a job holding the GPU lock may run inside the day hours before it is paused for the night; "
-            "one with no progress file to pause through is notified about and runs on, never stopped "
-            "(Decision #456, #1371)"),
+       note="local hour the owner's day starts, from which an idle served model is given back after "
+            "serve_idle_unload_day_s; no GPU limit reads it since #1509 (#1157)"),
     _k("watchdog_escalate_after", [f"{W}:ESCALATE_AFTER"], [1, 2, 3, 5],
        note="prior trips of a criterion on one subject inside watchdog_escalate_window before its escalation"),
     _k("watchdog_escalate_window", [f"{W}:ESCALATE_WINDOW_S"], [900.0, 1800.0, 3600.0],
@@ -45,23 +39,12 @@ KNOBS = [
     _k("watchdog_idle_hold", [f"{W}:IDLE_HOLD_S"], [600.0, 1800.0, 3600.0],
        note="seconds the eval lock may be held with no SoHoT job running before it is a stuck holder"),
     _k("watchdog_long_run_adopt", [f"{W}:LONG_RUN_ADOPT_S"], NIGHT, limit="watchdog_long_run_adopt", unit="s",
-       note="seconds a queued soh adopt measure may run at night before long_run notifies, then pauses it; never "
+       note="seconds a queued soh adopt measure may run before long_run notifies, then pauses it; never "
             "stops it (store 2026-10-30: 7 queued adopt jobs, median 1.25 h, longest 5.7 h, cancelled) (#1372)"),
     _k("watchdog_long_run_confirm", [f"{W}:LONG_RUN_CONFIRM_S"], NIGHT, limit="watchdog_long_run_confirm",
        unit="s", note="the same for a queued soh adopt --confirm (store 2026-10-30: the one queued confirm, job "
                       "0200, was paused here at 8.2 h with 398 of 632 cells done and #1357 resumes it; raising this "
                       "lets a confirm finish in one night) (#1372)"),
-    _k("watchdog_long_run_day_adopt", [f"{W}:LONG_RUN_DAY_ADOPT_S"], DAY, limit="watchdog_long_run_day_adopt",
-       unit="s", note=f"watchdog_long_run_adopt inside the day hours ({DAY_EVIDENCE}) (#1372)"),
-    _k("watchdog_long_run_day_confirm", [f"{W}:LONG_RUN_DAY_CONFIRM_S"], DAY,
-       limit="watchdog_long_run_day_confirm", unit="s",
-       note=f"watchdog_long_run_confirm inside the day hours ({DAY_EVIDENCE}) (#1372)"),
-    _k("watchdog_long_run_day_eval", [f"{W}:LONG_RUN_DAY_EVAL_S"], DAY, limit="watchdog_long_run_day_eval",
-       unit="s", note=f"watchdog_long_run_eval inside the day hours ({DAY_EVIDENCE}) (#1372)"),
-    _k("watchdog_long_run_day_other", [f"{W}:LONG_RUN_DAY_OTHER_S"], DAY, limit="watchdog_long_run_day_other",
-       unit="s", note=f"watchdog_long_run_other inside the day hours ({DAY_EVIDENCE}) (#1372)"),
-    _k("watchdog_long_run_day_sweep", [f"{W}:LONG_RUN_DAY_SWEEP_S"], DAY, limit="watchdog_long_run_day_sweep",
-       unit="s", note=f"watchdog_long_run_sweep inside the day hours ({DAY_EVIDENCE}) (#1372)"),
     _k("watchdog_long_run_eval", [f"{W}:LONG_RUN_EVAL_S"], NIGHT, limit="watchdog_long_run_eval", unit="s",
        note="the same for an evals.run, queued or unowned (store 2026-10-30: 128 queued evals.run jobs, median "
             "4 min, longest 11.5 h) (#1372)"),
@@ -103,10 +86,6 @@ NOT_GATING = {
     "harness/workqueue.py:WATCH_S": "how soon a worker with jobs running sees a job it may start beside them; "
                                     "it decides when, never whether (#1153)",
     "harness/workqueue.py:at_clock->timedelta(days)": "one calendar day: a clock time already past today means tomorrow (#900)",
-    "harness/workqueue.py:night_start->timedelta(days)": "one calendar day: the night window's edges on yesterday, today "
-                                                         "and tomorrow (#900)",
-    "harness/workqueue.py:night_window->timedelta(days)": "one calendar day: a day start already past means "
-                                                          "tomorrow's (#1020)",
     f"{P}:CLAIMS_FORMAT[json_schema][schema][properties][c][items][maxItems]":
         "the claims tuple's shape in the probe's known question, as smoke sends it; not a limit (#924)",
     f"{P}:CLAIMS_FORMAT[json_schema][schema][properties][c][items][minItems]":

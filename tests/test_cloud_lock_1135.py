@@ -157,7 +157,7 @@ def test_soh_jobs_names_the_lock_a_running_job_holds(tmp_path, monkeypatch):
         _stop(holder)
 
 
-def test_the_watchdog_does_not_pause_a_cloud_job_for_daytime_gpu(tmp_path):
+def test_the_watchdog_does_not_pause_a_cloud_job_for_contention(tmp_path):
     class Cloudy(Fake):
         def __init__(self, *a, cloud=(), **kw):
             super().__init__(*a, **kw)
@@ -167,17 +167,18 @@ def test_the_watchdog_does_not_pause_a_cloud_job_for_daytime_gpu(tmp_path):
             return self._cloud
 
     def job(cloud=(), lock=None):
-        return Cloudy(tmp_path, procs=[P(500, 400, 500, wd.DAYTIME_GPU_S + 60, "uv run soh discover --loop"),
-                                       P(510, 500, 510, wd.DAYTIME_GPU_S + 60, run_cmd)],
-                      jobs={"0007": 500}, cloud=cloud, lock=lock)
+        return Cloudy(tmp_path, procs=[P(500, 400, 500, 600, "uv run soh discover --loop"),
+                                       P(510, 500, 510, 600, run_cmd)],
+                      jobs={"0007": 500}, cloud=cloud, lock=lock,
+                      contention={"hold": None, "requests": [("sohot-code", NOON - 30)]})
 
     run_cmd = "uv run python -m evals.run --modality repo --candidates claude-code:claude-opus-5-5"
-    assert ids(judged(job(lock={"kind": "eval", "pgid": 510}), NOON)[1], "daytime_gpu") == ["job 0007"]
-    assert ids(judged(job(cloud={510}), NOON)[1], "daytime_gpu") == []
+    assert ids(judged(job(lock={"kind": "eval", "pgid": 510}), NOON)[1], "contention") == ["job 0007"]
+    assert ids(judged(job(cloud={510}), NOON)[1], "contention") == []
     unknown = job(cloud={510})
     unknown._lock = None
-    assert ids(judged(unknown, NOON)[1], "daytime_gpu") == [], "an unknown holder still spares a cloud-only job"
-    assert ids(judged(job(cloud={510}, lock={"kind": "eval", "pgid": 500}), NOON)[1], "daytime_gpu") == ["job 0007"]
+    assert ids(judged(unknown, NOON)[1], "contention") == [], "an unknown holder still spares a cloud-only job"
+    assert ids(judged(job(cloud={510}, lock={"kind": "eval", "pgid": 500}), NOON)[1], "contention") == ["job 0007"]
 
 
 def test_the_cloud_slot_count_is_a_registered_knob():

@@ -383,14 +383,14 @@ def _queue(kind: str, prompt: str, argv: list[str], out: Path, start: str = "") 
     job = workqueue.add(argv, title=f"{kind}: {prompt[:80]}", kind=kind,
                         output=str(out), cwd=str(Path(__file__).resolve().parents[1]),
                         priority=INTERACTIVE_PRIORITY, requested_by="mcp",
-                        not_before=not_before, night=start.strip() == "night")
+                        not_before=not_before)
     return _describe(job)
 
 
 @SERVER.tool(description="Generate an image. Queued on this machine's work "
                          "queue: returns a job id at once. Poll job_status, "
                          "then job_result for the PNG. About 3 s once started. "
-                         "`start` 'night' or 'HH:MM' holds it until then.")
+                         "`start` 'HH:MM' holds it until then.")
 def image(prompt: str, width: int = 512, height: int = 512,
           seed: int = 0, model: str = "", start: str = "") -> JobInfo:
     out = _out("image", ".png")
@@ -406,8 +406,7 @@ def image(prompt: str, width: int = 512, height: int = 512,
 @SERVER.tool(description="Generate a short video clip (MP4). Queued on this "
                          "machine's work queue: returns a job id at once. Poll "
                          "job_status, then job_result for the file. Minutes "
-                         "once started. `start` 'night' or 'HH:MM' holds it "
-                         "until then.")
+                         "once started. `start` 'HH:MM' holds it until then.")
 def video(prompt: str, width: int = 512, height: int = 512, frames: int = 22,
           seed: int = 0, start: str = "") -> JobInfo:
     out = _out("video", ".mp4")
@@ -472,7 +471,7 @@ def _describe(job: dict) -> JobInfo:
         info.ahead = (sum(1 for j in everyone if j["state"] == workqueue.RUNNING)
                       + line.index(job["id"]))
         running = next((j for j in everyone if j["state"] == workqueue.RUNNING), None)
-        if not workqueue.due(job, cleared=workqueue.cleared() is not None):
+        if not workqueue.due(job):
             info.waiting_for = f"its start time {job['not_before']}"
         elif running:
             info.waiting_for = running.get("kind") or "a job"

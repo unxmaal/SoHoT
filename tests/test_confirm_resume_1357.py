@@ -4,13 +4,12 @@ import json
 import os
 import time
 import types
-from datetime import datetime
 from pathlib import Path
 
 import pytest
 
 from evals import watch
-from harness import adopt, cli, heartbeat, holdout, paths, screen, watchdog, workqueue
+from harness import adopt, cli, holdout, paths, screen, workqueue
 from harness import memory_store as ms
 from harness.commands import adopt as adopt_cmd
 from harness.commands import measure as measure_cmd
@@ -121,7 +120,7 @@ def test_a_paused_confirmation_is_paused_queues_its_continuation_and_the_next_jo
     later = workqueue.pending(conn)
     assert len(later) == 1 and later[0]["id"] != first[0]["id"]
     assert later[0]["argv"][-2:] == ["--confirm", str(vid)]
-    assert conn.execute("SELECT not_before FROM jobs WHERE id = ?", (int(later[0]["id"]),)).fetchone()[0] > time.time()
+    assert conn.execute("SELECT not_before FROM jobs WHERE id = ?", (int(later[0]["id"]),)).fetchone()[0] is None
 
     got = workqueue.run_one(later[0], popen=_in_process(monkeypatch))
     assert (got["state"], got["rc"]) == (workqueue.DONE, 0)
@@ -189,23 +188,6 @@ def test_the_queue_records_exit_75_as_paused_and_lists_it(conn, monkeypatch, cap
     assert [workqueue.get(j["id"])["state"] for j in jobs] == [workqueue.PAUSED, workqueue.FAILED, workqueue.DONE]
     assert cli.main(["jobs", "list"]) == 0
     assert f"{jobs[0]['id']}  paused" in capsys.readouterr().out
-
-
-def at(day, hour, minute=0):
-    return datetime(2026, 10, day, hour, minute).timestamp()
-
-
-@pytest.mark.parametrize("now, want", [
-    (at(16, 15), at(16, 21)),
-    (at(16, 23), at(17, 21)),
-    (at(17, 5), at(17, 21)),
-    (at(17, 8), at(17, 21)),
-])
-def test_the_next_night_is_tonight_by_day_and_tomorrow_night_at_night(monkeypatch, now, want):
-    monkeypatch.setattr(heartbeat, "discover_hours", lambda: [21])
-    monkeypatch.setattr(watchdog, "DAY_START_HOUR", 8)
-    monkeypatch.setattr(watchdog, "DAY_END_HOUR", 21)
-    assert workqueue.next_night(now) == want
 
 
 def _finished(conn, name, rows, at=None):
