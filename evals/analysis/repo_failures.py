@@ -283,7 +283,7 @@ CASES = Path(__file__).resolve().parents[1] / "cases" / "repo"
 AS_RUN = (reasons.STOPPED_LOW_YIELD, reasons.TOOL_CALL, reasons.ENVIRONMENT_ERROR, reasons.DEGENERATE,
           reasons.RUNAWAY, reasons.TIMEOUT, reasons.STEP_CAP, reasons.CONTEXT_EXCEEDED, reasons.PLAN_REFUSED,
           reasons.POOL_FULL, reasons.BLANK_OUTPUT, reasons.BACKEND_FAULT, reasons.SERVER_DEAD, reasons.GPU_FAULT,
-          reasons.REFUSED_BY_GATEWAY, reasons.HARNESS_ERROR, reasons.LOAD_LOG_UNREAD, reasons.SHORT_COPY,
+          reasons.KILLS_SERVER, reasons.REFUSED_BY_GATEWAY, reasons.HARNESS_ERROR, reasons.LOAD_LOG_UNREAD, reasons.SHORT_COPY,
           reasons.INCOMPLETE_COPY, reasons.ATTACHMENT, reasons.MISSING_PACKAGE, reasons.LOAD_FAILED_RUNTIME,
           reasons.LOAD_FAILED_FILE, reasons.LOAD_FAILED_LAYOUT, reasons.MISSING_FILE_IN_SNAPSHOT,
           reasons.MEMORY_DEFERRED)
