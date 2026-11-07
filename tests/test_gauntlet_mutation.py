@@ -240,6 +240,31 @@ def test_every_test_file_that_imports_a_mutated_module_is_selected_or_left_out_o
             assert mutation.imports((REPO / "tests" / name).read_text(encoding="utf-8"), module), (module, name)
 
 
+LOADS_METAL = ("mlx.core", "mlx_lm")
+FIRST_TO_LOAD = """
+import importlib, sys
+for f in sys.argv[2:]:
+    try:
+        importlib.import_module(f[:-3].replace("/", "."))
+    except BaseException:
+        pass
+    if any(m in sys.modules for m in sys.argv[1].split(",")):
+        print(f)
+        break
+"""
+
+
+def test_no_selected_test_file_loads_metal_when_imported():
+    """Metal loaded at import segfaults a forked mutmut worker at exit and breaks the module's whole run (#728, #1588)."""
+    import subprocess
+    import sys
+    files = sorted({t for tests in mutation.MODULES.values() for t in tests})
+    got = subprocess.run([sys.executable, "-c", FIRST_TO_LOAD, ",".join(LOADS_METAL), *files], cwd=REPO,
+                         capture_output=True, text=True, encoding="utf-8")
+    assert got.returncode == 0, got.stderr[-2000:]
+    assert got.stdout.strip() == "", f"{got.stdout.strip()} loads mlx at import: import it inside the function that runs it"
+
+
 def test_an_import_is_recognised_in_each_spelling():
     for src in ("import harness.router\n", "from harness import router, screen\n",
                 "from harness.router import Watch\n", "from harness import (\n    adopt,\n    router,\n)\n"):
@@ -392,6 +417,51 @@ def test_a_function_run_ratchets_and_pins_only_that_functions_keys(monkeypatch, 
     for bad in (["--module", b, "--module", "harness/reasons.py"], ["--module", b, "--found", str(tmp_path / "f")]):
         with pytest.raises(SystemExit, match="--function"):
             mutation.main(["run", *bad, "--function", "f", "--workdir", str(tmp_path / "w")])
+
+
+SHARDED = '''
+def b(): pass
+async def e(): pass
+class C:
+    def d(self): pass
+    X = 1
+def a():
+    def inner(): pass
+'''
+
+
+def test_n_shards_split_a_modules_functions_between_them_and_the_first_owns_gone_pins():
+    """#1588: adopt.py outgrew one 120-minute job, so N jobs each mutate every Nth function."""
+    assert mutation.functions_of(SHARDED) == ["C.d", "a", "b", "e"]
+    assert mutation.shard(SHARDED, "1/2") == ("C.d", "b")
+    assert mutation.shard(SHARDED, "2/2") == ("a", "e")
+    assert mutation.shard(SHARDED, "1/1") == ("C.d", "a", "b", "e")
+    pinned = ["harness.m:gone:k", "harness.m:a:k"]
+    assert mutation.shard(SHARDED, "1/2", pinned) == ("C.d", "b", "gone")
+    assert mutation.shard(SHARDED, "2/2", pinned) == ("a", "e")
+    for bad in ("0/2", "3/2"):
+        with pytest.raises(SystemExit, match="K/N"):
+            mutation.shard(SHARDED, bad)
+
+
+def test_a_shards_found_file_replaces_only_its_own_functions_pins(monkeypatch, tmp_path):
+    b, seen = "harness/router.py", []
+    src = (REPO / b).read_text(encoding="utf-8")
+    mine, theirs = mutation.shard(src, "1/2")[0], mutation.shard(src, "2/2")[0]
+    _fake_run(monkeypatch, tmp_path, {b: [f"harness.router:{mine}:new"]}, seen)
+    mutation.PIN_FILE.write_text(json.dumps({b: [f"harness.router:{mine}:old", f"harness.router:{theirs}:k",
+                                                 "harness.router:renamed_away:k"]}), encoding="utf-8")
+    found = tmp_path / "found.json"
+    run = ["run", "--module", b, "--shard", "1/2", "--found", str(found), "--workdir", str(tmp_path / "w")]
+    assert mutation.main(run) == 1, "a new key, a pinned key now killed and a gone function's pin all fail shard 1"
+    assert seen[-1][1] == mutation.shard(src, "1/2", [f"harness.router:{theirs}:k", "harness.router:renamed_away:k"])
+    written = json.loads(found.read_text(encoding="utf-8"))
+    assert written[b] == [f"harness.router:{mine}:new"] and "renamed_away" in written[mutation.FUNCTIONS_KEY][b]
+    assert mutation.main(["pin", "--from", str(found)]) == 0
+    assert json.loads(mutation.PIN_FILE.read_text(encoding="utf-8")) == {
+        b: sorted([f"harness.router:{mine}:new", f"harness.router:{theirs}:k"])}
+    with pytest.raises(SystemExit, match="--shard"):
+        mutation.main(["run", "--module", b, "--module", "harness/reasons.py", "--shard", "1/2"])
 
 
 def test_a_jobs_cap_reaches_mutmut_and_no_cap_leaves_it_one_worker_per_cpu(monkeypatch, tmp_path):
