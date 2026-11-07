@@ -28,7 +28,7 @@ def _cuts() -> list[tuple]:
     if store.backend() == store.POSTGRES or ms.db_path().exists():
         conn = store.open_ro(ms.db_path())
         try:
-            if conn.execute("SELECT 1 FROM sqlite_master WHERE name = 'limit_cuts'").fetchone():
+            if store.has_table(conn, "limit_cuts"):
                 got += [tuple(r) for r in conn.execute("SELECT knob, kept, dropped FROM limit_cuts ORDER BY id")]
         finally:
             conn.close()
