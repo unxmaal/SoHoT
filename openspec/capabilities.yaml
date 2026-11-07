@@ -142,6 +142,9 @@ capabilities:
     spec: pending
     modules:
       - harness/store.py
+      - harness/store_audit.py
+      - harness/store_copy.py
+      - harness/store_service.py
       - harness/memory_store/
       - harness/runs.py
       - harness/lease.py

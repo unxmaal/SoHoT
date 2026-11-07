@@ -285,10 +285,9 @@ def headroom(samples: list[dict], since: float, tz=None) -> dict:
 # --- local: gateway_requests by purpose -----------------------------------------------------------
 
 def open_ro(path: Path):
-    """The store read-only (SQLite mode=ro): it can neither migrate nor write."""
-    conn = sqlite3.connect(f"{Path(path).resolve().as_uri()}?mode=ro", uri=True)
-    conn.row_factory = sqlite3.Row
-    return conn
+    """The store read-only (SQLite mode=ro, or the Postgres reader): it can neither migrate nor write."""
+    from harness import store
+    return store.open_ro(path)
 
 
 def _columns(conn, table: str) -> set[str]:

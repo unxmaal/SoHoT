@@ -3285,6 +3285,36 @@ Whether a run is refused for lack of memory is a separate question, answered by
 `memory.check_model` against free memory minus what is already resident, not by
 either field above.
 
+## The store on Postgres
+
+The store is SQLite until a home holds `store.json`; then every process of that
+home, launchd's or a shell's, talks to Postgres in the `sohot-postgres` container
+(`deploy/postgres/compose.yaml`: loopback port 5433, a named volume on the Docker
+VM's disk, passwords in the Keychain under `sohot-postgres`). `LOCALHARNESS_STORE`
+overrides the file either way. Readers connect as the read-only role
+`discovery_ro`; the MCP server borrows from a pool.
+
+Cutover, by the owner, after the deploy that ships this code (it changes nothing while no `store.json` exists), with `soh hold benchmarks` on and the queue idle:
+
+```bash
+uv run soh store pg-up                       # container up, healthy; owner password made once
+uv run soh store pg-roles                    # the read-only role
+uv run soh store migrate-to-postgres --dry-run   # .backup snapshot, schema and gaps, row counts; copies nothing
+scripts/launchd.sh uninstall                 # nothing writes the SQLite file from here
+uv run soh store migrate-to-postgres         # snapshot, copy, per-table rows and digests; rc 0 only if all equal
+uv run soh store switch --to postgres        # writes ~/localharness/store.json
+scripts/launchd.sh install && uv run soh morning && uv run soh coherence
+```
+
+Rollback, at any point: `uv run soh store export-to-sqlite ~/localharness/discovery-from-pg.db`
+(a new file, verified the same way) if Postgres took writes worth keeping, then
+`scripts/launchd.sh uninstall`, move that file over `discovery.db` (or keep the untouched
+original), `uv run soh store switch --to sqlite`, `scripts/launchd.sh install`.
+`soh store switch --dry-run` says what either switch would do. On Postgres a
+migrating deploy backs up with `pg_dump` and its rollback restores with `pg_restore`
+in one transaction. `make test-postgres` runs the whole suite on a throwaway
+container; CI's `check-postgres` runs it on every pull request.
+
 ## Developing
 
 ```bash

@@ -58,7 +58,8 @@ def _check(plants, replays=()) -> int:
 
     from harness import canary, paths
     live = paths.home() / "discovery.db"
-    conn = sqlite3.connect(f"file:{live}?mode=ro", uri=True)
+    from harness import store
+    conn = store.open_ro(live)
     try:
         got = [canary.separable(conn, p) for p in plants]
     finally:

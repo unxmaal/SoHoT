@@ -8,10 +8,66 @@ from harness.commands.common import emit, err, note
 from harness.commands import common
 
 
+def _pg_env():
+    """PG* from the environment when set, else the container on this machine as its owner."""
+    import os
+    from harness import store, store_service as svc
+    if os.environ.get("PGHOST") or store.marker():
+        return None
+    return {**os.environ, **svc.owner_environ()}
+
+
+def _postgres(a) -> int:
+    """The Postgres actions of `soh store`: the container, the copy each way, the switch. #1507."""
+    import time
+    from harness import memory_store as ms, paths, store, store_copy, store_service as svc
+    if a.action in ("pg-up", "pg-down", "pg-status"):
+        verb = {"pg-up": ["up", "-d", "--wait"], "pg-down": ["stop"], "pg-status": ["ps", "--format", "json"]}
+        got = svc.compose(verb[a.action])
+        note((got.stdout or "") + (got.stderr or ""))
+        emit(ok=got.returncode == 0, rc=got.returncode)
+        return 0 if got.returncode == 0 else 1
+    if a.action == "pg-roles":
+        conn = store.postgres_connect(svc.owner_environ())
+        try:
+            svc.grant_reader(conn, store.DEFAULT_READER, svc.password(store.DEFAULT_READER, ensure=True))
+        finally:
+            conn.close()
+        note(f"read-only role {store.DEFAULT_READER} can connect and SELECT; its password is in the Keychain")
+        emit(ok=True, reader=store.DEFAULT_READER)
+        return 0
+    if a.action == "switch":
+        got = svc.switch(a.to, dry_run=a.dry_run)
+        note(json.dumps(got, indent=1, sort_keys=True))
+        emit(**got)
+        return 0
+    if a.action == "migrate-to-postgres":
+        db = Path(a.path) if a.path else ms.db_path()
+        if not db.is_file():
+            return err(f"no SQLite store at {db}")
+        snap = Path(a.snapshot) if a.snapshot else (
+            paths.home() / "backups" / f"sqlite-to-postgres-{time.strftime('%Y%m%d-%H%M%S')}.db")
+        got = store_copy.to_postgres_report(db, snap, dry_run=a.dry_run, replace=a.replace, environ=_pg_env())
+    else:
+        if not a.path:
+            return err("export-to-sqlite needs the NEW file to write, e.g. ~/localharness/discovery-from-pg.db")
+        got = store_copy.to_sqlite_report(Path(a.path), environ=_pg_env())
+    for row in got.get("verify", []):
+        note(f"{'ok  ' if row['ok'] else 'DIFF'} {row['table']:<28} {row['rows']:>9} rows  {row['digest'][:16]}"
+             f"{'' if row['ok'] else '  ' + row['why']}")
+    for k in ("why", "gaps", "occupied", "rows", "foreign_key_violations", "snapshot", "dest"):
+        if got.get(k):
+            note(f"{k}: {got[k]}")
+    emit(**got)
+    return 0 if got["ok"] else 1
+
+
 def cmd_store(a) -> int:
     """Migrate a copy of a store with this checkout and check it. #478."""
     import sqlite3
 
+    if a.action != "dry-run":
+        return _postgres(a)
     from harness import migration_check as mc
     try:
         got = mc.dry_run(Path(a.path) if a.path else None, keep=a.keep)

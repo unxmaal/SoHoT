@@ -33,10 +33,9 @@ REPAIRED_BY = {"too_big_ceiling_current": heartbeat.REOPENED_TOO_BIG,
                "reopened_past_screen": heartbeat.MOVED_PAST_SCREEN}
 
 
-def open_readonly(path) -> sqlite3.Connection:
-    conn = sqlite3.connect(f"{Path(path).resolve().as_uri()}?mode=ro", uri=True)
-    conn.row_factory = sqlite3.Row
-    return conn
+def open_readonly(path):
+    from harness import store
+    return store.open_ro(path)
 
 
 def _adoptions_pass_here(conn) -> list:
@@ -364,10 +363,8 @@ def serving(conn, config=None) -> tuple[dict | None, dict]:
 def audit(path=None, config=None) -> dict:
     """Every check on the store at `path` (default: this home's), opened read-only."""
     from harness import gateway, memory_store as ms, store
-    if store.backend() != store.SQLITE:
-        raise RuntimeError("soh audit reads a SQLite store; this home uses another backend")
     path = Path(path if path is not None else ms.db_path())
-    if not path.is_file():
+    if not path.is_file() and not (store.backend() == store.POSTGRES and path == ms.db_path()):
         raise FileNotFoundError(f"no store at {path}")
     config = gateway_config(path, config)
     conn = open_readonly(path)

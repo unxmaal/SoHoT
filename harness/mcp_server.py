@@ -540,8 +540,10 @@ def main() -> None:
     ap.add_argument("--shutdown-grace", type=float, default=SHUTDOWN_GRACE_S,
                     help="seconds a stopping server waits for open client streams")
     a = ap.parse_args()
-    from harness import purpose
+    from harness import purpose, store
     purpose.set_process(purpose.WORK)
+    if store.backend() == store.POSTGRES:
+        store.use_pool()
     if a.transport == "stdio":
         SERVER.run(transport="stdio")
         return

@@ -935,9 +935,9 @@ GIB = 1024 ** 3
 
 def _columns(conn, table: str) -> set[str]:
     """Column names of one table, asked of whichever backend this is."""
-    if store.backend() == store.POSTGRES:
+    if store.dialect(conn) == store.POSTGRES:
         rows = conn.execute(
             "SELECT column_name FROM information_schema.columns "
-            "WHERE table_name = ?", (table,))
+            "WHERE table_schema = current_schema() AND table_name = ?", (table,))
         return {r["column_name"] for r in rows}
     return {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}

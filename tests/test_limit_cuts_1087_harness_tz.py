@@ -12,7 +12,7 @@ import types
 import pytest
 
 from harness import cuts
-from harness import memory_store as ms
+from harness import memory_store as ms, store
 from harness import watchdog as wd
 
 NOON = time.mktime((2026, 10, 12, 12, 0, 0, 0, 0, -1))
@@ -25,10 +25,10 @@ def _cuts() -> list[tuple]:
     path = cuts._spool_path()
     lines = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
     got = [(r["knob"], r["kept"], r["dropped"]) for r in map(json.loads, lines)]
-    if ms.db_path().exists():
-        conn = sqlite3.connect(ms.db_path())
+    if store.backend() == store.POSTGRES or ms.db_path().exists():
+        conn = store.open_ro(ms.db_path())
         try:
-            if conn.execute("SELECT 1 FROM sqlite_master WHERE name = 'limit_cuts'").fetchone():
+            if store.has_table(conn, "limit_cuts"):
                 got += [tuple(r) for r in conn.execute("SELECT knob, kept, dropped FROM limit_cuts ORDER BY id")]
         finally:
             conn.close()

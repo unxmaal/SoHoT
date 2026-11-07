@@ -43,10 +43,10 @@ def attribute_sightings(conn) -> dict:
 
 def _machine_fk_tables(conn) -> list[str]:
     """Every table with a machine_id column, so a merge misses none. #415."""
-    if store.backend() == store.POSTGRES:
+    if store.dialect(conn) == store.POSTGRES:
         names = [r["table_name"] for r in conn.execute(
             "SELECT DISTINCT table_name FROM information_schema.columns "
-            "WHERE column_name = 'machine_id'")]
+            "WHERE table_schema = current_schema() AND column_name = 'machine_id'")]
     else:
         names = [r["name"] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type = 'table'")]

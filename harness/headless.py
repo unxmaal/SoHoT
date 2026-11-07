@@ -69,10 +69,10 @@ def shell(model: str, base: str) -> str:
 
 
 def requests_between(path: Path, start: float, end: float) -> list[dict]:
-    """claude-cli rows of gateway_requests in [start, end], read with SQLite's mode=ro."""
-    conn = sqlite3.connect(f"{Path(path).resolve().as_uri()}?mode=ro", uri=True)
+    """claude-cli rows of gateway_requests in [start, end], read-only."""
+    from harness import store
+    conn = store.open_ro(path)
     try:
-        conn.row_factory = sqlite3.Row
         rows = conn.execute(
             "SELECT at, alias, served, client, call_type, stream, prompt_tokens, completion_tokens, "
             "tool_calls, tool_calls_valid, finish_reason, error_class FROM gateway_requests "

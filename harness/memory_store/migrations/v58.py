@@ -5,4 +5,4 @@ VERSION = 58
 
 
 def data(conn) -> None:
-    conn.execute("UPDATE downloads SET complete = 0 WHERE removed_at IS NOT NULL AND complete")
+    conn.execute("UPDATE downloads SET complete = 0 WHERE removed_at IS NOT NULL AND complete <> 0")

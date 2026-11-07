@@ -15,7 +15,7 @@ from types import SimpleNamespace
 import pytest
 
 from harness import cuts
-from harness import memory_store as ms
+from harness import memory_store as ms, store
 
 
 def _cuts() -> list[tuple]:
@@ -23,8 +23,8 @@ def _cuts() -> list[tuple]:
     path = cuts._spool_path()
     lines = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
     out = [(r["knob"], r["kept"], r["dropped"]) for r in map(json.loads, lines)]
-    if ms.db_path().exists():
-        with contextlib.closing(sqlite3.connect(ms.db_path())) as c:
+    if store.backend() == store.POSTGRES or ms.db_path().exists():
+        with contextlib.closing(store.open_ro(ms.db_path())) as c:
             with contextlib.suppress(sqlite3.Error):
                 out += [tuple(r) for r in c.execute("SELECT knob, kept, dropped FROM limit_cuts ORDER BY id")]
     return out

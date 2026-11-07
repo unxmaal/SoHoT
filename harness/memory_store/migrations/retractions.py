@@ -422,7 +422,7 @@ def _retract_verdicts_from_runs_that_never_ran(conn) -> None:
 
 def _verdicts_name_a_candidate(conn) -> None:
     """proposal_id becomes nullable and verdicts gain candidate_id. #407."""
-    if store.backend() == store.POSTGRES:
+    if store.dialect(conn) == store.POSTGRES:
         conn.execute("ALTER TABLE verdicts ALTER COLUMN proposal_id "
                      "DROP NOT NULL")
         if "candidate_id" not in _columns(conn, "verdicts"):

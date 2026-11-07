@@ -96,7 +96,13 @@ def _own_store():
     if ms.lent() is not None or ms.migrating() is not None:
         return None
     if store.backend() == store.POSTGRES:
-        return ms.connect()
+        conn = store.postgres_connect()
+        has = store.has_table(conn, TABLE)
+        conn.commit()
+        if has:
+            return conn
+        conn.close()
+        return None
     path = ms.db_path()
     if not path.exists():
         return None

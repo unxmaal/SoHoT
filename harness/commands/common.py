@@ -9,13 +9,25 @@ import sys
 from harness import paths
 
 
+def _pg_current() -> bool:
+    """Whether this home's Postgres store exists at this code's schema, so a reader can take it read-only."""
+    from harness import store
+    from harness.memory_store import connection
+    conn = store.postgres_connect()
+    try:
+        return connection._pg_schema(conn) == connection.SCHEMA_VERSION
+    finally:
+        conn.close()
+
+
 @contextlib.contextmanager
 def lent_store():
     """This home's store read-only (a fresh home's is created), lent to every reader for the block. #1432."""
     from harness import ledger, store
     from harness import memory_store as ms
     db = ms.db_path()
-    conn = ledger.open_ro(db) if store.backend() != store.POSTGRES and db.is_file() else ms.connect()
+    exists = _pg_current() if store.backend() == store.POSTGRES else db.is_file()
+    conn = ledger.open_ro(db) if exists else ms.connect()
     try:
         with ms.lend(conn):
             yield conn

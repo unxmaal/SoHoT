@@ -14,7 +14,7 @@ import httpx
 import pytest
 
 from harness import cuts
-from harness import memory_store as ms
+from harness import memory_store as ms, store
 from tests.test_context import GIB, ORNITH, QWEN3_4B
 from tests.test_context_store import _gguf, models  # noqa: F401
 from tests.test_harness_adopt import head_to_head_rows, row
@@ -45,8 +45,8 @@ def _knobs() -> list[str]:
     """Every cut this test's home holds: spooled, or already moved into its store."""
     path = cuts._spool_path()
     got = [json.loads(line)["knob"] for line in path.read_text(encoding="utf-8").splitlines()] if path.exists() else []
-    if ms.db_path().exists():
-        c = sqlite3.connect(ms.db_path())
+    if store.backend() == store.POSTGRES or ms.db_path().exists():
+        c = store.open_ro(ms.db_path())
         try:
             got += [r[0] for r in c.execute("SELECT knob FROM limit_cuts ORDER BY id")]
         finally:

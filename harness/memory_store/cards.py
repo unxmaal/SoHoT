@@ -27,7 +27,7 @@ def set_card(conn, name: str, card, read: str = "card") -> bool:
     conn.execute(
         "UPDATE proposals SET hf_task = ?, library = ?, card_tags = ?, "
         "attaches_to = ?, runtime_needed = ?, card_read = ?, "
-        "lane_source = CASE WHEN ? THEN ? ELSE lane_source END WHERE id = ?",
+        "lane_source = CASE WHEN ? <> 0 THEN ? ELSE lane_source END WHERE id = ?",
         (card.task, card.library, json.dumps(list(card.tags)),
          card.attaches_to, card.runtime_needed, read,
          1 if same else 0, card.lane_source, row["id"]))

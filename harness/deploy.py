@@ -315,7 +315,11 @@ def _run(argv, cwd, timeout: float, log, extra=None, *, site_knob: str) -> str:
 
 
 def backup(db: Path, dest: Path) -> Path:
-    """A consistent copy of the store through SQLite's backup API, read from a mode=ro connection."""
+    """A consistent copy of the store: SQLite's backup API from a mode=ro connection, or pg_dump on Postgres."""
+    from harness import store
+    if store.backend() == store.POSTGRES:
+        from harness import store_service
+        return store_service.dump(dest)
     src = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
     try:
         out = sqlite3.connect(str(dest))
