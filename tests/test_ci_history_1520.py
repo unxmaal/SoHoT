@@ -69,6 +69,28 @@ def test_the_slowest_tests_are_ranked_by_median_over_full_runs():
     assert ci_history.slowest(rows, top=2) == [("a", 20.0, 30.0, 2), ("b", 1.5, 2.0, 2)]
 
 
+def test_any_job_or_matrix_leg_is_read_from_its_first_make_step():
+    """#1588: check-linux, check-windows, check-postgres and each mutation leg are measured like check-macos."""
+    leg = {**_job("00:00:00", "02:00:30", "cancelled", ("00:02:00", None)), "name": "mutation (harness/adopt.py 1/2)"}
+    leg["steps"] = [{"name": "Run actions/checkout@v4", "started_at": "2026-11-03T00:00:00Z",
+                     "completed_at": "2026-11-03T00:01:00Z"}, {**leg["steps"][0], "name": "make mutation"}]
+    row = ci_history.from_job(leg, RUN, "mutation")
+    assert row["name"] == "mutation (harness/adopt.py 1/2)" and row["check_min"] == 118.5
+    assert ci_history.from_job(leg, RUN, "mutation-x") is None and ci_history.from_job(leg, RUN) is None
+    pg = {**_job("00:00:00", "00:30:00"), "name": "check-postgres"}
+    pg["steps"] = [{**pg["steps"][0], "name": "make test-postgres-suite"}]
+    assert ci_history.from_job(pg, RUN, "check-postgres")["check_min"] == 29.0
+
+
+def test_a_run_cut_at_its_limit_projects_its_length_from_the_progress_it_reached():
+    cut = {"fast": False, "runner": "unknown", "conclusion": "cancelled", "job_min": 45.2, "check_min": 42.0, "pct": 74}
+    assert ci_history.projected(cut) == round(45.2 + 42.0 * (100 / 74 - 1), 1) == 60.0
+    assert ci_history.projected({**cut, "pct": None}) is None
+    (row,) = ci_history.table([cut, {**cut, "pct": 20, "job_min": 10.0}], 45)
+    assert row["timeout"] == 1 and row["superseded"] == 1 and row["cut_projected_max"] == 60.0
+    assert row["path"] == "full (main)"
+
+
 def test_collect_reads_each_runs_jobs_and_caches_their_logs(tmp_path):
     calls = []
 
@@ -85,3 +107,5 @@ def test_collect_reads_each_runs_jobs_and_caches_their_logs(tmp_path):
     n = len(calls)
     ci_history.collect(5, tmp_path, gh=gh)
     assert len(calls) == n + 1, "the second pass reads only the run list; jobs and logs come from the cache"
+    assert ci_history.collect(5, tmp_path, gh=gh, name="check-linux", event="schedule") == []
+    assert calls[-1][-2:] == ["--event", "schedule"]

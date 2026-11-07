@@ -67,7 +67,7 @@ def test_the_installed_mlx_lm_serves_with_the_class_the_wrapper_raises():
     server = pytest.importorskip("mlx_lm.server")
     default = inspect.signature(server._run_http_server).parameters["server_class"].default
     assert default is http.server.ThreadingHTTPServer
-    assert mlx_server.ENTRY is server.main
+    assert mlx_server.entry() is server.main
 
 
 def test_serve_mlx_execs_the_wrapper_around_mlx_lm_server():

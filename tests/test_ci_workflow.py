@@ -77,10 +77,23 @@ def test_each_mutated_module_is_its_own_job_so_one_timeout_cannot_void_the_rest(
     from tests.gauntlet import mutation
     doc, _ = _ci()
     job = doc["jobs"]["mutation"]
-    assert sorted(job["strategy"]["matrix"]["module"]) == sorted(mutation.MODULES)
+    legs = job["strategy"]["matrix"]["include"]
+    assert sorted({leg["module"] for leg in legs}) == sorted(mutation.MODULES)
+    for module in mutation.MODULES:
+        shards = sorted(leg.get("shard", "") for leg in legs if leg["module"] == module)
+        n = len(shards)
+        assert shards == ([""] if n == 1 else [f"{k}/{n}" for k in range(1, n + 1)]), (module, shards)
     assert job["strategy"]["fail-fast"] is False
     run = "\n".join(s.get("run", "") for s in job["steps"])
-    assert "--module ${{ matrix.module }}" in run
+    assert "--module ${{ matrix.module }}${{ matrix.shard && format(' --shard {0}', matrix.shard) || '' }}" in run
+    assert "matrix.shard" in job["name"], "two shards of one module need two job names"
+
+
+def test_adopt_mutation_is_split_since_one_job_ran_past_its_limit():
+    """#1588: mutation (harness/adopt.py) was cut at 120 min on six of seven nightlies 11-01..11-07."""
+    doc, _ = _ci()
+    legs = [leg for leg in doc["jobs"]["mutation"]["strategy"]["matrix"]["include"] if leg["module"] == "harness/adopt.py"]
+    assert len(legs) >= 2
 
 
 def test_make_mutation_redirects_its_output():
@@ -147,6 +160,41 @@ def test_macos_leaves_room_for_a_slow_host_and_is_still_a_hang_detector():
     limit = doc["jobs"]["check-macos"]["timeout-minutes"]
     assert limit == ci_budget.MACOS_TIMEOUT_MIN
     assert MACOS_SLOW_HOST * MACOS_3_VCPU_JOB_P95 <= limit < 2 * MACOS_3_VCPU_JOB_MAX
+
+
+#: Job minutes projected from the nightly cuts' last progress % (python -m harness.ci_history --job J, #1588), and the
+#: whole Postgres suite's from push run 42412868007, cut at 99% after 36.2 min (#1584).
+PROJECTED_JOB_MIN = {"check-linux": 34.4, "check-windows": 61.0, "check-postgres": 36.5}
+#: Linux and Windows hosts vary less than the M1 class; check-postgres is on macos-latest, so MACOS_SLOW_HOST.
+HOST_FACTOR = {"check-linux": 1.3, "check-windows": 1.3, "check-postgres": MACOS_SLOW_HOST}
+
+
+def test_each_nightly_suite_has_room_for_its_measured_length_and_is_still_a_hang_detector():
+    """#1588: check-linux, check-windows and mutation (adopt) were cut at their limits every night 11-01..11-07."""
+    doc, _ = _ci()
+    for job, minutes in PROJECTED_JOB_MIN.items():
+        limit = doc["jobs"][job]["timeout-minutes"]
+        assert HOST_FACTOR[job] * minutes <= limit < 2 * minutes, (job, limit)
+
+
+PG = "check-postgres"
+
+
+def test_a_push_to_main_runs_on_postgres_only_what_it_reaches_and_the_nightly_runs_it_all():
+    """#1584: push run 42412868007 ran the whole Postgres suite and was cut at 35 min."""
+    doc, _ = _ci()
+    job = doc["jobs"][PG]
+    expr = job["env"][FAST]
+    assert "github.event_name == 'push'" in expr and "github.event_name == 'pull_request'" in expr
+    assert "schedule" not in expr and "workflow_dispatch" not in expr
+    assert expr.replace(" ", "").endswith("&&'1'||'0'}}")
+    select = next(s for s in job["steps"] if "tests.gauntlet.scope" in s.get("run", ""))
+    assert select["if"] == f"env.{FAST} == '1'"
+    assert '--base "$BASE"' in select["run"] and "--map" in select["run"]
+    base = select["env"]["BASE"]
+    assert "github.event.before" in base and "format('origin/{0}', github.base_ref)" in base
+    assert base == doc["jobs"]["store-touched"]["steps"][1]["env"]["BASE"], "one base for what reaches the store and what runs"
+    assert job["permissions"]["actions"] == "read", "the coverage map is an artifact"
 
 
 RERUN = CI.parent / "rerun-cancelled.yml"
