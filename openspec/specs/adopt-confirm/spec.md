@@ -223,12 +223,12 @@ Test: tests/test_adopt_effect_confirm_725.py::test_only_a_measured_gate_win_is_c
 - **THEN** the confirmation still tests dev at ALPHA
 Test: tests/test_adopt_effect_confirm_725.py::test_the_confirmation_is_tested_at_undivided_alpha
 
-### Requirement: CONFIRMING holds a win until a night run
-When a measured gate win has no confirmation cells the adopt tier SHALL record it as `confirming` (declined, limit), write no adoption so the incumbent keeps serving, and queue one night confirmation job; a lane too small to split SHALL always be held in-run, and the night run of it SHALL use every case.
+### Requirement: CONFIRMING holds a win until a confirmation run
+When a measured gate win has no confirmation cells the adopt tier SHALL record it as `confirming` (declined, limit), write no adoption so the incumbent keeps serving, and queue one confirmation job behind the contention gate; a lane too small to split SHALL always be held in-run, and the night run of it SHALL use every case.
 
 #### Scenario: no dev rows ran
 - **WHEN** a holdout win has only holdout rows
-- **THEN** it is confirming, recorded declined/limit, no adoption row exists, and one night job `adopt --confirm <vid>` is queued once
+- **THEN** it is confirming, recorded declined/limit, no adoption row exists, and one job `adopt --confirm <vid>` with no start is queued once
 Test: tests/test_adopt_effect_confirm_725.py::test_a_holdout_win_with_no_dev_rows_is_held_and_queues_a_night_confirmation
 
 #### Scenario: a too-small lane in-run and fresh
@@ -237,7 +237,7 @@ Test: tests/test_adopt_effect_confirm_725.py::test_a_holdout_win_with_no_dev_row
 Test: tests/test_adopt_effect_confirm_725.py::test_confirmation_cells_come_from_dev_and_a_fresh_run_of_a_lane_too_small_to_split
 
 ### Requirement: Queueing a confirmation
-`queue_confirmation` SHALL add `python -m harness.cli adopt --confirm VID` to the given store's work queue with requested_by "adopt", the repo as cwd, the night gate set and not_before at tonight's night start (or a given start), unless the same argv is already pending or running in a job other than the one this process runs in.
+`queue_confirmation` SHALL add `python -m harness.cli adopt --confirm VID` to the given store's work queue with requested_by "adopt", the repo as cwd and no start (or a given start), so the contention gate decides when it runs, unless the same argv is already pending or running in a job other than the one this process runs in.
 
 #### Scenario: the job's shape
 - **WHEN** a confirming verdict is queued
@@ -246,7 +246,7 @@ Test: tests/test_adopt_effect_confirm_725.py::test_the_confirmation_job_is_the_a
 
 #### Scenario: a job does not count itself
 - **WHEN** the running confirmation job queues its own continuation with a start time
-- **THEN** a new job is added at that start with the night gate, while another process sees the running job and queues nothing
+- **THEN** a new job is added at that start, while another process sees the running job and queues nothing
 Test: tests/test_adopt_effect_confirm_725.py::test_a_confirmation_job_does_not_count_itself_and_a_continuation_starts_when_named
 
 ### Requirement: The confirmation job decides or records nothing
@@ -278,7 +278,7 @@ Test: untested
 Test: tests/test_confirm_resume_1357.py::test_a_crashed_confirmation_still_fails_and_queues_nothing
 
 ### Requirement: Confirmation resume, pause and continuation
-The confirmation job SHALL resume the newest unfinished `*-confirm-<lane>` run of the same pair, repeat and split; record from a finished run of that exam newer than the hold, on the current split version, that no verdict was read from; start fresh when a resume is refused as another exam; and on a pause SHALL record no verdict, queue its continuation for the next night, and exit with the paused code (75).
+The confirmation job SHALL resume the newest unfinished `*-confirm-<lane>` run of the same pair, repeat and split; record from a finished run of that exam newer than the hold, on the current split version, that no verdict was read from; start fresh when a resume is refused as another exam; and on a pause SHALL record no verdict, queue its continuation behind the contention gate, and exit with the paused code (75).
 
 #### Scenario: pause then resume through the queue
 - **WHEN** a confirmation pauses after 8 cells inside a queue job

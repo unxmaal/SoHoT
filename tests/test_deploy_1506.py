@@ -181,7 +181,7 @@ def test_paused_deploys_queue_nothing_until_resumed(world):
     _commit(world["work"], {"f": "two\n"}, "two")
     deploy.pause()
     assert deploy.poll(src=world["link"], green=_green, environ={})["queued"] is None
-    assert "paused" in deploy.blocked(_local(10))
+    assert "paused" in deploy.blocked()
     deploy.resume()
     assert deploy.poll(src=world["link"], green=_green, environ={})["queued"] is not None
 
@@ -194,14 +194,13 @@ def _pending_deploy() -> dict:
                   cwd=str(paths.home()))
 
 
-@pytest.mark.parametrize("hour,minute,runs", [(10, 0, True), (19, 59, True), (20, 30, False), (23, 0, False),
-                                              (3, 0, False), (7, 59, False)])
-def test_a_deploy_job_waits_outside_the_day_window_and_never_runs_at_night(monkeypatch, hour, minute, runs):
+@pytest.mark.parametrize("hour,minute", [(10, 0), (19, 59), (20, 30), (23, 0), (3, 0), (7, 59)])
+def test_a_deploy_job_is_ready_at_any_hour_since_the_day_window_went(monkeypatch, hour, minute):
     monkeypatch.setattr("harness.sweep_guard.running", lambda root, **kw: [])
     job = _pending_deploy()
     other = wq.add(["true"], title="measure", cwd=str(paths.home()))
     ids = [j["id"] for j in wq.ready(now=_local(hour, minute))]
-    assert (job["id"] in ids) is runs and other["id"] in ids
+    assert job["id"] in ids and other["id"] in ids and not hasattr(deploy, "in_window")
 
 
 def test_a_deploy_job_waits_while_a_sweep_runs(monkeypatch):
@@ -209,7 +208,7 @@ def test_a_deploy_job_waits_while_a_sweep_runs(monkeypatch):
         {"what": "discover loop", "pid": 4242, "started": None, "commit": "", "command": "discover --loop"}])
     job = _pending_deploy()
     assert job["id"] not in [j["id"] for j in wq.ready(now=_local(10))]
-    assert "discover loop (pid 4242" in deploy.blocked(_local(10))
+    assert "discover loop (pid 4242" in deploy.blocked()
 
 
 def test_a_ready_deploy_never_interrupts_a_running_job_and_runs_before_the_rest(monkeypatch):

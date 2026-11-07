@@ -28,6 +28,8 @@ NOT_BINDING_LANE = "not_binding_lane"
 LANE_MIN_CUTS = 20
 #: Measured cases a run needs to stand for its model over a newer, smaller one, and to rank above a smaller run. #1179, #1239.
 FALLBACK_MIN_CASES = 20
+#: GPU seconds a reply-budget sweep, all its values together, may be projected to take before it is refused. #1020, #1509.
+BUDGET_S = 11 * 3600.0
 
 
 def _flag(k, value) -> list[str]:
@@ -231,17 +233,14 @@ def projected(conn, swept: dict, k, values, machines) -> float | None:
     return total
 
 
-def _night(conn, entry: dict, k, swept: dict, machines, now: float) -> str:
-    """Set the entry's start and projection; why it is refused when it would run past the night. #1020."""
-    from harness import power, workqueue as wq
-    start, end = wq.night_window(now)
-    entry["not_before"], entry["night_end"] = start, end
+def _budget(conn, entry: dict, k, swept: dict, machines) -> str:
+    """Set the entry's projection; why it is refused when it would take more than BUDGET_S. #1020, #1509."""
+    from harness import cuts, power
     entry["projected_s"] = got = projected(conn, swept, k, list(entry["argv"]), machines)
-    if got is None or got <= end - start:
+    if got is None or got <= BUDGET_S:
         return ""
-    return (f"projected {power._hm(got)} for {len(entry['argv'])} values, over the night's "
-            f"{power._hm(end - start)} ({time.strftime('%H:%M', time.localtime(start))} to "
-            f"{time.strftime('%H:%M', time.localtime(end))})")
+    cuts.cut("sweep_budget", "reply-budget sweeps projected past the budget", dropped=1, conn=conn)
+    return f"projected {power._hm(got)} for {len(entry['argv'])} values, over the {power._hm(BUDGET_S)} sweep budget"
 
 
 def lane_evidence(row: dict, spec: str) -> dict | None:
@@ -301,7 +300,7 @@ def plan(conn, *, now: float | None = None) -> list[dict]:
                 continue
         entry["argv"] = {v: argv(swept, k, v) for v in k.values_for(row["lane"])}
         entry["skip"] = (_skip(conn, _key(conn, k.name, row["lane"], swept["spec"], mid), now)
-                         or _night(conn, entry, k, swept, machines, now))
+                         or _budget(conn, entry, k, swept, machines))
         out.append(entry)
     return out
 

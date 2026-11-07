@@ -156,7 +156,7 @@ Test: tests/test_workqueue.py::test_a_pending_job_can_be_reprioritised_and_a_fin
 Test: tests/test_workqueue.py::test_priority_through_the_cli
 
 ### Requirement: A job may name its earliest start
-The queue SHALL store an optional `not_before`. A start spec SHALL be: empty for none; `night` for `night_start(now)`; `HH:MM` for its next local occurrence at or after now; a local `YYYY-MM-DD HH:MM[:SS]` (or with `T`) for that exact time. A dated start in the past, an out-of-range time and any other text MUST be refused.
+The queue SHALL store an optional `not_before`. A start spec SHALL be: empty or `night` for none; `HH:MM` for its next local occurrence at or after now; a local `YYYY-MM-DD HH:MM[:SS]` (or with `T`) for that exact time. A dated start in the past, an out-of-range time and any other text MUST be refused.
 
 #### Scenario: Clock times
 - **WHEN** `16:30` and `14:00` are given at 15:00
@@ -180,60 +180,93 @@ Test: tests/test_workqueue_start_900.py::test_a_dated_start_in_the_past_is_refus
 
 #### Scenario: The CLI takes and lists a start
 - **WHEN** `soh jobs add --night` and `--not-before 16:45` are run at 15:00, and `--not-before noon`
-- **THEN** the jobs show not_before 21:00 and 16:45, `noon` exits non-zero, and the listing says "from 2026-10-16 21:00" and "2 waiting for their start time"
-Test: tests/test_workqueue_start_900.py::test_the_cli_takes_night_and_not_before_and_lists_the_start
+- **THEN** the first has no start and says --night is ignored, the second shows 16:45, `noon` exits non-zero, and the listing says "from 2026-10-16 16:45", "1 waiting for their start time" and the contention gate's state
+Test: tests/test_workqueue_start_900.py::test_the_cli_ignores_night_takes_not_before_and_lists_the_start
 
 #### Scenario: An MCP job with a start
-- **WHEN** an MCP image is requested with start `night`, and a video with start `later`
-- **THEN** the image job's not_before is tonight's night start and its status says it waits for its start time, and the video is refused naming HH:MM
+- **WHEN** MCP images are requested with start `night` and `16:45` at 15:00, and a video with start `later`
+- **THEN** the first has no start, the second waits for 16:45 and its status says so, and the video is refused naming HH:MM
 Test: tests/test_workqueue_start_900.py::test_an_mcp_job_with_a_start_says_it_waits_for_it
 
-### Requirement: Night is the discover hours until the watchdog's day start
-`night_start(now)` SHALL return now when now is inside a night window, else the next window's start, where a window runs from each installed discover hour outside the watchdog's day hours (the day end hour if none) until the next day start hour. `next_night(now)` SHALL be `night_start(now)` by day and the following night's start at night.
+### Requirement: Night is no start
+Since the contention gate replaced the night rule, the start spec `night` SHALL mean no start at any hour, and the queue SHALL have no night window.
 
-#### Scenario: Night boundaries
-- **WHEN** now is 15:00 or 08:00, or 23:00, 03:00 or 07:59
-- **THEN** night_start is 21:00 the same day for the first two and now for the rest
-Test: tests/test_workqueue_start_900.py::test_night_is_from_the_discover_hour_until_the_day_starts
+#### Scenario: Any hour
+- **WHEN** `night` is given at 15:00, 08:00, 23:00 or 03:00
+- **THEN** the start is None, and the queue has no night_start, next_night or night_window
+Test: tests/test_workqueue_start_900.py::test_night_is_no_start_at_any_hour
 
-#### Scenario: The installed discover hours
-- **WHEN** the discover hours are 22 and 12 and it is 21:30
-- **THEN** night_start is 22:00
-Test: tests/test_workqueue_start_900.py::test_night_follows_the_installed_discover_hours
-
-#### Scenario: The next night
-- **WHEN** next_night is asked at 15:00, 23:00, 05:00 and 08:00
-- **THEN** it is tonight 21:00 by day and tomorrow 21:00 at night
-Test: tests/test_confirm_resume_1357.py::test_the_next_night_is_tonight_by_day_and_tomorrow_night_at_night
-
-### Requirement: Night with an explicit start keeps the later of the two
-The CLI SHALL turn `--night` with `--not-before WHEN` into `night_start(WHEN)` with no night gate, wherever the options are written; `--night` alone SHALL set the night gate.
+### Requirement: --night is ignored and an explicit start kept
+The CLI SHALL accept `--night` wherever the options are written, say it is ignored, and keep `--not-before WHEN` as given.
 
 #### Scenario: Both options
-- **WHEN** `--night --not-before` names a time by day, at night, or a clock time before tonight
-- **THEN** not_before is the first night moment at or after that time and `night_gate` is false, before or after the action word
-Test: tests/test_workqueue_start_900.py::test_night_with_a_start_keeps_the_later_of_the_two
+- **WHEN** `--night --not-before` names a dated or a clock start, before or after the action word
+- **THEN** not_before is that start and the job has no night gate
+Test: tests/test_workqueue_start_900.py::test_night_with_a_start_keeps_the_start_alone
 
 ### Requirement: A job runs only once its start has come
 The worker SHALL start only pending jobs that are due, in run order, so a later due job runs while an earlier one waits; the service SHALL not consult the gate while no job is due.
 
 #### Scenario: A night job queued by day
-- **WHEN** a night job and an unscheduled job are queued at 15:00
-- **THEN** only the unscheduled job runs by day, nothing runs at 20:59, and the night job runs at 21:00
-Test: tests/test_workqueue_start_900.py::test_a_night_job_queued_at_15_waits_while_the_gate_is_open_and_runs_at_21
+- **WHEN** a job queued for the night and one for 16:45 are queued at 15:00
+- **THEN** the night job runs at 15:00 and the 16:45 job runs at 16:45
+Test: tests/test_workqueue_start_900.py::test_a_job_queued_for_the_night_at_15_runs_at_15_and_a_clock_start_still_waits
 
 #### Scenario: Nothing due
 - **WHEN** the only job is not due
 - **THEN** one pass of the service never asks the gate and the job stays pending
 Test: tests/test_workqueue_start_900.py::test_the_worker_does_not_wake_for_a_job_that_is_not_due
 
-### Requirement: A day clearance lifts night starts, never clock times
-While this machine has a day clearance in force, a pending job with the night gate set SHALL be due whatever its not_before; a job with a clock or dated start MUST still wait for it.
+### Requirement: GPU jobs and deploys wait for the contention gate
+A GPU job or a deploy SHALL start only when no owner hold is in force, memory pressure is normal and no client request the gateway answered (purpose work or unknown) ended inside the last `contention_idle` seconds; a held deploy SHALL let nothing start ahead of it, a cloud job and a job a client waits on (requested through the MCP) SHALL never be held, and the worker SHALL say each change of the gate's decision once.
 
-#### Scenario: Clearance given and revoked
-- **WHEN** a night-gated job and a 16:45 job are pending at 12:00, then a clearance is given, then revoked
-- **THEN** nothing is ready before, only the night job is ready during the clearance, and nothing after the revoke
-Test: tests/test_day_clear_1112.py::test_a_clearance_lifts_a_night_start_but_never_a_clock_time
+#### Scenario: Memory pressure
+- **WHEN** a GPU job is pending at memory warn, then at normal
+- **THEN** it does not start, then it runs
+Test: tests/test_contention_1509.py::test_high_memory_pressure_keeps_a_gpu_job_from_starting
+
+#### Scenario: A served client
+- **WHEN** a client was served a minute ago and a GPU job and a deploy are pending
+- **THEN** neither starts until the idle window has passed, the deploy first
+Test: tests/test_contention_1509.py::test_a_served_client_holds_gpu_jobs_and_deploys_until_the_lanes_are_idle
+
+#### Scenario: SoHoT's own traffic
+- **WHEN** the only recent request is an eval, smoke, watchdog, discover or internal one
+- **THEN** the GPU job starts
+Test: tests/test_contention_1509.py::test_soh_s_own_traffic_never_holds_the_gate
+
+#### Scenario: A job a client waits on
+- **WHEN** a client was just served and a batch job and an MCP image job are pending
+- **THEN** the image job starts
+Test: tests/test_contention_1509.py::test_a_job_a_client_waits_on_is_serving_and_never_held
+
+#### Scenario: Each decision said once
+- **WHEN** the gate is asked twice while open, then once at memory warn
+- **THEN** two lines are said: open, then closed naming the pressure
+Test: tests/test_contention_1509.py::test_the_gate_says_each_change_of_decision_once
+
+### Requirement: A job paused for contention waits again and resumes
+When a job exits paused and the watchdog paused it for contention since it started, the queue SHALL return it to pending, appending to its log, so it resumes when the gate opens; a bare evals.run SHALL resume from its stored run (`--out <dir> --resume`); a job paused for any other reason, or whose command queued a pending job with the same command, SHALL stay paused.
+
+#### Scenario: Pause and resume
+- **WHEN** a client is served while a batch GPU job runs, the watchdog pauses it and it exits paused
+- **THEN** the job is pending with a note, does not start while the lanes are busy, then runs to done with both parts in its log
+Test: tests/test_contention_1509.py::test_served_traffic_during_a_gpu_job_pauses_it_at_a_checkpoint_and_it_resumes_when_idle
+
+#### Scenario: Another reason
+- **WHEN** the job exits paused after a long_run pause
+- **THEN** it stays paused
+Test: tests/test_contention_1509.py::test_a_job_paused_for_anything_else_stays_paused
+
+#### Scenario: Its own continuation
+- **WHEN** the paused job's command queued a pending job with the same command
+- **THEN** the paused job stays paused and only the continuation is pending
+Test: tests/test_contention_1509.py::test_a_command_that_queued_its_own_continuation_is_left_paused
+
+#### Scenario: A bare eval
+- **WHEN** a paused evals.run job stored a run
+- **THEN** it waits again with `--out <that run's dir> --resume`
+Test: tests/test_contention_1509.py::test_a_paused_bare_eval_resumes_from_its_stored_run
 
 ### Requirement: The gate is the pause flag and memory pressure
 `gate()` SHALL be closed while the queue's pause flag exists or memory pressure is alarming, and open otherwise, including when pressure is unknown. The worker SHALL check it before each start and MUST NOT stop a running job when it closes.

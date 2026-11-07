@@ -5,15 +5,15 @@ import json
 import statistics
 from pathlib import Path
 
-from harness import residency
+from harness import interactive, residency
 
 GB = 1e9
 #: Purposes whose requests are batch demand; the rest are a client waiting.
 BATCH_PURPOSES = ("eval", "discover")
 #: Purposes the harness sends to itself, not demand.
 SKIPPED_PURPOSES = ("watchdog", "smoke")
-#: Lanes whose served models the pinned+LRU policy holds when no --pin is given (#1558).
-PIN_LANES = ("decide", "extract", "code")
+#: Lanes whose served models the pinned+LRU policy holds when no --pin is given: the interactive server's (#1558, #1572).
+PIN_LANES = interactive.LANES
 
 
 def aliases(config=None) -> dict[str, str]:

@@ -1315,7 +1315,7 @@ names it); it becomes the next baseline and is not flagged. Each
 is recorded with its reason and failure class and flagged in `soh report`; a
 flagged lane is re-run once its threshold passes again. A re-run the watchdog
 paused is not judged: the next check queues its continuation from the
-checkpoint for the night. The served model is never swapped; that is left to a
+checkpoint. The served model is never swapped; that is left to a
 person. `soh reverify --dry-run` says what would be queued.
 
 **Exit status.** `soh discover --loop` exits nonzero when any step did, and
@@ -2967,12 +2967,22 @@ machine lock below for a whole job: each command takes it for the part that
 loads a model, so a job that is downloading does not block a GPU run. It starts
 the next one whenever the queue is not paused and macOS memory pressure is
 normal, whether or not someone is at the machine; under pressure it waits,
-and an unreadable pressure level does not block it. Jobs are rows in the
+and an unreadable pressure level does not block it. There is no night rule
+(#1509): a GPU job or a deploy starts at any hour once the contention gate is
+open, meaning no owner hold, normal memory pressure, and no client served
+through the gateway (purpose `work` or untagged) for the `contention_idle` knob.
+SoHoT's own eval, smoke, probe and pipeline requests do not count, and an MCP
+image or video a client waits on is never held. A client served while a batch
+GPU job runs makes the watchdog pause it at its next case; the queue puts it
+back to pending and it resumes from its checkpoint when the lanes are idle
+again. `soh gate` shows the gate and its signals; `soh gate hold "<who, why>"
+[--until HH:MM]` keeps GPU work off the machine (and pauses a running job)
+until `soh gate release`. `--night` is accepted and ignored. Jobs are rows in the
 store's `jobs` table, so they survive a restart, and output goes to
 `~/localharness/logs/jobs/<id>.log`. A failed job is recorded and the next
 starts. A job whose eval paused with its cases checkpointed is recorded
-paused, not failed; a paused `soh adopt --confirm` queues itself for
-the next night and resumes the same run directory. A job cut off by a reboot
+paused, not failed; a paused `soh adopt --confirm` queues its continuation
+behind the contention gate and resumes the same run directory. A job cut off by a reboot
 is marked failed rather than rerun. An eval
 run a job produced is linked to it (`runs.job_id`).
 
