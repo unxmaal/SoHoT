@@ -258,10 +258,26 @@ REQUIRES_KEYS = downloads.REQUIRES_KEYS
 PROVENANCE_KEYS = downloads.PROVENANCE_KEYS
 
 
-def runner_bases(model_id: str) -> list[str]:
-    """Base weights the candidate's runner loads beside it, which its own config never names. #632."""
+def runner_bases(model_id: str, conn=None) -> list[str]:
+    """Repos the candidate's runner loads beside it, which its own config never names: OmniSVG's base (#632), an mflux family's (#1546)."""
     from evals.runners.omnisvg import MODELS
-    return [base for base, repo in MODELS.values() if repo == model_id]
+    from harness import engines
+    got = [base for base, repo in MODELS.values() if repo == model_id]
+    if _image_or_unfiled(model_id, conn):
+        got += [r for r in engines.mflux_needs(model_id) if r not in got]
+    return got
+
+
+def _image_or_unfiled(model_id: str, conn) -> bool:
+    """The image lane's runner, mflux, runs it: its stored lane serves image, or the store holds no lane for it."""
+    if conn is None:
+        return True
+    try:
+        row = conn.execute("SELECT lane FROM proposals WHERE name = ? OR resolved = ? ORDER BY id LIMIT 1",
+                           (model_id, model_id)).fetchone()
+    except Exception:  # noqa: BLE001
+        return True
+    return not (row and row["lane"]) or lanes.serves(row["lane"], "image")
 
 
 def requires(model_id: str, conn=None) -> list[str]:
@@ -281,7 +297,7 @@ def requires(model_id: str, conn=None) -> list[str]:
         adapted = [p for p, kind in parents if kind == "adapter" and p != model_id]
         if adapted and loads_its_base(model_id, c):
             got.update(adapted)
-    got.update(runner_bases(model_id))
+        got.update(runner_bases(model_id, c))
     return sorted(got)
 
 
@@ -648,7 +664,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         """Bytes spent on what `name` needs, None when the registry deferred the tier."""
         got, cost, waiting = _fetch_needs(
             name, [m for m in requires(name, conn) if not have(m, conn)],
-            bases=runner_bases(name), sizes=sizes or {}, sizer=sizer, budget=budget,
+            bases=runner_bases(name, conn), sizes=sizes or {}, sizer=sizer, budget=budget,
             spent=spent, free=free, floor=floor, budget_knob=budget_knob, conn=conn,
             fetch=lambda dep: download(dep, snapshot=snapshot, conn=conn, refresh=refresh))
         done.extend(got)

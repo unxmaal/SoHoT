@@ -81,6 +81,8 @@ class ProcessRunner(BaseRunner):
                 # The why behind a one-line detail, kept in the run dir. #601.
                 kept = self.outdir / self.artifact(case, ".stderr.txt")
                 kept.write_text("\n".join(tail[-STDERR_TAIL:]) + "\n", encoding="utf-8")
+            if absent := reasons.offline_repo(r.stderr or ""):
+                detail += f": needs {absent}, which is not in the hub cache; soh fetch --run"
             if tail:
                 # An MPS abort is followed by interpreter warnings; the abort is the why. #604.
                 detail += f": {reasons.backend_abort(tail) or tail[-1]}"

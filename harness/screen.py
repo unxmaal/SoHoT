@@ -467,7 +467,7 @@ def plan(rows, *, missing=None) -> list[dict]:
             # NAME WHAT IS MISSING. "not ready" without the id sends whoever
             # reads it back to the server log to find out what to fetch.
             state, why = WAITING, (
-                f"needs {', '.join(absent)}, which its config names and "
+                f"needs {', '.join(absent)}, which its config or its runner names and "
                 f"nothing has fetched; soh fetch --run")
         else:
             state, why = READY, f"evals.run --modality {lane} --screen"

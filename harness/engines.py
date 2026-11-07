@@ -16,8 +16,11 @@ rejected here rather than by the generator forty minutes in.
 """
 from __future__ import annotations
 
+import ast
+import configparser
 import os
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 from typing import Callable
 
@@ -214,6 +217,59 @@ def mflux_binary(model: str) -> str:
         f"unknown mflux model {model!r}. Known families: "
         f"{', '.join(sorted(ENTRY_POINTS))}; "
         f"FLUX.1: {', '.join(sorted(FLUX1_MODELS))}")
+
+
+def mflux_repos(binary: str, root: Path | None = None) -> tuple[str, ...]:
+    """Repos the installed mflux family behind `binary` loads beside the candidate: its module-level *_REPO strings. #1546."""
+    from harness import stages
+    root = Path(root if root is not None else stages.MFLUX_TOOL_ROOT)
+    for eps in sorted(root.glob("lib/python*/site-packages/mflux-*.dist-info/entry_points.txt")):
+        try:
+            return _mflux_repos(binary, str(eps), eps.stat().st_mtime_ns)
+        except OSError:
+            continue
+    return ()
+
+
+@lru_cache(maxsize=None)
+def _mflux_repos(binary: str, entry_points: str, _mtime_ns: int) -> tuple[str, ...]:
+    eps = Path(entry_points)
+    parser = configparser.ConfigParser(delimiters=("=",), interpolation=None)
+    parser.optionxform = str
+    try:
+        parser.read_string(eps.read_text(encoding="utf-8"))
+    except configparser.Error:
+        return ()
+    parts = parser.get("console_scripts", binary, fallback="").partition(":")[0].strip().split(".")
+    if len(parts) < 2:
+        return ()
+    family = eps.parent.parent.joinpath(*parts[:parts.index("cli") if "cli" in parts else -1])
+    return tuple(sorted({repo for path in sorted(family.rglob("*.py")) for repo in _repo_constants(path)}))
+
+
+def _repo_constants(path: Path) -> list[str]:
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError, ValueError):
+        return []
+    out = []
+    for node in tree.body:
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target] if isinstance(node, ast.AnnAssign) else []
+        value = getattr(node, "value", None)
+        if (any(isinstance(t, ast.Name) and t.id.endswith("_REPO") for t in targets)
+                and isinstance(value, ast.Constant) and isinstance(value.value, str)
+                and value.value.count("/") == 1):
+            out.append(value.value)
+    return out
+
+
+def mflux_needs(model: str, root: Path | None = None) -> tuple[str, ...]:
+    """Repos besides `model` that the mflux entry point running it loads, () when mflux does not run it. #1546."""
+    try:
+        binary = mflux_binary(model)
+    except ValueError:
+        return ()
+    return tuple(r for r in mflux_repos(binary, root) if r != model)
 
 
 def _mflux(spec: str, model: str, options: dict) -> Engine:
