@@ -140,8 +140,63 @@ def test_eval_pair_takes_the_heaviest_lane_models_at_their_floor_context(tmp_pat
 
 
 def _sized(gib):
-    return lambda stem, models_dir: {"stem": stem, "path": f"/m/{stem}.gguf", "ctx": 32768, "slots": 2,
-                                     "weights": 1, "kv": 1, "bytes": int(gib[stem] * GIB)}
+    return lambda stem, models_dir, got=None: {"stem": stem, "path": f"/m/{stem}.gguf", "ctx": 32768, "slots": 2,
+                                               "weights": 1, "kv": 1, "bytes": int(gib[stem] * GIB), "got": got}
+
+
+NOW = 1_800_000_000.0
+
+
+def _requests(rows):
+    from harness import memory_store as ms
+    conn = ms.connect()
+    for at, alias, lane, client, purpose, tokens, total in rows:
+        conn.execute("INSERT INTO gateway_requests (at, alias, lane, client, purpose, prompt_tokens, completion_tokens, "
+                     "total_s) VALUES (?, ?, ?, ?, ?, ?, 0, ?)", (at, alias, lane, client, purpose, tokens, total))
+    conn.commit()
+    return conn
+
+
+def test_demand_reads_a_lanes_interactive_requests_their_sizes_and_overlap():
+    day = 86400.0
+    conn = _requests([
+        (NOW - 10, "sohot-decide", "decide", "python-httpx", "work", 800, 5.0),
+        (NOW - 8, "imajev-4b-Q8_0", "", "python-httpx", "internal", 3000, 5.0),
+        (NOW - 6, "", "decide", "soh-delegate", "work", 8000, 5.0),
+        (NOW - 100, "sohot-decide", "decide", "python-httpx", "unknown", 500, 1.0),
+        (NOW - 9, "imajev-4b-Q8_0", "", "Python-urllib", "eval", 90000, 5.0),
+        (NOW - 9, "eval-7b", "", "Python-urllib", "unknown", 90000, 5.0),
+        (NOW - 9, "sohot-code", "code", "python-httpx", "smoke", 90000, 5.0),
+        (NOW - 31 * day, "sohot-decide", "decide", "python-httpx", "work", 90000, 5.0)])
+    got = interactive.demand(conn, "decide", {"imajev-4b-Q8_0", ""}, now=NOW)
+    assert got == {"n": 4, "p99": 3000, "max": 8000, "peak": 3}
+    assert interactive.demand(conn, "extract", set(), now=NOW) == {"n": 0, "p99": 0, "max": 0, "peak": 0}
+
+
+def test_a_pinned_pool_is_sized_from_its_lanes_requests_not_the_eval_plan(tmp_path):
+    assert interactive.shape(None, 262144) == (interactive.SLOTS, interactive.POOL_CTX, 0)
+    assert interactive.shape({"n": 0}, 16384) == (interactive.SLOTS, 16384, 0)
+    assert interactive.shape({"n": 9, "p99": 3617, "max": 8115, "peak": 4}, 262144) == (4, 15360, 14468)
+    assert interactive.shape({"n": 9, "p99": 100, "max": 200, "peak": 1}, 262144) == (1, context.FLOOR, context.FLOOR)
+    assert interactive.shape({"n": 9, "p99": 7926, "max": 33968, "peak": 2}, 32768) == (2, 32768, 33968)
+    assert interactive.shape({"n": 9, "p99": 30000, "max": 9, "peak": 3}, 262144)[1] == interactive.POOL_CTX
+    write_gguf(tmp_path / "m.gguf", LLAMA)
+    per = context.kv_bytes_per_token(context.read_meta(tmp_path / "m.gguf"))
+    got = interactive.size("m", tmp_path, {"n": 9, "p99": 3617, "max": 8115, "peak": 4})
+    assert (got["slots"], got["ctx"], got["kv"]) == (4, 15360, per * 15360)
+    assert got["bytes"] == got["weights"] + per * 15360 + interactive.COMPUTE_BYTES
+    asked = []
+    interactive.choose({"decide": DECIDE}, {}, REPO / "gateway" / "config.yaml",
+                       sized=lambda stem, d, got=None: asked.append(got), demands={"decide": {"n": 1}})
+    assert asked == [{"n": 1}]
+
+
+def test_infovores_model_keeps_its_router_alias_when_extract_pins_the_same_gguf(pinned, held):
+    served = {e["model_name"]: e["litellm_params"] for e in gateway.served(
+        REPO / "gateway" / "config.yaml", defaults={"claims": "Qwen2.5-7B-Instruct-Q4_K_M"}, nodes=[])["model_list"]}
+    assert served["sohot-extract"]["api_base"] == f"{URL}/v1"
+    for name in ("eval-7b", EXTRACT, "sohot-claims"):
+        assert serving.bare(served[name]["api_base"]) == router.url(), name
 
 
 def test_choose_pins_each_lane_model_and_falls_back_to_the_typed_default_when_the_budget_runs_out():
