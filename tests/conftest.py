@@ -63,6 +63,15 @@ def _no_reverse_dns(monkeypatch):
     monkeypatch.setattr(socket, "getfqdn", refuse)
 
 
+@pytest.fixture(autouse=True)
+def _cold_caches():
+    """The run that records the coverage map empties every function cache first, so each test's coverage is its own. #1571."""
+    import os
+    if os.environ.get("SOHOT_COVERAGE_MAP"):
+        from tests.gauntlet import covmap
+        covmap.clear_caches()
+
+
 #: Set by CI on an unlabelled pull request; push to main, nightly and full-ci run everything. #720.
 FAST_PATH_ENV = "SOHOT_FAST_PATH"
 

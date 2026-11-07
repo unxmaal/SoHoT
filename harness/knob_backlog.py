@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import ast
+import functools
 import re
 import subprocess
 from dataclasses import dataclass
@@ -140,8 +141,13 @@ def _locals(fn) -> dict:
 
 def quotes(text: str, rel: str, root=knobs.REPO) -> list[Quote]:
     """Every f-string in one module, each hole resolved to the site it reads where that is knowable."""
+    return list(_quotes(text, rel, Path(root)))
+
+
+@functools.cache
+def _quotes(text: str, rel: str, root: Path) -> tuple:
+    """By source text and root, so a process that rescans the tree resolves each file once. #1571."""
     tree = ast.parse(text)
-    root = Path(root)
     imports, module = _imports(tree, root), _module_names(tree)
     out = []
 
@@ -197,7 +203,7 @@ def quotes(text: str, rel: str, root=knobs.REPO) -> list[Quote]:
             visit(child, frames)
 
     visit(tree, [])
-    return out
+    return tuple(out)
 
 
 def all_quotes(root=knobs.REPO) -> list[Quote]:

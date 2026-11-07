@@ -12,6 +12,7 @@ its NOT_GATING with a reason, or in the shrinking backlog the tier-1 test holds.
 from __future__ import annotations
 
 import ast
+import functools
 import importlib
 import inspect as _inspect
 import numbers
@@ -343,6 +344,12 @@ def gated_by_use(tree) -> set[str]:
 
 
 def _sites(text: str, rel: str) -> dict:
+    return dict(_sites_of(text, rel))
+
+
+@functools.cache
+def _sites_of(text: str, rel: str) -> dict:
+    """By source text: the ratchets read the same tree over and over, so each file is analysed once a process. #1571."""
     out = []
     tree = ast.parse(text)
     used = gated_by_use(tree)

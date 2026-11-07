@@ -35,13 +35,8 @@ def sources(root, tests=False):
 
 
 def parse(files):
-    out = {}
-    for rel, text in files.items():
-        try:
-            out[rel] = ast.parse(text)
-        except SyntaxError:
-            continue
-    return out
+    trees = {rel: scanners.tree(text)[0] for rel, text in files.items()}
+    return {rel: t for rel, t in trees.items() if t is not None}
 
 
 def _prod(trees):
@@ -466,11 +461,8 @@ def _marker(dec, consts):
 def bindings(files):
     out = {}
     for rel, text in files.items():
-        if not rel.startswith("tests/"):
-            continue
-        try:
-            tree = ast.parse(text)
-        except SyntaxError:
+        tree = scanners.tree(text)[0] if rel.startswith("tests/") else None
+        if tree is None:
             continue
         consts = {name: _str(v) for name, v, _ in _assign_targets(tree) if _str(v) is not None}
         for stmt in tree.body:

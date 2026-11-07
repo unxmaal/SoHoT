@@ -332,11 +332,20 @@ def test_a_pooled_service_gives_back_what_it_closes_and_what_it_drops():
         store.drop_pool()
 
 
-def test_the_ci_runs_the_whole_suite_on_postgres_on_every_pull_request():
+def test_the_ci_runs_the_suite_on_postgres_nightly_and_when_a_change_reaches_the_store():
+    import re
     import yaml
     doc = yaml.safe_load((svc.paths.REPO / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
     job = doc["jobs"]["check-postgres"]
-    assert "if" not in job
+    assert job["needs"] == "store-touched"
+    assert "schedule" in job["if"] and "needs.store-touched.outputs.touched == '1'" in job["if"]
+    run = doc["jobs"]["store-touched"]["steps"][1]["run"]
+    seam = re.compile(re.search(r"seam='([^']+)'", run).group(1))
+    for path in ("harness/store.py", "harness/store_copy.py", "harness/memory_store/schema.py", "tests/conftest.py",
+                 "deploy/postgres/compose.yaml", "tests/gauntlet/postgres_known.txt", "harness/commands/store.py"):
+        assert seam.search(path), path
+    for path in ("harness/watchdog.py", "harness/storefront.txt", "evals/run.py", "README.md"):
+        assert not seam.search(path), path
     assert "make test-postgres-suite" in "\n".join(s.get("run", "") for s in job["steps"])
     assert "check-postgres" in doc["jobs"]["report-nightly"]["needs"]
     make = (svc.paths.REPO / "Makefile").read_text(encoding="utf-8")
