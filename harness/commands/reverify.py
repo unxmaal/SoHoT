@@ -25,6 +25,9 @@ def report(got: dict) -> None:
     for e in got["planned"]:
         note(_line(e))
     dry = got.get("dry_run", False)
+    if got.get("held") and not dry:
+        note(f"  queued nothing: {got['held']}")
+        return
     verb = "would queue" if dry else "queued"
     note(f"  {verb} {sum(1 for e in got['planned'] if e['triggers'] and not e['skip'])}"
          f" re-run(s)" + ("" if dry else
