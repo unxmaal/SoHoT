@@ -48,7 +48,7 @@ MODULES = {
         "tests/test_tts_drop_1036.py", "tests/test_drafters_1039.py", "tests/test_plan_refusal_1047.py"],
     "harness/screen.py": [
         "tests/test_runner_gap_until_950.py", "tests/test_gguf_first_911.py", "tests/test_harness_screen.py", "tests/test_harness_screen_spec.py", "tests/test_screen_evidence.py",
-        "tests/test_screen_server_death.py", "tests/test_decide_lane.py", "tests/test_refusal_shapes.py",
+        "tests/test_screen_server_death.py", "tests/test_screen_server_killer_1544.py", "tests/test_decide_lane.py", "tests/test_refusal_shapes.py",
         "tests/test_verdict_reasons.py", "tests/test_screen_case_fit.py", "tests/test_methods.py",
         "tests/test_ds4.py", "tests/test_screen_fair.py", "tests/test_gguf_route.py",
         "tests/test_harness_adopt_receipt.py", "tests/test_lane_coverage.py",
@@ -95,7 +95,7 @@ LEFT_OUT = {
                                             "test_revisit_tier_1060.py", "test_revisitable_after_deploy_1361.py",
                                             "test_site.py", "test_futility_lane_too_small_1452.py"),
     "harness/reasons.py": (
-        "test_runtime_trials_1474.py", "test_repo_repair_890.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_staging_torch_1358.py",
+        "test_runtime_trials_1474.py", "test_repo_repair_890.py", "test_agent_cut_call_1547.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_staging_torch_1358.py",
         "test_vision_engines_1282.py",
         "test_shots_check_1208.py",
         "test_adopt_retest_1001.py", "test_attachment_tags_949.py", "test_canary_919.py",
@@ -113,7 +113,7 @@ LEFT_OUT = {
         "test_revisitable_after_deploy_1361.py", "test_adopt_effect_confirm_725.py", "test_min_effect_1320.py", "test_technique_triage_993.py",
         "test_exam_price_1354.py", "test_limit_cuts_1087_evals.py", "test_limit_cuts_1087_harness_di.py",
         "test_futility_lane_too_small_1452.py", "test_sustained_warn_1482.py", "test_technique_kinds_1476.py",
-        "test_engine_trials_1475.py", "test_mflux_second_repo_1546.py"),
+        "test_engine_trials_1475.py", "test_screen_server_killer_1544.py", "test_mflux_second_repo_1546.py"),
     "harness/screen.py": (
         "test_attachment_tags_949.py", "test_lane_too_small_1049.py", "test_vision_engines_1282.py",
         "test_variants_947.py", "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",

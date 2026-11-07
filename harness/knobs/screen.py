@@ -20,6 +20,14 @@ KNOBS = [
             "same-config Ornith runs 466/472 differ on 4 of 39 cases (FINDING #597), so one draw is noisy (#1176)"),
     _k("screen_reread_per_loop", ["harness/commands/loop.py:REREAD_PER_LOOP"], [10, 25, 100],
        note="runtime screen declines one loop re-reads the cards of; the rest wait for the next loop (#950)"),
+    _k("screen_server_back_wait", ["harness/commands/screen.py:SERVER_BACK_WAIT_S"], [0.0, 300.0, 600.0, 900.0], unit="s",
+       note="seconds a screen that ended with the mlx server dead waits for it to generate before the sweep exits 1; the "
+            "watchdog wakes every 5 min and gives a restart RESTART_TIMEOUT_S 180 s, and on 11-05 it restarted 2 min 45 s "
+            "after the death (#912, #1544)"),
+    _k("screen_server_kills", ["harness/commands/screen.py:SERVER_KILLS"], [1, 2, 3, 5], unit="screens",
+       note="screens of one candidate ending with the shared server dead on one runtime version before it is declined "
+            "until the version moves; 3 of the 285 screens on mlx-lm 0.32.0 (182 candidates) died, two of them "
+            "Qwen3.5-4B on consecutive nights, so a chance death twice on one candidate is about 1 in 10^4 (#1544)"),
     _k("screen_size", ["evals/run.py:SCREEN_PARAMS[width]", "evals/run.py:SCREEN_PARAMS[height]"], [256, 512, 1024],
        limit="screen_size", unit="pixels", note="pixels an image or video screen is shrunk to; a zero-pass media screen waits on it (#691)"),
     _k("stt_screen_max_wer", ["harness/screen.py:SCREEN_MAX_WER"], [0.3, 0.5, 0.8],
@@ -27,6 +35,8 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    "harness/commands/screen.py:SERVER_BACK_POLL_S": "seconds between looks at a restarting server's /health; "
+                                                     "screen_server_back_wait bounds the wait (#1544)",
     "evals/run.py:FREE_PCT_WARN": "free memory share under which a run prints that its wall clock is not comparable; "
                                   "the run and its receipt are the same either way (#283)",
     "evals/repo_screen.py:verdict(outside_votes)": "how many outside benchmarks favour the candidate, an input; "

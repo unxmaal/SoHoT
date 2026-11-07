@@ -307,6 +307,13 @@ def _no_gateway_down_wait(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_server_back_wait(monkeypatch):
+    """A screen that killed the mlx server looks at /health once, not for SERVER_BACK_WAIT_S (#1544)."""
+    from harness.commands import screen
+    monkeypatch.setattr(screen, "SERVER_BACK_WAIT_S", 0.0)
+
+
+@pytest.fixture(autouse=True)
 def _free_disk_is_pinned(monkeypatch):
     """No test reads the runner's free disk: the tmp HF_HOME sits on whatever
     drive CI gives it (31 GiB on Windows), under the fetch floor. #411."""

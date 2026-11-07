@@ -206,6 +206,72 @@ def memory_deferrals(conn, name: str) -> tuple[int, str]:
     return streak, need
 
 
+#: Screens of one candidate that ended with the shared server dead, on one runtime version, before it is declined. #1544.
+SERVER_KILLS = 2
+#: Seconds a screen that ended with the mlx server dead waits for the watchdog to restart it. #1544.
+SERVER_BACK_WAIT_S = 600.0
+#: Seconds between looks at the restarted server's /health. #1544.
+SERVER_BACK_POLL_S = 15.0
+
+
+def server_kills(conn, name: str, runtime: str, version: str) -> int:
+    """How many of a name's screens here ended with the server dead while their runs recorded `runtime` at `version`. #1544."""
+    import json
+    from harness import memory_store as ms
+    got = 0
+    for v in conn.execute(
+            "SELECT r.environment FROM verdicts v JOIN proposals p ON p.id = v.proposal_id "
+            "JOIN runs r ON r.id = v.run_id WHERE p.name = ? AND v.tier = ? AND v.machine_id IS ? "
+            f"AND v.failure_class IN ({', '.join('?' * len(reasons.SERVER_DIED))})",
+            (name, ms.SCREEN, ms.machine_row(conn), *reasons.SERVER_DIED)):
+        try:
+            versions = json.loads(v["environment"] or "{}").get("versions") or {}
+        except (ValueError, AttributeError):
+            continue
+        got += versions.get(runtime) == version
+    return got
+
+
+def _killer(conn, name: str, runtime: str, version: str, kills: int):
+    """kills_server when `kills` reaches screen_server_kills, else None. #1544."""
+    from harness import screen
+    if not version or kills < SERVER_KILLS:
+        return None
+    cuts.cut("screen_server_kills", f"{name}: {kills} screens ended with the server dead on {runtime} {version}; declined",
+             value=SERVER_KILLS, conn=conn)
+    return screen.kills_server(kills, runtime, version)
+
+
+def repeat_kill(conn, name: str, candidate: str, verdict, environment):
+    """A server death's verdict: kills_server once it is the screen_server_kills-th on its run's runtime version, else as given. #1544."""
+    from harness import screen
+    runtime = screen.engine_runtime(candidate) or screen.LOAD_RUNTIME
+    version = ((environment or {}).get("versions") or {}).get(runtime) or ""
+    return _killer(conn, name, runtime, version, server_kills(conn, name, runtime, version) + 1) or verdict
+
+
+def known_killer(conn, name: str, candidate: str):
+    """kills_server, unscreened, for one whose screens already killed the server enough on the installed version, else None. #1544."""
+    from harness import screen
+    runtime = screen.engine_runtime(candidate) or screen.LOAD_RUNTIME
+    version = screen._installed(runtime)
+    return _killer(conn, name, runtime, version, server_kills(conn, name, runtime, version))
+
+
+def server_back(base: str, conn=None) -> bool:
+    """Whether the mlx server at `base` can generate again within SERVER_BACK_WAIT_S, as the watchdog restarts it. #1544."""
+    from harness import mlx_server, watchdog
+    end = time.monotonic() + SERVER_BACK_WAIT_S
+    while True:
+        if mlx_server.generating(base, timeout=watchdog.PROBE_TIMEOUT_S):
+            return True
+        left = end - time.monotonic()
+        if left <= 0:
+            cuts.cut("screen_server_back_wait", f"{base} did not answer /health within the wait", conn=conn)
+            return False
+        time.sleep(min(SERVER_BACK_POLL_S, left))
+
+
 def screenable_backlog(want: str = "", plan=None, room=None, deferred=None) -> list[str]:
     """On disk, runnable, fitting in memory now, and not deferred for memory last screen: what a fetch would queue behind. #396, #910."""
     from harness import screen
@@ -371,6 +437,13 @@ def _report_screen(a) -> int:
                                   reason=reasons.MEMORY,
                                   until=memory.wait_for(r["name"], spec=r["candidate"], parallel=1))
                 continue
+            # Screening it again would only kill the shared server again. #1544.
+            known = known_killer(store, r["name"], r["candidate"])
+            if known:
+                print(f"   {known.outcome.upper()}: {known.detail}")
+                ms.decide_or_skip(store, r["name"], known.outcome, tier=ms.SCREEN, detail=known.detail[:600],
+                                  reason=known.reason, until=known.until, failure_class=known.failure_class)
+                continue
             taken += 1
             # Its own receipt directory, not the newest for the modality. #282.
             outdir = paths.unused_run(f"screen-{int(time.time())}", f"-{r['modality']}")
@@ -406,6 +479,9 @@ def _report_screen(a) -> int:
                 # The router's log says why; its child's lines are kept with the run. #953.
                 from harness import load_log
                 verdict = load_log.redecide(verdict, r["candidate"], r["name"], outdir, store)
+            if verdict.failure_class in reasons.SERVER_DIED:
+                # One that kills the server on every screen is no harness fault to requeue nightly. #1544.
+                verdict = repeat_kill(store, r["name"], r["candidate"], verdict, (stored or {}).get("environment"))
             tier = ms.SCREEN
             if verdict.failure_class in reasons.REFETCH:
                 from harness import downloads
@@ -431,6 +507,13 @@ def _report_screen(a) -> int:
                 print(f"   {verdict.failure_class}: the model server or GPU is "
                       f"suspect; stopping the screen so the rest are not "
                       f"spent on it (#404)")
+                if verdict.failure_class in reasons.SERVER_DIED and not screen.engine_runtime(r["candidate"]):
+                    from harness import serving
+                    print(f"   waiting up to {SERVER_BACK_WAIT_S:g} s for the watchdog to restart it", flush=True)
+                    if server_back(serving.MLX_URL, store):
+                        # The candidate is recorded and the server is back: not a failed sweep. #1544.
+                        print("   the model server generates again; the sweep goes on")
+                        return 0
                 return 1
     finally:
         store.close()

@@ -28,6 +28,8 @@ CANDIDATE, HARNESS, RUNTIME, MACHINE, MEMORY, LIMIT, UPSTREAM, REOPENED = REASON
 
 # Failure classes, set on each result row by the runner where it failed.
 SERVER_DEAD = "server_dead"
+#: A candidate whose screens killed the shared mlx server screen_server_kills times on one runtime version. #1544.
+KILLS_SERVER = "kills_server"
 GPU_FAULT = "gpu_fault"
 REFUSED_BY_GATEWAY = "refused_by_gateway"
 HARNESS_ERROR = "harness_error"
@@ -106,6 +108,7 @@ CLASSES = {
     PLAN_REFUSED: ("declined", LIMIT),
     ATTACHMENT: ("declined", CANDIDATE),
     MISSING_PACKAGE: ("declined", RUNTIME),
+    KILLS_SERVER: ("declined", RUNTIME),
     LOAD_FAILED_RUNTIME: ("declined", RUNTIME),
     LOAD_FAILED_FILE: ("declined", CANDIDATE),
     LOAD_FAILED_LAYOUT: ("declined", RUNTIME),
@@ -121,7 +124,10 @@ CLASSES = {
 }
 
 #: After one of these the shared server or the GPU is suspect, so a loop stops.
-STOPS = (SERVER_DEAD, GPU_FAULT)
+STOPS = (SERVER_DEAD, KILLS_SERVER, GPU_FAULT)
+
+#: Classes after which the shared mlx server died; the screen waits for the watchdog to restart it. #1544.
+SERVER_DIED = (SERVER_DEAD, KILLS_SERVER)
 
 #: Classes that mean our copy of the weights is wrong: the screen stands it down and fetch takes it again.
 REFETCH = (SHORT_COPY, INCOMPLETE_COPY)
@@ -165,6 +171,8 @@ _GATEWAY = ("invalid model name", "gateway returned http 400",
 #: What a server says when a request does not fit the context it is served at: llama-server, vLLM, LiteLLM. #695, #692.
 OVER_CONTEXT = re.compile(r"exceeds? the available context|context.?window.?exceeded|maximum context length"
                           r"|context length exceeded|exceeds? (the )?context (size|window|length)|max_model_len", re.I)
+#: llama-server's 500 for a reply that stopped inside a tool call's arguments: truncated JSON, not malformed. #1547.
+CUT_TOOL_CALL = re.compile(r"failed to parse tool call arguments.{0,200}?unexpected end of input", re.I | re.S)
 #: A tts stream the audio server dropped and logged no traceback for (harness.audio.StreamDropped). #1036.
 NO_SERVER_TRACEBACK = "no traceback in the audio server's log"
 _HARNESS = ("no cases of a modality it can run", "no candidate matched any case",
