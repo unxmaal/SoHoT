@@ -103,15 +103,15 @@ def test_a_lane_whose_model_the_server_does_not_hold_falls_back_to_the_router(pi
     assert interactive.route("code") is None
 
 
-def test_the_check_refuses_a_pinned_set_that_does_not_fit_beside_the_largest_eval_pair_naming_the_numbers():
-    plan = {"bytes": 20 * GIB, "lanes": {"decide": _entry(DECIDE, 6.0), "extract": _entry(EXTRACT, 14.0)}}
-    ok, why = interactive.check(plan, 60 * GIB, 16 * GIB, (26 * GIB, ["Ornith 21.0", "Qwen 5.0"]))
-    assert not ok
-    assert why == ("refused: the pinned set 20.0 GiB (decide imajev-4b-Q8_0 6.0, extract Qwen2.5-7B-Instruct-Q4_K_M "
-                   "14.0) + 16.0 GiB of MLX beside it + the largest eval pair 26.0 GiB (Ornith 21.0, Qwen 5.0) = "
-                   "62.0 GiB, over the 60.0 GiB budget by 2.0 GiB")
-    ok, why = interactive.check(plan, 62 * GIB, 16 * GIB, (26 * GIB, ["Ornith 21.0", "Qwen 5.0"]))
-    assert ok and why.endswith("0.0 GiB to spare")
+def test_the_install_check_passes_the_ornith_set_on_a_96_gb_studio_and_refuses_only_a_set_that_cannot_fit():
+    plan = {"bytes": int(33.6 * GIB), "lanes": {"decide": _entry(DECIDE, 5.7), "extract": _entry(EXTRACT, 6.6),
+                                                 "code": _entry("Ornith-1.5-35B-Q4_K_M", 21.3)}}
+    ok, why = interactive.check(plan, int(59.8 * GIB), 16 * GIB)
+    assert ok and why.startswith("fits: the pinned set 33.6 GiB (decide imajev-4b-Q8_0 5.7, extract "
+                                 "Qwen2.5-7B-Instruct-Q4_K_M 6.6, code Ornith-1.5-35B-Q4_K_M 21.3) + 16.0 GiB of MLX "
+                                 "beside it = 49.6 GiB of the 59.8 GiB budget; evals get the 10.2 GiB left")
+    ok, why = interactive.check(plan, 45 * GIB, 16 * GIB)
+    assert not ok and why.endswith("= 49.6 GiB, over the 45.0 GiB budget by 4.6 GiB")
 
 
 def test_a_refused_check_clears_the_plan_and_install_refuses_the_unit(pinned, monkeypatch):
@@ -128,15 +128,43 @@ def test_a_refused_check_clears_the_plan_and_install_refuses_the_unit(pinned, mo
     assert "blocked=1" in loop.split('if [ -n "$refused" ]', 1)[1].split("\n  fi\n", 1)[0]
 
 
-def test_eval_pair_takes_the_heaviest_lane_models_at_their_floor_context(tmp_path):
-    for stem, layers in (("big", 64), ("small", 8)):
-        write_gguf(tmp_path / f"{stem}.gguf", {**LLAMA, "llama.block_count": layers})
-    defaults = {"code": "llamacpp:big", "decide": "llamacpp:small", "svg": "mlx-community/X-4bit"}
-    one, names = interactive.eval_pair(None, defaults=defaults, models_dir=tmp_path, k=1)
-    two, _ = interactive.eval_pair(None, defaults=defaults, models_dir=tmp_path, k=2)
-    big = context.kv_bytes_per_token(context.read_meta(tmp_path / "big.gguf")) * context.FLOOR
-    assert one == (tmp_path / "big.gguf").stat().st_size + big and names[0].startswith("big ")
-    assert two > one
+def test_an_eval_candidate_too_big_beside_the_pinned_set_is_refused_at_admission_as_a_harness_limit(
+        pinned, tmp_path, monkeypatch):
+    from harness import reasons
+    write_gguf(tmp_path / "big.gguf", LLAMA)
+    monkeypatch.setattr(context, "router_rows", lambda conn: [{"path": str(tmp_path / "big.gguf"), "id": 1}])
+    monkeypatch.setattr(context, "coresident_bytes", lambda conn: 0)
+    monkeypatch.setattr(context, "_weights", lambda path: 12 * GIB)
+    why = context.plan(None, budget=20 * GIB, record=False)[0]["why"]
+    assert why.startswith("refused: 12.0 GiB of weights over the 9.0 GiB budget")
+    assert "11.0 GiB of the machine held by the interactive server's pinned models" in why
+    cls = reasons.classify(f"llamacpp:big is not served: {why}", candidate="llamacpp:big")
+    assert cls == reasons.PLAN_REFUSED and reasons.CLASSES[cls] == ("declined", reasons.LIMIT)
+    monkeypatch.setattr(memory, "available_gb", lambda: 100.0)
+    monkeypatch.setattr(memory, "ceiling_gb", lambda: 60.0)
+    monkeypatch.setattr(memory, "need_gb", lambda *a, **k: 55.0)
+    ok, said = memory.check_model("org/mlx-big", reserve_gb=0.0)
+    assert not ok and said == ("needs 55.0 GB but only 49.0 GB is safely available (100.0 GB free, 60.0 GB GPU "
+                               "ceiling, 0.0 GB reserved for the system, 11.0 GB held by the interactive server's "
+                               "pinned models)")
+
+
+def test_the_mlx_coresident_leaves_out_a_lane_the_interactive_server_answers(pinned):
+    defaults = {"extract": "mlx-community/Qwen2.5-7B-Instruct-4bit", "svg": "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit"}
+    sizes = {"mlx-community/Qwen2.5-7B-Instruct-4bit": 4 * GIB, "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit": 16 * GIB}
+    cfg = REPO / "gateway" / "config.yaml"
+    assert context.coresident_bytes(None, defaults, cfg, sizes.get, skip=set()) == 16 * GIB
+    only_extract = {"extract": defaults["extract"]}
+    assert context.coresident_bytes(None, only_extract, cfg, sizes.get, skip=set()) == 4 * GIB
+    assert context.coresident_bytes(None, only_extract, cfg, sizes.get, skip={"extract"}) == 0
+    assert context.coresident_bytes(None, only_extract, cfg, sizes.get) == 0
+
+
+def test_the_install_check_prices_the_mlx_coresident_without_the_lanes_it_is_about_to_pin(monkeypatch):
+    monkeypatch.setattr(context, "budget_bytes", lambda conn=None: 60 * GIB)
+    monkeypatch.setattr(context, "coresident_bytes", lambda conn, skip=None: 0 if "extract" in skip else 30 * GIB)
+    plan = {"bytes": 35 * GIB, "lanes": {"extract": _entry(EXTRACT, 35.0)}}
+    assert interactive.check_here(plan)[0]
 
 
 def _sized(gib):
@@ -205,7 +233,10 @@ def test_choose_pins_each_lane_model_and_falls_back_to_the_typed_default_when_th
     typed = {"decide": DECIDE, "extract": "mlx-community/Qwen2.5-7B-Instruct-4bit",
              "code": "mlx-community/Qwen3-4B-Instruct-2507-4bit"}
     sizes = {DECIDE: 5.7, EXTRACT: 6.6, "Ornith-1.5-35B-Q4_K_M": 21.3, "Qwen3-4B-Instruct-2507-Q4_K_M": 7.3}
-    got = interactive.choose(defaults, typed, REPO / "gateway" / "config.yaml", sized=_sized(sizes))
+    assert interactive.BUDGET_GB == 35.0
+    ornith = interactive.choose(defaults, typed, REPO / "gateway" / "config.yaml", sized=_sized(sizes))
+    assert ornith["lanes"]["code"]["stem"] == "Ornith-1.5-35B-Q4_K_M" and ornith["lanes"]["code"]["why"] == "the lane's model"
+    got = interactive.choose(defaults, typed, REPO / "gateway" / "config.yaml", budget_gb=25, sized=_sized(sizes))
     assert {lane: p["stem"] for lane, p in got["lanes"].items()} == {
         "decide": DECIDE, "extract": EXTRACT, "code": "Qwen3-4B-Instruct-2507-Q4_K_M"}
     assert "Ornith-1.5-35B-Q4_K_M needs 21.3 GiB with 12.7 of 25.0 GiB left" in got["lanes"]["code"]["why"]
@@ -213,8 +244,16 @@ def test_choose_pins_each_lane_model_and_falls_back_to_the_typed_default_when_th
     small = interactive.choose(defaults, typed, REPO / "gateway" / "config.yaml", budget_gb=10, sized=_sized(sizes))
     assert list(small["lanes"]) == ["decide"]
     assert "extract" in small["skipped"] and "4.3 of 10.0 GiB left" in small["skipped"]["extract"]
-    roomy = interactive.choose(defaults, typed, REPO / "gateway" / "config.yaml", budget_gb=40, sized=_sized(sizes))
-    assert roomy["lanes"]["code"]["served"] == "llamacpp:Ornith-1.5-35B-Q4_K_M,temperature=0.6"
+    assert ornith["lanes"]["code"]["served"] == "llamacpp:Ornith-1.5-35B-Q4_K_M,temperature=0.6"
+
+
+def test_the_code_lane_resolves_to_ornith_on_the_interactive_server(monkeypatch):
+    ornith = "Ornith-1.5-35B-Q4_K_M"
+    interactive.write({"url": URL, "bytes": 33 * GIB, "lanes": {"code": _entry(ornith, 21.3)}, "skipped": {}})
+    monkeypatch.setattr(router, "statuses", lambda get=None, base="": {ornith: "loaded"} if serving.bare(base) == URL
+                        else {})
+    spec, where = delegate.route("code")
+    assert (spec, where.base, where.model) == (f"llamacpp:{ornith}", URL, ornith)
 
 
 def test_the_pinned_set_is_resident_to_the_eval_planner_and_the_load_guard(pinned, monkeypatch):
@@ -306,12 +345,17 @@ def test_the_probe_reports_p95_pressure_and_the_lock_for_each_lane():
 
     def call():
         return {"spec": f"llamacpp:{DECIDE}", "model": DECIDE}
+    def slow_code():
+        for _ in range(3):
+            next(ticks)
+        return call()
     got = interactive_cmd.probe(4, decide=call, complete=call, sample=lambda: type("P", (), {"level": 1})(),
-                                busy=lambda: "job 0241", clock=lambda: next(ticks) * 3.0)
+                                busy=lambda: "job 0241", clock=lambda: next(ticks) * 3.0, code=slow_code)
     assert got["ok"] and got["lanes"]["decide"]["p95_s"] == 3.0 and got["lanes"]["extract"]["while_busy"] == 4
+    assert got["lanes"]["code"]["calls"] == 4 and got["lanes"]["code"]["p95_s"] == 12.0
     assert interactive_cmd.p95([1.0] * 19 + [11.0]) == 1.0 and interactive_cmd.p95([1.0] * 18 + [11.0] * 2) == 11.0
     slow = interactive_cmd.probe(2, decide=call, complete=call, sample=lambda: None, busy=lambda: "",
-                                 clock=lambda: next(ticks) * 11.0)
+                                 clock=lambda: next(ticks) * 11.0, code=call)
     assert not slow["ok"]
 
 

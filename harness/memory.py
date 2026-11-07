@@ -422,19 +422,20 @@ def budget_gb(available_gb: float, ceiling_gb: float, resident_gb: float,
 
 def fits(need_gb: float, available_gb: float, ceiling_gb: float,
          resident_gb: float = 0.0,
-         reserve_gb: float = DEFAULT_RESERVE_GB) -> tuple[bool, str]:
+         reserve_gb: float = DEFAULT_RESERVE_GB, pinned_gb: float = 0.0) -> tuple[bool, str]:
     """Can `need_gb` of weights be loaded without taking the machine down?
 
     `resident_gb` is what a hot-swapping server may still be holding. Budgeting
     as if only one model is resident is exactly how this went wrong.
     """
-    budget = budget_gb(available_gb, ceiling_gb, resident_gb, reserve_gb)
+    budget = budget_gb(available_gb, ceiling_gb - pinned_gb, resident_gb, reserve_gb)
     if need_gb > budget:
         return False, (
             f"needs {need_gb:.1f} GB but only {budget:.1f} GB is safely "
             f"available ({available_gb:.1f} GB free, {ceiling_gb:.1f} GB GPU "
             f"ceiling, {reserve_gb:.1f} GB reserved for the system"
             + (f", {resident_gb:.1f} GB still resident" if resident_gb else "")
+            + (f", {pinned_gb:.1f} GB held by the interactive server's pinned models" if pinned_gb else "")
             + ")")
     return True, f"{need_gb:.1f} GB into {budget:.1f} GB"
 
@@ -529,8 +530,9 @@ def check_model(repo: str, resident_gb: float = 0.0,
     if reserve_gb is None:
         reserve_gb = measured_reserve_gb()
     free, whole = available_gb(), ceiling_gb()
-    ceiling = whole - pinned_gb()
-    ok, why = fits(need, free, ceiling, resident_gb, reserve_gb)
+    held = pinned_gb()
+    ceiling = whole - held
+    ok, why = fits(need, free, whole, resident_gb, reserve_gb, held)
     # The reserve decided it only when the weights fit without it. #1087.
     reserve_knob = ("harness/memory.py:DEFAULT_RESERVE_GB" if reserve_gb == DEFAULT_RESERVE_GB else
                     "harness/memory.py:DISCRETE_RESERVE_GB" if reserve_gb == DISCRETE_RESERVE_GB else

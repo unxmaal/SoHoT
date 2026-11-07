@@ -15,7 +15,7 @@ LANES = ("decide", "extract", "code")
 PORT = 8083
 PORT_ENV = "INTERACTIVE_PORT"
 URL_ENV = "INTERACTIVE_URL"
-BUDGET_GB = 25.0
+BUDGET_GB = 35.0
 #: Slots a pinned model gets when its lane has no request history here.
 SLOTS = 2
 #: The most tokens of KV a pinned model's unified pool may hold, and its size with no request history.
@@ -255,37 +255,16 @@ def served_ctx(stem: str) -> int | None:
     return None
 
 
-def eval_pair(conn, defaults=None, models_dir=None, k: int | None = None, config=None) -> tuple[int, list[str]]:
-    """The k heaviest router models a lane serves, at their floor context: what an eval must still fit."""
-    from harness import adopt, context, gguf
-    defaults = adopt.lane_defaults(conn) if defaults is None else defaults
-    models_dir = Path(gguf.models_dir() if models_dir is None else models_dir)
-    k = context.recorded_models_max() if k is None else k
-    held = {}
-    for spec in defaults.values():
-        stem = stem_for(spec, config, stand_in=False)
-        path = models_dir / f"{stem}.gguf"
-        if not stem or stem in held:
-            continue
-        try:
-            meta, weights = context.read_meta(path), path.stat().st_size
-        except (OSError, ValueError, KeyError, struct.error):
-            continue
-        held[stem] = weights + context.kv_bytes_per_token(meta) * context.FLOOR + context.swa_bytes(meta)
-    top = sorted(held.items(), key=lambda kv: kv[1], reverse=True)[:max(k, 1)]
-    return sum(b for _, b in top), [f"{s} {_gib(b)}" for s, b in top]
-
-
-def check(plan: dict, budget: int, beside: int, pair: tuple[int, list[str]]) -> tuple[bool, str]:
-    """Whether the pinned set fits beside the co-resident MLX model and the largest eval pair, naming every number."""
+def check(plan: dict, budget: int, beside: int) -> tuple[bool, str]:
+    """Whether the pinned set fits beside the co-resident MLX model, naming every number; evals fit at admission. #1570."""
     pinned_set = ", ".join(f"{lane} {p['stem']} {_gib(p['bytes'])}" for lane, p in (plan.get("lanes") or {}).items())
-    need = int(plan.get("bytes") or 0) + beside + pair[0]
+    need = int(plan.get("bytes") or 0) + beside
     said = (f"the pinned set {_gib(plan.get('bytes') or 0)} GiB ({pinned_set or 'nothing'}) + "
-            f"{_gib(beside)} GiB of MLX beside it + the largest eval pair {_gib(pair[0])} GiB "
-            f"({', '.join(pair[1]) or 'none'}) = {_gib(need)} GiB")
+            f"{_gib(beside)} GiB of MLX beside it = {_gib(need)} GiB")
     if need > budget:
         return False, f"refused: {said}, over the {_gib(budget)} GiB budget by {_gib(need - budget)} GiB"
-    return True, f"fits: {said} of the {_gib(budget)} GiB budget, {_gib(budget - need)} GiB to spare"
+    return True, (f"fits: {said} of the {_gib(budget)} GiB budget; evals get the {_gib(budget - need)} GiB left, "
+                  f"and one that does not fit is refused when it is admitted")
 
 
 def check_here(plan: dict, conn=None) -> tuple[bool, str]:
@@ -295,7 +274,7 @@ def check_here(plan: dict, conn=None) -> tuple[bool, str]:
     own = conn is None
     conn = ms.connect() if own else conn
     try:
-        return check(plan, context.budget_bytes(conn), context.coresident_bytes(conn), eval_pair(conn))
+        return check(plan, context.budget_bytes(conn), context.coresident_bytes(conn, skip=set(plan.get("lanes") or ())))
     finally:
         if own:
             conn.close()

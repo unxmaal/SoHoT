@@ -250,9 +250,13 @@ def _too_big_why(weights: int, budget: int) -> str:
     Reporting only the VRAM shortfall would invite someone to offload the
     remainder and meet that wall without warning.
     """
-    from harness import memory
+    from harness import interactive, memory
     why = (f"refused: {weights / 1024 ** 3:.1f} GiB of weights over the "
            f"{budget / 1024 ** 3:.1f} GiB budget")
+    held = interactive.reserved_bytes()
+    if held:
+        # A harness limit: the interactive server's pinned models hold this much for good. #1570.
+        why += f", {held / 1024 ** 3:.1f} GiB of the machine held by the interactive server's pinned models"
     head = memory.commit_headroom_gb()
     if head is None:
         # No commit limit to read, so no claim about the host side. macOS grows
@@ -340,8 +344,8 @@ def kv_cap_bytes() -> int:
     return int(KV_MAX_GIB * memory.total_gb() / KV_MAX_RAM_GB * 1024 ** 3)
 
 
-def coresident_bytes(conn, defaults=None, config=None, size_of=None) -> int:
-    """The largest text model this machine serves on mlx_lm.server, which stays resident beside the router."""
+def coresident_bytes(conn, defaults=None, config=None, size_of=None, skip=None) -> int:
+    """The largest MLX text model a lane serves, resident beside the router; `skip` lanes are the interactive server's. #1570."""
     from harness import downloads, gateway, lanes, memory, serving
     if defaults is None:
         from harness import adopt
@@ -352,12 +356,15 @@ def coresident_bytes(conn, defaults=None, config=None, size_of=None) -> int:
             got = memory.size_gb(str(path)) if path else None
             return int(got * 1024 ** 3) if got else 0
     text = set(lanes.TEXT_SERVED) | set(gateway.TEXT_LANES)
+    if skip is None:
+        from harness import interactive
+        skip = set(interactive.pinned())
     entries = {str(e.get("model_name", "")).lower(): e
                for e in gateway.load(config).get("model_list") or []}
     best = 0
     for lane, spec in defaults.items():
         name = (spec or "").partition(",")[0].strip()
-        if lane not in text or not name or ":" in name:
+        if lane not in text or not name or ":" in name or lane in skip:
             continue
         entry = entries.get(name.lower())
         # A model served by another machine is not resident in this one's memory.
