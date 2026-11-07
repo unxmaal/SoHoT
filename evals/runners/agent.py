@@ -88,6 +88,15 @@ def finish(case: Case, box: sandbox.Sandbox, steps: list, final: str,
                        "metrics": rollup(steps, time.perf_counter() - started)})
 
 
+def failure(case: Case, exc: completion.CompletionError, steps: list, started: float) -> RunnerError:
+    """The RunnerError for a step that failed, carrying the steps taken so far as metrics and an ungraded transcript. #1547."""
+    metrics = rollup(steps, time.perf_counter() - started)
+    record = {"case": case.id, "stopped": "error", "error": str(exc), "final": "",
+              "grade": None, "steps": steps, "metrics": metrics}
+    return RunnerError(f"step {len(steps)}: {exc}", failure_class=exc.failure_class,
+                       limit=knobs.limit_text(exc.limit), metrics=metrics, output=json.dumps(record))
+
+
 def rollup(steps: list, wall: float) -> dict:
     calls = [c for s in steps for c in s.get("calls", [])]
     valid = sum(1 for c in calls if c.get("valid"))
@@ -200,9 +209,13 @@ class AgentRunner(BaseRunner):
                 if left <= 0:
                     stopped = "time cap"
                     break
+                t0 = time.perf_counter()
                 try:
                     rec, message, ended = self._step(n, messages, tools, min(self.step_seconds(), left + prefill))
                 except completion.CompletionError as exc:
+                    steps.append({"step": n + 1, "seconds": round(time.perf_counter() - t0, 4), "calls": [],
+                                  "error": str(exc)[:400],
+                                  **({"cut": True, "completion_tokens": self.max_tokens} if exc.finish == "length" else {})})
                     if exc.failure_class == reasons.TIMEOUT and exc.limit:
                         took = exc.limit[1]
                         exc.limit = (knobs.hit("agent_case_timeout_s", allowed, "s") if took < self.step_seconds()
@@ -238,9 +251,8 @@ class AgentRunner(BaseRunner):
                 self._act(box, calls, message, messages, rec)
         except completion.CompletionError as exc:
             box.cleanup()
-            limit = knobs.limit_text(exc.limit)
-            raise RunnerError(f"step {len(steps) + 1}: {exc}",
-                              failure_class=exc.failure_class, limit=limit) from exc
+            self.last_timing = {**step_timing(steps), "cold": cold}
+            raise failure(case, exc, steps, started + waited) from exc
         except BaseException:
             box.cleanup()
             raise
@@ -262,13 +274,32 @@ class AgentRunner(BaseRunner):
     def failed(self, case: Case, exc: RunnerError, seconds: float = 0.0):
         row = super().failed(case, exc, seconds)
         row.metrics = {**(row.metrics or {}), **self.extra_metrics()}
+        t = self.timing() if exc.metrics else {}
+        row.ttft_s, row.first_reasoning_s, row.prefill_s = t.get("ttft_s"), t.get("first_reasoning_s"), t.get("prefill_s")
+        row.cold = t.get("cold")
         return row
+
+    def budget_hit(self) -> tuple:
+        """The limit a reply cut at this step's reply budget hit. #1547."""
+        return knobs.hit("max_tokens.agent", self.max_tokens, "tokens")
+
+    def _cut_in_call(self, exc: completion.CompletionError) -> bool:
+        """A server error for tool-call arguments that ended early, on a reply not known to stop short of the budget. #1547."""
+        made = exc.usage.get("completion_tokens")
+        return bool(reasons.CUT_TOOL_CALL.search(str(exc))) and (not isinstance(made, int) or made >= self.max_tokens)
 
     def _step(self, n: int, messages: list, tools: list, timeout: float) -> tuple[dict, dict, str]:
         t0 = time.perf_counter()
-        got = self.chat(messages, model=self.model, gateway=self.gateway,
-                        tools=tools, timeout=timeout,
-                        max_tokens=self.max_tokens, sampling=self.sampling or None)
+        try:
+            got = self.chat(messages, model=self.model, gateway=self.gateway,
+                            tools=tools, timeout=timeout,
+                            max_tokens=self.max_tokens, sampling=self.sampling or None)
+        except completion.CompletionError as exc:
+            limit = self.budget_hit() if self._cut_in_call(exc) else ()
+            if limit:
+                # llama-server cannot parse a call the budget cut, so the length stop arrives as a 500. #1547.
+                exc.failure_class, exc.finish, exc.limit = reasons.TOKEN_BUDGET_EXHAUSTED, "length", limit
+            raise
         self.answered = True
         firsts = [v for v in (got.timing.get("ttft_s"), got.timing.get("first_tool_s"))
                   if v is not None]
