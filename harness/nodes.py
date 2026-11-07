@@ -56,6 +56,18 @@ class Node:
     renamed: tuple[tuple[str, str], ...] = ()
     #: Kept in nodes.yaml but left out of routing, fallbacks, probes and checks. #1061.
     parked: bool = False
+    #: An interactive node: only these lanes' sohot-<lane> aliases go to it, never its models by name. #1562.
+    lanes: tuple[str, ...] = ()
+
+    def takes(self, name: str) -> bool:
+        """Whether a gateway entry by this name may go to this node."""
+        from harness import gateway
+        return not self.lanes or name.lower() in {gateway.LANE_ALIAS.format(lane) for lane in self.lanes}
+
+    def asked(self) -> tuple[str, ...]:
+        """The gateway names smoke asks for this node: its lane aliases, else its models."""
+        from harness import gateway
+        return tuple(gateway.LANE_ALIAS.format(lane) for lane in self.lanes) or self.models
 
     def node_id(self, model: str) -> str:
         """The id this node is sent for a gateway model id."""
@@ -154,6 +166,10 @@ def parse(data: dict, where: str = FILE) -> list[Node]:
         parked = raw.get("parked", False)
         if not isinstance(parked, bool):
             raise ValueError(f"{at}: parked must be true or false")
+        from harness import interactive
+        lanes = raw.get("lanes") or []
+        if not isinstance(lanes, list) or any(str(lane) not in interactive.LANES for lane in lanes):
+            raise ValueError(f"{at}: lanes must be a list of {', '.join(interactive.LANES)}, not {lanes!r}")
         key = str(raw.get("key") or "").strip()
         if key and not _KEY.match(key):
             raise ValueError(f"{at}: key must be env:<VAR> or keychain:<service>/<account>, "
@@ -164,7 +180,8 @@ def parse(data: dict, where: str = FILE) -> list[Node]:
                         _number(raw, "connect_timeout", CONNECT_TIMEOUT_S, at),
                         _number(raw, "timeout", TIMEOUT_S, at),
                         _number(raw, "cooldown", COOLDOWN_S, at),
-                        bool(raw.get("ipv4", True)), tuple(renamed), parked))
+                        bool(raw.get("ipv4", True)), tuple(renamed), parked,
+                        tuple(dict.fromkeys(str(lane) for lane in lanes))))
     return out
 
 
@@ -263,15 +280,12 @@ def route(data: dict, nodes: list[Node]) -> dict:
     from harness import gateway, models, serving
     if not nodes:
         return data
-    holder = {}
-    for node in nodes:
-        for model in node.models:
-            holder.setdefault(model.lower(), node)
     entries, twins, fallbacks, held = [], [], [], set()
     for entry in data.get("model_list") or []:
         params = entry.get("litellm_params") or {}
         model = gateway.strip_provider(str(params.get("model", "")))
-        node = holder.get(model.lower())
+        node = next((n for n in nodes if model.lower() in {m.lower() for m in n.models}
+                     and n.takes(str(entry.get("model_name", "")))), None)
         base = serving.api_base(entry)
         try:
             same = bool(base) and serving.loopback(base) and node is not None \
@@ -287,7 +301,7 @@ def route(data: dict, nodes: list[Node]) -> dict:
         twin = {k: v for k, v in entry.items() if k != models.DEPRECATED_KEY}
         twins.append({**twin, "model_name": name + LOCAL_SUFFIX, FALLBACK_KEY: name})
         fallbacks.append({name: [name + LOCAL_SUFFIX]})
-    for node in nodes:
+    for node in (n for n in nodes if not n.lanes):
         for model in node.models:
             if model.lower() not in held and not any(
                     str(e.get("model_name", "")).lower() == model.lower() for e in entries):
@@ -354,11 +368,13 @@ def smoke(gateway: str, key: str, nodes: list[Node], get=_get_models, ask=_ask, 
         if unidentified(node):
             out.append((False, unidentified(node)))
         up, ids = _probe(node, get)
-        for model in node.models:
-            if up and node.node_id(model) not in ids:
-                out.append((False, f"node {node.name} up but does not advertise "
-                                   f"{node.node_id(model)} for {model}; it lists "
-                                   f"{', '.join(sorted(ids)) or 'nothing'} (set `as:` in nodes.yaml)"))
+        missing = [m for m in node.models if up and node.node_id(m) not in ids]
+        for model in missing:
+            out.append((False, f"node {node.name} up but does not advertise "
+                               f"{node.node_id(model)} for {model}; it lists "
+                               f"{', '.join(sorted(ids)) or 'nothing'} (set `as:` in nodes.yaml)"))
+        for model in node.asked():
+            if model in missing:
                 continue
             started = clock()
             try:
@@ -424,6 +440,7 @@ def main(argv=None) -> int:
     if args.cmd == "show":
         for n in nodes:
             held = ",".join(m if n.node_id(m) == m else f"{m} as {n.node_id(m)}" for m in n.models)
+            held += f"\tlanes {','.join(n.lanes)} only" if n.lanes else ""
             print(f"{n.name}\t{n.engine}\t{held}\tconnect {n.connect_timeout:g}s "
                   f"timeout {n.timeout:g}s cooldown {n.cooldown:g}s\tkey {n.key or 'none'}")
         return 0
