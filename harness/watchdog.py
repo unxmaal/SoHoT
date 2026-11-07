@@ -18,6 +18,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+from harness import interactive
 
 NOTE, NOTIFY, FILE, PAUSE, STOP, REAP, UNLOAD, RESTART = (
     "note", "notify", "file", "pause", "stop", "reap", "unload", "restart")
@@ -153,6 +154,7 @@ class World:
     protected: set | None = None
     gateway_up: bool | None = None
     mlx_generating: bool | None = None
+    interactive: dict = field(default_factory=dict)
     fallbacks: list | None = None
     #: This wake's lane_probes rows (#924).
     lanes: list | None = None
@@ -564,6 +566,7 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
     world.protected = probes.protected() if world.mlx_held else None
     world.gateway_up = probes.gateway_up()
     world.mlx_generating = probes.mlx_generating()
+    world.interactive = interactive.watch(probes.launchd_loaded("interactive"))
     world.fallbacks = probes.fallbacks(conn)
     try:
         world.served = probes.served()
@@ -1118,6 +1121,7 @@ CRITERIA = (
               "the gateway's liveliness probe fails"),
     Criterion("mlx_dead", (), RESTART, NOTIFY, ("mlx",), _mlx_dead,
               "mlx_lm.server is up but its generation thread died, so every request fails"),
+    Criterion("interactive_down", (), RESTART, NOTIFY, (), interactive.finding, interactive.WHAT),
     Criterion("node_fallbacks", ("watchdog_fallback_max",), NOTIFY, FILE, ("fallbacks",), _node_fallbacks,
               "a serving node's requests falling back to this machine"),
 )
@@ -1292,7 +1296,7 @@ class Hands:
     def restart(self, f: Finding) -> str:
         from harness import paths
         service = f.subject.detail.get("service", "")
-        if service == "mlx":
+        if service in ("mlx", "interactive"):
             return self._kickstart(service)
         if service != "gateway":
             return f"refused: {service or f.subject.kind} is not a service the watchdog restarts"

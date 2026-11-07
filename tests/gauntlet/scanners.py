@@ -860,6 +860,7 @@ EVAL_HOMED = {
 }
 #: Same keys -> why the entry may write the store of the home it runs in. #1346
 EVAL_WAIVED = {
+    "harness/cli.py pin action=probe": "times the live interactive server, which only the live home's plan names; its delegations are tagged internal, never work (#1561)",
     "harness/cli.py d --no-control": "skips the control: the judge's scores are the work",
     "harness/cli.py sub canary": "plants run in their own homes (canary.child_env); the parent writes a lease only",
     "harness/cli.py sub chaos": "scenarios run in chaos.scratch_home; the machine lock is a lease, not work",

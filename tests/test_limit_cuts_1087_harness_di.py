@@ -164,7 +164,7 @@ def _failing(monkeypatch, failure):
     from harness import completion, delegate, reasons, serving
     where = serving.Route("http://127.0.0.1:1", "m", {})
     monkeypatch.setattr(delegate, "route", lambda lane, model: ("m", where))
-    monkeypatch.setattr(delegate, "_budget", lambda *a: None)
+    monkeypatch.setattr(delegate, "_budget", lambda *a, **k: None)
     monkeypatch.setattr(delegate, "_allowance", lambda where, mt, timeout: timeout or delegate.TIMEOUT_S)
     monkeypatch.setattr(delegate, "as_work", lambda *a, **k: contextlib.nullcontext({}))
     monkeypatch.setattr(delegate, "generate", lambda spec, where, lane, prompt, call, **kw: call(prompt))
