@@ -22,6 +22,7 @@ QUIET = {
 }
 #: "file:function" -> why it may call ms.connect() itself inside a broad except: it writes, so a lend never reaches it.
 WRITERS = {
+    "harness/serve_lease.py:_leases": "takes, beats and releases a delegation's lease; a store that will not answer leaves serving unleased",
     "harness/delegations.py:record": "records a delegation outcome",
     "harness/disk.py:sweep": "deletes weights and records their rows",
     "harness/commands/store.py:cmd_disk": "the disk verb's own connection for deletes; it says so when there is none",
