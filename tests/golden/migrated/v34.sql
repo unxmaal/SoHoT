@@ -89,7 +89,7 @@ table meta [('key', 'TEXT', 0, None, 1), ('value', 'TEXT', 0, None, 0)]
   index sqlite_autoindex_meta_1 unique=1 ['key']
   ('artifact_split', '{"code": {"missing": 4, "none": 2, "path": 0, "resolved": 0, "text": 4}, "image": {"missing": 0, "none": 2, "path": 2, "resolved": 0, "text": 0}, "tts": {"missing": 0, "none": 0, "path": 4, "resolved": 0, "text": 0}}')
   ('candidate_guesses', '[{"adoption": 2, "from": "the adopt verdict/'s machine; no vote or judged run names one", "lane": "svg", "machine": 2, "proposal": "org-l/svg-thing", "spec": "mlx:org-l/svg-thing"}]')
-  ('schema', '90')
+  ('schema', '91')
 table otel_events [('id', 'INTEGER', 0, None, 1), ('key', 'TEXT', 1, None, 0), ('received_at', 'REAL', 1, None, 0), ('at', 'REAL', 1, None, 0), ('session_id', 'TEXT', 1, "''", 0), ('prompt_id', 'TEXT', 1, "''", 0), ('name', 'TEXT', 1, None, 0), ('tool', 'TEXT', 1, "''", 0), ('model', 'TEXT', 1, "''", 0), ('query_source', 'TEXT', 1, "''", 0), ('success', 'INTEGER', 0, None, 0), ('duration_ms', 'REAL', 0, None, 0), ('input_tokens', 'REAL', 0, None, 0), ('output_tokens', 'REAL', 0, None, 0), ('cache_read_tokens', 'REAL', 0, None, 0), ('cache_creation_tokens', 'REAL', 0, None, 0), ('cache_creation_5m_tokens', 'REAL', 0, None, 0), ('cache_creation_1h_tokens', 'REAL', 0, None, 0), ('cost_usd', 'REAL', 0, None, 0), ('result_bytes', 'REAL', 0, None, 0), ('attrs', 'TEXT', 1, "'{}'", 0)]
   index ix_otel_events_at unique=0 ['at', 'name']
   index ix_otel_events_session unique=0 ['session_id', 'at']
@@ -142,6 +142,8 @@ table runs [('id', 'INTEGER', 0, None, 1), ('path', 'TEXT', 1, None, 0), ('lane'
   (3, '20260920-100000-0003-tts', 'tts', 'measure', 2, 1789788000.0, 1, 'digest-2', '{"modality": "tts", "tier": "measure", "cases_digest": "digest-2"}', '{"hw_model": "Mac17,15", "os": "macOS-27.0.1-arm64-arm-64bit", "arch": "arm64"}', '{"tts-model": "mlx:org-h/tts-model", "kokoro": "kokoro"}', 1789788000.0, None, '', '')
 table runtime_trials [('id', 'INTEGER', 0, None, 1), ('runtime', 'TEXT', 1, None, 0), ('version', 'TEXT', 1, None, 0), ('pinned', 'TEXT', 1, "''", 0), ('channel', 'TEXT', 1, "''", 0), ('seen_at', 'REAL', 1, None, 0), ('outcome', 'TEXT', 1, "'proposed'", 0), ('detail', 'TEXT', 1, "''", 0), ('lane', 'TEXT', 1, "''", 0), ('dir', 'TEXT', 1, "''", 0), ('evidence', 'TEXT', 1, "'{}'", 0), ('decided_at', 'REAL', 0, None, 0)]
   index sqlite_autoindex_runtime_trials_1 unique=1 ['runtime', 'version']
+table serve_waits [('id', 'INTEGER', 0, None, 1), ('at', 'REAL', 1, None, 0), ('lane', 'TEXT', 1, None, 0), ('holder', 'TEXT', 1, "''", 0), ('waited_s', 'REAL', 1, '0', 0), ('outcome', 'TEXT', 1, None, 0), ('in_flight', 'TEXT', 1, "''", 0), ('call_id', 'TEXT', 1, "''", 0), ('cut', 'INTEGER', 1, '0', 0)]
+  index ix_serve_waits_lane unique=0 ['lane', 'at']
 table sightings [('id', 'INTEGER', 0, None, 1), ('proposal_id', 'INTEGER', 1, None, 0), ('source', 'TEXT', 1, None, 0), ('url', 'TEXT', 1, "''", 0), ('why', 'TEXT', 1, "''", 0), ('relevance', 'INTEGER', 1, '0', 0), ('seen_at', 'REAL', 1, None, 0), ('machine_id', 'INTEGER', 0, None, 0)]
   index ix_sight_prop unique=0 ['proposal_id']
   index sqlite_autoindex_sightings_1 unique=1 ['proposal_id', 'source', 'url']

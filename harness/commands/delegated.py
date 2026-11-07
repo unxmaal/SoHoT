@@ -10,6 +10,10 @@ def _rate(x) -> str:
     return "--" if x is None else f"{x:.0%}"
 
 
+def _secs(x) -> str:
+    return "--" if x is None else f"{x:.1f}"
+
+
 def cmd_delegated(a) -> int:
     from harness import delegations, usage
     from harness import memory_store as ms
@@ -44,6 +48,8 @@ def cmd_delegated(a) -> int:
             emit(**got)
             return 0
         rows = delegations.report(conn, since)
+        from harness import serve_lease
+        waits = serve_lease.waits(conn, since)
     finally:
         held.close()
     if not rows:
@@ -57,7 +63,15 @@ def cmd_delegated(a) -> int:
                  f"{_rate(r['used_rate']):>5} {_rate(r['edited_rate']):>6} "
                  f"{_rate(r['discarded_rate']):>9} {r['accepted']:>8} {r['rejected']:>8} "
                  f"{r['unknown']:>7} {r['pending']:>7} {med:>8}")
-    emit(report=rows, since=a.since)
+    if waits:
+        note(f"\nwaits on a held machine and whole latency (#1556)\n{'lane':<10} {'waits':>5} {'refused':>7} "
+             f"{'cut':>4} {'beside':>6} {'median s':>8} {'max s':>7} {'p95 s':>7}  target")
+        for w in waits:
+            target = ("" if w["target_s"] is None else
+                      f"{'OVER ' if w['over_target'] else ''}{w['target_s']:g}s")
+            note(f"{w['lane']:<10} {w['waits']:>5} {w['refused']:>7} {w['cut']:>4} {w['beside']:>6} "
+                 f"{_secs(w['median_wait_s']):>8} {_secs(w['max_wait_s']):>7} {_secs(w['p95_s']):>7}  {target}")
+    emit(report=rows, waits=waits, since=a.since)
     return 0
 
 

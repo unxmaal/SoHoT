@@ -139,6 +139,11 @@ class Watch:
         self._held = status == "loaded"
         self._slept = False
 
+    def rest(self) -> None:
+        """Forget what was held: a yield to serving swapped the model out on purpose and the run warmed it again. #1556."""
+        self._held = False
+        self._slept = False
+
 
 def _upstream(spec: str, gateway: str = "") -> tuple:
     from harness import delegate, serving

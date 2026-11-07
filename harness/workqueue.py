@@ -636,6 +636,11 @@ def gate(sample=None) -> tuple[bool, str]:
     from harness import env, pressure
     if paused():
         return False, "paused (soh jobs resume)"
+    from harness import serve_lease
+    serving = serve_lease.held()
+    if serving:
+        # Serving comes first: a job started now would load a model under a delegation. #1556.
+        return False, f"serving {serving}"
     vol = env.unmounted(env.configured())
     if vol:
         return False, f"paused until it returns: the weights volume {vol} {env.NOT_MOUNTED}"
