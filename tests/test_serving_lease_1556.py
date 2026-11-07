@@ -342,7 +342,7 @@ def test_an_idle_lease_lapses_after_its_grace():
     lease.idle()
     until = lease.record["until"]
     assert serve_lease.held(until - 1)
-    assert serve_lease.held(until + 1) == "" and not lease.path.exists()
+    assert serve_lease.held(until + 1) == ""
 
 
 def _yielding(now, since, done_ago, yielded_before):

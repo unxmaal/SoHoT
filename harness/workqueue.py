@@ -647,11 +647,57 @@ def _claim(job: dict, log: Path) -> bool:
     return took
 
 
+def _unclaim(job: dict, why: str) -> None:
+    with _store() as c:
+        c.execute("UPDATE jobs SET state = ?, started_at = NULL, log = '', note = ? WHERE id = ? AND state = ?",
+                  (PENDING, why, int(job["id"]), RUNNING))
+        c.commit()
+
+
+@contextmanager
+def leased(job: dict, pid: int | None = None):
+    """Hold the job's lease on its class, beaten every TTL_S/3 while the block runs; yields it, or None at capacity. #1558."""
+    from harness import item_lease
+    with _store() as c:
+        got = item_lease.take(c, needs(job), f"job {label(job['id'])}", job_id=int(job["id"]), pid=pid,
+                              priority=int(job.get("priority") or 0))
+    if got is None:
+        yield None
+        return
+    stop = threading.Event()
+
+    def keep():
+        while not stop.wait(item_lease.TTL_S / 3):
+            try:
+                with _store() as c:
+                    item_lease.beat(c, got["id"])
+            except Exception as exc:  # noqa: BLE001 - a missed beat lapses the lease, which recovery reads
+                print(f"{time.strftime('%H:%M:%S')} job {job['id']}: lease beat failed: {exc}", flush=True)
+
+    beating = threading.Thread(target=keep, name=f"lease-{job['id']}", daemon=True)
+    beating.start()
+    try:
+        yield got
+    finally:
+        stop.set()
+        beating.join(timeout=5)
+        with _store() as c:
+            item_lease.release(c, got["id"])
+
+
 def run_one(job: dict, popen=None) -> dict | None:
-    """Run a pending job here; None when another worker claimed it first."""
+    """Run a pending job here under its lease; None when another worker claimed it first or its class is full."""
     log = log_dir() / f"{job['id']}.log"
     if not _claim(job, log):
         return None
+    with leased(job) as lease:
+        if lease is None:
+            _unclaim(job, f"{needs(job)} is leased to capacity; waits for a free place")
+            return None
+        return _run_claimed(job, log, popen)
+
+
+def _run_claimed(job: dict, log: Path, popen=None) -> dict | None:
     with _store() as c:
         stale = stale_schema(job["cwd"] or ".", c)
     if stale:
@@ -701,17 +747,24 @@ def resume_argv(argv: list, out) -> list[str]:
     return [*got, "--out", str(out), "--resume"]
 
 
+def _resumed(c, job: dict) -> list | None:
+    """The argv that resumes an eval job from its stored run, or None when it is no eval or stored none. #1509."""
+    from harness import runs
+    run = runs.for_job(c, int(job["id"]))
+    if "evals.run" not in [str(a) for a in job["argv"]] or run is None:
+        return None
+    return resume_argv(job["argv"], runs.run_dir(run["path"]))
+
+
 def _repend(job: dict) -> bool:
     """A job the watchdog paused for contention waits again to resume where it stopped, unless it queued its own continuation. #1509."""
-    from harness import contention, runs
+    from harness import contention
     with _store() as c:
         if not contention.paused_for(c, job) or c.execute(
                 "SELECT 1 FROM jobs WHERE argv = ? AND state = ? AND id != ?",
                 (json.dumps([str(a) for a in job["argv"]]), PENDING, int(job["id"]))).fetchone():
             return False
-        argv, run = list(job["argv"]), runs.for_job(c, int(job["id"]))
-        if "evals.run" in [str(a) for a in argv] and run is not None:
-            argv = resume_argv(argv, runs.run_dir(run["path"]))
+        argv = _resumed(c, job) or list(job["argv"])
         c.execute("UPDATE jobs SET state = ?, finished_at = NULL, rc = ?, argv = ?, note = ? WHERE id = ?",
                   (PENDING, job.get("rc"), json.dumps(argv),
                    f"paused for contention at {job.get('finished')}; resumes when the contention gate opens",
@@ -720,15 +773,42 @@ def _repend(job: dict) -> bool:
     return True
 
 
-def _recover() -> None:
-    """Only the runner-lock holder calls this, so nothing here is really running:
-    a job still marked running was cut off (a reboot) and may be half done; a deploy settles from its record. #1506"""
+def _settle_gone(c, job: dict) -> None:
+    """A running job whose worker and process are gone: an eval that stored a run waits again to resume it, else it failed."""
+    argv = _resumed(c, job)
+    if argv is not None:
+        c.execute("UPDATE jobs SET state = ?, started_at = NULL, argv = ?, note = ? WHERE id = ? AND state = ?",
+                  (PENDING, json.dumps(argv), "its worker went away; resumes from its stored run", int(job["id"]), RUNNING))
+    else:
+        c.execute("UPDATE jobs SET state = ?, note = ? WHERE id = ? AND state = ?",
+                  (FAILED, "interrupted; add it again to retry", int(job["id"]), RUNNING))
+    c.commit()
+
+
+def _recover() -> list[dict]:
+    """At the runner's start each running job here lost its worker: those whose process runs on, to watch; the rest settled. #1558."""
     settle_deploys()
+    left = []
     with _store() as c:
         where, args = _claimed(c)
-        c.execute(f"UPDATE jobs SET state = ?, note = ? WHERE state = ? AND kind != ? AND {where}",
-                  (FAILED, "interrupted; add it again to retry", RUNNING, DEPLOY, *args))
-        c.commit()
+        for job in _select(c, f"WHERE state = ? AND kind != ? AND {where}", (RUNNING, DEPLOY, *args)):
+            if _pid_of(job["id"]) is not None:
+                left.append(job)
+            else:
+                _settle_gone(c, job)
+    return left
+
+
+def _watch_left(job: dict, poll: float = WATCH_S) -> None:
+    """Lease a job a gone worker left running until its process exits, then settle it. #1558."""
+    pid = _pid_of(job["id"])
+    if pid is not None:
+        with leased(job, pid=pid):
+            while alive(pid):
+                time.sleep(poll)
+    _pid_file(job["id"]).unlink(missing_ok=True)
+    with _store() as c:
+        _settle_gone(c, job)
 
 
 def settle_deploys() -> list:
@@ -810,7 +890,10 @@ def run_pending(popen=None, gate=lambda: (True, ""), clock=time.time, watch: flo
             finished.set()
 
     try:
-        _recover()
+        for job in _recover():
+            t = threading.Thread(target=_watch_left, args=(job, watch), name=f"left-{job['id']}", daemon=True)
+            live[t] = (needs(job), job["id"])
+            t.start()
         while True:
             finished.clear()
             live = {t: c for t, c in live.items() if t.is_alive()}

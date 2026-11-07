@@ -15,6 +15,7 @@ capabilities:
       - harness/commands/gate.py
       - harness/resources.py
       - harness/executors.py
+      - harness/item_lease.py
 
   - name: watchdog
     summary: The periodic judge of running jobs and served models, acting from a fixed set and recording each act.

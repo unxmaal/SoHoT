@@ -176,6 +176,14 @@ def cmd_jobs(a) -> int:
         note(f"  {j['id']}  {j['state']:8}{rc:7}  p{pri:<3} {wq.needs(j):7} {at}{j['title']}{lock}")
     for h in loose:
         note(f"  {h['lock']} lock held by {exclusive.describe(h)}, outside the queue")
+    from harness import item_lease
+    conn = ms.connect()
+    try:
+        leases = item_lease.live(conn)
+    finally:
+        conn.close()
+    for h in leases:
+        note(f"  {item_lease.line(h)}")
     emit(running=wq.running(), gate_open=ok, why=why, jobs=got, loop=loop, contention=gpu, locks=locks,
-         hold=held, held=sorted(waiting))
+         hold=held, held=sorted(waiting), leases=leases)
     return 0
