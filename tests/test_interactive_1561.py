@@ -359,6 +359,32 @@ def test_the_probe_reports_p95_pressure_and_the_lock_for_each_lane():
     assert not slow["ok"]
 
 
+def test_the_probe_holds_the_lanes_and_target_the_delegation_report_holds(monkeypatch):
+    from harness import serve_lease
+    ticks = iter(range(1000))
+
+    def call():
+        return {"spec": f"llamacpp:{DECIDE}", "model": DECIDE}
+    def slow_extract():
+        for _ in range(3):
+            next(ticks)
+        return call()
+    monkeypatch.setattr(serve_lease, "P95_TARGET_S", 6.0)
+    monkeypatch.setattr(serve_lease, "TARGET_LANES", ("decide",))
+    got = interactive_cmd.probe(2, decide=call, complete=slow_extract, sample=lambda: None, busy=lambda: "",
+                                clock=lambda: next(ticks) * 3.0, code=call)
+    assert got["ok"] and got["target_p95_s"] == 6.0 and got["lanes"]["extract"]["p95_s"] == 12.0
+
+    def again():
+        return interactive_cmd.probe(2, decide=call, complete=slow_extract, sample=lambda: None, busy=lambda: "",
+                                     clock=lambda: next(ticks) * 3.0, code=call)["ok"]
+    monkeypatch.setattr(serve_lease, "P95_TARGET_S", 2.0)
+    assert not again()
+    monkeypatch.setattr(serve_lease, "P95_TARGET_S", 6.0)
+    monkeypatch.setattr(serve_lease, "TARGET_LANES", ("decide", "extract"))
+    assert not again()
+
+
 def test_memory_warn_gives_back_eval_router_models_never_the_pinned_ones(pinned, monkeypatch):
     asked = []
 
