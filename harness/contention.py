@@ -59,10 +59,11 @@ def release() -> dict | None:
 
 def requests(conn, since: float) -> list[tuple[str, float]]:
     """(alias, when it ended) of each client request the gateway answered that was running at or after `since`."""
+    from harness import usage
     marks = ",".join("?" * len(SERVED))
     return [(str(r["alias"] or "?"), float(r["ended"])) for r in conn.execute(
-        f"SELECT alias, at + COALESCE(total_s, 0) AS ended FROM gateway_requests "
-        f"WHERE at + COALESCE(total_s, 0) >= ? AND purpose IN ({marks})", (since, *SERVED))]
+        f"SELECT alias, {usage.ENDED_SQL} AS ended FROM gateway_requests "
+        f"WHERE {usage.ENDED_SQL} >= ? AND purpose IN ({marks})", (since, *SERVED))]
 
 
 def served(conn, since: float) -> dict:

@@ -80,7 +80,8 @@ def demand(conn, lane: str, names, now: float | None = None) -> dict:
         (since, purpose.EVAL, purpose.SMOKE, purpose.WATCHDOG, f"sohot-{lane}", usage.DIRECT_CLIENT, lane,
          *names)).fetchall()
     tokens = sorted(int(r[2]) for r in rows if r[2])
-    edges = sorted([(float(r[0]), 1) for r in rows if r[1]] + [(float(r[0]) + float(r[1]), -1) for r in rows if r[1]])
+    spans = [usage.span(r[0], r[1]) for r in rows if r[1]]
+    edges = sorted([(start, 1) for start, _ in spans] + [(end, -1) for _, end in spans])
     peak = now_in = 0
     for _, step in edges:
         now_in += step

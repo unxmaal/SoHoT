@@ -100,7 +100,7 @@ def loads(models, measured: dict, weights: dict) -> tuple[dict[str, dict], dict]
 
 def requests(conn, since: float, until: float) -> tuple[list[tuple], dict]:
     """(start, end, model, kind) per local gateway request in the window, with counts of what was left out."""
-    from harness import gateway
+    from harness import gateway, usage
     marks = ", ".join("?" * len(SKIPPED_PURPOSES))
     out, left = [], {"skipped_purpose": 0, "failed": 0, "hosted": 0}
     for at, served, total, purpose, error in conn.execute(
@@ -114,7 +114,7 @@ def requests(conn, since: float, until: float) -> tuple[list[tuple], dict]:
             left["hosted"] += 1
         else:
             kind = residency.BATCH if purpose in BATCH_PURPOSES else residency.INTERACTIVE
-            out.append((float(at), float(at) + float(total or 0), gateway.strip_provider(str(served)), kind))
+            out.append((*usage.span(at, total), gateway.strip_provider(str(served)), kind))
     return out, left
 
 

@@ -531,7 +531,7 @@ def _text(path: Path) -> str:
 
 def gather(conn, home: Path, now: float, since: float | None = None) -> dict:
     """Every source once: the store through `conn` (read-only), the ledger, run dirs and logs under `home`."""
-    from harness import ledger, power as power_mod
+    from harness import ledger, power as power_mod, usage
     from harness import memory_store as ms
     mid = ms.machine_row(conn)
     first = _rows(conn, "SELECT first_seen FROM machines WHERE id = ?", (mid,))
@@ -539,7 +539,7 @@ def gather(conn, home: Path, now: float, since: float | None = None) -> dict:
     mine = "(machine_id = ? OR machine_id IS NULL)"
     reqs = _rows(conn, "SELECT at, client, lane, purpose, total_s, ttft_s, prompt_tokens, completion_tokens, "
                        "call_id FROM gateway_requests WHERE at >= ?", (start,))
-    intervals = [(r["at"], r["at"] + (r["total_s"] or 0.0), request_category(r["purpose"], r["client"]))
+    intervals = [(*usage.span(r["at"], r["total_s"]), request_category(r["purpose"], r["client"]))
                  for r in reqs]
     for j in _rows(conn, f"SELECT kind, argv, requested_by, started_at, finished_at, state FROM jobs "
                          f"WHERE started_at IS NOT NULL AND {mine}", (mid,)):
