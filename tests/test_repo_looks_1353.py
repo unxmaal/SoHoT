@@ -2,6 +2,7 @@
 import argparse
 import json
 import time
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -96,6 +97,17 @@ def _measure(**kw):
     return measure_cmd._measure(_ns(**kw), {"name": CH, "lane": "code"}, [], None)
 
 
+def priced(monkeypatch, each_s: float) -> None:
+    """Price one case of each side at `each_s`, whatever the test store says."""
+    real = measure_cmd._plan
+
+    def plan(*a, **k):
+        split, got = real(*a, **k)
+        return split, replace(got, estimate={"incumbent_s": each_s, "challenger_s": each_s})
+
+    monkeypatch.setattr(measure_cmd, "_plan", plan)
+
+
 def _verdicts(conn):
     return [dict(r) for r in conn.execute("SELECT * FROM verdicts WHERE tier = ? ORDER BY id", (adopt.TIER,))]
 
@@ -108,9 +120,9 @@ def test_a_paired_run_is_cut_into_look_slices_inside_its_budget(monkeypatch, wor
     after = time.time()
     first = fake.argvs[0]
     stop = float(first[first.index("--stop-at") + 1])
-    # --stop-at is whole seconds, stamped between before and after.
-    assert before - 1 < stop <= after + looks.LOOK_INTERVAL_S + 1
-    assert stop < after + 60 * 60 - 5
+    # The slice counts from the lock (--stop-after); --stop-at is the budget's end, in whole seconds. #1554.
+    assert float(first[first.index("--stop-after") + 1]) == looks.LOOK_INTERVAL_S
+    assert before - 1 < stop <= after + 60 * 60 + 1
 
 
 def test_a_decided_look_mid_run_stops_it_and_records_the_verdict(monkeypatch, world):
@@ -150,17 +162,18 @@ def test_a_slice_that_ran_nothing_ends_the_run_with_its_pause_kept(monkeypatch, 
     fake = Slices([_rows(6, gained=1, lost=1), _rows(6, gained=1, lost=1)])
     monkeypatch.setattr(measure_cmd, "_launch", fake)
     _measure()
-    assert len(fake.argvs) == 2
+    assert len(fake.argvs) == 1 + measure_cmd.IDLE_SLICES
     conn = world()
     try:
         (p,) = _pauses(conn)
         assert _verdicts(conn) == []
     finally:
         conn.close()
-    assert p["state"] == "paused" and p["sweeps"] == 1 and len(json.loads(p["looks"])) == 2
+    assert p["state"] == "paused" and p["sweeps"] == 1 and len(json.loads(p["looks"])) == 1 + measure_cmd.IDLE_SLICES
 
 
 def test_a_budget_under_one_look_interval_is_one_slice(monkeypatch, world):
+    priced(monkeypatch, 1.0)
     fake = Slices([_rows(6, gained=1, lost=1), _rows(12, gained=1, lost=1)])
     monkeypatch.setattr(measure_cmd, "_launch", fake)
     _measure(power_budget_min=looks.LOOK_INTERVAL_S / 60 / 2)

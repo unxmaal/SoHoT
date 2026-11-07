@@ -61,6 +61,8 @@ def test_an_over_budget_run_is_launched_to_pause_at_its_slice(monkeypatch, tmp_p
     monkeypatch.setattr(adopt, "default_for", lambda lane, fallback, conn=None: "q3-4b")
     real = ms.connect
     monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
+    from tests.test_repo_looks_1353 import priced
+    priced(monkeypatch, 1.0)
     before = time.time()
     measure_cmd._measure_and_adopt(_ns(power_budget_min=1), {"name": "org/challenger", "lane": "code"})
     after = time.time()
