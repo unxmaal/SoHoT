@@ -34,6 +34,14 @@ COLUMNS = ("at", "alias", "lane", "served", "spec", "client", "call_type", "stre
            "tool_calls_valid", "finish_reason", "error_class", "error_code", "purpose",
            "call_id")
 
+#: When a gateway_requests row's request ended, in SQL: `at` is its start. #1560.
+ENDED_SQL = "at + COALESCE(total_s, 0)"
+
+
+def span(at, total_s) -> tuple[float, float]:
+    """(start, end) of a gateway_requests row: `at` is when the request started, `total_s` how long it ran. #1560."""
+    return float(at), float(at) + float(total_s or 0)
+
 
 def _plain(obj):
     """A ModelResponse as a dict; a dict as itself; anything else as {}."""

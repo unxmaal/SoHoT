@@ -34,13 +34,13 @@ def summary(values: list[float]) -> dict:
 
 def uses(conn, since: float, skip=("watchdog", "smoke")) -> dict[str, list[tuple[float, float]]]:
     """Served model -> (start, end) of each gateway request since `since` that the watchdog or a smoke test did not send."""
-    from harness import gateway
+    from harness import gateway, usage
     out: dict = {}
     marks = ", ".join("?" * len(skip))
     for at, served, total in conn.execute(
             f"SELECT at, served, total_s FROM gateway_requests WHERE at >= ? AND purpose NOT IN ({marks}) ORDER BY at",
             (since, *skip)):
-        out.setdefault(gateway.strip_provider(str(served or "")), []).append((float(at) - float(total or 0), float(at)))
+        out.setdefault(gateway.strip_provider(str(served or "")), []).append(usage.span(at, total))
     return out
 
 
