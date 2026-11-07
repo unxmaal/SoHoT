@@ -57,6 +57,7 @@ from harness.commands import craft as craft_cmd
 from harness.commands import vision as vision_cmd
 from harness.commands import coherence as coherence_cmd
 from harness.commands import load_log as load_log_cmd
+from harness.commands import residency as residency_cmd
 from harness.commands import measure as measure_cmd
 from harness.commands import report as report_cmd
 from harness.commands import repo_screen as repo_screen_cmd
@@ -951,6 +952,17 @@ def build_parser() -> argparse.ArgumentParser:
     llg.add_argument("--idle", action="store_true", help="print each model's cold-load seconds and what each "
                      "idle unload limit would cost it in loads and idle hours; read-only. #1157")
     llg.set_defaults(func=load_log_cmd.cmd_load_log)
+    rsim = sub.add_parser("residency-sim", help="replay the gateway's requests and the queue's jobs against LRU, "
+                          "pinned+LRU, GreedyDual-Size and Belady at a memory budget; read-only. #1559")
+    rsim.add_argument("--since", default="30d", help="window start: 30d, or a date")
+    rsim.add_argument("--budget-gb", type=float, default=None, help="resident GB before swap risk "
+                      "(default: this machine's memory)")
+    rsim.add_argument("--pin", action="append", help="a model pinned+LRU never evicts (repeatable; "
+                      "default: the decide, extract and code lanes' models)")
+    rsim.add_argument("--no-jobs", action="store_true", help="leave out queued jobs' model holds")
+    rsim.add_argument("--db", default="", help="the store (default: this home's discovery.db, read-only)")
+    rsim.add_argument("--log", action="append", help="a router log to read load seconds from (repeatable)")
+    rsim.set_defaults(func=residency_cmd.cmd_residency_sim)
     coh = sub.add_parser("coherence", help="re-decide terminal verdicts whose reason contradicts the outcome "
                          "or that nothing can reopen; read-only without --apply. #991")
     coh.add_argument("--db", default="", help="the store (default: this home's discovery.db)")
