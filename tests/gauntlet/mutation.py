@@ -23,6 +23,8 @@ from harness import repo
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
 PIN_FILE = HERE / "mutation_survivors.json"
+#: In a --found file from a --shard run: the functions each module's keys cover.
+FUNCTIONS_KEY = "_functions"
 MUTMUT_GROUPS = ("--group", "mutation", "--group", "mcp")
 
 MODULES = {
@@ -276,6 +278,28 @@ def globs(module, functions):
     return out
 
 
+def functions_of(source):
+    """Every function mutmut mutates in a module's source, `Cls.fn` for a method."""
+    out = []
+    for node in ast.parse(source).body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            out.append(node.name)
+        elif isinstance(node, ast.ClassDef):
+            out += [f"{node.name}.{n.name}" for n in node.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
+    return sorted(out)
+
+
+def shard(source, spec, pinned=()):
+    """Shard `K/N`'s functions: every Nth by name from the Kth; the first also owns pins whose function is gone (#1588)."""
+    k, _, n = spec.partition("/")
+    k, n = int(k), int(n)
+    if not 1 <= k <= n:
+        raise SystemExit(f"--shard {spec}: want K/N with 1 <= K <= N")
+    names = functions_of(source)
+    gone = sorted({shown(key) for key in pinned} - set(names)) if k == 1 else []
+    return tuple(names[k - 1::n]) + tuple(gone)
+
+
 def within(meta, functions):
     """The meta cut to these functions' mutants; mutmut leaves the rest unrun."""
     if not functions:
@@ -416,7 +440,11 @@ def write_pin(pin):
 def cmd_run(a):
     modules = a.module or list(MODULES)
     functions = tuple(a.function or ())
-    if functions and (len(modules) != 1 or a.found):
+    if a.shard:
+        if len(modules) != 1 or functions:
+            raise SystemExit("--shard takes exactly one --module and no --function")
+        functions = shard((REPO / modules[0]).read_text(encoding="utf-8"), a.shard, load_pin().get(modules[0], ()))
+    elif functions and (len(modules) != 1 or a.found):
         raise SystemExit("--function takes exactly one --module and no --found")
     workdir = Path(a.workdir) if a.workdir else Path(tempfile.mkdtemp(prefix="mutation-"))
     tree = workdir / "tree"
@@ -436,7 +464,8 @@ def cmd_run(a):
             print(f"{module}: {len(found[module])} survivor(s)", flush=True)
     if a.found:
         Path(a.found).parent.mkdir(parents=True, exist_ok=True)
-        Path(a.found).write_text(json.dumps(found, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+        limited = {FUNCTIONS_KEY: {m: list(functions) for m in found}} if a.shard else {}
+        Path(a.found).write_text(json.dumps({**found, **limited}, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     pin = load_pin()
     if functions:
         rest = {m: [k for k in keys if shown(k) not in functions] for m, keys in pin.items() if m in found}
@@ -462,10 +491,14 @@ def cmd_pin(a):
     pin = load_pin()
     for path in a.sources:
         found = json.loads(Path(path).read_text(encoding="utf-8"))
+        limited = found.pop(FUNCTIONS_KEY, {})
         unknown = sorted(set(found) - set(MODULES))
         if unknown:
             raise SystemExit(f"{path}: not mutated modules: {', '.join(unknown)}")
-        pin.update({m: sorted(set(keys)) for m, keys in found.items()})
+        for m, keys in found.items():
+            # A shard's file replaces only its own functions' pins; the other shards' stay.
+            kept = [k for k in pin.get(m, []) if m in limited and shown(k) not in limited[m]]
+            pin[m] = sorted(set(kept) | set(keys))
         print(f"pinned {', '.join(sorted(found))} from {path}")
     write_pin(pin)
     return 0
@@ -482,6 +515,8 @@ def main(argv=None):
     r.add_argument("--function", action="append", help="mutate only this function (Cls.fn for a method); "
                    "the ratchet and --pin cover only these")
     r.add_argument("--jobs", type=int, help="mutmut workers (default: one per CPU)")
+    r.add_argument("--shard", metavar="K/N", help="mutate only every Nth function from the Kth, so N CI jobs split one "
+                   "module; ratchets and --found cover only those")
     r.set_defaults(fn=cmd_run)
     q = sub.add_parser("pin", help="pin the survivors in --found files from a CI run")
     q.add_argument("--from", dest="sources", nargs="+", required=True, metavar="FILE")

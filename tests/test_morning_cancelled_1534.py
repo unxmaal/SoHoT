@@ -41,15 +41,16 @@ def test_jobs_cancelled_at_their_timeout_read_cancelled_not_failed():
                      f"check-linux ({linux + 2.9:.0f} of {linux:g} min), "
                      f"mutation (harness/adopt.py) ({mutation + 5:.0f} of {mutation:g} min)"]
     assert {j["name"]: j["cancel"] for j in c["jobs"]}["check-linux"] == "timeout"
-    assert "cancelled  check-linux: at its 30 min timeout" in "\n".join(
+    assert f"cancelled  check-linux: at its {linux:g} min timeout" in "\n".join(
         morning_cmd.render_ci(c))
 
 
 def test_a_failure_is_failed_and_an_early_cancel_says_a_person_or_a_newer_run():
     c, needs = _needs([("check-windows", "failure", 12), ("check-linux", "cancelled", 4),
                        ("check-macos", "success", 22)])
+    linux = ci_budget.limit_minutes("check-linux")
     assert needs == ["nightly CI failed: check-windows",
-                     "nightly CI cancelled before its timeout (by a person or a newer run): check-linux (4 of 30 min)"]
+                     f"nightly CI cancelled before its timeout (by a person or a newer run): check-linux (4 of {linux:g} min)"]
     assert {j["name"]: j["cancel"] for j in c["jobs"]} == {"check-windows": "", "check-linux": "superseded",
                                                            "check-macos": ""}
 

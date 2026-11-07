@@ -174,9 +174,15 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       needs.store-touched.outputs.touched == '1'
     runs-on: macos-latest
-    timeout-minutes: 35
+    # 1.4x (a slow M1 host, #1520) the whole suite's 36.5 min projected from push run 42412868007's cut at 99% (#1584).
+    timeout-minutes: 52
+    permissions:
+      contents: read
+      # The selection reads the nightly coverage map, an artifact (#1571).
+      actions: read
     env:
-      SOHOT_FAST_PATH: ${{ (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'full-ci')) && '1' || '0' }}
+      # A push to main runs what it reaches, as a pull request does; the whole suite is the nightly's (#1584).
+      SOHOT_FAST_PATH: ${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'full-ci'))) && '1' || '0' }}
       PGHOST: 127.0.0.1
       PGPORT: "5432"
       PGUSER: discovery
@@ -208,16 +214,16 @@ jobs:
       - run: bash scripts/ci-retry.sh uv sync --python 3.12
 
       - name: Which tests this change can reach
-        # As check-macos: an unlabelled PR runs what the change reaches plus the ratchets; main runs it all (#1567, #1571).
+        # A PR diffs against its base branch, a push against the commit main was at before it (#1567, #1571, #1584).
         if: env.SOHOT_FAST_PATH == '1'
         env:
-          BASE_REF: ${{ github.base_ref }}
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
           GH_TOKEN: ${{ github.token }}
         run: |
           listing="$RUNNER_TEMP/selected.txt"
           map="$RUNNER_TEMP/coverage-map.json"
           uv run python -m tests.gauntlet.covmap fetch --out "$map" || echo "::warning::no coverage map; tracing by import"
-          if ! uv run python -m tests.gauntlet.scope --base "origin/$BASE_REF" --map "$map" --out "$listing"; then
+          if ! uv run python -m tests.gauntlet.scope --base "$BASE" --map "$map" --out "$listing"; then
             echo "::warning::test selection failed; running the full suite"
             rm -f "$listing"
           fi
@@ -249,8 +255,8 @@ jobs:
     # `ubuntu-latest` moves to 26 on 2026-10-19 (#339); the step below checks
     # the pin is honored. Keep it in step with EXPECT_UBUNTU.
     runs-on: ubuntu-24.04
-    # make check is about 14 minutes; the apt step has its own 6 below (#647).
-    timeout-minutes: 30
+    # 1.3x the job's 34.4 min projected from its nightly cuts (harness.ci_history --job check-linux, #1588); apt has its own 6 (#647).
+    timeout-minutes: 45
 
     env:
       EXPECT_UBUNTU: "24.04"
@@ -432,8 +438,8 @@ jobs:
     # The second measurement machine. Nothing here is Apple Silicon, so the MLX
     # lanes skip and the "What did not run" step below prints which ones.
     runs-on: windows-latest
-    # Measured on #624: make check 26m35s to 35m10s across three runs; 30 left one minute (#623).
-    timeout-minutes: 45
+    # 1.3x the job's 61.0 min projected from its nightly cuts at 74% (harness.ci_history --job check-windows, #1588).
+    timeout-minutes: 80
     defaults:
       run:
         # Git Bash. scripts/env.sh is sourced by the tests, and the Makefile
@@ -506,18 +512,22 @@ jobs:
   mutation:
     # Nightly or on demand, never on a pull request, labelled or not (#492 F3).
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    name: mutation (${{ matrix.module }}${{ matrix.shard && format(' {0}', matrix.shard) || '' }})
     runs-on: macos-latest
-    # One job per module: all six in one job outgrew 120 minutes and a cancelled job reports nothing (#840).
+    # One job per module, and adopt.py in two shards: it outgrew 120 minutes and a cancelled job reports nothing (#840, #1588).
     strategy:
       fail-fast: false
       matrix:
-        module:
-          - harness/memory_store/transitions.py
-          - harness/reasons.py
-          - harness/screen.py
-          - harness/adopt.py
-          - harness/serving.py
-          - harness/router.py
+        include:
+          - module: harness/memory_store/transitions.py
+          - module: harness/reasons.py
+          - module: harness/screen.py
+          - module: harness/adopt.py
+            shard: 1/2
+          - module: harness/adopt.py
+            shard: 2/2
+          - module: harness/serving.py
+          - module: harness/router.py
     timeout-minutes: 120
 
     steps:
@@ -531,7 +541,7 @@ jobs:
 
       - name: make mutation
         # Fails on a new surviving mutant, or on a pinned one that is now killed and still listed.
-        run: make mutation MUTATION_ARGS="--module ${{ matrix.module }} --found .logs/mutation-found.json"
+        run: make mutation MUTATION_ARGS="--module ${{ matrix.module }}${{ matrix.shard && format(' --shard {0}', matrix.shard) || '' }} --found .logs/mutation-found.json"
 
       - name: Survivors for `python -m tests.gauntlet.mutation pin --from`
         if: always()
@@ -545,7 +555,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "### Mutation testing: ${{ matrix.module }}"
+            echo "### Mutation testing: ${{ matrix.module }} ${{ matrix.shard }}"
             echo
             echo '```'
             tail -n 60 .logs/mutation.log 2>/dev/null || echo 'no log'
