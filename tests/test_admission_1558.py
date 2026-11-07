@@ -15,7 +15,7 @@ SIZES = {"llamacpp:Big-30B": 30.0, "llamacpp:Small-4B": 4.0}
 
 @pytest.fixture
 def machine(monkeypatch):
-    """A 60 GiB budget machine: ceiling 80, reserve 10, pinned 10, everything free, normal pressure."""
+    """A machine whose ceiling, reserve, pinned set, free memory and pressure the test sets."""
     monkeypatch.setattr(admission, "admit", admission.admit.real)
     state = {"available": 200.0, "level": pressure.NORMAL, "resident": []}
     monkeypatch.setattr(memory, "available_gb", lambda: state["available"])

@@ -464,7 +464,7 @@ A gpu job SHALL start only at normal memory pressure and when each local candida
 Test: tests/test_admission_1558.py::test_a_job_whose_model_does_not_fit_waits_with_the_numbers_and_starts_once_it_fits
 
 #### Scenario: The ledger
-- **WHEN** a live lease was admitted to load 35 GiB
+- **WHEN** a live lease was admitted to load more than the job's room leaves
 - **THEN** a job that fits only without it is refused, naming what is leased, and a small one is admitted
 Test: tests/test_admission_1558.py::test_the_ledger_counts_what_live_leases_were_admitted_to_load
 
