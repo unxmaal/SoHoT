@@ -657,11 +657,20 @@ def _unclaim(job: dict, why: str) -> None:
 @contextmanager
 def leased(job: dict, pid: int | None = None):
     """Hold the job's lease on its class, beaten every TTL_S/3 while the block runs; yields it, or None at capacity. #1558."""
-    from harness import item_lease
+    from harness import admission, item_lease
+    cls, said = needs(job), {}
+    # A job a gone worker left running is already loaded; only a new start is admitted. #1558.
+    n = admission.need(job) if cls == GPU and pid is None else admission.Need(None, why="not a new gpu load")
+
+    def fits(held):
+        ok, said["why"] = admission.admit(n, held)
+        return ok
     with _store() as c:
-        got = item_lease.take(c, needs(job), f"job {label(job['id'])}", job_id=int(job["id"]), pid=pid,
-                              priority=int(job.get("priority") or 0))
+        got = item_lease.take(c, cls, f"job {label(job['id'])}", job_id=int(job["id"]), pid=pid,
+                              priority=int(job.get("priority") or 0), mem_gb=n.gb,
+                              fits=fits if cls == GPU and pid is None else None, detail=n.why)
     if got is None:
+        job["refused"] = said.get("why") or f"{cls} is leased to capacity; waits for a free place"
         yield None
         return
     stop = threading.Event()
@@ -692,7 +701,7 @@ def run_one(job: dict, popen=None) -> dict | None:
         return None
     with leased(job) as lease:
         if lease is None:
-            _unclaim(job, f"{needs(job)} is leased to capacity; waits for a free place")
+            _unclaim(job, job["refused"])
             return None
         return _run_claimed(job, log, popen)
 
@@ -850,6 +859,18 @@ def _contended(now: float) -> bool:
         return not contention.gate(c, now)[0]
 
 
+def _admitted(job: dict) -> bool:
+    """Whether memory admits a gpu job now; a refused one waits, its note naming the numbers once. #1558."""
+    from harness import admission, item_lease
+    with _store() as c:
+        ok, why = admission.admit(admission.need(job), item_lease.live(c))
+        if not ok and job.get("note") != f"waits for memory: {why}":
+            c.execute("UPDATE jobs SET note = ? WHERE id = ? AND state = ?",
+                      (f"waits for memory: {why}", int(job["id"]), PENDING))
+            c.commit()
+    return ok
+
+
 def _startable(live: dict, now: float) -> tuple[dict, str] | None:
     """The first ready job, in run order, whose lock class is free; a GPU job or deploy only past the contention gate. #1153, #1509."""
     from harness import contention
@@ -862,7 +883,7 @@ def _startable(live: dict, now: float) -> tuple[dict, str] | None:
             if cls == DEPLOY:
                 return None
             continue
-        if _free(cls, live):
+        if _free(cls, live) and (cls != GPU or _admitted(job)):
             return job, cls
         if cls == DEPLOY:
             return None  # a ready deploy waits for the running jobs, and nothing new starts ahead of it. #1506

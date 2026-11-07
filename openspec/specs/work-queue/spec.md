@@ -455,6 +455,44 @@ Test: tests/test_queue_leases_1558.py::test_a_delegations_serving_lease_is_a_row
 - **THEN** the delegation goes on unleased and says why
 Test: tests/test_queue_leases_1558.py::test_serving_goes_on_unleased_when_the_store_will_not_answer
 
+### Requirement: A gpu job is admitted before it loads
+A gpu job SHALL start only at normal memory pressure and when each local candidate's model is resident or their summed need (a measured peak, else weights and recorded KV on disk) fits the least of what is free after the reserve and the pinned set, and what the ceiling leaves after every live lease's `mem_gb`. A refused job SHALL stay pending with a note naming the need, the room and why, as a harness limit, while other classes still start. A job nothing prices SHALL be admitted and say so. An admitted job's lease SHALL record its need.
+
+#### Scenario: Too big for now
+- **WHEN** a gpu job needs more than is admissible, then room frees
+- **THEN** it waits with the numbers in its note, then starts
+Test: tests/test_admission_1558.py::test_a_job_whose_model_does_not_fit_waits_with_the_numbers_and_starts_once_it_fits
+
+#### Scenario: The ledger
+- **WHEN** a live lease was admitted to load 35 GiB
+- **THEN** a job that fits only without it is refused, naming what is leased, and a small one is admitted
+Test: tests/test_admission_1558.py::test_the_ledger_counts_what_live_leases_were_admitted_to_load
+
+#### Scenario: Resident
+- **WHEN** the job's model is resident and free memory is short
+- **THEN** it is admitted
+Test: tests/test_admission_1558.py::test_a_resident_model_is_admitted_whatever_its_size
+
+#### Scenario: Unpriced
+- **WHEN** nothing prices a job
+- **THEN** it is admitted, saying so
+Test: tests/test_admission_1558.py::test_an_unpriced_job_is_admitted_and_says_so
+
+#### Scenario: Pressure
+- **WHEN** memory pressure is not normal
+- **THEN** nothing is admitted
+Test: tests/test_admission_1558.py::test_memory_pressure_admits_nothing
+
+#### Scenario: Recorded on the lease
+- **WHEN** a priced job is admitted
+- **THEN** its lease records its need
+Test: tests/test_admission_1558.py::test_an_admitted_job_records_what_it_was_admitted_to_load_on_its_lease
+
+#### Scenario: Other classes go on
+- **WHEN** a gpu job is refused for memory and a download is queued
+- **THEN** the download runs
+Test: tests/test_admission_1558.py::test_a_refused_gpu_job_does_not_hold_up_a_network_job
+
 ### Requirement: A job declares a resource class, each with a capacity
 A job SHALL need one resource class of `gpu`, `network`, `disk` and `cpu` (resources.CLASSES): the one it declared with `soh jobs add --resource`, else a deploy is `deploy`, an all-hosted eval or a `soh fetch` is `network`, and any other command is `gpu`. The worker SHALL run at most capacity jobs of each class at once (gpu 1, network the `cloud_evals` slots, disk 1, cpu 1), and an unknown class SHALL be refused when the job is added. Each job SHALL run under an executor (executors.for_job), the host's process group until containers can hand GPU work to it.
 
