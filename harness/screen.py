@@ -670,6 +670,8 @@ def load_until(candidate: str = "", evidence: str = "", card=None, cls: str = ""
 
 def _sentence(cls: str, why: str, limit: str) -> str:
     tail = f": {why}" if why else ""
+    if cls == reasons.KILLS_SERVER:
+        return f"its screens kill the shared model server on this runtime version{tail}"
     if cls == reasons.LOAD_FAILED_RUNTIME:
         return f"the installed runtime could not load it{tail}"
     if cls == reasons.MISSING_PACKAGE:
@@ -701,6 +703,13 @@ def _sentence(cls: str, why: str, limit: str) -> str:
         return (f"not screened: {cls}. The harness could not deliver the "
                 f"request, which says nothing about the candidate{tail}")
     return f"it ran and passed nothing{tail}"
+
+
+def kills_server(kills: int, runtime: str, version: str) -> Verdict:
+    """A candidate whose screens killed the shared server `kills` times on one runtime version: declined until it moves. #1544."""
+    why = f"{kills} of its screens ended with the server dead on {runtime} {version}"
+    return Verdict("declined", _sentence(reasons.KILLS_SERVER, why, ""), reasons.RUNTIME,
+                   f"version:{runtime}>{version}", reasons.KILLS_SERVER)
 
 
 def decide_class(cls: str, why: str = "", candidate: str = "",
