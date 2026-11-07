@@ -50,6 +50,7 @@ UNIT_OUTPUTS = {
     "gateway": ("gateway_requests", "at", "", ("gateway_requests",)),
     "mlx": ("gateway_requests", "at", PORT, ()),
     "eval": ("gateway_requests", "at", PORT, ()),
+    "interactive": ("gateway_requests", "at", PORT, ()),
     "tts": ("gateway_requests", "at", PORT, ()),
     "mcp": ("delegations", "at", "", ("delegations", "mcp.log")),
     "discover": ("verdicts", "decided_at", "", ("verdicts", "discover.log")),

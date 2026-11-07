@@ -2932,7 +2932,15 @@ soh jobs pause     # hold everything; a running job still finishes
 soh jobs resume
 soh jobs cancel 0003
 soh jobs priority 0005 10   # higher runs first; ties run in the order added
+soh hold benchmarks "owner: the rebuild"   # no sweep, reverify or measurement job starts; deploys still run
+soh hold status
+soh hold let 0241            # one measurement job may start anyway (or soh jobs add --despite-hold)
+soh hold release
 ```
+
+Pause benchmarking with `soh hold`, never with `launchctl disable`. A unit someone disabled with
+`launchctl disable` is left unloaded by `scripts/launchd.sh install`, which warns and names the
+`launchctl enable` that brings it back.
 
 A queued job runs in the deploy checkout, so it runs the deployed code. Queued
 from a git checkout at a different commit, `soh jobs add` refuses and names both

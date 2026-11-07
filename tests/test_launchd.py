@@ -429,8 +429,14 @@ case "$1" in
          printf '%s = {\n\tstate = %s\n' "$2" "$([ -f "$FAKE_STATE/$l.running" ] && echo running || echo waiting)"
          [ -f "$FAKE_STATE/$l.running" ] && printf '\tpid = 4242\n'
          printf '}\n' ;;
+  print-disabled) for f in "$FAKE_STATE"/*.disabled; do
+                    [ -e "$f" ] && printf '\t\t"%s" => disabled\n' "$(basename "$f" .disabled)"
+                  done ;;
   bootout) rm -f "$FAKE_STATE/${2##*/}" ;;
   bootstrap) l="$(basename "$3" .plist)"
+             if [ -f "$FAKE_STATE/$l.disabled" ] || [ "$l" = "${FAKE_FAIL_ALWAYS:-}" ]; then
+               echo "Bootstrap failed: 5: Input/output error" >&2; exit 5
+             fi
              if [ "$l" = "${FAKE_FAIL_ONCE:-}" ] && [ ! -f "$FAKE_STATE/$l.failed" ]; then
                touch "$FAKE_STATE/$l.failed"; echo "Bootstrap failed: 5: Input/output error" >&2; exit 5
              fi

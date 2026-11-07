@@ -30,6 +30,32 @@ def held_locks(jobs: list[dict], holders=None) -> list[dict]:
     return loose
 
 
+def _let(job: dict) -> None:
+    from harness import hold
+    from harness import memory_store as ms
+    conn = ms.connect()
+    try:
+        hold.let(conn, job["id"])
+    finally:
+        conn.close()
+    job["despite_hold"] = True
+
+
+def _held(got: list[dict]) -> tuple[str, set]:
+    """The benchmark hold's line and the pending jobs it keeps waiting. #1564."""
+    from harness import hold
+    from harness import memory_store as ms
+    from harness import workqueue as wq
+    conn = ms.connect()
+    try:
+        h = hold.active(conn)
+        if h is None:
+            return "", set()
+        return hold.line(h), {j["id"] for j in got if j["state"] == wq.PENDING and hold.held_back(conn, j, h)}
+    finally:
+        conn.close()
+
+
 def cmd_jobs(a) -> int:
     """The work queue every caller shares. #353."""
     from harness import workqueue as wq
@@ -38,10 +64,13 @@ def cmd_jobs(a) -> int:
     # REMAINDER swallows options written after the action.
     priority, cwd = a.priority, a.cwd
     night, start = bool(getattr(a, "night", False)), getattr(a, "not_before", "")
+    despite = bool(getattr(a, "despite_hold", False))
     while rest[:1] in (["--title"], ["--json"], ["--priority"], ["--cwd"], ["--night"],
-                       ["--not-before"]):
+                       ["--not-before"], ["--despite-hold"]):
         if rest[0] == "--json":
             common._JSON, rest = True, rest[1:]
+        elif rest[0] == "--despite-hold":
+            despite, rest = True, rest[1:]
         elif rest[0] == "--night":
             night, rest = True, rest[1:]
         elif len(rest) > 1 and rest[0] == "--not-before":
@@ -76,6 +105,8 @@ def cmd_jobs(a) -> int:
             not_before, gated = wq.start_with_night(start, night)
             job = wq.add(rest, title=a.title, cwd=where, priority=priority,
                          requested_by="cli", not_before=not_before, night=gated)
+            if despite:
+                _let(job)
             after = f" (not before {job['not_before']})" if job["not_before"] else ""
             note(f"queued {job['id']}{after}: {job['title']}")
             emit(job=job)
@@ -114,6 +145,9 @@ def cmd_jobs(a) -> int:
     clearance = wq.cleared()
     if clearance:
         note(f"{day_clear.line(clearance)}; the watchdog's day limits are off and night-start jobs may run now")
+    held, waiting = _held(got)
+    if held:
+        note(f"{held}; {len(waiting)} measurement job(s) wait for soh hold release")
     later = sum(j["state"] == wq.PENDING and not wq.due(j, cleared=clearance is not None) for j in got)
     note(f"{'a job is running' if wq.running() else 'nothing running'}; "
          f"{sum(j['state'] == wq.PENDING for j in got)} pending"
@@ -130,8 +164,10 @@ def cmd_jobs(a) -> int:
         at = (f"from {j['not_before'].replace('T', ' ')[:16]} "
               if j["state"] == wq.PENDING and not wq.due(j, cleared=clearance is not None) else "")
         lock = f" [holds the {j['lock']} lock]" if j.get("lock") else ""
+        lock += " [held: benchmarks]" if j["id"] in waiting else ""
         note(f"  {j['id']}  {j['state']:8}{rc:7}  p{pri:<3} {at}{j['title']}{lock}")
     for h in loose:
         note(f"  {h['lock']} lock held by {exclusive.describe(h)}, outside the queue")
-    emit(running=wq.running(), gate_open=ok, why=why, jobs=got, loop=loop, clearance=clearance, locks=locks)
+    emit(running=wq.running(), gate_open=ok, why=why, jobs=got, loop=loop, clearance=clearance, locks=locks,
+         hold=held, held=sorted(waiting))
     return 0

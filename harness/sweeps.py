@@ -561,22 +561,26 @@ def check(conn, *, now: float | None = None, dry_run: bool = False, add=None) ->
     settled = settle(conn, now=now, write=not dry_run)
     planned = plan(conn, now=now)
     queued, refused = [], []
-    if not dry_run:
+    from harness import hold
+    held = hold.active(conn, now)
+    if not dry_run and held is None:
         for entry in planned:
             if not entry["skip"]:
                 queued.append(_queue(conn, entry, now, add or wq.add))
             elif entry.get("evidence") and entry["evidence"]["binding"] is False:
                 got = _not_binding(conn, entry, now)
                 refused += [got] if got else []
-    return {"settled": settled, "planned": planned, "queued": queued, "not_binding": refused, "dry_run": dry_run}
+    return {"settled": settled, "planned": planned, "queued": queued, "not_binding": refused, "dry_run": dry_run,
+            "held": hold.line(held, now) if held else ""}
 
 
 def render(got: dict) -> str:
     from harness import power
     lines = [f"  {s['detail'] or s['outcome']}" for s in got["settled"]]
+    lines += [f"  queued nothing: {got['held']}"] if got.get("held") and not got.get("dry_run") else []
     for p in got["planned"]:
         t = p["trigger"]
-        why = p["skip"] or ("would queue" if got.get("dry_run") else "queued")
+        why = p["skip"] or ("would queue" if got.get("dry_run") else "held" if got.get("held") else "queued")
         if not p["argv"]:
             lines.append(f"  {p['knob']} on {p['lane']} ({t['limit']}: {t['hits']} of {t['of']}): not swept, {why}")
             continue

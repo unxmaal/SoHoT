@@ -351,7 +351,8 @@ def ready(conn=None, now: float | None = None) -> list[dict]:
         from harness import deploy
         if deploy.blocked(time.time() if now is None else now):
             got = [j for j in got if j["kind"] != DEPLOY]
-    return got
+    from harness import hold
+    return hold.startable(got, conn, now)
 
 
 def _claimed(c) -> tuple[str, tuple]:

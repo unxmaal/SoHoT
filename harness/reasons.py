@@ -23,8 +23,9 @@ REASONS = {
              "download cap",
     "upstream": "the candidate's upstream is gone or idle",
     "reopened": "a named reopen (retraction, retest) of an earlier verdict",
+    "owner": "the owner declined it by name (soh decline); no retest reopens it",
 }
-CANDIDATE, HARNESS, RUNTIME, MACHINE, MEMORY, LIMIT, UPSTREAM, REOPENED = REASONS
+CANDIDATE, HARNESS, RUNTIME, MACHINE, MEMORY, LIMIT, UPSTREAM, REOPENED, OWNER = REASONS
 
 # Failure classes, set on each result row by the runner where it failed.
 SERVER_DEAD = "server_dead"

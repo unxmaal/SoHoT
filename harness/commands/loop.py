@@ -163,6 +163,11 @@ def _report_loop(a) -> int:
     """The loop under a heartbeat that says where it is, finished however it ends. #251."""
     from harness import heartbeat
     run = bool(getattr(a, "run", False))
+    from harness import hold
+    held = hold.held() if run else ""
+    if held:  # the owner's benchmark hold. #1564
+        print(f"=== no sweep: {held} ===", flush=True)
+        return 0
     heartbeat.start(lane=(getattr(a, "lane", "") or "").strip().lower(),
                     total=LOOP_TOTAL if run else len(LOOP_STEPS))
     try:

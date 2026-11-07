@@ -19,6 +19,17 @@ KNOBS = [
        note="GGUF metadata arrays longer than this are skipped unread: tokenizer vocabularies, never a per-layer array (#498)"),
     _k("gpu_fraction", ["harness/memory.py:GPU_FRACTION"], [0.65, 0.75, 0.85],
        note="share of RAM Metal hands out when sysctl iogpu.wired_limit_mb is unset; measured on 32 GB (#699)"),
+    _k("interactive_budget_gb", ["harness/interactive.py:BUDGET_GB"], [15.0, 20.0, 25.0, 30.0],
+       limit="interactive_budget_gb", unit="GiB",
+       note="memory the interactive server's pinned lane models may hold for good, weights plus KV plus compute; "
+            "a lane whose model does not fit pins its typed default or nothing; owner's ceiling 25 (KB decision "
+            "#1035); on the Studio 2026-11-07 decide+extract+Qwen3-4B took 19.6, Ornith did not fit (#1561)"),
+    _k("interactive_pool_ctx", ["harness/interactive.py:POOL_CTX"], [8192, 16384, 32768, 65536],
+       note="ceiling on a pinned interactive model's unified KV pool, sized from its lane's requests (largest, and "
+            "p99 x peak overlap); 30 d live: decide p99 3620 max 8115 peak 4, extract p99 7358 max 33968 peak 2 (#1561)"),
+    _k("interactive_warm_wait", ["harness/interactive.py:WARM_WAIT_S"], [120.0, 600.0, 1200.0],
+       note="seconds the interactive server's start waits for it to answer before loading its pinned models; past "
+            "it they load on their first request instead (#1561)"),
     _k("kv_cap", ["harness/context.py:KV_MAX_GIB", "harness/context.py:KV_MAX_RAM_GB"], [4, 8, 16, 24, 32],
        note="GiB of KV one llama-server model may allocate on a 32 GB machine, scaled by RAM; it sets the planned "
             "served context, which binds as served_ctx (#692)"),
@@ -76,6 +87,12 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    "harness/interactive.py:DEMAND_DAYS": "how far back a pinned lane's requests are read to size its slots and "
+                                          "pool; evidence, never a limit on a request (#1561)",
+    "harness/interactive.py:WARM_POLL_S": "how often the interactive server's start asks it again; "
+                                          "interactive_warm_wait bounds the wait (#1561)",
+    "harness/commands/interactive.py:TARGET_P95_S": "the owner's latency target soh interactive probe reports "
+                                                    "against (KB decision #1035); it stops and drops nothing (#1561)",
     "harness/ds4.py:GIB": "bytes in a gibibyte (#611)",
     "evals/run.py:GATEWAY_DOWN_POLL_S": "how often a warm-up asks a refusing gateway again; gateway_down_wait bounds the wait (#1181)",
     "harness/idle_unload.py:WINDOW_DAYS": "how far back soh load-log --idle reads requests; evidence for a knob, never a limit (#1157)",
@@ -123,6 +140,7 @@ NOT_GATING = {
         "scripts/serve-ds4.sh:DS4_PORT",
         "scripts/serve-eval.sh:LLAMACPP_PORT",
         "scripts/serve-gateway.sh:GATEWAY_PORT",
+        "scripts/serve-interactive.sh:INTERACTIVE_PORT",
         "scripts/serve-llamacpp.sh:LLAMACPP_PORT",
         "scripts/serve-llamacpp.sh:LLAMACPP_PORT#2",
         "scripts/serve-llamacpp.sh:LLAMACPP_PORT#3",

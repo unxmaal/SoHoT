@@ -12,9 +12,14 @@ from harness.commands import measure as measure_cmd
 
 def cmd_fetch(a) -> int:
     """Download what the inspect tier queued. Issue #62."""
-    from harness import fetching, inspect as ins
+    from harness import fetching, hold, inspect as ins
     from harness import memory_store as ms
 
+    held = hold.held() if getattr(a, "day", False) or getattr(a, "run", False) else ""
+    if held:  # the owner's benchmark hold stops downloads too. #1564
+        note(f"no fetch: {held}")
+        emit(started=False, why=held)
+        return 0
     if getattr(a, "day", False):
         import signal
         from harness import day_fetch

@@ -38,6 +38,9 @@ from harness.commands import common
 from harness.commands import context as context_cmd
 from harness.commands import kb_filter as kb_filter_cmd
 from harness.commands import day as day_cmd
+from harness.commands import hold as hold_cmd
+from harness.commands import decline as decline_cmd
+from harness.commands import interactive as interactive_cmd
 from harness.commands import degenerate as degenerate_cmd
 from harness.commands import deploy as deploy_cmd
 from harness.commands import floors as floors_cmd
@@ -54,6 +57,7 @@ from harness.commands import craft as craft_cmd
 from harness.commands import vision as vision_cmd
 from harness.commands import coherence as coherence_cmd
 from harness.commands import load_log as load_log_cmd
+from harness.commands import residency as residency_cmd
 from harness.commands import measure as measure_cmd
 from harness.commands import report as report_cmd
 from harness.commands import repo_screen as repo_screen_cmd
@@ -896,6 +900,11 @@ def build_parser() -> argparse.ArgumentParser:
                      "(YYYY-MM-DD or 'YYYY-MM-DD HH:MM'). #1293")
     bla.add_argument("--against", default="", help="report: an earlier audit's directory, printed beside this one")
     bla.set_defaults(func=blame_cmd.cmd_blame)
+    dcl = sub.add_parser("decline", help="the owner declines a candidate by name: terminal, never retested, never "
+                         "fetched or screened again, nor its runner bases. #1564")
+    dcl.add_argument("repo", help="the proposal's name or resolved repo, e.g. szwagros/Lens-Turbo")
+    dcl.add_argument("said", nargs="*", help='who declined it and why, e.g. "owner: not wanted"')
+    dcl.set_defaults(func=decline_cmd.cmd_decline)
     prop = sub.add_parser("propose", help="file a technique a person names, for the next triage to read (#993)")
     prop.add_argument("url", help="the post, paper or page describing the technique")
     prop.add_argument("--title", default="", help="its title; without one the page is fetched for it")
@@ -943,6 +952,17 @@ def build_parser() -> argparse.ArgumentParser:
     llg.add_argument("--idle", action="store_true", help="print each model's cold-load seconds and what each "
                      "idle unload limit would cost it in loads and idle hours; read-only. #1157")
     llg.set_defaults(func=load_log_cmd.cmd_load_log)
+    rsim = sub.add_parser("residency-sim", help="replay the gateway's requests and the queue's jobs against LRU, "
+                          "pinned+LRU, GreedyDual-Size and Belady at a memory budget; read-only. #1559")
+    rsim.add_argument("--since", default="30d", help="window start: 30d, or a date")
+    rsim.add_argument("--budget-gb", type=float, default=None, help="resident GB before swap risk "
+                      "(default: this machine's memory)")
+    rsim.add_argument("--pin", action="append", help="a model pinned+LRU never evicts (repeatable; "
+                      "default: the decide, extract and code lanes' models)")
+    rsim.add_argument("--no-jobs", action="store_true", help="leave out queued jobs' model holds")
+    rsim.add_argument("--db", default="", help="the store (default: this home's discovery.db, read-only)")
+    rsim.add_argument("--log", action="append", help="a router log to read load seconds from (repeatable)")
+    rsim.set_defaults(func=residency_cmd.cmd_residency_sim)
     coh = sub.add_parser("coherence", help="re-decide terminal verdicts whose reason contradicts the outcome "
                          "or that nothing can reopen; read-only without --apply. #991")
     coh.add_argument("--db", default="", help="the store (default: this home's discovery.db)")
@@ -966,6 +986,8 @@ def build_parser() -> argparse.ArgumentParser:
                       help="add: run here instead of the deploy checkout. #645")
     jobs.add_argument("--not-before", default="", metavar="WHEN",
                       help="add: start no earlier than the next local HH:MM, or a local YYYY-MM-DD[T]HH:MM[:SS]. #900, #1297")
+    jobs.add_argument("--despite-hold", action="store_true",
+                      help="add: may start while benchmarks are held (soh hold). #1564")
     jobs.add_argument("--night", action="store_true",
                       help="add: start no earlier than the night window discovery runs in; with --not-before, the first night moment after it. #900, #1347")
     jobs.set_defaults(func=jobs_cmd.cmd_jobs, show_help=jobs.print_help)
@@ -973,6 +995,19 @@ def build_parser() -> argparse.ArgumentParser:
     day.add_argument("action", choices=("clear", "status", "revoke"))
     day.add_argument("said", nargs="*", help='clear: who cleared it and why, e.g. "owner: the #1110 baseline"')
     day.set_defaults(func=day_cmd.cmd_day)
+    hld = sub.add_parser("hold", help="hold benchmarking: no sweep, reverify or measurement job starts until "
+                         "released; deploys and serving still run. #1564")
+    hld.add_argument("action", choices=("benchmarks", "release", "status", "let"))
+    hld.add_argument("said", nargs="*", help='benchmarks: who holds it and why, e.g. "owner: the #1558 rebuild"; '
+                     "let: a job id")
+    hld.add_argument("--until", default="", metavar="WHEN",
+                     help="benchmarks: end the hold at the next local HH:MM or at YYYY-MM-DD[T]HH:MM")
+    hld.set_defaults(func=hold_cmd.cmd_hold)
+    pin = sub.add_parser("interactive", help="the pinned interactive server: its plan, health, and warm decide and "
+                         "extract p95 against the 10 s target, with pressure at every call. #1561")
+    pin.add_argument("action", nargs="?", default="plan", choices=("plan", "health", "probe"))
+    pin.add_argument("-n", type=int, default=interactive_cmd.PROBES, help="probe: timed calls per lane")
+    pin.set_defaults(func=interactive_cmd.cmd_interactive)
     dep = sub.add_parser("deploy", help="deploys as queue jobs: each green main commit built alongside, switched, "
                          "verified or rolled back, day-only. #1506")
     dep.add_argument("action", nargs="?", default="status",
@@ -1026,7 +1061,7 @@ def build_parser() -> argparse.ArgumentParser:
     ado.add_argument("--from-measurement", action="store_true",
                      help="with --lane: a typed incumbent that passed none of its stored cases gives way to the "
                           "best measured local candidate on the current exam, if it wins the paired gate (#1110)")
-    ado.add_argument("--dry-run", action="store_true", help="with --from-measurement: say it, record nothing")
+    ado.add_argument("--dry-run", action="store_true", help="print the plan and argv; run and record nothing (#1548)")
     ado.add_argument("--confirm", type=int, default=None, metavar="VERDICT",
                      help="run a held holdout win's dev confirmation and adopt or decline it; the adopt step "
                           "queues this for the night (#725)")
