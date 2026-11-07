@@ -6,7 +6,7 @@ IMAGE_TAG ?= 0.1.0
 NAMESPACE ?= lh
 
 # Entry points. `make check` is what CI would run and what to run before a commit.
-.PHONY: check test test-slow test-network test-postgres test-litellm coverage mutation diagram image secret-gh metrics lint smoke services clean
+.PHONY: check test test-slow test-network test-postgres test-postgres-suite test-litellm coverage mutation diagram image secret-gh metrics lint smoke services clean
 
 check: lint test          ## static checks + unit tests (no services needed)
 
@@ -63,20 +63,25 @@ image:                    ## build the discovery image and load it INTO the clus
 metrics:                  ## the four DORA numbers, from git and gh
 	uv run python -m harness.dora
 
-test-postgres:            ## the store against a REAL database, in docker
+test-postgres:            ## the whole suite on a REAL Postgres, in docker (#1507)
 	@docker rm -f $(PG_TEST) >/dev/null 2>&1 || true
 	@docker run -d --name $(PG_TEST) -e POSTGRES_PASSWORD=test \
 	  -e POSTGRES_USER=discovery -e POSTGRES_DB=discovery \
-	  -p 127.0.0.1::5432 postgres:16-alpine >/dev/null
+	  -p 127.0.0.1::5432 $(PG_IMAGE) -c max_connections=500 -c fsync=off >/dev/null
 	@for i in $$(seq 1 30); do \
 	  docker exec $(PG_TEST) pg_isready -U discovery >/dev/null 2>&1 && break; \
 	  sleep 1; done
 	port=$$(docker port $(PG_TEST) 5432/tcp | head -1 | sed 's/.*://'); \
-	  LOCALHARNESS_STORE=postgres PGHOST=127.0.0.1 PGPORT=$$port \
-	  PGUSER=discovery PGPASSWORD=test PGDATABASE=discovery \
-	  uv run --group cluster pytest tests/ -q -m postgres; \
+	  PGHOST=127.0.0.1 PGPORT=$$port PGUSER=discovery PGPASSWORD=test PGDATABASE=discovery \
+	  $(PG_SUITE); \
 	  status=$$?; docker rm -f $(PG_TEST) >/dev/null 2>&1; exit $$status
 
+test-postgres-suite:      ## the whole suite on the Postgres the PG* variables name (CI's)
+	$(PG_SUITE)
+
+PG_IMAGE := postgres:16.15-alpine
+PG_SUITE = LOCALHARNESS_STORE=postgres uv run --group cluster --group mcp pytest tests/ -q -n auto \
+  -m 'not slow and not network and not litellm'
 # One container per worktree on a docker-assigned port, so parallel worktrees do not kill each other's database. #705.
 PG_TEST := lh-pg-test-$(shell printf '%s' '$(CURDIR)' | cksum | cut -d' ' -f1)
 

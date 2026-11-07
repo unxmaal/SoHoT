@@ -846,11 +846,22 @@ def build_parser() -> argparse.ArgumentParser:
     mem.set_defaults(func=store_cmd.cmd_memory)
     sto = sub.add_parser("store", help="dry-run: migrate a copy of a store "
                          "with this checkout and check it, before a deploy")
-    sto.add_argument("action", choices=("dry-run",))
+    sto.add_argument("action", choices=("dry-run", "migrate-to-postgres", "export-to-sqlite", "switch",
+                                        "pg-up", "pg-down", "pg-status", "pg-roles"),
+                     help="dry-run a migration; or the Postgres store (#1507): migrate-to-postgres copies the "
+                          "SQLite store and verifies it, export-to-sqlite copies back into a new file, switch "
+                          "points this home at one or the other, pg-* run its container")
     sto.add_argument("path", nargs="?", default="",
-                     help="the store to copy (default: this home's discovery.db)")
+                     help="the store to copy (default: this home's discovery.db); export-to-sqlite: the new file")
     sto.add_argument("--keep", action="store_true",
                      help="keep the migrated copy and say where")
+    sto.add_argument("--dry-run", action="store_true",
+                     help="migrate-to-postgres: snapshot and check, copy nothing; switch: say what it would do")
+    sto.add_argument("--replace", action="store_true",
+                     help="migrate-to-postgres: overwrite a Postgres store that already holds rows")
+    sto.add_argument("--snapshot", default="", help="migrate-to-postgres: where the .backup goes "
+                     "(default: this home's backups/sqlite-to-postgres-<time>.db)")
+    sto.add_argument("--to", choices=("postgres", "sqlite"), default="postgres", help="switch: which store")
     sto.set_defaults(func=store_cmd.cmd_store)
     bch = sub.add_parser("benchmarks", help="benchmark sources found per lane, their "
                          "contamination status, and what was imported (#491)")

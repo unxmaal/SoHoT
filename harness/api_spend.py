@@ -195,7 +195,8 @@ def read_conn():
 
 
 def _has_table(conn) -> bool:
-    return conn.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'api_spend'").fetchone() is not None
+    from harness import store
+    return store.has_table(conn, "api_spend")
 
 
 def _tiers(e, config=None) -> list[dict]:
@@ -267,8 +268,8 @@ def per_case(conn, lane: str, candidate: str = "") -> tuple[float, float] | None
     """(prompt, completion) tokens per case on `lane` from stored results, the candidate's own first; None unmeasured."""
     if conn is None:
         return None
-    sql = ("SELECT AVG(json_extract(x.metrics, '$.prompt_tokens')), "
-           "AVG(json_extract(x.metrics, '$.completion_tokens')) FROM results x JOIN runs r ON r.id = x.run_id "
+    sql = ("SELECT AVG(CAST(json_extract(x.metrics, '$.prompt_tokens') AS REAL)), "
+           "AVG(CAST(json_extract(x.metrics, '$.completion_tokens') AS REAL)) FROM results x JOIN runs r ON r.id = x.run_id "
            "WHERE r.lane = ?")
     got = None
     if candidate:

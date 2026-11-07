@@ -33,6 +33,9 @@ def schema(conn) -> int:
 
 
 def _tables(conn) -> list[str]:
+    from harness import store, store_copy
+    if store.dialect(conn) == store.POSTGRES:
+        return store_copy.tables(conn)
     return [r[0] for r in conn.execute(
         "SELECT name FROM sqlite_master WHERE type = 'table' "
         "AND name NOT LIKE 'sqlite_%' ORDER BY name")]
@@ -45,6 +48,9 @@ def counts(conn) -> dict[str, int]:
 
 
 def _integrity(conn) -> list[str]:
+    from harness import store
+    if store.dialect(conn) == store.POSTGRES:
+        return []
     got = [r[0] for r in conn.execute("PRAGMA integrity_check")]
     return [] if got == ["ok"] else got
 
@@ -150,14 +156,16 @@ def _results(conn) -> list:
         bad.append("results still carries the artifact column")
     if "artifact_path" in cols:
         bad += [f"result {r['id']}: artifact_path is text" for r in conn.execute(
-            "SELECT id FROM results WHERE artifact_path LIKE '%' || char(10) || '%'")]
+            "SELECT id FROM results WHERE artifact_path LIKE ?", ("%\n%",))]
     return bad
 
 
 def invariants(conn) -> list[Check]:
     """Every check over a store; reads only."""
-    fk = [f"{r[0]} row {r[1]} -> {r[2]}"
-          for r in conn.execute("PRAGMA foreign_key_check")]
+    from harness import store
+    # Postgres enforces every foreign key on write, so there is nothing to find afterwards.
+    fk = [] if store.dialect(conn) == store.POSTGRES else [
+        f"{r[0]} row {r[1]} -> {r[2]}" for r in conn.execute("PRAGMA foreign_key_check")]
     have = schema(conn)
     return [
         _check("integrity", _integrity(conn)),

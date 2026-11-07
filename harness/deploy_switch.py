@@ -75,7 +75,17 @@ def flip(link: Path, target: Path) -> None:
 
 
 def restore(backup: Path, db: Path) -> int:
-    """Copy the pre-migration backup over the live store through SQLite's backup API; the schema it holds."""
+    """Copy the pre-migration backup over the live store (SQLite's backup API, or pg_restore); the schema it holds."""
+    from harness import store
+    if store.backend() == store.POSTGRES:
+        from harness import store_service
+        from harness.memory_store import connection
+        store_service.restore(Path(backup))
+        conn = store.postgres_connect()
+        try:
+            return connection._pg_schema(conn)
+        finally:
+            conn.close()
     src = sqlite3.connect(f"file:{Path(backup)}?mode=ro", uri=True)
     try:
         dst = sqlite3.connect(str(db), timeout=60)

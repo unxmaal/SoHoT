@@ -139,6 +139,70 @@ jobs:
         if: always()
         run: uv run python -m harness.ci_budget
 
+  check-postgres:
+    # The whole suite on Postgres, every PR (#1507). macOS like check-macos, so a PR is gated on one platform;
+    # its runners have no Docker, so Homebrew's postgresql@16, the container's major version.
+    runs-on: macos-latest
+    timeout-minutes: 35
+    env:
+      SOHOT_FAST_PATH: ${{ (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'full-ci')) && '1' || '0' }}
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: discovery
+      PGPASSWORD: test
+      PGDATABASE: discovery
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cores
+        run: echo "PYTEST_XDIST_AUTO_NUM_WORKERS=$(( $(sysctl -n hw.ncpu) + 1 ))" >> "$GITHUB_ENV"
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Tools, and Postgres 16
+        run: brew install shellcheck librsvg postgresql@16
+
+      - name: Start Postgres
+        run: |
+          bin="$(brew --prefix postgresql@16)/bin"
+          "$bin/initdb" -D "$RUNNER_TEMP/pg" -U discovery --auth=trust >/dev/null
+          "$bin/pg_ctl" -D "$RUNNER_TEMP/pg" -l "$RUNNER_TEMP/pg.log" -w \
+            -o "-c max_connections=500 -c fsync=off -p 5432 -k $RUNNER_TEMP" start
+          "$bin/createdb" -h 127.0.0.1 -U discovery discovery
+
+      - run: bash scripts/ci-retry.sh uv sync --python 3.12
+
+      - name: Which tests this change can reach
+        # As check-macos: an unlabelled PR runs what the change reaches plus the ratchets; main runs it all (#1567).
+        if: env.SOHOT_FAST_PATH == '1'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          listing="$RUNNER_TEMP/selected.txt"
+          if ! uv run python -m tests.gauntlet.scope --base "origin/$BASE_REF" --out "$listing"; then
+            echo "::warning::test selection failed; running the full suite"
+            rm -f "$listing"
+          fi
+          if [ -s "$listing" ]; then echo "SOHOT_SELECTED=$listing" >> "$GITHUB_ENV"; fi
+
+      - name: make test-postgres-suite
+        run: set -o pipefail && make test-postgres-suite 2>&1 | tee /tmp/check.log
+
+      - name: What did not run
+        if: always()
+        run: |
+          {
+            echo "### Skipped on Postgres"
+            echo
+            echo '```'
+            grep -E '^SKIPPED' /tmp/check.log || echo 'nothing skipped'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
   check-linux:
     # Deferred to the nightly run; a PR labelled full-ci runs it now.
     if: >-
@@ -455,7 +519,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   report-nightly:
-    needs: [check-macos, check-linux, check-windows, mutation]
+    needs: [check-macos, check-postgres, check-linux, check-windows, mutation]
     if: failure() && github.event_name == 'schedule'
     runs-on: ubuntu-latest
     permissions:

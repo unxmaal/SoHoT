@@ -31,6 +31,31 @@ def _home(tmp_path_factory, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _pg_schema(monkeypatch):
+    """On LOCALHARNESS_STORE=postgres every test gets its own empty schema, as it gets its own home. #1507."""
+    from harness import store
+    if store.backend() != store.POSTGRES:
+        yield None
+        return
+    import uuid
+    import psycopg
+    name = f"t_{uuid.uuid4().hex[:16]}"
+    with psycopg.connect(store.dsn(), autocommit=True) as admin:
+        admin.execute(f"CREATE SCHEMA {name}")
+    monkeypatch.setenv("PGOPTIONS", f"-c search_path={name}")
+    try:
+        yield name
+    finally:
+        with psycopg.connect(store.dsn(), autocommit=True) as admin:
+            # A connection the test leaked idles in a transaction holding locks the drop would wait on.
+            admin.execute("SELECT pg_terminate_backend(l.pid) FROM pg_locks l "
+                          "JOIN pg_class c ON c.oid = l.relation "
+                          "JOIN pg_namespace n ON n.oid = c.relnamespace "
+                          "WHERE n.nspname = %s AND l.pid <> pg_backend_pid()", (name,))
+            admin.execute(f"DROP SCHEMA IF EXISTS {name} CASCADE")
+
+
+@pytest.fixture(autouse=True)
 def _no_reverse_dns(monkeypatch):
     """A reverse lookup costs ~35 s on check-macos; build servers from harness.loopback. #711."""
     def refuse(name=""):
@@ -209,8 +234,26 @@ def pytest_runtest_logreport(report):
         _log_line("end", report.nodeid, f"{spent.pop(report.nodeid):.3f}")
 
 
+#: Tests still red on Postgres, one node id per line; each must fail there, so a fixed one leaves the list. #1507.
+POSTGRES_KNOWN = Path(__file__).parent / "gauntlet" / "postgres_known.txt"
+
+
+def postgres_known() -> set[str]:
+    try:
+        lines = POSTGRES_KNOWN.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return set()
+    return {ln.split("  #")[0].strip() for ln in lines if ln.strip() and not ln.startswith("#")}
+
+
 def pytest_collection_modifyitems(config, items):
     import os
+    from harness import store
+    if store.backend() == store.POSTGRES:
+        known = postgres_known()
+        for item in items:
+            if item.nodeid in known:
+                item.add_marker(pytest.mark.xfail(strict=True, reason="known red on Postgres (#1507)"))
     if os.environ.get(FAST_PATH_ENV) != "1":
         return
     skipped = [i for i in items if i.get_closest_marker("long")]
@@ -573,9 +616,12 @@ SCHEMA_13 = """
 
 
 @pytest.fixture
-def old_store(tmp_path):
+def old_store(tmp_path, monkeypatch):
     """make(version, rows): an older store from explicit DDL, not DROP COLUMN. #442."""
     import sqlite3
+    from harness import store
+    # An old store is a SQLite file; a Postgres store starts at the head schema by copy (#1507).
+    monkeypatch.setenv(store.BACKEND_ENV, store.SQLITE)
 
     def make(version, rows="", *, ddl=None, proposals="", verdicts="",
              name="old.db"):

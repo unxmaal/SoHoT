@@ -47,7 +47,7 @@ def _drop_column(conn, table: str, col: str) -> bool | None:
     """Drop one column; None if absent, False if this SQLite cannot drop it."""
     if col not in _columns(conn, table):
         return None
-    if store.backend() != store.POSTGRES and \
+    if store.dialect(conn) != store.POSTGRES and \
             sqlite3.sqlite_version_info < (3, 35, 0):
         return False
     conn.execute("SAVEPOINT drop_dead")

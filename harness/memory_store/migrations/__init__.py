@@ -36,7 +36,7 @@ def migrating():
 
 def _store_file(conn) -> str:
     """The migrated store's file; '' for postgres, which is one store."""
-    if store.backend() == store.POSTGRES:
+    if store.dialect(conn) == store.POSTGRES:
         return ""
     row = conn.execute("PRAGMA database_list").fetchone()
     return str(Path(row[2]).resolve()) if row and row[2] else ":memory:"

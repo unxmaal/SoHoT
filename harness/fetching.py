@@ -355,8 +355,8 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
                  WHERE d.proposal_id = p.id AND d.origin = 'fetch' AND d.removed_at IS NULL
                  ORDER BY d.id DESC LIMIT 1) AS last_fetch_complete,
                -- Inspect has answered since the last reopen; a 429 writes nothing. #798.
-               COALESCE((SELECT vi.tier = 'inspect' AND vi.outcome = 'queued'
-                                AND vi.reason NOT IN (:reopened, :harness)
+               COALESCE((SELECT CASE WHEN vi.tier = 'inspect' AND vi.outcome = 'queued'
+                                AND vi.reason NOT IN (:reopened, :harness) THEN 1 ELSE 0 END
                            FROM verdicts vi
                           WHERE vi.proposal_id = p.id
                             AND (vi.tier = 'inspect' OR vi.reason = :reopened)

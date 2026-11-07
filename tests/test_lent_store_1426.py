@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import sqlite3
 import time
 import traceback
 from pathlib import Path
@@ -106,7 +105,7 @@ NOT_RUN = {
     "ledger --sample-power": "appends a power reading", "morning --notify": "notifies (the morning unit)",
     "sweep-check --notify": "records the check", "craft --revalidate": "runs the installed release",
     "delegated --close": "records outcomes", "disk --record": "writes download rows",
-    "store --keep": "keeps a migrated copy", "benchmarks --sweep": "reads the registries now",
+    "store --keep": "keeps a migrated copy", "store --replace": "overwrites a Postgres store (#1507)", "benchmarks --sweep": "reads the registries now",
     "degenerate --apply": "writes verdicts", "load-log --apply": "writes excerpts and verdicts",
     "coherence --apply": "writes verdicts", "watchdog --act": "takes actions", "judge --force": "adopts",
     "verify --run": "runs lanes", "gauntlet --offline": "audits the committed snapshot, no store",
@@ -136,10 +135,10 @@ def test_every_command_with_a_store_replay_or_dry_run_flag_is_held_here():
 
 
 def _counts(path: Path) -> dict:
-    conn = sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True)
+    from harness import store, store_copy
+    conn = store.open_ro(path)
     try:
-        return {t: conn.execute(f'SELECT count(*) FROM "{t}"').fetchone()[0]
-                for (t,) in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+        return {t: conn.execute(f'SELECT count(*) FROM "{t}"').fetchone()[0] for t in store_copy.tables(conn)}
     finally:
         conn.close()
 

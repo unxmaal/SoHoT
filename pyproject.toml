@@ -32,6 +32,9 @@ dependencies = [
     "jsonschema>=4",
     # Fetching weights, on every machine; mlx-lm brought it in on macOS only (#551).
     "huggingface_hub>=1.0",
+    # The store on Postgres (#1507): once a home switches, every process needs the driver, and services a pool.
+    "psycopg[binary]>=3.2",
+    "psycopg-pool>=3.2",
 ]
 
 [project.scripts]

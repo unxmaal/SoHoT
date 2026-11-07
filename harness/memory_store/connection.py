@@ -99,8 +99,18 @@ def connect(path: Path | None = None):
     if store.backend() == store.POSTGRES:
         _refuse_reentry(None)
         conn = store.postgres_connect()
-        conn.executescript(_DDL)
-        ms._migrate(conn)
+        try:
+            have = _pg_schema(conn)
+            # CREATE INDEX IF NOT EXISTS locks its table even when the index exists, so a current store skips the DDL.
+            if have == SCHEMA_VERSION:
+                return conn
+            if store.live():
+                _guard_live(paths.DEFAULT_HOME / "discovery.db", lambda: have)
+            conn.executescript(_DDL)
+            ms._migrate(conn)
+        except BaseException:
+            conn.close()
+            raise
         return conn
     path = Path(path) if path is not None else db_path()
     _refuse_reentry(path)
@@ -135,7 +145,20 @@ class LiveStoreRefused(RuntimeError):
     """The live store is behind this code and this code is not the deploy. #455."""
 
 
+def _pg_schema(conn) -> int:
+    """The schema a Postgres store is at, 0 for an empty one; leaves no transaction open."""
+    row = conn.execute("SELECT to_regclass('meta') IS NOT NULL AS has").fetchone()
+    have = 0
+    if row["has"]:
+        got = conn.execute("SELECT value FROM meta WHERE key='schema'").fetchone()
+        have = int(got["value"]) if got else 0
+    conn.commit()
+    return have
+
+
 def _stored_schema(conn) -> int:
+    if store.dialect(conn) == store.POSTGRES:
+        return _pg_schema(conn)
     if not conn.execute("SELECT 1 FROM sqlite_master "
                         "WHERE type='table' AND name='meta'").fetchone():
         return 0

@@ -10,7 +10,7 @@ import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from harness import paths, reasons
+from harness import paths, reasons, store
 
 #: `soh morning` calls the canary stale when its newest receipt is older than this.
 STALE_DAYS = 8
@@ -144,7 +144,7 @@ def replay_all(replays) -> list[dict]:
         return [{"plant": r.name, "lane": r.lane, "replay": True, "observed": {}, "rcs": [], "ok": False,
                  "expected": [*r.expect[:1], "adopt", r.expect[1]], "invalid": f"no store at {live}"}
                 for r in replays]
-    conn = sqlite3.connect(f"file:{live}?mode=ro", uri=True)
+    conn = store.open_ro(live)
     try:
         return [replay(conn, r) for r in replays]
     finally:
@@ -247,7 +247,7 @@ def leaked(live: Path, names, since: float) -> int:
     names = list(names)
     if not names:
         return 0
-    conn = sqlite3.connect(f"file:{live}?mode=ro", uri=True)
+    conn = store.open_ro(live)
     try:
         return conn.execute(
             f"SELECT count(*) FROM verdicts WHERE decided_at > ? AND proposal_id IN "
