@@ -245,7 +245,8 @@ def test_a_limit_is_traced_by_a_recorded_limit_a_knob_name_or_its_site():
     assert limit_trace.traced(with_limit.sites[0], with_limit.name, {})
     via = next(k for k in knobs.KNOBS.values() if k.binds_via)
     assert limit_trace.traced(via.sites[0], via.name, {})
-    without = next(k for k in knobs.KNOBS.values() if not k.limit and k.name not in limit_trace.named(REPO))
+    named = limit_trace.named(REPO)
+    without = next(k for k in knobs.KNOBS.values() if not k.limit and k.name not in named)
     assert not limit_trace.traced(without.sites[0], without.name, {})
 
 

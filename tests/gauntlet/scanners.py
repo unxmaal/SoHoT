@@ -1,6 +1,7 @@
 """Repo-wide scans for the tier-1 gauntlet classes; each takes (text, path) and returns findings (#492 C)."""
 
 import ast
+import functools
 import re
 from pathlib import Path
 
@@ -9,11 +10,18 @@ from harness import repo
 _MUTABLE_CALLS = {"list", "dict", "set", "bytearray", "defaultdict", "OrderedDict", "Counter", "deque"}
 
 
-def _parse(text, rel):
+@functools.cache
+def tree(text):
+    """One parse per source text a process, shared by every ratchet that only reads it; None when it does not parse. #1571."""
     try:
-        return ast.parse(text), []
+        return ast.parse(text), 0
     except SyntaxError as e:
-        return None, [f"{rel}:{e.lineno or 0}: does not parse, so it was not scanned"]
+        return None, e.lineno or 0
+
+
+def _parse(text, rel):
+    got, line = tree(text)
+    return (got, []) if got is not None else (None, [f"{rel}:{line}: does not parse, so it was not scanned"])
 
 
 def _call_name(node):
