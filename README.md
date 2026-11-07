@@ -3299,9 +3299,9 @@ Cutover, by the owner, after the deploy that ships this code (it changes nothing
 ```bash
 uv run soh store pg-up                       # container up, healthy; owner password made once
 uv run soh store pg-roles                    # the read-only role
-uv run soh store migrate-to-postgres --dry-run   # .backup snapshot, schema and gaps, row counts; copies nothing
+uv run soh store migrate-to-postgres --dry-run   # .backup snapshot, schema and gaps, row counts; writes nothing to Postgres
 scripts/launchd.sh uninstall                 # nothing writes the SQLite file from here
-uv run soh store migrate-to-postgres         # snapshot, copy, per-table rows and digests; rc 0 only if all equal
+uv run soh store migrate-to-postgres         # one transaction: commits only if every table's rows and digest are equal
 uv run soh store switch --to postgres        # writes ~/localharness/store.json
 scripts/launchd.sh install && uv run soh morning && uv run soh coherence
 ```
