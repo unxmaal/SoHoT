@@ -12,7 +12,7 @@ GB = 1e9
 BATCH_PURPOSES = ("eval", "discover")
 #: Purposes the harness sends to itself, not demand.
 SKIPPED_PURPOSES = ("watchdog", "smoke")
-#: Lanes whose served models the pinned+LRU policy holds when no --pin is given: the interactive server's (#1558, #1572).
+#: Lanes whose served models the pinned+LRU policy holds when no --pin is given: the interactive server's (#1558, #1561).
 PIN_LANES = interactive.LANES
 
 

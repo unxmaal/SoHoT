@@ -42,6 +42,11 @@ def _no_reverse_dns(monkeypatch):
 FAST_PATH_ENV = "SOHOT_FAST_PATH"
 
 
+#: Set by CI on a pull request: a file listing the only test files the change can reach. #1567.
+SELECTED_ENV = "SOHOT_SELECTED"
+_selected: dict = {}
+
+
 #: Each test's start and end are appended here as they happen, so a cancelled run says where its time went. #1146.
 TEST_LOG_ENV = "SOHOT_TEST_LOG"
 _test_log: dict = {}
@@ -124,6 +129,9 @@ def pytest_configure(config):
     if not _running:
         _hang_watch()
     path = os.environ.pop(TEST_LOG_ENV, "")
+    # Popped so a pytest a test starts collects its own files; xdist workers get it through workerinput.
+    listed = os.environ.pop(SELECTED_ENV, "")
+    _selected["file"] = getattr(config, "workerinput", {}).get(SELECTED_ENV, listed)
     # A pytest a test starts inherits PYTEST_ADDOPTS and overwrote CI's JUnit XML with its own 2 tests (#1146).
     if "--junit" in os.environ.get("PYTEST_ADDOPTS", ""):
         os.environ["PYTEST_ADDOPTS"] = _without_junitxml(os.environ["PYTEST_ADDOPTS"])
@@ -134,6 +142,19 @@ def pytest_configure(config):
     # Popped so neither xdist workers nor a pytest a test starts record; the real home is read before any fixture. #1261.
     if os.environ.pop(local_catches.ENV, "") == "1" and not os.environ.get("CI") and not hasattr(config, "workerinput"):
         _catches.update(path=local_catches.path(), head=local_catches.head(), seen=set(), failed=set())
+
+
+@pytest.hookimpl(optionalhook=True)
+def pytest_configure_node(node):
+    if _selected.get("file"):
+        node.workerinput[SELECTED_ENV] = _selected["file"]
+
+
+def pytest_ignore_collect(collection_path, config):
+    if _selected.get("file"):
+        from tests.gauntlet import scope
+        return scope.ignored(collection_path, config.rootpath, _selected["file"]) or None
+    return None
 
 
 def pytest_unconfigure(config):

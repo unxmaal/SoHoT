@@ -1241,6 +1241,9 @@ def _parser():
     ap.add_argument("--stop-at", type=float, default=None, metavar="EPOCH",
                     help=f"pause between cases at this time, rows checkpointed, exit {watch.PAUSED}; "
                          f"a `{watch.PAUSE_FILE}` file in --out or SIGUSR1 pauses it too (#813)")
+    ap.add_argument("--stop-after", type=float, default=None, metavar="SECONDS",
+                    help="pause this many seconds after the run holds the machine, or at --stop-at if sooner; "
+                         "a slice spends none of its time waiting for the lock (#1554)")
     ap.add_argument("--plan-s", type=float, action="append", default=None, metavar="SECONDS",
                     help="planned seconds per case, once per candidate in order, written to "
                          f"{watch.PROGRESS} for a watchdog (#810). Default: each candidate's "
@@ -1274,6 +1277,9 @@ def _main(args) -> int:
     # One model-loading run on the machine at a time, across projects (#314); a cloud-only run takes a cloud slot (#1135).
     with exclusive.held(lock_kind(args), announce=lambda m: print(
             f"evals.run: {m}", file=sys.stderr, flush=True), deadline_s=deadline_s(args)):
+        if getattr(args, "stop_after", None) is not None:
+            after = watch.clock() + args.stop_after
+            args.stop_at = after if args.stop_at is None else min(args.stop_at, after)
         return _execute(args)
 
 
@@ -1602,6 +1608,7 @@ def _execute_at(args, overrides: dict) -> int:
         print(f"── paired order: {block} case(s) per candidate in turn", flush=True)
     kept = [{} for _ in todo]
     stopped = None
+    eye.yielder = yields_to_serving(outdir)
     try:
         with watch.asks_pause(eye):
             for i, mine in segments:
@@ -1616,6 +1623,9 @@ def _execute_at(args, overrides: dict) -> int:
         if isinstance(exc, watch.Deferred) and outdir:
             watch.ask_pause(outdir, exc.reason)
         print(f"\n{exc.why}", file=sys.stderr, flush=True)
+    finally:
+        if eye.yielder is not None:
+            eye.yielder.close()
     state, why = ("paused", stopped.why) if stopped else ("done", "")
     code = watch.PAUSED if stopped else 0
 
@@ -1688,6 +1698,8 @@ def _execute_at(args, overrides: dict) -> int:
             stamped["progress"] = {"state": state, "why": why, "done": len(results), "total": total}
         environment_ = {**serving_environment(client, serving, away),
                         "identities": {key: idents[spec] for key, spec in specs.items() if spec in idents}}
+        if eye.yields or eye.cuts:
+            environment_["serving_yields"] = {"count": eye.yields, "seconds": round(eye.yield_s, 3), "cut": eye.cuts}
         if taken:
             fresh = sum(len(m) for c, _, m in planned if c == taken["spec"])
             environment_["reused"] = {key: {"digest": taken["digest"], "reused": len(taken["cells"]),
@@ -1964,6 +1976,64 @@ def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None,
                   f"retry(ies) sent, {seen['lost']} request(s) lost so far (#755)", file=sys.stderr)
 
 
+def yields_to_serving(outdir):
+    """A serve_lease.Yielder when this run holds this machine's lock, so a delegation preempts it between cases. #1556."""
+    import os
+
+    from harness import exclusive, serve_lease
+    if os.environ.get(exclusive.HELD_ENV) != "1":
+        return None
+    return serve_lease.Yielder(outdir)
+
+
+def _rewarm(runner, kept, eye) -> bool:
+    """After a yield the lane's model may have taken the router: warm again, outside any case, and watch afresh."""
+    if kept.get("yields", 0) == eye.yields:
+        return False
+    kept["yields"] = eye.yields
+    if kept.get("held"):
+        kept["held"].rest()
+    kept["cold"] = None
+    try:
+        warm(runner)
+    except RunnerError as exc:
+        kept["cold"] = exc
+    return True
+
+
+def _attempt(eye, key: str, case_id: str, run_case, *args, **kw):
+    """The case's row, or None when a delegation had it cut: that row is the harness's, thrown away, never the model's,
+    and the case runs again after the yield. A row that ran beside a delegation says so. #1556."""
+    yielder = eye.yielder
+    if yielder is None:
+        return run_case(*args, **kw)
+    hit = []
+
+    def asked() -> bool:
+        if yielder.cut_asked():
+            hit.append(True)
+        return bool(hit)
+    row = None
+    with completion.cutting(asked):
+        try:
+            row = run_case(*args, **kw)
+        except completion.ServingCut:
+            # A runner that lets a CompletionError out; one that rows it is thrown away below.
+            if not hit:
+                raise
+    # Taken either way: a case that ended before the cut landed keeps its row, and the next boundary yields.
+    said = yielder.cut_done() if yielder.cut_asked() else {}
+    if hit:
+        eye.cut(key, case_id, said.get("why", ""))
+        return None
+    beside = yielder.contended()
+    if beside:
+        row.metrics["co_tenancy"] = len(beside)
+        lanes = ", ".join(sorted({str(b.get("lane") or "?") for b in beside}))
+        row.warnings.append(f"{len(beside)} delegation(s) ({lanes}) answered beside this case: its timing is contended")
+    return row
+
+
 def _run_turn(args, candidate, runner, mine, results, outdir, evicted, ladder, eye, ckpt, progress,
               kept, reload) -> None:
     eye = eye or watch.Watch()
@@ -1985,6 +2055,7 @@ def _run_turn(args, candidate, runner, mine, results, outdir, evicted, ladder, e
             warm(runner)
         except RunnerError as exc:
             kept["cold"] = exc
+        kept["yields"] = eye.yields
     if first:
         kept["ctx"] = _served_ctx(candidate)
         kept["count"] = (_served_tokens(base, model)
@@ -1996,9 +2067,20 @@ def _run_turn(args, candidate, runner, mine, results, outdir, evicted, ladder, e
     held, cold, ctx, count = kept["held"], kept["cold"], kept["ctx"], kept["count"]
     try:
         for case in mine:
-            eye.before(runner.candidate)
-            stop = _case_stop(kept.get("stop"), case, outdir)
-            results.append(_one_case(runner, case, held, cold, ladder, ctx, count, outdir, stop=stop))
+            tries = 0
+            while True:
+                eye.before(runner.candidate, case.id)
+                if _rewarm(runner, kept, eye):
+                    cold = kept["cold"]
+                    eye.restart(runner.candidate, case.id)
+                if not tries:
+                    stop = _case_stop(kept.get("stop"), case, outdir)
+                tries += 1
+                row = _attempt(eye, runner.candidate, case.id, _one_case,
+                               runner, case, held, cold, ladder, ctx, count, outdir, stop=stop)
+                if row is not None:
+                    break
+            results.append(row)
             wall = eye.lap(runner.candidate)
             if ckpt is not None:
                 ckpt.add(export_row(results[-1]), wall)

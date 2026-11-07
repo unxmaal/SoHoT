@@ -30,6 +30,10 @@ def clock() -> float:
     return time.time()
 
 
+def sleep(seconds: float) -> None:
+    time.sleep(seconds)
+
+
 def ask_pause(outdir, reason: str = "") -> Path:
     """Write the run's pause file: a timestamp, then the reason a reader can act on. #1082."""
     target = Path(outdir) / PAUSE_FILE
@@ -87,18 +91,89 @@ class Watch:
     walls: dict = field(default_factory=dict)
     began: float = 0.0
     asked: bool = False
+    #: A serve_lease.Yielder when this run yields to serving between cases; None never yields. #1556.
+    yielder: object = None
+    yields: int = 0
+    yield_s: float = 0.0
+    #: Yield seconds since the last finished case, which the watchdog leaves out of no_progress. #1556.
+    yield_since_case_s: float = 0.0
+    yielding_since: float | None = None
+    yielding_to: str = ""
+    cuts: list = field(default_factory=list)
+    changed: object = None
 
-    def before(self, key: str) -> None:
-        if self.asked or (self.outdir is not None and (self.outdir / PAUSE_FILE).exists()):
+    def _requested(self) -> bool:
+        return self.asked or (self.outdir is not None and (self.outdir / PAUSE_FILE).exists())
+
+    def before(self, key: str, case: str = "") -> bool:
+        """Raise Stop when the run pauses here; whether it yielded to serving first. #813, #1556."""
+        served = self._serve()
+        if self._requested():
             raise Stop(f"paused on request, {self.left_cases()} case(s) left")
-        if self.stop_at is not None and clock() >= self.stop_at:
+        # The slice is the run's own time: seconds yielded to serving move its stop time on. #1556.
+        if self.stop_at is not None and clock() >= self.stop_at + self.yield_s:
             raise Stop(f"paused at its stop time, {self.left_cases()} case(s) left")
+        self.restart(key, case)
+        return served
+
+    def restart(self, key: str = "", case: str = "") -> None:
+        """Start the case's clock now, after any warm-up a yield made it need."""
         self.began = clock()
+        if self.yielder is not None and key:
+            self.yielder.contended()
+            self.yielder.case(key, case, self.planned.get(key))
+
+    def cut(self, key: str, case: str, why: str) -> None:
+        """A case cut to serve a delegation: a harness cut, its row thrown away, the case run again. #1556."""
+        self.cuts.append({"candidate": key, "case": case, "why": why})
+        print(f"  cut {case} of {key} to serve ({why}); it runs again after the yield", flush=True)
+        self._changed()
+
+    def _serve(self) -> bool:
+        """Wait out a serving lease between cases, the wait kept out of every case's and the run's time. #1556."""
+        if self.yielder is None:
+            return False
+        from harness import serve_lease
+        who = serve_lease.held()
+        if not who:
+            return False
+        start, mark = clock(), time.perf_counter()
+        self.yielding_since, self.yielding_to = start, who
+        self.yielder.yielding(who)
+        print(f"yielding to {who} between cases", flush=True)
+        self._changed()
+        try:
+            while serve_lease.held() and not self._requested():
+                sleep(serve_lease.POLL_S)
+        finally:
+            span = max(0.0, clock() - start)
+            self.yields += 1
+            self.yield_s += span
+            self.yield_since_case_s += span
+            self.yielding_since, self.yielding_to = None, ""
+            self.yielder.between()
+            _hidden(mark)
+            print(f"resumed after {span:.0f}s yielded to serving", flush=True)
+            self._changed()
+        return True
+
+    def _changed(self) -> None:
+        if callable(self.changed):
+            self.changed()
+
+    def served(self) -> dict:
+        """This run's yields to serving so far, for progress.json and the run's evidence. #1556."""
+        return {"count": self.yields, "seconds": round(self.yield_s, 3),
+                "since_case_s": round(self.yield_since_case_s, 3),
+                "yielding_since": self.yielding_since, "to": self.yielding_to, "cut": list(self.cuts)}
 
     def lap(self, key: str) -> float:
         wall = max(0.0, clock() - self.began)
         self.walls.setdefault(key, []).append(wall)
         self.left[key] = max(0, self.left.get(key, 1) - 1)
+        self.yield_since_case_s = 0.0
+        if self.yielder is not None:
+            self.yielder.between()
         return wall
 
     def observed(self, key: str) -> float | None:
@@ -107,6 +182,18 @@ class Watch:
 
     def left_cases(self) -> int:
         return sum(self.left.values())
+
+
+#: The completion wait kind a yield to serving is recorded as. #1556.
+SERVING_YIELD = "serving_yield"
+
+
+def _hidden(mark: float) -> None:
+    """A yield is a wait no measuring() scope around it counts as model time. #1556."""
+    from harness import completion
+    waits = completion._WAITS.get()
+    if waits is not None:
+        waits.add(mark, time.perf_counter(), SERVING_YIELD)
 
 
 @contextlib.contextmanager
@@ -176,10 +263,13 @@ class Progress:
         self.eye, self.specs, self.total, self.done = eye, specs, total, done
         self.started = clock()
         self.at = self.started
+        eye.changed = self.write
 
-    def write(self, state: str = "running", why: str = "", run_id=None) -> dict:
+    def write(self, state: str = "", why: str = "", run_id=None) -> dict:
         pgid = os.getpgid(0) if hasattr(os, "getpgid") else None
+        state = state or ("yielding" if self.eye.yielding_since is not None else "running")
         got = {"state": state, "why": why, "done": self.done, "total": self.total,
+               "serving_yields": self.eye.served(),
                "specs": self.specs, "planned_s_per_case": self.eye.planned,
                "observed_s_per_case": {k: self.eye.observed(k) for k in self.eye.walls},
                "started_at": self.started, "last_progress_at": self.at,

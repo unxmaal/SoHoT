@@ -244,7 +244,7 @@ Test: tests/test_lane_too_small_1049.py::test_measure_does_not_run_a_plan_that_c
 Test: untested
 
 ### Requirement: The paired argv
-`_argv` SHALL launch evals.run through the runner's launcher with the lane, repeat, `--out` and the pair as `--candidates`, adding `--split` when the side is not all, `--stop-at` at the slice's end, a `--plan-s` per candidate when both are priced, `--reuse` when stored cells are reused, `--resume` when a pause is held, and `--unscreened` on every repo-lane pairing once the measure step has judged the challenger's screen itself.
+`_argv` SHALL launch evals.run through the runner's launcher with the lane, repeat, `--out` and the pair as `--candidates`, adding `--split` when the side is not all, `--stop-at` at the budget's end and, for a look slice short of it, `--stop-after` the look interval (evals.run counts it from when it holds the machine), a `--plan-s` per candidate when both are priced, `--reuse` when stored cells are reused, `--resume` when a pause is held, and `--unscreened` on every repo-lane pairing once the measure step has judged the challenger's screen itself.
 
 #### Scenario: A fresh slice
 - **WHEN** a priced pair is launched with nothing held
@@ -252,7 +252,7 @@ Test: untested
 Test: tests/test_resume_813.py::test_a_run_paused_at_its_slice_is_recorded_with_progress_and_a_look
 
 #### Scenario: The stop time
-- **WHEN** a pair is launched with a one-minute budget
+- **WHEN** a pair priced at a second a case is launched with a one-minute budget
 - **THEN** `--stop-at` falls within that minute of now
 Test: tests/test_over_budget_796.py::test_an_over_budget_run_is_launched_to_pause_at_its_slice
 
@@ -285,11 +285,11 @@ Test: tests/test_repo_looks_1353.py::test_a_held_repo_pause_resumes_whatever_its
 Test: untested
 
 ### Requirement: Looks between slices of one launch
-Inside its budget a paired run SHALL be launched in slices of `looks.LOOK_INTERVAL_S` (one slice when the budget is shorter); after a slice that stopped at its own stop time with budget left and new rows, the measure step SHALL take an interim look, keep the pause, and resume the same directory, stopping when the look decides and ending the launch with its pause kept when a slice adds no rows or the run paused for any other reason.
+Inside its budget a paired run SHALL be launched in slices of `looks.LOOK_INTERVAL_S` counted from when the eval holds the machine and never past the budget's end (one slice when the budget is shorter); after a slice that stopped at its own stop time with budget left, the measure step SHALL take an interim look, keep the pause, and resume the same directory, stopping when the look decides and ending the launch with its pause kept when `IDLE_SLICES` slices in a row add no rows (the pause names it) or the run paused for any other reason. The budget's last slice, when shorter than one planned case of each side, SHALL NOT be launched, and the measure step SHALL say why.
 
 #### Scenario: The first slice
 - **WHEN** a pair is launched with a budget longer than one look interval
-- **THEN** its stop time is within one look interval of now
+- **THEN** it stops one look interval after it holds the machine, and `--stop-at` is the budget's end
 Test: tests/test_repo_looks_1353.py::test_a_paired_run_is_cut_into_look_slices_inside_its_budget
 
 #### Scenario: A look decides for success
@@ -302,10 +302,40 @@ Test: tests/test_repo_looks_1353.py::test_a_decided_look_mid_run_stops_it_and_re
 - **THEN** the verdict is not measured and names futility, and the pause is done
 Test: tests/test_repo_looks_1353.py::test_a_hopeless_look_mid_run_stops_it_for_futility
 
-#### Scenario: A slice adds nothing
-- **WHEN** a slice ends with no new rows
-- **THEN** the launch ends with no verdict and the pause kept, one sweep and two looks
+#### Scenario: Slices add nothing
+- **WHEN** `IDLE_SLICES` slices in a row end with no new rows
+- **THEN** the launch ends with no verdict and the pause kept, one sweep and a look after each slice
 Test: tests/test_repo_looks_1353.py::test_a_slice_that_ran_nothing_ends_the_run_with_its_pause_kept
+
+#### Scenario: A wait for the lock
+- **WHEN** the eval waits for the machine before its first case
+- **THEN** it still gets a full look interval before its stop time
+Test: tests/test_slice_clock_1554.py::test_an_eval_that_waits_for_the_lock_still_gets_a_full_look_interval
+
+#### Scenario: A wait for the lock near the budget's end
+- **WHEN** the wait leaves less than a look interval of the budget
+- **THEN** the slice stops at the budget's end
+Test: tests/test_slice_clock_1554.py::test_a_lock_wait_never_carries_a_slice_past_the_budget
+
+#### Scenario: One slice adds nothing
+- **WHEN** a slice stops at its stop time with no new rows and budget left
+- **THEN** the next slice resumes the same run
+Test: tests/test_slice_clock_1554.py::test_a_slice_that_stops_on_time_with_no_new_rows_and_budget_left_takes_the_next_slice
+
+#### Scenario: Two slices add nothing
+- **WHEN** two slices in a row stop with no new rows
+- **THEN** the run pauses, exit 75, and the pause names the empty slices
+Test: tests/test_slice_clock_1554.py::test_two_slices_in_a_row_with_no_new_rows_pause_and_say_so
+
+#### Scenario: A resume takes this invocation's budget
+- **WHEN** a run paused under a one-minute budget is resumed with a two-hour one
+- **THEN** its `--stop-at` is two hours from now and its `--stop-after` the look interval
+Test: tests/test_slice_clock_1554.py::test_a_resumed_run_stops_at_this_invocations_budget_not_the_stored_one
+
+#### Scenario: A slice shorter than one case
+- **WHEN** the budget's last slice ends before one planned case of each side could finish
+- **THEN** nothing is launched and the measure step says why
+Test: tests/test_slice_clock_1554.py::test_a_slice_shorter_than_one_planned_case_is_not_launched_and_says_why
 
 #### Scenario: A budget under one interval
 - **WHEN** the budget is half a look interval

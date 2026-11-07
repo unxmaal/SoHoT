@@ -470,6 +470,8 @@ METRIC_DIRECTION = {
     "completion_tokens": "neutral",
     # NEUTRAL: time a request waited out another batch on the serving machine, left out of seconds. #776.
     "busy_wait_s": "neutral",
+    # Delegations answered beside the case: its timing shares the machine. #1556.
+    "co_tenancy": "neutral",
     # NEUTRAL: the part of busy_wait_s a pool-full retry lost, attempt and retry lock. #1235.
     "pool_full_wait_s": "neutral",
     # NEUTRAL: the part of busy_wait_s an engine attempt cut under a derived clock lost before its rerun. #1256.

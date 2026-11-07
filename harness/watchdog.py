@@ -18,7 +18,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from harness import interactive
+from harness import interactive, serve_lease
 
 NOTE, NOTIFY, FILE, PAUSE, STOP, REAP, UNLOAD, RESTART = (
     "note", "notify", "file", "pause", "stop", "reap", "unload", "restart")
@@ -669,8 +669,8 @@ def _long_run(w: World) -> list[Finding]:
     out = []
     for s in w.top:
         knob, limit = long_run_limit(s)
-        if s.elapsed_s is not None and s.elapsed_s > limit and not s.orphan:
-            out.append(Finding("long_run", s, {"elapsed_s": round(s.elapsed_s), "limit_s": limit,
+        if (worked := serve_lease.worked_s(s, w.now)) is not None and worked > limit and not s.orphan:
+            out.append(Finding("long_run", s, {"elapsed_s": round(worked), "limit_s": limit,
                                                "kind": kind_of(s),
                                                "limit": knobs.limit_text(knobs.hit(knob, limit, "s"))}))
     return out
@@ -779,7 +779,7 @@ def _no_progress(w: World) -> list[Finding]:
             continue
         plans = [v for v in (run.get("planned_s_per_case") or {}).values() if v]
         limit = max([STALL_S] + [STALL_CASES * v for v in plans])
-        idle = w.now - float(last)
+        idle = w.now - float(last) - serve_lease.yielded_s(run, w.now, since_case=True)
         if idle > limit:
             stall_knob = "watchdog_stall" if limit == STALL_S else "watchdog_stall_cases"
             stalled[stall_knob] = stalled.get(stall_knob, 0) + 1

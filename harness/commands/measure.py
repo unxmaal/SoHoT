@@ -15,6 +15,8 @@ from harness.commands import jobs as jobs_cmd
 
 #: The watchdog criteria whose pause frees memory rather than asking the sweep to stop. #1082.
 MEMORY_PAUSES = ("memory", "memory_warn", "memory_stuck", watch.MEMORY_HEADROOM)
+#: Look slices in a row that may run no case before a paired run pauses; the first may be a cold start. #1554.
+IDLE_SLICES = 2
 
 
 def cmd_verify(a) -> int:
@@ -352,8 +354,15 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         return 0
     if dry:
         return _dry_argv(lane, name, incumbent, plan, held, inc_spec, spec)
-    started, spans = time.time(), 1
+    started, spans, idle = time.time(), 1, 0
     while True:
+        part, last = _slice(plan, time.time() - started)
+        short = _short_slice(part) if last else ""
+        if short:
+            print(f"  {name}: not launched, {short}; it waits for the next sweep", flush=True)
+            if sweep is not None:
+                sweep.lines.append(f"{name}: not launched, {short}")
+            return watch.PAUSED if held else 0
         for _ in range(2):
             # NAME THE DIRECTORY, DO NOT GUESS AT IT AFTERWARDS: a newest-receipt read
             # took a stranger's run (`legacy-...` sorts above timestamps). #222.
@@ -365,9 +374,8 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
             if getattr(plan, "order", None):
                 from harness import weedout
                 weedout.write(out, plan.order)
-            part, last = _slice(plan, time.time() - started)
             argv = _argv(lane, part, out, inc_spec, spec, resume=bool(held),
-                         unscreened=lane == "repo")
+                         unscreened=lane == "repo", cap_s=None if last else max(0.0, plan.budget_s - (time.time() - started)))
             # ROUTE IT THE WAY THE SCREEN DOES: LiteLLM refuses a repo id it has no alias for. #223, #206.
             route = screen.routed_gateway(name)
             if route:
@@ -388,9 +396,10 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         if not (getattr(proc, "timed_out", False) or proc.returncode == watch.PAUSED):
             break
         before = int((held or {}).get("done") or 0)
-        between = _between_looks(proc, out, last, before)
-        rc = _paused(name, lane, inc_spec, spec, split, plan, out, held, ident, sweep,
-                     interim=between, spans=spans)
+        between = _between_looks(proc, out, last, before, idle)
+        idle = 0 if _rows_in(out) > before else idle + 1
+        rc = _paused(name, lane, inc_spec, spec, split, plan, out, held, ident, sweep, interim=between, spans=spans,
+                     note=f"{idle} look slices in a row ran no case" if idle >= IDLE_SLICES else "")
         spans = 0
         if not between:
             return rc
@@ -516,7 +525,7 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
     from dataclasses import replace
 
     from evals.run import STOCHASTIC_MODALITIES
-    from harness import adopt, holdout, power, weedout
+    from harness import adopt, holdout, looks, power, weedout
 
     split = holdout.for_lane(lane)
     settings = _settings(lane, inc_spec, spec)
@@ -574,8 +583,9 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
           f"{'; ' + split.caveat if split.caveat else ''}", flush=True)
     if plan.projected_s is not None:
         print(f"    time: {plan.cases_run} case(s) x repeat {plan.repeat} x {calls} "
-              f"call(s) projected at {power._hm(plan.projected_s)}; this slice pauses at "
-              f"{power._hm(plan.budget_s)}", flush=True)
+              f"call(s) projected at {power._hm(plan.projected_s)}; the budget ends at {power._hm(plan.budget_s)}"
+              f"{f', a look every {power._hm(looks.LOOK_INTERVAL_S)}' if 0 < (looks.LOOK_INTERVAL_S or 0) < plan.budget_s else ''}",
+              flush=True)
     if dev_skipped:
         print(f"    {dev_skipped}", flush=True)
     from harness import reuse
@@ -765,19 +775,38 @@ def _slice(plan, elapsed: float):
     return replace(plan, budget_s=left if last else step, deadline_s=deadline), last
 
 
-def _between_looks(proc, out, last: bool, before: int) -> bool:
-    """Whether a slice stopped at its own look time, with budget left and new rows, so the run goes on after a look."""
+def _between_looks(proc, out, last: bool, before: int, idle: int) -> bool:
+    """Whether a slice stopped at its own look time with budget left, so the run goes on after a look; `idle` slices before it ran nothing. #1554."""
     if last or getattr(proc, "timed_out", False) or proc.returncode != watch.PAUSED:
         return False
     progress = watch.read_progress(out)
     if not str(progress.get("why") or "").startswith("paused at its stop time"):
         return False
-    return len((watch.read(out) or ({}, []))[1]) > before
+    return _rows_in(out) > before or idle + 1 < IDLE_SLICES
+
+
+def _rows_in(out) -> int:
+    return len((watch.read(out) or ({}, []))[1])
+
+
+def _case_s(plan) -> list:
+    """The planned seconds of one case for the incumbent and the challenger, each None when unpriced."""
+    est = plan.estimate or {}
+    return [est.get(f"{who}_s") and est[f"{who}_s"] * (est.get(f"{who}_calls") or 1)
+            for who in ("incumbent", "challenger")]
+
+
+def _short_slice(plan) -> str:
+    """Why the budget's last slice is too short to launch: it ends before one planned case of each side; "" if not. #1553."""
+    each = _case_s(plan)
+    if plan.budget_s is None or not all(each) or plan.budget_s >= sum(each):
+        return ""
+    return f"its slice ends in {plan.budget_s:.0f}s, under one planned case of each side ({sum(each):.0f}s)"
 
 
 def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False,
-          unscreened: bool = False) -> list[str]:
-    """The paired evals.run: pause at this sweep's slice, a plan per case for a watchdog, resume when held. #813, #810."""
+          unscreened: bool = False, cap_s: float | None = None) -> list[str]:
+    """The paired evals.run: pause at this slice, counted from the lock and bounded by `cap_s`, the budget left. #813, #1554."""
     from harness import runner_gaps
     argv = [*runner_gaps.launcher([inc_spec, spec], ["uv", "run", "python"], lane), "-m", "evals.run", "--modality", lane,
             "--repeat", str(plan.repeat), "--out", str(out),
@@ -788,10 +817,10 @@ def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False,
         from harness import weedout
         argv += ["--order", str(Path(out) / weedout.ORDER_FILE)]
     if plan.budget_s is not None:
-        argv += ["--stop-at", f"{time.time() + plan.budget_s:.0f}"]
-    est = plan.estimate or {}
-    each = [est.get(f"{who}_s") and est[f"{who}_s"] * (est.get(f"{who}_calls") or 1)
-            for who in ("incumbent", "challenger")]
+        argv += ["--stop-at", f"{time.time() + max(plan.budget_s, cap_s or 0.0):.0f}"]
+        if cap_s is not None and cap_s > plan.budget_s:
+            argv += ["--stop-after", f"{plan.budget_s:.0f}"]
+    each = _case_s(plan)
     if all(each):
         argv += [x for s_ in each for x in ("--plan-s", f"{s_:.2f}")]
     if (getattr(plan, "reuse", None) or {}).get("reused"):
@@ -858,7 +887,13 @@ def _dry_argv(lane: str, name: str, incumbent: str, plan, held, inc_spec: str, s
     from harness import screen
     out = (Path(held["out"]) if held else paths.home() / "runs"
            / f"{time.strftime('%Y%m%d-%H%M%S')}-adopt-{lane}")
-    argv = _argv(lane, _slice(plan, 0.0)[0], out, inc_spec, spec, resume=bool(held), unscreened=lane == "repo")
+    part, last = _slice(plan, 0.0)
+    short = _short_slice(part) if last else ""
+    if short:
+        print(f"  {name}: not launched, {short} (dry run)", flush=True)
+        return 0
+    argv = _argv(lane, part, out, inc_spec, spec, resume=bool(held), unscreened=lane == "repo",
+                 cap_s=None if last else plan.budget_s)
     route = screen.routed_gateway(name)
     print(f"\n  {lane}: {name} against {incumbent} (dry run: nothing launched, nothing recorded)")
     print(f"    {' '.join(argv + (['--gateway', route] if route else []))}", flush=True)
@@ -906,7 +941,7 @@ def _signalled(rc) -> bool:
 
 
 def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, held, ident, sweep,
-            interim: bool = False, spans: int = 1) -> int:
+            interim: bool = False, spans: int = 1, note: str = "") -> int:
     """A run paused at its slice: take an interim look, then stop early on it or keep the pause for the next sweep. #813.
 
     `interim` is a look between slices of one launch (#1353): the pause is kept for a crash, the sweep is not told.
@@ -955,7 +990,7 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
     rest = None if not plan.projected_s or not per else max(
         1, math.ceil(plan.projected_s * (1 - done / max(total, 1)) / per))
     why = (f"paused at {done}/{total} case(s); {look.text}"
-           f"{f'; about {rest} more sweep(s) at {power._hm(per)} each' if rest else ''}")
+           f"{f'; about {rest} more sweep(s) at {power._hm(per)} each' if rest else ''}{f'; {note}' if note else ''}")
     store = ms.connect()
     try:
         paused.save(store, lane=lane, inc_spec=inc_spec, spec=spec, proposal=name, out=str(out),
@@ -1066,7 +1101,9 @@ def confirm_job(vid: int) -> int:
             proc, ran = _confirm_run(lane, inc_spec, spec, name, repeat, split, None, vid, plan)
         out = ran
         # A slice that stopped at its own look time: a futility look, then the next slice. #1439.
-        while proc.returncode == watch.PAUSED and _between_looks(proc, out, False, before):
+        idle = 0
+        while proc.returncode == watch.PAUSED and _between_looks(proc, out, False, before, idle):
+            idle = 0 if _rows_in(out) > before else idle + 1
             futile = _confirm_look(lane, out, plan, vid)
             if futile is not None:
                 print(f"    kept the incumbent: {futile.why}", flush=True)
@@ -1193,7 +1230,7 @@ def _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid, plan=None)
         if plan.get("order"):
             argv += ["--order", str(weedout.write(out, plan["order"]))]
         if looks.LOOK_INTERVAL_S and plan.get("cells"):
-            argv += ["--stop-at", f"{time.time() + looks.LOOK_INTERVAL_S:.0f}"]
+            argv += ["--stop-after", f"{looks.LOOK_INTERVAL_S:.0f}"]
     if resume:
         argv += ["--resume"]
     taken = _confirm_reuse(lane, inc_spec, spec, split, repeat, out, resume)

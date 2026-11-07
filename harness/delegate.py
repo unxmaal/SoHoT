@@ -292,10 +292,7 @@ def _gate(where: serving.Route) -> bool | None:
     held = busy()
     if not held:
         return None
-    # The holder's own job, never the queue's current one: that may be this caller. #1349.
-    owner = str(exclusive.holder().get("job") or "").strip()
-    job = running_job(job_id=owner) if owner else ""
-    holder = f"{held} under {job}" if job else held
+    holder = _holder(held)
     resident = loaded(where)
     level = None
     if resident:
@@ -305,6 +302,94 @@ def _gate(where: serving.Route) -> bool | None:
     if not ok:
         raise Refused(why)
     return resident
+
+
+def _holder(held: str) -> str:
+    """The lock's holder with its own queued job, never the queue's current one: that may be this caller. #1349."""
+    owner = str(exclusive.holder().get("job") or "").strip()
+    job = running_job(job_id=owner) if owner else ""
+    return f"{held} under {job}" if job else held
+
+
+def _turn(where: serving.Route, lane: str = "", clock=time.monotonic, sleep=time.sleep) -> dict:
+    """{resident, waited, holder, beside, cut}: go now when nothing is held or the model is resident, beside any case in
+    flight (both timings record it); else wait for a running eval to yield between cases. Its case is cut, a harness
+    cut it runs again, once the wait reaches WAIT_S or the case is CUT_FACTOR past its plan; CUT_WAIT_S on, refuse. #1556."""
+    from harness import serve_lease
+    started = clock()
+    held = busy()
+    if not held:
+        return {"resident": None, "waited": 0.0, "holder": "", "beside": "", "cut": False}
+    holder = _holder(held)
+    resident = loaded(where)
+    level = None
+    if resident:
+        from harness import pressure
+        level = pressure.sample().level
+    if admit(holder, resident, level)[0]:
+        found = serve_lease.yielders()
+        beside = serve_lease.in_flight(found) if serve_lease.mark_beside(found, lane) else ""
+        return {"resident": resident, "waited": 0.0, "holder": holder, "beside": beside, "cut": False}
+    cut_at = None
+    while True:
+        found = serve_lease.yielders()
+        waited = clock() - started
+        if not busy() or serve_lease.yielded(found):
+            # A yielded eval sits between cases and keeps its model; loading the lane's model runs beside no case.
+            return {"resident": False if found else resident, "waited": waited, "holder": holder,
+                    "beside": "", "cut": cut_at is not None}
+        case = serve_lease.in_flight(found)
+        if cut_at is None and case and (waited >= serve_lease.WAIT_S or serve_lease.past_plan(found)):
+            past = waited < serve_lease.WAIT_S
+            cuts.cut("serve_lease_cut_factor" if past else "serve_lease_wait",
+                     f"a case cut to serve a delegation behind {held}", kept=0, dropped=1)
+            serve_lease.ask_cut(found, f"a {lane} delegation waited {waited:.0f}s"
+                                + (", the case past its plan" if past else ""))
+            cut_at = waited
+        limit = serve_lease.WAIT_S if cut_at is None else cut_at + serve_lease.CUT_WAIT_S
+        if waited >= limit:
+            cuts.cut("serve_lease_cut_wait" if cut_at is not None else "serve_lease_wait",
+                     f"a delegation refused behind {held}", kept=0, dropped=1)
+            serve_lease.record_wait(lane, holder, waited, serve_lease.REFUSED, case, cut=cut_at is not None)
+            why = (f"{case}; it was asked to cut that case and did not within {serve_lease.CUT_WAIT_S:g}s"
+                   if cut_at is not None else
+                   f"it does not yield to serving and did not finish in {serve_lease.WAIT_S:g}s" if not found else
+                   f"it did not reach a case boundary in {serve_lease.WAIT_S:g}s")
+            raise Refused(f"this machine is busy with {holder}; {why}, and answering would load the model "
+                          f"under it: retry when it yields or finishes")
+        sleep(serve_lease.POLL_S)
+
+
+@contextlib.contextmanager
+def _serving(where: serving.Route, lane: str, max_tokens: int, timeout: float | None, serves: bool):
+    """{timeout, waited, beside, ...}: work for a caller holds the serving lease from its wait through its grace;
+    a program's call gates as before. Its call_id, set by the caller, joins the serve_waits row to the delegation. #1556."""
+    from harness import serve_lease
+    try:
+        base, _ = upstream(where)
+    except Exception:  # noqa: BLE001
+        base = ""
+    # A server on another host is not this machine's to preempt; the interactive server's models are never evicted.
+    if not serves or (base and not serving.loopback(base)) or interactive.upstream(where):
+        yield {"timeout": _allowance(where, max_tokens, timeout), "waited": 0.0, "beside": ""}
+        return
+    lease = serve_lease.Lease(lane, f"a {lane} delegation")
+    try:
+        turn = _turn(where, lane)
+    except Refused:
+        lease.drop()
+        raise
+    lease.serving()
+    resident = turn["resident"]
+    turn["timeout"] = timeout or _timeout(max_tokens, loaded(where) if resident is None else resident)
+    try:
+        yield turn
+        if turn["holder"]:
+            serve_lease.record_wait(lane, turn["holder"], turn["waited"],
+                                    serve_lease.BESIDE if turn["beside"] else serve_lease.ANSWERED,
+                                    turn["beside"], call_id=turn.get("call_id", ""), cut=turn["cut"])
+    finally:
+        lease.idle()
 
 
 def _timeout(max_tokens: int, resident: bool | None) -> float:
@@ -388,48 +473,56 @@ def complete(lane: str, prompt: str, system: str | None = None,
     base = methods.base_of(spec) or spec
     _budget(base, max_tokens, prompt, system or completion.SYSTEM.get(lane, ""), where=where)
     floored = timeout is None and TIMEOUT_S >= completion.timeout_for(int(max_tokens or 0))
-    timeout = _allowance(where, max_tokens, timeout)
-    started = time.perf_counter()
-    made = []
+    with _serving(where, lane, max_tokens, timeout, (tag or _tag(delegated)) == purpose.WORK) as turn:
+        timeout = turn["timeout"]
+        started = time.perf_counter()
+        made = []
 
-    def call(text, modality="", **kw):
-        made.append(modality)
-        mine = system if modality else None
-        label = _call_label(spec, len(made), modality)
-        try:
-            # Each call of a method gets the whole cap and the thinking switch. #581.
-            if label:
-                _budget(base, max_tokens, text, mine or completion.SYSTEM.get(modality, ""), where=where)
-            if modality == "claims":
-                from harness.checks import claims
-                try:
-                    kw = {**kw, "response_format": claims.response_format(claims.served_schema())}
-                except claims.NoSchema as exc:
-                    raise Refused(str(exc)) from exc
-            return completion.complete_full(
-                text, modality=modality, timeout=timeout,
-                temperature=temperature, max_tokens=int(max_tokens), stream=True,
-                system=mine, template=template(modality, thinking), **kw)
-        except Refused as exc:
-            raise Refused(f"{label}: {exc}") from exc
-        except completion.CompletionError as exc:
-            if exc.failure_class == reasons.TIMEOUT and floored:
-                cuts.cut("harness/delegate.py:TIMEOUT_S", f"{spec}: no reply in time", kept=0, dropped=1)
-            if exc.failure_class != reasons.TOKEN_BUDGET_EXHAUSTED:
-                raise
-            cuts.cut(max_tokens_knob, f"{spec}: reply cut at its token budget", value=max_tokens)
-            hint = "" if thinking is False else " Or pass thinking=false to answer without reasoning."
-            raise completion.CompletionError(
-                f"{label + ': ' if label else ''}{exc}{hint}",
-                exc.failure_class, exc.limit) from exc
-    with (as_work(lane, spec, where, stream=True, delegation=delegated, tag=tag or _tag(delegated)) as out,
-          completion.measuring()):
-        text, cost, replies = generate(spec, where, lane, prompt, call, method=method, context=context)
-        got = replies[-1]
-        out.update({"text": text, "lane": lane, "spec": spec,
-                    "model": _answered_by(got.model or where.model), "method": cost or None,
-                    "call_id": got.call_id, **_timing(got, started, replies)})
+        def call(text, modality="", **kw):
+            made.append(modality)
+            mine = system if modality else None
+            label = _call_label(spec, len(made), modality)
+            try:
+                # Each call of a method gets the whole cap and the thinking switch. #581.
+                if label:
+                    _budget(base, max_tokens, text, mine or completion.SYSTEM.get(modality, ""), where=where)
+                if modality == "claims":
+                    from harness.checks import claims
+                    try:
+                        kw = {**kw, "response_format": claims.response_format(claims.served_schema())}
+                    except claims.NoSchema as exc:
+                        raise Refused(str(exc)) from exc
+                return completion.complete_full(
+                    text, modality=modality, timeout=timeout,
+                    temperature=temperature, max_tokens=int(max_tokens), stream=True,
+                    system=mine, template=template(modality, thinking), **kw)
+            except Refused as exc:
+                raise Refused(f"{label}: {exc}") from exc
+            except completion.CompletionError as exc:
+                if exc.failure_class == reasons.TIMEOUT and floored:
+                    cuts.cut("harness/delegate.py:TIMEOUT_S", f"{spec}: no reply in time", kept=0, dropped=1)
+                if exc.failure_class != reasons.TOKEN_BUDGET_EXHAUSTED:
+                    raise
+                cuts.cut(max_tokens_knob, f"{spec}: reply cut at its token budget", value=max_tokens)
+                hint = "" if thinking is False else " Or pass thinking=false to answer without reasoning."
+                raise completion.CompletionError(
+                    f"{label + ': ' if label else ''}{exc}{hint}",
+                    exc.failure_class, exc.limit) from exc
+        with (as_work(lane, spec, where, stream=True, delegation=delegated, tag=tag or _tag(delegated)) as out,
+              completion.measuring()):
+            text, cost, replies = generate(spec, where, lane, prompt, call, method=method, context=context)
+            got = replies[-1]
+            out.update({"text": text, "lane": lane, "spec": spec,
+                        "model": _answered_by(got.model or where.model), "method": cost or None,
+                        "call_id": got.call_id, **_timing(got, started, replies), **_waited(turn)})
+        turn["call_id"] = out.get("call_id", "")
     return out
+
+
+def _waited(turn: dict) -> dict:
+    """The seconds a delegation waited for a running eval, and the case it answered beside, when either. #1556."""
+    return {**({"serve_wait_s": round(turn["waited"], 3)} if turn["waited"] else {}),
+            **({"co_tenant": turn["beside"]} if turn["beside"] else {})}
 
 
 def _answered_by(model: str) -> str:
@@ -482,13 +575,15 @@ def decide(question: str, schema: dict, context: str = "",
     check_schema(schema)
     _preflight(question, context, str(schema))
     spec, where = route("decide")
-    timeout = _allowance(where, 0, timeout)
-    started = time.perf_counter()
-    # Whole, not streamed: the gateway drops logprobs from a stream, and they are the answer.
-    with (as_work("decide", spec, where, stream=False, delegation=delegated, tag=_tag(delegated)) as out,
-          completion.measuring()):
-        body, got = ask(question, schema, where, context=context, timeout=timeout)
-        out.update({**body, "lane": "decide", "spec": spec,
-                    "model": got.model or where.model, "call_id": got.call_id,
-                    **_timing(got, started)})
+    with _serving(where, "decide", 0, timeout, _tag(delegated) == purpose.WORK) as turn:
+        timeout = turn["timeout"]
+        started = time.perf_counter()
+        # Whole, not streamed: the gateway drops logprobs from a stream, and they are the answer.
+        with (as_work("decide", spec, where, stream=False, delegation=delegated, tag=_tag(delegated)) as out,
+              completion.measuring()):
+            body, got = ask(question, schema, where, context=context, timeout=timeout)
+            out.update({**body, "lane": "decide", "spec": spec,
+                        "model": got.model or where.model, "call_id": got.call_id,
+                        **_timing(got, started), **_waited(turn)})
+        turn["call_id"] = out.get("call_id", "")
     return out
