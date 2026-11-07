@@ -263,6 +263,16 @@ def mps_abort(text: str) -> bool:
     return False
 
 
+#: huggingface_hub offline asking the registry for a repo no cached snapshot answers. #1546.
+_OFFLINE_REPO = re.compile(r"Cannot reach https?://[^/\s]+/api/models/([\w.-]+/[\w.-]+)/")
+
+
+def offline_repo(text: str) -> str:
+    """The repo an offline load looked for and the hub cache did not hold, or "". #1546."""
+    m = _OFFLINE_REPO.search(text or "")
+    return m.group(1) if m else ""
+
+
 def backend_abort(lines) -> str:
     """The one line naming an MPS abort in a stderr tail, or ""; the LLVM line takes the op after it."""
     lines = list(lines)
