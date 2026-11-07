@@ -47,6 +47,10 @@ KNOBS = [
             "not run on it; 1 because the paired gate pairs one incumbent draw with each challenger draw "
             "(paired.head_to_head, power.plan per cell) and a draw under the same bytes is exchangeable with a "
             "fresh one; replay of run 521 on a store copy keeps the futility verdict (#1094)"),
+    _k("look_idle_slices", ["harness/commands/measure.py:IDLE_SLICES"], [1, 2, 3],
+       note="look slices in a row that may stop at their stop time with no new case before a paired run pauses "
+            "for the next sweep; job 0239's first slice spent 954 s of 1800 waiting for the eval lock and two cold "
+            "27-35B loads and landed 0 rows, so 1 lost the night (#1554)"),
     _k("look_interval_s", ["harness/looks.py:LOOK_INTERVAL_S"], [600.0, 1800.0, 3600.0, 7200.0], unit="s",
        note="seconds of a paired run between interim looks inside its budget; each look restarts evals.run "
             "with --resume, about 23 s before its first case on a repo resume (job 0196), so 1800 costs ~1.3% "
@@ -81,6 +85,8 @@ KNOBS = [
 ]
 
 NEVER_CUTS = {
+    "harness/commands/measure.py:IDLE_SLICES": "pauses a paired run whose slices land no case; the pause is kept and "
+                                               "the next sweep resumes it, so no case is dropped (#1554)",
     "harness/looks.py:LOOK_INTERVAL_S": "sets when a paired run stops for an interim look; it resumes after the look "
                                         "unless the look decides, so no case is dropped (#1353)",
     "harness/effects.py:MIN_CASES": "read only when soh knobs effects derives power.EFFECT offline; no run is cut (#725)",

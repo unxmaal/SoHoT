@@ -244,9 +244,9 @@ def test_a_confirmation_runs_in_look_slices_with_its_order(tmp_path, monkeypatch
     _, out = measure_cmd._confirm_run("code", "inc-spec", "org/x", "org/x", 1, split, None, 7, plan)
     argv = seen[-1]
     assert json.loads(Path(argv[argv.index("--order") + 1]).read_text(encoding="utf-8")) == ["d2", "d1"]
-    assert "--stop-at" in argv and plan["incumbent"] == "inc-spec" and plan["challenger"] == "org/x"
+    assert "--stop-after" in argv and "--stop-at" not in argv and plan["incumbent"] == "inc-spec" and plan["challenger"] == "org/x"
     measure_cmd._confirm_run("code", "inc-spec", "org/x", "org/x", 1, split, None, 7, None)
-    assert "--order" not in seen[-1] and "--stop-at" not in seen[-1]
+    assert "--order" not in seen[-1] and "--stop-after" not in seen[-1]
 
 
 def test_a_replayed_run_is_never_ordered_from_its_own_rows():

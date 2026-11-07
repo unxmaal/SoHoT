@@ -1241,6 +1241,9 @@ def _parser():
     ap.add_argument("--stop-at", type=float, default=None, metavar="EPOCH",
                     help=f"pause between cases at this time, rows checkpointed, exit {watch.PAUSED}; "
                          f"a `{watch.PAUSE_FILE}` file in --out or SIGUSR1 pauses it too (#813)")
+    ap.add_argument("--stop-after", type=float, default=None, metavar="SECONDS",
+                    help="pause this many seconds after the run holds the machine, or at --stop-at if sooner; "
+                         "a slice spends none of its time waiting for the lock (#1554)")
     ap.add_argument("--plan-s", type=float, action="append", default=None, metavar="SECONDS",
                     help="planned seconds per case, once per candidate in order, written to "
                          f"{watch.PROGRESS} for a watchdog (#810). Default: each candidate's "
@@ -1274,6 +1277,9 @@ def _main(args) -> int:
     # One model-loading run on the machine at a time, across projects (#314); a cloud-only run takes a cloud slot (#1135).
     with exclusive.held(lock_kind(args), announce=lambda m: print(
             f"evals.run: {m}", file=sys.stderr, flush=True), deadline_s=deadline_s(args)):
+        if getattr(args, "stop_after", None) is not None:
+            after = watch.clock() + args.stop_after
+            args.stop_at = after if args.stop_at is None else min(args.stop_at, after)
         return _execute(args)
 
 
