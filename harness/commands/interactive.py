@@ -7,15 +7,11 @@ import time
 from harness import serve_lease
 from harness.commands.common import emit, note
 
-#: The owner's LAN target for decide and extract, warm (KB decision #1035).
-TARGET_P95_S = 10.0
 PROBES = 20
 SCHEMA = {"answer": {"type": "enum", "choices": ["yes", "no"], "description": "whether the sky is blue on a clear day"}}
 QUESTION = "Is the sky blue on a clear day?"
 PROMPT = "From: 'the build failed at 14:02 with exit code 2'. Reply with the exit code only."
 CODE_PROMPT = "Write a Python function that returns the sum of a list of numbers. Reply with the code only."
-#: Lanes TARGET_P95_S holds; the code lane is timed and reported beside them (#1570).
-TARGETED = serve_lease.TARGET_LANES
 
 
 def p95(seconds: list[float]) -> float | None:
@@ -58,9 +54,9 @@ def probe(n: int = PROBES, decide=None, complete=None, sample=None, busy=None, c
                        "pressure": sorted({r["pressure"] for r in timed if r["pressure"] is not None}),
                        "while_busy": sum(1 for r in timed if r["busy"]),
                        "served": sorted({str(r.get("spec")) for r in timed if r.get("spec")})}
-    ok = all(v["errors"] == 0 and v["p95_s"] is not None and v["p95_s"] < TARGET_P95_S
-             for lane, v in lanes.items() if lane in TARGETED)
-    return {"ok": ok, "target_p95_s": TARGET_P95_S, "lanes": lanes, "rows": rows}
+    ok = all(v["errors"] == 0 and v["p95_s"] is not None and v["p95_s"] < serve_lease.P95_TARGET_S
+             for lane, v in lanes.items() if lane in serve_lease.TARGET_LANES)
+    return {"ok": ok, "target_p95_s": serve_lease.P95_TARGET_S, "lanes": lanes, "rows": rows}
 
 
 def cmd_interactive(a) -> int:

@@ -92,8 +92,6 @@ NOT_GATING = {
                                           "pool; evidence, never a limit on a request (#1561)",
     "harness/interactive.py:WARM_POLL_S": "how often the interactive server's start asks it again; "
                                           "interactive_warm_wait bounds the wait (#1561)",
-    "harness/commands/interactive.py:TARGET_P95_S": "the owner's latency target soh interactive probe reports "
-                                                    "against (KB decision #1035); it stops and drops nothing (#1561)",
     "harness/ds4.py:GIB": "bytes in a gibibyte (#611)",
     "evals/run.py:GATEWAY_DOWN_POLL_S": "how often a warm-up asks a refusing gateway again; gateway_down_wait bounds the wait (#1181)",
     "harness/idle_unload.py:WINDOW_DAYS": "how far back soh load-log --idle reads requests; evidence for a knob, never a limit (#1157)",
