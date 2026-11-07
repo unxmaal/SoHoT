@@ -171,6 +171,8 @@ _GATEWAY = ("invalid model name", "gateway returned http 400",
 #: What a server says when a request does not fit the context it is served at: llama-server, vLLM, LiteLLM. #695, #692.
 OVER_CONTEXT = re.compile(r"exceeds? the available context|context.?window.?exceeded|maximum context length"
                           r"|context length exceeded|exceeds? (the )?context (size|window|length)|max_model_len", re.I)
+#: llama-server's 500 for a reply that stopped inside a tool call's arguments: truncated JSON, not malformed. #1547.
+CUT_TOOL_CALL = re.compile(r"failed to parse tool call arguments.{0,200}?unexpected end of input", re.I | re.S)
 #: A tts stream the audio server dropped and logged no traceback for (harness.audio.StreamDropped). #1036.
 NO_SERVER_TRACEBACK = "no traceback in the audio server's log"
 _HARNESS = ("no cases of a modality it can run", "no candidate matched any case",

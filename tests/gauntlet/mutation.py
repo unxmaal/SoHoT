@@ -95,7 +95,7 @@ LEFT_OUT = {
                                             "test_revisit_tier_1060.py", "test_revisitable_after_deploy_1361.py",
                                             "test_site.py", "test_futility_lane_too_small_1452.py"),
     "harness/reasons.py": (
-        "test_runtime_trials_1474.py", "test_repo_repair_890.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_staging_torch_1358.py",
+        "test_runtime_trials_1474.py", "test_repo_repair_890.py", "test_agent_cut_call_1547.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_staging_torch_1358.py",
         "test_vision_engines_1282.py",
         "test_shots_check_1208.py",
         "test_adopt_retest_1001.py", "test_attachment_tags_949.py", "test_canary_919.py",

@@ -74,7 +74,7 @@ class RepoRepairRunner(AgentRunner):
         final, stopped, error, cut = "", "step cap", None, ""
         made = dropped = 0
         cold = not self.answered
-        budget = self.max_tokens
+        budget = self._budget = self.max_tokens
         try:
             for n in range(int(MAX_STEPS)):
                 left = deadline - time.perf_counter()
@@ -159,6 +159,11 @@ class RepoRepairRunner(AgentRunner):
             return float("inf")
         count = self.count or agent_pad.estimate
         return self.served_ctx - count(json.dumps(messages)) - count(json.dumps(tools))
+
+    def budget_hit(self) -> tuple:
+        """max_tokens.repo when this step asked the whole reply budget, as the length stop counts it; else none. #1547."""
+        budget = getattr(self, "_budget", self.max_tokens)
+        return knobs.hit("max_tokens.repo", budget, "tokens") if self.max_tokens == budget else ()
 
     def _stop(self, stopped: str, cut: str, error, allowed: float) -> tuple[str, str]:
         """(failure class, limit) a failing row is put down to: the cap that ended its loop, else ""."""

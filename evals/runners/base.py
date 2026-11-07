@@ -35,7 +35,7 @@ class RunnerError(RuntimeError):
     """
 
     def __init__(self, detail: str, peak_kb: int = 0, failure_class: str = "",
-                 limit: str = ""):
+                 limit: str = "", metrics: dict | None = None, output: str | None = None):
         super().__init__(detail)
         self.detail = detail
         # A crash after the model loaded is exactly when peak memory matters.
@@ -43,6 +43,9 @@ class RunnerError(RuntimeError):
         # Set where the cause is known; "" is read once by reasons.classify.
         self.failure_class = failure_class
         self.limit = limit
+        #: What the generation measured and wrote before it failed, kept on the row. #1547.
+        self.metrics = dict(metrics or {})
+        self.output = output
 
 
 class BaseRunner:
@@ -80,7 +83,7 @@ class BaseRunner:
             exc.detail, reasons.RUNNER, self.spec or self.candidate)
         return Result(case.id, self.candidate, False, round(seconds, 3),
                       exc.peak_kb, exc.detail, failure_class=cls,
-                      limit=exc.limit)
+                      limit=exc.limit, metrics=dict(exc.metrics), output=exc.output)
 
     def generate(self, case: Case):
         """Return (artifact, peak_kb). Raise RunnerError on a real failure.

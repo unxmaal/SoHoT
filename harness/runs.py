@@ -323,6 +323,25 @@ def grade_cut_rows(conn) -> int:
     return changed
 
 
+def class_cut_calls(conn) -> int:
+    """Class a stored agent row crashed on llama-server's 500 for a call the reply budget cut as that budget; the rows changed. #1547."""
+    from harness import completion, knobs
+    got = conn.execute(
+        "SELECT x.id, x.detail, r.receipt FROM results x JOIN runs r ON r.id = x.run_id "
+        "WHERE x.passed = 0 AND r.lane IN ('agent', 'craft') AND x.failure_class IN ('', ?) "
+        "AND x.detail LIKE '%tool call arguments%'", (reasons.CRASHED,)).fetchall()
+    changed = 0
+    for r in got:
+        if not reasons.CUT_TOOL_CALL.search(r["detail"] or ""):
+            continue
+        asked = (json.loads(r["receipt"] or "{}") or {}).get("max_tokens") or completion.budget("agent")
+        conn.execute("UPDATE results SET failure_class = ?, hit_limit = ? WHERE id = ?",
+                     (reasons.TOKEN_BUDGET_EXHAUSTED, knobs.limit("max_tokens.agent", int(asked), "tokens"), r["id"]))
+        changed += 1
+    conn.commit()
+    return changed
+
+
 def stamp_claims_strata(conn) -> int:
     """Stamp a stored claims row's stratum from a row of its own run on its case, and count a bad reply as a missed empty; the rows changed. #792."""
     from evals.core import claims_stratum
