@@ -21,7 +21,10 @@ def _run_name(run: Path) -> str:
 
 def cmd_adopt(a) -> int:
     """The discovery loop's paired measure-and-adopt, for a named challenger."""
+    dry = getattr(a, "dry_run", False)
     if getattr(a, "confirm", None) is not None:
+        if dry:
+            return err("--dry-run: adopt --confirm runs the held confirmation and cannot dry-run (#1548)")
         return measure_cmd.confirm_job(a.confirm)
     if getattr(a, "power", False):
         return cmd_power(a)
@@ -32,6 +35,9 @@ def cmd_adopt(a) -> int:
     lane = lanes.canonical(a.lane)
     if lane not in lanes.ALL:
         return err(f"unknown lane {a.lane!r}; known: {', '.join(lanes.ALL)}")
+    if dry:
+        with lent_store():
+            return measure_cmd._measure(a, {"name": a.challenger, "lane": lane}, [])
     return measure_cmd._measure_and_adopt(a, {"name": a.challenger, "lane": lane})
 
 
