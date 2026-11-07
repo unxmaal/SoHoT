@@ -170,17 +170,39 @@ READS_SOURCE = (
 )
 
 
+def _nodes(tree, lazy):
+    todo = [tree]
+    while todo:
+        n = todo.pop()
+        yield n
+        todo.extend(c for c in ast.iter_child_nodes(n)
+                    if lazy or not isinstance(c, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)))
+
+
+def imported(text, package="", lazy=True):
+    """Every dotted name Python source imports (with lazy, inside functions too); relative ones need their package."""
+    names = set()
+    for n in _nodes(ast.parse(text), lazy):
+        if isinstance(n, ast.Import):
+            for a in n.names:
+                parts = a.name.split(".")
+                names.update(".".join(parts[:i]) for i in range(1, len(parts) + 1))
+        elif isinstance(n, ast.ImportFrom):
+            base = n.module or ""
+            if n.level:
+                if not package:
+                    continue
+                up = package.split(".")[:len(package.split(".")) - n.level + 1]
+                base = ".".join(up + ([n.module] if n.module else []))
+            if base:
+                names.add(base)
+            names.update(f"{base}.{a.name}" if base else a.name for a in n.names if a.name != "*")
+    return names
+
+
 def imports(text, module):
     """Whether Python source imports a harness module, by any of the three spellings."""
-    name = module[:-3].replace("/", ".")
-    pkg, _, short = name.rpartition(".")
-    for n in ast.walk(ast.parse(text)):
-        if isinstance(n, ast.Import) and any(a.name == name or a.name.startswith(name + ".") for a in n.names):
-            return True
-        if isinstance(n, ast.ImportFrom) and n.level == 0 and (
-                n.module == name or (n.module == pkg and any(a.name == short for a in n.names))):
-            return True
-    return False
+    return module[:-3].replace("/", ".") in imported(text)
 
 
 def unplaced(module, root=REPO):

@@ -30,7 +30,7 @@ jobs:
       # Where the time went downloads the last main run's per-test times (#1146).
       actions: read
     env:
-      # An unlabelled pull request skips the `long` tests; push to main, nightly and full-ci run all of them (#720).
+      # An unlabelled pull request skips `long` tests and runs only what its change reaches; main, nightly, full-ci run all (#720, #1567).
       SOHOT_FAST_PATH: ${{ (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'full-ci')) && '1' || '0' }}
 
     steps:
@@ -70,6 +70,19 @@ jobs:
         run: brew install shellcheck librsvg
 
       - run: bash scripts/ci-retry.sh uv sync --python 3.12
+
+      - name: Which tests this change can reach
+        # The fast path runs the test files the change reaches by import or name, plus the ratchets (#1567).
+        if: env.SOHOT_FAST_PATH == '1'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          listing="$RUNNER_TEMP/selected.txt"
+          if ! uv run python -m tests.gauntlet.scope --base "origin/$BASE_REF" --out "$listing"; then
+            echo "::warning::test selection failed; running the full suite"
+            rm -f "$listing"
+          fi
+          if [ -s "$listing" ]; then echo "SOHOT_SELECTED=$listing" >> "$GITHUB_ENV"; fi
 
       - name: make check
         # The same command a person runs locally. CI running something else is

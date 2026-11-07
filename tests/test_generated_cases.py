@@ -114,7 +114,8 @@ def test_an_imported_file_is_written_beside_its_case_and_may_not_escape(tmp_path
 
 @pytest.mark.parametrize("name,want", [
     ("ocr_synth", {"reference": 440, "other-case": 0, "empty": 0}),
-    ("pii_synth", {"reference": 540, "nothing": 120, "everything": 0}),
+    # About 100 s each on check-macos (harness.ci_history, #1567): main and nightly run it.
+    pytest.param("pii_synth", {"reference": 540, "nothing": 120, "everything": 0}, marks=pytest.mark.long),
     ("tts_synth", {"reference": 460, "silence": 0, "fixed": 0}),
     ("svg_synth", {"reference": 920, "square": 0, "other-case": 0}),
     ("web_synth", {"reference": 1300, "blank": 0, "other-case": 0}),
@@ -231,6 +232,7 @@ def test_pii_values_are_clearly_fake(committed):
                 assert label.startswith(pii_synth.KEY_PREFIX)
 
 
+@pytest.mark.long
 def test_pii_negative_controls_mark_nothing_and_mark_everything(committed):
     cases = committed["pii_synth"]
     wrap = lambda spans: json.dumps({"spans": spans})  # noqa: E731
@@ -378,6 +380,7 @@ def test_the_hard_table_kinds_need_the_rows_computed(committed):
     assert failed == []
 
 
+@pytest.mark.long
 def test_every_web_reference_renders_in_a_browser(committed):
     """Positive control through score(): a sample of reference pages parse, meet their structure and paint."""
     from harness.checks import render
