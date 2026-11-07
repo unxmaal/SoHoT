@@ -25,8 +25,8 @@ KNOBS = [
             "a lane whose model does not fit pins its typed default or nothing; owner's ceiling 25 (KB decision "
             "#1035); on the Studio 2026-11-07 decide+extract+Qwen3-4B took 19.6, Ornith did not fit (#1561)"),
     _k("interactive_pool_ctx", ["harness/interactive.py:POOL_CTX"], [8192, 16384, 32768, 65536],
-       note="tokens of KV each pinned interactive model holds, one unified pool its slots share; one request may "
-            "reach all of it, so it is the longest prompt plus reply a pinned lane takes (#1561)"),
+       note="ceiling on a pinned interactive model's unified KV pool, sized from its lane's requests (largest, and "
+            "p99 x peak overlap); 30 d live: decide p99 3620 max 8115 peak 4, extract p99 7358 max 33968 peak 2 (#1561)"),
     _k("interactive_warm_wait", ["harness/interactive.py:WARM_WAIT_S"], [120.0, 600.0, 1200.0],
        note="seconds the interactive server's start waits for it to answer before loading its pinned models; past "
             "it they load on their first request instead (#1561)"),
@@ -87,6 +87,8 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    "harness/interactive.py:DEMAND_DAYS": "how far back a pinned lane's requests are read to size its slots and "
+                                          "pool; evidence, never a limit on a request (#1561)",
     "harness/interactive.py:WARM_POLL_S": "how often the interactive server's start asks it again; "
                                           "interactive_warm_wait bounds the wait (#1561)",
     "harness/commands/interactive.py:TARGET_P95_S": "the owner's latency target soh interactive probe reports "

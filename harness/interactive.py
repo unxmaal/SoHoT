@@ -16,9 +16,12 @@ PORT = 8083
 PORT_ENV = "INTERACTIVE_PORT"
 URL_ENV = "INTERACTIVE_URL"
 BUDGET_GB = 25.0
+#: Slots a pinned model gets when its lane has no request history here.
 SLOTS = 2
-#: Tokens of KV each pinned model holds, one unified pool its slots share.
+#: The most tokens of KV a pinned model's unified pool may hold, and its size with no request history.
 POOL_CTX = 32768
+#: Days of a lane's gateway requests its pinned slots and pool are sized from.
+DEMAND_DAYS = 30
 #: llama-server's compute buffers beside one model's weights and KV.
 COMPUTE_BYTES = 512 * 1024 ** 2
 #: Gateway entry key: the MLX model a GGUF entry stands in for on this server.
@@ -65,8 +68,40 @@ def stem_for(spec: str, config=None, stand_in: bool = True) -> str:
     return ""
 
 
-def size(stem: str, models_dir) -> dict | None:
-    """Weights plus a SLOTS-way pool of POOL_CTX tokens plus compute buffers for one GGUF; None when unreadable."""
+def demand(conn, lane: str, names, now: float | None = None) -> dict:
+    """A lane's interactive requests over DEMAND_DAYS: count, p99 and max of prompt plus reply tokens, peak overlap."""
+    from harness import purpose, usage
+    names = sorted({n for n in names if n})
+    since = (time.time() if now is None else now) - DEMAND_DAYS * 86400
+    rows = conn.execute(
+        "SELECT at, total_s, COALESCE(prompt_tokens, 0) + COALESCE(completion_tokens, 0) FROM gateway_requests "
+        f"WHERE at >= ? AND purpose NOT IN (?, ?, ?) AND (alias = ? OR (client = ? AND lane = ?)"
+        f"{' OR alias IN (' + ','.join('?' * len(names)) + ')' if names else ''})",
+        (since, purpose.EVAL, purpose.SMOKE, purpose.WATCHDOG, f"sohot-{lane}", usage.DIRECT_CLIENT, lane,
+         *names)).fetchall()
+    tokens = sorted(int(r[2]) for r in rows if r[2])
+    edges = sorted([(float(r[0]), 1) for r in rows if r[1]] + [(float(r[0]) + float(r[1]), -1) for r in rows if r[1]])
+    peak = now_in = 0
+    for _, step in edges:
+        now_in += step
+        peak = max(peak, now_in)
+    return {"n": len(rows), "p99": tokens[int(0.99 * (len(tokens) - 1))] if tokens else 0,
+            "max": tokens[-1] if tokens else 0, "peak": peak}
+
+
+def shape(got: dict | None, trained: int) -> tuple[int, int, int]:
+    """(slots, pool tokens, tokens the history asks for): its peak overlap, room for its largest request and p99 per slot."""
+    from harness import context
+    if not got or not got.get("n"):
+        return SLOTS, min(POOL_CTX, trained), 0
+    slots = max(int(got["peak"]), 1)
+    want = max(int(got["max"]), int(got["p99"]) * slots, context.FLOOR)
+    stepped = -(-want // context.STEP) * context.STEP
+    return slots, min(stepped, POOL_CTX, trained), want
+
+
+def size(stem: str, models_dir, got: dict | None = None) -> dict | None:
+    """Weights plus a pool shaped by the lane's request history plus compute buffers for one GGUF; None when unreadable."""
     from harness import context
     path = Path(models_dir) / f"{stem}.gguf"
     try:
@@ -76,14 +111,14 @@ def size(stem: str, models_dir) -> dict | None:
     per, full = context.kv_bytes_per_token(meta), context.trained(meta)
     if not per or not full:
         return None
-    ctx = min(POOL_CTX, full)
-    kv = per * ctx + context.swa_bytes(meta) * SLOTS
-    return {"stem": stem, "path": str(path), "ctx": ctx, "trained": full, "slots": SLOTS, "weights": weights,
-            "kv": kv, "bytes": weights + kv + COMPUTE_BYTES}
+    slots, ctx, want = shape(got, full)
+    kv = per * ctx + context.swa_bytes(meta) * slots
+    return {"stem": stem, "path": str(path), "ctx": ctx, "trained": full, "want": want, "slots": slots,
+            "demand": got or {}, "weights": weights, "kv": kv, "bytes": weights + kv + COMPUTE_BYTES}
 
 
 def choose(defaults: dict, typed: dict, config=None, models_dir=None, budget_gb: float | None = None,
-           sized=size, record: bool = False) -> dict:
+           sized=size, record: bool = False, demands: dict | None = None) -> dict:
     """Each pinned lane's model inside the budget: the lane's own, else its typed default; what did not fit, said."""
     budget = int((BUDGET_GB if budget_gb is None else budget_gb) * GIB)
     left, lanes, skipped = budget, {}, {}
@@ -95,7 +130,7 @@ def choose(defaults: dict, typed: dict, config=None, models_dir=None, budget_gb:
                 tried.append(f"{spec} has no GGUF build")
                 continue
             shared = next((p for p in lanes.values() if p["stem"] == stem), None)
-            got = dict(shared, bytes=0) if shared else sized(stem, models_dir)
+            got = dict(shared, bytes=0) if shared else sized(stem, models_dir, (demands or {}).get(lane))
             if got is None:
                 tried.append(f"{stem}.gguf is not readable in {models_dir}")
                 continue
@@ -119,10 +154,19 @@ def choose(defaults: dict, typed: dict, config=None, models_dir=None, budget_gb:
 
 
 def plan_now(conn=None, config=None, record: bool = False) -> dict:
-    """choose() for this machine's lane models and GGUF dir now."""
-    from harness import adopt, gguf, winners
+    """choose() for this machine's lane models, GGUF dir and each pinned lane's request history now."""
+    from harness import adopt, gguf, runs, winners
     typed = winners.typed()
-    return choose(adopt.lane_defaults(conn, typed=typed), typed, config, gguf.models_dir(), record=record)
+    with runs.store(conn) as c:
+        defaults = adopt.lane_defaults(c, typed=typed)
+        demands = {lane: demand(c, lane, {_alias(s) for s in (defaults.get(lane), typed.get(lane))}) for lane in LANES}
+    return choose(defaults, typed, config, gguf.models_dir(), record=record, demands=demands)
+
+
+def _alias(spec) -> str:
+    """The gateway name a lane spec is asked for by: a llamacpp: stem bare."""
+    name = str(spec or "").partition(",")[0].strip()
+    return name[len(serving.LLAMACPP_PREFIX):] if name.startswith(serving.LLAMACPP_PREFIX) else name
 
 
 def read() -> dict:
@@ -366,10 +410,10 @@ def preset(out: Path, plan: dict) -> Path:
     stems = {p["stem"]: p for p in (plan.get("lanes") or {}).values()}
     rows = [{"stem": s, "ctx": p["ctx"], "slots": p["slots"], "why": f"pinned, {_gib(p['bytes'])} GiB"}
             for s, p in stems.items()]
-    capped = sorted(s for s, p in stems.items() if int(p.get("trained") or 0) > int(p["ctx"]))
+    capped = sorted(s for s, p in stems.items() if int(p.get("want") or 0) > int(p["ctx"]))
     if capped:
         from harness import cuts
-        cuts.cut("interactive_pool_ctx", f"pinned models served under their trained context: {', '.join(capped)}",
+        cuts.cut("interactive_pool_ctx", f"pinned pools smaller than their lanes' measured requests: {', '.join(capped)}",
                  dropped=len(capped))
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(context.preset_text(rows, POOL_CTX, SLOTS), encoding="utf-8")
