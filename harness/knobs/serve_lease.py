@@ -22,6 +22,10 @@ NEVER_CUTS = {
 }
 
 NOT_GATING = {
+    "harness/serve_lease.py:HELD_S": "how long a waiting or serving delegation's lease row stands; its live process "
+                                     "keeps it and a dead one's is released when read (#1558)",
+    "harness/item_lease.py:TTL_S": "how long a lease outlives its last beat; a live holder beats every third of it, so "
+                                   "it frees only a place nobody keeps (#1558)",
     "harness/serve_lease.py:POLL_S": "how often a delegation or a yielding eval looks at the lease again; "
                                      "serve_lease_wait bounds the wait (#1556)",
     "evals/watch.py:Watch.yield_s": "seconds a run has yielded to serving so far, a running total (#1556)",

@@ -689,7 +689,6 @@ def leased(job: dict, pid: int | None = None):
         yield got
     finally:
         stop.set()
-        beating.join(timeout=5)
         with _store() as c:
             item_lease.release(c, got["id"])
 
