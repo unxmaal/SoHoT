@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 90
+SCHEMA_VERSION = 91
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -556,6 +556,23 @@ CREATE TABLE IF NOT EXISTS delegations (
     outcome           TEXT,
     why               TEXT NOT NULL DEFAULT '',
     outcome_at        REAL
+);
+
+-- A delegation that found the machine held by another job: how long it waited for it to yield, and how it ended. #1556.
+CREATE TABLE IF NOT EXISTS serve_waits (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    at                REAL NOT NULL,
+    lane              TEXT NOT NULL,
+    holder            TEXT NOT NULL DEFAULT '',
+    waited_s          REAL NOT NULL DEFAULT 0,
+    -- 'answered', 'refused', or 'beside' (answered while a case ran: both timings contended).
+    outcome           TEXT NOT NULL,
+    -- The case the holder's eval was in when a refused delegation gave up; '' otherwise.
+    in_flight         TEXT NOT NULL DEFAULT '',
+    -- The answered delegation's call_id (joins delegations.call_id); '' when refused.
+    call_id           TEXT NOT NULL DEFAULT '',
+    -- 1 when the delegation had the eval's case in flight cut, a harness cut never charged to the model.
+    cut               INTEGER NOT NULL DEFAULT 0
 );
 
 -- Text of a request, only while the usage_text setting is on, newest kept. #481.

@@ -185,6 +185,7 @@ capabilities:
     modules:
       - harness/delegate.py
       - harness/delegations.py
+      - harness/serve_lease.py
       - harness/commands/delegated.py
       - harness/mcp_server.py
       - harness/mcp_peers.py

@@ -421,6 +421,24 @@ def stopping_after(tokens: int | None):
         _STOP_AFTER.reset(held)
 
 
+#: A predicate a streamed reply asks at every chunk; true cuts it to serve a delegation, charged to the harness. #1556.
+_CUT_WHEN: contextvars.ContextVar = contextvars.ContextVar("cut_when", default=None)
+
+
+class ServingCut(CompletionError):
+    """A reply cut so the machine could serve a delegation: the harness's doing, never the model's. #1556."""
+
+
+@contextlib.contextmanager
+def cutting(when):
+    """Cut streamed replies inside this block once `when()` is true. #1556."""
+    held = _CUT_WHEN.set(when)
+    try:
+        yield
+    finally:
+        _CUT_WHEN.reset(held)
+
+
 def request_of(payload: dict) -> dict:
     """The parts of a chat request that decide what is asked: budget, sampler, template kwargs, system digest. #921."""
     import hashlib
@@ -772,9 +790,12 @@ def assemble(lines, started: float, timeout: float = TIMEOUT_S):
     content, reasoning, tokens = [], [], []
     calls: dict[int, dict] = {}
     usage, timings, finish, model = {}, None, None, None
-    stop, made = _STOP_AFTER.get(), 0
+    stop, made, cut = _STOP_AFTER.get(), 0, _CUT_WHEN.get()
     first: dict = {"ttft_s": None, "first_reasoning_s": None}
     for line in lines:
+        if cut is not None and cut():
+            # Leaving the stream closes the connection, which ends the generation upstream.
+            raise ServingCut("cut to serve a delegation; the case runs again after it", reasons.HARNESS_ERROR)
         now = time.perf_counter() - started
         if now > timeout:
             # The non-streaming limit, kept as a total so a slow writer still times out.

@@ -18,7 +18,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from harness import interactive
+from harness import interactive, serve_lease
 
 NOTE, NOTIFY, FILE, PAUSE, STOP, REAP, UNLOAD, RESTART = (
     "note", "notify", "file", "pause", "stop", "reap", "unload", "restart")
@@ -684,8 +684,8 @@ def _long_run(w: World) -> list[Finding]:
     day, out = daytime(w.now), []
     for s in w.top:
         knob, limit = long_run_limit(s, day)
-        if s.elapsed_s is not None and s.elapsed_s > limit and not s.orphan:
-            out.append(Finding("long_run", s, {"elapsed_s": round(s.elapsed_s), "limit_s": limit, "day": day,
+        if (worked := serve_lease.worked_s(s, w.now)) is not None and worked > limit and not s.orphan:
+            out.append(Finding("long_run", s, {"elapsed_s": round(worked), "limit_s": limit, "day": day,
                                                "kind": kind_of(s),
                                                "limit": knobs.limit_text(knobs.hit(knob, limit, "s"))}))
     return out
@@ -794,7 +794,7 @@ def _no_progress(w: World) -> list[Finding]:
             continue
         plans = [v for v in (run.get("planned_s_per_case") or {}).values() if v]
         limit = max([STALL_S] + [STALL_CASES * v for v in plans])
-        idle = w.now - float(last)
+        idle = w.now - float(last) - serve_lease.yielded_s(run, w.now, since_case=True)
         if idle > limit:
             stall_knob = "watchdog_stall" if limit == STALL_S else "watchdog_stall_cases"
             stalled[stall_knob] = stalled.get(stall_knob, 0) + 1
@@ -850,11 +850,11 @@ def _on_gpu(w: World, s: Subject) -> bool:
 def _daytime_gpu(w: World) -> list[Finding]:
     if not daytime(w.now) or _cleared(w):
         return []
-    out = [Finding("daytime_gpu", s, {"elapsed_s": round(s.elapsed_s), "limit_s": DAYTIME_GPU_S,
+    out = [Finding("daytime_gpu", s, {"elapsed_s": round(serve_lease.worked_s(s, w.now)), "limit_s": DAYTIME_GPU_S,
                                       "hours": [DAY_START_HOUR, DAY_END_HOUR],
                                       "gpu": "holds the GPU lock" if w.gpu is not None else
                                       "the GPU lock's holder cannot be told"})
-           for s in w.top if s.elapsed_s is not None and s.elapsed_s > DAYTIME_GPU_S and not s.orphan
+           for s in w.top if (serve_lease.worked_s(s, w.now) or 0) > DAYTIME_GPU_S and not s.orphan
            and _on_gpu(w, s)]
     if out:
         from harness import cuts
