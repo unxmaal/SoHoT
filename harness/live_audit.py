@@ -239,8 +239,8 @@ def _spent_revisits(conn, facts=None) -> list:
     return [f"verdict {r['verdict_id']} {r['name']}: {r['until']}" for r in ms.revisitable(conn, facts, spent=True)]
 
 
-#: Broken screens the plan-refusal classifier (#1047) found on the 2026-10-19 store; they warn until `soh coherence --apply`.
-PINNED_LAYOUT = frozenset({12930})
+#: Broken screens new layout phrases found (#1047 on 2026-10-19, #1545 on 2026-11-06); they warn until `soh coherence --apply`.
+PINNED_LAYOUT = frozenset({12930, 18259, 18948, 18949, 18959})
 
 
 def _broken_runner_layout(conn, pinned=None) -> tuple[list, list]:

@@ -167,6 +167,12 @@ def test_the_until_keys_have_readers_that_open_only_when_the_lack_is_filled():
 
 # ---- #951: the classifier ---------------------------------------------------
 
+#: mflux's weight_loader on a ComfyUI-layout snapshot, as verdict 18949 recorded it. #1545.
+MFLUX_NO_WEIGHTS = ("fox-snow: exit 1: FileNotFoundError: No safetensors files found in /Volumes/MODELS/hf/hub/"
+                    "models--Comfy-Org--ERNIE-Image/snapshots/3c4e1f0a9b8d7c6e5f4a3b2c1d0e9f8a7b6c5d4e/transformer")
+COMFY_CARD = {"hf_task": "text-to-image", "library": "diffusion-single-file",
+              "card_tags": '["diffusion-single-file", "comfyui", "text-to-image"]'}
+
 LAYOUT_DETAILS = [
     ("diffusers:Danrisi/UltraReal_FineTune_Anima_base1_v3",
      "fox-snow: exit 1: OSError: Danrisi/UltraReal_FineTune_Anima_base1_v3 does not appear to have a file "
@@ -184,6 +190,8 @@ LAYOUT_DETAILS = [
     ("tts:m-a-p/YuE2-3B", "long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model "
                           "'m-a-p/YuE2-3B': Could not determine model type for m-a-p/YuE2-3B\"}"),
     ("acestep:m-a-p/YuE2-3B", "cover: exit 3"),
+    ("mflux:Comfy-Org/ERNIE-Image", MFLUX_NO_WEIGHTS),
+    ("mflux:org/x", "fox-snow: exit 1: FileNotFoundError: No safetensors files found under /hf/snapshots/0a1b"),
 ]
 
 
@@ -234,6 +242,8 @@ CARD_GAPS = [
                                               "card_tags": '["diffusers", "diffusers:WalkyriePipeline"]'}),
     ("acestep:m-a-p/YuE2-3B", {"hf_task": "text-to-audio", "model_type": "yue2",
                                "remote_code": "modeling_yue2.py"}),
+    ("mflux:Comfy-Org/ERNIE-Image", COMFY_CARD),
+    ("mflux:org/comfy,quantize=4", {**COMFY_CARD, "library": "ComfyUI"}),
 ]
 
 
@@ -251,6 +261,12 @@ CARD_FITS = [
     ("diffusers:black-forest-labs/FLUX.1-schnell",
      {"hf_task": "text-to-image", "library": "diffusers", "card_tags": '["diffusers:FluxPipeline"]',
       "siblings": [{"rfilename": "model_index.json"}, {"rfilename": "transformer/x.safetensors"}]}),
+    # mflux's own Lens config reads Comfy-Org/Lens's diffusion_models/ tree. #1545.
+    ("mflux:Comfy-Org/Lens", COMFY_CARD),
+    ("mflux:black-forest-labs/FLUX.2-klein-9B",
+     {"hf_task": "image-to-image", "library": "diffusers", "card_tags": '["diffusers", "diffusion-single-file"]'}),
+    ("mflux:org/remote", {"hf_task": "text-to-image", "library": "diffusers", "model_type": "nandi",
+                          "remote_code": "modeling_nandi.py"}),
 ]
 
 
@@ -388,5 +404,35 @@ def test_a_screen_verdict_records_its_failure_class(tmp_path, monkeypatch):
     try:
         assert _state(conn, "org/x") == {"state": "declined", "until": "runner:diffusers/single-file",
                                          "failure_class": reasons.LOAD_FAILED_LAYOUT}
+    finally:
+        conn.close()
+
+
+def test_the_image_lane_refuses_a_comfyui_card_before_download():
+    assert screen.candidate_for("image", "Comfy-Org/ERNIE-Image", card=COMFY_CARD).startswith("mflux:")
+    gap = screen.runner_gap("image", "Comfy-Org/ERNIE-Image", card=COMFY_CARD)
+    assert gap == ("needs its own runner: its card names the diffusion-single-file library, "
+                   "and mflux loads a diffusers transformer/ directory")
+    assert runner_gaps.pre_screen("mflux:Comfy-Org/ERNIE-Image", COMFY_CARD)[1] == "runner:mflux/diffusion-single-file"
+
+
+@pytest.mark.parametrize("name,card,until", [
+    ("Comfy-Org/ERNIE-Image", COMFY_CARD, "runner:mflux/diffusion-single-file"),
+    ("jimmycarter/krea2-turbo-bbox", {"hf_task": "text-to-image", "library": "diffusers",
+                                      "card_tags": '["diffusers", "krea2"]'}, "runner:mflux/no-safetensors"),
+])
+def test_coherence_declines_an_mflux_layout_gap_recorded_broken(tmp_path, name, card, until):
+    from harness import coherence
+    conn = _store(tmp_path)
+    try:
+        detail = "it ran and passed nothing: " + MFLUX_NO_WEIGHTS.replace("Comfy-Org--ERNIE-Image",
+                                                                          name.replace("/", "--"))
+        _seed(conn, name, "image", card, "broken", ms.SCREEN, detail, reason=reasons.CANDIDATE, spec=f"mflux:{name}")
+        assert live_audit._broken_runner_layout(conn, pinned=frozenset())[0]
+        found = coherence.changes(conn)
+        assert [c["now"] for c in found] == [["declined", "screen", reasons.RUNTIME, until]]
+        coherence.apply(conn, found)
+        assert _state(conn, name) == {"state": "declined", "until": until, "failure_class": reasons.LOAD_FAILED_LAYOUT}
+        assert live_audit._broken_runner_layout(conn) == ([], [])
     finally:
         conn.close()

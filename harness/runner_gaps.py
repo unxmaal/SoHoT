@@ -36,7 +36,9 @@ TEXT_LIBRARIES = frozenset({"transformers", "mlx", "mlx-lm", "mlx_lm", "gguf", "
 #: Engines that build generation pipelines from a model_index.json.
 DIFFUSERS_HEADS = ("diffusers", "diffusers-video")
 #: Engines that load a discovered repo through a stock loader, so its card can say they cannot.
-CARD_CHECKED = DIFFUSERS_HEADS + ("acestep",)
+CARD_CHECKED = DIFFUSERS_HEADS + ("acestep", "mflux")
+#: Card libraries for single-file or ComfyUI checkpoints; mflux opens a diffusers transformer/ directory. #1545.
+SINGLE_FILE_LIBRARIES = frozenset({"diffusion-single-file", "comfyui"})
 #: Tensor names a stock checkpoint ends in; any other leaf names the format the runner could not read.
 _STOCK_LEAVES = frozenset({"weight", "bias", "scales", "biases"})
 
@@ -206,10 +208,22 @@ def text_gap(card) -> tuple[str, str]:
     return "", ""
 
 
-def engine_gap(head: str, card) -> tuple[str, str]:
+def mflux_gap(repo: str, card) -> tuple[str, str]:
+    """(why, until) mflux cannot open `repo`: a single-file card no mflux model config names. #1545."""
+    from harness import disk
+    library = _library(card)
+    if library not in SINGLE_FILE_LIBRARIES or repo in disk.MFLUX_REPOS.values():
+        return "", ""
+    return (f"its card names the {library} library, and mflux loads a diffusers transformer/ directory",
+            f"runner:mflux/{library}")
+
+
+def engine_gap(head: str, card, repo: str = "") -> tuple[str, str]:
     """(why, until) engine `head` cannot load the repo its card describes, or ("", "")."""
     if not card:
         return "", ""
+    if head == "mflux":
+        return mflux_gap(repo, card)
     code = remote_code_gap(card)
     if code:
         return code, remote_code_until(model_type(card))
@@ -239,7 +253,8 @@ def pre_screen(spec: str, card) -> tuple[str, str]:
     head = head_of(spec)
     if not head:
         return text_gap(card)
-    return engine_gap(head, card) if head in CARD_CHECKED else ("", "")
+    repo = (spec or "").partition(",")[0].partition(":")[2].strip()
+    return engine_gap(head, card, repo) if head in CARD_CHECKED else ("", "")
 
 
 def format_name(card, evidence: str) -> str:
@@ -266,8 +281,9 @@ def layout_name(card, evidence: str) -> str:
         if library and library != "diffusers":
             return library
         return task if task in VLM_TASKS else "single-file"
-    if "no safetensors found" in low:
-        return library or "no-safetensors"
+    from harness import reasons
+    if any(phrase in low for phrase in reasons.NO_SAFETENSORS):
+        return library if library and library != "diffusers" else "no-safetensors"
     return model_type(card) or ("no-model-type" if "could not determine model type" in low else "layout")
 
 
