@@ -1,4 +1,4 @@
-"""Jobs from any caller, by priority then id within each lock class: one GPU job at a time, cloud jobs in free cloud slots, while memory pressure is normal. #353, #573, #1153.
+"""Jobs from any caller, by priority then id within each lock class: one GPU job at a time, cloud jobs in free cloud slots, while memory pressure is normal; GPU jobs and deploys behind the contention gate. #353, #573, #1153, #1509.
 
 Jobs are rows in the store's `jobs` table (#418). The runner flock and the
 paused flag stay files: a kernel lock and an operator switch.
@@ -96,7 +96,7 @@ def _row(conn, r) -> dict:
             "started": _iso(r["started_at"]), "finished": _iso(r["finished_at"]),
             "rc": r["rc"], "log": r["log"], "note": r["note"],
             "requested_by": r["requested_by"], "machine_id": r["machine_id"],
-            "not_before": _iso(r["not_before"]), "night_gate": bool(r["night_gate"]), "runs": runs}
+            "not_before": _iso(r["not_before"]), "runs": runs}
 
 
 def _select(conn, where: str = "", args=()) -> list[dict]:
@@ -148,54 +148,12 @@ def queue_cwd(caller, deploy, explicit: str = "") -> str:
         f"this checkout's code; pass --cwd {caller} to mean it, or queue from the deploy")
 
 
-def night_start(now: float) -> float:
-    """now if it is night, else when the next night starts: discovery's evening hours until the watchdog's day start. #900."""
-    from datetime import datetime, timedelta
-
-    from harness import heartbeat, watchdog
-    day = range(watchdog.DAY_START_HOUR, watchdog.DAY_END_HOUR)
-    hours = [h for h in heartbeat.discover_hours() if h % 24 not in day] or [watchdog.DAY_END_HOUR]
-    t = datetime.fromtimestamp(now)
-    later = []
-    for back in (-1, 0, 1):
-        d = t.date() + timedelta(days=back)
-        for h in hours:
-            start = datetime(d.year, d.month, d.day, h % 24)
-            end = start.replace(hour=watchdog.DAY_START_HOUR)
-            if end <= start:
-                end += timedelta(days=1)
-            if start <= t < end:
-                return now
-            if start > t:
-                later.append(start)
-    return min(later).timestamp()
-
-
-def next_night(now: float) -> float:
-    """When the night after this one starts: night_start(now) by day, the following night's start at night. #1357."""
-    start = night_start(now)
-    return start if start > now else night_start(night_window(now)[1])
-
-
-def night_window(now: float) -> tuple[float, float]:
-    """(start, end) of the night a job queued now runs in: night_start(now) until the watchdog's next day start. #1020."""
-    from datetime import datetime, timedelta
-
-    from harness import watchdog
-    start = night_start(now)
-    t = datetime.fromtimestamp(start)
-    end = t.replace(hour=watchdog.DAY_START_HOUR, minute=0, second=0, microsecond=0)
-    if end <= t:
-        end += timedelta(days=1)
-    return start, end.timestamp()
-
-
 def at_clock(hhmm: str, now: float) -> float:
     """The next local HH:MM at or after now. #900."""
     from datetime import datetime, timedelta
     m = re.fullmatch(r"(\d{1,2}):(\d{2})", hhmm.strip())
     if not m or int(m.group(1)) > 23 or int(m.group(2)) > 59:
-        raise ValueError(f"a start time is HH:MM or 'night', not {hhmm!r}")
+        raise ValueError(f"a start time is HH:MM, not {hhmm!r}")
     t = datetime.fromtimestamp(now)
     at = t.replace(hour=int(m.group(1)), minute=int(m.group(2)), second=0, microsecond=0)
     return (at if at >= t else at + timedelta(days=1)).timestamp()
@@ -213,30 +171,23 @@ def at_date(spec: str, now: float) -> float:
         except ValueError:
             continue
     if at is None:
-        raise ValueError(f"a start time is HH:MM, YYYY-MM-DD HH:MM[:SS] or 'night', not {spec!r}")
+        raise ValueError(f"a start time is HH:MM or YYYY-MM-DD HH:MM[:SS], not {spec!r}")
     if at.timestamp() < now:
         raise ValueError(f"the start {spec!r} is in the past")
     return at.timestamp()
 
 
+#: The start a caller from before #1509 may still name; the contention gate, not the clock, now holds GPU work.
+NIGHT = "night"
+
+
 def start_at(spec: str, now: float | None = None) -> float | None:
-    """'' -> None, 'night' -> night_start, 'HH:MM' -> its next occurrence, 'YYYY-MM-DD HH:MM' -> then. #900, #1297."""
+    """'' or 'night' -> None, 'HH:MM' -> its next occurrence, 'YYYY-MM-DD HH:MM' -> then. #900, #1297, #1509."""
     spec = (spec or "").strip()
-    if not spec:
+    if not spec or spec == NIGHT:
         return None
     now = time.time() if now is None else now
-    if spec == "night":
-        return night_start(now)
     return at_date(spec, now) if re.match(r"\d{4}-", spec) else at_clock(spec, now)
-
-
-def start_with_night(spec: str, night: bool, now: float | None = None) -> tuple[float | None, bool]:
-    """(not_before, night_gate) for --not-before spec and --night: both means the first night moment at or after spec. #1347."""
-    spec = (spec or "").strip()
-    if not night or not spec or spec == "night":
-        start = "night" if night else spec
-        return start_at(start, now), start == "night"
-    return night_start(start_at(spec, now)), False
 
 
 def _schema_file(cwd) -> Path | None:
@@ -270,7 +221,7 @@ REMEASURES = ("sweep", "reverify")
 
 def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
         output: str = "", priority: int = 0, requested_by: str = "",
-        not_before: float | None = None, night: bool = False, conn=None) -> dict:
+        not_before: float | None = None, conn=None) -> dict:
     if not argv:
         raise ValueError("a job needs a command")
     first = str(argv[0])
@@ -299,12 +250,11 @@ def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
         # The store assigns the id inside the insert, so two writers cannot collide. #418.
         cur = c.execute(
             "INSERT INTO jobs (title, kind, output, priority, argv, cwd, state, "
-            "created_at, requested_by, machine_id, not_before, night_gate) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            "created_at, requested_by, machine_id, not_before) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             (title or " ".join(argv), kind, output, int(priority),
              json.dumps([str(a) for a in argv]), cwd or os.getcwd(), PENDING,
              time.time(), requested_by, machine,
-             None if not_before is None else float(not_before),
-             int(bool(night) and not_before is not None)))
+             None if not_before is None else float(not_before)))
         c.commit()
         return _select(c, "WHERE id = ?", (cur.lastrowid,))[0]
 
@@ -329,27 +279,19 @@ def pending(conn=None) -> list[dict]:
         return order(_select(c, f"WHERE state = ? AND {where}", (PENDING, *args)))
 
 
-def due(job: dict, now: float | None = None, cleared: bool = False) -> bool:
-    """Whether a job's earliest start has come; a day clearance lifts a night start, never a clock time. #900, #1112."""
+def due(job: dict, now: float | None = None) -> bool:
+    """Whether a job's earliest start has come. #900."""
     at = _epoch(job.get("not_before")) if job.get("not_before") else None
-    return at is None or at <= (time.time() if now is None else now) or (cleared and bool(job.get("night_gate")))
-
-
-def cleared(conn=None, now: float | None = None) -> dict | None:
-    """This machine's day clearance in force at now, or None. #1112."""
-    from harness import day_clear
-    with _store(conn) as c:
-        return day_clear.active(c, now)
+    return at is None or at <= (time.time() if now is None else now)
 
 
 def ready(conn=None, now: float | None = None) -> list[dict]:
-    """Pending jobs whose start time has come, in run order; a deploy only inside its window with no sweep running. #900, #1506."""
+    """Pending jobs whose start time has come, in run order; a deploy only with no sweep running. #900, #1506."""
     with _store(conn) as c:
-        lifted = cleared(c, now) is not None
-        got = [j for j in pending(c) if due(j, now, lifted)]
+        got = [j for j in pending(c) if due(j, now)]
     if any(j["kind"] == DEPLOY for j in got):
         from harness import deploy
-        if deploy.blocked(time.time() if now is None else now):
+        if deploy.blocked():
             got = [j for j in got if j["kind"] != DEPLOY]
     from harness import hold
     return hold.startable(got, conn, now)
@@ -728,7 +670,7 @@ def run_one(job: dict, popen=None) -> dict | None:
     popen = popen or _in_group(job)
     # No machine lock here: each command takes it for the part that loads a
     # model, so a job that is downloading does not block a GPU run. #371.
-    with open(log, "w", encoding="utf-8") as out:
+    with open(log, "a", encoding="utf-8") as out:
         try:
             rc = popen(job["argv"], cwd=job["cwd"], stdout=out,
                        stderr=subprocess.STDOUT, env=env).returncode
@@ -747,8 +689,41 @@ def run_one(job: dict, popen=None) -> dict | None:
             # Left running and unwritten: the store may be migrated past this code; settle closes it. #1506.
             return {**job, "state": RUNNING, "handed_off": True}
         job.update(state=DONE if rc == 0 else PAUSED if rc == watch.PAUSED else FAILED)
-        _write(job)
+        if not (job["state"] == PAUSED and _repend(job)):
+            _write(job)
     return get(job["id"]) or job
+
+
+def resume_argv(argv: list, out) -> list[str]:
+    """argv without any --out or --resume, then --out `out` --resume."""
+    got, skip = [], False
+    for a in map(str, argv):
+        if skip:
+            skip = False
+        elif a == "--out":
+            skip = True
+        elif a != "--resume" and not a.startswith("--out="):
+            got.append(a)
+    return [*got, "--out", str(out), "--resume"]
+
+
+def _repend(job: dict) -> bool:
+    """A job the watchdog paused for contention waits again to resume where it stopped, unless it queued its own continuation. #1509."""
+    from harness import contention, runs
+    with _store() as c:
+        if not contention.paused_for(c, job) or c.execute(
+                "SELECT 1 FROM jobs WHERE argv = ? AND state = ? AND id != ?",
+                (json.dumps([str(a) for a in job["argv"]]), PENDING, int(job["id"]))).fetchone():
+            return False
+        argv, run = list(job["argv"]), runs.for_job(c, int(job["id"]))
+        if "evals.run" in [str(a) for a in argv] and run is not None:
+            argv = resume_argv(argv, runs.run_dir(run["path"]))
+        c.execute("UPDATE jobs SET state = ?, finished_at = NULL, rc = ?, argv = ?, note = ? WHERE id = ?",
+                  (PENDING, job.get("rc"), json.dumps(argv),
+                   f"paused for contention at {job.get('finished')}; resumes when the contention gate opens",
+                   int(job["id"])))
+        c.commit()
+    return True
 
 
 def _recover() -> None:
@@ -801,13 +776,25 @@ def _free(cls: str, live: dict) -> bool:
     return max(mine, taken) < slots
 
 
+def _contended(now: float) -> bool:
+    """Whether the contention gate holds GPU jobs and deploys at now. #1509."""
+    from harness import contention
+    with _store() as c:
+        return not contention.gate(c, now)[0]
+
+
 def _startable(live: dict, now: float) -> tuple[dict, str] | None:
-    """The first ready job, in run order, whose lock class is free. #1153."""
-    started = {i for _, i in live.values()}
+    """The first ready job, in run order, whose lock class is free; a GPU job or deploy only past the contention gate. #1153, #1509."""
+    from harness import contention
+    started, held = {i for _, i in live.values()}, None
     for job in ready(now=now):
         if job["id"] in started:
             continue
         cls = needs(job)
+        if cls in (GPU, DEPLOY) and contention.batch(job) and (held := _contended(now) if held is None else held):
+            if cls == DEPLOY:
+                return None
+            continue
         if _free(cls, live):
             return job, cls
         if cls == DEPLOY:

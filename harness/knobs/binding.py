@@ -22,6 +22,10 @@ KNOBS = [
             "is not swept on the reply budget. 2026-10-24 store, repo at 32768: 0 of 22 (runs 557 and 474, 484 and "
             "485); the Qwopus3.6 sweep it would have stopped (jobs 0141-0145) then converted 0 of 9 cut at 8000 and "
             "0 of 5 cut at 16384. 0 of 20 bounds the lane's conversion rate under 15% at 95% (#1177)"),
+    _k("sweep_budget", ["harness/sweeps.py:BUDGET_S"], [6 * 3600.0, 11 * 3600.0, 24 * 3600.0], unit="s",
+       note="GPU seconds a reply-budget sweep, all values together, may be projected to take before it is refused; "
+            "the 21:00-08:00 night it replaced (#1509). FINDING #601: a 6-value Ornith repo sweep projected 12h 05m "
+            "from run 474's row seconds (#1020)"),
 ]
 
 NEVER_CUTS = {

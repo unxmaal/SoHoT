@@ -11,16 +11,16 @@ capabilities:
       - harness/exclusive.py
       - harness/hold.py
       - harness/commands/hold.py
+      - harness/contention.py
+      - harness/commands/gate.py
 
   - name: watchdog
     summary: The periodic judge of running jobs and served models, acting from a fixed set and recording each act.
     spec: written
-    untested: 4
+    untested: 3
     modules:
       - harness/watchdog.py
       - harness/idle_unload.py
-      - harness/day_clear.py
-      - harness/commands/day.py
 
   - name: adopt-confirm
     summary: A measured or by-hand winner becomes a lane's served model, through the paired gate and its confirmation.

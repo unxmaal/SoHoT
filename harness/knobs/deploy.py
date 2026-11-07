@@ -28,9 +28,6 @@ KNOBS = [
             "deferred unit, PREFLIGHT_WAIT_S 60, the audit; a timeout rolls back (#1506)"),
     _k("deploy_keep_releases", [f"{Q}:KEEP_RELEASES"], [2, 3, 5], unit="releases",
        note=f"release directories kept, the serving and previous one included; {DISK} (#1506)"),
-    _k("deploy_last_start_hour", [f"{Q}:LAST_START_HOUR"], [18, 19, 20], unit="hours",
-       note="local hour after which no deploy starts until the next day start; FINDING #587: the 2026-10-18 21:04 "
-            "deploy raced the 21:00 sweep, which ran old code all night. Day-only until #1509"),
     _k("deploy_migrate_timeout", [f"{Q}:MIGRATE_TIMEOUT_S"], [600.0, 1800.0, 3600.0], unit="s",
        note="seconds the new release's migration of the live store may take before the backup is restored; "
             "FINDING #278: six stores up to schema 42 migrated in 0-2.1 s (#1506)"),
@@ -74,7 +71,6 @@ NOT_GATING = {
 
 NEVER_CUTS = {
     "scripts/launchd.sh:DEPLOY_EVERY_MIN": "how often origin/main is polled; a schedule cuts no work (#1506)",
-    f"{Q}:LAST_START_HOUR": "a deploy past it waits for the next day window and runs then; nothing is dropped (#1506)",
     f"{Q}:HANDOFF_GRACE_S": "past it a switch that never started is settled interrupted and alerted; the job ends "
                             "either way (#1506)",
     "scripts/launchd.sh:AUDIT_HOURS": "the hour the nightly audit unit starts; a schedule cuts no work (#1087)",

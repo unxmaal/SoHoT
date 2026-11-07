@@ -58,7 +58,7 @@ def _agreement(a) -> int:
 
 def _night(a) -> int:
     argv = staging_labels.night()
-    note(f"from the deploy checkout: soh jobs --title 'staging #1244' add --night -- {shlex.join(argv)}")
+    note(f"from the deploy checkout: soh jobs --title 'staging #1244' add -- {shlex.join(argv)}")
     emit(True, night=argv)
     return 0
 

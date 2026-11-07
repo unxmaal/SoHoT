@@ -110,7 +110,7 @@ WATCHDOG_EVERY_MIN="${WATCHDOG_EVERY_MIN:-5}"
 ENERGY_EVERY_MIN="${ENERGY_EVERY_MIN:-1}"
 # Delegation outcomes inferred from the callers' transcripts, or expired to unknown, every N minutes. #1158.
 DELEGATIONS_EVERY_MIN="${DELEGATIONS_EVERY_MIN:-60}"
-# A green origin/main commit becomes a deploy job within N minutes; the job itself waits for its day window. #1506.
+# A green origin/main commit becomes a deploy job within N minutes; the job itself waits for the contention gate. #1506, #1509.
 DEPLOY_EVERY_MIN="${DEPLOY_EVERY_MIN:-10}"
 # How long install waits for a deferred periodic run to end before leaving it on the old unit. #1058.
 DEFER_WAIT_S="${LH_DEFER_WAIT_S:-120}"

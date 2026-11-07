@@ -121,7 +121,6 @@ def render(r: dict) -> list[str]:
     adopted = s["settled"]["adopted"]
     out.append(f"settled   {_tally(s['settled']['verdicts'])}"
                + (f"; adopted {', '.join(a['lane'] + ' ' + a['spec'] for a in adopted)}" if adopted else ""))
-    out.extend(f"cleared   {c['line']}; {c['skips']} day limit(s) let off" for c in r.get("clearances") or [])
     out.extend([f"held      {r['hold']}"] if r.get("hold") else [])
     out.append(f"watchdog  {len(r['watchdog'])} action(s)")
     for w in r["watchdog"]:

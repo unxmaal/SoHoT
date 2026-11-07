@@ -37,7 +37,6 @@ from harness.commands import chaos as chaos_cmd
 from harness.commands import common
 from harness.commands import context as context_cmd
 from harness.commands import kb_filter as kb_filter_cmd
-from harness.commands import day as day_cmd
 from harness.commands import hold as hold_cmd
 from harness.commands import decline as decline_cmd
 from harness.commands import interactive as interactive_cmd
@@ -47,6 +46,7 @@ from harness.commands import floors as floors_cmd
 from harness.commands import specs as specs_cmd
 from harness.commands import staging as staging_cmd
 from harness.commands import discover as discover_cmd
+from harness.commands import gate as gate_cmd
 from harness.commands import gateway as gateway_cmd
 from harness.commands import gauntlet as gauntlet_cmd
 from harness.commands import jobs as jobs_cmd
@@ -1000,12 +1000,8 @@ def build_parser() -> argparse.ArgumentParser:
     jobs.add_argument("--despite-hold", action="store_true",
                       help="add: may start while benchmarks are held (soh hold). #1564")
     jobs.add_argument("--night", action="store_true",
-                      help="add: start no earlier than the night window discovery runs in; with --not-before, the first night moment after it. #900, #1347")
+                      help="add: ignored since #1509; GPU jobs wait for the contention gate (soh gate), not the night")
     jobs.set_defaults(func=jobs_cmd.cmd_jobs, show_help=jobs.print_help)
-    day = sub.add_parser("day", help="clear this machine to run jobs all day, until the watchdog's day end. #1112")
-    day.add_argument("action", choices=("clear", "status", "revoke"))
-    day.add_argument("said", nargs="*", help='clear: who cleared it and why, e.g. "owner: the #1110 baseline"')
-    day.set_defaults(func=day_cmd.cmd_day)
     hld = sub.add_parser("hold", help="hold benchmarking: no sweep, reverify or measurement job starts until "
                          "released; deploys and serving still run. #1564")
     hld.add_argument("action", choices=("benchmarks", "release", "status", "let"))
@@ -1019,8 +1015,15 @@ def build_parser() -> argparse.ArgumentParser:
     pin.add_argument("action", nargs="?", default="plan", choices=("plan", "health", "probe"))
     pin.add_argument("-n", type=int, default=interactive_cmd.PROBES, help="probe: timed calls per lane")
     pin.set_defaults(func=interactive_cmd.cmd_interactive)
+    gat = sub.add_parser("gate", help="the contention gate GPU jobs and deploys wait for: status, or the owner's "
+                         "hold that keeps GPU work off this machine and pauses it. #1509")
+    gat.add_argument("action", nargs="?", default="status", choices=("status", "hold", "release"))
+    gat.add_argument("said", nargs="*", help='hold: who holds the machine and why, e.g. "owner: a video render"')
+    gat.add_argument("--until", default="", metavar="WHEN",
+                     help="hold: end the hold at the next local HH:MM, or a local YYYY-MM-DD[T]HH:MM[:SS]")
+    gat.set_defaults(func=gate_cmd.cmd_gate)
     dep = sub.add_parser("deploy", help="deploys as queue jobs: each green main commit built alongside, switched, "
-                         "verified or rolled back, day-only. #1506")
+                         "verified or rolled back, behind the contention gate. #1506, #1509")
     dep.add_argument("action", nargs="?", default="status",
                      choices=("status", "poll", "now", "pause", "resume", "run", "migrate"),
                      help="now [SHA] queues origin/main (or SHA) at once; run and migrate are the job's own steps")
@@ -1075,7 +1078,7 @@ def build_parser() -> argparse.ArgumentParser:
     ado.add_argument("--dry-run", action="store_true", help="print the plan and argv; run and record nothing (#1548)")
     ado.add_argument("--confirm", type=int, default=None, metavar="VERDICT",
                      help="run a held holdout win's dev confirmation and adopt or decline it; the adopt step "
-                          "queues this for the night (#725)")
+                          "queues this behind the contention gate (#725, #1509)")
     ado.add_argument("--receipt", action="append", default=[],
                      help="with --power, read the incumbent's draws from this "
                           "results.json instead of the store (repeatable)")

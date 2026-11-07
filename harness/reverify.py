@@ -518,28 +518,14 @@ def judge(conn, rv: dict, job: dict | None) -> tuple[str, str, str, str, int | N
     return PASSED, reasons.CANDIDATE, "", said, rid
 
 
-def _resume_argv(argv: list, out) -> list[str]:
-    """argv without any --out or --resume, then --out `out` --resume."""
-    got, skip = [], False
-    for a in map(str, argv):
-        if skip:
-            skip = False
-        elif a == "--out":
-            skip = True
-        elif a != "--resume" and not a.startswith("--out="):
-            got.append(a)
-    return [*got, "--out", str(out), "--resume"]
-
-
 def _resume(conn, rv: dict, job: dict, now: float, add) -> dict:
-    """Queue a paused re-run's continuation from its checkpoint for the night, and point the reverification at it. #1403."""
+    """Queue a paused re-run's continuation from its checkpoint, and point the reverification at it. #1403."""
     from harness import paths, runs
     from harness import workqueue as wq
     run = runs.for_job(conn, int(job["id"]))
-    argv = job["argv"] if run is None else _resume_argv(job["argv"], runs.run_dir(run["path"]))
+    argv = job["argv"] if run is None else wq.resume_argv(job["argv"], runs.run_dir(run["path"]))
     nxt = add(argv, title=job["title"] or f"reverify {rv['lane']}: {rv['spec']}",
-              cwd=job["cwd"] or str(paths.REPO), priority=PRIORITY, requested_by=REQUESTED_BY,
-              not_before=wq.night_start(now), night=True, conn=conn)
+              cwd=job["cwd"] or str(paths.REPO), priority=PRIORITY, requested_by=REQUESTED_BY, conn=conn)
     conn.execute("UPDATE reverifications SET job_id = ? WHERE id = ?", (int(nxt["id"]), rv["id"]))
     return {"id": rv["id"], "lane": rv["lane"], "spec": rv["spec"], "paused": job["id"], "job": nxt["id"],
             "out": None if run is None else str(runs.run_dir(run["path"]))}

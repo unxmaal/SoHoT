@@ -1257,13 +1257,12 @@ def _confirm_reuse(lane, inc_spec, spec, split, repeat, out, resume: bool):
 
 
 def _confirm_paused(vid: int, lane: str, inc_spec: str, spec: str, out) -> int:
-    """A paused confirmation records no verdict and queues its own continuation for the next night. #1357."""
-    from harness import adopt, workqueue
+    """A paused confirmation records no verdict and queues its own continuation behind the contention gate. #1357, #1509."""
+    from harness import adopt
     from harness import memory_store as ms
     store = ms.connect()
     try:
-        job = adopt.queue_confirmation(store, vid, adopt.Verdict(lane, inc_spec, spec, False, ""),
-                                       start=workqueue.next_night(time.time()))
+        job = adopt.queue_confirmation(store, vid, adopt.Verdict(lane, inc_spec, spec, False, ""))
     finally:
         store.close()
     then = f"; it resumes as job {job['id']}" if job else ""
@@ -1287,7 +1286,7 @@ def _record(verdict, spec: str, run_id, out) -> None:
         if verdict.failure_class == reasons.CONFIRMING:
             job = adopt.queue_confirmation(store, vid, verdict)
             if job:
-                print(f"    confirmation queued for the night as job {job['id']}", flush=True)
+                print(f"    confirmation queued behind the contention gate as job {job['id']}", flush=True)
     except ms.IllegalTransition as exc:
         print(f"  skipped {exc}", flush=True)
     finally:

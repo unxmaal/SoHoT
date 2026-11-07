@@ -311,7 +311,7 @@ def test_soh_staging_night_prints_the_queue_command(capsys):
     from harness import cli
     assert cli.main(["staging", "night"]) == 0
     out = capsys.readouterr().out
-    assert "soh jobs --title 'staging #1244' add --night -- uv run --group metrics python -m evals.run" in out
+    assert "soh jobs --title 'staging #1244' add -- uv run --group metrics python -m evals.run" in out
 
 
 def test_soh_staging_sheet_then_agreement_round_trips(tmp_path, capsys):

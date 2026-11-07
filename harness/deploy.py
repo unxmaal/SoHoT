@@ -23,8 +23,6 @@ KIND = "deploy"
 PRIORITY = 1000
 #: A job that handed its switch to deploy_switch exits with this; the worker leaves it running for settle().
 HANDED_OFF = 76
-#: Local hour from which no deploy starts until the watchdog's next day start: day-only until #1509.
-LAST_START_HOUR = 20
 #: Release directories kept, the serving and the previous one included.
 KEEP_RELEASES = 3
 #: How long one git command of a deploy may take (fetch, worktree add, ls-files).
@@ -98,22 +96,10 @@ def resume() -> None:
     _pause_flag().unlink(missing_ok=True)
 
 
-def in_window(now: float) -> bool:
-    """Whether a deploy may start at now: from the watchdog's day start until LAST_START_HOUR, local time."""
-    from harness import watchdog
-    hour = time.localtime(now).tm_hour
-    return watchdog.DAY_START_HOUR <= hour < LAST_START_HOUR
-
-
-def blocked(now: float | None = None, running=None) -> str:
-    """Why a deploy may not start now, or ''."""
-    from harness import watchdog
-    now = time.time() if now is None else now
+def blocked(running=None) -> str:
+    """Why a deploy may not start now, or ''; the queue also holds it behind the contention gate (#1509)."""
     if paused():
         return "deploys are paused (soh deploy resume)"
-    if not in_window(now):
-        return (f"outside the deploy window {watchdog.DAY_START_HOUR:02d}:00-{LAST_START_HOUR:02d}:00; "
-                f"a deploy never runs at night")
     from harness import sweep_guard
     found = (running or sweep_guard.running)(paths.home())
     if found:

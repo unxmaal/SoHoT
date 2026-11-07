@@ -24,18 +24,12 @@ NOTE, NOTIFY, FILE, PAUSE, STOP, REAP, UNLOAD, RESTART = (
     "note", "notify", "file", "pause", "stop", "reap", "unload", "restart")
 ACTIONS = (NOTE, NOTIFY, FILE, PAUSE, STOP, REAP, UNLOAD, RESTART)
 
-#: Wall clock each kind of job (kind_of) may run at night before long_run flags it, then pauses it (#1372).
+#: Wall clock each kind of job (kind_of) may run before long_run flags it, then pauses it (#1372, #1509).
 LONG_RUN_ADOPT_S = 8 * 3600.0
 LONG_RUN_CONFIRM_S = 8 * 3600.0
 LONG_RUN_EVAL_S = 8 * 3600.0
 LONG_RUN_OTHER_S = 8 * 3600.0
 LONG_RUN_SWEEP_S = 8 * 3600.0
-#: The same, during the day hours.
-LONG_RUN_DAY_ADOPT_S = 2 * 3600.0
-LONG_RUN_DAY_CONFIRM_S = 2 * 3600.0
-LONG_RUN_DAY_EVAL_S = 2 * 3600.0
-LONG_RUN_DAY_OTHER_S = 2 * 3600.0
-LONG_RUN_DAY_SWEEP_S = 2 * 3600.0
 KINDS = ("adopt", "confirm", "eval", "other", "sweep")
 #: Observed seconds per case over this multiple of the plan's reads as a harness defect (Decision #456).
 OVERRUN_FACTOR = 2.0
@@ -48,11 +42,9 @@ STALL_S = 1800.0
 STALL_CASES = 10
 #: An orphan younger than this may be a parent mid-exit; it is left one more wake.
 ORPHAN_GRACE_S = 120.0
-#: The owner's day, local hours [start, end); the discover agent starts at scripts/launchd.sh DISCOVER_HOURS, which this does not move (#1369).
+#: The owner's day, local hours [start, end), when an idle served model is given back sooner (#1157); no GPU limit (#1509).
 DAY_START_HOUR = 8
 DAY_END_HOUR = 21
-#: A job holding the GPU lock longer than this inside the day hours is paused for the night, never stopped (#1370, #1371).
-DAYTIME_GPU_S = 3600.0
 #: The eval lock held this long with no SoHoT job running is a stuck holder.
 IDLE_HOLD_S = 1800.0
 #: Inside the day hours, a served model with no request this long is given back; at night the router's own sleep applies (#1157).
@@ -158,8 +150,8 @@ class World:
     fallbacks: list | None = None
     #: This wake's lane_probes rows (#924).
     lanes: list | None = None
-    #: The day clearance in force (soh day clear), or None. #1112.
-    clearance: dict | None = None
+    #: The owner's hold and the served lanes' client requests (contention.reading); None when unreadable. #1509.
+    contention: dict | None = None
     #: The top subject whose process holds the GPU lock: "" when none does, None when that cannot be told. #1370.
     gpu: str | None = ""
     #: The mcp unit's pid and how long it has run; None when no unit is loaded or launchd cannot be asked.
@@ -389,12 +381,12 @@ class Probes:
         from harness import lane_probe
         return lane_probe.wake(conn, now, machine_id=_machine(conn))
 
-    def clearance(self, conn, now: float) -> dict | None:
-        """The day clearance in force; None without a store, so an unreadable one never lifts a limit. #1112."""
+    def contention(self, conn, now: float) -> dict | None:
+        """The owner's hold and the served lanes' requests in the contention window; None without a store. #1509."""
         if conn is None:
             return None
-        from harness import day_clear
-        return day_clear.active(conn, now)
+        from harness import contention
+        return contention.reading(conn, now)
 
     def fallbacks(self, conn) -> list[dict] | None:
         from harness import live_audit
@@ -504,7 +496,8 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
         orphan = state not in ("running", "") or not probes.worker_running()
         s = Subject("job", f"job {job_id}", "a work queue pid file names its group leader", pid=pid, pgid=pid,
                     elapsed_s=p.elapsed_s, command=p.command, orphan=orphan,
-                    detail={"title": row.get("title", ""), "state": state})
+                    detail={"title": row.get("title", ""), "state": state,
+                            "requested_by": row.get("requested_by", "")})
         jobs[pid] = s
         marks[pid] = f"job {job_id}"
         world.top.append(s)
@@ -579,9 +572,9 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
         world.warn_samples = None
         world.gaps["warn_samples"] = f"the earlier warn samples could not be read: {type(exc).__name__}: {exc}"[:300]
     try:
-        world.clearance = probes.clearance(conn, now)
-    except Exception as exc:  # noqa: BLE001 - an unreadable clearance is none: the day limits stand
-        world.gaps["clearance"] = f"the day clearance could not be read: {type(exc).__name__}: {exc}"[:300]
+        world.contention = probes.contention(conn, now)
+    except Exception as exc:  # noqa: BLE001 - unread contention pauses nothing this wake
+        world.gaps["contention"] = f"the served lanes or the hold could not be read: {type(exc).__name__}: {exc}"[:300]
     try:
         world.lanes = probes.lanes(conn, now)
     except Exception as exc:  # noqa: BLE001 - a probe that cannot run is a gap, never a lost wake
@@ -644,11 +637,6 @@ def daytime(now: float) -> bool:
     return DAY_START_HOUR <= time.localtime(now).tm_hour < DAY_END_HOUR
 
 
-def _cleared(w: World) -> bool:
-    """The owner cleared today's day hours (soh day clear); the night limits are never lifted. #1112."""
-    return daytime(w.now) and w.clearance is not None
-
-
 _CONFIRM = re.compile(r"\badopt\b.*\s--confirm\b")
 _ADOPT = re.compile(r"\badopt\b")
 
@@ -665,27 +653,24 @@ def kind_of(s: Subject) -> str:
 
 
 def long_run_limits() -> dict:
-    """kind -> (night seconds, day seconds), read when asked so a rebound knob takes effect. #1372."""
-    return {"adopt": (LONG_RUN_ADOPT_S, LONG_RUN_DAY_ADOPT_S), "confirm": (LONG_RUN_CONFIRM_S, LONG_RUN_DAY_CONFIRM_S),
-            "eval": (LONG_RUN_EVAL_S, LONG_RUN_DAY_EVAL_S), "other": (LONG_RUN_OTHER_S, LONG_RUN_DAY_OTHER_S),
-            "sweep": (LONG_RUN_SWEEP_S, LONG_RUN_DAY_SWEEP_S)}
+    """kind -> seconds, read when asked so a rebound knob takes effect. #1372."""
+    return {"adopt": LONG_RUN_ADOPT_S, "confirm": LONG_RUN_CONFIRM_S, "eval": LONG_RUN_EVAL_S,
+            "other": LONG_RUN_OTHER_S, "sweep": LONG_RUN_SWEEP_S}
 
 
-def long_run_limit(s: Subject, day: bool) -> tuple[str, float]:
+def long_run_limit(s: Subject) -> tuple[str, float]:
     """(knob, seconds) of the long_run limit a subject is judged by. #1372."""
     kind = kind_of(s)
-    return (f"watchdog_long_run_day_{kind}" if day else f"watchdog_long_run_{kind}"), long_run_limits()[kind][day]
+    return f"watchdog_long_run_{kind}", long_run_limits()[kind]
 
 
 def _long_run(w: World) -> list[Finding]:
-    if _cleared(w):
-        return []
     from harness import knobs
-    day, out = daytime(w.now), []
+    out = []
     for s in w.top:
-        knob, limit = long_run_limit(s, day)
+        knob, limit = long_run_limit(s)
         if (worked := serve_lease.worked_s(s, w.now)) is not None and worked > limit and not s.orphan:
-            out.append(Finding("long_run", s, {"elapsed_s": round(worked), "limit_s": limit, "day": day,
+            out.append(Finding("long_run", s, {"elapsed_s": round(worked), "limit_s": limit,
                                                "kind": kind_of(s),
                                                "limit": knobs.limit_text(knobs.hit(knob, limit, "s"))}))
     return out
@@ -847,21 +832,27 @@ def _on_gpu(w: World, s: Subject) -> bool:
     return s.key == w.gpu if w.gpu is not None else not _cloud_only(w, s)
 
 
-def _daytime_gpu(w: World) -> list[Finding]:
-    if not daytime(w.now) or _cleared(w):
-        return []
-    out = [Finding("daytime_gpu", s, {"elapsed_s": round(serve_lease.worked_s(s, w.now)), "limit_s": DAYTIME_GPU_S,
-                                      "hours": [DAY_START_HOUR, DAY_END_HOUR],
-                                      "gpu": "holds the GPU lock" if w.gpu is not None else
-                                      "the GPU lock's holder cannot be told"})
-           for s in w.top if (serve_lease.worked_s(s, w.now) or 0) > DAYTIME_GPU_S and not s.orphan
-           and _on_gpu(w, s)]
-    if out:
+def _contention(w: World) -> list[Finding]:
+    """A batch job holding the GPU while an owner hold is in force or a client was served since it started. #1509."""
+    from harness import contention
+    c, out = w.contention, []
+    for s in w.top:
+        if s.orphan or s.elapsed_s is None or not _on_gpu(w, s) or not contention.batch(s.detail):
+            continue
+        since = w.now - s.elapsed_s
+        seen = [(a, at) for a, at in c["requests"] if at >= since]
+        if c["hold"] is None and not seen:
+            continue
+        by: dict = {}
+        for a, _ in seen:
+            by[a] = by.get(a, 0) + 1
+        out.append(Finding(contention.CRITERION, s, {"hold": (c["hold"] or {}).get("said"), "served": len(seen),
+                                                     "by_alias": by, "idle_s": contention.IDLE_S,
+                                                     "gpu": "holds the GPU lock" if w.gpu is not None else
+                                                     "the GPU lock's holder cannot be told"}))
+    if any(f.evidence["served"] for f in out):
         from harness import cuts
-        hour = time.localtime(w.now).tm_hour
-        hour_knob = "watchdog_day_start_hour" if hour - DAY_START_HOUR < DAY_END_HOUR - hour else "watchdog_day_end_hour"
-        cuts.cut("watchdog_daytime_gpu", "GPU jobs past the day limit", dropped=len(out))
-        cuts.cut(hour_knob, "GPU jobs judged inside the day hours, at the nearer edge", dropped=len(out))
+        cuts.cut("contention_idle", "batch GPU jobs paused for served traffic", dropped=len(out))
     return out
 
 
@@ -872,18 +863,6 @@ def _cloud_only(w: World, s: Subject) -> bool:
     def mine(x):
         return x.pgid in w.cloud or x.pid in w.cloud
     return mine(s) or (bool(s.children) and all(mine(c) for c in s.children))
-
-
-def _day_clear(w: World) -> list[Finding]:
-    """One row per day limit a job is past and was let off under the clearance. #1112."""
-    if not _cleared(w):
-        return []
-    c = w.clearance
-    return [Finding("day_clear", s, {"skipped": skipped, "elapsed_s": round(s.elapsed_s), "limit_s": limit,
-                                     "clearance": c["id"], "said": c["said"], "until": c["until"]})
-            for s in w.top if s.elapsed_s is not None and not s.orphan
-            for skipped, limit in (("daytime_gpu", DAYTIME_GPU_S), ("long_run", long_run_limit(s, True)[1]))
-            if s.elapsed_s > limit and not (skipped == "daytime_gpu" and not _on_gpu(w, s))]
 
 
 def _idle_lock(w: World) -> list[Finding]:
@@ -977,6 +956,9 @@ def _idle_unload(w: World) -> list[Finding]:
     if out and daytime(w.now):
         from harness import cuts
         cuts.cut("serve_idle_unload_day_s", "idle models given back in the day hours", dropped=len(out))
+        hour = time.localtime(w.now).tm_hour
+        edge_knob = "watchdog_day_start_hour" if hour - DAY_START_HOUR < DAY_END_HOUR - hour else "watchdog_day_end_hour"
+        cuts.cut(edge_knob, "idle models given back inside the day hours, at the nearer edge", dropped=len(out))
     return out
 
 
@@ -1081,11 +1063,10 @@ class Criterion:
 
 
 _LONG_RUN_KNOBS = tuple(f"watchdog_long_run_{k}" for k in KINDS)
-_LONG_RUN_DAY_KNOBS = tuple(f"watchdog_long_run_day_{k}" for k in KINDS)
 
 CRITERIA = (
-    Criterion("long_run", _LONG_RUN_KNOBS + _LONG_RUN_DAY_KNOBS, NOTIFY, PAUSE, ("processes",),
-              _long_run, "has run longer than its kind's limit (tighter during the day)"),
+    Criterion("long_run", _LONG_RUN_KNOBS, NOTIFY, PAUSE, ("processes",),
+              _long_run, "has run longer than its kind's limit"),
     Criterion("overrun", ("watchdog_overrun_factor", "watchdog_overrun_min_cases", "watchdog_overrun_min_pairs"), FILE, STOP,
               ("processes", "progress"), _overrun,
               "observed s/case far over the plan's, or a challenger far slower than planned on the incumbent's cases"),
@@ -1095,11 +1076,8 @@ CRITERIA = (
               "an eval or job whose sweep, worker or queue row is gone"),
     Criterion("stale_mcp", ("watchdog_orphan_grace",), NOTIFY, FILE, ("processes", "mcp_unit"), _stale_mcp,
               "an old MCP server kept alive by a client's open stream, serving the tool list it started with"),
-    Criterion("daytime_gpu", ("watchdog_day_start_hour", "watchdog_day_end_hour", "watchdog_daytime_gpu"), PAUSE,
-              NOTIFY, ("processes",), _daytime_gpu, "a job holding the GPU lock long inside the owner's day hours"),
-    Criterion("day_clear", ("watchdog_day_end_hour", "watchdog_daytime_gpu") + _LONG_RUN_DAY_KNOBS, NOTE, NOTIFY,
-              ("processes",), _day_clear,
-              "a long day job let off daytime_gpu and long_run's day limit: the owner cleared the day (soh day clear)"),
+    Criterion("contention", ("contention_idle",), PAUSE, NOTIFY, ("processes", "contention"), _contention,
+              "served lanes in use or an owner hold while a batch job holds the GPU: paused at its next case"),
     Criterion("idle_lock", ("watchdog_idle_hold",), NOTE, FILE, ("processes", "lock"), _idle_lock,
               "the eval lock held with nothing running"),
     Criterion("idle_model", (), NOTE, UNLOAD, ("processes", "resident"), _idle_model,
@@ -1135,7 +1113,7 @@ def _gap(w: World, need: str) -> str:
         return "no running eval has written a progress file"
     value = {"lock": w.lock, "resident": w.resident, "pressure": w.pressure,
              "gateway": w.gateway_up, "mlx": w.mlx_generating, "fallbacks": w.fallbacks,
-             "mcp_unit": w.mcp_live, "warn_samples": w.warn_samples}.get(need, True)
+             "mcp_unit": w.mcp_live, "warn_samples": w.warn_samples, "contention": w.contention}.get(need, True)
     if value is None:
         return {"lock": "the eval lock could not be read", "resident": "the router or its defaults could not be read",
                 "pressure": "memory pressure could not be sampled",
@@ -1143,7 +1121,8 @@ def _gap(w: World, need: str) -> str:
                 "mlx": "no mlx unit is loaded here, or its /health did not answer",
                 "fallbacks": "the store or the served config could not be read",
                 "mcp_unit": "no mcp unit is loaded here, or launchd cannot be asked",
-                "warn_samples": "the earlier warn samples could not be read"}[need]
+                "warn_samples": "the earlier warn samples could not be read",
+                "contention": "the served lanes or the hold could not be read: no store"}[need]
     return ""
 
 
