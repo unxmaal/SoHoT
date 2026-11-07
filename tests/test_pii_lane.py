@@ -121,6 +121,7 @@ def test_token_f1_on_a_known_sentence():
     assert pii.counts(text, gold, [[0, len(text)]]) == (5, 3, 0)
 
 
+@pytest.mark.long
 def test_negative_control_marking_nothing_or_everything_scores_clearly_worse():
     """Gauntlet: a metric quoted without a negative control. Two wrong stubs, one right one."""
     right = _rows(_gold_spans)

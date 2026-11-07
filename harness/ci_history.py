@@ -20,6 +20,7 @@ _RUNNER = re.compile(r"Apple (M\d[\w ]*?) \(Virtual\)\s*\n" + _STAMP + r"(\d+)",
 _REAL = re.compile(_STAMP + r"real (\d+(?:\.\d+)?)\s*$", re.M)
 _PCT = re.compile(r"\[\s*(\d{1,3})%\]")
 _FAST = re.compile(r"^\S+Z\s+SOHOT_FAST_PATH: 1\s*$", re.M)
+_SCOPED = re.compile(_STAMP + r"selection: (\d+) of (\d+) test files", re.M)
 _DUR = re.compile(_STAMP + r"(\d+\.\d+)s (?:call|setup|teardown) +(\S+::\S+)", re.M)
 _ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 
@@ -47,17 +48,19 @@ def _cached(f: Path, fetch) -> str | None:
 
 
 def from_log(log: str) -> dict:
-    """runner class, `time -p` real seconds, last progress %, fast path, and per-test call seconds from a job log."""
+    """runner class, `time -p` real seconds, last progress %, fast path, test files selected, per-test seconds, from a log."""
     log = _ANSI.sub("", log)
     m = _RUNNER.search(log)
     real = _REAL.findall(log)
     pct = _PCT.findall(log)
+    scoped = _SCOPED.search(log)
     tests: dict[str, float] = defaultdict(float)
     for sec, test in _DUR.findall(log):
         tests[test] += float(sec)
     return {"runner": f"{m.group(1).strip()} {m.group(2)}cpu" if m else "unknown",
             "real_s": float(real[-1]) if real else None, "pct": int(pct[-1]) if pct else None,
-            "fast": bool(_FAST.search(log)), "tests": dict(tests)}
+            "fast": bool(_FAST.search(log)), "selected": int(scoped.group(1)) if scoped else None,
+            "tests": dict(tests)}
 
 
 def from_job(job: dict, run: dict) -> dict | None:
@@ -84,7 +87,9 @@ def outcome(row: dict, limit_min: float) -> str:
 
 
 def path(row: dict) -> str:
-    return "fast (PR)" if row.get("fast") else "full (main)"
+    if row.get("fast"):
+        return "scoped (PR)" if row.get("selected") else "fast (PR)"
+    return "full (main)"
 
 
 def pctl(xs: list[float], q: float) -> float:
@@ -116,11 +121,11 @@ def table(rows: list[dict], limit_min: float) -> list[dict]:
     return out
 
 
-def slowest(rows: list[dict], top: int = 30, full_only: bool = True) -> list[tuple[str, float, float, int]]:
-    """(test, median s, max s, runs seen) over the logs that printed --durations."""
+def slowest(rows: list[dict], top: int = 30, fast: bool = False) -> list[tuple[str, float, float, int]]:
+    """(test, median s, max s, runs seen) over the full runs' logs, or the PR fast path's with fast."""
     seen: dict[str, list[float]] = defaultdict(list)
     for r in rows:
-        if full_only and r.get("fast"):
+        if bool(r.get("fast")) != fast:
             continue
         for t, s in (r.get("tests") or {}).items():
             seen[t].append(s)
@@ -128,7 +133,7 @@ def slowest(rows: list[dict], top: int = 30, full_only: bool = True) -> list[tup
     return [(t, round(m, 1), round(x, 1), n) for t, m, x, n in ranked[:top]]
 
 
-def render(tab: list[dict], slow: list, limit_min: float) -> str:
+def render(tab: list[dict], slow: list, limit_min: float, fast: bool = False) -> str:
     lines = [f"check-macos `make check` minutes (job limit {limit_min:g} min; p50/p95/max over runs that finished)", "",
              "| path | runner | runs | passed | failed | timeout | superseded | p50 | p95 | max | job p95 | job max |",
              "|---|---|---|---|---|---|---|---|---|---|---|---|"]
@@ -137,7 +142,7 @@ def render(tab: list[dict], slow: list, limit_min: float) -> str:
                      ("path", "runner", "runs", "passed", "failed", "timeout", "superseded", "p50", "p95", "max", "job_p95",
                       "job_max")) + " |")
     if slow:
-        lines += ["", "slowest tests on full runs (call+setup+teardown seconds, median over runs):", "",
+        lines += ["", f"slowest tests on {'PR fast-path' if fast else 'full'} runs (call+setup+teardown seconds, median):", "",
                   "| median s | max s | runs | test |", "|---|---|---|---|"]
         lines += [f"| {m} | {x} | {n} | `{t}` |" for t, m, x, n in slow]
     return "\n".join(lines)
@@ -173,15 +178,16 @@ def main(argv=None) -> int:
     ap.add_argument("--cache", type=Path, required=True, help="directory for downloaded job logs")
     ap.add_argument("--top", type=int, default=30)
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--fast", action="store_true", help="rank the slowest tests over PR fast-path runs")
     a = ap.parse_args(argv)
     limit_min = ci_budget.limit_minutes(JOB)
     rows = collect(a.limit, a.cache, branch=a.branch)
-    tab, slow = table(rows, limit_min), slowest(rows, a.top)
+    tab, slow = table(rows, limit_min), slowest(rows, a.top, a.fast)
     if a.json:
         print(json.dumps({"rows": [{k: v for k, v in r.items() if k != "tests"} for r in rows],
                           "table": tab, "slowest": slow}, indent=1))
     else:
-        print(render(tab, slow, limit_min))
+        print(render(tab, slow, limit_min, a.fast))
     return 0
 
 
