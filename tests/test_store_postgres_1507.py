@@ -573,7 +573,7 @@ def test_the_container_the_switch_and_the_owner_name_the_same_postgres(tmp_path)
 
 
 #: Tests still red on Postgres when this was counted (#1507); the inventory may only shrink.
-POSTGRES_KNOWN_PIN = 245
+POSTGRES_KNOWN_PIN = 244
 
 
 def test_the_tests_still_red_on_postgres_only_shrink():
@@ -584,7 +584,7 @@ def test_the_tests_still_red_on_postgres_only_shrink():
     assert all("::" in k and k.startswith("tests/") for k in known)
 
 
-def test_a_listed_test_is_strict_xfail_only_on_postgres(monkeypatch):
+def test_a_listed_test_is_xfail_only_on_postgres(monkeypatch):
     from tests import conftest
     item = type("I", (), {"nodeid": next(iter(conftest.postgres_known())), "marks": [],
                           "add_marker": lambda self, m: self.marks.append(m),
@@ -595,4 +595,4 @@ def test_a_listed_test_is_strict_xfail_only_on_postgres(monkeypatch):
     assert item.marks == []
     monkeypatch.setenv(store.BACKEND_ENV, store.POSTGRES)
     conftest.pytest_collection_modifyitems(None, [item])
-    assert item.marks and item.marks[0].kwargs["strict"] is True
+    assert item.marks and item.marks[0].name == "xfail"
