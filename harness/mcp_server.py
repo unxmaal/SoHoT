@@ -502,7 +502,7 @@ def transport_security(host: str, port: int, extra=()):
     """
     from mcp.server.transport_security import TransportSecuritySettings
 
-    names = ["localhost", "127.0.0.1", _local_hostname(), *extra]
+    names = ["localhost", "127.0.0.1", "[::1]", _local_hostname(), *extra]
     if host not in ("0.0.0.0", "::", ""):
         names.append(host)
     allowed = []
@@ -561,10 +561,43 @@ def serve(host: str, port: int, allow=(), grace: float = SHUTDOWN_GRACE_S) -> No
     app = SERVER.streamable_http_app(transport_security=transport_security(host, port, allow), host=host)
     config = uvicorn.Config(app, host=host, port=port, log_level=SERVER.settings.log_level.lower(),
                             timeout_graceful_shutdown=max(1, round(grace)))
-    sock = config.bind_socket()
+    socks = listen_sockets(host, port)
     for line in stale_report(port, pid=os.getpid()):
         print(line, file=sys.stderr, flush=True)
-    uvicorn.Server(config).run(sockets=[sock])
+    uvicorn.Server(config).run(sockets=socks)
+
+
+#: A wildcard or loopback host listens on both stacks, so a client whose localhost is ::1 connects. #1555.
+OTHER_STACK = {"0.0.0.0": "::", "": "::", "::": "0.0.0.0", "127.0.0.1": "::1", "localhost": "::1", "::1": "127.0.0.1"}
+
+
+def listen_sockets(host: str, port: int) -> list:
+    """One bound socket per stack for `host`; the second stack is skipped, with a line saying so, where it cannot bind."""
+    first = _bound("127.0.0.1" if host == "localhost" else (host or "0.0.0.0"), port)
+    socks = [first]
+    other = OTHER_STACK.get(host)
+    if other:
+        try:
+            socks.append(_bound(other, first.getsockname()[1]))
+        except OSError as exc:
+            print(f"mcp   listening on {host or '0.0.0.0'} only, not {other}: {exc}", file=sys.stderr, flush=True)
+    return socks
+
+
+def _bound(host: str, port: int):
+    import socket
+    family = socket.AF_INET6 if ":" in host else socket.AF_INET
+    sock = socket.socket(family, socket.SOCK_STREAM)
+    try:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if family == socket.AF_INET6:
+            # Its own socket per stack, so an IPv4 client is never seen as ::ffff:127.0.0.1.
+            sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+        sock.bind((host, port))
+    except OSError:
+        sock.close()
+        raise
+    return sock
 
 
 def stale_report(port: int, pid: int, procs=None, probes=None) -> list[str]:
