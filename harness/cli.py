@@ -25,7 +25,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from harness import adopt, audio, completion, env, power, proc, throughput, vector  # noqa: F401
+from harness import adopt, audio, completion, env, power, proc, resources, throughput, vector  # noqa: F401
 from harness.commands import adopt as adopt_cmd
 from harness.commands import baseline as baseline_cmd
 from harness.commands import api_spend as api_spend_cmd
@@ -985,7 +985,7 @@ def build_parser() -> argparse.ArgumentParser:
     wd.add_argument("--dry-run", action="store_true", help="only print and record what it would do")
     wd.set_defaults(func=_watchdog)
     jobs = sub.add_parser("jobs", help="the work queue: by priority then id, one GPU job at a time and "
-                          "cloud jobs in free cloud slots, while memory pressure is normal")
+                          "network, disk and cpu jobs beside it up to their capacity, while memory pressure is normal")
     jobs.add_argument("action", choices=("add", "list", "pause", "resume",
                                          "cancel", "priority"))
     jobs.add_argument("rest", nargs=argparse.REMAINDER,
@@ -997,6 +997,9 @@ def build_parser() -> argparse.ArgumentParser:
                       help="add: run here instead of the deploy checkout. #645")
     jobs.add_argument("--not-before", default="", metavar="WHEN",
                       help="add: start no earlier than the next local HH:MM, or a local YYYY-MM-DD[T]HH:MM[:SS]. #900, #1297")
+    jobs.add_argument("--resource", default="", choices=("", *resources.CLASSES),
+                      help="add: the resource class the job needs (gpu, network, disk, cpu); one gpu job runs at a "
+                           "time, the others beside it up to their capacity. Default: from the command. #1508")
     jobs.add_argument("--despite-hold", action="store_true",
                       help="add: may start while benchmarks are held (soh hold). #1564")
     jobs.add_argument("--night", action="store_true",

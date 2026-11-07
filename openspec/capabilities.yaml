@@ -2,7 +2,7 @@
 trees: [harness, evals]
 capabilities:
   - name: work-queue
-    summary: The jobs every caller shares, by priority then id within each lock class, one GPU job at a time and cloud jobs in free cloud slots.
+    summary: The jobs every caller shares, by priority then id within each resource class, one GPU job at a time and network, disk and cpu jobs beside it up to their capacity.
     spec: written
     untested: 3
     modules:
@@ -13,6 +13,8 @@ capabilities:
       - harness/commands/hold.py
       - harness/contention.py
       - harness/commands/gate.py
+      - harness/resources.py
+      - harness/executors.py
 
   - name: watchdog
     summary: The periodic judge of running jobs and served models, acting from a fixed set and recording each act.

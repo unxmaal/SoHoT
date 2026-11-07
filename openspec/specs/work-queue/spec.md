@@ -395,7 +395,7 @@ Test: tests/test_shared_store_703.py::test_recover_does_not_fail_an_unowned_runn
 Test: tests/test_shared_store_703.py::test_a_machine_with_no_machines_row_recovers_nothing
 
 ### Requirement: Each job has a lock class read from evals.run
-The queue SHALL class a job `cloud` when `evals.run.argv_lock_kind` of its argv is a cloud lock kind (every candidate hosted), and `gpu` otherwise, including any non-eval command, `--compare`, an argv that does not parse, or any exception.
+The queue SHALL class a job `cloud` (the `network` resource class) when `evals.run.argv_lock_kind` of its argv is a cloud lock kind (every candidate hosted), and `gpu` otherwise, including any non-eval command, `--compare`, an argv that does not parse, or any exception, unless the job declared a class or is a download.
 
 #### Scenario: Classes by argv
 - **WHEN** jobs are an all-hosted eval (by module or script path), a local or mixed eval, a compare, an unparseable eval, and a non-eval command
@@ -406,6 +406,34 @@ Test: tests/test_worker_cloud_1153.py::test_a_job_needs_the_lock_evals_run_would
 - **WHEN** `evals.run.lock_kind` is replaced to answer cloud
 - **THEN** a local eval job is classed `cloud`
 Test: tests/test_worker_cloud_1153.py::test_the_class_is_read_from_evals_run_lock_kind_not_a_copy
+
+### Requirement: A job declares a resource class, each with a capacity
+A job SHALL need one resource class of `gpu`, `network`, `disk` and `cpu` (resources.CLASSES): the one it declared with `soh jobs add --resource`, else a deploy is `deploy`, an all-hosted eval or a `soh fetch` is `network`, and any other command is `gpu`. The worker SHALL run at most capacity jobs of each class at once (gpu 1, network the `cloud_evals` slots, disk 1, cpu 1), and an unknown class SHALL be refused when the job is added. Each job SHALL run under an executor (executors.for_job), the host's process group until containers can hand GPU work to it.
+
+#### Scenario: Classed by its command
+- **WHEN** a job declares no class
+- **THEN** a local eval is gpu, an all-hosted eval and a fetch are network, a deploy is deploy
+Test: tests/test_resource_classes_1508.py::test_a_job_that_declares_nothing_is_classed_by_its_command
+
+#### Scenario: A declared class
+- **WHEN** a job declares disk, or an unknown class
+- **THEN** it is disk, and the unknown one is refused
+Test: tests/test_resource_classes_1508.py::test_a_declared_class_wins_over_the_command_and_an_unknown_one_is_refused
+
+#### Scenario: A gpu job and a network job together
+- **WHEN** a gpu job runs and a second gpu job and a download are queued
+- **THEN** the download runs to done beside it and the second gpu job waits
+Test: tests/test_resource_classes_1508.py::test_a_gpu_job_and_a_network_job_run_together_and_two_gpu_jobs_never_do
+
+#### Scenario: A class at capacity
+- **WHEN** a disk job runs and a second disk job and a cpu job are queued
+- **THEN** the cpu job runs and the second disk job waits for the first
+Test: tests/test_resource_classes_1508.py::test_a_class_at_capacity_waits_while_another_class_starts
+
+#### Scenario: Through its executor
+- **WHEN** a job runs
+- **THEN** its executor runs it and stops what it left
+Test: tests/test_resource_classes_1508.py::test_a_job_runs_under_its_executor_which_cancel_also_stops
 
 ### Requirement: One GPU job at a time, cloud jobs beside it in free slots
 The worker SHALL run at most one `gpu` job and up to the cloud slot count of `cloud` jobs at once, where a slot held outside the queue counts as taken; it SHALL start the first ready job in run order whose class is free and look for another every few seconds while jobs run. A job that raises in the worker SHALL stop new starts and be raised after the jobs beside it finish.
