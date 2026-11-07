@@ -122,7 +122,7 @@ def _sequences(conn) -> dict:
 
 
 def to_postgres(src, dst) -> list[str]:
-    """Replace every table of Postgres `dst` with `src`'s rows; identities resume above the old high-water."""
+    """Replace every table of Postgres `dst` with `src`'s rows, uncommitted; identities resume above the old high-water."""
     raw = dst._conn
     names = tables(src)
     with raw.cursor() as cur:
@@ -141,7 +141,6 @@ def to_postgres(src, dst) -> list[str]:
             top = max(cur.fetchone()[0], high.get(t, 0))
             if top:
                 cur.execute("SELECT setval(pg_get_serial_sequence(%s, 'id'), %s, true)", (t, top))
-    raw.commit()
     return names
 
 
@@ -171,7 +170,7 @@ def snapshot(db: Path, dest: Path) -> Path:
     """A consistent .backup of the SQLite store, read through a read-only connection."""
     from harness import migration_check
     dest.parent.mkdir(parents=True, exist_ok=True)
-    migration_check._copy_store(Path(db), Path(dest))
+    migration_check._copy_store(Path(db).resolve(), Path(dest).resolve())
     return dest
 
 
@@ -184,21 +183,29 @@ def open_sqlite(path: Path, *, read_only: bool):
     return conn
 
 
-def fresh_postgres(environ=None):
-    """The Postgres store opened and brought to this code's schema, whatever LOCALHARNESS_STORE says."""
+def build_schema(conn) -> None:
+    """This code's tables, columns, indexes and schema stamp, and no rows: never a step that imports the home's files."""
     from harness import memory_store as ms
+    from harness.memory_store import migrations
+    if store.dialect(conn) == store.POSTGRES:
+        conn._conn.cursor().execute(store.postgres_ddl(ms._DDL) + store.COMPAT)
+    else:
+        conn.executescript(ms._DDL)
+    migrations.schema_only(conn)
+
+
+def fresh_postgres(environ=None):
+    """The Postgres store with this code's schema built in an open transaction; the caller commits or rolls back."""
     conn = store.postgres_connect(environ)
-    conn.executescript(ms._DDL)
-    ms._migrate(conn)
+    build_schema(conn)
     return conn
 
 
 def fresh_sqlite(path: Path):
-    """A new SQLite store at `path` at this code's schema."""
-    from harness import memory_store as ms
+    """A new SQLite store at `path` at this code's schema, with no rows."""
     conn = open_sqlite(path, read_only=False)
-    conn.executescript(ms._DDL)
-    ms._migrate(conn)
+    build_schema(conn)
+    conn.commit()
     return conn
 
 
@@ -219,25 +226,38 @@ def to_postgres_report(db: Path, snap: Path, *, dry_run: bool, replace: bool, en
             return {"ok": False, "snapshot": str(snap),
                     "why": f"the SQLite store is schema {have}, this code speaks {SCHEMA_VERSION}: "
                            f"deploy this code on SQLite first"}
-        dst = fresh_postgres(environ)
+        # One transaction from here: the schema, the truncate, the copy and the check commit together or not at all.
+        dst = store.postgres_connect(environ)
         try:
-            missing = gaps(src, dst)
             busy = _occupied(dst)
+            build_schema(dst)
+            missing = gaps(src, dst)
             report = {"snapshot": str(snap), "schema": have, "gaps": missing, "occupied": busy,
                       "tables": len(tables(src))}
             if missing:
+                dst.rollback()
                 return {**report, "ok": False, "why": "the Postgres schema cannot hold every table and column"}
             if busy and not replace:
+                dst.rollback()
                 return {**report, "ok": False,
                         "why": f"the Postgres store already holds rows in {', '.join(busy)}; --replace overwrites"}
             if dry_run:
+                dst.rollback()
                 fk = len(src.execute("PRAGMA foreign_key_check").fetchall())
                 return {**report, "ok": True, "dry_run": True, "foreign_key_violations": fk,
                         "rows": {t: src.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0] for t in tables(src)}}
             to_postgres(src, dst)
             checked = compare(src, dst)
-            return {**report, "ok": all(c["ok"] for c in checked), "verify": checked,
+            ok = all(c["ok"] for c in checked)
+            if ok:
+                dst.commit()
+            else:
+                dst.rollback()
+            return {**report, "ok": ok, "verify": checked, "committed": ok,
                     "seconds": round(time.time() - started, 1)}
+        except BaseException:
+            dst.rollback()
+            raise
         finally:
             dst.close()
     finally:
@@ -250,19 +270,25 @@ def to_sqlite_report(dest: Path, environ=None) -> dict:
         return {"ok": False, "why": f"{dest} exists; name a new file"}
     started = time.time()
     src = store.postgres_connect(environ)
+    got = {"ok": False}
     try:
         src._conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
         dst = fresh_sqlite(dest)
         try:
             missing = gaps(src, dst)
             if missing:
-                return {"ok": False, "gaps": missing, "why": "the SQLite schema cannot hold every table and column"}
+                got = {"ok": False, "gaps": missing, "why": "the SQLite schema cannot hold every table and column"}
+                return got
             to_sqlite(src, dst)
             checked = compare(src, dst)
             src.rollback()
-            return {"ok": all(c["ok"] for c in checked), "dest": str(dest), "verify": checked,
-                    "seconds": round(time.time() - started, 1)}
+            got = {"ok": all(c["ok"] for c in checked), "dest": str(dest), "verify": checked,
+                   "seconds": round(time.time() - started, 1)}
+            return got
         finally:
             dst.close()
+            if not got["ok"]:
+                # A file that is not a verified copy must not be taken for one.
+                dest.unlink(missing_ok=True)
     finally:
         src.close()

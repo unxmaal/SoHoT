@@ -77,6 +77,20 @@ def _migrate(conn: sqlite3.Connection) -> None:
         _MIGRATING.conn, _MIGRATING.file = prior
 
 
+def schema_only(conn) -> None:
+    """A new store's columns and indexes phases and the stamp, uncommitted; no early or data step reads the home."""
+    prior = (getattr(_MIGRATING, "conn", None), getattr(_MIGRATING, "file", None))
+    _MIGRATING.conn, _MIGRATING.file = conn, _store_file(conn)
+    try:
+        for phase in _ALWAYS:
+            for step in steps():
+                if hasattr(step, phase):
+                    getattr(step, phase)(conn)
+        conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', ?)", (str(SCHEMA_VERSION),))
+    finally:
+        _MIGRATING.conn, _MIGRATING.file = prior
+
+
 def _migrate_steps(conn: sqlite3.Connection) -> None:
     row = conn.execute("SELECT value FROM meta WHERE key='schema'").fetchone()
     have = int(row["value"]) if row else 0
