@@ -406,8 +406,8 @@
   },
   {
    "candidate": "mflux:filipstrand/Z-Image-Turbo-mflux-4bit",
-   "decided_at": "2026-11-05T13:06:47Z",
-   "detail": "5.5 GiB would take this run past its 40 GiB budget (39.9 GiB already fetched)",
+   "decided_at": "2026-11-07T02:42:02Z",
+   "detail": "5.5 GiB would take this run past its 80 GiB budget (79.4 GiB already fetched)",
    "exam": {
     "about": "4bit, by filipstrand",
     "candidate": "mflux/filipstrand/Z-Image-Turbo-mflux-4bit-q8",
@@ -443,8 +443,8 @@
   },
   {
    "candidate": "mflux:szwagros/Lens-Turbo",
-   "decided_at": "2026-11-06T02:16:07Z",
-   "detail": "not screened: needs 14.6 GB but only 1.8 GB is safely available (19.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "decided_at": "2026-11-07T03:09:47Z",
+   "detail": "not screened: needs 14.6 GB but only 4.4 GB is safely available (22.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
    "exam": null,
    "outcome": "queued",
    "proposal": "szwagros/Lens-Turbo",
@@ -457,7 +457,7 @@
    "until": "room_gb:>14.6"
   }
  ],
- "cursor": 1793931485528880,
+ "cursor": 1794020987658867,
  "events": [
   {
    "at": "2026-09-18T22:18:09Z",
@@ -2708,6 +2708,21 @@
    "reason": "candidate",
    "run_id": 721,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-07T03:09:47Z",
+   "candidate": "szwagros/Lens-Turbo",
+   "chosen": null,
+   "detail": "not screened: needs 14.6 GB but only 4.4 GB is safely available (22.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1794020987658867,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -2970,7 +2985,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-06T02:54:09Z",
+ "generated_at": "2026-11-07T08:04:17Z",
  "knobs": [],
  "lane": {
   "cases": 584,
