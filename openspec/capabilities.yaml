@@ -165,6 +165,9 @@ capabilities:
       - harness/context.py
       - harness/load_log.py
       - harness/commands/load_log.py
+      - harness/residency.py
+      - harness/residency_trace.py
+      - harness/commands/residency.py
       - harness/lanprobe.py
       - harness/loopback.py
       - harness/slot_probe.py

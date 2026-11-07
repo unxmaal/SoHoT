@@ -478,10 +478,10 @@ def size_gb(path: str) -> float | None:
     return total / 1024 ** 3 if total else None
 
 
-def mlx_kv_bytes_per_token(repo: str) -> int:
-    """f16 K and V bytes one token of context costs this repo, from its config.json; 0 when unknown. #699."""
+def mlx_kv_bytes_per_token(repo: str, path: str | None = None) -> int:
+    """f16 K and V bytes one token of context costs this repo (or the weights at `path`), from its config.json; 0 when unknown. #699."""
     import json
-    path = cache_path(repo)
+    path = path or cache_path(repo)
     if not path:
         return 0
     root = Path(path)

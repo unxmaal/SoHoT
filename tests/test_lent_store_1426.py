@@ -33,6 +33,7 @@ RUNS = {
     "load-log": ([["load-log", "--db", S]], 0),
     "measure-order": ([["measure-order", "--store", S], ["measure-order", "--replay", "2", "--store", S]], 0),
     "repo-report": ([["repo-report", "--plan", "--store", S]], 0),
+    "residency-sim": ([["residency-sim", "--db", S, "--since", "3650d"]], 0),
     "repo-route": ([["repo-route", "--local", "1", "--cloud", "2", "--store", S]], 0),
     "repo-screen": ([["repo-screen", "pick", "--store", S]], 0),
     "reuse-replay": ([["reuse-replay", "1", "--store", S]], 0),
@@ -83,7 +84,7 @@ MODIFIERS = {
     "morning --no-model", "claude-news --no-record", "benchmarks --force", "benchmarks --passages",
     "cases --reextract", "jobs --night", "disk --yes", "fetch --hold-router", "adopt --unscreened",
     "judge --all-machines", "ask --live-home", "spans --live-home", "kb-filter --no-model", "kb-filter --rebuild",
-    "kb-filter --strict",
+    "kb-filter --strict", "residency-sim --no-jobs",
 }
 #: Flags whose mode writes, downloads, runs a model or reads the network by design, so it is not run here.
 NOT_RUN = {
