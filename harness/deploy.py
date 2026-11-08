@@ -38,6 +38,8 @@ HANDOFF_GRACE_S = 300.0
 #: How long launchctl may take to load the switch's one-shot unit.
 LAUNCHCTL_TIMEOUT_S = 60.0
 SWITCH_LABEL = "com.unxmaal.localharness.deploy-switch"
+#: Tells scripts/smoke-introduced.sh the old release still serves, so a new property warns (#1608).
+SMOKE_PHASE_ENV = "SMOKE_PHASE"
 DEPLOYED, ROLLED_BACK, FAILED, INTERRUPTED = (deploy_switch.DEPLOYED, deploy_switch.ROLLED_BACK,
                                               deploy_switch.FAILED, "interrupted")
 #: Untracked paths a release does not inherit from the one before it: rebuilt, or caches.
@@ -405,7 +407,8 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
             if why:
                 return stop(why)
             _update(c, deploy_id, stage="smoking")
-            why = _run(steps.smoke, release, SMOKE_TIMEOUT_S, log, site_knob="harness/deploy.py:SMOKE_TIMEOUT_S")
+            why = _run(steps.smoke, release, SMOKE_TIMEOUT_S, log, {SMOKE_PHASE_ENV: "before"},
+                       site_knob="harness/deploy.py:SMOKE_TIMEOUT_S")
             if why:
                 return stop(f"smoke before the switch: {why}")
             have, want = _store_schema(c), wq.code_schema(release) or 0

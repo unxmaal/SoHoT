@@ -26,7 +26,7 @@ SMOKE = """#!/bin/bash
 [ -f fail-smoke ] && exit 1
 if [ -f fail-smoke-live ] && [ "$(cd "$DEPLOY_LINK" && pwd -P)" = "$(pwd -P)" ]; then exit 1; fi
 if [ -f "${MACHINE_BROKEN:-/nonexistent}" ] && [ "$(cd "$DEPLOY_LINK" && pwd -P)" = "$(pwd -P)" ]; then exit 1; fi
-echo "smoke $(basename "$(pwd -P)")" >> "$DEPLOY_LOG"
+echo "smoke $(basename "$(pwd -P)")${SMOKE_PHASE:+ $SMOKE_PHASE}" >> "$DEPLOY_LOG"
 """
 INSTALL = 'echo "reinstall $(basename "$(pwd -P)")" >> "$DEPLOY_LOG"\n'
 ALERT = 'echo "alert $MONIT_DESCRIPTION" >> "$DEPLOY_LOG"\n'
@@ -262,7 +262,8 @@ def test_a_green_release_is_built_alongside_switched_and_recorded(world):
     assert not wq.paused()
     steps = world["log"].read_text(encoding="utf-8").splitlines()
     rel = Path(d["release"]).name
-    assert steps == [f"smoke {rel}", f"reinstall {rel}", f"smoke {rel}"]
+    # Only the smoke before the switch is told the old release still serves (#1608).
+    assert steps == [f"smoke {rel} before", f"reinstall {rel}", f"smoke {rel}"]
 
 
 @posix

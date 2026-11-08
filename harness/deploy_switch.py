@@ -27,7 +27,7 @@ REAP_TIMEOUT_S = 30.0
 #: How long the alert script may take.
 ALERT_TIMEOUT_S = 120.0
 #: Variables a deploy run must not hand to the release's scripts: they would pin the old checkout or its venv.
-DROP_ENV = ("LH_DEPLOY", "LH_REPO", "LH_REEXECED", "LH_GPU_LOCK_HELD", "VIRTUAL_ENV", "LH_JOB_ID")
+DROP_ENV = ("LH_DEPLOY", "LH_REPO", "LH_REEXECED", "LH_GPU_LOCK_HELD", "VIRTUAL_ENV", "LH_JOB_ID", "SMOKE_PHASE")
 DEPLOYED, ROLLED_BACK, FAILED = "deployed", "rolled_back", "failed"
 #: The file under the harness home where scripts/launchd.sh install records the environment it read. #1518.
 INSTALL_ENV = "install.env"
