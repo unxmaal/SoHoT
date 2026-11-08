@@ -105,7 +105,7 @@ def test_a_gone_workers_eval_that_stored_a_run_waits_again_to_resume_it(tmp_path
 
 
 def test_a_job_a_gone_worker_left_running_is_watched_under_a_lease_not_failed():
-    child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(1.5)"])
+    child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
     job = wq.add(["soh-batch-job"], title="batch")
     _running(job, child.pid)
     try:
@@ -113,8 +113,13 @@ def test_a_job_a_gone_worker_left_running_is_watched_under_a_lease_not_failed():
         assert [j["id"] for j in left] == [job["id"]] and wq.get(job["id"])["state"] == wq.RUNNING
         t = threading.Thread(target=wq._watch_left, args=(left[0], 0.05))
         t.start()
-        time.sleep(0.5)
+        # The watcher's first store open can take seconds on a Windows runner: wait for its lease, never a fixed time.
+        for _ in range(200):
+            if item_lease.live(_conn()):
+                break
+            time.sleep(0.05)
         assert [x["job_id"] for x in item_lease.live(_conn())] == [int(job["id"])], "the live job keeps the gpu"
+        child.kill()
         child.wait(10)
         t.join(10)
     finally:

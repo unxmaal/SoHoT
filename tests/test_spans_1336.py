@@ -124,7 +124,7 @@ def test_verbatim_catches_a_changed_line():
 
 def test_local_reads_through_the_1335_roots_and_returns_local_completes_shape(tmp_path):
     from harness import ask
-    (tmp_path / "a.py").write_text(TEXT, encoding="utf-8")
+    (tmp_path / "a.py").write_text(TEXT, encoding="utf-8", newline="\n")
     roots = [ask.Root(tmp_path)]
     fake = model(quote(20, 22))
     got = spans.ask_file(str(tmp_path / "a.py"), "q", roots=roots, complete=fake)
@@ -246,7 +246,7 @@ def test_the_tool_returns_spans_of_one_path_through_the_same_boundary(mcp_server
     with pytest.raises(ToolError, match="only a caller on it"):
         mcp_server.local_complete(paths=[str(tmp_path / "a.py")], question="q", mode="spans", ctx=remote)
     with pytest.raises(ToolError, match="outside the roots"):
-        mcp_server.local_complete(paths=["/"], question="q", mode="spans")
+        mcp_server.local_complete(paths=[tmp_path.anchor], question="q", mode="spans")
     with pytest.raises(ToolError, match="pass it in `paths`"):
         mcp_server.local_complete(question="q", mode="spans")
     with pytest.raises(ToolError, match="mode is"):

@@ -198,7 +198,7 @@ def build_manifest(cache: Path, n: int = N) -> list[dict]:
         Path(cache).mkdir(parents=True, exist_ok=True)
         held.write_bytes(blob)
     MANIFEST.write_text("".join(json.dumps(e, sort_keys=True) + "\n" for e in entries),
-                        encoding="utf-8")
+                        encoding="utf-8", newline="\n")
     return entries
 
 

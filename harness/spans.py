@@ -286,7 +286,7 @@ def spanned_path(command: str) -> str:
                     elif x in ("-q", "--question", "--lane", "--max-tokens"):
                         skip = True
                     elif not x.startswith("-"):
-                        return os.path.normpath(x)
+                        return x
     return ""
 
 
@@ -309,7 +309,8 @@ def redos(streams, window: int = REDO_WINDOW, since: float | None = None) -> dic
         for i, (uid, name, given, at) in enumerate(uses):
             said = answered.get(uid, "")
             if name == "Bash":
-                path, ok = spanned_path(str(given.get("command") or "")), said.lstrip().startswith("spans:")
+                named = spanned_path(str(given.get("command") or ""))
+                path, ok = os.path.normpath(named) if named else "", said.lstrip().startswith("spans:")
             else:
                 many = given.get("paths") if isinstance(given.get("paths"), list) else [given.get("paths")]
                 path = os.path.normpath(str(many[0])) if name.endswith("local_complete") and many[0] else ""

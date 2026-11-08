@@ -1294,8 +1294,9 @@ def _agent_params(path: Path, params: dict, assertions: dict) -> dict:
         raise ValueError(f"{path.name}: assert.hidden needs {params['repo']}/hidden/")
     h = hashlib.sha256()
     cut = len(bundle.as_posix()) + 1
-    for f in sorted(p for sub in ("repo", "hidden") for p in (bundle / sub).rglob("*")
-                    if "__pycache__" not in p.parts and p.is_file()):
+    # Case-sensitive parts order: a WindowsPath sorts case-folded, which moved README.txt and changed the digest.
+    for f in sorted((p for sub in ("repo", "hidden") for p in (bundle / sub).rglob("*")
+                     if "__pycache__" not in p.parts and p.is_file()), key=lambda p: p.as_posix().split("/")):
         h.update(f.as_posix()[cut:].encode("utf-8") + b"\x00")
         h.update(f.read_bytes().replace(b"\r\n", b"\n") + b"\x00")
     return {"repo_digest": h.hexdigest()[:16]}

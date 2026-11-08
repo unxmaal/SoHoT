@@ -21,6 +21,9 @@ import pytest
 import shells
 
 REPO = Path(__file__).resolve().parents[1]
+#: The test's own home and store, and what uv and Python need to start on Windows, so env.sh's cut is recorded there.
+KEPT = ("LOCALHARNESS_HOME", "LOCALHARNESS_STORE", "PGOPTIONS", "SYSTEMROOT", "SYSTEMDRIVE", "USERPROFILE",
+        "LOCALAPPDATA", "APPDATA", "TEMP", "TMP", "UV_CACHE_DIR", "UV_HTTP_RETRIES")
 
 
 def same_dir(a: str, b) -> bool:
@@ -46,7 +49,8 @@ def run_env(hf_root=None, shell="bash", min_free_gb="0", cwd=None, hf_home=None)
     if exe is None:
         pytest.skip(f"no {shell} on this machine")
     env = {"PATH": os.environ["PATH"], "HOME": os.environ["HOME"],
-           "HF_MIN_FREE_GB": str(min_free_gb)}
+           "HF_MIN_FREE_GB": str(min_free_gb),
+           **{k: os.environ[k] for k in KEPT if k in os.environ}}
     if hf_root is not None:
         env["HF_ROOT"] = hf_root
     if hf_home is not None:

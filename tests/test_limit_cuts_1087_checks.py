@@ -325,12 +325,15 @@ def test_a_weights_root_refused_for_free_space_is_a_cut_of_the_floor(tmp_path):
 
 
 def _sweep(bash, tmp_path, configs: str, budget: str):
-    root = tmp_path / "hf"
+    root, gguf = tmp_path / "hf", tmp_path / "gguf"
     root.mkdir(exist_ok=True)
+    # Git Bash's ln -s copies without symlink privilege, and a copy needs the file to exist.
+    gguf.mkdir(exist_ok=True)
+    (gguf / "stem.gguf").write_bytes(b"GGUF")
     return subprocess.run([bash, "scripts/slots-sweep.sh", "stem", "4096", configs], cwd=REPO, capture_output=True,
                           text=True, encoding="utf-8", timeout=120,
                           env=_env(tmp_path, HF_ROOT=str(root), HF_MIN_FREE_GB="0", SWEEP_BUDGET_S=budget,
-                                   SWEEP_OUT=str(tmp_path / "out")))
+                                   SWEEP_OUT=str(tmp_path / "out"), LLAMACPP_MODELS_DIR=str(gguf)))
 
 
 def test_slot_configs_past_the_sweep_budget_are_one_cut_of_the_budget(tmp_path):

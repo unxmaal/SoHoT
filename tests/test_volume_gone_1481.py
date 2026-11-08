@@ -54,6 +54,10 @@ def test_env_sh_keeps_low_space_apart_from_not_mounted(tmp_path):
     assert code == 1
     first = err.splitlines()[0]
     assert "not mounted" not in err and "GB free" in first and "not writable" not in first, err
+    from harness import cuts
+    conn = ms.connect()
+    cuts.flush(conn)
+    assert cuts.count(conn, 0).get("scripts/env.sh:HF_MIN_FREE_GB") == 1, "the cut missed this test's home"
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="chmod 500 does not remove write access on Windows")
