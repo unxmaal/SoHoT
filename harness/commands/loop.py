@@ -237,11 +237,9 @@ def _run_loop_held(a, keep=None) -> int:
     that starts doing either because something ranked well is how a laptop ends
     up unusable overnight.
     """
-    import argparse as _ap
     import sys
 
-    from harness import adopt, ceiling, fetching, power, rank
-    from harness import memory_store as ms
+    from harness import ceiling, power
 
     run = bool(getattr(a, "run", False))
     sweep = ceiling.Sweep(float(getattr(a, "ceiling_h", None) or power.SWEEP_CEILING_H) * 3600)
@@ -257,25 +255,42 @@ def _run_loop_held(a, keep=None) -> int:
             return 1
         print(f"\n=== {label} ===")
         _beat(label)
-        flags = {f: f == attr for _, f, _ in LOOP_STEPS}
-        extra = {}
         if attr == "inspect":
-            # INSPECT WHAT THE SWEEP FOUND, not the crowd. cmd_inspect's own
-            # comment calls --from-store "the rung the ladder was missing",
-            # and the loop never passed it, so the loop inspected new GitHub
-            # sightings while the QUEUE stayed unsized. Every one of 46 queued
-            # candidates was then skipped by fetch with "no measured size;
-            # inspect it first", immediately after the loop's own inspect step
-            # had run. Two tiers in one command, reading different sources.
-            extra = {"from_store": True, "top": LOOP_INSPECT}
-            for repair, args in ((_reopen_stale_too_big, ()), (_reopen_unranked, ()),
-                                 (_reopen_upstream_committed, ()), (_reread_runtime_declines, (a,)),
-                                 (_move_past_screen, ()), (_reopen_revisitable, ()),
-                                 (_rederive_attachments, ()), (_relane_vision, ()), (_trial_runtimes, ())):
+            for repair, args in (*_repairs(a), (_trial_runtimes, ())):
                 rc = _repair(label, repair, args, failed) or rc
-        sub = _ap.Namespace(**{**vars(a), **flags, **extra, "loop": False})
-        rc = _step(label, discover_cmd.cmd_discover(sub), failed) or rc
+        rc = _tier(a, label, attr, failed) or rc
+    rc = _report(a, failed) or rc
+    if not run:
+        print("\ninspect, fetch, screen and measure not run. Add --run to "
+              "spend the disk and the minutes.")
+        return _why_nonzero(rc, failed)
+    return _why_nonzero(_spend_and_settle(a, rc, failed, sweep), failed)
 
+
+def _repairs(a) -> tuple:
+    """The store repairs the inspect tier runs before it inspects, in order; the runtime trial follows them. #974."""
+    return ((_reopen_stale_too_big, ()), (_reopen_unranked, ()),
+            (_reopen_upstream_committed, ()), (_reread_runtime_declines, (a,)),
+            (_move_past_screen, ()), (_reopen_revisitable, ()),
+            (_rederive_attachments, ()), (_relane_vision, ()))
+
+
+def _tier(a, label: str, attr: str, failed: list) -> int:
+    """One of LOOP_STEPS through cmd_discover, its exit status noted under label."""
+    import argparse as _ap
+    flags = {f: f == attr for _, f, _ in LOOP_STEPS}
+    # INSPECT WHAT THE SWEEP FOUND, not the crowd: without --from-store the queue stays unsized and fetch skips it.
+    extra = {"from_store": True, "top": LOOP_INSPECT} if attr == "inspect" else {}
+    sub = _ap.Namespace(**{**vars(a), **flags, **extra, "loop": False})
+    return _step(label, discover_cmd.cmd_discover(sub), failed)
+
+
+def _report(a, failed: list) -> int:
+    """The queue tier's report: triage, method crossings, what is wanted, engine trials, binding knobs, adoptions."""
+    from harness import adopt, fetching, rank
+    from harness import memory_store as ms
+
+    rc = 0
     want = (getattr(a, "lane", "") or "").strip().lower()
     store = ms.connect()
     try:
@@ -310,12 +325,7 @@ def _run_loop_held(a, keep=None) -> int:
             print("  nothing adopted yet; every lane serves its typed constant")
     finally:
         store.close()
-
-    if not run:
-        print("\ninspect, fetch, screen and measure not run. Add --run to "
-              "spend the disk and the minutes.")
-        return _why_nonzero(rc, failed)
-    return _why_nonzero(_spend_and_settle(a, rc, failed, sweep), failed)
+    return rc
 
 
 def _step(label: str, got, failed: list) -> int:
@@ -384,37 +394,43 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
     download, and `--top` a ceiling on how many candidates it will carry the
     whole way.
     """
-    import argparse as _ap
-
-    from harness import adopt, ceiling, fetching, screen
-    from harness import memory_store as ms
-
-    from harness import disk
     failed = failed if failed is not None else []
-
-    print("\n=== retests ===")
-    _beat("retests")
-    _reopen_retests()
-    _reopen_missing_in_snapshot()
-
-    print("\n=== reverify ===")
-    _beat("reverify")
-    _reverify()
-
-    print("\n=== knob sweeps ===")
-    _beat("knob sweeps")
-    _sweeps()
-
-    # After the retests, so a reopened candidate's weights are queued, not swept.
-    print("\n=== disk ===")
-    _beat("disk")
-    disk.sweep()
-
+    # The disk step after the retests, so a reopened candidate's weights are queued, not swept.
+    for tier in UPKEEP:
+        _upkeep(tier)
     # `--top` is an override; unset, the sweep ceiling sizes the fetch, screen and measure. #1084.
+    plan = _sized(int(getattr(a, "top", 0) or 0), sweep)
+    rc = _fetch(a, plan, failed) or rc
+    rc = _screen(a, sweep, plan, failed) or rc
+    return _measure(a, sweep, failed, rc)
+
+
+#: The spend's store upkeep, before the fetch.
+UPKEEP = SPEND_STEPS[:4]
+
+
+def _upkeep(tier: str) -> None:
+    """One UPKEEP step under its header: retests, reverify, knob sweeps or the disk sweep."""
+    from harness import disk
+    print(f"\n=== {tier} ===")
+    _beat(tier)
+    if tier == "retests":
+        _reopen_retests()
+        _reopen_missing_in_snapshot()
+    elif tier == "reverify":
+        _reverify()
+    elif tier == "knob sweeps":
+        _sweeps()
+    else:
+        disk.sweep()
+
+
+def _fetch(a, plan: dict, failed: list) -> int:
+    """The fetch step: downloads for the screens the plan sizes, within the budget; held while the backlog fills them."""
+    from harness import fetching
     top = int(getattr(a, "top", 0) or 0)
     budget = fetching.budget_gib(getattr(a, "budget_gib", None))
-    plan = _sized(top, sweep)
-
+    rc = 0
     want = (getattr(a, "lane", "") or "").strip().lower()
     if want:
         print(f"\n(spending only on the {want} lane)")
@@ -431,20 +447,33 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
                             budget_gib=getattr(a, "budget_gib", None),
                             limit_knob="discover_top" if top else "screen_fraction")
         rc = _step("fetch", screen_cmd.cmd_fetch(sub), failed) or rc
+    return rc
 
+
+def _screen(a, sweep, plan: dict, failed: list) -> int:
+    """The screen step, its share of the sweep ceiling, after one router restart for GGUF files that changed."""
+    import argparse as _ap
+    import time
+
+    from harness import ceiling, gguf
+    top = int(getattr(a, "top", 0) or 0)
     print(f"\n=== screen ===")
     _beat("screen")
-    from harness import gguf
     if gguf.pending():
         print("  restarting the router once for the GGUF files day fetches downloaded or the disk sweep removed")
         gguf.relist()
-    import time
     until = None if top or sweep is None else time.time() + sweep.remaining() * ceiling.SCREEN_FRACTION
     sub = _ap.Namespace(**{**vars(a), "loop": False, "screen": True, "run": True, "json": False,
                            "limit": top or EVERY, "limit_knob": "discover_top",
                            "screen_until": until, "screen_s": plan["per_s"]})
-    rc = _step("screen", discover_cmd.cmd_discover(sub), failed) or rc
+    return _step("screen", discover_cmd.cmd_discover(sub), failed)
 
+
+def _measure(a, sweep, failed: list, rc: int = 0) -> int:
+    """The measure step: incumbents first, then each queued measurement that fits the ceiling and memory."""
+    from harness import memory_store as ms
+    top = int(getattr(a, "top", 0) or 0)
+    want = (getattr(a, "lane", "") or "").strip().lower()
     print(f"\n=== measure and adopt ===")
     _beat("measure")
     try:

@@ -114,6 +114,7 @@ capabilities:
     spec: pending
     modules:
       - harness/commands/loop.py
+      - harness/commands/loop_steps.py
       - harness/engine_trials.py
       - harness/heartbeat.py
       - harness/sweep_check.py

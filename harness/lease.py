@@ -72,8 +72,8 @@ def take(conn, name: str, who: dict, ttl_s: float, now: float | None = None,
 
 
 def _same(current: dict, who: dict) -> bool:
-    return bool(current) and (current.get("machine_id"), current.get("pid")) == (
-        who.get("machine_id"), who.get("pid"))
+    return bool(current) and (current.get("machine_id"), current.get("pid"), current.get("cycle")) == (
+        who.get("machine_id"), who.get("pid"), who.get("cycle"))
 
 
 def renew(conn, name: str, who: dict, ttl_s: float, now: float | None = None) -> bool:

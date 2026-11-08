@@ -46,6 +46,7 @@ from harness.commands import floors as floors_cmd
 from harness.commands import specs as specs_cmd
 from harness.commands import staging as staging_cmd
 from harness.commands import discover as discover_cmd
+from harness.commands import loop_steps
 from harness.commands import gate as gate_cmd
 from harness.commands import gateway as gateway_cmd
 from harness.commands import gauntlet as gauntlet_cmd
@@ -348,6 +349,13 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--loop", action="store_true",
                    help="every step from a sweep to an adopted winner. Says "
                         "what it would do; --run spends the disk and minutes")
+    d.add_argument("--jobs", action="store_true",
+                   help="with --loop --run, queue the sweep as work queue jobs, one per step, "
+                        "each queuing the next with its own resource class (#1508)")
+    d.add_argument("--step", default=None, choices=loop_steps.NAMES,
+                   help="run one step of a queued sweep and queue the next (what --jobs queues)")
+    d.add_argument("--cycle", default="",
+                   help="with --step, the sweep the step belongs to")
     d.add_argument("--sweep", action="store_true",
                    help="read every source family, then report. What running "
                         "a discovery means: --feeds alone leaves the star "
