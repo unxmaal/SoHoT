@@ -23,7 +23,9 @@ from __future__ import annotations
 import os
 import re
 import weakref
+from contextlib import contextmanager
 from pathlib import Path
+from threading import local as _thread_local
 
 SQLITE, POSTGRES = "sqlite", "postgres"
 BACKEND_ENV = "LOCALHARNESS_STORE"
@@ -76,10 +78,27 @@ def marker(home=None) -> dict:
     return got if isinstance(got, dict) else {}
 
 
+_PINNED = _thread_local()
+
+
 def backend() -> str:
     """Which store this process talks to: LOCALHARNESS_STORE, else the home's store.json, else SQLite."""
+    pinned = getattr(_PINNED, "backend", None)
+    if pinned:
+        return pinned
     got = (os.environ.get(BACKEND_ENV) or marker().get("backend") or SQLITE).strip().lower()
     return POSTGRES if got == POSTGRES else SQLITE
+
+
+@contextmanager
+def pinned(kind: str):
+    """This thread talks `kind` meanwhile: a SQLite copy migrates as SQLite on a Postgres home. #1579."""
+    was = getattr(_PINNED, "backend", None)
+    _PINNED.backend = kind
+    try:
+        yield
+    finally:
+        _PINNED.backend = was
 
 
 def live() -> bool:
@@ -107,17 +126,17 @@ def _rewrite(sql: str, rx, repl) -> str:
 
 _EMPTY_IN = re.compile(r"\b(NOT\s+)?IN\s*\(\s*\)", re.I)
 _IS_PARAM = re.compile(r"\bIS\s+(NOT\s+)?(?=\?)", re.I)
-_GLOB = re.compile(r"\bGLOB\s+\?", re.I)
+_GLOB = re.compile(r"\bGLOB\s+(\?|:[A-Za-z_]\w*)", re.I)
 _CAST_INT = re.compile(r"\bAS\s+INTEGER\b", re.I)
 _NAMED = re.compile(r"(?<![:\w]):([A-Za-z_]\w*)")
 
 
 def dialect_terms(sql: str) -> str:
-    """SQLite's `x IN ()`, `x IS ?`, `x GLOB ?` and 64-bit `CAST(x AS INTEGER)`, as Postgres spells them."""
+    """SQLite's `x IN ()`, `x IS ?`, `x GLOB ?` (or `:name`) and 64-bit `CAST(x AS INTEGER)`, as Postgres spells them."""
     sql = _rewrite(sql, _EMPTY_IN, lambda m: "<> ALL('{}')" if m.group(1) else "= ANY('{}')")
     sql = _rewrite(sql, _IS_PARAM, lambda m: "IS DISTINCT FROM " if m.group(1) else "IS NOT DISTINCT FROM ")
     sql = _rewrite(sql, _CAST_INT, "AS BIGINT")
-    return _rewrite(sql, _GLOB, "~ sqlite_glob(?)")
+    return _rewrite(sql, _GLOB, lambda m: f"~ sqlite_glob({m.group(1)})")
 
 
 def named(sql: str) -> str:
@@ -334,6 +353,8 @@ def postgres_ddl(sqlite_ddl: str) -> str:
 #: Statements that steer the transaction themselves; a savepoint around one would undo what it means.
 _TX_CONTROL = re.compile(r"^\s*(?:SAVEPOINT|RELEASE|ROLLBACK|BEGIN|COMMIT|END)\b", re.I)
 _PLAIN_INSERT = re.compile(r"^\s*INSERT\s+INTO\s+(\w+)", re.I)
+#: What opens a transaction in sqlite3: a write or an explicit BEGIN, never a read. #1579.
+_OPENS = re.compile(r"^\s*(?:INSERT|UPDATE|DELETE|REPLACE|BEGIN)\b", re.I)
 _ID_KEY = re.compile(r"\bid\s+INTEGER\s+PRIMARY\s+KEY\b", re.I)
 _ID_TABLES: set = set()
 
@@ -429,6 +450,7 @@ class PostgresConnection:
 
     def __init__(self, conn, pool=None):
         self._conn = conn
+        self._opened = False
         # A pooled connection goes back to its pool on close, or when its wrapper is collected unclosed.
         self._release = weakref.finalize(self, _give_back, pool, conn) if pool is not None else None
 
@@ -467,6 +489,7 @@ class PostgresConnection:
                 self._conn.rollback()
             kind = sqlite3.IntegrityError if isinstance(exc, psycopg.IntegrityError) else sqlite3.OperationalError
             raise kind(str(exc)) from exc
+        self._opened = self._opened or bool(_OPENS.match(sql))
         if mark:
             cur2 = self._conn.cursor()
             cur2.execute("RELEASE SAVEPOINT sohot_statement")
@@ -474,8 +497,10 @@ class PostgresConnection:
 
     @property
     def in_transaction(self) -> bool:
+        """As sqlite3 reports it: a write or BEGIN is pending, not merely a read psycopg began a transaction for."""
         from psycopg.pq import TransactionStatus
-        return self._conn.info.transaction_status in (TransactionStatus.INTRANS, TransactionStatus.INERROR)
+        return self._opened and self._conn.info.transaction_status in (TransactionStatus.INTRANS,
+                                                                        TransactionStatus.INERROR)
 
     def executemany(self, sql: str, rows):
         for row in rows:
@@ -497,15 +522,33 @@ class PostgresConnection:
 
     def commit(self):
         self._conn.commit()
+        self._opened = False
 
     def rollback(self):
         self._conn.rollback()
+        self._opened = False
 
     def close(self):
         if self._release is not None:
             self._release()
         else:
             self._conn.close()
+
+
+class ScratchConnection(PostgresConnection):
+    """Commits never land and close rolls back: the copy a report may write freely. #1579."""
+
+    def commit(self):
+        pass
+
+    def close(self):
+        self._conn.rollback()
+        super().close()
+
+
+def scratch():
+    """This home's Postgres store as the in-memory copy a SQLite home gets: every read, no write kept. #1579."""
+    return postgres_connect(cls=ScratchConnection)
 
 
 def _give_back(pool, conn) -> None:
@@ -587,19 +630,32 @@ def _as_sqlite_binds(conn):
     return conn
 
 
+def home_postgres(path) -> bool:
+    """Whether `path` names this home's store and that store is Postgres; any other path is a SQLite copy."""
+    from harness import paths
+    home_db = Path(paths.home()) / "discovery.db"
+    return backend() == POSTGRES and (path is None or Path(path).resolve() == home_db.resolve())
+
+
+def exists(path=None) -> bool:
+    """Whether there is a store at `path` (default this home's): its Postgres, else the SQLite file."""
+    from harness import paths
+    return home_postgres(path) or Path(path or Path(paths.home()) / "discovery.db").is_file()
+
+
 def open_ro(path=None):
     """The store read-only: Postgres as the reader when it is this home's store, else the SQLite file mode=ro."""
     import sqlite3
     from harness import paths
     home_db = Path(paths.home()) / "discovery.db"
-    if backend() == POSTGRES and (path is None or Path(path).resolve() == home_db.resolve()):
+    if home_postgres(path):
         return postgres_connect(read_only=True)
     conn = sqlite3.connect(f"{Path(path or home_db).resolve().as_uri()}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
     return conn
 
 
-def postgres_connect(environ=None, *, read_only=False):
+def postgres_connect(environ=None, *, read_only=False, cls=None):
     """Open the Postgres store; read_only as the reader role in read-only transactions. psycopg is lazy."""
     try:
         import psycopg
@@ -609,8 +665,8 @@ def postgres_connect(environ=None, *, read_only=False):
         ) from exc
     pool = _POOL.get("pool")
     if pool is not None and environ is None and not read_only:
-        return PostgresConnection(pool.getconn(), pool=pool)
+        return (cls or PostgresConnection)(pool.getconn(), pool=pool)
     # Client-side binding, as SQLite binds: `? IS NULL` needs no server-side type.
-    return PostgresConnection(_as_sqlite_binds(psycopg.connect(
+    return (cls or PostgresConnection)(_as_sqlite_binds(psycopg.connect(
         dsn(environ, read_only=read_only), row_factory=row_factory, autocommit=False,
         cursor_factory=psycopg.ClientCursor)))

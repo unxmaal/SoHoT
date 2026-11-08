@@ -1,11 +1,13 @@
 """A lane's findings as one versioned document, over the CLI, the MCP and the reports branch. #1200."""
 import base64
 import json
+import sqlite3
 
 import pytest
 
 from harness import candidates, cli, lane_feed, publish, runs
 from harness import memory_store as ms
+from tests import conftest
 
 T0 = 1_790_000_000.0
 WINNER, LOSER = "org/vid-winner", "org/vid-loser"
@@ -140,10 +142,13 @@ def test_a_lane_with_no_runs_is_a_valid_document_with_empty_lists(store):
 
 
 def test_the_feed_writes_nothing_to_the_store(store):
-    before = store.total_changes
+    store.commit()
+    before = conftest.store_state()
     ro = _ro()
     lane_feed.lane_feed(ro, "video")
-    assert ro.total_changes == 0 and store.total_changes == before
+    assert not ro.in_transaction and conftest.store_state() == before
+    with pytest.raises(sqlite3.OperationalError):
+        ro.execute("DELETE FROM meta")
 
 
 def test_every_funnel_stage_has_a_status_a_consumer_reads():

@@ -88,8 +88,8 @@ MODEL_PLANT_SQL = (
     "AND v.reason = 'candidate' AND v.run_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM verdicts r "
     "WHERE r.reopens = v.id AND r.reopen_kind = 'retraction') ORDER BY v.id")
 FLOOR_SQL = (
-    "SELECT COUNT(*) AS n, SUM(EXISTS (SELECT 1 FROM verdicts r WHERE r.reopens = o.id "
-    "AND r.reopen_kind = 'retraction')) AS retracted FROM verdicts o WHERE o.outcome IN ({})"
+    "SELECT COUNT(*) AS n, SUM(CASE WHEN EXISTS (SELECT 1 FROM verdicts r WHERE r.reopens = o.id "
+    "AND r.reopen_kind = 'retraction') THEN 1 ELSE 0 END) AS retracted FROM verdicts o WHERE o.outcome IN ({})"
 ).format(", ".join(f"'{s}'" for s in TERMINAL))
 
 

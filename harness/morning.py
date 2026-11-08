@@ -36,8 +36,8 @@ def snapshot():
     """A connection the report may use freely without writing the live store: a copy for SQLite."""
     from harness import ledger, store
     from harness import memory_store as ms
-    if store.backend() == store.POSTGRES:
-        return ms.connect()
+    if store.home_postgres(None):
+        return store.scratch()
     path = ms.db_path()
     mem = sqlite3.connect(":memory:")
     if path.exists():

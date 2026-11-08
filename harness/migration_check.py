@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from harness import memory_store as ms
-from harness import paths
+from harness import paths, store
 
 INVARIANTS = ("integrity", "foreign_keys", "schema", "proposal_state",
               "verdict_reason", "adoptions_resolve", "machines_unique",
@@ -223,19 +223,24 @@ def _copy_home(src_home: Path, home: Path) -> None:
 
 @contextmanager
 def _home(home: Path):
-    was = os.environ.get(paths.ENV_VAR)
+    """The copy's home, whose store is the SQLite copy whatever backend this home uses. #1579."""
+    was = {k: os.environ.get(k) for k in (paths.ENV_VAR, store.BACKEND_ENV)}
     os.environ[paths.ENV_VAR] = str(home)
+    os.environ[store.BACKEND_ENV] = store.SQLITE
     try:
         yield
     finally:
-        if was is None:
-            os.environ.pop(paths.ENV_VAR, None)
-        else:
-            os.environ[paths.ENV_VAR] = was
+        for k, v in was.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
 
 
 def dry_run(src: Path | None = None, *, keep: bool = False) -> dict:
     """Migrate a copy of `src` (default: this home's store) with this checkout's code; `src` is only read."""
+    if src is None and store.home_postgres(None):
+        raise FileNotFoundError("this home's store is Postgres; a dry run migrates a SQLite copy, so name one")
     src = Path(src if src is not None else ms.db_path()).resolve()
     if not src.is_file():
         raise FileNotFoundError(f"no store at {src}")

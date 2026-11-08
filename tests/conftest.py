@@ -31,9 +31,11 @@ def _home(tmp_path_factory, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def _pg_schema(monkeypatch):
+def _pg_schema(request, monkeypatch):
     """On LOCALHARNESS_STORE=postgres every test gets its own empty schema, as it gets its own home. #1507."""
     from harness import store
+    if request.node.get_closest_marker("sqlite_store"):
+        monkeypatch.setenv(store.BACKEND_ENV, store.SQLITE)
     if store.backend() != store.POSTGRES:
         yield None
         return
@@ -249,6 +251,31 @@ def pytest_runtest_logreport(report):
     spent[report.nodeid] = spent.get(report.nodeid, 0.0) + report.duration
     if report.when == "teardown":
         _log_line("end", report.nodeid, f"{spent.pop(report.nodeid):.3f}")
+
+
+def store_state(path=None):
+    """What a store holds, to see a write on either backend: a SQLite file's bytes, or each Postgres table's digest. #1579."""
+    import hashlib
+    from harness import memory_store as ms, store, store_copy
+    if not store.home_postgres(path):
+        p = Path(path or ms.db_path())
+        files = [f for f in (p, p.with_name(p.name + "-wal")) if f.is_file()]
+        return hashlib.sha256(b"".join(f.read_bytes() for f in files)).hexdigest() if files else None
+    conn = store.open_ro(path)
+    try:
+        return {t: store_copy.digest(conn, t, store_copy.columns(conn, t)) for t in store_copy.tables(conn)}
+    finally:
+        conn.close()
+
+
+def sqlite_copy(dest):
+    """A SQLite copy of this home's store at `dest`, as an owner makes one on either backend. #1579."""
+    from harness import memory_store as ms, store, store_copy
+    if store.home_postgres(None):
+        got = store_copy.to_sqlite_report(Path(dest))
+        assert got["ok"], got
+        return Path(dest)
+    return store_copy.snapshot(ms.db_path(), Path(dest))
 
 
 #: Tests still red on Postgres, one node id per line; the list's length is pinned and may only shrink. #1507.

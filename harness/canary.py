@@ -140,7 +140,7 @@ def replay_all(replays) -> list[dict]:
     live = paths.home() / "discovery.db"
     if not replays:
         return []
-    if not live.is_file():
+    if not store.exists(live):
         return [{"plant": r.name, "lane": r.lane, "replay": True, "observed": {}, "rcs": [], "ok": False,
                  "expected": [*r.expect[:1], "adopt", r.expect[1]], "invalid": f"no store at {live}"}
                 for r in replays]
@@ -242,7 +242,7 @@ def still_invalid(plant: Plant, prior: dict | None, version: str) -> str:
 
 def leaked(live: Path, names, since: float) -> int:
     """Verdicts on the plants' names the live store took since the canary started; read-only."""
-    if not live.is_file():
+    if not store.exists(live):
         return 0
     names = list(names)
     if not names:
@@ -261,7 +261,9 @@ def child_env(home: Path) -> dict:
     """The isolated home, under the GPU lock the canary already holds on the live one, whose services it uses."""
     from harness import exclusive, load_log
     serving = os.environ.get(load_log.SERVING_ENV) or str(paths.home())
-    return {**os.environ, paths.ENV_VAR: str(home), exclusive.HELD_ENV: "1", load_log.SERVING_ENV: serving}
+    # The isolated home's store is its own SQLite file whatever backend the live home uses. #1579.
+    return {**os.environ, paths.ENV_VAR: str(home), exclusive.HELD_ENV: "1", load_log.SERVING_ENV: serving,
+            store.BACKEND_ENV: store.SQLITE}
 
 
 def run_plant(plant: Plant, home: Path, run=subprocess.run, say=print, prior: dict | None = None) -> dict:
@@ -387,7 +389,7 @@ def _pair_rows(conn, plant: Plant) -> tuple:
     run_row = conn.execute(
         "SELECT r.run_id FROM results r JOIN candidates c ON c.id = r.candidate_id "
         "JOIN runs u ON u.id = r.run_id WHERE c.spec IN (?, ?) AND u.tier = 'measure' "
-        "GROUP BY r.run_id HAVING count(DISTINCT c.spec) = 2 ORDER BY u.generated_at DESC, r.run_id DESC LIMIT 1",
+        "GROUP BY r.run_id, u.generated_at HAVING count(DISTINCT c.spec) = 2 ORDER BY u.generated_at DESC, r.run_id DESC LIMIT 1",
         (inc, ch)).fetchone()
     if not run_row:
         return None, [], inc, ch
