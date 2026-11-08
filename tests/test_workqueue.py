@@ -49,8 +49,7 @@ def test_a_job_does_not_hold_the_machine_lock_for_its_whole_run(tmp_path):
     duration. Commands that load models take the lock themselves."""
     probe = ("import os, sys; sys.path.insert(0, %r); "
              "from harness import exclusive as e; "
-             "fd = os.open(e.lock_path(), os.O_RDWR | os.O_CREAT); "
-             "print('free' if e._take(fd) else 'held', os.environ.get(%r))"
+             "print('held' if e.gpu_holder() else 'free', os.environ.get(%r))"
              % (str(__import__('pathlib').Path(__file__).resolve().parents[1]),
                 exclusive.HELD_ENV))
     wq.add(py(probe))

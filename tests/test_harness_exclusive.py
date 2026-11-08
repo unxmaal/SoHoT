@@ -40,12 +40,7 @@ def test_a_cheap_lane_does_not_wait(lane):
         assert waited is False
         # Took no lock and named no holder: the machine is still free to an expensive lane. #1423.
         assert not exclusive.holder_path().exists()
-        fd = os.open(exclusive.lock_path(), os.O_RDWR | os.O_CREAT, 0o644)
-        try:
-            assert exclusive._take(fd)
-            exclusive._release(fd)
-        finally:
-            os.close(fd)
+        assert exclusive.gpu_leases() == 0
 
 
 def test_a_cheap_lane_takes_no_lock_even_while_one_is_held():
@@ -103,8 +98,14 @@ HOLD = textwrap.dedent("""
     import sys, time
     sys.path.insert(0, {repo!r})
     from harness import exclusive
+    from pathlib import Path
     with exclusive.held("video"):
         print("held", flush=True)
+        # Released only once a taker said it waits, or after a minute, so a slow taker start cannot miss the hold.
+        seen = Path(exclusive.holder_path().parent, "taker-waiting")
+        end = time.time() + 60
+        while not seen.exists() and time.time() < end:
+            time.sleep(0.05)
         time.sleep({seconds})
         print(time.time(), flush=True)
 """)
@@ -115,7 +116,12 @@ TAKE = textwrap.dedent("""
     from harness import exclusive
     started = time.perf_counter()
     saw = []
-    with exclusive.held("image", announce=saw.append, poll=0.05) as waited:
+    from pathlib import Path
+
+    def said(m):
+        saw.append(m)
+        Path(exclusive.holder_path().parent, "taker-waiting").write_text(m, encoding="utf-8")
+    with exclusive.held("image", announce=said, poll=0.05) as waited:
         print(json.dumps({{"waited": waited,
                            "seconds": time.perf_counter() - started,
                            "acquired_at": time.time(),

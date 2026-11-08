@@ -20,15 +20,8 @@ def home(tmp_path, monkeypatch):
 
 
 def _free() -> bool:
-    """Can someone else take the lock right now?"""
-    fd = os.open(exclusive.lock_path(), os.O_RDWR | os.O_CREAT, 0o644)
-    try:
-        got = exclusive._take(fd)
-        if got:
-            exclusive._release(fd)
-        return got
-    finally:
-        os.close(fd)
+    """Can someone else take the machine's gpu lease right now?"""
+    return exclusive.gpu_leases() == 0
 
 
 @pytest.mark.parametrize("kind", ["eval", "ramp", "external"])
@@ -57,8 +50,7 @@ def test_children_know_the_lock_is_held():
 def test_the_helper_holds_the_lock_for_the_command_and_passes_its_exit():
     probe = (f"import sys; sys.path.insert(0, {str(REPO)!r}); "
              "import os; from harness import exclusive as e; "
-             "fd = os.open(e.lock_path(), os.O_RDWR | os.O_CREAT); "
-             "sys.exit(3 if e._take(fd) else 7)")
+             "sys.exit(3 if e.gpu_leases() == 0 else 7)")
     # The probe clears the marker so it asks the OS, not the environment.
     got = subprocess.run([str(HELPER), "env", "-u", exclusive.HELD_ENV,
                           sys.executable, "-c", probe])

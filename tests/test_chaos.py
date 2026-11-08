@@ -107,21 +107,15 @@ def test_cli_refuses_when_the_machine_lock_is_held(capsys, monkeypatch):
 
 
 def test_try_held_takes_a_free_lock_and_refuses_a_held_one():
+    from harness import item_lease, resources
+    from harness import memory_store as ms
     with exclusive.try_held("chaos") as got:
         assert got is True
-        fd = os.open(exclusive.lock_path(), os.O_RDWR | os.O_CREAT, 0o644)
-        try:
-            assert exclusive._take(fd) is False
-        finally:
-            os.close(fd)
-    fd = os.open(exclusive.lock_path(), os.O_RDWR | os.O_CREAT, 0o644)
-    try:
-        assert exclusive._take(fd) is True
-        with exclusive.try_held("chaos") as got:
-            assert got is False
-        exclusive._release(fd)
-    finally:
-        os.close(fd)
+        assert exclusive.gpu_leases() == 1
+    other = item_lease.take(ms.connect(), resources.GPU, "another run", state="eval")
+    with exclusive.try_held("chaos") as got:
+        assert got is False
+    item_lease.release(ms.connect(), other["id"])
 
 
 # --- scratch home isolation and cleanup ---------------------------------------

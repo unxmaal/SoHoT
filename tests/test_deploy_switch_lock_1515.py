@@ -67,7 +67,7 @@ def test_a_handed_off_deploy_reaches_deployed_through_the_real_machine_lock(worl
     assert wq.get(job["id"])["state"] == wq.DONE and _deploys()[0]["outcome"] == deploy.DEPLOYED
     rel = Path(rec["release"]).name
     assert f"reinstall {rel}" in world["log"].read_text(encoding="utf-8")
-    assert not exclusive._taken(exclusive.lock_path()) and not wq.paused()
+    assert not exclusive.gpu_leases() and not wq.paused()
 
 
 @posix
@@ -93,7 +93,7 @@ def test_a_switch_whose_reinstall_waits_on_the_machine_lock_rolls_back_and_alert
     steps = world["log"].read_text(encoding="utf-8")
     assert "reinstall" not in steps, "a killed step's child took the lock and reinstalled after the switch moved on"
     assert f"alert deploy of {job['output'][:12]} rolled_back" in steps
-    assert not exclusive._taken(exclusive.lock_path())
+    assert not exclusive.gpu_leases()
     wq.settle_deploys()
     assert wq.get(job["id"])["state"] == wq.FAILED and _deploys()[0]["outcome"] == deploy.ROLLED_BACK
 

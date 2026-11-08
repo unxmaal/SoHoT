@@ -185,10 +185,10 @@ def test_a_router_restart_holds_the_machine_lock_until_the_router_answers():
     """The 2026-10-23 sweep: with-gpu-lock let go when kickstart returned, and job 0141 took the lock."""
     seen = []
     REFRESH(expect=(STEM,),
-            run=lambda cmd, check=False: seen.append(("restart", exclusive._taken(exclusive.lock_path()))),
-            wait=lambda expect: seen.append(("wait", exclusive._taken(exclusive.lock_path()))) or "")
+            run=lambda cmd, check=False: seen.append(("restart", bool(exclusive.gpu_leases()))),
+            wait=lambda expect: seen.append(("wait", bool(exclusive.gpu_leases()))) or "")
     assert seen == [("restart", True), ("wait", True)]
-    assert not exclusive._taken(exclusive.lock_path())
+    assert not bool(exclusive.gpu_leases())
 
 
 def test_the_restart_s_own_with_gpu_lock_does_not_wait_on_its_parent():
