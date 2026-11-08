@@ -201,6 +201,12 @@ def protected(conn=None, config=None) -> set[str]:
     return out
 
 
+def kept() -> set[str]:
+    """What no release unloads: protected stems, and models a ready gpu job names. Raises if unreadable. #1617."""
+    from harness import admission
+    return protected() | admission.waiting()
+
+
 @contextlib.contextmanager
 def _no_run_in_flight():
     """True while this process holds the eval lock nobody else had. #444."""
@@ -232,7 +238,7 @@ def release(stems, why: str, *, get=None, post=None, keep=None, say=print, base:
     if not wanted:
         return []
     try:
-        keepers = protected() if keep is None else set(keep)
+        keepers = kept() if keep is None else set(keep)
     except Exception as exc:  # noqa: BLE001
         say(f"  router: kept {', '.join(wanted)}: the lane defaults could not be read ({exc})")
         return []
