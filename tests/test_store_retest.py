@@ -223,3 +223,11 @@ def test_the_queue_report_shows_retests(monkeypatch, capsys):
     monkeypatch.setattr(ms.time, "time", lambda: T)
     cli._report_queue(argparse.Namespace(lane="", json=False, top=5))
     assert "retests: 1 due, 0 scheduled" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("reason,due", [("owner", None), ("candidate", T + WEEK)])
+def test_only_the_owners_decline_at_adopt_skips_its_retest(store, reason, due):
+    """#1564's `reason != "owner"` reached no selected test, so its mutants survived (#1588)."""
+    _see(store, "org/m")
+    ms.decide(store, "org/m", "declined", tier=ms.ADOPT, at=T, detail="x", reason=reason)
+    assert _row(store, "org/m")["next_retest_at"] == due

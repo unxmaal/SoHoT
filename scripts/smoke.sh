@@ -10,6 +10,7 @@ H="${SMOKE_HOST:-127.0.0.1}"
 G="http://$H:${GATEWAY_PORT:-4000}"
 E="http://$H:${MLX_PORT:-8081}"
 FAIL=0
+# A check for a property a release introduces runs through scripts/smoke-introduced.sh, enforced only with SMOKE_PHASE=after: deploys smoke before the switch against the old services (#1608).
 # Every request here is tagged smoke in the gateway's usage log (#825).
 export SOHOT_PURPOSE=smoke
 TAG="x-litellm-tags: purpose:smoke"
@@ -140,6 +141,9 @@ fi
 if [ "$LOCAL" -eq 1 ]; then
   # From inside launchd, where macOS Local Network privacy applies (#739); a Terminal connect proves nothing.
   /bin/bash scripts/lan-probe.sh || FAIL=1
+  # The MCP server on 127.0.0.1 and ::1 both, whichever a client's localhost resolves to (#1555).
+  /bin/bash scripts/mcp-probe.sh 127.0.0.1 || FAIL=1
+  /bin/bash scripts/smoke-introduced.sh /bin/bash scripts/mcp-probe.sh '[::1]' || FAIL=1
   NODES_OUT="$(SOHOT_GATEWAY_KEY="$KEY" uv run python -m harness.nodes smoke --gateway "$G" 2>&1)" || FAIL=1
   printf '%s\n' "$NODES_OUT"
 else

@@ -15,6 +15,10 @@ LANES = ("decide", "extract", "code")
 PORT = 8083
 PORT_ENV = "INTERACTIVE_PORT"
 URL_ENV = "INTERACTIVE_URL"
+#: The lanes this machine pins, comma separated; another machine's interactive server answers the rest. #1562.
+LANES_ENV = "INTERACTIVE_LANES"
+#: scripts/serve-llamacpp.sh's key file for a server on a LAN address; launchd.sh keeps it in $LH_HOME by this name.
+KEY_ENV = "LLAMACPP_API_KEY_FILE"
 BUDGET_GB = 35.0
 #: Slots a pinned model gets when its lane has no request history here.
 SLOTS = 2
@@ -40,6 +44,42 @@ def url() -> str:
         return serving.bare(got)
     port = (os.environ.get(PORT_ENV) or "").strip()
     return f"http://127.0.0.1:{port if port.isdigit() else PORT}"
+
+
+def here(environ=None) -> tuple[str, ...]:
+    """The LANES this machine pins: INTERACTIVE_LANES when set, else all of them; ValueError naming a stray lane."""
+    raw = ((os.environ if environ is None else environ).get(LANES_ENV) or "").strip()
+    if not raw:
+        return LANES
+    got = [lane.strip() for lane in raw.split(",") if lane.strip()]
+    stray = [lane for lane in got if lane not in LANES]
+    if stray:
+        raise ValueError(f"{LANES_ENV} names {', '.join(stray)}; the interactive lanes are {', '.join(LANES)}")
+    return tuple(lane for lane in LANES if lane in got)
+
+
+def key(environ=None) -> str:
+    """The key a LAN-listening server here demands: LLAMACPP_API_KEY_FILE, else the file an install kept; "" for none."""
+    from harness import paths
+    environ = os.environ if environ is None else environ
+    named = (environ.get(KEY_ENV) or "").strip()
+    if not named:
+        try:
+            named = (paths.home() / KEY_ENV).read_text(encoding="utf-8").strip()
+        except OSError:
+            return ""
+    try:
+        raw = Path(named).expanduser().read_text(encoding="utf-8-sig")
+    except OSError:
+        return ""
+    return "".join(raw.split())
+
+
+def _ask(base: str, get=None):
+    """get(path) for the interactive server at `base`: `get`, else one sending its key when it listens with one."""
+    from harness import router
+    secret = key()
+    return get or ((lambda path: router._get(path, base, secret)) if secret else None)
 
 
 def plan_path() -> Path:
@@ -123,7 +163,11 @@ def choose(defaults: dict, typed: dict, config=None, models_dir=None, budget_gb:
     """Each pinned lane's model inside the budget: the lane's own, else its typed default; what did not fit, said."""
     budget = int((BUDGET_GB if budget_gb is None else budget_gb) * GIB)
     left, lanes, skipped = budget, {}, {}
+    mine = here()
     for lane in LANES:
+        if lane not in mine:
+            skipped[lane] = f"{LANES_ENV} leaves it to another machine"
+            continue
         tried = []
         for spec in dict.fromkeys(s for s in (defaults.get(lane), typed.get(lane)) if s):
             stem = stem_for(spec, config)
@@ -219,14 +263,38 @@ def holds(lane: str, get=None) -> dict | None:
     if not entry:
         return None
     base = serving.bare(str(plan.get("url") or url()))
-    got = router.statuses(get, base=base)
+    got = router.statuses(_ask(base, get), base=base)
     if not got or got.get(entry["stem"]) not in router.RESIDENT:
         return None
     return {**entry, "url": base}
 
 
-def route(lane: str, get=None) -> tuple[str, serving.Route] | None:
-    """(served spec, Route) on the interactive server for a lane it holds, else None."""
+def _served(config=None) -> dict:
+    """The gateway's served config by name; {} when it was never written here."""
+    from harness import gateway
+    path = gateway.served_path(config)
+    return {str(e.get("model_name", "")): e for e in (gateway.load(path) if path.exists() else {})
+            .get("model_list") or []}
+
+
+def node_route(lane: str, config=None) -> tuple[str, serving.Route] | None:
+    """(spec, Route) through the gateway for a lane its served config sends to a node first, else None. #1562."""
+    from harness import completion, gateway, nodes
+    alias = gateway.LANE_ALIAS.format(lane)
+    entry = _served(config).get(alias) or {}
+    if not entry.get(nodes.NODE_KEY):
+        return None
+    spec = str((pinned().get(lane) or {}).get("served") or alias)
+    _, _, opts = spec.partition(",")
+    return spec, serving.Route(completion.gateway_url(), alias, serving._sampling(opts, spec),
+                               serving.template_options(opts, spec))
+
+
+def route(lane: str, get=None, config=None) -> tuple[str, serving.Route] | None:
+    """(served spec, Route): a node's lane through the gateway, else the interactive server here for a lane it holds."""
+    via = node_route(lane, config)
+    if via:
+        return via
     held = holds(lane, get)
     if not held:
         return None
@@ -236,10 +304,19 @@ def route(lane: str, get=None) -> tuple[str, serving.Route] | None:
                                serving.template_options(opts, spec))
 
 
-def upstream(where) -> tuple[str, str] | None:
-    """(base, stem) when `where` is a pinned model on the interactive server, else None."""
+def upstream(where, config=None) -> tuple[str, str] | None:
+    """(base, stem) when `where` is a pinned model here or a node's lane (this machine's copy, else the node's)."""
     if where is None:
         return None
+    from harness import completion, gateway, nodes
+    if serving.bare(where.base) == completion.gateway_url():
+        served = _served(config)
+        entry = served.get(where.model) or {}
+        if not entry.get(nodes.NODE_KEY):
+            return None
+        own = served.get(where.model + nodes.LOCAL_SUFFIX) or entry
+        params = own.get("litellm_params") or {}
+        return serving.bare(str(params.get("api_base") or "")), gateway.strip_provider(str(params.get("model") or ""))
     plan = read()
     base = serving.bare(str(plan.get("url") or ""))
     if not base or serving.bare(where.base) != base:
@@ -281,6 +358,40 @@ def check_here(plan: dict, conn=None) -> tuple[bool, str]:
             conn.close()
 
 
+def _node_get(node, timeout: float):
+    """get(path) -> JSON from a node's server, with its key, over IPv4 when it says so."""
+    def get(path: str) -> dict:
+        import httpx
+
+        from harness import nodes
+        key = nodes.secret(node)
+        transport = httpx.HTTPTransport(local_address="0.0.0.0") if node.ipv4 else None
+        with httpx.Client(transport=transport, timeout=httpx.Timeout(timeout, connect=node.connect_timeout)) as c:
+            r = c.get(serving.bare(node.api_base) + path, headers={"Authorization": f"Bearer {key}"} if key else {})
+        r.raise_for_status()
+        return r.json()
+    return get
+
+
+def node_health(config=None, get=None, found=None) -> dict:
+    """lane -> {node, routed, up, model, loaded} for each lane a node answers first; a down node is served here. #1562."""
+    from harness import delegate, gateway, nodes, router
+    served, out = _served(config), {}
+    for node in (n for n in (nodes.load() if found is None else found) if n.lanes):
+        got = router.statuses((get or (lambda n: _node_get(n, delegate.RESIDENCY_TIMEOUT_S)))(node))
+        for lane in node.lanes:
+            entry = served.get(gateway.LANE_ALIAS.format(lane)) or {}
+            model = gateway.strip_provider(str((entry.get("litellm_params") or {}).get("model") or ""))
+            out[lane] = {"node": node.name, "routed": entry.get(nodes.NODE_KEY) == node.name, "up": got is not None,
+                         "model": model, "loaded": (got or {}).get(model) in router.RESIDENT}
+    return out
+
+
+def node_ok(got: dict) -> bool:
+    """False when a node answers but does not hold a lane's model loaded, or the gateway does not send the lane there."""
+    return all(not v["up"] or (v["routed"] and v["loaded"]) for v in got.values())
+
+
 def drift(plan: dict, fresh: dict) -> dict:
     """lane -> [running stem, stem it would pin now] for every lane that changed."""
     old = {lane: p["stem"] for lane, p in (plan.get("lanes") or {}).items()}
@@ -297,7 +408,7 @@ def health(plan: dict | None = None, get=None) -> dict:
     if not stems:
         return {"planned": False}
     base = serving.bare(str(plan.get("url") or url()))
-    got = router.statuses(get, base=base)
+    got = router.statuses(_ask(base, get), base=base)
     return {"planned": True, "url": base, "up": got is not None, "pinned": stems,
             "missing": [s for s in stems if (got or {}).get(s) not in router.RESIDENT]}
 
@@ -333,10 +444,11 @@ def finding(w) -> list:
 def load(stems, base: str, post=None) -> list[str]:
     """Ask the server to load each stem; the ones it took."""
     from harness import router
-    done = []
+    done, secret = [], key()
     for stem in stems:
         try:
-            (post or (lambda p, b: router._post(p, b, base)))("/models/load", {"model": stem})
+            (post or (lambda p, b: router._post(p, b, base, **({"key": secret} if secret else {}))))(
+                "/models/load", {"model": stem})
         except Exception as exc:  # noqa: BLE001 - one refused load leaves the rest to try
             print(f"interactive: {stem} did not load: {exc}", file=sys.stderr)
             continue
@@ -374,10 +486,15 @@ def stale_gateway(plan: dict, config=None) -> bool:
         served = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     except (OSError, ValueError, yaml.YAMLError):
         return False
-    by_name = {str(e.get("model_name", "")): e.get("litellm_params") or {} for e in served.get("model_list") or []}
+    from harness import nodes
+    by_name = {str(e.get("model_name", "")): e for e in served.get("model_list") or []}
     for lane, entry in (plan.get("lanes") or {}).items():
         want = params(entry, str(plan.get("url") or ""))
-        got = by_name.get(gateway.LANE_ALIAS.format(lane)) or {}
+        alias = gateway.LANE_ALIAS.format(lane)
+        # A lane a node answers first keeps this server as its @local copy. #1562.
+        if (by_name.get(alias) or {}).get(nodes.NODE_KEY):
+            alias += nodes.LOCAL_SUFFIX
+        got = (by_name.get(alias) or {}).get("litellm_params") or {}
         if (got.get("api_base"), got.get("model")) != (want["api_base"], want["model"]):
             return True
     return False
@@ -439,8 +556,9 @@ def main(argv=None) -> int:
         return 0
     if what == "health":
         got = health()
+        got["nodes"] = node_health()
         print(json.dumps(got, sort_keys=True))
-        return 0 if not got.get("planned") or (got["up"] and not got["missing"]) else 1
+        return 0 if (not got.get("planned") or (got["up"] and not got["missing"])) and node_ok(got["nodes"]) else 1
     print("usage: python -m harness.interactive plan|check|serve PRESET|warm|health", file=sys.stderr)
     return 2
 

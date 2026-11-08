@@ -8,11 +8,19 @@ import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+HERE = Path(__file__).resolve()
+sys.path.insert(0, str(HERE.parents[1]))
 from harness import exclusive  # noqa: E402
 
 if len(sys.argv) < 2:
     sys.exit("usage: with-gpu-lock CMD [ARGS...]")
+try:
+    python = exclusive.store_python(HERE.parents[1])
+except RuntimeError as exc:
+    sys.exit(f"with-gpu-lock: refusing, no batch lease possible: {exc}")
+if python:
+    # System python3 has no psycopg, so on a Postgres store re-run under a venv that does. #1586.
+    os.execv(python, [python, "-I", str(HERE), *sys.argv[1:]])
 with exclusive.held("external",
                     announce=lambda m: print(f"with-gpu-lock: {m}",
                                              file=sys.stderr, flush=True)):

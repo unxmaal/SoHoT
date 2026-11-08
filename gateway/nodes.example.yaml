@@ -23,3 +23,5 @@ nodes:
     ipv4: true
     # true keeps this entry but leaves the node out of routing, fallbacks, probes and checks (#1061).
     parked: false
+    # An interactive node (LH_ROLE=interactive): only these lanes' sohot-<lane> aliases go to it (#1562).
+    lanes: []
