@@ -130,7 +130,7 @@ def models_volume(data: str, run=subprocess.run) -> str | None:
 
 def job_path(which=shutil.which) -> str:
     """PATH for monit's actions: uv, monit, the notifier and docker wherever they are installed, then the system's."""
-    dirs = [str(Path(p).parent) for p in (which("uv"), which("monit"), which("terminal-notifier"), which("docker"))
+    dirs = [os.path.dirname(p) for p in (which("uv"), which("monit"), which("terminal-notifier"), which("docker"))
             if p]
     dirs += ["/usr/bin", "/bin", "/usr/sbin", "/sbin"]
     return ":".join(dict.fromkeys(dirs))
