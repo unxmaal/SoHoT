@@ -1,8 +1,8 @@
 """The one-shot step of a queue deploy that switches releases, verifies, and rolls back; it outlives the worker it restarts. #1506.
 
 A deploy job writes a record and hands this file to launchd (or a detached process), then exits. This runs
-as a file with `python3 -I`, so it imports nothing outside the stdlib and no release's code can change under
-it. Its only output is the record; the worker settles the job and the deploys row from it.
+as a file with `python3 -I`, so it loads nothing outside the stdlib, and restore() imports harness from its own
+release root. Its only output is the record, saved after every stage; the worker settles the job from it.
 """
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ import sqlite3
 import subprocess
 import sys
 import time
+import traceback
 from pathlib import Path
 
 #: How long the new release's `launchd.sh reinstall` may take: the worker quiesce, deferred periodic units, preflight and the audit.
@@ -81,13 +82,8 @@ def restore(backup: Path, db: Path) -> int:
     from harness import store
     if store.backend() == store.POSTGRES:
         from harness import store_service
-        from harness.memory_store import connection
         store_service.restore(Path(backup))
-        conn = store.postgres_connect()
-        try:
-            return connection._pg_schema(conn)
-        finally:
-            conn.close()
+        return store_service.schema()
     src = sqlite3.connect(f"file:{Path(backup)}?mode=ro", uri=True)
     try:
         dst = sqlite3.connect(str(db), timeout=60)
@@ -167,38 +163,61 @@ def _step(rec: dict, argv: list, cwd: str, timeout: float, log, what: str, *, si
     return f"{what} {why or f'exited rc {rc}'}"
 
 
-def forward(rec: dict, log, end: float) -> str:
+def named(exc: BaseException) -> str:
+    return f"{type(exc).__name__}: {exc}"
+
+
+def _keep(rec: dict, stage: str, path) -> None:
+    rec["stage"] = stage
+    if path is not None:
+        save(path, rec)
+
+
+def forward(rec: dict, log, end: float, path=None) -> str:
     """Switch to the new release, reinstall its units, verify; '' when it all passed by `end` (monotonic)."""
     flip(Path(rec["link"]), Path(rec["release"]))
     rec["switched_at"] = time.time()
+    _keep(rec, "flipped", path)
     why = _step(rec, rec["install"], rec["release"], INSTALL_TIMEOUT_S, log, "install",
                 site_knob="harness/deploy_switch.py:INSTALL_TIMEOUT_S", end=end)
     if why:
         return why
+    _keep(rec, "installed", path)
     for argv in rec["verify"]:
         why = _step(rec, argv, rec["release"], VERIFY_TIMEOUT_S, log, " ".join(map(str, argv[-2:])),
                     site_knob="harness/deploy_switch.py:VERIFY_TIMEOUT_S", end=end)
         if why:
             return why
+    _keep(rec, "verified", path)
     return ""
 
 
-def rollback(rec: dict, why: str, log, end: float) -> str:
+def rollback(rec: dict, why: str, log, end: float, path=None) -> str:
     """Back to the previous release, the store backup if a migration ran, its units; what the rollback itself found."""
+    _keep(rec, "rolling_back", path)
     flip(Path(rec["link"]), Path(rec["previous"]))
+    _keep(rec, "flipped_back", path)
     said = []
     if rec.get("migrated") and rec.get("backup"):
         try:
             said.append(f"store restored from {rec['backup']} (schema {restore(Path(rec['backup']), Path(rec['db']))})")
-        except (OSError, sqlite3.Error, ValueError) as exc:
-            said.append(f"store restore FAILED: {exc}")
+        except Exception as exc:  # noqa: BLE001 - any failure leaves the store on the new schema, handled below
+            # The previous release refuses the newer store, so the new release keeps the link and its units.
+            flip(Path(rec["link"]), Path(rec["release"]))
+            rec["restore_failed"] = named(exc)
+            _keep(rec, "restore_failed", path)
+            return (f"store restore from {rec['backup']} FAILED ({named(exc)}); the store keeps the new schema, so "
+                    f"the link is back on {rec['release']} and its units stay")
+        _keep(rec, "restored", path)
     bad = _step(rec, rec["rollback_install"], rec["previous"], INSTALL_TIMEOUT_S, log, "rollback install",
                 site_knob="harness/deploy_switch.py:INSTALL_TIMEOUT_S", end=end)
     said.append(bad or "previous release reinstalled")
+    _keep(rec, "rollback_installed", path)
     if not bad and rec["verify"]:
         bad = _step(rec, rec["verify"][0], rec["previous"], VERIFY_TIMEOUT_S, log, "smoke after rollback",
                     site_knob="harness/deploy_switch.py:VERIFY_TIMEOUT_S", end=end)
         said.append(bad or "smoke passed after rollback")
+        _keep(rec, "rollback_verified", path)
         if bad:
             rec["environment_broken"] = True
             said.append(f"the previous release fails too, so this machine is broken, not release {rec['sha'][:12]}")
@@ -225,18 +244,23 @@ def switch(path: Path) -> dict:
     Path(rec["log"]).parent.mkdir(parents=True, exist_ok=True)
     with open(rec["log"], "a", encoding="utf-8") as log:
         try:
-            why = forward(rec, log, time.monotonic() + SWITCH_DEADLINE_S)
-        except OSError as exc:
-            why = f"switch failed: {exc}"
+            why = forward(rec, log, time.monotonic() + SWITCH_DEADLINE_S, path)
+        except Exception as exc:  # noqa: BLE001 - whatever stopped the switch, it rolls back and says why
+            log.write(traceback.format_exc())
+            why = f"switch failed: {named(exc)}"
         if not why:
             rec.update(outcome=DEPLOYED, detail=f"{rec['sha'][:12]} serving from {rec['release']}")
         else:
             try:
-                done = rollback(rec, why, log, time.monotonic() + SWITCH_DEADLINE_S)
-                rec.update(outcome=ROLLED_BACK, rolled_back_from=rec["sha"],
-                           detail=f"{why}; rolled back to {rec.get('previous_sha', '')[:12]}: {done}")
-            except OSError as exc:
-                rec.update(outcome=FAILED, detail=f"{why}; the rollback itself failed: {exc}")
+                done = rollback(rec, why, log, time.monotonic() + SWITCH_DEADLINE_S, path)
+                if rec.get("restore_failed"):
+                    rec.update(outcome=FAILED, detail=f"{why}; the rollback could not restore the store: {done}")
+                else:
+                    rec.update(outcome=ROLLED_BACK, rolled_back_from=rec["sha"],
+                               detail=f"{why}; rolled back to {rec.get('previous_sha', '')[:12]}: {done}")
+            except Exception as exc:  # noqa: BLE001 - a rollback that raises still ends in a recorded outcome
+                log.write(traceback.format_exc())
+                rec.update(outcome=FAILED, detail=f"{why}; the rollback itself failed at {rec['stage']}: {named(exc)}")
             head = "this machine is broken, not the release: " if rec.get("environment_broken") else ""
             alert(rec, f"{head}deploy of {rec['sha'][:12]} {rec['outcome']}: {rec['detail']}", log)
         if not rec.get("queue_was_paused"):
@@ -257,4 +281,6 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    # Run as a file under -I: harness is importable only from this file's own release root. #1610.
+    sys.path.append(str(Path(__file__).resolve().parents[1]))
     sys.exit(main(sys.argv[1:]))

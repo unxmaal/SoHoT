@@ -210,6 +210,36 @@ def test_a_last_sweep_older_than_its_interval_fails(live, monkeypatch):
     assert not check["ok"] and "1d 2h" in check["detail"]
 
 
+@pytest.mark.parametrize("scope", ["benchmarks", "gpu"])
+def test_a_late_sweep_under_an_owner_hold_is_held_not_failed(live, monkeypatch, scope):
+    """#1610: deploy 15 rolled back because the audit failed the loop benchmarks were held to stop."""
+    from harness import heartbeat, hold
+    conn = ms.connect()
+    try:
+        hold.hold(conn, "owner: benchmarks paused", scope=scope)
+    finally:
+        conn.close()
+    monkeypatch.setattr(heartbeat, "clock", lambda: time.time() + 26 * 3600)
+    got = live_audit.audit(live)
+    check = _checks(got)["sweep_on_schedule"]
+    assert check["ok"] and got["ok"], got
+    assert check["detail"].startswith(f"held, no sweep by design: {scope} held since") and "1d 2h" in check["detail"]
+    assert "ok   sweep_on_schedule: held" in live_audit.report_text(got)
+
+
+def test_a_late_sweep_after_the_hold_is_released_fails_again(live, monkeypatch):
+    from harness import heartbeat, hold
+    conn = ms.connect()
+    try:
+        hold.hold(conn, "owner: benchmarks paused")
+        hold.release(conn)
+    finally:
+        conn.close()
+    monkeypatch.setattr(heartbeat, "clock", lambda: time.time() + 26 * 3600)
+    check = _checks(live_audit.audit(live))["sweep_on_schedule"]
+    assert not check["ok"] and "1d 2h" in check["detail"]
+
+
 def _route_to_node(config, name="q3-4b", node="pc"):
     path = gateway.served_path(config)
     data = yaml.safe_load(path.read_text(encoding="utf-8"))

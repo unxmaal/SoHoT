@@ -1575,7 +1575,8 @@ this machine, no lane serves a reference model, each `sohot-<lane>` alias in
 the served config is the adoption, and no alias's requests through the gateway
 fail more than the threshold in `harness/live_audit.py`. A fifth,
 `sweep_on_schedule`, fails when the last discovery loop started more than 25
-hours ago. A failure exits 1 and names the rows.
+hours ago, unless an owner hold (`soh hold benchmarks` or `gpu`) stops sweeps on
+purpose; then it passes and says held (#1610). A failure exits 1 and names the rows.
 
 The `discover` agent sweeps once a day at 21:00, out of the way of daytime work
 (`StartCalendarInterval`; override with `DISCOVER_HOURS`). It used
@@ -3315,8 +3316,8 @@ Rollback, at any point: `uv run soh store export-to-sqlite ~/localharness/discov
 `scripts/launchd.sh uninstall`, move that file over `discovery.db` (or keep the untouched
 original), `uv run soh store switch --to sqlite`, `scripts/launchd.sh install`.
 `soh store switch --dry-run` says what either switch would do. On Postgres a
-migrating deploy backs up with `pg_dump` and its rollback restores with `pg_restore`
-in one transaction. `make test-postgres` runs the whole suite on a throwaway
+migrating deploy backs up with `pg_dump` and its rollback restores it in one `psql`
+transaction that first drops every table, so one the migration added goes too (#1610). `make test-postgres` runs the whole suite on a throwaway
 container; CI's `check-postgres` runs it on every pull request.
 
 ## Developing
