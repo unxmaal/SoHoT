@@ -27,6 +27,8 @@ CYCLE_S = 300
 MEMORY_WARN_S = 600
 #: Seconds a service port stays closed before monit alerts; launchd restarts it meanwhile.
 SERVICE_DOWN_S = 600
+#: Local hour in which monit asks each cycle whether the store's daily dump is due; the first ask makes it. #1591.
+STORE_BACKUP_HOUR = 2
 #: Seconds the du of the known growers may take on a disk alert, all of them together.
 DU_TIMEOUT_S = 30
 #: Seconds the webhook post may take.
@@ -50,7 +52,7 @@ LABEL = "com.unxmaal.localharness.monit"
 TITLE = "SoHoT monit"
 RECOVERED = "recovered"
 DISK_KINDS = ("disk", "disk-pause")
-KINDS = DISK_KINDS + ("volume", "volume-low", "memory", "service", "deploy", RECOVERED)
+KINDS = DISK_KINDS + ("volume", "volume-low", "memory", "service", "deploy", "store", "store-backup", RECOVERED)
 #: (monit name, launchd unit, port variable, the launcher's default port): read as scripts/serve-*.sh read them.
 SERVICES = (("gateway", "gateway", "GATEWAY_PORT", 4000), ("mlx", "mlx", "MLX_PORT", 8081),
             ("tts", "tts", "TTS_PORT", 8890))
@@ -127,8 +129,9 @@ def models_volume(data: str, run=subprocess.run) -> str | None:
 
 
 def job_path(which=shutil.which) -> str:
-    """PATH for monit's actions: uv, monit and the notifier wherever they are installed, then the system's."""
-    dirs = [str(Path(p).parent) for p in (which("uv"), which("monit"), which("terminal-notifier")) if p]
+    """PATH for monit's actions: uv, monit, the notifier and docker wherever they are installed, then the system's."""
+    dirs = [str(Path(p).parent) for p in (which("uv"), which("monit"), which("terminal-notifier"), which("docker"))
+            if p]
     dirs += ["/usr/bin", "/bin", "/usr/sbin", "/sbin"]
     return ":".join(dict.fromkeys(dirs))
 
@@ -136,7 +139,8 @@ def job_path(which=shutil.which) -> str:
 def scripts_dir() -> Path:
     """The deploy checkout's scripts when it has this monitor's, else this checkout's."""
     deploy = paths.deploy_checkout()
-    if deploy is not None and (deploy / "scripts" / "monit-alert.sh").is_file():
+    if deploy is not None and all((deploy / "scripts" / s.name).is_file()
+                                  for s in (paths.REPO / "scripts").glob("monit-*.sh")):
         return deploy / "scripts"
     return paths.REPO / "scripts"
 
@@ -151,12 +155,12 @@ def watched_services(agents: Path | None = None) -> list[tuple[str, int]]:
 
 def spec_here(run=subprocess.run) -> dict:
     """What this machine's config is rendered from."""
-    from harness import fetching
+    from harness import fetching, store_service
     home = paths.home()
     data = mount_point(str(home), run=run)
     return {"home": str(home), "scripts": str(scripts_dir()), "path": job_path(), "data": data,
             "models": models_volume(data, run=run), "models_floor_gib": fetching.DISK_FLOOR // (1024 ** 3),
-            "services": watched_services()}
+            "services": watched_services(), "store": store_service.hosted_here(home)}
 
 
 def _word(value) -> str:
@@ -192,6 +196,15 @@ def render(s: dict) -> str:
     for name, port in s.get("services") or []:
         out += [f"check host service_{_word(name)} with address 127.0.0.1",
                 f"    if failed port {int(port)} type tcp for {cycles(SERVICE_DOWN_S)} cycles {then('service')}", ""]
+    if s.get("store"):
+        from harness import store_service
+        store = f"{prefix} {s['scripts']}/monit-store.sh"
+        out += [f'check program store_postgres with path "{store} check" with timeout {CLI_TIMEOUT_S} seconds',
+                f"    if status != 0 for {cycles(SERVICE_DOWN_S)} cycles {then('store')}", "",
+                f'check program store_backup with path "{store} backup" '
+                f"with timeout {store_service.DUMP_TIMEOUT_S} seconds",
+                f'    every "* {int(STORE_BACKUP_HOUR)} * * *"',
+                f"    if status != 0 {then('store-backup')}", ""]
     return "\n".join(out)
 
 
@@ -483,7 +496,7 @@ def _bound(kind: str, what: str) -> None:
         cuts.cut("harness/monitor.py:DISK_PAUSE_GIB", what)
     elif kind == "memory":
         cuts.cut("harness/monitor.py:MEMORY_WARN_S", what)
-    elif kind == "service":
+    elif kind in ("service", "store"):
         cuts.cut("harness/monitor.py:SERVICE_DOWN_S", what)
 
 

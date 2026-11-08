@@ -847,10 +847,12 @@ def build_parser() -> argparse.ArgumentParser:
     sto = sub.add_parser("store", help="dry-run: migrate a copy of a store "
                          "with this checkout and check it, before a deploy")
     sto.add_argument("action", choices=("dry-run", "migrate-to-postgres", "export-to-sqlite", "switch",
-                                        "pg-up", "pg-down", "pg-status", "pg-roles"),
+                                        "pg-up", "pg-down", "pg-status", "pg-roles", "pg-check", "pg-backup",
+                                        "pg-restore"),
                      help="dry-run a migration; or the Postgres store (#1507): migrate-to-postgres copies the "
                           "SQLite store and verifies it, export-to-sqlite copies back into a new file, switch "
-                          "points this home at one or the other, pg-* run its container")
+                          "points this home at one or the other, pg-* run its container; pg-check exits 1 when its "
+                          "volume or container is gone, pg-backup writes the daily dump, pg-restore loads one (#1591)")
     sto.add_argument("path", nargs="?", default="",
                      help="the store to copy (default: this home's discovery.db); export-to-sqlite: the new file")
     sto.add_argument("--keep", action="store_true",
@@ -858,7 +860,12 @@ def build_parser() -> argparse.ArgumentParser:
     sto.add_argument("--dry-run", action="store_true",
                      help="migrate-to-postgres: snapshot and check, copy nothing; switch: say what it would do")
     sto.add_argument("--replace", action="store_true",
-                     help="migrate-to-postgres: overwrite a Postgres store that already holds rows")
+                     help="migrate-to-postgres: overwrite a Postgres store that already holds rows; "
+                          "pg-restore: replace the store with the dump")
+    sto.add_argument("--due", action="store_true",
+                     help="pg-backup: dump only when no daily dump was made today")
+    sto.add_argument("--keep-backups", type=int, default=None,
+                     help="pg-backup: daily dumps to keep (default store_service.BACKUP_KEEP)")
     sto.add_argument("--snapshot", default="", help="migrate-to-postgres: where the .backup goes "
                      "(default: this home's backups/sqlite-to-postgres-<time>.db)")
     sto.add_argument("--to", choices=("postgres", "sqlite"), default="postgres", help="switch: which store")

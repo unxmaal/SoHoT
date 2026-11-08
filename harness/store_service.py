@@ -61,8 +61,9 @@ def compose(action: list[str], *, run=subprocess.run, environ=None, secret=None)
     env["SOHOT_PG_PASSWORD"] = password(OWNER, ensure=True, secret=secret)
     env.setdefault("SOHOT_PG_PORT", str(PORT))
     from harness import cuts
+    # No terminal for compose to prompt on: a "Recreate (data will be lost)?" then takes its default, no. #1591.
     with cuts.timeout("harness/store_service.py:UP_TIMEOUT_S", "docker compose " + " ".join(action)):
-        return run(["docker", "compose", "-f", str(COMPOSE), *action], env=env,
+        return run(["docker", "compose", "-f", str(COMPOSE), *action], env=env, stdin=subprocess.DEVNULL,
                    capture_output=True, text=True, timeout=UP_TIMEOUT_S)
 
 
@@ -161,6 +162,149 @@ def schema(*, run=subprocess.run) -> int:
         raise _failed("psql schema read", got)
     out = (got.stdout or "").strip()
     return int(out) if out else 0
+
+
+VOLUME = "sohot-pg"
+#: The label pg-up creates the store's volume with, so a filtered prune passes it by. #1591.
+KEEP_LABEL = "com.unxmaal.sohot.keep=true"
+SAFE_PRUNE = f'docker system prune && docker volume prune --all --filter "label!={KEEP_LABEL}"'
+#: Daily dumps of the store kept under the home's backups/; pg-backup removes older ones.
+BACKUP_KEEP = 7
+BACKUP_PREFIX, BACKUP_SUFFIX = "store-daily-", ".dump"
+#: The first bytes of every pg_dump -Fc file.
+DUMP_MAGIC = b"PGDMP"
+
+
+class DockerDown(RuntimeError):
+    pass
+
+
+def hosted_here(home: Path | None = None) -> bool:
+    """This home's store is the Postgres container on this machine."""
+    got = store.marker(home)
+    return got.get("backend") == store.POSTGRES and got.get("host", "127.0.0.1") in ("127.0.0.1", "localhost")
+
+
+def _inspect(kind: list, name: str, run) -> dict | None:
+    """`docker <kind> inspect` of one object; None when docker says there is no such object."""
+    try:
+        got = run(["docker", *kind, "inspect", name], capture_output=True, text=True, timeout=UP_TIMEOUT_S,
+                  stdin=subprocess.DEVNULL)
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise DockerDown(f"docker did not answer: {type(exc).__name__}: {exc}") from exc
+    said = (got.stderr or got.stdout or "").strip()
+    if got.returncode != 0:
+        if "no such" in said.lower():
+            return None
+        raise DockerDown(f"docker did not answer (rc {got.returncode}): {said[:300]}")
+    try:
+        rows = json.loads(got.stdout or "[]")
+    except ValueError as exc:
+        raise DockerDown(f"docker inspect gave no JSON: {said[:300]}") from exc
+    return rows[0] if rows else None
+
+
+def labelled(vol: dict | None) -> bool:
+    key, _, value = KEEP_LABEL.partition("=")
+    return bool(vol) and (vol.get("Labels") or {}).get(key) == value
+
+
+def ensure_volume(run=subprocess.run, home: Path | None = None) -> str:
+    """The store's volume before compose starts on it: created with the keep label when absent, never on a switched home."""
+    if _inspect(["volume"], VOLUME, run) is not None:
+        return "exists"
+    if hosted_here(home):
+        raise RuntimeError(f"the store's volume {VOLUME} is gone and this home is switched to Postgres: the store is "
+                           f"lost. Restore it: docker volume create --label {KEEP_LABEL} {VOLUME}; soh store pg-up; "
+                           f"soh store pg-roles; soh store pg-restore --replace <newest {backup_dir(home)}/"
+                           f"{BACKUP_PREFIX}*{BACKUP_SUFFIX}>")
+    got = run(["docker", "volume", "create", "--label", KEEP_LABEL, VOLUME], capture_output=True, text=True,
+              timeout=UP_TIMEOUT_S, stdin=subprocess.DEVNULL)
+    if got.returncode != 0:
+        raise RuntimeError(f"docker volume create {VOLUME} exited {got.returncode}: {(got.stderr or '').strip()}")
+    return "created"
+
+
+def health(run=subprocess.run) -> list[str]:
+    """What is wrong with the store's volume and container; [] when the volume is there and the container healthy."""
+    try:
+        vol = _inspect(["volume"], VOLUME, run)
+        box = _inspect([], CONTAINER, run)
+    except DockerDown as exc:
+        return [f"the store is unreachable: {exc}"]
+    out = []
+    if vol is None:
+        out.append(f"the store's volume {VOLUME} is gone: restore the newest daily dump (soh store pg-status)")
+    state = (box or {}).get("State") or {}
+    if box is None:
+        out.append(f"the store's container {CONTAINER} does not exist: soh store pg-up")
+    elif not state.get("Running"):
+        out.append(f"the store's container {CONTAINER} is {state.get('Status') or 'not running'}: soh store pg-up")
+    elif (state.get("Health") or {}).get("Status") == "unhealthy":
+        out.append(f"the store's container {CONTAINER} is running but unhealthy: docker logs {CONTAINER}")
+    return out
+
+
+def backup_dir(home: Path | None = None) -> Path:
+    return Path(home or paths.home()) / "backups"
+
+
+def backups(home: Path | None = None) -> list[Path]:
+    """The daily dumps, oldest first; their names sort by time."""
+    return sorted(backup_dir(home).glob(f"{BACKUP_PREFIX}*{BACKUP_SUFFIX}"))
+
+
+def verify(path: Path, *, run=subprocess.run) -> None:
+    """A dump is a pg_dump -Fc file whose table of contents pg_restore can read."""
+    with open(path, "rb") as fh:
+        if fh.read(len(DUMP_MAGIC)) != DUMP_MAGIC:
+            raise RuntimeError(f"{path} is not a pg_dump custom-format file")
+    from harness import cuts
+    with open(path, "rb") as data, cuts.timeout("harness/store_service.py:DUMP_TIMEOUT_S", "pg_restore -l of a dump"):
+        got = run(in_container(["pg_restore", "-l"], stdin=True), stdin=data, stdout=subprocess.DEVNULL,
+                  stderr=subprocess.PIPE, timeout=DUMP_TIMEOUT_S)
+    if got.returncode != 0:
+        raise _failed("pg_restore -l", got)
+
+
+def daily_dump(home: Path | None = None, *, keep: int = BACKUP_KEEP, due: bool = False, run=subprocess.run,
+           clock=None) -> dict:
+    """One daily dump into backups/, checked, then the oldest past `keep` removed; with due, only when one is owed."""
+    import time
+    if keep < 1:
+        raise ValueError("keep must be at least 1: rotation never removes the dump it just made")
+    now = (clock or time.time)()
+    have = backups(home)
+    today = f"{BACKUP_PREFIX}{time.strftime('%Y%m%d', time.localtime(now))}-"
+    if due and have and have[-1].name.startswith(today):
+        return {"ok": True, "skipped": True, "newest": str(have[-1])}
+    dest = backup_dir(home) / f"{BACKUP_PREFIX}{time.strftime('%Y%m%d-%H%M%S', time.localtime(now))}{BACKUP_SUFFIX}"
+    dump(dest, run=run)
+    try:
+        verify(dest, run=run)
+    except Exception:
+        dest.unlink(missing_ok=True)
+        raise
+    have = backups(home)
+    removed = [str(p) for p in have[:-keep]]
+    for p in have[:-keep]:
+        p.unlink(missing_ok=True)
+    return {"ok": True, "skipped": False, "path": str(dest), "bytes": dest.stat().st_size, "removed": removed,
+            "kept": len(have) - len(removed)}
+
+
+def guard(home: Path | None = None, run=subprocess.run, clock=None) -> dict:
+    """pg-status's account of what protects the store: the volume's label, the safe prune, the daily dumps."""
+    import time
+    have = backups(home)
+    out = {"volume": VOLUME, "labelled": None, "prune": SAFE_PRUNE, "problems": health(run=run),
+           "backups": len(have), "newest": str(have[-1]) if have else "",
+           "newest_age_s": round((clock or time.time)() - have[-1].stat().st_mtime) if have else None}
+    try:
+        out["labelled"] = labelled(_inspect(["volume"], VOLUME, run))
+    except DockerDown as exc:
+        out["labelled_unknown"] = str(exc)
+    return out
 
 
 def marker_for(port: int = PORT, reader: str = store.DEFAULT_READER) -> dict:

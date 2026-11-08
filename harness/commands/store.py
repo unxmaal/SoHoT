@@ -17,15 +17,77 @@ def _pg_env():
     return {**os.environ, **svc.owner_environ()}
 
 
+def _say_guard(g: dict) -> None:
+    from harness import store_service as svc
+    if g["labelled"] is False:
+        note(f"volume {g['volume']} has no {svc.KEEP_LABEL} label (made before #1591; labels are fixed at creation), so "
+             "a filtered prune does not protect it: keep the container running and never run docker volume prune --all")
+    note(f"safe prune: {g['prune']}")
+    if g["newest"]:
+        note(f"daily dumps: {g['backups']}, newest {g['newest']} ({g['newest_age_s'] // 3600} h old)")
+    else:
+        note("daily dumps: none yet (soh store pg-backup; monit makes one a day)")
+    for p in g["problems"]:
+        note(f"warn: {p}")
+
+
+def _guard(a, svc) -> int:
+    """pg-check (monit's store check), pg-backup (the daily dump), pg-restore (a dump back into the store). #1591."""
+    if a.action == "pg-check":
+        problems = svc.health()
+        for p in problems:
+            note(p)
+        if not problems:
+            note(f"volume {svc.VOLUME} present, container {svc.CONTAINER} running")
+        emit(ok=not problems, problems=problems)
+        return 1 if problems else 0
+    if a.action == "pg-restore":
+        if not a.path or not Path(a.path).is_file():
+            return err("pg-restore needs a dump file, e.g. the newest of soh store pg-status's daily dumps")
+        if not a.replace:
+            return err("pg-restore replaces every table of the store: pass --replace")
+        try:
+            svc.restore(Path(a.path))
+        except (OSError, RuntimeError) as exc:
+            return err(f"restore failed, the store is unchanged: {exc}")
+        note(f"store restored from {a.path}")
+        emit(ok=True, restored=a.path)
+        return 0
+    try:
+        got = svc.daily_dump(keep=svc.BACKUP_KEEP if a.keep_backups is None else a.keep_backups, due=a.due)
+    except (OSError, RuntimeError, ValueError) as exc:
+        return err(f"backup failed: {exc}")
+    if got["skipped"]:
+        note(f"not due: {got['newest']} is today's")
+    else:
+        note(f"dumped {got['path']} ({got['bytes']} bytes), kept {got['kept']}, removed {len(got['removed'])}")
+    emit(**got)
+    return 0
+
+
 def _postgres(a) -> int:
     """The Postgres actions of `soh store`: the container, the copy each way, the switch. #1507."""
     import time
     from harness import memory_store as ms, paths, store, store_copy, store_service as svc
+    if a.action in ("pg-check", "pg-backup", "pg-restore"):
+        return _guard(a, svc)
     if a.action in ("pg-up", "pg-down", "pg-status"):
+        volume = ""
+        if a.action == "pg-up":
+            try:
+                volume = svc.ensure_volume()
+            except (RuntimeError, svc.DockerDown) as exc:
+                return err(str(exc))
+            if volume == "created":
+                note(f"created volume {svc.VOLUME} labelled {svc.KEEP_LABEL}")
         verb = {"pg-up": ["up", "-d", "--wait"], "pg-down": ["stop"], "pg-status": ["ps", "--format", "json"]}
         got = svc.compose(verb[a.action])
         note((got.stdout or "") + (got.stderr or ""))
-        emit(ok=got.returncode == 0, rc=got.returncode)
+        extra = {}
+        if a.action == "pg-status":
+            extra = svc.guard()
+            _say_guard(extra)
+        emit(ok=got.returncode == 0, rc=got.returncode, volume=volume, **extra)
         return 0 if got.returncode == 0 else 1
     if a.action == "pg-roles":
         conn = store.postgres_connect(svc.owner_environ())
