@@ -299,10 +299,16 @@ def _when(at) -> str:
     return time.strftime("%Y-%m-%d %H:%M", time.localtime(at)) if at else "never"
 
 
-def _sweep_on_schedule() -> list:
-    from harness import heartbeat
+def _sweep_on_schedule(conn) -> tuple[list, str]:
+    """(failures, note): a late loop fails, unless an owner hold stops sweeps on purpose; then it is noted held. #1610."""
+    from harness import heartbeat, hold
     late = heartbeat.overdue()
-    return [late] if late else []
+    if not late:
+        return [], ""
+    held = hold.actives(conn)
+    if held:
+        return [], "held, no sweep by design: " + "; ".join(hold.line(h) for h in held) + f" ({late})"
+    return [late], ""
 
 
 def _sweep_on_deployed_code() -> str:
@@ -372,12 +378,13 @@ def audit(path=None, config=None) -> dict:
         with ms.lend(conn):
             served, wanted = serving(conn, config)
         here = _facts_here(conn)
+        late, held = _sweep_on_schedule(conn)
         checks = mc.invariants(conn) + [
             mc._check("adoptions_pass_here", _adoptions_pass_here(conn)),
             mc._check("no_reference_served", _no_reference_served(conn, served or {})),
             mc._check("served_matches_adoption", _served_matches(served, wanted, gateway.served_path(config))),
             mc._check("gateway_errors", _gateway_errors(conn)),
-            mc._check("sweep_on_schedule", _sweep_on_schedule()),
+            mc._check("sweep_on_schedule", late),
             mc._check("sweep_on_deployed_code", []),
         ]
         inventories = {"too_big_ceiling_current": _too_big_ceiling_current(conn),
@@ -408,6 +415,7 @@ def audit(path=None, config=None) -> dict:
         drifted = _venv_drift(path)
         if drifted:
             warnings["venv_matches_script"] = "rebuilt from empty on its next run: " + mc._say(drifted)
+        notes = {"sweep_on_schedule": held} if held else {}
         moved = _sweep_on_deployed_code()
         if moved:
             warnings["sweep_on_deployed_code"] = moved
@@ -424,7 +432,7 @@ def audit(path=None, config=None) -> dict:
     finally:
         conn.close()
     return {"source": str(path), "served_config": str(gateway.served_path(config)), "schema": have, "ok": all(c.ok for c in checks),
-            "checks": [{"name": c.name, "ok": c.ok, "detail": c.detail or warnings.get(c.name, ""),
+            "checks": [{"name": c.name, "ok": c.ok, "detail": c.detail or warnings.get(c.name, notes.get(c.name, "")),
                         "warn": c.name in warnings} for c in checks],
             "binding": bound, "fallbacks": fell}
 

@@ -396,12 +396,53 @@ def test_a_dump_lands_whole_or_not_at_all(tmp_path):
 
 def test_a_restore_is_one_transaction(tmp_path):
     (tmp_path / "x.dump").write_bytes(b"DUMP")
-    ran = _Ran()
+    ran = _Ran(out=b"-- script")
     svc.restore(tmp_path / "x.dump", run=ran)
-    argv = ran.calls[0][0]
-    assert "pg_restore" in argv and "--single-transaction" in argv and "--clean" in argv
+    script, load = ran.calls[0][0], ran.calls[1][0]
+    assert "pg_restore" in script and "--clean" in script and "-d" not in script
+    assert "psql" in load and "-1" in load and "ON_ERROR_STOP=1" in load and svc.DROP_TABLES in load
+    assert not (tmp_path / "x.dump.restore.sql").exists()
     with pytest.raises(RuntimeError, match="pg_restore exited 1"):
         svc.restore(tmp_path / "x.dump", run=_Ran(rc=1))
+
+
+def _local_tools(schema, monkeypatch):
+    """The container's pg tools as this host's, on the PG* server, in the test's own schema."""
+    import shutil
+    tools = {t: shutil.which(t) for t in ("pg_dump", "pg_restore", "psql")}
+    if not all(tools.values()):
+        pytest.skip("needs pg_dump, pg_restore and psql on PATH")
+
+    def local(argv, stdin=False):
+        argv = [tools[argv[0]], *argv[1:]]
+        return argv + ["-n", schema] if argv[0] == tools["pg_dump"] else argv
+    monkeypatch.setattr(svc, "in_container", local)
+
+
+def test_a_postgres_restore_puts_the_backup_back_and_drops_what_a_migration_added(tmp_path, monkeypatch, _pg_schema):
+    """#1610: deploy 15's backup is a pg_dump; the rollback must leave the store exactly as it was dumped."""
+    from harness import deploy_switch
+    _pg_ready()
+    _local_tools(_pg_schema, monkeypatch)
+    ms.connect().close()
+    saved = svc.dump(tmp_path / "discovery-15-pre92.db")
+    conn = store.postgres_connect()
+    try:
+        conn.execute("CREATE TABLE added_by_migration (x INTEGER)")
+        conn.execute("ALTER TABLE jobs ADD COLUMN added_column TEXT")
+        conn.execute("UPDATE meta SET value = ? WHERE key = 'schema'", (str(ms.SCHEMA_VERSION + 1),))
+        conn.commit()
+    finally:
+        conn.close()
+    assert deploy_switch.restore(saved, ms.db_path()) == ms.SCHEMA_VERSION
+    conn = store.postgres_connect()
+    try:
+        assert not store.has_table(conn, "added_by_migration")
+        cols = {r[0] for r in conn.execute("SELECT column_name FROM information_schema.columns "
+                                           "WHERE table_schema = current_schema() AND table_name = 'jobs'")}
+        assert "added_column" not in cols and "id" in cols
+    finally:
+        conn.close()
 
 
 def test_a_deploy_on_postgres_backs_up_with_pg_dump(tmp_path, monkeypatch):
@@ -416,7 +457,7 @@ def test_a_deploy_on_postgres_backs_up_with_pg_dump(tmp_path, monkeypatch):
 # ---- SQLite-only code outside the seam is an inventory that only shrinks ----------
 
 #: Counted 2026-11-07 (#1507). origin/main had sqlite3_connect 18, uri_mode 11; the rest are SQLite branches.
-SQLITE_ONLY_PIN = {"backup": 4, "except_sqlite3": 28, "pragma": 10, "sqlite3_connect": 12,
+SQLITE_ONLY_PIN = {"backup": 4, "except_sqlite3": 27, "pragma": 10, "sqlite3_connect": 12,
                    "sqlite_master": 2, "uri_mode": 5}
 
 

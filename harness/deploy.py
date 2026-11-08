@@ -333,11 +333,14 @@ def backup(db: Path, dest: Path) -> Path:
     return dest
 
 
+def switch_argv(record: Path) -> list[str]:
+    """This release's deploy_switch as a file under the venv's base interpreter, isolated: no venv, no PYTHONPATH."""
+    return [os.path.realpath(sys.executable), "-I", str(Path(deploy_switch.__file__).resolve()), str(record)]
+
+
 def spawn_switch(record: Path, release_for_log: Path) -> str:
     """Start deploy_switch on the record so it outlives the worker: a launchd one-shot on macOS, else detached."""
-    me = Path(deploy_switch.__file__).resolve()
-    python = os.path.realpath(sys.executable)
-    argv = [python, "-I", str(me), str(record)]
+    argv = switch_argv(record)
     log = paths.logs() / "deploy.log"
     if sys.platform == "darwin":
         import plistlib
