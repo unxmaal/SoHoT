@@ -1696,7 +1696,7 @@ def _execute_at(args, overrides: dict) -> int:
         if stopped:
             # Stored at the path the finished run replaces, so its rows are kept and never doubled. #813.
             stamped["progress"] = {"state": state, "why": why, "done": len(results), "total": total}
-        environment_ = {**serving_environment(client, serving, away),
+        environment_ = {**serving_environment(client, serving, away, served_builds(completion.served())),
                         "identities": {key: idents[spec] for key, spec in specs.items() if spec in idents}}
         if eye.yields or eye.cuts:
             environment_["serving_yields"] = {"count": eye.yields, "seconds": round(eye.yield_s, 3), "cut": eye.cuts}
@@ -1831,12 +1831,18 @@ def reused_cells(path, idents: dict, cases) -> dict:
     return {"spec": spec, "digest": digest, "cells": cells, "runs": got.get("runs") or {}} if cells else {}
 
 
-def serving_environment(client: dict, serving: str, away: bool) -> dict:
-    """The receipt environment: the serving host's identity, the client's own capture beside it. #697."""
+def serving_environment(client: dict, serving: str, away: bool, builds=()) -> dict:
+    """The receipt environment: the serving host's identity and llama.cpp build, the client's capture beside it. #697, #1607."""
     if not away:
         return client
     from harness import machine
-    return {**machine.parse_fingerprint(serving), "client": client}
+    got = {**machine.parse_fingerprint(serving), "client": client}
+    return {**got, "versions": {"llama.cpp": ",".join(builds)}} if builds else got
+
+
+def served_builds(seen: dict) -> list[str]:
+    """Every llama.cpp build the replies' x-sohot-engine-build named. #1607."""
+    return sorted({b for got in seen.values() for b in (got.get("builds") or ()) if b})
 
 
 def _sent_as(spec: str, gateway: str | None) -> str:
@@ -1858,7 +1864,8 @@ def served_shapes(specs: dict, resolved: dict, seen: dict, away: bool,
             continue
         said = named.get(_sent_as(text_spec(spec), gateway)) or {}
         shape = {"model": said.get("model") or ("" if away else resolved.get(key, "")),
-                 "ctx": said.get("ctx"), "slots": said.get("slots")}
+                 "ctx": said.get("ctx"), "slots": said.get("slots"),
+                 "llama.cpp": ",".join(said.get("builds") or ())}
         if not away and not (shape["ctx"] or shape["slots"]):
             shape["ctx"] = _served_ctx(spec)
             try:

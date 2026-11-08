@@ -82,7 +82,8 @@ def served_shape(model: str) -> dict:
         return hit[1]
     from harness import context
     got = {}
-    for key, probe in (("ctx", context.served_ctx), ("slots", context.served_slots)):
+    for key, probe in (("ctx", context.served_ctx), ("slots", context.served_slots),
+                       ("engine-build", context.served_build)):
         try:
             got[key] = probe(model)
         except Exception:  # noqa: BLE001 - a reply header must not fail a reply

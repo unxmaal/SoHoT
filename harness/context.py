@@ -608,7 +608,27 @@ def _props(base: str, key: str, get=None) -> dict:
     except Exception:  # noqa: BLE001 - not llama-server, or not answering
         return {}
     ctx = (got.get("default_generation_settings") or {}).get("n_ctx")
-    return {k: int(v) for k, v in (("ctx", ctx), ("slots", got.get("total_slots"))) if v}
+    out = {k: int(v) for k, v in (("ctx", ctx), ("slots", got.get("total_slots"))) if v}
+    build = build_of(got.get("build_info"))
+    return {**out, "build": build} if build else out
+
+
+def build_of(info) -> str:
+    """The build number in llama-server's /props build_info ("b12110-cd959bae9" -> "12110"); "" when none. #1607."""
+    import re
+    m = re.match(r"b?(\d+)(?:-|$)", str(info or "").strip())
+    return m.group(1) if m else ""
+
+
+def served_build(spec: str, config=None, get=None) -> str | None:
+    """The llama.cpp build another host's llama-server serves this spec on, from its /props; None here or unknown. #1607."""
+    where = _upstream(spec, config)
+    if where is None:
+        return None
+    from harness import serving
+    if serving.loopback(where[0]):
+        return None
+    return _props(where[0], _key(spec, config), get).get("build") or None
 
 
 def served_ctx(spec: str, config=None, get=None, conn=None) -> int | None:
