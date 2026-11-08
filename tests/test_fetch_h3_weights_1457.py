@@ -31,6 +31,10 @@ def snapshot_download(**kw):
 """
 
 
+# Git for Windows' bash.exe puts /usr/bin before the caller's PATH, so its real df would win over the fake.
+FIRST = 'd="$1"; shift; if command -v cygpath >/dev/null; then d="$(cygpath -u "$d")"; fi; PATH="$d:$PATH" exec bash "$@"'
+
+
 def _exe(path: Path, body: str) -> None:
     path.write_text(body, encoding="utf-8", newline="\n")
     path.chmod(0o755)
@@ -56,7 +60,8 @@ def test_the_download_step_sees_online_mode_and_the_xet_switch(tmp_path, caller)
                H3_PY=Path(sys.executable).as_posix())
     if caller is not None:
         env["HF_HUB_OFFLINE"] = caller
-    p = subprocess.run([shells.BASH, str(SCRIPT)], capture_output=True, text=True, env=env, timeout=120)
+    p = subprocess.run([shells.BASH, "-c", FIRST, "_", str(bin_dir), str(SCRIPT)],
+                       capture_output=True, text=True, env=env, timeout=120)
     assert p.returncode == 0, p.stderr
     got = json.loads(seen.read_text(encoding="utf-8"))
     assert got["env"]["HF_HUB_OFFLINE"] == "0"

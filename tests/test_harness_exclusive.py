@@ -161,6 +161,11 @@ def test_the_lock_is_released_when_the_holder_is_killed(home):
     assert holder.stdout.readline().strip() == "held"
     holder.kill()
     holder.wait(timeout=10)
+    # Windows frees a dead process's lock some time after it exits. #851.
+    for _ in range(200):
+        if not exclusive._taken(exclusive.lock_path()):
+            break
+        time.sleep(0.05)
 
     with exclusive.held("image") as waited:
         pass

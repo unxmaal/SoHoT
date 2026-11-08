@@ -405,3 +405,18 @@ def test_an_overrun_stop_only_the_store_records_is_not_resumed(monkeypatch, worl
         conn.close()
     _measure()
     assert ("--resume" in fake.argvs[1]) is resumed
+
+
+@pytest.mark.parametrize("name", ["run-café", "run\\back"])
+def test_the_stored_overrun_is_found_for_a_path_json_escapes(world, tmp_path, name):  # noqa: F811
+    """A Windows path's backslashes and a non-ASCII name are escaped in the evidence JSON. #1606."""
+    out = tmp_path / name
+    conn = world()
+    try:
+        conn.execute("INSERT INTO watchdog_actions (at, criterion, subject, action, escalated, dry_run, evidence, "
+                     "outcome) VALUES (0, 'overrun', 'eval pgid 1', 'stop', 1, 0, ?, 'group 1: term')",
+                     (json.dumps({"command": f"uv run python -m evals.run --out {out} --resume"}),))
+        conn.commit()
+        assert wd.overrun_stopped(conn, out) and not wd.overrun_stopped(conn, tmp_path / "other")
+    finally:
+        conn.close()

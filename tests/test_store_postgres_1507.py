@@ -2,6 +2,7 @@
 import json
 import os
 import sqlite3
+import sys
 
 import pytest
 
@@ -134,7 +135,8 @@ def test_a_password_is_generated_once_and_kept(tmp_path):
     secret = gateway_key.FileStore(tmp_path / "pg.secret")
     first = svc.password("discovery", ensure=True, secret=secret)
     assert first and svc.password("discovery", secret=secret) == first
-    assert oct((tmp_path / "pg.secret").stat().st_mode & 0o777) == "0o600"
+    if sys.platform != "win32":  # chmod sets only the read-only bit on Windows; an ACL is the equivalent.
+        assert oct((tmp_path / "pg.secret").stat().st_mode & 0o777) == "0o600"
 
 
 def test_compose_gets_the_password_in_its_environment_never_its_argv(tmp_path):

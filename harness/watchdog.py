@@ -1336,6 +1336,8 @@ def overrun_stopped(conn, out) -> bool:
     from evals import watch
     if watch.stop_reason(out) == watch.OVERRUN:
         return True
+    # The evidence is JSON text: a backslash (every Windows path) or a non-ASCII name is escaped there.
+    out = json.dumps(str(out))[1:-1]
     row = conn.execute(
         "SELECT 1 FROM watchdog_actions WHERE criterion = ? AND action = ? AND dry_run = 0 AND outcome LIKE 'group %' "
         "AND (instr(evidence, ?) > 0 OR instr(evidence, ?) > 0) LIMIT 1",

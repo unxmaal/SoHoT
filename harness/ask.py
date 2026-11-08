@@ -465,7 +465,7 @@ def redos(files, window: int = REDO_WINDOW, since: float | None = None) -> dict:
                 if (later == "Read" and _norm(again.get("file_path", "")) in wanted
                         and again.get("offset") is None and again.get("limit") is None):
                     redone += 1
-                    examples.append({"transcript": str(path), "path": _norm(again["file_path"])})
+                    examples.append({"transcript": str(path), "path": str(again["file_path"])})
                     break
     return {"digests": digests, "redos": redone,
             "rate": (redone / digests) if digests else None, "examples": examples[:10]}

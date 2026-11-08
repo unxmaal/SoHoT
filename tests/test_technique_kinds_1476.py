@@ -192,7 +192,8 @@ def test_the_morning_brief_lists_measured_won_lost_and_unmeasurable_by_reason(co
     t = morning.techniques(conn, since=0.0)
     assert t["crossings"] == {"measured": 1, "won": 0, "lost": 1, "declined": 0, "waiting": 1}
     assert t["all"][tt.TRAINING] == 1 and t["all"][tt.ENGINE] == 1 and t["triaged"][tt.DECODING] == 1
-    r = morning.gather(conn, 1.0, 0.0, gh=lambda argv: "", git=lambda argv: "", lanes=lambda c: [],
+    # Windows has no local time before the epoch, and the ledger reads the day before now.
+    r = morning.gather(conn, 2 * 86400.0, 0.0, gh=lambda argv: "", git=lambda argv: "", lanes=lambda c: [],
                        stalls=lambda c: [])
     text = "\n".join(render(r))
     assert "techniques 3 triaged: 0 prompt, 1 decoding" in text

@@ -436,7 +436,7 @@ def test_the_tool_takes_paths_and_a_question_and_hides_its_context(mcp_server):
 def test_the_tool_answers_from_paths_with_the_files_it_read(fake, mcp_server, root, monkeypatch):  # noqa: F811
     monkeypatch.setenv(ask.ROOTS_ENV, str(root))
     fake.reply = "test_q"
-    (root / "a.log").write_text("FAILED test_q\n", encoding="utf-8")
+    (root / "a.log").write_text("FAILED test_q\n", encoding="utf-8", newline="\n")
     got = mcp_server.local_complete(paths=[str(root / "a.log")], question="what failed?")
     assert got.text == "FAILED test_q" and got.lane == "extract" and got.parts == 1
     assert got.files == [{"path": os.path.realpath(root / "a.log"), "bytes": 14}]

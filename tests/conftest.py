@@ -885,4 +885,6 @@ def fake_chrome(monkeypatch):
     chrome = _FakeChrome()
     monkeypatch.setattr(render, "time", types.SimpleNamespace(monotonic=chrome.monotonic, sleep=chrome.sleep))
     monkeypatch.setattr(render.subprocess, "Popen", chrome.Popen)
+    # On Windows _kill_tree runs taskkill through subprocess.run, which would get the fake too. #855.
+    monkeypatch.setattr(render, "_kill_tree", lambda proc: None)
     return chrome

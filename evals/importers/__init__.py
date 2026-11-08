@@ -85,12 +85,12 @@ def write(mod, name: str, made: list[Imported], root: Path = CASES) -> list[Path
     written, held = [], {}
     for one in sorted(made, key=lambda m: m.case["id"]):
         path = out / f"{one.case['id']}.yaml"
-        path.write_text(_dump(mod, one.case), encoding="utf-8")
+        path.write_text(_dump(mod, one.case), encoding="utf-8", newline="\n")
         if one.reference is not None:
             (out / "reference").mkdir(exist_ok=True)
             (out / "reference" / f"{one.case['id']}.py").write_text(
                 f"# {MARK} from {mod.SOURCE}@{mod.REVISION}.\n" + one.reference,
-                encoding="utf-8")
+                encoding="utf-8", newline="\n")
         for rel, data in one.files:
             target = (out / rel).resolve()
             if out.resolve() not in target.parents:
