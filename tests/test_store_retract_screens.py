@@ -11,7 +11,7 @@ from harness import memory_store as ms  # noqa: E402
 
 @pytest.fixture
 def store(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 
@@ -41,7 +41,7 @@ def test_an_evidence_free_broken_screen_is_reopened(store, tmp_path):
               detail="it ran and passed nothing || WARNING: 2154 MB of swap")
     rewind(store)
     store.close()
-    again = ms.connect(tmp_path / "s.db")
+    again = ms.connect()
     try:
         got, why = latest(again, "org/answered")
         assert got == "queued", f"a verdict with no evidence stayed terminal: {why}"
@@ -59,7 +59,7 @@ def test_a_screen_that_recorded_its_receipt_is_left_alone(store, tmp_path):
               run_path=str(tmp_path / "runs" / "screen-1"))
     rewind(store)
     store.close()
-    again = ms.connect(tmp_path / "s.db")
+    again = ms.connect()
     try:
         assert latest(again, "org/with-evidence")[0] == "broken"
     finally:
@@ -76,7 +76,7 @@ def test_a_candidate_screened_since_is_not_reopened(store, tmp_path):
               detail="1 case(s) passed a screen")
     rewind(store)
     store.close()
-    again = ms.connect(tmp_path / "s.db")
+    again = ms.connect()
     try:
         assert latest(again, "org/moved-on")[0] == "screened"
     finally:
@@ -91,7 +91,7 @@ def test_a_broken_screen_for_another_reason_is_left_alone(store, tmp_path):
               detail="the screen exited 1")
     rewind(store)
     store.close()
-    again = ms.connect(tmp_path / "s.db")
+    again = ms.connect()
     try:
         assert latest(again, "org/exited")[0] == "broken"
     finally:
@@ -105,9 +105,9 @@ def test_running_the_migration_twice_does_not_stack_retractions(store, tmp_path)
     rewind(store)
     store.close()
     for _ in range(2):
-        again = ms.connect(tmp_path / "s.db")
+        again = ms.connect()
         again.close()
-    again = ms.connect(tmp_path / "s.db")
+    again = ms.connect()
     try:
         n = again.execute(
             "SELECT COUNT(*) FROM verdicts v JOIN proposals p "

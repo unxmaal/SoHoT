@@ -19,7 +19,7 @@ IN_BAND = json.dumps({"error": {"message": "No module named 'soundfile'", "type"
 
 @pytest.fixture
 def store(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 

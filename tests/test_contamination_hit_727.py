@@ -10,7 +10,7 @@ from harness import memory_store as ms
 
 @pytest.fixture
 def store(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 
@@ -65,7 +65,7 @@ def test_too_few_probed_passages_leave_the_derivation_provisional(store, tmp_pat
     got = ct.calibrate(store, share=0.95, min_passages=10)
     assert _model(got, "m")["status"] == "provisional" and got["status"] == "provisional"
     assert got["agrees"] is True
-    args = type("A", (), {"db": str(tmp_path / "s.db"), "calibrate": True})()
+    args = type("A", (), {"db": str(ms.db_path()), "calibrate": True})()
     assert cmd.cmd_calibrate(args) == 0
 
 
@@ -124,7 +124,7 @@ def test_a_complete_derivation_that_disagrees_with_contamination_hit_fails_the_c
     got = ct.calibrate(store, share=0.95, min_passages=10)
     assert got["status"] == "derived" and got["derived"] == 1.0 != got["current"] == ct.HIT
     assert got["agrees"] is False
-    args = type("A", (), {"db": str(tmp_path / "s.db"), "calibrate": True})()
+    args = type("A", (), {"db": str(ms.db_path()), "calibrate": True})()
     assert cmd.cmd_calibrate(args) == 1
 
 

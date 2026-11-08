@@ -117,7 +117,7 @@ def test_the_gap_names_every_case_and_the_methods_it_takes(tmp_path, monkeypatch
 # ---- the store's card picks the engine and names the gap (#563, #601, #596) ----
 
 def _carded(tmp_path, name, lane, **cols):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     ms.record(conn, ms.Seen(name=name, source="t", lane=lane, registry=ms.HUGGINGFACE,
                             resolved=name))
     conn.execute(f"UPDATE proposals SET {', '.join(f'{k} = ?' for k in cols)} WHERE name = ?",

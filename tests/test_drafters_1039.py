@@ -86,7 +86,7 @@ def _machine(*runtimes):
 def test_inspect_then_fetch_declines_a_drafter_without_downloading_it(tmp_path, monkeypatch, repo, runtimes):
     from harness import machine
     monkeypatch.setattr(machine, "detect", lambda *a, **k: _machine(*runtimes))
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     try:
         ms.record(conn, ms.Seen(name=repo, source="t", lane="code", registry=ms.HUGGINGFACE, resolved=repo))
         ms.set_size(conn, repo, 4 * GIB)
@@ -162,7 +162,7 @@ def _held(conn, name, tags, until, detail):
 
 
 def test_coherence_re_decides_held_drafters_and_leaves_a_full_model(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     try:
         ctx = ("the installed runtime could not load it: llama-server: llama_init_from_model: failed to "
                "initialize the context: dflash requires ctx_other to be set (server-load.log)")

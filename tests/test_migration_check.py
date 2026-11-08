@@ -9,7 +9,7 @@ from harness import migration_check as mc
 
 @pytest.fixture
 def head(tmp_path):
-    conn = ms.connect(tmp_path / "head.db")
+    conn = ms.connect()
     for name in ("org/a", "org/b"):
         ms.record(conn, ms.Seen(name=name, source="test"), at=1.0)
     ms.decide(conn, "org/a", "queued", tier=ms.INSPECT, detail="fits: 1 GiB",
@@ -51,6 +51,7 @@ def test_a_state_held_by_another_proposals_verdict_fails(head):
     assert failing(head) == {"proposal_state"}
 
 
+@pytest.mark.sqlite_store  # PRAGMA foreign_keys = OFF lets a dangling row in; Postgres enforces. #1631.
 def test_an_adoption_of_no_candidate_fails(head):
     head.execute("PRAGMA foreign_keys = OFF")
     head.execute("INSERT INTO adoptions (lane, candidate_id, how, adopted_at) "
@@ -96,6 +97,7 @@ def test_a_schema_behind_head_fails(head):
     assert failing(head) == {"schema"}
 
 
+@pytest.mark.sqlite_store  # PRAGMA foreign_keys = OFF lets a dangling row in; Postgres enforces. #1631.
 def test_a_dangling_foreign_key_fails(head):
     head.execute("PRAGMA foreign_keys = OFF")
     head.execute("INSERT INTO sightings (proposal_id, source, seen_at) "

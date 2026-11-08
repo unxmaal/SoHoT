@@ -21,7 +21,7 @@ P = "harness/memory_store/proposals.py:"
 
 @pytest.fixture
 def db(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 

@@ -30,7 +30,7 @@ def _env(host, memory_gb=96, hw="Mac17,15"):
 
 
 def test_two_hosts_with_one_board_keep_two_rows(tmp_path, machine_is):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     machine_is(_env("aaaaaaaaaaaa", 96))
     a = ms.remember_machine(conn)
     machine_is(_env("bbbbbbbbbbbb", 256))
@@ -55,7 +55,7 @@ def test_a_host_with_no_platform_uuid_persists_one(tmp_path):
 
 
 def test_the_first_host_to_ask_claims_the_rows_from_before_hosts(tmp_path, machine_is):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     old = runs.machine_for(conn, {"hw_model": "Mac17,15", "os": OS, "arch": "arm64"})
     machine_is(_env("aaaaaaaaaaaa"))
     assert ms.machine_row(conn) == old
@@ -69,7 +69,7 @@ def test_the_first_host_to_ask_claims_the_rows_from_before_hosts(tmp_path, machi
 
 
 def test_two_hosts_are_not_reported_as_one_machine(tmp_path, machine_is):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     for host in ("aaaaaaaaaaaa", "bbbbbbbbbbbb"):
         machine_is(_env(host))
         ms.remember_machine(conn)
@@ -318,7 +318,7 @@ def test_a_llamacpp_spec_takes_the_local_shape_because_llama_server_sends_no_hea
 
 
 def test_a_receipt_from_another_host_does_not_take_this_stores_old_row(tmp_path, machine_is):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     old = runs.machine_for(conn, {"hw_model": "Mac17,15", "os": OS, "arch": "arm64"})
     machine_is(_env("aaaaaaaaaaaa"))
     b = runs.machine_for(conn, _env("bbbbbbbbbbbb"))
@@ -328,7 +328,7 @@ def test_a_receipt_from_another_host_does_not_take_this_stores_old_row(tmp_path,
 
 
 def test_asking_for_the_client_machine_writes_nothing(tmp_path, machine_is):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     machine_is(_env("aaaaaaaaaaaa"))
     run_id = runs.record(conn, tmp_path / "r.json", {
         "generated": "2026-10-11T00:00:00", "environment": {**_env("bbbbbbbbbbbb"), "client": _env("cccccccccccc")},

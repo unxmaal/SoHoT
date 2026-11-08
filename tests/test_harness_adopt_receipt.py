@@ -394,7 +394,7 @@ def test_the_incumbent_is_not_measured_against_itself(monkeypatch, tmp_path,
 
 
 def test_inspect_does_not_reanswer_a_screened_candidate(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     try:
         _seed_screened(conn, "org/screened")
         conn.execute("UPDATE proposals SET resolved = 'org/screened'")

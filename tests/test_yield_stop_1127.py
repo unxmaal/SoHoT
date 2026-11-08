@@ -20,7 +20,7 @@ _SEQ = iter(range(1, 10_000))
 
 @pytest.fixture
 def conn(tmp_path, monkeypatch):
-    c = ms.connect(tmp_path / "d.db")
+    c = ms.connect()
     yield c
     c.close()
 
@@ -187,7 +187,7 @@ def test_the_dry_run_rescores_a_checkpoint(conn, tmp_path, capsys):
     conn.commit()
     ck = tmp_path / "checkpoint.jsonl"
     ck.write_text("\n".join(json.dumps({"row": r}) for r in tail_never_passes("ornith")), encoding="utf-8")
-    a = common.parsed("yield-stop", LANE, "ornith", "--store", str(tmp_path / "d.db"), "--checkpoint", str(ck))
+    a = common.parsed("yield-stop", LANE, "ornith", "--store", str(ms.db_path()), "--checkpoint", str(ck))
     assert a.func(a) == 0
     out = capsys.readouterr().out
     assert "stops at 100 tokens" in out and "10 passes kept, 0 lost, 15 stopped" in out

@@ -57,7 +57,7 @@ def _decline(conn, name, ceiling_gb, until="ceiling_gb:>398.1", detail=STALE):
 
 @pytest.fixture
 def store(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 

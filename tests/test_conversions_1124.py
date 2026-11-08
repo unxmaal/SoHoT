@@ -1,5 +1,6 @@
 """A reply budget binds only through cuts that pass with more room, so its binding line counts those (#1124)."""
 from harness import binding, convertible
+from harness import memory_store as ms
 from harness.commands import common
 from tests.test_reply_budget_binding_1020 import DAY_AT, conn, runs_472_474  # noqa: F401
 
@@ -14,7 +15,7 @@ def test_the_binding_line_counts_cuts_that_converted_on_runs_472_and_474(conn):
 def test_a_dry_run_over_runs_472_and_474_reproduces_0_of_21(conn, tmp_path, capsys):
     low, high = runs_472_474(conn)
     conn.commit()
-    a = common.parsed("climb", "repo", "ornith", "--runs", f"{low},{high}", "--store", str(tmp_path / "d.db"))
+    a = common.parsed("climb", "repo", "ornith", "--runs", f"{low},{high}", "--store", str(ms.db_path()))
     assert a.func(a) == 0
     assert "0 of 21 cuts at 32768 converted" in capsys.readouterr().out
 

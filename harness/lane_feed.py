@@ -242,7 +242,7 @@ def open_store(store: str = ""):
     from harness import ledger, store as backend
     from harness import memory_store as ms
     if store:
-        if not Path(store).is_file():
+        if not backend.exists(store):
             raise FileNotFoundError(f"no store at {store}")
         return ledger.open_ro(Path(store))
     if not backend.exists(ms.db_path()):

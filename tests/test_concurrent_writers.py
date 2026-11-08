@@ -19,6 +19,8 @@ import pytest
 
 from harness import memory_store
 
+pytestmark = pytest.mark.sqlite_store  # WAL, busy_timeout and file locks are the subject. #1631.
+
 
 def _write(path, key, rows, barrier=None):
     conn = memory_store.connect(Path(path))
@@ -40,7 +42,7 @@ def test_the_store_waits_for_the_lock_rather_than_failing():
 def test_wal_and_a_timeout_are_actually_set(tmp_path):
     """Read back from the connection rather than trusting the source: a PRAGMA
     can be silently refused, and journal_mode in particular is per-database."""
-    conn = memory_store.connect(tmp_path / "d.db")
+    conn = memory_store.connect()
     assert conn.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
     assert conn.execute("PRAGMA busy_timeout").fetchone()[0] == \
         int(memory_store.BUSY_TIMEOUT_SECONDS * 1000)

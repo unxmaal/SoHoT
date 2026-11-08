@@ -464,7 +464,7 @@ def test_with_streaming_the_memory_check_counts_the_expert_cache(monkeypatch):
 
 
 def test_the_fetch_tier_never_downloads_a_ds4_model_on_its_own(tmp_path, monkeypatch):
-    db = ms.connect(tmp_path / "d.db")
+    db = ms.connect()
     ms.record(db, ms.Seen(name=QWEN, source="t", resolved=QWEN, kind="weights", lane="code"))
     ms.set_size(db, QWEN, int(137.10 * GIB))
     ms.decide(db, QWEN, "queued", tier="inspect", size_bytes=int(137.10 * GIB))
@@ -583,7 +583,7 @@ def test_a_card_tag_makes_an_unlisted_repo_ds4s_and_its_siblings_pick_the_file(m
 
 def test_the_store_given_is_the_one_whose_fetched_file_is_spelled(models, tmp_path, monkeypatch):
     monkeypatch.setattr(ins, "ceiling_bytes", lambda: 200 * GIB)
-    conn = ms.connect(tmp_path / "other.db")
+    conn = ms.connect()
     try:
         downloads.record(conn, QWEN, downloads.GGUF, models / f"{QWEN_Q2}.gguf",
                          file=f"{QWEN_Q2}.gguf")

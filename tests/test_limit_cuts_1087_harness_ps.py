@@ -109,7 +109,7 @@ def conn(tmp_path, monkeypatch):
     from harness import memory_store as ms
     from tests.test_min_effect_1320 import FAKE_MACHINE
     monkeypatch.setattr(ms.machines, "_THIS_MACHINE", FAKE_MACHINE)
-    c = ms.connect(tmp_path / "d.db")
+    c = ms.connect()
     yield c
     c.close()
 

@@ -195,7 +195,7 @@ def test_a_single_variant_listing_downloads_as_before(monkeypatch, tmp_path):
 
 @pytest.fixture
 def store(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 

@@ -19,7 +19,7 @@ ATOM = ('<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>t</title>'
 
 @pytest.fixture
 def store(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 

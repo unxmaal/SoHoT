@@ -40,7 +40,7 @@ class Asked:
 
 @pytest.fixture
 def conn(tmp_path):
-    c = ms.connect(tmp_path / "d.db")
+    c = ms.connect()
     yield c
     c.close()
 

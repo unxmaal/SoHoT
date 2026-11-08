@@ -53,14 +53,14 @@ def test_without_paired_rows_nothing_is_adopted():
 
 
 def test_a_lane_serves_its_typed_constant_until_something_is_adopted(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     assert adopt.default_for("tts", "CONST", conn) == "CONST"
 
 
 def test_an_adoption_changes_what_the_lane_serves(tmp_path):
     """The whole point. Before this the loop could measure a winner and the
     lane went on serving the constant somebody typed."""
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     ms.record(conn, ms.Seen(name="org/new", source="feeds", lane="tts",
                             kind="weights", resolved="org/new"))
     adopt.record(conn, adopt.Verdict("tts", "old", "org/new", True, "won"))
@@ -70,7 +70,7 @@ def test_an_adoption_changes_what_the_lane_serves(tmp_path):
 
 def test_a_loss_is_recorded_too(tmp_path):
     """So the same candidate is not re-proposed every sweep."""
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     ms.record(conn, ms.Seen(name="org/new", source="feeds", lane="tts",
                             kind="weights", resolved="org/new"))
     adopt.record(conn, adopt.Verdict("tts", "old", "org/new", False, "lost"))
@@ -229,7 +229,7 @@ def test_an_unmatched_candidate_is_an_error_not_a_silent_skip():
 def test_only_the_latest_verdict_counts_as_a_survivor(tmp_path):
     """A candidate that screened green and was later declined must not be
     handed to the measure tier again on every loop."""
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     ms.record(conn, ms.Seen(name="org/a", source="feeds", lane="tts",
                             kind="weights", resolved="org/a"))
     ms.decide(conn, "org/a", "screened", tier=ms.SCREEN, detail="ran")

@@ -101,7 +101,7 @@ def test_soh_floors_says_which_normaliser_scored_each_item(tmp_path):
 
     from harness import floors
     from harness import memory_store as ms
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     old = conn.execute("INSERT INTO runs (path, lane, recorded_at, receipt) VALUES ('r1', 'tts', 0, '{}')").lastrowid
     new = conn.execute("INSERT INTO runs (path, lane, recorded_at, receipt) VALUES ('r2', 'tts', 0, ?)",
                        (json.dumps({"instruments": {"wer": speech.NORMALISER}}),)).lastrowid

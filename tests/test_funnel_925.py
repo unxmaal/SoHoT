@@ -22,7 +22,7 @@ def store(tmp_path, monkeypatch):
     monkeypatch.setattr("harness.rank.serving", lambda *a, **k: set())
     monkeypatch.setattr("harness.rank.lanes_with_receipts", lambda *a, **k: set())
     monkeypatch.setattr(fetching, "requires", lambda name, conn=None: [])
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 

@@ -313,7 +313,7 @@ def test_weights_not_on_disk_offline_are_the_harness_not_the_model():
 def test_a_stored_reranker_marked_an_embedding_attachment_is_released_and_relaned(tmp_path):
     from harness import memory_store as ms
     from harness.memory_store.migrations import retractions
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     tags = json.dumps(["sentence-transformers", "reranker", "text-embeddings-inference"])
     conn.execute("INSERT INTO proposals (name, lane, hf_task, library, card_tags, attaches_to,"
                  " first_seen, last_seen) VALUES ('a/rr', '', 'text-ranking',"

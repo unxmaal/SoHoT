@@ -236,10 +236,10 @@ def cmd_repo_report(a) -> int:
     """The repo lane's paired report over one or two stored runs, the task as the unit. #923."""
     from pathlib import Path
 
-    from harness import live_audit
+    from harness import live_audit, store
     from harness import memory_store as ms
     db = Path(a.store) if a.store else ms.db_path()
-    if not db.is_file():
+    if not store.exists(db):
         return _repo_report(a)
     conn = live_audit.open_readonly(db)
     try:

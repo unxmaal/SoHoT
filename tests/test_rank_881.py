@@ -97,7 +97,7 @@ def test_parameters_are_read_from_the_name(name, billions):
 
 
 def test_the_incumbents_base_families_come_from_lineage(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     ms.record(conn, ms.Seen(name="ornith-ai/Ornith-1.5-35B-A3B", source="t", lane="code"))
     pid = conn.execute("SELECT id FROM proposals").fetchone()[0]
     conn.execute("INSERT INTO lineage (proposal_id, parent, kind) VALUES (?, ?, ?)",
@@ -109,7 +109,7 @@ def test_the_incumbents_base_families_come_from_lineage(tmp_path):
 # --- re-screens of a measured loss are capped ------------------------------
 
 def test_a_decline_at_adopt_is_retested_once_then_final(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     ms.record(conn, ms.Seen(name="Qwen/Qwen3.5-0.8B", source="t", lane="code"))
     ms.decide(conn, "Qwen/Qwen3.5-0.8B", "declined", tier=ms.ADOPT, at=NOW, detail="lost")
     week = ms.RETEST_AFTER_SECONDS
@@ -128,7 +128,7 @@ def test_a_screen_rejection_keeps_three_retests():
 
 
 def test_a_retest_scheduled_before_the_cap_does_not_reopen_a_repeated_loser(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     ms.record(conn, ms.Seen(name="Qwen/Qwen3.5-0.8B", source="t", lane="code"))
     for i in range(4):
         conn.execute("INSERT INTO verdicts (proposal_id, tier, outcome, decided_at) "

@@ -13,7 +13,7 @@ from harness.commands import measure as measure_cmd
 
 @pytest.fixture
 def conn(tmp_path):
-    c = ms.connect(tmp_path / "s.db")
+    c = ms.connect()
     yield c
     c.close()
 

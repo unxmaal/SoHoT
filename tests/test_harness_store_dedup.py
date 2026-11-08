@@ -13,7 +13,7 @@ from harness import memory_store as ms
 
 @pytest.fixture
 def store(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     ms.record(conn, ms.Seen(name="org/x", source="t", url="", why="",
                             relevance=0, kind="candidate",
                             registry=ms.HUGGINGFACE, lane="code",

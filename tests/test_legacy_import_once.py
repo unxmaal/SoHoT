@@ -14,7 +14,7 @@ def _votes(conn) -> int:
 def test_human_votes_import_once_and_keep_a_vote_cast_twice(tmp_path):
     f = tmp_path / "human-verdicts.json"
     f.write_text(json.dumps([VOTE, VOTE, {**VOTE, "case": "icon-2"}]), encoding="utf-8")
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         assert ms.import_human_verdicts_json(conn, f) == 3
         assert ms.import_human_verdicts_json(conn, f) == 0
@@ -26,7 +26,7 @@ def test_human_votes_import_once_and_keep_a_vote_cast_twice(tmp_path):
 def test_a_judge_page_vote_does_not_stand_in_for_a_file_vote(tmp_path):
     f = tmp_path / "human-verdicts.json"
     f.write_text(json.dumps([VOTE]), encoding="utf-8")
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         conn.execute("INSERT INTO human_votes (lane, run, case_id, left_candidate, "
                      "right_candidate, winner, shown_first, voter, at) VALUES "
@@ -41,7 +41,7 @@ def test_memory_limits_import_once(tmp_path):
     f = tmp_path / "memory-limits.json"
     f.write_text(json.dumps({"Mac14,12/macOS-26.0/arm64": [
         {"measured_at": "2026-09-20T10:00:00", "margin_gb": 6.5}]}), encoding="utf-8")
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         assert ms.import_memory_limits_json(conn, f) == 1
         assert ms.import_memory_limits_json(conn, f) == 0
@@ -53,7 +53,7 @@ def test_memory_limits_import_once(tmp_path):
 def test_downloads_backfill_records_a_gone_path_once(tmp_path):
     manifest = paths.home() / "gguf-sources.json"
     manifest.write_text(json.dumps({"org/gone": "gone-Q4_K_M.gguf"}), encoding="utf-8")
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         hub, ggufs = tmp_path / "hub", tmp_path / "gguf"
         downloads.backfill(conn, hub, ggufs, manifest)

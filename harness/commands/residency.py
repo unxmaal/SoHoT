@@ -51,7 +51,7 @@ def show(trace: dict, result: dict, budget: float, pins: list, why: str) -> None
 
 def cmd_residency_sim(a) -> int:
     from harness import context_report as cr
-    from harness import ledger, load_log, memory, residency, residency_trace
+    from harness import ledger, load_log, memory, residency, residency_trace, store
     from harness import memory_store as ms
     from harness.commands.common import lent_store
     now = time.time()
@@ -60,7 +60,7 @@ def cmd_residency_sim(a) -> int:
     except ValueError as exc:
         return err(str(exc))
     db = Path(a.db) if a.db else None
-    if db is not None and not db.is_file():
+    if db is not None and not store.exists(db):
         return err(f"residency-sim: no store at {db}")
     budget = float(a.budget_gb) if a.budget_gb else memory.total_gb()
     logs = [Path(p) for p in a.log] if a.log else load_log.router_logs()

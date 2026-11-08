@@ -135,7 +135,7 @@ def _broken(conn, name, detail, spec, run_dir=""):
 
 def test_coherence_re_decides_both_live_verdicts(tmp_path, monkeypatch, llama):
     monkeypatch.setattr(runner_gaps, "has_package", lambda dist, venv="": False)
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     run = tmp_path / "runs" / "screen-1792410689-code"
     run.mkdir(parents=True)
     log = tmp_path / "eval.log"

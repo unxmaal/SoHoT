@@ -45,7 +45,7 @@ def test_an_unknown_architecture_stays_a_runtime_gap(monkeypatch):
 
 
 def test_a_header_that_disagrees_with_itself_is_the_files_fault(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     gguf = tmp_path / f"{NEX_ALIAS}.gguf"
     gguf.write_bytes(b"GGUF")
     downloads.record(conn, NEX_REPO, downloads.GGUF, gguf, file=gguf.name, at=1791246487.4)
@@ -177,7 +177,7 @@ def test_load_log_redecides_held_rows_from_the_router_log(monkeypatch, tmp_path)
     monkeypatch.setattr(screen, "_installed", lambda pkg: "99999")
     log = tmp_path / "eval.log"
     log.write_text("".join(NEX + K2), encoding="utf-8")
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     k2_run, k2_id = _held(conn, tmp_path, K2_REPO, K2_ALIAS, "version:llama.cpp>11146")
     nex_run, nex_id = _held(conn, tmp_path, NEX_REPO, NEX_ALIAS, "version:llama.cpp>11146")
     conn.commit()

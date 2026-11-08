@@ -186,7 +186,7 @@ def test_rank_reads_the_lineage_inspect_writes_for_every_kind(tmp_path):
     kept. #420 was the adapter's parent going missing between the two."""
     from harness import inspect as ins
     from harness import memory_store as ms
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         for kind in ("adapter", "finetune", "quantized", "merge", ""):
             name = f"org/child-{kind or 'plain'}"

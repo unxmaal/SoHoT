@@ -30,7 +30,7 @@ BOX_WINDOWS = {**BOX, "os": "Windows-11", "arch": "x86_64",
 
 @pytest.fixture
 def store(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     conn.execute("INSERT INTO proposals (name, kind, lane, resolved, "
                  "first_seen, last_seen, registry) "
                  "VALUES ('org/c','candidate','code','org/c',0,0,'huggingface')")
@@ -390,7 +390,7 @@ def test_decide_no_longer_reads_a_condition_out_of_the_detail(store):
 
 
 def test_schema_18_backfills_refusals_written_after_266(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     ms.record(conn, ms.Seen(name="org/g", source="t", kind="weights",
                             lane="code", why="seeded"))
     conn.execute("INSERT INTO verdicts (proposal_id, outcome, tier, detail, "
@@ -399,7 +399,7 @@ def test_schema_18_backfills_refusals_written_after_266(tmp_path):
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', '17')")
     conn.commit()
     conn.close()
-    again = ms.connect(tmp_path / "s.db")
+    again = ms.connect()
     try:
         assert again.execute("SELECT until FROM verdicts").fetchone()[0] == (
             "runtime:llamacpp")
@@ -408,7 +408,7 @@ def test_schema_18_backfills_refusals_written_after_266(tmp_path):
 
 
 def _at_schema_18(tmp_path, name, lane, description, outcome, detail):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     ms.record(conn, ms.Seen(name=name, source="t", kind="weights",
                             lane=lane, why="seeded"))
     conn.execute("UPDATE proposals SET description = ?", (description,))
@@ -418,7 +418,7 @@ def _at_schema_18(tmp_path, name, lane, description, outcome, detail):
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', '18')")
     conn.commit()
     conn.close()
-    return ms.connect(tmp_path / "s.db")
+    return ms.connect()
 
 
 def test_schema_19_refiles_a_vlm_judge_out_of_the_image_lane(tmp_path):
@@ -459,7 +459,7 @@ def test_schema_19_leaves_a_model_that_genuinely_failed(tmp_path):
 
 def test_schema_19_does_not_reopen_a_verdict_the_lane_never_touched(tmp_path):
     """#379: relaning reopened inspect's too-big verdicts on 1.4 TB models."""
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     ms.record(conn, ms.Seen(name="moonshotai/Kimi-K3", source="t",
                             kind="weights", lane="", why="seeded"))
     conn.execute("UPDATE proposals SET description = 'task image-text-to-text'")
@@ -469,7 +469,7 @@ def test_schema_19_does_not_reopen_a_verdict_the_lane_never_touched(tmp_path):
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', '18')")
     conn.commit()
     conn.close()
-    again = ms.connect(tmp_path / "s.db")
+    again = ms.connect()
     try:
         assert again.execute("SELECT lane FROM proposals").fetchone()[0] == "code"
         assert again.execute("SELECT outcome FROM verdicts ORDER BY id DESC"
@@ -491,7 +491,7 @@ def test_schema_19_keeps_an_svg_model_in_the_svg_lane(tmp_path):
 
 def _at_schema_39(tmp_path, name, lane, task, tags, verdicts):
     import json
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     ms.record(conn, ms.Seen(name=name, source="t", kind="weights",
                             lane=lane, why="seeded"))
     conn.execute("UPDATE proposals SET hf_task = ?, card_tags = ?, "
@@ -504,7 +504,7 @@ def _at_schema_39(tmp_path, name, lane, task, tags, verdicts):
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', '39')")
     conn.commit()
     conn.close()
-    return ms.connect(tmp_path / "s.db")
+    return ms.connect()
 
 
 def _lane_and_last(conn):
@@ -575,7 +575,7 @@ def test_schema_40_keeps_a_verdict_no_lane_reached(tmp_path, tier, detail):
 def _at_schema_51(tmp_path, rows):
     """rows: (name, lane, task, tags, parents, verdict outcome)."""
     import json
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     for name, lane, task, tags, parents, outcome in rows:
         ms.record(conn, ms.Seen(name=name, source="t", kind="weights",
                                 lane=lane, why="seeded"))
@@ -592,7 +592,7 @@ def _at_schema_51(tmp_path, rows):
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', '51')")
     conn.commit()
     conn.close()
-    return ms.connect(tmp_path / "s.db")
+    return ms.connect()
 
 
 _557_ROWS = [
@@ -648,7 +648,7 @@ def test_the_retraction_census_is_not_empty():
 @pytest.mark.parametrize("tier,detail", LANE_FREE)
 @pytest.mark.parametrize("fn", RETRACTIONS)
 def test_a_lane_independent_verdict_survives_every_retraction(tmp_path, fn, tier, detail):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         # A card that contradicts the lane, so a relane moves the row.
         ms.record(conn, ms.Seen(name="LiquidAI/LFM2.5-350M", source="t",
@@ -692,7 +692,7 @@ def test_a_snapshot_with_only_a_card_is_not_downloaded(tmp_path):
     """#399: Marlin-2B had LICENSE and README and was screened as present.
     The row records it incomplete, and have() reads the row. #411."""
     from harness import fetching
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     assert _hub(conn, "org/card", ["LICENSE", "README.md"])["complete"] == 0
     assert _hub(conn, "org/real", ["config.json", "model.safetensors"])["complete"] == 1
     assert not fetching.have("org/card", conn)
@@ -700,17 +700,17 @@ def test_a_snapshot_with_only_a_card_is_not_downloaded(tmp_path):
     conn.close()
 
 
-def test_schema_20_requeues_a_screen_of_weights_never_downloaded(tmp_path, monkeypatch):
+@pytest.mark.parametrize("name,want", [("org/gone", "queued"), ("org/here", "broken")])
+def test_schema_20_requeues_a_screen_of_weights_never_downloaded(tmp_path, monkeypatch, name, want):
     monkeypatch.setattr("harness.fetching.have", lambda m, conn=None: m == "org/here")
-    for name, want in (("org/gone", "queued"), ("org/here", "broken")):
-        again = _at_schema_18(tmp_path / name.replace("/", "_"), name, "code", "",
-                              "broken", "it ran and passed nothing: [Errno 2] "
-                              "No such file or directory: 'x/config.json'")
-        try:
-            assert again.execute("SELECT outcome FROM verdicts ORDER BY id DESC"
-                                 ).fetchone()[0] == want, name
-        finally:
-            again.close()
+    again = _at_schema_18(tmp_path, name, "code", "",
+                          "broken", "it ran and passed nothing: [Errno 2] "
+                          "No such file or directory: 'x/config.json'")
+    try:
+        assert again.execute("SELECT outcome FROM verdicts ORDER BY id DESC"
+                             ).fetchone()[0] == want, name
+    finally:
+        again.close()
 
 
 def test_schema_21_requeues_a_sampling_setting_the_pipeline_refused(tmp_path):

@@ -113,7 +113,7 @@ def _broken(conn, name, detail):
 
 def test_schema_59_requeues_the_screen_a_missing_backend_settled(tmp_path):
     from harness.memory_store.migrations import v59
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         _broken(conn, "PaddlePaddle/PaddleOCR-VL-1.6", RECORDED)
         _broken(conn, "org/really-broken", "it ran and passed nothing: ocr-invoice-line: CER 0.9")
@@ -210,7 +210,7 @@ def test_the_fetch_tier_refuses_an_mlx_ocr_conversion_before_download(tmp_path, 
                                                                        repo):
     monkeypatch.setattr(fetching, "have", lambda *a, **k: False)
     monkeypatch.setattr(fetching, "requires", lambda name, conn=None: [])
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         ms.record(conn, ms.Seen(name=repo, source="t", lane="ocr",
                                 registry=ms.HUGGINGFACE, resolved=repo))

@@ -231,7 +231,7 @@ def test_a_powered_null_is_an_ordinary_loss(monkeypatch):
 
 def test_the_verdict_row_carries_the_split_version_and_the_power(tmp_path):
     from harness import memory_store as ms
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     weak = power.plan([2 / 3] * 3, effect=0.2, stochastic=True, cap=3)
     verdict = adopt.Verdict("code", "q3-4b", "org/x", False, "underpowered: x",
                             failure_class=reasons.UNDERPOWERED,

@@ -292,7 +292,7 @@ def test_the_snapshots_are_of_the_pinned_runtimes():
 # ---- the store: backfill, audit, failure_class --------------------------------
 
 def _store(tmp_path):
-    return ms.connect(tmp_path / "d.db")
+    return ms.connect()
 
 
 def _seed(conn, name, lane, card, outcome, tier, detail, until="", reason="", spec=""):

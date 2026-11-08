@@ -55,7 +55,7 @@ def test_the_vision_route_is_the_same_question_as_the_text_gap():
 # --- the store -------------------------------------------------------------------
 
 def _store(tmp_path):
-    return ms.connect(tmp_path / "d.db")
+    return ms.connect()
 
 
 def _seed(conn, name, card, outcome, tier, detail, until="", reason="", lane="code"):

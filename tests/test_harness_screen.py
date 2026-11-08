@@ -98,7 +98,7 @@ def test_a_screen_that_passed_is_screened_and_not_terminal():
 def test_screened_is_a_verdict_the_store_recognises(tmp_path):
     """It has been in the vocabulary since the store was built and nothing has
     ever written one."""
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     ms.record(conn, Seen(name="org/m", source="recap", resolved="org/m"))
     ms.decide(conn, "org/m", "screened", tier=ms.SCREEN, detail="1 passed")
     row = conn.execute("SELECT outcome, tier FROM verdicts").fetchone()

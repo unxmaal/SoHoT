@@ -218,7 +218,7 @@ def test_the_writer_guard_sees_the_writers():
 
 
 def test_decide_refuses_a_reason_outside_the_vocabulary(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     ms.record(conn, ms.Seen(name="org/x", source="t"))
     with pytest.raises(ValueError):
         ms.decide(conn, "org/x", "broken", tier=ms.SCREEN, reason="vibes")

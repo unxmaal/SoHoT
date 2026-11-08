@@ -36,7 +36,7 @@ def _cols(conn):
 
 
 def test_a_new_store_has_none_of_the_dead_columns(tmp_path):
-    conn = ms.connect(tmp_path / "new.db")
+    conn = ms.connect()
     try:
         cols = _cols(conn)
         assert not [f"{t}.{c}" for t, c in ms.DEAD_COLUMNS if c in cols[t]]
@@ -81,7 +81,7 @@ def test_an_sqlite_that_cannot_drop_keeps_the_columns_and_still_works(tmp_path,
 
 
 def test_decide_no_longer_takes_the_dropped_columns(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         for kw in ({"issue": 20}, {"attaches_to": "lora"}):
             with pytest.raises(TypeError):

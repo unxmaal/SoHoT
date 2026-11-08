@@ -94,13 +94,13 @@ def test_a_known_source_is_not_proposed_back(week):
 # ---- schedule -------------------------------------------------------------
 
 def test_a_never_read_source_is_stale(tmp_path):
-    store = ms.connect(tmp_path / "d.db")
+    store = ms.connect()
     rows = feeds.staleness([Source("s", "u")], store=store)
     assert rows[0]["stale"] and rows[0]["last_fetched"] is None
 
 
 def test_staleness_turns_over_at_the_interval(tmp_path):
-    store = ms.connect(tmp_path / "d.db")
+    store = ms.connect()
     now = time.time()
     feeds.record_fetch("s", when=now - 20 * 86400, store=store)
     fresh = feeds.staleness([Source("s", "u")], now=now, days=30, store=store)

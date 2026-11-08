@@ -256,7 +256,7 @@ def test_a_remote_code_privacy_model_is_refused(tmp_path, capsys):
 def test_a_laneless_privacy_filter_row_is_relaned(tmp_path):
     from harness import memory_store as ms
     from harness.memory_store.migrations import retractions
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     conn.execute("INSERT INTO proposals (name, lane, hf_task, card_tags, first_seen, last_seen)"
                  " VALUES ('a/pf', '', 'token-classification', ?, 0, 0)",
                  (json.dumps(["pii", "roberta"]),))

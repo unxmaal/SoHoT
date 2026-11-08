@@ -24,7 +24,7 @@ def store(tmp_path, monkeypatch):
     monkeypatch.setattr("harness.rank.lanes_with_receipts",
                         lambda *a, **k: set())
     monkeypatch.setattr("harness.rank.unrunnable", lambda row, m=None: "")
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 

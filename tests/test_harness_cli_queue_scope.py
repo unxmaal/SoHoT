@@ -130,7 +130,7 @@ def test_a_fetched_candidate_below_the_rank_head_is_still_screened(monkeypatch, 
 def test_a_survivor_in_the_scoped_lane_below_the_cut_is_measured(tmp_path):
     """#386: the loop took the newest N survivors, then kept the scoped lane."""
     from harness import memory_store as ms
-    store = ms.connect(tmp_path / "s.db")
+    store = ms.connect()
     try:
         for name, lane in [("org/theimage", "image")] + [
                 (f"org/code{i}", "code") for i in range(4)]:

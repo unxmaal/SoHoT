@@ -14,7 +14,7 @@ LIVE_SECONDS = {2000: 533.493, 4000: 900.0, 8000: 1300.0, 16384: 1700.0, 32768: 
 @pytest.fixture
 def conn(tmp_path, monkeypatch):
     conftest.stand_in_machine(monkeypatch, M)
-    c = ms.connect(tmp_path / "d.db")
+    c = ms.connect()
     ms.remember_machine(c, dict(M))
     yield c
     c.close()

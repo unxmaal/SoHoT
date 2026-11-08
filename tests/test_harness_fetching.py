@@ -7,7 +7,7 @@ from harness import memory_store as ms
 
 @pytest.fixture
 def db(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 
