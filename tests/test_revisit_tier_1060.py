@@ -150,5 +150,7 @@ def test_the_audit_warns_on_a_stranded_reopen_until_the_loop_moves_it_then_fails
 
 def test_the_discover_step_runs_the_move_before_the_revisit_requeue():
     import inspect
+    repairs = [f.__name__ for f, _ in loop_cmd._repairs(None)]
+    assert repairs.index("_move_past_screen") < repairs.index("_reopen_revisitable")
     src = inspect.getsource(loop_cmd._run_loop_held)
-    assert src.index("_move_past_screen") < src.index("_reopen_revisitable") < src.index("cmd_discover(sub)")
+    assert src.index("_repairs(a)") < src.index("_tier(a")

@@ -131,15 +131,51 @@ def code_moved(data: dict | None, head: str = "", alive=alive) -> str:
             f"so it ran {start[:8]}'s code")
 
 
-def start(lane: str = "", total: int = 0) -> dict:
+def start(lane: str = "", total: int = 0, cycle: str = "") -> dict:
     now = clock()
     kept = {k: v for k, v in (read() or {}).items() if k in KEPT}
     data = {**kept, "state": RUNNING, "pid": os.getpid(), "lane": lane, "tier": "",
             "candidate": "", "step": 0, "total": int(total), "item": 0, "items": 0,
             "started": now, "updated": now, "finished": None, "rc": None, "error": "",
             "commit": code_commit()}
+    if cycle:
+        data[CYCLE] = cycle
     _write(data)
     return data
+
+
+#: The queued sweep a heartbeat follows across its step jobs, and the job its next step waits in. #1508.
+CYCLE = "cycle"
+NEXT_JOB = "next_job"
+
+
+def attach(cycle: str) -> dict | None:
+    """Make this step process the running sweep `cycle`'s writer; None when the heartbeat follows another. #1508."""
+    data = read()
+    if not cycle or not data or data.get(CYCLE) != cycle or data.get("state") != RUNNING:
+        return None
+    data.update(pid=os.getpid(), updated=clock(), waiting="")
+    data.pop(NEXT_JOB, None)
+    _write(data)
+    return data
+
+
+def handoff(job: str, tier: str) -> None:
+    """Record that this sweep's next step, `tier`, waits in the queue as `job`; a no-op unless this process writes it."""
+    data = _mine()
+    if data is None or data.get("state") != RUNNING:
+        return
+    data.update({NEXT_JOB: job, "waiting": f"the {tier} step waits in the queue as job {job}", "updated": clock()})
+    _write(data)
+
+
+def _queued(job: str) -> bool:
+    from harness import workqueue as wq
+    try:
+        got = wq.get(job)
+    except Exception:  # noqa: BLE001 - an unreadable queue cannot vouch for the sweep
+        return False
+    return bool(got) and got.get("state") in (wq.PENDING, wq.RUNNING)
 
 
 def beat(tier: str, step: int, total: int | None = None, candidate: str = "",
@@ -267,11 +303,14 @@ def finish(rc: int | None = None, error: str = "") -> None:
     _write(data)
 
 
-def status(data: dict | None, alive=alive) -> str:
+def status(data: dict | None, alive=alive, queued=None) -> str:
     if not data:
         return ""
     if data.get("state") == FINISHED:
         return "finished"
+    if data.get(NEXT_JOB) and (queued or _queued)(data[NEXT_JOB]):
+        # Between step jobs no process runs; the sweep lives while its next step waits in the queue. #1508.
+        return "running"
     if not alive(data.get("pid") or 0):
         return "stalled"
     if clock() - progress_at(data) > stall_after(data):
@@ -297,12 +336,12 @@ def _where(d: dict) -> str:
     return out
 
 
-def summary(alive=alive) -> dict | None:
+def summary(alive=alive, queued=None) -> dict | None:
     """The heartbeat, its status and age, and one line saying so; None when no loop has run."""
     d = read()
     if d is None:
         return None
-    st = status(d, alive=alive)
+    st = status(d, alive=alive, queued=queued)
     now = clock()
     age = now - (progress_at(d) if d.get("updated") else now)
     lane = f" ({d['lane']} lane)" if d.get("lane") else ""

@@ -90,6 +90,7 @@ NOT_RUN = {
     "discover --sources": "probes each feed over the network",
     "adopt --from-measurement": "adopts the measured incumbent; its --dry-run is held in RUNS",
     "discover --external": "asks the registries", "discover --loop": "the discovery loop",
+    "discover --jobs": "queues a sweep's first step",
     "discover --sweep": "reads every source and records it", "discover --benchmarks": "sweeps the registries",
     "discover --quants": "follows bases on the hub", "discover --papers": "reads a feed and records it",
     "discover --posts": "reads a feed and records it", "discover --triage": "drafts with a model under --run",
