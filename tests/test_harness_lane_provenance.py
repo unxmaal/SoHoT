@@ -22,7 +22,7 @@ def _latest(conn, name):
 
 @pytest.fixture
 def store(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 
@@ -96,7 +96,7 @@ def test_a_missing_proposal_is_not_an_error(store):
 # --- the migration --------------------------------------------------------
 
 def test_the_migration_moves_a_row_its_card_contradicts(tmp_path):
-    conn = ms.connect(tmp_path / "m.db")
+    conn = ms.connect()
     _seed(conn, "org/vid", "image", "task text-to-video; tagged video")
     # As a real row arrives: inspect queues it, then the screen settles it.
     ms.decide(conn, "org/vid", "queued", tier=ms.INSPECT, detail="fits")
@@ -106,7 +106,7 @@ def test_the_migration_moves_a_row_its_card_contradicts(tmp_path):
     conn.commit()
     conn.close()
 
-    conn = ms.connect(tmp_path / "m.db")
+    conn = ms.connect()
     try:
         assert conn.execute("SELECT lane FROM proposals WHERE name='org/vid'"
                             ).fetchone()["lane"] == "video"
@@ -121,13 +121,13 @@ def test_the_migration_moves_a_row_its_card_contradicts(tmp_path):
 def test_the_migration_leaves_a_row_with_no_card_alone(tmp_path):
     """The negative control. A lane with nothing to check against may be
     right, and guessing again is no better than the guess already there."""
-    conn = ms.connect(tmp_path / "m.db")
+    conn = ms.connect()
     _seed(conn, "org/bare", "image", "")
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', '8')")
     conn.commit()
     conn.close()
 
-    conn = ms.connect(tmp_path / "m.db")
+    conn = ms.connect()
     try:
         assert conn.execute("SELECT lane FROM proposals WHERE name='org/bare'"
                             ).fetchone()["lane"] == "image"
@@ -136,7 +136,7 @@ def test_the_migration_leaves_a_row_with_no_card_alone(tmp_path):
 
 
 def test_the_migration_leaves_an_agreeing_row_alone(tmp_path):
-    conn = ms.connect(tmp_path / "m.db")
+    conn = ms.connect()
     _seed(conn, "org/img", "image", "task text-to-image; tagged diffusion")
     ms.decide(conn, "org/img", "queued", tier=ms.INSPECT, detail="fits")
     ms.decide(conn, "org/img", "declined", tier=ms.SCREEN, detail="too big")
@@ -144,7 +144,7 @@ def test_the_migration_leaves_an_agreeing_row_alone(tmp_path):
     conn.commit()
     conn.close()
 
-    conn = ms.connect(tmp_path / "m.db")
+    conn = ms.connect()
     try:
         assert conn.execute("SELECT lane FROM proposals WHERE name='org/img'"
                             ).fetchone()["lane"] == "image"

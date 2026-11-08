@@ -15,7 +15,7 @@ PROBES = Path(__file__).resolve().parent.parent / "evals" / "contamination" / "p
 
 @pytest.fixture
 def store(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 

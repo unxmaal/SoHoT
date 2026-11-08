@@ -28,7 +28,7 @@ from harness import memory_store as ms  # noqa: E402
 
 @pytest.fixture
 def store(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 

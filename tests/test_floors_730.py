@@ -28,7 +28,7 @@ def _row(conn, run, seq, candidate, case, *, passed=1, output=None, metrics=None
 
 @pytest.fixture
 def store(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 
@@ -138,7 +138,7 @@ def test_a_knob_whose_default_is_not_its_derived_value_fails_the_command(store, 
     for i in range(12):
         _row(store, run, i, floors.REFERENCE["stt"], f"u{i}", output="one two three four five six seven eight nine then")
     store.commit()
-    args = type("A", (), {"store": str(tmp_path / "s.db"), "action": "derive"})()
+    args = type("A", (), {"store": str(ms.db_path()), "action": "derive"})()
     assert cmd.cmd_floors(args, refs=refs, prompts={}, cases={}) == 1
     rows = floors.report(store, refs=refs, prompts={}, cases={})
     stt = next(r for r in rows if r["knob"] == "stt_max_wer")
@@ -158,7 +158,7 @@ def test_a_provisional_floor_never_fails_and_a_complete_one_above_the_range_does
 def test_an_empty_store_derives_nothing_and_passes(store, tmp_path):
     from harness.commands import floors as cmd
     store.commit()
-    args = type("A", (), {"store": str(tmp_path / "s.db"), "action": "derive"})()
+    args = type("A", (), {"store": str(ms.db_path()), "action": "derive"})()
     assert cmd.cmd_floors(args, refs={}, prompts={}, cases={}) == 0
     assert all(r["derived"] is None for r in floors.report(store, refs={}, prompts={}, cases={})
                if r["knob"] != "usage_session_gap")

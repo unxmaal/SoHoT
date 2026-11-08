@@ -33,7 +33,7 @@ def on(monkeypatch):
 
 @pytest.fixture
 def conn(tmp_path, on):
-    c = ms.connect(tmp_path / "d.db")
+    c = ms.connect()
     yield c
     c.close()
 

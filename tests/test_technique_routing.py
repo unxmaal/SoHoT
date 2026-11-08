@@ -118,7 +118,7 @@ def test_a_lane_scoped_report_leaves_the_buckets_out():
 
 
 def test_the_store_lists_a_techniques_lane_source(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     p = PAPERS[SLIMWISE]
     ms.record(conn, ms.Seen(name=f"arxiv:{SLIMWISE}", source=papers.SOURCE, why=p["title"],
                             lane="code", lane_source="prose", category=ms.TECHNIQUE,

@@ -75,7 +75,7 @@ def test_the_schema_lanes_are_the_lanes_whose_requests_carry_one(monkeypatch):
 
 def _store(tmp_path, spec, lane):
     from harness import memory_store as ms
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     if "/" in spec and ":" not in spec:
         ms.record(conn, ms.Seen(name=spec, source="feeds", lane=lane,
                                 kind="weights", resolved=spec))

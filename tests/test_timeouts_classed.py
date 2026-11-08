@@ -177,7 +177,7 @@ M = {"fingerprint": "Mac17,15/macOS/arm64", "hw_model": "Mac17,15", "os": "macOS
 
 def test_binding_sees_the_code_check_timeout_bind_on_a_run(tmp_path, monkeypatch):
     conftest.stand_in_machine(monkeypatch, M)
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     ms.remember_machine(conn, dict(M))
     now = 1_800_000_000.0
 

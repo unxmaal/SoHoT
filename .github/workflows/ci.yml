@@ -156,7 +156,7 @@ jobs:
         env:
           BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
         run: |
-          seam='^(harness/store[a-z_]*\.py|harness/memory_store/|harness/migration_check\.py|harness/commands/store\.py|deploy/postgres/|tests/conftest\.py|tests/test_store_postgres_1507\.py|tests/test_harness_store\.py|tests/gauntlet/postgres_known\.txt|Makefile|pyproject\.toml|uv\.lock|\.github/workflows/ci\.yml)'
+          seam='^(harness/store[a-z_]*\.py|harness/memory_store/|harness/migration_check\.py|harness/commands/store\.py|deploy/postgres/|tests/conftest\.py|tests/test_store_postgres_1507\.py|tests/test_harness_store\.py|tests/gauntlet/postgres_known\.txt|tests/gauntlet/explicit_store_paths\.txt|Makefile|pyproject\.toml|uv\.lock|\.github/workflows/ci\.yml)'
           if changed="$(git diff --name-only "$BASE"...HEAD 2>/dev/null)"; then
             hits="$(printf '%s\n' "$changed" | grep -E "$seam" || true)"
           else

@@ -177,7 +177,7 @@ def _adopt(conn, lane, run_id, at=1):
 @pytest.mark.gauntlet("state-is-whichever-row-came-last", site="evals/workload_baseline.py:_newest")
 def test_the_local_run_is_taken_on_the_claude_runs_exam(store_run, tmp_path):
     from harness import memory_store as ms
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     orn = {"ornith": "llamacpp:ornith"}
     adopted = store_run("a", "repo", rows=_rows("ornith", "PIC"), conn=conn, cases_digest="X",
                         generated="2026-10-01T00:00:00", specs=orn)
@@ -206,7 +206,7 @@ def test_the_local_run_is_taken_on_the_claude_runs_exam(store_run, tmp_path):
 
 def test_a_lane_with_no_stored_claude_run_says_so_instead_of_reading_zero(store_run, tmp_path):
     from harness import memory_store as ms
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     store_run("a", "claims", rows=_rows("qwen", "PPCE"), conn=conn)
     rows = B.lane_rows(conn, ["claims", "music"])
     conn.close()
@@ -222,7 +222,7 @@ def test_a_lane_with_no_stored_claude_run_says_so_instead_of_reading_zero(store_
 
 def test_a_repeated_run_pairs_on_its_first_repeat(store_run, tmp_path):
     from harness import memory_store as ms
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
 
     def rows(cand, bits):
         return [{"candidate": cand, "case_id": f"t{i // 2}#{i % 2 + 1}", "passed": b, "seconds": 6.0,
@@ -247,7 +247,7 @@ def test_a_shapes_share_counts_only_its_fitting_units():
 
 def test_decide_fields_under_the_gate_go_to_claude(store_run, tmp_path):
     from harness import memory_store as ms
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     rows = [{"candidate": "imajev", "case_id": "q1", "passed": False, "seconds": 2.0, "failure_class": "",
              "metrics": {"decide_correct": 2, "decide_fields": 3, "decisions": [[0.99, 1], [0.6, 1], [0.5, 0]]}},
             {"candidate": "imajev", "case_id": "q2", "passed": True, "seconds": 2.0, "failure_class": "",

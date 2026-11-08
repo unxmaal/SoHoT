@@ -7,7 +7,7 @@ from harness.memory_store import Seen
 
 @pytest.fixture
 def db(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 
@@ -351,7 +351,7 @@ def test_pending_returns_what_nothing_has_answered(tmp_path):
     """The sweep wrote 233 proposals into a cluster store and every later tier
     read a different source, so nothing consumed one. This is the first arrow
     in sweep -> inspect -> judge."""
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     ms.record(conn, Seen(
         name="org/fresh", kind="proposal", lane="image", source="feed",
         url="https://a", why="", relevance=1, resolved="org/fresh"))
@@ -359,7 +359,7 @@ def test_pending_returns_what_nothing_has_answered(tmp_path):
 
 
 def test_a_terminal_verdict_removes_it_for_good(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     ms.record(conn, Seen(
         name="org/done", kind="proposal", lane="image", source="feed",
         url="https://a", why="", relevance=1, resolved="org/done"))
@@ -370,7 +370,7 @@ def test_a_terminal_verdict_removes_it_for_good(tmp_path):
 def test_a_waypoint_verdict_does_not(tmp_path):
     """`queued` and `screened` say work is under way, not that it is answered.
     Treating them as terminal would drop a candidate mid-ladder."""
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     ms.record(conn, Seen(
         name="org/mid", kind="proposal", lane="image", source="feed",
         url="https://a", why="", relevance=1, resolved="org/mid"))
@@ -382,7 +382,7 @@ def test_an_unresolved_name_is_not_offered_as_work(tmp_path):
     """A proposal whose name never resolved to a real repo cannot be cloned,
     so handing it to inspect spends an API call to learn what extraction
     already knew."""
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     ms.record(conn, Seen(
         name="a phrase from prose", kind="proposal", lane="", source="feed",
         url="https://a", why="", relevance=0, resolved=""))
@@ -392,7 +392,7 @@ def test_an_unresolved_name_is_not_offered_as_work(tmp_path):
 def test_the_most_corroborated_comes_first(tmp_path):
     """The project's own answer to a feed measuring popularity: a thing that
     keeps coming back is a different signal from a thing that trended once."""
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     for src in ("feed-a", "feed-b", "feed-c"):
         ms.record(conn, Seen(
             name="org/often", kind="proposal", lane="image", source=src,
@@ -404,7 +404,7 @@ def test_the_most_corroborated_comes_first(tmp_path):
 
 
 def test_the_limit_is_honoured(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     for i in range(5):
         ms.record(conn, Seen(
             name=f"org/r{i}", kind="proposal", lane="image", source="feed",
@@ -415,7 +415,7 @@ def test_the_limit_is_honoured(tmp_path):
 # ---- a tier restating itself (issue #184) ----------------------------------
 
 def _store(tmp_path, name="org/thing"):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     ms.record(conn, ms.Seen(name=name, source="feed", url="u"))
     return conn
 

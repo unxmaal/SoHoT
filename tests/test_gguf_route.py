@@ -218,7 +218,7 @@ def test_the_llama_server_url_is_the_one_serve_eval_starts():
 # --- a retracted refusal goes back to inspect -------------------------------
 
 def test_a_retracted_refusal_is_pending_again(tmp_path):
-    db = ms.connect(tmp_path / "d.db")
+    db = ms.connect()
     ms.record(db, ms.Seen(name="org/g", source="t", resolved="org/g",
                           kind="weights", lane="code"))
     ms.decide(db, "org/g", "declined", tier="inspect",
@@ -230,7 +230,7 @@ def test_a_retracted_refusal_is_pending_again(tmp_path):
 
 
 def test_requeue_retracts_every_revisitable_verdict(tmp_path):
-    db = ms.connect(tmp_path / "d.db")
+    db = ms.connect()
     for name in ("org/a", "org/b"):
         ms.record(db, ms.Seen(name=name, source="t", resolved=name,
                               kind="weights", lane="code"))

@@ -102,7 +102,7 @@ def test_a_renamed_model_resolves_to_its_old_row_read_only(tmp_path):
 
 def test_a_queued_reverify_creates_the_row_the_lookup_did_not(tmp_path, monkeypatch):
     conftest.stand_in_machine(monkeypatch, M2)
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     spec = reverify.served(conn)["code"]["spec"]
     assert candidates.get(conn, spec) is None
     assert reverify.served(conn)["code"]["candidate_id"] is None

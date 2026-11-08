@@ -189,7 +189,7 @@ def test_an_identity_one_test_leaves_behind_is_not_the_next_tests(tmp_path):
 
 
 def test_a_failed_capture_never_blanks_the_real_machines_row(monkeypatch, tmp_path, clock, machine_is):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     machine_is({**ENV, "accelerator": {"kind": "metal", "total_gb": 96},
                 "versions": {"mlx": "0.30.0"}})
     monkeypatch.setattr(machine, "uuid_failed", lambda: False)

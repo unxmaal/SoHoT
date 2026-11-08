@@ -628,7 +628,7 @@ def sat_exam(monkeypatch):
 def store_conn(tmp_path):
     """A fresh store connection for code that requires one, such as rank.rank. #893."""
     from harness import memory_store as ms
-    conn = ms.connect(tmp_path / "store.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 

@@ -10,7 +10,7 @@ from tests.test_measure_gain_1315 import DAY, NOW, paired_run
 
 @pytest.fixture
 def conn(tmp_path):
-    c = ms.connect(tmp_path / "s.db")
+    c = ms.connect()
     yield c
     c.close()
 

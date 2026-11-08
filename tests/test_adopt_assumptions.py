@@ -68,7 +68,7 @@ def test_a_null_under_a_plan_for_a_bigger_effect_than_the_lane_cares_about_is_no
     assert got.failure_class == reasons.UNDERPOWERED, got.why
     assert "not shown at +" in got.why
     assert got.evidence["power"]["mde"] > 0.1
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     vid = adopt.record(conn, got, spec="org/x")
     assert conn.execute("SELECT reason FROM verdicts WHERE id = ?", (vid,)).fetchone()[0] == reasons.LIMIT
 
@@ -152,7 +152,7 @@ def test_the_evidence_names_a_level_only_when_a_holdout_earlier_challengers_or_s
 
 
 def test_a_recorded_verdict_keeps_the_level_it_was_tested_at(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     ev = {"split": _split(3).as_dict(), "power": {}, "comparisons": 2, "alpha": 0.0125}
     vid = adopt.record(conn, adopt.Verdict("code", "inc", "org/c", False, "x", evidence=ev), spec="org/c")
     got = json.loads(conn.execute("SELECT power FROM verdicts WHERE id = ?", (vid,)).fetchone()[0])
@@ -161,7 +161,7 @@ def test_a_recorded_verdict_keeps_the_level_it_was_tested_at(tmp_path):
 
 
 def test_comparisons_count_the_lanes_verdicts_on_one_holdout_version(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     ev = {"split": _split(3).as_dict(), "power": {}}
     for i in range(3):
         adopt.record(conn, adopt.Verdict("code", "inc", f"org/c{i}", False, "x", evidence=ev),

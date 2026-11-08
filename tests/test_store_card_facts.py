@@ -86,7 +86,7 @@ def test_an_adapter_is_an_attachment_from_the_column(tmp_path):
     card = ins.card_facts({"pipeline_tag": "text-to-image",
                            "tags": ["base_model:adapter:org/base"]})
     assert card.attaches_to == "adapter"
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         for name in ("org/innocuous", "org/plain"):
             ms.record(conn, ms.Seen(name=name, source="t", lane="image",

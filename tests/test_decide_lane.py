@@ -745,7 +745,7 @@ def test_the_store_card_picks_the_engine(tmp_path):
     from harness import candidates
     from harness import inspect as ins
     from harness import memory_store as ms
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         ms.record(conn, ms.Seen(name="org/my-router", source="t", lane="decide"))
         ms.set_card(conn, "org/my-router", ins.card_facts(
@@ -763,7 +763,7 @@ def test_the_store_card_picks_the_engine(tmp_path):
 def test_the_fetch_tier_queues_an_adapter_no_engine_is_known_to_load(tmp_path):
     from harness import fetching
     from harness import memory_store as ms
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         import fakes
         ms.record(conn, ms.Seen(name="org/qwen-lora", source="t", lane="decide",

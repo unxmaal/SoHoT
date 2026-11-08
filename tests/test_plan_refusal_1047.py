@@ -158,7 +158,7 @@ def _broken(conn, name, detail):
 
 
 def test_coherence_re_decides_the_broken_screen_12930_wrote(tmp_path):
-    store = ms.connect(tmp_path / "s.db")
+    store = ms.connect()
     try:
         _broken(store, "HermiHg/Qwen3.8-27B-DFlash2-Q2_K_S-MIX-GGUF", DETAIL_12930)
         found = coherence.changes(store)
@@ -175,7 +175,7 @@ def test_coherence_re_decides_the_broken_screen_12930_wrote(tmp_path):
 
 def test_coherence_holds_a_drafter_as_an_attachment_whatever_its_plan_refusal_says(tmp_path):
     import json
-    store = ms.connect(tmp_path / "s.db")
+    store = ms.connect()
     try:
         name = "HermiHg/Qwen3.8-27B-DFlash2-Q2_K_S-MIX-GGUF"
         _broken(store, name, DETAIL_12930)
@@ -190,7 +190,7 @@ def test_coherence_holds_a_drafter_as_an_attachment_whatever_its_plan_refusal_sa
 
 def test_the_audit_warns_on_a_pinned_misread_broken_screen_and_fails_a_new_one(tmp_path):
     from harness import live_audit
-    store = ms.connect(tmp_path / "s.db")
+    store = ms.connect()
     try:
         _broken(store, "HermiHg/Qwen3.8-27B-DFlash2-Q2_K_S-MIX-GGUF", DETAIL_12930)
         vid = store.execute("SELECT state_verdict_id FROM proposals").fetchone()[0]

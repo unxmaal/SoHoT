@@ -350,7 +350,7 @@ def test_fill_writes_a_real_file_of_the_asked_size(tmp_path):
 
 def test_fetching_run_honours_a_floor_it_is_given(tmp_path, monkeypatch):
     monkeypatch.setattr(fetching, "have", lambda *a, **k: False)
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     try:
         chaos.seed(conn, "org/tiny", 1000)
         got = fetching.run(conn, free=5000, floor=4500,

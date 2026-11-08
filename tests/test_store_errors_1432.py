@@ -11,6 +11,7 @@ import pytest
 
 from harness import adopt, discover, engine_timeout, memory, reply_cap, screen, yield_stop
 from harness import memory_store as ms
+from harness import store
 from harness.commands import discover as discover_cmd
 from harness.commands import measure as measure_cmd
 
@@ -146,10 +147,10 @@ def test_a_reader_under_a_lend_reads_the_lent_store(module, name, call, monkeypa
     real = getattr(module, name)
 
     def spy(*a, **kw):
-        seen.append([x for x in (*a, *kw.values()) if isinstance(x, sqlite3.Connection)])
+        seen.append([x for x in (*a, *kw.values()) if isinstance(x, (sqlite3.Connection, store.PostgresConnection))])
         return real(*a, **kw)
     monkeypatch.setattr(module, name, spy)
-    conn = ms.connect(tmp_path / "lent.db")
+    conn = ms.connect()
     try:
         with ms.lend(conn):
             call()

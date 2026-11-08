@@ -113,7 +113,7 @@ def lane(tmp_path, monkeypatch):
 
 
 def _store(tmp_path):
-    return ms.connect(tmp_path / "s.db")
+    return ms.connect()
 
 
 def _rows(conn):

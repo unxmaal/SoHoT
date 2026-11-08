@@ -205,7 +205,7 @@ def test_the_loop_refetches_a_screen_that_blamed_the_runtime_for_our_snapshot(mo
 
 
 def test_the_loop_reinspects_a_non_text_lane_sized_by_a_gguf(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         for name, lane in (("nvidia/magpie_tts_multilingual_357m", "tts"), ("org/text-gguf", "code")):
             ms.record(conn, ms.Seen(name=name, source="t", lane=lane))

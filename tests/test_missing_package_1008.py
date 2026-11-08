@@ -77,7 +77,7 @@ def test_the_package_until_is_met_once_that_venv_has_it(tmp_path, monkeypatch):
 
 @pytest.fixture
 def store(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 

@@ -225,7 +225,7 @@ def test_binding_credits_served_ctx_not_the_reply_budget(tmp_path, monkeypatch):
          "arch": "arm64", "memory_gb": 96.0, "accelerator": "unified 96GB", "runtimes": "cpu,mlx",
          "ceiling_gb": 66.0, "versions": {}}
     conftest.stand_in_machine(monkeypatch, m)
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     ms.remember_machine(conn, dict(m))
     rows = [{"candidate": "m", "case_id": f"c{i}", "passed": False, "seconds": 1.0,
              "failure_class": reasons.CONTEXT_EXCEEDED, "limit": "served_ctx>16384"} for i in range(4)]

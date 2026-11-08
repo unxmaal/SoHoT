@@ -313,7 +313,7 @@ def test_a_laneless_ocr_row_is_relaned_and_a_laned_row_is_not(tmp_path, monkeypa
     from harness import memory_store as ms
     from harness.memory_store.migrations import retractions
     monkeypatch.setenv("LOCALHARNESS_HOME", str(tmp_path))
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     conn.execute("INSERT INTO proposals (name, lane, hf_task, card_tags, first_seen, last_seen) "
                  "VALUES ('a/ocr', '', 'image-text-to-text', ?, 0, 0)", (json.dumps(["ocr"]),))
     conn.execute("INSERT INTO proposals (name, lane, hf_task, card_tags, first_seen, last_seen) "

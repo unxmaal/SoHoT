@@ -138,7 +138,7 @@ def test_the_ladder_is_shown_in_the_order_work_flows_through_it():
 def test_the_funnel_orders_by_the_ladder_not_by_count(tmp_path):
     from harness import memory_store as ms
 
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     try:
         for name, tier in (("a", "adopt"), ("b", "inspect"), ("c", "screen")):
             ms.record(conn, ms.Seen(name=name, source="t", url="", why="",

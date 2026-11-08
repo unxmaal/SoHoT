@@ -14,7 +14,7 @@ INC = "llamacpp:Ornith-1.5-35B-Q4_K_M"
 
 @pytest.fixture
 def conn(tmp_path):
-    c = ms.connect(tmp_path / "s.db")
+    c = ms.connect()
     yield c
     c.close()
 

@@ -37,7 +37,7 @@ def store(tmp_path, monkeypatch):
     monkeypatch.setattr(fetching, "requires", lambda name, conn=None: [])
     monkeypatch.setattr("harness.rank.serving", lambda *a, **k: set())
     monkeypatch.setattr("harness.rank.lanes_with_receipts", lambda *a, **k: set())
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 
@@ -105,7 +105,7 @@ def test_an_adapter_is_declined_rather_than_downloaded(tmp_path):
     from harness import fetching
     from harness import memory_store as ms
 
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         import fakes
         ms.record(conn, ms.Seen(
@@ -138,7 +138,7 @@ def test_an_ordinary_model_is_not_refused_as_an_attachment(tmp_path):
     from harness import memory_store as ms
 
     seen = []
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         ms.record(conn, ms.Seen(
             name="org/z-image-turbo-4bit", source="test", lane="image",

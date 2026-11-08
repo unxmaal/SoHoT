@@ -191,7 +191,7 @@ def test_the_neutral_control_shows_no_effect_on_the_same_cases(faithful):
 
 
 def test_a_control_that_wins_is_never_adopted(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     try:
         v = adopt.Verdict("code", "q3-4b", "neutral/q3-4b", True,
                           "beats q3-4b on the lane's metric, 8 gained against 0 lost, p=0.01")
@@ -220,7 +220,7 @@ def test_the_loop_crosses_deepen_and_its_control_over_each_text_lanes_incumbent(
     from harness.commands import loop
     monkeypatch.setattr(winners, "typed", lambda: {"code": "q3-4b", "web": "q3-4b", "extract": "q3-1b",
                                                    "svg": "local-large"})
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     try:
         got = {(lane, spec) for lane, spec, _ in loop._cross_methods(conn)}
     finally:
@@ -320,7 +320,7 @@ def test_a_lane_with_enough_cases_is_not_too_small_at_a_short_repeat():
 
 
 def test_lane_too_small_is_stored_waiting_on_the_lanes_cases_and_spends_no_comparison(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     try:
         ms.record(conn, ms.Seen(name="deepen:q3-4b", source=methods.CROSSING_SOURCE,
                                 kind=methods.CROSSING_KIND, lane="extract", resolved="deepen:q3-4b"))

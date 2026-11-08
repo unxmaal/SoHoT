@@ -322,7 +322,7 @@ def _screen_run(conn, dirname, spec, key, detail, stderr_lines):
 
 def test_schema_60_requeues_the_screen_an_mps_abort_settled(tmp_path):
     from harness.memory_store.migrations import v60
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         row_detail = RECORDED.split(": ", 2)[-1]
         _broken(conn, NAME, RECORDED)
@@ -353,7 +353,7 @@ def test_schema_60_requeues_the_screen_an_mps_abort_settled(tmp_path):
 def test_schema_60_leaves_a_missing_run_dir_alone(tmp_path):
     from harness import paths
     from harness.memory_store.migrations import v60
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         _broken(conn, NAME, RECORDED)
         _screen_run(conn, "screen-3-ocr", SPEC, "hf-ocr/PaddleOCR-VL-1.6",

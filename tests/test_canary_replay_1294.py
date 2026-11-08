@@ -37,7 +37,7 @@ def _replays(inc, ch):
 
 
 def test_the_replayed_repo_gate_adopts_the_stored_known_better_run(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         better, _ = _replays(*_pair(conn))
         got = canary.replay(conn, better, split=SPLIT)
@@ -49,7 +49,7 @@ def test_the_replayed_repo_gate_adopts_the_stored_known_better_run(tmp_path):
 
 
 def test_the_replayed_repo_gate_declines_the_stored_known_worse_run(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         _, worse = _replays(*_pair(conn))
         got = canary.replay(conn, worse, split=SPLIT)
@@ -60,7 +60,7 @@ def test_the_replayed_repo_gate_declines_the_stored_known_worse_run(tmp_path):
 
 
 def test_a_replay_the_gate_answers_wrongly_is_a_miss_not_invalid(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         inc, ch = _pair(conn)
         swapped = canary.Replay("x", "repo", GOOD, BAD, (ch, inc), ("measured", ""))
@@ -71,7 +71,7 @@ def test_a_replay_the_gate_answers_wrongly_is_a_miss_not_invalid(tmp_path):
 
 
 def test_a_decline_for_another_reason_is_a_miss(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         # A holdout win the dev cases do not confirm is declined as limit, not as a worse candidate.
         inc = _run(conn, "bad", "repo", BAD, lambda c: c[0] == "d" or int(c[1:]) % 4 == 0)
@@ -85,7 +85,7 @@ def test_a_decline_for_another_reason_is_a_miss(tmp_path):
 
 
 def test_a_replay_plant_whose_stored_pair_no_longer_shares_an_exam_is_invalid_not_a_miss(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         inc = _run(conn, "bad", "repo", BAD, lambda c: False, digest="dig1")
         ch = _run(conn, "good", "repo", GOOD, lambda c: True, digest="dig2")
@@ -97,7 +97,7 @@ def test_a_replay_plant_whose_stored_pair_no_longer_shares_an_exam_is_invalid_no
 
 
 def test_a_replay_plant_whose_rows_are_gone_is_invalid_not_a_miss(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         inc, ch = _pair(conn)
         conn.execute("DELETE FROM results WHERE run_id = ?", (ch,))
@@ -112,7 +112,7 @@ def test_a_replay_plant_whose_rows_are_gone_is_invalid_not_a_miss(tmp_path):
 
 
 def test_a_replay_whose_rows_miss_todays_holdout_is_invalid_not_a_miss(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         old = tuple(f"old{i}" for i in range(30))
         inc = _run(conn, "bad", "repo", BAD, lambda c: False, cases=old)
@@ -125,7 +125,7 @@ def test_a_replay_whose_rows_miss_todays_holdout_is_invalid_not_a_miss(tmp_path)
 
 
 def test_a_replay_writes_nothing_to_the_store_it_reads(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         better, worse = _replays(*_pair(conn))
         before = conn.execute("SELECT (SELECT count(*) FROM verdicts), (SELECT count(*) FROM adoptions)").fetchone()

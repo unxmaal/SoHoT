@@ -53,7 +53,7 @@ def test_different_hardware_or_os_family_is_a_different_machine():
 
 
 def test_receipts_from_two_interpreters_land_on_one_row(tmp_path, on):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     a = runs.machine_for(conn, {"hw_model": "Mac17,15", "os": UV_PY, "arch": "arm64"})
     b = runs.machine_for(conn, {"hw_model": "Mac17,15", "os": DEPLOY_PY,
                                 "arch": "arm64"})
@@ -69,7 +69,7 @@ def test_receipts_from_two_interpreters_land_on_one_row(tmp_path, on):
 def test_the_same_board_under_another_os_is_not_here(tmp_path, on):
     """hw_model stood in for identity and pooled the 4070 box's two OSes."""
     linux_os, windows_os = "Linux-6.8.0-x86_64-with-glibc2.39", "Windows-11-10.0"
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     linux = runs.machine_for(conn, {"hw_model": "MS-7D25", "os": linux_os,
                                     "arch": "x86_64"})
     runs.machine_for(conn, {"hw_model": "MS-7D25", "os": windows_os,
@@ -161,7 +161,7 @@ def test_the_migration_folds_duplicates_and_repoints_every_machine_id(tmp_path, 
 
 def test_a_receipt_with_no_os_joins_the_only_machine_with_that_board(tmp_path, on):
     """The live store held `Mac14,12/arm64`: 51 runs whose receipt named no OS."""
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
 
     def row(hw, os_, arch):
         return conn.execute(
@@ -218,7 +218,7 @@ def test_the_migration_imports_memory_limits_json(tmp_path, on):
 
 def test_remember_machine_records_versions_and_until_met_reads_them(tmp_path, on):
     on(facts(versions={"diffusers": "0.41.0", "llama.cpp": "10900", "mlx": ""}))
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     mid = ms.remember_machine(conn)
     got = ms.recorded_facts(conn, mid)
     assert got["versions"] == {"diffusers": "0.41.0", "llama.cpp": "10900"}
@@ -234,7 +234,7 @@ def test_remember_machine_records_versions_and_until_met_reads_them(tmp_path, on
 def test_a_version_wait_reopens_from_the_recorded_versions(tmp_path, on, have,
                                                            reopens):
     on(facts(versions={"diffusers": have}))
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     ms.record(conn, ms.Seen(name="org/v", source="t", kind="weights",
                             lane="image", why="seeded"))
     ms.decide(conn, "org/v", "declined", tier="screen",

@@ -31,7 +31,9 @@ def _connect(store: str):
     if not store:
         return morning.snapshot()
     from pathlib import Path
-    if not Path(store).is_file():
+
+    from harness import store as backend
+    if not backend.exists(store):
         raise FileNotFoundError(f"no store at {store}")
     return ledger.open_ro(Path(store))
 

@@ -10,6 +10,7 @@ from harness.commands import measure as measure_cmd
 from harness.commands import screen as screen_cmd
 from harness import disk, fetching
 from harness import memory_store as ms
+from harness import store as store_backend
 
 MAC = {"fingerprint": "mac", "runtimes": "cpu,mlx", "memory_gb": 32.0,
        "ceiling_gb": 22.0, "hw_model": "m", "os": "o", "arch": "a",
@@ -20,7 +21,7 @@ BOX = {**MAC, "fingerprint": "box", "runtimes": "cpu,cuda"}
 @pytest.fixture
 def store(tmp_path, monkeypatch):
     monkeypatch.setattr("harness.paths.home", lambda: tmp_path)
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 
@@ -393,7 +394,11 @@ def test_a_refused_decide_does_not_hold_the_stores_write_lock(store, tmp_path):
     with pytest.raises(ms.IllegalTransition):
         ms.decide(store, "org/x", "queued", tier=ms.INSPECT, detail="again")
     assert not store.in_transaction
-    other = sqlite3.connect(tmp_path / "s.db", timeout=0)
+    if store_backend.backend() == store_backend.POSTGRES:
+        other = ms.connect()
+        other.execute("SET lock_timeout = '1s'")
+    else:
+        other = sqlite3.connect(ms.db_path(), timeout=0)
     try:
         other.execute("UPDATE machines SET last_seen = last_seen")
         other.commit()

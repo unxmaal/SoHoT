@@ -23,7 +23,7 @@ ROOMY = 10 ** 15
 
 
 def _store(tmp_path):
-    return ms.connect(tmp_path / "d.db")
+    return ms.connect()
 
 
 def _decline(conn, name, lane, model_type, until):

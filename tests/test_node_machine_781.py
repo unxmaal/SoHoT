@@ -68,7 +68,7 @@ def _row(conn, mid):
 
 
 def test_a_board_name_with_a_slash_still_files_under_its_row(tmp_path, monkeypatch):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     fp = "B550/X570 Board/Linux/x86_64/abcdefabcdef"
     mid = filed(conn, tmp_path, header(tmp_path, monkeypatch, node(machine=fp)))
     assert mid is not None and _row(conn, mid)["hw_model"] == "B550/X570 Board"
@@ -80,7 +80,7 @@ def test_a_windows_build_bump_keeps_one_identity_and_one_machine_row(tmp_path, m
     before = node(machine=f"{HW}/{windows(26100)}/AMD64/37b7b3682e08")
     after = node(machine=f"{HW}/{windows(26200)}/AMD64/37b7b3682e08")
     assert before[0].identity == after[0].identity == KHRYLL
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     one = filed(conn, tmp_path, header(tmp_path, monkeypatch, before), "a.json")
     two = filed(conn, tmp_path, header(tmp_path, monkeypatch, after), "b.json")
     assert one == two and one is not None

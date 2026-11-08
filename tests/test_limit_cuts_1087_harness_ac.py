@@ -61,7 +61,7 @@ def _stored(conn) -> list[tuple]:
 
 def test_a_metric_win_the_paired_alpha_refuses_is_a_cut_when_recorded(tmp_path):
     from harness import adopt
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     ms.record(conn, ms.Seen(name="org/new", source="feeds", lane="tts", kind="weights", resolved="org/new"))
     inc, ch = row("inc", 0.05), row("ch", 0.01)
     won = adopt.decide("tts", inc, ch, head_to_head_rows([False] * 8, [True] * 8))
@@ -91,7 +91,7 @@ def test_a_by_hand_win_on_too_few_votes_is_held_as_a_cut(monkeypatch):
 
 def test_the_held_and_alpha_cuts_land_whole_in_the_store_they_are_given(tmp_path, monkeypatch):
     from harness import adopt, human
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     monkeypatch.setattr(human, "lane_verdict", lambda lane, pairs, conn=None: ("ch", "a person preferred it"))
     monkeypatch.setattr(human, "vote_stats", lambda lane, pairs, conn=None: (3, 1.0))
     assert adopt.decide_by_hand("tts", "inc", "ch", [], min_votes=5, conn=conn).held

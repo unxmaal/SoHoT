@@ -372,7 +372,7 @@ def test_the_cost_note_says_what_the_method_paid_for_its_result():
 # ---- adopt: a method that wins is adopted, and the lane commands serve it (#581) ---
 
 def test_a_winning_method_is_adopted(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     try:
         v = adopt.Verdict("code", "q3-4b", "best-of-3/q3-4b", True,
                           "beats q3-4b on the lane's metric, 8 gained against 0 lost, p=0.01")
@@ -387,7 +387,7 @@ def test_a_winning_method_is_adopted(tmp_path):
 
 def test_a_methods_cost_and_its_run_reach_the_stored_verdict(tmp_path):
     from harness import runs
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     try:
         run = tmp_path / "20261007-000000-r1"
         run.mkdir()
@@ -417,7 +417,7 @@ def test_the_loop_queues_each_applicable_method_over_each_lanes_incumbent(monkey
     _lane_defaults(monkeypatch, {"code": "q3-4b", "web": "q3-4b", "svg": "local-large",
                                  "image": "mflux:flux2-klein-4b", "extract": "q3-1b",
                                  "decide": "decider:x", "agent": "q3-4b"})
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     try:
         got = loop._cross_methods(conn)
         specs = {(lane, spec) for lane, spec, _ in got}
@@ -438,7 +438,7 @@ def test_the_loop_queues_each_applicable_method_over_each_lanes_incumbent(monkey
 def test_crossing_twice_queues_nothing_new_and_adds_no_sighting(monkeypatch, tmp_path):
     from harness.commands import loop
     _lane_defaults(monkeypatch, {"code": "q3-4b"})
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     try:
         first = loop._cross_methods(conn, want="code")
         again = loop._cross_methods(conn, want="code")
@@ -454,7 +454,7 @@ def test_a_crossed_method_reaches_the_screen_as_ready(monkeypatch, tmp_path, sto
     from harness import rank
     from harness.commands import loop
     _lane_defaults(monkeypatch, {"code": "q3-4b"})
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     try:
         loop._cross_methods(conn, want="code")
         rows = ms.judgeable(conn, limit=1000)

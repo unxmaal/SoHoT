@@ -155,7 +155,7 @@ def test_a_caller_holding_only_the_store_routes_and_gaps_alike(tmp_path):
     card = fakes.card(REPO)
     card["siblings"] = [s for s in card["siblings"] if not s["rfilename"].startswith("model")
                         and s["rfilename"] != "config.json"]
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     fakes.seeded_store(conn, [(REPO, "code", 14.0, 1)])
     fakes.carded(conn, REPO, card)
     assert ms.card_of(conn, REPO)["runtime_needed"] == "vllm"

@@ -140,7 +140,7 @@ LIVE_13009 = {"repeat": 1, "power": 0.0, "cells": 3, "cases": 3, "effect": 0.2, 
 
 
 def test_soh_coherence_moves_a_saturated_time_retest_to_the_lane_until(svg_lane, tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         _live_svg(conn, "OmniSVG/OmniSVG1.1_4B", {**LIVE_13009, "side": "all"})
         _live_svg(conn, "OmniSVG/OmniSVG1.1_8B", LIVE_13009)
@@ -165,7 +165,7 @@ def test_soh_coherence_moves_a_saturated_time_retest_to_the_lane_until(svg_lane,
 def test_a_lane_that_grew_since_the_plan_is_reopened_by_its_until(monkeypatch, tmp_path):
     grown = holdout.Split("svg", tuple(f"d{i}" for i in range(9)), tuple(f"h{i}" for i in range(4)), False)
     monkeypatch.setattr(holdout, "for_lane", lambda lane, *a, **k: grown)
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         _live_svg(conn, "OmniSVG/OmniSVG1.1_4B", {**LIVE_13009, "side": "all"})
         coherence.apply(conn, coherence.changes(conn))

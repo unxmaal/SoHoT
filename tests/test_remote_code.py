@@ -97,7 +97,7 @@ def test_runners_wanted_lists_them_and_not_the_native_one():
 
 
 def test_the_store_keeps_both_facts_and_card_of_returns_them(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         repo = "baidu/Unlimited-OCR"
         ms.record(conn, ms.Seen(name=repo, source="t", lane="ocr",
@@ -113,7 +113,7 @@ def test_the_store_keeps_both_facts_and_card_of_returns_them(tmp_path):
 def test_the_fetch_tier_queues_it_before_any_download(tmp_path, monkeypatch):
     monkeypatch.setattr(fetching, "have", lambda *a, **k: False)
     monkeypatch.setattr(fetching, "requires", lambda name, conn=None: [])
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         repo = "baidu/Unlimited-OCR"
         ms.record(conn, ms.Seen(name=repo, source="t", lane="ocr",

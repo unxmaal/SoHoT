@@ -198,7 +198,7 @@ def test_weights_with_no_retest_pending_still_go_after_the_grace(world):
 
 
 def test_a_ten_day_outage_continues_the_backlog(tmp_path):
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     now = 1_791_000_000.0
     ms.record_source(conn, papers.SOURCE, kind=papers.KIND, url=papers.API, at=now - 10 * DAY)
     asked = []

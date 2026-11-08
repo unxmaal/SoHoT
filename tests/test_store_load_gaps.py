@@ -16,7 +16,7 @@ MISSING = ('it ran and passed nothing: chunk-bytes: gateway returned HTTP 404: '
 
 @pytest.fixture
 def store(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 
@@ -38,7 +38,7 @@ def migrate(store, tmp_path):
     store.execute("INSERT OR REPLACE INTO meta VALUES ('schema', '16')")
     store.commit()
     store.close()
-    return ms.connect(tmp_path / "s.db")
+    return ms.connect()
 
 
 def test_an_architecture_gap_becomes_declined_until_a_newer_runtime(store, tmp_path):

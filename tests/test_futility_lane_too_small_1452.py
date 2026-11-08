@@ -72,7 +72,7 @@ def _stored(conn, name, plan):
 
 
 def test_soh_coherence_re_decides_a_stored_unpowered_futility_stop_and_leaves_a_powered_one(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         _stored(conn, "org/unpowered", UNPOWERED.as_dict())
         _stored(conn, "org/powered", POWERED.as_dict())
