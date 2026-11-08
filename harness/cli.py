@@ -25,7 +25,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from harness import adopt, audio, completion, env, power, proc, throughput, vector  # noqa: F401
+from harness import adopt, audio, completion, env, power, proc, resources, throughput, vector  # noqa: F401
 from harness.commands import adopt as adopt_cmd
 from harness.commands import baseline as baseline_cmd
 from harness.commands import api_spend as api_spend_cmd
@@ -985,7 +985,7 @@ def build_parser() -> argparse.ArgumentParser:
     wd.add_argument("--dry-run", action="store_true", help="only print and record what it would do")
     wd.set_defaults(func=_watchdog)
     jobs = sub.add_parser("jobs", help="the work queue: by priority then id, one GPU job at a time and "
-                          "cloud jobs in free cloud slots, while memory pressure is normal")
+                          "network, disk and cpu jobs beside it up to their capacity, while memory pressure is normal")
     jobs.add_argument("action", choices=("add", "list", "pause", "resume",
                                          "cancel", "priority"))
     jobs.add_argument("rest", nargs=argparse.REMAINDER,
@@ -997,30 +997,32 @@ def build_parser() -> argparse.ArgumentParser:
                       help="add: run here instead of the deploy checkout. #645")
     jobs.add_argument("--not-before", default="", metavar="WHEN",
                       help="add: start no earlier than the next local HH:MM, or a local YYYY-MM-DD[T]HH:MM[:SS]. #900, #1297")
+    jobs.add_argument("--resource", default="", choices=("", *resources.CLASSES),
+                      help="add: the resource class the job needs (gpu, network, disk, cpu); one gpu job runs at a "
+                           "time, the others beside it up to their capacity. Default: from the command. #1508")
     jobs.add_argument("--despite-hold", action="store_true",
                       help="add: may start while benchmarks are held (soh hold). #1564")
     jobs.add_argument("--night", action="store_true",
                       help="add: ignored since #1509; GPU jobs wait for the contention gate (soh gate), not the night")
     jobs.set_defaults(func=jobs_cmd.cmd_jobs, show_help=jobs.print_help)
-    hld = sub.add_parser("hold", help="hold benchmarking: no sweep, reverify or measurement job starts until "
-                         "released; deploys and serving still run. #1564")
-    hld.add_argument("action", choices=("benchmarks", "release", "status", "let"))
-    hld.add_argument("said", nargs="*", help='benchmarks: who holds it and why, e.g. "owner: the #1558 rebuild"; '
-                     "let: a job id")
+    hld = sub.add_parser("hold", help="the owner's hold, by scope: benchmarks (no sweep, reverify or measurement "
+                         "job starts) or gpu (no batch GPU job or deploy starts); serving still runs. #1564, #1509")
+    hld.add_argument("action", nargs="?", default="status", choices=("benchmarks", "gpu", "release", "status", "let"))
+    hld.add_argument("said", nargs="*", help='benchmarks|gpu: who holds it and why, e.g. "owner: the #1558 rebuild"; '
+                     "release: the scope, needed when both are held; let: a job id")
     hld.add_argument("--until", default="", metavar="WHEN",
-                     help="benchmarks: end the hold at the next local HH:MM or at YYYY-MM-DD[T]HH:MM")
+                     help="benchmarks|gpu: end the hold at the next local HH:MM or at YYYY-MM-DD[T]HH:MM")
     hld.set_defaults(func=hold_cmd.cmd_hold)
     pin = sub.add_parser("interactive", help="the pinned interactive server: its plan, health, and warm decide and "
                          "extract p95 against the 10 s target, with pressure at every call. #1561")
     pin.add_argument("action", nargs="?", default="plan", choices=("plan", "health", "probe"))
     pin.add_argument("-n", type=int, default=interactive_cmd.PROBES, help="probe: timed calls per lane")
     pin.set_defaults(func=interactive_cmd.cmd_interactive)
-    gat = sub.add_parser("gate", help="the contention gate GPU jobs and deploys wait for: status, or the owner's "
-                         "hold that keeps GPU work off this machine and pauses it. #1509")
+    gat = sub.add_parser("gate", help="the contention gate GPU jobs and deploys wait for; the owner's hold on "
+                         "them is soh hold gpu. #1509")
     gat.add_argument("action", nargs="?", default="status", choices=("status", "hold", "release"))
-    gat.add_argument("said", nargs="*", help='hold: who holds the machine and why, e.g. "owner: a video render"')
-    gat.add_argument("--until", default="", metavar="WHEN",
-                     help="hold: end the hold at the next local HH:MM, or a local YYYY-MM-DD[T]HH:MM[:SS]")
+    gat.add_argument("said", nargs="*", help="hold|release: folded into soh hold gpu")
+    gat.add_argument("--until", default="", metavar="WHEN", help="folded into soh hold gpu --until")
     gat.set_defaults(func=gate_cmd.cmd_gate)
     dep = sub.add_parser("deploy", help="deploys as queue jobs: each green main commit built alongside, switched, "
                          "verified or rolled back, behind the contention gate. #1506, #1509")

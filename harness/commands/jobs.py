@@ -65,14 +65,17 @@ def cmd_jobs(a) -> int:
     priority, cwd = a.priority, a.cwd
     night, start = bool(getattr(a, "night", False)), getattr(a, "not_before", "")
     despite = bool(getattr(a, "despite_hold", False))
+    resource = getattr(a, "resource", "") or ""
     while rest[:1] in (["--title"], ["--json"], ["--priority"], ["--cwd"], ["--night"],
-                       ["--not-before"], ["--despite-hold"]):
+                       ["--not-before"], ["--despite-hold"], ["--resource"]):
         if rest[0] == "--json":
             common._JSON, rest = True, rest[1:]
         elif rest[0] == "--despite-hold":
             despite, rest = True, rest[1:]
         elif rest[0] == "--night":
             night, rest = True, rest[1:]
+        elif len(rest) > 1 and rest[0] == "--resource":
+            resource, rest = rest[1], rest[2:]
         elif len(rest) > 1 and rest[0] == "--not-before":
             start, rest = rest[1], rest[2:]
         elif len(rest) > 1 and rest[0] == "--title":
@@ -105,7 +108,7 @@ def cmd_jobs(a) -> int:
             if night:
                 note("--night is ignored since #1509: a GPU job starts when the contention gate opens (soh gate)")
             job = wq.add(rest, title=a.title, cwd=where, priority=priority,
-                         requested_by="cli", not_before=wq.start_at(start))
+                         requested_by="cli", not_before=wq.start_at(start), resource=resource)
             if despite:
                 _let(job)
             after = f" (not before {job['not_before']})" if job["not_before"] else ""
@@ -170,7 +173,7 @@ def cmd_jobs(a) -> int:
               if j["state"] == wq.PENDING and not wq.due(j) else "")
         lock = f" [holds the {j['lock']} lock]" if j.get("lock") else ""
         lock += " [held: benchmarks]" if j["id"] in waiting else ""
-        note(f"  {j['id']}  {j['state']:8}{rc:7}  p{pri:<3} {at}{j['title']}{lock}")
+        note(f"  {j['id']}  {j['state']:8}{rc:7}  p{pri:<3} {wq.needs(j):7} {at}{j['title']}{lock}")
     for h in loose:
         note(f"  {h['lock']} lock held by {exclusive.describe(h)}, outside the queue")
     emit(running=wq.running(), gate_open=ok, why=why, jobs=got, loop=loop, contention=gpu, locks=locks,

@@ -185,7 +185,7 @@ def test_morning_names_the_hold_instead_of_a_missing_sweep():
 
 def test_the_cli_holds_shows_and_releases(capsys):
     assert cli.main(["hold", "status"]) == 0
-    assert "no benchmark hold" in capsys.readouterr().out
+    assert "no hold" in capsys.readouterr().out
     assert cli.main(["hold", "benchmarks"]) != 0
     capsys.readouterr()
     assert cli.main(["hold", "benchmarks", SAID, "--json"]) == 0

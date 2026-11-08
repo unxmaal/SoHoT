@@ -327,12 +327,22 @@ Test: tests/test_watchdog.py::test_a_queue_job_with_no_worker_or_a_settled_row_i
 Test: tests/test_watchdog.py::test_reap_kills_an_orphan_group_and_refuses_one_that_is_not
 
 ### Requirement: contention
-At any hour, the watchdog SHALL find contention on the non-orphan top-level subject whose own process, one of its evals or any descendant holds the GPU lock, while the owner's hold is in force or a client request the gateway answered (purpose work or unknown) ended inside the last `contention_idle` seconds and after the subject started; when the lock's holder cannot be told it SHALL judge every such subject except one whose evals all hold a cloud slot, and it SHALL never judge a job a client waits on (requested through the MCP). Its action SHALL be pause, escalating to notify.
+At any hour, the watchdog SHALL find contention on the non-orphan top-level subject whose own process, one of its evals or any descendant holds the GPU lock, while the owner's gpu hold is in force or a client request the gateway answered (purpose work or unknown) ended inside the last `contention_idle` seconds and after the subject started, outside every span the subject's evals yielded to serving; when the lock's holder cannot be told it SHALL judge every such subject except one whose evals all hold a cloud slot, and it SHALL never judge a job a client waits on (requested through the MCP). Its action SHALL be pause, escalating to notify.
 
 #### Scenario: Served since it started, by day or at night
 - **WHEN** a job holding the GPU lock runs at noon and at night with a client served since it started, one served before it started, and none
 - **THEN** contention trips the first time at both hours and not the other two
 Test: tests/test_watchdog.py::test_contention_trips_on_a_client_served_since_the_job_started_by_day_or_night
+
+#### Scenario: A client the eval already yielded to
+- **WHEN** a client was served inside a span the job's eval yielded to serving, or while a yield is still in progress
+- **THEN** contention does not trip for it
+Test: tests/test_hold_scopes_1558.py::test_a_client_the_eval_already_yielded_to_does_not_pause_it
+
+#### Scenario: A client outside any yield
+- **WHEN** a client was served after the eval's only yield ended
+- **THEN** contention trips with that request as its evidence
+Test: tests/test_hold_scopes_1558.py::test_a_client_served_outside_any_yield_still_pauses_it
 
 #### Scenario: Only the GPU lock's holder trips
 - **WHEN** two jobs run while a client is served, one whose eval holds the GPU lock, and then the lock is free

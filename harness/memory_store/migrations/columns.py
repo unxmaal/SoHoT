@@ -239,6 +239,12 @@ def _add_job_despite_hold(conn) -> None:
         conn.execute("ALTER TABLE jobs ADD COLUMN despite_hold INTEGER NOT NULL DEFAULT 0")
 
 
+def _add_job_resource(conn) -> None:
+    """jobs.resource on an older store; every earlier job is classified from its command. #1508."""
+    if "resource" not in _columns(conn, "jobs"):
+        conn.execute("ALTER TABLE jobs ADD COLUMN resource TEXT NOT NULL DEFAULT ''")
+
+
 def _add_request_purpose(conn) -> None:
     """gateway_requests.purpose on an older store; every earlier row is 'unknown'. #825."""
     if "purpose" not in _columns(conn, "gateway_requests"):

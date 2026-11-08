@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 91
+SCHEMA_VERSION = 92
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -289,7 +289,9 @@ CREATE TABLE IF NOT EXISTS jobs (
     -- 1 when not_before is the night start (--night), which a day clearance lifts. #1112.
     night_gate   INTEGER NOT NULL DEFAULT 0,
     -- 1 when the owner let this measurement job start through a benchmark hold. #1564.
-    despite_hold INTEGER NOT NULL DEFAULT 0
+    despite_hold INTEGER NOT NULL DEFAULT 0,
+    -- The resource class the job declared (resources.CLASSES); '' is classified from its command. #1508.
+    resource     TEXT NOT NULL DEFAULT ''
 );
 
 -- One technique proposal triaged once: into a method (a registered one, or a drafted template), or left wanted. #993.

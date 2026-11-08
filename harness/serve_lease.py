@@ -318,3 +318,12 @@ def worked_s(subject, now: float | None = None) -> float | None:
     if subject.elapsed_s is None:
         return None
     return max(0.0, subject.elapsed_s - sum(yielded_s(r, now) for r in subject.runs()))
+
+
+def during_yield(progress: dict, at: float, now: float | None = None) -> bool:
+    """Whether `at` fell inside one of a run's yields to serving, one in progress included. #1558."""
+    got = progress.get("serving_yields") or {}
+    spans = [(float(a), float(b)) for a, b in got.get("spans") or []]
+    if got.get("yielding_since") is not None:
+        spans.append((float(got["yielding_since"]), time.time() if now is None else now))
+    return any(a <= at <= b for a, b in spans)

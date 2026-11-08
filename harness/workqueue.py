@@ -1,4 +1,4 @@
-"""Jobs from any caller, by priority then id within each lock class: one GPU job at a time, cloud jobs in free cloud slots, while memory pressure is normal; GPU jobs and deploys behind the contention gate. #353, #573, #1153, #1509.
+"""Jobs from any caller, by priority then id within each resource class (resources.py): one GPU job at a time, the rest up to their capacity, while memory pressure is normal; GPU jobs and deploys behind the contention gate. #353, #573, #1153, #1509.
 
 Jobs are rows in the store's `jobs` table (#418). The runner flock and the
 paused flag stay files: a kernel lock and an operator switch.
@@ -16,14 +16,14 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
-from harness import exclusive, paths
+from harness import exclusive, paths, resources
 
 PENDING, RUNNING, DONE, FAILED = "pending", "running", "done", "failed"
 CANCELLED = "cancelled"
 #: A job whose command paused on request with its work checkpointed (evals.watch.PAUSED). #1357.
 PAUSED = "paused"
-#: The lock class a job waits for before the worker starts it; a deploy runs alone. #1153, #1506.
-GPU, CLOUD, DEPLOY = "gpu", "cloud", "deploy"
+#: The resource classes the worker starts by; a deploy runs alone. #1153, #1506, #1508.
+GPU, CLOUD, DEPLOY = resources.GPU, resources.NETWORK, resources.DEPLOY
 #: How often a worker with jobs running looks for one it can start beside them. #1153.
 WATCH_S = 5.0
 #: How long a cancelled job's process group gets to exit before it is killed. #628.
@@ -96,7 +96,8 @@ def _row(conn, r) -> dict:
             "started": _iso(r["started_at"]), "finished": _iso(r["finished_at"]),
             "rc": r["rc"], "log": r["log"], "note": r["note"],
             "requested_by": r["requested_by"], "machine_id": r["machine_id"],
-            "not_before": _iso(r["not_before"]), "runs": runs}
+            "not_before": _iso(r["not_before"]), "runs": runs,
+            "resource": r["resource"]}
 
 
 def _select(conn, where: str = "", args=()) -> list[dict]:
@@ -221,7 +222,9 @@ REMEASURES = ("sweep", "reverify")
 
 def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
         output: str = "", priority: int = 0, requested_by: str = "",
-        not_before: float | None = None, conn=None) -> dict:
+        not_before: float | None = None, conn=None, resource: str = "") -> dict:
+    if resource:
+        resources.check(resource)
     if not argv:
         raise ValueError("a job needs a command")
     first = str(argv[0])
@@ -250,11 +253,11 @@ def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
         # The store assigns the id inside the insert, so two writers cannot collide. #418.
         cur = c.execute(
             "INSERT INTO jobs (title, kind, output, priority, argv, cwd, state, "
-            "created_at, requested_by, machine_id, not_before) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            "created_at, requested_by, machine_id, not_before, resource) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
             (title or " ".join(argv), kind, output, int(priority),
              json.dumps([str(a) for a in argv]), cwd or os.getcwd(), PENDING,
              time.time(), requested_by, machine,
-             None if not_before is None else float(not_before)))
+             None if not_before is None else float(not_before), resource))
         c.commit()
         return _select(c, "WHERE id = ?", (cur.lastrowid,))[0]
 
@@ -382,7 +385,8 @@ def cancel(job_id: str, conn=None, grace: float = CANCEL_GRACE_S) -> dict:
         raise ValueError(f"job {job['id']} is running but no process of it is on this "
                          f"machine; cancel it where it runs")
     _cancel_flag(job["id"]).write_text(time.strftime(_STAMP), encoding="utf-8")
-    how = stop_group(pid, grace=grace)
+    from harness import executors
+    how = executors.for_job(job).stop(pid, grace)
     _settle_cancelled(job, how)
     return get(job["id"]) or job
 
@@ -621,20 +625,10 @@ def running() -> bool:
 
 
 def _in_group(job: dict):
-    """A popen that runs the job as its own process group and leaves its pid where cancel finds it. #628."""
-    def run(argv, cwd=None, stdout=None, stderr=None, env=None):
-        child = spawn_group(argv, cwd, stdout, env)
-        pid_file = _pid_file(job["id"])
-        pid_file.write_text(str(child.pid), encoding="utf-8")
-        try:
-            child.wait()
-            left = stop_group(child.pid)
-            if left != "gone" and stdout is not None:
-                stdout.write(f"stopped processes the job left running: {left}\n")
-        finally:
-            pid_file.unlink(missing_ok=True)
-        return child
-    return run
+    """A popen that runs the job under its executor, which leaves its pid where cancel finds it. #628, #1508."""
+    from harness import executors
+    run = executors.for_job(job).run
+    return lambda argv, cwd=None, stdout=None, stderr=None, env=None: run(job, argv, cwd=cwd, stdout=stdout, env=env)
 
 
 def _claim(job: dict, log: Path) -> bool:
@@ -753,27 +747,20 @@ def settle_deploys() -> list:
 
 
 def needs(job: dict) -> str:
-    """The lock class a job waits for: DEPLOY for a deploy, CLOUD for an eval evals.run would run in a cloud slot, else GPU. #1153."""
-    if job.get("kind") == DEPLOY:
-        return DEPLOY
-    try:
-        from evals import run
-        kind = run.argv_lock_kind(job.get("argv") or [])
-    except Exception:  # noqa: BLE001 - a job the rule cannot read waits for the GPU, as every job did before
-        return GPU
-    return CLOUD if kind in exclusive.CLOUD else GPU
+    """The resource class a job waits for (resources.of). #1153, #1508."""
+    return resources.of(job)
 
 
 def _free(cls: str, live: dict) -> bool:
-    """Whether a job of this class may start beside the jobs in `live` (thread -> (class, id)). #1153."""
+    """Whether a job of this class may start beside the jobs in `live` (thread -> (class, id)). #1153, #1508."""
     if cls == DEPLOY or any(c == DEPLOY for c, _ in live.values()):
         return not live
     mine = sum(1 for c, _ in live.values() if c == cls)
-    if cls == GPU:
-        return mine == 0
-    slots = max(1, int(exclusive.CLOUD_SLOTS))
-    taken = sum(exclusive._taken(exclusive.cloud_lock_path(i)) for i in range(slots))
-    return max(mine, taken) < slots
+    if cls == CLOUD:
+        # Cloud evals outside the queue hold cloud slots too. #1135.
+        mine = max(mine, sum(exclusive._taken(exclusive.cloud_lock_path(i))
+                             for i in range(resources.capacity(CLOUD))))
+    return mine < resources.capacity(cls)
 
 
 def _contended(now: float) -> bool:

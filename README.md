@@ -2933,9 +2933,10 @@ soh jobs resume
 soh jobs cancel 0003
 soh jobs priority 0005 10   # higher runs first; ties run in the order added
 soh hold benchmarks "owner: the rebuild"   # no sweep, reverify or measurement job starts; deploys still run
+soh hold gpu "owner: a video render"       # no batch GPU job or deploy starts; a running one pauses
 soh hold status
 soh hold let 0241            # one measurement job may start anyway (or soh jobs add --despite-hold)
-soh hold release
+soh hold release benchmarks  # the scope may be left out when only one is held
 ```
 
 Pause benchmarking with `soh hold`, never with `launchctl disable`. A unit someone disabled with
@@ -2960,9 +2961,12 @@ code, or the error) however the loop ends. `soh jobs list`, `soh report` and the
 local report page print it. A heartbeat with no progress for three hours, or
 whose process is gone, reads as stalled rather than running.
 
-The `worker` service runs them in order, one at a time, except that an eval
+The `worker` service runs them in order within each resource class
+(`harness/resources.py`): one `gpu` job at a time, and `network`, `disk` and
+`cpu` jobs beside it up to each class's capacity. A job declares its class with
+`soh jobs add --resource`; one that does not is `network` when it is an eval
 whose every candidate is hosted (the rule `evals.run` uses for its cloud slot)
-starts beside a running job while a cloud slot is free. It does not hold the
+or a `soh fetch`, and `gpu` otherwise. It does not hold the
 machine lock below for a whole job: each command takes it for the part that
 loads a model, so a job that is downloading does not block a GPU run. It starts
 the next one whenever the queue is not paused and macOS memory pressure is
@@ -2975,9 +2979,9 @@ SoHoT's own eval, smoke, probe and pipeline requests do not count, and an MCP
 image or video a client waits on is never held. A client served while a batch
 GPU job runs makes the watchdog pause it at its next case; the queue puts it
 back to pending and it resumes from its checkpoint when the lanes are idle
-again. `soh gate` shows the gate and its signals; `soh gate hold "<who, why>"
+again. `soh gate` shows the gate and its signals; `soh hold gpu "<who, why>"
 [--until HH:MM]` keeps GPU work off the machine (and pauses a running job)
-until `soh gate release`. `--night` is accepted and ignored. Jobs are rows in the
+until `soh hold release gpu`. `--night` is accepted and ignored. Jobs are rows in the
 store's `jobs` table, so they survive a restart, and output goes to
 `~/localharness/logs/jobs/<id>.log`. A failed job is recorded and the next
 starts. A job whose eval paused with its cases checkpointed is recorded
