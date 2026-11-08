@@ -69,18 +69,43 @@ def _drop(path: Path) -> None:
         print(f"serve_lease: {path.name} left ({exc})", file=sys.stderr)
 
 
+#: Seconds a waiting or serving lease stands between checks of its process; a live process keeps it. #1558.
+HELD_S = 86400.0
+
+
+def _leases(fn, default=None):
+    """fn(conn) on the store; a store that will not answer leaves serving unleased, never refused. #1558."""
+    from harness import memory_store as ms
+    try:
+        conn = ms.connect()
+        try:
+            return fn(conn)
+        finally:
+            conn.close()
+    except Exception as exc:  # noqa: BLE001 - serving comes first; the delegation goes on without a lease
+        print(f"serve_lease: the store did not answer ({type(exc).__name__}: {exc})", file=sys.stderr)
+        return default
+
+
 class Lease:
-    """One delegation's claim on the machine: waiting, serving, then idle for GRACE_S after it answers."""
+    """One delegation's lease on this machine's serving: waiting, serving, then idle for GRACE_S after it answers. #1556, #1558."""
 
     def __init__(self, lane: str, holder: str, clock=time.time):
+        from harness import item_lease
         self.clock = clock
-        self.path = _dir("leases") / f"{os.getpid()}-{uuid.uuid4().hex[:8]}.json"
         self.record = {"holder": holder, "lane": lane, "pid": os.getpid(), "since": clock()}
-        self.set(WAITING)
+        got = _leases(lambda c: item_lease.take(c, item_lease.SERVING, f"delegation {lane}", state=WAITING,
+                                                detail=holder, ttl_s=HELD_S, now=self.record["since"]))
+        self.id = got["id"] if got else None
+        self.record.update(state=WAITING, until=None)
 
     def set(self, state: str, until: float | None = None) -> None:
+        from harness import item_lease
         self.record.update(state=state, until=until)
-        _write(self.path, self.record)
+        if self.id is not None:
+            now = self.clock()
+            ttl = (until - now) if until is not None else HELD_S
+            _leases(lambda c: item_lease.beat(c, self.id, ttl_s=ttl, now=now, state=state))
 
     def serving(self) -> None:
         self.set(SERVING)
@@ -89,23 +114,27 @@ class Lease:
         self.set(IDLE, until=self.clock() + GRACE_S)
 
     def drop(self) -> None:
-        _drop(self.path)
+        from harness import item_lease
+        if self.id is not None:
+            _leases(lambda c: item_lease.release(c, self.id))
 
 
 def holders(now: float | None = None) -> list[dict]:
-    """The live leases: waiting or serving in a live process, or idle inside their grace; a lapsed one is removed."""
+    """The live delegation leases: waiting or serving in a live process, or idle inside their grace; a dead one is released."""
+    from harness import item_lease
     now = time.time() if now is None else now
-    out = []
-    for f in sorted(_dir("leases").glob("*.json")):
-        r = _read(f)
-        state = r.get("state")
-        live = (state in (WAITING, SERVING) and _alive(r.get("pid"))) or (
-            state == IDLE and float(r.get("until") or 0) > now)
-        if live:
-            out.append(r)
-        else:
-            _drop(f)
-    return out
+
+    def read(c):
+        out = []
+        for r in item_lease.live(c, item_lease.SERVING, now):
+            if r["state"] in (WAITING, SERVING) and not _alive(r["pid"]):
+                item_lease.release(c, r["id"], now)
+                continue
+            out.append({"holder": r["detail"], "lane": r["item"].split(" ", 1)[-1], "pid": r["pid"],
+                        "state": r["state"], "since": r["taken_at"],
+                        "until": r["expires_at"] if r["state"] == IDLE else None})
+        return out
+    return _leases(read, [])
 
 
 def held(now: float | None = None) -> str:

@@ -2987,8 +2987,13 @@ store's `jobs` table, so they survive a restart, and output goes to
 `~/localharness/logs/jobs/<id>.log`. A failed job is recorded and the next
 starts. A job whose eval paused with its cases checkpointed is recorded
 paused, not failed; a paused `soh adopt --confirm` queues its continuation
-behind the contention gate and resumes the same run directory. A job cut off by a reboot
-is marked failed rather than rerun. An eval
+behind the contention gate and resumes the same run directory. Each running job holds a
+lease on its resource class in the store's `leases` table, which the worker
+beats while it runs; `soh jobs list` shows them. A worker that comes back
+finds the jobs it lost: one whose process still runs is watched under a new
+lease until it exits, an eval that stored a run goes back to pending to resume
+it, and anything else, such as a job cut off by a reboot, is marked failed
+rather than rerun. A delegation's serving lease is a row in the same table. An eval
 run a job produced is linked to it (`runs.job_id`).
 
 Over MCP, `image` and `video` are queued at priority 10, ahead of batch work

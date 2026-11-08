@@ -371,8 +371,18 @@ Test: tests/test_shared_store_703.py::test_two_workers_on_one_store_run_an_unown
 - **THEN** the job's machine_id is that machine
 Test: tests/test_shared_store_703.py::test_a_claimed_job_is_stamped_with_the_machine_that_runs_it
 
-### Requirement: A runner fails its own interrupted jobs at start
-When it takes the runner lock, a worker SHALL mark every job this machine claimed that is still `running` as `failed` with note "interrupted; add it again to retry", and MUST leave running jobs of other machines, unowned running jobs, and everything on a machine with no machines row untouched.
+### Requirement: A runner retakes its own interrupted jobs at start
+When it takes the runner lock, a worker SHALL treat every job this machine claimed that is still `running` as lost by its worker: one whose process still runs SHALL be watched under a new lease until it exits; an eval that stored a run SHALL go back to pending with `--out <run> --resume`; any other SHALL be `failed` with note "interrupted; add it again to retry". It MUST leave running jobs of other machines, unowned running jobs, and everything on a machine with no machines row untouched.
+
+#### Scenario: An eval that stored a run
+- **WHEN** a gone worker's eval job stored a run and its process is gone
+- **THEN** it is pending again with `--out` and `--resume`, while a non-eval beside it is failed
+Test: tests/test_queue_leases_1558.py::test_a_gone_workers_eval_that_stored_a_run_waits_again_to_resume_it
+
+#### Scenario: A job still running
+- **WHEN** a gone worker's job still has a live process
+- **THEN** it stays running under a lease on its class until the process exits, and is settled then
+Test: tests/test_queue_leases_1558.py::test_a_job_a_gone_worker_left_running_is_watched_under_a_lease_not_failed
 
 #### Scenario: Cut off by a reboot
 - **WHEN** this machine's job is left `running` and the worker starts
@@ -406,6 +416,44 @@ Test: tests/test_worker_cloud_1153.py::test_a_job_needs_the_lock_evals_run_would
 - **WHEN** `evals.run.lock_kind` is replaced to answer cloud
 - **THEN** a local eval job is classed `cloud`
 Test: tests/test_worker_cloud_1153.py::test_the_class_is_read_from_evals_run_lock_kind_not_a_copy
+
+### Requirement: Every running item holds a lease
+A queued job SHALL run only under a lease on its resource class in the store's `leases` table (holder, beat, expiry), taken when it is claimed, beaten every third of `item_lease.TTL_S` while it runs and released when it ends; a lease nobody beats SHALL lapse at its expiry. A class at capacity SHALL take no further lease, two takers racing for the last place SHALL never both win, and a job refused a lease SHALL go back to pending. A delegation's serving lease SHALL be a `serving` row in the same table; a store that does not answer SHALL leave the delegation unleased, never refused.
+
+#### Scenario: A running job's lease
+- **WHEN** a job runs
+- **THEN** a lease on its class names it while it runs and is released after
+Test: tests/test_queue_leases_1558.py::test_a_running_job_holds_a_lease_on_its_class_until_it_ends
+
+#### Scenario: Capacity
+- **WHEN** the gpu lease is held
+- **THEN** a second gpu lease is refused, a network lease is not, and the gpu lease is free once released
+Test: tests/test_queue_leases_1558.py::test_a_class_at_capacity_takes_no_second_lease_until_the_first_is_released
+
+#### Scenario: A race for the last place
+- **WHEN** six takers race for the one gpu place
+- **THEN** exactly one wins
+Test: tests/test_queue_leases_1558.py::test_two_takers_racing_for_the_last_place_never_both_win
+
+#### Scenario: A lapsed lease
+- **WHEN** nobody beats a lease past its expiry
+- **THEN** it is no longer live, a late beat does not revive it, and its place is free
+Test: tests/test_queue_leases_1558.py::test_a_lease_nobody_beats_lapses_and_frees_its_place
+
+#### Scenario: Refused a lease
+- **WHEN** the gpu class is leased outside this worker
+- **THEN** a gpu job does not run and is pending again, its note saying why
+Test: tests/test_queue_leases_1558.py::test_a_job_whose_class_is_leased_elsewhere_goes_back_to_pending
+
+#### Scenario: A delegation's lease
+- **WHEN** a delegation takes, serves and drops its lease
+- **THEN** it is a serving row while held and gone after
+Test: tests/test_queue_leases_1558.py::test_a_delegations_serving_lease_is_a_row_beside_the_jobs
+
+#### Scenario: No store
+- **WHEN** the store does not answer a delegation
+- **THEN** the delegation goes on unleased and says why
+Test: tests/test_queue_leases_1558.py::test_serving_goes_on_unleased_when_the_store_will_not_answer
 
 ### Requirement: A job declares a resource class, each with a capacity
 A job SHALL need one resource class of `gpu`, `network`, `disk` and `cpu` (resources.CLASSES): the one it declared with `soh jobs add --resource`, else a deploy is `deploy`, an all-hosted eval or a `soh fetch` is `network`, and any other command is `gpu`. The worker SHALL run at most capacity jobs of each class at once (gpu 1, network the `cloud_evals` slots, disk 1, cpu 1), and an unknown class SHALL be refused when the job is added. Each job SHALL run under an executor (executors.for_job), the host's process group until containers can hand GPU work to it.

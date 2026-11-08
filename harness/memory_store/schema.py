@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 92
+SCHEMA_VERSION = 93
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -386,6 +386,28 @@ CREATE TABLE IF NOT EXISTS holds (
     said         TEXT NOT NULL,
     -- NULL holds until released.
     until        REAL,
+    released_at  REAL
+);
+
+-- One item's lease on a resource of this machine: a queued job's class, or a delegation's model. #1558.
+CREATE TABLE IF NOT EXISTS leases (
+    id           INTEGER PRIMARY KEY,
+    machine_id   INTEGER REFERENCES machines(id),
+    -- gpu, network, disk, cpu, deploy (resources.py) or serving.
+    resource     TEXT NOT NULL,
+    -- 'job 0241' or 'delegation decide'.
+    item         TEXT NOT NULL,
+    job_id       INTEGER REFERENCES jobs(id) ON DELETE SET NULL,
+    pid          INTEGER,
+    priority     INTEGER NOT NULL DEFAULT 0,
+    -- What the item was admitted to load, GiB; NULL when unpriced.
+    mem_gb       REAL,
+    -- A delegation's waiting, serving or idle.
+    state        TEXT NOT NULL DEFAULT '',
+    detail       TEXT NOT NULL DEFAULT '',
+    taken_at     REAL NOT NULL,
+    beat_at      REAL NOT NULL,
+    expires_at   REAL NOT NULL,
     released_at  REAL
 );
 
