@@ -1,8 +1,7 @@
 """A sampler setting one engine reads lives on that engine, not in the case. #735."""
 from pathlib import Path
 
-import yaml
-
+from evals import core
 from harness import engines
 
 CASES = Path(__file__).resolve().parents[1] / "evals" / "cases"
@@ -31,7 +30,7 @@ def test_a_spec_option_still_sets_h3_steps():
 def test_no_case_sets_an_engine_sampler_setting():
     found = []
     for path in sorted(CASES.rglob("*.yaml")):
-        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        data = core._parse(path)
         for case in data if isinstance(data, list) else [data]:
             if isinstance(case, dict):
                 found += [f"{path.relative_to(CASES).as_posix()}: {k}" for k in sorted(SAMPLER & set(case.get("params") or {}))]

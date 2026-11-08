@@ -40,12 +40,18 @@ def publishable(root: Path) -> list[Path]:
     see", and the file written thirty seconds ago is the one most likely to
     carry something that should not ship.
     """
+    return [root / line for line in names(root)]
+
+
+def names(root: Path, *within: str) -> list[str]:
+    """publishable(root) as git prints it, relative and /-separated, only under the directories `within` when given. #1590."""
     seen, out = set(), []
+    spec = ("--", *within) if within else ()
     for args in (("ls-files",), ("ls-files", "--others", "--exclude-standard")):
-        r = subprocess.run(("git", "-C", str(root)) + args,
+        r = subprocess.run(("git", "-C", str(root)) + args + spec,
                            capture_output=True, text=True, check=True)
         for line in r.stdout.splitlines():
             if line and line not in seen:
                 seen.add(line)
-                out.append(root / line)
+                out.append(line)
     return out
