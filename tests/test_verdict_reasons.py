@@ -533,3 +533,11 @@ def test_the_backfill_classifies_every_old_row_and_reopens_only_ours(tmp_path):
 @pytest.mark.parametrize("text", ["unsupported model type foo", "failed to load model"])
 def test_a_load_phrase_is_a_runtime_gap_only_from_the_runner_whose_phrase_it_is(text):
     assert reasons.classify(text, reasons.RUNNER, "org/model") == reasons.CRASHED
+
+
+def test_an_offline_load_names_the_repo_the_hub_cache_lacked():
+    """#1546's offline_repo was tested only in a LEFT_OUT file, so its mutants survived the reasons run (#1588)."""
+    text = "OSError: Cannot reach https://huggingface.co/api/models/mlx-community/gpt-oss-20b-MXFP4-Q8/revision/main"
+    assert reasons.offline_repo(text) == "mlx-community/gpt-oss-20b-MXFP4-Q8"
+    assert reasons.offline_repo("Cannot reach the hub") == ""
+    assert reasons.offline_repo(None) == ""
