@@ -193,11 +193,35 @@ JOB_PATH="$HOME/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/
 # Resolved HERE rather than written into the plist by hand, so the value is
 # this machine's own answer and a second machine gets its own.
 _hf_env() {
-  local root home
-  root="$(_hf_var HF_ROOT)"
-  home="$(_hf_var HF_HOME)"
-  [ -n "$root" ] && printf '    <key>HF_ROOT</key><string>%s</string>\n' "$root"
-  [ -n "$home" ] && printf '    <key>HF_HOME</key><string>%s</string>\n' "$home"
+  local pair
+  while IFS= read -r pair; do
+    printf '    <key>%s</key><string>%s</string>\n' "${pair%%=*}" "${pair#*=}"
+  done < <(_hf_pairs)
+}
+
+# HF_ROOT and HF_HOME as the units get them, one NAME=value a line; the fit check runs under the same. #1616.
+_hf_pairs() {
+  local var val
+  for var in HF_ROOT HF_HOME; do
+    val="$(_hf_var "$var")"
+    if [ -n "$val" ]; then printf '%s=%s\n' "$var" "$val"; fi
+  done
+  return 0
+}
+
+# Run a command with the unit's weights root, not the caller's: the fit check must read the server's gguf dir. #1616.
+_as_unit() {
+  local pair
+  local -a pairs=()
+  while IFS= read -r pair; do pairs+=("$pair"); done < <(_hf_pairs)
+  env -u HF_ROOT -u HF_HOME -u LLAMACPP_MODELS_DIR ${pairs[@]+"${pairs[@]}"} "$@"
+}
+
+# uv for install's own calls: the caller's PATH, then the units' (an ssh shell has no Homebrew on PATH). #1616.
+_find_uv() {
+  (PATH="$PATH:$JOB_PATH"; command -v uv) && return 0
+  echo "FATAL: uv not found on PATH ($PATH) or the units' PATH ($JOB_PATH); no unit was touched." >&2
+  return 1
 }
 
 # One variable from env.sh run in the checkout; empty when env.sh refuses. #705.
@@ -516,6 +540,8 @@ _run_deployed() {
 }
 
 install_units() {
+  local UV
+  UV="$(_find_uv)" || exit 1
   # reinstall: a queue deploy already switched DEPLOY to this release, so nothing is checked out. #1506.
   if [ "${1:-}" != reinstall ]; then
     deploy
@@ -538,7 +564,7 @@ install_units() {
       echo "NOT reloading $PREFIX.$service: a run is live (pid $pid) and bootout would kill it" >&2
       continue
     fi
-    if [ "$service" = interactive ] && ! (cd "$DEPLOY" && uv run python -m harness.interactive check); then
+    if [ "$service" = interactive ] && ! (cd "$DEPLOY" && _as_unit "$UV" run python -m harness.interactive check); then
       # The pinned set must fit beside the largest eval pair, or it is not served at all. #1561.
       if launchctl print "gui/$UID/$PREFIX.$service" >/dev/null 2>&1; then
         launchctl bootout "gui/$UID/$PREFIX.$service"
@@ -549,7 +575,7 @@ install_units() {
     if [ "$service" = worker ]; then
       # Reloading the worker kills its running job, so let that job finish first. #577.
       echo "waiting for any running queued job to finish before reloading the worker"
-      if ! was=$(cd "$DEPLOY" && uv run python -m harness.workqueue quiesce); then
+      if ! was=$(cd "$DEPLOY" && "$UV" run python -m harness.workqueue quiesce); then
         echo "could not quiesce the queue; reloading the worker anyway" >&2
         was=""
       fi
@@ -559,7 +585,7 @@ install_units() {
     # than either all-old or all-new because nothing on it is a known state.
     if _reload "$service"; then
       if [ "$service" = worker ] && [ "$was" = was-running ]; then
-        (cd "$DEPLOY" && uv run soh jobs resume >/dev/null)
+        (cd "$DEPLOY" && "$UV" run soh jobs resume >/dev/null)
       fi
     else
       failed="$failed $service"
@@ -600,7 +626,7 @@ install_units() {
     [ -z "$stale" ] || echo "deferred:$stale -- mid-run, and its unit changed: it keeps the old unit until the next install. Re-run install after it finishes." >&2
   fi
   # monit watches the machine through every deploy, so an install leaves it loaded or says it is not. #1521.
-  if [ -f "$AGENTS/$PREFIX.monit.plist" ] && ! (cd "$DEPLOY" && uv run --quiet soh monitor install); then
+  if [ -f "$AGENTS/$PREFIX.monit.plist" ] && ! (cd "$DEPLOY" && "$UV" run --quiet soh monitor install); then
     failed="$failed monit"
   fi
   if [ -n "$failed" ]; then
@@ -616,11 +642,11 @@ install_units() {
     blocked=1
   fi
   if [ -n "$refused" ]; then
-    echo "refused:$refused -- the pinned set does not fit; see above" >&2
+    echo "refused:$refused -- harness.interactive check did not pass; see above" >&2
     blocked=1
   fi
   # A node with no machine fingerprint files every run it serves under no machine. #781.
-  if ! (cd "$DEPLOY" && uv run python -m harness.nodes check); then
+  if ! (cd "$DEPLOY" && "$UV" run python -m harness.nodes check); then
     echo "a serving node has no machine fingerprint; set machine: in nodes.yaml, see above" >&2
     blocked=1
   fi
