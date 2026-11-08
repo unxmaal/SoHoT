@@ -1,5 +1,4 @@
 """`soh hear --worst` and `--rates`: stored speech clips, read-only (#94, #91)."""
-import hashlib
 import json
 import struct
 import wave
@@ -8,6 +7,7 @@ import pytest
 
 from harness import cli, clips, paths, runs
 from harness import memory_store as ms
+from tests import conftest
 
 
 def wav(path, seconds, rate=16000):
@@ -162,10 +162,10 @@ def test_a_legacy_run_not_in_the_store_is_read_from_its_receipt(store, cases):
 
 
 def test_reading_never_writes_the_store(store, cases):
-    before = hashlib.sha256(store.read_bytes()).hexdigest()
+    before = conftest.store_state(store)
     clips.worst("stt", n=10, store=store, cases_dir=cases)
     clips.rates(store=store, cases_dir=cases)
-    assert hashlib.sha256(store.read_bytes()).hexdigest() == before
+    assert conftest.store_state(store) == before
 
 
 def test_the_cli_prints_the_worst_clips(store, cases, capsys):

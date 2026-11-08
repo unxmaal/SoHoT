@@ -8,6 +8,7 @@ import pytest
 import yaml
 
 from harness import memory_store as ms
+from harness.memory_store.schema import _columns
 from harness import paths, usage
 
 REPO = Path(__file__).resolve().parents[1]
@@ -145,11 +146,11 @@ def test_the_schema_carries_the_requests_and_samples_tables():
     conn = ms.connect()
     try:
         assert ms.SCHEMA_VERSION >= 44
-        cols = {r[1] for r in conn.execute("PRAGMA table_info(gateway_requests)")}
+        cols = _columns(conn, "gateway_requests")
         assert {"at", "alias", "lane", "served", "spec", "client", "prompt_tokens",
                 "completion_tokens", "ttft_s", "total_s", "stream", "tool_calls",
                 "tool_calls_valid", "finish_reason", "error_class"} <= cols
-        assert {r[1] for r in conn.execute("PRAGMA table_info(gateway_samples)")} >= {
+        assert _columns(conn, "gateway_samples") >= {
             "request_id", "prompt", "completion"}
     finally:
         conn.close()
@@ -176,7 +177,8 @@ def _writer(**kw):
 def _rows(table="gateway_requests"):
     conn = ms.connect()
     try:
-        return [dict(r) for r in conn.execute(f"SELECT * FROM {table} ORDER BY rowid")]
+        key = "request_id" if table == "gateway_samples" else "id"
+        return [dict(r) for r in conn.execute(f"SELECT * FROM {table} ORDER BY {key}")]
     finally:
         conn.close()
 
@@ -189,7 +191,11 @@ def test_the_writer_batches_rows_into_the_store_and_keeps_no_text_by_default():
     rows = _rows()
     assert len(rows) == 5 and rows[0]["alias"] == "sohot-code"
     assert _rows("gateway_samples") == []
-    assert SECRET.encode() not in (paths.home() / "discovery.db").read_bytes()
+    db = paths.home() / "discovery.db"
+    if db.is_file():
+        assert SECRET.encode() not in db.read_bytes()
+    else:
+        assert all(SECRET not in str(v) for r in rows for v in r.values())
 
 
 def test_with_text_on_the_writer_keeps_a_bounded_number_of_samples(monkeypatch):

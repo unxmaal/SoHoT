@@ -33,7 +33,10 @@ def _home(tmp_path_factory, monkeypatch):
 @pytest.fixture(autouse=True)
 def _pg_schema(request, monkeypatch):
     """On LOCALHARNESS_STORE=postgres every test gets its own empty schema, as it gets its own home. #1507."""
+    import os
     from harness import store
+    # Restored after the test: an eval's scratch home pins its process to SQLite. #1579.
+    monkeypatch.setenv(store.BACKEND_ENV, os.environ.get(store.BACKEND_ENV) or store.SQLITE)
     if request.node.get_closest_marker("sqlite_store"):
         monkeypatch.setenv(store.BACKEND_ENV, store.SQLITE)
     if store.backend() != store.POSTGRES:

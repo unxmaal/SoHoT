@@ -60,6 +60,7 @@ def test_a_live_store_behind_the_code_is_refused_from_another_checkout(live, dep
 
 
 @launchd_only
+@pytest.mark.sqlite_store
 def test_an_absent_live_store_is_not_created_from_another_checkout(
         tmp_path, monkeypatch, deploy):
     monkeypatch.setattr(paths, "DEFAULT_HOME", tmp_path / "home")

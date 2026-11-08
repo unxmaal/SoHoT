@@ -128,7 +128,10 @@ def eval_home(scratch: Path | None = None, *, live: bool = False, reads_live: bo
     if is_live(where / "discovery.db"):
         raise LiveHomeRefused(f"{where} is the live home, not a scratch one")
     where.mkdir(parents=True, exist_ok=True)
+    from harness import store
     os.environ[ENV_VAR] = str(where)
+    # A scratch home's store is its own SQLite file, even where LOCALHARNESS_STORE names a shared Postgres. #1579.
+    os.environ[store.BACKEND_ENV] = store.SQLITE
     return where
 
 

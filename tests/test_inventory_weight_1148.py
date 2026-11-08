@@ -233,6 +233,7 @@ def _snapshot(root):
             for p in sorted(root.rglob("*")) if p.is_file() and not p.name.endswith(SIDECARS)}
 
 
+@pytest.mark.sqlite_store
 def test_the_command_opens_the_store_read_only_and_writes_nothing(store, tmp_path, monkeypatch, capsys):
     agents = tmp_path / "agents"
     agents.mkdir()

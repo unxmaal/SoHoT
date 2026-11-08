@@ -690,7 +690,7 @@ def test_the_container_the_switch_and_the_owner_name_the_same_postgres(tmp_path)
 
 
 #: Tests still red on Postgres when this was counted (#1507); the inventory may only shrink.
-POSTGRES_KNOWN_PIN = 115
+POSTGRES_KNOWN_PIN = 0
 
 
 def test_the_tests_still_red_on_postgres_only_shrink():
@@ -703,7 +703,9 @@ def test_the_tests_still_red_on_postgres_only_shrink():
 
 def test_a_listed_test_is_xfail_only_on_postgres(monkeypatch):
     from tests import conftest
-    item = type("I", (), {"nodeid": next(iter(conftest.postgres_known())), "marks": [],
+    listed = "tests/test_x.py::test_red_on_postgres"
+    monkeypatch.setattr(conftest, "postgres_known", lambda: {listed})
+    item = type("I", (), {"nodeid": listed, "marks": [],
                           "add_marker": lambda self, m: self.marks.append(m),
                           "get_closest_marker": lambda self, name: None})()
     monkeypatch.delenv(store.BACKEND_ENV, raising=False)

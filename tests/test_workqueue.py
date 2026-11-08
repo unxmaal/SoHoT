@@ -283,11 +283,14 @@ def test_a_job_is_a_row_in_the_store():
 
 
 def test_ids_are_ordered_as_numbers_not_filenames():
-    from harness import memory_store as ms
+    from harness import memory_store as ms, store
     conn = ms.connect()
     try:
         conn.execute("INSERT INTO jobs (id, argv, created_at) "
                      "VALUES (9999, '[\"true\"]', 0)")
+        if store.dialect(conn) == store.POSTGRES:
+            # An explicit id leaves a Postgres sequence behind; only the import inserts one, and it sets the sequence too.
+            conn.execute("SELECT setval(pg_get_serial_sequence('jobs', 'id'), 9999)")
         conn.commit()
     finally:
         conn.close()

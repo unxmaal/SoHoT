@@ -267,13 +267,17 @@ def live_home(tmp_path, monkeypatch):
 
 
 def test_the_redo_and_eval_run_from_a_scratch_home(live_home, tmp_path, monkeypatch):
+    import os
     from harness import cli, paths
-    before = live_home.read_bytes()
+    from tests.test_ask_paths_1335 import live_state
+    backend = os.environ["LOCALHARNESS_STORE"]
+    before = live_state(monkeypatch, live_home, backend)
     assert cli.main(["spans", "--redo", "--root", str(tmp_path / "none")]) == 0
     assert not paths.is_live(paths.home() / "discovery.db")
     monkeypatch.delenv(paths.ENV_VAR)
     cli.main(["spans", "--eval", str(tmp_path / "ev"), "--root", str(tmp_path / "none"), "--n", "1"])
-    assert paths.home() == (tmp_path / "ev" / "home").resolve() and live_home.read_bytes() == before
+    assert paths.home() == (tmp_path / "ev" / "home").resolve()
+    assert live_state(monkeypatch, live_home, backend) == before
 
 
 def test_naming_the_live_home_is_refused_unless_asked_for(live_home, tmp_path, monkeypatch, capsys):

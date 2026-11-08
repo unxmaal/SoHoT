@@ -48,7 +48,8 @@ def _knobs() -> list[str]:
     if store.backend() == store.POSTGRES or ms.db_path().exists():
         c = store.open_ro(ms.db_path())
         try:
-            got += [r[0] for r in c.execute("SELECT knob FROM limit_cuts ORDER BY id")]
+            if store.has_table(c, "limit_cuts"):
+                got += [r[0] for r in c.execute("SELECT knob FROM limit_cuts ORDER BY id")]
         finally:
             c.close()
     return got

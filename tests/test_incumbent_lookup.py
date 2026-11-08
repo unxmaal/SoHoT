@@ -4,6 +4,7 @@ import argparse
 import pytest
 
 from harness import gateway, power
+from tests import conftest
 
 MAC = gateway.REPO / "gateway" / "config.yaml"
 OLD, NEW = "eval-imajev-4b", "imajev-4b-Q8_0"
@@ -91,9 +92,9 @@ def test_reading_the_served_profile_writes_nothing(renamed):
     from harness import memory_store as ms
     conn = ms.connect()
     try:
-        before = conn.total_changes
+        before = conftest.store_state()
         power.served_profile(conn, "decide", NEW)
-        assert conn.total_changes == before
+        assert not conn.in_transaction and conftest.store_state() == before
     finally:
         conn.close()
 

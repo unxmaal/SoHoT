@@ -9,6 +9,7 @@ import pytest
 
 from harness import cuts, paths, purpose
 from harness import memory_store as ms
+from tests import conftest
 from tests.gauntlet import scanners
 
 SITE = "harness/cuts.py:WRITE_WAIT_S"
@@ -28,8 +29,8 @@ def live(tmp_path, monkeypatch):
 
 
 def _cut_rows(db: Path) -> int:
-    import sqlite3
-    c = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+    from harness import store
+    c = store.open_ro(db)
     try:
         return c.execute("SELECT COUNT(*) FROM limit_cuts").fetchone()[0]
     finally:
@@ -99,11 +100,11 @@ def _slot_probe(monkeypatch):
 @pytest.mark.parametrize("entry", [_sensitivity, _discover_control, _slot_probe])
 def test_a_probe_run_by_the_deploy_in_the_live_home_records_none_of_its_cuts(live, monkeypatch, entry):
     monkeypatch.setattr(paths, "runs_elsewhere", lambda: None)
-    before = (live / "discovery.db").read_bytes()
+    before = conftest.store_state(live / "discovery.db")
     assert entry(monkeypatch) == 0
     assert _cut_rows(live / "discovery.db") == 0
     assert not (live / cuts.SPOOL).exists()
-    assert (live / "discovery.db").read_bytes() == before
+    assert conftest.store_state(live / "discovery.db") == before
     assert purpose.current() == purpose.EVAL
 
 

@@ -162,6 +162,7 @@ def golden_eras():
     return tg.ERAS
 
 
+@pytest.mark.sqlite_store
 @pytest.mark.parametrize("version", golden_eras())
 def test_each_golden_migrates_to_the_recorded_content(version, tmp_path, monkeypatch):
     """Regenerate after an intended change: LH_RECORD_MIGRATED=1 uv run pytest tests/test_module_layout.py."""
@@ -177,6 +178,7 @@ WINDOWS_SPEECH = {"DEFAULT_TTS_MODEL": "kokoro-onnx/Kokoro-82M",
                   "DEFAULT_STT_MODEL": "Systran/faster-whisper-base.en"}
 
 
+@pytest.mark.sqlite_store
 @pytest.mark.parametrize("version", golden_eras())
 def test_a_golden_migrates_the_same_under_every_platform_default(version, tmp_path,
                                                                  monkeypatch):
@@ -195,6 +197,7 @@ def test_the_speech_pin_reaches_the_typed_defaults(monkeypatch):
     assert winners.typed()["tts"] == "kokoro-onnx/Kokoro-82M"
 
 
+@pytest.mark.sqlite_store
 def test_the_dump_sees_one_changed_row(tmp_path, monkeypatch):
     version = golden_eras()[-1]
     clean = migrated_dump(version, tmp_path / "a", monkeypatch)

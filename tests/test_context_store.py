@@ -37,7 +37,8 @@ def _gguf(conn, models, stem, meta, repo="org/m"):
 
 
 def test_the_store_carries_the_served_context_beside_the_gguf_row(conn):
-    cols = {r["name"] for r in conn.execute("PRAGMA table_info(downloads)")}
+    from harness.memory_store.schema import _columns
+    cols = _columns(conn, "downloads")
     assert {"ctx", "ctx_trained", "kv_bytes_token", "ctx_slots", "ctx_why",
             "ctx_at"} <= cols
 
