@@ -11,9 +11,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import pickle
 import re
+import stat
 import statistics
+import sys
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -1192,9 +1195,65 @@ def load_suite(root: str | Path | None = None, local: str | Path | None = None) 
     return shipped + (load_cases(local, private=True) if local.is_dir() else [])
 
 
+#: A directory's (subdirectories, other entries) by its (mtime_ns, inode): adding, removing or renaming an entry moves both. #1590.
+_LISTED: dict[str, tuple] = {}
+
+
+def files(root: str | Path) -> list[tuple[str, int, int]]:
+    """(path, mtime_ns, size) of each file rglob('*') and is_file() find under root, sorted; listings cached per directory. #1590."""
+    out, stack = [], [str(Path(root))]
+    while stack:
+        d = stack.pop()
+        if sys.platform == "win32":
+            _scan_fresh(d, stack, out)
+            continue
+        try:
+            st = os.stat(d)
+        except OSError:
+            continue
+        key = (st.st_mtime_ns, st.st_ino)
+        got = _LISTED.get(d)
+        if got is None or got[0] != key:
+            try:
+                with os.scandir(d) as it:
+                    entries = [(e.name, e.is_dir(follow_symlinks=False)) for e in it]
+            except OSError:
+                continue
+            got = _LISTED[d] = (key, tuple(n for n, sub in entries if sub), tuple(n for n, sub in entries if not sub))
+        stack.extend(os.path.join(d, n) for n in got[1])
+        for n in got[2]:
+            p = os.path.join(d, n)
+            try:
+                fs = os.stat(p)
+            except OSError:
+                continue
+            if stat.S_ISREG(fs.st_mode):
+                out.append((p, fs.st_mtime_ns, fs.st_size))
+    return sorted(out)
+
+
+def _scan_fresh(d: str, stack: list, out: list) -> None:
+    """One directory of files() without the listing cache: a Windows scandir entry carries its stat, os.stat opens the file."""
+    try:
+        with os.scandir(d) as it:
+            for e in it:
+                if e.is_dir(follow_symlinks=False):
+                    stack.append(e.path)
+                    continue
+                try:
+                    fs = e.stat()
+                except OSError:
+                    continue
+                if stat.S_ISREG(fs.st_mode):
+                    out.append((e.path, fs.st_mtime_ns, fs.st_size))
+    except OSError:
+        return
+
+
 def load_cases(directory: str | Path, private: bool = False) -> list[Case]:
-    """Load every *.yaml under `directory`, sorted by id for stable runs."""
-    return [load_case(path, private) for path in sorted(Path(directory).rglob("*.yaml"))]
+    """Load every *.yaml under `directory`, sorted by path for stable runs."""
+    paths = sorted(Path(p) for p, _, _ in files(directory) if os.path.normcase(p).endswith(".yaml"))
+    return [load_case(path, private) for path in paths]
 
 
 def load_case(path: Path, private: bool = False) -> Case:
@@ -1292,14 +1351,22 @@ def _agent_params(path: Path, params: dict, assertions: dict) -> dict:
         raise ValueError(f"{path.name}: an agent case needs assert.answer or assert.hidden")
     if assertions.get("hidden") and not (bundle / "hidden").is_dir():
         raise ValueError(f"{path.name}: assert.hidden needs {params['repo']}/hidden/")
-    h = hashlib.sha256()
-    cut = len(bundle.as_posix()) + 1
-    # Case-sensitive parts order: a WindowsPath sorts case-folded, which moved README.txt and changed the digest.
-    for f in sorted((p for sub in ("repo", "hidden") for p in (bundle / sub).rglob("*")
-                     if "__pycache__" not in p.parts and p.is_file()), key=lambda p: p.as_posix().split("/")):
-        h.update(f.as_posix()[cut:].encode("utf-8") + b"\x00")
-        h.update(f.read_bytes().replace(b"\r\n", b"\n") + b"\x00")
-    return {"repo_digest": h.hexdigest()[:16]}
+    listed = tuple(f for sub in ("repo", "hidden") for f in files(bundle / sub))
+    key = (bundle.as_posix(), listed)
+    if key not in _BUNDLE_DIGESTS:
+        h = hashlib.sha256()
+        cut = len(bundle.as_posix()) + 1
+        # Case-sensitive parts order: a WindowsPath sorts case-folded, which moved README.txt and changed the digest.
+        for f in sorted((p for p in (Path(f) for f, _, _ in listed) if "__pycache__" not in p.parts),
+                        key=lambda p: p.as_posix().split("/")):
+            h.update(f.as_posix()[cut:].encode("utf-8") + b"\x00")
+            h.update(f.read_bytes().replace(b"\r\n", b"\n") + b"\x00")
+        _BUNDLE_DIGESTS[key] = h.hexdigest()[:16]
+    return {"repo_digest": _BUNDLE_DIGESTS[key]}
+
+
+#: An agent bundle's digest by its files' (path, mtime_ns, size): the suite loads 374 bundles per load_cases. #1590.
+_BUNDLE_DIGESTS: dict[tuple, str] = {}
 
 
 def _load_context(path: Path, raw: dict) -> str:
