@@ -159,6 +159,9 @@ def pytest_runtest_protocol(item, nextitem):
 
 def pytest_configure(config):
     import os
+    from harness import store
+    # The suite never takes its backend from the developer's home store.json; check-postgres sets it. #1614.
+    os.environ.setdefault(store.BACKEND_ENV, store.SQLITE)
     # faulthandler's timed dump of a running thread can spin forever in CPython 3.12 and wedge the worker (#1351).
     if not _running:
         _hang_watch()
@@ -189,6 +192,11 @@ def pytest_ignore_collect(collection_path, config):
         from tests.gauntlet import scope
         return scope.ignored(collection_path, config.rootpath, _selected["file"]) or None
     return None
+
+
+def pytest_terminal_summary(terminalreporter):
+    from harness import store
+    terminalreporter.write_line(f"store backend: {store.backend()}")
 
 
 def pytest_unconfigure(config):
