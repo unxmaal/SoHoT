@@ -448,7 +448,7 @@ exit 0
 
 
 def _install(tmp_path, role="scheduler", running=(), defer_wait=0, mode="", then="", uv="#!/bin/sh\nexit 0\n",
-             extra_env=None, run=True):
+             extra_env=None, run=True, prelude="", env_sh=""):
     """install_units against a fake launchctl, with deploy and preflight stubbed out; rerunnable on one tmp_path."""
     scripts, bin_, state, deploy = (tmp_path / d for d in ("scripts", "bin", "state", "deploy"))
     for d in (scripts, bin_, state, deploy / "scripts"):
@@ -456,11 +456,13 @@ def _install(tmp_path, role="scheduler", running=(), defer_wait=0, mode="", then
     (state / "log").write_text("", encoding="utf-8")
     text = GEN.read_text(encoding="utf-8")
     (scripts / "lib.sh").write_text(text[:text.index('case "${1:-}" in')], encoding="utf-8")
-    (scripts / "env.sh").write_text("", encoding="utf-8")
+    (scripts / "env.sh").write_text(env_sh, encoding="utf-8")
     (scripts / "run.sh").write_text(
         'source "$(dirname "$0")/lib.sh"\ndeploy() { :; }\n_run_deployed() { :; }\npreflight() { :; }\n'
-        f'install_units {mode}\n', encoding="utf-8")
+        f'{prelude}\ninstall_units {mode}\n', encoding="utf-8")
     for name, body in (("launchctl", FAKE_LAUNCHCTL_794), ("uv", uv)):
+        if body is None:
+            continue
         (bin_ / name).write_text(body, encoding="utf-8")
         (bin_ / name).chmod(0o755)
     for name in ("lan-probe.sh", "serve-audit.sh"):
@@ -475,6 +477,7 @@ def _install(tmp_path, role="scheduler", running=(), defer_wait=0, mode="", then
     env = {**os.environ, "PATH": f"{bin_}{os.pathsep}{os.environ['PATH']}", "HOME": str(tmp_path / "home"),
            "LOCALHARNESS_HOME": str(tmp_path / "lh"), "LH_DEPLOY": str(deploy), "LH_ROLE": role,
            "FAKE_STATE": str(state), "LH_DEFER_WAIT_S": str(defer_wait), **(extra_env or {})}
+    env = {k: v for k, v in env.items() if v is not None}
     argv = [shells.BASH, str(scripts / "run.sh")]
     if then:
         argv = [shells.BASH, "-c", f'"{shells.BASH}" "{scripts / "run.sh"}" && {then}']
@@ -601,6 +604,56 @@ def test_install_fails_when_monit_cannot_be_loaded(tmp_path):
     env = {"FAKE_PY": sys.executable, "PYTHONPATH": str(REPO)}
     got, _ = _install(tmp_path, uv=FAKE_UV_SOH, extra_env=env)
     assert got.returncode != 0 and "not loaded: monit" in got.stderr, got.stderr[-1500:]
+
+
+# An ssh shell's PATH, without Homebrew; the units' PATH is cut to the tmp home so a real uv cannot answer. #1616.
+SSH_PATH = "/usr/bin:/bin:/usr/sbin:/sbin"
+JOB_PATH_HOME_ONLY = 'JOB_PATH="$HOME/.local/bin:/usr/bin:/bin:/usr/sbin:/sbin"'
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="launchd.sh install is macOS")
+def test_install_without_uv_fails_before_touching_any_unit(tmp_path):
+    got, calls = _install(tmp_path, role="interactive", uv=None, prelude=JOB_PATH_HOME_ONLY,
+                          extra_env={"PATH": f"{tmp_path / 'bin'}{os.pathsep}{SSH_PATH}"})
+    assert got.returncode != 0 and "uv not found" in got.stderr, (got.returncode, got.stderr[-800:])
+    assert "pinned set" not in got.stderr and "refused" not in got.stderr, got.stderr[-800:]
+    assert not [c for c in calls if c.split()[0] in ("bootout", "bootstrap")], calls
+    assert "removed" not in got.stdout, got.stdout
+    assert all((tmp_path / "state" / f"com.unxmaal.localharness.{s}").exists() for s in SERVICES)
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="launchd.sh install is macOS")
+def test_install_finds_uv_on_the_units_path_when_the_shell_has_none(tmp_path):
+    local_bin = tmp_path / "home" / ".local" / "bin"
+    local_bin.mkdir(parents=True)
+    (local_bin / "uv").write_text('#!/bin/sh\necho "$*" >> "$FAKE_STATE/uv"\n', encoding="utf-8")
+    (local_bin / "uv").chmod(0o755)
+    got, _ = _install(tmp_path, role="interactive", uv=None, prelude=JOB_PATH_HOME_ONLY,
+                      extra_env={"PATH": f"{tmp_path / 'bin'}{os.pathsep}{SSH_PATH}"})
+    assert got.returncode == 0, got.stderr[-800:]
+    assert "loaded com.unxmaal.localharness.interactive" in got.stdout, got.stdout
+    ran = (tmp_path / "state" / "uv").read_text(encoding="utf-8")
+    assert "run python -m harness.interactive check" in ran and "run python -m harness.nodes check" in ran, ran
+
+
+FAKE_UV_GGUF_DIR = ('#!/bin/sh\n[ "$*" = "run python -m harness.interactive check" ] || exit 0\n'
+                    'exec "$FAKE_PY" -c "from harness import gguf; print(gguf.models_dir())" > "$FAKE_STATE/gguf-dir"\n')
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="launchd.sh install is macOS")
+def test_the_fit_check_reads_the_gguf_dir_the_unit_serves_from(tmp_path):
+    import plistlib
+    weights = tmp_path / "hf"
+    env_sh = f'HF_ROOT="${{HF_ROOT:-{tmp_path / "hf_root"}}}"\nexport HF_HOME="$HF_ROOT"\n'
+    env = {"HF_ROOT": str(weights), "HF_HOME": None, "LLAMACPP_MODELS_DIR": str(tmp_path / "elsewhere"),
+           "FAKE_PY": sys.executable, "PYTHONPATH": str(REPO)}
+    got, _ = _install(tmp_path, role="interactive", uv=FAKE_UV_GGUF_DIR, env_sh=env_sh, extra_env=env)
+    assert got.returncode == 0, got.stderr[-800:]
+    unit = tmp_path / "home" / "Library" / "LaunchAgents" / "com.unxmaal.localharness.interactive.plist"
+    unit_env = plistlib.loads(unit.read_bytes())["EnvironmentVariables"]
+    assert unit_env["HF_HOME"] == unit_env["HF_ROOT"] == str(weights), unit_env
+    checked = (tmp_path / "state" / "gguf-dir").read_text(encoding="utf-8").strip()
+    assert checked == str(weights / "gguf"), (checked, unit_env)
 
 
 def test_a_node_still_drops_the_periodic_units(tmp_path):

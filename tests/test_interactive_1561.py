@@ -123,7 +123,7 @@ def test_a_refused_check_clears_the_plan_and_install_refuses_the_unit(pinned, mo
     assert interactive.main(["check"]) == 0 and interactive.read()["lanes"]
     text = (REPO / "scripts" / "launchd.sh").read_text(encoding="utf-8")
     loop = text.split("install_units() {", 1)[1]
-    assert re.search(r'"\$service" = interactive \] && ! \(cd "\$DEPLOY" && uv run python -m harness\.interactive '
+    assert re.search(r'"\$service" = interactive \] && ! \(cd "\$DEPLOY" && _as_unit "\$UV" run python -m harness\.interactive '
                      r'check\)', loop)
     assert "blocked=1" in loop.split('if [ -n "$refused" ]', 1)[1].split("\n  fi\n", 1)[0]
 
