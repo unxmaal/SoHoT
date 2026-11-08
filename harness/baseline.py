@@ -37,7 +37,8 @@ def exam_cases(lane: str, split: str = "all", repeat: int = 1, suite=None) -> li
     from evals.run import expand_cases, select_cases
     from harness import holdout
     try:
-        cases = select_cases(core.load_suite(core.SHIPPED, core.local_root()) if suite is None else suite, _lane(lane))
+        cases = select_cases(core.load_suite(core.SHIPPED, core.local_root(), _lane(lane)) if suite is None else suite,
+                             _lane(lane))
         return list(expand_cases(holdout.only(cases, split or "all"), max(1, int(repeat or 1))))
     except (SystemExit, ValueError):
         return None

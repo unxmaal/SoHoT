@@ -1121,7 +1121,7 @@ def load_selected(args) -> list[Case]:
     """The run's cases: --cases plus, when --cases is the shipped tree, the local-only ones. #654."""
     shipped = Path(args.cases).resolve() == core.SHIPPED.resolve()
     local = Path(args.local_cases) if getattr(args, "local_cases", None) else core.local_root()
-    loaded = core.load_suite(args.cases, local) if shipped else core.load_cases(args.cases)
+    loaded = core.load_suite(args.cases, local, args.modality) if shipped else core.load_cases(args.cases)
     return select_cases(loaded, args.modality)
 
 

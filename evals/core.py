@@ -1188,10 +1188,13 @@ def local_root() -> Path:
     return paths.home() / "cases"
 
 
-def load_suite(root: str | Path | None = None, local: str | Path | None = None) -> list[Case]:
-    """The shipped cases plus this machine's local-only ones, marked private. #654."""
+def load_suite(root: str | Path | None = None, local: str | Path | None = None, lane: str = "") -> list[Case]:
+    """The shipped cases plus this machine's local-only ones, marked private; a known lane reads only its <root>/<lane> trees. #654, #1514."""
     local = Path(local) if local is not None else local_root()
-    shipped = load_cases(root if root is not None else SHIPPED)
+    root = Path(root if root is not None else SHIPPED)
+    if lane in MODALITIES:
+        root, local = root / lane, local / lane
+    shipped = load_cases(root) if root.is_dir() else []
     return shipped + (load_cases(local, private=True) if local.is_dir() else [])
 
 
