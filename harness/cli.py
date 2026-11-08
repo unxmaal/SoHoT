@@ -752,7 +752,7 @@ def build_parser() -> argparse.ArgumentParser:
                          "status, and the alert action monit runs (#1485)")
     mon.add_argument("action", choices=("render", "install", "status", "alert"))
     mon.add_argument("kind", nargs="?", default="", help="with alert: what monit saw (disk, disk-pause, volume, "
-                     "volume-low, memory, service, recovered)")
+                     "volume-low, memory, service, gpu-refused, recovered)")
     mon.add_argument("--problems", action="store_true", help="with status: one line per problem, nothing when well")
     mon.set_defaults(func=monitor_cmd.cmd_monitor)
     swc = sub.add_parser("sweep-check", help="whether tonight's discovery sweep is running and progressing, "
@@ -1239,7 +1239,11 @@ def main(argv: list[str] | None = None) -> int:
     if not getattr(a, "func", None):
         ap.print_help(sys.stderr)
         return 2
-    return a.func(a)
+    from harness import exclusive
+    try:
+        return a.func(a)
+    except exclusive.StoreDown as exc:
+        return common.err(str(exc))
 
 
 if __name__ == "__main__":

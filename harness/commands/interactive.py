@@ -24,6 +24,15 @@ def p95(seconds: list[float]) -> float | None:
 HERE = "here"
 
 
+def _busy() -> str:
+    """delegate.busy(), or the store-down reason as the holder; the probe's own calls are refused. #1648."""
+    from harness import delegate, exclusive
+    try:
+        return delegate.busy()
+    except exclusive.StoreDown as exc:
+        return str(exc)
+
+
 def host(lane: str, served=None):
     """Forget the lane alias's last reply; who() then names who answered the next: a node, fallback:<node>, or here."""
     from harness import completion, gateway
@@ -45,7 +54,7 @@ def probe(n: int = PROBES, decide=None, complete=None, sample=None, busy=None, c
     complete = complete or (lambda: delegate.complete("extract", PROMPT))
     code = code or (lambda: delegate.complete("code", CODE_PROMPT))
     calls = {"decide": decide, "extract": complete, "code": code}
-    sample, busy = sample or pressure.sample, busy or delegate.busy
+    sample, busy = sample or pressure.sample, busy or _busy
     rows: list[dict] = []
     for lane, call in calls.items():
         try:

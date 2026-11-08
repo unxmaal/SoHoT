@@ -137,14 +137,3 @@ def test_another_project_s_lockf_holds_the_gpu_and_a_held_kind_holds_the_flock_l
         os.close(fd)
     with exclusive.held("eval"):
         assert exclusive._taken(exclusive.lock_path()), "a lockf user waits for a held kind"
-
-
-def test_with_no_store_the_flock_holds_the_machine_and_says_so(monkeypatch):
-    def down(*a, **k):
-        raise RuntimeError("store down")
-    monkeypatch.setattr(exclusive, "_conn", down)
-    said = []
-    with exclusive.held("eval", announce=said.append):
-        assert exclusive._taken(exclusive.lock_path())
-        assert exclusive.gpu_leases() == 1
-    assert "holding the local lock only" in said[0] and not exclusive._taken(exclusive.lock_path())

@@ -575,7 +575,7 @@ def deterministic_headline(r: dict) -> str:
 
 def _ask(prompt: str) -> str:
     from harness import delegate
-    held = delegate.busy()
+    held = delegate.held_now("morning")
     if held:
         raise delegate.Refused(f"the machine is busy with {held}; the morning report does not wait")
     return delegate.complete(MODEL_LANE, prompt, system=SYSTEM, max_tokens=MODEL_MAX_TOKENS,

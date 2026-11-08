@@ -923,7 +923,11 @@ def _free(cls: str, live: dict) -> bool:
     mine = sum(1 for c, _ in live.values() if c == cls)
     if cls == GPU:
         # A gpu lease taken outside the queue (with-gpu-lock, soh image) holds the class too. #1619.
-        mine = max(mine, exclusive.gpu_leases())
+        try:
+            mine = max(mine, exclusive.gpu_leases())
+        except exclusive.StoreDown as exc:
+            print(f"{time.strftime('%H:%M:%S')} {exclusive.refuse('worker', exc)}", flush=True)
+            return False
     if cls == CLOUD:
         # Cloud evals outside the queue hold cloud slots too. #1135.
         mine = max(mine, sum(exclusive._taken(exclusive.cloud_lock_path(i))

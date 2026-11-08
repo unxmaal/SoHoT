@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run a command holding localharness's machine lock. Usage: with-gpu-lock CMD...
+"""Run a command holding localharness's machine lock. Usage: with-gpu-lock [--repair] CMD...
 
 For any project that loads models on this machine. Standard library only.
 """
@@ -12,16 +12,26 @@ HERE = Path(__file__).resolve()
 sys.path.insert(0, str(HERE.parents[1]))
 from harness import exclusive  # noqa: E402
 
-if len(sys.argv) < 2:
-    sys.exit("usage: with-gpu-lock CMD [ARGS...]")
+argv = sys.argv[1:]
+# --repair is launchd.sh install/reinstall: it runs under the flock alone while the store is down. #1648.
+repair = argv[:1] == ["--repair"]
+argv = argv[1:] if repair else argv
+if not argv:
+    sys.exit("usage: with-gpu-lock [--repair] CMD [ARGS...]")
 try:
     python = exclusive.store_python(HERE.parents[1])
 except RuntimeError as exc:
-    sys.exit(f"with-gpu-lock: refusing, no batch lease possible: {exc}")
+    if not repair:
+        sys.exit(f"with-gpu-lock: refusing, no batch lease possible: {exc}")
+    print(f"with-gpu-lock: {exc}; repairing under the local lock", file=sys.stderr, flush=True)
+    python = None
 if python:
     # System python3 has no psycopg, so on a Postgres store re-run under a venv that does. #1586.
     os.execv(python, [python, "-I", str(HERE), *sys.argv[1:]])
-with exclusive.held("external",
-                    announce=lambda m: print(f"with-gpu-lock: {m}",
-                                             file=sys.stderr, flush=True)):
-    sys.exit(subprocess.call(sys.argv[1:], env=os.environ))
+try:
+    with exclusive.held("install" if repair else "external",
+                        announce=lambda m: print(f"with-gpu-lock: {m}",
+                                                 file=sys.stderr, flush=True)):
+        sys.exit(subprocess.call(argv, env=os.environ))
+except exclusive.StoreDown as exc:
+    sys.exit(f"with-gpu-lock: {exc}")

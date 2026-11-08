@@ -1275,8 +1275,12 @@ def _main(args) -> int:
         raise SystemExit(f"{' and '.join(missing)} required (or use --compare)")
     from harness import exclusive
     # One model-loading run on the machine at a time, across projects (#314); a cloud-only run takes a cloud slot (#1135).
-    with exclusive.held(lock_kind(args), announce=lambda m: print(
-            f"evals.run: {m}", file=sys.stderr, flush=True), deadline_s=deadline_s(args)):
+    with contextlib.ExitStack() as stack:
+        try:
+            stack.enter_context(exclusive.held(lock_kind(args), announce=lambda m: print(
+                f"evals.run: {m}", file=sys.stderr, flush=True), deadline_s=deadline_s(args)))
+        except exclusive.StoreDown as exc:
+            raise SystemExit(f"evals.run: {exc}") from exc
         from harness import workqueue
         item = workqueue.item_s() if args.stop_at is None and args.stop_after is None else None
         if item is not None:
