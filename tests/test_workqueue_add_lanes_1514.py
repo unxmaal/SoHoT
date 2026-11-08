@@ -50,9 +50,7 @@ def test_a_lane_read_gives_the_cases_the_whole_suite_gives(lane, tmp_path):
 
 
 def test_every_shipped_case_sits_in_its_lanes_directory():
-    wrong = [p for p, _, _ in core.files(core.SHIPPED) if p.endswith(".yaml")
-             and Path(p).relative_to(core.SHIPPED).parts[0] != core._parse(Path(p)).get("modality")]
-    assert wrong == []
+    assert core.misfiled(core.SHIPPED) == []
 
 
 def test_all_still_reads_every_lane():

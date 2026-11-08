@@ -1198,6 +1198,24 @@ def load_suite(root: str | Path | None = None, local: str | Path | None = None, 
     return shipped + (load_cases(local, private=True) if local.is_dir() else [])
 
 
+def misfiled(root: str | Path) -> list[str]:
+    """Case files under `root` outside their declared lane's directory, which a one-lane load_suite skips. #1636."""
+    root, bad = Path(root), []
+    for p, _, _ in files(root):
+        if not os.path.normcase(p).endswith(".yaml"):
+            continue
+        parts = Path(p).relative_to(root).parts
+        sits = parts[0] if len(parts) > 1 else ""
+        try:
+            declared = _parse(Path(p)).get("modality") or ""
+        except (OSError, ValueError, yaml.YAMLError) as exc:
+            bad.append(f"{p}: unreadable, so no lane reads it ({exc.__class__.__name__})")
+            continue
+        if declared != sits:
+            bad.append(f"{p}: declares lane {declared or '(none)'} but sits in {sits or 'the case root'}")
+    return bad
+
+
 #: A directory's (subdirectories, other entries) by its (mtime_ns, inode): adding, removing or renaming an entry moves both. #1590.
 _LISTED: dict[str, tuple] = {}
 

@@ -22,7 +22,9 @@ VERDICTS = ("too_big_ceiling_current", "too_big_names_variant", "terminal_reason
             "attachment_by_tag", "package_until_reachable", "revisitable", "reopened_past_screen")
 #: Inventories that never fail the audit: what a runner venv holds beyond its script's pins. #1032.
 VENVS = ("venv_matches_script",)
-CHECKS = mc.INVARIANTS + SERVING + SCHEDULE + VERDICTS + VENVS
+#: A local case outside its lane's directory is skipped by every one-lane run. #1636.
+CASES = ("local_cases_in_lane_dir",)
+CHECKS = mc.INVARIANTS + SERVING + SCHEDULE + VERDICTS + VENVS + CASES
 #: Checks a loop step repairs, and the heartbeat key that step marks: each warns until its own repair has run. #972.
 REPAIRED_BY = {"too_big_ceiling_current": heartbeat.REOPENED_TOO_BIG,
                "too_big_names_variant": heartbeat.REQUEUED_OLD_SIZING,
@@ -294,6 +296,12 @@ def _venv_drift(store) -> list:
     return venv_drift.report(deploy or paths.REPO)
 
 
+def _local_cases_in_lane_dir(root=None) -> list:
+    from evals import core
+    root = Path(root) if root is not None else core.local_root()
+    return core.misfiled(root) if root.is_dir() else []
+
+
 def _when(at) -> str:
     import time
     return time.strftime("%Y-%m-%d %H:%M", time.localtime(at)) if at else "never"
@@ -366,8 +374,8 @@ def serving(conn, config=None) -> tuple[dict | None, dict]:
     return served, wanted
 
 
-def audit(path=None, config=None) -> dict:
-    """Every check on the store at `path` (default: this home's), opened read-only."""
+def audit(path=None, config=None, cases=None) -> dict:
+    """Every check on the store at `path` (default: this home's) opened read-only, and on the local case tree `cases`."""
     from harness import gateway, memory_store as ms, store
     path = Path(path if path is not None else ms.db_path())
     if not store.exists(path):
@@ -402,6 +410,7 @@ def audit(path=None, config=None) -> dict:
                   "package_until_reachable": _package_until_reachable(conn)}
         checks += [mc._check(name, failed[name]) for name in VERDICTS]
         checks += [mc._check(name, []) for name in VENVS]
+        checks.append(mc._check("local_cases_in_lane_dir", _local_cases_in_lane_dir(cases)))
         warnings = {name: f"awaiting the loop's {REPAIRED_BY[name]}: " + mc._say(fresh)
                     for name, (bad, fresh) in inventories.items() if fresh and not bad}
         if pinned and not incoherent:
