@@ -43,6 +43,15 @@ def test_residency_sim_on_the_named_home_store_reaches_the_store(postgres_home):
         a.func(a)
 
 
+def test_baseline_on_this_homes_store_reaches_the_store(postgres_home, monkeypatch):
+    """#1644."""
+    monkeypatch.setattr(live_audit, "open_readonly", _opened)
+    for argv in ([], ["--store", str(postgres_home)]):
+        a = common.parsed("baseline", *argv)
+        with pytest.raises(Opened):
+            a.func(a)
+
+
 def test_the_repo_report_lends_the_home_store_on_a_postgres_home(postgres_home, monkeypatch):
     monkeypatch.setattr(live_audit, "open_readonly", _opened)
     a = common.parsed("repo-report")

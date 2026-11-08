@@ -305,7 +305,7 @@ def verdict(rate: dict | None, bar: float | None) -> str:
 
 def run(*, store=None, summary=None, replay=None, manifest=None, strata=None, lanes=LANES, gate: float = DECIDE_GATE,
         candidate: str = rp.ADOPTED, bar: float | None = None) -> dict:
-    from harness import live_audit
+    from harness import live_audit, store as backend
     from harness import memory_store as ms
     records = summarise(Path(replay)) if replay else (
         load_summary(Path(summary or SUMMARY)) if Path(summary or SUMMARY).exists() else [])
@@ -313,7 +313,7 @@ def run(*, store=None, summary=None, replay=None, manifest=None, strata=None, la
     strata_path = Path(strata or STRATA)
     st = json.loads(strata_path.read_text(encoding="utf-8")).get("strata", {}) if strata_path.exists() else {}
     path = Path(store) if store else ms.db_path()
-    if not path.exists():
+    if not backend.exists(path):
         raise Refused(f"no store at {path.name}")
     conn = live_audit.open_readonly(path)
     try:

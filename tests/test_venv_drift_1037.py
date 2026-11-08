@@ -103,7 +103,7 @@ def test_the_audit_reads_the_nimble_venv_beside_its_checkout(tmp_path, monkeypat
     monkeypatch.setenv("LOCALHARNESS_HOME", str(tmp_path))
     for var in (*runner_gaps._VENV_ENV.values(), *runner_gaps._CHECKOUT_VENVS.values()):
         monkeypatch.delenv(var, raising=False)
-    ms.connect(tmp_path / "discovery.db").close()
+    ms.connect().close()
     root = tmp_path / "nimble" / "venv"
     for name, pin in venv_drift.pins("nimble", ROOT).items():
         _dist(root, name, pin.partition("==")[2])

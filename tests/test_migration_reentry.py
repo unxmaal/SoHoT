@@ -1,19 +1,18 @@
 """A migration never opens the store it is migrating a second time. #495."""
 import pytest
 
-from harness import downloads, memory_store as ms, paths, runs
+from harness import downloads, memory_store as ms, runs
 
 
-def _behind(path, version=40):
-    conn = ms.connect(path)
+def _behind(version=40):
+    conn = ms.connect()
     conn.execute("UPDATE meta SET value = ? WHERE key = 'schema'", (str(version),))
     conn.commit()
     conn.close()
 
 
 def test_a_step_that_asks_the_default_store_gets_the_one_migrating(monkeypatch):
-    db = paths.home() / "discovery.db"
-    _behind(db)
+    _behind()
     seen = {}
 
     def step(conn):
@@ -22,10 +21,10 @@ def test_a_step_that_asks_the_default_store_gets_the_one_migrating(monkeypatch):
             seen["inner"] = c
         seen["path"] = downloads.path_of("org/x")
         with pytest.raises(ms.MigrationReentered):
-            ms.connect(db)
+            ms.connect()
         return {}
     monkeypatch.setattr(ms.migrations.columns, "split_result_artifacts", step)
-    conn = ms.connect(db)
+    conn = ms.connect()
     try:
         assert seen["inner"] is seen["outer"]
         assert seen["path"] is None
@@ -36,8 +35,7 @@ def test_a_step_that_asks_the_default_store_gets_the_one_migrating(monkeypatch):
 
 
 def test_the_migrating_connection_is_not_closed_by_a_borrower(monkeypatch):
-    db = paths.home() / "discovery.db"
-    _behind(db)
+    _behind()
 
     def step(conn):
         with runs.store():
@@ -45,29 +43,27 @@ def test_the_migrating_connection_is_not_closed_by_a_borrower(monkeypatch):
         conn.execute("SELECT 1").fetchone()
         return {}
     monkeypatch.setattr(ms.migrations.columns, "split_result_artifacts", step)
-    ms.connect(db).close()
+    ms.connect().close()
 
 
 def test_another_store_opens_normally_during_a_migration(tmp_path, monkeypatch):
-    db = paths.home() / "discovery.db"
-    _behind(db)
+    _behind()
     other = tmp_path / "other.db"
 
     def step(conn):
         ms.connect(other).close()
         return {}
     monkeypatch.setattr(ms.migrations.columns, "split_result_artifacts", step)
-    ms.connect(db).close()
+    ms.connect().close()
     assert other.exists()
 
 
 def test_a_failed_migration_leaves_nothing_marked_migrating(monkeypatch):
-    db = paths.home() / "discovery.db"
-    _behind(db)
+    _behind()
 
     def step(conn):
         raise RuntimeError("boom")
     monkeypatch.setattr(ms.migrations.columns, "split_result_artifacts", step)
     with pytest.raises(RuntimeError, match="boom"):
-        ms.connect(db)
+        ms.connect()
     assert ms.migrating() is None

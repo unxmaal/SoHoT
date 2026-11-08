@@ -109,14 +109,14 @@ def _copy_cases(tmp_path):
 
 def _store(tmp_path, store_run, cases, digest, candidate="imajev-4b-Q8_0"):
     from harness import memory_store as ms
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     rows = [{"candidate": candidate, "case_id": c.id, "passed": i == 0, "seconds": 0.5,
              "metrics": {"decide_correct": 5 - i, "decide_fields": 5, "calibrated": 1.0,
                          "decide_brier_sum": 0.1 * i, "decisions": [[0.9, 1]] * (5 - i) + [[0.6, 0]] * i}}
             for i, c in enumerate(cases)]
     run_id = store_run("run-a", "decide", rows=rows, cases_digest=digest, conn=conn)
     conn.close()
-    return tmp_path / "s.db", run_id
+    return ms.db_path(), run_id
 
 
 def test_the_stored_arm_is_read_on_the_same_case_ids_and_its_digest_is_checked(tmp_path, store_run):

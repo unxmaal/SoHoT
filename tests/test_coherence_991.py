@@ -1,11 +1,11 @@
 """#991: the four verdicts pinned in terminal_reason_coherent, the paths that wrote them, and `soh coherence`."""
-import sqlite3
 
 import pytest
 
 from harness import coherence, live_audit
 from harness import inspect as ins
 from harness import memory_store as ms
+from harness import store as backend
 from harness.memory_store import transitions
 
 
@@ -202,18 +202,17 @@ def test_the_repair_moves_each_pinned_kind_to_a_coherent_verdict(store):
 
 def test_soh_coherence_is_read_only_without_apply(tmp_path, capsys):
     from harness import cli
-    db = tmp_path / "s.db"
-    conn = ms.connect(db)
+    db = ms.db_path()
+    conn = ms.connect()
     _the_four(conn)
     conn.close()
     assert cli.main(["coherence", "--db", str(db)]) == 0
     assert "4 of 4" in capsys.readouterr().out
-    conn = ms.connect(db)
+    conn = ms.connect()
     assert len(coherence.incoherent(conn)) == 4
     conn.close()
     assert cli.main(["coherence", "--db", str(db), "--apply"]) == 0
-    conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
-    conn.row_factory = sqlite3.Row
+    conn = backend.open_ro(db)
     try:
         assert live_audit._terminal_reason_coherent(conn, pinned=frozenset()) == ([], [])
     finally:

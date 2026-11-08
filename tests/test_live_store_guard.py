@@ -100,6 +100,7 @@ def test_a_newer_live_store_keeps_the_newer_store_refusal(live):
     assert not isinstance(err.value, ms.LiveStoreRefused)
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_an_explicit_store_path_migrates_as_before(old_store, deploy):
     path = old_store(13)
     assert not paths.is_live(path)

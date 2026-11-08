@@ -275,6 +275,7 @@ def _vote(c, lane, run, key, other, machine, n=3, case="c1"):
                   "(?,?,?,?,?,?,?,1.0)", (lane, run, case, lo, hi, key, machine))
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_the_migration_scopes_a_by_hand_adoption_to_the_machine_that_voted(
         tmp_path, on):
     path = tmp_path / "old.db"
@@ -296,6 +297,7 @@ def test_the_migration_scopes_a_by_hand_adoption_to_the_machine_that_voted(
     c.close()
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_the_migration_falls_back_to_the_judged_runs_machine(tmp_path, on):
     path = tmp_path / "old.db"
     c, m2, studio = _legacy_store(path, on)
@@ -309,6 +311,7 @@ def test_the_migration_falls_back_to_the_judged_runs_machine(tmp_path, on):
     c.close()
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_the_migration_records_a_guess_when_nothing_names_the_machine(
         tmp_path, on):
     path = tmp_path / "old.db"
@@ -335,6 +338,7 @@ def test_the_migration_records_a_guess_when_nothing_names_the_machine(
     c.close()
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_the_migration_leaves_measured_adoptions_alone(tmp_path, on):
     path = tmp_path / "old.db"
     c, m2, studio = _legacy_store(path, on)

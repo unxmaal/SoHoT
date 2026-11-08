@@ -184,6 +184,7 @@ def test_backfill_keeps_a_size_already_written(store):
     assert _size(store, "a/x") == 3 * GIB
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_an_older_store_is_backfilled_on_connect(old_store):
     """A schema 13 store from explicit DDL, migrated by the real chain. #442."""
     path = old_store(13, """

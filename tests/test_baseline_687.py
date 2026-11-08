@@ -3,13 +3,14 @@ from __future__ import annotations
 
 import json
 import random
-import sqlite3
 
 import pytest
 
 from evals import redact
 from evals import workload_baseline as B
 from evals.analysis.demand import replay as rp
+from harness import store
+from tests import conftest
 
 SECRET = "zebra-quartz-unrelated-7731"
 
@@ -272,11 +273,11 @@ def test_the_bar_decides_keep_or_return_only_when_set():
 def test_the_store_file_is_byte_identical_after_a_run(store_run, tmp_path, capsys):
     from harness import cli
     from harness import memory_store as ms
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     store_run("a", "repo", rows=_rows("ornith", "PIC"), conn=conn, cases_digest="X")
     store_run("d", "repo", rows=_rows("claude-code:opus", "PPC", tokens=(2, 30, 6)), conn=conn, cases_digest="X")
     conn.close()
-    path = tmp_path / "s.db"
+    path = ms.db_path()
     summary = tmp_path / "replay.jsonl"
     B.save(_record("P1", "orchestration_chat", "usable_with_edits"), summary)
     manifest = tmp_path / "manifest.jsonl"
@@ -284,13 +285,16 @@ def test_the_store_file_is_byte_identical_after_a_run(store_run, tmp_path, capsy
                         encoding="utf-8")
     strata = tmp_path / "strata.json"
     strata.write_text(json.dumps({"strata": {"s": {"N": 1, "tokens_out": 100}}}), encoding="utf-8")
-    before = path.read_bytes()
+    before = conftest.store_state(path)
     assert cli.main(["baseline", "--json", "--store", str(path), "--summary", str(summary), "--manifest",
                      str(manifest), "--strata", str(strata), "--lane", "repo", "--bar", "0.5"]) == 0
     got = json.loads(capsys.readouterr().out)
-    assert path.read_bytes() == before
-    with sqlite3.connect(path) as c:
+    assert conftest.store_state(path) == before
+    c = store.open_ro(path)
+    try:
         assert c.execute("SELECT count(*) FROM results").fetchone()[0] == 6
+    finally:
+        c.close()
     names = [r["workload"] for r in got["rows"]]
     assert names == ["replay orchestration_chat", "replay all fitting", "repo"]
     assert got["rows"][-1]["verdict"] in ("keep", "return", "undecided")

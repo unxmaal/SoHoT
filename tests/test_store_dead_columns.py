@@ -44,6 +44,7 @@ def test_a_new_store_has_none_of_the_dead_columns(tmp_path):
         conn.close()
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_the_migration_drops_them_and_keeps_what_they_held(tmp_path):
     path = tmp_path / "old.db"
     _schema_35_store(path)
@@ -62,6 +63,7 @@ def test_the_migration_drops_them_and_keeps_what_they_held(tmp_path):
         conn.close()
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_an_sqlite_that_cannot_drop_keeps_the_columns_and_still_works(tmp_path,
                                                                      monkeypatch):
     """Negative control: the drop is gated, the data is still kept."""

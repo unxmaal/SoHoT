@@ -49,6 +49,7 @@ CREATE TABLE gateway_requests (id INTEGER PRIMARY KEY, at REAL NOT NULL,
 """
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_a_schema_67_store_gains_the_table_and_column_on_connect(old_store):
     path = old_store(67, "INSERT INTO gateway_requests (at, alias) VALUES (1.0, 'sohot-code');",
                      ddl=OLD_GATEWAY_REQUESTS)

@@ -38,6 +38,7 @@ def _migrated(tmp_path, seed):
     return state, survivors
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_a_pre_815_length_refusal_is_requeued_for_measurement(tmp_path):
     def seed(conn):
         _screened(conn, "org/refused")
@@ -47,6 +48,7 @@ def test_a_pre_815_length_refusal_is_requeued_for_measurement(tmp_path):
     assert "org/refused" in survivors
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_other_limit_declines_stay_declined(tmp_path):
     def seed(conn):
         _screened(conn, "org/underpowered")
@@ -69,6 +71,7 @@ def test_other_limit_declines_stay_declined(tmp_path):
         assert name not in survivors
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_a_refusal_after_a_later_retest_is_left_alone(tmp_path):
     """Only the state verdict is retracted: a refusal superseded since then is history."""
     def seed(conn):
@@ -80,6 +83,7 @@ def test_a_refusal_after_a_later_retest_is_left_alone(tmp_path):
     assert state["org/moved-on"] == "queued"
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 @pytest.mark.gauntlet("state-is-whichever-row-came-last",
                       site="harness/memory_store/migrations/retractions.py:_requeue_length_refusals")
 def test_only_a_refusal_straight_after_the_screen_is_requeued(tmp_path):

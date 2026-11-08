@@ -222,6 +222,7 @@ def test_the_router_still_gets_a_context_when_the_preset_cannot_be_written(
     assert "per-model context" in err
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_an_older_store_gains_the_columns(tmp_path):
     path = tmp_path / "old.db"
     ms.connect(path).close()

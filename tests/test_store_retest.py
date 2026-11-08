@@ -162,6 +162,7 @@ def test_counts_due_and_scheduled(store):
 
 # --- the migration ---------------------------------------------------------
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_backfill_schedules_existing_rejections_from_their_decision(old_store):
     old = T - 30 * 86400
     path = old_store(25, f"""

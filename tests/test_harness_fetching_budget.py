@@ -171,6 +171,7 @@ def test_a_disk_below_the_floor_requeues_rather_than_settling(store):
     assert "org/fine" in [r["name"] for r in fetching.queued(store)]
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_a_candidate_already_settled_by_a_full_disk_is_requeued_by_the_migration(tmp_path):
     """The fix governs new refusals; the ones made under the old rule are reopened once. #528."""
     path = tmp_path / "old.db"
@@ -194,6 +195,7 @@ def test_a_candidate_already_settled_by_a_full_disk_is_requeued_by_the_migration
     assert state["org/too-big"] == "declined"
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_a_runtime_refusal_at_fetch_is_not_mistaken_for_a_full_disk(tmp_path):
     path = tmp_path / "old.db"
     conn = ms.connect(path)

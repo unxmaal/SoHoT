@@ -270,18 +270,18 @@ def test_soh_repo_report_reads_the_store(store_run, tmp_path, capsys):
         (pilot / f"{c.id}.yaml").write_text(yaml.safe_dump(raw), encoding="utf-8")
     cases = load_cases(pilot)
     receipt = {"case_ids": [c.id for c in cases], "repeat": 1, "max_tokens": 32768}
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     rows = {466: [], 467: []}
     for r in _pilot_rows():
         rows[r["run_id"]].append({k: r[k] for k in ("candidate", "case_id", "passed", "failure_class")})
     ids = [store_run(f"run-{n}", "repo", rows=rows[n], cases_digest=cases_digest(cases), conn=conn,
                      receipt=receipt) for n in (466, 467)]
     conn.close()
-    assert cli.main(["repo-report", "--json", *map(str, ids), "--store", str(tmp_path / "s.db"),
+    assert cli.main(["repo-report", "--json", *map(str, ids), "--store", str(ms.db_path()),
                      "--cases", str(pilot), "--resamples", "200"]) == 0
     got = json.loads(capsys.readouterr().out)
     assert got["ok"] and got["views"]["limits as losses"]["p"] == 0.0625
-    assert cli.main(["repo-report", str(ids[0]), "--store", str(tmp_path / "s.db"), "--cases", str(pilot)]) == 1
+    assert cli.main(["repo-report", str(ids[0]), "--store", str(ms.db_path()), "--cases", str(pilot)]) == 1
 
 
 def test_there_is_one_wilson():

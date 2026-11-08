@@ -4,6 +4,7 @@ import json
 import pytest
 
 from harness import cli, github, knobs, neighbors as nb, probes
+from tests import conftest
 
 SEEDS = ("org/seed",)
 
@@ -140,12 +141,12 @@ def test_discover_why_names_no_crowd_member(tmp_path, monkeypatch, capsys):
 def test_discover_why_reads_the_store_sightings_read_only(tmp_path, monkeypatch, capsys):
     from harness import memory_store as ms
     from harness.commands import discover_why
-    db = tmp_path / "s.db"
-    conn = ms.connect(db)
+    db = ms.db_path()
+    conn = ms.connect()
     ms.record(conn, ms.Seen(name="x/target", source="github-crowd", kind="repo", registry=ms.GITHUB,
                             url="https://github.com/x/target", resolved="x/target"))
     conn.close()
-    before = db.read_bytes()
+    before = conftest.store_state(db)
     api = _why_api()
     monkeypatch.setattr(discover_why, "_client", lambda budget: _client(api, tmp_path, budget=budget))
     monkeypatch.setattr(nb, "DEFAULT_SEEDS", SEEDS)
@@ -153,4 +154,4 @@ def test_discover_why_reads_the_store_sightings_read_only(tmp_path, monkeypatch,
     out = capsys.readouterr().out
     got = json.loads(out[out.index("{"):])["store"]
     assert got["found"] and got["sightings"] == {"github-crowd": 1} and got["registry"] == ms.GITHUB
-    assert db.read_bytes() == before
+    assert conftest.store_state(db) == before

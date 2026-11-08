@@ -151,6 +151,7 @@ SCHEMA_11 = """
 """
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_an_old_store_is_attributed_and_says_it_was_inferred(old_store):
     """1767 rows predate the column. Only this Mac has ever written to the
     real store, so attributing them to the migrating machine is right HERE
@@ -237,6 +238,7 @@ def test_the_upstream_idle_time_is_a_number_not_one_decimal_of_years(store):
     assert row["upstream_idle_days"] == pytest.approx(1058.5)
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_a_judge_using_the_word_workflow_is_not_a_verdict_about_one(old_store):
     """THE MIGRATION'S OWN NEAR-MISS, and the reason it recovers rather than
     recomputes.

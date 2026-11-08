@@ -309,19 +309,19 @@ def test_soh_repo_report_arms_and_plan_read_the_store(store_run, tmp_path, capsy
                                                         "params": params}), encoding="utf-8")
     from evals.core import cases_digest, load_cases
     runs, rows, _ = _controls(2, tasks=8, repeat=2)
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     rid = store_run("arms", "repo", rows=[{k: r[k] for k in ("candidate", "case_id", "passed", "failure_class",
                                                                 "seconds", "metrics")} for r in rows],
                     cases_digest=cases_digest(load_cases(d)), conn=conn,
                     receipt={"contexts": runs[0]["receipt"]["contexts"]})
     conn.close()
-    args = ["--store", str(tmp_path / "s.db"), "--cases", str(d), "--resamples", "20", "--json"]
+    args = ["--store", str(ms.db_path()), "--cases", str(d), "--resamples", "20", "--json"]
     assert cli.main(["repo-report", str(rid), "--arms", *args]) == 0
     got = json.loads(capsys.readouterr().out)
     assert got["baseline"] == NONE and got["sides"]["all"]["arms"][NOCHANGE]["draws"] == 8 * 2 * 2
     assert cli.main(["repo-report", "--plan", *args]) == 0
     assert json.loads(capsys.readouterr().out)["unseen"]
-    assert cli.main(["repo-report", "--store", str(tmp_path / "s.db")]) == 1
+    assert cli.main(["repo-report", "--store", str(ms.db_path())]) == 1
 
 
 def test_the_paired_unit_is_the_task_pass_rate_not_whether_any_draw_passed():

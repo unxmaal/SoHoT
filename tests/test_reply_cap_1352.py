@@ -8,6 +8,7 @@ from evals import run as R
 from harness import cli, completion, knobs, reasons, reply_cap, runs
 from harness import memory_store as ms
 from harness.commands import measure
+from tests import conftest
 
 LANE = "repo"
 BUDGET = completion.budget(LANE)
@@ -16,13 +17,13 @@ _REAL_CONNECT = ms.connect
 
 
 @pytest.fixture
-def db(tmp_path):
-    return tmp_path / "d.db"
+def db():
+    return ms.db_path()
 
 
 @pytest.fixture
 def conn(db):
-    c = ms.connect(db)
+    c = ms.connect()
     yield c
     c.close()
 
@@ -206,8 +207,7 @@ def test_the_caps_knobs_are_registered_at_their_defaults():
 def test_soh_knobs_reply_caps_prints_each_lane_models_derivation(conn, tmp_path, capsys):
     qwopus(conn)
     conn.commit()
-    copy = tmp_path / "copy.db"
-    conn.execute(f"VACUUM INTO '{copy}'")
+    copy = conftest.sqlite_copy(tmp_path / "copy.db")
     assert cli.main(["knobs", "reply-caps", "--json", "--store", str(copy)]) == 0
     out = json.loads(capsys.readouterr().out)
     got = [r for r in out["caps"] if r["lane"] == LANE and r["model"] == "qwopus"]

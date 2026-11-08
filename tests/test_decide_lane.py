@@ -576,6 +576,7 @@ def test_the_fetch_tier_knows_an_adapters_base_before_downloading_it():
         conn.close()
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_the_migration_gives_a_queued_laneless_card_its_lane(tmp_path):
     from harness import memory_store as ms
     db = tmp_path / "s.db"

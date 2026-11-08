@@ -205,7 +205,7 @@ def test_morning_names_a_running_sweep_under_a_newer_deploy(deploy_dir):  # noqa
 def test_the_audit_warns_about_a_sweep_on_moved_code(tmp_path, monkeypatch):
     from harness import memory_store as ms
     monkeypatch.setenv("LOCALHARNESS_HOME", str(tmp_path))
-    ms.connect(tmp_path / "discovery.db").close()
+    ms.connect().close()
     (tmp_path / "loop-heartbeat.json").write_text(json.dumps(
         {"state": "finished", "started": time.time(), "commit": A, "finished_commit": B}), encoding="utf-8")
     check = {c["name"]: c for c in live_audit.audit(tmp_path / "discovery.db")["checks"]}["sweep_on_deployed_code"]

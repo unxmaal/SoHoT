@@ -94,6 +94,7 @@ def _insert(conn, name, kind, url):
     conn.commit()
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_an_existing_store_is_backfilled_from_evidence_it_already_holds(tmp_path):
     path = tmp_path / "old.db"
     old = _v2_store(path)
@@ -116,6 +117,7 @@ def test_an_existing_store_is_backfilled_from_evidence_it_already_holds(tmp_path
     assert got["org/linked"] == ms.GITHUB
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_a_name_with_no_evidence_is_left_unknown_rather_than_guessed(tmp_path):
     """Guessing turns "nobody knows" into a wrong answer nothing revisits."""
     path = tmp_path / "old.db"
@@ -396,6 +398,7 @@ def test_the_description_reaches_the_store_and_the_judge_can_read_it(db):
     assert ms.judgeable(db)[0]["description"].startswith("task text-to-image")
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_a_store_written_before_descriptions_existed_still_opens(tmp_path):
     """Schema 4 adds a column to a table the DDL only knows how to create."""
     path = tmp_path / "old.db"
