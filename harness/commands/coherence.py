@@ -11,9 +11,9 @@ def cmd_coherence(a) -> int:
     import sqlite3
 
     from harness import live_audit
-    from harness import memory_store as ms
+    from harness import memory_store as ms, store
     db = Path(a.db) if a.db else ms.db_path()
-    if not db.is_file():
+    if not store.exists(db):
         return err(f"coherence: no store at {db}")
     try:
         conn = ms.connect(db) if a.apply else live_audit.open_readonly(db)

@@ -14,9 +14,9 @@ def _store(repo: str, path: str = "") -> dict:
     import sqlite3
     from pathlib import Path
 
-    from harness import live_audit, memory_store as ms
+    from harness import live_audit, memory_store as ms, store
     db = Path(path) if path else ms.db_path()
-    if not db.is_file():
+    if not store.exists(db):
         return {"found": False, "why": f"no store at {db}"}
     conn = live_audit.open_readonly(db)
     try:

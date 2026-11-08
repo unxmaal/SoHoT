@@ -245,10 +245,9 @@ def open_store(store: str = ""):
         if not Path(store).is_file():
             raise FileNotFoundError(f"no store at {store}")
         return ledger.open_ro(Path(store))
-    if backend.backend() == backend.POSTGRES:
-        return ms.connect()
-    if not ms.db_path().is_file():
+    if not backend.exists(ms.db_path()):
         raise FileNotFoundError(f"no store at {ms.db_path()}")
+    # Postgres as the reader, never a writable connection to the live store. #1579.
     return ledger.open_ro(ms.db_path())
 
 

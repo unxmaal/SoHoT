@@ -92,6 +92,79 @@ def test_the_variable_overrides_the_home(tmp_path, monkeypatch):
     assert store.backend() == store.SQLITE
 
 
+def test_on_a_postgres_home_any_other_path_is_a_sqlite_file(tmp_path, monkeypatch):
+    """A copy or a canary's isolated home stays a file; only this home's path is Postgres. #1579."""
+    monkeypatch.setenv(store.BACKEND_ENV, store.POSTGRES)
+    copy = tmp_path / "copy.db"
+    conn = ms.connect(copy)
+    try:
+        assert store.dialect(conn) == store.SQLITE
+        assert conn.execute("SELECT value FROM meta WHERE key = 'schema'").fetchone()[0] == str(ms.SCHEMA_VERSION)
+    finally:
+        conn.close()
+    assert copy.is_file() and store.backend() == store.POSTGRES
+    assert store.home_postgres(None) and store.home_postgres(ms.db_path()) and not store.home_postgres(copy)
+    assert store.exists() and store.exists(copy) and not store.exists(tmp_path / "none.db")
+
+
+def test_an_older_sqlite_copy_migrates_as_sqlite_on_a_postgres_home(tmp_path, monkeypatch):
+    """Schema 35's step resets a Postgres sequence when this home is Postgres; a SQLite copy must skip it. #1579."""
+    import importlib.util
+    from pathlib import Path
+    spec = importlib.util.spec_from_file_location("golden_build", Path(__file__).parent / "golden" / "build.py")
+    gb = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gb)
+    from harness import paths
+    db, _ = gb.load(Path(__file__).parent / "golden" / "v34", tmp_path)
+    jobs = paths.home() / "queue" / "jobs"
+    jobs.mkdir(parents=True)
+    (jobs / "0001.json").write_text(json.dumps({"id": 1, "argv": ["true"], "created_at": 0}), encoding="utf-8")
+    monkeypatch.setenv(store.BACKEND_ENV, store.POSTGRES)
+    conn = ms.connect(db)
+    try:
+        assert conn.execute("SELECT value FROM meta WHERE key = 'schema'").fetchone()[0] == str(ms.SCHEMA_VERSION)
+        assert conn.execute("SELECT count(*) FROM jobs WHERE id = 1").fetchone()[0] == 1
+    finally:
+        conn.close()
+
+
+def test_a_pin_holds_only_on_its_own_thread_and_only_meanwhile(monkeypatch):
+    import threading
+    monkeypatch.setenv(store.BACKEND_ENV, store.POSTGRES)
+    seen = []
+    with store.pinned(store.SQLITE):
+        assert store.backend() == store.SQLITE
+        t = threading.Thread(target=lambda: seen.append(store.backend()))
+        t.start()
+        t.join()
+    assert seen == [store.POSTGRES] and store.backend() == store.POSTGRES
+
+
+def test_a_postgres_home_names_the_copy_a_dry_run_migrates(monkeypatch):
+    from harness import migration_check as mc
+    monkeypatch.setenv(store.BACKEND_ENV, store.POSTGRES)
+    with pytest.raises(FileNotFoundError, match="Postgres"):
+        mc.dry_run()
+
+
+def test_the_canary_seeds_its_isolated_home_never_a_postgres_live_store(tmp_path, monkeypatch):
+    """The live home chose Postgres by store.json, as the Studio does; no Postgres is reachable here. #1579."""
+    from harness import canary, paths
+    monkeypatch.delenv(store.BACKEND_ENV, raising=False)
+    svc.switch(store.POSTGRES, paths.home())
+    monkeypatch.setattr(store, "postgres_connect", lambda *a, **k: pytest.fail("the canary opened Postgres"))
+    plant = canary.Plant("worse", "stt", "org/worse", ("declined", "adopt", "candidate"))
+    envs = []
+
+    def run(argv, env=None, **kw):
+        envs.append(env)
+        return type("R", (), {"returncode": 0})()
+    home = tmp_path / "isolated"
+    got = canary.run_plant(plant, home, run=run, say=lambda *_: None)
+    assert (home / "discovery.db").is_file() and got["observed"]["outcome"] == ""
+    assert envs and all(e[store.BACKEND_ENV] == store.SQLITE for e in envs)
+
+
 def test_a_dry_run_switch_writes_nothing(tmp_path):
     got = svc.switch(store.POSTGRES, tmp_path, dry_run=True)
     assert got["dry_run"] and not (tmp_path / "store.json").exists()
@@ -459,7 +532,7 @@ def test_a_deploy_on_postgres_backs_up_with_pg_dump(tmp_path, monkeypatch):
 # ---- SQLite-only code outside the seam is an inventory that only shrinks ----------
 
 #: Counted 2026-11-07 (#1507). origin/main had sqlite3_connect 18, uri_mode 11; the rest are SQLite branches.
-SQLITE_ONLY_PIN = {"backup": 4, "except_sqlite3": 27, "pragma": 10, "sqlite3_connect": 12,
+SQLITE_ONLY_PIN = {"backup": 4, "except_sqlite3": 27, "pragma": 9, "sqlite3_connect": 12,
                    "sqlite_master": 2, "uri_mode": 5}
 
 
@@ -531,6 +604,7 @@ def test_sqlite_terms_are_spelled_as_postgres_spells_them():
     assert "a IS NOT DISTINCT FROM %s AND b IS DISTINCT FROM %s AND c IS NULL" in t(
         "SELECT 1 FROM x WHERE a IS ? AND b IS NOT ? AND c IS NULL")
     assert "x ~ sqlite_glob(%s) AND y = 'a GLOB ?'" in t("SELECT 1 FROM z WHERE x GLOB ? AND y = 'a GLOB ?'")
+    assert "x ~ sqlite_glob(:p)" in t("SELECT 1 FROM z WHERE x GLOB :p")
     assert "CAST(n AS BIGINT)" in t("SELECT CAST(n AS INTEGER) FROM x")
     assert t("ALTER TABLE x ADD COLUMN n INTEGER NOT NULL DEFAULT 0").endswith("n BIGINT NOT NULL DEFAULT 0")
     assert store.named("VALUES (:a, :b_c, 'x:y', n::text)") == "VALUES (%(a)s, %(b_c)s, 'x:y', n::text)"
@@ -616,7 +690,7 @@ def test_the_container_the_switch_and_the_owner_name_the_same_postgres(tmp_path)
 
 
 #: Tests still red on Postgres when this was counted (#1507); the inventory may only shrink.
-POSTGRES_KNOWN_PIN = 244
+POSTGRES_KNOWN_PIN = 115
 
 
 def test_the_tests_still_red_on_postgres_only_shrink():

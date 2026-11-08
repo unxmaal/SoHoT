@@ -184,14 +184,12 @@ def _open():
 
 def read_conn():
     """A read-only connection to this checkout's store, or None when it does not exist yet."""
-    from harness import ledger
+    from harness import ledger, store
     from harness import memory_store as ms
     path = ms.db_path()
-    if not path.exists():
+    if not store.exists(path):
         return None
-    conn = ledger.open_ro(path)
-    conn.row_factory = sqlite3.Row
-    return conn
+    return ledger.open_ro(path)
 
 
 def _has_table(conn) -> bool:
@@ -300,8 +298,11 @@ def check_run(plan: dict, config=None, budget: float | None = None) -> dict | No
         return None
     budget = BUDGET_USD if budget is None else float(budget)
     conn = read_conn()
+    if conn is not None and not _has_table(conn):
+        conn.close()
+        conn = None
     try:
-        used = spent(conn) if conn is not None and _has_table(conn) else 0.0
+        used = spent(conn) if conn is not None else 0.0
         each = {(c, lane): estimate(n, per_case(conn, lane, c), price(entry(c, config)))
                 for c, lanes in metered_.items() for lane, n in lanes.items() if n}
     finally:

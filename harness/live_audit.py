@@ -370,7 +370,7 @@ def audit(path=None, config=None) -> dict:
     """Every check on the store at `path` (default: this home's), opened read-only."""
     from harness import gateway, memory_store as ms, store
     path = Path(path if path is not None else ms.db_path())
-    if not path.is_file() and not (store.backend() == store.POSTGRES and path == ms.db_path()):
+    if not store.exists(path):
         raise FileNotFoundError(f"no store at {path}")
     config = gateway_config(path, config)
     conn = open_readonly(path)

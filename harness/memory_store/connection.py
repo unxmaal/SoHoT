@@ -96,7 +96,8 @@ def connect(path: Path | None = None):
     if lent() is not None:
         raise ReadOnlyStore("a read-only connection is lent to this thread; opening the store "
                             "here would migrate it, so the reader must take the lent one")
-    if store.backend() == store.POSTGRES:
+    # Any other path is a SQLite file (a copy, a canary's isolated home), as store.open_ro reads one. #1579.
+    if store.home_postgres(path):
         _refuse_reentry(None)
         conn = store.postgres_connect()
         try:
@@ -136,8 +137,9 @@ def connect(path: Path | None = None):
     # network-mounted store wants a single writer rather than this.
     conn.execute("PRAGMA journal_mode = WAL")
     conn.execute(f"PRAGMA busy_timeout = {int(BUSY_TIMEOUT_SECONDS * 1000)}")
-    conn.executescript(_DDL)
-    ms._migrate(conn)
+    with store.pinned(store.SQLITE):
+        conn.executescript(_DDL)
+        ms._migrate(conn)
     return conn
 
 

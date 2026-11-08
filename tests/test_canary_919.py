@@ -1,5 +1,6 @@
 """`soh canary`: each plant in its own isolated home, its verdict read back, nothing in the live store. #919."""
 import json
+import os
 import subprocess
 import sys
 import time
@@ -7,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from harness import canary, cli, exclusive, heartbeat, holdout, morning, paths
+from harness import canary, cli, exclusive, heartbeat, holdout, morning, paths, store
 from harness import memory_store as ms
 from harness.commands import morning as morning_cmd
 from tests import conftest
@@ -22,8 +23,9 @@ if os.environ.get("LH_GPU_LOCK_HELD") != "1":
 argv = sys.argv[1:]
 if argv[:2] != ["canary", "spend"] and argv[:2] != ["discover", "--screen"]:
     sys.exit(0)
-home = plan.get("write_to") or os.environ["LOCALHARNESS_HOME"]
-conn = ms.connect(os.path.join(home, "discovery.db"))
+if plan.get("write_to"):
+    os.environ.update(LOCALHARNESS_HOME=plan["write_to"], LOCALHARNESS_STORE=plan["store"])
+conn = ms.connect()
 ms.record(conn, ms.Seen(name=plan["name"], source="t", lane=plan["lane"]))
 ms.decide(conn, plan["name"], plan["outcome"], tier=plan["tier"], detail=plan.get("detail", "t"),
           reason=plan["reason"], failure_class=plan.get("failure_class", ""))
@@ -91,7 +93,7 @@ def test_a_plant_missing_its_verdict_is_a_miss(child):
 def test_a_child_that_writes_the_live_store_is_caught(child, _home):
     ms.connect().close()
     child.plan(name="org/worse", lane="stt", outcome="declined", tier="adopt", reason="candidate",
-               write_to=str(_home))
+               write_to=str(_home), store=os.environ[store.BACKEND_ENV])
     r = canary.run([WORSE], run=child.run)
     assert r["leaked"] == 1 and not r["ok"], r
 
@@ -189,7 +191,7 @@ def _known_pair():
 
 
 def test_check_says_whether_the_stored_results_separate_each_pair(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         v2, v3 = _known_pair()
         _stored_pair(conn, "stt", v2, v3)
@@ -201,7 +203,7 @@ def test_check_says_whether_the_stored_results_separate_each_pair(tmp_path):
 
 
 def test_check_misses_a_pair_the_gate_cannot_separate(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         v2, v3 = _known_pair()
         _stored_pair(conn, "stt", v3, v2)
@@ -230,7 +232,7 @@ def test_dry_run_lists_every_plant(capsys):
 
 @pytest.mark.gauntlet("state-is-whichever-row-came-last", site="harness/canary.py:_pair_rows")
 def test_check_reads_the_newest_run_holding_both(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     try:
         v2, v3 = _known_pair()
         # Inserted first, generated last: recency is the run's own time, not its row id.

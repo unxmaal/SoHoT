@@ -291,7 +291,8 @@ def open_ro(path: Path):
 
 
 def _columns(conn, table: str) -> set[str]:
-    return {r[1] for r in conn.execute(f"PRAGMA table_info({table})")}
+    from harness.memory_store.schema import _columns
+    return _columns(conn, table)
 
 
 def gateway_rows(conn, since: float) -> list[tuple]:

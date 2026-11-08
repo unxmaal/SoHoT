@@ -10,6 +10,9 @@ from harness import cli, memory_store as ms
 from harness import migration_check as mc
 from harness import paths
 
+#: A dry run migrates a SQLite copy; a Postgres home refuses one with no path (test_store_postgres_1507). #1579.
+pytestmark = pytest.mark.sqlite_store
+
 GOLDEN = Path(__file__).parent / "golden"
 _spec = importlib.util.spec_from_file_location("golden_build", GOLDEN / "build.py")
 gb = importlib.util.module_from_spec(_spec)

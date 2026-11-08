@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 import plistlib
-import sqlite3
 import subprocess
 import time
 from datetime import datetime, timezone
@@ -11,10 +10,10 @@ from pathlib import Path
 
 import pytest
 
-from harness import delegate, morning
+from harness import delegate, morning, store
 from harness import memory_store as ms
 from harness.commands import morning as morning_cmd
-from tests import shells
+from tests import conftest, shells
 
 REPO = Path(__file__).resolve().parents[1]
 NOW = datetime(2026, 10, 15, 6, 30).timestamp()
@@ -231,8 +230,7 @@ def test_the_model_is_not_asked_while_the_machine_is_held(monkeypatch):
 def test_the_report_never_writes_the_live_store(tmp_path, monkeypatch):
     conn = _store()
     conn.close()
-    path = ms.db_path()
-    before = path.read_bytes()
+    before = conftest.store_state()
     snap = morning.snapshot()
     try:
         snap.execute("INSERT INTO candidates (spec, receipt_key, lane, created_at) VALUES ('x','x','code',0)")
@@ -240,8 +238,8 @@ def test_the_report_never_writes_the_live_store(tmp_path, monkeypatch):
         assert snap.execute("SELECT COUNT(*) FROM verdicts").fetchone()[0] == 4
     finally:
         snap.close()
-    assert path.read_bytes() == before
-    ro = sqlite3.connect(path)
+    assert conftest.store_state() == before
+    ro = store.open_ro()
     assert ro.execute("SELECT COUNT(*) FROM candidates WHERE spec = 'x'").fetchone()[0] == 0
     ro.close()
 

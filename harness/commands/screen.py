@@ -96,7 +96,7 @@ def cmd_fetch(a) -> int:
 def _replay(a) -> int:
     """`soh fetch --replay DAYS`: what past runs fetched and what the pass-over term would have. #1288."""
     from harness import fetch_replay, rank
-    from harness import memory_store as ms
+    from harness import memory_store as ms, store
     step, cap = rank.PASSED_OVER, rank.PASSED_OVER_MAX
     if a.passed_over is not None:
         rank.PASSED_OVER = a.passed_over
@@ -104,7 +104,7 @@ def _replay(a) -> int:
         rank.PASSED_OVER_MAX = a.passed_over_max
     from harness import fetching, ledger
     # A replay reads; every reader takes this read-only connection, so nothing migrates or writes. #1426.
-    if not ms.db_path().is_file():
+    if not store.exists(ms.db_path()):
         return err(f"fetch --replay: no store at {ms.db_path()}")
     store = ledger.open_ro(ms.db_path())
     try:

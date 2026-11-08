@@ -10,9 +10,9 @@ DIR = Path(__file__).resolve().parents[2] / "evals" / "blame"
 
 
 def _open(path: str):
-    from harness import live_audit, memory_store as ms
+    from harness import live_audit, memory_store as ms, store
     db = Path(path) if path else ms.db_path()
-    if not db.is_file():
+    if not store.exists(db):
         raise FileNotFoundError(f"no store at {db}")
     return live_audit.open_readonly(db)
 

@@ -110,9 +110,9 @@ def cmd_calibrate(a) -> int:
 
     from harness import contamination as ct
     from harness import live_audit
-    from harness import memory_store as ms
+    from harness import memory_store as ms, store
     db = Path(getattr(a, "db", "") or ms.db_path())
-    if not db.is_file():
+    if not store.exists(db):
         return err(f"benchmarks --calibrate: no store at {db}")
     try:
         conn = live_audit.open_readonly(db)
