@@ -20,6 +20,15 @@ def cmd_discover(a) -> int:
     every time anything is installed or any eval is run. A number in a document
     is wrong by the next commit.
     """
+    if getattr(a, "step", None):
+        from harness.commands import loop_steps
+        return loop_steps.run_step(a)
+    if getattr(a, "loop", False) and getattr(a, "jobs", False):
+        from harness.commands import loop_steps
+        if not getattr(a, "run", False):
+            err("--jobs queues a sweep that spends the disk and the minutes; add --run")
+            return 2
+        return loop_steps.queue_cycle(a)
     if getattr(a, "loop", False):
         return loop_cmd._report_loop(a)
     if getattr(a, "sweep", False):

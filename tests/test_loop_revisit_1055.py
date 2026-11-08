@@ -58,9 +58,12 @@ def test_one_loop_discover_step_reopens_a_met_cases_until_to_the_measure_queue(g
 
 
 def test_the_discover_step_runs_the_revisit_repair_before_inspect():
+    repairs = [f.__name__ for f, _ in loop_cmd._repairs(None)]
+    assert repairs.index("_reread_runtime_declines") < repairs.index("_reopen_revisitable")
     src = inspect.getsource(loop_cmd._run_loop_held)
-    assert "_reopen_revisitable" in src
-    assert src.index("_reread_runtime_declines") < src.index("_reopen_revisitable") < src.index("cmd_discover(sub)")
+    assert src.index("_repairs(a)") < src.index("_tier(a")
+    from harness.commands import loop_steps
+    assert loop_steps.NAMES.index("repair") < loop_steps.NAMES.index("inspect")
 
 
 def test_a_re_decline_under_the_same_met_until_is_spent_and_never_reopens_again(grown, capsys):

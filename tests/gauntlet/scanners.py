@@ -701,9 +701,9 @@ def unwaited_repairs(audit, loop, stores):
 
 #: Namespaces spread from the very parser the callee's verb reads; "rel:function->callee" -> why. #974.
 SAME_PARSER = {
-    "harness/commands/loop.py:_run_loop_held->cmd_discover":
+    "harness/commands/loop.py:_tier->cmd_discover":
         "a is the namespace `soh discover --loop` parsed, handed back to soh discover with one tier flag set",
-    "harness/commands/loop.py:_loop_spend->cmd_discover":
+    "harness/commands/loop.py:_screen->cmd_discover":
         "a is the namespace `soh discover --loop` parsed, handed back to soh discover for its screen tier",
     "harness/commands/discover.py:_report_sweep->cmd_discover":
         "a is soh discover's own namespace, re-dispatched one source tier at a time",
