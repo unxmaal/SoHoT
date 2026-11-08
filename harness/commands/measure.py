@@ -410,6 +410,12 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
             store.close()
         if held is None:
             return rc
+        from harness import workqueue
+        if sweep is None and workqueue.item_s() is not None and workqueue.item_ended():
+            # Under the queue each look slice is one item; the next resumes this held run on the same models. #1618.
+            print(f"  {name}: item ended at a look; the next item resumes it", flush=True)
+            loaded.clear()
+            return watch.PAUSED
         held = {**held, "identity": ident}
     if _signalled(proc.returncode) and watch.stop_reason(out) == watch.OVERRUN:
         return _ended(name, held, out, sweep)
@@ -780,7 +786,7 @@ def _between_looks(proc, out, last: bool, before: int, idle: int) -> bool:
     if last or getattr(proc, "timed_out", False) or proc.returncode != watch.PAUSED:
         return False
     progress = watch.read_progress(out)
-    if not str(progress.get("why") or "").startswith("paused at its stop time"):
+    if not str(progress.get("why") or "").startswith(watch.AT_STOP_TIME):
         return False
     return _rows_in(out) > before or idle + 1 < IDLE_SLICES
 

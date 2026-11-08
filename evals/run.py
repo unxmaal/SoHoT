@@ -1277,6 +1277,11 @@ def _main(args) -> int:
     # One model-loading run on the machine at a time, across projects (#314); a cloud-only run takes a cloud slot (#1135).
     with exclusive.held(lock_kind(args), announce=lambda m: print(
             f"evals.run: {m}", file=sys.stderr, flush=True), deadline_s=deadline_s(args)):
+        from harness import workqueue
+        item = workqueue.item_s() if args.stop_at is None and args.stop_after is None else None
+        if item is not None:
+            # The worker runs this job in items: stop at the item's end and say so, so it queues the next. #1618.
+            args.stop_after, args.queue_item = item, True
         if getattr(args, "stop_after", None) is not None:
             after = watch.clock() + args.stop_after
             args.stop_at = after if args.stop_at is None else min(args.stop_at, after)
@@ -1622,6 +1627,9 @@ def _execute_at(args, overrides: dict) -> int:
         stopped = exc
         if isinstance(exc, watch.Deferred) and outdir:
             watch.ask_pause(outdir, exc.reason)
+        elif getattr(args, "queue_item", False) and exc.why.startswith(watch.AT_STOP_TIME):
+            from harness import workqueue
+            workqueue.item_ended()
         print(f"\n{exc.why}", file=sys.stderr, flush=True)
     finally:
         if eye.yielder is not None:

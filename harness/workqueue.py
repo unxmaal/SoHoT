@@ -31,6 +31,10 @@ CANCEL_GRACE_S = 30.0
 
 #: Set in a job's environment so evals.run can stamp the run it stores. #418.
 JOB_ENV = "LH_JOB_ID"
+#: Seconds of cases one queue item of an eval runs before the eval goes back to pending to wait its turn. #1618.
+ITEM_S = 600.0
+#: Set for a job the worker runs in items: an eval stops at the item's end and marks it, the next item resumes it.
+ITEM_ENV = "LH_QUEUE_ITEM_S"
 
 _STAMP = "%Y-%m-%dT%H:%M:%S"
 
@@ -417,6 +421,40 @@ def _cancel_flag(job_id) -> Path:
     return _pids() / f"{label(job_id)}.cancel"
 
 
+def _item_flag(job_id) -> Path:
+    return _pids() / f"{label(job_id)}.item"
+
+
+def item_ended(environ=None) -> bool:
+    """Mark that this queued job stopped at its item's end with cases left, so the worker queues its next item. #1618."""
+    key = _key((environ if environ is not None else os.environ).get(JOB_ENV, ""))
+    if key is None:
+        return False
+    _item_flag(key).write_text(time.strftime(_STAMP), encoding="utf-8")
+    return True
+
+
+def item_s(environ=None) -> float | None:
+    """The seconds of this process's queue item, when the worker runs its job in items; None otherwise. #1618."""
+    try:
+        got = float((environ if environ is not None else os.environ).get(ITEM_ENV, ""))
+    except ValueError:
+        return None
+    return got if got > 0 else None
+
+
+def itemized(job: dict) -> bool:
+    """Whether the worker runs a job in items: a gpu eval or paired adopt that sets no stop of its own. #1618."""
+    from evals import run
+    argv = [str(a) for a in job.get("argv") or []]
+    if ITEM_S <= 0 or needs(job) != GPU or any(a.split("=")[0] in ("--stop-at", "--stop-after") for a in argv):
+        return False
+    if run.queued_args(argv) is not None:
+        return True
+    return (resources._verb(argv) == "adopt" and "--challenger" in argv
+            and not {"--confirm", "--power", "--from-measurement", "--dry-run"} & set(argv))
+
+
 def _pid_of(job_id) -> int | None:
     try:
         pid = int(_pid_file(job_id).read_text(encoding="utf-8").strip())
@@ -661,6 +699,12 @@ def _loads(n) -> str:
     return n.why or "; ".join(x for x in said if x)
 
 
+def _detail(job: dict, n) -> str:
+    """The lease's detail: its loads, and for an item the seconds it is planned to run. #1617, #1618."""
+    planned = f"an item of up to {ITEM_S:.0f}s" if itemized(job) else ""
+    return "; ".join(x for x in (_loads(n), planned) if x)
+
+
 @contextmanager
 def leased(job: dict, pid: int | None = None):
     """Hold the job's lease on its class, beaten every TTL_S/3 while the block runs; yields it, or None at capacity. #1558."""
@@ -675,7 +719,7 @@ def leased(job: dict, pid: int | None = None):
     with _store() as c:
         got = item_lease.take(c, cls, f"job {label(job['id'])}", job_id=int(job["id"]), pid=pid,
                               priority=int(job.get("priority") or 0), mem_gb=n.gb,
-                              fits=fits if cls == GPU and pid is None else None, detail=_loads(n))
+                              fits=fits if cls == GPU and pid is None else None, detail=_detail(job, n))
     if got is None:
         job["refused"] = said.get("why") or f"{cls} is leased to capacity; waits for a free place"
         yield None
@@ -721,7 +765,11 @@ def _run_claimed(job: dict, log: Path, popen=None) -> dict | None:
         _write(job)
         return get(job["id"]) or job
     env = {**os.environ, JOB_ENV: str(int(job["id"]))}
+    env.pop(ITEM_ENV, None)
+    if itemized(job):
+        env[ITEM_ENV] = f"{ITEM_S:g}"
     _cancel_flag(job["id"]).unlink(missing_ok=True)
+    _item_flag(job["id"]).unlink(missing_ok=True)
     popen = popen or _in_group(job)
     # No machine lock here: each command takes it for the part that loads a
     # model, so a job that is downloading does not block a GPU run. #371.
@@ -744,7 +792,7 @@ def _run_claimed(job: dict, log: Path, popen=None) -> dict | None:
             # Left running and unwritten: the store may be migrated past this code; settle closes it. #1506.
             return {**job, "state": RUNNING, "handed_off": True}
         job.update(state=DONE if rc == 0 else PAUSED if rc == watch.PAUSED else FAILED)
-        if not (job["state"] == PAUSED and _repend(job)):
+        if not (job["state"] == PAUSED and (_next_item(job) or _repend(job))):
             _write(job)
     return get(job["id"]) or job
 
@@ -769,6 +817,28 @@ def _resumed(c, job: dict) -> list | None:
     if "evals.run" not in [str(a) for a in job["argv"]] or run is None:
         return None
     return resume_argv(job["argv"], runs.run_dir(run["path"]))
+
+
+def _next_item(job: dict) -> bool:
+    """A job that stopped at its item's end waits again for its next item, resumed where it stopped. #1618."""
+    flag = _item_flag(job["id"])
+    if not flag.exists():
+        return False
+    flag.unlink(missing_ok=True)
+    from evals import run
+    with _store() as c:
+        argv = _resumed(c, job) if run.queued_args(job["argv"]) is not None else list(job["argv"])
+        if argv is None:
+            return False
+        took = (_epoch(job.get("finished")) or time.time()) - (_epoch(job.get("started")) or time.time())
+        c.execute("UPDATE jobs SET state = ?, finished_at = NULL, rc = ?, argv = ?, note = ? WHERE id = ?",
+                  (PENDING, job.get("rc"), json.dumps(argv),
+                   f"item ended after {took:.0f}s of a planned {ITEM_S:.0f}s; the next item waits its turn",
+                   int(job["id"])))
+        c.commit()
+    from harness import cuts
+    cuts.cut("queue_item", f"job {label(job['id'])}: an item ended after {took:.0f}s; the next waits its turn", kept=1)
+    return True
 
 
 def _repend(job: dict) -> bool:
