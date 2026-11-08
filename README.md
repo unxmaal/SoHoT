@@ -1579,7 +1579,10 @@ the served config is the adoption, and no alias's requests through the gateway
 fail more than the threshold in `harness/live_audit.py`. A fifth,
 `sweep_on_schedule`, fails when the last discovery loop started more than 25
 hours ago, unless an owner hold (`soh hold benchmarks` or `gpu`) stops sweeps on
-purpose; then it passes and says held (#1610). A failure exits 1 and names the rows.
+purpose; then it passes and says held (#1610). `local_cases_in_lane_dir` fails
+on a case under `$LOCALHARNESS_HOME/cases` that is not in its own lane's
+directory, since a one-lane run reads only `<lane>/` and would skip it (#1636).
+A failure exits 1 and names the rows.
 
 The `discover` agent sweeps once a day at 21:00, out of the way of daytime work
 (`StartCalendarInterval`; override with `DISCOVER_HOURS`). It used
