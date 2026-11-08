@@ -407,6 +407,38 @@ def smoke(gateway: str, key: str, nodes: list[Node], get=_get_models, ask=_ask, 
     return out
 
 
+def _get_build(node: Node) -> str:
+    import httpx
+    from harness import context
+    key = secret(node)
+    transport = httpx.HTTPTransport(local_address="0.0.0.0") if node.ipv4 else None
+    with httpx.Client(transport=transport,
+                      timeout=httpx.Timeout(node.timeout, connect=node.connect_timeout)) as c:
+        r = c.get(f"{node.api_base.rstrip('/').removesuffix('/v1')}/props",
+                  headers={"Authorization": f"Bearer {key}"} if key else {})
+    return context.build_of(r.json().get("build_info")) if r.status_code < 400 else ""
+
+
+def builds(nodes: list[Node], here: str, get=None) -> list[tuple[bool, str]]:
+    """(same build, line) per node: its llama.cpp build beside this machine's; a mismatch warns. #1607."""
+    get = get or _get_build
+    out = []
+    for node in nodes:
+        try:
+            got = get(node)
+        except Exception:  # noqa: BLE001 - a node that does not answer has no build to compare
+            got = ""
+        if not got:
+            out.append((False, f"node {node.name} names no llama.cpp build in its /props; "
+                               f"its replies and receipts carry none"))
+        elif here and got != here:
+            out.append((False, f"node {node.name} runs llama.cpp build {got}, this machine {here}: "
+                               f"its replies and receipts name {got}"))
+        else:
+            out.append((True, f"node {node.name} runs llama.cpp build {got}, this machine {here or 'none'}"))
+    return out
+
+
 def main(argv=None) -> int:
     import argparse
     p = argparse.ArgumentParser(prog="python -m harness.nodes")
@@ -448,6 +480,9 @@ def main(argv=None) -> int:
     rows = smoke(args.gateway, gateway_key.key(), nodes)
     for passed, line in rows:
         print(f"{'PASS' if passed else 'FAIL'}  {line}")
+    from harness import serving
+    for same, line in builds(nodes, serving.llamacpp_build()):
+        print(f"{'PASS' if same else 'WARN'}  {line}")
     if not rows and not rested:
         print("SKIP  no serving nodes in " + str(path()))
     return 0 if all(p for p, _ in rows) else 1

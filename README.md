@@ -964,8 +964,11 @@ when the node did, `x-sohot-fallback: <node>` when this machine did instead, and
 `x-sohot-machine` either way (the node's `machine` fingerprint, or `node:<name>`).
 A run records that host, so `comparable()` refuses to rank a run on a node beside
 one on this machine, and a run answered partly by each is filed as several hosts.
+A node's reply also carries `x-sohot-engine-build`, the llama.cpp build its `/props`
+names, and the receipt records that build for the keys it served, not this machine's.
 `make smoke` asks the gateway for each node's models and passes when the node
-answers while it is up and this machine answers quickly while it is down.
+answers while it is up and this machine answers quickly while it is down. It prints
+each node's build beside this machine's and warns, without failing, when they differ.
 Each node needs `machine:`, its hw_model/os/arch/host fingerprint, which
 `python -m harness.nodes fingerprint` prints on the node. Without it a run the
 node serves is stored under no machine, so `make smoke`, `launchd.sh install` and

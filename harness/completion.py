@@ -627,7 +627,7 @@ def _refuses_system_role(body: str) -> bool:
     return any(p in low for p in SYSTEM_ROLE_REFUSALS)
 
 
-#: (gateway, model) -> {"machine", "model", "ctx", "slots"} its last good reply named in x-sohot-* headers. #697.
+#: (gateway, model) -> {"machine", "model", "ctx", "slots", "build"} its last good reply named in x-sohot-* headers. #697, #1607.
 SERVED: dict = {}
 
 
@@ -645,7 +645,9 @@ def _note(gateway: str, model, r) -> None:
     machine = str(got.get("x-sohot-machine") or "")
     # Every host that answered, so a run a node served only in part is not filed under one. #684.
     machines = sorted(set((SERVED.get(key) or {}).get("machines") or ()) | ({machine} - {""}))
-    SERVED[key] = {"machine": machine, "machines": machines,
+    build = str(got.get("x-sohot-engine-build") or "")
+    builds = sorted(set((SERVED.get(key) or {}).get("builds") or ()) | ({build} - {""}))
+    SERVED[key] = {"machine": machine, "machines": machines, "build": build, "builds": builds,
                    "model": str(got.get("x-sohot-model") or ""), **shape,
                    "node": str(got.get("x-sohot-node") or ""), "fallback": str(got.get("x-sohot-fallback") or "")}
 
