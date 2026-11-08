@@ -96,6 +96,22 @@ def grant_reader(conn, role: str, pw: str) -> None:
 DUMP_TIMEOUT_S = 1800
 
 
+#: Drops every table of the store's schema, so one a later migration added does not outlive a restore. #1610.
+DROP_TABLES = ("DO $$DECLARE t record; BEGIN FOR t IN SELECT tablename FROM pg_tables WHERE schemaname = current_schema() "
+               "LOOP EXECUTE format('DROP TABLE IF EXISTS %I.%I CASCADE', current_schema(), t.tablename); END LOOP; END$$")
+
+
+def in_container(argv: list, stdin: bool = False) -> list:
+    """argv run inside the store's container, whose tools reach the store on its local socket."""
+    return ["docker", "exec", *(["-i"] if stdin else []), CONTAINER, *argv]
+
+
+def _failed(what: str, got) -> RuntimeError:
+    err = got.stderr or b""
+    return RuntimeError(f"{what} exited {got.returncode}: "
+                        f"{(err.decode(errors='replace') if isinstance(err, bytes) else err).strip()}")
+
+
 def dump(dest: Path, *, run=subprocess.run) -> Path:
     """pg_dump -Fc of the store from inside its container (local socket, no password), into `dest`."""
     dest = Path(dest)
@@ -103,24 +119,48 @@ def dump(dest: Path, *, run=subprocess.run) -> Path:
     tmp = dest.with_name(dest.name + ".tmp")
     from harness import cuts
     with open(tmp, "wb") as out, cuts.timeout("harness/store_service.py:DUMP_TIMEOUT_S", "pg_dump of the store"):
-        got = run(["docker", "exec", CONTAINER, "pg_dump", "-U", OWNER, "-Fc", OWNER],
+        got = run(in_container(["pg_dump", "-U", OWNER, "-Fc", OWNER]),
                   stdout=out, stderr=subprocess.PIPE, timeout=DUMP_TIMEOUT_S)
     if got.returncode != 0:
         tmp.unlink(missing_ok=True)
-        raise RuntimeError(f"pg_dump exited {got.returncode}: {(got.stderr or b'').decode(errors='replace').strip()}")
+        raise _failed("pg_dump", got)
     os.replace(tmp, dest)
     return dest
 
 
 def restore(src: Path, *, run=subprocess.run) -> None:
-    """Replace the store with a pg_dump -Fc file, in one transaction: a failed restore leaves it as it was."""
+    """Replace the store with a pg_dump -Fc file in one transaction, tables it lacks dropped; a failure changes nothing."""
     from harness import cuts
-    with open(src, "rb") as data, cuts.timeout("harness/store_service.py:DUMP_TIMEOUT_S", "pg_restore of the store"):
-        got = run(["docker", "exec", "-i", CONTAINER, "pg_restore", "-U", OWNER, "-d", OWNER,
-                   "--clean", "--if-exists", "--single-transaction", "--no-owner"],
-                  stdin=data, capture_output=True, timeout=DUMP_TIMEOUT_S)
+    src = Path(src)
+    sql = src.with_name(src.name + ".restore.sql")
+    try:
+        with open(src, "rb") as data, open(sql, "wb") as out, \
+                cuts.timeout("harness/store_service.py:DUMP_TIMEOUT_S", "pg_restore of the store"):
+            got = run(in_container(["pg_restore", "--clean", "--if-exists", "--no-owner", "-f", "-"], stdin=True),
+                      stdin=data, stdout=out, stderr=subprocess.PIPE, timeout=DUMP_TIMEOUT_S)
+        if got.returncode != 0:
+            raise _failed("pg_restore", got)
+        with open(sql, "rb") as data, cuts.timeout("harness/store_service.py:DUMP_TIMEOUT_S", "restore of the store"):
+            got = run(in_container(["psql", "-X", "-q", "-v", "ON_ERROR_STOP=1", "-1", "-U", OWNER, "-d", OWNER,
+                                    "-c", DROP_TABLES, "-f", "-"], stdin=True),
+                      stdin=data, capture_output=True, timeout=DUMP_TIMEOUT_S)
+        if got.returncode != 0:
+            raise _failed("psql restore", got)
+    finally:
+        sql.unlink(missing_ok=True)
+
+
+def schema(*, run=subprocess.run) -> int:
+    """The store's meta schema through the container's psql, so a caller with no psycopg (deploy_switch) can read it."""
+    from harness import cuts
+    with cuts.timeout("harness/store_service.py:DUMP_TIMEOUT_S", "schema read of the store"):
+        got = run(in_container(["psql", "-X", "-tA", "-U", OWNER, "-d", OWNER,
+                                "-c", "SELECT value FROM meta WHERE key = 'schema'"]),
+                  capture_output=True, text=True, timeout=DUMP_TIMEOUT_S)
     if got.returncode != 0:
-        raise RuntimeError(f"pg_restore exited {got.returncode}: {(got.stderr or b'').decode(errors='replace').strip()}")
+        raise _failed("psql schema read", got)
+    out = (got.stdout or "").strip()
+    return int(out) if out else 0
 
 
 def marker_for(port: int = PORT, reader: str = store.DEFAULT_READER) -> dict:

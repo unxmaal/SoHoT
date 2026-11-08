@@ -210,6 +210,8 @@ jobs:
           "$bin/pg_ctl" -D "$RUNNER_TEMP/pg" -l "$RUNNER_TEMP/pg.log" -w \
             -o "-c max_connections=500 -c fsync=off -p 5432 -k $RUNNER_TEMP" start
           "$bin/createdb" -h 127.0.0.1 -U discovery discovery
+          # The restore test runs pg_dump, pg_restore and psql as the store's container would (#1610).
+          echo "$bin" >> "$GITHUB_PATH"
 
       - run: bash scripts/ci-retry.sh uv sync --python 3.12
 
