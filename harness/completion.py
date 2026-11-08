@@ -646,7 +646,8 @@ def _note(gateway: str, model, r) -> None:
     # Every host that answered, so a run a node served only in part is not filed under one. #684.
     machines = sorted(set((SERVED.get(key) or {}).get("machines") or ()) | ({machine} - {""}))
     SERVED[key] = {"machine": machine, "machines": machines,
-                   "model": str(got.get("x-sohot-model") or ""), **shape}
+                   "model": str(got.get("x-sohot-model") or ""), **shape,
+                   "node": str(got.get("x-sohot-node") or ""), "fallback": str(got.get("x-sohot-fallback") or "")}
 
 
 def served(gateway: str | None = None) -> dict:

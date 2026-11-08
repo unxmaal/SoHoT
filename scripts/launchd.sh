@@ -135,6 +135,7 @@ FETCH_HOURS="${FETCH_HOURS:-8 11 14 17}"
 # Periodic jobs that read or write the shared store: only the scheduler runs them. #703.
 declare -a SCHEDULER_ONLY=(discover audit ledger morning claude-news canary sweep-check fetch delegations review)
 # Machines sharing one store run the periodic jobs on one of them: scheduler, or node for the rest. #703.
+# An interactive node runs only the interactive server, for lanes the scheduler's gateway sends it first. #1562.
 # A role given once is kept in $LH_HOME/role, so a later plain `make install` keeps it.
 ROLE_FILE="$LH_HOME/role"
 ROLE_GIVEN="${LH_ROLE:-}"
@@ -143,8 +144,8 @@ if [ -z "$ROLE_GIVEN" ] && [ -f "$ROLE_FILE" ]; then
 fi
 LH_ROLE="${LH_ROLE:-scheduler}"
 case "$LH_ROLE" in
-  scheduler|node) ;;
-  *) echo "LH_ROLE must be scheduler or node, not '$LH_ROLE' (from ${ROLE_GIVEN:+the environment}${ROLE_GIVEN:-$ROLE_FILE})" >&2; exit 2 ;;
+  scheduler|node|interactive) ;;
+  *) echo "LH_ROLE must be scheduler, node or interactive, not '$LH_ROLE' (from ${ROLE_GIVEN:+the environment}${ROLE_GIVEN:-$ROLE_FILE})" >&2; exit 2 ;;
 esac
 if [ -n "$ROLE_GIVEN" ]; then
   mkdir -p "$LH_HOME"
@@ -159,6 +160,7 @@ units() {
     if [ "$LH_ROLE" = node ]; then
       for p in "${SCHEDULER_ONLY[@]}"; do [ "$p" = "$service" ] && skip=1; done
     fi
+    [ "$LH_ROLE" = interactive ] && [ "$service" != interactive ] && skip=1
     [ -z "$skip" ] && printf '%s\n' "$service"
   done
   return 0
@@ -207,10 +209,12 @@ _hf_root() {
 }
 
 # The watchdog acts and files issues, the day fetch runs and the review files, only once the owner sets these; a value given once is kept. #814, #1084, #1149.
+# An interactive node's server listens on the LAN with a key and pins only its lanes. #1562.
 _watchdog_env() {
   local var val vars
   case "$1" in
     watchdog) vars="LH_WATCHDOG_ACT LH_WATCHDOG_FILE" ;;
+    interactive) vars="LLAMACPP_HOST LLAMACPP_API_KEY_FILE INTERACTIVE_LANES LLAMACPP_BIN" ;;
     fetch) vars="LH_DAY_FETCH" ;;
     review) vars="LH_REVIEW_FILE" ;;
     *) return 0 ;;
@@ -446,15 +450,16 @@ _live_pid() {
   awk '/^\tpid = /{print $3; exit}' <<<"$out"
 }
 
-# A node unloads periodic units an earlier scheduler install left behind.
+# A node unloads the units an earlier install of a wider role left behind.
 drop_periodic() {
-  local p
-  for p in "${SCHEDULER_ONLY[@]}"; do
+  local p dropped="${SCHEDULER_ONLY[*]}"
+  [ "$LH_ROLE" = interactive ] && dropped="$(for p in $SERVICES; do [ "$p" = interactive ] || echo "$p"; done)"
+  for p in $dropped; do
     if launchctl print "gui/$UID/$PREFIX.$p" >/dev/null 2>&1; then
       launchctl bootout "gui/$UID/$PREFIX.$p"
     fi
     rm -f "$AGENTS/$PREFIX.$p.plist"
-    echo "removed $PREFIX.$p (LH_ROLE=node)"
+    echo "removed $PREFIX.$p (LH_ROLE=$LH_ROLE)"
   done
 }
 
@@ -534,7 +539,7 @@ install_units() {
       sleep 1
     done
   fi
-  [ "$LH_ROLE" = node ] && drop_periodic
+  [ "$LH_ROLE" = scheduler ] || drop_periodic
   # A deferral is not a failure: the unit runs the deploy path, so its next run starts the deployed code. #1521.
   if [ -n "$deferred" ]; then
     local now same="" stale=""
@@ -575,8 +580,8 @@ install_units() {
     echo "a serving node has no machine fingerprint; set machine: in nodes.yaml, see above" >&2
     blocked=1
   fi
-  # The deploy is not done until the store it now serves passes the audit. #492.
-  if ! /bin/bash "$DEPLOY/scripts/serve-audit.sh"; then
+  # The deploy is not done until the store it now serves passes the audit; an interactive node serves none. #492, #1562.
+  if [ "$LH_ROLE" != interactive ] && ! /bin/bash "$DEPLOY/scripts/serve-audit.sh"; then
     echo "the deployed units are loaded but the live store FAILS its audit; see above" >&2
     return 1
   fi
