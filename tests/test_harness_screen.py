@@ -367,3 +367,11 @@ def test_the_vision_lane_names_its_labeller_from_the_card_given_or_the_stored_on
     assert screen.runner_gap("vision", "org/v", card={"library": "gguf"}) == head + "llamacpp-vlm:org/v"
     assert screen.runner_gap("vision", "org/v", conn="d") == head + "mlx-vlm:org/v"
     assert asked[-1] == ("d", "org/v")
+
+
+def test_a_server_killer_verdict_says_how_many_screens_died_on_which_runtime_version():
+    """#1544's kills_server why reached no selected test, so its mutants survived once the screen run stopped crashing (#1588)."""
+    assert screen.kills_server(3, "mlx_lm", "0.31.0") == screen.Verdict(
+        "declined", "its screens kill the shared model server on this runtime version: "
+        "3 of its screens ended with the server dead on mlx_lm 0.31.0",
+        reasons.RUNTIME, "version:mlx_lm>0.31.0", reasons.KILLS_SERVER)

@@ -48,6 +48,17 @@ def test_an_eviction_between_cases_is_recorded_with_who_took_the_slot():
                         "resident": ["imajev-4b"]}]
 
 
+def test_a_yield_that_let_serving_swap_the_model_out_is_no_swap_of_the_run():
+    """#1556: after rest() the watch holds nothing, so the model gone after a yield costs no case (#1588 survivor)."""
+    fake = FakeRouter(**{OURS: "loaded"})
+    w = router.Watch(OURS, get=fake.get)
+    w.look("a", "end")
+    w.rest()
+    fake.models = {OURS: "unloaded", "imajev-4b": "loaded"}
+    w.look("b", "start")
+    assert w.swaps == []
+
+
 def test_a_reload_in_progress_after_the_model_was_held_is_a_swap():
     fake = FakeRouter(**{OURS: "loaded"})
     w = router.Watch(OURS, get=fake.get)
