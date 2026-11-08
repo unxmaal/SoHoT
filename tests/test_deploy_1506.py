@@ -89,7 +89,7 @@ def world(tmp_path, monkeypatch):
     monkeypatch.setenv("HF_HOME", str(hf))
     (paths.home() / deploy_switch.INSTALL_ENV).write_text(f"HF_HOME={hf}\n", encoding="utf-8")
     ms.connect().close()
-    steps = deploy.Steps(sync=NOOP, smoke=[BASH, "scripts/smoke.sh"],
+    steps = deploy.Steps(sync=NOOP, probe=NOOP, smoke=[BASH, "scripts/smoke.sh"],
                          migrate=[sys.executable, "migrate.py", str(ms.db_path()), str(ms.SCHEMA_VERSION + 1)],
                          coherence=NOOP, install=[BASH, "scripts/launchd.sh"], alert=[BASH, "scripts/monit-alert.sh"])
     return {"origin": origin, "work": work, "link": link, "first": first, "log": log, "steps": steps, "hf": hf}
@@ -456,7 +456,7 @@ def test_the_switch_is_a_launchd_one_shot_that_outlives_the_worker(tmp_path, mon
     assert deploy.spawn_switch(record, tmp_path) == f"launchd {deploy.SWITCH_LABEL}"
     import plistlib
     plist = plistlib.loads((paths.home() / "launchd" / f"{deploy.SWITCH_LABEL}.plist").read_bytes())
-    assert plist["ProgramArguments"][1:] == ["-I", str(Path(deploy_switch.__file__).resolve()), str(record)]
+    assert plist["ProgramArguments"][3:] == ["-I", str(Path(deploy_switch.__file__).resolve()), str(record)]
     assert plist["RunAtLoad"] is True and "KeepAlive" not in plist
     said = calls.read_text(encoding="utf-8").splitlines()
     assert said[0].startswith("bootout ") and said[1].startswith("bootstrap ")

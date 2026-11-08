@@ -34,6 +34,9 @@ KNOBS = [
     _k("deploy_path_timeout", ["harness/paths.py:deploy_link->subprocess.run(timeout)"], [10, 30, 60], unit="s",
        note="seconds `launchd.sh deploy-path` may take to name the deploy link; a timeout reads as no deploy checkout. "
             "It sources nothing and prints one variable (#455, #1506)"),
+    _k("deploy_probe_timeout", [f"{Q}:PROBE_TIMEOUT_S"], [120.0, 300.0, 600.0], unit="s",
+       note="seconds the new release's `launchd.sh probe` may take before the switch; it waits PREFLIGHT_WAIT_S 60 "
+            "for its launchd agent, and a timeout fails the deploy before the flip (#1516)"),
     _k("deploy_smoke_timeout", [f"{Q}:SMOKE_TIMEOUT_S"], [900.0, 1200.0, 1800.0], unit="s",
        note=f"seconds smoke may take in the new release before the switch; {SMOKE} (#1506)"),
     _k("deploy_switch_deadline", [f"{X}:SWITCH_DEADLINE_S"], [1800.0, 3600.0, 7200.0], unit="s",
