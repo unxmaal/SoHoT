@@ -188,6 +188,17 @@ def test_a_holdout_short_of_its_need_says_how_many_more_cases_and_for_whom():
     assert bare[1].startswith("lane too small, needs 3 holdout cases: 0 cannot show +0.00 per cell")
 
 
+def test_a_lane_with_no_cases_waits_from_zero_and_says_what_its_run_could_see():
+    """#1588: the nightly's _lane_too_small survivors (`cases or 0` -> `or 1`, the plan's mde key)."""
+    import types
+    got = adopt.Verdict("svg", "inc", "org/m", False, "a null")
+    plan = {"cases_needed": 3, "power": 0.1, "mde": 0.25, "target": 0.8}
+    out = adopt._lane_too_small("svg", "inc", "org/m", got, plan, types.SimpleNamespace(dev=(), holdout=()))
+    more = adopt.more_cases(0, 3)
+    assert out.until == f"cases:svg>{more - 1}"
+    assert out.why.endswith("(a null); smallest gain this run could see: +0.25 per cell at power 0.8")
+
+
 @pytest.mark.parametrize("plan", [
     {**SHORT, "power": 0.8}, {**SHORT, "power": 0.9}, {**SHORT, "target": 0.3, "power": 0.3},
     {**SHORT, "unmeasured": True}, {**SHORT, "unmeasured": True, "power": 0.0},

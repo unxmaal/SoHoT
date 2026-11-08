@@ -337,9 +337,10 @@ def cancelled(jobs: list[dict]) -> list[str]:
     return out
 
 
-def stuck_prs(now: float, gh=_gh) -> dict:
+def stuck_prs(now: float, gh=None) -> dict:
     """Open PRs whose newest check-macos ended cancelled or failed, so auto-merge waits on them. #1540."""
     from harness import ci_history, ci_rerun
+    gh = gh or _gh
     try:
         prs = json.loads(gh(["pr", "list", "--state", "open", "-L", "100",
                              "--json", "number,title,url,statusCheckRollup"]) or "[]")

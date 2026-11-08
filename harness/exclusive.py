@@ -62,6 +62,38 @@ HELD_ENV = "LH_GPU_LOCK_HELD"
 POLL_SECONDS = 0.5
 
 
+def _venv_python(root: Path) -> Path:
+    return root / ".venv" / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
+
+
+def _imports_psycopg(python: Path) -> bool:
+    import subprocess
+    return subprocess.run([str(python), "-I", "-c", "import psycopg"], capture_output=True).returncode == 0
+
+
+def store_python(repo: Path, can_import=_imports_psycopg) -> str | None:
+    """A venv interpreter that can open this home's Postgres store when this one cannot; None when this one can. #1586."""
+    import importlib.util
+
+    from harness import store
+    if os.environ.get(HELD_ENV) == "1" or store.backend() != store.POSTGRES or importlib.util.find_spec("psycopg"):
+        return None
+    tried = [sys.executable]
+    try:
+        deploy = paths.deploy_checkout()
+    except Exception:  # noqa: BLE001 - the repo's own venv is still a candidate
+        deploy = None
+    for root in (repo, deploy):
+        python = _venv_python(Path(root)) if root else None
+        if python is None or not python.exists() or str(python) in tried:
+            continue
+        tried.append(str(python))
+        if can_import(python):
+            return str(python)
+    raise RuntimeError(f"the store is Postgres and no interpreter tried can import psycopg ({', '.join(tried)}); "
+                       "uv sync --group cluster")
+
+
 def _dir() -> Path:
     d = paths.home() / "queue"
     d.mkdir(parents=True, exist_ok=True)

@@ -27,10 +27,14 @@ PROMPT_CACHE_BYTES = "8GB"
 #: Seconds a swap back to the boot model may take: its load plus one token. #1082.
 SWAP_TIMEOUT_S = 120.0
 
-try:
-    from mlx_lm.server import main as ENTRY
-except ImportError:  # pragma: no cover - mlx-lm is darwin-only
-    ENTRY = None
+
+def entry():
+    """mlx_lm.server's main, or None without mlx-lm; imported on use, since Metal loaded at import segfaults a forked worker (#1588)."""
+    try:
+        from mlx_lm.server import main
+    except ImportError:  # pragma: no cover - mlx-lm is darwin-only
+        return None
+    return main
 
 
 def raise_backlog(n: int = BACKLOG) -> None:
@@ -178,11 +182,12 @@ def release_spec(spec: str, why: str, **kw) -> bool:
 def main() -> None:
     sys.argv[1:] = cache_caps(sys.argv[1:])
     raise_backlog()
-    if ENTRY is None:
+    run = entry()
+    if run is None:
         raise SystemExit(f"{WRAPS} is not installed")
     from mlx_lm.server import APIHandler
     serve_loaded(APIHandler)
-    ENTRY()
+    run()
 
 
 if __name__ == "__main__":

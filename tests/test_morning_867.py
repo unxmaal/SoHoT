@@ -30,7 +30,9 @@ def _gh(run_conclusion="success", jobs=(("check-macos", "success"), ("check-linu
     view = {"jobs": [{"name": n, "status": "completed", "conclusion": c, "url": f"https://x/{n}"} for n, c in jobs]}
 
     def gh(argv):
-        assert argv[:2] in (["run", "list"], ["run", "view"]), argv
+        assert argv[:2] in (["run", "list"], ["run", "view"], ["pr", "list"]), argv
+        if argv[:2] == ["pr", "list"]:
+            return "[]"
         if argv[:2] == ["run", "list"]:
             assert argv[argv.index("--workflow") + 1] == morning.NIGHTLY_WORKFLOW
             assert argv[argv.index("--event") + 1] == "schedule"
