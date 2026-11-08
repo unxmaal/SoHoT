@@ -1,6 +1,7 @@
 """`soh discover --loop --run --jobs`: one sweep as queue jobs, a step each with its own resource class, each queuing the next. #1508."""
 from __future__ import annotations
 
+import contextvars
 import json
 import os
 import sys
@@ -59,6 +60,30 @@ def _cycle_of(words) -> str:
     return words[words.index("--cycle") + 1]
 
 
+def _step_of(words) -> str:
+    words = [str(w) for w in words]
+    return words[words.index("--step") + 1] if "--step" in words[:-1] else ""
+
+
+def _jobs_of(conn, cycle: str) -> list[tuple[int, str, str]]:
+    """(id, step, state) of every queued step job of `cycle`, in id order."""
+    got = []
+    for r in conn.execute("SELECT id, argv, state FROM jobs WHERE requested_by = ? ORDER BY id", ("discover",)):
+        words = json.loads(r["argv"] or "[]")
+        if _cycle_of(words) == cycle and _step_of(words) in NAMES:
+            got.append((int(r["id"]), _step_of(words), r["state"]))
+    return got
+
+
+def _ran(conn, cycle: str, name: str, me: int | None) -> int | None:
+    """The job showing step `name` of `cycle` already ran: a later step of it, or a later continuation of it, queued."""
+    at = NAMES.index(name)
+    for job, got, _ in _jobs_of(conn, cycle):
+        if job != me and (NAMES.index(got) > at or got == name and me is not None and job > me):
+            return job
+    return None
+
+
 def live(conn, but: str = "") -> dict[str, str]:
     """{cycle: job label} for each sweep with a step pending or running, other than `but`."""
     from harness import workqueue as wq
@@ -76,20 +101,20 @@ def _mine() -> dict | None:
     return wq.get(key) if key else None
 
 
-def queue(name: str, cycle: str, a, conn=None) -> dict:
-    """Queue step `name` of `cycle` at this job's priority, unless the same step already waits or runs."""
+def queue(name: str, cycle: str, a, conn=None, again: bool = False) -> dict:
+    """Queue step `name` of `cycle` once, or with `again` this job's own continuation once; an earlier job of it comes back with `existed`."""
     from harness import paths
     from harness import memory_store as ms
     from harness import workqueue as wq
     words = argv(name, cycle, a)
     me = _mine()
+    mine = int(me["id"]) if me else None
     own = conn is None
     conn = ms.connect() if own else conn
     try:
-        have = conn.execute("SELECT id FROM jobs WHERE argv = ? AND state = ? AND id IS NOT ?",
-                            (json.dumps(words), wq.PENDING, int(me["id"]) if me else None)).fetchone()
-        if have is not None:
-            return wq.get(have["id"], conn)
+        for job, got, _ in _jobs_of(conn, cycle):
+            if got == name and job != mine and (not again or mine is None or job > mine):
+                return {**wq.get(job, conn), "existed": True}
         return wq.add(words, title=f"discover {name} (cycle {cycle})", cwd=str(paths.REPO),
                       priority=int((me or {}).get("priority") or 0), requested_by="discover",
                       resource=step(name).resource, conn=conn)
@@ -195,6 +220,34 @@ def _end(cycle: str, rc: int | None, error: str = "") -> None:
     _release(cycle)
 
 
+#: The step this process is running, so a tier that dispatches back to run_step is refused, not recursed. #1646.
+_RUNNING: contextvars.ContextVar[str] = contextvars.ContextVar("loop_step", default="")
+#: The heartbeat key the last step sets to its cycle: that sweep is closed and none of its steps runs again. #1646.
+CLOSED = "closed_cycle"
+
+
+def _inner(a):
+    """The step's options without --step, --cycle and --jobs, so its tiers' cmd_discover runs the tier itself. #1646."""
+    import argparse
+    return argparse.Namespace(**{**vars(a), "step": None, "cycle": None, "jobs": False})
+
+
+def _already(name: str, cycle: str) -> str:
+    """Why step `name` of `cycle` must not run again, or "": the sweep is closed, or the step queued what follows it."""
+    from harness import heartbeat
+    from harness import memory_store as ms
+    from harness import workqueue as wq
+    if (heartbeat.read() or {}).get(CLOSED) == cycle:
+        return "the sweep is closed"
+    me = _mine()
+    conn = ms.connect()
+    try:
+        job = _ran(conn, cycle, name, int(me["id"]) if me else None)
+    finally:
+        conn.close()
+    return f"job {wq.label(job)} follows it" if job is not None else ""
+
+
 def run_step(a) -> int:
     """One step of a queued sweep: under the sweep's lease and heartbeat, then its successor queued whatever it returned."""
     from harness import ceiling, heartbeat, power
@@ -202,6 +255,13 @@ def run_step(a) -> int:
     if not cycle:
         print("--step needs --cycle: the sweep it belongs to", file=sys.stderr)
         return 2
+    if _RUNNING.get():
+        print(f"the {name} step of sweep {cycle} was entered again from inside its own step; refusing", file=sys.stderr)
+        return 1
+    done = _already(name, cycle)
+    if done:
+        print(f"sweep {cycle}: the {name} step already ran ({done}); nothing to do")
+        return 0
     held = _lease(cycle)
     if held:
         print(f"another discover loop holds the store lease ({json.dumps(held, sort_keys=True)}); "
@@ -217,9 +277,10 @@ def run_step(a) -> int:
                           started=float(data["started"]))
     failed: list[str] = []
     print(f"\n=== sweep {cycle}: the {name} step ===", flush=True)
+    entered = _RUNNING.set(name)
     try:
         loop_cmd._beat(me.tier)
-        rc = _body(name, a, sweep, failed)
+        rc = _body(name, _inner(a), sweep, failed)
     except loop_cmd.WeightsGone as gone:
         heartbeat.pause(gone.tier, gone.reason)
         print(f"\n=== sweep paused before {gone.tier}: {gone.reason} ===", file=sys.stderr, flush=True)
@@ -231,6 +292,8 @@ def run_step(a) -> int:
     except BaseException as exc:
         _end(cycle, None, error=f"{type(exc).__name__}: {exc}")
         raise
+    finally:
+        _RUNNING.reset(entered)
     seen = list((heartbeat.read() or {}).get(FAILED) or []) + failed
     heartbeat.note(FAILED, seen)
     return _next(a, me, cycle, sweep, seen, rc)
@@ -243,14 +306,19 @@ def _next(a, me: Step, cycle: str, sweep, seen: list, rc: int) -> int:
         None if me is STEPS[-1] else STEPS[STEPS.index(me) + 1])
     if after is None:
         _settle(sweep)
+        heartbeat.note(CLOSED, cycle)
         _end(cycle, loop_cmd._why_nonzero(1 if seen else 0, seen))
+        print(f"\nsweep {cycle} is closed: its {me.name} step is its last")
         return rc
     try:
-        job = queue(after.name, cycle, a)
+        job = queue(after.name, cycle, a, again=after is me)
     except ValueError as exc:
         print(f"sweep {cycle} stops: its {after.name} step could not be queued ({exc})", file=sys.stderr)
         _end(cycle, 1, error=str(exc))
         return 1
+    if job.get("existed"):
+        print(f"\nthe {after.name} step of sweep {cycle} is already job {job['id']}; not queuing another", flush=True)
+        return rc
     if after is me:
         # A run paused on request waits in the queue; its model must not hold memory the requester needs.
         _unload("the discovery loop's measure paused on request")
