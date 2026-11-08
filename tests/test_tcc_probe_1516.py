@@ -125,6 +125,7 @@ def test_the_switch_wrapper_keeps_bash_as_the_parent_and_passes_the_exit_code():
     assert rc == 3
 
 
+@pytest.mark.sqlite_store
 @posix
 def test_a_deploy_whose_launchd_probe_never_returns_is_refused_before_the_flip(world, alerts, monkeypatch):
     monkeypatch.setattr(deploy, "PROBE_TIMEOUT_S", 1.0)
