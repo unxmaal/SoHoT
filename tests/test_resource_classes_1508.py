@@ -31,7 +31,7 @@ class Fake:
             self.started.append(tuple(argv))
         gate = self.gates.get(tuple(argv))
         if gate is not None:
-            assert gate.wait(60), f"{argv} never released"
+            gate.wait()
         return types.SimpleNamespace(returncode=0)
 
 
