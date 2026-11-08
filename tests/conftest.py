@@ -366,6 +366,17 @@ def _no_real_contention(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_admission(monkeypatch):
+    """No queue test reads this machine's memory to admit a job; a test of admission restores admission.admit.real. #1558."""
+    from harness import admission
+
+    def roomy(n, held, sample=None):
+        return True, "admitted by the test's stub"
+    roomy.real = admission.admit
+    monkeypatch.setattr(admission, "admit", roomy)
+
+
+@pytest.fixture(autouse=True)
 def _no_real_lane_probes(monkeypatch):
     """No watchdog wake sends a real lane a completion; a test that wants the real probe restores Probes.lanes.real. #924."""
     from harness import watchdog
