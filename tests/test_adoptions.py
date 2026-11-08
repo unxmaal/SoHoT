@@ -161,6 +161,7 @@ def test_winners_compare_against_what_the_lane_serves(conn, monkeypatch):
     assert [r["typed"] for r in winners.disagreements(conn)] == ["org/new"]
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_the_migration_backfills_adopt_verdicts(tmp_path, on):
     path = tmp_path / "old.db"
     c = ms.connect(path)

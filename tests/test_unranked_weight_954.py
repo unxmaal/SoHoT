@@ -11,7 +11,7 @@ PARENT, OTHER, WEIGHT = "Blaizzy/mlx-audio", "org/other-tool", "sesame/csm-1b"
 @pytest.fixture
 def store(tmp_path, monkeypatch):
     monkeypatch.setattr("harness.paths.home", lambda: tmp_path)
-    conn = ms.connect(tmp_path / "discovery.db")
+    conn = ms.connect()
     yield conn
     conn.close()
 

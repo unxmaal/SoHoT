@@ -8,7 +8,7 @@ TESTS = Path(__file__).parent
 LIST = TESTS / "gauntlet" / "explicit_store_paths.txt"
 TODO = "#1631"
 #: Sites still to move onto this home's store; may only fall.
-TODO_PIN = 100
+TODO_PIN = 0
 ALIASES = {"ms", "memory_store", "connection"}
 
 

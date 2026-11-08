@@ -200,14 +200,14 @@ def test_load_log_redecides_held_rows_from_the_router_log(monkeypatch, tmp_path)
 def test_the_load_log_command_is_read_only_without_apply(tmp_path):
     log = tmp_path / "eval.log"
     log.write_text("".join(NEX), encoding="utf-8")
-    db = tmp_path / "d.db"
-    conn = ms.connect(db)
+    db = ms.db_path()
+    conn = ms.connect()
     run, vid = _held(conn, tmp_path, NEX_REPO, NEX_ALIAS, "version:llama.cpp>11146")
     conn.commit()
     conn.close()
     assert cli.main(["load-log", "--db", str(db), "--log", str(log)]) == 0
     assert not (run / load_log.FILE).exists()
-    conn = ms.connect(db)
+    conn = ms.connect()
     assert _latest(conn, NEX_REPO)["id"] == vid
     conn.close()
     assert cli.main(["load-log", "--db", str(db), "--log", str(log), "--apply"]) == 0

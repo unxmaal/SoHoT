@@ -239,7 +239,7 @@ TIERS = (*ms.LADDER, "")
 @pytest.mark.parametrize("seed", range(40))
 def test_state_is_the_fold_of_the_accepted_transitions(tmp_path, seed):
     rng = random.Random(seed)
-    conn = ms.connect(tmp_path / f"p{seed}.db")
+    conn = ms.connect()
     try:
         _see(conn, "org/p")
         tried = []
@@ -270,6 +270,7 @@ def test_state_is_the_fold_of_the_accepted_transitions(tmp_path, seed):
 
 # --- the migration -----------------------------------------------------------
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_schema_24_backfills_the_state_from_the_newest_row(tmp_path, monkeypatch):
     monkeypatch.setattr("harness.paths.home", lambda: tmp_path)
     path = tmp_path / "old.db"

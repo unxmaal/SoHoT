@@ -195,6 +195,7 @@ def test_the_judge_reads_only_this_machines_relevance(db):
     assert got == {"org/cuda-thing": -1, "org/legacy": None}
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_schema_38_names_the_machine_only_where_the_store_proves_it(tmp_path):
     """#450: the only machine with evidence by a sighting's time swept it;
     two candidates, or none, leave it unknown."""
@@ -234,12 +235,11 @@ def test_an_edge_to_an_unknown_proposal_is_refused(db):
 # ---- schema ----------------------------------------------------------------
 
 def test_the_store_reopens_without_losing_anything(tmp_path):
-    p = tmp_path / "d.db"
-    c1 = ms.connect(p)
+    c1 = ms.connect()
     see(c1, "SDMLX")
     ms.decide(c1, "SDMLX", "queued")
     c1.close()
-    c2 = ms.connect(p)
+    c2 = ms.connect()
     assert ms.recurrence(c2, minimum=1)[0]["name"] == "SDMLX"
     c2.close()
 
@@ -247,14 +247,13 @@ def test_the_store_reopens_without_losing_anything(tmp_path):
 def test_a_newer_schema_is_refused_rather_than_migrated_backwards(tmp_path):
     """This is the one piece of state meant to outlive every other decision
     here, so a version it does not understand must not be written to."""
-    p = tmp_path / "d.db"
-    conn = ms.connect(p)
+    conn = ms.connect()
     conn.execute("UPDATE meta SET value = ? WHERE key='schema'",
                  (str(ms.SCHEMA_VERSION + 1),))
     conn.commit()
     conn.close()
     with pytest.raises(RuntimeError) as exc:
-        ms.connect(p)
+        ms.connect()
     assert "Refusing" in str(exc.value)
 
 

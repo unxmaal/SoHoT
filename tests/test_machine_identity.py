@@ -131,6 +131,7 @@ FK_TABLES = ("verdicts", "runs", "adoptions", "human_votes", "downloads",
              "future_facts")
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_the_migration_folds_duplicates_and_repoints_every_machine_id(tmp_path, on):
     path = tmp_path / "old.db"
     old = _old_store(path)
@@ -189,6 +190,7 @@ def test_a_receipt_with_no_os_joins_the_only_machine_with_that_board(tmp_path, o
     conn.close()
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_the_migration_takes_the_machine_out_of_fetch_details(tmp_path, on):
     _old_store(tmp_path / "old.db")
     conn = ms.connect(tmp_path / "old.db")
@@ -198,6 +200,7 @@ def test_the_migration_takes_the_machine_out_of_fetch_details(tmp_path, on):
     conn.close()
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_the_migration_imports_memory_limits_json(tmp_path, on):
     from harness import memory, paths
     _old_store(tmp_path / "old.db")

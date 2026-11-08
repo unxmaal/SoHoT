@@ -125,6 +125,7 @@ def _old_store(path, rows):
     conn.close()
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_the_migration_recovers_what_the_description_kept(tmp_path):
     path = tmp_path / "old.db"
     _old_store(path, [

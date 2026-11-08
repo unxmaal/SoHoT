@@ -116,6 +116,7 @@ def test_spend_refuses_the_live_home(monkeypatch, _home):
     assert cli.main(["canary", "spend", "--lane", "stt"]) == 1
 
 
+@pytest.mark.sqlite_store  # the canary's isolated home is a SQLite file (canary.child_env). #1631.
 def test_the_known_better_incumbent_is_adopted_by_hand_in_the_isolated_store(tmp_path):
     plant = next(p for p in canary.PLANTS if p.name == "stt-known-better")
     conn = ms.connect(tmp_path / "discovery.db")

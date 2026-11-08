@@ -116,7 +116,7 @@ def test_drift_is_an_audit_inventory_that_never_fails(tmp_path, monkeypatch):
     for var in (*runner_gaps._VENV_ENV.values(), *runner_gaps._CHECKOUT_VENVS.values()):
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setattr(sys, "platform", "darwin")
-    ms.connect(tmp_path / "discovery.db").close()
+    ms.connect().close()
     root = tmp_path / "venvs" / "diffusers-cuda"
     root.parent.mkdir()
     _venv(tmp_path).rename(root)

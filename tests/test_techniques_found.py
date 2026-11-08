@@ -90,6 +90,7 @@ def test_the_backfill_fills_only_what_the_store_already_knows(conn):
                    "hf/already": "technique"}
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_a_store_at_the_previous_schema_gains_the_column_and_its_backfill(tmp_path):
     """Through the migration chain, not the DDL: the column, then the data step."""
     from harness.memory_store.schema import _columns

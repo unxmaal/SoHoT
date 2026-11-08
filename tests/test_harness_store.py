@@ -197,6 +197,7 @@ SCHEMA_2 = """
 """
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_a_schema_2_store_gains_the_registry_column(old_store):
     """The ALTER a fresh database never reaches, from schema 2's own DDL. #442."""
     path = old_store(2, """

@@ -127,8 +127,8 @@ def test_a_runaway_is_a_candidate_failure_not_a_harness_one():
 def test_the_audit_reports_binding_knobs_without_failing(tmp_path, monkeypatch):
     from harness import live_audit
     conftest.stand_in_machine(monkeypatch, M)
-    path = tmp_path / "d.db"
-    c = ms.connect(path)
+    path = ms.db_path()
+    c = ms.connect()
     ms.remember_machine(c, dict(M))
     record(c, "code", ["max_tokens.code>32768"] * 5 + [""] * 5, at=__import__("time").time() - DAY)
     c.close()

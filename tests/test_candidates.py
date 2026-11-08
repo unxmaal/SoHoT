@@ -80,6 +80,7 @@ def _latest(conn):
         "ON v.id = (SELECT MAX(id) FROM verdicts WHERE proposal_id = p.id)")}
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_the_migration_merges_spec_named_proposals_into_the_table(old_store):
     raw = sqlite3.connect(old_store)
     before = _latest(raw)
@@ -106,6 +107,7 @@ def test_the_migration_merges_spec_named_proposals_into_the_table(old_store):
         conn.close()
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_a_moved_verdict_never_becomes_the_proposals_latest(old_store):
     """A fake's adopt row newer than the real proposal's last verdict stays on
     the candidate alone, so the migration decides nothing."""
@@ -162,6 +164,7 @@ def test_a_receipt_key_beats_the_computed_one():
         conn.close()
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_schema_37_folds_a_receipt_key_proposal_through_its_download(tmp_path):
     """#429: diffusers/sdxl-turbo had no specs map; the downloaded repo whose
     runner writes that key is the candidate, and its result rows link."""

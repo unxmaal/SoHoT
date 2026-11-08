@@ -1,12 +1,12 @@
 """#1001: an adopt limit decline after its one retest, the web method nulls, and the soh coherence repair."""
 import dataclasses
 import json
-import sqlite3
 
 import pytest
 
 from harness import adopt, coherence, holdout, live_audit, power, reasons
 from harness import memory_store as ms
+from harness import store as backend
 from harness.memory_store import transitions
 
 T = 1791000000.0
@@ -180,14 +180,13 @@ def test_soh_coherence_leaves_a_spent_screen_limit_to_a_person(store):
 
 def test_the_repair_is_read_only_through_soh_coherence_without_apply(tmp_path, lane_cases, capsys):
     from harness import cli
-    db = tmp_path / "s.db"
-    conn = ms.connect(db)
+    db = ms.db_path()
+    conn = ms.connect()
     _live_three(conn)
     conn.close()
     assert cli.main(["coherence", "--db", str(db)]) == 0
     assert "3 of 3" in capsys.readouterr().out
-    ro = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
-    ro.row_factory = sqlite3.Row
+    ro = backend.open_ro(db)
     try:
         assert len(live_audit._terminal_reason_coherent(ro)[0]) == 3
     finally:

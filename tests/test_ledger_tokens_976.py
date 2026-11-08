@@ -137,6 +137,7 @@ CREATE TABLE ledger_days (
 """
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_schema_77_drops_the_dollar_columns_and_keeps_each_day(old_store):
     path = old_store(76, ddl=LEDGER_DAYS_76, rows=(
         "INSERT INTO ledger_days (day, recorded_at, cloud_usd, tier, energy_kwh, detail) "

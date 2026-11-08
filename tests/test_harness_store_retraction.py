@@ -56,6 +56,7 @@ def _latest(conn, name):
         (name,)).fetchone()
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_a_decline_from_a_run_that_never_ran_is_retracted(home):
     conn = ms.connect(home / "d.db")
     _seed(conn, "org/never-ran", "declined", "does not beat the incumbent")
@@ -74,6 +75,7 @@ def test_a_decline_from_a_run_that_never_ran_is_retracted(home):
         conn.close()
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_a_genuine_loss_is_left_alone(home):
     """THE NEGATIVE CONTROL, and the one that matters: a candidate that ran
     and lost must stay settled, or the ladder never declines anything."""
@@ -91,6 +93,7 @@ def test_a_genuine_loss_is_left_alone(home):
         conn.close()
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_one_row_that_reached_a_model_makes_the_zero_the_candidates_own(home):
     """0 of 27 is not automatically ours. A candidate that produced output on
     any case was measured, and a bad score is its own."""
@@ -109,6 +112,7 @@ def test_one_row_that_reached_a_model_makes_the_zero_the_candidates_own(home):
         conn.close()
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_an_engine_receipt_key_still_finds_its_proposal(home):
     """The receipt key is `mflux/<id>-q8` and the proposal is the bare id:
     the candidates table maps one to the other. #407."""
@@ -129,6 +133,7 @@ def test_an_engine_receipt_key_still_finds_its_proposal(home):
         conn.close()
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_no_runs_directory_is_not_an_error(tmp_path, monkeypatch):
     monkeypatch.setattr("harness.paths.home", lambda: tmp_path / "absent")
     conn = ms.connect(tmp_path / "d.db")
@@ -141,6 +146,7 @@ def test_no_runs_directory_is_not_an_error(tmp_path, monkeypatch):
         conn.close()
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_a_short_name_cannot_match_every_key_that_spells_it(home):
     """The negative control for containment. A proposal with no `/` must not
     be retracted because some unrelated receipt key contains its letters."""

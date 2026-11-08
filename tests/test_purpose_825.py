@@ -63,6 +63,7 @@ CREATE TABLE gateway_requests (
 """
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_a_schema_67_store_gains_the_column_and_its_rows_are_unknown(old_store):
     rows = ("INSERT INTO gateway_requests (at, client) VALUES (1.0, 'Python-urllib/3.12');"
             "INSERT INTO gateway_requests (at, client) VALUES (2.0, 'python-httpx/0.28.1');")

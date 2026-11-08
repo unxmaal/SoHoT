@@ -167,6 +167,7 @@ OLD_RUNS_RESULTS = """
 """
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_the_migration_splits_artifact_into_output_and_artifact_path(old_store, tmp_path):
     img = tmp_path / "m--a#1.png"
     img.write_bytes(b"png")

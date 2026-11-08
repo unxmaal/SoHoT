@@ -1,10 +1,11 @@
 """The invariants a migrated store must hold, each seen to fail on a broken store. #478."""
-import sqlite3
 
 import pytest
 
 from harness import memory_store as ms
 from harness import migration_check as mc
+from harness import store
+from tests import conftest
 
 
 @pytest.fixture
@@ -134,13 +135,12 @@ def test_counts_cover_every_table(head):
 
 
 def test_invariants_never_write(tmp_path):
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
     conn.close()
-    before = (tmp_path / "s.db").read_bytes()
-    ro = sqlite3.connect(f"file:{tmp_path / 's.db'}?mode=ro", uri=True)
-    ro.row_factory = sqlite3.Row
+    before = conftest.store_state()
+    ro = store.open_ro()
     try:
         assert all(c.ok for c in mc.invariants(ro))
     finally:
         ro.close()
-    assert (tmp_path / "s.db").read_bytes() == before
+    assert conftest.store_state() == before

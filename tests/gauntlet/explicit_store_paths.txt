@@ -1,101 +1,16 @@
 # memory_store.connect(<path>) in a test outside a sqlite_store test runs SQLite under check-postgres (#1631): key, then why. #1631 = still to move.
-tests/test_adopt_retest_1001.py::test_the_repair_is_read_only_through_soh_coherence_without_apply #1631
-tests/test_adopt_scope.py::_legacy_store #1631
-tests/test_adopt_scope.py::test_the_migration_falls_back_to_the_judged_runs_machine #1631
-tests/test_adopt_scope.py::test_the_migration_leaves_measured_adoptions_alone #1631
-tests/test_adopt_scope.py::test_the_migration_records_a_guess_when_nothing_names_the_machine #1631
-tests/test_adopt_scope.py::test_the_migration_scopes_a_by_hand_adoption_to_the_machine_that_voted #1631
-tests/test_adoptions.py::test_the_migration_backfills_adopt_verdicts #1631
-tests/test_arms_995.py::test_soh_repo_report_arms_and_plan_read_the_store #1631
-tests/test_baseline_687.py::test_the_store_file_is_byte_identical_after_a_run #1631
-tests/test_canary_919.py::test_the_known_better_incumbent_is_adopted_by_hand_in_the_isolated_store #1631
-tests/test_canary_stt_1531.py::_child.run #1631
-tests/test_canary_stt_1531.py::test_soh_canary_check_judges_a_pair_on_todays_holdout #1631
-tests/test_canary_stt_1531.py::test_the_separation_check_reads_the_holdout_not_every_case #1631
-tests/test_candidates.py::test_a_moved_verdict_never_becomes_the_proposals_latest #1631
-tests/test_candidates.py::test_schema_37_folds_a_receipt_key_proposal_through_its_download #1631
-tests/test_candidates.py::test_the_migration_merges_spec_named_proposals_into_the_table #1631
-tests/test_coherence_991.py::test_soh_coherence_is_read_only_without_apply #1631
-tests/test_context_store.py::test_an_older_store_gains_the_columns #1631
-tests/test_crowd_pages_764.py::test_discover_why_reads_the_store_sightings_read_only #1631
-tests/test_decide_lane.py::test_the_migration_gives_a_queued_laneless_card_its_lane #1631
-tests/test_delegations.py::test_a_schema_67_store_gains_the_table_and_column_on_connect #1631
-tests/test_gguf_route.py::test_fetch_downloads_one_gguf_file_and_records_it #1631
-tests/test_harness_feeds.py::test_reading_a_source_stamps_the_store_it_was_given #1631
-tests/test_harness_fetching_budget.py::test_a_candidate_already_settled_by_a_full_disk_is_requeued_by_the_migration #1631
-tests/test_harness_fetching_budget.py::test_a_runtime_refusal_at_fetch_is_not_mistaken_for_a_full_disk #1631
-tests/test_harness_memory_store.py::test_a_newer_schema_is_refused_rather_than_migrated_backwards #1631
-tests/test_harness_memory_store.py::test_schema_38_names_the_machine_only_where_the_store_proves_it #1631
-tests/test_harness_memory_store.py::test_the_store_reopens_without_losing_anything #1631
-tests/test_harness_registry.py::test_a_name_with_no_evidence_is_left_unknown_rather_than_guessed #1631
-tests/test_harness_registry.py::test_a_store_written_before_descriptions_existed_still_opens #1631
-tests/test_harness_registry.py::test_an_existing_store_is_backfilled_from_evidence_it_already_holds #1631
-tests/test_harness_store.py::test_a_schema_2_store_gains_the_registry_column #1631
-tests/test_harness_store_retraction.py::_migrate #1631
-tests/test_harness_store_retraction.py::test_a_decline_from_a_run_that_never_ran_is_retracted #1631
-tests/test_harness_store_retraction.py::test_a_genuine_loss_is_left_alone #1631
-tests/test_harness_store_retraction.py::test_a_short_name_cannot_match_every_key_that_spells_it #1631
-tests/test_harness_store_retraction.py::test_an_engine_receipt_key_still_finds_its_proposal #1631
-tests/test_harness_store_retraction.py::test_no_runs_directory_is_not_an_error #1631
-tests/test_harness_store_retraction.py::test_one_row_that_reached_a_model_makes_the_zero_the_candidates_own #1631
-tests/test_knob_binding.py::test_the_audit_reports_binding_knobs_without_failing #1631
-tests/test_lane_feed_1200.py::test_a_lane_with_no_runs_is_a_valid_document_with_empty_lists #1631
-tests/test_laya_decide_970.py::_store #1631
-tests/test_ledger_tokens_976.py::test_schema_77_drops_the_dollar_columns_and_keeps_each_day #1631
-tests/test_length_refusal_reopen_858.py::_migrated #1631
-tests/test_lent_store_1426.py::copy #1631
-tests/test_limit_cuts_1087_store.py::test_a_statement_the_lock_wait_gives_up_on_is_a_cut_and_a_quick_one_is_not #1631
-tests/test_live_audit.py::_requests #1631
-tests/test_live_audit.py::test_a_few_errors_on_little_traffic_say_nothing #1631
-tests/test_live_audit.py::test_a_reference_model_adopted_for_a_lane_fails #1631
-tests/test_live_audit.py::test_an_alias_whose_requests_mostly_fail_fails #1631
-tests/test_live_audit.py::test_an_older_store_is_reported_not_migrated #1631
-tests/test_live_store_guard.py::test_an_explicit_store_path_migrates_as_before #1631
-tests/test_load_log_953.py::test_the_load_log_command_is_read_only_without_apply #1631
-tests/test_loop_end_to_end.py::test_an_adoption_survives_a_new_connection #1631
-tests/test_machine_identity.py::_old_store #1631
-tests/test_machine_identity.py::test_the_migration_folds_duplicates_and_repoints_every_machine_id #1631
-tests/test_machine_identity.py::test_the_migration_imports_memory_limits_json #1631
-tests/test_machine_identity.py::test_the_migration_takes_the_machine_out_of_fetch_details #1631
-tests/test_measure_gain_1315.py::test_measure_order_reads_only_the_store_it_is_given #1631
-tests/test_migration_check.py::test_invariants_never_write #1631
-tests/test_migration_reentry.py::_behind #1631
-tests/test_migration_reentry.py::test_a_failed_migration_leaves_nothing_marked_migrating #1631
-tests/test_migration_reentry.py::test_a_step_that_asks_the_default_store_gets_the_one_migrating #1631
-tests/test_migration_reentry.py::test_a_step_that_asks_the_default_store_gets_the_one_migrating.step #1631
-tests/test_migration_reentry.py::test_another_store_opens_normally_during_a_migration #1631
-tests/test_migration_reentry.py::test_another_store_opens_normally_during_a_migration.step #1631
-tests/test_migration_reentry.py::test_the_migrating_connection_is_not_closed_by_a_borrower #1631
-tests/test_module_layout.py::migrated_dump #1631
-tests/test_purpose_825.py::test_a_schema_67_store_gains_the_column_and_its_rows_are_unknown #1631
-tests/test_reply_cap_1352.py::conn #1631
-tests/test_repo_report.py::test_soh_repo_report_reads_the_store #1631
-tests/test_repo_routing.py::test_routing_reads_the_store_read_only_and_writes_nothing #1631
-tests/test_results_output_split.py::test_the_migration_splits_artifact_into_output_and_artifact_path #1631
-tests/test_served_readonly_1247.py::path #1631
-tests/test_served_readonly_1247.py::test_a_renamed_model_resolves_to_its_old_row_read_only #1631
-tests/test_served_readonly_1247.py::test_a_served_lookup_makes_no_writes #1631
-tests/test_served_readonly_1247.py::test_served_answers_every_lane_on_a_read_only_store #1631
-tests/test_store_card_facts.py::_old_store #1631
-tests/test_store_card_facts.py::test_the_migration_recovers_what_the_description_kept #1631
-tests/test_store_dead_columns.py::_schema_35_store #1631
-tests/test_store_dead_columns.py::test_an_sqlite_that_cannot_drop_keeps_the_columns_and_still_works #1631
-tests/test_store_dead_columns.py::test_the_migration_drops_them_and_keeps_what_they_held #1631
-tests/test_store_machines.py::test_a_judge_using_the_word_workflow_is_not_a_verdict_about_one #1631
-tests/test_store_machines.py::test_an_old_store_is_attributed_and_says_it_was_inferred #1631
-tests/test_store_postgres_1507.py::test_an_older_sqlite_copy_migrates_as_sqlite_on_a_postgres_home #1631
-tests/test_store_postgres_1507.py::test_on_a_postgres_home_any_other_path_is_a_sqlite_file #1631
-tests/test_store_retest.py::test_backfill_schedules_existing_rejections_from_their_decision #1631
-tests/test_store_size.py::test_an_older_store_is_backfilled_on_connect #1631
-tests/test_store_sources.py::test_an_imported_name_no_source_carries_is_retired_not_enabled #1631
-tests/test_store_sources.py::test_an_older_store_imports_state_scores_and_lanes #1631
-tests/test_store_sources.py::test_the_acestep_feed_is_retired_with_its_reason #1631
-tests/test_store_sources.py::test_the_import_is_idempotent #1631
-tests/test_store_state.py::test_schema_24_backfills_the_state_from_the_newest_row #1631
-tests/test_store_state.py::test_state_is_the_fold_of_the_accepted_transitions #1631
-tests/test_sweep_guard_1000.py::test_the_audit_warns_about_a_sweep_on_moved_code #1631
-tests/test_techniques_found.py::test_a_store_at_the_previous_schema_gains_the_column_and_its_backfill #1631
-tests/test_unranked_weight_954.py::store #1631
-tests/test_venv_drift_1032.py::test_drift_is_an_audit_inventory_that_never_fails #1631
-tests/test_venv_drift_1037.py::test_the_audit_reads_the_nimble_venv_beside_its_checkout #1631
-tests/test_verdict_reasons.py::test_the_backfill_classifies_every_old_row_and_reopens_only_ours #1631
+tests/test_adopt_scope.py::_legacy_store helper of sqlite_store tests: an old-schema store
+tests/test_canary_stt_1531.py::_child.run stands in for the canary child, whose isolated home is a SQLite file (canary.child_env)
+tests/test_harness_feeds.py::test_reading_a_source_stamps_the_store_it_was_given the subject is a store handed in that is not this home's (#188)
+tests/test_harness_store_retraction.py::_migrate helper of sqlite_store tests: an old-schema store
+tests/test_lane_feed_1200.py::test_a_lane_with_no_runs_is_a_valid_document_with_empty_lists a second, empty store beside this home's
+tests/test_length_refusal_reopen_858.py::_migrated helper of sqlite_store tests: an old-schema store
+tests/test_lent_store_1426.py::copy a --store copy, a SQLite file whatever this home's backend
+tests/test_machine_identity.py::_old_store helper of sqlite_store tests: an old-schema store
+tests/test_measure_gain_1315.py::test_measure_order_reads_only_the_store_it_is_given a --store copy, a SQLite file whatever this home's backend
+tests/test_migration_reentry.py::test_another_store_opens_normally_during_a_migration.step a second store opened while this home's migrates
+tests/test_module_layout.py::migrated_dump helper of sqlite_store tests: a golden SQLite store
+tests/test_store_card_facts.py::_old_store helper of sqlite_store tests: an old-schema store
+tests/test_store_dead_columns.py::_schema_35_store helper of sqlite_store tests: an old-schema store
+tests/test_store_postgres_1507.py::test_an_older_sqlite_copy_migrates_as_sqlite_on_a_postgres_home the subject: a copy on a Postgres home is a SQLite file
+tests/test_store_postgres_1507.py::test_on_a_postgres_home_any_other_path_is_a_sqlite_file the subject: a copy on a Postgres home is a SQLite file

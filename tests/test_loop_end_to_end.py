@@ -99,8 +99,7 @@ def test_a_loser_is_recorded_so_it_is_not_re_proposed(store):
 def test_an_adoption_survives_a_new_connection(tmp_path):
     """A STORE FACT, not an edit to a source file. If the answer lived in
     memory the lane would forget it the moment the loop exited."""
-    path = tmp_path / "s.db"
-    conn = ms.connect(path)
+    conn = ms.connect()
     # 27 cases, not 9. Zero lost against five gained is p=0.06 and the gate
     # correctly refuses it: a clean sweep of nine is not yet significant. The
     # fixture has to clear the bar the product enforces, not the other way
@@ -112,7 +111,7 @@ def test_an_adoption_survives_a_new_connection(tmp_path):
         rows("local-large", 6, 27) + rows("org/better-svg", 27, 27)))
     conn.close()
 
-    again = ms.connect(path)
+    again = ms.connect()
     try:
         assert adopt.default_for("svg", "local-large", conn=again) == \
             "org/better-svg"

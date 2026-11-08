@@ -99,7 +99,7 @@ def test_inspect_still_sums_a_safetensors_repo():
 # --- fetch downloads one file ----------------------------------------------
 
 def test_fetch_downloads_one_gguf_file_and_records_it(home, monkeypatch):
-    db = ms.connect(home / "d.db")
+    db = ms.connect()
     ms.record(db, ms.Seen(name="org/Model-4B-GGUF", source="t",
                           resolved="org/Model-4B-GGUF", kind="weights",
                           lane="code"))

@@ -94,6 +94,7 @@ def test_callers_with_their_own_limit_name_their_own_site(monkeypatch):
                     P + "judgeable_total->ms.judgeable(limit)"]
 
 
+@pytest.mark.sqlite_store  # SQLite's busy_timeout lock wait is the subject. #1631.
 def test_a_statement_the_lock_wait_gives_up_on_is_a_cut_and_a_quick_one_is_not(tmp_path, monkeypatch):
     from harness.memory_store import connection
     monkeypatch.setattr(connection, "BUSY_TIMEOUT_SECONDS", 0.05)

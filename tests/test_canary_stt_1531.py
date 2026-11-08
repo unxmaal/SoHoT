@@ -112,7 +112,7 @@ def test_a_separated_pair_the_gate_calls_underpowered_is_still_a_miss(monkeypatc
 
 
 def test_the_separation_check_reads_the_holdout_not_every_case():
-    conn = ms.connect(":memory:")
+    conn = ms.connect()
     try:
         _measured(conn, OLD_BETTER)
         old = canary.apart(conn, OLD_BETTER, SPLIT)
@@ -123,7 +123,7 @@ def test_the_separation_check_reads_the_holdout_not_every_case():
 
 
 def test_soh_canary_check_judges_a_pair_on_todays_holdout():
-    conn = ms.connect(":memory:")
+    conn = ms.connect()
     try:
         _measured(conn, OLD_BETTER)
         got = canary.separable(conn, OLD_BETTER, SPLIT)

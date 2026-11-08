@@ -487,6 +487,7 @@ OLD = (
 )
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_the_backfill_classifies_every_old_row_and_reopens_only_ours(tmp_path):
     db = tmp_path / "old.db"
     conn = ms.connect(db)

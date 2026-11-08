@@ -248,6 +248,7 @@ def _files(home: Path) -> None:
         encoding="utf-8")
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_an_older_store_imports_state_scores_and_lanes(tmp_path, _home):
     _files(_home)
     path = tmp_path / "old.db"
@@ -271,6 +272,7 @@ def test_an_older_store_imports_state_scores_and_lanes(tmp_path, _home):
     assert (_home / "discovery-state.json").exists()
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_the_import_is_idempotent(tmp_path, _home):
     _files(_home)
     path = tmp_path / "old.db"
@@ -300,6 +302,7 @@ def test_a_fresh_store_with_no_files_imports_nothing(store):
     assert store.execute("SELECT COUNT(*) FROM sources").fetchone()[0] == 0
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_an_imported_name_no_source_carries_is_retired_not_enabled(tmp_path, _home):
     """#625: a probe-only name came in enabled and sat unread for weeks."""
     _files(_home)
@@ -313,6 +316,7 @@ def test_an_imported_name_no_source_carries_is_retired_not_enabled(tmp_path, _ho
     assert row["enabled"] == 0 and row["retired"]
 
 
+@pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
 def test_the_acestep_feed_is_retired_with_its_reason(tmp_path):
     """Never in DEFAULT_SOURCES, so no sweep reads it; RULE #281 says why (#625)."""
     path = tmp_path / "d.db"

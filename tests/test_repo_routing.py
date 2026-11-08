@@ -7,6 +7,8 @@ import random
 import pytest
 
 from evals import repo_routing as R
+from harness import store
+from tests import conftest
 
 #: P resolved; C applied, tests ran, wrong; B applied, pass_to_pass broken; I did not apply; E harness never ran.
 CODES = {"P": (True, True, False, ""), "C": (False, True, False, "content_failed"),
@@ -99,11 +101,10 @@ def test_spec_local_routes_by_the_variant_alone():
 
 
 def test_routing_reads_the_store_read_only_and_writes_nothing(store_run, tmp_path, capsys):
-    import sqlite3
 
     from harness import cli
     from harness import memory_store as ms
-    conn = ms.connect(tmp_path / "s.db")
+    conn = ms.connect()
 
     def rows(cand, codes):
         return [{"candidate": cand, "case_id": f"t{i}-spec", "passed": CODES[c][0], "failure_class": CODES[c][3],
@@ -113,14 +114,17 @@ def test_routing_reads_the_store_read_only_and_writes_nothing(store_run, tmp_pat
     local = store_run("local", "repo", rows=rows("ornith", "PIBC"), conn=conn)
     cloud = store_run("cloud", "repo", rows=rows("opus", "PPPC"), conn=conn)
     conn.close()
-    path = tmp_path / "s.db"
-    before = path.read_bytes()
+    path = ms.db_path()
+    before = conftest.store_state(path)
     assert cli.main(["repo-route", "--json", "--local", str(local), "--cloud", str(cloud), "--store", str(path),
                      "--cases", str(tmp_path)]) == 0
     got = json.loads(capsys.readouterr().out)
-    assert path.read_bytes() == before
+    assert conftest.store_state(path) == before
     assert got["executors"] == {"local": {"resolved": 1, "n": 4}, "cloud": {"resolved": 3, "n": 4}}
     assert got["gates"]["local"]["visible"]["pass"] == 2 and got["policies"]["gate-visible"]["resolved"] == 3
-    with sqlite3.connect(path) as c:
+    c = store.open_ro(path)
+    try:
         assert c.execute("SELECT count(*) FROM results").fetchone()[0] == 8
+    finally:
+        c.close()
     assert cli.main(["repo-route", "--local", "999", "--cloud", str(cloud), "--store", str(path)]) == 1

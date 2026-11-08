@@ -1,6 +1,4 @@
 """What a lane serves is looked up without writing, so read-only callers work on a mode=ro store. #1247."""
-import hashlib
-
 import pytest
 
 from harness import adopt, candidates, gateway, live_audit, report, reverify, runs, screen, sweeps, winners
@@ -18,8 +16,8 @@ M2 = {"fingerprint": "Mac14,12/macOS/arm64", "hw_model": "Mac14,12",
 @pytest.fixture
 def path(tmp_path, monkeypatch):
     conftest.stand_in_machine(monkeypatch, M2)
-    p = tmp_path / "d.db"
-    conn = ms.connect(p)
+    p = ms.db_path()
+    conn = ms.connect()
     ms.remember_machine(conn, M2)
     rid = runs.record(conn, "runs/r1-code", {
         "receipt": {"modality": "code", "tier": "measure"}, "environment": {"versions": M2["versions"]},
@@ -38,12 +36,8 @@ def _read_only(p):
     return live_audit.open_readonly(p)
 
 
-def _bytes(p):
-    return hashlib.sha256(b"".join(f.read_bytes() for f in sorted(p.parent.glob(p.name + "*")))).hexdigest()
-
-
 def test_served_answers_every_lane_on_a_read_only_store(path):
-    rw = ms.connect(path)
+    rw = ms.connect()
     want_served, want_ids = reverify.served(rw), winners.served_ids(rw)
     rw.close()
     ro = _read_only(path)
@@ -57,8 +51,8 @@ def test_served_answers_every_lane_on_a_read_only_store(path):
 
 
 def test_a_served_lookup_makes_no_writes(path):
-    conn = ms.connect(path)
-    before, file_before = conn.total_changes, _bytes(path)
+    conn = ms.connect()
+    before = conftest.store_state(path)
     candidates.served(conn, "q3-4b", lane="code")
     reverify.served(conn)
     winners.served_ids(conn)
@@ -66,8 +60,7 @@ def test_a_served_lookup_makes_no_writes(path):
     sweeps.plan(conn, now=NOW)
     sweeps.check(conn, now=NOW, dry_run=True)
     reverify.check(conn, now=NOW, facts=dict(M2), lane="", dry_run=True)
-    assert conn.total_changes == before
-    assert _bytes(path) == file_before
+    assert not conn.in_transaction and conftest.store_state(path) == before
     conn.close()
 
 
@@ -83,8 +76,8 @@ def test_every_read_only_caller_runs_on_a_mode_ro_store(path):
 
 
 def test_a_renamed_model_resolves_to_its_old_row_read_only(tmp_path):
-    p = tmp_path / "d.db"
-    conn = ms.connect(p)
+    p = ms.db_path()
+    conn = ms.connect()
     new_spec = "mlx-community/Qwen3-4B-Instruct-2507-4bit"
     runs.record(conn, "runs/old", {"generated": "2026-10-01T10:00:00",
                                    "receipt": {"modality": "code", "tier": "measure"}, "environment": {},
