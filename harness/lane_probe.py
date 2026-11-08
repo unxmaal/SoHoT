@@ -316,7 +316,10 @@ def prepare(lane: str, sender: Sender, resolve=None, resident=None, busy=None, h
     if sender.in_flight(lane):
         return done(SKIPPED, "the previous probe of this lane has not returned")
     # This machine's lock says nothing about a server on another host, as delegate._gate holds.
-    held = (busy or delegate.busy)() if serving.loopback(row["upstream"]) else ""
+    try:
+        held = (busy or (lambda: delegate.held_now("lane probe")))() if serving.loopback(row["upstream"]) else ""
+    except delegate.Refused as exc:
+        return done(SKIPPED, str(exc))
     if held:
         return done(SKIPPED, f"the machine is held: {held}")
     loaded, exc = (resident or _resident)(where)

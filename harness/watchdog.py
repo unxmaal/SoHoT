@@ -279,7 +279,7 @@ class Probes:
         from harness import delegate, exclusive
         try:
             return exclusive.holder() or {"kind": "unknown"} if delegate.busy() else {}
-        except OSError:
+        except (OSError, exclusive.StoreDown):
             return None
 
     def cloud(self) -> set:
@@ -287,7 +287,7 @@ class Probes:
         from harness import exclusive
         try:
             held = exclusive.holders()
-        except OSError:
+        except (OSError, exclusive.StoreDown):
             return set()
         gpu = {h.get(k) for h in held if h["lock"] == "gpu" for k in ("pgid", "pid")}
         return {h.get(k) for h in held if h["lock"] == "cloud" for k in ("pgid", "pid")} - gpu - {None}

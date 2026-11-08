@@ -196,10 +196,12 @@ def test_decide_records_its_call_too(fake, gateway_id, conn):
 
 
 def test_a_store_that_cannot_be_written_never_fails_the_delegation(fake, monkeypatch, capsys):
-    from harness import delegate
+    from harness import delegate, exclusive
 
     def broken():
         raise RuntimeError("store is locked")
+    # The gpu lease still reads; a store that cannot be reached at all refuses the call (#1648).
+    monkeypatch.setattr(exclusive, "_conn", ms.connect)
     monkeypatch.setattr(ms, "connect", broken)
     got = delegate.complete("code", "write add", delegated=True)
     assert got["text"] and got["call_id"].startswith("local-")

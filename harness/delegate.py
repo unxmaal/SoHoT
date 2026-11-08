@@ -99,6 +99,14 @@ def busy() -> str:
     return "" if not record or _mine(record) else exclusive.describe(record)
 
 
+def held_now(who: str = "delegate") -> str:
+    """busy() for a call about to load a model: Refused, the reason named, when the store is down. #1648."""
+    try:
+        return busy()
+    except exclusive.StoreDown as exc:
+        raise Refused(str(exclusive.refuse(who, exc))) from exc
+
+
 def _preflight(*texts: str, max_tokens: int = 1) -> None:
     size = sum(len(t or "") for t in texts)
     if size > MAX_PROMPT_CHARS:
@@ -282,7 +290,7 @@ def _gate(where: serving.Route) -> bool | None:
     # This machine's lock and pressure say nothing about a server on another host.
     if base and not serving.loopback(base):
         return None
-    held = busy()
+    held = held_now()
     if not held:
         return None
     holder = _holder(held)
@@ -310,7 +318,7 @@ def _turn(where: serving.Route, lane: str = "", clock=time.monotonic, sleep=time
     cut it runs again, once the wait reaches WAIT_S or the case is CUT_FACTOR past its plan; CUT_WAIT_S on, refuse. #1556."""
     from harness import serve_lease
     started = clock()
-    held = busy()
+    held = held_now()
     if not held:
         return {"resident": None, "waited": 0.0, "holder": "", "beside": "", "cut": False}
     holder = _holder(held)
@@ -327,7 +335,7 @@ def _turn(where: serving.Route, lane: str = "", clock=time.monotonic, sleep=time
     while True:
         found = serve_lease.yielders()
         waited = clock() - started
-        if not busy() or serve_lease.yielded(found):
+        if not held_now() or serve_lease.yielded(found):
             # A yielded eval sits between cases and keeps its model; loading the lane's model runs beside no case.
             return {"resident": False if found else resident, "waited": waited, "holder": holder,
                     "beside": "", "cut": cut_at is not None}

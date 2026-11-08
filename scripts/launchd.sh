@@ -732,13 +732,13 @@ case "${1:-}" in
     # wait for any model-loading run to finish first. #314.
     if [ "${LH_GPU_LOCK_HELD:-}" != 1 ]; then
       sweep_guard
-      exec "$REPO/scripts/with-gpu-lock" "$0" install
+      exec "$REPO/scripts/with-gpu-lock" --repair "$0" install
     fi
     install_units ;;
   reinstall)
     if [ "${LH_GPU_LOCK_HELD:-}" != 1 ]; then
       sweep_guard
-      exec "$REPO/scripts/with-gpu-lock" "$0" reinstall
+      exec "$REPO/scripts/with-gpu-lock" --repair "$0" reinstall
     fi
     install_units reinstall ;;
   restart)

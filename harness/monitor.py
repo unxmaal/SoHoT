@@ -52,7 +52,8 @@ LABEL = "com.unxmaal.localharness.monit"
 TITLE = "SoHoT monit"
 RECOVERED = "recovered"
 DISK_KINDS = ("disk", "disk-pause")
-KINDS = DISK_KINDS + ("volume", "volume-low", "memory", "service", "deploy", "store", "store-backup", RECOVERED)
+KINDS = DISK_KINDS + ("volume", "volume-low", "memory", "service", "deploy", "store", "store-backup", "gpu-refused",
+                           RECOVERED)
 #: (monit name, launchd unit, port variable, the launcher's default port): read as scripts/serve-*.sh read them.
 SERVICES = (("gateway", "gateway", "GATEWAY_PORT", 4000), ("mlx", "mlx", "MLX_PORT", 8081),
             ("tts", "tts", "TTS_PORT", 8890))
@@ -320,12 +321,25 @@ def summary(monit: str, rc: Path, run=subprocess.run) -> tuple[bool, list[str]]:
     return got.returncode == 0, lines
 
 
+def _refused() -> str:
+    """The standing gpu refusal of a store outage as a problem line, '' when none stands. #1648."""
+    from harness import exclusive
+    got = exclusive.refusal()
+    if not got:
+        return ""
+    when = time.strftime("%Y-%m-%d %H:%M", time.localtime(float(got.get("at") or 0)))
+    return f"gpu work refused since {when}: {got.get('reason') or 'the store is unreachable'}"
+
+
 def status(run=subprocess.run, which=shutil.which, expected: str | None = None) -> dict:
     """Is monit installed, running and on the config install would write now; is the webhook set."""
     monit, rc = which("monit"), rc_path()
     out = {"installed": bool(monit), "rc": str(rc), "current": None, "running": False, "summary": [],
            "webhook": webhook_set(), "problems": []}
     probs = out["problems"]
+    refused = _refused()
+    if refused:
+        probs.append(refused)
     if not monit:
         probs.append("monit is not installed (brew install monit, then soh monitor install): nothing watches "
                      "the disk, memory pressure or the models volume")

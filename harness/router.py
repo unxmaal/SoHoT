@@ -231,7 +231,13 @@ def release(stems, why: str, *, get=None, post=None, keep=None, say=print, base:
         say(f"  router: kept {', '.join(wanted)}: the lane defaults could not be read ({exc})")
         return []
     gone = []
-    with (contextlib.nullcontext(True) if proven_idle else _no_run_in_flight()) as free:
+    from harness import exclusive
+    with contextlib.ExitStack() as stack:
+        try:
+            free = True if proven_idle else stack.enter_context(_no_run_in_flight())
+        except exclusive.StoreDown as exc:
+            say(f"  router: kept {', '.join(wanted)}: {exc}")
+            return []
         for stem in wanted:
             if stem in keepers:
                 continue

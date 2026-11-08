@@ -377,9 +377,13 @@ def main(argv=None) -> int:
               file=sys.stderr, flush=True)
 
     # After any run that loads models, so a restart never lands mid-measurement. #319.
-    with exclusive.held("external", announce=log, deadline_s=deadline_s(a.max_wait_s, DRAIN_S)):
-        switch(requested_at=a.requested_at, idle_s=a.idle_s,
-               max_wait_s=a.max_wait_s, log=log)
+    try:
+        with exclusive.held("external", announce=log, deadline_s=deadline_s(a.max_wait_s, DRAIN_S)):
+            switch(requested_at=a.requested_at, idle_s=a.idle_s,
+                   max_wait_s=a.max_wait_s, log=log)
+    except exclusive.StoreDown as exc:
+        log(str(exc))
+        return 1
     return 0
 
 

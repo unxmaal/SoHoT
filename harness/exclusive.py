@@ -27,6 +27,8 @@ from harness import paths
 #: LOCK is the truth, this is only how a waiter says what it is waiting behind.
 HOLDER = "generation.holder"
 LOCK = "generation.lock"
+#: Written at the first gpu refusal while the store is down, removed at the next store connect. #1648.
+REFUSED = "gpu.refused"
 
 #: Which lanes need the whole machine, declared once rather than tested for at
 #: each call site.
@@ -43,7 +45,9 @@ LOCK = "generation.lock"
 EXCLUSIVE = {"image", "video"}
 #: Batch runs that load models on any engine, and other projects through
 #: scripts/with-gpu-lock. A lane prompt is not one of these. #314.
-BATCH = {"eval", "ramp", "external", "chaos"}
+BATCH = {"eval", "ramp", "external", "chaos", "install"}
+#: Kinds that run under the flock alone when the store is down: install and deploy are how the store is repaired. #1648.
+REPAIR = {"install"}
 #: Batch kinds that reach their models through the gateway, so they load the serving machine, not this one. #769.
 GATEWAY_BATCH = {"eval"}
 #: Batch kinds that load no model anywhere this machine serves: an eval whose every candidate is hosted. #1135.
@@ -145,6 +149,52 @@ def _conn():
     return ms.connect()
 
 
+class StoreDown(RuntimeError):
+    """The store holding the gpu lease cannot be reached, so GPU work is refused. #1648."""
+
+
+def refused_path() -> Path:
+    return _dir() / REFUSED
+
+
+def refusal() -> dict:
+    """The first gpu refusal of the current store outage, {} when none stands. #1648."""
+    return _read(refused_path()) if refused_path().exists() else {}
+
+
+def _alert(kind: str, message: str) -> None:
+    from harness import monitor
+    with contextlib.suppress(Exception):
+        monitor.alert(kind, {"MONIT_SERVICE": "gpu", "MONIT_DESCRIPTION": message})
+
+
+def refuse(who: str, exc: Exception) -> StoreDown:
+    """The refusal to raise for `who`; the first of an outage is recorded and alerted, once. #1648."""
+    reason = f"{who} refused: {exc}"
+    try:
+        fd = os.open(refused_path(), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+    except OSError:
+        return StoreDown(reason)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        json.dump({"at": time.time(), "who": who, "pid": os.getpid(), "reason": reason}, fh)
+    _alert("gpu-refused", reason)
+    return StoreDown(reason)
+
+
+def _store():
+    """A store connection; StoreDown naming why when none opens. A connect ends a recorded refusal. #1648."""
+    try:
+        conn = _conn()
+    except Exception as exc:  # noqa: BLE001 - any failure to open is the store being unreachable
+        raise StoreDown(f"the store is unreachable, so no gpu lease can be taken or checked: {exc}") from exc
+    try:
+        os.unlink(refused_path())
+    except OSError:
+        return conn
+    _alert("recovered", "the store is reachable again; gpu work is no longer refused")
+    return conn
+
+
 def _holder_alive(h: dict) -> bool:
     """Whether a gpu lease's holder lives: its process, or for a queued job's, the job's own process. #1619."""
     from harness import workqueue as wq
@@ -176,11 +226,8 @@ def _own(conn) -> dict | None:
 
 
 def gpu_leases() -> int:
-    """How many gpu leases live on this machine; the fallback flock's state when the store will not open. #1619."""
-    try:
-        conn = _conn()
-    except Exception:  # noqa: BLE001 - with no store, the fallback flock is what holds the machine
-        return int(_taken(lock_path()))
+    """How many gpu leases live on this machine; StoreDown when the store will not open. #1619, #1648."""
+    conn = _store()
     try:
         leases = _gpu_leases(conn)
     finally:
@@ -196,10 +243,7 @@ def _outside(leases: list[dict]) -> bool:
 def gpu_holder() -> dict:
     """The holder record of the model-loading process on this machine's gpu lease, {} when none holds it. #1619."""
     from harness import workqueue as wq
-    try:
-        conn = _conn()
-    except Exception:  # noqa: BLE001 - with no store, the fallback flock is what holds the machine
-        return holder() if _taken(lock_path()) else {}
+    conn = _store()
     try:
         leases = _gpu_leases(conn)
     finally:
@@ -270,13 +314,15 @@ def _gpu(kind: str, announce, poll: float, wait: bool = True):
 
 @contextlib.contextmanager
 def _lease(kind: str, announce, poll: float, wait: bool = True):
-    """This machine's gpu lease for `kind`: its queued job's own, else one taken, waiting while it is held. #1619."""
+    """This machine's gpu lease for `kind`: its job's own, else one taken, waiting; store down, only REPAIR runs. #1648."""
     from harness import item_lease, resources
     try:
-        conn = _conn()
-    except Exception as exc:  # noqa: BLE001 - the flock still holds this machine against another with no store
+        conn = _store()
+    except StoreDown as exc:
+        if kind not in REPAIR:
+            raise refuse(kind, exc) from exc
         if announce:
-            announce(f"no gpu lease (the store would not open: {exc}); holding the local lock only")
+            announce(f"no gpu lease ({exc}); {kind} holds the local lock only")
         yield True, False
         return
     try:
@@ -295,7 +341,11 @@ def _lease(kind: str, announce, poll: float, wait: bool = True):
             if got is not None or not wait:
                 break
             waited = True
-            who = describe(gpu_holder()) if gpu_holder() else "; ".join(
+            try:
+                rec = gpu_holder()
+            except StoreDown as exc:
+                raise refuse(kind, exc) from exc
+            who = describe(rec) if rec else "; ".join(
                 item_lease.line(h) for h in _gpu_leases(conn)) or "a gpu lease"
             if announce and who.split(" for ")[0] != said:
                 announce(f"waiting for {who} to finish")
