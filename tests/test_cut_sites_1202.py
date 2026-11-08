@@ -56,3 +56,43 @@ def test_a_router_request_that_times_out_records_its_cut(monkeypatch, call, what
         assert _rows(conn) == [("harness/router.py:TIMEOUT", what)]
     finally:
         conn.close()
+
+
+class _Sent:
+    """urlopen that keeps each request and answers with `reply`."""
+
+    def __init__(self, reply=b'{"ok": 1}'):
+        self.reply, self.reqs, self.timeouts = reply, [], []
+
+    def __call__(self, req, timeout=None):
+        import io
+        self.reqs.append(req)
+        self.timeouts.append(timeout)
+        return io.BytesIO(self.reply)
+
+
+@pytest.mark.parametrize("key", ["k1", ""])
+def test_a_router_request_sends_its_key_only_when_given_one(monkeypatch, key):
+    """A LAN router wants its API key on every request; a loopback one gets no header. #1562."""
+    import json
+    sent = _Sent()
+    monkeypatch.setattr(router.urllib.request, "urlopen", sent)
+    assert GET("/models", "http://r:1", key=key) == {"ok": 1}
+    assert POST("/models/load", {"model": "m"}, "http://r:1", key=key) == {"ok": 1}
+    get, post = sent.reqs
+    assert (get.full_url, get.get_method(), get.data) == ("http://r:1/models", "GET", None)
+    assert (post.full_url, post.get_method()) == ("http://r:1/models/load", "POST")
+    assert json.loads(post.data) == {"model": "m"} and post.get_header("Content-type") == "application/json"
+    for req in sent.reqs:
+        assert req.get_header("Authorization") == (f"Bearer {key}" if key else None)
+    assert sent.timeouts == [router.TIMEOUT, router.TIMEOUT]
+    assert router._auth(key) == ({"Authorization": f"Bearer {key}"} if key else {})
+
+
+def test_a_router_request_with_no_base_asks_this_machines_router_and_reads_an_empty_body_as_nothing(monkeypatch):
+    sent = _Sent(reply=b"")
+    monkeypatch.setattr(router.urllib.request, "urlopen", sent)
+    monkeypatch.setattr(router, "url", lambda: "http://here:2")
+    assert GET("/models") == {} and POST("/models/unload", {}) == {}
+    assert [r.full_url for r in sent.reqs] == ["http://here:2/models", "http://here:2/models/unload"]
+    assert all(r.get_header("Authorization") is None for r in sent.reqs)
