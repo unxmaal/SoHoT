@@ -26,7 +26,7 @@ SMOKE = """#!/bin/bash
 [ -f fail-smoke ] && exit 1
 if [ -f fail-smoke-live ] && [ "$(cd "$DEPLOY_LINK" && pwd -P)" = "$(pwd -P)" ]; then exit 1; fi
 if [ -f "${MACHINE_BROKEN:-/nonexistent}" ] && [ "$(cd "$DEPLOY_LINK" && pwd -P)" = "$(pwd -P)" ]; then exit 1; fi
-echo "smoke $(basename "$(pwd -P)")" >> "$DEPLOY_LOG"
+echo "smoke $(basename "$(pwd -P)")${SMOKE_PHASE:+ $SMOKE_PHASE}" >> "$DEPLOY_LOG"
 """
 INSTALL = 'echo "reinstall $(basename "$(pwd -P)")" >> "$DEPLOY_LOG"\n'
 ALERT = 'echo "alert $MONIT_DESCRIPTION" >> "$DEPLOY_LOG"\n'
@@ -262,7 +262,8 @@ def test_a_green_release_is_built_alongside_switched_and_recorded(world):
     assert not wq.paused()
     steps = world["log"].read_text(encoding="utf-8").splitlines()
     rel = Path(d["release"]).name
-    assert steps == [f"smoke {rel}", f"reinstall {rel}", f"smoke {rel}"]
+    # The smoke before the switch warns on a property the release introduces; the switch's smoke enforces it (#1608).
+    assert steps == [f"smoke {rel} before", f"reinstall {rel}", f"smoke {rel} after"]
 
 
 @posix
@@ -284,7 +285,7 @@ def test_a_release_whose_smoke_fails_after_the_switch_rolls_back_and_restores_th
     assert not wq.paused()
     steps = world["log"].read_text(encoding="utf-8")
     prev, rel = Path(d["previous"]).name, Path(d["release"]).name
-    assert f"reinstall {rel}\nreinstall {prev}\nsmoke {prev}\n" in steps
+    assert f"reinstall {rel}\nreinstall {prev}\nsmoke {prev} after\n" in steps
     assert f"alert deploy of {job['output'][:12]} rolled_back" in steps
 
 
