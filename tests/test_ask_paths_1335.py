@@ -628,6 +628,15 @@ def live_home(tmp_path, monkeypatch):
     return live / "discovery.db"
 
 
+def live_state(monkeypatch, db: Path, backend: str):
+    """The live home's store as the live home reads it, though an eval moved this process to a scratch home. #1579."""
+    from harness import paths, store
+    from tests import conftest
+    monkeypatch.delenv(paths.ENV_VAR, raising=False)
+    monkeypatch.setenv(store.BACKEND_ENV, backend)
+    return conftest.store_state(db)
+
+
 def _writes_to(monkeypatch, store: Path) -> list:
     import sqlite3
     seen, real = [], sqlite3.connect
@@ -644,11 +653,12 @@ def _writes_to(monkeypatch, store: Path) -> list:
 
 def test_the_eval_runs_from_a_scratch_home_and_never_opens_the_live_store_to_write(live_home, tmp_path, monkeypatch):
     from harness import cli
-    before = live_home.read_bytes()
+    backend = os.environ["LOCALHARNESS_STORE"]
+    before = live_state(monkeypatch, live_home, backend)
     writes = _writes_to(monkeypatch, live_home)
     monkeypatch.setattr(delegate, "complete", lambda lane, p, **kw: {"text": "none", "spec": "s", "model": "m"})
     cli.main(["ask", "--eval", str(tmp_path / "ev"), "--n", "4", "--chunk", "2000"])
-    assert writes == [] and live_home.read_bytes() == before
+    assert writes == [] and live_state(monkeypatch, live_home, backend) == before
     assert (tmp_path / "ev" / "home").is_dir() and (tmp_path / "ev" / "results.jsonl").exists()
 
 

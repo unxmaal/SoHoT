@@ -105,7 +105,8 @@ def test_a_cut_with_no_connection_writes_an_existing_store_and_takes_the_spool_w
 
 def test_a_cut_a_read_only_or_older_store_refuses_reaches_the_home_store_instead(tmp_path):
     ms.connect().close()
-    ro = sqlite3.connect(f"file:{ms.db_path()}?mode=ro", uri=True)
+    from harness import store as backend
+    ro = backend.open_ro()
     cuts.cut(SITE, "read only", value=1, conn=ro)
     ro.close()
     old = sqlite3.connect(tmp_path / "old.db")

@@ -6,6 +6,7 @@ import pytest
 
 from harness import delegations, usage
 from harness import memory_store as ms
+from harness.memory_store.schema import _columns
 from tests.test_mcp_delegate import (SCHEMA, SERVED, Handler, _call, fake,  # noqa: F401
                                      mcp_server)
 
@@ -36,10 +37,10 @@ def _row(conn, call_id):
 
 def test_the_store_is_schema_69_with_the_table_and_the_join_column(conn):
     assert ms.SCHEMA_VERSION >= 69
-    cols = {r["name"] for r in conn.execute("PRAGMA table_info(delegations)")}
+    cols = _columns(conn, "delegations")
     assert {"call_id", "id_source", "at", "lane", "spec", "model", "seconds",
             "prompt_tokens", "completion_tokens", "outcome", "why", "outcome_at"} <= cols
-    assert "call_id" in {r["name"] for r in conn.execute("PRAGMA table_info(gateway_requests)")}
+    assert "call_id" in _columns(conn, "gateway_requests")
 
 
 OLD_GATEWAY_REQUESTS = """

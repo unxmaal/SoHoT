@@ -6,6 +6,7 @@ import pytest
 from harness import cli, human, paths, runs
 from harness import memory_store as ms
 from harness.live_audit import open_readonly
+from tests import conftest
 
 
 def row(cand, case, passed, **metrics):
@@ -92,11 +93,11 @@ def test_the_command_reads_a_store_without_writing_it(conn, capsys):
     vote(conn, "svg", run, "frog", "alpha", "beta", ["a", "a", "a"])
     conn.commit()
     path = ms.db_path()
-    before = path.read_bytes()
+    before = conftest.store_state(path)
     assert cli.main(["votes", "--json", "--store", str(path)]) == 0
     got = json.loads(capsys.readouterr().out)
     assert got["lanes"] == {"svg": {human.AGREE: 1}}
-    assert path.read_bytes() == before
+    assert conftest.store_state(path) == before
     ro = open_readonly(path)
     try:
         assert human.metric_agreement(ro, "web") == {"pairs": [], "lanes": {}}

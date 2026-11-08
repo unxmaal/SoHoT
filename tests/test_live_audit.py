@@ -1,5 +1,4 @@
 """`soh audit`: the store's invariants and the serving facts, against the live store, read-only (#492 F)."""
-import hashlib
 import json
 import sqlite3
 import time
@@ -9,7 +8,8 @@ import yaml
 
 from harness import adopt, cli, gateway, live_audit
 from harness import memory_store as ms
-from harness import runs
+from harness import runs, store
+from tests import conftest
 
 SPEC = "mlx-community/Qwen3-4B-Instruct-2507-4bit"
 BASE = {"model_list": [{"model_name": "q3-4b", "litellm_params": {
@@ -61,9 +61,9 @@ def test_a_healthy_store_passes_every_check(live):
 
 
 def test_the_audit_never_writes_the_store(live):
-    before = hashlib.sha256(live.read_bytes()).hexdigest()
+    before = conftest.store_state(live)
     live_audit.audit(live)
-    assert hashlib.sha256(live.read_bytes()).hexdigest() == before
+    assert conftest.store_state(live) == before
     conn = live_audit.open_readonly(live)
     try:
         with pytest.raises(sqlite3.OperationalError):
@@ -73,13 +73,13 @@ def test_the_audit_never_writes_the_store(live):
 
 
 def test_an_older_store_is_reported_not_migrated(live):
-    raw = sqlite3.connect(live)
+    raw = ms.connect(live)
     raw.execute("UPDATE meta SET value = '40' WHERE key = 'schema'")
     raw.commit()
     raw.close()
     got = live_audit.audit(live)
     assert not _checks(got)["schema"]["ok"]
-    raw = sqlite3.connect(live)
+    raw = store.open_ro(live)
     assert raw.execute("SELECT value FROM meta WHERE key = 'schema'").fetchone()[0] == "40"
     raw.close()
 
@@ -118,7 +118,7 @@ def test_a_probe_that_fails_at_the_first_identity_read_does_not_hide_the_run_her
 
 
 def test_a_reference_model_adopted_for_a_lane_fails(live):
-    raw = sqlite3.connect(live)
+    raw = ms.connect(live)
     raw.execute("INSERT INTO candidates (spec, receipt_key, lane, created_at) VALUES "
                 "('claude-code:opus', 'claude-code:opus', 'code', 1)")
     cid = raw.execute("SELECT id FROM candidates WHERE spec = 'claude-code:opus'").fetchone()[0]
@@ -143,7 +143,7 @@ def test_a_served_alias_that_is_not_the_adoption_fails(live, config):
 
 
 def test_an_alias_whose_requests_mostly_fail_fails(live):
-    raw = sqlite3.connect(live)
+    raw = ms.connect(live)
     now = time.time()
     for i in range(live_audit.MIN_REQUESTS):
         raw.execute("INSERT INTO gateway_requests (at, alias, lane, error_class) VALUES (?, 'sohot-code', 'code', ?)",
@@ -155,7 +155,7 @@ def test_an_alias_whose_requests_mostly_fail_fails(live):
 
 
 def test_a_few_errors_on_little_traffic_say_nothing(live):
-    raw = sqlite3.connect(live)
+    raw = ms.connect(live)
     raw.execute("INSERT INTO gateway_requests (at, alias, lane, error_class) VALUES (?, 'sohot-code', 'code', 'X')",
                 (time.time(),))
     raw.commit()
@@ -250,7 +250,7 @@ def _route_to_node(config, name="q3-4b", node="pc"):
 
 
 def _requests(live, *rows):
-    raw = sqlite3.connect(live)
+    raw = ms.connect(live)
     raw.executemany("INSERT INTO gateway_requests (at, alias, lane) VALUES (?, ?, '')", rows)
     raw.commit()
     raw.close()

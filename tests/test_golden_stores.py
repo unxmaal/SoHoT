@@ -12,6 +12,9 @@ from harness.memory_store import connection
 from harness import migration_check as mc
 from harness import paths, privacy
 
+#: Each golden is a SQLite file at a historical schema; a Postgres store starts at the head schema by copy. #1579.
+pytestmark = pytest.mark.sqlite_store
+
 GOLDEN = Path(__file__).parent / "golden"
 _spec = importlib.util.spec_from_file_location("golden_build", GOLDEN / "build.py")
 gb = importlib.util.module_from_spec(_spec)

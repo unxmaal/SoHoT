@@ -242,6 +242,7 @@ def _claim(job) -> dict:
     return job
 
 
+@pytest.mark.sqlite_store
 @posix
 def test_a_green_release_is_built_alongside_switched_and_recorded(world):
     job = (_queue(world, {"f": "two\n"}))
@@ -266,6 +267,7 @@ def test_a_green_release_is_built_alongside_switched_and_recorded(world):
     assert steps == [f"smoke {rel} before", f"reinstall {rel}", f"smoke {rel} after"]
 
 
+@pytest.mark.sqlite_store
 @posix
 def test_a_release_whose_smoke_fails_after_the_switch_rolls_back_and_restores_the_store(world):
     job = (_queue(world, {"fail-smoke-live": "",
@@ -289,6 +291,7 @@ def test_a_release_whose_smoke_fails_after_the_switch_rolls_back_and_restores_th
     assert f"alert deploy of {job['output'][:12]} rolled_back" in steps
 
 
+@pytest.mark.sqlite_store
 @posix
 def test_a_release_whose_smoke_fails_before_the_switch_never_switches_or_migrates(world):
     job = (_queue(world, {"fail-smoke": "",
@@ -432,6 +435,7 @@ def test_prune_keeps_the_newest_store_backups(monkeypatch):
     assert sorted(p.name for p in deploy.backups_dir().iterdir()) == ["discovery-11-pre89.db", "discovery-7-pre89.db"]
 
 
+@pytest.mark.sqlite_store
 def test_restore_puts_the_backup_over_the_live_store(tmp_path):
     db = ms.db_path()
     ms.connect().close()

@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from harness import discover, feeds, paths
+from harness import discover, feeds, paths, store
 from harness import memory_store as ms
 from harness import machine as mach
 from harness.memory import Accelerator
@@ -666,7 +666,8 @@ def test_reading_a_source_never_stamps_the_developers_real_home(tmp_path, _home)
     feeds.read(src, cache_dir=tmp_path,
                fetcher=lambda u: WEEK.read_text(encoding="utf-8"))
 
-    assert (_home / "discovery.db").exists()
+    # On a Postgres home the store is the home's Postgres, not a file under it. #1579.
+    assert store.home_postgres(None) or (_home / "discovery.db").exists()
     assert not (_home / "discovery-state.json").exists()
     assert feeds.last_fetched("s") is not None
     after = [p.stat().st_mtime_ns if p.exists() else None for p in real]

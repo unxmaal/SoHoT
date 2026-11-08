@@ -212,6 +212,7 @@ def _snapshot(root):
             for p in sorted(root.rglob("*")) if p.is_file() and not p.name.endswith(SIDECARS)}
 
 
+@pytest.mark.sqlite_store
 def test_the_command_opens_the_store_mode_ro_and_writes_nothing(home, monkeypatch, capsys):
     before = _snapshot(home)
     db = ms.db_path()
