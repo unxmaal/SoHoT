@@ -105,10 +105,9 @@ def _unnamed_in(text: str, rel: str) -> tuple:
 def _modules(root):
     from harness import repo
     root = Path(root)
-    for path in repo.publishable(root):
-        rel = path.relative_to(root).as_posix()
-        if path.is_file() and knobs._production(rel) and rel != "harness/cuts.py":
-            yield rel, path.read_text(encoding="utf-8", errors="replace")
+    for rel in repo.names(root, *knobs.production(root)):
+        if knobs._production(rel) and rel != "harness/cuts.py" and (root / rel).is_file():
+            yield rel, (root / rel).read_text(encoding="utf-8", errors="replace")
 
 
 #: How a shell script records a cut: through harness.cuts, naming its knob or site as a literal.
@@ -124,10 +123,9 @@ def shell_cuts_in(text: str, rel: str) -> list[tuple[str, str]]:
 def _scripts(root):
     from harness import repo
     root = Path(root)
-    for path in repo.publishable(root):
-        rel = path.relative_to(root).as_posix()
-        if path.is_file() and re.fullmatch(r"scripts/[^/]+\.sh", rel):
-            yield rel, path.read_text(encoding="utf-8", errors="replace")
+    for rel in repo.names(root, "scripts/"):
+        if re.fullmatch(r"scripts/[^/]+\.sh", rel) and (root / rel).is_file():
+            yield rel, (root / rel).read_text(encoding="utf-8", errors="replace")
 
 
 def named(root=knobs.REPO) -> dict[str, list[str]]:

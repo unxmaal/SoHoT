@@ -401,6 +401,15 @@ def gateway_settings(text: str, rel: str) -> list[str]:
     return list(_gateway_sites(text, rel))
 
 
+def production(root) -> tuple[str, ...]:
+    """Pathspecs holding every name _production accepts; naming evals/ children keeps git from walking the case tree. #1590."""
+    try:
+        kids = sorted(e.name for e in os.scandir(Path(root) / "evals") if e.name != "cases")
+    except OSError:
+        kids = []
+    return ("harness/", *(f"evals/{k}" for k in kids))
+
+
 def _production(rel: str) -> bool:
     return rel.endswith(".py") and rel.startswith(("harness/", "evals/")) and not rel.startswith("evals/cases/")
 
@@ -410,9 +419,10 @@ def inventory(root) -> list[str]:
     from harness import repo
     root = Path(root)
     out = []
-    for path in repo.publishable(root):
-        rel = path.relative_to(root).as_posix()
-        if not path.is_file():
+    for rel in repo.names(root, *production(root), "scripts/", "gateway/"):
+        path = root / rel
+        wanted = _production(rel) or re.fullmatch(r"(scripts/[^/]+\.sh|gateway/[^/]+\.ya?ml)", rel)
+        if not wanted or not path.is_file():
             continue
         if _production(rel):
             out += gating(path.read_text(encoding="utf-8", errors="replace"), rel)

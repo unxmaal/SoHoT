@@ -211,10 +211,9 @@ def all_quotes(root=knobs.REPO) -> list[Quote]:
     from harness import repo
     root = Path(root)
     out = []
-    for path in repo.publishable(root):
-        rel = path.relative_to(root).as_posix()
-        if path.is_file() and knobs._production(rel):
-            out += quotes(path.read_text(encoding="utf-8", errors="replace"), rel, root)
+    for rel in repo.names(root, *knobs.production(root)):
+        if knobs._production(rel) and (root / rel).is_file():
+            out += quotes((root / rel).read_text(encoding="utf-8", errors="replace"), rel, root)
     return out
 
 

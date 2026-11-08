@@ -152,7 +152,8 @@ def _cases(root: str, private: bool, stamp: tuple) -> tuple:
 
 
 def _stamp(root: Path) -> tuple:
-    return tuple(sorted((str(p), p.stat().st_mtime_ns) for p in root.rglob("*") if p.is_file()))
+    from evals.core import files
+    return tuple(files(root))
 
 
 @functools.lru_cache(maxsize=8)
