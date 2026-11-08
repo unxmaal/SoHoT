@@ -18,6 +18,8 @@ CHECKPOINT = "checkpoint.jsonl"
 PROGRESS = "progress.json"
 #: Touch this file in a run's directory, or send the run SIGUSR1, and it pauses after the case in flight.
 PAUSE_FILE = "pause"
+#: How a run that paused at its stop time says so. #1618.
+AT_STOP_TIME = "paused at its stop time"
 #: The watchdog writes this, naming its criterion, before it signals a run to stop. #1409.
 STOP_FILE = "stopped"
 #: The one stop that ends a run as a suspected harness defect rather than pausing it. #1409.
@@ -114,7 +116,7 @@ class Watch:
             raise Stop(f"paused on request, {self.left_cases()} case(s) left")
         # The slice is the run's own time: seconds yielded to serving move its stop time on. #1556.
         if self.stop_at is not None and clock() >= self.stop_at + self.yield_s:
-            raise Stop(f"paused at its stop time, {self.left_cases()} case(s) left")
+            raise Stop(f"{AT_STOP_TIME}, {self.left_cases()} case(s) left")
         self.restart(key, case)
         return served
 
