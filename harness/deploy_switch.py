@@ -29,6 +29,8 @@ ALERT_TIMEOUT_S = 120.0
 #: Variables a deploy run must not hand to the release's scripts: they would pin the old checkout or its venv.
 DROP_ENV = ("LH_DEPLOY", "LH_REPO", "LH_REEXECED", "LH_GPU_LOCK_HELD", "VIRTUAL_ENV", "LH_JOB_ID", "SMOKE_PHASE")
 DEPLOYED, ROLLED_BACK, FAILED = "deployed", "rolled_back", "failed"
+#: Every switch step runs after the switch, so scripts/smoke-introduced.sh enforces (#1608).
+SMOKE_PHASE_ENV = "SMOKE_PHASE"
 #: The file under the harness home where scripts/launchd.sh install records the environment it read. #1518.
 INSTALL_ENV = "install.env"
 
@@ -106,7 +108,7 @@ def run(argv: list, cwd: str, timeout: float, log, extra=None) -> tuple[int | No
     _TERM["held"] = True
     try:
         child = subprocess.Popen([str(a) for a in argv], cwd=cwd, stdout=log, stderr=subprocess.STDOUT,
-                                 env={**env(), **(extra or {})}, start_new_session=sys.platform != "win32")
+                                 env={**env(), SMOKE_PHASE_ENV: "after", **(extra or {})}, start_new_session=sys.platform != "win32")
     except OSError as exc:
         _release_term()
         return None, f"could not run: {exc}"

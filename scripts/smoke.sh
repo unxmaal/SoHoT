@@ -10,7 +10,7 @@ H="${SMOKE_HOST:-127.0.0.1}"
 G="http://$H:${GATEWAY_PORT:-4000}"
 E="http://$H:${MLX_PORT:-8081}"
 FAIL=0
-# A check for a property a release introduces runs through scripts/smoke-introduced.sh: deploys smoke before the switch against the old services (#1608).
+# A check for a property a release introduces runs through scripts/smoke-introduced.sh, enforced only with SMOKE_PHASE=after: deploys smoke before the switch against the old services (#1608).
 # Every request here is tagged smoke in the gateway's usage log (#825).
 export SOHOT_PURPOSE=smoke
 TAG="x-litellm-tags: purpose:smoke"

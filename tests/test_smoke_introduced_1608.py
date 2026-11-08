@@ -53,8 +53,10 @@ def _smoke_mcp_lines(port: int, phase: str | None):
 
 
 @needs_curl
-def test_before_the_switch_an_ipv4_only_server_passes_with_a_warning_naming_ipv6(ipv4_only_mcp):
-    got = _smoke_mcp_lines(ipv4_only_mcp, "before")
+@pytest.mark.parametrize("phase", ["before", None], ids=["before", "old-caller"])
+def test_before_the_switch_an_ipv4_only_server_passes_with_a_warning_naming_ipv6(ipv4_only_mcp, phase):
+    """None: a deploy.py and deploy_switch.py from before #1608 run this smoke and set no phase."""
+    got = _smoke_mcp_lines(ipv4_only_mcp, phase)
     assert got.returncode == 0, got.stdout
     assert f"PASS  mcp at 127.0.0.1:{ipv4_only_mcp}" in got.stdout
     assert f"WARN  mcp at [::1]:{ipv4_only_mcp}" in got.stdout and "FAIL" not in got.stdout
@@ -62,20 +64,26 @@ def test_before_the_switch_an_ipv4_only_server_passes_with_a_warning_naming_ipv6
 
 @needs_curl
 def test_after_the_switch_the_same_server_fails_naming_ipv6(ipv4_only_mcp):
-    got = _smoke_mcp_lines(ipv4_only_mcp, None)
+    got = _smoke_mcp_lines(ipv4_only_mcp, "after")
     assert got.returncode == 1
     assert f"FAIL  mcp at [::1]:{ipv4_only_mcp}" in got.stdout
 
 
 @needs_curl
-def test_before_the_switch_a_property_the_old_release_had_still_fails():
+@pytest.mark.parametrize("phase", ["before", None])
+def test_before_the_switch_a_property_the_old_release_had_still_fails(phase):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
         port = s.getsockname()[1]
-    got = _smoke_mcp_lines(port, "before")
+    got = _smoke_mcp_lines(port, phase)
     assert got.returncode == 1
     assert f"FAIL  mcp at 127.0.0.1:{port}" in got.stdout
 
 
-def test_the_switch_never_passes_the_before_phase_to_its_smoke():
-    assert deploy_switch.env({deploy.SMOKE_PHASE_ENV: "before", "PATH": "/bin"}) == {"PATH": "/bin"}
+def test_every_switch_step_runs_in_the_after_phase(tmp_path, monkeypatch):
+    monkeypatch.setenv(deploy.SMOKE_PHASE_ENV, "before")
+    out = tmp_path / "phase"
+    with open(tmp_path / "log", "w", encoding="utf-8") as log:
+        rc, _ = deploy_switch.run([sys.executable, "-c", f"import os; open({str(out)!r}, 'w').write(os.environ.get('SMOKE_PHASE', ''))"],
+                                  str(tmp_path), 60, log)
+    assert rc == 0 and out.read_text(encoding="utf-8") == "after"

@@ -38,8 +38,7 @@ HANDOFF_GRACE_S = 300.0
 #: How long launchctl may take to load the switch's one-shot unit.
 LAUNCHCTL_TIMEOUT_S = 60.0
 SWITCH_LABEL = "com.unxmaal.localharness.deploy-switch"
-#: Tells scripts/smoke-introduced.sh the old release still serves, so a new property warns (#1608).
-SMOKE_PHASE_ENV = "SMOKE_PHASE"
+SMOKE_PHASE_ENV = deploy_switch.SMOKE_PHASE_ENV
 DEPLOYED, ROLLED_BACK, FAILED, INTERRUPTED = (deploy_switch.DEPLOYED, deploy_switch.ROLLED_BACK,
                                               deploy_switch.FAILED, "interrupted")
 #: Untracked paths a release does not inherit from the one before it: rebuilt, or caches.
