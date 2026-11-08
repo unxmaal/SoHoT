@@ -67,6 +67,8 @@ _install_env() {
       for var in $RECORDED; do
         if [ -n "${!var:-}" ]; then GIVEN="$GIVEN $var"; fi
       done ;;
+    # The probe asks about the weights reinstall will render, once an install recorded them. #1516.
+    probe) if [ -f "$INSTALL_ENV" ]; then _install_env reinstall; fi ;;
   esac
   return 0
 }
@@ -355,6 +357,17 @@ generate() {
   done
 }
 
+# Every path a unit reads that may sit on a protected volume: the weights root, and $LH_HOME's links onto /Volumes. #1516.
+_probe_roots() {
+  local l
+  printf '%s\n' "$1"
+  for l in "$LH_HOME"/*; do
+    [ -L "$l" ] || continue
+    case "$(readlink "$l")" in /Volumes/*) printf '%s\n' "$l" ;; esac
+  done
+  return 0
+}
+
 # Can a launchd agent actually read the weights volume?
 #
 # Checking from THIS shell proves nothing: the terminal already has the Full
@@ -363,7 +376,7 @@ generate() {
 # appears in /Volumes -- and every read returns "Operation not permitted".
 # mlx_lm turns that into a permanent hang inside os.listdir, with the server
 # accepting connections and answering none, which is a genuinely horrible way
-# to find out about a permission. So probe from inside launchd first.
+# to find out about a permission. So probe from inside launchd first, as the units run: /bin/bash, then this checkout's python.
 preflight() {
   local probe="/tmp/localharness-preflight.$$"
   local label="$PREFIX.preflight.$$"   # per run: parallel suites share gui/$UID
@@ -374,9 +387,21 @@ preflight() {
     (cd "$REPO" && . scripts/env.sh >/dev/null) 2>&1 | sed 's/^/  /' >&2
     exit 1
   fi
+  local roots=() r
+  while IFS= read -r r; do roots+=("$r"); done < <(_probe_roots "$root")
+  local quoted py
+  quoted="$(printf '%q ' "${roots[@]}")"
+  py="$(printf '%q' "$REPO/.venv/bin/python")"
   cat > "$probe.sh" <<PROBE
 #!/bin/bash
-ls "$root" >/dev/null 2>&1 && echo ok > "$probe.out" || echo denied > "$probe.out"
+echo started > "$probe.started"
+for r in $quoted; do
+  ls "\$r/" >/dev/null 2>&1 || { echo "denied \$r" > "$probe.out"; exit 0; }
+done
+if [ -x $py ] && ! $py -I -c 'import os, sys; [os.listdir(r) for r in sys.argv[1:]]' $quoted >/dev/null 2>&1; then
+  echo "denied to python" > "$probe.out"; exit 0
+fi
+echo ok > "$probe.out"
 PROBE
   chmod +x "$probe.sh"
   cat > "$probe.plist" <<PLIST
@@ -385,7 +410,8 @@ PROBE
   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
 <key>Label</key><string>$label</string>
-<key>ProgramArguments</key><array><string>$probe.sh</string></array>
+<key>ProgramArguments</key><array><string>/bin/bash</string><string>$probe.sh</string></array>
+<key>WorkingDirectory</key><string>$REPO</string>
 <key>RunAtLoad</key><true/>
 </dict></plist>
 PLIST
@@ -393,9 +419,27 @@ PLIST
   launchctl bootstrap "gui/$UID" "$probe.plist" 2>/dev/null || true
   for _ in $(seq 1 $((wait_s * 2))); do [ -f "$probe.out" ] && break; sleep 0.5; done
   local verdict; verdict="$(cat "$probe.out" 2>/dev/null || echo unknown)"
+  # Started and never finished: blocked in the kernel on a privacy consent. #1516.
+  if [ "$verdict" = unknown ] && [ -f "$probe.started" ]; then verdict=pending; fi
   launchctl bootout "gui/$UID/$label" 2>/dev/null || true
-  rm -f "$probe.sh" "$probe.plist" "$probe.out"
+  rm -f "$probe.sh" "$probe.plist" "$probe.out" "$probe.started"
 
+  if [ "$verdict" = pending ]; then
+    cat >&2 <<MSG
+FATAL: consent pending: the launchd probe started reading ${roots[*]} and was still blocked after $wait_s s.
+
+  macOS holds a read of a protected volume while it waits for a privacy
+  consent, and a dialog may be open on this machine's screen. Every unit
+  started now would block the same way. A launchd agent gets the read only
+  through Full Disk Access on /bin/bash, the program launchd runs for it:
+    System Settings > Privacy & Security > Full Disk Access
+    /bin/bash must be listed and switched on (+, Cmd+Shift+G, /bin/bash, Open)
+  The dialog grants only the program that asked; do not rely on it.
+
+  Then re-run: ./scripts/launchd.sh probe
+MSG
+    exit 1
+  fi
   if [ "$verdict" = unknown ]; then
     cat >&2 <<MSG
 FATAL: the launchd probe of $root did not finish in $wait_s s.

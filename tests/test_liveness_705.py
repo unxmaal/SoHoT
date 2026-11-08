@@ -41,11 +41,12 @@ def _exe(path: Path, body: str) -> Path:
 
 
 def _fake_launchctl(bin_dir: Path, runs: bool) -> None:
-    run = '"$prog"' if runs else ":"
+    """Runs the probe's script only when its unit's program is /bin/bash, as the units' is (#1516)."""
+    run = '/bin/bash "$prog"' if runs else ":"
     _exe(bin_dir / "launchctl", f"""#!/bin/bash
 if [ "$1" = bootstrap ]; then
-  prog="$(sed -n 's:.*<array><string>\\(.*\\)</string></array>.*:\\1:p' "$3")"
-  {run}
+  prog="$(sed -n 's:.*<array><string>/bin/bash</string><string>\\(.*\\)</string></array>.*:\\1:p' "$3")"
+  [ -n "$prog" ] && {run}
 fi
 exit 0
 """)

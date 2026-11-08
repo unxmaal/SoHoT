@@ -31,6 +31,8 @@ GIT_TIMEOUT_S = 300.0
 SYNC_TIMEOUT_S = 1800.0
 #: How long scripts/smoke.sh may take against the new release, before the switch.
 SMOKE_TIMEOUT_S = 1200.0
+#: How long the new release's `launchd.sh probe` may take: its launchd agent reading the weights, PREFLIGHT_WAIT_S 60 at most.
+PROBE_TIMEOUT_S = 300.0
 #: How long the new release's migration of the live store may take.
 MIGRATE_TIMEOUT_S = 1800.0
 #: How long a handed-off switch may take to start and record its pid before settle calls the deploy interrupted.
@@ -38,6 +40,8 @@ HANDOFF_GRACE_S = 300.0
 #: How long launchctl may take to load the switch's one-shot unit.
 LAUNCHCTL_TIMEOUT_S = 60.0
 SWITCH_LABEL = "com.unxmaal.localharness.deploy-switch"
+#: The switch unit's program: the one the Full Disk Access grant names, SIP-protected, so the grant never lapses. #1516.
+SWITCH_SHELL = "/bin/bash"
 SMOKE_PHASE_ENV = deploy_switch.SMOKE_PHASE_ENV
 DEPLOYED, ROLLED_BACK, FAILED, INTERRUPTED = (deploy_switch.DEPLOYED, deploy_switch.ROLLED_BACK,
                                               deploy_switch.FAILED, "interrupted")
@@ -54,6 +58,8 @@ class DeployError(RuntimeError):
 class Steps:
     """The commands a deploy runs, each in the release named; tests plant their own."""
     sync: list = field(default_factory=lambda: ["uv", "sync", "--frozen"])
+    probe: list = field(default_factory=lambda: ["bash", "scripts/launchd.sh", "probe"] if sys.platform == "darwin"
+                        else [])
     smoke: list = field(default_factory=lambda: ["bash", "scripts/smoke.sh"])
     migrate: list = field(default_factory=lambda: [*SOH, "deploy", "migrate"])
     coherence: list = field(default_factory=lambda: [*SOH, "coherence"])
@@ -315,6 +321,21 @@ def _run(argv, cwd, timeout: float, log, extra=None, *, site_knob: str) -> str:
     return "" if got.returncode == 0 else f"{' '.join(map(str, argv))} exited rc {got.returncode}"
 
 
+def _probe(argv, release: Path, log, log_path: Path) -> str:
+    """'' when a launchd agent started from the release reads the weights, else why with the probe's FATAL line. #1516."""
+    if not argv:
+        return ""
+    log.flush()
+    start = log_path.stat().st_size
+    why = _run(argv, release, PROBE_TIMEOUT_S, log, site_knob="harness/deploy.py:PROBE_TIMEOUT_S")
+    if not why:
+        return ""
+    log.flush()
+    said = [ln.strip() for ln in log_path.read_bytes()[start:].decode("utf-8", "replace").splitlines()
+            if ln.startswith("FATAL")]
+    return f"{why}: {said[0]}" if said else why
+
+
 def backup(db: Path, dest: Path) -> Path:
     """A consistent copy of the store: SQLite's backup API from a mode=ro connection, or pg_dump on Postgres."""
     from harness import store
@@ -347,8 +368,10 @@ def spawn_switch(record: Path, release_for_log: Path) -> str:
         plist = paths.home() / "launchd" / f"{SWITCH_LABEL}.plist"
         plist.parent.mkdir(parents=True, exist_ok=True)
         keep = {k: os.environ[k] for k in ("PATH", "HOME", paths.ENV_VAR) if os.environ.get(k)}
+        # A python program would be its own privacy identity, and its first read of /Volumes waits on a dialog. #1516.
+        wrapper = Path(deploy_switch.__file__).resolve().parents[1] / "scripts" / "deploy-switch.sh"
         plist.write_bytes(plistlib.dumps({
-            "Label": SWITCH_LABEL, "ProgramArguments": argv, "RunAtLoad": True,
+            "Label": SWITCH_LABEL, "ProgramArguments": [SWITCH_SHELL, str(wrapper), *argv], "RunAtLoad": True,
             "WorkingDirectory": str(release_for_log), "StandardOutPath": str(log), "StandardErrorPath": str(log),
             "EnvironmentVariables": {**keep, "PYTHONUNBUFFERED": "1"}, "ProcessType": "Interactive"}))
         domain = f"gui/{os.getuid()}"
@@ -408,6 +431,9 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
             why = _run(steps.sync, release, SYNC_TIMEOUT_S, log, site_knob="harness/deploy.py:SYNC_TIMEOUT_S")
             if why:
                 return stop(why)
+            why = _probe(steps.probe, release, log, log_path)
+            if why:
+                return stop(f"launchd probe of the new release before the switch: {why}")
             _update(c, deploy_id, stage="smoking")
             why = _run(steps.smoke, release, SMOKE_TIMEOUT_S, log, {SMOKE_PHASE_ENV: "before"},
                        site_knob="harness/deploy.py:SMOKE_TIMEOUT_S")
