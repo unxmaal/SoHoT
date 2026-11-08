@@ -3325,6 +3325,22 @@ migrating deploy backs up with `pg_dump` and its rollback restores it in one `ps
 transaction that first drops every table, so one the migration added goes too (#1610). `make test-postgres` runs the whole suite on a throwaway
 container; CI's `check-postgres` runs it on every pull request.
 
+The volume `sohot-pg` is the store (#1591). Compose takes it as external, so
+`docker compose down -v` never removes it; `soh store pg-up` creates a missing one
+labelled `com.unxmaal.sohot.keep=true`, and refuses on a home switched to Postgres,
+where a missing volume means the store is lost. Prune with
+`docker volume prune --all --filter "label!=com.unxmaal.sohot.keep=true"`; a volume
+made before #1591 has no label (labels are fixed when a volume is made), so on it
+never run `docker volume prune --all`, and `soh store pg-status` says so. Docker
+Desktop's "Clean / Purge data" deletes it whatever the label. On the machine whose
+home is switched, monit runs `soh store pg-check` (alert `store` when the volume or
+container is gone) and, in the night hour `monitor.STORE_BACKUP_HOUR`,
+`soh store pg-backup --due`: a `pg_dump -Fc` checked with `pg_restore -l`, written to
+`~/localharness/backups/store-daily-*.dump`, keeping `store_service.BACKUP_KEEP`
+(alert `store-backup` on failure). After a lost volume:
+`docker volume create --label com.unxmaal.sohot.keep=true sohot-pg`, `soh store pg-up`,
+`soh store pg-roles`, `soh store pg-restore --replace <newest dump>`.
+
 ## Developing
 
 ```bash

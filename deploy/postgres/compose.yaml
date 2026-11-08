@@ -22,5 +22,7 @@ services:
       timeout: 5s
       retries: 5
 volumes:
+  # External: soh store pg-up creates it with com.unxmaal.sohot.keep=true; compose down -v never removes it. #1591.
   sohot-pg:
     name: sohot-pg
+    external: true
