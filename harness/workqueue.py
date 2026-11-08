@@ -654,6 +654,13 @@ def _unclaim(job: dict, why: str) -> None:
         c.commit()
 
 
+def _loads(n) -> str:
+    """A lease's detail: which models were resident when it was taken and what it loads. #1617."""
+    said = [f"resident {', '.join(n.resident)}" if n.resident else "",
+            f"loads {', '.join(f'{s} {g} GiB' for s, g in n.priced)}" if n.priced else ""]
+    return n.why or "; ".join(x for x in said if x)
+
+
 @contextmanager
 def leased(job: dict, pid: int | None = None):
     """Hold the job's lease on its class, beaten every TTL_S/3 while the block runs; yields it, or None at capacity. #1558."""
@@ -668,7 +675,7 @@ def leased(job: dict, pid: int | None = None):
     with _store() as c:
         got = item_lease.take(c, cls, f"job {label(job['id'])}", job_id=int(job["id"]), pid=pid,
                               priority=int(job.get("priority") or 0), mem_gb=n.gb,
-                              fits=fits if cls == GPU and pid is None else None, detail=n.why)
+                              fits=fits if cls == GPU and pid is None else None, detail=_loads(n))
     if got is None:
         job["refused"] = said.get("why") or f"{cls} is leased to capacity; waits for a free place"
         yield None
@@ -870,18 +877,39 @@ def _admitted(job: dict) -> bool:
     return ok
 
 
+def _affine(job: dict, rest: list[dict], blocked) -> dict:
+    """The first gpu job at job's priority whose models are all resident, job itself first; else job. #1617."""
+    from harness import admission
+    held = admission._resident()
+
+    def loaded(j):
+        n = admission.need(j, resident=lambda: held)
+        return n.gb == 0.0 and bool(n.resident)
+    same = [j for j in rest if needs(j) == GPU and int(j.get("priority") or 0) == int(job.get("priority") or 0)]
+    return next((j for j in [job, *same] if (j is job or not blocked(j)) and loaded(j)), job)
+
+
 def _startable(live: dict, now: float) -> tuple[dict, str] | None:
     """The first ready job, in run order, whose lock class is free; a GPU job or deploy only past the contention gate. #1153, #1509."""
     from harness import contention
-    started, held = {i for _, i in live.values()}, None
-    for job in ready(now=now):
-        if job["id"] in started:
-            continue
+    started, held = {i for _, i in live.values()}, []
+    jobs = [j for j in ready(now=now) if j["id"] not in started]
+
+    def blocked(job) -> bool:
+        if not contention.batch(job):
+            return False
+        if not held:
+            held.append(_contended(now))
+        return held[0]
+    for at, job in enumerate(jobs):
         cls = needs(job)
-        if cls in (GPU, DEPLOY) and contention.batch(job) and (held := _contended(now) if held is None else held):
+        if cls in (GPU, DEPLOY) and blocked(job):
             if cls == DEPLOY:
                 return None
             continue
+        if cls == GPU and _free(cls, live) and (pick := _affine(job, jobs[at + 1:], blocked)) is not job \
+                and _admitted(pick):
+            return pick, cls
         if _free(cls, live) and (cls != GPU or _admitted(job)):
             return job, cls
         if cls == DEPLOY:

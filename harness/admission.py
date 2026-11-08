@@ -40,17 +40,41 @@ def spec_gb(spec: str) -> float | None:
     return got if isinstance(got, float) else None
 
 
-def need(job: dict, resident=None) -> Need:
-    """What a queued job's models need; an eval prices each local candidate, a model already resident costs nothing."""
+def local_specs(job: dict) -> list[str] | None:
+    """The candidates a queued eval loads on this machine; None for a job that names none."""
     from evals import run
     args = run.queued_args(job.get("argv") or [])
     if args is None or not getattr(args, "candidates", ""):
+        return None
+    return [c for c in run.split_candidates(args.candidates) if not run.hosted(c)]
+
+
+def model_id(spec: str) -> str:
+    """The model a server holds for a candidate spec: a router stem or an mlx repo, options and method dropped."""
+    from harness import methods
+    base = (methods.base_of(spec) or spec).partition(",")[0].strip()
+    return base.partition(":")[2] if ":" in base else base
+
+
+def waiting(conn=None) -> set[str]:
+    """Models the ready gpu jobs here name, which no release should unload from under them. #1617."""
+    from harness import workqueue as wq
+    out = set()
+    for job in wq.ready(conn):
+        if wq.needs(job) == wq.GPU:
+            out.update(model_id(s) for s in local_specs(job) or [])
+    return out
+
+
+def need(job: dict, resident=None) -> Need:
+    """What a queued job's models need; an eval prices each local candidate, a model already resident costs nothing."""
+    local = local_specs(job)
+    if local is None:
         return Need(None, why="not an eval with named candidates, so unpriced")
-    local = [c for c in run.split_candidates(args.candidates) if not run.hosted(c)]
     held = set(resident() if resident else _resident())
     out = Need(0.0)
     for spec in local:
-        if spec.partition(":")[2] in held or spec in held:
+        if model_id(spec) in held or spec in held:
             out.resident.append(spec)
             continue
         gb = spec_gb(spec)

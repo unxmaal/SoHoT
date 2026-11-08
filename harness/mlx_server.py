@@ -148,7 +148,7 @@ def release(model: str, why: str, *, base: str = "", keep=None, timeout: float |
     try:
         if keep is None:
             from harness import router
-            keep = router.protected()
+            keep = router.kept()
     except Exception as exc:  # noqa: BLE001 - unknown protection means nothing is free to unload
         say(f"  mlx: kept {model}: the lane defaults could not be read ({exc})")
         return False

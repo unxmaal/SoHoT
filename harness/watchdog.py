@@ -299,7 +299,7 @@ class Probes:
         if held is None:
             return None
         try:
-            keep = router.protected()
+            keep = router.kept()
         except Exception:  # noqa: BLE001 - unknown protection means nothing is free to unload
             return None
         return sorted(k for k, v in held.items() if v in router.RESIDENT and k not in keep)
