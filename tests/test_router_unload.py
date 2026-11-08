@@ -61,31 +61,40 @@ def test_a_model_not_resident_is_not_asked_about(fake):
     assert fake.unloads == []
 
 
+def _run():
+    """Another run holding this machine's gpu lease."""
+    from harness import item_lease, resources
+    from harness import memory_store as ms
+    return item_lease.take(ms.connect(), resources.GPU, "eval pid 1", state="eval")
+
+
+def _done(run):
+    from harness import item_lease
+    from harness import memory_store as ms
+    item_lease.release(ms.connect(), run["id"])
+
+
 def test_nothing_is_unloaded_while_a_run_holds_the_machine(fake):
-    fd = os.open(exclusive.lock_path(), os.O_RDWR | os.O_CREAT, 0o644)
-    assert exclusive._take(fd)
+    run = _run()
     try:
         said = []
         assert router.release_spec("llamacpp:command-a-plus-IQ1_S", "x",
                                    say=said.append) == []
         assert "a run is in flight" in said[0]
     finally:
-        exclusive._release(fd)
-        os.close(fd)
+        _done(run)
     assert fake.unloads == []
     assert router.release_spec("llamacpp:command-a-plus-IQ1_S", "x") != []
 
 
 def test_a_model_proven_idle_is_unloaded_even_while_a_run_holds_the_machine(fake):
-    fd = os.open(exclusive.lock_path(), os.O_RDWR | os.O_CREAT, 0o644)
-    assert exclusive._take(fd)
+    run = _run()
     try:
         assert router.release_spec("llamacpp:command-a-plus-IQ1_S", "x", say=lambda m: None) == []
         assert router.release_spec("llamacpp:command-a-plus-IQ1_S", "x", proven_idle=True,
                                    say=lambda m: None) == ["command-a-plus-IQ1_S"]
     finally:
-        exclusive._release(fd)
-        os.close(fd)
+        _done(run)
     assert fake.unloads == ["command-a-plus-IQ1_S"]
 
 

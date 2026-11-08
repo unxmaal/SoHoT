@@ -95,15 +95,8 @@ def busy() -> str:
     """What other than this process's own job holds the machine lock, or "". Never waits."""
     if os.environ.get(exclusive.HELD_ENV) == "1":
         return ""
-    fd = os.open(exclusive.lock_path(), os.O_RDWR | os.O_CREAT, 0o644)
-    try:
-        if exclusive._take(fd):
-            exclusive._release(fd)
-            return ""
-    finally:
-        os.close(fd)
-    record = exclusive.holder()
-    return "" if _mine(record) else exclusive.describe(record)
+    record = exclusive.gpu_holder()
+    return "" if not record or _mine(record) else exclusive.describe(record)
 
 
 def _preflight(*texts: str, max_tokens: int = 1) -> None:

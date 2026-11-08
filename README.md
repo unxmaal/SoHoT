@@ -3005,9 +3005,12 @@ another machine gets the picture rather than a path it cannot open.
 ### One model-loading run at a time
 
 Image and video generation, eval runs (screen, measure, `soh rubric run`) and
-`soh memory ramp` hold one machine-wide lock,
-`$LOCALHARNESS_HOME/queue/generation.lock`. A second run waits and says what
-it is waiting behind. Text lane prompts do not take it, because each server
+`soh memory ramp` hold one machine-wide lock: this machine's `gpu` lease in the
+store (the same ledger the work queue, `delegate` and the router read), then the
+flock `$LOCALHARNESS_HOME/queue/generation.lock` that other projects' `lockf`
+takes. A run inside a queued GPU job uses its job's lease. A second run waits
+and says what it is waiting behind. A holder that dies frees the lease at the
+next take (#1619). Text lane prompts do not take it, because each server
 already queues its own requests.
 
 The lock is local, so it also takes a batch lease on the serving machine

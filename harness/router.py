@@ -209,22 +209,10 @@ def kept() -> set[str]:
 
 @contextlib.contextmanager
 def _no_run_in_flight():
-    """True while this process holds the eval lock nobody else had. #444."""
+    """True while this process holds the gpu lease nobody else had, or its own job's. #444, #1619."""
     from harness import exclusive
-    if os.environ.get(exclusive.HELD_ENV) == "1":
-        yield True
-        return
-    fd = os.open(exclusive.lock_path(), os.O_RDWR | os.O_CREAT, 0o644)
-    try:
-        if not exclusive._take(fd):
-            yield False
-            return
-        try:
-            yield True
-        finally:
-            exclusive._release(fd)
-    finally:
-        os.close(fd)
+    with exclusive.gpu_now("router release") as got:
+        yield got
 
 
 def release(stems, why: str, *, get=None, post=None, keep=None, say=print, base: str = "",

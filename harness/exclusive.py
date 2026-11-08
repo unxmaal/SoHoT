@@ -9,10 +9,7 @@ MEASURED, NOT ASSUMED. 2026-09-12 on the M2 Pro: `lh image` started while
 kIOGPUCommandBufferCallbackErrorTimeout, swap reached 8.0 GB of 9.2, and both
 jobs were killed with no artifact. That is ERROR #33 and assumption C4.
 
-An advisory file lock, NOT a pidfile. A lock the kernel holds is released when
-the process dies however it dies -- killed, crashed, OOM -- so there is no
-stale-lock path to get wrong. The 2026-09-12 incident ended in exactly the kill
-a pidfile scheme handles worst.
+The lock is this machine's gpu lease in the store, plus the generation.lock flock other projects' lockf shares. #1619.
 """
 from __future__ import annotations
 
@@ -20,6 +17,7 @@ import contextlib
 import json
 import os
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -142,11 +140,197 @@ def _taken(path: Path) -> bool:
         os.close(fd)
 
 
+def _conn():
+    from harness import memory_store as ms
+    return ms.connect()
+
+
+def _holder_alive(h: dict) -> bool:
+    """Whether a gpu lease's holder lives: its process, or for a queued job's, the job's own process. #1619."""
+    from harness import workqueue as wq
+    if h.get("pid") and wq.alive(int(h["pid"])):
+        return True
+    return h.get("job_id") is not None and wq._pid_of(h["job_id"]) is not None
+
+
+def _gpu_leases(conn) -> list[dict]:
+    from harness import item_lease, resources
+    return [h for h in item_lease.live(conn, resources.GPU) if _holder_alive(h)]
+
+
+def _reap(conn) -> None:
+    """Release this machine's gpu leases whose holder is gone, so a killed holder frees the GPU at once. #1619."""
+    from harness import item_lease, resources
+    for h in item_lease.live(conn, resources.GPU):
+        if not _holder_alive(h):
+            item_lease.release(conn, h["id"])
+
+
+def _own(conn) -> dict | None:
+    """The gpu lease this process's queued job holds, or None. #1619."""
+    from harness import item_lease, resources
+    from harness import workqueue as wq
+    key = wq._key(os.environ.get(wq.JOB_ENV, ""))
+    got = item_lease.of_job(conn, key) if key is not None else None
+    return got if got and got["resource"] == resources.GPU else None
+
+
+def gpu_leases() -> int:
+    """How many gpu leases live on this machine; the fallback flock's state when the store will not open. #1619."""
+    try:
+        conn = _conn()
+    except Exception:  # noqa: BLE001 - with no store, the fallback flock is what holds the machine
+        return int(_taken(lock_path()))
+    try:
+        leases = _gpu_leases(conn)
+    finally:
+        conn.close()
+    return len(leases) + int(_outside(leases))
+
+
+def _outside(leases: list[dict]) -> bool:
+    """Whether another project's lockf holds generation.lock: taken while no lease here is a model-loading one. #1619."""
+    return not any(h.get("state") for h in leases) and _taken(lock_path())
+
+
+def gpu_holder() -> dict:
+    """The holder record of the model-loading process on this machine's gpu lease, {} when none holds it. #1619."""
+    from harness import workqueue as wq
+    try:
+        conn = _conn()
+    except Exception:  # noqa: BLE001 - with no store, the fallback flock is what holds the machine
+        return holder() if _taken(lock_path()) else {}
+    try:
+        leases = _gpu_leases(conn)
+    finally:
+        conn.close()
+    for h in leases:
+        if not h.get("state"):
+            continue
+        rec = holder()
+        if h.get("job_id") is None:
+            return {"kind": h["state"], "pid": h["pid"], "since": h["taken_at"],
+                    **(rec if rec.get("pid") == h["pid"] else {})}
+        if str(rec.get("job") or "") == str(h["job_id"]) and rec.get("pid") and wq.alive(int(rec["pid"])):
+            return rec
+    if _outside(leases):
+        rec = holder()
+        return rec if rec.get("pid") and wq.alive(int(rec["pid"])) else {"kind": "another project's lockf"}
+    return {}
+
+
+@contextlib.contextmanager
+def _flock(announce, poll: float, wait: bool = True):
+    """The flock on generation.lock, which other projects' lockf shares; yields (taken, waited)."""
+    fd = os.open(lock_path(), os.O_RDWR | os.O_CREAT, 0o644)
+    try:
+        waited, said = False, None
+        while not (got := _take(fd)) and wait:
+            waited = True
+            record = holder()
+            if announce and identity(record) != said:
+                announce(f"waiting for {describe(record)} to finish")
+                said = identity(record)
+            time.sleep(poll)
+        try:
+            yield got, waited
+        finally:
+            if got:
+                _release(fd)
+    finally:
+        os.close(fd)
+
+
+def _beating(lease_id: int):
+    from harness import item_lease
+    stop = threading.Event()
+
+    def keep():
+        while not stop.wait(item_lease.TTL_S / 3):
+            with contextlib.suppress(Exception):
+                conn = _conn()
+                try:
+                    item_lease.beat(conn, lease_id)
+                finally:
+                    conn.close()
+    threading.Thread(target=keep, name="gpu-lease", daemon=True).start()
+    return stop
+
+
+@contextlib.contextmanager
+def _gpu(kind: str, announce, poll: float, wait: bool = True):
+    """The gpu lease, then the flock other projects' `lockf -k generation.lock` takes (DECISION #210); yields (taken, waited). #1619."""
+    with _lease(kind, announce, poll, wait) as (got, waited):
+        if not got:
+            yield False, waited
+            return
+        with _flock(announce, poll, wait) as (locked, lock_waited):
+            yield locked, waited or lock_waited
+
+
+@contextlib.contextmanager
+def _lease(kind: str, announce, poll: float, wait: bool = True):
+    """This machine's gpu lease for `kind`: its queued job's own, else one taken, waiting while it is held. #1619."""
+    from harness import item_lease, resources
+    try:
+        conn = _conn()
+    except Exception as exc:  # noqa: BLE001 - the flock still holds this machine against another with no store
+        if announce:
+            announce(f"no gpu lease (the store would not open: {exc}); holding the local lock only")
+        yield True, False
+        return
+    try:
+        own = _own(conn)
+        if own is not None and item_lease.beat(conn, own["id"], state=kind):
+            try:
+                yield True, False
+            finally:
+                with contextlib.suppress(Exception):
+                    item_lease.beat(conn, own["id"], state="")
+            return
+        waited, said = False, None
+        while True:
+            _reap(conn)
+            got = item_lease.take(conn, resources.GPU, f"{kind} pid {os.getpid()}", state=kind, detail=kind)
+            if got is not None or not wait:
+                break
+            waited = True
+            who = describe(gpu_holder()) if gpu_holder() else "; ".join(
+                item_lease.line(h) for h in _gpu_leases(conn)) or "a gpu lease"
+            if announce and who.split(" for ")[0] != said:
+                announce(f"waiting for {who} to finish")
+                said = who.split(" for ")[0]
+            time.sleep(poll)
+        if got is None:
+            yield False, waited
+            return
+        stop = _beating(got["id"])
+        try:
+            yield True, waited
+        finally:
+            stop.set()
+            with contextlib.suppress(Exception):
+                item_lease.release(conn, got["id"])
+    finally:
+        conn.close()
+
+
+@contextlib.contextmanager
+def gpu_now(kind: str):
+    """Hold this machine's gpu lease only if it is free now, or this process's job holds it; yields whether held. #1619."""
+    if os.environ.get(HELD_ENV) == "1":
+        yield True
+        return
+    with _gpu(kind, None, POLL_SECONDS, wait=False) as (got, _):
+        yield got
+
+
 def holders() -> list[dict]:
     """Each lock held on this machine now with its holder record: "gpu", then each "cloud" slot. #1135."""
     out = []
-    if _taken(lock_path()):
-        out.append({**holder(), "lock": "gpu"})
+    got = gpu_holder()
+    if got:
+        out.append({**got, "lock": "gpu"})
     for slot in range(max(1, int(CLOUD_SLOTS))):
         if _taken(cloud_lock_path(slot)):
             out.append({**_read(cloud_holder_path(slot)), "lock": "cloud", "slot": slot})
@@ -340,36 +524,15 @@ def held(kind: str, announce=None, poll: float = POLL_SECONDS, deadline_s: float
             yield False
         return
 
-    path = lock_path()
-    # Opened for the whole block: on Windows the lock is on the open handle,
-    # and closing it anywhere would release it early.
-    fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o644)
-    try:
-        waited = False
-        said = None
-        while not _take(fd):
-            waited = True
-            record = holder()
-            who = identity(record)
-            if announce and who != said:
-                announce(f"waiting for {describe(record)} to finish")
-                said = who
-            time.sleep(poll)
-
+    with _gpu(kind, announce, poll) as (_, waited), _leased(announce, poll) as lease_waited:
+        _write_holder(kind, deadline_s)
+        os.environ[HELD_ENV] = "1"
         try:
-            with _leased(announce, poll) as lease_waited:
-                _write_holder(kind, deadline_s)
-                os.environ[HELD_ENV] = "1"
-                try:
-                    yield waited or lease_waited
-                finally:
-                    os.environ.pop(HELD_ENV, None)
-                    with contextlib.suppress(OSError):
-                        holder_path().unlink()
+            yield waited or lease_waited
         finally:
-            _release(fd)
-    finally:
-        os.close(fd)
+            os.environ.pop(HELD_ENV, None)
+            with contextlib.suppress(OSError):
+                holder_path().unlink()
 
 
 @contextlib.contextmanager
@@ -416,34 +579,28 @@ def try_held(kind: str):
     if os.environ.get(HELD_ENV) == "1":
         yield True
         return
-    fd = os.open(lock_path(), os.O_RDWR | os.O_CREAT, 0o644)
-    try:
-        if not _take(fd):
+    with _gpu(kind, None, POLL_SECONDS, wait=False) as (got, _):
+        if not got:
             yield False
             return
-        try:
-            with _named() as mine:
+        with _named() as mine:
+            try:
+                who = _owner()
+                busy = _claim(mine, who)
+            except Exception:  # noqa: BLE001 - the gpu lease still holds this machine
+                who, busy = None, {}
+            if busy:
+                yield False
+                return
+            with _renewing(mine, who) if who else contextlib.nullcontext():
+                _write_holder(kind)
+                os.environ[HELD_ENV] = "1"
                 try:
-                    who = _owner()
-                    busy = _claim(mine, who)
-                except Exception:  # noqa: BLE001 - the flock still holds this machine
-                    who, busy = None, {}
-                if busy:
-                    yield False
-                    return
-                with _renewing(mine, who) if who else contextlib.nullcontext():
-                    _write_holder(kind)
-                    os.environ[HELD_ENV] = "1"
-                    try:
-                        yield True
-                    finally:
-                        os.environ.pop(HELD_ENV, None)
-                        with contextlib.suppress(OSError):
-                            holder_path().unlink()
-        finally:
-            _release(fd)
-    finally:
-        os.close(fd)
+                    yield True
+                finally:
+                    os.environ.pop(HELD_ENV, None)
+                    with contextlib.suppress(OSError):
+                        holder_path().unlink()
 
 
 def beat(now: float | None = None) -> None:

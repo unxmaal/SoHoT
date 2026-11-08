@@ -194,13 +194,13 @@ def test_a_cold_model_gets_no_completion(tmp_path, lane):
 
 def test_a_held_machine_gets_no_completion(tmp_path, lane):
     conn, f = _store(tmp_path), lane()
-    fd = os.open(exclusive.lock_path(), os.O_RDWR | os.O_CREAT, 0o644)
+    from harness import item_lease, resources
+    from harness import memory_store as ms
+    run = item_lease.take(ms.connect(), resources.GPU, "eval pid 1", state="eval")
     try:
-        assert exclusive._take(fd)
         row = f.wake(conn, 0)
     finally:
-        exclusive._release(fd)
-        os.close(fd)
+        item_lease.release(ms.connect(), run["id"])
     assert row["outcome"] == "skipped" and "held" in row["reason"]
     assert f.state["posts"] == []
 

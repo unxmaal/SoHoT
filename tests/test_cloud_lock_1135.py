@@ -45,7 +45,7 @@ def _locks_during_execute(monkeypatch, candidates, extra=()):
     seen = {}
 
     def execute(args):
-        seen["gpu"] = exclusive._taken(exclusive.lock_path())
+        seen["gpu"] = exclusive.gpu_leases() > 0
         seen["cloud"] = exclusive._taken(exclusive.cloud_lock_path(0))
         seen["held"] = [h["lock"] for h in exclusive.holders()]
         return 0
