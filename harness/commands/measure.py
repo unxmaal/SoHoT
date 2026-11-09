@@ -257,6 +257,61 @@ def room_for(row: dict) -> tuple[bool, float | None, str]:
     return ok, need if isinstance(need, (int, float)) else None, why
 
 
+def unserved(spec: str) -> tuple[str, str]:
+    """(stem, why) when the recorded llama-server plan refuses the stem `spec` routes to, else ("", ""). #1650."""
+    from harness import serving
+    try:
+        serving.route(spec)
+    except ValueError as exc:
+        return reasons.plan_refusal(str(exc))
+    return "", ""
+
+
+def _incumbent_waits(lane: str, incumbent: str, stem: str, why: str) -> str:
+    return (f"{lane}: the incumbent {incumbent} is not served here ({why}), so nothing is measured against it; "
+            f"a harness limit, waiting on plan:{stem} (#1650)")
+
+
+def _names(spec: str, stem: str) -> bool:
+    return bool(stem) and stem.lower() in spec.lower()
+
+
+def lane_refusal(lane: str) -> str:
+    """Why no measurement in `lane` can start because the recorded plan refuses its incumbent, else "". #1650."""
+    from harness import adopt, screen, winners
+    incumbent = adopt.default_for(lane, winners.typed().get(lane, ""))
+    if not incumbent:
+        return ""
+    stem, why = unserved(screen.candidate_for(lane, incumbent) or incumbent)
+    return _incumbent_waits(lane, incumbent, stem, why) if stem else ""
+
+
+def _plan_limit(name: str, lane: str, incumbent: str, stem: str, why: str, mine: bool, sweep, dry: bool) -> bool:
+    """Whether the recorded plan refuses `stem` for either candidate, said once; a refused challenger (`mine`) waits on plan:<stem>. #1650."""
+    from harness import memory_store as ms
+    from harness.commands import screen as screen_cmd
+    if not stem:
+        return False
+    if mine:
+        v = screen_cmd.verdict_of_run(1, f"llamacpp:{stem} is not served: {why}", None, name)
+        line = f"{name}: not measured: {v.detail}; waiting on {v.until}"
+        if not dry:
+            store = ms.connect()
+            try:
+                ms.decide(store, name, v.outcome, tier=ms.MEASURE, detail=v.detail[:200], until=v.until,
+                          reason=v.reason, failure_class=v.failure_class)
+            except (KeyError, ms.IllegalTransition) as exc:
+                line += f" (not recorded: {exc})"
+            finally:
+                store.close()
+    else:
+        line = f"{name}: not measured: {_incumbent_waits(lane, incumbent, stem, why)}"
+    print(f"  {line}", flush=True)
+    if sweep is not None:
+        sweep.lines.append(line)
+    return True
+
+
 def lane_for(row: dict, want: str = "") -> str:
     """The lane `row` is measured in: a repo row's own, else the scoped lane when it can run there, else its filed lane. #207, #889, #1134."""
     from harness import repo_gate
@@ -338,6 +393,9 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         upstream = screen.upstream_of(incumbent)
         if upstream:
             inc_spec = screen.candidate_for(lane, upstream) or upstream
+    for side in (inc_spec, spec):
+        if _plan_limit(name, lane, incumbent, *unserved(side), side == spec, sweep, dry):
+            return 0
     split, plan = _plan(a, lane, inc_spec, spec, sweep=sweep)
     held, ident = _held(lane, inc_spec, spec, split, name, sweep)
     if held:
@@ -424,6 +482,9 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         print(f"    stopped by a signal (exit {proc.returncode}); its checkpointed cases are kept", flush=True)
         return _paused(name, lane, inc_spec, spec, split, plan, out, held, ident, sweep)
     if proc.returncode != 0:
+        stem, why = reasons.plan_refusal(proc.stderr or "")
+        if _plan_limit(name, lane, incumbent, stem, why, _names(spec, stem) and not _names(inc_spec, stem), sweep, dry):
+            return 0
         err(proc.stderr.strip()[-400:] or "no stderr")
         return 1
     taken = (held or {}).get("looks") or []

@@ -562,11 +562,28 @@ def _sized(top: int, sweep) -> dict:
                     f"of the {power._hm(left)} left of the sweep ceiling")}
 
 
-def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=None, headroom=None) -> int:
+def _servable_lanes(rows: list[dict], want: str, sweep, refusal=None) -> list[dict]:
+    """The rows whose lane's incumbent the recorded plan serves; each refused lane said once, a harness limit. #1650."""
+    refusal = refusal or measure_cmd.lane_refusal
+    lanes_of = [measure_cmd.lane_for(r, want) for r in rows]
+    why = {lane: refusal(lane) for lane in dict.fromkeys(lanes_of)}
+    kept = [r for r, lane in zip(rows, lanes_of) if not why[lane]]
+    for lane, line in why.items():
+        if line:
+            line = f"{line}; {lanes_of.count(lane)} measurement(s) wait"
+            print(f"  {line}", flush=True)
+            if sweep is not None:
+                sweep.lines.append(line)
+    return kept
+
+
+def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=None, headroom=None,
+                 refusal=None) -> int:
     """Each measurement in turn, none while memory is short; after a memory pause, only those that fit now, smallest first. #813, #1082, #1482."""
     room = room or measure_cmd.room_for
     headroom = headroom or measure_cmd.headroom_gb
-    queue, total, i, tight = list(fresh), len(fresh), 0, False
+    queue = _servable_lanes(fresh, getattr(a, "lane", ""), sweep, refusal)
+    total, i, tight = len(queue), 0, False
     while queue:
         held = _held_back(sweep, len(queue))
         if held:
