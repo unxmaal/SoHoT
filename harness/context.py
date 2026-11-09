@@ -102,7 +102,7 @@ def slot_plan(stem: str) -> tuple[int, int] | None:
 
 
 def choose_slots(meta: dict, weights: int, budget: int, slots: int, slot_ctx: int,
-                 cache_type: str = "f16", kv_cap: int | None = None) -> "Choice":
+                 cache_type: str = "f16", kv_cap: int | None = None, coresident: int = 0) -> "Choice":
     """A pool of slots * slot_ctx shared by the slots, when it fits beside the weights and one slot fits kv_cap."""
     full = trained(meta)
     per = kv_bytes_per_token(meta, cache_type)
@@ -111,6 +111,8 @@ def choose_slots(meta: dict, weights: int, budget: int, slots: int, slot_ctx: in
     if not per or not full or slot_ctx > full:
         return Choice(0, full, per, f"refused: {slots} slots of {slot_ctx} tokens, "
                       f"trained for {full}, {per} B/token")
+    if weights >= budget:
+        return Choice(0, full, per, _too_big_why(weights, budget, coresident))
     # The cap bounds what one request's context may cost; the budget bounds the pool. #682.
     if kv_cap is not None and slot_ctx * per > kv_cap:
         return Choice(0, full, per, f"refused: one slot of {slot_ctx} tokens needs "
@@ -124,13 +126,13 @@ def choose_slots(meta: dict, weights: int, budget: int, slots: int, slot_ctx: in
 
 
 def fitting_slots(meta: dict, weights: int, budget: int, slots: int, slot_ctx: int,
-                  cache_type: str = "f16", kv_cap: int | None = None) -> tuple[int, "Choice"]:
+                  cache_type: str = "f16", kv_cap: int | None = None, coresident: int = 0) -> tuple[int, "Choice"]:
     """The most slots up to `slots` whose pool fits, so a knob set for a bigger machine serves fewer, not none. #682."""
-    first = choose_slots(meta, weights, budget, slots, slot_ctx, cache_type, kv_cap)
+    first = choose_slots(meta, weights, budget, slots, slot_ctx, cache_type, kv_cap, coresident)
     if first.ctx:
         return slots, first
     for n in range(slots - 1, 0, -1):
-        got = choose_slots(meta, weights, budget, n, slot_ctx, cache_type, kv_cap)
+        got = choose_slots(meta, weights, budget, n, slot_ctx, cache_type, kv_cap, coresident)
         if got.ctx:
             return n, got._replace(why=f"{got.why}; {slots} asked, {n} fit")
     return slots, first
@@ -235,7 +237,7 @@ def swa_bytes(meta: dict, cache_type: str = "f16") -> int:
     return local * (int(_arch(meta, "attention.sliding_window") or 0) + SWA_UBATCH) if local else 0
 
 
-def _too_big_why(weights: int, budget: int) -> str:
+def _too_big_why(weights: int, budget: int, coresident: int = 0) -> str:
     """Why a model whose weights alone exceed the budget is not served. #779.
 
     SAY THE TERM THAT ACTUALLY REFUSED IT. This used to fall through to the KV
@@ -257,6 +259,8 @@ def _too_big_why(weights: int, budget: int) -> str:
     if held:
         # A harness limit: the interactive server's pinned models hold this much for good. #1570.
         why += f", {held / 1024 ** 3:.1f} GiB of the machine held by the interactive server's pinned models"
+    if coresident:
+        why += f", {coresident / 1024 ** 3:.1f} GiB by the co-resident MLX model"
     head = memory.commit_headroom_gb()
     if head is None:
         # No commit limit to read, so no claim about the host side. macOS grows
@@ -276,7 +280,7 @@ def _too_big_why(weights: int, budget: int) -> str:
 
 def choose(meta: dict, weights: int, budget: int, slots: int = 1,
            cache_type: str = "f16", floor: int = FLOOR,
-           kv_cap: int | None = None) -> Choice:
+           kv_cap: int | None = None, coresident: int = 0) -> Choice:
     """A pool of slots x min(trained, each slot's share of the room under kv_cap), in steps of 1024; 0 when a slot is below `floor`."""
     full = trained(meta)
     per = kv_bytes_per_token(meta, cache_type)
@@ -284,7 +288,7 @@ def choose(meta: dict, weights: int, budget: int, slots: int = 1,
         return Choice(0, full, per, "refused: the GGUF header gives no trained context "
                       "or KV shape to size a cache from")
     if weights >= budget:
-        return Choice(0, full, per, _too_big_why(weights, budget))
+        return Choice(0, full, per, _too_big_why(weights, budget, coresident))
     room = max(budget - weights, 0)
     room = min(room, kv_cap) if kv_cap is not None else room
     slots = max(slots, 1)
@@ -424,17 +428,17 @@ def models_max_path(preset) -> Path:
 
 
 def _sized(meta: dict, weights: int, alone: int, room: int, fixed, n: int, cache_type: str,
-           kv_cap: int | None) -> tuple[int, Choice]:
+           kv_cap: int | None, coresident: int = 0) -> tuple[int, Choice]:
     """(slots, choice) for one GGUF: its own slot plan when it has one, else the most slots up to `n` that fit."""
     if fixed:
         # The slots it serves alone, sharing whatever pool the k-resident room holds. #748.
-        n, got = fitting_slots(meta, weights, alone, *fixed, cache_type, kv_cap)
+        n, got = fitting_slots(meta, weights, alone, *fixed, cache_type, kv_cap, coresident)
         pooled = shared_pool(meta, weights, room, n, fixed[1], cache_type, kv_cap) if got.ctx else got
         return n, (got if pooled.ctx == got.ctx else pooled)
-    got = choose(meta, weights, room, n, cache_type, kv_cap=kv_cap)
+    got = choose(meta, weights, room, n, cache_type, kv_cap=kv_cap, coresident=coresident)
     while not got.ctx and n > 1:
         n -= 1
-        got = choose(meta, weights, room, n, cache_type, kv_cap=kv_cap)
+        got = choose(meta, weights, room, n, cache_type, kv_cap=kv_cap, coresident=coresident)
     return n, got
 
 
@@ -492,6 +496,7 @@ def plan(conn, budget: int | None = None, slots: int = 1,
         raise
     except Exception:  # noqa: BLE001
         beside = 0
+    mlx = beside
     from harness import interactive
     # The interactive server's pinned set is resident for good, so evals plan around it. #1561.
     beside += interactive.reserved_bytes()
@@ -511,7 +516,7 @@ def plan(conn, budget: int | None = None, slots: int = 1,
             # With k resident, each gets an equal share of what the k heaviest weights leave. #699.
             room = budget - beside if k == 1 else weights + max(budget - beside - heaviest, 0) // k
             asked = n
-            n, got = _sized(meta, weights, budget - beside, room, fixed, n, cache_type, kv_cap)
+            n, got = _sized(meta, weights, budget - beside, room, fixed, n, cache_type, kv_cap, mlx)
             if record:
                 bound.setdefault(_bound(meta, weights, budget - beside, room, fixed, asked, cache_type, kv_cap, got),
                                  []).append(stem)
