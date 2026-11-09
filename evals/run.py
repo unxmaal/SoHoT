@@ -1618,6 +1618,7 @@ def _execute_at(args, overrides: dict) -> int:
     kept = [{} for _ in todo]
     stopped = None
     eye.yielder = yields_to_serving(outdir)
+    fresh, control = len(results), (todo[0][1].candidate if len(todo) > 1 and not args.screen else "")
     try:
         with watch.asks_pause(eye):
             for i, mine in segments:
@@ -1627,6 +1628,9 @@ def _execute_at(args, overrides: dict) -> int:
                         launches[runner.candidate] = ds4.launch_text(launched["launch"])
                     _run_candidate(args, candidate, runner, mine, results, outdir, evicted, ladder,
                                    eye, ckpt, progress, kept[i], block != 1, pooled)
+                silent = incumbent_silent(results, control, fresh) if control else ""
+                if silent:
+                    raise watch.Silent(silent)
     except watch.Stop as exc:
         stopped = exc
         if isinstance(exc, watch.Deferred) and outdir:
@@ -1638,6 +1642,14 @@ def _execute_at(args, overrides: dict) -> int:
     finally:
         if eye.yielder is not None:
             eye.yielder.close()
+    if isinstance(stopped, watch.Silent):
+        from harness import cuts
+        cuts.cut("incumbent_silent_cases", f"{args.modality}: {control} answered nothing",
+                 kept=len(results) - fresh, dropped=eye.left_cases())
+        if outdir:
+            watch.mark_stop(outdir, watch.INCUMBENT_SILENT)
+        progress.write("stopped", stopped.why)
+        return watch.SILENT
     state, why = ("paused", stopped.why) if stopped else ("done", "")
     code = watch.PAUSED if stopped else 0
 
@@ -1956,6 +1968,20 @@ def pair_block(candidates, gateway: str, home=_home) -> int | None:
             held.setdefault(base, [cap, set()])[1].add(model)
     fits = all(cap is None or len(models) <= cap for cap, models in held.values())
     return 1 if fits else PAIR_BLOCK
+
+
+#: Fresh incumbent rows, every one harness_error, after which a paired run stops as no comparison. #1656.
+SILENT_CASES = 5
+
+
+def incumbent_silent(results, key: str, since: int = 0, n: int | None = None) -> str:
+    """Why the paired run stops: `key` answered none of its first `n` cases this run, every one harness_error; or ""."""
+    n = SILENT_CASES if n is None else n
+    mine = [r for r in results[since:] if r.candidate == key]
+    if len(mine) < n or any(r.failure_class != reasons.HARNESS_ERROR for r in mine):
+        return ""
+    return (f"stopped: the incumbent {key} answered none of its first {len(mine)} case(s), every one "
+            f"harness_error ({(mine[0].detail or '').strip()[:240]}); no comparison to make (#1656)")
 
 
 def paired_segments(order, rest, block, key=lambda c: c) -> list[tuple[int, list]]:
