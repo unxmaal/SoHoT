@@ -180,7 +180,7 @@ def api_base(entry: dict) -> str:
 
 def engine_at(base: str, environ=None, config=None, data=None) -> str | None:
     """The engine serving `base`: a config entry's engine key, else the local launcher port; None if neither says."""
-    from harness import ds4, gateway, router
+    from harness import ds4, gateway, interactive, router
     want = bare(base)
     if not want:
         return None
@@ -188,7 +188,7 @@ def engine_at(base: str, environ=None, config=None, data=None) -> str | None:
         got = _declared(entry, environ)
         if got and api_base(entry) == want:
             return got
-    if want in (LLAMACPP_URL, router.url()):
+    if want in (LLAMACPP_URL, router.url(), interactive.url()):
         return LLAMACPP
     if want == vllm_url(environ):
         return vllm_engine(environ)
@@ -310,6 +310,24 @@ def _servable(stem: str) -> str:
     return stem
 
 
+def _router_for(stem: str) -> tuple[str, str]:
+    """(base, stem): the interactive server for a stem a paired run's arm is answered by there (#1578), else the router."""
+    from harness import interactive, router
+    pinned = interactive.answering(stem)
+    return (pinned, stem) if pinned else (router.url(), _servable(stem))
+
+
+def router_stem(spec: str, config=None) -> str:
+    """The stem llama-server serves a spec under: a llamacpp: stem or a GGUF-only repo id; "" for anything else."""
+    name = (spec or "").partition(",")[0].strip()
+    if name.startswith(LLAMACPP_PREFIX):
+        return name[len(LLAMACPP_PREFIX):].strip()
+    if "/" not in name or ":" in name:
+        return ""
+    from harness import screen
+    return "" if name.lower() in screen.gateway_routes(config)[0] else (gguf_stem(name) or "")
+
+
 def route(spec: str, gateway: str = "", config=None) -> Route:
     """The server that serves a text spec, shared by lane commands and evals.run. #297.
 
@@ -333,10 +351,8 @@ def _route(name: str, sampling: dict, spec: str, gateway: str, config) -> Route:
     from harness import ds4
     if not text_spec(name):
         raise ValueError(f"{spec!r} is not served by a text server")
-    from harness import router
     if name.startswith(LLAMACPP_PREFIX):
-        return Route(router.url(), _servable(name[len(LLAMACPP_PREFIX):].strip()),
-                     sampling)
+        return Route(*_router_for(name[len(LLAMACPP_PREFIX):].strip()), sampling)
     if name.startswith(VLLM_PREFIX):
         model = name[len(VLLM_PREFIX):].strip()
         if not model:
@@ -353,7 +369,7 @@ def _route(name: str, sampling: dict, spec: str, gateway: str, config) -> Route:
             return Route(ds4.url(), stem, sampling)
     stem = None if alias else gguf_stem(name)
     if stem:
-        return Route(router.url(), _servable(stem), sampling)
+        return Route(*_router_for(stem), sampling)
     if gateway:
         return Route(gateway.rstrip("/"), name, sampling)
     if alias:

@@ -475,6 +475,8 @@ METRIC_DIRECTION = {
     "busy_wait_s": "neutral",
     # Delegations answered beside the case: its timing shares the machine. #1556.
     "co_tenancy": "neutral",
+    # 1 when the interactive server's pinned copy answered the case beside its LAN lanes. #1578.
+    "co_tenant": "neutral",
     # NEUTRAL: the part of busy_wait_s a pool-full retry lost, attempt and retry lock. #1235.
     "pool_full_wait_s": "neutral",
     # NEUTRAL: the part of busy_wait_s an engine attempt cut under a derived clock lost before its rerun. #1256.
@@ -873,6 +875,8 @@ class Receipt:
     pool_full: dict = field(default_factory=dict)
     #: receipt key -> the reply cap its stored runs derived and where it came from. Not an axis; max_tokens is. #1352.
     reply_cap: dict = field(default_factory=dict)
+    #: receipt key -> the interactive server that answered it and the pinned lanes it shared. Not an axis. #1578.
+    co_tenancy: dict = field(default_factory=dict)
 
     @property
     def rows_per_case(self) -> int:
@@ -910,7 +914,8 @@ class Receipt:
                 "engine_timeout": {k: dict(v) for k, v in self.engine_timeout.items()},
                 **({"harness": self.harness} if self.harness else {}),
                 **({"pool_full": {k: dict(v) for k, v in self.pool_full.items()}} if self.pool_full else {}),
-                **({"reply_cap": {k: dict(v) for k, v in self.reply_cap.items()}} if self.reply_cap else {})}
+                **({"reply_cap": {k: dict(v) for k, v in self.reply_cap.items()}} if self.reply_cap else {}),
+                **({"co_tenancy": {k: dict(v) for k, v in self.co_tenancy.items()}} if self.co_tenancy else {})}
 
     @classmethod
     def from_dict(cls, raw: dict) -> "Receipt":
@@ -943,7 +948,8 @@ class Receipt:
                    engine_timeout=raw.get("engine_timeout") or {},
                    harness=raw.get("harness") or "",
                    pool_full=raw.get("pool_full") or {},
-                   reply_cap=raw.get("reply_cap") or {})
+                   reply_cap=raw.get("reply_cap") or {},
+                   co_tenancy=raw.get("co_tenancy") or {})
 
 
 def legacy_knobs(raw: dict) -> dict:

@@ -1,6 +1,7 @@
 """The interactive server: a llama-server holding each LAN lane's model pinned, apart from the eval router. #1561."""
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import struct
@@ -331,6 +332,63 @@ def served_ctx(stem: str) -> int | None:
         if entry["stem"] == stem:
             return int(entry["ctx"])
     return None
+
+
+#: stem -> this machine's interactive server, for the arms of the run in hand answered there. #1578.
+_ARMS: dict[str, str] = {}
+
+
+def _here_base(plan: dict) -> str:
+    base = serving.bare(str(plan.get("url") or ""))
+    return base if base and serving.loopback(base) else ""
+
+
+def pinned_here(spec: str, config=None) -> dict | None:
+    """The pinned entry, its lane and server, when `spec` is a GGUF this machine's interactive server pins; else None. #1578."""
+    plan = read()
+    base = _here_base(plan)
+    stem = serving.router_stem(spec, config) if base else ""
+    for lane, entry in (plan.get("lanes") or {}).items() if stem else ():
+        if entry.get("stem") == stem:
+            return {**entry, "lane": lane, "url": base}
+    return None
+
+
+def answering(stem: str) -> str:
+    """The interactive server answering `stem` for the run in hand, "" when the router serves it. #1578."""
+    return _ARMS.get(stem, "")
+
+
+@contextlib.contextmanager
+def answer(specs=None):
+    """Within it each of `specs` (every stem, for None) this machine pins is answered by the interactive server. #1578."""
+    plan = read()
+    base = _here_base(plan)
+    entries = [] if not base else (list((plan.get("lanes") or {}).values()) if specs is None else
+                                   [e for e in map(pinned_here, specs) if e])
+    was = dict(_ARMS)
+    _ARMS.update({e["stem"]: base for e in entries})
+    try:
+        yield {e["stem"]: base for e in entries}
+    finally:
+        _ARMS.clear()
+        _ARMS.update(was)
+
+
+def preset_path(base: str = "") -> Path:
+    """The preset scripts/serve-interactive.sh writes for the server at `base`, this machine's by default."""
+    from harness import paths
+    return paths.home() / f"interactive-preset-{serving.bare(base or url()).rsplit(':', 1)[1]}.ini"
+
+
+def co_tenancy(base: str, stem: str) -> dict:
+    """What an arm answered by the interactive server shared it with: the server, its pinned lanes and models. #1578."""
+    lanes = read().get("lanes") or {}
+    mine = [e for e in lanes.values() if e.get("stem") == stem]
+    return {"server": serving.bare(base), "stem": stem,
+            "lanes": sorted(lane for lane, e in lanes.items() if e.get("stem") == stem),
+            "pinned": {lane: e.get("stem") for lane, e in sorted(lanes.items())},
+            "ctx": served_ctx(stem), "slots": mine[0].get("slots") if mine else None}
 
 
 def check(plan: dict, budget: int, beside: int) -> tuple[bool, str]:
