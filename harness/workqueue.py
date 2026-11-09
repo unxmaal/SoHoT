@@ -1025,15 +1025,17 @@ def _affine(job: dict, rest: list[dict], blocked) -> dict:
 def _startable(live: dict, now: float) -> tuple[dict, str] | None:
     """The first ready job, in run order, whose lock class is free; a GPU job or deploy only past the contention gate. #1153, #1509."""
     from harness import contention
-    started, held = {i for _, i in live.values()}, {}
+    started, held = {i for _, i in live.values()}, []
     jobs = [j for j in ready(now=now) if j["id"] not in started]
 
     def blocked(job) -> bool:
         if not contention.batch(job):
             return False
-        if needs(job) not in held:
-            held[needs(job)] = _contended(now, job)
-        return held[needs(job)]
+        if needs(job) == DEPLOY:
+            return _contended(now, job)
+        if not held:
+            held.append(_contended(now))
+        return held[0]
     for at, job in enumerate(jobs):
         cls = needs(job)
         if cls in (GPU, DEPLOY) and blocked(job):
