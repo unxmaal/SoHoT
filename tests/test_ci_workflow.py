@@ -72,6 +72,19 @@ def test_mutation_testing_runs_nightly_and_never_on_a_pull_request():
     assert "mutation" in doc["jobs"]["report-nightly"]["needs"]
 
 
+def test_a_pull_request_mutates_the_functions_it_changes():
+    """#1663 and #1665 changed screen functions, tested them only in LEFT_OUT files, and merged before any mutation run (#1666)."""
+    doc, _ = _ci()
+    plan, job = doc["jobs"]["mutation-plan"], doc["jobs"]["mutation-changed"]
+    assert plan["if"] == "github.event_name == 'pull_request'"
+    assert plan["steps"][0]["with"]["fetch-depth"] == 0, "the merge base needs the base branch's history"
+    assert 'tests.gauntlet.mutation changed --base "origin/$BASE_REF"' in "\n".join(s.get("run", "") for s in plan["steps"])
+    assert job["needs"] == "mutation-plan" and job["if"] == "needs.mutation-plan.outputs.plan != ''"
+    assert job["runs-on"] == "macos-latest", "mutmut runs the selection, which needs Apple Silicon"
+    run = "\n".join(s.get("run", "") for s in job["steps"])
+    assert '--function $f' in run and 'make mutation MUTATION_ARGS="$args" < /dev/null' in run
+
+
 def test_each_mutated_module_is_its_own_job_so_one_timeout_cannot_void_the_rest():
     """#840: all six in one job grew 35 -> 89 min, then hit the 120-minute limit and reported nothing."""
     from tests.gauntlet import mutation

@@ -13,7 +13,7 @@ REAL_BASELINE = mutation._baseline
 
 @pytest.fixture(autouse=True)
 def _no_real_baseline(monkeypatch):
-    monkeypatch.setattr(mutation, "_baseline", lambda tree, env, module: None)
+    monkeypatch.setattr(mutation, "_baseline", lambda tree, env, module, **kw: None)
 
 MUTATED = '''
 import os
@@ -170,6 +170,17 @@ def test_a_selected_test_that_fails_unmutated_is_named_before_mutmut_hides_it(mo
     monkeypatch.setattr(mutation.subprocess, "run",
                         lambda argv, **kw: subprocess.CompletedProcess(argv, 0, stdout="ok\n"))
     assert REAL_BASELINE(tmp_path, {}, "harness/reasons.py") is None
+
+
+def test_the_baseline_runs_at_the_workers_asked_for_else_one_per_cpu(monkeypatch, tmp_path):
+    """A local --jobs run must not start a pytest worker per core before mutmut honours the cap (#1666)."""
+    import subprocess
+    seen = []
+    monkeypatch.setattr(mutation.subprocess, "run",
+                        lambda argv, **kw: seen.append(argv) or subprocess.CompletedProcess(argv, 0, stdout="ok\n"))
+    REAL_BASELINE(tmp_path, {}, "harness/reasons.py", jobs=6)
+    REAL_BASELINE(tmp_path, {}, "harness/reasons.py")
+    assert [a[a.index("-n") + 1] for a in seen] == ["6", "auto"]
 
 
 def test_a_mutant_that_never_settles_breaks_the_run(monkeypatch, tmp_path):
@@ -473,3 +484,69 @@ def test_a_jobs_cap_reaches_mutmut_and_no_cap_leaves_it_one_worker_per_cpu(monke
     mutation._mutmut(tmp_path, {}, None, [])
     assert seen[0][-4:] == ["run", "--max-children", "3", "m.x_f__mutmut_*"]
     assert seen[1][-1] == "run"
+
+
+OLD_MODULE = '''LIMIT = 1
+
+
+def kept(x):
+    return x + 1
+
+
+class Box:
+    def size(self):
+        def inner():
+            return 2
+        return inner()
+
+
+def dropped():
+    return 3
+'''
+NEW_MODULE = '''LIMIT = 2
+
+
+def kept(x):
+    return x + 1
+
+
+class Box:
+    def size(self):
+        def inner():
+            return 5
+        return inner()
+
+
+def added():
+    return 4
+'''
+
+
+def _git(root, *args):
+    import subprocess
+    subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", *args], cwd=root, check=True,
+                   capture_output=True)
+
+
+def test_a_pull_request_mutates_the_functions_it_changes_or_adds_in_a_mutated_module(tmp_path):
+    """#1663/#1665 changed screen functions whose only tests were LEFT_OUT, and no PR run mutated them (#1666)."""
+    module = tmp_path / "harness" / "screen.py"
+    module.parent.mkdir()
+    module.write_text(OLD_MODULE, encoding="utf-8")
+    (tmp_path / "harness" / "other.py").write_text("def f():\n    return 1\n", encoding="utf-8")
+    _git(tmp_path, "init", "-q", "-b", "main")
+    _git(tmp_path, "add", ".")
+    _git(tmp_path, "commit", "-qm", "base")
+    _git(tmp_path, "checkout", "-qb", "pr")
+    module.write_text(NEW_MODULE, encoding="utf-8")
+    (tmp_path / "harness" / "other.py").write_text("def f():\n    return 2\n", encoding="utf-8")
+    _git(tmp_path, "commit", "-qam", "change")
+    assert mutation.changed("main", root=tmp_path) == {"harness/screen.py": ["Box.size", "added"]}
+    _git(tmp_path, "checkout", "-q", "main")
+    assert mutation.changed("main", root=tmp_path) == {}
+
+
+def test_changed_prints_one_tab_separated_line_per_module(monkeypatch, capsys):
+    monkeypatch.setattr(mutation, "changed", lambda base: {"harness/screen.py": ["argv", "Box.size"]})
+    assert mutation.main(["changed", "--base", "origin/main"]) == 0
+    assert capsys.readouterr().out == "harness/screen.py\targv Box.size\n"
