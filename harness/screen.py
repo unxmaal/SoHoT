@@ -526,7 +526,7 @@ def upstream_of(alias: str, config=None) -> str:
         params = entry.get("litellm_params") or {}
         model = gateway.strip_provider(str(params.get("model", "")))
         if model and serving.engine_at(str(params.get("api_base", "")), data=data) == serving.LLAMACPP:
-            # mlx_lm.server reads a router stem as a hub repo and 404s offline; the stem goes to the router. #1656.
+            # mlx_lm.server reads a router stem as a hub repo it cannot find offline; the stem goes to the router. #1656.
             return f"{LLAMACPP_PREFIX}{model}"
         return model
     return ""
