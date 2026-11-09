@@ -70,6 +70,21 @@
    "until": "policy:trust_remote_code@unlimited_ocr"
   },
   {
+   "candidate": "hf-ocr:datalab-to/indra-ocr",
+   "decided_at": "2026-11-09T02:02:10Z",
+   "detail": "it ran and passed nothing: ocr-invoice-line: exit 1: You can update Transformers with the command `pip install --upgrade transformers`. If this does not work, and the checkpoint is very new, then there may not be a release version that supports this model yet. In this case, you can get the most up-to-date code by installing T",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "datalab-to/indra-ocr",
+   "reason": "candidate",
+   "receipt_key": "hf-ocr/indra-ocr",
+   "run_id": 759,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "osocr:auto",
    "decided_at": "",
    "detail": "",
@@ -107,7 +122,7 @@
    "until": ""
   }
  ],
- "cursor": 1794032952814914,
+ "cursor": 1794189730029815,
  "events": [
   {
    "at": "2026-10-06T02:09:51Z",
@@ -318,6 +333,21 @@
    "reason": "candidate",
    "run_id": 715,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-09T02:02:10Z",
+   "candidate": "hf-ocr:datalab-to/indra-ocr",
+   "chosen": null,
+   "detail": "it ran and passed nothing: ocr-invoice-line: exit 1: You can update Transformers with the command `pip install --upgrade transformers`. If this does not work, and the checkpoint is very new, then there may not be a release version that supports this model yet. In this case, you can get the most up-to-date code by installing T",
+   "how": "",
+   "id": 1794189730029815,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 759,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -521,7 +551,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-07T08:04:22Z",
+ "generated_at": "2026-11-09T08:03:20Z",
  "knobs": [],
  "lane": {
   "cases": 448,
