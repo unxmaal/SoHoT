@@ -434,7 +434,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-02T08:00:27Z",
+ "generated_at": "2026-11-09T08:03:21Z",
  "knobs": [],
  "lane": {
   "cases": 299,
@@ -487,7 +487,7 @@
   "pass_rate": 0.642,
   "serves": "Qwen2.5-7B-Instruct-Q4_K_M",
   "serves_model": "Qwen2.5-7B-Instruct-Q4_K_M; 7B params, Q4_K_M, by bartowski",
-  "stale": false
+  "stale": true
  },
  "since": 0
 }
