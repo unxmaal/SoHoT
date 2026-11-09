@@ -158,6 +158,58 @@
    "until": "policy:trust_remote_code@yue2"
   },
   {
+   "candidate": "tts:mlx-community/fish-audio-s2-pro",
+   "decided_at": "2026-11-09T03:24:53Z",
+   "detail": "tts: lane too small, needs 1734 holdout cases: 135 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 5330 more tts cases are needed before a null says anything about fish-audio-",
+   "exam": {
+    "about": "",
+    "candidate": "fish-audio-s2-pro",
+    "cases": 470,
+    "first_s": 3.918,
+    "median_s": 3.334,
+    "metrics": {
+     "wer": 0.1004
+    },
+    "model": "fish-audio-s2-pro",
+    "not_run": "",
+    "pass_rate": 0.856,
+    "passed": 398,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-09T03:24:51Z",
+    "served_as": "",
+    "source": "",
+    "total": 465,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "declined",
+   "proposal": "mlx-community/fish-audio-s2-pro",
+   "reason": "limit",
+   "receipt_key": "fish-audio-s2-pro",
+   "run_id": 770,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:tts>5799"
+  },
+  {
+   "candidate": "tts:nativ-community/phonon",
+   "decided_at": "2026-11-09T02:03:04Z",
+   "detail": "the installed runtime could not load it: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'nativ-community/phonon': [Errno 2] No such file or directory: 'packed_manifest.json'\"}; numbers-and-units: tts failed: HTTP 50",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "nativ-community/phonon",
+   "reason": "runtime",
+   "receipt_key": "phonon",
+   "run_id": 765,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "version:mlx-audio>0.5.3"
+  },
+  {
    "candidate": "tts:owensong/Inflect-Micro-v2",
    "decided_at": "2026-10-18T00:42:26Z",
    "detail": "retracted: tts:owensong/Inflect-Micro-v2's runner could not open the repo's layout, a runner gap rather than a verdict on owensong/Inflect-Micro-v2: it ran and passed nothing: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'owensong/Inflect-Micro-v2': Could not determine model type for owensong/Inflect-Micro-v2\"} || not run, no candidate for them -- tts: fr-liaison",
@@ -188,29 +240,44 @@
    "until": "runner:tts/no-model-type"
   },
   {
+   "candidate": "tts:rumik-ai/rumik-oss-1",
+   "decided_at": "2026-11-09T02:01:58Z",
+   "detail": "needs its own runner: the stock loader could not assemble it: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'rumik-ai/rumik-oss-1': Could not determine model type for rumik-ai/rumik-oss-1\"}; numbers-and-units: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'rumik-ai/rumik-oss-1': Could not determine model type for rumik-ai/rumik-oss",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "rumik-ai/rumik-oss-1",
+   "reason": "runtime",
+   "receipt_key": "rumik-oss-1",
+   "run_id": 758,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "policy:trust_remote_code@rumik_oss"
+  },
+  {
    "candidate": "tts:mlx-community/Kokoro-82M-bf16",
    "decided_at": "2026-10-06T15:29:33Z",
    "detail": "tts: already the lane's default",
    "exam": {
     "about": "82M params, bf16, by Kokoro-82M-bf16",
     "candidate": "Kokoro-82M-bf16/bm_george",
-    "cases": 460,
-    "first_s": 2.833,
-    "median_s": 0.155,
+    "cases": 470,
+    "first_s": 0.327,
+    "median_s": 0.162,
     "metrics": {
-     "wer": 0.0837
+     "wer": 0.0968
     },
     "model": "Kokoro-82M-bf16/bm_george",
     "not_run": "",
-    "pass_rate": 0.889,
-    "passed": 409,
+    "pass_rate": 0.854,
+    "passed": 397,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-26T04:06:59Z",
+    "run_at": "2026-11-09T03:24:51Z",
     "served_as": "",
     "source": "https://huggingface.co/Kokoro-82M-bf16/bm_george",
-    "total": 460,
+    "total": 465,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -231,23 +298,23 @@
    "exam": {
     "about": "82M params, bf16, by Kokoro-82M-bf16",
     "candidate": "Kokoro-82M-bf16/bm_george",
-    "cases": 460,
-    "first_s": 2.833,
-    "median_s": 0.155,
+    "cases": 470,
+    "first_s": 0.327,
+    "median_s": 0.162,
     "metrics": {
-     "wer": 0.0837
+     "wer": 0.0968
     },
     "model": "Kokoro-82M-bf16/bm_george",
     "not_run": "",
-    "pass_rate": 0.889,
-    "passed": 409,
+    "pass_rate": 0.854,
+    "passed": 397,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-26T04:06:59Z",
+    "run_at": "2026-11-09T03:24:51Z",
     "served_as": "",
     "source": "https://huggingface.co/Kokoro-82M-bf16/bm_george",
-    "total": 460,
+    "total": 465,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -268,23 +335,23 @@
    "exam": {
     "about": "82M params, bf16, by Kokoro-82M-bf16",
     "candidate": "Kokoro-82M-bf16/bm_george",
-    "cases": 460,
-    "first_s": 2.833,
-    "median_s": 0.155,
+    "cases": 470,
+    "first_s": 0.327,
+    "median_s": 0.162,
     "metrics": {
-     "wer": 0.0837
+     "wer": 0.0968
     },
     "model": "Kokoro-82M-bf16/bm_george",
     "not_run": "",
-    "pass_rate": 0.889,
-    "passed": 409,
+    "pass_rate": 0.854,
+    "passed": 397,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-26T04:06:59Z",
+    "run_at": "2026-11-09T03:24:51Z",
     "served_as": "",
     "source": "https://huggingface.co/Kokoro-82M-bf16/bm_george",
-    "total": 460,
+    "total": 465,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -330,17 +397,17 @@
   },
   {
    "candidate": "tts:OpenMOSS-Team/MOSS-TTS-v1.5",
-   "decided_at": "2026-11-04T02:11:42Z",
-   "detail": "fits: smallest variant model-00001-of-00004.safetensors (+3): 15.8 GiB of 4 weight files",
+   "decided_at": "2026-11-09T02:01:55Z",
+   "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local dis",
    "exam": null,
    "outcome": "queued",
    "proposal": "OpenMOSS-Team/MOSS-TTS-v1.5",
-   "reason": "candidate",
+   "reason": "harness",
    "receipt_key": "MOSS-TTS-v1.5",
-   "run_id": null,
+   "run_id": 757,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
+   "tier": "screen",
    "until": ""
   },
   {
@@ -374,7 +441,7 @@
    "until": "format:.pt"
   }
  ],
- "cursor": 1793674873090593,
+ "cursor": 1794194693534761,
  "events": [
   {
    "at": "2026-09-19T21:17:40Z",
@@ -855,9 +922,136 @@
    "reason": "runtime",
    "run_id": 676,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-09T02:01:55Z",
+   "candidate": "tts:OpenMOSS-Team/MOSS-TTS-v1.5",
+   "chosen": null,
+   "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local dis",
+   "how": "",
+   "id": 1794189715327285,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "harness",
+   "run_id": 757,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-09T02:01:58Z",
+   "candidate": "tts:rumik-ai/rumik-oss-1",
+   "chosen": null,
+   "detail": "needs its own runner: the stock loader could not assemble it: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'rumik-ai/rumik-oss-1': Could not determine model type for rumik-ai/rumik-oss-1\"}; numbers-and-units: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'rumik-ai/rumik-oss-1': Could not determine model type for rumik-ai/rumik-oss",
+   "how": "",
+   "id": 1794189718975591,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "runtime",
+   "run_id": 758,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-09T02:02:32Z",
+   "candidate": "tts:mlx-community/fish-audio-s2-pro",
+   "chosen": null,
+   "detail": "2 case(s) passed a screen",
+   "how": "",
+   "id": 1794189752479095,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 760,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-09T02:03:04Z",
+   "candidate": "tts:nativ-community/phonon",
+   "chosen": null,
+   "detail": "the installed runtime could not load it: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'nativ-community/phonon': [Errno 2] No such file or directory: 'packed_manifest.json'\"}; numbers-and-units: tts failed: HTTP 50",
+   "how": "",
+   "id": 1794189784645824,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "runtime",
+   "run_id": 765,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-09T03:24:53Z",
+   "candidate": "tts:mlx-community/fish-audio-s2-pro",
+   "chosen": null,
+   "detail": "tts: lane too small, needs 1734 holdout cases: 135 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 5330 more tts cases are needed before a null says anything about fish-audio-",
+   "how": "",
+   "id": 1794194693534761,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 770,
+   "tier": "adopt"
   }
  ],
  "exams": [
+  {
+   "cases": 470,
+   "differs": [],
+   "first_run_at": "2026-11-09T03:24:51Z",
+   "repeat": 1,
+   "rows": [
+    {
+     "about": "",
+     "candidate": "fish-audio-s2-pro",
+     "first_s": 3.918,
+     "median_s": 3.334,
+     "metrics": {
+      "wer": 0.1004
+     },
+     "model": "fish-audio-s2-pro",
+     "not_run": "",
+     "pass_rate": 0.856,
+     "passed": 398,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-09T03:24:51Z",
+     "served_as": "",
+     "source": "",
+     "total": 465,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "about": "82M params, bf16, by Kokoro-82M-bf16",
+     "candidate": "Kokoro-82M-bf16/bm_george",
+     "first_s": 0.327,
+     "median_s": 0.162,
+     "metrics": {
+      "wer": 0.0968
+     },
+     "model": "Kokoro-82M-bf16/bm_george",
+     "not_run": "",
+     "pass_rate": 0.854,
+     "passed": 397,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-09T03:24:51Z",
+     "served_as": "",
+     "source": "https://huggingface.co/Kokoro-82M-bf16/bm_george",
+     "total": 465,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    }
+   ],
+   "run_at": "2026-11-09T03:24:51Z",
+   "runs": 1
+  },
   {
    "cases": 460,
    "differs": [],
@@ -973,7 +1167,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-04T08:02:14Z",
+ "generated_at": "2026-11-09T08:03:22Z",
  "knobs": [],
  "lane": {
   "cases": 470,
@@ -992,18 +1186,18 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-10-08T12:11:27Z",
-  "median_s": 0.14,
+  "measured_at": "2026-11-09T03:24:51Z",
+  "median_s": 0.162,
   "metrics": {
-   "wer": 0.0824
+   "wer": 0.0968
   },
   "not_run": "",
   "parked": "",
   "parked_until": "",
-  "pass_rate": 0.865,
+  "pass_rate": 0.854,
   "serves": "mlx-community/Kokoro-82M-bf16",
   "serves_model": "mlx-community/Kokoro-82M-bf16; family yl4579/StyleTTS2-LJSpeech, 82M params, bf16, by mlx-community",
-  "stale": true
+  "stale": false
  },
  "since": 0
 }
