@@ -41,42 +41,42 @@
   },
   {
    "candidate": "hf-pii:openai/privacy-filter",
-   "decided_at": "2026-10-22T01:42:05Z",
-   "detail": "3 case(s) passed a screen",
+   "decided_at": "2026-11-09T02:42:56Z",
+   "detail": "pii: lane too small, needs 349 holdout cases: 166 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 610 more pii cases are needed before a null says anything about hf-pii/privac",
    "exam": {
     "about": "",
     "candidate": "hf-pii/privacy-filter",
-    "cases": 16,
-    "first_s": 4.058,
-    "median_s": 4.181,
+    "cases": 556,
+    "first_s": 13.555,
+    "median_s": 3.92,
     "metrics": {
-     "pii_f1": 0.9771,
-     "pii_precision": 0.9552,
-     "pii_recall": 1.0
+     "pii_f1": 0.89,
+     "pii_precision": 0.9101,
+     "pii_recall": 0.8708
     },
     "model": "hf-pii/privacy-filter",
     "not_run": "",
-    "pass_rate": 1.0,
-    "passed": 16,
-    "peak_gb": 3.95,
+    "pass_rate": 0.831,
+    "passed": 462,
+    "peak_gb": 4.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-07T15:27:44Z",
+    "run_at": "2026-11-09T02:42:54Z",
     "served_as": "",
     "source": "",
-    "total": 16,
+    "total": 556,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
-   "outcome": "screened",
+   "outcome": "declined",
    "proposal": "openai/privacy-filter",
-   "reason": "candidate",
+   "reason": "limit",
    "receipt_key": "hf-pii/privacy-filter",
-   "run_id": 538,
+   "run_id": 766,
    "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:pii>1165"
   },
   {
    "candidate": "pii-regex",
@@ -86,7 +86,7 @@
     "about": "",
     "candidate": "pii-regex/patterns",
     "cases": 556,
-    "first_s": 0.025,
+    "first_s": 0.027,
     "median_s": 0.025,
     "metrics": {
      "pii_f1": 0.7964,
@@ -100,7 +100,7 @@
     "peak_gb": 0.01,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-05T05:34:03Z",
+    "run_at": "2026-11-09T02:42:54Z",
     "served_as": "",
     "source": "",
     "total": 556,
@@ -118,7 +118,7 @@
    "until": ""
   }
  ],
- "cursor": 1793856843233612,
+ "cursor": 1794192176457972,
  "events": [
   {
    "at": "2026-10-07T15:26:32Z",
@@ -209,6 +209,21 @@
    "reason": "limit",
    "run_id": 710,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-09T02:42:56Z",
+   "candidate": "hf-pii:openai/privacy-filter",
+   "chosen": null,
+   "detail": "pii: lane too small, needs 349 holdout cases: 166 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 610 more pii cases are needed before a null says anything about hf-pii/privac",
+   "how": "",
+   "id": 1794192176457972,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 766,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -220,8 +235,31 @@
    "rows": [
     {
      "about": "",
+     "candidate": "hf-pii/privacy-filter",
+     "first_s": 13.555,
+     "median_s": 3.92,
+     "metrics": {
+      "pii_f1": 0.89,
+      "pii_precision": 0.9101,
+      "pii_recall": 0.8708
+     },
+     "model": "hf-pii/privacy-filter",
+     "not_run": "",
+     "pass_rate": 0.831,
+     "passed": 462,
+     "peak_gb": 4.0,
+     "reference": false,
+     "run_at": "2026-11-09T02:42:54Z",
+     "served_as": "",
+     "source": "",
+     "total": 556,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "about": "",
      "candidate": "pii-regex/patterns",
-     "first_s": 0.025,
+     "first_s": 0.027,
      "median_s": 0.025,
      "metrics": {
       "pii_f1": 0.7964,
@@ -234,7 +272,7 @@
      "passed": 411,
      "peak_gb": 0.01,
      "reference": false,
-     "run_at": "2026-11-05T05:34:03Z",
+     "run_at": "2026-11-09T02:42:54Z",
      "served_as": "",
      "source": "",
      "total": 556,
@@ -265,8 +303,8 @@
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-11-05T05:34:03Z",
-   "runs": 1
+   "run_at": "2026-11-09T02:42:54Z",
+   "runs": 2
   },
   {
    "cases": 166,
@@ -358,7 +396,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-05T08:00:22Z",
+ "generated_at": "2026-11-09T08:03:21Z",
  "knobs": [],
  "lane": {
   "cases": 556,
@@ -377,7 +415,7 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-11-05T05:34:03Z",
+  "measured_at": "2026-11-09T02:42:54Z",
   "median_s": 0.025,
   "metrics": {
    "pii_f1": 0.7964,
