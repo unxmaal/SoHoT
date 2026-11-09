@@ -244,11 +244,14 @@ def upstream(where: serving.Route, config=None) -> tuple[str, str]:
     base = serving.bare(where.base)
     if not is_gateway(base):
         return base, where.model
-    for entry in gateway.load(config).get("model_list") or []:
-        if str(entry.get("model_name", "")).strip().lower() == where.model.lower():
-            params = entry.get("litellm_params") or {}
-            return (str(params.get("api_base", "")).rstrip("/").removesuffix("/v1"),
-                    gateway.strip_provider(str(params.get("model", ""))))
+    served = gateway.served_path(config)
+    # A lane alias, its node route and @local twin exist only in the config the gateway was started with. #1653.
+    for entries in (gateway.load(config), gateway.load(served) if served.exists() else {}):
+        for entry in entries.get("model_list") or []:
+            if str(entry.get("model_name", "")).strip().lower() == where.model.lower():
+                params = entry.get("litellm_params") or {}
+                return (str(params.get("api_base", "")).rstrip("/").removesuffix("/v1"),
+                        gateway.strip_provider(str(params.get("model", ""))))
     return "", ""
 
 

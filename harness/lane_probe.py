@@ -125,6 +125,11 @@ def _take(fd: int) -> bool:
     return True
 
 
+def _sohot(headers) -> dict:
+    """The gateway's x-sohot-* reply headers, which name the node or fallback that answered."""
+    return {k.lower(): v for k, v in (headers or {}).items() if k.lower().startswith("x-sohot-")}
+
+
 def _send(req: dict) -> dict:
     """POST req["body"] to req["url"] and wait up to req["hold"]; what came back."""
     import socket
@@ -137,9 +142,9 @@ def _send(req: dict) -> dict:
     out: dict = {"status": None, "body": "", "error": "", "timed_out": False}
     try:
         with urllib.request.urlopen(r, timeout=req["hold"]) as got:
-            out.update(status=got.status, body=got.read().decode("utf-8", "replace"))
+            out.update(status=got.status, body=got.read().decode("utf-8", "replace"), headers=_sohot(got.headers))
     except urllib.error.HTTPError as exc:
-        out.update(status=exc.code, body=exc.read().decode("utf-8", "replace"))
+        out.update(status=exc.code, body=exc.read().decode("utf-8", "replace"), headers=_sohot(exc.headers))
     except (TimeoutError, socket.timeout) as exc:
         out.update(error=f"no answer after {req['hold']:.0f}s: {exc}", timed_out=True)
         from harness import cuts
@@ -221,7 +226,7 @@ def _resolve(lane: str):
     return delegate.route(lane)
 
 
-def _resident(where, get=None):
+def _resident(where, get=None, config=None):
     """(True/False/None, error): delegate.loaded, keeping the exception it would swallow."""
     from harness import delegate
     seen: list = []
@@ -232,8 +237,37 @@ def _resident(where, get=None):
         except Exception as exc:
             seen.append(exc)
             raise
-    got = delegate.loaded(where, get=asking)
+    got = delegate.loaded(where, get=asking, config=config)
     return got, (seen[0] if seen else None)
+
+
+def _node(where) -> dict | None:
+    """The node a gateway alias goes to first, its @local twin's base and the key the gateway sends it; None for no node. #1653."""
+    from harness import completion, context, gateway, nodes, serving
+    if not completion.is_gateway(serving.bare(where.base)):
+        return None
+    entry = context._entry_for(where.model) or {}
+    if not entry.get(nodes.NODE_KEY):
+        return None
+    name = str(entry[nodes.NODE_KEY])
+    twin = (context._entry_for(where.model + nodes.LOCAL_SUFFIX) or {}).get("litellm_params") or {}
+    try:
+        found = next((n for n in nodes.load() if n.name == name), None)
+    except ValueError:
+        found = None
+    return {"name": name, "engine": str(entry.get(serving.ENGINE_KEY) or ""),
+            "key": context._key(where.model) or (nodes.secret(found) if found else ""),
+            "twin": serving.bare(str(twin.get("api_base") or "")), "alias": where.model + nodes.LOCAL_SUFFIX,
+            "config": gateway.served_path()}
+
+
+def _node_resident(node):
+    """A residency check that asks the node itself, with its key, as the served config names it."""
+    from harness import context
+
+    def resident(where):
+        return _resident(where, get=lambda url: context._get_json(url, node["key"]), config=node["config"])
+    return resident
 
 
 def _refused(exc) -> bool:
@@ -308,7 +342,9 @@ def prepare(lane: str, sender: Sender, resolve=None, resident=None, busy=None, h
         row["spec"], where = (resolve or _resolve)(lane)
         row["base"], row["model"] = serving.bare(where.base), where.model
         row["upstream"], _ = delegate.upstream(where)
-        row["engine"] = (serving.engine_at(row["upstream"]) or "") if row["upstream"] else ""
+        node = _node(where)
+        row["engine"] = (node and node["engine"]) or (
+            (serving.engine_at(row["upstream"]) or "") if row["upstream"] else "")
     except Exception as exc:  # noqa: BLE001 - a lane with no route is a skipped probe, said why
         return done(SKIPPED, f"no route: {type(exc).__name__}: {exc}")
     if not row["upstream"]:
@@ -322,7 +358,12 @@ def prepare(lane: str, sender: Sender, resolve=None, resident=None, busy=None, h
         return done(SKIPPED, str(exc))
     if held:
         return done(SKIPPED, f"the machine is held: {held}")
-    loaded, exc = (resident or _resident)(where)
+    loaded, exc = (resident or (_node_resident(node) if node else _resident))(where)
+    if node and loaded is None and exc is not None and (_refused(exc) or _timed_out(exc)):
+        # The gateway falls back to the @local twin, so the probe still goes through it and the reply names who answered.
+        row["reason"] = f"node {node['name']} did not answer its residency query: {getattr(exc, 'reason', exc)}"[
+            :ERROR_CHARS]
+        loaded = True
     if loaded is None and exc is not None and _refused(exc):
         return done(DOWN, "the server refused the residency query; no completion sent",
                     f"{row['upstream']}: {getattr(exc, 'reason', exc)}")
@@ -342,7 +383,20 @@ def prepare(lane: str, sender: Sender, resolve=None, resident=None, busy=None, h
         with purpose.using(purpose.WATCHDOG):
             headers = gateway_key.headers()
     return row, {"url": f"{row['base']}/v1/chat/completions", "headers": headers,
-                 "body": request(lane, where.model), "gateway": _via_gateway(where.base)}
+                 "body": request(lane, where.model), "gateway": _via_gateway(where.base), "node": node}
+
+
+def _served_by(row: dict, sent: dict, node: dict) -> dict:
+    """The row naming the node the gateway reached, or the @local twin that answered for it."""
+    got = {k.lower(): v for k, v in (sent.get("headers") or {}).items()}
+    twin = f"{node['alias']} at {node['twin'] or 'no base'}"
+    if got.get("x-sohot-fallback"):
+        why, row = f"the {twin} fallback answered; node {node['name']} did not", {**row, "upstream": node["twin"]}
+    elif got.get("x-sohot-node"):
+        why = f"served by node {got['x-sohot-node']}; fallback {twin}"
+    else:
+        why = f"the gateway named neither node {node['name']} nor its fallback {twin}"
+    return {**row, "reason": _after(row, why)}
 
 
 def _via_gateway(base: str) -> bool:
@@ -354,7 +408,9 @@ def _after(row: dict, why: str) -> str:
     return "; ".join(w for w in (row.get("reason"), why) if w)[:ERROR_CHARS]
 
 
-def finish(row: dict, sent: dict | None, wait: float) -> dict:
+def finish(row: dict, sent: dict | None, wait: float, node: dict | None = None) -> dict:
+    if sent is not None and node and not sent.get("failed") and sent.get("status") is not None:
+        row = _served_by(row, sent, node)
     if sent is None:
         return {**row, "outcome": SLOW, "seconds": wait,
                 "reason": _after(row, f"no answer in {wait:g}s; the request is left to finish, and this lane is not "
@@ -402,7 +458,7 @@ def wake(conn, now: float, lanes=None, sender: Sender | None = None, machine_id=
     for row, req, handle, deadline in rows:
         if handle is not None:
             sent = sender.collect(handle, deadline - time.monotonic())
-            row = finish(row, sent, timeout(row["lane"]))
+            row = finish(row, sent, timeout(row["lane"]), req.get("node"))
             slow += [row["lane"]] if sent is None else []
             if sent is not None and not sent.get("failed") and not req["gateway"]:
                 row["_direct"] = sent
@@ -425,7 +481,7 @@ def _cuts(rows: list[dict], slow: list[str]) -> None:
 
 
 def line(row: dict) -> str:
-    what = row.get("reason") if row["outcome"] in (SKIPPED, SLOW) else row.get("error")
+    what = row.get("reason") if row["outcome"] in (SKIPPED, SLOW, UP) else row.get("error")
     took = f" in {row['seconds']:.2f}s" if row.get("seconds") is not None and row["outcome"] == UP else ""
     return f"lane {row['lane']}: {row['outcome']}{took}" + (f" ({what})" if what else "")
 

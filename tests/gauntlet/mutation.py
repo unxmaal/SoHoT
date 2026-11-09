@@ -145,7 +145,7 @@ LEFT_OUT = {
         "test_machine_identity.py", "test_mlx_dead_912.py", "test_purpose_825.py", "test_usage_gateway.py",
         "test_vllm.py", "test_repo_failures_921.py", "test_presence_960.py", "test_limit_cuts_1087_harness_di.py",
         "test_limit_cuts_1087_harness_ps.py", "test_sustained_warn_1482.py", "test_interactive_1561.py",
-        "test_interactive_node_1562.py"),
+        "test_interactive_node_1562.py", "test_lane_probe_node_1653.py"),
     "harness/router.py": (
         "test_delegate_resident.py", "test_machine_host.py", "test_router_ready_1012.py", "test_sweep_ceiling_806.py",
         "test_watchdog.py", "test_memory_warn_1082.py", "test_idle_unload_1157.py", "test_router_down_1181.py",
