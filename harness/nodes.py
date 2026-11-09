@@ -36,6 +36,7 @@ COOL_ON = ("TimeoutErrorAllowedFails", "InternalServerErrorAllowedFails",
            "ServiceUnavailableErrorAllowedFails", "BadGatewayErrorAllowedFails",
            "AuthenticationErrorAllowedFails", "NotFoundErrorAllowedFails")
 _NAME = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+_SHA = re.compile(r"^[0-9a-f]{64}$")
 _KEY = re.compile(r"^(env:[A-Za-z_][A-Za-z0-9_]*|keychain:[^/\s]+/[^/\s]+)$")
 
 
@@ -58,6 +59,13 @@ class Node:
     parked: bool = False
     #: An interactive node: only these lanes' sohot-<lane> aliases go to it, never its models by name. #1562.
     lanes: tuple[str, ...] = ()
+    #: (gateway id, sha256 of the GGUF the node serves it from), from a models entry's sha256:. #1652.
+    digests: tuple[tuple[str, str], ...] = ()
+
+    def sha256(self, model: str) -> str:
+        """The sha256 nodes.yaml records for a model, by its gateway id or the id the node is sent; "" for none."""
+        want = model.lower()
+        return next((sha for gid, sha in self.digests if want in (gid.lower(), self.node_id(gid).lower())), "")
 
     def takes(self, name: str) -> bool:
         """Whether a gateway entry by this name may go to this node."""
@@ -146,14 +154,19 @@ def parse(data: dict, where: str = FILE) -> list[Node]:
         if engine not in serving.engines():
             raise ValueError(f"{at}: engine {engine!r} is not one of "
                              f"{', '.join(dict.fromkeys(serving.engines()))}")
-        models, renamed = [], []
+        models, renamed, digests = [], [], []
         for m in raw.get("models") or []:
             if isinstance(m, dict):
-                gid, nid = str(m.get("id") or "").strip(), str(m.get("as") or "").strip()
+                gid, sha = str(m.get("id") or "").strip(), str(m.get("sha256") or "").strip().lower()
+                nid = str(m.get("as") or "").strip() or (gid if sha else "")
+                if sha and not _SHA.match(sha):
+                    raise ValueError(f"{at}: models {gid!r} sha256 must be 64 hex digits")
                 if gid and nid:
                     models.append(gid)
                     if nid != gid:
                         renamed.append((gid, nid))
+                    if sha:
+                        digests.append((gid, sha))
                     continue
             elif isinstance(m, str) and m.strip():
                 models.append(m.strip())
@@ -161,8 +174,8 @@ def parse(data: dict, where: str = FILE) -> list[Node]:
             models = []
             break
         if not models:
-            raise ValueError(f"{at}: models must be a list of model ids, or of {{id, as}} where the "
-                             f"node advertises a model under another id")
+            raise ValueError(f"{at}: models must be a list of model ids, or of {{id, as, sha256}} where the "
+                             f"node advertises a model under another id or its file's sha256 is recorded")
         parked = raw.get("parked", False)
         if not isinstance(parked, bool):
             raise ValueError(f"{at}: parked must be true or false")
@@ -181,7 +194,7 @@ def parse(data: dict, where: str = FILE) -> list[Node]:
                         _number(raw, "timeout", TIMEOUT_S, at),
                         _number(raw, "cooldown", COOLDOWN_S, at),
                         bool(raw.get("ipv4", True)), tuple(renamed), parked,
-                        tuple(dict.fromkeys(str(lane) for lane in lanes))))
+                        tuple(dict.fromkeys(str(lane) for lane in lanes)), tuple(digests)))
     return out
 
 
@@ -439,6 +452,17 @@ def builds(nodes: list[Node], here: str, get=None) -> list[tuple[bool, str]]:
     return out
 
 
+def digest_lines(models) -> list[str]:
+    """`- {id: <stem>, sha256: <hex>}` per GGUF, the models entry that gives a node-served model an identity. #1652."""
+    from harness import gguf, identity
+    out = []
+    for m in models:
+        path = Path(m).expanduser()
+        path = path if path.suffix == ".gguf" else gguf.models_dir() / f"{m}.gguf"
+        out.append(f"- {{id: {path.stem}, sha256: {identity.file_digest(path)}}}")
+    return out
+
+
 def main(argv=None) -> int:
     import argparse
     p = argparse.ArgumentParser(prog="python -m harness.nodes")
@@ -447,12 +471,18 @@ def main(argv=None) -> int:
     sub.add_parser("show", help="the nodes this machine routes to")
     sub.add_parser("check", help="fail each node with no machine fingerprint")
     sub.add_parser("fingerprint", help="this machine's fingerprint, for `machine:` where it serves as a node")
+    d = sub.add_parser("digest", help="models lines with each GGUF's sha256, for nodes.yaml where it serves as a node")
+    d.add_argument("models", nargs="+", help="a GGUF path, or a stem in this machine's models dir")
     s = sub.add_parser("smoke", help="ask the gateway for each node's models; node up and node down")
     s.add_argument("--gateway", required=True)
     args = p.parse_args(argv)
     if args.cmd == "fingerprint":
         from evals import environment
         print(environment.identity()["fingerprint"])
+        return 0
+    if args.cmd == "digest":
+        for line in digest_lines(args.models):
+            print(line)
         return 0
     nodes = load()
     rested = [n.name for n in parked()] if args.cmd in ("check", "show", "smoke") else []
