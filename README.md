@@ -3381,7 +3381,9 @@ the product, not the tests.
 each module. A change to a mutated module re-pins its survivors with
 `make mutation MUTATION_ARGS="--module harness/adopt.py --pin"`, and a new test
 file for that module goes into its list first, or the nightly reports code it
-tests as surviving.
+tests as surviving. A pull request's `mutation-changed` job mutates the
+functions it changes in those modules (`python -m tests.gauntlet.mutation
+changed` lists them), so a LEFT_OUT test fails the PR, not the next nightly.
 
 Every safety check here has been broken on purpose to confirm its test then
 fails. A test that passes against known-broken code is testing nothing, and the

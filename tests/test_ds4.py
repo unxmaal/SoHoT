@@ -583,7 +583,7 @@ def test_a_card_tag_makes_an_unlisted_repo_ds4s_and_its_siblings_pick_the_file(m
 
 def test_the_store_given_is_the_one_whose_fetched_file_is_spelled(models, tmp_path, monkeypatch):
     monkeypatch.setattr(ins, "ceiling_bytes", lambda: 200 * GIB)
-    conn = ms.connect()
+    conn = ms.connect(tmp_path / "other.db")
     try:
         downloads.record(conn, QWEN, downloads.GGUF, models / f"{QWEN_Q2}.gguf",
                          file=f"{QWEN_Q2}.gguf")

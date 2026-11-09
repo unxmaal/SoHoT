@@ -3,6 +3,7 @@
 python -m tests.gauntlet.mutation run [--module M ...] [--pin] [--workdir DIR] [--found FILE]
 python -m tests.gauntlet.mutation run --module M --function F [--function G ...] [--jobs N] [--pin]
 python -m tests.gauntlet.mutation pin --from FILE [FILE ...]
+python -m tests.gauntlet.mutation changed [--base REF]
 """
 
 import argparse
@@ -393,11 +394,11 @@ def copy_tree(dest):
             shutil.copy2(path, target)
 
 
-def _baseline(tree, env, module):
+def _baseline(tree, env, module, jobs=None):
     """The selection must pass unmutated; mutmut reports only "exited 1" and hides which test failed (#840)."""
     deselect = [a for t in READS_SOURCE for a in ("--deselect", t)]
     argv = ["uv", "run", "--python", "3.12", *MUTMUT_GROUPS, "python", "-m", "pytest",
-            "-p", "no:randomly", "-n", "auto", "-rfE", *deselect, *MODULES[module]]
+            "-p", "no:randomly", "-n", str(jobs) if jobs else "auto", "-rfE", *deselect, *MODULES[module]]
     r = subprocess.run(argv, cwd=tree, env=env, capture_output=True, text=True, check=False)
     if r.returncode == 0:
         return
@@ -415,7 +416,7 @@ def run_module(tree, module, pyproject, log, functions=(), jobs=None):
     for d in (env["LOCALHARNESS_HOME"], env["HF_HOME"]):
         Path(d).mkdir(exist_ok=True)
     try:
-        _baseline(tree, env, module)
+        _baseline(tree, env, module, **({"jobs": jobs} if jobs else {}))
     except BrokenRun as e:
         raise BrokenRun(f"{module}: {e}") from None
     base, meta_path = _paths(tree, module)
@@ -508,6 +509,29 @@ def cmd_pin(a):
     return 0
 
 
+def touched_functions(old, new, hunks):
+    """The functions mutmut mutates (Cls.fn for a method) that a diff of one module changes or adds."""
+    from tests.gauntlet import covmap
+    names, out = set(functions_of(new)), set()
+    for q in covmap.touched(old, new, hunks).funcs:
+        parts = q.split(".")
+        out.update(next(([".".join(parts[:i])] for i in range(len(parts), 0, -1) if ".".join(parts[:i]) in names), []))
+    return sorted(out)
+
+
+def changed(base, root=REPO):
+    """{module: functions} this branch changes since its merge base with base, for a pull request's mutation run (#1666)."""
+    from tests.gauntlet import scope
+    diffs = scope.diff_of(list(MODULES), scope.merge_base(base, root), "HEAD", root)
+    return {m: fns for m, (old, new, hs) in sorted(diffs.items()) if (fns := touched_functions(old, new, hs))}
+
+
+def cmd_changed(a):
+    for m, fns in changed(a.base).items():
+        print(f"{m}\t{' '.join(fns)}")
+    return 0
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="python -m tests.gauntlet.mutation")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -518,13 +542,16 @@ def main(argv=None):
     r.add_argument("--found", help="also write each module's survivors here as JSON, for `pin --from`")
     r.add_argument("--function", action="append", help="mutate only this function (Cls.fn for a method); "
                    "the ratchet and --pin cover only these")
-    r.add_argument("--jobs", type=int, help="mutmut workers (default: one per CPU)")
+    r.add_argument("--jobs", type=int, help="mutmut and baseline pytest workers (default: one per CPU)")
     r.add_argument("--shard", metavar="K/N", help="mutate only every Nth function from the Kth, so N CI jobs split one "
                    "module; ratchets and --found cover only those")
     r.set_defaults(fn=cmd_run)
     q = sub.add_parser("pin", help="pin the survivors in --found files from a CI run")
     q.add_argument("--from", dest="sources", nargs="+", required=True, metavar="FILE")
     q.set_defaults(fn=cmd_pin)
+    c = sub.add_parser("changed", help="print each mutated module and the functions this branch changes, tab-separated")
+    c.add_argument("--base", default="origin/main")
+    c.set_defaults(fn=cmd_changed)
     a = p.parse_args(argv)
     return a.fn(a)
 

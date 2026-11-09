@@ -265,6 +265,80 @@ def test_a_missing_config_routes_nowhere_rather_than_guessing(tmp_path):
     assert screen.routed_gateway("org/x", tmp_path / "absent.yaml") == ""
 
 
+ALIAS = "mlx-community/Qwen3-4B-Instruct-2507-4bit"
+
+
+def _hot_swap(tmp_path):
+    """A gateway whose alias is spelled as a repo id, as gateway/config.yaml spells them, over a hot-swap upstream."""
+    cfg = tmp_path / "g.yaml"
+    cfg.write_text(f"model_list:\n  - model_name: {ALIAS}\n    hot_swap: true\n    litellm_params:\n"
+                   f"      model: openai/{ALIAS}\n      api_base: http://up/v1\n", encoding="utf-8")
+    return cfg
+
+
+def test_an_alias_spelled_as_a_repo_id_goes_through_the_gateway(tmp_path):
+    assert screen.routed_gateway(ALIAS, _hot_swap(tmp_path)) == ""
+
+
+def test_an_engine_spec_sends_no_gateway_request_even_naming_a_repo_id(tmp_path):
+    """#1660: nimble:<repo> runs in its own engine; routing it by the repo id sent the run to mlx_lm.server."""
+    assert screen.routed_gateway("nimble:org/m", _hot_swap(tmp_path)) == ""
+
+
+def test_a_repair_spec_routes_as_the_model_evals_run_unwraps(tmp_path):
+    """evals.run reads repair:<model>[,options] as the text before the first comma, and skips empty options."""
+    cfg = _hot_swap(tmp_path)
+    assert screen.routed_gateway("repair:org/m", cfg) == "http://up"
+    assert screen.routed_gateway("repair:org/m,attempts=2", cfg) == "http://up"
+    assert screen.routed_gateway(f"repair:{ALIAS},attempts=2,", cfg) == ""
+    assert screen.routed_gateway("repair:nimble:org/m", cfg) == ""
+
+
+def _upstreams(tmp_path, base, engine=""):
+    cfg = tmp_path / "u.yaml"
+    lines = ["model_list:", "  - model_name: q3-4b"]
+    if engine:
+        lines.append(f"    engine: {engine}")
+    lines += ["    litellm_params:", "      model: openai/Qwen3-4B-Q4_K_M"]
+    if base:
+        lines.append(f"      api_base: {base}")
+    cfg.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return cfg
+
+
+def test_an_alias_the_llama_server_router_serves_travels_as_its_router_stem(tmp_path):
+    """#1656: mlx_lm.server read the router stem as a hub repo it could not find offline."""
+    cfg = _upstreams(tmp_path, "http://127.0.0.1:8082/v1")
+    assert screen.upstream_of("Q3-4B ", cfg) == "llamacpp:Qwen3-4B-Q4_K_M"
+
+
+def test_an_alias_whose_entry_declares_llama_server_travels_as_its_router_stem(tmp_path):
+    """The engine key in the config read, not the machine's default config, says what serves a node's base."""
+    cfg = _upstreams(tmp_path, "http://node.lan:9000/v1", engine="llama-server")
+    assert screen.upstream_of("q3-4b", cfg) == "llamacpp:Qwen3-4B-Q4_K_M"
+
+
+@pytest.mark.parametrize("base", ["http://127.0.0.1:8081/v1", ""])
+def test_an_alias_served_by_mlx_or_by_no_named_base_travels_as_its_model(tmp_path, base):
+    assert screen.upstream_of("q3-4b", _upstreams(tmp_path, base)) == "Qwen3-4B-Q4_K_M"
+
+
+def _argv_tail(row, outdir=None):
+    argv = screen.argv({"modality": "code", **row}, outdir=outdir)
+    return argv[argv.index("--candidates"):]
+
+
+def test_argv_routes_by_the_built_spec_and_falls_back_to_the_name(tmp_path, monkeypatch):
+    """#1660: the spec decides the gateway; a row with no spec still routes by its proposal name."""
+    from harness import gateway
+    monkeypatch.setenv(gateway.ENV_VAR, str(_hot_swap(tmp_path)))
+    out = tmp_path / "out"
+    assert _argv_tail({"name": "org/m", "candidate": "org/m"}, out) == [
+        "--candidates", "org/m", "--gateway", "http://up", "--out", str(out)]
+    assert _argv_tail({"name": "org/m", "candidate": "nimble:org/m"}) == ["--candidates", "nimble:org/m"]
+    assert _argv_tail({"name": "org/m", "candidate": ""}) == ["--candidates", "", "--gateway", "http://up"]
+
+
 def test_the_fixture_key_is_the_one_the_run_writes():
     """The tests above used `pass` and so did outcome(), so they agreed with
     each other and with nothing else. A hand-made fixture that never meets the
