@@ -353,7 +353,7 @@
    "runs": 6
   }
  ],
- "generated_at": "2026-11-03T04:27:02Z",
+ "generated_at": "2026-11-09T08:03:20Z",
  "knobs": [],
  "lane": {
   "cases": 4,
@@ -399,7 +399,7 @@
   "pass_rate": 1.0,
   "serves": "acestep:acestep-v15-turbo",
   "serves_model": "acestep:acestep-v15-turbo",
-  "stale": false
+  "stale": true
  },
  "since": 0
 }
