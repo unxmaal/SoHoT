@@ -756,6 +756,29 @@ def run_one(job: dict, popen=None) -> dict | None:
         return _run_claimed(job, log, popen)
 
 
+def _bin(venv: Path) -> Path:
+    return venv / ("Scripts" if sys.platform == "win32" else "bin")
+
+
+def job_venv(cwd, environ) -> dict:
+    """environ with VIRTUAL_ENV and its PATH entry moved to the .venv of the checkout cwd is in, or dropped. #1655."""
+    env = dict(environ)
+    was = env.pop("VIRTUAL_ENV", "")
+    if not was:
+        return env
+    here = Path(cwd).resolve()
+    root = next((p for p in (here, *here.parents) if (p / "pyproject.toml").is_file()), None)
+    venv = root / ".venv" if root is not None and (root / ".venv").is_dir() else None
+    if venv is not None:
+        env["VIRTUAL_ENV"] = str(venv)
+    if "PATH" in env:
+        old = os.path.normcase(str(_bin(Path(was))))
+        new = str(_bin(venv)) if venv is not None else ""
+        moved = (new if os.path.normcase(p) == old else p for p in env["PATH"].split(os.pathsep))
+        env["PATH"] = os.pathsep.join(p for p in moved if p)
+    return env
+
+
 def _run_claimed(job: dict, log: Path, popen=None) -> dict | None:
     with _store() as c:
         stale = stale_schema(job["cwd"] or ".", c)
@@ -764,7 +787,7 @@ def _run_claimed(job: dict, log: Path, popen=None) -> dict | None:
         job.update(rc=None, state=FAILED, note=f"not started: {stale}", finished=time.strftime(_STAMP))
         _write(job)
         return get(job["id"]) or job
-    env = {**os.environ, JOB_ENV: str(int(job["id"]))}
+    env = {**job_venv(job["cwd"] or ".", os.environ), JOB_ENV: str(int(job["id"]))}
     env.pop(ITEM_ENV, None)
     if itemized(job):
         env[ITEM_ENV] = f"{ITEM_S:g}"
