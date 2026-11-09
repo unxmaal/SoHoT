@@ -101,7 +101,7 @@ def plan(lanes_state, *, only: str = "", include_stale: bool = True,
             from harness import runner_gaps
             task.argv = [*runner_gaps.launcher([spec], ["uv", "run", "python"], name), "-m", "evals.run",
                          "--modality", name, "--candidates", spec]
-            route = screen.routed_gateway(default)
+            route = screen.routed_gateway(spec)
             if route:
                 task.argv += ["--gateway", route]
         out.append(task)

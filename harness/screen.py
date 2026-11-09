@@ -542,8 +542,13 @@ def routed_gateway(model: str, config=None) -> str:
     """
     from harness import methods
     model = methods.base_of(model) or model
+    if (model or "").startswith("repair:"):
+        model = model.partition(":")[2].partition(",")[0].strip()
     names, base = gateway_routes(config)
     if (model or "").strip().lower() in names:
+        return ""
+    if ":" in (model or ""):
+        # An engine spec (nimble:, decider:, llamacpp:, ...) sends no request to the gateway. #1660.
         return ""
     from harness import gguf
     if gguf.fetched(model or "") or gguf.hub_stem(model or ""):
@@ -561,7 +566,7 @@ def argv(row: dict, outdir=None) -> list[str]:
     out = [*runner_gaps.launcher([row["candidate"]], [sys.executable or "python"], row["modality"]), "-m", "evals.run",
            "--modality", row["modality"],
            "--screen", "--repeat", "1", "--candidates", row["candidate"]]
-    upstream = routed_gateway(row.get("name") or "")
+    upstream = routed_gateway(row.get("candidate") or row.get("name") or "")
     if upstream:
         out += ["--gateway", upstream]
     if outdir:

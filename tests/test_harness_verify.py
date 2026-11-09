@@ -178,3 +178,14 @@ def test_all_plans_a_parked_lane_with_no_receipt_without_crashing():
     got = verify.plan(_lanes(parked), force=True)
     assert got[0].why == "no receipt on this machine"
     assert got[0].skip.startswith("parked")
+
+
+def test_a_lane_whose_default_runs_as_an_engine_spec_is_routed_by_that_spec(monkeypatch):
+    """A decide default built as nimble:<repo> sends no gateway request, so no --gateway. #1660."""
+    monkeypatch.setattr("harness.screen.candidate_for", lambda lane, name, *a, **k: f"nimble:{name}")
+    monkeypatch.setattr("harness.screen.gateway_routes", lambda config=None: (set(), "http://127.0.0.1:8081/v1"))
+    monkeypatch.setattr("harness.gguf.fetched", lambda repo: None)
+    monkeypatch.setattr("harness.gguf.hub_stem", lambda repo: None)
+    row = {"lane": "decide", "serves": "org/x", "unverified": True, "stale": False, "age_days": None}
+    argv = verify.plan(_lanes(row), force=True)[0].argv
+    assert "nimble:org/x" in argv and "--gateway" not in argv, argv
