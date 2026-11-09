@@ -501,7 +501,8 @@ def plan(conn, budget: int | None = None, slots: int = 1,
     # The interactive server's pinned set is resident for good, so evals plan around it. #1561.
     beside += interactive.reserved_bytes()
     rows = router_rows(conn)
-    sizes = [_weights(r["path"]) for r in rows]
+    # A stem whose weights alone overrun the room is never resident here, so it holds none of it (a pinned one twice). #1578.
+    sizes = [w for w in (_weights(r["path"]) for r in rows) if w < budget - beside]
     k = max(min(models_max, len(sizes)), 1)
     heaviest = sum(sorted(sizes, reverse=True)[:k])
     out = []
@@ -595,7 +596,9 @@ def _upstream(spec: str, config=None) -> tuple[str, str] | None:
     from harness.serving import LLAMACPP_PREFIX
     name = (spec or "").partition(",")[0].strip()
     if name.startswith(LLAMACPP_PREFIX):
-        return router.url(), name[len(LLAMACPP_PREFIX):].strip()
+        from harness import interactive
+        stem = name[len(LLAMACPP_PREFIX):].strip()
+        return interactive.answering(stem) or router.url(), stem
     if not name or ":" in name:
         return None
     entry = _entry_for(name, config)
@@ -659,7 +662,9 @@ def served_ctx(spec: str, config=None, get=None, conn=None) -> int | None:
     # The stored choice was planned for this machine; a remote server says itself or is unknown. #722.
     if not serving.loopback(base):
         return _props(base, key, get).get("ctx")
-    from harness import downloads
+    from harness import downloads, interactive
+    if base == interactive.answering(stem):
+        return interactive.served_ctx(stem)
     try:
         with downloads.store(conn) as c:
             row = served(c, stem)

@@ -1235,6 +1235,9 @@ def _parser():
                     help="retry a reply cut off at its budget at the next larger one, e.g. "
                          "4000,16000,32000,65536; bare, the lane's (completion.LADDER). Capped by "
                          "each candidate's served context, recorded on the receipt (#668)")
+    ap.add_argument("--pinned-arms", action="store_true",
+                    help="a paired run: an arm whose GGUF this machine's interactive server pins is answered "
+                         "there, not loaded again on the router; its rows are flagged co-tenant (#1578)")
     ap.add_argument("--resume", action="store_true",
                     help="continue the run checkpointed in --out, skipping finished cases; "
                          f"exits {watch.STALE} if it was another exam (#813)")
@@ -1360,8 +1363,51 @@ def knob_overrides(pairs) -> dict:
 
 def _execute(args) -> int:
     overrides = knob_overrides(getattr(args, "knob", None))
-    with knobs.rebind(overrides):
+    with knobs.rebind(overrides), pinned_arms(args):
         return _execute_at(args, overrides)
+
+
+@contextlib.contextmanager
+def pinned_arms(args):
+    """With --pinned-arms, each arm this machine's interactive server pins is answered there for the run. #1578."""
+    if not getattr(args, "pinned_arms", False):
+        yield {}
+        return
+    if args.screen:
+        raise SystemExit("--pinned-arms is a paired run's; a screen measures a candidate on the eval router")
+    from harness import interactive
+    with interactive.answer(split_candidates(args.candidates or "")) as got:
+        for stem, base in got.items():
+            print(f"── {stem}: answered by the interactive server's pinned copy at {base}, beside its "
+                  f"pinned lanes; its rows are flagged co-tenant (#1578)", flush=True)
+        if not got:
+            print("── --pinned-arms: no arm is pinned on this machine's interactive server now; "
+                  "every arm goes to its own server", file=sys.stderr, flush=True)
+        yield got
+
+
+def co_tenants(specs: dict) -> dict:
+    """receipt key -> the interactive server an arm was answered by and what it shared it with. #1578."""
+    from harness import interactive, serving
+    out = {}
+    for key, spec in specs.items():
+        stem = serving.router_stem(text_spec(spec)) if text_candidate(spec) else ""
+        base = interactive.answering(stem) if stem else ""
+        if base:
+            out[key] = interactive.co_tenancy(base, stem)
+    return out
+
+
+def flag_co_tenants(results, shared: dict) -> None:
+    """Mark each row an interactive-server arm answered, so its timing is never read as uncontended. #1578, #1558."""
+    for r in results:
+        got = shared.get(r.candidate)
+        if not got or r.metrics.get("co_tenant"):
+            continue
+        r.metrics["co_tenant"] = 1
+        lanes = ", ".join(f"{lane} {stem}" for lane, stem in got["pinned"].items())
+        r.warnings.append(f"answered by the interactive server at {got['server']} beside its pinned lanes "
+                          f"({lanes}): its timing is contended (#1578)")
 
 
 def _plan(args) -> tuple[str, list, list]:
@@ -1659,6 +1705,8 @@ def _execute_at(args, overrides: dict) -> int:
             return code
         raise SystemExit("nothing ran: no candidate matched any case")
 
+    shared = co_tenants(specs)
+    flag_co_tenants(results, shared)
     report(summarize(results), resolved)
     ece_withheld(results)
     if args.modality in REPO_MODALITIES:
@@ -1710,6 +1758,7 @@ def _execute_at(args, overrides: dict) -> int:
             requests=sent_requests(planned),
             contexts=context_receipts(planned),
             server_sampling=server_sampling(specs),
+            co_tenancy=shared,
             validation=validation,
             harness="" if harness == "patch" else harness)
         now = time.time()

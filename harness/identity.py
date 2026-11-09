@@ -241,8 +241,13 @@ def served(spec: str, config=None, get=None) -> dict:
             [] if gguf_path.exists() else [f"model: no {gguf_path.name} in the models dir"])
         if missing:
             return {**out, "unresolved": missing}
-        return {**out, "engine": serving.LLAMACPP, "runtime": files_digest(runtime_files(exe)),
-                "model": files_digest([gguf_path]), "preset": preset_section(stem)}
+        from harness import interactive
+        pinned = interactive.answering(stem)
+        got = {**out, "engine": serving.LLAMACPP, "runtime": files_digest(runtime_files(exe)),
+               "model": files_digest([gguf_path]),
+               "preset": preset_section(stem, interactive.preset_path(pinned) if pinned else None)}
+        # The pinned copy's preset and co-tenants are another exam from the router's. #1578.
+        return {**got, "server": "interactive"} if pinned else got
     repo = base if "/" in base else (where[1] if where else "")
     if engine == serving.DEFAULT and "/" in repo:
         runtime = {d: dist_digest(d) for d in MLX_DISTS if dist_digest(d)}

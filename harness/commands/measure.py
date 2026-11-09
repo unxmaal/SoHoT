@@ -278,11 +278,12 @@ def _names(spec: str, stem: str) -> bool:
 
 def lane_refusal(lane: str) -> str:
     """Why no measurement in `lane` can start because the recorded plan refuses its incumbent, else "". #1650."""
-    from harness import adopt, screen, winners
+    from harness import adopt, interactive, screen, winners
     incumbent = adopt.default_for(lane, winners.typed().get(lane, ""))
     if not incumbent:
         return ""
-    stem, why = unserved(screen.candidate_for(lane, incumbent) or incumbent)
+    with interactive.answer():
+        stem, why = unserved(screen.candidate_for(lane, incumbent) or incumbent)
     return _incumbent_waits(lane, incumbent, stem, why) if stem else ""
 
 
@@ -325,10 +326,12 @@ def lane_for(row: dict, want: str = "") -> str:
 
 def _measure_and_adopt(a, row: dict, sweep=None) -> int:
     """_measure, then unload the challenger it loaded. #444."""
-    from harness import mlx_server, router
+    from harness import interactive, mlx_server, router
     loaded: list[str] = []
     try:
-        return _measure(a, row, loaded, sweep)
+        # An arm whose GGUF the interactive server pins is answered there, never loaded twice. #1578.
+        with interactive.answer():
+            return _measure(a, row, loaded, sweep)
     finally:
         for spec in loaded:
             router.release_spec(spec, f"measured {row['name']}")
@@ -895,10 +898,17 @@ def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False,
         argv += ["--reuse", str(Path(out) / reuse.REUSE_FILE)]
     if resume:
         argv.append("--resume")
+    argv += _pinned_arms(inc_spec, spec)
     if unscreened:
         # The measure step judged the challenger's screen itself; the lane's incumbent needs none. #1353.
         argv.append("--unscreened")
     return argv
+
+
+def _pinned_arms(*specs: str) -> list[str]:
+    """--pinned-arms when an arm is answered by the interactive server's pinned copy. #1578."""
+    from harness import interactive, serving
+    return ["--pinned-arms"] if any(interactive.answering(serving.router_stem(s)) for s in specs) else []
 
 
 def _held(lane: str, inc_spec: str, spec: str, split, name: str, sweep):
@@ -1126,6 +1136,12 @@ def _confirmed(verdict, rows, split, screened, served: str, inc_spec: str, spec:
 
 def confirm_job(vid: int) -> int:
     """`soh adopt --confirm VID`: the night dev run that confirms or refuses a held holdout win. #725."""
+    from harness import interactive
+    with interactive.answer():
+        return _confirm_job(vid)
+
+
+def _confirm_job(vid: int) -> int:
     from types import SimpleNamespace
     from harness import adopt, candidates, holdout, reuse, screen
     from harness import memory_store as ms
@@ -1300,6 +1316,7 @@ def _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid, plan=None)
             argv += ["--stop-after", f"{looks.LOOK_INTERVAL_S:.0f}"]
     if resume:
         argv += ["--resume"]
+    argv += _pinned_arms(inc_spec, spec)
     taken = _confirm_reuse(lane, inc_spec, spec, split, repeat, out, resume)
     if taken:
         argv += ["--reuse", str(taken)]
