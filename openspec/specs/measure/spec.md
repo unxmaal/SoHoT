@@ -85,6 +85,16 @@ Test: tests/test_harness_adopt_receipt.py::test_the_measure_routes_a_repo_id_the
 - **THEN** `--candidates` names the upstream model, then the challenger
 Test: tests/test_harness_adopt_receipt.py::test_the_incumbent_travels_as_a_repo_id_when_the_run_goes_upstream
 
+#### Scenario: An alias the router serves goes to the router
+- **WHEN** the run is routed off the gateway and the incumbent's alias is served by llama-server
+- **THEN** `--candidates` names it as `llamacpp:<stem>`, never the bare stem mlx_lm.server reads as a hub repo
+Test: tests/test_incumbent_silent_1656.py::test_the_decide_incumbent_goes_to_the_router_when_the_challenger_goes_to_mlx
+
+#### Scenario: An incumbent that answers nothing ends the run
+- **WHEN** the incumbent's first `incumbent_silent_cases` fresh rows in a paired run are all harness_error
+- **THEN** evals.run stops with exit 78, its stop file says incumbent_silent, and the last stderr line names the incumbent
+Test: tests/test_incumbent_silent_1656.py::test_a_paired_run_whose_incumbent_answers_nothing_stops_early_and_says_why
+
 #### Scenario: The run stays on the gateway
 - **WHEN** the challenger is itself a gateway alias
 - **THEN** the incumbent keeps its alias in `--candidates`

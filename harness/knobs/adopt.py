@@ -47,6 +47,10 @@ KNOBS = [
             "not run on it; 1 because the paired gate pairs one incumbent draw with each challenger draw "
             "(paired.head_to_head, power.plan per cell) and a draw under the same bytes is exchangeable with a "
             "fresh one; replay of run 521 on a store copy keeps the futility verdict (#1094)"),
+    _k("incumbent_silent_cases", ["evals/run.py:SILENT_CASES"], [3, 5, 10], unit="cases",
+       note="fresh incumbent rows, every one harness_error, after which a paired run stops with exit 78 and its stop "
+            "file says incumbent_silent; runs/20261108-232512-adopt-decide paired 196 challenger cases against an "
+            "incumbent whose one failed warm-up (gateway 404) failed every case in 0.0 s (#1656)"),
     _k("look_idle_slices", ["harness/commands/measure.py:IDLE_SLICES"], [1, 2, 3],
        note="look slices in a row that may stop at their stop time with no new case before a paired run pauses "
             "for the next sweep; job 0239's first slice spent 954 s of 1800 waiting for the eval lock and two cold "

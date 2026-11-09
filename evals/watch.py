@@ -13,6 +13,10 @@ from pathlib import Path
 PAUSED = 75
 #: Exit status of a --resume whose checkpoint is another exam. #813.
 STALE = 77
+#: Exit status of a paired run stopped because its incumbent answered none of its first cases. #1656.
+SILENT = 78
+#: The stop file reason of that run. #1656.
+INCUMBENT_SILENT = "incumbent_silent"
 
 CHECKPOINT = "checkpoint.jsonl"
 PROGRESS = "progress.json"
@@ -82,6 +86,10 @@ class Deferred(Stop):
     def __init__(self, why: str, reason: str):
         super().__init__(f"paused on request ({reason}): {why}")
         self.reason = reason
+
+
+class Silent(Stop):
+    """The run ends: its incumbent answered nothing, so there is no comparison to resume. #1656."""
 
 
 @dataclass

@@ -514,16 +514,21 @@ def upstream_of(alias: str, config=None) -> str:
 
     `openai/` is LiteLLM's provider prefix, not part of the id.
     """
-    from harness import gateway
+    from harness import gateway, serving
 
     want = (alias or "").strip().lower()
     if not want:
         return ""
-    for entry in gateway.load(config).get("model_list") or []:
+    data = gateway.load(config)
+    for entry in data.get("model_list") or []:
         if str(entry.get("model_name", "")).strip().lower() != want:
             continue
-        return gateway.strip_provider(
-            str((entry.get("litellm_params") or {}).get("model", "")))
+        params = entry.get("litellm_params") or {}
+        model = gateway.strip_provider(str(params.get("model", "")))
+        if model and serving.engine_at(str(params.get("api_base", "")), data=data) == serving.LLAMACPP:
+            # mlx_lm.server reads a router stem as a hub repo it cannot find offline; the stem goes to the router. #1656.
+            return f"{LLAMACPP_PREFIX}{model}"
+        return model
     return ""
 
 
