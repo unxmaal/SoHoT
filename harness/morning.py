@@ -479,8 +479,11 @@ def needs(r: dict) -> list[str]:
     d = r["deploy"]
     if d.get("available") and d["behind"]:
         out.append(f"deploy is {d['behind']} commit(s) behind origin/main")
-    from harness import deploy as deploys
+    from harness import contention, deploy as deploys
     out.extend(deploys.line(x) for x in r.get("deploys") or [] if x["outcome"] not in ("", deploys.DEPLOYED))
+    w = r.get("deploy_wait")
+    if w and w["why"] and w["waited"] >= contention.DEPLOY_ALERT_S:
+        out.append(deploys.wait_line(w))
     if r["stale"]:
         out.append(f"stale lanes: {', '.join(s['lane'] for s in r['stale'])}")
     if r.get("stalled"):
@@ -513,7 +516,8 @@ def parked_nodes() -> list[str]:
 
 
 def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, where=None, lanes=None,
-           health=None, stalls=None, canary=None, parked=None, incumbent=None, monitor=None, pulls=None) -> dict:
+           health=None, stalls=None, canary=None, parked=None, incumbent=None, monitor=None, pulls=None,
+           waiting=None) -> dict:
     """`health` probes the headline's lane (lane_health), `canary` reads its receipts (canary.morning_line); None skips either."""
     r = {"lane": health(MODEL_LANE) if health else {"lane": MODEL_LANE, "generating": None, "why": "not probed"},
          "generated": now, "since": since, "sweep": sweep(conn, since, beat), "watchdog": watchdog(conn, since),
@@ -526,7 +530,7 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "engines": engines(conn, since), "idle": _idle(conn, since),
          "runtimes": runtimes(conn, since), "techniques": techniques(conn, since),
          "monitor": monitor(since) if monitor else None, "deploys": deploys_since(conn, since),
-         "pulls": pulls(now) if pulls else None}
+         "pulls": pulls(now) if pulls else None, "deploy_wait": waiting(conn, now) if waiting else None}
     from harness import hold
     r["hold"], r["gpu_hold"] = hold.held(conn, now), hold.held(conn, now, hold.GPU)
     if r["sweep"]["loop"] is not None:
@@ -550,6 +554,15 @@ def deploys_since(conn, since: float) -> list[dict]:
         return deploy.since(conn, since)
     except sqlite3.OperationalError:
         return []
+
+
+def deploy_wait(conn, now: float) -> dict | None:
+    """The pending deploy and why it waits; None with none pending or on a store that cannot say. #1672."""
+    from harness import deploy
+    try:
+        return deploy.wait(conn, now)
+    except (sqlite3.Error, RuntimeError, OSError) as exc:
+        return {"job": "?", "sha": "", "since": now, "first": None, "waited": 0.0, "why": f"not read: {exc}"[:300]}
 
 
 def repo_incumbent(conn) -> dict:

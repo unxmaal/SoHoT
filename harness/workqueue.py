@@ -615,7 +615,24 @@ def resume() -> None:
     _pause_flag().unlink(missing_ok=True)
 
 
-def gate(sample=None) -> tuple[bool, str]:
+def _pressed(level, now: float) -> tuple[bool, str]:
+    """Memory pressure holds every job but a deploy at the head of the queue past its bound on it. #1672."""
+    from harness import contention, deploy
+    try:
+        with _store() as c:
+            head = ready(c, now)[:1]
+            since = deploy.waiting_since(c, head[0]["id"])[0] if head and head[0]["kind"] == DEPLOY else None
+    except RuntimeError:
+        since = None
+    if since is None:
+        return False, f"memory pressure level {level}"
+    if now - since < contention.DEPLOY_PRESSURE_S:
+        return False, f"memory pressure level {level}; the deploy waits on it until {contention.pressure_until(since)}"
+    return True, (f"memory pressure level {level}; only the deploy starts, past its "
+                  f"{contention.DEPLOY_PRESSURE_S:.0f} s bound on memory pressure")
+
+
+def gate(sample=None, now: float | None = None) -> tuple[bool, str]:
     """(open, why): may the next job start now? A running job always finishes. #573."""
     from harness import env, pressure
     if paused():
@@ -628,10 +645,10 @@ def gate(sample=None) -> tuple[bool, str]:
     vol = env.unmounted(env.configured())
     if vol:
         return False, f"paused until it returns: the weights volume {vol} {env.NOT_MOUNTED}"
-    now = (sample or pressure.sample)()
-    if now.alarming:
-        return False, f"memory pressure level {now.level}"
-    return True, "memory pressure normal" if now.level is not None else "memory pressure unknown"
+    p = (sample or pressure.sample)()
+    if p.alarming:
+        return _pressed(p.level, time.time() if now is None else now)
+    return True, "memory pressure normal" if p.level is not None else "memory pressure unknown"
 
 
 def quiesce(wait=0.5, sleep=time.sleep, is_running=None) -> bool:
@@ -934,6 +951,21 @@ def settle_deploys() -> list:
     return got
 
 
+def watch_deploys(now: float | None = None) -> dict | None:
+    """deploy.watch_wait, logged rather than raised: a pending deploy waiting too long alerts once. #1672."""
+    import sqlite3
+
+    from harness import deploy
+    try:
+        got = deploy.watch_wait(now)
+    except (OSError, ValueError, RuntimeError, sqlite3.Error) as exc:
+        print(f"{time.strftime('%H:%M:%S')} deploy wait check failed: {exc}", flush=True)
+        return None
+    if got is not None:
+        print(f"{time.strftime('%H:%M:%S')} alerted: {deploy.wait_line(got)}", flush=True)
+    return got
+
+
 def needs(job: dict) -> str:
     """The resource class a job waits for (resources.of). #1153, #1508."""
     return resources.of(job)
@@ -958,11 +990,12 @@ def _free(cls: str, live: dict) -> bool:
     return mine < resources.capacity(cls)
 
 
-def _contended(now: float) -> bool:
-    """Whether the contention gate holds GPU jobs and deploys at now. #1509."""
-    from harness import contention
+def _contended(now: float, job: dict | None = None) -> bool:
+    """Whether the contention gate holds GPU jobs, or this deploy, at now. #1509, #1672."""
+    from harness import contention, deploy
     with _store() as c:
-        return not contention.gate(c, now)[0]
+        since = deploy.waiting_since(c, job["id"])[0] if job is not None and needs(job) == DEPLOY else None
+        return not contention.gate(c, now, since=since)[0]
 
 
 def _admitted(job: dict) -> bool:
@@ -992,15 +1025,15 @@ def _affine(job: dict, rest: list[dict], blocked) -> dict:
 def _startable(live: dict, now: float) -> tuple[dict, str] | None:
     """The first ready job, in run order, whose lock class is free; a GPU job or deploy only past the contention gate. #1153, #1509."""
     from harness import contention
-    started, held = {i for _, i in live.values()}, []
+    started, held = {i for _, i in live.values()}, {}
     jobs = [j for j in ready(now=now) if j["id"] not in started]
 
     def blocked(job) -> bool:
         if not contention.batch(job):
             return False
-        if not held:
-            held.append(_contended(now))
-        return held[0]
+        if needs(job) not in held:
+            held[needs(job)] = _contended(now, job)
+        return held[needs(job)]
     for at, job in enumerate(jobs):
         cls = needs(job)
         if cls in (GPU, DEPLOY) and blocked(job):
@@ -1133,6 +1166,7 @@ def serve(poll: float = 30.0, sleep=time.sleep, popen=None,
     said = ""
     while True:
         settle_deploys()
+        watch_deploys(clock())
         try:
             waiting = ready(now=clock())
         except RuntimeError as exc:

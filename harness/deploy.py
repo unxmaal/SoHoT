@@ -118,6 +118,83 @@ def _env(extra=None) -> dict:
     return {**deploy_switch.env(), **(extra or {})}
 
 
+SUPERSEDED = "superseded by "
+
+
+def _wait_alerted() -> Path:
+    return wq.root() / "deploy-wait-alerted"
+
+
+def waiting_since(conn, job_id) -> tuple[float, int]:
+    """(when, first job id) deploys began waiting: this job's queueing, or that of the pending jobs it superseded. #1672."""
+    key, since, first = int(job_id), None, int(job_id)
+    for r in conn.execute("SELECT id, created_at, state, note FROM jobs WHERE kind = ? AND id <= ? ORDER BY id DESC",
+                          (KIND, key)).fetchall():
+        if int(r["id"]) != key and not (r["state"] == wq.CANCELLED and str(r["note"] or "").startswith(SUPERSEDED)):
+            break
+        since, first = float(r["created_at"]), int(r["id"])
+    return (time.time() if since is None else since), first
+
+
+def wait(conn, now: float | None = None, sample=None) -> dict | None:
+    """The pending deploy, since when deploys have waited and why it has not started ('' if it starts next poll). #1672."""
+    from harness import contention
+    now = time.time() if now is None else now
+    job = next((j for j in wq.pending(conn) if j["kind"] == KIND), None)
+    if job is None:
+        return None
+    since, first = waiting_since(conn, job["id"])
+    why = held = blocked()
+    if not why:
+        ok, said = wq.gate(sample, now=now)
+        why = "" if ok else said
+    if not why:
+        v = contention.verdict(conn, now, sample, since)
+        why = "" if v["open"] else f"the contention gate is closed: {v['why']}"
+    busy = [] if why else wq.running_here(conn)
+    if busy:
+        why = "waiting for the running job(s) " + ", ".join(j["id"] for j in busy)
+    return {"job": job["id"], "sha": job["output"], "since": since, "first": first, "waited": now - since,
+            "why": why, "held": bool(held)}
+
+
+def wait_line(w: dict) -> str:
+    when = time.strftime("%Y-%m-%d %H:%M", time.localtime(w["since"]))
+    return (f"deploy job {w['job']} of {w['sha'][:12]} pending since {when} ({w['waited'] / 3600:.1f} h): "
+            + (w["why"] or "starts at the worker's next poll"))
+
+
+def watch_wait(now: float | None = None, alert=None) -> dict | None:
+    """One alert per wait once a pending deploy has waited contention.DEPLOY_ALERT_S, naming why; not for a pause or sweep. #1672."""
+    from harness import contention
+    now = time.time() if now is None else now
+    try:
+        said = _wait_alerted().read_text(encoding="utf-8").strip()
+    except OSError:
+        said = ""
+    with wq._store() as c:
+        job = next((j for j in wq.pending(c) if j["kind"] == KIND), None)
+        since, first = waiting_since(c, job["id"]) if job is not None else (now, None)
+        if now - since < contention.DEPLOY_ALERT_S or said == str(first):
+            return None
+        w = wait(c, now)
+    if w is None or not w["why"] or w["held"]:
+        return None
+    _wait_alerted().write_text(str(w["first"]), encoding="utf-8")
+    (alert or _alert_script)(wait_line(w))
+    return w
+
+
+def _alert_script(message: str) -> None:
+    """The alert through scripts/monit-alert.sh, as monit runs it. #1672."""
+    extra = {"MONIT_SERVICE": "deploy", "MONIT_EVENT": "waiting", "MONIT_DESCRIPTION": message}
+    try:
+        subprocess.run(Steps().alert, cwd=Path(__file__).resolve().parents[1], env={**os.environ, **extra},
+                       capture_output=True, timeout=deploy_switch.ALERT_TIMEOUT_S)
+    except (OSError, subprocess.SubprocessError) as exc:
+        print(f"deploy alert failed: {exc}", file=sys.stderr)
+
+
 def _git(cwd, *args: str) -> str:
     from harness import cuts
     try:
@@ -183,7 +260,7 @@ def poll(conn=None, now: float | None = None, *, src=None, sha: str = "", force:
         superseded = [wq.label(r["id"]) for r in c.execute(
             "SELECT id FROM jobs WHERE kind = ? AND state = ? AND output != ?", (KIND, wq.PENDING, want))]
         c.execute("UPDATE jobs SET state = ?, finished_at = ?, note = ? WHERE kind = ? AND state = ? AND output != ?",
-                  (wq.CANCELLED, time.time() if now is None else now, f"superseded by {want[:12]}", KIND,
+                  (wq.CANCELLED, time.time() if now is None else now, f"{SUPERSEDED}{want[:12]}", KIND,
                    wq.PENDING, want))
         c.commit()
         job = wq.add([*SOH, "deploy", "run", want], title=f"deploy {want[:12]}", cwd=str(src), kind=KIND,

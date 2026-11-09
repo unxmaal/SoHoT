@@ -140,7 +140,7 @@ def cmd_jobs(a) -> int:
         note(f"{a.action}d; next job {'may start' if ok else 'waits'}: {why}")
         emit(paused=wq.paused(), gate_open=ok, why=why)
         return 0
-    from harness import contention, exclusive, heartbeat
+    from harness import contention, deploy, exclusive, heartbeat
     from harness import memory_store as ms
     got = wq.jobs()
     ok, why = wq.gate()
@@ -150,9 +150,12 @@ def cmd_jobs(a) -> int:
     conn = ms.connect()
     try:
         gpu = contention.verdict(conn)
+        waits = deploy.wait(conn)
     finally:
         conn.close()
     note(f"GPU jobs and deploys: the contention gate is {'open' if gpu['open'] else 'closed'}: {gpu['why']}")
+    if waits:
+        note(deploy.wait_line(waits))
     later = sum(j["state"] == wq.PENDING and not wq.due(j) for j in got)
     held, waiting = _held(got)
     if held:
@@ -184,6 +187,6 @@ def cmd_jobs(a) -> int:
         conn.close()
     for h in leases:
         note(f"  {item_lease.line(h)}")
-    emit(running=wq.running(), gate_open=ok, why=why, jobs=got, loop=loop, contention=gpu, locks=locks,
+    emit(running=wq.running(), gate_open=ok, why=why, jobs=got, loop=loop, contention=gpu, deploy_wait=waits, locks=locks,
          hold=held, held=sorted(waiting), leases=leases)
     return 0
