@@ -166,16 +166,71 @@ def snapshot_files(repo: str) -> list[Path]:
     return sorted(f for f in snap.rglob("*") if f.is_file()) if snap.is_dir() else []
 
 
-def served(spec: str) -> dict:
+#: /props generation settings that change from request to request, never what a reply is made with.
+_TRANSIENT = ("id", "id_task", "id_slot", "is_processing", "next_token", "state", "n_past")
+
+
+def _node_props(base: str, model: str, key: str, get=None) -> dict:
+    """A node's /props for one model (a router answers per ?model=), else its own; {} when it does not answer."""
+    from urllib.parse import quote
+
+    from harness import context
+    for url in (f"{base}/props?model={quote(model)}", f"{base}/props"):
+        try:
+            got = get(url) if get else context._get_json(url, key)
+        except Exception:  # noqa: BLE001 - a node that does not answer has no identity
+            continue
+        if isinstance(got, dict) and got:
+            return got
+    return {}
+
+
+def node_served(name: str, entry: dict, engine: str, config=None, get=None) -> dict:
+    """The served part of a gateway entry a node serves: its host, its llama.cpp build and /props settings, the model sha256 nodes.yaml records. #1652."""
+    from harness import context, gateway, nodes, serving
+    node_name = str(entry.get(nodes.NODE_KEY))
+    host = str(entry.get(nodes.MACHINE_KEY) or "")
+    out: dict = {"engine": engine, "node": node_name, "host": host}
+    if engine != serving.LLAMACPP:
+        return {**out, "unresolved": [f"runtime: no content identity for {engine} on node {node_name}"]}
+    node = next((n for n in nodes.load() if n.name == node_name), None)
+    params = entry.get("litellm_params") or {}
+    sent = gateway.strip_provider(str(params.get("model") or ""))
+    base = str(params.get("api_base") or "").rstrip("/").removesuffix("/v1")
+    if node is None:
+        return {**out, "unresolved": [f"model: node {node_name} is not in {nodes.path()}"]}
+    key = context._key(name, config) or nodes.secret(node)
+    props = _node_props(base, sent, key, get)
+    build = context.build_of(props.get("build_info"))
+    gen = props.get("default_generation_settings") or {}
+    template = str(props.get("chat_template") or "")
+    sha = node.sha256(sent)
+    unresolved = ([] if node.fingerprint else [f"machine: {nodes.unidentified(node)}"]) + (
+        [] if build else [f"runtime: node {node_name} named no llama.cpp build in /props"]) + (
+        [] if sha else [f"model: {nodes.path().name} records no sha256 for {sent} on node {node_name}"])
+    if unresolved:
+        return {**out, "unresolved": unresolved}
+    return {**out, "runtime": {"llama.cpp": build}, "model": {sent: sha},
+            "preset": {"settings": {k: v for k, v in gen.items() if k not in _TRANSIENT},
+                       "chat_template": _text_sha(template) if template else ""}}
+
+
+def served(spec: str, config=None, get=None) -> dict:
     """{"engine", "runtime", "model", "preset"} for a text spec, with "unresolved" naming what had no bytes to read."""
-    from harness import context, gguf, serving
+    from harness import context, gguf, nodes, serving
     base = spec.partition(",")[0].strip()
+    entry = (None if ":" in base else context._entry_for(base, config)) or {}
+    # A node entry and its @local twin are only in the served config, which names their engine.
+    declared = str(entry.get(serving.ENGINE_KEY) or "") if (
+        entry.get(nodes.NODE_KEY) or entry.get(nodes.FALLBACK_KEY)) else ""
     try:
-        engine = serving.engine_for(base)
+        engine = declared or serving.engine_for(base, config=config)
     except ValueError as exc:
         return {"unresolved": [f"engine: {exc}"]}
     out: dict = {"engine": engine}
-    where = context._upstream(base)
+    if entry.get(nodes.NODE_KEY):
+        return node_served(base, entry, engine, config, get)
+    where = context._upstream(base, config)
     if engine == serving.LLAMACPP:
         if where is None or not serving.loopback(where[0]):
             return {**out, "unresolved": [f"model: {base} is not served from this machine"]}
