@@ -343,13 +343,15 @@ def test_a_checkpoint_from_before_identities_were_recorded_still_resumes():
 def test_the_watchdog_judges_the_challenger_against_the_stored_incumbent_time(tmp_path, quiet, pair):
     _incumbent_only(tmp_path)
     got, cells = _planned()
+    # The fake runner moves only the watch clock, so the stored draws' perf_counter seconds are ~0: give them the case's time.
+    got = {**got, "cells": {c: [*v[:3], 10.0, *v[4:]] for c, v in got["cells"].items()}}
     out = tmp_path / "paired"
     reuse.write(out, INC, got)
     R._execute(_args(out, candidates=f"{INC},{CH}", reuse=str(out / reuse.REUSE_FILE),
                      stop_at=watch.clock() + 10.0 * 6 - 1))
     _, by = watchdog._cells({"_dir": str(out), "specs": {INC: INC, CH: CH}})
     assert len(by[INC]) == len(cells)
-    assert watchdog._paired(by, INC, CH) is not None
+    assert watchdog._paired(by, INC, CH)[0] is not None
 
 
 def test_reverify_names_a_model_whose_bytes_moved(served):

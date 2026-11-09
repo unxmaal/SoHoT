@@ -19,6 +19,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from harness import interactive, serve_lease
+from harness.overrun import cells as _cells, paired as _paired, unmeasured as _unmeasured
 
 NOTE, NOTIFY, FILE, PAUSE, STOP, REAP, UNLOAD, RESTART = (
     "note", "notify", "file", "pause", "stop", "reap", "unload", "restart")
@@ -676,55 +677,8 @@ def _long_run(w: World) -> list[Finding]:
     return out
 
 
-def _cells(run: dict):
-    """(incumbent key, {key: {case: [wall_s, reply tokens or None, rows]}}) from a paired run's checkpoint, else None. #864."""
-    from evals.watch import read
-    got = read(run["_dir"]) if run.get("_dir") else None
-    if not got:
-        return None
-    ident, rows = got
-    key_of = {spec: key for key, spec in (run.get("specs") or {}).items()}
-    order = [key_of.get(c, c) for c in ident.get("candidates") or []]
-    if len(order) < 2:
-        return None
-    budget = ident.get("max_tokens")
-    by: dict = {}
-    for r in rows:
-        if r.get("candidate") is None or r.get("case_id") is None:
-            continue
-        toks = (r.get("metrics") or {}).get("completion_tokens")
-        if not toks and r.get("failure_class") == "token_budget_exhausted":
-            toks = budget
-        cell = by.setdefault(r["candidate"], {}).setdefault(r["case_id"], [0.0, 0, 0])
-        cell[0] += float(r.get("wall_s") or r.get("seconds") or 0.0)
-        cell[1] = cell[1] + toks if toks and cell[1] is not None else None
-        cell[2] += 1
-    if ident.get("reuse"):
-        # The incumbent cells taken from stored draws keep their stored time, so a challenger is still judged against it. #1094.
-        from harness import reuse
-        for case, (seconds, toks) in reuse.timing(run["_dir"]).items():
-            by.setdefault(order[0], {}).setdefault(case, [float(seconds or 0.0), toks or None, 1])
-    return order[0], by
-
-
-def _paired(by: dict, inc: str, ch: str, minimum: int | None = None):
-    """(observed challenger/incumbent ratio, basis, pairs) on the cases both finished, or None below the minimum. #864."""
-    minimum = OVERRUN_MIN_PAIRS if minimum is None else minimum
-    mine, theirs = by.get(ch) or {}, by.get(inc) or {}
-    pairs = [c for c in mine if c in theirs and mine[c][2] == theirs[c][2]]
-    tok = [c for c in pairs if mine[c][1] and theirs[c][1]]
-    if len(tok) >= minimum:
-        a, at = sum(mine[c][0] for c in tok), sum(mine[c][1] for c in tok)
-        b, bt = sum(theirs[c][0] for c in tok), sum(theirs[c][1] for c in tok)
-        return ((a / at) / (b / bt) if b else None), "seconds per reply token", len(tok)
-    if len(pairs) >= minimum:
-        b = sum(theirs[c][0] for c in pairs)
-        return (sum(mine[c][0] for c in pairs) / b if b else None), "seconds", len(pairs)
-    return None
-
-
 def _overrun(w: World) -> list[Finding]:
-    out, few_cases, few_pairs = [], 0, 0
+    out, few_cases, few_pairs, per_case = [], 0, 0, []
     for s in w.evals:
         run = s.progress or {}
         planned, seen = run.get("planned_s_per_case") or {}, run.get("observed_s_per_case") or {}
@@ -743,6 +697,15 @@ def _overrun(w: World) -> list[Finding]:
             # A challenger is judged against the incumbent on the same cases, not its plan's mean: case time is heavy-tailed. #864.
             inc = cells[0]
             got = _paired(cells[1], inc, k) if planned.get(inc) else None
+            blind = _unmeasured(cells[1], inc, k) if got is None and planned.get(inc) else 0
+            if blind:
+                # Without measured incumbent seconds the challenger is held to its own plan per case. #1654.
+                why = f"{blind} paired case(s) carry no measured seconds against {inc}: judged per case"
+                if seen[k] > OVERRUN_FACTOR * planned[k]:
+                    worst.append((seen[k] / planned[k], k, {"basis": "seconds per case", "why": why, "against": inc}))
+                else:
+                    per_case.append(why)
+                continue
             if got is None and planned.get(inc):
                 some = _paired(cells[1], inc, k, minimum=1)
                 few_pairs += bool(some and some[0] is not None and some[0] > OVERRUN_FACTOR * planned[k] / planned[inc])
@@ -767,6 +730,9 @@ def _overrun(w: World) -> list[Finding]:
     if few_pairs:
         cuts.cut("watchdog_overrun_min_pairs", "challengers over their plan not judged yet: too few pairs",
                  kept=few_pairs)
+    if per_case:
+        cuts.cut("watchdog_overrun_min_pairs", f"challengers not paired, within plan per case: {per_case[0]}",
+                 kept=len(per_case))
     return out
 
 

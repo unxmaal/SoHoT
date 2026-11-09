@@ -24,6 +24,7 @@ capabilities:
     untested: 3
     modules:
       - harness/watchdog.py
+      - harness/overrun.py
       - harness/idle_unload.py
 
   - name: adopt-confirm
