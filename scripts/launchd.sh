@@ -744,9 +744,10 @@ case "${1:-}" in
   restart)
     # One loaded service, after any model-loading run. A no-op when the
     # service is not loaded (another machine, or not installed). #319.
+    # --repair: recovering a serving unit must not wait on the store. #1667.
     label="$PREFIX.${2:?usage: $0 restart SERVICE}"
     launchctl print "gui/$UID/$label" >/dev/null 2>&1 || exit 0
-    "$REPO/scripts/with-gpu-lock" launchctl kickstart -k "gui/$UID/$label" ;;
+    "$REPO/scripts/with-gpu-lock" --repair launchctl kickstart -k "gui/$UID/$label" ;;
   uninstall) uninstall_units ;;
   status)    status ;;
   *)         usage ;;
