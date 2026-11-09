@@ -10,6 +10,7 @@ nodes:
     engine: llama-server
     # The gateway's model ids. Where the node advertises another id (a router names a model by its
     # file in --models-dir), map it: `- {id: <gateway id>, as: <the node's id>}`. `make smoke` checks.
+    # `- {id: <gateway id>, sha256: <hex>}` lets its stored draws be reused; `python -m harness.nodes digest <stem>` on the node prints it (#1652).
     models:
       - Qwen2.5-7B-Instruct-Q4_K_M
     # Never the key itself: keychain:<service>/<account> (login Keychain) or env:<VARIABLE>.

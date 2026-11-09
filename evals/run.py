@@ -1721,7 +1721,8 @@ def _execute_at(args, overrides: dict) -> int:
             # Stored at the path the finished run replaces, so its rows are kept and never doubled. #813.
             stamped["progress"] = {"state": state, "why": why, "done": len(results), "total": total}
         environment_ = {**serving_environment(client, serving, away, served_builds(completion.served())),
-                        "identities": {key: idents[spec] for key, spec in specs.items() if spec in idents}}
+                        "identities": served_identities(specs, idents, completion.served(),
+                                                        ms.this_machine()["fingerprint"], args.gateway)}
         if eye.yields or eye.cuts:
             environment_["serving_yields"] = {"count": eye.yields, "seconds": round(eye.yield_s, 3), "cut": eye.cuts}
         if taken:
@@ -1828,6 +1829,28 @@ def content_identity(lane: str, spec: str, budget: int, ladder, overrides, cases
                            repo_harness=harness)
     except Exception as exc:  # noqa: BLE001 - an unreadable identity only disables reuse
         return {"digest": "", "cases": {}, "parts": {}, "timing": {}, "unresolved": [f"{type(exc).__name__}: {exc}"]}
+
+
+def served_identities(specs: dict, idents: dict, seen: dict, here: str, gateway: str | None = None) -> dict:
+    """receipt key -> identity, emptied of its digest and bytes when the replies name another host than it was read for. #1652."""
+    named = {model: got for (_, model), got in seen.items()}
+    out = {}
+    for key, spec in specs.items():
+        if spec not in idents:
+            continue
+        ident = idents[spec]
+        part = (ident.get("parts") or {}).get("served") or {}
+        want = part.get("host") or here
+        hosts = set((named.get(_sent_as(text_spec(spec), gateway)) or {}).get("machines") or ()) \
+            if text_candidate(spec) else set()
+        if ident.get("digest") and (hosts - {want} or (want != here and not hosts)):
+            said = ", ".join(sorted(hosts)) or "no host"
+            ident = {**ident, "digest": "",
+                     "parts": {**ident["parts"], "served": {"engine": part.get("engine", ""), "host": said}},
+                     "unresolved": [*ident.get("unresolved", []),
+                                    f"served: the replies named {said}, the identity was read for {want}"]}
+        out[key] = ident
+    return out
 
 
 def combined_identity(ident: dict) -> str:
