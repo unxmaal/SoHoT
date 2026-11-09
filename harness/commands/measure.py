@@ -389,7 +389,8 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
     # cannot travel as a LiteLLM alias: :8081 has never heard of `q3-4b`, the
     # control scored 0 of 27, and the run had nothing to compare against. The
     # config maps every alias to the upstream behind it. #223.
-    if screen.routed_gateway(name):
+    route = screen.routed_gateway(spec)
+    if route:
         upstream = screen.upstream_of(incumbent)
         if upstream:
             inc_spec = screen.candidate_for(lane, upstream) or upstream
@@ -435,7 +436,6 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
             argv = _argv(lane, part, out, inc_spec, spec, resume=bool(held),
                          unscreened=lane == "repo", cap_s=None if last else max(0.0, plan.budget_s - (time.time() - started)))
             # ROUTE IT THE WAY THE SCREEN DOES: LiteLLM refuses a repo id it has no alias for. #223, #206.
-            route = screen.routed_gateway(name)
             if route:
                 argv += ["--gateway", route]
             print(f"\n  {lane}: {name} against {incumbent}")
@@ -961,7 +961,7 @@ def _dry_argv(lane: str, name: str, incumbent: str, plan, held, inc_spec: str, s
         return 0
     argv = _argv(lane, part, out, inc_spec, spec, resume=bool(held), unscreened=lane == "repo",
                  cap_s=None if last else plan.budget_s)
-    route = screen.routed_gateway(name)
+    route = screen.routed_gateway(spec)
     print(f"\n  {lane}: {name} against {incumbent} (dry run: nothing launched, nothing recorded)")
     print(f"    {' '.join(argv + (['--gateway', route] if route else []))}", flush=True)
     return 0
@@ -1303,7 +1303,7 @@ def _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid, plan=None)
     taken = _confirm_reuse(lane, inc_spec, spec, split, repeat, out, resume)
     if taken:
         argv += ["--reuse", str(taken)]
-    route = screen.routed_gateway(name)
+    route = screen.routed_gateway(spec)
     if route:
         argv += ["--gateway", route]
     print(f"\n  {lane}: {'resuming' if resume else 'confirming'} {spec} over {inc_spec} on dev (verdict {vid})"
