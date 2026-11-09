@@ -13,7 +13,7 @@ sys.path.insert(0, str(HERE.parents[1]))
 from harness import exclusive  # noqa: E402
 
 argv = sys.argv[1:]
-# --repair is launchd.sh install/reinstall: it runs under the flock alone while the store is down. #1648.
+# --repair is launchd.sh install/reinstall/restart: it runs under the flock alone while the store is down. #1648, #1667.
 repair = argv[:1] == ["--repair"]
 argv = argv[1:] if repair else argv
 if not argv:

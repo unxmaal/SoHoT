@@ -46,7 +46,7 @@ EXCLUSIVE = {"image", "video"}
 #: Batch runs that load models on any engine, and other projects through
 #: scripts/with-gpu-lock. A lane prompt is not one of these. #314.
 BATCH = {"eval", "ramp", "external", "chaos", "install"}
-#: Kinds that run under the flock alone when the store is down: install and deploy are how the store is repaired. #1648.
+#: Kinds that run under the flock alone when the store is down: install, deploy and unit restarts are repairs. #1648, #1667.
 REPAIR = {"install"}
 #: Batch kinds that reach their models through the gateway, so they load the serving machine, not this one. #769.
 GATEWAY_BATCH = {"eval"}
