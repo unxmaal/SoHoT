@@ -253,7 +253,7 @@ Test: tests/test_watchdog_limits_1369.py::test_raising_one_kind_s_limit_lets_tha
 Test: tests/test_watchdog_limits_1369.py::test_long_run_notifies_then_pauses_through_the_progress_file_and_never_stops
 
 ### Requirement: overrun
-The watchdog SHALL find overrun on an eval with at least `OVERRUN_MIN_CASES` (3) cases done when a candidate's observed seconds per case exceed `OVERRUN_FACTOR` (2) times its plan; in a paired run a challenger SHALL instead be judged against the incumbent on at least `OVERRUN_MIN_PAIRS` (5) shared cases, per reply token when both have token counts and per second otherwise, against the plan's ratio, including incumbent cells taken from stored draws.
+The watchdog SHALL find overrun on an eval with at least `OVERRUN_MIN_CASES` (3) cases done when a candidate's observed seconds per case exceed `OVERRUN_FACTOR` (2) times its plan; in a paired run a challenger SHALL instead be judged against the incumbent on at least `OVERRUN_MIN_PAIRS` (5) shared cases, per reply token when both have token counts and per second otherwise, against the plan's ratio, including incumbent cells taken from stored draws; a cell that is harness_error or carries no seconds SHALL NOT be paired, and a challenger left without enough measured pairs for that reason SHALL be judged per case against its own plan (#1654).
 
 #### Scenario: Over and under the factor
 - **WHEN** a single-candidate eval's observed rate is just over, or just under, the factor times its plan
@@ -294,6 +294,16 @@ Test: tests/test_overrun_864.py::test_the_incumbent_of_a_paired_run_is_still_jud
 - **WHEN** a paired run reuses the incumbent's stored draws
 - **THEN** the incumbent's stored times form the pairs
 Test: tests/test_incumbent_reuse_1094.py::test_the_watchdog_judges_the_challenger_against_the_stored_incumbent_time
+
+#### Scenario: Incumbent cells that measured nothing
+- **WHEN** a challenger within its plan per case shares its cases only with incumbent cells that are harness_error or carry no seconds
+- **THEN** overrun does not trip, and a cut says the challenger was judged per case
+Test: tests/test_overrun_1654.py::test_a_challenger_within_plan_against_an_incumbent_that_measured_nothing_is_not_an_overrun
+
+#### Scenario: Over plan per case with no measured incumbent
+- **WHEN** that challenger is over the factor times its own plan per case
+- **THEN** overrun trips with basis `seconds per case` and a why
+Test: tests/test_overrun_1654.py::test_a_challenger_over_plan_per_case_is_still_an_overrun_when_the_incumbent_measured_nothing
 
 ### Requirement: no_progress
 The watchdog SHALL find no_progress on an eval whose last finished case (or start) is older than the larger of `STALL_S` (1800 s) and `STALL_CASES` (10) planned cases.

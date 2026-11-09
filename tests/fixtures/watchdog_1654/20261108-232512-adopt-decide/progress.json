@@ -1,0 +1,12 @@
+{
+ "total": 1322,
+ "specs": {
+  "imajev-4b-Q8_0": "imajev-4b-Q8_0",
+  "nimble/Bespoke-Nimble-9B": "nimble:bespokelabs/Bespoke-Nimble-9B"
+ },
+ "planned_s_per_case": {
+  "imajev-4b-Q8_0": 0.51,
+  "nimble/Bespoke-Nimble-9B": 6.16
+ },
+ "done": 391
+}
