@@ -17,18 +17,40 @@
   },
   {
    "candidate": "diffusers-video:Motif-Technologies/Motif-Video-2B",
-   "decided_at": "2026-10-30T03:03:25Z",
-   "detail": "1 case(s) passed a screen",
-   "exam": null,
-   "outcome": "screened",
+   "decided_at": "2026-11-09T02:50:29Z",
+   "detail": "video: lane too small, needs 54 holdout cases: 1 cannot show +0.20 per cell at power 0.8 at any repeat up to 16, so about 177 more video cases are needed before a null says anything about diffusers-vi",
+   "exam": {
+    "about": "2B params",
+    "candidate": "diffusers-video/Motif-Video-2B",
+    "cases": 1,
+    "first_s": 52.748,
+    "median_s": 50.758,
+    "metrics": {
+     "motion": 0.0826
+    },
+    "model": "diffusers-video/Motif-Video-2B",
+    "not_run": "",
+    "pass_rate": 1.0,
+    "passed": 2,
+    "peak_gb": 21.49,
+    "reference": false,
+    "repeat": 2,
+    "run_at": "2026-11-09T02:50:28Z",
+    "served_as": "",
+    "source": "",
+    "total": 2,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "declined",
    "proposal": "Motif-Technologies/Motif-Video-2B",
-   "reason": "candidate",
+   "reason": "limit",
    "receipt_key": "diffusers-video/Motif-Video-2B",
-   "run_id": 617,
+   "run_id": 768,
    "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:video>177"
   },
   {
    "candidate": "diffusers-video:FastVideo/FastVideo-FastH3-8-Step-V2",
@@ -53,22 +75,22 @@
     "about": "",
     "candidate": "h3/minimax-h3",
     "cases": 1,
-    "first_s": 102.514,
-    "median_s": 102.514,
+    "first_s": 170.728,
+    "median_s": 171.527,
     "metrics": {
-     "motion": 0.0418
+     "motion": 0.0378
     },
     "model": "h3/minimax-h3",
     "not_run": "",
     "pass_rate": 1.0,
-    "passed": 1,
-    "peak_gb": 3.2,
+    "passed": 2,
+    "peak_gb": 3.47,
     "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-02T07:27:17Z",
+    "repeat": 2,
+    "run_at": "2026-11-09T02:50:28Z",
     "served_as": "",
     "source": "",
-    "total": 1,
+    "total": 2,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -83,7 +105,7 @@
    "until": ""
   }
  ],
- "cursor": 1793850095157360,
+ "cursor": 1794192629179771,
  "events": [
   {
    "at": "2026-09-19T23:24:35Z",
@@ -174,9 +196,76 @@
    "reason": "candidate",
    "run_id": 705,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-09T02:50:29Z",
+   "candidate": "diffusers-video:Motif-Technologies/Motif-Video-2B",
+   "chosen": null,
+   "detail": "video: lane too small, needs 54 holdout cases: 1 cannot show +0.20 per cell at power 0.8 at any repeat up to 16, so about 177 more video cases are needed before a null says anything about diffusers-vi",
+   "how": "",
+   "id": 1794192629179771,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 768,
+   "tier": "adopt"
   }
  ],
  "exams": [
+  {
+   "cases": 1,
+   "differs": [],
+   "first_run_at": "2026-11-09T02:50:28Z",
+   "repeat": 2,
+   "rows": [
+    {
+     "about": "2B params",
+     "candidate": "diffusers-video/Motif-Video-2B",
+     "first_s": 52.748,
+     "median_s": 50.758,
+     "metrics": {
+      "motion": 0.0826
+     },
+     "model": "diffusers-video/Motif-Video-2B",
+     "not_run": "",
+     "pass_rate": 1.0,
+     "passed": 2,
+     "peak_gb": 21.49,
+     "reference": false,
+     "run_at": "2026-11-09T02:50:28Z",
+     "served_as": "",
+     "source": "",
+     "total": 2,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "about": "",
+     "candidate": "h3/minimax-h3",
+     "first_s": 170.728,
+     "median_s": 171.527,
+     "metrics": {
+      "motion": 0.0378
+     },
+     "model": "h3/minimax-h3",
+     "not_run": "",
+     "pass_rate": 1.0,
+     "passed": 2,
+     "peak_gb": 3.47,
+     "reference": false,
+     "run_at": "2026-11-09T02:50:28Z",
+     "served_as": "",
+     "source": "",
+     "total": 2,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    }
+   ],
+   "run_at": "2026-11-09T02:50:28Z",
+   "runs": 1
+  },
   {
    "cases": 1,
    "differs": [
@@ -290,7 +379,7 @@
    "runs": 7
   }
  ],
- "generated_at": "2026-11-05T08:00:19Z",
+ "generated_at": "2026-11-09T08:03:20Z",
  "knobs": [],
  "lane": {
   "cases": 1,
@@ -322,10 +411,10 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-11-02T07:27:17Z",
-  "median_s": 102.514,
+  "measured_at": "2026-11-09T02:50:28Z",
+  "median_s": 171.527,
   "metrics": {
-   "motion": 0.0418
+   "motion": 0.0378
   },
   "not_run": "",
   "parked": "",
