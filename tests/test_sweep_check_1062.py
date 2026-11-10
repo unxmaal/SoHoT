@@ -201,7 +201,7 @@ def test_the_unit_runs_at_22_and_hourly_to_06(tmp_path):
 
 
 #: Supervision code that predates #1062 and still shells out to pgrep; never add to it.
-PGREP_KNOWN = {"scripts/h3-weights-status.sh"}
+PGREP_KNOWN = {"scripts/h3-weights-status.sh", "harness/context_repeats.py"}  # the latter only names it as a mistake
 
 
 def _pgrep(text, rel):

@@ -403,6 +403,7 @@ capabilities:
       - harness/context_report.py
       - harness/context_class.py
       - harness/context_mistakes.py
+      - harness/context_repeats.py
       - harness/commands/context.py
       - harness/agent_weight.py
       - harness/inventory_time.py
