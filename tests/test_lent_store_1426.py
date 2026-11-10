@@ -17,6 +17,7 @@ S = "<copy>"
 #: command -> (argv lists, ms.connect calls the command makes itself); S stands for the copy's path.
 RUNS = {
     "adopt": ([["adopt", "--from-measurement", "--lane", "code", "--dry-run"]], 1),
+    "atomic": ([["atomic", "--out", "<tmp>", "--report-only", "--local-run", "1", "--cloud-run", "2", "--store", S]], 0),
     "baseline": ([["baseline", "--store", S]], 0),
     "benchmarks": ([["benchmarks", "--calibrate", "--db", S]], 0),
     "blame": ([["blame", "sample", "--dir", "<tmp>", "--db", S]], 0),
@@ -88,6 +89,7 @@ MODIFIERS = {
 }
 #: Flags whose mode writes, downloads, runs a model or reads the network by design, so it is not run here.
 NOT_RUN = {
+    "atomic --report-only": "held in RUNS",
     "scaffold module --command": "writes a command module and edits harness/cli.py in the checkout, never the store (#1697)",
     "scaffold unit --every-machine": "writes a launchd unit into the checkout's scripts, never the store (#1697)",
     "gguf-aux --apply": "moves GGUFs aside and restarts the router",

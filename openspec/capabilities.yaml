@@ -325,6 +325,8 @@ capabilities:
       - evals/analysis/
       - harness/repo_gate.py
       - harness/commands/repo_screen.py
+      - evals/atomic.py
+      - harness/commands/atomic.py
 
   - name: claims-lane
     summary: Claims cases imported local-only, judged by a rubric only once it separates, and read back per candidate.

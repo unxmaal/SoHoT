@@ -235,6 +235,8 @@ INDEX = {
         "waivers": {
             "harness/contamination.py:gateway_ask(max_tokens)":
                 "a contamination probe's reply budget, the same question to every model by design (#531)",
+            "evals/atomic.py:ask_claude(timeout)":
+                "one planning model per run, its timeout the atomic_plan_timeout_s knob (#1690)",
         },
         "instances": _i(355, 401, 498), "scanners": []},
     "a-constant-chosen-before-the-thing-it-constrains-existed": {
