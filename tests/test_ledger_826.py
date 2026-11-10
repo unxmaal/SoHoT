@@ -283,7 +283,8 @@ def test_record_upserts_one_row_per_day():
     finally:
         conn.close()
     assert [r["day"] for r in got] == ["2026-10-08", "2026-10-09", "2026-10-10"]
-    assert got[0]["recorded_at"] == 2.0 and set(got[0]) == {"day", "recorded_at", "energy_kwh", "cloud_tokens"}
+    assert got[0]["recorded_at"] == 2.0 and set(got[0]) == {"day", "recorded_at", "energy_kwh", "cloud_tokens",
+                                                                      "ratio"}
 
 
 SECRET = "sk-THIS-IS-A-KEY-0123456789"

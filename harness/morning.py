@@ -208,6 +208,17 @@ def ledger_row(conn, now: float) -> dict | None:
             "cloud_lower_bound": bool((d.get("cloud") or {}).get("lower_bound")), "plan": d.get("headroom") or {}, "displaced": displaced}
 
 
+def ratio(conn, now: float) -> dict | None:
+    """Local over cloud tokens for yesterday and the week to it, from ledger_days' recorded counts. #1688."""
+    if not _has(conn, "ledger_days"):
+        return None
+    from harness import ledger
+    yesterday = ledger.day_of(now - 86400)
+    first = ledger.ratio_over({}, yesterday, ledger.RATIO_DAYS)["first_day"]
+    days = {r["day"]: r["ratio"] for r in ledger.recorded(conn, first) if r.get("ratio")}
+    return ledger.headline(days, yesterday)
+
+
 def engines(conn, since: float) -> list[dict]:
     """Engines the loop could not trial and filed an issue for since `since`; [] before schema 86. #1475."""
     if not _has(conn, "engine_trials"):
@@ -524,7 +535,7 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
     """`health` probes the headline's lane (lane_health), `canary` reads its receipts (canary.morning_line); None skips either."""
     r = {"lane": health(MODEL_LANE) if health else {"lane": MODEL_LANE, "generating": None, "why": "not probed"},
          "generated": now, "since": since, "sweep": sweep(conn, since, beat), "watchdog": watchdog(conn, since),
-         "ci": ci(now, gh=gh or _gh), "ledger": ledger_row(conn, now), "stale": (lanes or stale_lanes)(conn),
+         "ci": ci(now, gh=gh or _gh), "ledger": ledger_row(conn, now), "ratio": ratio(conn, now), "stale": (lanes or stale_lanes)(conn),
          "stalled": (stalls or stalled)(conn), "deploy": deploy(where, git=git or _git),
          "canary": canary(now) if canary else "", "incidents": incidents(conn, since, now),
          "parked": parked() if parked else [], "checks": sweep_checks(conn, since),
