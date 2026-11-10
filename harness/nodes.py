@@ -69,7 +69,7 @@ class Node:
     lanes: tuple[str, ...] = ()
     #: (gateway id, sha256 of the GGUF the node serves it from), from a models entry's sha256:. #1652.
     digests: tuple[tuple[str, str], ...] = ()
-    #: `deploy:` in nodes.yaml: the ssh destination, key, checkout and LH_ROLE a Studio deploy installs it with. #1692.
+    #: `deploy:` in nodes.yaml: the ssh destination, key, checkout and an LH_ROLE over the node's own role file. #1692, #1707.
     ssh: str = ""
     ssh_key: str = ""
     deploy_dir: str = ""
@@ -200,7 +200,7 @@ def parse(data: dict, where: str = FILE) -> list[Node]:
         if key and not _KEY.match(key):
             raise ValueError(f"{at}: key must be env:<VAR> or keychain:<service>/<account>, "
                              f"never the key itself")
-        ssh, ssh_key, deploy_dir, role = _deploy(raw.get("deploy"), lanes, at)
+        ssh, ssh_key, deploy_dir, role = _deploy(raw.get("deploy"), at)
         out.append(Node(name, base if base.endswith("/v1") else base + "/v1", engine,
                         tuple(models), key,
                         str(raw.get("machine") or "").strip(),
@@ -213,7 +213,7 @@ def parse(data: dict, where: str = FILE) -> list[Node]:
     return out
 
 
-def _deploy(raw, lanes: list, at: str) -> tuple[str, str, str, str]:
+def _deploy(raw, at: str) -> tuple[str, str, str, str]:
     """(ssh, key, dir, role) from a node's `deploy:` mapping; ("", ...) when it has none, so no deploy reaches it. #1692."""
     if raw is None:
         return "", "", "", ""
@@ -222,8 +222,8 @@ def _deploy(raw, lanes: list, at: str) -> tuple[str, str, str, str]:
     ssh = str(raw.get("ssh") or "").strip()
     if not _SSH.match(ssh):
         raise ValueError(f"{at}: deploy ssh {ssh!r} must be host or user@host (or a ~/.ssh/config Host)")
-    role = str(raw.get("role") or ("interactive" if lanes else "node")).strip()
-    if role not in ROLES:
+    role = str(raw.get("role") or "").strip()
+    if role and role not in ROLES:
         raise ValueError(f"{at}: deploy role must be one of {', '.join(ROLES)}, not {role!r}")
     return ssh, str(raw.get("key") or "").strip(), str(raw.get("dir") or "").strip(), role
 

@@ -30,19 +30,36 @@ def _node(name: str, **extra) -> dict:
             "models": ["Qwen2.5-7B-Instruct-Q4_K_M"], "machine": FP, "lanes": ["extract"], **extra}
 
 
-class Fake:
-    """ssh as a table: (mode, sha) -> (rc, output); every call kept with the node it went to."""
+#: The units each role's install leaves loaded on the fake node.
+UNITS = {"interactive": ["interactive"], "node": ["interactive", "gateway", "mlx", "worker", "watchdog"]}
 
-    def __init__(self, head=(0, OLD), install=None):
+
+class Fake:
+    """ssh as a table: (mode, sha) -> (rc, output), over a node whose role file and loaded units each install sets."""
+
+    def __init__(self, head=(0, OLD), install=None, role="interactive", extra=()):
         self.head, self.install, self.calls = head, dict(install or {}), []
+        self.role, self.loaded, self.extra = role, list(UNITS.get(role, [])), list(extra)
 
     def __call__(self, argv, script, timeout):
         assert script == node_deploy.SCRIPT and argv[0] == "ssh"
         args = shlex.split(argv[-1])[3:]
         self.calls.append((argv[-2], *args))
         if args[0] == "head":
-            return self.head
-        return self.install.get(args[2], (0, "reinstalled"))
+            rc, said = self.head
+            return rc, f"{said}\nrole {self.role}" if rc == 0 else said
+        if args[0] == "units":
+            return 0, "\n".join([f"role {self.role}", *(f"want {u}" for u in UNITS.get(self.role, [])),
+                                 *(f"loaded {u}" for u in self.loaded)])
+        rc, said = self.install.get(args[2], (0, "reinstalled"))
+        if rc == 0:
+            self.role = args[3] or self.role
+            self.loaded, self.extra = UNITS[self.role] + self.extra, []
+        return rc, said
+
+    def sent(self) -> list[tuple]:
+        """Every call but the post-install unit listings."""
+        return [c[1:] for c in self.calls if c[1] != "units"]
 
 
 @pytest.fixture
@@ -71,12 +88,13 @@ def test_a_node_install_runs_after_a_passing_deploy_records_its_outcome_and_skip
               _node("khryll", parked=True, deploy={"ssh": "ops@khryll.invalid"}))
     ssh = Fake()
     got = _follow(deployed, f, ssh)
-    assert ssh.calls == [("ops@styx.invalid", "head", ""), ("ops@styx.invalid", "install", "", NEW, "interactive")]
+    assert ssh.calls == [("ops@styx.invalid", "head", ""), ("ops@styx.invalid", "install", "", NEW, "interactive"),
+                         ("ops@styx.invalid", "units", "")]
     rec = _record(deployed)
     assert rec["outcome"] == deploy.DEPLOYED and set(rec["nodes"]) == {"styx"}
     assert rec["nodes"]["styx"]["outcome"] == node_deploy.DEPLOYED == got["nodes"]["styx"]["outcome"]
     assert rec["nodes"]["styx"]["previous_sha"] == OLD
-    assert _follow(deployed, f, ssh)["nodes"] == {} and len(ssh.calls) == 2
+    assert _follow(deployed, f, ssh)["nodes"] == {} and len(ssh.calls) == 3
 
 
 def test_no_node_follows_a_deploy_that_is_running_or_did_not_pass(tmp_path):
@@ -123,8 +141,8 @@ def test_a_failing_node_install_rolls_the_node_back_and_alerts_and_leaves_the_st
     checks = iter(["nodes smoke: node styx up: sohot-extract served by fallback"] if failing == "smoke" else [])
     alerts = []
     got = _follow(deployed, f, ssh, check=lambda n: next(checks, ""), alerts=alerts)
-    assert [c[1:] for c in ssh.calls] == [("head", "~/lh/deploy"), ("install", "~/lh/deploy", NEW, "interactive"),
-                                          ("install", "~/lh/deploy", OLD, "interactive")]
+    assert ssh.sent() == [("head", "~/lh/deploy"), ("install", "~/lh/deploy", NEW, "interactive"),
+                          ("install", "~/lh/deploy", OLD, "interactive")]
     r = _record(deployed)["nodes"]["styx"]
     assert r["outcome"] == node_deploy.ROLLED_BACK == got["nodes"]["styx"]["outcome"]
     assert ("uv sync failed" if failing == "install" else "served by fallback") in r["detail"]
@@ -154,7 +172,7 @@ def test_a_down_node_is_skipped_and_retried_at_the_next_poll(deployed, tmp_path)
     up = Fake()
     r = _follow(deployed, f, up, alerts=alerts)["nodes"]["styx"]
     assert r["outcome"] == node_deploy.DEPLOYED and r["tries"] == 2 and alerts == []
-    assert [c[1] for c in up.calls] == ["head", "install"]
+    assert [c[1] for c in up.calls] == ["head", "install", "units"]
 
 
 def test_an_install_cut_off_by_the_network_reinstalls_next_poll_and_keeps_the_true_previous(deployed, tmp_path):
@@ -164,7 +182,7 @@ def test_an_install_cut_off_by_the_network_reinstalls_next_poll_and_keeps_the_tr
     # The cut install had checked NEW out already; the node is not "current", and rollback goes to OLD.
     again = Fake(head=(0, NEW), install={NEW: (1, "reinstall failed")})
     r = _follow(deployed, f, again)["nodes"]["styx"]
-    assert [c[1:] for c in again.calls][1:] == [("install", "", NEW, "interactive"), ("install", "", OLD, "interactive")]
+    assert again.sent()[1:] == [("install", "", NEW, "interactive"), ("install", "", OLD, "interactive")]
     assert r["outcome"] == node_deploy.ROLLED_BACK
 
 
@@ -197,11 +215,11 @@ def test_a_malformed_deploy_block_names_the_field(tmp_path, bad, field):
         nodes.load(_yaml(tmp_path, _node("styx", deploy=bad)))
 
 
-def test_the_role_follows_lanes_and_the_ssh_line_quotes_every_argument(tmp_path):
+def test_no_role_is_defaulted_and_the_ssh_line_quotes_every_argument(tmp_path):
     plain = {k: v for k, v in _node("pc").items() if k != "lanes"}
     n = nodes.load(_yaml(tmp_path, {**plain, "deploy": {"ssh": "pc", "key": "~/.ssh/k"}}))[0]
-    assert n.role == "node"
-    argv = node_deploy.ssh_argv(n, "install", "~/a dir; rm -rf /", NEW, n.role)
+    assert n.role == "" == nodes.load(_yaml(tmp_path, _node("pc", deploy={"ssh": "pc"})))[0].role
+    argv = node_deploy.ssh_argv(n, "install", "~/a dir; rm -rf /", NEW, "node")
     assert argv[argv.index("-i") + 1] == str(Path("~/.ssh/k").expanduser()) and "BatchMode=yes" in argv
     assert argv[-2] == "pc" and shlex.split(argv[-1]) == ["bash", "-s", "--", "install", "~/a dir; rm -rf /", NEW, "node"]
 
@@ -247,7 +265,9 @@ def test_the_node_script_checks_out_the_sha_syncs_and_reinstalls_in_the_checkout
     _git(repo, "config", "user.email", "t@example.invalid")
     _git(repo, "config", "user.name", "t")
     (repo / "scripts").mkdir()
-    (repo / "scripts" / "launchd.sh").write_text(f'echo "launchd $* $LH_ROLE $LH_DEPLOY" >> {calls}\n', encoding="utf-8")
+    (repo / "scripts" / "launchd.sh").write_text(
+        f'[ "$1" = units ] && {{ echo "want interactive"; echo "loaded x$LH_ROLE"; exit 0; }}\n'
+        f'echo "launchd $* $LH_ROLE $LH_DEPLOY" >> {calls}\n', encoding="utf-8")
     _git(repo, "add", "-A")
     _git(repo, "commit", "-q", "-m", "old")
     old = _git(repo, "rev-parse", "HEAD")
@@ -264,16 +284,24 @@ def test_the_node_script_checks_out_the_sha_syncs_and_reinstalls_in_the_checkout
                              capture_output=True, env=env, timeout=timeout)
         return got.returncode, got.stdout + got.stderr
     rc, said = local(node_deploy.ssh_argv(n, "head", n.deploy_dir), node_deploy.SCRIPT, 30)
-    assert rc == 0 and said.strip() == old
+    assert rc == 0 and said.split() == [old, "role"]
     (home / "lhh").mkdir()
     os.symlink(repo, home / "lhh" / "deploy")
     env["LOCALHARNESS_HOME"] = str(home / "lhh")
     rc, said = local(node_deploy.ssh_argv(n, "head", ""), node_deploy.SCRIPT, 30)
-    assert rc == 0 and said.strip() == old, "no dir: means the node's own $LOCALHARNESS_HOME/deploy"
-    rc, said = local(node_deploy.ssh_argv(n, "install", n.deploy_dir, new, n.role), node_deploy.SCRIPT, 30)
+    assert rc == 0 and said.split() == [old, "role"], "no dir: means the node's own $LOCALHARNESS_HOME/deploy"
+    (home / "lhh" / "role").write_text(" interactive\n", encoding="utf-8")
+    rc, said = local(node_deploy.ssh_argv(n, "head", ""), node_deploy.SCRIPT, 30)
+    assert said.splitlines() == [old, "role interactive"]
+    env["LH_ROLE"] = "node"
+    rc, said = local(node_deploy.ssh_argv(n, "units", ""), node_deploy.SCRIPT, 30)
+    assert rc == 0 and said.splitlines() == ["role interactive", "want interactive", "loaded x"], \
+        "launchd.sh units reads the role file, never an LH_ROLE the ssh session carries"
+    del env["LH_ROLE"]
+    rc, said = local(node_deploy.ssh_argv(n, "install", n.deploy_dir, new, "interactive"), node_deploy.SCRIPT, 30)
     assert rc == 0, said
     assert _git(repo, "rev-parse", "HEAD") == new
     assert calls.read_text(encoding="utf-8").splitlines() == [
         "uv sync --frozen", f"launchd reinstall interactive {home}/lh/deploy"]
-    rc, said = local(node_deploy.ssh_argv(n, "install", n.deploy_dir, "c" * 40, n.role), node_deploy.SCRIPT, 30)
+    rc, said = local(node_deploy.ssh_argv(n, "install", n.deploy_dir, "c" * 40, "interactive"), node_deploy.SCRIPT, 30)
     assert rc != 0 and _git(repo, "rev-parse", "HEAD") == new
