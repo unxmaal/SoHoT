@@ -32,6 +32,12 @@ KNOBS = [
     _k("deploy_migrate_timeout", [f"{Q}:MIGRATE_TIMEOUT_S"], [600.0, 1800.0, 3600.0], unit="s",
        note="seconds the new release's migration of the live store may take before the backup is restored; "
             "FINDING #278: six stores up to schema 42 migrated in 0-2.1 s (#1506)"),
+    _k("deploy_node_install_timeout", ["harness/node_deploy.py:INSTALL_TIMEOUT_S"], [900.0, 1800.0, 3600.0],
+       unit="s", note="seconds a node's checkout, uv sync and launchd.sh reinstall over ssh may take; a timeout "
+                      "rolls the node back to its previous checkout and alerts (#1692)"),
+    _k("deploy_node_warm", ["harness/node_deploy.py:WARM_S"], [120.0, 300.0, 600.0], unit="s",
+       note="seconds a reinstalled node has to answer /models before its install counts as failed and rolls back; "
+            "its interactive unit loads two pinned GGUFs, about 11.6 GiB on the Mac mini node (#1692)"),
     _k("deploy_path_timeout", ["harness/paths.py:deploy_link->subprocess.run(timeout)"], [10, 30, 60], unit="s",
        note="seconds `launchd.sh deploy-path` may take to name the deploy link; a timeout reads as no deploy checkout. "
             "It sources nothing and prints one variable (#455, #1506)"),
@@ -64,6 +70,12 @@ NOT_GATING = {
                                             "the wait, the sweep ceiling bounds it (#1675)",
     "harness/holders.py:_FILEINFO": "byte size of libproc's struct proc_fileinfo, fixed by <sys/proc_info.h> (#1523)",
     "harness/holders.py:_REGIONINFO": "byte size of libproc's struct proc_regioninfo, fixed by <sys/proc_info.h> (#1523)",
+    "harness/node_deploy.py:CONNECT_TIMEOUT_S": "how long ssh waits to reach a node; a node that does not answer "
+                                                "is marked down and tried again at the next deploy poll (#1692)",
+    "harness/node_deploy.py:HEAD_TIMEOUT_S": "how long reading a node's checkout head may take; a timeout marks "
+                                             "the node down and the next deploy poll tries again (#1692)",
+    "harness/node_deploy.py:WARM_POLL_S": "how often a reinstalled node is asked for /models; it paces the wait, "
+                                          "WARM_S bounds it (#1692)",
     f"{Q}:LAUNCHCTL_TIMEOUT_S": "how long launchctl may take to load the switch's one-shot unit; a timeout fails "
                                 "the deploy before the switch and restores the store (#1506)",
     f"{X}:REAP_TIMEOUT_S": "how long a timed-out step's killed process group has to exit; the step already counts "
