@@ -87,6 +87,8 @@ MODIFIERS = {
 }
 #: Flags whose mode writes, downloads, runs a model or reads the network by design, so it is not run here.
 NOT_RUN = {
+    "scaffold module --command": "writes a command module and edits harness/cli.py in the checkout, never the store (#1697)",
+    "scaffold unit --every-machine": "writes a launchd unit into the checkout's scripts, never the store (#1697)",
     "gguf-aux --apply": "moves GGUFs aside and restarts the router",
     "discover --sources": "probes each feed over the network",
     "adopt --from-measurement": "adopts the measured incumbent; its --dry-run is held in RUNS",
@@ -208,7 +210,9 @@ def _modes(parser, path=()):
 def test_every_mode_flag_is_held_here_or_says_why_not():
     found = set(_modes(cli.build_parser()))
     listed = set(READ_ONLY) | MODIFIERS | set(NOT_RUN)
-    assert not found - listed, f"a new mode flag: add it to READ_ONLY, MODIFIERS or NOT_RUN: {sorted(found - listed)}"
+    assert not found - listed, (f"a new mode flag: add it to READ_ONLY, MODIFIERS or NOT_RUN: {sorted(found - listed)}\n"
+                                + "\n".join(f'NOT_RUN gains:     "{f}": "<why its mode is not run here>",'
+                                            for f in sorted(found - listed)))
     assert not listed - found, f"listed flags no command takes: {sorted(listed - found)}"
 
 

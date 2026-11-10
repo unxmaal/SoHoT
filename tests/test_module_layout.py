@@ -88,7 +88,9 @@ def over_budget(root: Path = ls.REPO, budget: int = BUDGET) -> dict:
 
 def test_no_harness_module_is_over_budget():
     got = over_budget()
-    assert {k: v for k, v in got.items() if k not in OVER_BUDGET} == {}
+    over = {k: v for k, v in got.items() if k not in OVER_BUDGET}
+    assert over == {}, "split these, or add to OVER_BUDGET:\n" + "\n".join(
+        f'    "{k}": "<why it is not split yet>",  # {v} lines' for k, v in over.items())
     assert [k for k in OVER_BUDGET if k not in got] == [], "a stale exception"
 
 

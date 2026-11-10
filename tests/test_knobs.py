@@ -288,7 +288,12 @@ def _assert_no_new_gating_site(root):
     found = knobs.unregistered(knobs.inventory(root))
     new = sorted(set(found) - set(_backlog()))
     assert not new, ("register these in an area of harness/knobs/, or name why one gates nothing in "
-                     "that area's NOT_GATING:\n  " + "\n  ".join(new))
+                     "that area's NOT_GATING:\n  " + "\n  ".join(new) + "\n" + _paste(new))
+
+
+def _paste(sites) -> str:
+    from harness import scaffold
+    return "\n".join(f"{s}:\n    " + "\n    ".join(scaffold.register_fix(s)) for s in sites)
 
 
 def test_no_new_gating_constant_is_unregistered():
@@ -308,7 +313,7 @@ def _assert_no_site_joins_the_backlog(root):
         pytest.skip(f"{knob_backlog.BASE} is not in this clone")
     assert not got, ("not in the backlog at the merge base with origin/main: register these in an area of "
                      "harness/knobs/, or name why one gates nothing in that area's NOT_GATING (#1085):\n  "
-                     + "\n  ".join(f"{_backlog_file(s).name}: {s}" for s in got))
+                     + "\n  ".join(f"{_backlog_file(s).name}: {s}" for s in got) + "\n" + _paste(got))
 
 
 def test_no_site_joins_the_knob_backlog():

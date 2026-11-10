@@ -164,7 +164,7 @@ def map_problems(root: Path, caps: list[dict]) -> list[str]:
                 owners[m].append(c.get("name", ""))
     for m, who in owners.items():
         if not who:
-            out.append(f"{m}: in no capability in {MAP}")
+            out.append(f"{m}: in no capability in {MAP}; add this line under one's modules:   - {m}")
         elif len(who) > 1:
             out.append(f"{m}: in more than one capability ({', '.join(who)})")
     return out

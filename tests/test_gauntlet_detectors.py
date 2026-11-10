@@ -258,10 +258,10 @@ def _backlog():
 def test_no_new_code_trips_a_detector_without_a_bound_test(tree_ledger):
     led, _ = tree_ledger
     backlog = _backlog()
-    new = [f"{cid}: {s}" for cid, row in led.items() for s in row["unbound"] if s not in backlog.get(cid, [])]
+    new = [(cid, s) for cid, row in led.items() for s in row["unbound"] if s not in backlog.get(cid, [])]
     assert not new, ("these sites trip a gauntlet trigger: bind a test with "
                      "@pytest.mark.gauntlet(class_id, site=...) or waive it in classes.INDEX with a reason:\n  "
-                     + "\n  ".join(new))
+                     + "\n  ".join(f'{cid}: {s}\n    @pytest.mark.gauntlet("{cid}", site="{s}")' for cid, s in new))
 
 
 def test_the_backlog_only_shrinks(tree_ledger):
