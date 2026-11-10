@@ -94,6 +94,7 @@ from harness.commands import delegated as delegated_cmd
 from harness.commands import local as local_cmd
 from harness.commands import scaffold as scaffold_cmd
 from harness.commands import volume as volume_cmd
+from harness.commands import atomic as atomic_cmd
 
 # What scripts, tests and other modules take from harness.cli, from where it now lives.
 from harness.commands.common import say  # noqa: F401
@@ -816,6 +817,7 @@ def build_parser() -> argparse.ArgumentParser:
     unverified_cmd.add_parser(sub)
     local_cmd.add_parser(sub)
     scaffold_cmd.add_parser(sub)
+    atomic_cmd.add_parser(sub)
     dlg = sub.add_parser("delegated", help="record what became of a local_complete, local_decide or "
                          "`soh local` answer, or --report the rates per lane")
     dlg.add_argument("call_id", nargs="?", default="", help="the call_id the delegation returned")
