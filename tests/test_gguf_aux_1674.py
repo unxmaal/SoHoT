@@ -205,10 +205,10 @@ def test_a_phantom_backed_by_an_auxiliary_file_names_it_and_the_repair(models):
 
     def get(_path):
         return {"data": [{"id": s, "source": "preset", "status": {"value": "unloaded", "args": ["llama-server"]}}
-                         for s in ("mtp-M-Q8_0", "Model", "Ghost")]}
+                         for s in ("mtp-M-Q8_0", "Model", "Ghost", "Ghost-00002-of-00003")]}
     got = router.phantoms(get)
     assert got["mtp-M-Q8_0"].endswith(f"; {path} is an MTP head (block 3 of 4), not a model: `{gguf.REPAIR}` sets it aside")
-    assert got["Model"] == got["Ghost"] == "preset: no --model, a preset section with no file"
+    assert got["Model"] == got["Ghost"] == got["Ghost-00002-of-00003"] == "preset: no --model, a preset section with no file"
 
 
 def test_smoke_names_the_repair_verb_on_a_phantom():
