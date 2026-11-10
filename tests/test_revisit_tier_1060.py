@@ -152,5 +152,5 @@ def test_the_discover_step_runs_the_move_before_the_revisit_requeue():
     import inspect
     repairs = [f.__name__ for f, _ in loop_cmd._repairs(None)]
     assert repairs.index("_move_past_screen") < repairs.index("_reopen_revisitable")
-    src = inspect.getsource(loop_cmd._run_loop_held)
+    src = inspect.getsource(loop_cmd._run_steps)
     assert src.index("_repairs(a)") < src.index("_tier(a")

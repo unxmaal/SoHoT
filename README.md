@@ -1541,7 +1541,10 @@ runner class) and the slowest tests over recent runs.
 `LH_DEPLOY_UNCHECKED=1` deploys without asking, with a warning.
 `deploy` and `install` also refuse while a discover loop or an eval is running, naming its pid and
 start time: a running loop keeps the code it imported, so a deploy under it leaves it on the old code.
-`LH_DEPLOY_DURING_SWEEP=1` stops it first; a paused measurement resumes next sweep. The loop records
+`LH_DEPLOY_DURING_SWEEP=1` stops it first; a paused measurement resumes next sweep. With it, `install`
+and `reinstall` first hold the work queue and stop each running job with every process under it, put
+back to pending to resume after; the hold is lifted when install ends, pass or fail, and a pause the
+owner set is left alone (#1675). An install waiting on a queued job's GPU lease says how to stop it. The loop records
 the commit it started on, and `soh morning` and `soh audit` say when a sweep ran under a deploy.
 A periodic unit with a live run (a daytime `fetch`) is not reloaded: install waits `LH_DEFER_WAIT_S`
 for it, then prints `deferred:` and still exits 0, since the unit starts the deployed code on its
@@ -2995,7 +2998,21 @@ GPU job runs makes the watchdog pause it at its next case; the queue puts it
 back to pending and it resumes from its checkpoint when the lanes are idle
 again. `soh gate` shows the gate and its signals; `soh hold gpu "<who, why>"
 [--until HH:MM]` keeps GPU work off the machine (and pauses a running job)
-until `soh hold release gpu`. `--night` is accepted and ignored. Jobs are rows in the
+until `soh hold release gpu`. A deploy waits on memory pressure only for the
+`deploy_pressure_wait` knob, counted from the first deploy it superseded, then
+starts at warn while the lanes are idle and nothing is held (#1672); one that
+has waited `deploy_wait_alert` for anything but a deploy pause or a sweep
+alerts once through `scripts/monit-alert.sh`, and `soh jobs list` and
+`soh morning` say why a pending deploy waits. While a deploy is due, the worker
+starts no measurement job and asks each running one's evals to pause at their
+next case (SIGUSR1); the job goes back to pending and resumes after the deploy.
+The scheduled sweep is asked too: it stops at its next step or measurement,
+waits for the deploy, and goes on from the deployed release with what is left
+of its ceiling (#1675). A `soh adopt --confirm` whose eval was paused or
+stopped by a signal resumes its run rather than starting over.
+A sha whose deploy job failed is queued again `deploy_retry_after` later, at
+most `deploy_retries` times; then only a new commit or `soh deploy now` deploys
+it. `--night` is accepted and ignored. Jobs are rows in the
 store's `jobs` table, so they survive a restart, and output goes to
 `~/localharness/logs/jobs/<id>.log`. A failed job is recorded and the next
 starts. A job whose eval paused with its cases checkpointed is recorded

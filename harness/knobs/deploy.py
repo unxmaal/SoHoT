@@ -37,6 +37,12 @@ KNOBS = [
     _k("deploy_probe_timeout", [f"{Q}:PROBE_TIMEOUT_S"], [120.0, 300.0, 600.0], unit="s",
        note="seconds the new release's `launchd.sh probe` may take before the switch; it waits PREFLIGHT_WAIT_S 60 "
             "for its launchd agent, and a timeout fails the deploy before the flip (#1516)"),
+    _k("deploy_retries", [f"{Q}:RETRIES"], [1, 3, 6],
+       note="times the poll queues a sha whose deploy job failed again, each after deploy_retry_after; each failed "
+            "attempt restarts the services twice. 2026-11-09: deploy 21 rolled back because the previous release "
+            "failed smoke too, and its sha was never tried again (#1672)"),
+    _k("deploy_retry_after", [f"{Q}:RETRY_S"], [1800.0, 3600.0, 7200.0], unit="s",
+       note="seconds after a deploy job failed before the poll queues the same sha again (#1672)"),
     _k("deploy_smoke_timeout", [f"{Q}:SMOKE_TIMEOUT_S"], [900.0, 1200.0, 1800.0], unit="s",
        note=f"seconds smoke may take in the new release before the switch; {SMOKE} (#1506)"),
     _k("deploy_switch_deadline", [f"{X}:SWITCH_DEADLINE_S"], [1800.0, 3600.0, 7200.0], unit="s",
@@ -53,6 +59,8 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    "harness/commands/loop.py:YIELD_POLL_S": "how often a yielded sweep looks whether its deploy is done; it paces "
+                                            "the wait, the sweep ceiling bounds it (#1675)",
     "harness/holders.py:_FILEINFO": "byte size of libproc's struct proc_fileinfo, fixed by <sys/proc_info.h> (#1523)",
     "harness/holders.py:_REGIONINFO": "byte size of libproc's struct proc_regioninfo, fixed by <sys/proc_info.h> (#1523)",
     f"{Q}:LAUNCHCTL_TIMEOUT_S": "how long launchctl may take to load the switch's one-shot unit; a timeout fails "

@@ -293,14 +293,16 @@ def due(job: dict, now: float | None = None) -> bool:
 
 
 def ready(conn=None, now: float | None = None) -> list[dict]:
-    """Pending jobs whose start time has come, in run order; a deploy only with no sweep running. #900, #1506."""
+    """Pending jobs whose start time has come, in run order; a deploy only with no sweep running, and no measurement while it waits. #900, #1506, #1672."""
+    from harness import hold
     with _store(conn) as c:
         got = [j for j in pending(c) if due(j, now)]
     if any(j["kind"] == DEPLOY for j in got):
         from harness import deploy
-        if deploy.blocked():
+        if deploy.paused():
             got = [j for j in got if j["kind"] != DEPLOY]
-    from harness import hold
+        elif deploy.blocked():
+            got = [j for j in got if j["kind"] != DEPLOY and not hold.measurement(j)]
     return hold.startable(got, conn, now)
 
 
@@ -607,15 +609,32 @@ def paused() -> bool:
     return _pause_flag().exists()
 
 
-def pause() -> None:
-    _pause_flag().write_text(time.strftime(_STAMP), encoding="utf-8")
+def pause(why: str = "") -> None:
+    _pause_flag().write_text(f"{time.strftime(_STAMP)} {why}".strip(), encoding="utf-8")
 
 
 def resume() -> None:
     _pause_flag().unlink(missing_ok=True)
 
 
-def gate(sample=None) -> tuple[bool, str]:
+def _pressed(level, now: float) -> tuple[bool, str]:
+    """Memory pressure holds every job but a deploy at the head of the queue past its bound on it. #1672."""
+    from harness import contention, deploy
+    try:
+        with _store() as c:
+            head = ready(c, now)[:1]
+            since = deploy.waiting_since(c, head[0]["id"])[0] if head and head[0]["kind"] == DEPLOY else None
+    except RuntimeError:
+        since = None
+    if since is None:
+        return False, f"memory pressure level {level}"
+    if now - since < contention.DEPLOY_PRESSURE_S:
+        return False, f"memory pressure level {level}; the deploy waits on it until {contention.pressure_until(since)}"
+    return True, (f"memory pressure level {level}; only the deploy starts, past its "
+                  f"{contention.DEPLOY_PRESSURE_S:.0f} s bound on memory pressure")
+
+
+def gate(sample=None, now: float | None = None) -> tuple[bool, str]:
     """(open, why): may the next job start now? A running job always finishes. #573."""
     from harness import env, pressure
     if paused():
@@ -628,10 +647,10 @@ def gate(sample=None) -> tuple[bool, str]:
     vol = env.unmounted(env.configured())
     if vol:
         return False, f"paused until it returns: the weights volume {vol} {env.NOT_MOUNTED}"
-    now = (sample or pressure.sample)()
-    if now.alarming:
-        return False, f"memory pressure level {now.level}"
-    return True, "memory pressure normal" if now.level is not None else "memory pressure unknown"
+    p = (sample or pressure.sample)()
+    if p.alarming:
+        return _pressed(p.level, time.time() if now is None else now)
+    return True, "memory pressure normal" if p.level is not None else "memory pressure unknown"
 
 
 def quiesce(wait=0.5, sleep=time.sleep, is_running=None) -> bool:
@@ -793,6 +812,8 @@ def _run_claimed(job: dict, log: Path, popen=None) -> dict | None:
         env[ITEM_ENV] = f"{ITEM_S:g}"
     _cancel_flag(job["id"]).unlink(missing_ok=True)
     _item_flag(job["id"]).unlink(missing_ok=True)
+    _deploy_flag(job["id"]).unlink(missing_ok=True)
+    _stop_flag(job["id"]).unlink(missing_ok=True)
     popen = popen or _in_group(job)
     # No machine lock here: each command takes it for the part that loads a
     # model, so a job that is downloading does not block a GPU run. #371.
@@ -808,6 +829,9 @@ def _run_claimed(job: dict, log: Path, popen=None) -> dict | None:
     if flag.exists():
         flag.unlink(missing_ok=True)
         _settle_cancelled(job, rc=rc)
+    elif _stop_flag(job["id"]).exists():
+        with _store() as c:
+            _repend_stopped(c, job)
     else:
         from evals import watch
         from harness import deploy
@@ -836,10 +860,18 @@ def resume_argv(argv: list, out) -> list[str]:
 def _resumed(c, job: dict) -> list | None:
     """The argv that resumes an eval job from its stored run, or None when it is no eval or stored none. #1509."""
     from harness import runs
+    if confirms(job):
+        return list(job["argv"])
     run = runs.for_job(c, int(job["id"]))
     if "evals.run" not in [str(a) for a in job["argv"]] or run is None:
         return None
     return resume_argv(job["argv"], runs.run_dir(run["path"]))
+
+
+def confirms(job: dict) -> bool:
+    """Whether a job is `soh adopt --confirm`, whose own argv resumes the newest unfinished run of its pair. #1357, #1675."""
+    argv = [str(a) for a in job.get("argv") or []]
+    return resources._verb(argv) == "adopt" and "--confirm" in argv
 
 
 def _next_item(job: dict) -> bool:
@@ -865,24 +897,202 @@ def _next_item(job: dict) -> bool:
 
 
 def _repend(job: dict) -> bool:
-    """A job the watchdog paused for contention waits again to resume where it stopped, unless it queued its own continuation. #1509."""
+    """A job paused for contention or a deploy waits again to resume where it stopped, unless it queued its own continuation. #1509, #1672."""
     from harness import contention
+    flag = _deploy_flag(job["id"])
+    for_deploy = flag.exists()
+    flag.unlink(missing_ok=True)
     with _store() as c:
-        if not contention.paused_for(c, job) or c.execute(
+        if not (for_deploy or contention.paused_for(c, job)) or c.execute(
                 "SELECT 1 FROM jobs WHERE argv = ? AND state = ? AND id != ?",
                 (json.dumps([str(a) for a in job["argv"]]), PENDING, int(job["id"]))).fetchone():
             return False
         argv = _resumed(c, job) or list(job["argv"])
+        why = ("paused for a deploy at {}; resumes after it" if for_deploy else
+               "paused for contention at {}; resumes when the contention gate opens").format(job.get("finished"))
         c.execute("UPDATE jobs SET state = ?, finished_at = NULL, rc = ?, argv = ?, note = ? WHERE id = ?",
-                  (PENDING, job.get("rc"), json.dumps(argv),
-                   f"paused for contention at {job.get('finished')}; resumes when the contention gate opens",
-                   int(job["id"])))
+                  (PENDING, job.get("rc"), json.dumps(argv), why, int(job["id"])))
         c.commit()
     return True
 
 
+def _deploy_flag(job_id) -> Path:
+    return _pids() / f"{label(job_id)}.deploy"
+
+
+def _stop_flag(job_id) -> Path:
+    return _pids() / f"{label(job_id)}.stopped"
+
+
+def paused_for_deploy(environ=None) -> bool:
+    """Whether a due deploy asked this queued job to pause, so the worker re-pends it rather than it queueing a continuation. #1675."""
+    key = _key((environ if environ is not None else os.environ).get(JOB_ENV, ""))
+    return key is not None and _deploy_flag(key).exists()
+
+
+def _repend_stopped(c, job: dict) -> None:
+    """A job a deploy stopped waits again, resumed where it stopped when it can be. #1675."""
+    try:
+        said = json.loads(_stop_flag(job["id"]).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        said = {}
+    argv = (said.get("argv") if isinstance(said, dict) else None) or _resumed(c, job) or list(job["argv"])
+    c.execute("UPDATE jobs SET state = ?, started_at = NULL, finished_at = NULL, argv = ?, note = ? "
+              "WHERE id = ? AND state IN (?, ?)",
+              (PENDING, json.dumps(argv), f"stopped for a deploy at {time.strftime(_STAMP)}; resumes after it",
+               int(job["id"]), RUNNING, PENDING))
+    c.commit()
+
+
+def _stopped_argv(job: dict, pids: set) -> list[str] | None:
+    """The argv that resumes a bare eval job from the one run its processes were writing, or None. #1675."""
+    from harness import sweep_guard
+    if "evals.run" not in [str(a) for a in job["argv"]]:
+        return None
+    outs = set()
+    for path in sorted(paths.runs().glob(f"*/{sweep_guard.PROGRESS}")):
+        got = sweep_guard._read(path)
+        if got.get("state") == "running" and sweep_guard._pid(got.get("pid")) in pids:
+            outs.add(path.parent)
+    return resume_argv(job["argv"], outs.pop()) if len(outs) == 1 else None
+
+
+def _held_flag() -> Path:
+    return root() / "paused.deploy"
+
+
+def hold_for_deploy(grace: float = CANCEL_GRACE_S, stop=None, tree=None, stop_rest=None) -> list[str]:
+    """LH_DEPLOY_DURING_SWEEP: pause the queue for the install, then stop each job running here, every process under it, to resume after. #1675."""
+    from harness import executors, sweep_guard
+    said = []
+    if not paused():
+        pause(f"held for a deploy by pid {os.getpid()}")
+        _held_flag().write_text(_pause_flag().read_text(encoding="utf-8"), encoding="utf-8")
+        said.append("queue held for the deploy; it is released when the install ends")
+    elif _held_flag().exists():
+        said.append("queue already held for a deploy; it is released when the install ends")
+    else:
+        said.append("queue was already paused by its owner and stays paused after the deploy (soh jobs resume)")
+    for job in running_here():
+        pid = _pid_of(job["id"])
+        if job["kind"] == DEPLOY or pid is None:
+            continue
+        # Snapshot first: a process measure started in its own session is not in the job's group.
+        procs = (tree or _tree)(pid)
+        under = [{"pid": p} for p, _ in procs if p != pid]
+        _stop_flag(job["id"]).write_text(json.dumps({"at": time.strftime(_STAMP), "argv": _stopped_argv(
+            job, {p for p, _ in procs})}), encoding="utf-8")
+        how = (stop or executors.for_job(job).stop)(pid, grace)
+        rest = [r for r in under if alive(r["pid"])]
+        left = (stop_rest or sweep_guard.stop)(rest, grace=grace, alive=alive) if rest else []
+        with _store() as c:
+            _repend_stopped(c, job)
+        tail = f"; pid(s) {', '.join(map(str, left))} outlived SIGKILL" if left else ""
+        said.append(f"job {job['id']} stopped for the deploy ({how}); it resumes after it{tail}")
+    return said
+
+
+def release_for_deploy() -> str:
+    """Lift the hold hold_for_deploy set, whatever the install did; an owner's pause, or one set since, stays. #1675."""
+    flag = _held_flag()
+    if not flag.exists():
+        return "queue not held for a deploy; left as it was"
+    mine = flag.read_text(encoding="utf-8")
+    flag.unlink(missing_ok=True)
+    if paused() and _pause_flag().read_text(encoding="utf-8") == mine:
+        resume()
+        return "queue released after the deploy"
+    return "queue left as it is: it was paused again during the deploy (soh jobs resume)"
+
+
+def _tree(pid: int) -> list[tuple[int, str]]:
+    """(pid, command) of pid and every process under it, in any session, from ps; [] where there is none to ask. #1675."""
+    from harness import sweep_guard
+    if sys.platform == "win32":
+        return []
+    try:
+        got = subprocess.run(["ps", "-ww", "-axo", "pid=,ppid=,command="], capture_output=True, text=True,
+                             timeout=sweep_guard.PS_TIMEOUT_S)
+    except (OSError, subprocess.SubprocessError) as exc:
+        print(f"{time.strftime('%H:%M:%S')} could not list the processes of pid {pid}: {exc}", flush=True)
+        return []
+    rows = [r for r in (ln.split(None, 2) for ln in got.stdout.splitlines()) if len(r) >= 2 and r[0].isdigit()]
+    kids: dict[str, list] = {}
+    for r in rows:
+        kids.setdefault(r[1], []).append(r)
+    found, seen, todo = [], set(), [r for r in rows if r[0] == str(pid)]
+    while todo:
+        r = todo.pop(0)
+        if r[0] in seen:
+            continue
+        seen.add(r[0])
+        found.append((int(r[0]), r[2] if len(r) == 3 else ""))
+        todo += kids.get(r[0], [])
+    return found
+
+
+def _evals_in(pid: int) -> list[int]:
+    """Pids of the evals.run processes under pid: measure starts each in a session of its own, so not its group. #1672, #1675."""
+    from harness import sweep_guard
+    return [p for p, command in _tree(pid) if sweep_guard.EVAL.search(command)]
+
+
+def preempt_for_deploy(now: float | None = None, evals=None, signal_=None) -> list[str]:
+    """A due deploy asks each running measurement job's evals here to pause at their next case; the job then waits to resume. #1672."""
+    from harness import deploy, hold
+    sig = signal_ if signal_ is not None else getattr(signal, "SIGUSR1", None)
+    if sig is None or deploy.paused():
+        return []
+    with _store() as c:
+        if not any(j["kind"] == DEPLOY and due(j, now) for j in pending(c)):
+            return []
+        busy = [j for j in running_here(c) if hold.measurement(j)]
+    said = []
+    for job in busy:
+        pid, flag = _pid_of(job["id"]), _deploy_flag(job["id"])
+        asked = set(flag.read_text(encoding="utf-8").split()) if flag.exists() else set()
+        fresh = [p for p in (evals or _evals_in)(pid) if str(p) not in asked] if pid is not None else []
+        for p in fresh:
+            try:
+                os.kill(p, sig)
+            except OSError as exc:
+                said.append(f"job {job['id']}: eval {p} not asked to pause: {exc}")
+                continue
+            asked.add(str(p))
+            said.append(f"job {job['id']}: eval {p} asked to pause at its next case for the pending deploy")
+        if asked:
+            flag.write_text(" ".join(sorted(asked)), encoding="utf-8")
+    return said + _ask_loop(sig, evals or _evals_in)
+
+
+def _ask_loop(sig, evals) -> list[str]:
+    """The scheduled sweep yields at its next checkpoint, its evals pause after their case, and it goes on on the new release. #1675."""
+    from harness import heartbeat, sweep_guard
+    beat = heartbeat.read() or {}
+    if beat.get("state") != heartbeat.RUNNING or not beat.get(heartbeat.YIELDS):
+        return []
+    said = []
+    for r in sweep_guard.running(paths.home()):
+        if r["what"] != "discover loop" or r["pid"] != beat.get("pid"):
+            continue
+        # Asked each turn: an eval the loop starts before its checkpoint is asked too.
+        for p in [r["pid"], *evals(r["pid"])]:
+            try:
+                os.kill(p, sig)
+            except OSError as exc:
+                said.append(f"discover loop {r['pid']}: {p} not asked to yield: {exc}")
+        flag = root() / "loop-yield"
+        if not flag.exists() or flag.read_text(encoding="utf-8") != str(r["pid"]):
+            flag.write_text(str(r["pid"]), encoding="utf-8")
+            said.append(f"discover loop {r['pid']} asked to yield at its next checkpoint for the pending deploy")
+    return said
+
+
 def _settle_gone(c, job: dict) -> None:
-    """A running job whose worker and process are gone: an eval that stored a run waits again to resume it, else it failed."""
+    """A running job whose worker and process are gone: an eval that stored a run, or a confirm, waits again to resume it, else it failed."""
+    if _stop_flag(job["id"]).exists():
+        _repend_stopped(c, job)
+        return
     argv = _resumed(c, job)
     if argv is not None:
         c.execute("UPDATE jobs SET state = ?, started_at = NULL, argv = ?, note = ? WHERE id = ? AND state = ?",
@@ -934,6 +1144,30 @@ def settle_deploys() -> list:
     return got
 
 
+def watch_deploys(now: float | None = None) -> dict | None:
+    """deploy.watch_wait, logged rather than raised: a pending deploy waiting too long alerts once. #1672."""
+    from harness import deploy
+    try:
+        got = deploy.watch_wait(now)
+    except Exception as exc:  # noqa: BLE001 - a check of the wait must not stop the worker, on any store
+        print(f"{time.strftime('%H:%M:%S')} deploy wait check failed: {exc}", flush=True)
+        return None
+    if got is not None:
+        print(f"{time.strftime('%H:%M:%S')} alerted: {deploy.wait_line(got)}", flush=True)
+    return got
+
+
+def deploy_turn(now: float) -> None:
+    """Each worker turn: a pending deploy pauses measurement for itself and alerts once if it waits too long. #1672."""
+    try:
+        said = preempt_for_deploy(now)
+    except Exception as exc:  # noqa: BLE001 - preempting must not stop the worker, on any store
+        said = [f"preempting for the deploy failed: {exc}"]
+    for line in said:
+        print(f"{time.strftime('%H:%M:%S')} {line}", flush=True)
+    watch_deploys(now)
+
+
 def needs(job: dict) -> str:
     """The resource class a job waits for (resources.of). #1153, #1508."""
     return resources.of(job)
@@ -958,11 +1192,12 @@ def _free(cls: str, live: dict) -> bool:
     return mine < resources.capacity(cls)
 
 
-def _contended(now: float) -> bool:
-    """Whether the contention gate holds GPU jobs and deploys at now. #1509."""
-    from harness import contention
+def _contended(now: float, job: dict | None = None) -> bool:
+    """Whether the contention gate holds GPU jobs, or this deploy, at now. #1509, #1672."""
+    from harness import contention, deploy
     with _store() as c:
-        return not contention.gate(c, now)[0]
+        since = deploy.waiting_since(c, job["id"])[0] if job is not None and needs(job) == DEPLOY else None
+        return not contention.gate(c, now, since=since)[0]
 
 
 def _admitted(job: dict) -> bool:
@@ -998,6 +1233,8 @@ def _startable(live: dict, now: float) -> tuple[dict, str] | None:
     def blocked(job) -> bool:
         if not contention.batch(job):
             return False
+        if needs(job) == DEPLOY:
+            return _contended(now, job)
         if not held:
             held.append(_contended(now))
         return held[0]
@@ -1045,6 +1282,7 @@ def run_pending(popen=None, gate=lambda: (True, ""), clock=time.time, watch: flo
         while True:
             finished.clear()
             live = {t: c for t, c in live.items() if t.is_alive()}
+            deploy_turn(clock())
             nxt = None if errors or handed.is_set() else _startable(live, clock())
             if nxt is not None and gate()[0]:
                 t = threading.Thread(target=work, args=(nxt[0],), name=f"job-{nxt[0]['id']}")
@@ -1133,6 +1371,7 @@ def serve(poll: float = 30.0, sleep=time.sleep, popen=None,
     said = ""
     while True:
         settle_deploys()
+        deploy_turn(clock())
         try:
             waiting = ready(now=clock())
         except RuntimeError as exc:
@@ -1161,5 +1400,11 @@ if __name__ == "__main__":
     import sys
     if sys.argv[1:] == ["quiesce"]:
         print("was-paused" if quiesce() else "was-running")
+        sys.exit(0)
+    if sys.argv[1:] == ["hold-for-deploy"]:
+        print("\n".join(hold_for_deploy()), flush=True)
+        sys.exit(0)
+    if sys.argv[1:] == ["release-for-deploy"]:
+        print(release_for_deploy(), flush=True)
         sys.exit(0)
     serve(poll=float(os.environ.get("LH_QUEUE_POLL", "30")))

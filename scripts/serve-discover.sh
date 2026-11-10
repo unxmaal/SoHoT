@@ -45,4 +45,12 @@ set -m
 uv run soh discover --loop --run \
   ${TOP:+--top "$TOP"} --budget-gib "$BUDGET" ${REPEAT:+--repeat "$REPEAT"} &
 child=$!
-wait "$child"
+rc=0
+wait "$child" || rc=$?
+# 78: the sweep yielded to a due deploy and waited for it; it goes on from the release now deployed. #1675.
+if [ "$rc" = 78 ]; then
+  next="$(bash scripts/launchd.sh deploy-path)/scripts/serve-discover.sh"
+  echo "=== sweep goes on from $next ==="
+  LH_SWEEP_RESUMED=1 exec bash "$next"
+fi
+exit "$rc"

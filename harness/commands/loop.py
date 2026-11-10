@@ -66,11 +66,35 @@ class WeightsGone(Exception):
         self.tier, self.reason = tier, reason
 
 
+#: Exit status of a sweep that yielded to a due deploy; serve-discover.sh goes on from the deployed release. #1675.
+YIELDED = 78
+#: Seconds between looks at the queue while a yielded sweep waits for the deploy to finish. #1675.
+YIELD_POLL_S = 30.0
+#: Where a yielded sweep leaves the seconds of its ceiling still unspent, for the sweep that goes on. #1675.
+YIELD_FILE = "sweep-yield.json"
+#: Set by SIGUSR1: a due deploy asked this sweep to yield at its next checkpoint. #1675.
+_ASKED: list = []
+
+
+class DeployDue(Exception):
+    """A due deploy asked the sweep to yield; it stops before `tier` with its measurements paused. #1675."""
+
+    def __init__(self, tier: str):
+        super().__init__(f"a due deploy asked the sweep to yield before {tier}")
+        self.tier, self.left = tier, None
+
+
+def _yield_point(tier: str) -> None:
+    if _ASKED:
+        raise DeployDue(tier)
+
+
 def _beat(tier: str, **kw) -> None:
     from harness import env, heartbeat
     vol = env.unmounted(env.configured())
     if vol:
         raise WeightsGone(tier, f"the weights volume {vol} {env.NOT_MOUNTED}")
+    _yield_point(tier)
     names = [label for label, _, _ in LOOP_STEPS] + list(SPEND_STEPS)
     heartbeat.beat(tier, step=names.index(tier) + 1, **kw)
 
@@ -170,6 +194,7 @@ def _report_loop(a) -> int:
         return 0
     heartbeat.start(lane=(getattr(a, "lane", "") or "").strip().lower(),
                     total=LOOP_TOTAL if run else len(LOOP_STEPS))
+    restore = _yield_on_signal() if run else (lambda: None)
     try:
         rc = _run_loop(a)
     except WeightsGone as gone:
@@ -177,11 +202,92 @@ def _report_loop(a) -> int:
         heartbeat.pause(gone.tier, gone.reason)
         print(f"\n=== sweep paused before {gone.tier}: {gone.reason} ===", file=sys.stderr, flush=True)
         rc = PAUSED
+    except DeployDue as due:
+        # Finished before it waits, or the deploy would wait on this sweep's heartbeat.
+        heartbeat.pause(due.tier, "yielded to a due deploy; it goes on from the deployed release")
+        heartbeat.finish(YIELDED)
+        print(f"\n=== sweep yielded to a due deploy before {due.tier} ===", flush=True)
+        return _after_deploy(due.left)
     except BaseException as exc:
         heartbeat.finish(None, error=f"{type(exc).__name__}: {exc}")
         raise
+    finally:
+        restore()
     heartbeat.finish(rc)
     return rc
+
+
+def _yield_on_signal():
+    """SIGUSR1 asks this sweep to yield at its next checkpoint; the heartbeat says it will. Returns the undo. #1675."""
+    import signal
+
+    from harness import heartbeat
+    sig = getattr(signal, "SIGUSR1", None)
+    _ASKED.clear()
+    if sig is None:
+        return lambda: None
+    try:
+        before = signal.signal(sig, lambda *_: _ASKED.append(True))
+    except ValueError:  # not the main thread: nothing can ask it, so the heartbeat does not offer
+        return lambda: None
+    heartbeat.note(heartbeat.YIELDS, True)
+    return lambda: signal.signal(sig, before)
+
+
+def _deploy_in_flight() -> bool:
+    """Whether a deploy this sweep yielded to is still pending or switching here. #1675."""
+    from harness import deploy, paths
+    from harness import workqueue as wq
+    if deploy.paused():
+        return False
+    try:
+        with wq._store() as c:
+            return any(j["kind"] == wq.DEPLOY for j in [*wq.pending(c), *wq.running_here(c)])
+    except RuntimeError:
+        # A store this code cannot read any more was migrated by the deploy; it is done once the release moved.
+        return paths.deploy_checkout() in (None, paths.REPO.resolve())
+
+
+def _after_deploy(left, sleep=None, clock=None, busy=None) -> int:
+    """Wait for the deploy within the ceiling left, then hand serve-discover.sh what is left; 0 if it ran out. #1675."""
+    import json
+    import time
+
+    from harness import paths, power
+    sleep, clock, busy = sleep or time.sleep, clock or time.monotonic, busy or _deploy_in_flight
+    left = float(power.SWEEP_CEILING_H) * 3600 if left is None else float(left)
+    end = clock() + left
+    while busy():
+        if clock() >= end:
+            from harness import cuts
+            cuts.cut("sweep_ceiling_h", "the sweep's ceiling ran out while it waited for the deploy it yielded to",
+                     value=left / 3600)
+            print("=== the sweep's ceiling ran out waiting for the deploy; the next sweep goes on ===", flush=True)
+            return 0
+        sleep(YIELD_POLL_S)
+    rest = max(0.0, end - clock())
+    (paths.home() / YIELD_FILE).write_text(json.dumps({"left_s": rest, "at": time.time()}), encoding="utf-8")
+    print(f"=== the deploy is done; the sweep goes on from the deployed release with {power._hm(rest)} "
+          f"of its ceiling ===", flush=True)
+    return YIELDED
+
+
+def _ceiling_s(a, environ=None) -> float:
+    """The sweep's ceiling; a sweep going on after a deploy it yielded to has only what that one left. #1675."""
+    import json
+    import os
+
+    from harness import paths, power
+    full = float(getattr(a, "ceiling_h", None) or power.SWEEP_CEILING_H) * 3600
+    if (environ if environ is not None else os.environ).get("LH_SWEEP_RESUMED") != "1":
+        return full
+    path = paths.home() / YIELD_FILE
+    try:
+        got = float(json.loads(path.read_text(encoding="utf-8"))["left_s"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return full
+    path.unlink(missing_ok=True)
+    return min(full, max(0.0, got))
 
 
 #: The store lease one discover loop holds, so machines sharing a store never sweep together. #703.
@@ -237,12 +343,19 @@ def _run_loop_held(a, keep=None) -> int:
     that starts doing either because something ranked well is how a laptop ends
     up unusable overnight.
     """
+    from harness import ceiling
+    sweep = ceiling.Sweep(_ceiling_s(a))
+    try:
+        return _run_steps(a, keep, sweep)
+    except DeployDue as due:
+        due.left = sweep.remaining()
+        raise
+
+
+def _run_steps(a, keep, sweep) -> int:
     import sys
 
-    from harness import ceiling, power
-
     run = bool(getattr(a, "run", False))
-    sweep = ceiling.Sweep(float(getattr(a, "ceiling_h", None) or power.SWEEP_CEILING_H) * 3600)
     rc = 0
     failed: list[str] = []
     for label, attr, needs_run in LOOP_STEPS:
@@ -585,6 +698,8 @@ def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=No
     queue = _servable_lanes(fresh, getattr(a, "lane", ""), sweep, refusal)
     total, i, tight = len(queue), 0, False
     while queue:
+        # A run the deploy paused set sweep.halted; the sweep yields here rather than ending. #1675.
+        _yield_point("measure")
         held = _held_back(sweep, len(queue))
         if held:
             sweep.lines.append(held)

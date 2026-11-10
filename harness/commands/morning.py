@@ -182,6 +182,8 @@ def render(r: dict) -> list[str]:
         out.extend(f"          {m}" for m in d["missing"])
     from harness import deploy
     out.extend(f"          {deploy.line(x)}" for x in r.get("deploys") or [])
+    if r.get("deploy_wait"):
+        out.append(f"          {deploy.wait_line(r['deploy_wait'])}")
     return out
 
 
@@ -200,7 +202,7 @@ def cmd_morning(a) -> int:
         r = morning.gather(conn, now, since, beat=heartbeat.summary(), where=paths.deploy_checkout(),
                            health=morning.lane_health, canary=canary.morning_line, parked=morning.parked_nodes,
                            incumbent=morning.repo_incumbent, monitor=monitor.morning, pulls=morning.stuck_prs,
-                           tts=audio_models.morning)
+                           tts=audio_models.morning, waiting=morning.deploy_wait)
     finally:
         conn.close()
     lines = render(r)

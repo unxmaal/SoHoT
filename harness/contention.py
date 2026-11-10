@@ -13,6 +13,10 @@ SERVED = (purpose.WORK, purpose.UNKNOWN)
 CRITERION = "contention"
 #: Who queues a job a client waits on (an MCP image or video): it is serving, never held or paused as batch work.
 SERVING = ("mcp",)
+#: Seconds a deploy waits on memory pressure past normal before it starts anyway; it loads no model, it restarts them. #1672.
+DEPLOY_PRESSURE_S = 1800.0
+#: Seconds a deploy may wait, for any reason, before one alert names why. #1672.
+DEPLOY_ALERT_S = 10800.0
 
 _said = ""
 
@@ -41,8 +45,13 @@ def reading(conn, now: float) -> dict:
     return {"hold": hold.active(conn, now, hold.GPU), "requests": requests(conn, now - IDLE_S)}
 
 
-def verdict(conn, now: float | None = None, sample=None) -> dict:
-    """Whether a GPU job may start now, why, and each signal read."""
+def pressure_until(since: float) -> str:
+    """The clock time a deploy waiting since `since` stops waiting on memory pressure. #1672."""
+    return time.strftime("%H:%M", time.localtime(since + DEPLOY_PRESSURE_S))
+
+
+def verdict(conn, now: float | None = None, sample=None, since: float | None = None) -> dict:
+    """Whether a GPU job, or with `since` a deploy waiting since then, may start now, why, and each signal read."""
     from harness import cuts, hold, pressure
     now = time.time() if now is None else now
     p = (sample or pressure.sample)()
@@ -52,8 +61,10 @@ def verdict(conn, now: float | None = None, sample=None) -> dict:
            "last_served": use["last"], "hold": hold_now, "idle_s": IDLE_S}
     if hold_now is not None:
         return {**got, "why": f"held by the owner: {hold_now['said']} ({hold.RELEASE} {hold.GPU})"}
-    if p.alarming:
-        return {**got, "why": f"memory pressure level {p.level}, not normal"}
+    waived = p.alarming and since is not None and now - since >= DEPLOY_PRESSURE_S
+    if p.alarming and not waived:
+        bound = f"; a deploy waits on it until {pressure_until(since)}" if since is not None else ""
+        return {**got, "why": f"memory pressure level {p.level}, not normal{bound}"}
     if use["requests"]:
         cuts.cut("contention_idle", "GPU job starts while the served lanes were in use", dropped=1, conn=conn)
         ago = round(now - use["last"]) if use["last"] is not None else None
@@ -62,13 +73,17 @@ def verdict(conn, now: float | None = None, sample=None) -> dict:
     if use["requests"] is None:
         return {**got, "why": "the served lanes could not be read: no store"}
     level = "normal" if p.level is not None else "unknown"
+    if waived:
+        cuts.cut("deploy_pressure_wait", "deploy starts at memory pressure past normal", dropped=1, conn=conn)
+        level = (f"level {p.level}, but the deploy has waited past its {DEPLOY_PRESSURE_S:.0f} s bound on it "
+                 f"(queued {time.strftime('%H:%M', time.localtime(since))})")
     return {**got, "open": True, "why": f"memory pressure {level}, served lanes idle {IDLE_S:.0f} s, no hold"}
 
 
-def gate(conn, now: float | None = None, sample=None, say=None) -> tuple[bool, str]:
+def gate(conn, now: float | None = None, sample=None, say=None, since: float | None = None) -> tuple[bool, str]:
     """(open, why) for a GPU job or a deploy; says each change of decision, which is the queue's log of them."""
     global _said
-    v = verdict(conn, now, sample)
+    v = verdict(conn, now, sample, since)
     if v["why"] != _said:
         line = f"{time.strftime('%H:%M:%S')} contention gate {'open' if v['open'] else 'closed'}: {v['why']}"
         say(line) if say else print(line, flush=True)

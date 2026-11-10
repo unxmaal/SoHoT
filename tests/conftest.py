@@ -394,7 +394,7 @@ def _no_real_contention(monkeypatch):
     """No queue test waits on this machine's memory pressure; a test of the gate restores workqueue._contended.real. #1509."""
     from harness import workqueue
 
-    def calm(now):
+    def calm(now, job=None):
         return False
     calm.real = workqueue._contended
     monkeypatch.setattr(workqueue, "_contended", calm)
