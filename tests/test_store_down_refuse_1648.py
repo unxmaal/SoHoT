@@ -104,11 +104,11 @@ def test_a_lane_probe_is_skipped_naming_the_store(down, monkeypatch, tmp_path):
 
 
 def test_a_router_release_keeps_its_models_naming_the_store(down, monkeypatch):
-    monkeypatch.setattr(router, "_get", lambda path: {"data": [{"id": "M", "status": {"value": "loaded"}}]})
+    monkeypatch.setattr(router, "_get", lambda path: {"data": [{"id": s, "status": {"value": "loaded"}} for s in "MN"]})
     monkeypatch.setattr(router, "_post", lambda path, body: pytest.fail("unloaded with no gpu lease"))
     said = []
-    assert router.release(["M"], "x", keep=set(), say=said.append) == []
-    assert REASON in said[0]
+    assert router.release(["M", "N"], "x", keep=set(), say=said.append) == []
+    assert said[0].startswith("  router: kept M, N: ") and REASON in said[0]
 
 
 def _down_home(tmp_path) -> dict:

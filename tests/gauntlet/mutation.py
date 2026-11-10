@@ -76,7 +76,8 @@ MODULES = {
         "tests/test_lane_routes.py", "tests/test_remote_upstreams.py", "tests/test_deepen_993.py",
         "tests/test_lane_too_small_1049.py", "tests/test_lane_until_1053.py", "tests/test_reverify_lane_metric_733.py",
         "tests/test_adopt_effect_confirm_725.py", "tests/test_min_effect_1320.py",
-        "tests/test_limit_cuts_1087_harness_ac.py", "tests/test_limit_cuts_1087_harness_ps.py"],
+        "tests/test_limit_cuts_1087_harness_ac.py", "tests/test_limit_cuts_1087_harness_ps.py",
+        "tests/test_adopt_store_given_1673.py"],
     "harness/serving.py": [
         "tests/test_harness_serving.py", "tests/test_lane_routes.py", "tests/test_gguf_route.py",
         "tests/test_schema_lanes.py", "tests/test_ds4.py", "tests/test_remote_upstreams.py",
