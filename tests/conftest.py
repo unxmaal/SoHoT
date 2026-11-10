@@ -512,6 +512,19 @@ def _no_real_engine_trial(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_docker(monkeypatch):
+    """No test asks this machine's Docker engine or removes a container; a test of it restores containers._info.real. #1510."""
+    from harness import containers
+
+    def absent(run=None):
+        return None if run is None else absent.real(run)
+    absent.real = containers._info
+    monkeypatch.setattr(containers, "_info", absent)
+    monkeypatch.setattr(containers, "remove", lambda name, run=None: None)
+    monkeypatch.setattr(containers, "_vm", {})
+
+
+@pytest.fixture(autouse=True)
 def _no_real_hub_download(request, monkeypatch):
     """No test downloads from the Hub: one fetched a whole GGUF every run (#1146)."""
     if request.node.get_closest_marker("network") or request.node.get_closest_marker("slow"):

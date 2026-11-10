@@ -97,11 +97,25 @@ class FakeGh:
         return [c for c in self.calls if c[:2] == ["issue", "create"]]
 
 
+#: The bytes of every wheel the fake download container leaves; the fake index publishes their sha256.
+WHEEL_BYTES = b"a planted wheel"
+#: The platform the fake container fetches for, so no test depends on this host's macOS version.
+PLATFORM = "macosx_15_0_arm64"
+
+
+def fake_digest(t, filename, name, version):
+    return et.hashlib.sha256(WHEEL_BYTES).hexdigest()
+
+
 def _fake_uv(log):
-    """Plays uv: `uv venv` makes the venv, `uv pip install` drops the package's console script in it."""
+    """Plays docker and uv: the container leaves the pin's wheel, `uv venv` makes the venv, `uv pip install` drops the console script."""
     def run(argv, env, cwd, timeout=et.INSTALL_TIMEOUT_S):
         log.append(argv)
-        if "venv" in argv and "pip" not in argv:
+        if argv[1:2] == ["run"]:
+            out = Path(next(a for a in argv if a.endswith(":/out:rw")).rsplit(":", 2)[0])
+            package, _, version = next(a for a in argv if "==" in a).partition("==")
+            (out / f"{package.replace('-', '_')}-{version}-py3-none-any.whl").write_bytes(WHEEL_BYTES)
+        elif "venv" in argv and "pip" not in argv:
             Path(argv[-1], "bin").mkdir(parents=True, exist_ok=True)
         elif "pip" in argv:
             py = Path(argv[argv.index("--python") + 1])
@@ -112,7 +126,8 @@ def _fake_uv(log):
 def _sweep(conn, tools, waiting, tmp_path, gh=None, screener=None, ask=None, installs=None, now=5000.0):
     installs = [] if installs is None else installs
     return et.sweep(conn, tools, waiting, ask=ask or _readings(), evidence=EVIDENCE.__getitem__,
-                    installer=lambda t, root: et.install(t, root, run=_fake_uv(installs)),
+                    installer=lambda t, root: et.install(t, root, run=_fake_uv(installs), digest=fake_digest,
+                                                         plat=PLATFORM),
                     screener=screener or (lambda t, c: et.Screened(et.FAIL, 0, 1, "fake")),
                     gh=gh or FakeGh(), root=tmp_path / "trials", now=now,
                     known=redact.Known(accounts=("operator",), hosts=("trialbox",)))
@@ -121,6 +136,7 @@ def _sweep(conn, tools, waiting, tmp_path, gh=None, screener=None, ask=None, ins
 @pytest.fixture(autouse=True)
 def sandbox_here(monkeypatch):
     monkeypatch.setattr(et, "can_sandbox", lambda: True)
+    monkeypatch.setattr(et, "docker_here", lambda: True)
 
 
 # ---- acceptance ----------------------------------------------------------------------------
@@ -148,9 +164,12 @@ def test_a_planted_openai_engine_is_classified_installed_in_its_own_dir_screened
     assert (t.kind, t.state, t.channel, t.package, t.version) == ("engine", et.INSTALLED, et.PYPI, "fast-serve", "1.4.2")
     trial_dir = Path(t.dir)
     assert trial_dir.parent == tmp_path / "trials" and (trial_dir / "installed.json").is_file()
-    pip = next(a for a in installs if "pip" in a)
-    assert pip[0] == et.SANDBOX_EXEC and "fast-serve==1.4.2" in pip and ":all:" in pip
-    assert f"TRIAL={trial_dir.resolve()}" in pip
+    fetch = installs[0]
+    assert fetch[1] == "run" and "fast-serve==1.4.2" in fetch and "--only-binary=:all:" in fetch
+    pip = next(a for a in installs if "pip" in a and a[0] == et.SANDBOX_EXEC)
+    assert "--offline" in pip and "--no-index" in pip and "--require-hashes" in pip and ":all:" in pip
+    assert f"TRIAL={trial_dir.resolve()}" in pip and pip[2].endswith("offline.sb")
+    assert "fast-serve==1.4.2 --hash=sha256:" in (trial_dir / "requirements.txt").read_text(encoding="utf-8")
     argv = seen["argv"]
     assert argv[0] == et.SANDBOX_EXEC and argv[argv.index("-D") + 2] == str(trial_dir / "venv" / "bin" / "fast-serve")
     assert CANDIDATE in argv and "network-outbound" in (trial_dir.resolve() / "serve.sb").read_text(encoding="utf-8")

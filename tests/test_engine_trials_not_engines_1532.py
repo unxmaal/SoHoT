@@ -9,7 +9,7 @@ import pytest
 from evals import redact
 from harness import engine_trials as et
 from tests.test_engine_trials_1475 import (EVIDENCE, FAKE_ENGINE, OPENAI_READING, UNTESTABLE, FakeGh, _asker,
-                                           _fake_uv, _readings, _tool, _waiting, conn)  # noqa: F401
+                                           PLATFORM, _fake_uv, _readings, _tool, _waiting, conn, fake_digest)  # noqa: F401
 
 #: The real GitHub reader, taken before the conftest guard replaces it; the test hands it a fake client.
 REAL_GH_JSON = et._gh_json
@@ -41,6 +41,7 @@ SHAPES = {
 @pytest.fixture(autouse=True)
 def sandbox_here(monkeypatch):
     monkeypatch.setattr(et, "can_sandbox", lambda: True)
+    monkeypatch.setattr(et, "docker_here", lambda: True)
 
 
 def _evidence(name):
@@ -50,7 +51,7 @@ def _evidence(name):
 def _sweep(conn, names, tmp_path, readings, gh):
     tools = [_tool(conn, n) for n in names]
     et.sweep(conn, tools, [_waiting(conn)], ask=_asker(**{n.replace("/", "_"): r for n, r in readings.items()}),
-             evidence=_evidence, installer=lambda t, root: et.install(t, root, run=_fake_uv([])),
+             evidence=_evidence, installer=lambda t, root: et.install(t, root, run=_fake_uv([]), digest=fake_digest, plat=PLATFORM),
              screener=lambda t, c: et.Screened(et.FAIL, 0, 1, "fake"), gh=gh, root=tmp_path / "trials",
              now=5000.0, known=redact.Known(accounts=("operator",), hosts=("trialbox",)))
     return tools
