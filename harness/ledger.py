@@ -549,6 +549,65 @@ def _energy_cuts(out: dict, ndays: int) -> None:
                  kept=ndays - partial, dropped=partial)
 
 
+# --- the primary metric: local over cloud tokens (#1688, DECISION #1148) --------------------------
+
+#: Local tokens wanted per cloud token (owner, 2026-11-10).
+TARGET_RATIO = 3.0
+#: Cloud tokens that count: fresh input, output and cache writes; cache reads do not.
+CLOUD_COUNTED = ("input", "output", "cache_write")
+#: Purposes whose local tokens displace cloud work: delegations and the harness's own drafting and triage.
+DISPLACING = (WORK, "internal")
+#: Days the ratio's longer window spans, ending yesterday.
+RATIO_DAYS = 7
+
+
+def local_vs_cloud(rows, cloud_tokens: dict | None) -> dict:
+    """One day's counts under the #1688 rule; rows are (purpose, lane, prompt, completion) gateway rows."""
+    from harness import interactive
+    loc = sum((pin_ or 0) + (pout or 0) for p, lane, pin_, pout in rows
+              if (p or UNKNOWN) in DISPLACING or ((p or UNKNOWN) == UNKNOWN and lane in interactive.LANES))
+    cld = None if cloud_tokens is None else sum(int(cloud_tokens.get(k) or 0) for k in CLOUD_COUNTED)
+    return {"local": loc, "cloud": cld}
+
+
+def ratio_over(days: dict, last_day: str, n: int) -> dict:
+    """Local over cloud summed across the n days ending last_day that have a cloud count."""
+    want = [(_dt.date.fromisoformat(last_day) - _dt.timedelta(days=i)).isoformat() for i in range(n)]
+    got = [days[d] for d in want if (days.get(d) or {}).get("cloud") is not None]
+    loc, cld = sum(g["local"] for g in got), sum(g["cloud"] for g in got)
+    return {"first_day": want[-1], "last_day": last_day, "days": len(got), "of": n, "local": loc, "cloud": cld,
+            "ratio": loc / cld if cld else None, "target": TARGET_RATIO}
+
+
+def headline(days: dict, yesterday: str) -> dict:
+    """The ratio for yesterday and for the RATIO_DAYS ending yesterday, from {day: local_vs_cloud}."""
+    return {"yesterday": ratio_over(days, yesterday, 1), "week": ratio_over(days, yesterday, RATIO_DAYS)}
+
+
+def _as_ratio(r: float | None) -> str:
+    if r is None:
+        return "n/a"
+    if r >= 1 or r == 0:
+        return f"{r:.1f}:1"
+    return f"1:{1 / r:.0f}"
+
+
+def ratio_line(h: dict) -> str:
+    """The headline as one line: yesterday, then the week, against the target."""
+    def part(label: str, r: dict) -> str:
+        if not r["days"]:
+            return f"{label} n/a (no cloud count)"
+        span = "" if r["days"] == r["of"] else f", {r['days']} of {r['of']} days"
+        return f"{label} {_as_ratio(r['ratio'])} ({_mtok(r['local'])} local / {_mtok(r['cloud'])} cloud{span})"
+    y, w = h["yesterday"], h["week"]
+    return (f"local:cloud {part(y['last_day'], y)}; {part(str(w['of']) + 'd', w)}; "
+            f"target {_as_ratio(TARGET_RATIO)}")
+
+
+def _mtok(n: int) -> str:
+    return f"{n / 1e6:.2f}M" if n >= 1_000_000 else f"{n:,}"
+
+
 # --- the join -------------------------------------------------------------------------------------
 
 def _sum(buckets) -> dict:
@@ -584,7 +643,7 @@ def cloud_summary(cloud_doc: dict, cdays: list[dict], available: bool) -> dict:
 def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limits: list[dict],
           power: list[dict], tariff: float | None = None, macmon: bool = False, tz=None, mapping=None,
           delegations=(), context=(), macmon_version: str | None = None, census_doc: dict | None = None,
-          events=(), messages=()) -> dict:
+          events=(), messages=(), recorded_ratio: dict | None = None) -> dict:
     """The ledger: aggregates only, no prompts, paths or keys; Claude usage in tokens, never dollars (#976)."""
     tariff = TARIFF_USD_PER_KWH if tariff is None else tariff
     days = days_between(since, now, tz)
@@ -594,6 +653,9 @@ def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limit
     cdays = cloud_days(days, cloud_doc, events, messages, tz)
     available = any(c["tokens"] is not None for c in cdays.values())
     ctx = context_days(context, tz)
+    per: dict = {}
+    for r in rows:
+        per.setdefault(day_of(r[0], tz), []).append((r[4], r[2], r[5], r[6]))
     out_days = []
     for day in days:
         c = cdays[day]
@@ -614,13 +676,16 @@ def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limit
             "unknown": lday["purposes"].get(UNKNOWN),
             "headroom": hr.get("days", {}).get(day, {}) if hr["available"] else {},
             "energy": e,
+            "ratio": local_vs_cloud(per.get(day, ()), c["tokens"]),
         })
         out_days[-1]["zero_delegation"] = zero_delegation(out_days[-1])
     purposes: dict = {}
     for d in out_days:
         for p, b in d["local"].items():
             purposes.setdefault(p, []).append(b)
+    ratios = {**(recorded_ratio or {}), **{d["day"]: d["ratio"] for d in out_days}}
     return {
+        "ratio": headline(ratios, day_of(now - 86400, tz)),
         "window": {"since": since, "until": now, "first_day": days[0], "last_day": days[-1]},
         "assumptions": {
             "tariff_usd_per_kwh": tariff,
@@ -757,5 +822,5 @@ def recorded(conn, first_day: str) -> list[dict]:
         except ValueError:
             detail = {}
         out.append({"day": r["day"], "recorded_at": r["recorded_at"], "energy_kwh": r["energy_kwh"],
-                    "cloud_tokens": (detail.get("cloud") or {}).get("tokens")})
+                    "cloud_tokens": (detail.get("cloud") or {}).get("tokens"), "ratio": detail.get("ratio")})
     return out

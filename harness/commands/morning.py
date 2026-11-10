@@ -79,7 +79,9 @@ def render_prs(p: dict | None) -> list[str]:
 def render(r: dict) -> list[str]:
     """The deterministic report, one line per fact."""
     s = r["sweep"]
-    out = [f"since {_hm(r['since'])}"]
+    from harness import ledger
+    out = [ledger.ratio_line(r["ratio"]) if r.get("ratio") else "local:cloud no ledger_days table",
+           f"since {_hm(r['since'])}"]
     h = r.get("lane") or {}
     from harness import morning
     from harness.availability import incident_line

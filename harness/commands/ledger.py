@@ -31,6 +31,7 @@ def gather(a, now: float) -> dict:
     since = cr.parse_when(a.since, now)
     first_day = ledger.days_between(since, now)[0]
     start = ledger.day_start(first_day)
+    week = ledger.days_between(now - ledger.RATIO_DAYS * 86400, now)[0]
     rows, dels, history, ev = [], [], [], []
     if store.backend() == store.POSTGRES:
         conn = ms.connect()
@@ -41,7 +42,7 @@ def gather(a, now: float) -> dict:
         try:
             rows = ledger.gateway_rows(conn, start)
             dels = ledger.delegation_rows(conn, start)
-            history = ledger.recorded(conn, first_day)
+            history = ledger.recorded(conn, min(first_day, week))
             ev = otel.events(conn, start, now + 1)
         finally:
             conn.close()
@@ -54,8 +55,9 @@ def gather(a, now: float) -> dict:
         power=ledger.read_jsonl(ledger.ledger_dir() / "power.jsonl"),
         tariff=a.tariff, macmon=bool(shutil.which("macmon")), delegations=dels, context=ctx,
         macmon_version=ledger.macmon_version(), census_doc=ledger.census(), events=ev,
-        messages=ledger.usage_messages(files, start))
-    out["recorded"] = history
+        messages=ledger.usage_messages(files, start),
+        recorded_ratio={h["day"]: h["ratio"] for h in history if h.get("ratio")})
+    out["recorded"] = [h for h in history if h["day"] >= first_day]
     out["otel"] = otel_days(ev)
     return out
 
@@ -70,7 +72,9 @@ def otel_days(ev: list[dict], tz=None) -> dict:
 
 
 def show(L: dict) -> None:
+    from harness import ledger
     w, s = L["window"], L["assumptions"]
+    note(ledger.ratio_line(L["ratio"]))
     note(f"ledger {w['first_day']} .. {w['last_day']}")
     for line in cloud_lines(L["cloud"]):
         note(line)
