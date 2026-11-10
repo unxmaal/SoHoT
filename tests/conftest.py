@@ -22,6 +22,9 @@ def _home(tmp_path_factory, monkeypatch):
     """
     home = tmp_path_factory.mktemp("lh-home")
     monkeypatch.setenv(paths.ENV_VAR, str(home))
+    # Nor holds or reads this machine's real gpu lock from an eval's scratch home. #1703.
+    monkeypatch.setenv(paths.MACHINE_ENV, str(home))
+    monkeypatch.delenv(paths.MACHINE_FOR_ENV, raising=False)
     # Nor reads this machine's weights: what is on disk is a downloads row. #411.
     monkeypatch.setenv("HF_HOME", str(tmp_path_factory.mktemp("hf-home")))
     monkeypatch.delenv("LLAMACPP_MODELS_DIR", raising=False)
