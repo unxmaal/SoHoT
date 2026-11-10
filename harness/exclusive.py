@@ -136,9 +136,23 @@ def holder() -> dict:
     return _read(holder_path())
 
 
+def _on_machine(fn):
+    """fn() with home() at the machine's home, where its generation.lock lives. #1703."""
+    with paths.seated(paths.machine_home()):
+        return fn()
+
+
+def machine_holder() -> dict:
+    """holder() of the machine's generation.lock, whichever home this process writes. #1703."""
+    return _on_machine(holder)
+
+
 def _taken(path: Path) -> bool:
     """Whether some process holds the lock at `path` now. Never waits."""
-    fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o644)
+    try:
+        fd = os.open(path, os.O_RDWR)
+    except FileNotFoundError:
+        return False
     try:
         if _take(fd):
             _release(fd)
@@ -209,7 +223,43 @@ def _holder_alive(h: dict) -> bool:
 
 def _gpu_leases(conn) -> list[dict]:
     from harness import item_lease, resources
+    if conn is None:
+        return []
     return [h for h in item_lease.live(conn, resources.GPU) if _holder_alive(h)]
+
+
+def _machine_backend(there: Path) -> str:
+    from harness import store
+    got = (os.environ.get(paths.MACHINE_STORE_ENV) or store.marker(there).get("backend") or store.SQLITE).strip().lower()
+    return store.POSTGRES if got == store.POSTGRES else store.SQLITE
+
+
+@contextlib.contextmanager
+def _machine():
+    """A connection holding this machine's gpu leases, home() at its home: from a scratch eval home, the live one read-only. #1703."""
+    there = paths.machine_home()
+    if there == paths.home():
+        conn = _store()
+        try:
+            yield conn
+        finally:
+            conn.close()
+        return
+    from harness import store
+    with paths.seated(there), store.pinned(_machine_backend(there)):
+        try:
+            conn = None if store.backend() == store.SQLITE and not (there / "discovery.db").exists() else store.open_ro()
+        except Exception as exc:  # noqa: BLE001 - any failure to open is the machine's store being unreachable
+            raise StoreDown(f"the machine's store in {there} is unreachable, so its gpu lease cannot be checked: {exc}") from exc
+        try:
+            yield conn
+        except StoreDown:
+            raise
+        except Exception as exc:  # noqa: BLE001 - a lease ledger that cannot be read is one that cannot be checked
+            raise StoreDown(f"the machine's gpu lease in {there} cannot be read: {exc}") from exc
+        finally:
+            if conn is not None:
+                conn.close()
 
 
 def _stop_hint(leases: list[dict]) -> str:
@@ -241,27 +291,24 @@ def _own(conn) -> dict | None:
 
 def gpu_leases() -> int:
     """How many gpu leases live on this machine; StoreDown when the store will not open. #1619, #1648."""
-    conn = _store()
-    try:
+    with _machine() as conn:
         leases = _gpu_leases(conn)
-    finally:
-        conn.close()
-    return len(leases) + int(_outside(leases))
+        return len(leases) + int(_outside(leases))
 
 
 def _outside(leases: list[dict]) -> bool:
     """Whether another project's lockf holds generation.lock: taken while no lease here is a model-loading one. #1619."""
-    return not any(h.get("state") for h in leases) and _taken(lock_path())
+    return not any(h.get("state") for h in leases) and _taken(paths.home() / "queue" / LOCK)
 
 
 def gpu_holder() -> dict:
     """The holder record of the model-loading process on this machine's gpu lease, {} when none holds it. #1619."""
+    with _machine() as conn:
+        return _holder(_gpu_leases(conn))
+
+
+def _holder(leases: list[dict]) -> dict:
     from harness import workqueue as wq
-    conn = _store()
-    try:
-        leases = _gpu_leases(conn)
-    finally:
-        conn.close()
     for h in leases:
         if not h.get("state"):
             continue
@@ -279,13 +326,13 @@ def gpu_holder() -> dict:
 
 @contextlib.contextmanager
 def _flock(announce, poll: float, wait: bool = True):
-    """The flock on generation.lock, which other projects' lockf shares; yields (taken, waited)."""
-    fd = os.open(lock_path(), os.O_RDWR | os.O_CREAT, 0o644)
+    """The flock on the machine's generation.lock, which other projects' lockf shares; yields (taken, waited)."""
+    fd = os.open(_on_machine(lock_path), os.O_RDWR | os.O_CREAT, 0o644)
     try:
         waited, said = False, None
         while not (got := _take(fd)) and wait:
             waited = True
-            record = holder()
+            record = machine_holder()
             if announce and identity(record) != said:
                 announce(f"waiting for {describe(record)} to finish")
                 said = identity(record)

@@ -310,7 +310,7 @@ def _gate(where: serving.Route) -> bool | None:
 
 def _holder(held: str) -> str:
     """The lock's holder with its own queued job, never the queue's current one: that may be this caller. #1349."""
-    owner = str(exclusive.holder().get("job") or "").strip()
+    owner = str(exclusive.machine_holder().get("job") or "").strip()
     job = running_job(job_id=owner) if owner else ""
     return f"{held} under {job}" if job else held
 
