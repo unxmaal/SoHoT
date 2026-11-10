@@ -761,6 +761,19 @@ adopted here, through the same route `soh code` uses:
   schema, answers plus a probability per choice, from the decide lane's model.
   It is not streamed, so `ttft_s` is empty: through the gateway a streamed
   reply loses the logprobs the probabilities come from.
+- `soh local complete PROMPT [--lane L] [--system S] [--max-tokens N] [--thinking on|off]
+  [--paths P... -q Q] [--mode spans]` and `soh local decide QUESTION --schema JSON|FILE
+  [--context TEXT | -f FILE]` are the same two tools from a shell, for a session whose MCP
+  connection failed (a client connects once, at start, so a server restart mid-deploy leaves
+  it without the tools for its whole life). They run the same code, write the same
+  `delegations` and `gateway_requests` rows, print the answer, a `-- model, seconds, call_id`
+  footer and the follow-up; `--json` prints the MCP result's fields. A prompt or material
+  left out is read from stdin.
+- `delegated(call_id, outcome, why)`, or `soh delegated CALL_ID used|edited|discarded "why"`,
+  closes a call_id from either path. Unreported, `soh delegated --close` infers the outcome
+  from the caller's transcript (an MCP result, or a Bash call of `soh local`) or records it
+  unknown after 24 h. `soh ledger` flags each day with Claude Code tokens and no delegation
+  at all, and `soh morning` lists last night's as needing a person.
 
 Both answer directly rather than queueing. Prompts are capped at 100,000
 characters and calls time out after 300 s. When something holds the machine lock
@@ -788,6 +801,9 @@ Do it yourself when it needs judgment, touches security-sensitive code (auth,
 crypto, input handling, secrets), or needs repo-wide context you cannot pass in
 the prompt. Review what comes back before using it; the local model sees only
 the prompt. If the tool says the machine is busy, do the work yourself.
+If the soh MCP server is not connected, run `soh local complete` / `soh local decide`
+from the shell instead; a missing MCP connection is never a reason to skip delegation.
+Report each answer with `delegated` or `soh delegated CALL_ID used|edited|discarded "why"`.
 ```
 
 DNS-rebinding protection stays on, with an allowlist in `MCP_ALLOW`. It guards a

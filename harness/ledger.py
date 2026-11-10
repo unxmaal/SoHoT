@@ -615,6 +615,7 @@ def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limit
             "headroom": hr.get("days", {}).get(day, {}) if hr["available"] else {},
             "energy": e,
         })
+        out_days[-1]["zero_delegation"] = zero_delegation(out_days[-1])
     purposes: dict = {}
     for d in out_days:
         for p, b in d["local"].items():
@@ -630,6 +631,7 @@ def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limit
         "headroom": {k: v for k, v in hr.items() if k != "days"},
         "local": {p: _sum(bs) for p, bs in sorted(purposes.items())},
         "delegated": _delegated(out_days),
+        "zero_delegation_days": [d["day"] for d in out_days if d["zero_delegation"]],
         "accepted": accepted(delegations, days, census_doc, tz),
         "displaced": {"tokens": _sum(d["displaced"]["tokens"] for d in out_days),
                       "note": "tagged work served locally, in tokens"},
@@ -704,6 +706,14 @@ def accepted(delegations, days: list[str], cen: dict | None = None, tz=None) -> 
     return {"lanes": dict(sorted(lanes.items())), "total": total,
             "accepted_share": round(total[dl.ACCEPTED] / closed, 4) if closed else None,
             "census": {k: v for k, v in cen.items() if k != "per_day"}}
+
+
+def zero_delegation(day: dict) -> bool:
+    """A ledger day (or its recorded detail) with Claude Code tokens and not one delegation, joined or not. #1687."""
+    tokens = (day.get("cloud") or {}).get("tokens") or {}
+    calls = ((day.get("delegated") or {}).get("requests") or 0) + \
+        ((day.get("unjoined_delegations") or {}).get("requests") or 0)
+    return any(isinstance(v, (int, float)) and v > 0 for v in tokens.values()) and not calls
 
 
 def _delegated(days: list[dict]) -> dict:

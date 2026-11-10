@@ -202,7 +202,8 @@ def ledger_row(conn, now: float) -> dict | None:
     lanes = (d.get("displaced") or {}).get("lanes") or []
     displaced = {k: sum(x.get(k) or 0 for x in lanes) for k in ("requests", "input", "output")}
     e = (d.get("energy") or {})
-    return {"day": r["day"], "recorded_at": r["recorded_at"], "energy_kwh": r["energy_kwh"],
+    from harness import ledger
+    return {"day": r["day"], "zero_delegation": ledger.zero_delegation(d), "recorded_at": r["recorded_at"], "energy_kwh": r["energy_kwh"],
             "energy": {k: e.get(k) for k in ("partial", "lower_bound_kwh", "why")} if e.get("partial") else {},
             "cloud": (d.get("cloud") or {}).get("tokens"), "cloud_source": (d.get("cloud") or {}).get("source"),
             "cloud_lower_bound": bool((d.get("cloud") or {}).get("lower_bound")), "plan": d.get("headroom") or {}, "displaced": displaced}
@@ -501,6 +502,9 @@ def needs(r: dict) -> list[str]:
     out += [f"runtime {runtime_trials.line(v)}" for v in r.get("runtimes") or [] if v["outcome"] in runtime_trials.PUSHED]
     from harness import monitor
     out += [f"monit {monitor.line(a)}" for a in monitor.still_open((r.get("monitor") or {}).get("alerts") or [])]
+    if (r.get("ledger") or {}).get("zero_delegation"):
+        out.append(f"zero delegations on {r['ledger']['day']} with cloud work: nothing went to local_complete, "
+                   "local_decide or `soh local`")
     return out
 
 

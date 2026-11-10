@@ -36,7 +36,7 @@ from mcp.server.mcpserver import Context, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import BaseModel
 
-from harness import ask, completion, cuts, delegate, delegations, env, exclusive, paths, spans, workqueue
+from harness import ask, completion, cuts, delegations, env, exclusive, local_tools, paths, workqueue
 
 
 class JobInfo(BaseModel):
@@ -268,34 +268,10 @@ def local_complete(prompt: str = "", lane: str = "", system: str | None = None,
                    max_tokens: int | None = None, temperature: float | None = None,
                    thinking: bool | None = None, paths: list[str] | None = None,
                    question: str = "", mode: str = "", ctx: Context | None = None) -> LocalCompletion:
-    if mode not in ("", "spans"):
-        raise ToolError(f"mode is \"spans\" or left out, not {mode!r}")
-    if mode == "spans":
-        if not paths:
-            raise ToolError("mode \"spans\" reads one file: pass it in `paths`")
-        _from_here(ctx)
-        got = _delegated(spans.ask_file, paths, question or prompt, lane=lane or "code",
-                         max_tokens=max_tokens, delegated=True)
-    elif paths:
-        _from_here(ctx)
-        got = _delegated(ask.ask, paths, question or prompt, lane=lane or "extract",
-                         max_tokens=max_tokens or ask.REPLY_TOKENS, system=system,
-                         thinking=thinking, delegated=True)
-    else:
-        if question and not prompt:
-            raise ToolError("`question` asks about `paths`; pass the files, or put the task in `prompt`")
-        given = {} if max_tokens is None else {"max_tokens": max_tokens}
-        got = _prompted(prompt, lane or "code", system, temperature=temperature, thinking=thinking, **given)
+    got = _delegated(local_tools.complete, prompt, lane, system, max_tokens=max_tokens, temperature=temperature,
+                     thinking=thinking, paths=paths, question=question, mode=mode, here=lambda: _from_here(ctx))
     got["report"] = delegations.instruction(got["call_id"])
     return LocalCompletion(**{k: got[k] for k in LocalCompletion.model_fields if k in got})
-
-
-def _prompted(prompt: str, lane: str, system: str | None, max_tokens: int = 2048, **kw) -> dict:
-    got = _delegated(delegate.complete, lane, prompt, system=system, max_tokens=max_tokens, delegated=True, **kw)
-    if (got.get("completion_tokens") or 0) >= max_tokens:
-        cuts.cut("harness/mcp_server.py:_prompted(max_tokens)", f"a {lane} delegation reply at its token budget",
-                 value=max_tokens, kept=0, dropped=1)
-    return got
 
 
 def _from_here(ctx) -> None:
@@ -318,7 +294,7 @@ def _from_here(ctx) -> None:
     "material to judge. Cheap enough for bulk labelling. Report what became of "
     "the answer with `delegated` and the returned call_id."))
 def local_decide(question: str, schema: dict, context: str = "") -> LocalDecision:
-    got = _delegated(delegate.decide, question, schema, context=context, delegated=True)
+    got = _delegated(local_tools.decide, question, schema, context=context)
     got["report"] = delegations.instruction(got["call_id"])
     return LocalDecision(**{k: got[k] for k in LocalDecision.model_fields})
 

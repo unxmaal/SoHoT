@@ -91,7 +91,8 @@ def _store(stops=0, ledger=True):
                      "VALUES (?, 'overrun', ?, 'stop', 1, 0, 'group term')", (NIGHT + 1500 + i, f"eval pgid {i + 2}"))
     if ledger:
         detail = {"cloud": {"tokens": {"input": 1200, "output": 3400, "cache_read": 5_600_000, "cache_write": 78_000}},
-                  "headroom": {"five_hour": 61.0, "seven_day": 40.0}, "displaced": {"lanes": []}}
+                  "headroom": {"five_hour": 61.0, "seven_day": 40.0}, "displaced": {"lanes": []},
+                  "delegated": {"requests": 2, "outcomes": {"used": 2}}}
         conn.execute("INSERT INTO ledger_days (day, recorded_at, energy_kwh, detail) VALUES (?, ?, 0.06, ?)",
                      (YESTERDAY, NIGHT + 7200, json.dumps(detail)))
     conn.commit()

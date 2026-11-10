@@ -192,11 +192,13 @@ capabilities:
       - harness/purpose.py
 
   - name: local-delegation
-    summary: local_complete and local_decide over MCP, handed to a lane's adopted local model, and what became of each answer.
+    summary: local_complete and local_decide over MCP or `soh local`, handed to a lane's adopted local model, and what became of each answer.
     spec: pending
     modules:
       - harness/delegate.py
       - harness/delegations.py
+      - harness/local_tools.py
+      - harness/commands/local.py
       - harness/serve_lease.py
       - harness/commands/delegated.py
       - harness/mcp_server.py

@@ -351,18 +351,18 @@ def test_repos_too_few_of_the_crowd_starred_are_one_cut(tmp_path):
 
 def test_a_delegation_reply_at_its_token_budget_is_a_cut(monkeypatch):
     mcp_server = pytest.importorskip("harness.mcp_server")
-    from harness import delegations
+    from harness import delegations, local_tools
 
     def reply(tokens):
         return lambda *a, **kw: {"text": "x", "lane": "code", "spec": "s", "model": "m", "ttft_s": 0.1, "seconds": 1.0,
                                  "prompt_tokens": 3, "completion_tokens": tokens, "method": None, "call_id": "c1"}
     monkeypatch.setattr(delegations, "instruction", lambda call_id: "")
-    monkeypatch.setattr(mcp_server.delegate, "complete", reply(10))
+    monkeypatch.setattr(local_tools.delegate, "complete", reply(10))
     mcp_server.local_complete(prompt="p", max_tokens=64)
     assert _spooled() == []
-    monkeypatch.setattr(mcp_server.delegate, "complete", reply(64))
+    monkeypatch.setattr(local_tools.delegate, "complete", reply(64))
     mcp_server.local_complete(prompt="p", max_tokens=64)
-    assert _spooled() == [("harness/mcp_server.py:_prompted(max_tokens)", 0, 1)]
+    assert _spooled() == [("harness/local_tools.py:_prompted(max_tokens)", 0, 1)]
 
 
 def test_a_hostname_lookup_that_times_out_is_a_cut(monkeypatch):

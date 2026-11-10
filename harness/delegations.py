@@ -30,6 +30,10 @@ SPAN_SHARE = 0.25
 
 #: The MCP tools whose result carries a call_id.
 DELEGATING = ("local_complete", "local_decide")
+#: A shell command running `soh local complete|decide`, whose output carries the call_id. #1687.
+CLI_CALL = re.compile(r"\bsoh\b[^\n|;&]*?\blocal\s+(complete|decide)\b")
+#: The footer `soh local` prints after the answer.
+CLI_FOOTER = re.compile(r"^-- .*\bcall_id (\S+)$", re.M)
 
 
 class UnknownCall(KeyError):
@@ -86,8 +90,8 @@ def outcome(conn, call_id: str, what: str, why: str = "", at: float | None = Non
     row = conn.execute("SELECT outcome, why FROM delegations WHERE call_id = ?",
                        (call_id,)).fetchone()
     if row is None:
-        raise UnknownCall(f"no delegation has call id {call_id!r}; local_complete and "
-                          f"local_decide return it as call_id")
+        raise UnknownCall(f"no delegation has call id {call_id!r}; local_complete, local_decide "
+                          f"and `soh local` return it as call_id")
     prev, prev_why = row["outcome"], row["why"]
     note_ = ""
     if prev is not None:
@@ -104,11 +108,12 @@ def kind(outcome) -> str:
     return _KIND.get(outcome or "", PENDING)
 
 
-def instruction(call_id: str) -> str:
-    """The sentence every local_complete / local_decide result carries. #1158."""
-    return (f"Once you have used, edited or discarded this answer, call delegated with call_id "
-            f"{call_id!r} and that outcome. Unreported, it is inferred from this session's later tool "
-            f"inputs, or recorded unknown after {EXPIRY_H:g} h.")
+def instruction(call_id: str, cli: bool = False) -> str:
+    """The sentence every local_complete / local_decide result carries; `cli` names `soh delegated`. #1158, #1687."""
+    how = (f"run `soh delegated {call_id} used|edited|discarded \"why\"`" if cli
+           else f"call delegated with call_id {call_id!r} and that outcome")
+    return (f"Once you have used, edited or discarded this answer, {how}. Unreported, it is inferred from this "
+            f"session's later tool inputs, or recorded unknown after {EXPIRY_H:g} h.")
 
 
 def report(conn, since: float, now: float | None = None) -> list[dict]:
@@ -178,6 +183,27 @@ def _asked(name: str, given: dict) -> str:
     return "\n".join(str(given.get(k) or "") for k in keys)
 
 
+def cli_result(text: str) -> dict:
+    """`soh local` output as the MCP result's fields: its --json object, else the answer above its footer."""
+    for line in reversed(text.splitlines()):
+        if line.startswith("{"):
+            try:
+                got = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(got, dict) and got.get("call_id"):
+                return got
+    foot = list(CLI_FOOTER.finditer(text))
+    if not foot:
+        return {}
+    answer = text[:foot[-1].start()].rstrip("\n")
+    try:
+        answers = json.loads(answer)
+    except ValueError:
+        answers = None
+    return {"call_id": foot[-1].group(1), "text": answer, "answers": answers if isinstance(answers, dict) else {}}
+
+
 def calls(path: Path, wanted) -> list[dict]:
     """Each delegation in `wanted` this transcript returned: its answer, its prompt, and every later tool input."""
     from harness.context_report import result_text
@@ -207,12 +233,17 @@ def calls(path: Path, wanted) -> list[dict]:
                 order.append((name, "\n".join(_strings(given))))
             elif c.get("type") == "tool_result" and not c.get("is_error"):
                 name, given = uses.get(c.get("tool_use_id"), ("", {}))
-                if _short(name) not in DELEGATING:
+                verb = CLI_CALL.search(str(given.get("command") or "")) if name == "Bash" else None
+                if verb:
+                    name, given = f"local_{verb.group(1)}", {"prompt": given["command"]}
+                    body = cli_result(result_text(c.get("content")))
+                elif _short(name) not in DELEGATING:
                     continue
-                try:
-                    body = json.loads(result_text(c.get("content")))
-                except ValueError:
-                    continue
+                else:
+                    try:
+                        body = json.loads(result_text(c.get("content")))
+                    except ValueError:
+                        continue
                 call_id = body.get("call_id") if isinstance(body, dict) else None
                 if call_id in wanted:
                     found.append({"call_id": call_id, "tool": _short(name), "answer": _answer(name, body),
@@ -232,7 +263,7 @@ def judge(answer: str, prompt: str, later, floor: int | None = None,
     from harness.context_report import SPAWN_TOOLS
     under = False
     for name, text in later:
-        if _short(name) in DELEGATING:
+        if _short(name) in DELEGATING or (name == "Bash" and CLI_CALL.search(text)):
             continue
         flat = _norm(text)
         hit = sum(1 for s in mine if s in flat)

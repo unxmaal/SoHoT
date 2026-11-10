@@ -38,7 +38,7 @@ def cmd_delegated(a) -> int:
     try:
         if not a.report:
             try:
-                got = delegations.outcome(conn, a.call_id, a.outcome, a.why)
+                got = delegations.outcome(conn, a.call_id, a.outcome, a.why or getattr(a, "said", ""))
             except (ValueError, delegations.UnknownCall) as exc:
                 note(str(exc))
                 emit(False, error=str(exc))
