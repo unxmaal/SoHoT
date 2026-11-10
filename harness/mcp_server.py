@@ -208,6 +208,8 @@ class LocalCompletion(BaseModel):
     #: With mode "spans": "spans" or "whole", and the (first, last) line ranges quoted. #1336.
     mode: str | None = None
     spans: list | None = None
+    #: With mode "digest": items the check found, kept and added, and whether its planted-failure control was caught. #1690.
+    check: dict | None = None
 
 
 class LocalDecision(BaseModel):
@@ -255,6 +257,9 @@ def _delegated(call, *args, **kw) -> dict:
     "checked against the file, and you get those lines numbered as Read shows "
     "them (then Read with offset/limit for more), or the whole file when it "
     "doubts. "
+    "For a test or CI log, pass `paths` and mode \"digest\" (question optional): you get the "
+    "failing tests, error lines, counts and exits, any the model left out added by a check, "
+    "and a pointer to the raw file; read that instead of the log. "
     "`lane` defaults to code for a prompt and for spans, and extract for paths. "
     "`system` replaces the lane's own system prompt. "
     "While a batch run holds the machine it answers at once if the model is "

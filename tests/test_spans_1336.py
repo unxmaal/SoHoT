@@ -250,7 +250,7 @@ def test_the_tool_returns_spans_of_one_path_through_the_same_boundary(mcp_server
     with pytest.raises(ToolError, match="pass it in `paths`"):
         mcp_server.local_complete(question="q", mode="spans")
     with pytest.raises(ToolError, match="mode is"):
-        mcp_server.local_complete(prompt="p", mode="digest")
+        mcp_server.local_complete(prompt="p", mode="summary")
     assert len(fake.calls) == 1
 
 

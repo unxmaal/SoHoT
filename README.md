@@ -757,6 +757,18 @@ adopted here, through the same route `soh code` uses:
   answers a full Read of the same file followed within 10 tool calls (the bar is 20%), and
   `soh spans --eval DIR [--kind python]` samples past Reads that were never edited and scores
   recall of what the session later used from the file (bar 90%); its rows hold numbers only.
+- `local_complete(paths=[...], mode="digest")`, or `soh digest LOG...`, digests a test or CI log
+  (#1690). The answer and the failure scan are followed by a check, which Claude wrote and the
+  model never sees. The check reads every failing test (pytest failure headers and FAILED/ERROR
+  ids), the first exception line of each, failure counts and nonzero exits from the raw file, adds
+  any the digest left out (at most `digest_check_items`), and plants one failing test to confirm it
+  would catch an omission. The reply ends with a `raw:` pointer to the file. `soh digest --run
+  [--out LOG] -- CMD...` runs the command into a log, digests it and exits with the command's code.
+  `--no-model` (or a lane that refuses) leaves the scan and the check. `soh digest --ab DIR`
+  replays `evals/digest_ab`, failed CI logs of this repo, each test's gold read twice (failure
+  headers equal the -q progress F/E marks). It reports the tokens Claude would read raw and as a
+  digest, failing-test recall for the model alone, model plus scan, and checked, and local:cloud
+  under the #1688 rule. `python -m evals.digest_ab RUN_ID...` rebuilds the set.
 - `local_decide(question, schema, context="")` is `soh decide`: the same flat
   schema, answers plus a probability per choice, from the decide lane's model.
   It is not streamed, so `ttft_s` is empty: through the gateway a streamed
@@ -796,7 +808,9 @@ Delegate to `local_complete` / `local_decide` when the work is cheap and checkab
 boilerplate, test scaffolding, docstrings, summaries of material you pass in,
 bulk rewrites, and classifying many items against a fixed schema.
 For a long log or tool-output file, pass its path, `local_complete(paths=[...], question=...)`,
-rather than its contents.
+rather than its contents. For test or CI output, run `soh digest LOG` (or
+`soh digest --run -- make check`) and read the digest, not the log; Read the raw file only at
+the lines the digest's `raw:` pointer and check name.
 Do it yourself when it needs judgment, touches security-sensitive code (auth,
 crypto, input handling, secrets), or needs repo-wide context you cannot pass in
 the prompt. Review what comes back before using it; the local model sees only

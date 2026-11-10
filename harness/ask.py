@@ -10,7 +10,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from harness import cuts, delegate, purpose
+from harness import cuts, delegate
 
 Refused = delegate.Refused
 
@@ -46,6 +46,9 @@ FAILURE_LINES = 20
 #: Characters kept of a failure-shaped line, around its match.
 LINE_CHARS = 300
 _STAMP = re.compile(r"^\s*(?:\d{4}-\d\d-\d\d[T ][\d:.,]+Z?|\[?\d\d:\d\d:\d\d[\d.,]*\]?)\s+")
+#: `gh run view --log` lines: job, step and a timestamp ahead of each line; and colour codes, raw or as ^[ text.
+_CI_PREFIX = re.compile(r"^(?:[^\t\n]*\t){1,2}\ufeff?\d{4}-\d\d-\d\dT[\d:.]+Z ?", re.M)
+_ANSI = re.compile(r"(?:\x1b|\^\[)\[[0-9;]*[A-Za-z]")
 _FAILURE = (
     re.compile(r"(?<![\w.,])[1-9]\d*\s+(?:errors?|failed|failures?|failing|broken)\b", re.I),
     re.compile(r"(?<!expected )\b(?:errors?|failures?|failed)\s*[=:]\s*[1-9]", re.I),
@@ -265,10 +268,15 @@ def _clip(line: str, at: int) -> str:
     return line[start:start + LINE_CHARS]
 
 
+def plain(text: str) -> str:
+    """`text` without CI log prefixes and colour codes, so a line reads as the tool printed it."""
+    return _ANSI.sub("", _CI_PREFIX.sub("", text))
+
+
 def failure_lines(text: str) -> list[str]:
     """Each distinct line of `text` shaped like a failure (nonzero count, FAILED/ERROR, exception, error mark, nonzero exit)."""
     out, seen, clipped = [], set(), 0
-    for raw in text.splitlines():
+    for raw in plain(text).splitlines():
         line = _STAMP.sub("", raw).strip()
         if not line or _NOT_FAILING.search(line):
             continue
@@ -370,13 +378,13 @@ def _total(replies: list[dict], key: str):
 def ask(raws, question: str, lane: str = "extract", roots: list[Root] | None = None,
         cwd: Path | None = None, max_tokens: int | None = None, system: str | None = None,
         thinking: bool | None = None, delegated: bool = False, complete=None,
-        size: int | None = None) -> dict:
-    """The answer to `question` about the files, with the paths and byte counts it read; never their text."""
+        size: int | None = None, files: list[File] | None = None) -> dict:
+    """The answer to `question` about the files (`files` when the caller read them), with paths and byte counts."""
     lane = delegate.check_lane(lane)
     max_tokens = int(max_tokens or REPLY_TOKENS)
     if not (question or "").strip():
         raise Refused("empty question")
-    files = read(raws, default_roots(cwd) if roots is None else roots, cwd)
+    files = files or read(raws, default_roots(cwd) if roots is None else roots, cwd)
     complete = complete or delegate.complete
     if thinking is None and lane == "code":
         thinking = False
@@ -384,7 +392,7 @@ def ask(raws, question: str, lane: str = "extract", roots: list[Root] | None = N
 
     def call(prompt: str) -> str:
         got = complete(lane, prompt, system=system or SYSTEM, max_tokens=max_tokens, thinking=thinking,
-                       tag=purpose.WORK if delegated else purpose.INTERNAL)
+                       tag=delegate.tag_of(delegated))
         replies.append(got)
         if (got.get("completion_tokens") or 0) >= max_tokens:
             cuts.cut("harness/ask.py:REPLY_TOKENS", "a digest reply reached its token budget", value=max_tokens,
@@ -392,7 +400,7 @@ def ask(raws, question: str, lane: str = "extract", roots: list[Root] | None = N
         return got["text"]
     started = time.perf_counter()
     text, parts, calls = digest(files, question, call, size or chunk_chars(lane, max_tokens))
-    scanned = 0
+    model_text, scanned = text, 0
     if _ABOUT_FAILURE.search(question):
         text, scanned = with_failures(text, "\n".join(f.text for f in files))
     last = replies[-1]
@@ -401,7 +409,7 @@ def ask(raws, question: str, lane: str = "extract", roots: list[Root] | None = N
            "prompt_tokens": _total(replies, "prompt_tokens"),
            "completion_tokens": _total(replies, "completion_tokens"), "method": None, "call_id": "",
            "files": [{"path": f.path, "bytes": f.size} for f in files], "parts": parts, "calls": calls,
-           "scanned": scanned}
+           "scanned": scanned, "model_text": model_text}
     if delegated:
         from harness import delegations
         out = delegations.note(out, delegations.new_id())

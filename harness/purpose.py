@@ -9,6 +9,8 @@ WORK, EVAL, SMOKE, DISCOVER, WATCHDOG = "work", "eval", "smoke", "discover", "wa
 #: A program's own pipeline call (morning, otel, claude-news, label), not work an agent delegated. #1158.
 INTERNAL = "internal"
 PURPOSES = (WORK, EVAL, SMOKE, DISCOVER, WATCHDOG, INTERNAL)
+#: A process measuring a lane: a program call inside it is that measurement, not internal work. #1701
+MEASURING = (EVAL, SMOKE)
 UNKNOWN = "unknown"
 #: The purpose a process and its children send when nothing in the process sets one.
 ENV = "SOHOT_PURPOSE"

@@ -215,6 +215,9 @@ capabilities:
       - harness/spans.py
       - harness/commands/spans.py
       - evals/spans_recall.py
+      - harness/digest.py
+      - harness/commands/digest.py
+      - evals/digest_ab.py
       - harness/kb_filter.py
       - harness/commands/kb_filter.py
 

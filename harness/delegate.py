@@ -461,8 +461,14 @@ def as_work(lane: str, spec: str, where: serving.Route, stream: bool, delegation
         got.update(delegations.note(got, call_id, gateway=bool(got.get("call_id"))))
 
 
-def _tag(delegated: bool) -> str:
-    return purpose.WORK if delegated else purpose.INTERNAL
+def tag_of(delegated: bool) -> str:
+    """work for a delegation; eval or smoke inside a process measuring the lane; else internal. #1701"""
+    if delegated:
+        return purpose.WORK
+    return purpose.current() if purpose.current() in purpose.MEASURING else purpose.INTERNAL
+
+
+_tag = tag_of
 
 
 def complete(lane: str, prompt: str, system: str | None = None,
