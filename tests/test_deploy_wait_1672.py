@@ -74,6 +74,15 @@ def test_the_gate_s_log_says_the_deploy_went_past_pressure(warn):
         conn.close()
     assert "contention gate open: memory pressure level 2, but the deploy has waited past its" in said[0]
     assert said[1].endswith("contention gate closed: memory pressure level 2, not normal")
+    assert _cuts("deploy_pressure_wait") == [(contention.DEPLOY_PRESSURE_S, 1)]
+
+
+def _cuts(knob: str) -> list:
+    conn = ms.connect()
+    try:
+        return [(r[0], r[1]) for r in conn.execute("SELECT value, dropped FROM limit_cuts WHERE knob = ?", (knob,))]
+    finally:
+        conn.close()
 
 
 def test_a_deploy_still_waits_for_served_lanes_and_the_owner_hold(warn):
@@ -124,6 +133,7 @@ def test_a_stuck_deploy_alerts_once_past_the_wait_knob_naming_why(warn, monkeypa
     assert got["job"] == job["id"] and len(sent) == 1
     assert f"deploy job {job['id']} of {'a' * 12}" in sent[0] and "memory pressure level 2" in sent[0]
     assert deploy.watch_wait(now + 3600, alert=sent.append) is None and len(sent) == 1
+    assert _cuts("deploy_wait_alert") == [(contention.DEPLOY_ALERT_S, 1)]
     _set(job, state=wq.DONE)
     _deploy(now - contention.DEPLOY_ALERT_S - 1, sha="e" * 40)
     assert deploy.watch_wait(now, alert=sent.append) is not None and len(sent) == 2, "the next wait alerts again"

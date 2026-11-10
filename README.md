@@ -2995,7 +2995,12 @@ GPU job runs makes the watchdog pause it at its next case; the queue puts it
 back to pending and it resumes from its checkpoint when the lanes are idle
 again. `soh gate` shows the gate and its signals; `soh hold gpu "<who, why>"
 [--until HH:MM]` keeps GPU work off the machine (and pauses a running job)
-until `soh hold release gpu`. `--night` is accepted and ignored. Jobs are rows in the
+until `soh hold release gpu`. A deploy waits on memory pressure only for the
+`deploy_pressure_wait` knob, counted from the first deploy it superseded, then
+starts at warn while the lanes are idle and nothing is held (#1672); one that
+has waited `deploy_wait_alert` for anything but a deploy pause or a sweep
+alerts once through `scripts/monit-alert.sh`, and `soh jobs list` and
+`soh morning` say why a pending deploy waits. `--night` is accepted and ignored. Jobs are rows in the
 store's `jobs` table, so they survive a restart, and output goes to
 `~/localharness/logs/jobs/<id>.log`. A failed job is recorded and the next
 starts. A job whose eval paused with its cases checkpointed is recorded

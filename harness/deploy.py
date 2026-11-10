@@ -166,7 +166,7 @@ def wait_line(w: dict) -> str:
 
 def watch_wait(now: float | None = None, alert=None) -> dict | None:
     """One alert per wait once a pending deploy has waited contention.DEPLOY_ALERT_S, naming why; not for a pause or sweep. #1672."""
-    from harness import contention
+    from harness import contention, cuts
     now = time.time() if now is None else now
     try:
         said = _wait_alerted().read_text(encoding="utf-8").strip()
@@ -181,6 +181,7 @@ def watch_wait(now: float | None = None, alert=None) -> dict | None:
     if w is None or not w["why"] or w["held"]:
         return None
     _wait_alerted().write_text(str(w["first"]), encoding="utf-8")
+    cuts.cut("deploy_wait_alert", "pending deploy alerted as stuck", dropped=1)
     (alert or _alert_script)(wait_line(w))
     return w
 

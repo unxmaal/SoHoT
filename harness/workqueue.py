@@ -953,12 +953,10 @@ def settle_deploys() -> list:
 
 def watch_deploys(now: float | None = None) -> dict | None:
     """deploy.watch_wait, logged rather than raised: a pending deploy waiting too long alerts once. #1672."""
-    import sqlite3
-
     from harness import deploy
     try:
         got = deploy.watch_wait(now)
-    except (OSError, ValueError, RuntimeError, sqlite3.Error) as exc:
+    except Exception as exc:  # noqa: BLE001 - a check of the wait must not stop the worker, on any store
         print(f"{time.strftime('%H:%M:%S')} deploy wait check failed: {exc}", flush=True)
         return None
     if got is not None:

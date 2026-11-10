@@ -74,6 +74,7 @@ def verdict(conn, now: float | None = None, sample=None, since: float | None = N
         return {**got, "why": "the served lanes could not be read: no store"}
     level = "normal" if p.level is not None else "unknown"
     if waived:
+        cuts.cut("deploy_pressure_wait", "deploy starts at memory pressure past normal", dropped=1, conn=conn)
         level = (f"level {p.level}, but the deploy has waited past its {DEPLOY_PRESSURE_S:.0f} s bound on it "
                  f"(queued {time.strftime('%H:%M', time.localtime(since))})")
     return {**got, "open": True, "why": f"memory pressure {level}, served lanes idle {IDLE_S:.0f} s, no hold"}

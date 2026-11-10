@@ -561,7 +561,7 @@ def deploy_wait(conn, now: float) -> dict | None:
     from harness import deploy
     try:
         return deploy.wait(conn, now)
-    except (sqlite3.Error, RuntimeError, OSError) as exc:
+    except Exception as exc:  # noqa: BLE001 - the report says it could not tell rather than failing
         return {"job": "?", "sha": "", "since": now, "first": None, "waited": 0.0, "why": f"not read: {exc}"[:300]}
 
 
