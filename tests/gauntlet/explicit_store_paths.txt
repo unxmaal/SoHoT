@@ -1,5 +1,6 @@
 # memory_store.connect(<path>) in a test outside a sqlite_store test runs SQLite under check-postgres (#1631): key, then why. #1631 = still to move.
 tests/test_adopt_scope.py::_legacy_store helper of sqlite_store tests: an old-schema store
+tests/test_adopt_store_given_1673.py::other the subject is a store handed in that is not this home's; on this home's store conn=None reads the same rows (#1673)
 tests/test_canary_stt_1531.py::_child.run stands in for the canary child, whose isolated home is a SQLite file (canary.child_env)
 tests/test_ds4.py::test_the_store_given_is_the_one_whose_fetched_file_is_spelled the subject is a store handed in that is not this home's; on this home's store conn=None reads the same rows (#1666)
 tests/test_harness_feeds.py::test_reading_a_source_stamps_the_store_it_was_given the subject is a store handed in that is not this home's (#188)
