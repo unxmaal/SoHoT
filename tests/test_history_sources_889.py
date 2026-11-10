@@ -150,6 +150,7 @@ def test_extras_reach_uv_sync_and_key_their_own_environment(tmp_path, monkeypatc
         return Done()
 
     monkeypatch.setattr(repo.subprocess, "run", fake)
+    monkeypatch.setattr(repo, "interpreter", lambda task, uv, env: "/host/python")
     venv = repo.prepare(task, ("dev", "aaa"))
     assert venv.name == repo.env_digest(task, ("dev",  "aaa"))
     assert seen[0][-4:] == ["--extra", "aaa", "--extra", "dev"]
