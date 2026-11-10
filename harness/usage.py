@@ -230,15 +230,25 @@ def _specs(conn) -> dict:
     return {gateway.LANE_ALIAS.format(lane): spec for lane, spec in got.items()}
 
 
+def _insert_one(conn, r: dict):
+    sql = (f"INSERT INTO gateway_requests ({', '.join(COLUMNS)}) VALUES "
+           f"({', '.join(':' + c for c in COLUMNS)})")
+    return conn.execute(sql, {**{c: r.get(c) for c in COLUMNS},
+                              "purpose": r.get("purpose") or purpose.UNKNOWN,
+                              "call_id": r.get("call_id") or ""})
+
+
+def append(conn, r: dict) -> None:
+    """One row and nothing else: no sample, no trim. #1717."""
+    _insert_one(conn, r)
+    conn.commit()
+
+
 def insert(conn, rows: list[tuple[dict, dict | None]]) -> None:
     """Write a batch; with text on, its samples too, keeping the newest SAMPLE_ROWS."""
     keep = text_enabled(conn)
-    sql = (f"INSERT INTO gateway_requests ({', '.join(COLUMNS)}) VALUES "
-           f"({', '.join(':' + c for c in COLUMNS)})")
     for r, s in rows:
-        cur = conn.execute(sql, {**{c: r.get(c) for c in COLUMNS},
-                                 "purpose": r.get("purpose") or purpose.UNKNOWN,
-                                 "call_id": r.get("call_id") or ""})
+        cur = _insert_one(conn, r)
         if keep and s:
             conn.execute("INSERT INTO gateway_samples (request_id, prompt, completion) "
                          "VALUES (?, ?, ?)", (cur.lastrowid, s.get("prompt", ""),

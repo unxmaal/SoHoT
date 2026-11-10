@@ -250,7 +250,9 @@ def ask_file(raw, question: str, *, lane: str = "code", roots=None, cwd: Path | 
     f, replies, base = files[0], [], complete or delegate.complete
 
     def call(lane_: str, prompt_: str, **kw) -> dict:
-        got = base(lane_, prompt_, tag=delegate.tag_of(delegated), **kw)
+        from harness import delegations
+        with delegations.on_behalf(delegated):
+            got = base(lane_, prompt_, tag=delegate.tag_of(delegated), **kw)
         replies.append(got)
         return got
     got = answer(f.text, question, name=f.path, lane=lane, complete=call, max_tokens=max_tokens, model=model)

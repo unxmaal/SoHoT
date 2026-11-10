@@ -391,8 +391,10 @@ def ask(raws, question: str, lane: str = "extract", roots: list[Root] | None = N
     replies: list[dict] = []
 
     def call(prompt: str) -> str:
-        got = complete(lane, prompt, system=system or SYSTEM, max_tokens=max_tokens, thinking=thinking,
-                       tag=delegate.tag_of(delegated))
+        from harness import delegations
+        with delegations.on_behalf(delegated):
+            got = complete(lane, prompt, system=system or SYSTEM, max_tokens=max_tokens, thinking=thinking,
+                           tag=delegate.tag_of(delegated))
         replies.append(got)
         if (got.get("completion_tokens") or 0) >= max_tokens:
             cuts.cut("harness/ask.py:REPLY_TOKENS", "a digest reply reached its token budget", value=max_tokens,

@@ -1,6 +1,7 @@
 """Each delegated subtask and what became of its answer: reported, inferred from the caller's transcript, or expired. #829, #1158."""
 from __future__ import annotations
 
+import contextvars
 import hashlib
 import json
 import math
@@ -9,6 +10,7 @@ import statistics
 import sys
 import time
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 
 #: What a caller reports with `delegated`.
@@ -60,26 +62,100 @@ def record(conn, call_id: str, lane: str, spec: str = "", model: str = "",
     return call_id
 
 
+_BEHALF = contextvars.ContextVar("delegation_behalf", default=False)
+#: Why the live store was not written, once printed: one stderr line a process. #1717.
+_SKIPPED: set = set()
+
+
+@contextmanager
+def on_behalf(yes: bool = True):
+    """Requests made meanwhile are a delegation's: their rows go where its delegations row goes. #1717."""
+    token = _BEHALF.set(bool(yes) or _BEHALF.get())
+    try:
+        yield
+    finally:
+        _BEHALF.reset(token)
+
+
+def behalf() -> bool:
+    return _BEHALF.get()
+
+
+@contextmanager
+def ledger():
+    """Where a delegation's rows go, or None: usage.target(), else from another checkout the live store as it stands. #1717."""
+    from harness import paths, usage
+    from harness import memory_store as ms
+    path = usage.target()
+    if path is not None:
+        conn = ms.connect(path)
+    elif paths.evaluating():
+        conn = None
+    else:
+        conn = _live_as_is(ms.db_path())
+    try:
+        yield conn
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+def _skip(why: str):
+    if why not in _SKIPPED:
+        _SKIPPED.add(why)
+        print(f"delegations: not recorded in the live store ({why})", file=sys.stderr)
+    return None
+
+
+def _live_as_is(path: Path):
+    """The live store opened to append, never to migrate: no DDL, and only at this code's schema. #1717."""
+    from harness import store
+    from harness.memory_store import connection as mc
+    from harness.memory_store.schema import SCHEMA_VERSION
+    named = store.marker().get("backend") or store.SQLITE
+    if store.backend() != named:
+        return _skip(f"this process talks {store.backend()}; the live store is {named}")
+    if not store.exists(path):
+        return _skip(f"no store at {path}")
+    conn = store.open_as_is(path)
+    try:
+        have = mc._stored_schema(conn)
+    except BaseException:
+        conn.close()
+        raise
+    if have != SCHEMA_VERSION:
+        conn.close()
+        return _skip(f"it is at schema {have}, this checkout speaks {SCHEMA_VERSION}")
+    return conn
+
+
 def note(got: dict, call_id: str, gateway: bool = False) -> dict:
     """Record a delegate.complete/decide result as delegation `call_id`; a store failure never fails the call."""
     try:
-        from harness import usage
-        from harness import memory_store as ms
-        path = usage.target()
-        if path is None:
-            return {**got, "call_id": call_id}
-        conn = ms.connect(path)
-        try:
-            record(conn, call_id, got["lane"], spec=got.get("spec", ""),
-                   model=got.get("model", ""), seconds=got.get("seconds"),
-                   prompt_tokens=got.get("prompt_tokens"),
-                   completion_tokens=got.get("completion_tokens"),
-                   id_source=GATEWAY if gateway else LOCAL)
-        finally:
-            conn.close()
+        with ledger() as conn:
+            if conn is not None:
+                record(conn, call_id, got["lane"], spec=got.get("spec", ""),
+                       model=got.get("model", ""), seconds=got.get("seconds"),
+                       prompt_tokens=got.get("prompt_tokens"),
+                       completion_tokens=got.get("completion_tokens"),
+                       id_source=GATEWAY if gateway else LOCAL)
     except Exception as exc:  # noqa: BLE001
         print(f"delegations: not recorded ({exc})", file=sys.stderr)
     return {**got, "call_id": call_id}
+
+
+def request(row: dict) -> bool:
+    """Write a delegation's own gateway_requests row where its delegations row goes; never raising. #1717."""
+    try:
+        from harness import usage
+        with ledger() as conn:
+            if conn is None:
+                return False
+            usage.append(conn, row)
+        return True
+    except Exception as exc:  # noqa: BLE001
+        print(f"delegations: request row not recorded ({exc})", file=sys.stderr)
+        return False
 
 
 def outcome(conn, call_id: str, what: str, why: str = "", at: float | None = None) -> dict:
