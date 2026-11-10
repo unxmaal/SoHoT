@@ -312,3 +312,20 @@ def test_the_nightly_runs_the_litellm_suite_after_make_check():
     check = _linux_step(steps, lambda s: "make check" in s.get("run", ""))
     litellm = _linux_step(steps, lambda s: "make test-litellm" in s.get("run", ""))
     assert litellm > check and steps[litellm].get("timeout-minutes")
+
+
+def _cancels(value, event: str) -> bool:
+    if isinstance(value, bool):
+        return value
+    import re
+    m = re.fullmatch(r"\$\{\{\s*github\.event_name\s*(==|!=)\s*'(\w+)'\s*\}\}", str(value).strip())
+    assert m, f"cancel-in-progress {value!r} is not a form this test can evaluate"
+    return (event == m.group(2)) == (m.group(1) == "==")
+
+
+def test_a_push_to_main_is_never_cancelled_by_the_next_merge():
+    """Merges faster than check-macos cancelled every main run, so no main sha went green and deploys starved (#1702)."""
+    doc, _ = _ci()
+    value = doc["concurrency"]["cancel-in-progress"]
+    assert not _cancels(value, "push") and not _cancels(value, "schedule")
+    assert _cancels(value, "pull_request")
