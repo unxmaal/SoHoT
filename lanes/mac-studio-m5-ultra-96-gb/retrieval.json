@@ -46,8 +46,8 @@
     "about": "",
     "candidate": "bm25/okapi",
     "cases": 189,
-    "first_s": 0.022,
-    "median_s": 0.022,
+    "first_s": 0.025,
+    "median_s": 0.024,
     "metrics": {
      "retrieval_ndcg": 0.8803,
      "retrieval_recall": 0.7831
@@ -59,7 +59,7 @@
     "peak_gb": 0.01,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-02T07:32:12Z",
+    "run_at": "2026-11-10T04:09:05Z",
     "served_as": "",
     "source": "",
     "total": 189,
@@ -165,8 +165,8 @@
     {
      "about": "",
      "candidate": "bm25/okapi",
-     "first_s": 0.022,
-     "median_s": 0.022,
+     "first_s": 0.025,
+     "median_s": 0.024,
      "metrics": {
       "retrieval_ndcg": 0.8803,
       "retrieval_recall": 0.7831
@@ -177,7 +177,7 @@
      "passed": 148,
      "peak_gb": 0.01,
      "reference": false,
-     "run_at": "2026-11-02T07:32:12Z",
+     "run_at": "2026-11-10T04:09:05Z",
      "served_as": "",
      "source": "",
      "total": 189,
@@ -185,8 +185,8 @@
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-11-02T07:32:12Z",
-   "runs": 5
+   "run_at": "2026-11-10T04:09:05Z",
+   "runs": 6
   },
   {
    "cases": 14,
@@ -243,7 +243,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-09T08:03:21Z",
+ "generated_at": "2026-11-10T08:00:29Z",
  "knobs": [],
  "lane": {
   "cases": 594,
@@ -262,8 +262,8 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-11-02T07:32:12Z",
-  "median_s": 0.022,
+  "measured_at": "2026-11-10T04:09:05Z",
+  "median_s": 0.024,
   "metrics": {
    "retrieval_ndcg": 0.8803,
    "retrieval_recall": 0.7831
@@ -274,7 +274,7 @@
   "pass_rate": 0.783,
   "serves": "bm25",
   "serves_model": "bm25",
-  "stale": true
+  "stale": false
  },
  "since": 0
 }
