@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import time
+from collections import defaultdict
 from pathlib import Path
 
 from harness.commands.common import emit, note
@@ -106,8 +107,8 @@ def _p(p: float) -> str:
     return f"{p:.2g}" if p < 0.001 else f"{p:.3f}"
 
 
-def _mistakes(a, root: Path, since, until) -> int:
-    """`soh context --mistakes`: KB mistakes after a compaction and per context band, against messages. #1381."""
+def _kb_rows(a, kinds) -> tuple[str, list[dict] | None, int]:
+    """(source, rows of kinds, 0), or the error already reported and its exit code."""
     import os
     from harness import context_mistakes as cm
     source = a.kb or os.environ.get("SOH_MCM_URL", "")
@@ -115,14 +116,70 @@ def _mistakes(a, root: Path, since, until) -> int:
         why = "--mistakes needs --kb: the mcm-engine MCP URL or a file of its scroll_entries pages (or $SOH_MCM_URL)"
         note(why)
         emit(False, error=why)
-        return 2
+        return source, None, 2
     try:
-        rows = cm.load_rows(source)
+        return source, cm.load_rows(source, kinds), 0
     except (OSError, ValueError) as exc:
         why = f"cannot read the KB rows: {type(exc).__name__}"
         note(why)
         emit(False, error=why)
-        return 1
+        return source, None, 1
+
+
+def _day(at) -> str:
+    return time.strftime("%Y-%m-%d", time.gmtime(at)) if at is not None else "-"
+
+
+def _repeats(a, root: Path, since, until) -> int:
+    """`soh context --mistakes --repeats`: repeated KB mistakes and known-bad command rates, main vs sub. #1696."""
+    from harness import context_repeats as cx
+    source, rows, rc = _kb_rows(a, cx.KB_KINDS)
+    if rows is None:
+        return rc
+    got = cx.measure(root, rows, since=since, until=until)
+    s = got["summary"]
+    note("repeat: a negative/error row matching a class in context_repeats.PATTERNS that an earlier negative, "
+         "error or rule row already matched; dates are the KB updated stamp")
+    note(f"KB {got['kb_rows']}; in the window {s['rows']}, repeats {s['repeat_rows']}")
+    note(f"\n{'class':<30} {'neg rep/rows':>12} {'err rep/rows':>13} {'first':>14}")
+    for c in got["classes"]:
+        note(f"{c['class'][:30]:<30} {c['negative_repeats']:>5}/{c['negative']:<6} {c['error_repeats']:>6}/"
+             f"{c['error']:<6} {c['first'] or '-':>14}")
+    note(f"\nrepeats joined to their recording call {s['recorded']}; in the {got['lookback_s'] / 3600:g} h before it, "
+         f"no KB query {s['no_query']}, a topical query {s['topical_query']}, an earlier entry of the class "
+         f"returned {s['returned_before']}; the recording call's own result named one {s['returned_on_record']}")
+    for r in (r for r in got["repeats"] if r["kind"] == "negative"):
+        seen = ", ".join(r.get("returned") or ()) or "-"
+        where = (f"{r['recorded']} queries {r['queries']} topical {r['topical']} returned {seen}"
+                 if r.get("recorded") else "no recording call in the transcripts")
+        note(f"  NEGATIVE #{r['id']} {_day(r['at'])} {r['class']}: earlier {r['earlier']} {_day(r['earlier_at'])} "
+             f"(of {r['earlier_n']}); {where}")
+    note(f"\nBash calls {got['bash']}; per 1k Bash calls, main / sub; self copies = later uses in the same stream")
+    for p in got["rates"]:
+        m, sub = p["kinds"]["main"], p["kinds"]["sub"]
+        note(f"{p['pattern']}: main {m['calls']} ({m['per_1k']}) sub {sub['calls']} ({sub['per_1k']}); "
+             f"self copies main {m['self_copies']} sub {sub['self_copies']} in {sub['streams_2plus']} subagents")
+        if p.get("split"):
+            note(f"  around {p['lesson']} {_day(p['lesson_at'])}: " + "; ".join(
+                f"{k} {v['calls']}/{v['bash']:,} ({v['per_1k']})" for k, v in p["split"].items()))
+        weeks = defaultdict(dict)
+        for w in p["weeks"]:
+            weeks[w["week"]][w["kind"]] = w
+        for wk, kinds in weeks.items():
+            if any(v["calls"] for v in kinds.values()):
+                note(f"  {wk} " + " ".join(f"{k} {v['calls']}/{v['bash']:,} ({v['per_1k']})"
+                                         for k, v in sorted(kinds.items())))
+    emit(source="url" if source.startswith(("http://", "https://")) else "file", root=str(root), since=since,
+         until=until, **got)
+    return 0
+
+
+def _mistakes(a, root: Path, since, until) -> int:
+    """`soh context --mistakes`: KB mistakes after a compaction and per context band, against messages. #1381."""
+    from harness import context_mistakes as cm
+    source, rows, rc = _kb_rows(a, cm.MISTAKE_KINDS)
+    if rows is None:
+        return rc
     got = cm.measure(root, rows, since=since, until=until)
     note("messages: assistant API messages of interactive main transcripts; mistakes: KB negative and error rows "
          f"joined to their main-stream call within {cm.MATCH_S} s; control: add_knowledge and add_rule calls")
@@ -162,8 +219,13 @@ def cmd_context(a) -> int:
         return 2
     root = Path(a.root) if a.root else cr.default_root()
     source = getattr(a, "source", "transcripts")
+    if getattr(a, "repeats", False) and not mistakes:
+        why = "--repeats extends --mistakes: add --mistakes"
+        note(why)
+        emit(False, error=why)
+        return 2
     if mistakes:
-        return _mistakes(a, root, since, until)
+        return (_repeats if getattr(a, "repeats", False) else _mistakes)(a, root, since, until)
     if getattr(a, "carried", False):
         if a.by == "class" and source == "transcripts":
             return _by_class(a, root, since, until)

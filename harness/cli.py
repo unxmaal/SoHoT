@@ -678,6 +678,9 @@ def build_parser() -> argparse.ArgumentParser:
                      help="--by class: per KB search, hits shown and hits Claude referenced later (#1333)")
     ctx.add_argument("--mistakes", action="store_true",
                      help="KB mistakes after compaction and per context band vs messages, exact p-values (#1381)")
+    ctx.add_argument("--repeats", action="store_true",
+                     help="--mistakes: KB rows repeating a recorded class, known-bad Bash command rates per 1k "
+                          "calls main vs subagent by week, and what was searched first (#1696)")
     ctx.add_argument("--kb", default="",
                      help="--mistakes: mcm-engine MCP URL or a file of its scroll_entries pages (default $SOH_MCM_URL)")
     ctx.add_argument("--root", default="",

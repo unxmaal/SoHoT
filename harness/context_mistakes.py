@@ -19,7 +19,8 @@ MATCH_S = 120
 #: The tool each KB table is written by; the control class is KB writes that are not mistakes.
 MISTAKE_TOOLS = {"add_negative": "negative", "report_error": "error"}
 CONTROL_TOOLS = ("add_knowledge", "add_rule")
-_ROW = re.compile(r"^#(\d+) \[(negative|error)\]")
+MISTAKE_KINDS = ("negative", "error")
+_ROW = re.compile(r"^#(\d+) \[(negative|error|rule|knowledge)\]")
 _AT = re.compile(r"updated=(\d{4}-\d\d-\d\d[ T][\d:.]+(?:[+-]\d\d:?\d\d|Z)?)")
 PAGE = 100
 
@@ -46,8 +47,8 @@ def _epoch(text) -> float | None:
     return (dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)).timestamp()
 
 
-def parse_rows(text: str) -> list[dict]:
-    """KB rows {kind, id, at} from mcm-engine scroll_entries pages, raw or as {"result": ...} JSON lines."""
+def parse_rows(text: str, kinds=MISTAKE_KINDS) -> list[dict]:
+    """KB rows {kind, id, at, text} of kinds from mcm-engine scroll_entries pages, raw or as {"result": ...} lines."""
     lines: list[str] = []
     for line in text.splitlines():
         if line.startswith("{"):
@@ -59,18 +60,28 @@ def parse_rows(text: str) -> list[dict]:
                 lines.extend(got["result"].splitlines())
                 continue
         lines.append(line)
-    rows, cur = {}, None
+    rows, bodies, cur = {}, {}, None
     for line in lines:
         m = _ROW.match(line)
         if m:
-            cur = (m.group(2), int(m.group(1)))
+            cur = (m.group(2), int(m.group(1))) if m.group(2) in kinds else None
+            head = line[m.end():].strip()
             continue
-        a = _AT.search(line) if cur else None
-        if a:
-            at = _epoch(a.group(1))
-            if at is not None:
-                rows[cur] = {"kind": cur[0], "id": cur[1], "at": at}
+        if cur is None or line.startswith("--- page"):
+            continue
+        if cur in rows:
+            bodies[cur].append(line)
+            continue
+        a = _AT.search(line)
+        if not a:
+            continue
+        at = _epoch(a.group(1))
+        if at is None:
             cur = None
+            continue
+        rows[cur], bodies[cur] = {"kind": cur[0], "id": cur[1], "at": at}, [head]
+    for key, row in rows.items():
+        row["text"] = "\n".join(bodies[key])
     return sorted(rows.values(), key=lambda r: (r["at"], r["kind"], r["id"]))
 
 
@@ -95,14 +106,14 @@ def _result_text(raw: str) -> str:
     return ""
 
 
-def fetch_rows(url: str, post=_post) -> list[dict]:
-    """Page every negative and error row from an mcm-engine MCP URL with the read-only scroll_entries tool."""
+def fetch_rows(url: str, post=_post, kinds=MISTAKE_KINDS) -> list[dict]:
+    """Page every row of kinds from an mcm-engine MCP URL with the read-only scroll_entries tool."""
     session, _ = post(url, {"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {
         "protocolVersion": "2025-03-26", "capabilities": {}, "clientInfo": {"name": "soh-context", "version": "1"}}},
         None)
     post(url, {"jsonrpc": "2.0", "method": "notifications/initialized"}, session)
     text, n = [], 1
-    for kind in ("negative", "error"):
+    for kind in kinds:
         after = 0
         while True:
             n += 1
@@ -115,14 +126,14 @@ def fetch_rows(url: str, post=_post) -> list[dict]:
                 break
             text.append(page)
             after = max(ids)
-    return parse_rows("\n".join(text))
+    return parse_rows("\n".join(text), kinds)
 
 
-def load_rows(source: str) -> list[dict]:
-    """KB rows from an mcm-engine MCP URL or a saved file of scroll_entries pages."""
+def load_rows(source: str, kinds=MISTAKE_KINDS) -> list[dict]:
+    """KB rows of kinds from an mcm-engine MCP URL or a saved file of scroll_entries pages."""
     if source.startswith(("http://", "https://")):
-        return fetch_rows(source)
-    return parse_rows(Path(source).read_text(encoding="utf-8", errors="replace"))
+        return fetch_rows(source, kinds=kinds)
+    return parse_rows(Path(source).read_text(encoding="utf-8", errors="replace"), kinds)
 
 
 def _walk(session: str, kind: str, recs: list[dict], usage: dict, seen: set, msgs: list, calls: list) -> int:
@@ -162,7 +173,8 @@ def _walk(session: str, kind: str, recs: list[dict], usage: dict, seen: set, msg
     return compactions
 
 
-def join(rows: list[dict], calls: list[dict], slack: float = MATCH_S) -> tuple[list[dict], Counter]:
+def join(rows: list[dict], calls: list[dict], slack: float = MATCH_S,
+         streams=("main",)) -> tuple[list[dict], Counter]:
     """Each KB row joined to the unused call of its kind nearest in time within slack; the rest counted as left out."""
     by_kind = defaultdict(list)
     for c in calls:
@@ -176,7 +188,7 @@ def join(rows: list[dict], calls: list[dict], slack: float = MATCH_S) -> tuple[l
             continue
         c = min(near, key=lambda c: abs(c["at"] - r["at"]))
         used.add(id(c))
-        if c["kind"] != "main":
+        if c["kind"] not in streams:
             left[f"{r['kind']} {c['kind']}"] += 1
             continue
         joined.append({**c, "class": r["kind"], "id": r["id"], "row_at": r["at"]})

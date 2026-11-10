@@ -18,6 +18,8 @@ KNOBS = [
     _k("context_mistake_windows", ["harness/context_mistakes.py:WINDOWS"],
        [(10, 25, 50, 100), (5, 10, 20, 40), (25, 50, 100, 200)],
        note="messages after a compaction each window of `soh context --mistakes` spans (#1381)"),
+    _k("context_repeat_lookback_s", ["harness/context_repeats.py:LOOKBACK_S"], [3600, 12 * 3600, 24 * 3600],
+       note="seconds before a repeat's recording call in which its stream's KB queries and results count (#1696)"),
     _k("dora_thin", ["harness/dora.py:THIN"], [2, 3, 5],
        note="incidents or lead times under which a DORA figure is marked thin; one incident once read as a median (#5bb56d5a)"),
     _k("knob_backlog_literal_letters", ["harness/knob_backlog.py:LITERAL_LETTERS"], [4, 8, 16],
@@ -38,6 +40,8 @@ NEVER_CUTS = {
     "harness/context_mistakes.py:BANDS": "which band a message falls in; every message is in one band (#1381)",
     "harness/context_mistakes.py:MATCH_S": "which call a KB row joins; a row with none is counted and printed (#1381)",
     "harness/context_mistakes.py:WINDOWS": "which windows are tested; every message and event is counted (#1381)",
+    "harness/context_repeats.py:LOOKBACK_S": "which queries count toward a repeat; every repeat is still reported "
+                                             "(#1696)",
     "harness/dora.py:DEFAULT_DAYS": "the window a DORA report describes, printed with it; nothing in it is dropped (#1087)",
     "harness/dora.py:THIN": "marks a DORA figure thin; the figure is still computed and shown (#5bb56d5a)",
     "harness/publish.py:STALE_DAYS": "tags a published lane stale on the site; its numbers are still published (#1210)",
