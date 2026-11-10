@@ -635,6 +635,90 @@
    "until": ""
   },
   {
+   "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+   "decided_at": "2026-11-10T03:58:39Z",
+   "detail": "2 case(s) passed a screen",
+   "exam": {
+    "about": "4B params, 4bit, by mlx-community",
+    "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "cases": 80,
+    "first_s": 3.03,
+    "median_s": 3.106,
+    "metrics": {
+     "completion_tokens": 485.8333,
+     "patch_applied": 0.5,
+     "resolved": 0.0,
+     "test_s": 0.3755,
+     "tokens_per_s": 103.1667,
+     "wall_s": 5.9972
+    },
+    "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "not_run": "",
+    "pass_rate": 0.0,
+    "passed": 0,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-10-23T07:12:06Z",
+    "served_as": "",
+    "source": "https://huggingface.co/mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "total": 6,
+    "ttft_median_s": 0.851,
+    "ttft_p95_s": 4.599
+   },
+   "outcome": "screened",
+   "proposal": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+   "reason": "candidate",
+   "receipt_key": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+   "run_id": 803,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit,temperature=0",
+   "decided_at": "2026-11-10T03:58:39Z",
+   "detail": "2 case(s) passed a screen",
+   "exam": {
+    "about": "4B params, 4bit, by mlx-community",
+    "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "cases": 80,
+    "first_s": 3.03,
+    "median_s": 3.106,
+    "metrics": {
+     "completion_tokens": 485.8333,
+     "patch_applied": 0.5,
+     "resolved": 0.0,
+     "test_s": 0.3755,
+     "tokens_per_s": 103.1667,
+     "wall_s": 5.9972
+    },
+    "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "not_run": "",
+    "pass_rate": 0.0,
+    "passed": 0,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-10-23T07:12:06Z",
+    "served_as": "",
+    "source": "https://huggingface.co/mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "total": 6,
+    "ttft_median_s": 0.851,
+    "ttft_p95_s": 4.599
+   },
+   "outcome": "screened",
+   "proposal": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+   "reason": "candidate",
+   "receipt_key": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+   "run_id": 803,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "mlx-community/Qwen3-8B-4bit",
    "decided_at": "2026-10-22T01:54:19Z",
    "detail": "3 case(s) passed a screen",
@@ -703,51 +787,9 @@
    "status": "screened",
    "tier": "screen",
    "until": ""
-  },
-  {
-   "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
-   "decided_at": "",
-   "detail": "",
-   "exam": {
-    "about": "4B params, 4bit, by mlx-community",
-    "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
-    "cases": 80,
-    "first_s": 3.03,
-    "median_s": 3.106,
-    "metrics": {
-     "completion_tokens": 485.8333,
-     "patch_applied": 0.5,
-     "resolved": 0.0,
-     "test_s": 0.3755,
-     "tokens_per_s": 103.1667,
-     "wall_s": 5.9972
-    },
-    "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
-    "not_run": "",
-    "pass_rate": 0.0,
-    "passed": 0,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-10-23T07:12:06Z",
-    "served_as": "",
-    "source": "https://huggingface.co/mlx-community/Qwen3-4B-Instruct-2507-4bit",
-    "total": 6,
-    "ttft_median_s": 0.851,
-    "ttft_p95_s": 4.599
-   },
-   "outcome": "",
-   "proposal": "",
-   "reason": "",
-   "receipt_key": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "",
-   "until": ""
   }
  ],
- "cursor": 1794030982456362,
+ "cursor": 1794283119245898,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -2323,6 +2365,21 @@
    "reason": "candidate",
    "run_id": 695,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-10T03:58:39Z",
+   "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+   "chosen": null,
+   "detail": "2 case(s) passed a screen",
+   "how": "",
+   "id": 1794283119245898,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 803,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -3837,7 +3894,7 @@
    "runs": 3
   }
  ],
- "generated_at": "2026-11-09T08:03:21Z",
+ "generated_at": "2026-11-10T08:00:30Z",
  "knobs": [
   {
    "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
