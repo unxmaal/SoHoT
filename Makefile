@@ -6,9 +6,12 @@ IMAGE_TAG ?= 0.1.0
 NAMESPACE ?= lh
 
 # Entry points. `make check` is what CI would run and what to run before a commit.
-.PHONY: check test test-slow test-network test-postgres test-postgres-suite test-litellm coverage mutation diagram image secret-gh metrics lint smoke services clean
+.PHONY: check test precheck test-slow test-network test-postgres test-postgres-suite test-litellm coverage mutation diagram image secret-gh metrics lint smoke services clean
 
 check: lint test          ## static checks + unit tests (no services needed)
+
+precheck:                 ## only the registration ratchets, each failure with the line that fixes it (#1697)
+	uv run --group mcp python -m tests.gauntlet.precheck
 
 test:                     ## unit tests (fast; excludes the model-loading ones), across every core (#720)
 	SOHOT_CATCHES=1 uv run --group mcp pytest tests/ -q -n auto

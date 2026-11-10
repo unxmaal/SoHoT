@@ -190,7 +190,11 @@ def test_a_failed_run_whose_log_cannot_be_read_is_reported_not_read_as_clean(tmp
 @pytest.mark.gauntlet("a-closed-table-fronting-an-open-set", site="harness/inventory_weight.py:UNIT_OUTPUTS")
 def test_every_launchd_unit_declares_its_output():
     units = iw.services((paths.REPO / "scripts" / "launchd.sh").read_text(encoding="utf-8"))
-    assert len(units) >= 19 and set(units) == set(iw.UNIT_OUTPUTS)
+    from harness import scaffold
+    missing = [scaffold.unit_line(u, "<store table it writes>", "<its time column>", "", (u,))
+               for u in units if u not in iw.UNIT_OUTPUTS]
+    assert not missing, "add to harness/inventory_weight.py UNIT_OUTPUTS:\n" + "\n".join(missing)
+    assert len(units) >= 19 and set(units) == set(iw.UNIT_OUTPUTS), f"no such unit: {set(iw.UNIT_OUTPUTS) - set(units)}"
     for unit, (table, col, cond, words) in iw.UNIT_OUTPUTS.items():
         assert table or words, f"{unit}: names neither a table nor a word its readers would name"
     stray = iw.score_units([{"unit": "newcomer", "declared": False, "rows": None, "log": None, "readers": []}], 0, DAY)

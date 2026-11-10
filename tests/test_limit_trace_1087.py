@@ -261,9 +261,12 @@ def test_every_cut_names_a_registered_knob_or_a_gating_site_and_names_it_where_a
 
 
 def test_no_limit_leaves_no_trace_unless_the_untraced_inventory_lists_it():
+    from harness import scaffold
     new = sorted(set(limit_trace.untraced(REPO)) - set(_inventory()))
-    assert not new, ("record a cut with harness.cuts when these bind, or list them in tests/gauntlet/untraced/:\n  "
-                     + "\n  ".join(f"{limit_trace.file_of(s)}: {s}" for s in new))
+    names = limit_trace.limits(REPO) if new else {}
+    assert not new, ("record a cut with harness.cuts when these bind, or name why one only paces work in its "
+                     "area's NEVER_CUTS:\n  " + "\n  ".join(
+                         f"{s}:\n    " + "\n    ".join(scaffold.trace_fix(s, names.get(s, ""))) for s in new))
 
 
 def test_the_untraced_inventory_only_shrinks():

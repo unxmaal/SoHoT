@@ -133,7 +133,10 @@ def _calls_eval_home(rel):
 
 def test_every_eval_or_probe_entry_runs_from_a_scratch_home_or_says_why_not():
     unhomed = scanners.scan_tree(REPO, scanners.unhomed_evals, scanners.is_python)
-    assert not unhomed, "an eval or probe on the default home writes rows that pass for real work:\n" + "\n".join(unhomed)
+    keys = [u.split("'")[1] for u in unhomed]
+    assert not unhomed, ("an eval or probe on the default home writes rows that pass for real work:\n" + "\n".join(unhomed)
+                         + "\nor waive one in tests/gauntlet/scanners.py EVAL_WAIVED:\n" + "\n".join(
+                             f'    "{k}": "<why its rows never pass for real work>",' for k in keys))
     found = set(scanners.scan_tree(REPO, lambda t, r: [k for _, k in scanners.eval_entry_points(t, r)],
                                    scanners.is_python))
     registered = set(scanners.EVAL_HOMED) | set(scanners.EVAL_WAIVED)

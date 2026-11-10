@@ -245,7 +245,8 @@ def test_every_test_file_that_imports_a_mutated_module_is_selected_or_left_out_o
     found = {m: mutation.unplaced(m) for m in mutation.MODULES}
     assert not any(found.values()), (
         "add each to tests/gauntlet/mutation.py MODULES (then re-pin) or LEFT_OUT: "
-        + "; ".join(f"{m}: {', '.join(f)}" for m, f in found.items() if f))
+        + "; ".join(f"{m}: {', '.join(f)}" for m, f in found.items() if f) + "\n"
+        + "\n".join(f'LEFT_OUT["{m}"] gains: "{name}",' for m, f in found.items() for name in f))
     for module, left in mutation.LEFT_OUT.items():
         for name in left:
             assert mutation.imports((REPO / "tests" / name).read_text(encoding="utf-8"), module), (module, name)

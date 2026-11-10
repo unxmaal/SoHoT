@@ -3411,10 +3411,15 @@ container is gone) and, in the night hour `monitor.STORE_BACKUP_HOUR`,
 
 ```bash
 make check     # shellcheck + bash -n + unit tests, no services needed
+make precheck  # only the registration ratchets, each failure with the line that fixes it
 make test      # unit tests only
 make smoke     # end-to-end, REQUIRES the services running
 make mutation  # nightly mutation testing of the core modules, minutes per module
 ```
+
+New code registers itself through `soh scaffold module|knob|not-gating|timeout|unit`, which writes
+the module, constant or launchd unit together with its capability entry, knob or NOT_GATING
+line, schedule and UNIT_OUTPUTS entry; run `make precheck` before `make check`.
 
 CI runs `make check` on an Apple Silicon runner for every push and pull
 request. Linux and Windows run nightly on main (06:00 UTC), from the Actions
