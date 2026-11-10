@@ -373,6 +373,16 @@ def _serving(where: serving.Route, lane: str, max_tokens: int, timeout: float | 
         base, _ = upstream(where)
     except Exception:  # noqa: BLE001
         base = ""
+    node = interactive.node_of(where) if serves else ""
+    if node:
+        # Interactive work on a node never waits: its lease makes the node's batch yield between cases. #1689.
+        lease = serve_lease.Lease(lane, f"a {lane} delegation", node=node)
+        lease.serving()
+        try:
+            yield {"timeout": _allowance(where, max_tokens, timeout), "waited": 0.0, "beside": ""}
+        finally:
+            lease.idle()
+        return
     # A server on another host is not this machine's to preempt; the interactive server's models are never evicted.
     if not serves or (base and not serving.loopback(base)) or interactive.upstream(where):
         yield {"timeout": _allowance(where, max_tokens, timeout), "waited": 0.0, "beside": ""}

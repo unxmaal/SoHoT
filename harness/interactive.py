@@ -305,6 +305,14 @@ def route(lane: str, get=None, config=None) -> tuple[str, serving.Route] | None:
                                serving.template_options(opts, spec))
 
 
+def node_of(where, config=None) -> str:
+    """The node the gateway sends `where` to first, "" for this machine. #1689."""
+    from harness import completion, nodes
+    if where is None or serving.bare(where.base) != completion.gateway_url():
+        return ""
+    return str((_served(config).get(where.model) or {}).get(nodes.NODE_KEY) or "")
+
+
 def upstream(where, config=None) -> tuple[str, str] | None:
     """(base, stem) when `where` is a pinned model here or a node's lane (this machine's copy, else the node's)."""
     if where is None:

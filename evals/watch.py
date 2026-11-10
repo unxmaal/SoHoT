@@ -146,7 +146,8 @@ class Watch:
         if self.yielder is None:
             return False
         from harness import serve_lease
-        who = serve_lease.held()
+        node = getattr(self.yielder, "node", "")
+        who = serve_lease.held(node=node)
         if not who:
             return False
         start, mark = clock(), time.perf_counter()
@@ -155,7 +156,7 @@ class Watch:
         print(f"yielding to {who} between cases", flush=True)
         self._changed()
         try:
-            while serve_lease.held() and not self._requested():
+            while serve_lease.held(node=node) and not self._requested():
                 sleep(serve_lease.POLL_S)
         finally:
             span = max(0.0, clock() - start)

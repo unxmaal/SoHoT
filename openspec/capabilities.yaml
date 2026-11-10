@@ -170,6 +170,7 @@ capabilities:
       - harness/serving.py
       - harness/engines.py
       - harness/nodes.py
+      - harness/node_state.py
       - harness/router.py
       - harness/interactive.py
       - harness/commands/interactive.py

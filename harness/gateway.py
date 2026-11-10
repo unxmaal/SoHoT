@@ -158,8 +158,14 @@ def served(config=None, defaults=None, nodes=None) -> dict:
 
 def _capped(entry: dict, data=None) -> dict:
     """An mlx_lm.server deployment queues past its sized cap in LiteLLM; a declared cap is a ceiling. #542, #705."""
-    from harness import serving
+    from harness import node_state, nodes, serving
     params = dict(entry.get("litellm_params") or {})
+    if entry.get(nodes.NODE_KEY):
+        # A node's cap is what the node reports, never this machine's sizing; an MLX node that has not said gets 1. #754.
+        cap = node_state.cap(str(entry[nodes.NODE_KEY]), strip_provider(str(params.get("model", ""))))
+        if cap is None and entry.get(serving.ENGINE_KEY) == serving.DEFAULT:
+            cap = 1
+        return {**entry, "litellm_params": {**params, "max_parallel_requests": cap}} if cap else entry
     if serving.engine_at(str(params.get("api_base", "")), data=data or {}) != serving.DEFAULT:
         return entry
     cap = serving.mlx_parallel(strip_provider(str(params.get("model", ""))))

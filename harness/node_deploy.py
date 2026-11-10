@@ -29,13 +29,14 @@ WARM_POLL_S = 5.0
 LOG = "deploy-nodes.log"
 _SHA = re.compile(r"^[0-9a-f]{40}$")
 
-#: Sent on stdin to `bash -s -- head DIR` or `install DIR SHA ROLE`, DIR "" for the node's own; a non-login PATH lacks uv.
+#: Sent on stdin to `bash -s -- head DIR`, `state DIR` or `install DIR SHA ROLE`, DIR "" for the node's own; a non-login PATH lacks uv.
 SCRIPT = r"""set -euo pipefail
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 dir="${2:-${LOCALHARNESS_HOME:-$HOME/localharness}/deploy}"
 case "$dir" in "~") dir="$HOME" ;; "~/"*) dir="$HOME/${dir#\~/}" ;; esac
 cd "$dir"
 if [ "$1" = head ]; then git rev-parse HEAD; exit 0; fi
+if [ "$1" = state ]; then exec uv run --no-sync python -m harness.node_state; fi
 git cat-file -e "$3^{commit}" 2>/dev/null || git fetch -q origin main
 git checkout -q --detach "$3"
 test "$(git rev-parse HEAD)" = "$3"

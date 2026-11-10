@@ -120,7 +120,7 @@ def test_a_finished_yield_is_kept_as_a_span_in_the_runs_progress(monkeypatch):
     from harness import serve_lease
     w = watch.Watch(yielder=type("Y", (), {"yielding": lambda s, who: None, "between": lambda s: None})())
     held = iter(["a decide delegation", "a decide delegation", ""])
-    monkeypatch.setattr(serve_lease, "held", lambda: next(held))
+    monkeypatch.setattr(serve_lease, "held", lambda node="": next(held))
     monkeypatch.setattr(watch, "sleep", lambda s: None)
     assert w._serve()
     spans = w.served()["spans"]

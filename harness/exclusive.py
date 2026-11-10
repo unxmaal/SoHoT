@@ -56,6 +56,10 @@ CLOUD = {"cloud-eval"}
 CLOUD_SLOTS = 2
 #: Set while a cloud slot is held, so a child eval does not take a second one.
 CLOUD_HELD_ENV = "LH_CLOUD_LOCK_HELD"
+#: Batch kinds whose every model a node serves: they hold the node's gpu lease, never this machine's. #778, #1689.
+NODE = {"node-eval"}
+#: Set to the node's name while its lease is held, so a child does not take it again and an eval yields to its serving.
+NODE_HELD_ENV = "LH_NODE_LOCK_HELD"
 #: Set while held, so a child that also asks (a helper running `lh ...`)
 #: does not deadlock against its own parent.
 HELD_ENV = "LH_GPU_LOCK_HELD"
@@ -378,6 +382,49 @@ def _lease(kind: str, announce, poll: float, wait: bool = True):
 
 
 @contextlib.contextmanager
+def _node(node: str, kind: str, announce, poll: float):
+    """The node's gpu lease, its job's own or one taken, waiting; this machine's lease and flock stay free. #778, #1689."""
+    from harness import item_lease, resources
+    from harness import workqueue as wq
+    if not node:
+        raise ValueError(f"{kind} names no node")
+    if os.environ.get(NODE_HELD_ENV) == node:
+        yield False
+        return
+    cls = resources.on(node)
+    try:
+        conn = _store()
+    except StoreDown as exc:
+        raise refuse(kind, exc) from exc
+    try:
+        key = wq._key(os.environ.get(wq.JOB_ENV, ""))
+        own = item_lease.of_job(conn, key) if key is not None else None
+        got = own if own and own["resource"] == cls and item_lease.beat(conn, own["id"], state=kind) else None
+        waited, said = False, None
+        while got is None:
+            got = item_lease.take(conn, cls, f"{kind} pid {os.getpid()}", state=kind, detail=kind)
+            if got is None:
+                waited = True
+                who = "; ".join(item_lease.line(h) for h in item_lease.live(conn, cls)) or f"a {cls} lease"
+                if announce and who.split(" for ")[0] != said:
+                    announce(f"waiting for {who} to finish")
+                    said = who.split(" for ")[0]
+                time.sleep(poll)
+        stop = None if got is own else _beating(got["id"])
+        os.environ[NODE_HELD_ENV] = node
+        try:
+            yield waited
+        finally:
+            os.environ.pop(NODE_HELD_ENV, None)
+            if stop is not None:
+                stop.set()
+                with contextlib.suppress(Exception):
+                    item_lease.release(conn, got["id"])
+    finally:
+        conn.close()
+
+
+@contextlib.contextmanager
 def gpu_now(kind: str):
     """Hold this machine's gpu lease only if it is free now, or this process's job holds it; yields whether held. #1619."""
     if os.environ.get(HELD_ENV) == "1":
@@ -566,7 +613,7 @@ def _leased(announce, poll: float):
 
 
 @contextlib.contextmanager
-def held(kind: str, announce=None, poll: float = POLL_SECONDS, deadline_s: float | None = None):
+def held(kind: str, announce=None, poll: float = POLL_SECONDS, deadline_s: float | None = None, node: str = ""):
     """Hold the machine for `kind`, waiting if someone else has it.
 
     `announce` is called with a sentence the first time this has to wait, and
@@ -575,6 +622,10 @@ def held(kind: str, announce=None, poll: float = POLL_SECONDS, deadline_s: float
     """
     if kind in CLOUD:
         with _cloud(kind, announce, poll, deadline_s) as waited:
+            yield waited
+        return
+    if kind in NODE:
+        with _named(), _node(node, kind, announce, poll) as waited:
             yield waited
         return
     if kind not in EXCLUSIVE | BATCH or os.environ.get(HELD_ENV) == "1":

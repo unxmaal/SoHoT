@@ -231,6 +231,8 @@ def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
         resources.check(resource)
     if not argv:
         raise ValueError("a job needs a command")
+    if resources.node_of(resource) and resources.classify(argv, kind) != resource:
+        raise ValueError(f"not queued: {resource} runs only an eval whose every candidate that node serves first")
     first = str(argv[0])
     if first.startswith("-"):
         raise ValueError(f"the command starts with {first!r}: an option this "
@@ -1178,6 +1180,11 @@ def _free(cls: str, live: dict) -> bool:
     if cls == DEPLOY or any(c == DEPLOY for c, _ in live.values()):
         return not live
     mine = sum(1 for c, _ in live.values() if c == cls)
+    if resources.node_of(cls):
+        # A run started by hand holds the node's lease too. #1689.
+        from harness import item_lease
+        with _store() as c:
+            mine = max(mine, len(item_lease.live(c, cls)))
     if cls == GPU:
         # A gpu lease taken outside the queue (with-gpu-lock, soh image) holds the class too. #1619.
         try:
@@ -1212,6 +1219,21 @@ def _admitted(job: dict) -> bool:
     return ok
 
 
+def _on_node(job: dict, cls: str) -> bool:
+    """Whether the node a job's class is on admits it now by its own report; a refused one waits, its note naming why. #1689."""
+    from evals import run
+    from harness import node_state
+    args = run.queued_args(job.get("argv") or [])
+    _, held = node_state.placed(run.split_candidates(getattr(args, "candidates", "") or "")) if args else ("", [])
+    ok, why = node_state.admits(resources.node_of(cls), held)
+    if not ok and job.get("note") != f"waits for its node: {why}":
+        with _store() as c:
+            c.execute("UPDATE jobs SET note = ? WHERE id = ? AND state = ?",
+                      (f"waits for its node: {why}", int(job["id"]), PENDING))
+            c.commit()
+    return ok
+
+
 def _affine(job: dict, rest: list[dict], blocked) -> dict:
     """The first gpu job at job's priority whose models are all resident, job itself first; else job. #1617."""
     from harness import admission
@@ -1240,6 +1262,11 @@ def _startable(live: dict, now: float) -> tuple[dict, str] | None:
         return held[0]
     for at, job in enumerate(jobs):
         cls = needs(job)
+        if resources.node_of(cls):
+            # A node's work loads nothing here, so this machine's contention and memory never hold it. #1689.
+            if _free(cls, live) and _on_node(job, cls):
+                return job, cls
+            continue
         if cls in (GPU, DEPLOY) and blocked(job):
             if cls == DEPLOY:
                 return None
