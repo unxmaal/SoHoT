@@ -186,7 +186,7 @@ def _node_props(base: str, model: str, key: str, get=None) -> dict:
 
 
 def node_served(name: str, entry: dict, engine: str, config=None, get=None) -> dict:
-    """The served part of a gateway entry a node serves: its host, its llama.cpp build and /props settings, the model sha256 nodes.yaml records. #1652."""
+    """The served part of a gateway entry a node serves: its host, llama.cpp build, /props settings and model sha256. #1652, #1683."""
     from harness import context, gateway, nodes, serving
     node_name = str(entry.get(nodes.NODE_KEY))
     host = str(entry.get(nodes.MACHINE_KEY) or "")
@@ -204,10 +204,10 @@ def node_served(name: str, entry: dict, engine: str, config=None, get=None) -> d
     build = context.build_of(props.get("build_info"))
     gen = props.get("default_generation_settings") or {}
     template = str(props.get("chat_template") or "")
-    sha = node.sha256(sent)
+    sha, why = nodes.digest(node, sent)
     unresolved = ([] if node.fingerprint else [f"machine: {nodes.unidentified(node)}"]) + (
         [] if build else [f"runtime: node {node_name} named no llama.cpp build in /props"]) + (
-        [] if sha else [f"model: {nodes.path().name} records no sha256 for {sent} on node {node_name}"])
+        [] if sha else [f"model: {why}"])
     if unresolved:
         return {**out, "unresolved": unresolved}
     return {**out, "runtime": {"llama.cpp": build}, "model": {sent: sha},

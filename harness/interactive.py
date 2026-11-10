@@ -560,11 +560,11 @@ def stale_gateway(plan: dict, config=None) -> bool:
 
 def preset(out: Path, plan: dict) -> Path:
     """Write the server's preset and a models dir holding only the pinned files; the dir."""
-    from harness import context, paths
+    from harness import context, nodes, paths
     out = Path(out)
     stems = {p["stem"]: p for p in (plan.get("lanes") or {}).values()}
-    rows = [{"stem": s, "ctx": p["ctx"], "slots": p["slots"], "why": f"pinned, {_gib(p['bytes'])} GiB"}
-            for s, p in stems.items()]
+    rows = nodes.tag_digests([{"stem": s, "path": p["path"], "ctx": p["ctx"], "slots": p["slots"],
+                               "why": f"pinned, {_gib(p['bytes'])} GiB"} for s, p in stems.items()])
     capped = sorted(s for s, p in stems.items() if int(p.get("want") or 0) > int(p["ctx"]))
     if capped:
         from harness import cuts

@@ -25,6 +25,12 @@ IPV4_KEY = "ipv4"
 FALLBACK_KEY = "fallback_for"
 #: The refusal for a down node's model with no local twin; smoke matches it. #823.
 NO_LOCAL_COPY = "this machine has no copy of"
+#: A node's preset tags each model with the sha256 of the file it serves, so its /v1/models names it. #1683.
+DIGEST_TAG = "sha256:"
+#: The Studio's record of what each node reported, in $LOCALHARNESS_HOME; nodes.yaml stays the owner's.
+RECORD = "node-digests.json"
+#: How long reading a node's /v1/models for its digests may take; its own timeout covers a cold reply.
+DIGEST_TIMEOUT_S = 10.0
 
 CONNECT_TIMEOUT_S = 3.0
 #: Covers a cold reload after --sleep-idle-seconds plus a long reply.
@@ -347,17 +353,19 @@ def _probe(node: Node, get) -> tuple[bool, set]:
     return status < 400, set(ids)
 
 
-def _get_models(url: str, node: Node) -> tuple[int, set]:
+def _get_models(url: str, node: Node, timeout: float | None = None) -> tuple[int, dict]:
+    """(HTTP status, {advertised id: its tags})."""
     import httpx
     key = secret(node)
     transport = httpx.HTTPTransport(local_address="0.0.0.0") if node.ipv4 else None
     with httpx.Client(transport=transport,
-                      timeout=httpx.Timeout(node.timeout, connect=node.connect_timeout)) as c:
+                      timeout=httpx.Timeout(timeout or node.timeout, connect=node.connect_timeout)) as c:
         r = c.get(url, headers={"Authorization": f"Bearer {key}"} if key else {})
     try:
-        ids = {str(m.get("id")) for m in r.json().get("data") or [] if isinstance(m, dict)}
-    except ValueError:
-        ids = set()
+        ids = {str(m.get("id")): tuple(m.get("tags") or ()) for m in r.json().get("data") or []
+               if isinstance(m, dict)}
+    except (ValueError, AttributeError):
+        ids = {}
     return r.status_code, ids
 
 
@@ -452,6 +460,131 @@ def builds(nodes: list[Node], here: str, get=None) -> list[tuple[bool, str]]:
     return out
 
 
+def lan_bound(environ=None) -> bool:
+    """Whether this machine's llama-server answers another machine, read from LLAMACPP_HOST at call time."""
+    from harness import serving
+    environ = os.environ if environ is None else environ
+    return (environ.get("LLAMACPP_HOST") or "127.0.0.1").strip().strip("[]") not in serving.LOOPBACK
+
+
+def _knows_tags(binary: str = "") -> bool:
+    import subprocess
+
+    from harness import serving
+    binary = binary or serving.llamacpp_binary() or ""
+    if not binary:
+        return False
+    try:
+        out = subprocess.run([binary, "--help"], capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return "--tags" in out.stdout + out.stderr
+
+
+def tag_digests(rows: list[dict], environ=None, knows=None) -> list[dict]:
+    """Preset rows with each served file's sha256 when a LAN node's llama-server can tag it, for /v1/models. #1683."""
+    if not rows or not lan_bound(environ) or not (knows or _knows_tags)():
+        return rows
+    from harness import identity
+    out = []
+    for row in rows:
+        try:
+            sha = identity.file_digest(row["path"]) if row.get("path") and row.get("ctx") else ""
+        except OSError:
+            sha = ""
+        out.append({**row, "sha256": sha} if sha else row)
+    return out
+
+
+def record_path() -> Path:
+    """The node-reported digests the Studio records itself, beside nodes.yaml and never in it. #1683."""
+    from harness import paths
+    return paths.home() / RECORD
+
+
+def _records() -> dict:
+    import json
+    try:
+        got = json.loads(record_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return got if isinstance(got, dict) else {}
+
+
+def recorded(node: Node, model: str) -> str:
+    """The sha256 this node last reported for a model, "" when it reported none or was another machine then."""
+    got = _records().get(node.name) or {}
+    if not isinstance(got, dict) or got.get("machine") != node.identity:
+        return ""
+    return str((got.get("models") or {}).get(node.node_id(model)) or "")
+
+
+def digest(node: Node, model: str) -> tuple[str, str]:
+    """(sha256, "") from nodes.yaml or what the node reported, else ("", why there is none or they disagree)."""
+    mine, got = node.sha256(model), recorded(node, model)
+    if mine and got and mine != got:
+        return "", (f"{path().name} records sha256 {mine} for {model} on node {node.name}, "
+                    f"but the node reports {got}")
+    if mine or got:
+        return mine or got, ""
+    return "", (f"{path().name} records no sha256 for {model} on node {node.name}, and the node has "
+                f"reported none to {record_path()}")
+
+
+def _record(node: Node, reported: dict) -> None:
+    import datetime
+    import json
+    got = _records()
+    got[node.name] = {"machine": node.identity, "models": reported,
+                      "at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")}
+    where = record_path()
+    where.parent.mkdir(parents=True, exist_ok=True)
+    tmp = where.with_name(where.name + ".tmp")
+    tmp.write_text(json.dumps(got, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    os.replace(tmp, where)
+
+
+def _reported(tags) -> str:
+    return next((t[len(DIGEST_TAG):].lower() for t in tags or () if isinstance(t, str) and t.startswith(DIGEST_TAG)
+                 and _SHA.match(t[len(DIGEST_TAG):].lower())), "")
+
+
+def digests(nodes: list[Node], get=None) -> list[tuple[str, str]]:
+    """(PASS|FAIL|WARN, line) per node model: the sha256 its /v1/models tags, recorded, and checked against nodes.yaml. #1683."""
+    get = get or (lambda url, node: _get_models(url, node, DIGEST_TIMEOUT_S))
+    out = []
+    for node in nodes:
+        try:
+            status, ids = get(f"{node.api_base}/models", node)
+        except Exception as exc:  # noqa: BLE001 - a node that does not answer has no digest to read
+            status, ids, why = 0, {}, f"no answer ({type(exc).__name__})"
+        else:
+            why = f"HTTP {status}" if status >= 400 else ""
+        if why:
+            out.append(("WARN", f"node {node.name} did not answer /v1/models ({why}): no sha256 read or "
+                                f"recorded for {', '.join(node.models)}"))
+            continue
+        tags = ids if isinstance(ids, dict) else dict.fromkeys(ids, ())
+        reported = {}
+        for model in node.models:
+            nid = node.node_id(model)
+            got, mine = _reported(tags.get(nid)), node.sha256(model)
+            if not got:
+                out.append(("WARN", f"node {node.name} reports no sha256 for {nid} (its release or preset tags "
+                                    f"none){'' if mine else '; its runs carry no model digest'}"))
+                continue
+            reported[nid] = got
+            if mine and mine != got:
+                out.append(("FAIL", f"node {node.name} {model}: {path().name} records sha256 {mine}, "
+                                    f"the node reports {got}"))
+            elif mine:
+                out.append(("PASS", f"node {node.name} {model}: sha256 {got} matches {path().name}"))
+            else:
+                out.append(("PASS", f"node {node.name} {model}: sha256 {got} reported, recorded in {record_path()}"))
+        _record(node, reported)
+    return out
+
+
 def digest_lines(models) -> list[str]:
     """`- {id: <stem>, sha256: <hex>}` per GGUF, the models entry that gives a node-served model an identity. #1652."""
     from harness import gguf, identity
@@ -469,7 +602,7 @@ def main(argv=None) -> int:
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("exports", help="shell exports of each node's Keychain key, for serve-gateway.sh")
     sub.add_parser("show", help="the nodes this machine routes to")
-    sub.add_parser("check", help="fail each node with no machine fingerprint")
+    sub.add_parser("check", help="fail each node with no machine fingerprint or a sha256 its node contradicts")
     sub.add_parser("fingerprint", help="this machine's fingerprint, for `machine:` where it serves as a node")
     d = sub.add_parser("digest", help="models lines with each GGUF's sha256, for nodes.yaml where it serves as a node")
     d.add_argument("models", nargs="+", help="a GGUF path, or a stem in this machine's models dir")
@@ -495,7 +628,10 @@ def main(argv=None) -> int:
         for n in nodes:
             if not unidentified(n):
                 print(f"PASS  node {n.name} is {n.identity}")
-        return 1 if bad else 0
+        shas = digests(nodes)
+        for status, line in shas:
+            print(f"{status}  {line}")
+        return 1 if bad or any(s == "FAIL" for s, _ in shas) else 0
     if args.cmd == "exports":
         print("\n".join(exports(nodes)))
         return 0
@@ -513,9 +649,12 @@ def main(argv=None) -> int:
     from harness import serving
     for same, line in builds(nodes, serving.llamacpp_build()):
         print(f"{'PASS' if same else 'WARN'}  {line}")
+    shas = digests(nodes)
+    for status, line in shas:
+        print(f"{status}  {line}")
     if not rows and not rested:
         print("SKIP  no serving nodes in " + str(path()))
-    return 0 if all(p for p, _ in rows) else 1
+    return 0 if all(p for p, _ in rows) and all(s != "FAIL" for s, _ in shas) else 1
 
 
 if __name__ == "__main__":

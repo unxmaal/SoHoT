@@ -665,9 +665,9 @@ install_units() {
     echo "refused:$refused -- harness.interactive check did not pass; see above" >&2
     blocked=1
   fi
-  # A node with no machine fingerprint files every run it serves under no machine. #781.
+  # A node with no machine fingerprint files every run it serves under no machine (#781); one whose sha256 nodes.yaml contradicts, a wrong digest (#1683).
   if ! (cd "$DEPLOY" && "$UV" run python -m harness.nodes check); then
-    echo "a serving node has no machine fingerprint; set machine: in nodes.yaml, see above" >&2
+    echo "a serving node has no machine fingerprint or a contradicted sha256 in nodes.yaml, see above" >&2
     blocked=1
   fi
   # The deploy is not done until the store it now serves passes the audit; an interactive node serves none. #492, #1562.

@@ -975,9 +975,12 @@ node serves is stored under no machine, so `make smoke`, `launchd.sh install` an
 `python -m harness.nodes check` fail that node and `evals.run` warns.
 A node-served model's content identity, which lets a measurement reuse its stored
 draws, is the node's fingerprint, its `/props` build and settings, and the GGUF
-sha256 its models entry records as `- {id: <gateway id>, sha256: <hex>}`
-(`python -m harness.nodes digest <stem>` on the node prints the line). Without the
-sha256 its draws are never reused. A run whose replies came from another host than
+sha256. A node whose server listens on the LAN tags each model in its preset with
+the sha256 of the file it serves, and `nodes check` and smoke read it from the
+node's `/v1/models` into `$LOCALHARNESS_HOME/node-digests.json`. A models entry
+`- {id: <gateway id>, sha256: <hex>}` (`python -m harness.nodes digest <stem>` on
+the node prints it) is checked against what the node reports, and a mismatch
+fails. Without a sha256 its draws are never reused. A run whose replies came from another host than
 its identity was read for, such as the `@local` copy answering for a down node, is
 stored with no digest.
 

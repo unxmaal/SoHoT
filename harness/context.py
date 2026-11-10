@@ -781,7 +781,8 @@ def preset_text(plans: list[dict], default_ctx: int, slots: int, cache_type: str
     lines = ["version = 1", "", "[*]", *args(default_ctx, slots), ""]
     for p in sorted(plans, key=lambda p: p["stem"]):
         if p["ctx"]:
-            lines += [f"; {p['why']}", f"[{p['stem']}]", *args(p["ctx"], p.get("slots", slots)), ""]
+            tag = [f"tags = sha256:{p['sha256']}"] if p.get("sha256") else []
+            lines += [f"; {p['why']}", f"[{p['stem']}]", *args(p["ctx"], p.get("slots", slots)), *tag, ""]
         else:
             lines += [f"; {p['stem']} {p['why']}", ""]
     return "\n".join(lines)
@@ -807,7 +808,8 @@ def main(argv=None) -> int:
         conn.close()
     for p in plans:
         print(f"context: {p['stem']}: {p['ctx'] or 'refused'} ({p['why']})", file=sys.stderr)
-    Path(argv[0]).write_text(preset_text(plans, default, slots, cache), encoding="utf-8")
+    from harness import nodes
+    Path(argv[0]).write_text(preset_text(nodes.tag_digests(plans), default, slots, cache), encoding="utf-8")
     models_max_path(argv[0]).write_text(f"{models_max}\n", encoding="utf-8")
     print(argv[0])
     return 0

@@ -123,6 +123,10 @@ NOT_GATING = {
        "answers, which the receipt records, never whether a request is answered (#684)"
        for n in ("CONNECT_TIMEOUT_S", "TIMEOUT_S", "COOLDOWN_S", "_to_node->params.update(max_retries)")},
     "harness/nodes.py:keychain->subprocess.run(timeout)": "how long the Keychain may take to hand over a key (#684)",
+    "harness/nodes.py:DIGEST_TIMEOUT_S": "how long a node's /v1/models may take to name its sha256; past it the "
+                                         "digest is reported unread, never guessed, and no request is cut (#1683)",
+    "harness/nodes.py:_knows_tags->subprocess.run(timeout)": "how long llama-server --help may take to say it "
+                                                             "takes --tags; past it the preset carries none (#1683)",
     "harness/machine.py:RETRY_S": "how soon a failed identity probe is asked again; never which machine answers (#747)",
     "harness/live_audit.py:FALLBACK_WINDOW_S": "how far back the audit lists node fallbacks; reported, never a check (#739)",
     "scripts/lan-probe.sh:LAN_PROBE_WAIT_EXTRA_S": "how long the deploy waits for a launchd probe to write; never a lane's outcome (#739)",
