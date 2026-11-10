@@ -470,6 +470,7 @@ capabilities:
     modules:
       - harness/deploy.py
       - harness/deploy_switch.py
+      - harness/node_deploy.py
       - harness/holders.py
       - harness/engine_smoke.py
       - harness/install_env.py

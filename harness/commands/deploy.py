@@ -6,7 +6,15 @@ import os
 from harness.commands.common import emit, err, note
 
 
-def _poll(force: bool, sha: str) -> int:
+def _nodes(retry: bool = False) -> dict:
+    from harness import node_deploy
+    got = node_deploy.follow(retry=retry)
+    for name, r in got["nodes"].items():
+        note(node_deploy.line(name, r))
+    return got
+
+
+def _poll(force: bool, sha: str, nodes: bool = False) -> int:
     from harness import deploy
     got = deploy.poll(sha=sha, force=force)
     job = got["queued"]
@@ -19,7 +27,8 @@ def _poll(force: bool, sha: str) -> int:
              f"{deploy.blocked() or 'nothing blocks it now'}")
     else:
         note(f"nothing queued: {got['why']}")
-    emit(**got)
+    # A node down at the deploy, or added since, follows at the next poll. #1692.
+    emit(**got, nodes=_nodes() if nodes else {})
     return 0
 
 
@@ -38,7 +47,13 @@ def cmd_deploy(a) -> int:
         emit(paused=False)
         return 0
     if a.action == "poll":
-        return _poll(False, "")
+        return _poll(False, "", nodes=True)
+    if a.action == "nodes":
+        got = _nodes(retry=True)
+        if got["why"] or not got["nodes"]:
+            note(f"no node deployed: {got['why'] or 'every node is at ' + got['sha'][:12]}")
+        emit(**got)
+        return 0
     if a.action == "now":
         return _poll(True, a.sha or "")
     if a.action == "migrate":
@@ -54,9 +69,11 @@ def cmd_deploy(a) -> int:
         if not a.sha:
             return err("soh deploy run needs the commit; the queue gives it")
         return deploy.run(a.sha, os.environ.get(wq.JOB_ENV) or None)
+    from harness import node_deploy
     conn = ms.connect()
     try:
         got = deploy.status(conn)
+        got["nodes"] = node_deploy.status(conn)
     finally:
         conn.close()
     note(f"serving {got['head'][:12] or 'unknown'} from {got['serving'] or 'no deploy checkout'}"
@@ -66,5 +83,7 @@ def cmd_deploy(a) -> int:
         note(f"  job {j['id']} {j['state']:9} {j['title']}" + (f": {j['note']}" if j["note"] else ""))
     for d in got["recent"]:
         note(f"  {deploy.line(d)}")
+    for name, r in got["nodes"].items():
+        note(f"  {node_deploy.line(name, r)}")
     emit(**got)
     return 0

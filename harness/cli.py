@@ -1051,8 +1051,9 @@ def build_parser() -> argparse.ArgumentParser:
     dep = sub.add_parser("deploy", help="deploys as queue jobs: each green main commit built alongside, switched, "
                          "verified or rolled back, behind the contention gate. #1506, #1509")
     dep.add_argument("action", nargs="?", default="status",
-                     choices=("status", "poll", "now", "pause", "resume", "run", "migrate"),
-                     help="now [SHA] queues origin/main (or SHA) at once; run and migrate are the job's own steps")
+                     choices=("status", "poll", "now", "pause", "resume", "run", "migrate", "nodes"),
+                     help="now [SHA] queues origin/main (or SHA) at once; nodes deploys each node behind this "
+                          "machine's sha, failed ones too; run and migrate are the job's own steps")
     dep.add_argument("sha", nargs="?", default="")
     dep.set_defaults(func=deploy_cmd.cmd_deploy)
     spc = sub.add_parser("specs", help="per capability in openspec/: scenarios, bound to a test, untested; "

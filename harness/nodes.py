@@ -44,6 +44,8 @@ COOL_ON = ("TimeoutErrorAllowedFails", "InternalServerErrorAllowedFails",
 _NAME = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 _SHA = re.compile(r"^[0-9a-f]{64}$")
 _KEY = re.compile(r"^(env:[A-Za-z_][A-Za-z0-9_]*|keychain:[^/\s]+/[^/\s]+)$")
+_SSH = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9._-]*(@[A-Za-z0-9_][A-Za-z0-9._-]*)?$")
+ROLES = ("interactive", "node")
 
 
 @dataclass(frozen=True)
@@ -67,6 +69,11 @@ class Node:
     lanes: tuple[str, ...] = ()
     #: (gateway id, sha256 of the GGUF the node serves it from), from a models entry's sha256:. #1652.
     digests: tuple[tuple[str, str], ...] = ()
+    #: `deploy:` in nodes.yaml: the ssh destination, key, checkout and LH_ROLE a Studio deploy installs it with. #1692.
+    ssh: str = ""
+    ssh_key: str = ""
+    deploy_dir: str = ""
+    role: str = ""
 
     def sha256(self, model: str) -> str:
         """The sha256 nodes.yaml records for a model, by its gateway id or the id the node is sent; "" for none."""
@@ -193,6 +200,7 @@ def parse(data: dict, where: str = FILE) -> list[Node]:
         if key and not _KEY.match(key):
             raise ValueError(f"{at}: key must be env:<VAR> or keychain:<service>/<account>, "
                              f"never the key itself")
+        ssh, ssh_key, deploy_dir, role = _deploy(raw.get("deploy"), lanes, at)
         out.append(Node(name, base if base.endswith("/v1") else base + "/v1", engine,
                         tuple(models), key,
                         str(raw.get("machine") or "").strip(),
@@ -200,8 +208,24 @@ def parse(data: dict, where: str = FILE) -> list[Node]:
                         _number(raw, "timeout", TIMEOUT_S, at),
                         _number(raw, "cooldown", COOLDOWN_S, at),
                         bool(raw.get("ipv4", True)), tuple(renamed), parked,
-                        tuple(dict.fromkeys(str(lane) for lane in lanes)), tuple(digests)))
+                        tuple(dict.fromkeys(str(lane) for lane in lanes)), tuple(digests),
+                        ssh, ssh_key, deploy_dir, role))
     return out
+
+
+def _deploy(raw, lanes: list, at: str) -> tuple[str, str, str, str]:
+    """(ssh, key, dir, role) from a node's `deploy:` mapping; ("", ...) when it has none, so no deploy reaches it. #1692."""
+    if raw is None:
+        return "", "", "", ""
+    if not isinstance(raw, dict):
+        raise ValueError(f"{at}: deploy must be a mapping of ssh, key, dir and role")
+    ssh = str(raw.get("ssh") or "").strip()
+    if not _SSH.match(ssh):
+        raise ValueError(f"{at}: deploy ssh {ssh!r} must be host or user@host (or a ~/.ssh/config Host)")
+    role = str(raw.get("role") or ("interactive" if lanes else "node")).strip()
+    if role not in ROLES:
+        raise ValueError(f"{at}: deploy role must be one of {', '.join(ROLES)}, not {role!r}")
+    return ssh, str(raw.get("key") or "").strip(), str(raw.get("dir") or "").strip(), role
 
 
 def _all(file=None) -> list[Node]:
