@@ -64,6 +64,10 @@ LOCAL=0
 case "$H" in 127.0.0.1|localhost) LOCAL=1 ;; esac
 if [ "$LOCAL" -eq 1 ]; then
   grep -q . <<<"$(curl -sf "$E/v1/models")" && ok "engine /v1/models" || no "engine /v1/models"
+  # This release sets drafters, MTP heads and shards aside itself (moves, restarts the router): an older deploy driver has no repair step (#1681).
+  REPAIR="${SMOKE_REPAIR:-uv run --quiet python -m harness.cli gguf-aux --apply}"
+  REPAIRED="$($REPAIR 2>&1)" || no "gguf-aux --apply before the phantom check:"
+  case "$REPAIRED" in ""|"moved 0 "*) ;; *) printf '%s\n' "$REPAIRED" | sed 's/^/note  /' ;; esac
   # The router lists its startup snapshot; an id with no file hangs whoever asks for it (#780).
   PHANTOMS="$(uv run python -m harness.router phantoms 2>&1)"
   case $? in
