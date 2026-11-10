@@ -58,6 +58,7 @@ from harness.commands import craft as craft_cmd
 from harness.commands import vision as vision_cmd
 from harness.commands import coherence as coherence_cmd
 from harness.commands import load_log as load_log_cmd
+from harness.commands import gguf_aux as gguf_aux_cmd
 from harness.commands import residency as residency_cmd
 from harness.commands import measure as measure_cmd
 from harness.commands import report as report_cmd
@@ -978,6 +979,11 @@ def build_parser() -> argparse.ArgumentParser:
     llg.add_argument("--idle", action="store_true", help="print each model's cold-load seconds and what each "
                      "idle unload limit would cost it in loads and idle hours; read-only. #1157")
     llg.set_defaults(func=load_log_cmd.cmd_load_log)
+    gax = sub.add_parser("gguf-aux", help="list the drafters, MTP heads, adapters and shards in the router's "
+                         "GGUF dir; --apply moves them to a quarantine dir beside it and restarts the router, "
+                         "never deletes. #1674")
+    gax.add_argument("--apply", action="store_true", help="move them aside and restart the router")
+    gax.set_defaults(func=gguf_aux_cmd.cmd_gguf_aux)
     rsim = sub.add_parser("residency-sim", help="replay the gateway's requests and the queue's jobs against LRU, "
                           "pinned+LRU, GreedyDual-Size and Belady at a memory budget; read-only. #1559")
     rsim.add_argument("--since", default="30d", help="window start: 30d, or a date")

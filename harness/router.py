@@ -67,6 +67,14 @@ def _cached(ref: str) -> bool:
     return any(quant.lower() in p.name.lower() for p in downloads.hub_dir(repo).rglob("*.gguf"))
 
 
+def _aux_note(stem: str) -> str:
+    """'; <file> is <what>; <repair verb> sets it aside' when the stem's file in the models dir is no model. #1674."""
+    from harness import gguf
+    path = gguf.models_dir() / f"{stem}.gguf"
+    why = gguf.auxiliary(path) if path.is_file() else ""
+    return f"; {path} is {why}, not a model: `{gguf.REPAIR}` sets it aside" if why else ""
+
+
 def phantoms(get=None) -> dict[str, str] | None:
     """Advertised id -> why no file backs it; None when the router cannot be asked. #780."""
     from pathlib import Path
@@ -88,7 +96,7 @@ def phantoms(get=None) -> dict[str, str] | None:
         else:
             why = f"{where}: no --model, a preset section with no file"
         if why:
-            out[str(m.get("id"))] = why
+            out[str(m.get("id"))] = why + _aux_note(str(m.get("id")))
     return out
 
 

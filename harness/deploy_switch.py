@@ -173,6 +173,16 @@ def _keep(rec: dict, stage: str, path) -> None:
         save(path, rec)
 
 
+def _repair(rec: dict, cwd: str, log, end: float) -> None:
+    """Set non-model GGUFs aside and restart the router before a smoke; a failure is logged, the smoke still judges. #1674."""
+    if not rec.get("repair"):
+        return
+    why = _step(rec, rec["repair"], cwd, VERIFY_TIMEOUT_S, log, "repair",
+                site_knob="harness/deploy_switch.py:VERIFY_TIMEOUT_S", end=end)
+    rec.setdefault("repaired", []).append(why or "done")
+    log.write(f"--- repair before smoke: {why or 'done'}\n")
+
+
 def forward(rec: dict, log, end: float, path=None) -> str:
     """Switch to the new release, reinstall its units, verify; '' when it all passed by `end` (monotonic)."""
     flip(Path(rec["link"]), Path(rec["release"]))
@@ -183,6 +193,7 @@ def forward(rec: dict, log, end: float, path=None) -> str:
     if why:
         return why
     _keep(rec, "installed", path)
+    _repair(rec, rec["release"], log, end)
     for argv in rec["verify"]:
         why = _step(rec, argv, rec["release"], VERIFY_TIMEOUT_S, log, " ".join(map(str, argv[-2:])),
                     site_knob="harness/deploy_switch.py:VERIFY_TIMEOUT_S", end=end)
@@ -214,6 +225,8 @@ def rollback(rec: dict, why: str, log, end: float, path=None) -> str:
     said.append(bad or "previous release reinstalled")
     _keep(rec, "rollback_installed", path)
     if not bad and rec["verify"]:
+        # The new release's verb: the previous one may predate it, and the files it moves stay moved. #1674.
+        _repair(rec, rec["release"], log, end)
         bad = _step(rec, rec["verify"][0], rec["previous"], VERIFY_TIMEOUT_S, log, "smoke after rollback",
                     site_knob="harness/deploy_switch.py:VERIFY_TIMEOUT_S", end=end)
         said.append(bad or "smoke passed after rollback")

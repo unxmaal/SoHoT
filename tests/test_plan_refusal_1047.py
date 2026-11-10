@@ -16,7 +16,8 @@ from tests.test_context import GIB, QWEN3_4B, write_gguf
 ROOT = Path(__file__).resolve().parent.parent
 STEM = "Qwen3.8-27B-DFlash2-Q2_K_S-MIX"
 #: A drafter's header: an architecture, and no context_length or attention keys under it.
-NO_SHAPE = {"general.architecture": "dflash", "general.name": STEM}
+# Not "dflash": a drafter architecture is refused before its shape is read (#1674).
+NO_SHAPE = {"general.architecture": "qwen9x", "general.name": STEM}
 # Verdict 12930's detail, as the 2026-10-19 day loop wrote it.
 DETAIL_12930 = (f"the screen exited 1 || llamacpp:{STEM} is not served: refused: the GGUF header gives no "
                 "trained context or KV shape to size a cache from")

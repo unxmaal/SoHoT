@@ -87,6 +87,7 @@ MODIFIERS = {
 }
 #: Flags whose mode writes, downloads, runs a model or reads the network by design, so it is not run here.
 NOT_RUN = {
+    "gguf-aux --apply": "moves GGUFs aside and restarts the router",
     "discover --sources": "probes each feed over the network",
     "adopt --from-measurement": "adopts the measured incumbent; its --dry-run is held in RUNS",
     "discover --external": "asks the registries", "discover --loop": "the discovery loop",

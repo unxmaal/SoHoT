@@ -68,7 +68,8 @@ if [ "$LOCAL" -eq 1 ]; then
   PHANTOMS="$(uv run python -m harness.router phantoms 2>&1)"
   case $? in
     0) ok "router advertises only models with a file" ;;
-    1) no "router advertises models with no file (restart the router):"; printf '%s\n' "$PHANTOMS" ;;
+    1) no "router advertises models with no file (restart the router; \`soh gguf-aux\` lists drafters, MTP heads and shards in its dir, --apply sets them aside):"
+       printf '%s\n' "$PHANTOMS" ;;
     *) printf 'SKIP  router phantoms: %s\n' "$PHANTOMS" ;;
   esac
   # The interactive server is up with every pinned lane model loaded, or pins nothing here (#1561).

@@ -2355,6 +2355,14 @@ download, since their runners load the repo:
   linked under, never to mlx_lm.server, which cannot load a GGUF or enforce
   the decide lane's schema. That holds when `evals.run` is given a `--gateway`
   too (it always is, by default), the same as for a `llamacpp:` spec.
+- **Auxiliary files** are refused by their GGUF header: a speculative drafter,
+  an MTP head (only the `nextn` block), a layer shard (no token embedding, or
+  fewer blocks than `block_count`), a split part or an adapter. A fetched one
+  is moved to `quarantine-<date>` beside the models dir and the candidate is
+  declined; an adopted one is not linked; the router preset gives one already
+  in the dir no section. `soh gguf-aux` lists them and `--apply` moves them
+  aside and restarts the router. Nothing is deleted. A queue deploy runs it
+  before every smoke, the rollback's included.
 - **Screen and measure** spell it `llamacpp:<file stem>`, and the run sends it
   straight to the eval server at `127.0.0.1:8082` (`scripts/serve-eval.sh`).
   LiteLLM would refuse a name it has no alias for. A measure pits it against
