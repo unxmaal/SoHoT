@@ -130,6 +130,41 @@
    "until": ""
   },
   {
+   "candidate": "bespokelabs/Bespoke-Nimble-9B",
+   "decided_at": "2026-10-22T01:40:38Z",
+   "detail": "2 case(s) passed a screen",
+   "exam": {
+    "about": "family Qwen/Qwen3.5-9B, 9B params, by bespokelabs",
+    "candidate": "bespokelabs/Bespoke-Nimble-9B",
+    "cases": 132,
+    "first_s": null,
+    "median_s": null,
+    "metrics": {},
+    "model": "bespokelabs/Bespoke-Nimble-9B",
+    "not_run": "harness_error",
+    "pass_rate": null,
+    "passed": null,
+    "peak_gb": null,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-10T04:17:22Z",
+    "served_as": "",
+    "source": "https://huggingface.co/bespokelabs/Bespoke-Nimble-9B",
+    "total": 132,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "screened",
+   "proposal": "bespokelabs/Bespoke-Nimble-9B",
+   "reason": "candidate",
+   "receipt_key": "bespokelabs/Bespoke-Nimble-9B",
+   "run_id": 532,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "nimble:bespokelabs/Bespoke-Nimble-9B",
    "decided_at": "2026-10-22T01:40:38Z",
    "detail": "2 case(s) passed a screen",
@@ -173,7 +208,32 @@
    "candidate": "nimble:bespokelabs/Bespoke-Nimble-9B-v2",
    "decided_at": "2026-10-22T01:40:59Z",
    "detail": "2 case(s) passed a screen",
-   "exam": null,
+   "exam": {
+    "about": "9B params",
+    "candidate": "nimble/Bespoke-Nimble-9B-v2",
+    "cases": 132,
+    "first_s": 10.695,
+    "median_s": 4.253,
+    "metrics": {
+     "calibrated": 1.0,
+     "decide_accuracy": 0.7423,
+     "decide_brier": 0.3174,
+     "decide_ece": 0.0516
+    },
+    "model": "nimble/Bespoke-Nimble-9B-v2",
+    "not_run": "",
+    "pass_rate": 0.371,
+    "passed": 49,
+    "peak_gb": 20.22,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-10T06:07:12Z",
+    "served_as": "",
+    "source": "",
+    "total": 132,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
    "outcome": "screened",
    "proposal": "bespokelabs/Bespoke-Nimble-9B-v2",
    "reason": "candidate",
@@ -221,8 +281,8 @@
   },
   {
    "candidate": "akhilaaa3/Jev-Omni",
-   "decided_at": "2026-11-09T02:01:27Z",
-   "detail": "not screened: needs 34.3 GB but only 21.3 GB is safely available (39.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 33.0 GB held by the interactive server's pinned models)",
+   "decided_at": "2026-11-10T03:57:24Z",
+   "detail": "not screened: needs 34.3 GB but only 26.8 GB is safely available (50.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 33.0 GB held by the interactive server's pinned models)",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
@@ -236,8 +296,8 @@
   },
   {
    "candidate": "akhilaaa3/Jev-Omni,temperature=0",
-   "decided_at": "2026-11-09T02:01:27Z",
-   "detail": "not screened: needs 34.3 GB but only 21.3 GB is safely available (39.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 33.0 GB held by the interactive server's pinned models)",
+   "decided_at": "2026-11-10T03:57:24Z",
+   "detail": "not screened: needs 34.3 GB but only 26.8 GB is safely available (50.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 33.0 GB held by the interactive server's pinned models)",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
@@ -321,7 +381,7 @@
   },
   {
    "candidate": "decider:StrandsAgents/strands-decider-2B-hobson-v21",
-   "decided_at": "2026-11-09T02:01:32Z",
+   "decided_at": "2026-11-10T03:57:28Z",
    "detail": "not screened: our snapshot lacks files its runner opens; refetch: check-squad2-56dddf4066d3e219004dad5f: exit 1: needs StrandsAgents/strands-decider-2B-hobson-v21, which is not in the hub cache; soh fetch --run: huggingface_hub.errors.IncompleteSnapshotError: The cached snapshot for 'StrandsAgents/strands-decider-2B-hobson-v21' (revision 'main', commit 2b52a6235c1",
    "exam": {
     "about": "2B params",
@@ -353,7 +413,7 @@
    "proposal": "StrandsAgents/strands-decider-2B-hobson-v21",
    "reason": "harness",
    "receipt_key": "decider/strands-decider-2B-hobson-v21",
-   "run_id": 756,
+   "run_id": 801,
    "serves": false,
    "status": "pending",
    "tier": "fetch",
@@ -408,7 +468,7 @@
    "exam": {
     "about": "4B params, Q8_0, by mindchain",
     "candidate": "imajev-4b-Q8_0",
-    "cases": 661,
+    "cases": 132,
     "first_s": null,
     "median_s": null,
     "metrics": {},
@@ -419,10 +479,10 @@
     "peak_gb": null,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-09T04:40:08Z",
+    "run_at": "2026-11-10T06:07:12Z",
     "served_as": "",
     "source": "https://huggingface.co/mindchain/imajev-4b-GGUF",
-    "total": 196,
+    "total": 132,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -675,7 +735,7 @@
    "until": ""
   }
  ],
- "cursor": 1794189687879520,
+ "cursor": 1794283044119562,
  "events": [
   {
    "at": "2026-09-22T13:14:31Z",
@@ -961,9 +1021,96 @@
    "reason": "memory",
    "run_id": null,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-10T03:57:24Z",
+   "candidate": "akhilaaa3/Jev-Omni",
+   "chosen": null,
+   "detail": "not screened: needs 34.3 GB but only 26.8 GB is safely available (50.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 33.0 GB held by the interactive server's pinned models)",
+   "how": "",
+   "id": 1794283044119562,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   }
  ],
  "exams": [
+  {
+   "cases": 132,
+   "differs": [],
+   "first_run_at": "2026-11-02T05:32:12Z",
+   "repeat": 1,
+   "rows": [
+    {
+     "about": "9B params",
+     "candidate": "nimble/Bespoke-Nimble-9B-v2",
+     "first_s": 10.695,
+     "median_s": 4.253,
+     "metrics": {
+      "calibrated": 1.0,
+      "decide_accuracy": 0.7423,
+      "decide_brier": 0.3174,
+      "decide_ece": 0.0516
+     },
+     "model": "nimble/Bespoke-Nimble-9B-v2",
+     "not_run": "",
+     "pass_rate": 0.371,
+     "passed": 49,
+     "peak_gb": 20.22,
+     "reference": false,
+     "run_at": "2026-11-10T06:07:12Z",
+     "served_as": "",
+     "source": "",
+     "total": 132,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "about": "4B params, Q8_0, by mindchain",
+     "candidate": "imajev-4b-Q8_0",
+     "first_s": null,
+     "median_s": null,
+     "metrics": {},
+     "model": "imajev-4b-Q8_0",
+     "not_run": "harness_error",
+     "pass_rate": null,
+     "passed": null,
+     "peak_gb": null,
+     "reference": false,
+     "run_at": "2026-11-10T06:07:12Z",
+     "served_as": "",
+     "source": "https://huggingface.co/mindchain/imajev-4b-GGUF",
+     "total": 132,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "about": "family Qwen/Qwen3.5-9B, 9B params, by bespokelabs",
+     "candidate": "bespokelabs/Bespoke-Nimble-9B",
+     "first_s": null,
+     "median_s": null,
+     "metrics": {},
+     "model": "bespokelabs/Bespoke-Nimble-9B",
+     "not_run": "harness_error",
+     "pass_rate": null,
+     "passed": null,
+     "peak_gb": null,
+     "reference": false,
+     "run_at": "2026-11-10T04:17:22Z",
+     "served_as": "",
+     "source": "https://huggingface.co/bespokelabs/Bespoke-Nimble-9B",
+     "total": 132,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    }
+   ],
+   "run_at": "2026-11-10T06:07:12Z",
+   "runs": 3
+  },
   {
    "cases": 661,
    "differs": [],
@@ -1042,42 +1189,6 @@
    ],
    "run_at": "2026-11-09T04:40:08Z",
    "runs": 2
-  },
-  {
-   "cases": 132,
-   "differs": [],
-   "first_run_at": "2026-11-02T05:32:12Z",
-   "repeat": 1,
-   "rows": [
-    {
-     "about": "4B params, Q8_0, by mindchain",
-     "candidate": "imajev-4b-Q8_0",
-     "first_s": 0.9,
-     "median_s": 0.522,
-     "metrics": {
-      "calibrated": 1.0,
-      "completion_tokens": 36.8182,
-      "decide_accuracy": 0.7901,
-      "decide_brier": 0.3188,
-      "decide_ece": 0.0781,
-      "tokens_per_s": 68.4045
-     },
-     "model": "imajev-4b-Q8_0",
-     "not_run": "",
-     "pass_rate": 0.409,
-     "passed": 54,
-     "peak_gb": 0.0,
-     "reference": false,
-     "run_at": "2026-11-02T05:32:12Z",
-     "served_as": "",
-     "source": "https://huggingface.co/mindchain/imajev-4b-GGUF",
-     "total": 132,
-     "ttft_median_s": null,
-     "ttft_p95_s": null
-    }
-   ],
-   "run_at": "2026-11-02T05:32:12Z",
-   "runs": 1
   },
   {
    "cases": 134,
@@ -1547,7 +1658,7 @@
    "runs": 4
   }
  ],
- "generated_at": "2026-11-09T08:03:20Z",
+ "generated_at": "2026-11-10T08:00:29Z",
  "knobs": [],
  "lane": {
   "cases": 661,
@@ -1566,7 +1677,7 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-11-09T04:40:08Z",
+  "measured_at": "2026-11-10T06:07:12Z",
   "median_s": null,
   "metrics": {},
   "not_run": "harness_error",
