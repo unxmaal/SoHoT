@@ -97,6 +97,9 @@ def show(L: dict) -> None:
     outcomes = ", ".join(f"{k} {v}" for k, v in sorted(dg["outcomes"].items())) or "none"
     note(f"delegated {dg['requests']:,} requests inside work, joined on call_id (outcomes: {outcomes})"
          + (f"; {dg['unjoined']['requests']} with no gateway row, not counted" if dg["unjoined"]["requests"] else ""))
+    if L.get("zero_delegation_days"):
+        note(f"FLAG      cloud work and zero delegations on {', '.join(L['zero_delegation_days'])}: "
+             "nothing went to local_complete, local_decide or `soh local`")
     for line in accepted_lines(L.get("accepted") or {}):
         note(line)
     note(f"displaced {local_tokens(L['displaced']['tokens'])} of tagged work served locally")

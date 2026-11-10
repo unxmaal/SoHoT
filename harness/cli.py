@@ -90,6 +90,7 @@ from harness.commands import canary as canary_cmd
 from harness.commands import review as review_cmd
 from harness.commands import claude_news as claude_news_cmd
 from harness.commands import delegated as delegated_cmd
+from harness.commands import local as local_cmd
 from harness.commands import volume as volume_cmd
 
 # What scripts, tests and other modules take from harness.cli, from where it now lives.
@@ -807,10 +808,12 @@ def build_parser() -> argparse.ArgumentParser:
     route_trial_cmd.add_parser(sub)
     ask_cmd.add_parser(sub)
     unverified_cmd.add_parser(sub)
-    dlg = sub.add_parser("delegated", help="record what became of a local_complete or "
-                         "local_decide answer, or --report the rates per lane")
+    local_cmd.add_parser(sub)
+    dlg = sub.add_parser("delegated", help="record what became of a local_complete, local_decide or "
+                         "`soh local` answer, or --report the rates per lane")
     dlg.add_argument("call_id", nargs="?", default="", help="the call_id the delegation returned")
     dlg.add_argument("outcome", nargs="?", default="", choices=("", "used", "edited", "discarded"))
+    dlg.add_argument("said", nargs="?", default="", metavar="why", help="the same as --why")
     dlg.add_argument("--why", default="", help="what was wrong with it, or why it was kept")
     dlg.add_argument("--report", action="store_true",
                      help="per lane: calls, recorded rate, used/edited/discarded rates, closed kinds, median seconds")
@@ -1215,7 +1218,7 @@ def _watchdog(a) -> int:
 #: The purpose a verb's gateway requests carry, unless an enclosing process already set one. #825.
 VERB_PURPOSE = {
     **dict.fromkeys(("image", "video", "svg", "web", "prompt", "code", "extract", "decide",
-                     "label-score", "label-select", "say", "hear"), "work"),
+                     "label-score", "label-select", "say", "hear", "local"), "work"),
     **dict.fromkeys(("discover", "fetch"), "discover"),
     **dict.fromkeys(("rubric", "throughput", "judge", "adopt", "verify", "reverify",
                      "sensitivity", "gauntlet", "chaos", "route-trial"), "eval"),

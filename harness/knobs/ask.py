@@ -14,6 +14,6 @@ KNOBS = [
        note="paths one digest may name (#1335)"),
     _k("ask_reply_tokens", ["harness/ask.py:REPLY_TOKENS"], [300, 600, 1200],
        note="reply budget of each digest call; the issue's digest is at most about 500 tokens (#1335)"),
-    _k("local_complete_reply_tokens", ["harness/mcp_server.py:_prompted(max_tokens)"], [512, 2048, 8192],
+    _k("local_complete_reply_tokens", ["harness/local_tools.py:_prompted(max_tokens)"], [512, 2048, 8192],
        note="reply budget of a local_complete prompt when the caller names none (#1335)"),
 ]
