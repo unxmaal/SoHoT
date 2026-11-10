@@ -10,6 +10,8 @@ def _poll(force: bool, sha: str) -> int:
     from harness import deploy
     got = deploy.poll(sha=sha, force=force)
     job = got["queued"]
+    if got["confirm"]:
+        note(got["confirm"])
     for s in got["superseded"]:
         note(f"cancelled deploy job {s}: superseded")
     if job:

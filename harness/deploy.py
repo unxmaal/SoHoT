@@ -192,9 +192,9 @@ def watch_wait(now: float | None = None, alert=None) -> dict | None:
     return w
 
 
-def _alert_script(message: str) -> None:
+def _alert_script(message: str, event: str = "waiting") -> None:
     """The alert through scripts/monit-alert.sh, as monit runs it. #1672."""
-    extra = {"MONIT_SERVICE": "deploy", "MONIT_EVENT": "waiting", "MONIT_DESCRIPTION": message}
+    extra = {"MONIT_SERVICE": "deploy", "MONIT_EVENT": event, "MONIT_DESCRIPTION": message}
     try:
         subprocess.run(Steps().alert, cwd=Path(__file__).resolve().parents[1], env={**os.environ, **extra},
                        capture_output=True, timeout=deploy_switch.ALERT_TIMEOUT_S)
@@ -256,9 +256,40 @@ def _retry(seen: list, now: float) -> str:
     return ""
 
 
+def _borrowed() -> Path:
+    return wq.root() / "deploy-borrowed"
+
+
+def confirm(own=None, alert=None) -> str:
+    """For a sha queued on its PR's run: '' until main's own run concludes, then what it said; alerts a failure. #1684."""
+    from harness import deploy_guard
+    try:
+        sha = _borrowed().read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+    try:
+        state, why = (own or deploy_guard.own)(sha)
+    except (deploy_guard.GhError, ValueError, KeyError, TypeError) as exc:
+        return f"cannot yet confirm {sha[:12]} by main's own run: {exc}"
+    if state in (deploy_guard.WAITING, deploy_guard.NONE):
+        return ""
+    _borrowed().unlink(missing_ok=True)
+    if state == deploy_guard.FAILED:
+        line = (f"{sha[:12]} was queued to deploy on its PR's {deploy_guard.JOB} run and main's own run failed "
+                f"(soh deploy status says whether it is live): {why}")
+        (alert or (lambda m: _alert_script(m, "ci failed")))(line)
+        return line
+    return f"{sha[:12]}: main's own run is {state}: {why}"
+
+
 def poll(conn=None, now: float | None = None, *, src=None, sha: str = "", force: bool = False,
-         green=None, environ=None) -> dict:
+         green=None, environ=None, own=None, alert=None) -> dict:
     """Queue one deploy job for origin/main's head (or sha) when it passed check-macos; supersede pending older ones."""
+    said = confirm(own, alert)
+    return {**_queue(conn, now, src=src, sha=sha, force=force, green=green, environ=environ), "confirm": said}
+
+
+def _queue(conn, now, *, src, sha: str, force: bool, green, environ) -> dict:
     from harness import deploy_guard
     environ = os.environ if environ is None else environ
     if paused() and not force:
@@ -279,8 +310,9 @@ def poll(conn=None, now: float | None = None, *, src=None, sha: str = "", force:
                else _retry(seen, time.time() if now is None else now) if seen and not force else "")
         if why:
             return {"queued": None, "why": f"{want[:12]} {why}", "superseded": []}
+        by = deploy_guard.BY_MAIN
         if environ.get(deploy_guard.OVERRIDE) != "1":
-            ok, why = (green or deploy_guard.verdict)(want)
+            ok, why, by = (*(green or (lambda s: deploy_guard.judge(s, repo=src)))(want), by)[:3]
             if not ok:
                 return {"queued": None, "why": why, "superseded": []}
         superseded = [wq.label(r["id"]) for r in c.execute(
@@ -291,6 +323,8 @@ def poll(conn=None, now: float | None = None, *, src=None, sha: str = "", force:
         c.commit()
         job = wq.add([*SOH, "deploy", "run", want], title=f"deploy {want[:12]}", cwd=str(src), kind=KIND,
                      output=want, priority=PRIORITY, requested_by="deploy", conn=c)
+    if by == deploy_guard.BY_PR:
+        _borrowed().write_text(want, encoding="utf-8")
     return {"queued": job, "why": "", "superseded": superseded}
 
 

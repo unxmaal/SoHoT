@@ -112,8 +112,8 @@ WATCHDOG_EVERY_MIN="${WATCHDOG_EVERY_MIN:-5}"
 ENERGY_EVERY_MIN="${ENERGY_EVERY_MIN:-1}"
 # Delegation outcomes inferred from the callers' transcripts, or expired to unknown, every N minutes. #1158.
 DELEGATIONS_EVERY_MIN="${DELEGATIONS_EVERY_MIN:-60}"
-# A green origin/main commit becomes a deploy job within N minutes; the job itself waits for the contention gate. #1506, #1509.
-DEPLOY_EVERY_MIN="${DEPLOY_EVERY_MIN:-10}"
+# A green origin/main commit becomes a deploy job within N minutes; an idle poll is one git fetch, no gh call. #1506, #1684.
+DEPLOY_EVERY_MIN="${DEPLOY_EVERY_MIN:-1}"
 # How long install waits for a deferred periodic run to end before leaving it on the old unit. #1058.
 DEFER_WAIT_S="${LH_DEFER_WAIT_S:-120}"
 # The day's ledger row, written late each evening and rewritten the next. #826.
@@ -378,7 +378,7 @@ deploy() {
   sweep_guard
   git -C "$SRC" fetch -q origin main
   local want; want="$(git -C "$SRC" rev-parse origin/main)"
-  # Two green PRs can merge into a red main; deploy only a commit whose own push run passed. #870.
+  # Two green PRs can merge into a red main; deploy only a commit whose own push run, or same-tree PR run, passed. #870, #1684.
   python3 -I "$REPO/harness/deploy_guard.py" "$want" "$SRC" || exit 1
   if [ ! -e "$DEPLOY/.git" ]; then
     git -C "$SRC" worktree add -q --detach "$DEPLOY" "$want"
