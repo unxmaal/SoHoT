@@ -118,6 +118,7 @@ capabilities:
       - harness/commands/loop.py
       - harness/commands/loop_steps.py
       - harness/engine_trials.py
+      - harness/containers.py
       - harness/heartbeat.py
       - harness/sweep_check.py
       - harness/commands/sweep_check.py

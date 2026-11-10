@@ -96,11 +96,12 @@ def _resident() -> list[str]:
 def budget_gb(held: list[dict]) -> tuple[float, str]:
     """GiB a new load may take now: the least of what is free and what the ledger of live leases leaves."""
     from harness import memory
-    reserve, pinned = memory.measured_reserve_gb(), memory.pinned_gb()
+    reserve, pinned = memory.measured_reserve_gb(), memory.held_gb()
     leased = sum(float(h.get("mem_gb") or 0.0) for h in held)
     free = memory.budget_gb(memory.available_gb(), memory.ceiling_gb() - pinned, 0.0, reserve)
     ledger = memory.ceiling_gb() - pinned - reserve - leased
-    return min(free, ledger), (f"{free:.1f} GiB free after a {reserve:.1f} GiB reserve and {pinned:.1f} GiB pinned; "
+    return min(free, ledger), (f"{free:.1f} GiB free after a {reserve:.1f} GiB reserve and {pinned:.1f} GiB held "
+                               f"by pinned models and the Docker VM; "
                                f"{ledger:.1f} GiB left by the ledger after {leased:.1f} GiB leased")
 
 

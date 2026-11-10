@@ -9,13 +9,15 @@ KNOBS = [
     _k("engine_classify_tokens", [f"{M}:CLASSIFY_TOKENS"], [600, 1200, 2400],
        note="reply budget of one classification, a JSON object of five fields (#1475)"),
     _k("engine_install_timeout_s", [f"{M}:INSTALL_TIMEOUT_S"], [300.0, 900.0, 1800.0],
-       note="seconds one sandboxed uv venv or uv pip install of a trial engine may take before the trial is blocked (#1475)"),
+       note="seconds the download container, uv venv or offline uv pip install of a trial engine may take before the trial is blocked (#1475, #1510)"),
     _k("engine_installs_per_run", [f"{M}:INSTALLS_PER_RUN"], [0, 1, 2, 5],
        note="trial installs one sweep makes; each spends disk and minutes (#1475)"),
     _k("engine_screens_per_run", [f"{M}:SCREENS_PER_RUN"], [0, 2, 4, 10],
        note="runner-wanted candidates one sweep screens on trial engines; each loads a model (#1475)"),
     _k("engine_serve_timeout_s", [f"{M}:SERVE_TIMEOUT_S"], [120.0, 600.0, 1200.0],
        note="seconds a trial engine may take to answer /v1/models before its screen is load_failed (#1475)"),
+    _k("engine_trial_container_memory_gb", [f"{M}:CONTAINER_MEMORY_GB"], [0.5, 1.0, 2.0],
+       note="memory cap of the container that downloads a trial's wheels; it runs inside the Docker VM the budget counts (#1510)"),
 ]
 
 NOT_GATING = {

@@ -422,13 +422,13 @@ def budget_gb(available_gb: float, ceiling_gb: float, resident_gb: float,
 
 def fits(need_gb: float, available_gb: float, ceiling_gb: float,
          resident_gb: float = 0.0,
-         reserve_gb: float = DEFAULT_RESERVE_GB, pinned_gb: float = 0.0) -> tuple[bool, str]:
+         reserve_gb: float = DEFAULT_RESERVE_GB, pinned_gb: float = 0.0, vm_gb: float = 0.0) -> tuple[bool, str]:
     """Can `need_gb` of weights be loaded without taking the machine down?
 
     `resident_gb` is what a hot-swapping server may still be holding. Budgeting
     as if only one model is resident is exactly how this went wrong.
     """
-    budget = budget_gb(available_gb, ceiling_gb - pinned_gb, resident_gb, reserve_gb)
+    budget = budget_gb(available_gb, ceiling_gb - pinned_gb - vm_gb, resident_gb, reserve_gb)
     if need_gb > budget:
         return False, (
             f"needs {need_gb:.1f} GB but only {budget:.1f} GB is safely "
@@ -436,6 +436,7 @@ def fits(need_gb: float, available_gb: float, ceiling_gb: float,
             f"ceiling, {reserve_gb:.1f} GB reserved for the system"
             + (f", {resident_gb:.1f} GB still resident" if resident_gb else "")
             + (f", {pinned_gb:.1f} GB held by the interactive server's pinned models" if pinned_gb else "")
+            + (f", {vm_gb:.1f} GB given to the Docker VM" if vm_gb else "")
             + ")")
     return True, f"{need_gb:.1f} GB into {budget:.1f} GB"
 
@@ -530,9 +531,10 @@ def check_model(repo: str, resident_gb: float = 0.0,
     if reserve_gb is None:
         reserve_gb = measured_reserve_gb()
     free, whole = available_gb(), ceiling_gb()
-    held = pinned_gb()
-    ceiling = whole - held
-    ok, why = fits(need, free, whole, resident_gb, reserve_gb, held)
+    from harness import containers
+    pinned, vm = pinned_gb(), containers.vm_gb()
+    ceiling = whole - pinned - vm
+    ok, why = fits(need, free, whole, resident_gb, reserve_gb, pinned, vm)
     # The reserve decided it only when the weights fit without it. #1087.
     reserve_knob = ("harness/memory.py:DEFAULT_RESERVE_GB" if reserve_gb == DEFAULT_RESERVE_GB else
                     "harness/memory.py:DISCRETE_RESERVE_GB" if reserve_gb == DISCRETE_RESERVE_GB else
@@ -581,9 +583,15 @@ def pinned_gb() -> float:
     return interactive.reserved_bytes() / 1024 ** 3
 
 
+def held_gb() -> float:
+    """What stays held beside any load: the interactive server's pinned models and the Docker VM. #1561, #1510."""
+    from harness import containers
+    return pinned_gb() + containers.vm_gb()
+
+
 def room_gb() -> float:
     """What fits() would budget here now with nothing resident: the quantity `room_gb:>n` reads. #928."""
-    return budget_gb(available_gb(), ceiling_gb() - pinned_gb(), 0.0, measured_reserve_gb())
+    return budget_gb(available_gb(), ceiling_gb() - held_gb(), 0.0, measured_reserve_gb())
 
 
 def wait_for(repo: str, spec: str = "", parallel: int = 0, resident_gb: float = 0.0,

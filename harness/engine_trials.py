@@ -1,11 +1,15 @@
-"""Engines and runners wanted, tested: classify a tooling repo, trial it sandboxed, screen what waits on it, file what cannot be tried. #1475."""
+"""Engines and runners wanted, tested: classify a tooling repo, trial it sandboxed, screen what waits on it, file what cannot be tried. #1475, #1510."""
 from __future__ import annotations
 
 import base64
 import configparser
 import contextlib
+import hashlib
 import json
+import os
+import platform
 import re
+import shutil
 import socket
 import subprocess
 import sys
@@ -37,6 +41,15 @@ GH_TIMEOUT_S = 60.0
 PYTHON = "3.12"
 SANDBOX_EXEC = "/usr/bin/sandbox-exec"
 PYPI_INDEX = "https://pypi.org/simple"
+#: The environment variable naming the image a trial's download runs in; read at run time.
+IMAGE_ENV = "SOHOT_TRIAL_IMAGE"
+#: A stock image with pip; nothing of this machine is in it or passed to it beyond the pin.
+IMAGE = "python:3.14-slim"
+#: Memory and CPUs the download container may use, inside the Docker VM the budget counts.
+CONTAINER_MEMORY_GB = 1.0
+CONTAINER_CPUS = 2.0
+#: A wheel file name a release may offer; anything else is never fetched or installed.
+WHEEL_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.+!-]*\.whl")
 GH_REPO = "unxmaal/SoHoT"
 LABEL = "engine-trial"
 MARKER = "engine-trial:"
@@ -56,6 +69,15 @@ PROFILE = """(version 1)
 (allow file-write* (subpath (param "TRIAL")) (literal "/dev/null") (literal "/dev/zero")
        (regex #"^/dev/tty") (regex #"^/dev/fd/"))
 """
+#: An install from verified wheels reaches no network at all.
+OFFLINE_NET = "(deny network*)\n"
+#: Runs in the container: fetch a release wheel when given its URL, then pip download it or the pin with its dependencies.
+FETCH = ("import subprocess, sys, urllib.request\n"
+         "url, spec, args = sys.argv[1], sys.argv[2], sys.argv[3:]\n"
+         "if url:\n"
+         "    spec = '/out/' + spec\n"
+         "    urllib.request.urlretrieve(url, spec)\n"
+         "sys.exit(subprocess.call([sys.executable, '-I', '-m', 'pip', 'download', '--dest', '/out', *args, spec]))\n")
 #: A served trial may answer loopback and reach nothing else.
 SERVE_NET = """(deny network-outbound (remote ip "*:*"))
 (allow network-outbound (remote ip "localhost:*"))
@@ -120,6 +142,10 @@ class Trial:
 
 class TrialError(RuntimeError):
     """A trial step that cannot go on; its text is the blocker."""
+
+    def __init__(self, text: str, returncode: int | None = None):
+        super().__init__(text)
+        self.returncode = returncode
 
 
 def slug(name: str) -> str:
@@ -339,11 +365,16 @@ def can_sandbox() -> bool:
     return sys.platform == "darwin" and Path(SANDBOX_EXEC).is_file()
 
 
-def sandboxed(argv: list, trial_dir: Path, serve: bool = False) -> list:
-    """argv under sandbox-exec: no write outside the trial dir, and when serving no network beyond loopback."""
+def docker_here() -> bool:
+    from harness import containers
+    return containers.available()
+
+
+def sandboxed(argv: list, trial_dir: Path, serve: bool = False, offline: bool = False) -> list:
+    """argv under sandbox-exec: no write outside the trial dir; serving reaches only loopback, offline reaches nothing."""
     trial_dir = Path(trial_dir).resolve()
-    profile = trial_dir / ("serve.sb" if serve else "install.sb")
-    profile.write_text(PROFILE + (SERVE_NET if serve else ""), encoding="utf-8")
+    profile = trial_dir / ("serve.sb" if serve else "offline.sb" if offline else "install.sb")
+    profile.write_text(PROFILE + (SERVE_NET if serve else OFFLINE_NET if offline else ""), encoding="utf-8")
     return [SANDBOX_EXEC, "-f", str(profile), "-D", f"TRIAL={trial_dir}", *argv]
 
 
@@ -374,11 +405,116 @@ def _run(argv: list, env: dict, cwd: Path, timeout: float | None = None) -> None
         raise TrialError(f"could not start {argv[0]}: {exc}") from exc
     if got.returncode != 0:
         tail = (got.stderr or got.stdout or "").strip().splitlines()[-6:]
-        raise TrialError(f"install exited {got.returncode}: " + " | ".join(tail)[:600])
+        raise TrialError(f"install exited {got.returncode}: " + " | ".join(tail)[:600], got.returncode)
 
 
-def install(t: Trial, root: Path, run=None) -> Path:
-    """The trial's own venv with its package at the exact version, installed under the sandbox; TrialError says why not."""
+def target_platform(mac_ver=None, machine=None) -> str:
+    """The wheel platform tag of this Mac, read at call time: the container fetches for it, not for itself."""
+    major = ((mac_ver or platform.mac_ver)()[0] or "").split(".")[0]
+    if not major.isdigit():
+        raise TrialError("a trial installs macOS wheels and this host reports no macOS version")
+    return f"macosx_{major}_0_{(machine or platform.machine)() or 'arm64'}"
+
+
+def supported_tags(plat: str) -> set:
+    """Every wheel tag the trial venv's CPython runs on this platform."""
+    from packaging import tags
+    m = re.fullmatch(r"macosx_(\d+)_(\d+)_(\w+)", plat)
+    if not m:
+        raise TrialError(f"{plat} is no macOS wheel platform")
+    plats = list(tags.mac_platforms((int(m[1]), int(m[2])), m[3]))
+    py = tuple(int(x) for x in PYTHON.split("."))
+    return set(tags.cpython_tags(py, platforms=plats)) | set(tags.compatible_tags(py, f"cp{py[0]}{py[1]}", plats))
+
+
+def fetch_argv(t: Trial, wheels: Path, plat: str) -> tuple[str, list]:
+    """(container name, `docker run` argv) that downloads the trial's wheels and theirs into `wheels`, and nothing else."""
+    from harness import containers
+    if t.channel == PYPI:
+        url, spec = "", f"{t.package}=={t.version}"
+    elif t.channel == RELEASE:
+        if not WHEEL_NAME.fullmatch(t.package):
+            raise TrialError(f"the release asset {t.package!r} is no wheel file name")
+        url, spec = f"https://github.com/{t.name}/releases/download/{t.version}/{t.package}", t.package
+    else:
+        raise TrialError(f"no install channel {t.channel!r}")
+    pip = ["--only-binary=:all:", "--platform", plat, "--python-version", PYTHON, "--implementation", "cp",
+           "--index-url", PYPI_INDEX]
+    name = f"sohot-trial-{slug(t.name)[:40]}-{os.getpid()}"
+    argv = containers.run_argv(os.environ.get(IMAGE_ENV) or IMAGE, ["python", "-I", "-c", FETCH, url, spec, *pip],
+                               name=name, mounts=[(Path(wheels).resolve(), "/out", "rw")],
+                               memory_gb=CONTAINER_MEMORY_GB, cpus=CONTAINER_CPUS, network=True,
+                               env={"PIP_CACHE_DIR": "/tmp/pip", "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+                                    "PIP_NO_INPUT": "1"})
+    return name, argv
+
+
+def index_digest(t: Trial, filename: str, name: str, version: str, client=None) -> str:
+    """The sha256 the wheel's own index publishes: the GitHub release asset digest, else PyPI's; "" when none."""
+    if t.channel == RELEASE and filename == t.package:
+        if client is None:
+            from harness import github
+            client = github.Client()
+        rel = _gh_json(client, f"repos/{t.name}/releases/tags/{t.version}") or {}
+        for a in rel.get("assets") or []:
+            if a.get("name") == filename:
+                got = str(a.get("digest") or "")
+                return got.partition("sha256:")[2] if got.startswith("sha256:") else ""
+        return ""
+    got = _pypi_json(f"{name}/{version}") or {}
+    for u in got.get("urls") or []:
+        if u.get("filename") == filename:
+            return str((u.get("digests") or {}).get("sha256") or "")
+    return ""
+
+
+def sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def verify(t: Trial, wheels: Path, plat: str, digest=None) -> list[str]:
+    """Hash-pinned requirement lines for what the container fetched; TrialError unless each file is a wheel for this Mac
+    whose sha256 its index publishes, and the trial's own package is among them at its exact version."""
+    from packaging.utils import InvalidWheelFilename, canonicalize_name, parse_wheel_filename
+    digest = digest or index_digest
+    ok = supported_tags(plat)
+    files = sorted(Path(wheels).iterdir()) if Path(wheels).is_dir() else []
+    if not files:
+        raise TrialError("the download container fetched nothing")
+    pins: dict = {}
+    own = False
+    for f in files:
+        if f.is_symlink() or not f.is_file() or not WHEEL_NAME.fullmatch(f.name):
+            raise TrialError(f"the download container left {f.name}, which is no wheel")
+        try:
+            name, version, _, wtags = parse_wheel_filename(f.name)
+        except InvalidWheelFilename as exc:
+            raise TrialError(f"{f.name}: {exc}") from exc
+        if not wtags & ok:
+            raise TrialError(f"{f.name} does not run on CPython {PYTHON} on {plat}")
+        got, want = sha256(f), digest(t, f.name, str(name), str(version))
+        if not want:
+            raise TrialError(f"{f.name}: its index publishes no sha256, so it cannot be verified")
+        if got != want.lower():
+            raise TrialError(f"{f.name}: sha256 {got[:16]} is not the published {want[:16]}")
+        key = canonicalize_name(name)
+        if key in pins and pins[key][0] != str(version):
+            raise TrialError(f"the download container fetched {key} at both {pins[key][0]} and {version}")
+        pins.setdefault(key, (str(version), []))[1].append(got)
+        own = own or (f.name == t.package if t.channel == RELEASE else
+                      key == canonicalize_name(t.package) and str(version) == t.version)
+    if not own:
+        raise TrialError(f"the download container did not fetch {t.package} {t.version}")
+    return [f"{k}=={v} " + " ".join(f"--hash=sha256:{h}" for h in hs) for k, (v, hs) in sorted(pins.items())]
+
+
+def install(t: Trial, root: Path, run=None, digest=None, plat: str = "") -> Path:
+    """The trial's own venv at the exact version: wheels fetched in a container, verified here, installed offline under the sandbox."""
+    from harness import containers, cuts
     run = run or _run
     d = Path(root) / f"{slug(t.name)}-{slug(t.version)}"
     d.mkdir(parents=True, exist_ok=True)
@@ -386,23 +522,30 @@ def install(t: Trial, root: Path, run=None) -> Path:
     if done.is_file():
         return d
     env = trial_env(d)
-    venv = d / "venv"
+    wheels = d / "wheels"
+    # A set an earlier, interrupted fetch left is not trusted: it is fetched and verified again.
+    shutil.rmtree(wheels, ignore_errors=True)
+    wheels.mkdir()
+    plat = plat or target_platform()
+    name, argv = fetch_argv(t, wheels, plat)
+    try:
+        run(argv, containers.cli_env(), d)
+    except TrialError as exc:
+        containers.remove(name)
+        if exc.returncode == 137:
+            cuts.cut("engine_trial_container_memory_gb", f"{t.name}: the download container was killed",
+                     value=CONTAINER_MEMORY_GB, kept=0, dropped=1)
+        raise
+    req = d / "requirements.txt"
+    req.write_text("\n".join(verify(t, wheels, plat, digest)) + "\n", encoding="utf-8")
+    venv = d.resolve() / "venv"
     run(sandboxed(["uv", "venv", "--python", PYTHON, str(venv)], d), env, d)
     py = str(venv / "bin" / "python")
-    if t.channel == PYPI:
-        want = f"{t.package}=={t.version}"
-    elif t.channel == RELEASE:
-        dist = d / "dist"
-        dist.mkdir(exist_ok=True)
-        run(["gh", "release", "download", t.version, "-R", t.name, "-p", t.package, "-D", str(dist),
-             "--clobber"], env, d)
-        want = str(dist / t.package)
-    else:
-        raise TrialError(f"no install channel {t.channel!r}")
-    run(sandboxed(["uv", "pip", "install", "--python", py, "--only-binary", ":all:", "--index-url", PYPI_INDEX,
-                   want], d), env, d)
+    run(sandboxed(["uv", "pip", "install", "--python", py, "--offline", "--no-index", "--find-links",
+                   str(wheels.resolve()), "--only-binary", ":all:", "--require-hashes", "-r", str(req.resolve())], d,
+                  offline=True), env, d)
     done.write_text(json.dumps({"name": t.name, "channel": t.channel, "package": t.package,
-                                "version": t.version}), encoding="utf-8")
+                                "version": t.version, "platform": plat}), encoding="utf-8")
     return d
 
 
@@ -574,8 +717,9 @@ def body_for(t: Trial, row: dict, waiting: list) -> str:
             f"{f', {t.interface} interface' if t.interface else ''}. {t.why}\n\n"
             f"**What blocked the trial**: {t.blocker}\n\n"
             f"**Models waiting on a runner it may provide**:\n{models}\n\n"
-            f"A trial installs only from PyPI or a GitHub release at an exact version, into its own directory, and "
-            f"runs it under sandbox-exec. Close this once an engine entry exists or the repo is judged not worth one.\n\n"
+            f"A trial fetches wheels only from PyPI or a GitHub release at an exact version, in a Docker container, "
+            f"checks each against its published sha256, then installs and runs it in its own directory under "
+            f"sandbox-exec. Close this once an engine entry exists or the repo is judged not worth one.\n\n"
             f"{MARKER} {t.name}\n")
 
 
@@ -682,6 +826,10 @@ def sweep(conn, tools: list, waiting: list, *, ask=None, evidence=None, installe
             state, blocker = DEFERRED, f"a trial runs under {SANDBOX_EXEC}, which this host lacks"
         out.classified.append(record(conn, row, c, state, channel, package, version, blocker, now))
     ready = trials(conn, CLASSIFIED)
+    if ready and not docker_here():
+        # Classified trials wait for Docker rather than install without the container.
+        out.stopped = out.stopped or "a trial downloads in a Docker container, and no docker engine answers here"
+        ready = []
     if len(ready) > INSTALLS_PER_RUN:
         cuts.cut("engine_installs_per_run", "trial installs left for a later sweep", kept=INSTALLS_PER_RUN,
                  dropped=len(ready) - INSTALLS_PER_RUN, conn=conn)
