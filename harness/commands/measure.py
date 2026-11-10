@@ -1194,7 +1194,7 @@ def _confirm_job(vid: int) -> int:
                 return 0
             before = len((watch.read(out) or ({}, []))[1])
             proc, out = _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid, plan)
-        if proc.returncode == watch.PAUSED:
+        if proc.returncode == watch.PAUSED or (_signalled(proc.returncode) and watch.stop_reason(out) != watch.OVERRUN):
             return _confirm_paused(vid, lane, inc_spec, spec, out)
         if proc.returncode != 0:
             err(proc.stderr.strip()[-400:] or "no stderr")
@@ -1341,9 +1341,12 @@ def _confirm_reuse(lane, inc_spec, spec, split, repeat, out, resume: bool):
 
 
 def _confirm_paused(vid: int, lane: str, inc_spec: str, spec: str, out) -> int:
-    """A paused confirmation records no verdict and queues its own continuation behind the contention gate. #1357, #1509."""
-    from harness import adopt
+    """A paused or signal-stopped (not overrun) confirmation queues its own continuation; for a deploy, the queue re-pends this job. #1357, #1509, #1675."""
+    from harness import adopt, workqueue
     from harness import memory_store as ms
+    if workqueue.paused_for_deploy():
+        print(f"    paused at {out} for a deploy; this job resumes it after the deploy", flush=True)
+        return watch.PAUSED
     store = ms.connect()
     try:
         job = adopt.queue_confirmation(store, vid, adopt.Verdict(lane, inc_spec, spec, False, ""))

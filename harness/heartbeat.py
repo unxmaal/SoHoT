@@ -287,6 +287,8 @@ def stall_after(data: dict) -> float:
 
 #: Why and before which step a loop paused itself, or absent. #1481.
 PAUSED = "paused"
+#: Set by a loop that yields at its next checkpoint on SIGUSR1, so a due deploy asks it rather than waits. #1675.
+YIELDS = "yields_to_deploy"
 
 
 def pause(tier: str, reason: str) -> None:

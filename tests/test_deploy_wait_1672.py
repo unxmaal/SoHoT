@@ -329,12 +329,15 @@ def test_measurement_waits_while_a_deploy_waits_for_a_running_eval(monkeypatch):
     assert [j["id"] for j in wq.ready()] == [job["id"], measure["id"], fetch["id"]]
 
 
-def test_evals_in_a_group_are_read_from_ps(monkeypatch):
+def test_evals_under_a_job_are_read_from_ps_in_any_session(monkeypatch):
     monkeypatch.setattr(sys, "platform", "darwin")
-    out = ("  101  100 uv run soh adopt --confirm 7\n  102  100 python -m evals.run --out runs/x\n"
-           "  103  999 python -m evals.run --out runs/y\n  104  100 llama-server -m x.gguf\n")
+    # measure starts the eval in a session of its own (#805), so only the parent chain finds it. #1675.
+    out = ("  100    1 uv run soh adopt --confirm 7\n  101  100 python -m harness.cli adopt --confirm 7\n"
+           "  102  101 uv run python -m evals.run --out runs/x\n  103  102 python -m evals.run --out runs/x\n"
+           "  104    1 python -m evals.run --out runs/y\n  105  101 llama-server -m x.gguf\n")
     monkeypatch.setattr(wq.subprocess, "run", lambda *a, **k: types.SimpleNamespace(stdout=out, returncode=0))
-    assert wq._evals_in(100) == [102]
+    assert wq._evals_in(100) == [102, 103]
+    assert wq._evals_in(4242) == [], "a job whose process is gone has none"
     monkeypatch.setattr(sys, "platform", "win32")
     assert wq._evals_in(100) == []
 

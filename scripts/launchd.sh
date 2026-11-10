@@ -354,6 +354,26 @@ sweep_guard() {
   python3 -I "$REPO/harness/sweep_guard.py" "$LH_HOME" || exit 1
 }
 
+# The queue's side of LH_DEPLOY_DURING_SWEEP=1: hold-for-deploy or release-for-deploy. #1675.
+_queue_for_deploy() {
+  local uv
+  uv="$(_find_uv)" || return 1
+  (cd "$REPO" && "$uv" run --quiet python -m harness.workqueue "$1-for-deploy")
+}
+
+# install or reinstall under the GPU lock. LH_DEPLOY_DURING_SWEEP=1 first holds the queue and stops its
+# running jobs to resume after, so nothing relaunches what the guard stops; released however install ends. #1675.
+_locked_install() {
+  if [ "${LH_DEPLOY_DURING_SWEEP:-}" != 1 ]; then
+    sweep_guard
+    exec "$REPO/scripts/with-gpu-lock" --repair "$0" "$1"
+  fi
+  trap '_queue_for_deploy release || echo "could not release the queue held for the deploy: soh jobs resume" >&2' EXIT
+  _queue_for_deploy hold || echo "could not hold the queue for the deploy; its jobs may start again" >&2
+  sweep_guard
+  "$REPO/scripts/with-gpu-lock" --repair "$0" "$1"
+}
+
 deploy() {
   sweep_guard
   git -C "$SRC" fetch -q origin main
@@ -731,14 +751,14 @@ case "${1:-}" in
     # Restarting a model server mid-run killed 32 requests on 2026-10-04, so
     # wait for any model-loading run to finish first. #314.
     if [ "${LH_GPU_LOCK_HELD:-}" != 1 ]; then
-      sweep_guard
-      exec "$REPO/scripts/with-gpu-lock" --repair "$0" install
+      _locked_install install
+      exit
     fi
     install_units ;;
   reinstall)
     if [ "${LH_GPU_LOCK_HELD:-}" != 1 ]; then
-      sweep_guard
-      exec "$REPO/scripts/with-gpu-lock" --repair "$0" reinstall
+      _locked_install reinstall
+      exit
     fi
     install_units reinstall ;;
   restart)

@@ -142,6 +142,7 @@ def test_with_gpu_lock_repair_runs_under_the_flock_while_the_store_is_down(tmp_p
 
 def test_install_reinstall_and_deploy_go_through_the_repair_hold():
     text = (REPO / "scripts" / "launchd.sh").read_text(encoding="utf-8")
-    assert 'with-gpu-lock" --repair "$0" install' in text
-    assert 'with-gpu-lock" --repair "$0" reinstall' in text
+    # Both run through _locked_install, which takes the lock with --repair, with or without the #1675 hold.
+    assert text.count('with-gpu-lock" --repair "$0" "$1"') == 2
+    assert "_locked_install install" in text and "_locked_install reinstall" in text
     assert deploy.Steps().install == ["bash", "scripts/launchd.sh", "reinstall"]

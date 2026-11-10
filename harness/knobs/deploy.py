@@ -59,6 +59,8 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    "harness/commands/loop.py:YIELD_POLL_S": "how often a yielded sweep looks whether its deploy is done; it paces "
+                                            "the wait, the sweep ceiling bounds it (#1675)",
     "harness/holders.py:_FILEINFO": "byte size of libproc's struct proc_fileinfo, fixed by <sys/proc_info.h> (#1523)",
     "harness/holders.py:_REGIONINFO": "byte size of libproc's struct proc_regioninfo, fixed by <sys/proc_info.h> (#1523)",
     f"{Q}:LAUNCHCTL_TIMEOUT_S": "how long launchctl may take to load the switch's one-shot unit; a timeout fails "

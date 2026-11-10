@@ -208,6 +208,16 @@ def _gpu_leases(conn) -> list[dict]:
     return [h for h in item_lease.live(conn, resources.GPU) if _holder_alive(h)]
 
 
+def _stop_hint(leases: list[dict]) -> str:
+    """How the owner stops the queued jobs an install waits on, or "". #1675."""
+    from harness import workqueue as wq
+    jobs = [wq.label(h["job_id"]) for h in leases if h.get("job_id") is not None]
+    if not jobs:
+        return ""
+    return (f" (to stop it for this deploy and resume it after: Ctrl-C, then LH_DEPLOY_DURING_SWEEP=1 "
+            f"scripts/launchd.sh install; or end it: soh jobs cancel {' '.join(jobs)})")
+
+
 def _reap(conn) -> None:
     """Release this machine's gpu leases whose holder is gone, so a killed holder frees the GPU at once. #1619."""
     from harness import item_lease, resources
@@ -345,8 +355,10 @@ def _lease(kind: str, announce, poll: float, wait: bool = True):
                 rec = gpu_holder()
             except StoreDown as exc:
                 raise refuse(kind, exc) from exc
-            who = describe(rec) if rec else "; ".join(
-                item_lease.line(h) for h in _gpu_leases(conn)) or "a gpu lease"
+            leases = [] if rec else _gpu_leases(conn)
+            who = describe(rec) if rec else "; ".join(item_lease.line(h) for h in leases) or "a gpu lease"
+            if kind in REPAIR:
+                who += _stop_hint(leases)
             if announce and who.split(" for ")[0] != said:
                 announce(f"waiting for {who} to finish")
                 said = who.split(" for ")[0]
