@@ -260,6 +260,28 @@ def test_a_due_deploy_asks_a_running_measurement_job_s_evals_to_pause_once(monke
     assert killed[-1] == (333, 10), "an eval the job starts after the ask is asked too"
 
 
+def test_an_eval_that_cannot_be_signalled_is_said_and_asked_again(monkeypatch):
+    def refuse(pid, sig):
+        if sig:
+            raise PermissionError("not ours")
+    monkeypatch.setattr(wq.os, "kill", refuse)
+    job = _running(_measuring())
+    _deploy(time.time())
+    said = wq.preempt_for_deploy(evals=lambda pid: [111], signal_=10)
+    assert said == [f"job {job['id']}: eval 111 not asked to pause: not ours"]
+    assert not wq._deploy_flag(job["id"]).exists(), "nothing asked, so its pause is not the deploy's"
+
+
+def test_a_failing_preempt_never_stops_the_worker_turn(monkeypatch, capsys):
+    def boom(now=None):
+        raise RuntimeError("store gone")
+    watched = []
+    monkeypatch.setattr(wq, "preempt_for_deploy", boom)
+    monkeypatch.setattr(wq, "watch_deploys", lambda now=None: watched.append(now))
+    wq.deploy_turn(7.0)
+    assert "preempting for the deploy failed: store gone" in capsys.readouterr().out and watched == [7.0]
+
+
 def test_a_paused_or_not_yet_due_deploy_preempts_nothing(monkeypatch):
     killed = _kills(monkeypatch)
     _running(_measuring())
@@ -289,8 +311,9 @@ def test_a_job_paused_for_the_deploy_waits_again_to_resume(monkeypatch):
 
 def test_a_job_that_pauses_on_its_own_is_not_repended_as_the_deploy_s():
     job = _measuring()
+    wq._deploy_flag(job["id"]).write_text("4242", encoding="utf-8")
     wq.run_one(job, popen=lambda argv, **kw: types.SimpleNamespace(returncode=75))
-    assert wq.get(job["id"])["state"] == wq.PAUSED
+    assert wq.get(job["id"])["state"] == wq.PAUSED, "an ask left from an earlier start is not this one's"
 
 
 def test_measurement_waits_while_a_deploy_waits_for_a_running_eval(monkeypatch):

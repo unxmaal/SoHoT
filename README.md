@@ -3000,7 +3000,12 @@ until `soh hold release gpu`. A deploy waits on memory pressure only for the
 starts at warn while the lanes are idle and nothing is held (#1672); one that
 has waited `deploy_wait_alert` for anything but a deploy pause or a sweep
 alerts once through `scripts/monit-alert.sh`, and `soh jobs list` and
-`soh morning` say why a pending deploy waits. `--night` is accepted and ignored. Jobs are rows in the
+`soh morning` say why a pending deploy waits. While a deploy is due, the worker
+starts no measurement job and asks each running one's evals to pause at their
+next case (SIGUSR1); the job goes back to pending and resumes after the deploy.
+A sha whose deploy job failed is queued again `deploy_retry_after` later, at
+most `deploy_retries` times; then only a new commit or `soh deploy now` deploys
+it. `--night` is accepted and ignored. Jobs are rows in the
 store's `jobs` table, so they survive a restart, and output goes to
 `~/localharness/logs/jobs/<id>.log`. A failed job is recorded and the next
 starts. A job whose eval paused with its cases checkpointed is recorded
