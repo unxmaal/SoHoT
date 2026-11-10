@@ -397,14 +397,14 @@
   },
   {
    "candidate": "tts:OpenMOSS-Team/MOSS-TTS-v1.5",
-   "decided_at": "2026-11-09T02:01:55Z",
+   "decided_at": "2026-11-10T03:57:51Z",
    "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local dis",
    "exam": null,
    "outcome": "queued",
    "proposal": "OpenMOSS-Team/MOSS-TTS-v1.5",
    "reason": "harness",
    "receipt_key": "MOSS-TTS-v1.5",
-   "run_id": 757,
+   "run_id": 802,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -441,7 +441,7 @@
    "until": "format:.pt"
   }
  ],
- "cursor": 1794194693534761,
+ "cursor": 1794283071518329,
  "events": [
   {
    "at": "2026-09-19T21:17:40Z",
@@ -997,6 +997,21 @@
    "reason": "limit",
    "run_id": 770,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-10T03:57:51Z",
+   "candidate": "tts:OpenMOSS-Team/MOSS-TTS-v1.5",
+   "chosen": null,
+   "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local dis",
+   "how": "",
+   "id": 1794283071518329,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "harness",
+   "run_id": 802,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -1167,7 +1182,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-09T08:03:22Z",
+ "generated_at": "2026-11-10T08:00:31Z",
  "knobs": [],
  "lane": {
   "cases": 470,
