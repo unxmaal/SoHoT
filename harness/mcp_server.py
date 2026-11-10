@@ -309,14 +309,13 @@ def local_decide(question: str, schema: dict, context: str = "") -> LocalDecisio
     "edited, or discarded, with an optional why. `call_id` is the one that "
     "call returned. Recording again overwrites and keeps the earlier outcome in why."))
 def delegated(call_id: str, outcome: str, why: str = "") -> DelegationOutcome:
-    from harness import memory_store as ms
-    conn = ms.connect()
-    try:
-        return DelegationOutcome(**delegations.outcome(conn, call_id, outcome, why))
-    except (ValueError, delegations.UnknownCall) as exc:
-        raise ToolError(str(exc)) from exc
-    finally:
-        conn.close()
+    with delegations.ledger() as conn:
+        if conn is None:
+            raise ToolError("not recorded: this server cannot write the live store")
+        try:
+            return DelegationOutcome(**delegations.outcome(conn, call_id, outcome, why))
+        except (ValueError, delegations.UnknownCall) as exc:
+            raise ToolError(str(exc)) from exc
 
 
 # ---------------------------------------------------------------------------

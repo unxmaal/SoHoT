@@ -16,7 +16,6 @@ def _secs(x) -> str:
 
 def cmd_delegated(a) -> int:
     from harness import delegations, usage
-    from harness import memory_store as ms
 
     if getattr(a, "close", False):
         return _close(a)
@@ -34,9 +33,15 @@ def cmd_delegated(a) -> int:
 
     from harness.commands.common import lent_store
     held = contextlib.ExitStack()
-    conn = held.enter_context(lent_store() if a.report else contextlib.closing(ms.connect()))
+    # An outcome goes where the delegation went, the live store as it stands from any checkout. #1717.
+    conn = held.enter_context(lent_store() if a.report else delegations.ledger())
     try:
         if not a.report:
+            if conn is None:
+                why = "not recorded: this checkout cannot write the live store (see the line above)"
+                note(why)
+                emit(False, error=why)
+                return 1
             try:
                 got = delegations.outcome(conn, a.call_id, a.outcome, a.why or getattr(a, "said", ""))
             except (ValueError, delegations.UnknownCall) as exc:

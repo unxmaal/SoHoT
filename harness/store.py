@@ -655,6 +655,19 @@ def open_ro(path=None):
     return conn
 
 
+def open_as_is(path=None):
+    """The store to append to as it stands: Postgres when it is this home's, else the SQLite file, never created. #1717."""
+    import sqlite3
+    from harness import paths
+    from harness.memory_store import connection as mc
+    if home_postgres(path):
+        return postgres_connect()
+    conn = sqlite3.connect(f"{Path(path or Path(paths.home()) / 'discovery.db').resolve().as_uri()}?mode=rw",
+                           uri=True, timeout=mc.BUSY_TIMEOUT_SECONDS, factory=mc._Store)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
 def postgres_connect(environ=None, *, read_only=False, cls=None):
     """Open the Postgres store; read_only as the reader role in read-only transactions. psycopg is lazy."""
     try:
