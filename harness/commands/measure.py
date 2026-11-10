@@ -326,7 +326,7 @@ def lane_for(row: dict, want: str = "") -> str:
 
 def _measure_and_adopt(a, row: dict, sweep=None) -> int:
     """_measure, then unload the challenger it loaded. #444."""
-    from harness import interactive, mlx_server, router
+    from harness import audio_models, interactive, mlx_server, router
     loaded: list[str] = []
     try:
         # An arm whose GGUF the interactive server pins is answered there, never loaded twice. #1578.
@@ -336,6 +336,7 @@ def _measure_and_adopt(a, row: dict, sweep=None) -> int:
         for spec in loaded:
             router.release_spec(spec, f"measured {row['name']}")
             mlx_server.release_spec(spec, f"measured {row['name']}")
+            audio_models.release_spec(spec, f"measured {row['name']}")
 
 
 def _measure(a, row: dict, loaded: list, sweep=None) -> int:

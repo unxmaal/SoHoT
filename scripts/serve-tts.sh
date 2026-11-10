@@ -37,7 +37,8 @@ spacy.util.is_package("en_core_web_sm") or sys.exit("en_core_web_sm is not in th
 from misaki import en
 en.G2P()')
 else
-  RUN=(-m mlx_audio.server --host "${TTS_HOST:-0.0.0.0}" --port "${TTS_PORT:-8890}")
+  # harness.tts_server: a DELETE /v1/models gives the model's memory back, which the stock server never does. #1671
+  RUN=(-m harness.tts_server --host "${TTS_HOST:-0.0.0.0}" --port "${TTS_PORT:-8890}")
 fi
 exec uv run --no-project \
   --with "$MLX_AUDIO_PIN" --with "$UVICORN_PIN" --with "$WEBRTCVAD_PIN" \

@@ -154,6 +154,9 @@ def test_the_measure_unloads_its_challenger_however_it_ends(monkeypatch):
     monkeypatch.setattr(router, "release_spec",
                         lambda spec, why, **k: released.append(spec))
     monkeypatch.setattr(mlx_server, "release_spec", lambda spec, why, **k: mlx.append(spec))
+    from harness import audio_models
+    audio = []
+    monkeypatch.setattr(audio_models, "release_spec", lambda spec, why, **k: audio.append(spec))
 
     def measure(a, row, loaded, sweep=None):
         loaded.append("llamacpp:Challenger-Q4_K_M")
@@ -163,6 +166,7 @@ def test_the_measure_unloads_its_challenger_however_it_ends(monkeypatch):
         cli._measure_and_adopt(argparse.Namespace(), {"name": "org/c"})
     assert released == ["llamacpp:Challenger-Q4_K_M"]
     assert mlx == ["llamacpp:Challenger-Q4_K_M"], "the mlx server lets go of a challenger it was left holding (#1082)"
+    assert audio == mlx, "the audio server lets go of a tts/stt challenger it was left holding (#1671)"
 
 
 def test_the_loop_ends_by_settling_the_router(monkeypatch):
@@ -206,10 +210,14 @@ def test_the_screen_unloads_each_candidate_it_ran(monkeypatch, tmp_path):
     monkeypatch.setattr(router, "release_spec",
                         lambda spec, why, **k: released.append((spec, why)))
     monkeypatch.setattr(mlx_server, "release_spec", lambda spec, why, **k: mlx.append((spec, why)))
+    from harness import audio_models
+    audio = []
+    monkeypatch.setattr(audio_models, "release_spec", lambda spec, why, **k: audio.append((spec, why)))
     cli._report_screen(argparse.Namespace(lane="", top=5, limit=5, run=True,
                                           json=False))
     assert released == [("llamacpp:C-Q4_K_M", "screened org/c-GGUF")]
     assert mlx == released, "an mlx screen's model is not left resident after it (#1082)"
+    assert audio == released, "a tts/stt screen's model is not left resident on the audio server (#1671)"
 
 
 def test_the_suite_never_reaches_the_real_router():

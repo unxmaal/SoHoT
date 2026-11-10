@@ -375,6 +375,11 @@ def _no_real_launchd_units(monkeypatch):
     activity = mlx_server.activity
     monkeypatch.setattr(mlx_server, "activity",
                         lambda base, *a, **kw: None if base.rstrip("/") in live else activity(base, *a, **kw))
+    # No test reads, and so none DELETEs from, the live audio server. #1671.
+    from harness import audio_models
+    loaded, ears = audio_models.loaded, {"http://127.0.0.1:8890/v1", "http://localhost:8890/v1"}
+    monkeypatch.setattr(audio_models, "loaded", lambda base="", *a, **kw: None
+                        if (base or audio_models.base_url()).rstrip("/") in ears else loaded(base, *a, **kw))
 
 
 @pytest.fixture(autouse=True)
