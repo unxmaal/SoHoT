@@ -83,7 +83,7 @@ MODIFIERS = {
     "context --main-only",
     "morning --no-model", "claude-news --no-record", "benchmarks --force", "benchmarks --passages",
     "cases --reextract", "jobs --night", "jobs --despite-hold","disk --yes", "fetch --hold-router", "adopt --unscreened",
-    "judge --all-machines", "ask --live-home", "spans --live-home", "kb-filter --no-model", "kb-filter --rebuild",
+    "judge --all-machines", "ask --live-home", "spans --live-home", "digest --live-home", "digest --no-model", "kb-filter --no-model", "kb-filter --rebuild",
     "kb-filter --strict", "residency-sim --no-jobs",
 }
 #: Flags whose mode writes, downloads, runs a model or reads the network by design, so it is not run here.
@@ -122,6 +122,7 @@ NOT_RUN = {
     "ask --redo": "moves to a scratch home (paths.eval_home) before reading transcripts",
     "spans --redo": "moves to a scratch home (paths.eval_home) before reading transcripts",
     "kb-filter --eval": "asks the decide and extract lanes; reads transcripts, no store",
+    "digest --run": "runs the given command, then the extract lane",
 }
 
 

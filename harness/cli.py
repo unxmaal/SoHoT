@@ -84,6 +84,7 @@ from harness.commands import runtimes as runtimes_cmd
 from harness.commands import otel as otel_cmd
 from harness.commands import route_trial as route_trial_cmd
 from harness.commands import ask as ask_cmd
+from harness.commands import digest as digest_cmd
 from harness.commands import unverified as unverified_cmd
 from harness.commands import usage as usage_cmd
 from harness.commands import canary as canary_cmd
@@ -811,6 +812,7 @@ def build_parser() -> argparse.ArgumentParser:
     otel_cmd.add_parser(sub)
     route_trial_cmd.add_parser(sub)
     ask_cmd.add_parser(sub)
+    digest_cmd.add_parser(sub)
     unverified_cmd.add_parser(sub)
     local_cmd.add_parser(sub)
     scaffold_cmd.add_parser(sub)
@@ -1224,7 +1226,7 @@ def _watchdog(a) -> int:
 #: The purpose a verb's gateway requests carry, unless an enclosing process already set one. #825.
 VERB_PURPOSE = {
     **dict.fromkeys(("image", "video", "svg", "web", "prompt", "code", "extract", "decide",
-                     "label-score", "label-select", "say", "hear", "local"), "work"),
+                     "label-score", "label-select", "say", "hear", "local", "digest"), "work"),
     **dict.fromkeys(("discover", "fetch"), "discover"),
     **dict.fromkeys(("rubric", "throughput", "judge", "adopt", "verify", "reverify",
                      "sensitivity", "gauntlet", "chaos", "route-trial"), "eval"),

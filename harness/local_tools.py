@@ -3,15 +3,22 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from harness import ask, cuts, delegate, spans
+from harness import ask, cuts, delegate, digest, spans
 
 
 def complete(prompt: str = "", lane: str = "", system: str | None = None, max_tokens: int | None = None,
              temperature: float | None = None, thinking: bool | None = None, paths: list[str] | None = None,
              question: str = "", mode: str = "", here=None, cwd: Path | None = None) -> dict:
     """One delegation as local_complete runs it; `here` vets a caller passing paths, `cwd` resolves relative ones."""
-    if mode not in ("", "spans"):
-        raise ValueError(f"mode is \"spans\" or left out, not {mode!r}")
+    if mode not in ("", "spans", "digest"):
+        raise ValueError(f"mode is \"spans\", \"digest\" or left out, not {mode!r}")
+    if mode == "digest":
+        if not paths:
+            raise ValueError("mode \"digest\" reads logs: pass them in `paths`")
+        if here:
+            here()
+        return digest.run(paths, question or prompt, lane=lane or "extract", cwd=cwd, max_tokens=max_tokens,
+                          delegated=True)
     if mode == "spans":
         if not paths:
             raise ValueError("mode \"spans\" reads one file: pass it in `paths`")
