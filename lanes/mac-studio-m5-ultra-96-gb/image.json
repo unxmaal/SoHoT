@@ -353,6 +353,43 @@
    "until": ""
   },
   {
+   "candidate": "mflux:filipstrand/Z-Image-Turbo-mflux-4bit",
+   "decided_at": "2026-11-10T03:54:10Z",
+   "detail": "5 case(s) passed a screen",
+   "exam": {
+    "about": "4bit, by filipstrand",
+    "candidate": "mflux/filipstrand/Z-Image-Turbo-mflux-4bit-q8",
+    "cases": 3,
+    "first_s": 25.141,
+    "median_s": 8.3,
+    "metrics": {
+     "cer": 0.0
+    },
+    "model": "mflux/filipstrand/Z-Image-Turbo-mflux-4bit-q8",
+    "not_run": "",
+    "pass_rate": 1.0,
+    "passed": 9,
+    "peak_gb": 10.05,
+    "reference": false,
+    "repeat": 3,
+    "run_at": "2026-10-06T05:24:19Z",
+    "served_as": "",
+    "source": "https://huggingface.co/filipstrand/Z-Image-Turbo-mflux-4bit-q8",
+    "total": 9,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "screened",
+   "proposal": "filipstrand/Z-Image-Turbo-mflux-4bit",
+   "reason": "candidate",
+   "receipt_key": "mflux/filipstrand/Z-Image-Turbo-mflux-4bit-q8",
+   "run_id": 797,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "diffusers:lolzinventor/Qwen3.5-4B-Base-ZitGen-V1",
    "decided_at": "",
    "detail": "",
@@ -399,8 +436,8 @@
   },
   {
    "candidate": "mflux:Tongyi-MAI/Z-Image",
-   "decided_at": "2026-11-09T02:03:00Z",
-   "detail": "not screened: needs 23.6 GB but only 15.6 GB is safely available (33.6 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 33.0 GB held by the interactive server's pinned models)",
+   "decided_at": "2026-11-10T03:58:39Z",
+   "detail": "not screened: needs 23.6 GB but only 20.8 GB is safely available (38.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 33.0 GB held by the interactive server's pinned models)",
    "exam": {
     "about": "by Tongyi-MAI",
     "candidate": "mflux/Tongyi-MAI/Z-Image-q8",
@@ -433,46 +470,9 @@
    "status": "pending",
    "tier": "screen",
    "until": "room_gb:>23.6"
-  },
-  {
-   "candidate": "mflux:filipstrand/Z-Image-Turbo-mflux-4bit",
-   "decided_at": "2026-11-09T01:08:48Z",
-   "detail": "5.5 GiB would take this run past its 80 GiB budget (79.9 GiB already fetched)",
-   "exam": {
-    "about": "4bit, by filipstrand",
-    "candidate": "mflux/filipstrand/Z-Image-Turbo-mflux-4bit-q8",
-    "cases": 3,
-    "first_s": 25.141,
-    "median_s": 8.3,
-    "metrics": {
-     "cer": 0.0
-    },
-    "model": "mflux/filipstrand/Z-Image-Turbo-mflux-4bit-q8",
-    "not_run": "",
-    "pass_rate": 1.0,
-    "passed": 9,
-    "peak_gb": 10.05,
-    "reference": false,
-    "repeat": 3,
-    "run_at": "2026-10-06T05:24:19Z",
-    "served_as": "",
-    "source": "https://huggingface.co/filipstrand/Z-Image-Turbo-mflux-4bit-q8",
-    "total": 9,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "queued",
-   "proposal": "filipstrand/Z-Image-Turbo-mflux-4bit",
-   "reason": "limit",
-   "receipt_key": "mflux/filipstrand/Z-Image-Turbo-mflux-4bit-q8",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "fetch",
-   "until": ""
   }
  ],
- "cursor": 1794189780958541,
+ "cursor": 1794283119741313,
  "events": [
   {
    "at": "2026-09-18T22:18:09Z",
@@ -2858,6 +2858,36 @@
    "reason": "memory",
    "run_id": null,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-10T03:54:10Z",
+   "candidate": "mflux:filipstrand/Z-Image-Turbo-mflux-4bit",
+   "chosen": null,
+   "detail": "5 case(s) passed a screen",
+   "how": "",
+   "id": 1794282850295825,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 797,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-10T03:58:39Z",
+   "candidate": "Tongyi-MAI/Z-Image",
+   "chosen": null,
+   "detail": "not screened: needs 23.6 GB but only 20.8 GB is safely available (38.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 33.0 GB held by the interactive server's pinned models)",
+   "how": "",
+   "id": 1794283119741313,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -3120,7 +3150,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-09T08:03:19Z",
+ "generated_at": "2026-11-10T08:00:27Z",
  "knobs": [],
  "lane": {
   "cases": 584,
