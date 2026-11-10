@@ -12,7 +12,8 @@ on:
 
 concurrency:
   group: check-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
+  # A main run always finishes, or merges faster than check-macos would leave no main sha green (#1702).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # uv's default 3 retries span 5 s, too short for a runner DNS blip (#1440); this covers every uv download.
 env:

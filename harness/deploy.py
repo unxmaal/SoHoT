@@ -227,6 +227,17 @@ def origin_main(src) -> str:
     return _git(src, "rev-parse", "origin/main")
 
 
+def newer(src, tip: str, live: str) -> list[str]:
+    """main's first-parent commits newer than the live release, newest first; only the tip when live is off main. #1702."""
+    if not live:
+        return [tip]
+    try:
+        _git(src, "merge-base", "--is-ancestor", live, tip)
+        return _git(src, "rev-list", "--first-parent", tip, f"^{live}").split() or [tip]
+    except DeployError:
+        return [tip]
+
+
 def _store_schema(conn) -> int:
     row = conn.execute("SELECT value FROM meta WHERE key='schema'").fetchone()
     return int(row[0]) if row else 0
@@ -284,7 +295,7 @@ def confirm(own=None, alert=None) -> str:
 
 def poll(conn=None, now: float | None = None, *, src=None, sha: str = "", force: bool = False,
          green=None, environ=None, own=None, alert=None) -> dict:
-    """Queue one deploy job for origin/main's head (or sha) when it passed check-macos; supersede pending older ones."""
+    """Queue one deploy job for the newest main commit since live (or sha) that passed check-macos; supersede pending older ones."""
     said = confirm(own, alert)
     return {**_queue(conn, now, src=src, sha=sha, force=force, green=green, environ=environ), "confirm": said}
 
@@ -301,20 +312,29 @@ def _queue(conn, now, *, src, sha: str, force: bool, green, environ) -> dict:
         want = sha or origin_main(src)
     except DeployError as exc:
         return {"queued": None, "why": str(exc), "superseded": []}
-    if want == head_of(src) and not force:
+    deployed = head_of(src)
+    if want == deployed and not force:
         return {"queued": None, "why": f"{want[:12]} is already deployed", "superseded": []}
+    wants = [want] if sha or want == deployed else newer(src, want, deployed)
     with wq._store(conn) as c:
-        seen = _jobs_for(c, want)
-        live = [r for r in seen if r["state"] in (wq.PENDING, wq.RUNNING)]
-        why = (f"is already queued as job {wq.label(live[-1]['id'])} ({live[-1]['state']})" if live
-               else _retry(seen, time.time() if now is None else now) if seen and not force else "")
-        if why:
-            return {"queued": None, "why": f"{want[:12]} {why}", "superseded": []}
-        by = deploy_guard.BY_MAIN
-        if environ.get(deploy_guard.OVERRIDE) != "1":
+        refused = []
+        for want in wants:
+            seen = _jobs_for(c, want)
+            live = [r for r in seen if r["state"] in (wq.PENDING, wq.RUNNING)]
+            why = (f"is already queued as job {wq.label(live[-1]['id'])} ({live[-1]['state']})" if live
+                   else _retry(seen, time.time() if now is None else now) if seen and not force else "")
+            if why:
+                return {"queued": None, "why": "; ".join([*refused, f"{want[:12]} {why}"]), "superseded": []}
+            by = deploy_guard.BY_MAIN
+            if environ.get(deploy_guard.OVERRIDE) == "1":
+                break
             ok, why, by = (*(green or (lambda s: deploy_guard.judge(s, repo=src)))(want), by)[:3]
-            if not ok:
-                return {"queued": None, "why": why, "superseded": []}
+            if ok:
+                break
+            refused.append(why)
+        else:
+            more = f"; nor did the {len(wants) - 1} older main commit(s) since live {deployed[:12]}" if len(wants) > 1 else ""
+            return {"queued": None, "why": refused[0] + more, "superseded": []}
         superseded = [wq.label(r["id"]) for r in c.execute(
             "SELECT id FROM jobs WHERE kind = ? AND state = ? AND output != ?", (KIND, wq.PENDING, want))]
         c.execute("UPDATE jobs SET state = ?, finished_at = ?, note = ? WHERE kind = ? AND state = ? AND output != ?",
