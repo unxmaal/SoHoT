@@ -14,6 +14,8 @@ import time
 
 from harness import paths, purpose
 
+#: How long a batch the store refused is retried on a fresh connection before it is dropped. #1714.
+RETRY_S = 120.0
 #: Characters of prompt or completion kept per sample when text is on.
 SAMPLE_CHARS = 8000
 #: Newest samples kept when text is on; older ones are deleted.
@@ -279,13 +281,23 @@ def drop_warning(conn, start: float) -> list[str]:
     return [f"{n} gateway usage row(s) were dropped in this window; its rates are on an incomplete sample"] if n else []
 
 
+def _shut(conn) -> None:
+    """Close a connection the store may already have lost; None to hold in its place."""
+    if conn is not None:
+        try:
+            conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+
+
 class Writer:
     """A queue and one thread that drains it into the store in batches."""
 
     def __init__(self, connect=None, flush_s: float = FLUSH_S, maxsize: int = QUEUE_MAX,
-                 log=None):
+                 log=None, retry_s: float = RETRY_S):
         self._connect = connect
         self._flush_s = flush_s
+        self._retry_s = retry_s
         self._q: queue.Queue = queue.Queue(maxsize=maxsize)
         self._log = log or (lambda m: print(f"usage_log: {m}", file=sys.stderr, flush=True))
         self._thread = None
@@ -344,6 +356,27 @@ class Writer:
             raise RuntimeError(self.disabled)
         return ms.connect(path)
 
+    def _write(self, conn, batch: list):
+        """The connection the batch went in on; a store blip reopens it until retry_s has passed, then raises."""
+        until = None
+        while True:
+            try:
+                if conn is None:
+                    conn = self._open()
+                    self.specs = _specs(conn)
+                insert(conn, [({**r, "spec": self.specs.get(r.get("alias")) or r.get("spec")}, s)
+                              for r, s in batch])
+                return conn
+            except Exception as exc:  # noqa: BLE001
+                conn = _shut(conn)
+                if self.disabled:
+                    raise
+                if until is None:
+                    until = time.monotonic() + self._retry_s
+                    self._log(f"retrying a usage batch for up to {self._retry_s:g} s: {exc}")
+                if time.monotonic() >= until or self._stop.wait(self._flush_s):
+                    raise
+
     def _drain(self, block: bool) -> list:
         got = []
         try:
@@ -375,11 +408,7 @@ class Writer:
                     self.dropped += len(batch)
                 continue
             try:
-                if conn is None:
-                    conn = self._open()
-                    self.specs = _specs(conn)
-                insert(conn, [({**r, "spec": self.specs.get(r.get("alias")) or r.get("spec")}, s)
-                              for r, s in batch])
+                conn = self._write(conn, batch)
                 self._save_drops(conn)
             except Exception as exc:  # noqa: BLE001
                 with self._lock:
@@ -388,12 +417,7 @@ class Writer:
                 if not warned:
                     self._log(f"dropping usage rows: {exc}")
                     warned = True
-                if conn is not None:
-                    try:
-                        conn.close()
-                    except Exception:  # noqa: BLE001
-                        pass
-                    conn = None
+                conn = _shut(conn)
         if conn is not None:
             conn.close()
 
