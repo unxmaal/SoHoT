@@ -76,6 +76,10 @@ NOT_GATING = {
                                              "the node down and the next deploy poll tries again (#1692)",
     "harness/node_deploy.py:WARM_POLL_S": "how often a reinstalled node is asked for /models; it paces the wait, "
                                           "WARM_S bounds it (#1692)",
+    "harness/node_state.py:FRESH_S": "how long a node's report is reused before the queue asks again; it paces the "
+                                     "ssh reads, and a delegation lease on the node is read live (#1689)",
+    "harness/node_state.py:READ_TIMEOUT_S": "how long the ssh reading a node's report may take; a timeout leaves the "
+                                            "node's batch work waiting until the next read (#1689)",
     f"{Q}:LAUNCHCTL_TIMEOUT_S": "how long launchctl may take to load the switch's one-shot unit; a timeout fails "
                                 "the deploy before the switch and restores the store (#1506)",
     f"{X}:REAP_TIMEOUT_S": "how long a timed-out step's killed process group has to exit; the step already counts "

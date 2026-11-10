@@ -1280,8 +1280,10 @@ def _main(args) -> int:
     # One model-loading run on the machine at a time, across projects (#314); a cloud-only run takes a cloud slot (#1135).
     with contextlib.ExitStack() as stack:
         try:
-            stack.enter_context(exclusive.held(lock_kind(args), announce=lambda m: print(
-                f"evals.run: {m}", file=sys.stderr, flush=True), deadline_s=deadline_s(args)))
+            kind = lock_kind(args)
+            stack.enter_context(exclusive.held(kind, announce=lambda m: print(
+                f"evals.run: {m}", file=sys.stderr, flush=True), deadline_s=deadline_s(args),
+                node=node_of(args) if kind in exclusive.NODE else ""))
         except exclusive.StoreDown as exc:
             raise SystemExit(f"evals.run: {exc}") from exc
         from harness import workqueue
@@ -1306,11 +1308,22 @@ def hosted(candidate: str, config=None) -> bool:
 
 
 def lock_kind(args, config=None) -> str:
-    """The lock a run takes: a cloud slot when every candidate is hosted, else the GPU lock. #1135."""
+    """The lock a run takes: a cloud slot when every candidate is hosted, a node's when one node serves them all, else the GPU lock. #1135, #778."""
     if getattr(args, "adherence", None) or getattr(args, "from_winners", False):
         return "eval"
     candidates = split_candidates(getattr(args, "candidates", "") or "")
-    return "cloud-eval" if candidates and all(hosted(c, config) for c in candidates) else "eval"
+    if candidates and all(hosted(c, config) for c in candidates):
+        return "cloud-eval"
+    return "node-eval" if node_of(args, config) else "eval"
+
+
+def node_of(args, config=None) -> str:
+    """The node that serves every candidate first, so the run loads nothing here; "" for any other run. #778, #1689."""
+    from harness import node_state
+    candidates = split_candidates(getattr(args, "candidates", "") or "")
+    if not candidates or any(kind_of(c) != "gateway" for c in candidates):
+        return ""
+    return node_state.placed(candidates, config)[0]
 
 
 def queued_args(argv):
@@ -1332,6 +1345,12 @@ def argv_lock_kind(argv, config=None) -> str | None:
     """The lock_kind a queued `-m evals.run ...` command will take; None for any other command. #1153."""
     args = queued_args(argv)
     return None if args is None or args.compare else lock_kind(args, config)
+
+
+def argv_node(argv, config=None) -> str:
+    """The node a queued `-m evals.run ...` command's candidates are all served by; "" for any other. #1689."""
+    args = queued_args(argv)
+    return "" if args is None or args.compare else node_of(args, config)
 
 
 def deadline_s(args) -> float | None:
@@ -2094,10 +2113,13 @@ def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None,
 
 
 def yields_to_serving(outdir):
-    """A serve_lease.Yielder when this run holds this machine's lock, so a delegation preempts it between cases. #1556."""
+    """A serve_lease.Yielder when this run holds this machine's lock or a node's, so a delegation there preempts it. #1556, #1689."""
     import os
 
     from harness import exclusive, serve_lease
+    node = os.environ.get(exclusive.NODE_HELD_ENV) or ""
+    if node:
+        return serve_lease.Yielder(outdir, node=node)
     if os.environ.get(exclusive.HELD_ENV) != "1":
         return None
     return serve_lease.Yielder(outdir)

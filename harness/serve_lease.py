@@ -87,14 +87,20 @@ def _leases(fn, default=None):
         return default
 
 
-class Lease:
-    """One delegation's lease on this machine's serving: waiting, serving, then idle for GRACE_S after it answers. #1556, #1558."""
+def resource(node: str = "") -> str:
+    """The lease class of serving on this machine, or on a node its gateway sends a lane to. #1689."""
+    from harness import item_lease, resources
+    return resources.on(node, item_lease.SERVING) if node else item_lease.SERVING
 
-    def __init__(self, lane: str, holder: str, clock=time.time):
+
+class Lease:
+    """One delegation's lease on this machine's serving, or a node's: waiting, serving, then idle for GRACE_S. #1556, #1689."""
+
+    def __init__(self, lane: str, holder: str, clock=time.time, node: str = ""):
         from harness import item_lease
         self.clock = clock
         self.record = {"holder": holder, "lane": lane, "pid": os.getpid(), "since": clock()}
-        got = _leases(lambda c: item_lease.take(c, item_lease.SERVING, f"delegation {lane}", state=WAITING,
+        got = _leases(lambda c: item_lease.take(c, resource(node), f"delegation {lane}", state=WAITING,
                                                 detail=holder, ttl_s=HELD_S, now=self.record["since"]))
         self.id = got["id"] if got else None
         self.record.update(state=WAITING, until=None)
@@ -119,14 +125,14 @@ class Lease:
             _leases(lambda c: item_lease.release(c, self.id))
 
 
-def holders(now: float | None = None) -> list[dict]:
-    """The live delegation leases: waiting or serving in a live process, or idle inside their grace; a dead one is released."""
+def holders(now: float | None = None, node: str = "") -> list[dict]:
+    """The live delegation leases here, or on a node: waiting or serving in a live process, or idle in their grace."""
     from harness import item_lease
     now = time.time() if now is None else now
 
     def read(c):
         out = []
-        for r in item_lease.live(c, item_lease.SERVING, now):
+        for r in item_lease.live(c, resource(node), now):
             if r["state"] in (WAITING, SERVING) and not _alive(r["pid"]):
                 item_lease.release(c, r["id"], now)
                 continue
@@ -137,9 +143,9 @@ def holders(now: float | None = None) -> list[dict]:
     return _leases(read, [])
 
 
-def held(now: float | None = None) -> str:
-    """Who holds the serving lease, or "" when nobody does."""
-    got = holders(now)
+def held(now: float | None = None, node: str = "") -> str:
+    """Who holds the serving lease here, or on a node, or "" when nobody does."""
+    got = holders(now, node)
     if not got:
         return ""
     first = got[0]
@@ -150,10 +156,11 @@ def held(now: float | None = None) -> str:
 class Yielder:
     """A running eval's record of where it is, so a delegation knows when it may load a model. #1556."""
 
-    def __init__(self, out, clock=time.time):
+    def __init__(self, out, clock=time.time, node: str = ""):
         self.clock = clock
+        self.node = node
         self.path = _dir("yielders") / f"{os.getpid()}.json"
-        self.record = {"pid": os.getpid(), "out": str(out or ""), "state": BETWEEN, "at": clock()}
+        self.record = {"pid": os.getpid(), "out": str(out or ""), "state": BETWEEN, "at": clock(), "node": node}
         _write(self.path, self.record)
 
     def _set(self, **fields) -> None:
@@ -241,13 +248,14 @@ def mark_beside(found: list[dict], lane: str) -> int:
     return n
 
 
-def yielders() -> list[dict]:
-    """Every live eval that yields to a lease; a dead one's record is removed."""
+def yielders(node: str = "") -> list[dict]:
+    """Every live eval loading this machine, or a node, that yields to a lease; a dead one's record is removed."""
     out = []
     for f in sorted(_dir("yielders").glob("*.json")):
         r = _read(f)
         if r and _alive(r.get("pid")):
-            out.append(r)
+            if (r.get("node") or "") == node:
+                out.append(r)
         else:
             _drop(f)
     return out

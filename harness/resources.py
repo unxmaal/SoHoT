@@ -14,18 +14,35 @@ DEPLOY = "deploy"
 CLASSES = (GPU, NETWORK, DISK, CPU)
 #: soh verbs whose whole job is a download.
 DOWNLOADS = ("fetch",)
+#: A class on a node, not this machine: gpu@styx is styx's GPU, held by batch work its gateway sends there. #1689.
+AT = "@"
+
+
+def on(node: str, cls: str = GPU) -> str:
+    return f"{cls}{AT}{node}"
+
+
+def node_of(cls: str) -> str:
+    """The node a class is on, "" for this machine's own."""
+    return (cls or "").partition(AT)[2]
 
 
 def capacity(cls: str) -> int:
-    """How many jobs of `cls` this machine's worker runs at once; a deploy has the machine to itself."""
+    """How many jobs of `cls` this machine's worker runs at once; a deploy has the machine to itself, a node's GPU one."""
     from harness import exclusive
     return {GPU: 1, NETWORK: max(1, int(exclusive.CLOUD_SLOTS)), DISK: 1, CPU: 1}.get(cls, 1)
 
 
 def check(cls: str) -> str:
-    """`cls` when it is a class a job may declare; else ValueError naming them."""
+    """`cls` when it is a class a job may declare, a node's gpu among them; else ValueError naming them."""
+    base, _, node = (cls or "").partition(AT)
+    if base == GPU and node:
+        from harness import node_state
+        if node_state.node(node) is None:
+            raise ValueError(f"{cls}: {node} is not an unparked node in nodes.yaml")
+        return cls
     if cls not in CLASSES:
-        raise ValueError(f"a job's resource is one of {', '.join(CLASSES)}, not {cls!r}")
+        raise ValueError(f"a job's resource is one of {', '.join(CLASSES)} or {on('<node>')}, not {cls!r}")
     return cls
 
 
@@ -38,14 +55,17 @@ def _verb(argv) -> str:
 
 
 def classify(argv, kind: str = "command") -> str:
-    """The class of a job that declared none: a deploy, a cloud-only eval or a download, else gpu, as every job was. #1153."""
+    """The class of a job that declared none: a deploy, a cloud-only eval, a node's eval or a download, else gpu. #1153, #1689."""
     from harness import exclusive
     if kind == DEPLOY:
         return DEPLOY
     try:
         from evals import run
-        if run.argv_lock_kind(argv or []) in exclusive.CLOUD:
+        kind = run.argv_lock_kind(argv or [])
+        if kind in exclusive.CLOUD:
             return NETWORK
+        if kind in exclusive.NODE:
+            return on(run.argv_node(argv or []))
     except Exception:  # noqa: BLE001 - a job the rule cannot read waits for the GPU, as every job did before
         return GPU
     return NETWORK if _verb(argv or []) in DOWNLOADS else GPU

@@ -619,12 +619,16 @@ def _upstream(spec: str, config=None) -> tuple[str, str] | None:
     return (base, gateway.strip_provider(str(params.get("model", "")))) if base else None
 
 
-def _props(base: str, key: str, get=None) -> dict:
-    """A single-model llama-server's /props: {"ctx": per-slot context, "slots"}; {} when it does not say. #684."""
-    try:
-        got = get(base + "/props") if get else _get_json(base + "/props", key)
-    except Exception:  # noqa: BLE001 - not llama-server, or not answering
-        return {}
+def _props(base: str, key: str, get=None, model: str = "") -> dict:
+    """llama-server's /props: {"ctx": per-slot context, "slots"}; a router's answers n_ctx 0, so its model's own first. #684, #762."""
+    got = {}
+    for path in ([f"/props?model={model}"] if model else []) + ["/props"]:
+        try:
+            got = get(base + path) if get else _get_json(base + path, key)
+        except Exception:  # noqa: BLE001 - not llama-server, or not answering
+            got = {}
+        if (got.get("default_generation_settings") or {}).get("n_ctx"):
+            break
     ctx = (got.get("default_generation_settings") or {}).get("n_ctx")
     out = {k: int(v) for k, v in (("ctx", ctx), ("slots", got.get("total_slots"))) if v}
     build = build_of(got.get("build_info"))
@@ -646,7 +650,7 @@ def served_build(spec: str, config=None, get=None) -> str | None:
     from harness import serving
     if serving.loopback(where[0]):
         return None
-    return _props(where[0], _key(spec, config), get).get("build") or None
+    return _props(where[0], _key(spec, config), get, where[1]).get("build") or None
 
 
 def served_ctx(spec: str, config=None, get=None, conn=None) -> int | None:
@@ -671,7 +675,7 @@ def served_ctx(spec: str, config=None, get=None, conn=None) -> int | None:
     from harness import serving
     # The stored choice was planned for this machine; a remote server says itself or is unknown. #722.
     if not serving.loopback(base):
-        return _props(base, key, get).get("ctx")
+        return _props(base, key, get, stem).get("ctx")
     from harness import downloads, interactive
     if base == interactive.answering(stem):
         return interactive.served_ctx(stem)
@@ -725,7 +729,7 @@ def served_slots(spec: str, config=None, get=None) -> int | None:
     except Exception:  # noqa: BLE001 - an unreachable router serves an unknown shape
         return None
     from harness import serving
-    return None if serving.loopback(base) else _props(base, key, get).get("slots")
+    return None if serving.loopback(base) else _props(base, key, get, stem).get("slots")
 
 
 #: llama-server's /props sampler names, as the request keys they default. #921.
