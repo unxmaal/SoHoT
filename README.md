@@ -1534,6 +1534,11 @@ running and the current `origin/main`. `deploy` refuses to overwrite local
 edits made inside the deploy worktree, and refuses a commit until check-macos
 has passed in that commit's own push run on main (asked through `gh`), so two
 PRs that were green apart but break main together never reach the agents.
+While main's own run is unfinished, a commit whose tree is byte-identical to the head of the PR
+its subject names deploys on that PR's passed check-macos run, provided the head contains the
+commit's parent (#1684): then nothing else merged in between, so it is the tree the PR run tested.
+A concluded main run still outranks it. When main's own run then fails, `soh deploy poll` alerts
+once through `scripts/monit-alert.sh`; it does not roll back.
 A push run whose check-macos hits its job timeout on main's tip is rerun once by
 `.github/workflows/rerun-cancelled.yml`, and its report says "slow suite at N%" or names the hung
 test; `uv run python -m harness.ci_history --cache DIR` tabulates check-macos minutes (p50/p95 by
@@ -1550,8 +1555,9 @@ A periodic unit with a live run (a daytime `fetch`) is not reloaded: install wai
 for it, then prints `deferred:` and still exits 0, since the unit starts the deployed code on its
 next run. When that unit's definition changed, the line says so; run `install` again after the run ends.
 
-Once that is installed, a deploy is a job in the work queue (#1506). Every 10 minutes the
-`deploy` agent (`soh deploy poll`) looks at `origin/main`; a head whose check-macos passed gets one
+Once that is installed, a deploy is a job in the work queue (#1506). Every minute
+(`DEPLOY_EVERY_MIN`) the `deploy` agent (`soh deploy poll`) fetches `origin/main`, and asks `gh` nothing
+when that head is deployed or queued; a head whose check-macos passed gets one
 deploy job, and a newer green head cancels a pending one. The job starts only from the watchdog's
 day start until 20:00, with no discover loop or eval running and no other job running, and ahead
 of every pending measurement. It checks the commit out into a new release under
