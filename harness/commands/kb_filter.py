@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import random
+import sys
 import time
 from pathlib import Path
 
@@ -14,11 +15,41 @@ def _row(name: str, r: dict) -> str:
             f"{r['kept_hits']:>6}/{r['hits']:<6} {r['kept_share']:>6.1%}")
 
 
-def cmd_kb_filter(a) -> int:
+def _answer_hook(a, stdin, decide) -> int:
+    """Claude Code reads the hook's stdout as the replacement result, so it prints that or nothing, on any failure too."""
+    from harness import kb_filter as kf
+    tag = "-strict" if a.strict else ""
+    try:
+        event = json.loads(stdin.read() or "{}")
+        chosen = json.loads((Path(a.dir) / f"report{tag}.json").read_text(encoding="utf-8"))
+        vocab = json.loads((Path(a.dir) / f"vocab{tag}.json").read_text(encoding="utf-8"))
+        if decide is None and chosen.get("ship", {}).get("arm") in kf.LOCAL:
+            from harness import delegate
+            decide = delegate.decide
+        got = kf.hook(event, chosen, vocab, decide)
+    except Exception:  # noqa: BLE001 - a hook that fails shows the search whole
+        got = None
+    if got:
+        print(json.dumps(got))
+    return 0
+
+
+def cmd_kb_filter(a, stdin=None, decide=None) -> int:
     from harness import context_report as cr
     from harness import kb_filter as kf
     from harness import paths
 
+    if a.hook:
+        return _answer_hook(a, stdin or sys.stdin, decide)
+    if a.settings:
+        where = paths.deploy_checkout()
+        command = (f"uv run --quiet --project {where or '<deploy checkout>'} soh kb-filter --hook "
+                   f"--dir {Path(a.dir).expanduser().resolve()}" + (" --strict" if a.strict else ""))
+        block = kf.settings(command)
+        note("add to ~/.claude/settings.json or a project's .claude/settings.json (not applied here):")
+        note(json.dumps(block, indent=2))
+        emit(settings=block)
+        return 0
     paths.eval_home(reads_live=True)
     out = Path(a.dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -62,18 +93,26 @@ def cmd_kb_filter(a) -> int:
         return 1
     if len(scored_held) < len(held):
         note(f"{len(held) - len(scored_held)} held-out searches have no decide scores yet and are left out")
-    got = kf.report(tune, scored_held, decide, extract, k, [p for p in planted if p["key"] in decide])
-    note(f"{got['held_out']} held-out searches (newest {a.days:g} days), threshold {got['threshold']:.3f} "
-         f"tuned on {got['tuning']} earlier ones; position arm at the decide arm's kept tokens")
+    vocab = kf.vocabulary(tune)
+    (out / f"vocab{tag}.json").write_text(json.dumps(vocab), encoding="utf-8")
+    got = kf.report(tune, scored_held, decide, extract, k, [p for p in planted if p["key"] in decide], vocab)
+    cuts = ", ".join(f"{arm} {cut:.3f}" for arm, cut in got["thresholds"].items())
+    note(f"{got['held_out']} held-out searches (newest {a.days:g} days); cuts {cuts}, tuned on earlier searches "
+         f"({got['tuning']} with decide scores); position arm at the decide arm's kept tokens")
     note(f"{'arm':<9} {'recall':>7} {'lower':>7} {'kept/referenced':>11} {'hits kept':>13} {'tokens':>6}")
     for name, r in got["arms"].items():
         note(_row(name, r))
-    if "planted" in got:
-        note(_row("planted", got["planted"]))
+    for name, r in got.get("planted_by_arm", {}).items():
+        note(_row(f"planted {name}", r))
     vs = got["vs_position"]
     note(f"decide vs position on referenced hits: {vs['won']} kept only by decide, {vs['lost']} only by position, "
          f"p {vs['p']}")
-    note("gate: " + ("passes" if not got["gate"] else "fails: " + "; ".join(got["gate"])))
+    for name, vs in got["vs_lexical"].items():
+        note(f"{name} vs lexical at {name}'s kept tokens: {vs['won']} kept only by {name}, {vs['lost']} only by "
+             f"lexical, p {vs['p']}")
+    for name, why in got["gates"].items():
+        note(f"gate {name}: " + ("passes" if not why else "fails: " + "; ".join(why)))
+    note(f"ships: {got['ship']['arm']}" + ("".join(f"; {w}" for w in got["ship"]["why"])))
     (out / f"report{tag}.json").write_text(json.dumps(got, indent=1), encoding="utf-8")
-    emit(not got["gate"], **got)
+    emit(got["ship"]["arm"] != "none", **got)
     return 0

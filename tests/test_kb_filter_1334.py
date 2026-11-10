@@ -193,7 +193,163 @@ def test_soh_kb_filter_eval_reports_every_arm_from_stored_scores(tmp_path, capsy
         for it in items), encoding="utf-8")
     assert cli.main(args + ["--no-model", "--json"]) == 0
     data = json.loads(capsys.readouterr().out)
-    assert set(data["arms"]) == {"decide", "position", "type"}
+    assert set(data["arms"]) == {"decide", "lexical", "combo", "position", "type"}
     assert data["arms"]["decide"]["recall"] == 1.0 and data["held_out"] == 8
     assert json.loads((work / "report.json").read_text(encoding="utf-8"))["threshold"] == data["threshold"]
-    assert data["knobs"] == K._asdict()
+    assert data["knobs"] == K._asdict() and data["ship"]["arm"] in ("lexical", "decide", "combo", "none")
+    assert json.loads((work / "vocab.json").read_text(encoding="utf-8"))["n"] == 6 * 8
+
+
+def test_the_threshold_is_the_highest_cut_reaching_the_target_as_a_scan_finds_it():
+    import random
+    rng = random.Random(7)
+    items = [item(f"t{n}", 10, rng.sample(range(1, 11), 2)) for n in range(30)]
+    scores = {it["key"]: [rng.random() for _ in range(10)] for it in items}
+    for target in (0.5, 0.8, 0.96, 1.0):
+        scan = next((c for c in sorted({s for v in scores.values() for s in v}, reverse=True)
+                     if kf.recall(items, {it["key"]: kf.decide_keep(it, scores[it["key"]], c, K)
+                                          for it in items})[0] >= target), 0.0)
+        assert kf.threshold(items, scores, K, target) == scan
+
+
+def lex_item(need, hits, query="widget"):
+    hits = [{"kind": "RULE", "id": str(200 + p), "text": f"[RULE #{200 + p}] {t}"} for p, t in enumerate(hits, 1)]
+    return {"key": need, "query": query, "need": need, "header": "", "hits": hits, "footer": "",
+            "tokens": sum(kf.tokens(h["text"]) for h in hits), "gold": []}
+
+
+FILLER = [f"unrelated topic number {n} about gardening and soup" for n in range(9)]
+
+
+def test_the_lexical_arm_scores_rare_shared_words_over_common_ones_with_no_model():
+    vocab = kf.vocabulary([lex_item("x", FILLER + ["the widget gearbox jams", "widget"])])
+    it = lex_item("the gearbox jams on the widget", FILLER + ["gearbox jams in cold", "the widget"])
+    got = kf.lexical_scores(it, vocab, K)
+    assert got[9] == 1.0 and got[10] < got[9] and max(got[:9]) < got[10]
+    assert kf.lexical_scores(lex_item("", ["a", "b"], query=""), vocab, K) == [0.0, 0.0]
+
+
+def test_mean_and_budget_arms_line_up_per_hit_and_stop_at_the_budget():
+    assert kf.mean_scores({"a": [1.0, 0.0], "b": [1.0], "c": None}, {"a": [0.0, 1.0], "b": [1.0, 0.0]}) == \
+        {"a": [0.5, 0.5]}
+    it = item("k", 6, [5])
+    one = kf.tokens(it["hits"][0]["text"])
+    assert kf.budget_keep(it, [0.1, 0.2, 0.3, 0.4, 0.9, 0.5], 2 * one, K) == [5, 6]
+    assert kf.budget_keep(it, None, one, K) == [1, 2, 3, 4, 5, 6]
+
+
+def _out(gates=None, vs=None, kept=None):
+    gates = gates or {}
+    vs = vs or {}
+    kept = kept or {}
+    return {"arms": {a: {"tokens_kept": kept.get(a, 100)} for a in ("decide", "lexical", "combo")},
+            "gates": {a: gates.get(a, []) for a in ("decide", "lexical", "combo")},
+            "vs_lexical": {a: vs.get(a, {"won": 1, "lost": 1, "p": 1.0}) for a in kf.LOCAL},
+            "thresholds": {"decide": 0.3, "lexical": 0.1, "combo": 0.2}}
+
+
+def test_a_local_arm_ships_only_when_it_beats_lexical_at_equal_tokens_and_keeps_no_more():
+    win = {"won": 30, "lost": 5, "p": 0.001}
+    assert kf.ship(_out())["arm"] == "lexical"
+    assert kf.ship(_out(vs={"combo": {"won": 13, "lost": 7, "p": 0.2632}}))["arm"] == "lexical"
+    assert kf.ship(_out(vs={"combo": win}))["arm"] == "combo"
+    assert kf.ship(_out(vs={"combo": win}, kept={"combo": 101}))["arm"] == "lexical"
+    assert kf.ship(_out(vs={"combo": win}, gates={"combo": ["recall"]}))["arm"] == "lexical"
+    assert kf.ship(_out(vs={"combo": win, "decide": win}, kept={"decide": 90, "combo": 95})) == \
+        {"arm": "decide", "cut": 0.3, "why": []}
+    none = kf.ship(_out(gates={"lexical": ["recall 0.9 < 0.95"]}))
+    assert none["arm"] == "none" and "lexical: recall 0.9 < 0.95" in none["why"]
+
+
+NEED = "the gearbox jams on the widget after the firmware update"
+
+
+def _chosen(arm="lexical", cut=0.5):
+    return {"ship": {"arm": arm}, "thresholds": {"decide": 0.5, "lexical": cut, "combo": 0.5},
+            "knobs": K._asdict()}
+
+
+def _event(tmp_path, text, response=None, tool=SEARCH):
+    tr = tmp_path / "t.jsonl"
+    tr.write_text(json.dumps(call("m1", text=NEED)) + "\n" + json.dumps(call("m2", [("s1", SEARCH, {})])) + "\n",
+                  encoding="utf-8")
+    shown = json.dumps({"result": text})
+    return {"tool_name": tool, "tool_input": {"query": "widget"}, "transcript_path": str(tr),
+            "tool_response": response if response is not None else [{"type": "text", "text": shown}]}
+
+
+def _search(n=10, at=8):
+    rows = [(f"[RULE #{300 + p}] unrelated topic {p} about gardening and soup" if p != at else
+             f"[RULE #{300 + p}] {NEED} (planted)") for p in range(1, n + 1)]
+    return "\n\n".join(rows) + FOOTER
+
+
+def test_the_hook_keeps_a_planted_hit_at_position_eight_and_names_the_dropped_ids(tmp_path):
+    vocab = kf.vocabulary([lex_item("x", FILLER + [NEED])])
+    got = kf.hook(_event(tmp_path, _search()), _chosen(), vocab)
+    out = got["hookSpecificOutput"]
+    assert out["hookEventName"] == "PostToolUse" and out["updatedMCPToolOutput"] == out["updatedToolOutput"]
+    (block,) = out["updatedMCPToolOutput"]
+    text = json.loads(block["text"])["result"]
+    assert f"[RULE #308] {NEED}" in text and "[RULE #302] unrelated" not in text
+    assert "also matched: [RULE #302]" in text and "[RULE #310]" in text and text.endswith(FOOTER)
+
+
+@pytest.mark.parametrize("shape", ["str", "result", "content"])
+def test_the_hook_returns_the_shape_it_was_given(tmp_path, shape):
+    vocab = kf.vocabulary([lex_item("x", FILLER + [NEED])])
+    text = _search()
+    resp = {"str": text, "result": {"result": text}, "content": {"content": [{"type": "text", "text": text}]}}[shape]
+    out = kf.hook(_event(tmp_path, text, resp), _chosen(), vocab)["hookSpecificOutput"]["updatedMCPToolOutput"]
+    got = {"str": lambda o: o, "result": lambda o: o["result"], "content": lambda o: o["content"][0]["text"]}[shape](out)
+    assert "(planted)" in got and "unrelated topic 2 " not in got
+
+
+def test_the_hook_leaves_the_result_whole_when_it_cannot_judge(tmp_path):
+    vocab = kf.vocabulary([lex_item("x", FILLER + [NEED])])
+    assert kf.hook(_event(tmp_path, _search(), tool="Read"), _chosen(), vocab) is None
+    assert kf.hook(_event(tmp_path, _search()), _chosen("none"), vocab) is None
+    assert kf.hook(_event(tmp_path, _search(n=3, at=2)), _chosen(), vocab) is None
+    assert kf.hook(_event(tmp_path, _search(), response={"weird": 1}), _chosen(), vocab) is None
+    assert kf.hook(_event(tmp_path, _search()), _chosen(cut=0.0), vocab) is None
+
+
+def test_a_local_arm_whose_lane_fails_falls_back_to_the_lexical_cut(tmp_path):
+    vocab = kf.vocabulary([lex_item("x", FILLER + [NEED])])
+
+    def down(*a, **k):
+        raise RuntimeError("lane down")
+
+    def picks_first(question, schema, context=""):
+        return {"answers": {}, "probabilities": {f: {"true": 1.0 if f == "result_1" else 0.0} for f in schema}}
+
+    fell = kf.hook(_event(tmp_path, _search()), _chosen("decide"), vocab, down)
+    assert "(planted)" in fell["hookSpecificOutput"]["updatedMCPToolOutput"][0]["text"]
+    local = kf.hook(_event(tmp_path, _search()), _chosen("decide"), vocab, picks_first)
+    text = json.loads(local["hookSpecificOutput"]["updatedMCPToolOutput"][0]["text"])["result"]
+    assert "[RULE #301] unrelated" in text and "[RULE #303] unrelated" not in text
+
+
+def test_soh_kb_filter_hook_prints_the_replacement_or_nothing(tmp_path, capsys):
+    import io
+    vocab = kf.vocabulary([lex_item("x", FILLER + [NEED])])
+    (tmp_path / "report.json").write_text(json.dumps(_chosen()), encoding="utf-8")
+    (tmp_path / "vocab.json").write_text(json.dumps(vocab), encoding="utf-8")
+    args = cli.build_parser().parse_args(["kb-filter", "--hook", "--dir", str(tmp_path)])
+    from harness.commands import kb_filter as cmd
+    assert cmd.cmd_kb_filter(args, stdin=io.StringIO(json.dumps(_event(tmp_path, _search())))) == 0
+    printed = json.loads(capsys.readouterr().out)
+    assert "(planted)" in printed["hookSpecificOutput"]["updatedMCPToolOutput"][0]["text"]
+    assert cmd.cmd_kb_filter(args, stdin=io.StringIO("not json")) == 0
+    assert capsys.readouterr().out == ""
+    (tmp_path / "vocab.json").unlink()
+    assert cmd.cmd_kb_filter(args, stdin=io.StringIO(json.dumps(_event(tmp_path, _search())))) == 0
+    assert capsys.readouterr().out == ""
+
+
+def test_soh_kb_filter_settings_prints_a_post_tool_use_block_for_the_search_tool(tmp_path, capsys):
+    assert cli.main(["kb-filter", "--settings", "--dir", str(tmp_path), "--json"]) == 0
+    block = json.loads(capsys.readouterr().out)["settings"]
+    (entry,) = block["hooks"]["PostToolUse"]
+    assert entry["matcher"] == SEARCH and entry["hooks"][0]["command"].endswith(
+        f"soh kb-filter --hook --dir {tmp_path.resolve()}")

@@ -122,6 +122,8 @@ NOT_RUN = {
     "ask --redo": "moves to a scratch home (paths.eval_home) before reading transcripts",
     "spans --redo": "moves to a scratch home (paths.eval_home) before reading transcripts",
     "kb-filter --eval": "asks the decide and extract lanes; reads transcripts, no store",
+    "kb-filter --hook": "reads a PostToolUse event on stdin; may ask the decide lane, no store",
+    "kb-filter --settings": "prints a settings block, no store",
 }
 
 

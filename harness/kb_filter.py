@@ -2,14 +2,17 @@
 from __future__ import annotations
 
 import json
+import math
 import random
 import re
+from collections import Counter
 from pathlib import Path
 from typing import NamedTuple
 
 from harness import context_class as cc
 from harness import context_report as cr
 from harness.intervals import wilson
+from harness.lexical_rank import tokens as words
 from harness.paired import sign_test
 
 SEARCH = cc.KB_PREFIX + "search"
@@ -20,7 +23,9 @@ _ID = re.compile(r"#(\d+)\b")
 TARGET = 0.96
 #: Recall and its Wilson lower bound the held-out week must reach before wiring (#1334).
 GATE_RECALL, GATE_LOWER = 0.95, 0.92
-ARMS = ("decide", "extract", "position", "type")
+ARMS = ("decide", "extract", "lexical", "combo", "position", "type")
+#: Arms that call a local model; one ships only when it beats the lexical arm at equal tokens (#1690).
+LOCAL = ("decide", "combo")
 
 
 class Knobs(NamedTuple):
@@ -165,12 +170,60 @@ def by_type(item: dict, k: int = 2) -> list[int]:
 
 
 def threshold(items: list[dict], scores: dict, k: Knobs, target: float = TARGET) -> float:
-    """The highest P(keep) cut whose recall over `items` reaches `target`, guard included."""
-    cuts = sorted({s for it in items for s in scores.get(it["key"], [])}, reverse=True)
-    for cut in cuts:
-        if recall(items, {it["key"]: decide_keep(it, scores.get(it["key"]), cut, k) for it in items})[0] >= target:
-            return cut
-    return 0.0
+    """The highest score cut whose recall over `items` reaches `target`, guard included (recall falls as the cut rises)."""
+    cuts = sorted({s for it in items for s in scores.get(it["key"]) or []}, reverse=True)
+
+    def reaches(cut: float) -> bool:
+        return recall(items, {it["key"]: decide_keep(it, scores.get(it["key"]), cut, k) for it in items})[0] >= target
+    lo, hi = 0, len(cuts)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if reaches(cuts[mid]):
+            hi = mid
+        else:
+            lo = mid + 1
+    return cuts[lo] if lo < len(cuts) else 0.0
+
+
+def vocabulary(items: list[dict]) -> dict:
+    """Document frequency of every word over the hits of `items`: the lexical arm's idf."""
+    df: Counter = Counter()
+    n = 0
+    for it in items:
+        for h in it["hits"]:
+            n += 1
+            df.update(set(words(h["text"])))
+    return {"n": n, "df": dict(df)}
+
+
+def lexical_scores(item: dict, vocab: dict, k: Knobs) -> list[float]:
+    """Per hit, the idf of the words it shares with the query and need, over the search's best: no model."""
+    n, df = vocab["n"], vocab["df"]
+    asked_words = set(words(item["query"] + " " + item["need"][-k.need_chars:]))
+    raw = [sum(math.log(1 + (n - df.get(w, 0) + 0.5) / (df.get(w, 0) + 0.5))
+               for w in asked_words & set(words(h["text"][:k.hit_chars]))) for h in item["hits"]]
+    top = max(raw, default=0.0) or 1.0
+    return [s / top for s in raw]
+
+
+def mean_scores(a: dict, b: dict) -> dict:
+    """key -> per-hit mean of two arms' scores, for the searches both scored in full."""
+    return {key: [(x + y) / 2 for x, y in zip(a[key], b[key])] for key in a
+            if a[key] and b.get(key) and len(a[key]) == len(b[key])}
+
+
+def budget_keep(item: dict, probs: list[float] | None, budget: int, k: Knobs) -> list[int]:
+    """The best-scored hits until their tokens reach `budget`: an arm at another arm's kept tokens."""
+    if probs is None or len(probs) != len(item["hits"]):
+        return guard(item["hits"], None, item["query"], item["need"], k)
+    order = sorted(range(1, len(probs) + 1), key=lambda p: -probs[p - 1])
+    kept, spent = [], 0
+    for p in order:
+        if spent >= budget and kept:
+            break
+        kept.append(p)
+        spent += tokens(item["hits"][p - 1]["text"])
+    return guard(item["hits"], kept, item["query"], item["need"], k, order)
 
 
 def decide_keep(item: dict, probs: list[float] | None, cut: float, k: Knobs) -> list[int]:
@@ -320,6 +373,66 @@ def labelled(root: Path, *, since: float, until: float = float("inf"), big: int 
     return sorted(out, key=lambda it: it["at"])
 
 
+def _response_text(resp):
+    """(text, put) for a search's tool_response, where put(new) rebuilds the same shape; None for a shape unknown."""
+    if isinstance(resp, str):
+        return resp, lambda new: new
+    if isinstance(resp, dict) and isinstance(resp.get("result"), str):
+        return resp["result"], lambda new: {**resp, "result": new}
+    blocks = resp.get("content") if isinstance(resp, dict) else resp
+    if isinstance(blocks, list):
+        at = [i for i, b in enumerate(blocks) if isinstance(b, dict) and b.get("type") == "text"]
+        if len(at) == 1:
+            def put(new, i=at[0]):
+                out = [*blocks[:i], {**blocks[i], "text": new}, *blocks[i + 1:]]
+                return {**resp, "content": out} if isinstance(resp, dict) else out
+            return str(blocks[at[0]].get("text") or ""), put
+    return None
+
+
+def hook(event: dict, chosen: dict, vocab: dict, decide=None) -> dict | None:
+    """The PostToolUse output that shows a KB search's kept hits and names the rest; None leaves the result whole."""
+    from harness import unverified as uv
+    arm = chosen.get("ship", {}).get("arm")
+    if event.get("tool_name") != SEARCH or arm not in ("lexical", *LOCAL):
+        return None
+    got = _response_text(event.get("tool_response"))
+    if got is None:
+        return None
+    raw, put = got
+    text, wrapped = unwrap(raw)
+    header, hits, footer = parse(text)
+    k = Knobs(**chosen["knobs"])
+    if len(hits) < k.min_hits:
+        return None
+    path = Path(str(event.get("transcript_path") or ""))
+    recs = uv._records(path, uv.TRANSCRIPT_BYTES)[0] if path.is_file() else []
+    item = {"query": str((event.get("tool_input") or {}).get("query") or ""), "need": _need(recs, len(recs)),
+            "hits": hits}
+    probs, cut = lexical_scores(item, vocab, k), chosen["thresholds"]["lexical"]
+    local = None
+    if arm in LOCAL and decide is not None:
+        try:
+            local = decide_scores(item, decide, k)
+        except Exception:  # noqa: BLE001 - the lane being down leaves the lexical arm
+            local = None
+    if local is not None:
+        probs, cut = (local if arm == "decide" else [(a + b) / 2 for a, b in zip(local, probs)],
+                      chosen["thresholds"][arm])
+    kept = decide_keep(item, probs, cut, k)
+    if len(kept) == len(hits):
+        return None
+    new = render(header, hits, kept, footer)
+    out = put(json.dumps({"result": new}) if wrapped else new)
+    return {"hookSpecificOutput": {"hookEventName": "PostToolUse", "updatedMCPToolOutput": out,
+                                   "updatedToolOutput": out}}
+
+
+def settings(command: str) -> dict:
+    """The settings.json block that runs the filter on every KB search; printed, never written."""
+    return {"hooks": {"PostToolUse": [{"matcher": SEARCH, "hooks": [{"type": "command", "command": command}]}]}}
+
+
 def split(items: list[dict], days: float) -> tuple[list[dict], list[dict]]:
     """(tuning, held out): the held-out set is the newest `days` of searches."""
     if not items:
@@ -359,25 +472,62 @@ def score(items: list[dict], arm: str, path: Path, call, k: Knobs, log=lambda *_
     return done
 
 
+def _spent(item: dict, kept: list[int]) -> int:
+    return sum(tokens(item["hits"][p - 1]["text"]) for p in kept)
+
+
+def ship(out: dict) -> dict:
+    """The arm a hook runs: a local arm only when its gate holds, it beats lexical at equal tokens and keeps no more."""
+    lex = out["arms"]["lexical"]
+    why = []
+    for a in sorted(LOCAL, key=lambda a: out["arms"][a]["tokens_kept"]):
+        vs = out["vs_lexical"][a]
+        if out["gates"][a]:
+            why.append(f"{a}: gate fails")
+        elif not (vs["won"] > vs["lost"] and vs["p"] < 0.05):
+            why.append(f"{a}: does not beat lexical at equal tokens ({vs['won']} won, {vs['lost']} lost, p {vs['p']})")
+        elif out["arms"][a]["tokens_kept"] > lex["tokens_kept"]:
+            why.append(f"{a}: keeps {out['arms'][a]['tokens_kept']} tokens to lexical's {lex['tokens_kept']}")
+        else:
+            return {"arm": a, "cut": out["thresholds"][a], "why": why}
+    if out["gates"]["lexical"]:
+        return {"arm": "none", "cut": None, "why": why + ["lexical: " + "; ".join(out["gates"]["lexical"])]}
+    return {"arm": "lexical", "cut": out["thresholds"]["lexical"], "why": why}
+
+
 def report(tune: list[dict], held: list[dict], decide: dict, extract: dict, k: Knobs,
-           planted: list[dict] | None = None) -> dict:
-    """Every arm on the held-out searches at the decide arm's kept tokens, and the gate."""
+           planted: list[dict] | None = None, vocab: dict | None = None) -> dict:
+    """Every arm on the held-out searches, each local arm against lexical at its own kept tokens, the gates, and the arm to ship."""
+    vocab = vocab if vocab is not None else vocabulary(tune)
+    lexical = {it["key"]: lexical_scores(it, vocab, k) for it in tune + held + (planted or [])}
+    scores = {"decide": decide, "lexical": lexical, "combo": mean_scores(decide, lexical)}
     have = [it for it in tune if it["key"] in decide]
-    cut = threshold(have, decide, k) if have else 0.5
-    arms = {"decide": {it["key"]: decide_keep(it, decide.get(it["key"]), cut, k) for it in held}}
-    arms["position"] = {it["key"]: guard(it["hits"], by_position(it, sum(tokens(it["hits"][p - 1]["text"])
-                                                                         for p in arms["decide"][it["key"]])),
-                                         it["query"], it["need"], k) for it in held}
+    cuts = {"decide": threshold(have, decide, k) if have else 0.5,
+            "lexical": threshold(tune, lexical, k) if tune else 0.5,
+            "combo": threshold(have, scores["combo"], k) if have else 0.5}
+    arms = {a: {it["key"]: decide_keep(it, s.get(it["key"]), cuts[a], k) for it in held} for a, s in scores.items()}
+    at_tokens = {a: {it["key"]: guard(it["hits"], by_position(it, _spent(it, arms[a][it["key"]])),
+                                      it["query"], it["need"], k) for it in held} for a in scores}
+    arms["position"] = at_tokens["decide"]
     arms["type"] = {it["key"]: guard(it["hits"], by_type(it), it["query"], it["need"], k) for it in held}
     if extract:
         arms["extract"] = {it["key"]: guard(it["hits"], extract.get(it["key"]), it["query"], it["need"], k)
                            for it in held if it["key"] in extract}
-    out = {"tuning": len(have), "held_out": len(held), "threshold": cut, "knobs": k._asdict(),
-           "arms": {a: summary([it for it in held if it["key"] in k], k) for a, k in arms.items()},
+    out = {"tuning": len(have), "held_out": len(held), "threshold": cuts["decide"], "thresholds": cuts,
+           "knobs": k._asdict(),
+           "arms": {a: summary([it for it in held if it["key"] in kept], kept) for a, kept in arms.items()},
            "vs_position": paired(held, arms["decide"], arms["position"])}
-    plant_row = None
+    vs_pos = {a: paired(held, arms[a], at_tokens[a]) for a in scores}
+    out["vs_lexical"] = {a: paired(held, arms[a], {it["key"]: budget_keep(it, lexical[it["key"]],
+                                                                          _spent(it, arms[a][it["key"]]), k)
+                                                   for it in held}) for a in LOCAL}
+    rows = {a: None for a in scores}
     if planted:
-        plant_row = summary(planted, {it["key"]: decide_keep(it, decide.get(it["key"]), cut, k) for it in planted})
-        out["planted"] = plant_row
-    out["gate"] = gate(out["arms"]["decide"], out["vs_position"], plant_row)
+        rows = {a: summary(planted, {it["key"]: decide_keep(it, s.get(it["key"]), cuts[a], k) for it in planted})
+                for a, s in scores.items()}
+        out["planted"] = rows["decide"]
+        out["planted_by_arm"] = rows
+    out["gates"] = {a: gate(out["arms"][a], vs_pos[a], rows[a]) for a in scores}
+    out["gate"] = out["gates"]["decide"]
+    out["ship"] = ship(out)
     return out
