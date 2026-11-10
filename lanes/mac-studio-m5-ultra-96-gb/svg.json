@@ -1,6 +1,88 @@
 {
  "candidates": [
   {
+   "candidate": "plan:q3-30b",
+   "decided_at": "2026-11-10T05:57:14Z",
+   "detail": "svg: won the holdout (verdict 20742); confirmed on 627 dev case(s): 163 gained against 16 lost, p=0.000",
+   "exam": {
+    "about": "30B (3B active) params, 4bit, by mlx-community",
+    "candidate": "plan/q3-30b",
+    "cases": 628,
+    "first_s": 3.735,
+    "median_s": 4.458,
+    "metrics": {
+     "busy_wait_s": 5.092,
+     "completion_tokens": 561.8694,
+     "ink": 0.3807,
+     "method_calls": 2.0,
+     "svg_bytes": 662.633
+    },
+    "model": "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
+    "not_run": "",
+    "pass_rate": 0.72,
+    "passed": 452,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-10T05:57:12Z",
+    "served_as": "",
+    "source": "https://huggingface.co/mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
+    "total": 628,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "measured",
+   "proposal": "plan:q3-30b",
+   "reason": "candidate",
+   "receipt_key": "plan/q3-30b",
+   "run_id": 811,
+   "serves": true,
+   "status": "adopted",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
+   "candidate": "plan:q3-30b,temperature=0",
+   "decided_at": "2026-11-10T05:57:14Z",
+   "detail": "svg: won the holdout (verdict 20742); confirmed on 627 dev case(s): 163 gained against 16 lost, p=0.000",
+   "exam": {
+    "about": "30B (3B active) params, 4bit, by mlx-community",
+    "candidate": "plan/q3-30b",
+    "cases": 628,
+    "first_s": 3.735,
+    "median_s": 4.458,
+    "metrics": {
+     "busy_wait_s": 5.092,
+     "completion_tokens": 561.8694,
+     "ink": 0.3807,
+     "method_calls": 2.0,
+     "svg_bytes": 662.633
+    },
+    "model": "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
+    "not_run": "",
+    "pass_rate": 0.72,
+    "passed": 452,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-10T05:57:12Z",
+    "served_as": "",
+    "source": "https://huggingface.co/mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
+    "total": 628,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "measured",
+   "proposal": "plan:q3-30b",
+   "reason": "candidate",
+   "receipt_key": "plan/q3-30b",
+   "run_id": 811,
+   "serves": false,
+   "status": "adopted",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
    "candidate": "best-of:3:q3-30b",
    "decided_at": "2026-11-09T08:02:56Z",
    "detail": "svg: lane too small, needs 317 holdout cases: 295 cannot show +0.12 per cell at power 0.8 at any repeat up to 16, so about 74 more svg cases are needed before a null says anything about best-of-3/q3-3",
@@ -132,27 +214,27 @@
     "about": "7B params, 4bit, by mlx-community",
     "candidate": "local-large",
     "cases": 923,
-    "first_s": 2.28,
-    "median_s": 2.542,
+    "first_s": 2.582,
+    "median_s": 1.337,
     "metrics": {
-     "completion_tokens": 334.7947,
-     "ink": 0.4212,
-     "svg_bytes": 568.8641,
-     "tokens_per_s": 110.0925
+     "completion_tokens": 319.072,
+     "ink": 0.4063,
+     "svg_bytes": 564.378,
+     "tokens_per_s": 125.8345
     },
     "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
     "not_run": "",
-    "pass_rate": 0.542,
-    "passed": 206,
+    "pass_rate": 0.315,
+    "passed": 291,
     "peak_gb": 0.0,
     "reference": false,
-    "repeat": 2,
-    "run_at": "2026-11-09T01:18:51Z",
+    "repeat": 1,
+    "run_at": "2026-11-10T04:08:49Z",
     "served_as": "local-large",
     "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-    "total": 380,
-    "ttft_median_s": 0.148,
-    "ttft_p95_s": 0.241
+    "total": 923,
+    "ttft_median_s": 0.187,
+    "ttft_p95_s": 0.222
    },
    "outcome": "declined",
    "proposal": "",
@@ -171,35 +253,35 @@
    "exam": {
     "about": "30B (3B active) params, 4bit, by mlx-community",
     "candidate": "q3-30b",
-    "cases": 923,
-    "first_s": 1.244,
-    "median_s": 2.498,
+    "cases": 628,
+    "first_s": 1.436,
+    "median_s": 2.729,
     "metrics": {
-     "completion_tokens": 331.2713,
-     "ink": 0.3218,
-     "svg_bytes": 573.6934,
-     "tokens_per_s": 113.8513
+     "completion_tokens": 341.0392,
+     "ink": 0.3085,
+     "svg_bytes": 610.973,
+     "tokens_per_s": 114.5765
     },
     "model": "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
     "not_run": "",
-    "pass_rate": 0.691,
-    "passed": 497,
+    "pass_rate": 0.712,
+    "passed": 37,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-09T08:02:53Z",
+    "run_at": "2026-11-10T05:57:12Z",
     "served_as": "q3-30b",
     "source": "https://huggingface.co/mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
-    "total": 719,
-    "ttft_median_s": 0.201,
-    "ttft_p95_s": 0.218
+    "total": 52,
+    "ttft_median_s": 0.202,
+    "ttft_p95_s": 0.222
    },
    "outcome": "declined",
    "proposal": "",
    "reason": "candidate",
    "receipt_key": "q3-30b",
    "run_id": null,
-   "serves": true,
+   "serves": false,
    "status": "rejected",
    "tier": "adopt",
    "until": ""
@@ -321,86 +403,6 @@
    "until": ""
   },
   {
-   "candidate": "plan:q3-30b",
-   "decided_at": "2026-10-29T01:12:21Z",
-   "detail": "retracted: cases:svg>643 is met here",
-   "exam": {
-    "about": "30B (3B active) params, 4bit, by mlx-community",
-    "candidate": "plan/q3-30b",
-    "cases": 295,
-    "first_s": 3.251,
-    "median_s": 5.593,
-    "metrics": {
-     "completion_tokens": 683.1111,
-     "ink": 0.7335,
-     "method_calls": 2.0,
-     "svg_bytes": 1319.3333
-    },
-    "model": "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
-    "not_run": "",
-    "pass_rate": 0.333,
-    "passed": 3,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-09T04:45:08Z",
-    "served_as": "",
-    "source": "https://huggingface.co/mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
-    "total": 9,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "screened",
-   "proposal": "plan:q3-30b",
-   "reason": "reopened",
-   "receipt_key": "plan/q3-30b",
-   "run_id": null,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
-   "candidate": "plan:q3-30b,temperature=0",
-   "decided_at": "2026-10-29T01:12:21Z",
-   "detail": "retracted: cases:svg>643 is met here",
-   "exam": {
-    "about": "30B (3B active) params, 4bit, by mlx-community",
-    "candidate": "plan/q3-30b",
-    "cases": 295,
-    "first_s": 3.251,
-    "median_s": 5.593,
-    "metrics": {
-     "completion_tokens": 683.1111,
-     "ink": 0.7335,
-     "method_calls": 2.0,
-     "svg_bytes": 1319.3333
-    },
-    "model": "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
-    "not_run": "",
-    "pass_rate": 0.333,
-    "passed": 3,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-09T04:45:08Z",
-    "served_as": "",
-    "source": "https://huggingface.co/mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
-    "total": 9,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "screened",
-   "proposal": "plan:q3-30b",
-   "reason": "reopened",
-   "receipt_key": "plan/q3-30b",
-   "run_id": null,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
    "candidate": "trace:mflux:dev",
    "decided_at": "2026-10-20T11:44:26Z",
    "detail": "retracted: cases:svg>3 is met and its screen passed: reopened to screened at screen",
@@ -479,7 +481,7 @@
    "until": ""
   }
  ],
- "cursor": 1794211376780560,
+ "cursor": 1794290234510618,
  "events": [
   {
    "at": "2026-10-04T14:29:27Z",
@@ -3075,39 +3077,162 @@
    "reason": "limit",
    "run_id": 779,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-10T04:59:58Z",
+   "candidate": "plan:q3-30b",
+   "chosen": null,
+   "detail": "svg: held for confirmation: no case outside the holdout ran, so the incumbent serves until a night run of the dev cases confirms it (beats q3-30b on the lane's metric, 21 gained against 4 lost, p=0.00",
+   "how": "",
+   "id": 1794286798855238,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 809,
+   "tier": "adopt"
+  },
+  {
+   "at": "2026-11-10T05:57:14Z",
+   "candidate": "plan:q3-30b",
+   "chosen": null,
+   "detail": "svg: won the holdout (verdict 20742); confirmed on 627 dev case(s): 163 gained against 16 lost, p=0.000",
+   "how": "measured",
+   "id": 1794290234510618,
+   "incumbent": "q3-30b",
+   "kind": "adoption",
+   "knob": "",
+   "outcome": "measured",
+   "reason": "candidate",
+   "run_id": 811,
+   "tier": "adopt"
   }
  ],
  "exams": [
+  {
+   "cases": 628,
+   "differs": [],
+   "first_run_at": "2026-11-10T05:57:12Z",
+   "repeat": 1,
+   "rows": [
+    {
+     "about": "30B (3B active) params, 4bit, by mlx-community",
+     "candidate": "plan/q3-30b",
+     "first_s": 3.735,
+     "median_s": 4.458,
+     "metrics": {
+      "busy_wait_s": 5.092,
+      "completion_tokens": 561.8694,
+      "ink": 0.3807,
+      "method_calls": 2.0,
+      "svg_bytes": 662.633
+     },
+     "model": "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
+     "not_run": "",
+     "pass_rate": 0.72,
+     "passed": 452,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-10T05:57:12Z",
+     "served_as": "",
+     "source": "https://huggingface.co/mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
+     "total": 628,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "about": "30B (3B active) params, 4bit, by mlx-community",
+     "candidate": "q3-30b",
+     "first_s": 1.436,
+     "median_s": 2.729,
+     "metrics": {
+      "completion_tokens": 341.0392,
+      "ink": 0.3085,
+      "svg_bytes": 610.973,
+      "tokens_per_s": 114.5765
+     },
+     "model": "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
+     "not_run": "",
+     "pass_rate": 0.712,
+     "passed": 37,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-10T05:57:12Z",
+     "served_as": "q3-30b",
+     "source": "https://huggingface.co/mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
+     "total": 52,
+     "ttft_median_s": 0.202,
+     "ttft_p95_s": 0.222
+    }
+   ],
+   "run_at": "2026-11-10T05:57:12Z",
+   "runs": 1
+  },
+  {
+   "cases": 295,
+   "differs": [],
+   "first_run_at": "2026-11-09T04:45:08Z",
+   "repeat": 1,
+   "rows": [
+    {
+     "about": "30B (3B active) params, 4bit, by mlx-community",
+     "candidate": "plan/q3-30b",
+     "first_s": 2.939,
+     "median_s": 4.585,
+     "metrics": {
+      "completion_tokens": 584.8644,
+      "ink": 0.3753,
+      "method_calls": 2.0,
+      "svg_bytes": 691.0137
+     },
+     "model": "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
+     "not_run": "",
+     "pass_rate": 0.736,
+     "passed": 217,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-10T04:59:57Z",
+     "served_as": "",
+     "source": "https://huggingface.co/mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
+     "total": 295,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "about": "30B (3B active) params, 4bit, by mlx-community",
+     "candidate": "q3-30b",
+     "first_s": 1.756,
+     "median_s": 2.569,
+     "metrics": {
+      "completion_tokens": 338.6803,
+      "ink": 0.3079,
+      "svg_bytes": 578.3682,
+      "tokens_per_s": 114.466
+     },
+     "model": "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
+     "not_run": "",
+     "pass_rate": 0.678,
+     "passed": 200,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-10T04:59:57Z",
+     "served_as": "q3-30b",
+     "source": "https://huggingface.co/mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
+     "total": 295,
+     "ttft_median_s": 0.206,
+     "ttft_p95_s": 0.223
+    }
+   ],
+   "run_at": "2026-11-10T04:59:57Z",
+   "runs": 2
+  },
   {
    "cases": 923,
    "differs": [],
    "first_run_at": "2026-11-09T08:02:53Z",
    "repeat": 1,
    "rows": [
-    {
-     "about": "30B (3B active) params, 4bit, by mlx-community",
-     "candidate": "q3-30b",
-     "first_s": 1.244,
-     "median_s": 2.498,
-     "metrics": {
-      "completion_tokens": 331.2713,
-      "ink": 0.3218,
-      "svg_bytes": 573.6934,
-      "tokens_per_s": 113.8513
-     },
-     "model": "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
-     "not_run": "",
-     "pass_rate": 0.691,
-     "passed": 497,
-     "peak_gb": 0.0,
-     "reference": false,
-     "run_at": "2026-11-09T08:02:53Z",
-     "served_as": "q3-30b",
-     "source": "https://huggingface.co/mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
-     "total": 719,
-     "ttft_median_s": 0.201,
-     "ttft_p95_s": 0.218
-    },
     {
      "about": "30B (3B active) params, 4bit, by mlx-community",
      "candidate": "best-of-3/q3-30b",
@@ -3133,68 +3258,58 @@
      "total": 923,
      "ttft_median_s": null,
      "ttft_p95_s": null
-    }
-   ],
-   "run_at": "2026-11-09T08:02:53Z",
-   "runs": 1
-  },
-  {
-   "cases": 295,
-   "differs": [],
-   "first_run_at": "2026-11-09T04:45:08Z",
-   "repeat": 1,
-   "rows": [
-    {
-     "about": "30B (3B active) params, 4bit, by mlx-community",
-     "candidate": "plan/q3-30b",
-     "first_s": 3.251,
-     "median_s": 5.593,
-     "metrics": {
-      "completion_tokens": 683.1111,
-      "ink": 0.7335,
-      "method_calls": 2.0,
-      "svg_bytes": 1319.3333
-     },
-     "model": "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
-     "not_run": "",
-     "pass_rate": 0.333,
-     "passed": 3,
-     "peak_gb": 0.0,
-     "reference": false,
-     "run_at": "2026-11-09T04:45:08Z",
-     "served_as": "",
-     "source": "https://huggingface.co/mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
-     "total": 9,
-     "ttft_median_s": null,
-     "ttft_p95_s": null
     },
     {
      "about": "30B (3B active) params, 4bit, by mlx-community",
      "candidate": "q3-30b",
-     "first_s": 2.032,
-     "median_s": 1.371,
+     "first_s": 4.236,
+     "median_s": 1.579,
      "metrics": {
-      "completion_tokens": 324.3,
-      "ink": 0.6268,
-      "svg_bytes": 1299.5,
-      "tokens_per_s": 109.37
+      "completion_tokens": 329.0493,
+      "ink": 0.3211,
+      "svg_bytes": 588.6937,
+      "tokens_per_s": 109.2916
      },
      "model": "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
      "not_run": "",
-     "pass_rate": 0.2,
-     "passed": 2,
+     "pass_rate": 0.411,
+     "passed": 379,
      "peak_gb": 0.0,
      "reference": false,
-     "run_at": "2026-11-09T04:45:08Z",
+     "run_at": "2026-11-10T04:08:49Z",
      "served_as": "q3-30b",
      "source": "https://huggingface.co/mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
-     "total": 10,
-     "ttft_median_s": 0.188,
-     "ttft_p95_s": 0.244
+     "total": 923,
+     "ttft_median_s": 0.247,
+     "ttft_p95_s": 0.303
+    },
+    {
+     "about": "7B params, 4bit, by mlx-community",
+     "candidate": "local-large",
+     "first_s": 2.582,
+     "median_s": 1.337,
+     "metrics": {
+      "completion_tokens": 319.072,
+      "ink": 0.4063,
+      "svg_bytes": 564.378,
+      "tokens_per_s": 125.8345
+     },
+     "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+     "not_run": "",
+     "pass_rate": 0.315,
+     "passed": 291,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-10T04:08:49Z",
+     "served_as": "local-large",
+     "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
+     "total": 923,
+     "ttft_median_s": 0.187,
+     "ttft_p95_s": 0.222
     }
    ],
-   "run_at": "2026-11-09T04:45:08Z",
-   "runs": 1
+   "run_at": "2026-11-10T04:08:49Z",
+   "runs": 2
   },
   {
    "cases": 923,
@@ -3652,7 +3767,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-09T08:03:20Z",
+ "generated_at": "2026-11-10T08:00:28Z",
  "knobs": [],
  "lane": {
   "cases": 923,
@@ -3668,22 +3783,23 @@
  "schema_version": 2,
  "served": {
   "adopted": true,
-  "adopted_at": "2026-10-06T19:57:01Z",
+  "adopted_at": "2026-11-10T05:57:14Z",
   "adopted_how": "measured",
-  "incumbent": "local-large",
-  "measured_at": "2026-11-09T08:02:53Z",
-  "median_s": 2.498,
+  "incumbent": "q3-30b",
+  "measured_at": "2026-11-10T05:57:12Z",
+  "median_s": 4.458,
   "metrics": {
-   "completion_tokens": 331.2713,
-   "ink": 0.3218,
-   "svg_bytes": 573.6934,
-   "tokens_per_s": 113.8513
+   "busy_wait_s": 5.092,
+   "completion_tokens": 561.8694,
+   "ink": 0.3807,
+   "method_calls": 2.0,
+   "svg_bytes": 662.633
   },
   "not_run": "",
   "parked": "",
   "parked_until": "",
-  "pass_rate": 0.691,
-  "serves": "q3-30b",
+  "pass_rate": 0.72,
+  "serves": "plan:q3-30b",
   "serves_model": "mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit (served as q3-30b); 30B (3B active) params, 4bit, by mlx-community",
   "stale": false
  },
