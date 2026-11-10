@@ -166,6 +166,9 @@ def render(r: dict) -> list[str]:
         out.append(f"monit     {len(mon['alerts'])} alert line(s)" + (f"; {mon['why']}" if mon["why"] else ""))
         out.extend(f"          {monitor.line(x)}" for x in mon["alerts"])
         out.extend(f"          {ln}" for ln in mon["summary"])
+    if r.get("tts"):
+        from harness import audio_models
+        out.append(f"tts       {audio_models.line(r['tts'])}")
     if r.get("canary"):
         out.append(f"canary    {r['canary']}")
     if r.get("parked"):
@@ -183,7 +186,7 @@ def render(r: dict) -> list[str]:
 
 
 def cmd_morning(a) -> int:
-    from harness import canary, context_report as cr, heartbeat, monitor, morning, paths
+    from harness import audio_models, canary, context_report as cr, heartbeat, monitor, morning, paths
 
     now = time.time()
     try:
@@ -196,7 +199,8 @@ def cmd_morning(a) -> int:
     try:
         r = morning.gather(conn, now, since, beat=heartbeat.summary(), where=paths.deploy_checkout(),
                            health=morning.lane_health, canary=canary.morning_line, parked=morning.parked_nodes,
-                           incumbent=morning.repo_incumbent, monitor=monitor.morning, pulls=morning.stuck_prs)
+                           incumbent=morning.repo_incumbent, monitor=monitor.morning, pulls=morning.stuck_prs,
+                           tts=audio_models.morning)
     finally:
         conn.close()
     lines = render(r)

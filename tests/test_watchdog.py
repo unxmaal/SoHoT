@@ -413,7 +413,7 @@ def test_restart_runs_launchd_restart_for_the_gateway_and_refuses_an_unlisted_se
     g = wd.Finding("gateway_down", wd.Subject("gateway", "gateway", "t", detail={"service": "gateway"}), {})
     assert wd.Hands(run=fake).do(wd.RESTART, g) == "restarted gateway"
     assert calls[0][-2:] == ["restart", "gateway"] and Path(calls[0][1]).as_posix().endswith("scripts/launchd.sh")
-    other = wd.Finding("x", wd.Subject("model", "m", "t", detail={"service": "tts"}), {})
+    other = wd.Finding("x", wd.Subject("model", "m", "t", detail={"service": "audit"}), {})
     assert wd.Hands(run=fake).do(wd.RESTART, other).startswith("refused") and len(calls) == 1
 
 

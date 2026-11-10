@@ -2,7 +2,7 @@
 
 It acts only on what it identified positively as SoHoT's own: the discover
 agent, a work queue job's process group, an evals.run under either, a run's
-progress file (#813), the eval lock, the router, the gateway, the mlx server. Anything else it
+progress file (#813), the eval lock, the router, the gateway, the mlx and tts servers. Anything else it
 sees is listed and left alone. Until LH_WATCHDOG_ACT=1 every action is a dry
 run that prints and records what it would have done.
 """
@@ -18,7 +18,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from harness import interactive, serve_lease
+from harness import audio_models, interactive, serve_lease
 from harness.overrun import cells as _cells, paired as _paired, unmeasured as _unmeasured
 
 NOTE, NOTIFY, FILE, PAUSE, STOP, REAP, UNLOAD, RESTART = (
@@ -166,6 +166,8 @@ class World:
     idle_since: dict = field(default_factory=dict)
     #: Earlier wakes in an unbroken run that found memory at warn; None when the store could not say. #1482.
     warn_samples: int | None = 0
+    #: The tts server's pid, footprint_gib, in_flight and loaded models; {} with no tts unit here. #1671.
+    tts: dict = field(default_factory=dict)
     #: observation -> why it could not be made.
     gaps: dict = field(default_factory=dict)
 
@@ -304,6 +306,9 @@ class Probes:
         except Exception:  # noqa: BLE001 - unknown protection means nothing is free to unload
             return None
         return sorted(k for k, v in held.items() if v in router.RESIDENT and k not in keep)
+
+    def footprint(self, pid: int) -> float | None:
+        return audio_models.footprint_gib(pid)
 
     def pressure(self):
         from harness import pressure
@@ -562,6 +567,10 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
     world.mlx_generating = probes.mlx_generating()
     world.interactive = interactive.watch(probes.launchd_loaded("interactive"))
     world.fallbacks = probes.fallbacks(conn)
+    try:
+        world.tts = audio_models.watch(probes, listed)
+    except Exception as exc:  # noqa: BLE001 - an unreadable tts server restarts nothing this wake
+        world.gaps["tts"] = f"the tts server could not be read: {type(exc).__name__}: {exc}"[:300]
     try:
         world.served = probes.served()
         world.idle_since = _idle_since(probes, world, probes.last_use(conn, now - unload_after(now)), now)
@@ -1068,6 +1077,8 @@ CRITERIA = (
     Criterion("mlx_dead", (), RESTART, NOTIFY, ("mlx",), _mlx_dead,
               "mlx_lm.server is up but its generation thread died, so every request fails"),
     Criterion("interactive_down", (), RESTART, NOTIFY, (), interactive.finding, interactive.WHAT),
+    Criterion("tts_footprint", ("tts_footprint_gb",), RESTART, NOTIFY, ("processes", "tts"), audio_models.finding,
+              audio_models.WHAT),
     Criterion("node_fallbacks", ("watchdog_fallback_max",), NOTIFY, FILE, ("fallbacks",), _node_fallbacks,
               "a serving node's requests falling back to this machine"),
 )
@@ -1245,7 +1256,7 @@ class Hands:
         service = f.subject.detail.get("service", "")
         if service in ("mlx", "interactive"):
             return self._kickstart(service)
-        if service != "gateway":
+        if service not in ("gateway", audio_models.SERVICE):
             return f"refused: {service or f.subject.kind} is not a service the watchdog restarts"
         try:
             got = self.run(["/bin/bash", str(paths.REPO / "scripts" / "launchd.sh"), "restart", service],

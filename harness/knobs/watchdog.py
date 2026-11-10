@@ -21,6 +21,11 @@ KNOBS = [
             "that loads its model, at most once per this span; store 2026-11-02: svg's incident opened 10-24 08:35 "
             "on 56 refused residency queries, then 1642 not-resident and 789 machine-held skips over 9 days with no "
             "judged row, while the shared :8081 server answered extract's probes (#1499)"),
+    _k("tts_footprint_gb", ["harness/audio_models.py:FOOTPRINT_MAX_GB"], [8.0, 16.0, 32.0], limit="tts_footprint_gb",
+       unit="GiB",
+       note="tts server physical footprint past which the watchdog restarts it when no request is in flight and no "
+            "eval uses it; 2026-11-09 it held 43 GB after 23 h (3 screened candidates), its lane defaults Kokoro and "
+            "parakeet hold about 1 GiB, a big tts candidate (MOSS-TTS-v1.5) 16 GB on disk (#1671)"),
     _k("watchdog_day_end_hour", [f"{W}:DAY_END_HOUR"], [18, 20, 21, 22],
        note="local hour the owner's day ends, after which an idle served model waits for the router's own sleep; "
             "no GPU limit reads it since #1509; the discover agent starts at scripts/launchd.sh DISCOVER_HOURS, "
@@ -83,6 +88,11 @@ NOT_GATING = {
                          "decide, this only finds them (#1533)",
     f"{P}:_SCAN_SPAN_S": "how far ahead that scan looks; a day predicate with no day in it falls back to "
                          "lane_probe_unprobed alone (#1533)",
+    "harness/audio_models.py:TIMEOUT_S": "how long one read or DELETE of the audio server may take; a slow one keeps "
+                                         "the model and says so (#1671)",
+    "harness/audio_models.py:FOOTPRINT_TIMEOUT_S": "how long vmmap may take to sum the tts server; a slow one reads "
+                                                   "as an unknown footprint, which restarts nothing (#1671)",
+    "harness/audio_models.py:_UNIT[G]": "vmmap's G suffix in GiB, a unit conversion; not a limit (#1671)",
     "harness/workqueue.py:WATCH_S": "how soon a worker with jobs running sees a job it may start beside them; "
                                     "it decides when, never whether (#1153)",
     "harness/workqueue.py:at_clock->timedelta(days)": "one calendar day: a clock time already past today means tomorrow (#900)",
