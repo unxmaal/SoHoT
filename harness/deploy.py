@@ -19,8 +19,12 @@ from harness import deploy_switch, paths
 from harness import workqueue as wq
 
 KIND = "deploy"
-#: Ahead of every measurement job; a deploy still never interrupts a running one.
+#: Ahead of every measurement job; a due deploy pauses a running one at its checkpoint (#1672).
 PRIORITY = 1000
+#: Seconds after a sha's deploy job failed before the poll queues that sha again. #1672.
+RETRY_S = 3600.0
+#: Times a failed sha is queued again before only a new commit or --force deploys it. #1672.
+RETRIES = 3
 #: A job that handed its switch to deploy_switch exits with this; the worker leaves it running for settle().
 HANDED_OFF = 76
 #: Release directories kept, the serving and the previous one included.
@@ -227,8 +231,27 @@ def _store_schema(conn) -> int:
 
 
 def _jobs_for(conn, sha: str) -> list:
-    return conn.execute("SELECT id, state FROM jobs WHERE kind = ? AND output = ? ORDER BY id",
+    return conn.execute("SELECT id, state, finished_at FROM jobs WHERE kind = ? AND output = ? ORDER BY id",
                         (KIND, sha)).fetchall()
+
+
+def _retry(seen: list, now: float) -> str:
+    """'' when a sha whose last deploy job failed may be queued again now, else why not. #1672."""
+    from harness import cuts
+    last = seen[-1]
+    if last["state"] != wq.FAILED:
+        return f"is already queued as job {wq.label(last['id'])} ({last['state']})"
+    failed = sum(r["state"] == wq.FAILED for r in seen)
+    if failed > RETRIES:
+        cuts.cut("deploy_retries", "a failed sha not queued again", dropped=1)
+        return (f"failed {failed} times as job(s) up to {wq.label(last['id'])}, past its {RETRIES} retries; "
+                f"a new commit or `soh deploy now` deploys it")
+    at = float(last["finished_at"] or now) + RETRY_S
+    if now < at:
+        return (f"failed as job {wq.label(last['id'])}; retry {failed} of {RETRIES} at "
+                f"{time.strftime('%H:%M', time.localtime(at))}")
+    cuts.cut("deploy_retry_after", f"a failed deploy retried, attempt {failed + 1}", kept=1)
+    return ""
 
 
 def poll(conn=None, now: float | None = None, *, src=None, sha: str = "", force: bool = False,
@@ -250,10 +273,10 @@ def poll(conn=None, now: float | None = None, *, src=None, sha: str = "", force:
     with wq._store(conn) as c:
         seen = _jobs_for(c, want)
         live = [r for r in seen if r["state"] in (wq.PENDING, wq.RUNNING)]
-        if live or (seen and not force):
-            r = (live or seen)[-1]
-            return {"queued": None, "why": f"{want[:12]} is already queued as job {wq.label(r['id'])} ({r['state']})",
-                    "superseded": []}
+        why = (f"is already queued as job {wq.label(live[-1]['id'])} ({live[-1]['state']})" if live
+               else _retry(seen, time.time() if now is None else now) if seen and not force else "")
+        if why:
+            return {"queued": None, "why": f"{want[:12]} {why}", "superseded": []}
         if environ.get(deploy_guard.OVERRIDE) != "1":
             ok, why = (green or deploy_guard.verdict)(want)
             if not ok:

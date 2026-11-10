@@ -293,14 +293,16 @@ def due(job: dict, now: float | None = None) -> bool:
 
 
 def ready(conn=None, now: float | None = None) -> list[dict]:
-    """Pending jobs whose start time has come, in run order; a deploy only with no sweep running. #900, #1506."""
+    """Pending jobs whose start time has come, in run order; a deploy only with no sweep running, and no measurement while it waits. #900, #1506, #1672."""
+    from harness import hold
     with _store(conn) as c:
         got = [j for j in pending(c) if due(j, now)]
     if any(j["kind"] == DEPLOY for j in got):
         from harness import deploy
-        if deploy.blocked():
+        if deploy.paused():
             got = [j for j in got if j["kind"] != DEPLOY]
-    from harness import hold
+        elif deploy.blocked():
+            got = [j for j in got if j["kind"] != DEPLOY and not hold.measurement(j)]
     return hold.startable(got, conn, now)
 
 
@@ -810,6 +812,7 @@ def _run_claimed(job: dict, log: Path, popen=None) -> dict | None:
         env[ITEM_ENV] = f"{ITEM_S:g}"
     _cancel_flag(job["id"]).unlink(missing_ok=True)
     _item_flag(job["id"]).unlink(missing_ok=True)
+    _deploy_flag(job["id"]).unlink(missing_ok=True)
     popen = popen or _in_group(job)
     # No machine lock here: each command takes it for the part that loads a
     # model, so a job that is downloading does not block a GPU run. #371.
@@ -882,20 +885,70 @@ def _next_item(job: dict) -> bool:
 
 
 def _repend(job: dict) -> bool:
-    """A job the watchdog paused for contention waits again to resume where it stopped, unless it queued its own continuation. #1509."""
+    """A job paused for contention or a deploy waits again to resume where it stopped, unless it queued its own continuation. #1509, #1672."""
     from harness import contention
+    flag = _deploy_flag(job["id"])
+    for_deploy = flag.exists()
+    flag.unlink(missing_ok=True)
     with _store() as c:
-        if not contention.paused_for(c, job) or c.execute(
+        if not (for_deploy or contention.paused_for(c, job)) or c.execute(
                 "SELECT 1 FROM jobs WHERE argv = ? AND state = ? AND id != ?",
                 (json.dumps([str(a) for a in job["argv"]]), PENDING, int(job["id"]))).fetchone():
             return False
         argv = _resumed(c, job) or list(job["argv"])
+        why = ("paused for a deploy at {}; resumes after it" if for_deploy else
+               "paused for contention at {}; resumes when the contention gate opens").format(job.get("finished"))
         c.execute("UPDATE jobs SET state = ?, finished_at = NULL, rc = ?, argv = ?, note = ? WHERE id = ?",
-                  (PENDING, job.get("rc"), json.dumps(argv),
-                   f"paused for contention at {job.get('finished')}; resumes when the contention gate opens",
-                   int(job["id"])))
+                  (PENDING, job.get("rc"), json.dumps(argv), why, int(job["id"])))
         c.commit()
     return True
+
+
+def _deploy_flag(job_id) -> Path:
+    return _pids() / f"{label(job_id)}.deploy"
+
+
+def _evals_in(pgid: int) -> list[int]:
+    """Pids of the evals.run processes in a process group, from ps; [] where there is none to ask. #1672."""
+    from harness import sweep_guard
+    if sys.platform == "win32":
+        return []
+    try:
+        got = subprocess.run(["ps", "-ww", "-axo", "pid=,pgid=,command="], capture_output=True, text=True,
+                             timeout=sweep_guard.PS_TIMEOUT_S)
+    except (OSError, subprocess.SubprocessError) as exc:
+        print(f"{time.strftime('%H:%M:%S')} could not list evals for a deploy: {exc}", flush=True)
+        return []
+    rows = [ln.split(None, 2) for ln in got.stdout.splitlines()]
+    return [int(r[0]) for r in rows if len(r) == 3 and r[1] == str(pgid) and sweep_guard.EVAL.search(r[2])]
+
+
+def preempt_for_deploy(now: float | None = None, evals=None, signal_=None) -> list[str]:
+    """A due deploy asks each running measurement job's evals here to pause at their next case; the job then waits to resume. #1672."""
+    from harness import deploy, hold
+    sig = signal_ if signal_ is not None else getattr(signal, "SIGUSR1", None)
+    if sig is None or deploy.paused():
+        return []
+    with _store() as c:
+        if not any(j["kind"] == DEPLOY and due(j, now) for j in pending(c)):
+            return []
+        busy = [j for j in running_here(c) if hold.measurement(j)]
+    said = []
+    for job in busy:
+        pid, flag = _pid_of(job["id"]), _deploy_flag(job["id"])
+        asked = set(flag.read_text(encoding="utf-8").split()) if flag.exists() else set()
+        fresh = [p for p in (evals or _evals_in)(pid) if str(p) not in asked] if pid is not None else []
+        for p in fresh:
+            try:
+                os.kill(p, sig)
+            except OSError as exc:
+                said.append(f"job {job['id']}: eval {p} not asked to pause: {exc}")
+                continue
+            asked.add(str(p))
+            said.append(f"job {job['id']}: eval {p} asked to pause at its next case for the pending deploy")
+        if asked:
+            flag.write_text(" ".join(sorted(asked)), encoding="utf-8")
+    return said
 
 
 def _settle_gone(c, job: dict) -> None:
@@ -962,6 +1015,17 @@ def watch_deploys(now: float | None = None) -> dict | None:
     if got is not None:
         print(f"{time.strftime('%H:%M:%S')} alerted: {deploy.wait_line(got)}", flush=True)
     return got
+
+
+def deploy_turn(now: float) -> None:
+    """Each worker turn: a pending deploy pauses measurement for itself and alerts once if it waits too long. #1672."""
+    try:
+        said = preempt_for_deploy(now)
+    except Exception as exc:  # noqa: BLE001 - preempting must not stop the worker, on any store
+        said = [f"preempting for the deploy failed: {exc}"]
+    for line in said:
+        print(f"{time.strftime('%H:%M:%S')} {line}", flush=True)
+    watch_deploys(now)
 
 
 def needs(job: dict) -> str:
@@ -1078,6 +1142,7 @@ def run_pending(popen=None, gate=lambda: (True, ""), clock=time.time, watch: flo
         while True:
             finished.clear()
             live = {t: c for t, c in live.items() if t.is_alive()}
+            deploy_turn(clock())
             nxt = None if errors or handed.is_set() else _startable(live, clock())
             if nxt is not None and gate()[0]:
                 t = threading.Thread(target=work, args=(nxt[0],), name=f"job-{nxt[0]['id']}")
@@ -1166,7 +1231,7 @@ def serve(poll: float = 30.0, sleep=time.sleep, popen=None,
     said = ""
     while True:
         settle_deploys()
-        watch_deploys(clock())
+        deploy_turn(clock())
         try:
             waiting = ready(now=clock())
         except RuntimeError as exc:

@@ -1,11 +1,15 @@
-"""A deploy waits on memory pressure only up to its bound, never on it alone; one alert names why a deploy is stuck. #1672."""
+"""A deploy works without the owner: a bound on memory pressure, measurement paused for it, a failed sha retried, one alert. #1672."""
+import os
+import sys
 import time
+import types
 
 import pytest
 
 from harness import cli, contention, deploy, morning, paths, pressure, workqueue as wq
 from harness import memory_store as ms
 from harness.commands import morning as morning_cmd
+from tests.test_deploy_1506 import _commit, _green, posix, world  # noqa: F401 - world is a fixture
 
 WARN = pressure.Pressure(level=pressure.WARN)
 NORMAL = pressure.Pressure(level=pressure.NORMAL)
@@ -216,3 +220,134 @@ def test_morning_s_deploy_section_shows_a_pending_deploy_however_short_its_wait(
     assert r["deploy_wait"] is w
     assert f"          {deploy.wait_line(w)}" in morning_cmd.render(r)
     assert deploy.wait_line(w).endswith("(0.0 h): the contention gate is closed: served lanes in use")
+
+
+# --- a pending deploy preempts measurement ----------------------------------------------------------------------
+
+def _measuring(title: str = "measure") -> dict:
+    return wq.add(["uv", "run", "python", "-m", "evals.run", "--modality", "code"], title=title,
+                  cwd=str(paths.home()))
+
+
+def _running(job: dict) -> dict:
+    assert wq._claim(job, wq.log_dir() / f"{job['id']}.log")
+    wq._pid_file(job["id"]).write_text(str(os.getpid()), encoding="utf-8")
+    return job
+
+
+def _kills(monkeypatch) -> list:
+    got = []
+    monkeypatch.setattr(wq.os, "kill", lambda pid, sig: got.append((pid, sig)) if sig else None)
+    return got
+
+
+def test_a_due_deploy_asks_a_running_measurement_job_s_evals_to_pause_once(monkeypatch):
+    killed = _kills(monkeypatch)
+    job = _running(_measuring())
+    other = _running(wq.add(["true"], title="fetch", cwd=str(paths.home())))
+    asked = []
+
+    def evals(pid):
+        asked.append(pid)
+        return [111, 222]
+    assert wq.preempt_for_deploy(evals=evals, signal_=10) == [], "no deploy pending, nothing paused"
+    _deploy(time.time())
+    said = wq.preempt_for_deploy(evals=evals, signal_=10)
+    assert killed == [(111, 10), (222, 10)] and len(said) == 2 and all(f"job {job['id']}" in s for s in said)
+    assert asked == [os.getpid()], f"only the measurement job's group is read, not job {other['id']}'s"
+    assert wq.preempt_for_deploy(evals=evals, signal_=10) == [] and len(killed) == 2, "each eval is asked once"
+    assert wq.preempt_for_deploy(evals=lambda pid: [111, 333], signal_=10)[0].endswith("for the pending deploy")
+    assert killed[-1] == (333, 10), "an eval the job starts after the ask is asked too"
+
+
+def test_a_paused_or_not_yet_due_deploy_preempts_nothing(monkeypatch):
+    killed = _kills(monkeypatch)
+    _running(_measuring())
+    job = _deploy(time.time())
+    deploy.pause()
+    assert wq.preempt_for_deploy(evals=lambda pid: [111], signal_=10) == [] and killed == []
+    deploy.resume()
+    _set(job, not_before=time.time() + 3600)
+    assert wq.preempt_for_deploy(evals=lambda pid: [111], signal_=10) == [] and killed == []
+
+
+def test_a_job_paused_for_the_deploy_waits_again_to_resume(monkeypatch):
+    killed = _kills(monkeypatch)
+    job = _measuring()
+    _deploy(time.time())
+
+    def popen(argv, cwd=None, stdout=None, stderr=None, env=None):
+        wq._pid_file(job["id"]).write_text(str(os.getpid()), encoding="utf-8")
+        wq.preempt_for_deploy(evals=lambda pid: [4242], signal_=10)
+        return types.SimpleNamespace(returncode=75)
+    wq.run_one(job, popen=popen)
+    got = wq.get(job["id"])
+    assert killed == [(4242, 10)]
+    assert got["state"] == wq.PENDING and got["note"].startswith("paused for a deploy at ")
+    assert not wq._deploy_flag(job["id"]).exists()
+
+
+def test_a_job_that_pauses_on_its_own_is_not_repended_as_the_deploy_s():
+    job = _measuring()
+    wq.run_one(job, popen=lambda argv, **kw: types.SimpleNamespace(returncode=75))
+    assert wq.get(job["id"])["state"] == wq.PAUSED
+
+
+def test_measurement_waits_while_a_deploy_waits_for_a_running_eval(monkeypatch):
+    measure, fetch = _measuring(), wq.add(["true"], title="fetch", cwd=str(paths.home()))
+    job = _deploy(time.time())
+    monkeypatch.setattr("harness.sweep_guard.running", lambda root, **kw: [
+        {"what": "eval x", "pid": 4242, "started": None, "commit": "", "command": "evals.run"}])
+    assert [j["title"] for j in wq.ready()] == ["fetch"]
+    deploy.pause()
+    assert [j["title"] for j in wq.ready()] == ["measure", "fetch"], "a paused deploy holds nothing back"
+    deploy.resume()
+    monkeypatch.setattr("harness.sweep_guard.running", lambda root, **kw: [])
+    assert [j["id"] for j in wq.ready()] == [job["id"], measure["id"], fetch["id"]]
+
+
+def test_evals_in_a_group_are_read_from_ps(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "darwin")
+    out = ("  101  100 uv run soh adopt --confirm 7\n  102  100 python -m evals.run --out runs/x\n"
+           "  103  999 python -m evals.run --out runs/y\n  104  100 llama-server -m x.gguf\n")
+    monkeypatch.setattr(wq.subprocess, "run", lambda *a, **k: types.SimpleNamespace(stdout=out, returncode=0))
+    assert wq._evals_in(100) == [102]
+    monkeypatch.setattr(sys, "platform", "win32")
+    assert wq._evals_in(100) == []
+
+
+def test_each_worker_turn_preempts_for_the_deploy(monkeypatch, capsys):
+    seen = []
+    monkeypatch.setattr(wq, "preempt_for_deploy", lambda now=None: seen.append(now) or ["job 0001: asked"])
+    wq.add(["true"], title="t", cwd=str(paths.home()))
+    wq.run_pending(popen=lambda argv, **kw: types.SimpleNamespace(returncode=0), clock=lambda: 5.0)
+    assert seen and set(seen) == {5.0} and "job 0001: asked" in capsys.readouterr().out
+
+
+# --- a failed deploy is tried again -----------------------------------------------------------------------------
+
+@posix
+def test_a_failed_sha_is_queued_again_after_its_wait_up_to_its_retries(world):
+    head = _commit(world["work"], {"f": "two\n"}, "two")
+    now = time.time()
+    job = deploy.poll(src=world["link"], green=_green, environ={}, now=now)["queued"]
+    _set(job, state=wq.FAILED, finished_at=now)
+    got = deploy.poll(src=world["link"], green=_green, environ={}, now=now + 60)
+    assert got["queued"] is None and f"failed as job {job['id']}; retry 1 of {deploy.RETRIES} at " in got["why"]
+    for _ in range(deploy.RETRIES):
+        job = deploy.poll(src=world["link"], green=_green, environ={}, now=now + deploy.RETRY_S + 1)["queued"]
+        assert job["output"] == head
+        _set(job, state=wq.FAILED, finished_at=now)
+    got = deploy.poll(src=world["link"], green=_green, environ={}, now=now + deploy.RETRY_S * 9)
+    assert got["queued"] is None and f"past its {deploy.RETRIES} retries" in got["why"]
+    assert len(_cuts("deploy_retry_after")) == deploy.RETRIES and len(_cuts("deploy_retries")) == 1
+
+
+@posix
+def test_a_cancelled_deploy_is_not_retried(world):
+    _commit(world["work"], {"f": "two\n"}, "two")
+    now = time.time()
+    job = deploy.poll(src=world["link"], green=_green, environ={}, now=now)["queued"]
+    _set(job, state=wq.CANCELLED, finished_at=now)
+    got = deploy.poll(src=world["link"], green=_green, environ={}, now=now + deploy.RETRY_S * 9)
+    assert got["queued"] is None and got["why"].endswith(f"is already queued as job {job['id']} (cancelled)")
