@@ -22,6 +22,7 @@ NOT_GATING = {
                                      "no check reads them (#481)",
     **{f"harness/usage.py:_UNITS[{u}]": "seconds in a day, hour, minute or second (#706)" for u in "dhms"},
     "harness/context_report.py:rtk_gain->runner(timeout)": "how long `rtk gain` may take to report (#828)",
+    "harness/usage.py:RETRY_S": "past it the batch is dropped and counted in meta usage_dropped, which soh usage and the audit report (#1714)",
 }
 
 NEVER_CUTS = {

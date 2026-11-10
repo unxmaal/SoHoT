@@ -149,7 +149,7 @@ def test_lanes_with_too_few_requests_to_judge_are_one_cut(monkeypatch):
     use = {"code": {"requests": 3, "error_rate": 0.5}, "web": {"requests": 2, "error_rate": 0.0},
            "decide": {"requests": 500, "error_rate": 0.5}}
     monkeypatch.setattr(usage, "real_use", lambda conn: use)
-    assert len(live_audit._gateway_errors(None)) == 1
+    assert len(live_audit._gateway_errors(None)[0]) == 1
     assert _spooled() == [("harness/live_audit.py:MIN_REQUESTS", None, 2)]
 
 

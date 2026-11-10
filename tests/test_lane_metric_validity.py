@@ -211,7 +211,7 @@ def test_the_live_audit_does_not_call_a_rate_limit_burst_the_models_failure(monk
     rows = [_req(NOW + i, "c", "RateLimitError" if i < 10 else "") for i in range(30)]
     monkeypatch.setattr(usage, "real_use", lambda conn: {"code": usage.stats(rows)})
     monkeypatch.setattr(usage, "drop_warning", lambda conn, start: [])
-    [got] = live_audit._gateway_errors(None)
+    [got], _ = live_audit._gateway_errors(None)
     assert "gateway" in got and "requests failed" not in got
 
 
@@ -275,8 +275,8 @@ def test_the_live_audit_says_a_window_dropped_rows_beside_model_and_gateway_erro
     rows = [_req(NOW + i, "c", "RateLimitError" if i < 10 else "APIError" if i < 20 else "") for i in range(30)]
     monkeypatch.setattr(usage, "real_use", lambda conn: {"code": usage.stats(rows)})
     monkeypatch.setattr(usage, "drop_warning", lambda conn, start: ["7 gateway usage row(s) were dropped"])
-    drop, model, gateway = live_audit._gateway_errors(None)
-    assert "dropped" in drop
+    (model, gateway, drop), warned = live_audit._gateway_errors(None)
+    assert "dropped" in drop and warned == []
     assert "failed in the model" in model and "gateway" not in model
     assert "gateway or client refused" in gateway
 

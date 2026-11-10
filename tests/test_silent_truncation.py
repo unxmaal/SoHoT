@@ -128,10 +128,10 @@ def test_a_full_usage_queue_records_the_drops_and_the_audit_refuses_the_window()
     conn = ms.connect()
     try:
         assert usage.dropped_since(conn, 0.0) == w.dropped >= 30
-        bad = live_audit._gateway_errors(conn)
+        bad, warned = live_audit._gateway_errors(conn)
     finally:
         conn.close()
-    assert any("dropped" in b for b in bad)
+    assert bad == [] and any("dropped" in b for b in warned)
 
 
 # ---- tts ------------------------------------------------------------------
