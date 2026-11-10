@@ -23,6 +23,9 @@ def _read(fh, fmt: str):
 
 def _string(fh) -> str:
     n = _read(fh, "<Q")
+    # A length past the file's end is a corrupt header, not gigabytes to allocate (only long ones pay the fstat). #1674.
+    if n > 4096 and n > os.fstat(fh.fileno()).st_size - fh.tell():
+        raise ValueError(f"GGUF string of {n} bytes runs past the file: not a GGUF header")
     return fh.read(n).decode("utf-8", "replace")
 
 
@@ -500,9 +503,12 @@ def plan(conn, budget: int | None = None, slots: int = 1,
     from harness import interactive
     # The interactive server's pinned set is resident for good, so evals plan around it. #1561.
     beside += interactive.reserved_bytes()
+    from harness import gguf
     rows = router_rows(conn)
+    # A drafter, MTP head or shard gets no section, so the router advertises no stem it cannot load. #1674.
+    aux = {r["path"]: gguf.auxiliary(r["path"]) for r in rows}
     # A stem whose weights alone overrun the room is never resident here, so it holds none of it (a pinned one twice). #1578.
-    sizes = [w for w in (_weights(r["path"]) for r in rows) if w < budget - beside]
+    sizes = [w for w in (_weights(r["path"]) for r in rows if not aux[r["path"]]) if w < budget - beside]
     k = max(min(models_max, len(sizes)), 1)
     heaviest = sum(sorted(sizes, reverse=True)[:k])
     out = []
@@ -513,6 +519,8 @@ def plan(conn, budget: int | None = None, slots: int = 1,
         fixed = slot_plan(stem)
         n = fixed[0] if fixed else max(slots, 1)
         try:
+            if aux[row["path"]]:
+                raise gguf.Auxiliary(aux[row["path"]])
             meta, weights = read_meta(path), _weights(path)
             # With k resident, each gets an equal share of what the k heaviest weights leave. #699.
             room = budget - beside if k == 1 else weights + max(budget - beside - heaviest, 0) // k
@@ -521,6 +529,8 @@ def plan(conn, budget: int | None = None, slots: int = 1,
             if record:
                 bound.setdefault(_bound(meta, weights, budget - beside, room, fixed, asked, cache_type, kv_cap, got),
                                  []).append(stem)
+        except gguf.Auxiliary as exc:
+            got = Choice(0, 0, 0, f"refused: {exc}, not a model llama-server serves alone ({gguf.REPAIR})")
         except (OSError, ValueError, KeyError, struct.error) as exc:
             got = Choice(0, 0, 0, f"refused: unreadable GGUF header ({exc})")
         if k > 1 and got.ctx:

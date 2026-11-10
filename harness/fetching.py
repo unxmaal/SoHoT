@@ -498,9 +498,13 @@ def _download(repo, snapshot, listing, hf_download, text, conn, require_weights,
             raise FetchError("no single GGUF file fits the ceiling")
         if single:
             from harness import gguf
-            # A day fetch leaves the router alone; the night's screen restarts it. #1084.
-            return gguf.download(repo, single[0], hf_download=hf_download, conn=conn,
-                                 refresh=None if refresh else (lambda: gguf.note_unlisted((Path(single[0]).stem,))))
+            try:
+                # A day fetch leaves the router alone; the night's screen restarts it. #1084.
+                return gguf.download(repo, single[0], hf_download=hf_download, conn=conn,
+                                     refresh=None if refresh else (lambda: gguf.note_unlisted((Path(single[0]).stem,))))
+            except gguf.Auxiliary as exc:
+                # The file that fits is a drafter, MTP head or shard; fetching it again would land the same one. #1674.
+                raise Unloadable(str(exc)) from exc
         if snapshot is None:
             from huggingface_hub import snapshot_download as snapshot
         with downloads.store(conn) as c:

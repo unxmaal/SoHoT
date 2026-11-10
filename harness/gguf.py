@@ -24,6 +24,115 @@ def models_dir() -> Path:
     hf = os.environ.get("HF_HOME") or Path.home() / ".cache" / "huggingface"
     return Path(hf) / "gguf"
 
+#: llama.cpp architectures that only draft tokens for another model. #1674.
+DRAFTERS = ("dflash", "dspark", "eagle", "medusa", "draft")
+#: Where `soh gguf-aux --apply` and a refused fetch move auxiliary GGUFs, beside the models dir. #1674.
+QUARANTINE = "quarantine-{day}"
+#: The verb that sets auxiliary GGUFs aside, named wherever one is found. #1674.
+REPAIR = "soh gguf-aux --apply"
+
+
+class Auxiliary(ValueError):
+    """A GGUF that is not a model llama-server can serve alone. #1674."""
+
+
+def _header(path) -> tuple[dict, list[str]]:
+    """A GGUF's key/values (long arrays None) and tensor names, read without loading weights."""
+    from harness.context import _read, _string, _value
+    with open(path, "rb") as fh:
+        if fh.read(4) != b"GGUF" or _read(fh, "<I") < 2:
+            raise ValueError("not a GGUF v2+ file")
+        tensors, count = _read(fh, "<Q"), _read(fh, "<Q")
+        meta = {}
+        for _ in range(count):
+            key = _string(fh)
+            meta[key] = _value(fh, _read(fh, "<I"))
+        names = []
+        for _ in range(tensors):
+            names.append(_string(fh))
+            fh.seek(8 * _read(fh, "<I") + 12, 1)
+    return meta, names
+
+
+def _blocks(ids: set[int], total) -> str:
+    shown = ", ".join(map(str, sorted(ids)[:4])) + (", ..." if len(ids) > 4 else "")
+    return f"block{'s' if len(ids) > 1 else ''} {shown} of {total if isinstance(total, int) else '?'}"
+
+
+_AUX: dict[tuple, str] = {}
+
+
+def auxiliary(path) -> str:
+    """What `path` is when it is not a standalone model ('' for a model or an unreadable header). #1674."""
+    path = Path(path)
+    part = _PART.match(path.name)
+    if part:
+        return f"a split part ({int(part.group(2))} of {int(part.group(3))})"
+    try:
+        st = path.stat()
+    except OSError:
+        return ""
+    at = (str(path.resolve()), st.st_size, st.st_mtime_ns)
+    if at not in _AUX:
+        _AUX[at] = _auxiliary(path)
+    return _AUX[at]
+
+
+def _auxiliary(path: Path) -> str:
+    import struct
+    try:
+        meta, names = _header(path)
+    except (OSError, ValueError, struct.error):
+        return ""
+    parts = meta.get("split.count")
+    if isinstance(parts, int) and parts > 1:
+        return f"a split part ({int(meta.get('split.no') or 0) + 1} of {parts})"
+    kind = str(meta.get("general.type") or "model").lower()
+    if kind != "model":
+        return f"{'an' if kind[:1] in 'aeiou' else 'a'} {kind} file (general.type {kind})"
+    arch = str(meta.get("general.architecture") or "")
+    if any(d in arch.lower() for d in DRAFTERS):
+        return f"a speculative drafter (architecture {arch})"
+    if not names:
+        return ""
+    if not arch:
+        return "a tensor file with no general.architecture"
+    blocks = {int(n.split(".")[1]) for n in names if n.startswith("blk.") and n.split(".")[1].isdigit()}
+    nextn = {int(n.split(".")[1]) for n in names if n.startswith("blk.") and ".nextn." in n}
+    total = meta.get(f"{arch}.block_count")
+    if blocks and blocks <= nextn:
+        return f"an MTP head ({_blocks(blocks, total)})"
+    if "token_embd.weight" not in names:
+        return f"a layer shard ({_blocks(blocks, total)}, no token embedding)"
+    if isinstance(total, int) and blocks and len(blocks) < total:
+        return f"a layer shard ({_blocks(blocks, total)})"
+    return ""
+
+
+def auxiliaries(where=None) -> list[tuple[Path, str]]:
+    """Each GGUF in the router's dir that is not a standalone model, with what it is. #1674."""
+    where = Path(where) if where else models_dir()
+    found = [(p, auxiliary(p)) for p in sorted(where.glob("*.gguf")) if p.is_file()]
+    return [(p, why) for p, why in found if why]
+
+
+def quarantine_dir(day: str = "") -> Path:
+    import time
+    return models_dir().parent / QUARANTINE.format(day=day or time.strftime("%Y-%m-%d"))
+
+
+def set_aside(path, where=None) -> Path:
+    """Move `path` (a link stays a link) into the quarantine dir under a free name; never deletes. #1674."""
+    import shutil
+    path, where = Path(path), Path(where) if where else quarantine_dir()
+    where.mkdir(parents=True, exist_ok=True)
+    dest, n = where / path.name, 1
+    while dest.exists() or dest.is_symlink():
+        dest, n = where / f"{path.stem}.{n}{path.suffix}", n + 1
+    shutil.move(str(path), str(dest))
+    return dest
+
+
 def _servable(f: dict) -> bool:
     name = str(f.get("rfilename", ""))
     return (name.lower().endswith(".gguf") and "/" not in name
@@ -92,8 +201,8 @@ def fetched(repo: str, conn=None) -> str | None:
     return path.name[:-len(".gguf")] if path else None
 
 
-def _hub_pick(repo: str, conn=None):
-    """(hub row, snapshot dir, file name) adopt() would link for `repo`, or None. A read."""
+def _hub_pick(repo: str, conn=None, skipped=None):
+    """(hub row, snapshot dir, file name) adopt() would link for `repo`, or None; auxiliary GGUFs go to `skipped`. A read."""
     from harness import downloads
     from harness import inspect as ins
     with downloads.store(conn) as c:
@@ -103,8 +212,15 @@ def _hub_pick(repo: str, conn=None):
         if not row["complete"] or not snaps.is_dir():
             continue
         for snap in sorted(snaps.iterdir()):
-            files = [{"rfilename": f.name, "size": f.stat().st_size}
-                     for f in snap.iterdir() if f.is_file()]
+            files = []
+            for f in snap.iterdir():
+                # Split parts stay listed: choose() never takes one, and they size the stray floor. #438.
+                single = f.name.lower().endswith(".gguf") and not _PART.match(f.name)
+                why = auxiliary(f) if single and f.is_file() else ""
+                if why and skipped is not None:
+                    skipped.append((f.name, why))
+                elif f.is_file() and not why:
+                    files.append({"rfilename": f.name, "size": f.stat().st_size})
             pick = choose(files, ins.ceiling_bytes()) if gguf_first(files) else None
             if pick:
                 return row, snap, pick[0]
@@ -123,9 +239,14 @@ def adopt(conn, repo: str) -> str:
     A write the fetch tier makes for text-lane repos only (#303, RULE #334).
     """
     from harness import downloads
+    import sys
     if path_of(repo, conn):
         return ""
-    got = _hub_pick(repo, conn)
+    skipped: list = []
+    got = _hub_pick(repo, conn, skipped)
+    for name, why in skipped:
+        print(f"  gguf: {repo}: not linking {name}: {why}, not a model llama-server serves alone",
+              file=sys.stderr)
     if not got:
         return ""
     row, snap, name = got
@@ -304,6 +425,12 @@ def download(repo: str, filename: str, hf_download=None, refresh=None,
             downloads.finish(c, rid, failed=True)
             raise
         downloads.finish(c, rid)
+        landed = models_dir() / filename
+        why = auxiliary(landed)
+        if why:
+            moved = set_aside(landed)
+            downloads.removed(c, landed, by=f"auxiliary: {why}")
+            raise Auxiliary(f"{filename} is {why}, not a model llama-server serves alone; moved to {moved}")
     refresh() if refresh else refresh_router(expect=(Path(filename).stem,))
     return str(where)
 
@@ -332,6 +459,9 @@ def record_existing(path, repo: str = "", refresh=None, conn=None,
         raise ValueError(f"not a gguf: {path.name}")
     if not path.is_file():
         raise FileNotFoundError(path)
+    why = auxiliary(path)
+    if why:
+        raise Auxiliary(f"{path.name} is {why}, not a model llama-server serves alone")
     # The router reads ONE directory. A row for a file outside it would price
     # VRAM in the plan for something that can never be loaded.
     where = models_dir().resolve()

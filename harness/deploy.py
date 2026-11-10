@@ -65,6 +65,8 @@ class Steps:
     probe: list = field(default_factory=lambda: ["bash", "scripts/launchd.sh", "probe"] if sys.platform == "darwin"
                         else [])
     smoke: list = field(default_factory=lambda: ["bash", "scripts/smoke.sh"])
+    #: Before every smoke: drafters, MTP heads and shards leave the router dir, so a stray download fails no deploy. #1674.
+    repair: list = field(default_factory=lambda: [*SOH, "gguf-aux", "--apply"])
     migrate: list = field(default_factory=lambda: [*SOH, "deploy", "migrate"])
     coherence: list = field(default_factory=lambda: [*SOH, "coherence"])
     install: list = field(default_factory=lambda: ["bash", "scripts/launchd.sh", "reinstall"])
@@ -536,6 +538,8 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
             if why:
                 return stop(f"launchd probe of the new release before the switch: {why}")
             _update(c, deploy_id, stage="smoking")
+            repaired = _run(steps.repair, release, SMOKE_TIMEOUT_S, log, site_knob="harness/deploy.py:SMOKE_TIMEOUT_S")
+            log.write(f"--- repair before smoke: {repaired or 'done'}\n")
             why = _run(steps.smoke, release, SMOKE_TIMEOUT_S, log, {SMOKE_PHASE_ENV: "before"},
                        site_knob="harness/deploy.py:SMOKE_TIMEOUT_S")
             if why:
@@ -557,7 +561,7 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
                    "previous": str(previous), "previous_sha": previous_sha, "db": str(ms.db_path()),
                    "backup": saved, "migrated": migrated, "queue_was_paused": wq.paused(),
                    "queue_flag": str(wq._pause_flag()), "install": steps.install,
-                   "rollback_install": steps.install, "verify": [steps.smoke, steps.coherence],
+                   "rollback_install": steps.install, "verify": [steps.smoke, steps.coherence], "repair": steps.repair,
                    "alert": steps.alert, "log": str(log_path), "install_env": str(install_env.path()),
                    "stage": "handed_off", "outcome": "",
                    "handed_at": now()}

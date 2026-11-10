@@ -30,6 +30,7 @@ echo "smoke $(basename "$(pwd -P)")${SMOKE_PHASE:+ $SMOKE_PHASE}" >> "$DEPLOY_LO
 """
 INSTALL = 'echo "reinstall $(basename "$(pwd -P)")" >> "$DEPLOY_LOG"\n'
 ALERT = 'echo "alert $MONIT_DESCRIPTION" >> "$DEPLOY_LOG"\n'
+REPAIR = 'echo "repair $(basename "$(pwd -P)")" >> "$DEPLOY_LOG"\n'
 MIGRATE = """import sqlite3, sys
 c = sqlite3.connect(sys.argv[1])
 c.execute("CREATE TABLE planted_by_migration (x)")
@@ -73,6 +74,7 @@ def world(tmp_path, monkeypatch):
     _git(work, "config", "user.email", "t@example.invalid")
     _git(work, "config", "user.name", "t")
     first = _commit(work, {"scripts/smoke.sh": SMOKE, "scripts/launchd.sh": INSTALL, "scripts/monit-alert.sh": ALERT,
+                           "scripts/gguf-aux.sh": REPAIR,
                            "migrate.py": MIGRATE, ".gitignore": "evals/cases/stt/\n.venv/\n",
                            "harness/memory_store/schema.py": f"SCHEMA_VERSION = {ms.SCHEMA_VERSION}\n"}, "first")
     link = paths.home() / "deploy"
@@ -91,7 +93,8 @@ def world(tmp_path, monkeypatch):
     ms.connect().close()
     steps = deploy.Steps(sync=NOOP, probe=NOOP, smoke=[BASH, "scripts/smoke.sh"],
                          migrate=[sys.executable, "migrate.py", str(ms.db_path()), str(ms.SCHEMA_VERSION + 1)],
-                         coherence=NOOP, install=[BASH, "scripts/launchd.sh"], alert=[BASH, "scripts/monit-alert.sh"])
+                         coherence=NOOP, install=[BASH, "scripts/launchd.sh"], alert=[BASH, "scripts/monit-alert.sh"],
+                         repair=[BASH, "scripts/gguf-aux.sh"])
     return {"origin": origin, "work": work, "link": link, "first": first, "log": log, "steps": steps, "hf": hf}
 
 
@@ -264,7 +267,8 @@ def test_a_green_release_is_built_alongside_switched_and_recorded(world):
     steps = world["log"].read_text(encoding="utf-8").splitlines()
     rel = Path(d["release"]).name
     # The smoke before the switch warns on a property the release introduces; the switch's smoke enforces it (#1608).
-    assert steps == [f"smoke {rel} before", f"reinstall {rel}", f"smoke {rel} after"]
+    # Non-model GGUFs leave the router dir before each smoke, so a stray download fails no deploy (#1674).
+    assert steps == [f"repair {rel}", f"smoke {rel} before", f"reinstall {rel}", f"repair {rel}", f"smoke {rel} after"]
 
 
 @pytest.mark.sqlite_store
@@ -287,7 +291,8 @@ def test_a_release_whose_smoke_fails_after_the_switch_rolls_back_and_restores_th
     assert not wq.paused()
     steps = world["log"].read_text(encoding="utf-8")
     prev, rel = Path(d["previous"]).name, Path(d["release"]).name
-    assert f"reinstall {rel}\nreinstall {prev}\nsmoke {prev} after\n" in steps
+    # The rollback smoke follows the new release's repair too: the previous release may not have the verb (#1674).
+    assert f"reinstall {rel}\nrepair {rel}\nreinstall {prev}\nrepair {rel}\nsmoke {prev} after\n" in steps
     assert f"alert deploy of {job['output'][:12]} rolled_back" in steps
 
 

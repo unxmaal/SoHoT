@@ -89,6 +89,7 @@ capabilities:
       - harness/quants.py
       - harness/variants.py
       - harness/gguf.py
+      - harness/commands/gguf_aux.py
 
   - name: discovery-sources
     summary: Feeds, registries, papers, posts and neighbours that propose candidates, techniques and benchmarks.
