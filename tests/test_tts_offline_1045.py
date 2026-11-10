@@ -68,7 +68,7 @@ def test_the_check_runs_in_the_servers_own_env(tmp_path):
     assert check[:check.index("python")] == head
     assert _pin("EN_CORE_WEB_SM_PIN") in head
     assert _pin("PRESHED_PIN") in head
-    assert serve[serve.index("python") + 1:][:2] == ["-m", "mlx_audio.server"]
+    assert serve[serve.index("python") + 1:][:2] == ["-m", "harness.tts_server"]
     assert check[check.index("python") + 1] == "-c"
 
 

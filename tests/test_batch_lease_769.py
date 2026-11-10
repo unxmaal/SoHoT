@@ -7,7 +7,6 @@ import queue
 import subprocess
 import sys
 import threading
-import time
 from pathlib import Path
 
 import httpx
@@ -54,23 +53,31 @@ def test_a_remote_eval_is_refused_while_a_local_eval_holds_the_serving_machine()
     assert reasons.CLASSES[reasons.classify(f"gateway returned HTTP 503: {detail}")][1] == reasons.HARNESS
 
 
-def test_a_local_eval_waits_while_a_remote_eval_holds_the_serving_machine(monkeypatch):
-    _short_ttl(monkeypatch, 1.5)
+def test_a_local_eval_waits_while_a_remote_eval_holds_the_serving_machine():
+    from harness import batch
+    from harness import memory_store as ms
     hook = _gateway()
     asyncio.run(hook(None, None, _request("a-remote-eval"), "acompletion"))
-    said, out = [], {}
+    said, out, asked, released = [], {}, threading.Event(), threading.Event()
 
     def local_eval():
-        start = time.monotonic()
-        with exclusive.held("eval", announce=said.append, poll=0.05) as waited:
-            out["waited"], out["after"] = waited, time.monotonic() - start
+        with exclusive.held("eval", announce=lambda s: (said.append(s), asked.set()), poll=0.05) as waited:
+            out["waited"], out["released_first"] = waited, released.is_set()
 
-    t = threading.Thread(target=local_eval)
+    t = threading.Thread(target=local_eval, daemon=True)
     t.start()
-    t.join(timeout=10)
+    assert asked.wait(timeout=_HUNG_S), "the local eval never said it was waiting"
+    assert "released_first" not in out
+    released.set()
+    conn = ms.connect()
+    try:
+        assert batch.let_go_all(conn, "a-remote-eval") >= 1
+    finally:
+        conn.close()
+    t.join(timeout=_HUNG_S)
     assert not t.is_alive()
-    assert out["waited"] and out["after"] >= 1.0, out
-    assert said and "a-remote-eval" in said[0]
+    assert out == {"waited": True, "released_first": True}
+    assert "a-remote-eval" in said[0]
 
 
 def test_a_local_evals_own_requests_pass_its_own_lease():

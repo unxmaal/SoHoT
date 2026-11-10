@@ -441,6 +441,9 @@ def needs(r: dict) -> list[str]:
     if h.get("generating") is False and open_incident(r, h["lane"]) is None:
         out.append(f"the {h['lane']} lane cannot generate: {h['spec']} at {h['base']} says its generation thread "
                    "died; the watchdog restarts the mlx unit, or run `scripts/launchd.sh restart mlx`")
+    from harness import audio_models
+    if audio_models.over(r.get("tts") or {}):
+        out.append(audio_models.over(r["tts"]))
     loop = r["sweep"].get("loop")
     if r.get("gpu_hold"):
         out.append(f"{r['gpu_hold']}; no batch GPU job or deploy starts until soh hold release gpu")
@@ -517,7 +520,7 @@ def parked_nodes() -> list[str]:
 
 def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, where=None, lanes=None,
            health=None, stalls=None, canary=None, parked=None, incumbent=None, monitor=None, pulls=None,
-           waiting=None) -> dict:
+           tts=None, waiting=None) -> dict:
     """`health` probes the headline's lane (lane_health), `canary` reads its receipts (canary.morning_line); None skips either."""
     r = {"lane": health(MODEL_LANE) if health else {"lane": MODEL_LANE, "generating": None, "why": "not probed"},
          "generated": now, "since": since, "sweep": sweep(conn, since, beat), "watchdog": watchdog(conn, since),
@@ -530,7 +533,8 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "engines": engines(conn, since), "idle": _idle(conn, since),
          "runtimes": runtimes(conn, since), "techniques": techniques(conn, since),
          "monitor": monitor(since) if monitor else None, "deploys": deploys_since(conn, since),
-         "pulls": pulls(now) if pulls else None, "deploy_wait": waiting(conn, now) if waiting else None}
+         "pulls": pulls(now) if pulls else None, "tts": tts() if tts else None,
+         "deploy_wait": waiting(conn, now) if waiting else None}
     from harness import hold
     r["hold"], r["gpu_hold"] = hold.held(conn, now), hold.held(conn, now, hold.GPU)
     if r["sweep"]["loop"] is not None:

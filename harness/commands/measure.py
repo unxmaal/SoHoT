@@ -326,7 +326,7 @@ def lane_for(row: dict, want: str = "") -> str:
 
 def _measure_and_adopt(a, row: dict, sweep=None) -> int:
     """_measure, then unload the challenger it loaded. #444."""
-    from harness import interactive, mlx_server, router
+    from harness import audio_models, interactive, mlx_server, router
     loaded: list[str] = []
     try:
         # An arm whose GGUF the interactive server pins is answered there, never loaded twice. #1578.
@@ -336,6 +336,7 @@ def _measure_and_adopt(a, row: dict, sweep=None) -> int:
         for spec in loaded:
             router.release_spec(spec, f"measured {row['name']}")
             mlx_server.release_spec(spec, f"measured {row['name']}")
+            audio_models.release_spec(spec, f"measured {row['name']}")
 
 
 def _measure(a, row: dict, loaded: list, sweep=None) -> int:
@@ -1344,15 +1345,12 @@ def _confirm_paused(vid: int, lane: str, inc_spec: str, spec: str, out) -> int:
     """A paused or signal-stopped (not overrun) confirmation queues its own continuation; for a deploy, the queue re-pends this job. #1357, #1509, #1675."""
     from harness import adopt, workqueue
     from harness import memory_store as ms
-    if workqueue.paused_for_deploy():
-        print(f"    paused at {out} for a deploy; this job resumes it after the deploy", flush=True)
-        return watch.PAUSED
-    store = ms.connect()
+    deploy, store = workqueue.paused_for_deploy(), ms.connect()
     try:
-        job = adopt.queue_confirmation(store, vid, adopt.Verdict(lane, inc_spec, spec, False, ""))
+        job = None if deploy else adopt.queue_confirmation(store, vid, adopt.Verdict(lane, inc_spec, spec, False, ""))
     finally:
         store.close()
-    then = f"; it resumes as job {job['id']}" if job else ""
+    then = "; this job resumes it after the deploy" if deploy else f"; it resumes as job {job['id']}" if job else ""
     print(f"    paused at {out}: {watch.pause_reason(out) or 'on request'}{then}", flush=True)
     return watch.PAUSED
 
