@@ -78,6 +78,8 @@ def cmd_deploy(a) -> int:
         conn.close()
     note(f"serving {got['head'][:12] or 'unknown'} from {got['serving'] or 'no deploy checkout'}"
          + (f" through {got['link']}" if got["link"] and got["link"] != got["serving"] else ""))
+    if got["deploy"] and got["deploy"]["state"] == "split":
+        note(f"deploy {got['deploy']['deploy']} {deploy.said(got['deploy'])}")
     note(f"a deploy {'waits: ' + got['blocked'] if got['blocked'] else 'may start now'}")
     for j in got["jobs"]:
         note(f"  job {j['id']} {j['state']:9} {j['title']}" + (f": {j['note']}" if j["note"] else ""))
