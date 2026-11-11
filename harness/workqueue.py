@@ -224,7 +224,9 @@ REMEASURES = ("sweep", "reverify")
 
 def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
         output: str = "", priority: int = 0, requested_by: str = "",
-        not_before: float | None = None, conn=None, resource: str = "") -> dict:
+        not_before: float | None = None, conn=None, resource: str = "", commit: bool = True) -> dict:
+    if not commit and conn is None:
+        raise ValueError("an uncommitted job needs the caller's connection")
     if resource:
         resources.check(resource)
     if not argv:
@@ -262,7 +264,8 @@ def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
              json.dumps([str(a) for a in argv]), cwd or os.getcwd(), PENDING, js.ADDED,
              time.time(), requested_by, machine,
              None if not_before is None else float(not_before), resource))
-        c.commit()
+        if commit:
+            c.commit()
         return _select(c, "WHERE id = ?", (cur.lastrowid,))[0]
 
 

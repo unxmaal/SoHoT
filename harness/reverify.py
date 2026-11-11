@@ -384,16 +384,18 @@ def _queue(conn, entry: dict, now: float, add) -> dict:
     if entry["candidate_id"] is None:
         # served() only looks up; the row a reverification names is created here. #1247.
         entry = {**entry, "candidate_id": candidates.ensure(conn, entry["spec"], lane=entry["lane"])}
-    job = add(entry["argv"], title=f"reverify {entry['lane']}: {entry['spec']}",
-              cwd=str(paths.REPO), priority=PRIORITY, requested_by=REQUESTED_BY,
-              conn=conn)
-    conn.execute(
-        "INSERT INTO reverifications (lane, candidate_id, spec, incumbent, triggers, "
-        "job_id, baseline_run_id, machine_id, queued_at) VALUES (?,?,?,?,?,?,?,?,?)",
-        (entry["lane"], entry["candidate_id"], entry["spec"], entry["incumbent"],
-         json.dumps(entry["triggers"]), int(job["id"]), entry["baseline_run_id"],
-         ms.machine_row(conn), now))
-    conn.commit()
+    from harness import job_state as js
+
+    def own(jobs):
+        return conn.execute(
+            "INSERT INTO reverifications (lane, candidate_id, spec, incumbent, triggers, "
+            "job_id, baseline_run_id, machine_id, queued_at) VALUES (?,?,?,?,?,?,?,?,?)",
+            (entry["lane"], entry["candidate_id"], entry["spec"], entry["incumbent"],
+             json.dumps(entry["triggers"]), int(jobs[0]["id"]), entry["baseline_run_id"],
+             ms.machine_row(conn), now)).lastrowid
+    _, [job] = js.add_owned(conn, [(entry["argv"], {
+        "title": f"reverify {entry['lane']}: {entry['spec']}", "cwd": str(paths.REPO),
+        "priority": PRIORITY, "requested_by": REQUESTED_BY})], own, add)
     return {**entry, "job": job["id"]}
 
 
@@ -518,15 +520,23 @@ def judge(conn, rv: dict, job: dict | None) -> tuple[str, str, str, str, int | N
     return PASSED, reasons.CANDIDATE, "", said, rid
 
 
-def _resume(conn, rv: dict, job: dict, now: float, add) -> dict:
-    """Queue a paused re-run's continuation from its checkpoint, and point the reverification at it. #1403."""
+def _resume(conn, rv: dict, job: dict, now: float, add) -> dict | None:
+    """Queue a paused re-run's continuation and repoint the reverification in one commit; None if another settle did. #1403, #1755."""
+    from harness import job_state as js
     from harness import paths, runs
     from harness import workqueue as wq
     run = runs.for_job(conn, int(job["id"]))
     argv = job["argv"] if run is None else wq.resume_argv(job["argv"], runs.run_dir(run["path"]))
-    nxt = add(argv, title=job["title"] or f"reverify {rv['lane']}: {rv['spec']}",
-              cwd=job["cwd"] or str(paths.REPO), priority=PRIORITY, requested_by=REQUESTED_BY, conn=conn)
-    conn.execute("UPDATE reverifications SET job_id = ? WHERE id = ?", (int(nxt["id"]), rv["id"]))
+
+    def own(jobs):
+        return conn.execute("UPDATE reverifications SET job_id = ? WHERE id = ? AND job_id = ?",
+                            (int(jobs[0]["id"]), rv["id"], int(job["id"]))).rowcount or None
+    got, rows = js.add_owned(conn, [(argv, {
+        "title": job["title"] or f"reverify {rv['lane']}: {rv['spec']}", "cwd": job["cwd"] or str(paths.REPO),
+        "priority": PRIORITY, "requested_by": REQUESTED_BY})], own, add)
+    if got is None:
+        return None
+    nxt = rows[0]
     return {"id": rv["id"], "lane": rv["lane"], "spec": rv["spec"], "paused": job["id"], "job": nxt["id"],
             "out": None if run is None else str(runs.run_dir(run["path"]))}
 
@@ -543,7 +553,7 @@ def settle(conn, *, now: float, write: bool = True, add=None, resumed: list | No
         if job is not None and job["state"] == wq.PAUSED:
             if write:
                 got = _resume(conn, rv, job, now, add or wq.add)
-                if resumed is not None:
+                if got is not None and resumed is not None:
                     resumed.append(got)
             continue
         outcome, reason, cls, detail, rid = judge(conn, rv, job)
