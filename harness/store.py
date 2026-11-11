@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import os
 import re
+import sqlite3
 import weakref
 from contextlib import contextmanager
 from pathlib import Path
@@ -29,6 +30,8 @@ from threading import local as _thread_local
 
 SQLITE, POSTGRES = "sqlite", "postgres"
 BACKEND_ENV = "LOCALHARNESS_STORE"
+#: A unique or foreign-key refusal on either backend; PostgresConnection raises it for psycopg's too.
+IntegrityError = sqlite3.IntegrityError
 
 #: Postgres REAL is float4. A unix timestamp needs ten significant digits and
 #: float4 carries about seven, so `first_seen` would silently round to the

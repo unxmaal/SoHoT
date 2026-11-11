@@ -39,6 +39,7 @@ capabilities:
       - harness/effects.py
       - harness/paired.py
       - harness/gateway_switch.py
+      - harness/gateway_switch_state.py
 
   - name: measure
     summary: The measure tier, its pauses, looks and resumes, and the order the measure queue is spent in.
