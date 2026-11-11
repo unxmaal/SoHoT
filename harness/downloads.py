@@ -15,6 +15,8 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
+from harness import download_state as ds
+
 try:
     import fcntl
 except ImportError:  # Windows
@@ -44,9 +46,7 @@ PROVENANCE_KEYS = {
     "_name_or_path": "where the config came from, not what it needs",
 }
 _REPO = re.compile(r"^[A-Za-z0-9][\w.-]*/[\w.-]+$")
-#: A started download with no finish and no lock file (an older row) is judged by wall time after this long.
-IN_FLIGHT_SECONDS = 24 * 3600
-#: Row id -> the open lock file the fetching process holds while it writes. #704.
+#: Row id -> the open lock file this process holds while it writes; a handle, never read as state. #704, #1734.
 _HELD: dict[int, object] = {}
 #: Seconds between looks at the bytes a download has written; each growth beats the loop's heartbeat. #771.
 PROGRESS_POLL_S = 60.0
@@ -160,26 +160,30 @@ def _drop_lock(path_key: str) -> bool:
     return True
 
 
-def hold(rid: int, path_key: str) -> None:
-    """Lock the download for as long as this process writes it; a crash or SIGKILL lets go. #704."""
-    release(rid)
-    try:
-        p = lock_path(path_key)
-        p.parent.mkdir(parents=True, exist_ok=True)
-        f = p.open("a+b")
-    except OSError:
-        return
+class Busy(RuntimeError):
+    """A download a live process is writing: a second start or a removal of it loses. #1734."""
+
+
+def _take(path_key: str):
+    """This download's lock, open and held until release; Busy when a live process holds it. #704, #1734."""
+    p = lock_path(path_key)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    f = p.open("a+b")
     if _try_lock(f):
-        _HELD[rid] = f
-    else:
-        f.close()
+        return f
+    f.close()
+    raise Busy(f"{path_key} is being downloaded by a live process")
+
+
+def _let_go(f) -> None:
+    _unlock(f)
+    f.close()
 
 
 def release(rid: int) -> None:
     f = _HELD.pop(rid, None)
     if f is not None:
-        _unlock(f)
-        f.close()
+        _let_go(f)
 
 
 def held_elsewhere(path_key: str) -> bool | None:
@@ -346,7 +350,7 @@ def _proposal(conn, name: str):
 def live(conn, *, repo: str = "", kind: str = "", path: str = "") -> list[dict]:
     """This machine's rows not yet removed, newest first."""
     where, args = _in(mine(conn))
-    sql = f"SELECT * FROM downloads WHERE removed_at IS NULL AND {where}"
+    sql = f"SELECT * FROM downloads WHERE state <> '{ds.REMOVED}' AND {where}"
     if repo:
         sql += " AND lower(repo) = ?"
         args += (repo.lower(),)
@@ -359,94 +363,97 @@ def live(conn, *, repo: str = "", kind: str = "", path: str = "") -> list[dict]:
     return [dict(r) for r in conn.execute(sql + " ORDER BY id DESC", args)]
 
 
-def start(conn, repo: str, kind: str, path, *, file: str = "",
-          origin: str = FETCH, proposal: str = "") -> int:
-    """A download about to begin; the row is in flight until finish()."""
-    now = time.time()
-    got = live(conn, kind=kind, path=path)
-    if got:
-        conn.execute("UPDATE downloads SET started_at = ?, finished_at = NULL, "
-                     "complete = 0 WHERE id = ?", (now, got[0]["id"]))
+def start(conn, repo: str, kind: str, path, *, file: str = "", origin: str = FETCH, proposal: str = "",
+          reason: str = "", source: str | None = None, at: float | None = None) -> int:
+    """A download about to begin under its lock, fetching until finish(); a finished row on the path reopens only for a named reason. #1734."""
+    k = key(path)
+    f = _take(k)
+    try:
+        now = time.time() if at is None else at
+        got = live(conn, kind=kind, path=path)
+        if not got:
+            rid = ds.born(conn, ds.FETCHING, ds.STARTED, proposal_id=_proposal(conn, proposal or repo), repo=repo,
+                          kind=kind, path=k, file=file, origin=origin, source=source or "", started_at=now,
+                          machine_id=this_machine(conn))
+        else:
+            row, rid = got[0], got[0]["id"]
+            cols = {"started_at": now, "finished_at": None}
+            if source is not None:
+                cols["source"] = source
+            if repo and not row["repo"]:
+                cols["repo"] = repo
+            # Holding the lock proves the last writer of a fetching row let go without finishing.
+            why = ds.ABANDONED if row["state"] == ds.FETCHING else reason
+            if not ds.move(conn, rid, row["state"], ds.FETCHING, why, **cols):
+                conn.commit()
+                raise Busy(f"download {rid} moved while {k} was being started")
         conn.commit()
-        hold(got[0]["id"], key(path))
-        return got[0]["id"]
-    rid = conn.execute(
-        "INSERT INTO downloads (proposal_id, repo, kind, path, file, origin, "
-        "started_at, machine_id) VALUES (?,?,?,?,?,?,?,?)",
-        (_proposal(conn, proposal or repo), repo, kind, key(path), file,
-         origin, now, this_machine(conn))).lastrowid
-    conn.commit()
-    hold(rid, key(path))
+    except BaseException:
+        _let_go(f)
+        raise
+    _HELD[rid] = f
     return rid
 
 
-def finish(conn, rid: int, path=None, *, failed: bool = False) -> dict:
-    """Measure what landed and stamp the row."""
+def finish(conn, rid: int, path=None, *, failed: bool = False, at: float | None = None) -> dict:
+    """Measure what landed and move the row out of fetching; `moved` is False when another writer moved it first."""
     row = dict(conn.execute("SELECT * FROM downloads WHERE id = ?",
                             (rid,)).fetchone())
     where = key(path) if path is not None else row["path"]
-    size, files = _measure(row["kind"], where)
-    # Offline loads resolve refs/main; a dir without it is not had. #799.
-    complete = 0 if failed else int(loadable(row["kind"], where)
-                                    and not offline_gap(row["kind"], where))
-    needs = (requires_in(config_of(where), row["repo"])
-             if row["kind"] == HUB and complete else [])
-    conn.execute(
-        "UPDATE downloads SET path = ?, bytes = ?, files = ?, complete = ?, "
-        "requires = ?, finished_at = ? WHERE id = ?",
-        (where, size, files, complete, json.dumps(needs), time.time(), rid))
-    conn.commit()
-    release(rid)
-    _drop_lock(row["path"])
-    return {**row, "path": where, "bytes": size, "files": files,
-            "complete": complete, "requires": json.dumps(needs)}
+    try:
+        size, files = _measure(row["kind"], where)
+        # Offline loads resolve refs/main; a dir without it is not had. #799.
+        complete = 0 if failed else int(loadable(row["kind"], where)
+                                        and not offline_gap(row["kind"], where))
+        needs = (requires_in(config_of(where), row["repo"])
+                 if row["kind"] == HUB and complete else [])
+        to = ds.COMPLETE if complete else ds.INCOMPLETE
+        got = {"path": where, "bytes": size, "files": files, "requires": json.dumps(needs),
+               "finished_at": time.time() if at is None else at}
+        moved = ds.move(conn, rid, ds.FETCHING, to, ds.FAILED if failed else ds.FINISHED, **got)
+        conn.commit()
+    finally:
+        release(rid)
+        _drop_lock(row["path"])
+    if not moved:
+        return {**dict(conn.execute("SELECT * FROM downloads WHERE id = ?", (rid,)).fetchone()), "moved": False}
+    return {**row, **got, "complete": complete, "state": to, "moved": True}
 
 
 def record(conn, repo: str, kind: str, path, *, file: str = "",
            origin: str = FETCH, source: str = "", proposal: str = "",
            at: float | None = None) -> dict:
     """A download that already happened, measured now."""
-    rid = start(conn, repo, kind, path, file=file, origin=origin,
-                proposal=proposal)
-    conn.execute("UPDATE downloads SET started_at = ?, source = ?, "
-                 "repo = CASE WHEN repo = '' THEN ? ELSE repo END WHERE id = ?",
-                 (time.time() if at is None else at, source, repo, rid))
-    got = finish(conn, rid)
-    if at is not None:
-        conn.execute("UPDATE downloads SET finished_at = ? WHERE id = ?",
-                     (at, rid))
-        conn.commit()
-    return got
+    rid = start(conn, repo, kind, path, file=file, origin=origin, proposal=proposal,
+                reason=ds.RECORDED, source=source, at=at)
+    return finish(conn, rid, at=at)
 
 
 def removed(conn, path, *, by: str, verdict_id=None, repo: str = "",
             kind: str = "", bytes_: int = 0, at: float | None = None,
             origin: str = "") -> int:
-    """Stamp the live row for `path` removed; insert one if nothing recorded it."""
+    """Move the live rows for `path` to removed, or insert a removed one if nothing recorded it; Busy while a live process writes it."""
     at = time.time() if at is None else at
     got = live(conn, path=path)
+    busy = [r["id"] for r in got if in_flight(r)]
+    if busy:
+        raise Busy(f"download {busy[0]} of {key(path)} is being written by a live process")
     if got:
         for r in got:
-            conn.execute(
-                "UPDATE downloads SET removed_at = ?, removed_by = ?, "
-                "removal_verdict_id = ?, complete = 0 WHERE id = ?",
-                (at, by, verdict_id, r["id"]))
+            ds.move(conn, r["id"], r["state"], ds.REMOVED, ds.DELETED,
+                    removed_at=at, removed_by=by, removal_verdict_id=verdict_id)
         conn.commit()
         return got[0]["id"]
     kind = kind or (GGUF if str(path).lower().endswith(".gguf") else HUB)
-    rid = conn.execute(
-        "INSERT INTO downloads (proposal_id, repo, kind, path, file, origin, "
-        "bytes, machine_id, removed_at, removed_by, removal_verdict_id) "
-        "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-        (_proposal(conn, repo), repo, kind, key(path), Path(path).name,
-         origin or SCAN, int(bytes_), this_machine(conn), at, by,
-         verdict_id)).lastrowid
+    rid = ds.born(conn, ds.REMOVED, ds.HISTORY, proposal_id=_proposal(conn, repo), repo=repo, kind=kind,
+                  path=key(path), file=Path(path).name, origin=origin or SCAN, bytes=int(bytes_),
+                  machine_id=this_machine(conn), removed_at=at, removed_by=by, removal_verdict_id=verdict_id)
     conn.commit()
     return rid
 
 
 def _complete(conn, repo: str, kind: str = "", stat: bool = True) -> list[dict]:
-    rows = [r for r in live(conn, repo=repo, kind=kind) if r["complete"]]
+    rows = [r for r in live(conn, repo=repo, kind=kind) if r["state"] == ds.COMPLETE]
     return [r for r in rows if not stat or Path(r["path"]).exists()]
 
 
@@ -456,11 +463,11 @@ def have(repo: str, conn=None, *, stat: bool = True) -> bool:
         return bool(_complete(c, repo, stat=stat))
 
 
-def stand_down(conn, repo: str) -> int:
-    """This machine's complete rows for `repo` marked incomplete, so the fetch tier takes it again. #799."""
-    got = conn.execute("UPDATE downloads SET complete = 0 WHERE repo = ? AND complete = 1 "
-                       "AND removed_at IS NULL AND machine_id = ?",
-                       (repo, this_machine(conn))).rowcount
+def stand_down(conn, repo: str, reason: str) -> int:
+    """This machine's complete rows for `repo` moved to stood_down for `reason`, so the fetch tier takes it again. #799, #1734."""
+    rows = conn.execute("SELECT id FROM downloads WHERE repo = ? AND state = ? AND machine_id = ?",
+                        (repo, ds.COMPLETE, this_machine(conn))).fetchall()
+    got = sum(ds.move(conn, r["id"], ds.COMPLETE, ds.STOOD_DOWN, reason) for r in rows)
     conn.commit()
     return got
 
@@ -489,22 +496,20 @@ def requires(repo: str, conn=None) -> list[str]:
 def complete_hub(conn) -> list[dict]:
     """Every complete hub download on this machine, still present."""
     with store(conn) as c:
-        rows = [r for r in live(c, kind=HUB) if r["complete"]]
+        rows = [r for r in live(c, kind=HUB) if r["state"] == ds.COMPLETE]
     return [r for r in rows if Path(r["path"]).exists()]
 
 
-def in_flight(row: dict, now: float | None = None, by_clock: list | None = None) -> bool:
-    """Started, not finished, and a live process still holds its lock; wall time only for a row with no lock. #704."""
-    now = time.time() if now is None else now
-    if row.get("started_at") is None or row.get("finished_at") is not None:
-        return False
-    live = held_elsewhere(row["path"])
-    if live is not None:
-        return live
-    young = now - float(row["started_at"]) < IN_FLIGHT_SECONDS
-    if young and by_clock is not None:
-        by_clock.append(row["path"])
-    return young
+def in_flight(row: dict) -> bool:
+    """A fetching row whose lock a live process holds; one whose writer let go is abandoned, never in flight. #704, #1734."""
+    return row.get("state") == ds.FETCHING and held_elsewhere(row["path"]) is True
+
+
+def liveness(row: dict) -> str:
+    """The row's state, with a fetching row nobody holds named abandoned: a view, never stored. #1734."""
+    if row.get("state") == ds.FETCHING and not in_flight(row):
+        return ds.ABANDONED
+    return row.get("state") or ""
 
 
 def scan(hub: Path, ggufs: Path) -> list[tuple[str, Path]]:
@@ -527,8 +532,9 @@ def drift(conn, hub: Path | None = None, ggufs: Path | None = None) -> dict:
     hub = Path(hub) if hub is not None else hub_root()
     ggufs = Path(ggufs) if ggufs is not None else gguf_root()
     rows = live(conn)
+    # A GGUF lands at its path only once whole, so a download in flight is not drift. #1734.
     gone = [r for r in rows
-            if r["origin"] != PARTIAL and not os.path.lexists(r["path"])]
+            if r["origin"] != PARTIAL and not os.path.lexists(r["path"]) and not in_flight(r)]
     known = {r["path"] for r in rows}
     unrecorded = [str(p) for _, p in scan(hub, ggufs) if key(p) not in known]
     return {"gone": gone, "unrecorded": unrecorded}
@@ -602,7 +608,7 @@ def backfill(conn, hub: Path | None = None, ggufs: Path | None = None,
             removals.setdefault(key(r["path"]), []).append(dict(r))
     stamped, done = set(), set()
 
-    def settle(rid, row_path):
+    def settle(rid, row_path, state):
         if os.path.lexists(row_path):
             return
         gone = removals.get(key(row_path))
@@ -613,9 +619,7 @@ def backfill(conn, hub: Path | None = None, ggufs: Path | None = None,
                 last["verdict_id"]
         else:
             by, at, vid = "absent at backfill", now, None
-        conn.execute("UPDATE downloads SET removed_at = ?, removed_by = ?, "
-                     "removal_verdict_id = ?, complete = 0 WHERE id = ?",
-                     (at, by, vid, rid))
+        ds.move(conn, rid, state, ds.REMOVED, ds.DELETED, removed_at=at, removed_by=by, removal_verdict_id=vid)
 
     def once(repo, kind, where, **kw):
         if key(where) in done:
@@ -626,7 +630,7 @@ def backfill(conn, hub: Path | None = None, ggufs: Path | None = None,
                         (key(where),)).fetchone():
             return
         got = record(conn, repo, kind, where, **kw)
-        settle(got["id"], got["path"])
+        settle(got["id"], got["path"], got["state"])
         return got
 
     for v in conn.execute(
@@ -666,16 +670,11 @@ def backfill(conn, hub: Path | None = None, ggufs: Path | None = None,
                 "SELECT repo FROM downloads WHERE path = ? ORDER BY id DESC",
                 (key(Path(r["path"]).parent.parent),)).fetchone()
             repo = owner["repo"] if owner else ""
-        conn.execute(
-            "INSERT INTO downloads (proposal_id, repo, kind, path, file, "
-            "origin, bytes, machine_id, removed_at, removed_by, "
-            "removal_verdict_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-            (_proposal(conn, repo), repo,
-             GGUF if r["path"].lower().endswith(".gguf") else HUB,
-             key(r["path"]), Path(r["path"]).name,
-             PARTIAL if partial else BACKFILL, int(r["bytes"] or 0),
-             this_machine(conn), r["removed_at"], r["source"] or "lh disk",
-             r["verdict_id"]))
+        ds.born(conn, ds.REMOVED, ds.HISTORY, proposal_id=_proposal(conn, repo), repo=repo,
+                kind=GGUF if r["path"].lower().endswith(".gguf") else HUB,
+                path=key(r["path"]), file=Path(r["path"]).name, origin=PARTIAL if partial else BACKFILL,
+                bytes=int(r["bytes"] or 0), machine_id=this_machine(conn), removed_at=r["removed_at"],
+                removed_by=r["source"] or "lh disk", removal_verdict_id=r["verdict_id"])
     if _has_table(conn, "disk_removals"):
         conn.execute("DROP TABLE disk_removals")
 
@@ -691,14 +690,9 @@ def _has_table(conn, table: str) -> bool:
 
 
 def summary(conn) -> dict:
-    """Rows by kind, complete or not, removed or not."""
+    """Rows by kind and state."""
     out = {}
-    for r in conn.execute(
-            "SELECT kind, complete, removed_at IS NOT NULL AS gone, "
-            "COUNT(*) AS n, COALESCE(SUM(bytes), 0) AS b FROM downloads "
-            "GROUP BY kind, complete, removed_at IS NOT NULL"):
-        state = ("removed" if r["gone"] else
-                 "complete" if r["complete"] else "incomplete")
-        k = out.setdefault(r["kind"], {})
-        k[state] = {"count": r["n"], "bytes": r["b"]}
+    for r in conn.execute("SELECT kind, state, COUNT(*) AS n, COALESCE(SUM(bytes), 0) AS b FROM downloads "
+                          "GROUP BY kind, state"):
+        out.setdefault(r["kind"], {})[r["state"]] = {"count": r["n"], "bytes": r["b"]}
     return out

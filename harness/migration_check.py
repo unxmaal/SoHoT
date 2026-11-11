@@ -130,8 +130,9 @@ def _machines(conn) -> list:
 
 
 def _downloads(conn) -> list:
+    from harness import download_state as ds
     from harness import downloads as d
-    origins = {d.FETCH, d.LINK, d.SCRIPT, d.SCAN, d.BACKFILL, d.PARTIAL}
+    origins ={d.FETCH, d.LINK, d.SCRIPT, d.SCAN, d.BACKFILL, d.PARTIAL}
     bad = []
     for r in conn.execute("SELECT * FROM downloads ORDER BY id"):
         why = [w for w, broken in (
@@ -142,7 +143,10 @@ def _downloads(conn) -> list:
             ("removed by nobody", r["removed_at"] is not None
              and not r["removed_by"]),
             ("removed yet complete", r["removed_at"] is not None
-             and r["complete"])) if broken]
+             and r["complete"]),
+            (f"state {r['state']!r}", r["state"] not in ds.STATES),
+            ("state and removed_at disagree", (r["state"] == ds.REMOVED) != (r["removed_at"] is not None)),
+            ("state and complete disagree", (r["state"] == ds.COMPLETE) != bool(r["complete"]))) if broken]
         if why:
             bad.append(f"download {r['id']} {r['repo']}: {', '.join(why)}")
     return bad

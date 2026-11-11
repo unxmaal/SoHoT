@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 94
+SCHEMA_VERSION = 95
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -815,7 +815,10 @@ CREATE TABLE IF NOT EXISTS downloads (
     ctx_at       REAL,
     -- The KV cap and the co-resident MLX model the choice was made under. #498.
     kv_cap_bytes INTEGER NOT NULL DEFAULT 0,
-    coresident_bytes INTEGER NOT NULL DEFAULT 0
+    coresident_bytes INTEGER NOT NULL DEFAULT 0,
+    -- download_state.STATES, written only by download_state.move; complete mirrors state = 'complete'. #1734.
+    state        TEXT NOT NULL DEFAULT 'incomplete',
+    reason       TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS edges (

@@ -170,7 +170,7 @@ def test_a_live_fetch_older_than_a_day_keeps_its_partial_blobs(world):
     rid = downloads.start(world.conn, "org/slow", downloads.HUB, d)
     try:
         row = dict(world.conn.execute("SELECT * FROM downloads WHERE id = ?", (rid,)).fetchone())
-        assert downloads.in_flight(row, time.time() + 3 * DAY)
+        assert downloads.in_flight(row)
         disk.clean(inv(world), time.time() + 3 * DAY, world.conn)
         assert part.exists()
     finally:

@@ -187,7 +187,7 @@ def _stored(conn, spec: str) -> tuple[set, set]:
             "SELECT p.name, d.repo, d.kind, d.file FROM candidates c "
             "JOIN proposals p ON p.id = c.proposal_id "
             "LEFT JOIN downloads d ON d.proposal_id = p.id "
-            "AND d.removed_at IS NULL WHERE c.spec = ?", (spec,)).fetchall():
+            "AND d.state <> 'removed' WHERE c.spec = ?", (spec,)).fetchall():
         repos.add(r["name"])
         if r["repo"]:
             repos.add(r["repo"])
@@ -546,11 +546,11 @@ def clear_incomplete(inv: Inventory, conn=None, source: str = "discover",
         return []
     hub = Path(inv.hub).resolve()
     rows = _rows(conn)
-    removed, by_clock = [], []
+    removed = []
     for blob in inv.incomplete:
         path = Path(blob["path"])
         row = rows.get(downloads.key(blob["dir"]))
-        if row is None or downloads.in_flight(row, now, by_clock) or path.is_symlink():
+        if row is None or downloads.in_flight(row) or path.is_symlink():
             continue
         try:
             path.resolve().relative_to(hub)
@@ -563,10 +563,6 @@ def clear_incomplete(inv: Inventory, conn=None, source: str = "discover",
         removed.append({"path": str(path), "group": "incomplete",
                         "repo": row["repo"], "bytes": blob["size"],
                         "origin": downloads.PARTIAL, "at": time.time()})
-    if by_clock:
-        from harness import cuts
-        cuts.cut("harness/downloads.py:IN_FLIGHT_SECONDS", "partial downloads with no lock kept as in flight by age",
-                 dropped=len(by_clock), conn=conn)
     record(conn, removed, source)
     return removed
 

@@ -522,7 +522,7 @@ def resident_bytes(spec: str, file_bytes: int) -> int | None:
 
 def fetch(repo: str, filename: str, hf_download=None, conn=None) -> str:
     """Download one ds4 file into the ds4 models dir and record it. By hand only."""
-    from harness import downloads, env
+    from harness import download_state, downloads, env
     if not any(m.repo.lower() == repo.lower() and m.file == filename for m in MODELS):
         raise ValueError(f"ds4 lists no {filename} in {repo} at {pinned_rev()[:7]}: "
                          f"{', '.join(m.file for m in MODELS if m.repo == repo)}")
@@ -535,7 +535,7 @@ def fetch(repo: str, filename: str, hf_download=None, conn=None) -> str:
     dest.mkdir(parents=True, exist_ok=True)
     with downloads.store(conn) as c:
         rid = downloads.start(c, repo, downloads.GGUF, dest / filename, file=filename,
-                              origin=downloads.SCRIPT)
+                              origin=downloads.SCRIPT, reason=download_state.REFETCH)
         try:
             with env.online():
                 where = hf_download(repo, filename, str(dest))

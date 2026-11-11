@@ -156,7 +156,7 @@ def test_a_failed_fetch_holds_only_while_it_is_the_newest_attempt(store, tmp_pat
         for i, failed in enumerate(tries):
             _attempt(store, name, tmp_path / "gguf" / f"{name.split('/')[1]}-{i}.gguf", failed)
     rows = {r["name"]: r for r in fetching.queued(store)}
-    assert rows["org/retried"]["last_fetch_complete"] == 1
+    assert rows["org/retried"]["last_fetch_state"] == "complete"
     assert {n: bool(rows[n]["failed_at"]) for n in plans} == {
         "org/retried": False, "org/inflight": False, "org/regressed": True}
 

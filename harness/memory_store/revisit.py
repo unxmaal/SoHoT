@@ -504,10 +504,10 @@ def incomplete_copies(conn) -> list[dict]:
 
 def requeue_incomplete_copies(conn) -> list[str]:
     """Stand down each such snapshot and hand it back to inspect, so fetch takes what the runner opens. #1040."""
-    from harness import downloads
+    from harness import download_state, downloads
     names = []
     for r in incomplete_copies(conn):
-        downloads.stand_down(conn, r["name"])
+        downloads.stand_down(conn, r["name"], download_state.INCOMPLETE_COPY)
         retract(conn, r["name"], f"verdict {r['id']} blamed the runtime for files our fetch never took; "
                                  "refetched by what its runner opens")
         names.append(r["name"])

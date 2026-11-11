@@ -203,13 +203,13 @@ def fetched(repo: str, conn=None) -> str | None:
 
 def _hub_pick(repo: str, conn=None, skipped=None):
     """(hub row, snapshot dir, file name) adopt() would link for `repo`, or None; auxiliary GGUFs go to `skipped`. A read."""
-    from harness import downloads
+    from harness import download_state, downloads
     from harness import inspect as ins
     with downloads.store(conn) as c:
         rows = downloads.live(c, repo=repo, kind=downloads.HUB)
     for row in rows:
         snaps = Path(row["path"]) / "snapshots"
-        if not row["complete"] or not snaps.is_dir():
+        if row["state"] != download_state.COMPLETE or not snaps.is_dir():
             continue
         for snap in sorted(snaps.iterdir()):
             files = []
@@ -406,7 +406,7 @@ def refresh_router(expect=(), run=None, wait=None) -> str:
 
 def download(repo: str, filename: str, hf_download=None, refresh=None,
              conn=None, origin: str = "") -> str:
-    from harness import downloads
+    from harness import download_state, downloads
     if hf_download is None:
         from huggingface_hub import hf_hub_download
 
@@ -416,7 +416,7 @@ def download(repo: str, filename: str, hf_download=None, refresh=None,
     models_dir().mkdir(parents=True, exist_ok=True)
     with downloads.store(conn) as c:
         rid = downloads.start(c, repo, downloads.GGUF, models_dir() / filename,
-                              file=filename, origin=origin or downloads.FETCH)
+                              file=filename, origin=origin or downloads.FETCH, reason=download_state.REFETCH)
         try:
             # hf_hub_download stages the file under local_dir/.cache until it is whole. #771.
             with downloads.landing(models_dir() / ".cache", models_dir() / filename, what=repo):
