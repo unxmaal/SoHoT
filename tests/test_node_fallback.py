@@ -29,13 +29,19 @@ MODEL = "Qwen2.5-7B-Instruct-Q4_K_M"
 TIMEOUT = 3
 
 
-def _server(who, seen, first_delay=0.0):
+def _server(who, seen, first_delay=0.0, failing=None):
     class Upstream(BaseHTTPRequestHandler):
         def log_message(self, *a):
             pass
 
         def do_POST(self):
             seen.append(self.headers.get("Authorization", ""))
+            if failing is not None and failing.is_set():
+                self.rfile.read(int(self.headers["Content-Length"]))
+                self.send_response(500)
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
             if len(seen) == 1 and first_delay:
                 time.sleep(first_delay)
             body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
@@ -97,7 +103,7 @@ def _free_port():
     return port
 
 
-def _proxy(tmp_path, node_base, extra=()):
+def _proxy(tmp_path, node_base, extra=(), cooldown=30):
     studio_seen, node_seen = [], []
     studio = _server("from-studio", studio_seen)
     for mod, name in (("usage_log", "proxy_handler_instance"), ("key_auth", "user_api_key_auth"),
@@ -128,7 +134,7 @@ general_settings:
     nodes = nodes_mod.parse({"nodes": [{
         "name": "pc", "api_base": node_base, "engine": "llama-server", "models": [MODEL, *extra],
         "key": "env:TEST_NODE_KEY", "machine": "PC1/Windows/x86_64/abc123",
-        "connect_timeout": 1, "timeout": TIMEOUT, "cooldown": 30}]})
+        "connect_timeout": 1, "timeout": TIMEOUT, "cooldown": cooldown}]})
     served = gateway.write_served(cfg, defaults={}, nodes=nodes)
     port = _free_port()
     log = open(tmp_path / "proxy.log", "w", encoding="utf-8")
@@ -253,3 +259,28 @@ def test_a_down_node_model_with_no_local_copy_is_refused_at_once(tmp_path, stop)
     assert code == 503, text
     assert "node pc is down" in text and "no copy of node-only-14b" in text
     assert not studio_seen
+
+
+def test_a_node_that_failed_and_recovered_is_routed_again_under_steady_traffic(tmp_path, stop):
+    """#1808: requests the gateway sends to this machine while the node is held out must not extend its cooldown."""
+    failing, node_seen, cooldown = threading.Event(), [], 3
+    failing.set()
+    node = _server("from-node", node_seen, failing=failing)
+    base, proc, *_ = _proxy(tmp_path, f"http://127.0.0.1:{node.server_address[1]}/v1", cooldown=cooldown)
+    stop(proc)
+    code, h, text, _ = _ask(base)
+    assert code == 200 and "from-studio" in text and h["x-sohot-fallback"] == "pc", text
+    failed, failing_seen = time.monotonic(), len(node_seen)
+    failing.clear()
+    served_by = []
+    for _ in range(int(cooldown * 4 / 0.5)):
+        time.sleep(0.5)
+        code, h, text, _ = _ask(base)
+        served_by.append((time.monotonic() - failed, "from-node" in text))
+        if "from-node" in text:
+            break
+    assert served_by[-1][1], f"steady traffic kept the recovered node out: {served_by}"
+    assert served_by[-1][0] < cooldown * 2, served_by
+    assert all(not by_node for _, by_node in served_by[:-1]) and len(node_seen) == failing_seen + 1
+    node.shutdown()
+

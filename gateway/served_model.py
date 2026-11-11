@@ -10,7 +10,7 @@ from functools import lru_cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from harness import models, nodes, routes, serving  # noqa: E402
+from harness import models, node_reach, nodes, routes, serving  # noqa: E402
 from harness.machine import LOOPBACK  # noqa: E402
 
 try:
@@ -112,6 +112,15 @@ UP_TTL_S = 10.0
 #: node name -> (monotonic time, reachable).
 _REACH: dict = {}
 _REACHING: dict = {}
+#: node name -> the routing state last written to the reach log. #1808.
+_ROUTED: dict = {}
+
+
+def _routed(name: str, ok: bool, why: str) -> None:
+    state = node_reach.UP if ok else node_reach.DOWN
+    if _ROUTED.get(name, node_reach.UP) != state:
+        _ROUTED[name] = state
+        node_reach.record(name, state, why)
 
 
 async def _connects(base: str, timeout: float, ipv4: bool = True) -> bool:
@@ -144,6 +153,7 @@ async def reachable(entry: dict) -> bool:
         _REACHING[name] = task
     ok = await asyncio.shield(task)
     _REACH[name] = (time.monotonic(), ok)
+    _routed(name, ok, "it took a connection" if ok else "it took no connection")
     return ok
 
 
@@ -345,8 +355,11 @@ class ServedModel(CustomLogger):
             headers["x-sohot-served-as"] = alias
         if routed.get(nodes.NODE_KEY) and not node:
             headers["x-sohot-fallback"] = str(routed[nodes.NODE_KEY])
-            # A node that failed one name is skipped for every name it holds until its cooldown ends.
-            _REACH[str(routed[nodes.NODE_KEY])] = (time.monotonic(), False)
+            # Only a request sent to the node marks it down; one already sent @local must not extend the mark. #1808.
+            if not str(data.get("model") or "").endswith(nodes.LOCAL_SUFFIX):
+                # A node that failed one name is skipped for every name it holds until its cooldown ends.
+                _REACH[str(routed[nodes.NODE_KEY])] = (time.monotonic(), False)
+                _routed(str(routed[nodes.NODE_KEY]), False, f"{asked} fell back")
         return headers or None
 
 

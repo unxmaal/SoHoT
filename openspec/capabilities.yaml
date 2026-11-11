@@ -194,6 +194,7 @@ capabilities:
       - harness/slot_probe.py
       - harness/throughput.py
       - harness/purpose.py
+      - harness/node_reach.py
 
   - name: local-delegation
     summary: local_complete and local_decide over MCP or `soh local`, handed to a lane's adopted local model, and what became of each answer.
