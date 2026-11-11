@@ -15,10 +15,6 @@
   "harness/mcp_server.py:MIME",
   "harness/screen.py:ENGINE_RUNTIMES"
  ],
- "a-lifecycle-with-no-declared-state": [
-  "harness/paused.py:save",
-  "harness/paused.py:settle"
- ],
  "each-half-verified-against-its-own-spec-the-seam-against-nothing": [
   "env:ACESTEP_ROOT",
   "env:DECIDER_BIN",
