@@ -197,10 +197,15 @@ def _facts_here(conn) -> dict:
 
 
 def _met_at_sweep(row: dict, data: dict | None) -> bool:
-    """Whether a row's cases: until was already met when the loop's requeue ran; other untils are judged by time. #1361."""
+    """Whether a row's until was already met when the loop's requeue ran, by the verdicts it recorded as met. #1361, #1749."""
     from harness import memory_store as ms
-    if not row["until"].startswith("cases:"):
+    met = (data or {}).get(heartbeat.REVISIT_MET)
+    if isinstance(met, list):
+        return row["verdict_id"] in met
+    if row["until"].startswith("limit:"):
         return True
+    if not row["until"].startswith("cases:"):
+        return False
     counts = (data or {}).get(heartbeat.REVISIT_CASES)
     if isinstance(counts, dict):
         return ms.until_met(row["until"], {"cases": counts})
