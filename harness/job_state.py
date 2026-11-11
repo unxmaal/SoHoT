@@ -119,3 +119,21 @@ def gone_move(flags, resumable: bool) -> tuple[str, str]:
     if resumable:
         return PENDING, WORKER_GONE
     return FAILED, INTERRUPTED
+
+
+def add_owned(conn, jobs: list[tuple[list, dict]], own, add=None):
+    """Queue (argv, workqueue.add kwargs) jobs and `own(rows)`'s owner row in one transaction; own returns None to keep neither. #1755, #1756."""
+    from harness import workqueue
+    put = add or workqueue.add
+    conn.commit()
+    try:
+        rows = [put(argv, **kw, conn=conn, commit=False) for argv, kw in jobs]
+        owner = own(rows)
+    except BaseException:
+        conn.rollback()
+        raise
+    if owner is None:
+        conn.rollback()
+        return None, []
+    conn.commit()
+    return owner, rows
