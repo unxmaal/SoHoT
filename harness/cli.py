@@ -819,7 +819,7 @@ def build_parser() -> argparse.ArgumentParser:
     scaffold_cmd.add_parser(sub)
     atomic_cmd.add_parser(sub)
     dlg = sub.add_parser("delegated", help="record what became of a local_complete, local_decide or "
-                         "`soh local` answer, or --report the rates per lane")
+                         "`soh local` answer, show a call_id's rows (no outcome), or --report the rates per lane")
     dlg.add_argument("call_id", nargs="?", default="", help="the call_id the delegation returned")
     dlg.add_argument("outcome", nargs="?", default="", choices=("", "used", "edited", "discarded"))
     dlg.add_argument("said", nargs="?", default="", metavar="why", help="the same as --why")

@@ -261,3 +261,22 @@ def test_a_delegation_through_the_real_gateway_joins_its_request_row(gateway, mo
     finally:
         conn.close()
     assert d["id_source"] == "gateway"
+
+
+def test_a_request_on_a_delegation_s_behalf_lands_through_the_real_gateway_with_its_call_id(gateway, monkeypatch):
+    """#1721: each request of a digest or spans delegation carries the delegation's id onto the gateway's row."""
+    import time
+
+    from harness import completion, context, delegate, delegations, gateway_key, serving
+    monkeypatch.setattr(gateway_key, "key", lambda *a, **k: KEY)
+    monkeypatch.setenv(completion.GATEWAY_ENV, gateway)
+    monkeypatch.setattr(delegate, "route", lambda lane, chosen=None, via="": (
+        "sohot-code", serving.Route(gateway, "sohot-code", {})))
+    monkeypatch.setattr(context, "served_ctx", lambda spec: None)
+    with delegations.on_behalf("local-1721"):
+        first = delegate.complete("code", "hi", max_tokens=20)
+        between = time.time()
+        second = delegate.complete("code", "again", max_tokens=20)
+    assert first["call_id"] != second["call_id"] and "local-1721" not in (first["call_id"], second["call_id"])
+    rows = _wait_rows({("local-1721", False), ("local-1721", True)}, lambda r: (r["call_id"], r["at"] >= between))
+    assert len([r for r in rows if r["call_id"] == "local-1721"]) == 2

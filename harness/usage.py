@@ -143,7 +143,8 @@ def row(kwargs, response_obj, specs: dict | None = None) -> dict:
         "error_class": (str(err.get("error_class") or "") or "error") if failed else "",
         "error_code": str(err.get("error_code") or "") if failed else "",
         "purpose": purpose.of_tags(slo.get("request_tags")),
-        "call_id": str(slo.get("litellm_call_id") or kwargs.get("litellm_call_id") or "")[:128],
+        "call_id": str(purpose.delegation_of(slo.get("request_tags")) or slo.get("litellm_call_id")
+                       or kwargs.get("litellm_call_id") or "")[:128],
     }
 
 

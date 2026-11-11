@@ -248,10 +248,11 @@ def ask_file(raw, question: str, *, lane: str = "code", roots=None, cwd: Path | 
     if len(files) != 1:
         raise ask.Refused(f"spans reads one file, not {len(files)}")
     f, replies, base = files[0], [], complete or delegate.complete
+    from harness import delegations
+    call_id = delegations.new_id() if delegated else ""
 
     def call(lane_: str, prompt_: str, **kw) -> dict:
-        from harness import delegations
-        with delegations.on_behalf(delegated):
+        with delegations.on_behalf(call_id):
             got = base(lane_, prompt_, tag=delegate.tag_of(delegated), **kw)
         replies.append(got)
         return got
@@ -267,8 +268,7 @@ def ask_file(raw, question: str, *, lane: str = "code", roots=None, cwd: Path | 
            "method": None, "call_id": "", "files": [{"path": f.path, "bytes": f.size}],
            "parts": len(replies), "calls": got.calls}
     if delegated and replies:
-        from harness import delegations
-        out = delegations.note(out, delegations.new_id())
+        out = delegations.note(out, call_id)
     return out
 
 
