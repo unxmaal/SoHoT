@@ -181,18 +181,19 @@ def test_a_malformed_staging_assertion_is_refused_at_load(tmp_path, bad, why):
 
 def test_the_staging_checker_version_changes_the_cases_digest(monkeypatch):
     cases = _cases()
+    was = staging.CHECKER_VERSION, staging.UNCOUNTED, staging.DETECTOR_REVISION
     before = core.cases_digest(cases)
-    monkeypatch.setattr(staging, "CHECKER_VERSION", staging.CHECKER_VERSION + 1)
+    monkeypatch.setattr(staging, "CHECKER_VERSION", was[0] + 1)
     bumped = core.cases_digest(cases)
-    monkeypatch.undo()
+    monkeypatch.setattr(staging, "CHECKER_VERSION", was[0])
     monkeypatch.setattr(staging, "UNCOUNTED", frozenset({"held"}))
     uncounted = core.cases_digest(cases)
-    monkeypatch.undo()
+    monkeypatch.setattr(staging, "UNCOUNTED", was[1])
     monkeypatch.setattr(staging, "DETECTOR_REVISION", "0" * 40)
     revised = core.cases_digest(cases)
     assert len({before, bumped, uncounted, revised}) == 4
     plain = [c for c in core.load_cases(IMAGE_CASES) if "staging" not in c.assertions]
-    monkeypatch.undo()
+    monkeypatch.setattr(staging, "DETECTOR_REVISION", was[2])
     first = core.cases_digest(plain)
     monkeypatch.setattr(staging, "CHECKER_VERSION", 99)
     assert core.cases_digest(plain) == first
