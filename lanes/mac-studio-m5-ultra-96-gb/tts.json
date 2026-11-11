@@ -84,14 +84,14 @@
   },
   {
    "candidate": "tts:SpragAI/qwen3-tts-emotion-tags",
-   "decided_at": "2026-11-03T03:00:30Z",
+   "decided_at": "2026-11-11T03:09:28Z",
    "detail": "it ran and passed nothing: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: ValueError: CustomVoice model requires 'voice' (speaker name) (e.g., ['serena', 'vivian', 'uncle_fu', 'ryan', 'aiden', 'ono_anna', 'sohee', '",
    "exam": null,
    "outcome": "broken",
    "proposal": "SpragAI/qwen3-tts-emotion-tags",
    "reason": "candidate",
    "receipt_key": "qwen3-tts-emotion-tags",
-   "run_id": 671,
+   "run_id": 829,
    "serves": false,
    "status": "rejected",
    "tier": "screen",
@@ -397,14 +397,14 @@
   },
   {
    "candidate": "tts:OpenMOSS-Team/MOSS-TTS-v1.5",
-   "decided_at": "2026-11-10T03:57:51Z",
+   "decided_at": "2026-11-11T03:09:55Z",
    "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local dis",
    "exam": null,
    "outcome": "queued",
    "proposal": "OpenMOSS-Team/MOSS-TTS-v1.5",
    "reason": "harness",
    "receipt_key": "MOSS-TTS-v1.5",
-   "run_id": 802,
+   "run_id": 831,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -441,7 +441,7 @@
    "until": "format:.pt"
   }
  ],
- "cursor": 1794283071518329,
+ "cursor": 1794366595217727,
  "events": [
   {
    "at": "2026-09-19T21:17:40Z",
@@ -1012,6 +1012,36 @@
    "reason": "harness",
    "run_id": 802,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-11T03:09:28Z",
+   "candidate": "tts:SpragAI/qwen3-tts-emotion-tags",
+   "chosen": null,
+   "detail": "it ran and passed nothing: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: ValueError: CustomVoice model requires 'voice' (speaker name) (e.g., ['serena', 'vivian', 'uncle_fu', 'ryan', 'aiden', 'ono_anna', 'sohee', '",
+   "how": "",
+   "id": 1794366568349169,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 829,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-11T03:09:55Z",
+   "candidate": "tts:OpenMOSS-Team/MOSS-TTS-v1.5",
+   "chosen": null,
+   "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local dis",
+   "how": "",
+   "id": 1794366595217727,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "harness",
+   "run_id": 831,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -1182,7 +1212,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-10T08:00:31Z",
+ "generated_at": "2026-11-11T06:06:36Z",
  "knobs": [],
  "lane": {
   "cases": 470,
