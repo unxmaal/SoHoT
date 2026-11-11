@@ -470,12 +470,22 @@ def _scrub(text: str, secret: str) -> str:
     return text.replace(secret, "<webhook>") if secret else text
 
 
-def alert(kind: str, environ=None, *, notify=desktop, send=post, pause=pause_all, measure=None, clock=time.time,
+def live_home(home: Path | None = None) -> bool:
+    """Is `home` the machine's live home, the one whose alerts reach the owner. #1720."""
+    return Path(home or paths.home()).resolve() == Path(paths.DEFAULT_HOME).resolve()
+
+
+def alert(kind: str, environ=None, *, notify=None, send=None, pause=pause_all, measure=None, clock=time.time,
           home: Path | None = None) -> dict:
     """monit's exec action: pause first on disk-pause, then the alert line, the desktop and the webhook; du on disk."""
     if kind not in KINDS:
         raise ValueError(f"unknown alert kind {kind!r}; one of {', '.join(KINDS)}")
     environ = os.environ if environ is None else environ
+    if live_home(home):
+        notify, send = notify or desktop, send or post
+    else:
+        quiet = f"not sent: {Path(home or paths.home())} is not the live home {paths.DEFAULT_HOME}"
+        notify, send = (lambda *a: quiet), (lambda *a: quiet)
     url = read_env(env_path(home)).get(WEBHOOK, "")
     service, event, desc = (_scrub(environ.get(k) or d, url) for k, d in
                             (("MONIT_SERVICE", "manual"), ("MONIT_EVENT", ""), ("MONIT_DESCRIPTION", "")))

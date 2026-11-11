@@ -589,12 +589,32 @@ def _no_real_runtime_bytes(monkeypatch):
                         lambda: Path(os.environ["LLAMACPP_BIN"]) if os.environ.get("LLAMACPP_BIN") else None)
 
 
+#: Programs that put a notice on the owner's desktop. #1720.
+NOTIFIERS = ("osascript", "terminal-notifier")
+
+
+def real_notifier(args, env, fakes: Path) -> str:
+    """The desktop notifier this argv would execute, unless it is a test's own fake under `fakes`; else ""."""
+    import os
+    import shutil
+    if isinstance(args, (str, bytes)) or not args:
+        return ""
+    first = os.fsdecode(args[0])
+    if os.path.basename(first) not in NOTIFIERS:
+        return ""
+    found = first if os.sep in first else shutil.which(first, path=(env or os.environ).get("PATH"))
+    if found and Path(found).resolve().is_relative_to(fakes.resolve()):
+        return ""
+    return os.path.basename(first)
+
+
 @pytest.fixture(autouse=True)
-def _no_real_runtime(request, monkeypatch):
-    """No test executes a real runtime binary: it answers as absent and fails the test. #536."""
+def _no_real_runtime(request, monkeypatch, tmp_path_factory):
+    """No test executes a real runtime binary or desktop notifier: it answers as absent and fails the test. #536, #1720."""
     import subprocess
-    calls = []
+    calls, notices = [], []
     real = subprocess.Popen
+    fakes = tmp_path_factory.getbasetemp()
 
     class Guarded(real):
         def __init__(self, args, *a, **k):
@@ -602,12 +622,43 @@ def _no_real_runtime(request, monkeypatch):
             if name:
                 calls.append(list(args) if not isinstance(args, (str, bytes)) else [args])
                 raise FileNotFoundError(2, "runtime binary refused under test", name)
+            name = real_notifier(args, k.get("env"), fakes)
+            if name:
+                notices.append(list(args)[:4])
+                raise FileNotFoundError(2, "desktop notifier refused under test", name)
             super().__init__(args, *a, **k)
 
     monkeypatch.setattr(subprocess, "Popen", Guarded)
     yield calls
     if calls and request.node.get_closest_marker("real_runtime") is None:
         pytest.fail(f"executed a real runtime binary: {calls}", pytrace=False)
+    if notices:
+        pytest.fail(f"reached a real desktop notifier (stub it or use _no_real_notifier): {notices}", pytrace=False)
+
+
+@pytest.fixture(autouse=True)
+def _no_real_notifier(monkeypatch):
+    """Desktop notices and webhook posts land in this list; a call bringing its own fake run or opener reaches the real one. #1720."""
+    import inspect
+    import subprocess
+    import urllib.request
+    from harness import monitor, watchdog
+    sent = []
+
+    def recorder(real, kind, outcome, fake):
+        def record(*a, **k):
+            if inspect.signature(real).bind(*a, **k).arguments.get(fake) not in (None, subprocess.run,
+                                                                                 urllib.request.urlopen):
+                return real(*a, **k)
+            sent.append((kind, *a[:2]))
+            return outcome(*a)
+        record.real = real
+        return record
+    monkeypatch.setattr(monitor, "desktop", recorder(monitor.desktop, "desktop", lambda *a: "notified", "run"))
+    monkeypatch.setattr(watchdog, "desktop", recorder(watchdog.desktop, "desktop",
+                                                      lambda t, m, *a: f"{watchdog.NOTIFIED}: {m}", "run"))
+    monkeypatch.setattr(monitor, "post", recorder(monitor.post, "webhook", lambda *a: "posted: HTTP 204", "opener"))
+    return sent
 
 
 def _typed_keys() -> dict[str, str]:

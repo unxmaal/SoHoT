@@ -148,16 +148,25 @@ def _running_eval(home: Path) -> Path:
     return run
 
 
+@pytest.fixture
+def live(monkeypatch, _no_real_notifier):
+    """This test's home is the machine's live home, so its alerts reach the (recorded) desktop and the real webhook."""
+    monkeypatch.setattr(paths, "DEFAULT_HOME", paths.home())
+    monkeypatch.setattr(monitor, "post", monitor.post.real)
+    return _no_real_notifier
+
+
 @pytest.mark.skipif(sys.platform == "win32", reason="monit and its alert script are POSIX")
-def test_the_alert_script_on_a_disk_pause_pauses_records_notifies_posts_and_runs_du(tmp_path, hook):
+def test_the_alert_script_from_a_scratch_home_pauses_records_and_runs_du_but_sends_nothing(tmp_path, hook):
     home = paths.home()
     _env_file(hook)
     run = _running_eval(home)
     bin_ = tmp_path / "bin"
     bin_.mkdir()
     calls = tmp_path / "notifier.args"
-    (bin_ / "terminal-notifier").write_text(f'#!/bin/sh\nprintf "%s\\n" "$@" >> "{calls}"\n', encoding="utf-8")
-    (bin_ / "terminal-notifier").chmod(0o755)
+    for name in ("terminal-notifier", "osascript"):
+        (bin_ / name).write_text(f'#!/bin/sh\nprintf "%s\\n" "$@" >> "{calls}"\n', encoding="utf-8")
+        (bin_ / name).chmod(0o755)
     env = {**os.environ, **_monit_env(), "PATH": f"{bin_}:{os.environ['PATH']}"}
     got = subprocess.run([shells.resolve("bash"), str(REPO / "scripts" / "monit-alert.sh"), "disk-pause"], env=env, cwd=REPO,
                          capture_output=True, text=True, timeout=120)
@@ -168,19 +177,41 @@ def test_the_alert_script_on_a_disk_pause_pauses_records_notifies_posts_and_runs
     lines = [json.loads(ln) for ln in monitor.alerts_path().read_text(encoding="utf-8").splitlines()]
     assert [x["kind"] for x in lines] == ["disk-pause", "du"]
     assert "paused the job queue and 1 running eval(s)" in lines[0]["message"]
-    assert lines[0]["webhook"] == "posted: HTTP 204" and lines[1]["description"].startswith("growers: ")
-    posted = [json.loads(b) for b in _Hook.bodies]
-    assert [list(p) for p in posted] == [["content"], ["content"]]
-    assert posted[0]["content"] == f"{monitor.TITLE}: {lines[0]['message']}"
-    assert posted[1]["content"].startswith(f"{monitor.TITLE}: system_data: growers: runs ")
-    if sys.platform == "darwin":
-        assert "SoHoT monit" in calls.read_text(encoding="utf-8")
+    assert lines[1]["description"].startswith("growers: ")
+    for said in (lines[0]["desktop"], lines[0]["webhook"], lines[1]["webhook"]):
+        assert said.startswith("not sent: ") and "is not the live home" in said
+    assert _Hook.bodies == [] and not calls.exists()
     log = (home / "logs" / "monit-alert.log").read_text(encoding="utf-8")
     for where in (log, monitor.alerts_path().read_text(encoding="utf-8"), got.stdout, got.stderr):
         assert SECRET not in where and "/api/webhooks" not in where
 
 
-def test_the_url_is_never_in_the_line_even_when_the_post_fails_or_monit_quotes_it(tmp_path, hook):
+def test_a_disk_pause_in_the_live_home_notifies_posts_and_runs_du(hook, live):
+    _env_file(hook)
+    got = monitor.alert("disk-pause", _monit_env(), pause=lambda why: {"queue": "paused", "runs": []},
+                        measure=lambda: [{"name": "runs", "path": "/r", "kib": 1024 ** 2, "why": ""}])
+    lines = [json.loads(ln) for ln in monitor.alerts_path().read_text(encoding="utf-8").splitlines()]
+    assert [x["kind"] for x in lines] == ["disk-pause", "du"] and got["desktop"] == "notified"
+    assert live == [("desktop", monitor.TITLE, lines[0]["message"])]
+    assert lines[0]["webhook"] == "posted: HTTP 204"
+    posted = [json.loads(b) for b in _Hook.bodies]
+    assert [list(p) for p in posted] == [["content"], ["content"]]
+    assert posted[0]["content"] == f"{monitor.TITLE}: {lines[0]['message']}"
+    assert posted[1]["content"].startswith(f"{monitor.TITLE}: system_data: growers: runs ")
+    assert SECRET not in monitor.alerts_path().read_text(encoding="utf-8")
+
+
+def test_an_alert_from_a_scratch_home_records_it_and_calls_neither_notifier_nor_webhook(hook, _no_real_notifier):
+    _env_file(hook)
+    told = []
+    got = monitor.alert("gpu-refused", {"MONIT_SERVICE": "gpu", "MONIT_DESCRIPTION": "eval refused: the store is unreachable"},
+                        notify=lambda *a: told.append(a) or "notified", send=lambda *a: told.append(a) or "posted")
+    assert told == [] and _no_real_notifier == [] and _Hook.bodies == []
+    assert got["desktop"].startswith("not sent: ") and got["webhook"].startswith("not sent: ")
+    assert [x["description"] for x in monitor.alerts(0)] == ["eval refused: the store is unreachable"]
+
+
+def test_the_url_is_never_in_the_line_even_when_the_post_fails_or_monit_quotes_it(tmp_path, hook, live):
     _Hook.code = 404
     _env_file(hook)
     got = monitor.alert("service", _monit_env("service_gateway", f"failed {hook}"), notify=lambda t, m: m,
@@ -254,7 +285,9 @@ def test_a_terminal_notifier_that_exits_3_falls_back_to_osascript_and_reports_bo
         (bin_ / name).write_text(f'#!/bin/sh\necho {name} >> "{calls}"\nexit {rc}\n', encoding="utf-8")
         (bin_ / name).chmod(0o755)
     monkeypatch.setenv("PATH", f"{bin_}:/usr/bin:/bin")
-    out = monitor.desktop("t", "m", platform="darwin")
+    from harness import watchdog
+    monkeypatch.setattr(watchdog, "desktop", watchdog.desktop.real)
+    out = monitor.desktop.real("t", "m", platform="darwin")
     assert calls.read_text(encoding="utf-8").split() == ["terminal-notifier", "osascript"]
     if osa_rc == 0:
         assert out == "notified by osascript after terminal-notifier rc 3"
