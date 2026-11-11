@@ -16,8 +16,6 @@
   "harness/screen.py:ENGINE_RUNTIMES"
  ],
  "a-lifecycle-with-no-declared-state": [
-  "harness/paused.py:save",
-  "harness/paused.py:settle",
   "harness/workqueue.py:_next_item",
   "harness/workqueue.py:_repend",
   "harness/workqueue.py:_write",

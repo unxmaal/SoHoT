@@ -1059,7 +1059,7 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
                                              **({"reuse": taken_from} if taken_from else {})})
         print(f"    {'ADOPTED' if verdict.adopt else 'kept the incumbent'}: {verdict.why}", flush=True)
         _record(verdict, spec, progress.get("run_id"), out)
-        if held:
+        if held and held.get("id") is not None:
             _settle_pause(held["id"], "done", look.text)
         if sweep is not None:
             sweep.lines.append(f"{name}: {look.text}")
