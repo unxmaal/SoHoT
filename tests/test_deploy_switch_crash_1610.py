@@ -120,7 +120,7 @@ def test_a_restore_that_raises_anything_ends_failed_alerted_and_saved_with_the_n
     path = _record(tmp_path, backup=tmp_path / "pre.db")
     rec = deploy_switch.switch(path)
     on_disk = deploy_switch.load(path)
-    assert on_disk["outcome"] == deploy_switch.FAILED and on_disk["stage"] == deploy_switch.FAILED
+    assert on_disk["outcome"] == deploy_switch.FAILED_FORWARD and on_disk["stage"] == deploy_switch.FAILED_FORWARD
     assert "ModuleNotFoundError: No module named 'harness'" in on_disk["detail"]
     assert os.path.realpath(rec["link"]) == rec["release"], "the store keeps the new schema, so the new release stays"
     log = Path(rec["log"]).read_text(encoding="utf-8")

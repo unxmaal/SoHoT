@@ -15,6 +15,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from harness import deploy_state as ds
 from harness import deploy_switch, job_state as js, paths
 from harness import workqueue as wq
 
@@ -47,8 +48,8 @@ SWITCH_LABEL = "com.unxmaal.localharness.deploy-switch"
 #: The switch unit's program: the one the Full Disk Access grant names, SIP-protected, so the grant never lapses. #1516.
 SWITCH_SHELL = "/bin/bash"
 SMOKE_PHASE_ENV = deploy_switch.SMOKE_PHASE_ENV
-DEPLOYED, ROLLED_BACK, FAILED, INTERRUPTED = (deploy_switch.DEPLOYED, deploy_switch.ROLLED_BACK,
-                                              deploy_switch.FAILED, "interrupted")
+DEPLOYED, ROLLED_BACK, FAILED, FAILED_FORWARD, INTERRUPTED = (ds.DEPLOYED, ds.ROLLED_BACK, ds.FAILED,
+                                                              ds.FAILED_FORWARD, ds.INTERRUPTED)
 #: Untracked paths a release does not inherit from the one before it: rebuilt, or caches.
 NOT_CARRIED = frozenset({".venv", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".git"})
 SOH = ("uv", "run", "python", "-m", "harness.cli")
@@ -349,23 +350,46 @@ def _queue(conn, now, *, src, sha: str, force: bool, green, environ) -> dict:
 
 def _insert(conn, sha: str, job_id, previous: Path, previous_sha: str, now: float) -> int:
     from harness import memory_store as ms
+    ds.check(ds.NEW, ds.BUILDING, ds.JOB)
     cur = conn.execute("INSERT INTO deploys (sha, job_id, machine_id, previous, previous_sha, stage, started_at) "
                        "VALUES (?,?,?,?,?,?,?)", (sha, job_id, ms.remember_machine(conn), str(previous),
-                                                  previous_sha, "building", now))
+                                                  previous_sha, ds.BUILDING, now))
     conn.commit()
     return int(cur.lastrowid)
 
 
-def _update(conn, deploy_id: int, **cols) -> None:
-    sets = ", ".join(f"{k} = ?" for k in cols)
-    conn.execute(f"UPDATE deploys SET {sets} WHERE id = ?", (*cols.values(), int(deploy_id)))
+#: Columns a move may set beside the stage; None leaves one as it is.
+_COLS = ("release", "previous", "backup", "schema_from", "schema_to", "detail", "finished_at", "rolled_back_from")
+
+
+def move(conn, deploy_id: int, leaves: str, enters: str, writer: str, **cols) -> bool:
+    """The one writer of a deploys row: refuses a move ds.MOVES does not list, else compare-and-swaps on the stage it leaves."""
+    ds.check(leaves, enters, writer)
+    bad = set(cols) - set(_COLS)
+    if bad:
+        raise ValueError(f"deploys has no movable column {sorted(bad)}")
+    vals = [cols.get(k) for k in _COLS]
+    cur = conn.execute("UPDATE deploys SET stage = ?, outcome = ?, release = COALESCE(?, release), "
+                       "previous = COALESCE(?, previous), backup = COALESCE(?, backup), "
+                       "schema_from = COALESCE(?, schema_from), schema_to = COALESCE(?, schema_to), "
+                       "detail = COALESCE(?, detail), finished_at = COALESCE(?, finished_at), "
+                       "rolled_back_from = COALESCE(?, rolled_back_from) WHERE id = ? AND stage = ? AND outcome = ''",
+                       (enters, enters if enters in ds.OUTCOMES else "", *vals, int(deploy_id), leaves))
     conn.commit()
+    return cur.rowcount == 1
+
+
+def stage_of(conn, deploy_id: int) -> str:
+    row = conn.execute("SELECT stage FROM deploys WHERE id = ?", (int(deploy_id),)).fetchone()
+    return row["stage"] if row else ds.NEW
 
 
 def finish(conn, deploy_id: int, outcome: str, detail: str, now: float | None = None,
-           rolled_back_from: str = "") -> None:
-    _update(conn, deploy_id, outcome=outcome, stage=outcome, detail=detail[:2000],
-            finished_at=time.time() if now is None else now, rolled_back_from=rolled_back_from)
+           rolled_back_from: str = "", *, leaves: str | None = None, writer: str = ds.SETTLE) -> bool:
+    """Close the row with its outcome through move(); False when another writer closed it first."""
+    leaves = stage_of(conn, deploy_id) if leaves is None else leaves
+    return move(conn, deploy_id, leaves, outcome, writer, detail=detail[:2000],
+                finished_at=time.time() if now is None else now, rolled_back_from=rolled_back_from)
 
 
 def adopt(link: Path) -> Path:
@@ -556,12 +580,19 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
         previous = link.resolve()
         previous_sha = head_of(previous)
         deploy_id = _insert(c, sha, None if job_id is None else int(job_id), previous, previous_sha, now())
+        at = [ds.BUILDING]
         log_path = paths.logs() / "deploy.log"
         with open(log_path, "a", encoding="utf-8") as log:
             log.write(f"=== deploy {deploy_id} of {sha[:12]} {time.strftime('%Y-%m-%dT%H:%M:%S')} ===\n")
 
+            def go(to: str, **cols) -> None:
+                if not move(c, deploy_id, at[0], to, ds.JOB, **cols):
+                    raise DeployError(f"deploy {deploy_id} left {at[0]} under the job: {stage_of(c, deploy_id)}")
+                at[0] = to
+
             def stop(why: str) -> int:
-                finish(c, deploy_id, FAILED, why, now())
+                if not finish(c, deploy_id, FAILED, why, now(), leaves=at[0], writer=ds.JOB):
+                    log.write(f"--- deploy {deploy_id} left {at[0]} under the job: {stage_of(c, deploy_id)}\n")
                 log.write(f"--- failed: {why}\n")
                 log.flush()
                 _alert(steps, previous, f"deploy of {sha[:12]} failed before the switch: {why}", log)
@@ -574,13 +605,13 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
             try:
                 if not link.is_symlink():
                     previous = adopt(link)
-                    _update(c, deploy_id, previous=str(previous))
+                    go(ds.BUILDING, previous=str(previous))
                 release = releases_dir() / f"{deploy_id}-{sha[:12]}"
                 prune({previous, link.resolve()}, previous, room=1, log=log)
                 prune_backups()
                 _git(previous, "fetch", "-q", "origin", "main")
                 _git(previous, "worktree", "add", "-q", "--detach", str(release), sha)
-                _update(c, deploy_id, release=str(release))
+                go(ds.BUILDING, release=str(release))
                 log.write(f"carried {', '.join(carry(previous, release)) or 'nothing'} from {previous}\n")
             except (DeployError, OSError) as exc:
                 return stop(f"build: {exc}")
@@ -590,7 +621,10 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
             why = _probe(steps.probe, release, log, log_path)
             if why:
                 return stop(f"launchd probe of the new release before the switch: {why}")
-            _update(c, deploy_id, stage="smoking")
+            try:
+                go(ds.SMOKING)
+            except DeployError as exc:
+                return stop(str(exc))
             repaired = _run(steps.repair, release, SMOKE_TIMEOUT_S, log, site_knob="harness/deploy.py:SMOKE_TIMEOUT_S")
             log.write(f"--- repair before smoke: {repaired or 'done'}\n")
             why = _run(steps.smoke, release, SMOKE_TIMEOUT_S, log, {SMOKE_PHASE_ENV: "before"},
@@ -598,12 +632,15 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
             if why:
                 return stop(f"smoke before the switch: {why}")
             have, want = _store_schema(c), wq.code_schema(release) or 0
-            _update(c, deploy_id, schema_from=have, schema_to=max(have, want))
+            schema = {"schema_from": have, "schema_to": max(have, want)}
             saved, migrated = "", want > have
             if migrated:
                 saved = str(backups_dir() / f"discovery-{deploy_id}-pre{want}.db")
                 # Written before the copy, so a restored store still names its own backup.
-                _update(c, deploy_id, stage="migrating", backup=saved)
+                try:
+                    go(ds.MIGRATING, backup=saved, **schema)
+                except DeployError as exc:
+                    return stop(str(exc))
                 backup(ms.db_path(), Path(saved))
                 why = _run(steps.migrate, release, MIGRATE_TIMEOUT_S, log, {paths.ALLOW_MIGRATE_ENV: "1"},
                            site_knob="harness/deploy.py:MIGRATE_TIMEOUT_S")
@@ -616,13 +653,13 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
                    "queue_flag": str(wq._pause_flag()), "install": steps.install,
                    "rollback_install": steps.install, "verify": [steps.smoke, steps.coherence], "repair": steps.repair,
                    "alert": steps.alert, "log": str(log_path), "install_env": str(install_env.path()),
-                   "stage": "handed_off", "outcome": "",
+                   "stage": ds.HANDED_OFF, "outcome": "",
                    "handed_at": now()}
             wq.pause()
             path = record_path(deploy_id)
             deploy_switch.save(path, rec)
-            _update(c, deploy_id, stage="switching")
             try:
+                go(ds.HANDED_OFF, **({} if migrated else schema))
                 how = spawn(path, release)
             except (DeployError, OSError, subprocess.SubprocessError) as exc:
                 if not rec["queue_was_paused"]:
@@ -630,6 +667,8 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
                 path.unlink(missing_ok=True)
                 if migrated:
                     deploy_switch.restore(Path(saved), ms.db_path())
+                    # The restore put the row back as the backup saw it.
+                    at[0] = ds.MIGRATING
                 return stop(f"could not start the switch: {exc}")
             log.write(f"--- switch handed to {how}; record {path}\n")
     return HANDED_OFF
@@ -654,7 +693,11 @@ def settle(conn=None, now: float | None = None, alive=wq.alive) -> list[dict]:
     with wq._store(conn) as c:
         where, args = wq._here(c)
         for row in c.execute(f"SELECT * FROM deploys WHERE outcome = '' AND {where} ORDER BY id", args).fetchall():
-            got = _settle_one(c, dict(row), now, alive)
+            try:
+                got = _settle_one(c, dict(row), now, alive)
+            except ds.IllegalMove as exc:
+                print(f"deploy settle: {exc}", file=sys.stderr)
+                continue
             if got:
                 settled.append(got)
         claimed, cargs = wq._claimed(c)
@@ -675,26 +718,28 @@ def _close_job(c, job_id, state: str, rc, note: str, now: float) -> None:
 def _settle_one(c, row: dict, now: float, alive) -> dict | None:
     rec = _read(record_path(row["id"]))
     job = wq.get(row["job_id"], conn=c) if row["job_id"] is not None else None
-    if rec.get("outcome"):
+    got = ds.outcome_of(rec)
+    if got:
+        if not move(c, row["id"], row["stage"], got, ds.SETTLE, detail=rec.get("detail", "")[:2000],
+                    finished_at=rec.get("finished_at") or now, rolled_back_from=rec.get("rolled_back_from", ""),
+                    **{k: rec[k] for k in ("release", "previous", "backup") if rec.get(k)}):
+            return None
         from harness import cuts
         for t in rec.get("timed_out") or []:
             site_knob = t["site"]
             cuts.cut(site_knob, t["what"], kept=0, dropped=1, conn=c)
-        finish(c, row["id"], rec["outcome"], rec.get("detail", ""), rec.get("finished_at") or now,
-               rec.get("rolled_back_from", ""))
-        _update(c, row["id"], **{k: rec[k] for k in ("release", "previous", "backup") if rec.get(k)})
         if job is not None:
-            ok = rec["outcome"] == DEPLOYED
+            ok = got == DEPLOYED
             _close_job(c, job["id"], wq.DONE if ok else wq.FAILED, 0 if ok else 1,
-                       f"deploy {row['id']} {rec['outcome']}: {rec.get('detail', '')}", now)
-        return {"deploy": row["id"], "outcome": rec["outcome"]}
+                       f"deploy {row['id']} {got}: {rec.get('detail', '')}", now)
+        return {"deploy": row["id"], "outcome": got}
     if rec:
         if rec.get("pid") and alive(int(rec["pid"])):
             return None
-        if rec.get("stage") == "handed_off" and now - float(rec.get("handed_at") or 0) < HANDOFF_GRACE_S:
+        if rec.get("stage") == ds.HANDED_OFF and now - float(rec.get("handed_at") or 0) < HANDOFF_GRACE_S:
             return None
-        why = f"the switch stopped at {rec.get('stage')} without an outcome; the deploy link points at " \
-              f"{os.path.realpath(rec['link'])}"
+        seen = view({**row, **{k: rec[k] for k in ("release", "previous") if rec.get(k)}}, rec, Path(rec["link"]))
+        why = f"the switch stopped at {rec.get('stage')} without an outcome; {said(seen)}"
         if not rec.get("queue_was_paused"):
             Path(rec["queue_flag"]).unlink(missing_ok=True)
     else:
@@ -704,7 +749,10 @@ def _settle_one(c, row: dict, now: float, alive) -> dict | None:
             why = f"job {job['id']} ended {job['state']} rc={job['rc']} before it recorded an outcome"
         else:
             why = "the job stopped before it handed off the switch"
-    finish(c, row["id"], INTERRUPTED, why, now)
+        if row["stage"] == ds.MIGRATING:
+            why += f"; the store may be part-migrated, its backup is {row['backup'] or 'not named'}"
+    if not move(c, row["id"], row["stage"], INTERRUPTED, ds.SETTLE, detail=why[:2000], finished_at=now):
+        return None
     if job is not None:
         _close_job(c, job["id"], wq.FAILED, None, f"deploy {row['id']} interrupted: {why}", now)
     _alert_here(f"deploy {row['id']} of {row['sha'][:12]} interrupted: {why}")
@@ -738,15 +786,58 @@ def deployed_at(conn) -> float | None:
     return float(row[0]) if row and row[0] is not None else None
 
 
+def _same(a: str, b) -> bool:
+    return bool(a and b) and os.path.realpath(a) == os.path.realpath(str(b))
+
+
+def view(row: dict, rec: dict | None = None, link: Path | None = None) -> dict:
+    """The one reconciling read of a deploy: its stage (the switch record's while it switches) against what the link serves."""
+    rec = _read(record_path(row["id"])) if rec is None else rec
+    stage = row["stage"]
+    if not row.get("outcome") and rec.get("stage"):
+        stage = ds.outcome_of(rec) or rec["stage"]
+    target = os.path.realpath(link) if link is not None and (Path(link).is_symlink() or Path(link).exists()) else ""
+    serves = (ds.NONE if not target else ds.RELEASE if _same(target, row.get("release"))
+              else ds.PREVIOUS if _same(target, row.get("previous")) else ds.OTHER)
+    return {"deploy": row["id"], "stage": stage, "serves": serves, "path": target, "expect": ds.EXPECT.get(stage, ""),
+            "state": ds.reconcile(stage, serves)}
+
+
+_SERVES = {ds.RELEASE: "this deploy's release", ds.PREVIOUS: "the release before it", ds.OTHER: "another release"}
+
+
+def said(v: dict) -> str:
+    if v["serves"] == ds.NONE:
+        return "no deploy link serves anything"
+    out = f"the deploy link serves {_SERVES[v['serves']]} {v['path']}"
+    if v["state"] == ds.SPLIT:
+        out = f"{ds.SPLIT.upper()}: {v['stage']} says {_SERVES[v['expect']]} serves, but {out}"
+    return out
+
+
 def line(d: dict) -> str:
     when = time.strftime("%Y-%m-%d %H:%M", time.localtime(d["started_at"]))
-    out = d["outcome"] or f"running ({d['stage']})"
+    v = d.get("view")
+    out = d["outcome"] or f"running ({v['stage'] if v else d['stage']})"
     back = f" from {d['rolled_back_from'][:12]} to {d['previous_sha'][:12]}" if d.get("rolled_back_from") else ""
-    return f"deploy {d['id']} {d['sha'][:12]} {when}: {out}{back}" + (f"; {d['detail']}" if d.get("detail") else "")
+    return (f"deploy {d['id']} {d['sha'][:12]} {when}: {out}{back}" + (f"; {said(v)}" if v else "")
+            + (f"; {d['detail']}" if d.get("detail") else ""))
+
+
+def serving(conn, link: Path | None = None) -> dict | None:
+    """This machine's newest deploy reconciled against the deploy link; None before its first deploy."""
+    where, args = wq._here(conn)
+    row = conn.execute(f"SELECT * FROM deploys WHERE {where} ORDER BY id DESC", args).fetchone()
+    return view(dict(row), link=link) if row else None
 
 
 def status(conn) -> dict:
     link = paths.deploy_link()
+    now = serving(conn, link)
+    recent_ = recent(conn)
+    for d in recent_:
+        if now is not None and d["id"] == now["deploy"]:
+            d["view"] = now
     return {"paused": paused(), "blocked": blocked(), "link": str(link) if link else "",
             "serving": str(link.resolve()) if link else "", "head": head_of(link) if link else "",
-            "recent": recent(conn), "jobs": [j for j in wq.jobs(conn) if j["kind"] == KIND][-5:]}
+            "deploy": now, "recent": recent_, "jobs": [j for j in wq.jobs(conn) if j["kind"] == KIND][-5:]}

@@ -490,6 +490,7 @@ capabilities:
       - harness/ci_budget.py
       - harness/ci_rerun.py
       - harness/dora.py
+      - harness/deploy_state.py
 
   - name: repo-hygiene
     summary: What a public reader gets, personal setup kept out of it, stated claims, coverage, specs and the gauntlet.
