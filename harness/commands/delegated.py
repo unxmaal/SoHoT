@@ -35,7 +35,7 @@ def cmd_delegated(a) -> int:
 
     from harness.commands.common import lent_store
     held = contextlib.ExitStack()
-    # An outcome goes where the delegation went, the live store as it stands from any checkout. #1717.
+    # An outcome goes where the delegation went: the live store as it stands from any checkout, or its spool. #1717, #1789.
     conn = held.enter_context(lent_store() if a.report else delegations.ledger())
     try:
         if not a.report:
@@ -45,7 +45,7 @@ def cmd_delegated(a) -> int:
                 emit(False, error=why)
                 return 1
             try:
-                got = delegations.outcome(conn, a.call_id, a.outcome, a.why or getattr(a, "said", ""))
+                got = delegations.tell(conn, a.call_id, a.outcome, a.why or getattr(a, "said", ""))
             except (ValueError, delegations.UnknownCall) as exc:
                 note(str(exc))
                 emit(False, error=str(exc))
@@ -94,6 +94,10 @@ def _show(call_id: str) -> int:
     else:
         note(f"{call_id}: lane {d['lane']}, {d['prompt_tokens'] or 0} in / {d['completion_tokens'] or 0} out, "
              f"outcome {d['outcome'] or 'pending'}")
+    spooled = delegations.spooled(call_id)
+    if spooled:
+        note(f"{len(spooled)} record(s) spooled under {delegations.spool_dir()}, not yet landed: "
+             + ", ".join(r.get("kind", "?") for r in spooled))
     note(f"{len(reqs)} gateway request(s) carry it" + (":" if reqs else ""))
     for r in reqs:
         note(f"  {r['at']:.0f} {r['alias'] or '-':<16} {r['client'] or '-':<14} {r['purpose'] or '-':<8} "
@@ -111,10 +115,15 @@ def _close(a) -> int:
     root = cr.default_root() if not a.root else Path(a.root).expanduser()
     conn = ms.connect()
     try:
+        # Rows a checkout at another schema spooled land first, so close() can judge them too. #1789.
+        spool = delegations.drain(conn)
         got = delegations.close(conn, root=root, expiry_h=a.expiry_h)
     finally:
         conn.close()
+    note(f"spool: {spool['landed']} landed, {spool['duplicate']} already here, {spool['held']} held")
+    for h in spool["held_records"]:
+        note(f"  held {h['file']} ({h['kind']} {h['call_id']}): {h['why']}")
     note(f"closed {got['accepted']} accepted, {got['rejected']} rejected, {got['unknown']} unknown; "
          f"{got['pending']} still pending ({got['transcripts']} transcripts read)")
-    emit(**got)
+    emit(**got, spool=spool)
     return 0

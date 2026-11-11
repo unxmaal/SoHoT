@@ -786,6 +786,10 @@ adopted here, through the same route `soh code` uses:
   from the caller's transcript (an MCP result, or a Bash call of `soh local`) or records it
   unknown after 24 h. `soh ledger` flags each day with Claude Code tokens and no delegation
   at all, and `soh morning` lists last night's as needing a person.
+- From a checkout at another schema than the live store, those rows and the outcome go to
+  `~/localharness/delegations-spool/` (one file a record) instead; the deployed release's
+  hourly `soh delegated --close` lands each once and keeps any it cannot (a column the store
+  lacks) as held, named in its log.
 
 Both answer directly rather than queueing. Prompts are capped at 100,000
 characters and calls time out after 300 s. When something holds the machine lock

@@ -493,6 +493,7 @@ capabilities:
       - harness/dora.py
       - harness/deploy_state.py
       - harness/deploy_hold.py
+      - harness/store_ahead.py
 
   - name: repo-hygiene
     summary: What a public reader gets, personal setup kept out of it, stated claims, coverage, specs and the gauntlet.
