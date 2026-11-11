@@ -53,6 +53,7 @@ FLAGS = ("--store", "--db", "--replay", "--dry-run")
 READ_ONLY = {
     "adopt --power": ([["adopt", "--power"], ["adopt", "--power", "--lane", "code"]], 0),
     "adopt --table": ([["adopt", "--power", "--table"]], 0),
+    "adopt --serving": ([["adopt", "--serving"]], 0),
     "discover --winners": ([["discover", "--winners"]], 0),
     "discover --coverage": ([["discover", "--coverage"]], 0),
     "discover --queue": ([["discover", "--queue"]], 0),
@@ -84,6 +85,7 @@ MODIFIERS = {
     "context --main-only",
     "morning --no-model", "claude-news --no-record", "benchmarks --force", "benchmarks --passages",
     "cases --reextract", "jobs --night", "jobs --despite-hold","disk --yes", "fetch --hold-router", "adopt --unscreened",
+    "adopt --all-machines",
     "judge --all-machines", "ask --live-home", "spans --live-home", "digest --live-home", "digest --no-model", "kb-filter --no-model", "kb-filter --rebuild",
     "kb-filter --strict", "residency-sim --no-jobs",
 }

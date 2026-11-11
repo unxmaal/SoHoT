@@ -624,6 +624,15 @@ case assumes `rho` 1 until a run measures it. The negative control is pinned: a
 challenger that wins two cases and loses one, the same way on every draw, is
 never adopted at any repeat (the old cell count adopted it from repeat 14).
 
+What a lane serves on a machine is a chain of named moves in `adoptions`
+(schema 96, #1735): each row adopts a model or withdraws the one serving, and
+leaves the lane's previous row, so two writers that read the same head cannot
+both land. `soh adopt --serving` prints every lane on every machine with its
+state: adopted, withdrawn, or configured default, never adopted. A by-hand
+adoption the machine cannot fit is named on that line. `soh adopt --lane L
+--withdraw "why"` withdraws the lane's adoption on this machine
+(`--all-machines` everywhere), and the configured default serves again.
+
 `soh adopt --power` prints, per lane, the repeat that reaches power 0.8 to
 detect `--effect` at alpha 0.05, the holdout size needed when no repeat up to
 16 can (and how many more holdout and lane cases that is), and the projected

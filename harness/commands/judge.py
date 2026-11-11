@@ -109,18 +109,16 @@ def cmd_rubric(a) -> int:
     return 0
 
 
-def _say_adopted(store, lane: str, verdict) -> None:
-    """Print what a by-hand adoption rests on, what it costs, and where it serves. #485."""
+def _say_adopted(store, lane: str, verdict, vid: int) -> None:
+    """Print what the by-hand adoption of verdict `vid` rests on, what it costs, and where it serves. #485, #1735."""
     import json
-    from harness import adopt
+    from harness import adopt, adoption_state as st
     if not verdict.adopt:
         return
-    row = store.execute(
-        "SELECT a.*, c.spec FROM adoptions a JOIN candidates c "
-        "ON c.id = a.candidate_id WHERE a.lane = ? ORDER BY a.id DESC LIMIT 1",
-        (lane,)).fetchone()
-    if not row:
+    rows = st.history(store, lane=lane.strip().lower(), verdict_id=vid)
+    if not rows:
         return
+    row = rows[0]
     note(f"  adopted {row['spec']} for {lane}: "
          f"{adopt.describe(dict(row), row['machine_id'])}")
     note(f"  {adopt.cost_text(json.loads(row['cost'] or '{}'))}")
@@ -189,13 +187,13 @@ def cmd_judge(a) -> int:
                         min_votes=getattr(a, "min_votes", adopt.MIN_VOTES),
                         conn=store), challenger=spec)
                     try:
-                        adopt.record(store, verdict)
+                        vid = adopt.record(store, verdict)
                     except ms.IllegalTransition as exc:
                         note(f"  skipped {exc}")
                     except adopt.Held as exc:
                         note(f"  not adopted: {exc}")
                     else:
-                        _say_adopted(store, lane_, verdict)
+                        _say_adopted(store, lane_, verdict, vid)
             store.commit()
         finally:
             store.close()

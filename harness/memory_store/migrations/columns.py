@@ -266,6 +266,15 @@ def _add_job_reason(conn) -> None:
         conn.execute("ALTER TABLE jobs ADD COLUMN reason TEXT NOT NULL DEFAULT ''")
 
 
+def _add_adoption_move(conn) -> None:
+    """adoptions.move, why and leaves on an older store; v96's data step chains the rows. #1735."""
+    have = _columns(conn, "adoptions")
+    for col, ddl in (("move", "TEXT NOT NULL DEFAULT 'adopt'"), ("why", "TEXT NOT NULL DEFAULT ''"),
+                     ("leaves", "INTEGER NOT NULL DEFAULT 0")):
+        if col not in have:
+            conn.execute(f"ALTER TABLE adoptions ADD COLUMN {col} {ddl}")
+
+
 def _add_request_purpose(conn) -> None:
     """gateway_requests.purpose on an older store; every earlier row is 'unknown'. #825."""
     if "purpose" not in _columns(conn, "gateway_requests"):
