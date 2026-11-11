@@ -191,12 +191,16 @@ def _trees(root, tests=False):
 
 def detector_bindings(root=REPO) -> list[Problem]:
     """tests/test_gauntlet_detectors.py: a detector hit is bound to a test, waived, or in the shrinking backlog."""
-    from gauntlet import detectors
+    from gauntlet import detectors, ratchet
 
     from tests.gauntlet import classes, registry
     pin = pinned(root, "tests/gauntlet/registry.py", "BACKLOG_PIN")
-    led = detectors.ledger(detectors.run(detectors.parse(_trees(root)), classes.INDEX, registry.production),
-                           detectors.bindings(_trees(root, tests=True)), classes.INDEX)
+    trees = detectors.parse(_trees(root))
+    config = ratchet.detector_config(registry.REGISTRY)
+    # A registered move table is read only where its module is in the tree checked.
+    config["terminal_without_reader"]["tables"] = [t for t in registry.MOVES if t.site.split(":")[0] in trees]
+    run = detectors.run(trees, classes.INDEX, registry.production, None, config)
+    led = detectors.ledger(run, detectors.bindings(_trees(root, tests=True)), classes.INDEX)
     backlog = json.loads((Path(root) / "tests/gauntlet/backlog.json").read_text(encoding="utf-8"))
     out = [_p("gauntlet", f"{cid}: {s} trips a gauntlet trigger with no bound test",
               f"mark the test that pins it: @pytest.mark.gauntlet({scaffold.q(cid)}, site={scaffold.q(s)})",

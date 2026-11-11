@@ -8,6 +8,7 @@ import types
 from pathlib import Path
 
 import pytest
+from gauntlet import scanners as gscanners
 
 from harness import memory_store as ms
 from harness import paths, store
@@ -191,6 +192,6 @@ def test_the_scanner_finds_an_undo_left_unpinned_and_a_lifted_guard():
 
 
 def test_no_test_undoes_conftests_home_without_pinning_it_again():
-    found = scanners.scan_tree(paths.REPO, scanners.undone_home_pins, scanners.is_python,
-                               lambda rel: rel.startswith("tests/"))
+    found = gscanners.scan_tree(paths.REPO, scanners.undone_home_pins, gscanners.is_python,
+                                lambda rel: rel.startswith("tests/"))
     assert found == [], "\n".join(found)

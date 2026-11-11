@@ -93,7 +93,7 @@ dev = [
     "python-multipart>=0.0.9",
     "pytest-xdist>=3.6",
     # The corpus and the ratchets; tests/gauntlet holds only this repo's registry (#1785).
-    "gauntlet @ git+https://github.com/unxmaal/gauntlet@v0.1.0 ; python_version >= '3.12'",
+    "gauntlet @ git+https://github.com/unxmaal/gauntlet@v0.2.2 ; python_version >= '3.12'",
 ]
 mcp = [
     "mcp>=2",
