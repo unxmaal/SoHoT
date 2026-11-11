@@ -404,6 +404,23 @@ def _ask(gateway: str, key: str, model: str, timeout: float):
                             "messages": [{"role": "user", "content": "Reply with exactly: OK"}]})
 
 
+class ViaGateway(str):
+    """A smoke line about the gateway's view of a node, which the node answering directly can clear. #1791."""
+
+
+def ask_node(node: Node, model: str):
+    """The node's own reply to a one-word completion of MODEL, past the gateway. #1791."""
+    import httpx
+    key = secret(node)
+    transport = httpx.HTTPTransport(local_address="0.0.0.0") if node.ipv4 else None
+    with httpx.Client(transport=transport,
+                      timeout=httpx.Timeout(node.timeout, connect=node.connect_timeout)) as c:
+        return c.post(f"{node.api_base.rstrip('/')}/chat/completions",
+                      headers={"Authorization": f"Bearer {key}"} if key else {},
+                      json={"model": node.node_id(model), "max_tokens": 4,
+                            "messages": [{"role": "user", "content": "Reply with exactly: OK"}]})
+
+
 def smoke(gateway: str, key: str, nodes: list[Node], get=_get_models, ask=_ask, clock=None) -> list[tuple[bool, str]]:
     """(passed, line) per node model: up, the node answers through the gateway; down, this machine does, fast."""
     import time
@@ -434,16 +451,23 @@ def smoke(gateway: str, key: str, nodes: list[Node], get=_get_models, ask=_ask, 
                 out.append((took <= node.connect_timeout + 10,
                             f"node {node.name} down: {model} refused in {took:.1f}s, {NO_LOCAL_COPY} it"))
             elif r.status_code >= 400:
-                out.append((False, f"node {node.name} {model}: HTTP {r.status_code}"))
+                out.append((False, ViaGateway(f"node {node.name} {model}: HTTP {r.status_code} through the gateway")))
             elif up and served_by == node.name and node.fingerprint \
                     and r.headers.get("x-sohot-machine", "") != node.identity:
-                out.append((False, f"node {node.name} up: {model} served by {served_by}, but the gateway "
-                                   f"names its machine {r.headers.get('x-sohot-machine') or 'nothing'}, "
-                                   f"not {node.identity}; restart the gateway to reload nodes.yaml"))
+                out.append((False, ViaGateway(
+                    f"node {node.name} up: {model} served by {served_by}, but the gateway names its machine "
+                    f"{r.headers.get('x-sohot-machine') or 'nothing'} where {path().name} says {node.identity}; "
+                    f"restart the Studio gateway to reload {path().name}")))
+            elif up and served_by == node.name:
+                out.append((True, f"node {node.name} up: {model} served by {served_by}"))
             elif up:
-                out.append((served_by == node.name,
-                            f"node {node.name} up: {model} served by "
-                            f"{served_by or r.headers.get('x-sohot-machine', 'this machine')}"))
+                who = r.headers.get("x-sohot-machine") or "this machine"
+                why = (f"the gateway fell back to it, holding the node down (restarted inside its {node.cooldown:.0f} s "
+                       f"cooldown, or {node.api_base} unreachable from the gateway)" if fell == node.name
+                       else f"the gateway does not route {model} to {node.name}; restart the Studio gateway "
+                            f"to reload {path().name}")
+                out.append((False, ViaGateway(f"node {node.name} up but {model} was answered by {who}, "
+                                              f"not by the node's {node.identity}: {why}")))
             else:
                 fast = took <= node.connect_timeout + 10
                 out.append((not served_by and fell == node.name and fast,
