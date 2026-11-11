@@ -25,16 +25,24 @@ SUPERSEDED = "superseded"
 DEPLOYED = "deployed"
 DEPLOY_FAILED = "deploy_failed"
 HANDED_OFF = "handed_off"
+MEMORY_PAUSE = "memory_pause"
+QUEUE_PAUSE = "queue_pause"
+RESUMED = "resumed"
+EXPIRED = "expired"
+NEEDS_OWNER = "needs_owner"
 
-#: (state it leaves, state it enters) -> the reasons that move may carry. Nothing leaves done, failed, cancelled or paused.
+#: (state it leaves, state it enters) -> the reasons that move may carry. Nothing leaves done, failed or cancelled; paused leaves only by paused_jobs.settle or a cancel (#1764).
 MOVES: dict[tuple[str, str], frozenset[str]] = {
     (PENDING, RUNNING): frozenset({CLAIMED}),
     (PENDING, CANCELLED): frozenset({CANCEL, SUPERSEDED}),
     (RUNNING, PENDING): frozenset({UNCLAIMED, NEXT_ITEM, DEPLOY_PAUSE, CONTENTION_PAUSE, DEPLOY_STOP, WORKER_GONE}),
     (RUNNING, DONE): frozenset({EXITED, DEPLOYED}),
     (RUNNING, FAILED): frozenset({EXITED, NOT_STARTED, INTERRUPTED, DEPLOY_FAILED}),
-    (RUNNING, PAUSED): frozenset({CHECKPOINTED, CONTINUED}),
+    (RUNNING, PAUSED): frozenset({CHECKPOINTED, CONTINUED, MEMORY_PAUSE, QUEUE_PAUSE}),
     (RUNNING, CANCELLED): frozenset({CANCEL}),
+    (PAUSED, PENDING): frozenset({RESUMED}),
+    (PAUSED, FAILED): frozenset({EXPIRED, NEEDS_OWNER}),
+    (PAUSED, CANCELLED): frozenset({CANCEL, SUPERSEDED}),
 }
 
 #: The flag files beside a running job's pid file (workqueue._pids), read only to choose its exit move.
