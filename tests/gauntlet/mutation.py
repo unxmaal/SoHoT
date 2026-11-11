@@ -103,7 +103,7 @@ LEFT_OUT = {
     "harness/reasons.py": (
         "test_owner_decline_1564.py", "test_runtime_trials_1474.py", "test_repo_repair_890.py", "test_agent_cut_call_1547.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_staging_torch_1358.py",
         "test_vision_engines_1282.py",
-        "test_shots_check_1208.py",
+        "test_shots_check_1208.py", "test_node_drain_1815.py",
         "test_adopt_retest_1001.py", "test_attachment_tags_949.py", "test_canary_919.py",
         "test_chaos.py", "test_claims_lane.py", "test_gateway_key.py", "test_harness_checks_ocr.py",
         "test_harness_paired.py", "test_harness_screen.py", "test_harness_screen_spec.py",
