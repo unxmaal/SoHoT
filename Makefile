@@ -4,6 +4,8 @@
 CLUSTER_NODE ?= desktop-control-plane
 IMAGE_TAG ?= 0.1.0
 NAMESPACE ?= lh
+#: xdist workers for every parallel suite; on a shared machine pass PYTEST_N=6 (#1722).
+PYTEST_N ?= auto
 
 # Entry points. `make check` is what CI would run and what to run before a commit.
 .PHONY: check test precheck test-slow test-network test-postgres test-postgres-suite test-litellm coverage mutation diagram image secret-gh metrics lint smoke services clean
@@ -14,7 +16,7 @@ precheck:                 ## only the registration ratchets, each failure with t
 	uv run --group mcp python -m tests.gauntlet.precheck
 
 test:                     ## unit tests (fast; excludes the model-loading ones), across every core (#720)
-	SOHOT_CATCHES=1 uv run --group mcp pytest tests/ -q -n auto
+	SOHOT_CATCHES=1 uv run --group mcp pytest tests/ -q -n $(PYTEST_N)
 
 test-slow:                ## the metrics tests: loads multi-GB scorers, minutes
 	uv run --group metrics pytest tests/ -q -m slow
@@ -83,7 +85,7 @@ test-postgres-suite:      ## the whole suite on the Postgres the PG* variables n
 	$(PG_SUITE)
 
 PG_IMAGE := postgres:16.15-alpine
-PG_SUITE = LOCALHARNESS_STORE=postgres uv run --group cluster --group mcp pytest tests/ -q -n auto \
+PG_SUITE = LOCALHARNESS_STORE=postgres uv run --group cluster --group mcp pytest tests/ -q -n $(PYTEST_N) \
   -m 'not slow and not network and not litellm'
 # One container per worktree on a docker-assigned port, so parallel worktrees do not kill each other's database. #705.
 PG_TEST := lh-pg-test-$(shell printf '%s' '$(CURDIR)' | cksum | cut -d' ' -f1)

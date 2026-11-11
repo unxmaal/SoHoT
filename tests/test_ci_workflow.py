@@ -4,6 +4,7 @@ A pull request runs macOS only, so work moves at the speed of one runner.
 Linux and Windows run nightly on main, on demand, or on a PR labelled
 full-ci, and a nightly failure opens an issue so it cannot pass unseen.
 """
+import re
 from pathlib import Path
 
 import yaml
@@ -264,7 +265,17 @@ def test_the_fast_path_variable_is_the_one_conftest_reads():
 def test_make_check_spreads_the_suite_over_every_core():
     make = (CI.parents[2] / "Makefile").read_text(encoding="utf-8")
     recipe = make.split("\ntest:", 1)[1].split("\n\n", 1)[0]
-    assert "pytest" in recipe and "-n auto" in recipe
+    assert "pytest" in recipe and "-n $(PYTEST_N)" in recipe
+    assert re.search(r"^PYTEST_N \?= auto$", make, re.M)
+
+
+def test_every_parallel_pytest_in_the_makefile_takes_its_workers_from_pytest_n():
+    """Agents told to run make check got 30 workers each from a hardcoded -n auto (#1722)."""
+    make = (CI.parents[2] / "Makefile").read_text(encoding="utf-8").replace("\\\n", " ")
+    runs = [line for line in make.splitlines() if re.search(r"\bpytest\b", line) and not line.lstrip().startswith("#")]
+    workers = [re.findall(r"(?<!\S)(?:-n|--numprocesses)(?:[ =]|(?=\w))(\S+)", line) for line in runs]
+    assert sum(map(len, workers)) >= 2
+    assert {w for ws in workers for w in ws} == {"$(PYTEST_N)"}
 
 
 def test_check_macos_reports_where_the_test_time_went():
@@ -317,7 +328,6 @@ def test_the_nightly_runs_the_litellm_suite_after_make_check():
 def _cancels(value, event: str) -> bool:
     if isinstance(value, bool):
         return value
-    import re
     m = re.fullmatch(r"\$\{\{\s*github\.event_name\s*(==|!=)\s*'(\w+)'\s*\}\}", str(value).strip())
     assert m, f"cancel-in-progress {value!r} is not a form this test can evaluate"
     return (event == m.group(2)) == (m.group(1) == "==")
