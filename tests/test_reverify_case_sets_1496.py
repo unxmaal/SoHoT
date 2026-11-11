@@ -4,6 +4,7 @@ import pytest
 from harness import adopt, baseline, paired, reverify, runs
 from tests.test_reverify import (DAY, NOW, VERSIONS, _latest, _queue_and_finish, check, conn, on,  # noqa: F401
                                  powered, queued, record_run, upgraded)
+from tests import job_rows
 
 pytestmark = pytest.mark.usefixtures("powered")
 
@@ -63,7 +64,7 @@ def test_after_a_disjoint_refusal_the_next_rerun_pairs_with_it(upgraded):
     check(conn, now=NOW + 8 * DAY)
     job = queued(conn)[-1]
     from harness import workqueue as wq
-    wq._write({**job, "state": wq.DONE, "rc": 0}, conn=conn)
+    job_rows.put({**job, "state": wq.DONE, "rc": 0}, conn=conn)
     record_run(conn, "code", _cases("q3-4b", _ids("d", 10)), at=NOW + 8 * DAY + 60, job_id=job["id"],
                versions={**VERSIONS, "mlx-lm": "0.29.1"})
     check(conn, now=NOW + 8 * DAY + 120)

@@ -12,6 +12,7 @@ from evals.runners.base import BaseRunner
 from harness import knobs, reverify, runs, sweeps, workqueue as wq
 from harness import memory_store as ms
 from tests import conftest
+from tests import job_rows
 
 DAY = 86400.0
 NOW = 1_800_000_000.0
@@ -113,7 +114,7 @@ def test_a_dry_run_queues_nothing(conn, serving):
 def _finish(conn, outcomes, state=wq.DONE, total=20):
     """outcomes: value -> (passed of total, seconds per row), or None for a job that stored no run."""
     for job in queued(conn):
-        wq._write({**job, "state": state, "rc": 0}, conn=conn)
+        job_rows.put({**job, "state": state, "rc": 0}, conn=conn)
     row = conn.execute("SELECT jobs FROM knob_sweeps ORDER BY id DESC").fetchone()
     for value, job_id in json.loads(row["jobs"]):
         got = outcomes.get(value)

@@ -15,6 +15,12 @@ WARN = pressure.Pressure(level=pressure.WARN)
 NORMAL = pressure.Pressure(level=pressure.NORMAL)
 
 
+@pytest.fixture(autouse=True)
+def _leads(monkeypatch):
+    """This process stands in for a job's process, which as a real job's would lead its own group. #1728."""
+    monkeypatch.setattr(wq, "_leads", lambda pid: True)
+
+
 @pytest.fixture
 def warn(monkeypatch):
     """The real contention gate with memory pressure stuck at warn, the served lanes idle, no hold and no sweep."""
@@ -107,7 +113,7 @@ def test_a_deploy_still_waits_for_served_lanes_and_the_owner_hold(warn):
 def test_a_superseded_deploy_keeps_the_wait_of_the_one_it_replaced(warn):
     now = time.time()
     old = _deploy(now - contention.DEPLOY_PRESSURE_S - 60, sha="b" * 40)
-    _set(old, state=wq.CANCELLED, note=f"{deploy.SUPERSEDED}{'c' * 12}")
+    _set(old, state=wq.CANCELLED, reason="superseded", note=f"{deploy.SUPERSEDED}{'c' * 12}")
     new = _deploy(now - 10, sha="c" * 40)
     conn = ms.connect()
     try:

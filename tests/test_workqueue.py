@@ -6,6 +6,7 @@ import sys
 import pytest
 
 from harness import cli, exclusive, workqueue as wq
+from tests import job_rows
 
 
 @pytest.fixture(autouse=True)
@@ -123,7 +124,7 @@ def test_a_job_cut_off_mid_run_is_not_silently_rerun(tmp_path):
     """A reboot leaves a job marked running. It may be half done."""
     job = wq.add(py("pass"))
     job["state"] = wq.RUNNING
-    wq._write(job)
+    job_rows.put(job)
     wq.run_pending()
     got = wq.jobs()[0]
     assert got["state"] == wq.FAILED and "interrupted" in got["note"]
@@ -474,7 +475,7 @@ def test_cancel_refuses_a_finished_job():
 def test_cancel_refuses_a_running_job_with_no_process_on_this_machine():
     job = wq.add(py("pass"))
     job["state"] = wq.RUNNING
-    wq._write(job)
+    job_rows.put(job)
     with pytest.raises(ValueError, match="no process"):
         wq.cancel(job["id"])
 
@@ -482,6 +483,6 @@ def test_cancel_refuses_a_running_job_with_no_process_on_this_machine():
 def test_the_listing_shows_a_cancelled_job(capsys):
     job = wq.add(py("pass"), title="was running")
     job.update(state=wq.CANCELLED, note="cancelled by soh jobs cancel")
-    wq._write(job)
+    job_rows.put(job)
     assert cli.main(["jobs", "list"]) == 0
     assert "cancelled" in capsys.readouterr().out

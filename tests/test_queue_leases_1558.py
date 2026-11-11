@@ -105,7 +105,7 @@ def test_a_gone_workers_eval_that_stored_a_run_waits_again_to_resume_it(tmp_path
 
 
 def test_a_job_a_gone_worker_left_running_is_watched_under_a_lease_not_failed():
-    child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+    child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"], start_new_session=True)
     job = wq.add(["soh-batch-job"], title="batch")
     _running(job, child.pid)
     try:
