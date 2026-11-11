@@ -88,6 +88,8 @@ INCONCLUSIVE = "inconclusive"
 LANE_TOO_SMALL = "lane_too_small"
 #: A verdict's class: the holdout gate passed and the cases it was not decided on have not confirmed it yet. #725.
 CONFIRMING = "confirming"
+#: A verdict's class: a fetch budget refused a row for what the run already fetched; rank ages on it. #1288, #1779.
+PASSED_OVER = "passed_over"
 
 #: class -> (screen outcome, reason), in precedence order when rows disagree.
 CLASSES = {
