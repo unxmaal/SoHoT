@@ -69,7 +69,6 @@
  "state-is-whichever-row-came-last": [
   "harness/commands/discover.py:_judge_neighbors",
   "harness/memory_store/proposals.py:judgeable",
-  "harness/publish.py:_accelerator_name",
-  "harness/sweeps.py:_key"
+  "harness/publish.py:_accelerator_name"
  ]
 }
