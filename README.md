@@ -3448,7 +3448,7 @@ the module, constant or launchd unit together with its capability entry, knob or
 line, schedule and UNIT_OUTPUTS entry; run `make precheck` before `make check`.
 
 CI runs `make check` on an Apple Silicon runner for every push and pull
-request. Linux and Windows run nightly on main (06:00 UTC), from the Actions
+request. Linux and Windows run nightly on main (06:17 UTC), from the Actions
 tab on demand, or on a pull request labelled `full-ci`; a failing night opens
 or updates the issue "Nightly CI is failing on main". Each runner reports
 which tests it skipped and why. A

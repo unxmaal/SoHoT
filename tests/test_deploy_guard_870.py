@@ -11,13 +11,13 @@ OTHER = "b" * 40
 
 
 def fake(runs, jobs=None, calls=None):
-    """A gh that answers `run list` with runs and `run view ID` with jobs[ID]."""
+    """A gh that answers `run list` with runs and `run view ID` with jobs[ID], none for a run not yet started."""
     def gh(argv):
         if calls is not None:
             calls.append(argv)
         if argv[:2] == ["run", "list"]:
             return json.dumps(runs)
-        return json.dumps({"jobs": (jobs or {})[int(argv[2])]})
+        return json.dumps({"jobs": (jobs or {}).get(int(argv[2]), [])})
     return gh
 
 

@@ -1,0 +1,148 @@
+{
+ "event": "schedule",
+ "createdAt": "2026-11-11T13:49:18Z",
+ "run": {
+  "databaseId": 43032598280,
+  "conclusion": "",
+  "headSha": "30a48cac6cb1b481a5258b633f1e3adb5db20ae1",
+  "status": "queued",
+  "url": "https://github.com/unxmaal/SoHoT/actions/runs/43032598280"
+ },
+ "jobs": [
+  {
+   "name": "check-windows",
+   "status": "completed",
+   "conclusion": "failure",
+   "startedAt": "2026-11-11T13:49:22Z",
+   "completedAt": "2026-11-11T14:54:02Z",
+   "databaseId": 130563190127,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43032598280/job/130563190127"
+  },
+  {
+   "name": "check-macos",
+   "status": "completed",
+   "conclusion": "success",
+   "startedAt": "2026-11-11T13:57:52Z",
+   "completedAt": "2026-11-11T14:27:47Z",
+   "databaseId": 130563190160,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43032598280/job/130563190160"
+  },
+  {
+   "name": "coverage-map",
+   "status": "completed",
+   "conclusion": "success",
+   "startedAt": "2026-11-11T14:02:08Z",
+   "completedAt": "2026-11-11T14:46:16Z",
+   "databaseId": 130563190190,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43032598280/job/130563190190"
+  },
+  {
+   "name": "mutation (harness/screen.py)",
+   "status": "in_progress",
+   "conclusion": "",
+   "startedAt": "2026-11-11T14:19:34Z",
+   "completedAt": "0001-01-01T00:00:00Z",
+   "databaseId": 130563190244,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43032598280/job/130563190244"
+  },
+  {
+   "name": "check-linux",
+   "status": "completed",
+   "conclusion": "success",
+   "startedAt": "2026-11-11T13:49:21Z",
+   "completedAt": "2026-11-11T14:26:47Z",
+   "databaseId": 130563190298,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43032598280/job/130563190298"
+  },
+  {
+   "name": "store-touched",
+   "status": "completed",
+   "conclusion": "success",
+   "startedAt": "2026-11-11T13:49:22Z",
+   "completedAt": "2026-11-11T13:49:30Z",
+   "databaseId": 130563190309,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43032598280/job/130563190309"
+  },
+  {
+   "name": "mutation (harness/reasons.py)",
+   "status": "completed",
+   "conclusion": "success",
+   "startedAt": "2026-11-11T14:06:01Z",
+   "completedAt": "2026-11-11T14:19:29Z",
+   "databaseId": 130563190483,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43032598280/job/130563190483"
+  },
+  {
+   "name": "mutation (harness/serving.py)",
+   "status": "completed",
+   "conclusion": "failure",
+   "startedAt": "2026-11-11T14:27:50Z",
+   "completedAt": "2026-11-11T14:47:22Z",
+   "databaseId": 130563190594,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43032598280/job/130563190594"
+  },
+  {
+   "name": "mutation (harness/adopt.py 2/2)",
+   "status": "in_progress",
+   "conclusion": "",
+   "startedAt": "2026-11-11T14:49:19Z",
+   "completedAt": "0001-01-01T00:00:00Z",
+   "databaseId": 130563190610,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43032598280/job/130563190610"
+  },
+  {
+   "name": "mutation (harness/memory_store/transitions.py)",
+   "status": "completed",
+   "conclusion": "success",
+   "startedAt": "2026-11-11T14:24:01Z",
+   "completedAt": "2026-11-11T14:50:20Z",
+   "databaseId": 130563190620,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43032598280/job/130563190620"
+  },
+  {
+   "name": "mutation (harness/adopt.py 1/2)",
+   "status": "in_progress",
+   "conclusion": "",
+   "startedAt": "2026-11-11T14:47:50Z",
+   "completedAt": "0001-01-01T00:00:00Z",
+   "databaseId": 130563190648,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43032598280/job/130563190648"
+  },
+  {
+   "name": "mutation (harness/router.py)",
+   "status": "queued",
+   "conclusion": "",
+   "startedAt": "2026-11-11T13:49:19Z",
+   "completedAt": "0001-01-01T00:00:00Z",
+   "databaseId": 130563190857,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43032598280/job/130563190857"
+  },
+  {
+   "name": "mutation-plan",
+   "status": "completed",
+   "conclusion": "skipped",
+   "startedAt": "2026-11-11T13:49:19Z",
+   "completedAt": "2026-11-11T13:49:19Z",
+   "databaseId": 130563192367,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43032598280/job/130563192367"
+  },
+  {
+   "name": "mutation-changed",
+   "status": "completed",
+   "conclusion": "skipped",
+   "startedAt": "2026-11-11T13:49:19Z",
+   "completedAt": "2026-11-11T13:49:19Z",
+   "databaseId": 130563193517,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43032598280/job/130563193517"
+  },
+  {
+   "name": "check-postgres",
+   "status": "queued",
+   "conclusion": "",
+   "startedAt": "2026-11-11T13:49:30Z",
+   "completedAt": "0001-01-01T00:00:00Z",
+   "databaseId": 130563286101,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43032598280/job/130563286101"
+  }
+ ]
+}

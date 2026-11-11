@@ -56,15 +56,16 @@ def _scan(sha: str, argv: list[str], gh, what: str) -> tuple[str, str]:
     waiting, failed = [], []
     for run in runs:
         url = run.get("url", "")
-        if run.get("status") != "completed":
-            waiting.append(run)
-            continue
         jobs = json.loads(gh(["run", "view", str(run["databaseId"]), "--json", "jobs"]) or "{}").get("jobs") or []
         job = next((j for j in jobs if j.get("name") == JOB), None)
+        if job is not None and job.get("conclusion") == "success":
+            return PASSED, f"{JOB} passed for {sha[:12]} in {url}"
+        if run.get("status") != "completed":
+            # The run's other jobs (check-postgres) may still be queued for a runner; only check-macos gates (#1802).
+            waiting.append(run)
+            continue
         if job is None:
             failed.append((None, f"run {url} has no {JOB} job"))
-        elif job.get("conclusion") == "success":
-            return PASSED, f"{JOB} passed for {sha[:12]} in {url}"
         else:
             failed.append((job.get("conclusion"), f"{JOB} concluded {job.get('conclusion') or 'nothing'} in {url}"))
     if waiting:

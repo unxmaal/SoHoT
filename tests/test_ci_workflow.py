@@ -339,3 +339,58 @@ def test_a_push_to_main_is_never_cancelled_by_the_next_merge():
     value = doc["concurrency"]["cancel-in-progress"]
     assert not _cancels(value, "push") and not _cancels(value, "schedule")
     assert _cancels(value, "pull_request")
+
+
+def _expand(text: str, **github) -> str:
+    """Evaluate each ${{ }} in text over a github context; && || == != and literals only."""
+    def one(m):
+        expr = re.sub(r"\bgithub\.(\w+)", lambda g: repr(github[g.group(1)]), m.group(1))
+        expr = expr.replace("&&", " and ").replace("||", " or ")
+        assert re.fullmatch(r"[\s\w'./=!-]*", expr), expr
+        return str(eval(expr, {"__builtins__": {}}, {}))
+    return re.sub(r"\$\{\{(.*?)\}\}", one, str(text))
+
+
+def _group(event: str, ref: str, sha: str) -> str:
+    doc, _ = _ci()
+    return _expand(doc["concurrency"]["group"], event_name=event, ref=ref, sha=sha)
+
+
+def test_a_merge_never_waits_for_the_previous_main_run():
+    """One push group held each merge's run until the last one's check-postgres finished, and a newer pending run
+    cancelled the older before it started; c200928b had no job 40 min after its merge (#1802)."""
+    main = "refs/heads/main"
+    assert _group("push", main, "a" * 40) != _group("push", main, "b" * 40)
+    assert _group("push", main, "a" * 40) not in {_group(e, main, "a" * 40) for e in ("schedule", "workflow_dispatch")}
+    assert _group("schedule", main, "a" * 40) == _group("schedule", main, "b" * 40)
+
+
+def test_a_new_push_to_a_pull_request_cancels_its_superseded_run_only():
+    doc, _ = _ci()
+    pr = "refs/pull/1802/merge"
+    assert _group("pull_request", pr, "a" * 40) == _group("pull_request", pr, "b" * 40)
+    assert _group("pull_request", pr, "a" * 40) != _group("pull_request", "refs/pull/1801/merge", "a" * 40)
+    assert _cancels(doc["concurrency"]["cancel-in-progress"], "pull_request")
+    assert not _cancels(doc["concurrency"]["cancel-in-progress"], "push")
+
+
+def test_no_job_joins_a_concurrency_group_of_its_own():
+    """A job-level group would serialize main's check-macos across merges again (#1802)."""
+    doc, _ = _ci()
+    assert [n for n, j in doc["jobs"].items() if "concurrency" in j] == []
+
+
+def test_mutation_never_runs_in_a_push_run_and_leaves_macos_runners_for_check_macos():
+    """GitHub hands its 5 macOS runners to the oldest queued job: the 13:49 nightly's queued legs went ahead of the
+    13:57 main check-macos for 55+ min. A leg held back by max-parallel is not queued yet (#1802)."""
+    doc, _ = _ci()
+    mutation = doc["jobs"]["mutation"]
+    assert _expand("${{ " + mutation["if"] + " }}", event_name="push") == "False"
+    assert _expand("${{ " + doc["jobs"]["mutation-plan"]["if"] + " }}", event_name="push") == "False"
+    assert 1 <= mutation["strategy"]["max-parallel"] <= 2
+
+
+def test_the_nightly_is_not_scheduled_on_the_hour():
+    """'0 6 * * *' started 11:54-15:39 UTC on 2026-10-28..11-11, among the day's merges (#1802)."""
+    _, on = _ci()
+    assert all(c["cron"].split()[0] != "0" for c in on["schedule"])
