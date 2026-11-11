@@ -569,6 +569,7 @@ _POOL: dict = {}
 def use_pool(max_size: int = POOL_MAX):
     """From now on this process borrows its Postgres connections from one pool (RULE #119): long-lived services."""
     if "pool" not in _POOL:
+        refuse_live(postgres=True)
         import atexit
         from psycopg_pool import ConnectionPool
         import psycopg
@@ -603,13 +604,75 @@ def secret(user: str, lookup=None) -> str:
     return lookup(SECRET_SERVICE, user)
 
 
+def _where(e, m) -> tuple:
+    return (e.get("PGHOST") or m.get("host") or "localhost", e.get("PGPORT") or str(m.get("port") or 5432),
+            e.get("PGDATABASE") or m.get("dbname") or "discovery")
+
+
+def pg_target(environ=None, home=None) -> str:
+    """host:port/dbname a connection would reach, every loopback host spelled `local`. #1826."""
+    host, port, db = _where(os.environ if environ is None else environ, marker(home))
+    host = "local" if host in ("localhost", "127.0.0.1", "::1") or host.startswith("/") else host
+    return f"{host}:{port}/{db}"
+
+
+#: Set once per pytest session by tests/conftest.py, read at every connect: the live store no test may open. #1826.
+GUARD_ENV = "SOHOT_TEST_LIVE"
+#: Every refusal this process made; conftest fails a test that leaves one here, even one the code swallowed.
+REFUSALS: list = []
+
+
+class LiveStoreUnderTest(RuntimeError):
+    """A test run tried to open the live store. #1826."""
+
+
+def guard_flag(live_home, inherited="") -> str:
+    """GUARD_ENV's value: each live home's discovery.db and, when its store.json says Postgres, that Postgres."""
+    import json
+    pg = pg_target({}, live_home) if marker(live_home).get("backend") == POSTGRES else ""
+    entry = {"db": str((Path(live_home) / "discovery.db").resolve()), "postgres": pg}
+    got = json.loads(inherited) if inherited else []
+    return json.dumps(got if entry in got else got + [entry])
+
+
+def _sqlite_file(database) -> Path | None:
+    from urllib.request import url2pathname
+    raw = os.fsdecode(database) if isinstance(database, (str, bytes, os.PathLike)) else ""
+    if raw.startswith("file:"):
+        raw = url2pathname(raw[5:].split("?", 1)[0])
+    return None if raw in ("", ":memory:") else Path(raw)
+
+
+def _refuse(what: str) -> None:
+    REFUSALS.append(what)
+    raise LiveStoreUnderTest(f"a test reached the live store ({what}); {GUARD_ENV} refuses it before any "
+                             f"connection. A test pins its own LOCALHARNESS_HOME and never calls monkeypatch.undo().")
+
+
+def refuse_live(database=None, *, postgres=False, environ=None) -> None:
+    """Under pytest, refuse the live SQLite file, a Postgres store opened from the live home, or the live Postgres."""
+    import json
+    raw = os.environ.get(GUARD_ENV)
+    if not raw:
+        return
+    for live in json.loads(raw):
+        if postgres:
+            from harness import paths
+            if (Path(paths.home()) / "discovery.db").resolve() == Path(live["db"]):
+                _refuse(f"Postgres from the live home {paths.home()}")
+            if live["postgres"] and pg_target(environ) == live["postgres"]:
+                _refuse(f"Postgres {live['postgres']}")
+            continue
+        got = _sqlite_file(database)
+        if got is not None and got.name == Path(live["db"]).name and got.resolve() == Path(live["db"]):
+            _refuse(str(got))
+
+
 def dsn(environ=None, *, read_only=False, home=None, lookup=None) -> str:
     """Where the store's Postgres is: PG* variables, else the home's store.json, password else the Keychain."""
     e = os.environ if environ is None else environ
     m = marker(home)
-    host = e.get("PGHOST") or m.get("host") or "localhost"
-    port = e.get("PGPORT") or str(m.get("port") or 5432)
-    db = e.get("PGDATABASE") or m.get("dbname") or "discovery"
+    host, port, db = _where(e, m)
     role = reader(e, home) if read_only else ""
     user = role or e.get("PGUSER") or m.get("user") or "discovery"
     password = (e.get("PGPASSWORD_RO") if role else e.get("PGPASSWORD")) or secret(user, lookup)
@@ -653,6 +716,7 @@ def open_ro(path=None):
     home_db = Path(paths.home()) / "discovery.db"
     if home_postgres(path):
         return postgres_connect(read_only=True)
+    refuse_live(path or home_db)
     conn = sqlite3.connect(f"{Path(path or home_db).resolve().as_uri()}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
     return conn
@@ -665,6 +729,7 @@ def open_as_is(path=None):
     from harness.memory_store import connection as mc
     if home_postgres(path):
         return postgres_connect()
+    refuse_live(path or Path(paths.home()) / "discovery.db")
     conn = sqlite3.connect(f"{Path(path or Path(paths.home()) / 'discovery.db').resolve().as_uri()}?mode=rw",
                            uri=True, timeout=mc.BUSY_TIMEOUT_SECONDS, factory=mc._Store)
     conn.row_factory = sqlite3.Row
@@ -673,6 +738,7 @@ def open_as_is(path=None):
 
 def postgres_connect(environ=None, *, read_only=False, cls=None):
     """Open the Postgres store; read_only as the reader role in read-only transactions. psycopg is lazy."""
+    refuse_live(postgres=True, environ=environ)
     try:
         import psycopg
     except ImportError as exc:  # pragma: no cover - exercised by the message

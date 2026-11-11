@@ -959,3 +959,38 @@ def machine_stand_ins(text, rel):
             out.append(f"{rel}:{n.lineno}: replaces {name.value}; name the machine with conftest machine_is or "
                        f"machine_has, which reach it through environment.identity")
     return out
+
+
+UNDO_OWNER = "tests/test_live_store_pytest_1826.py"
+_GUARD = "SOHOT_TEST_LIVE"
+
+
+def _names(arg, attr, const):
+    return (isinstance(arg, ast.Constant) and arg.value == const) or (isinstance(arg, ast.Attribute) and arg.attr == attr)
+
+
+def undone_home_pins(text, rel):
+    """monkeypatch.undo() with no setenv of LOCALHARNESS_HOME after it, or a test that lifts the live-store guard. #1826."""
+    if rel == UNDO_OWNER:
+        return []
+    tree, out = _parse(text, rel)
+    if tree is None:
+        return out
+    found = set()
+    for fn in ast.walk(tree):
+        if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        pending = None
+        for c in sorted((n for n in ast.walk(fn) if isinstance(n, ast.Call)), key=lambda c: (c.lineno, c.col_offset)):
+            name = _call_name(c)
+            if name == "undo" and not c.args and isinstance(c.func, ast.Attribute):
+                if pending is not None:
+                    found.add((pending, "monkeypatch.undo() drops conftest's LOCALHARNESS_HOME; setenv it again after"))
+                pending = c.lineno
+            elif name == "setenv" and c.args and _names(c.args[0], "ENV_VAR", "LOCALHARNESS_HOME"):
+                pending = None
+            if name in ("setenv", "delenv", "pop", "__delitem__") and c.args and _names(c.args[0], "GUARD_ENV", _GUARD):
+                found.add((c.lineno, f"lifts {_GUARD}, the guard that keeps a test off the live store"))
+        if pending is not None:
+            found.add((pending, "monkeypatch.undo() drops conftest's LOCALHARNESS_HOME; setenv it again after"))
+    return out + [f"{rel}:{line}: {why}" for line, why in sorted(found)]

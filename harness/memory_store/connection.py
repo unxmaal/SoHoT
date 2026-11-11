@@ -114,6 +114,7 @@ def connect(path: Path | None = None):
             raise
         return conn
     path = Path(path) if path is not None else db_path()
+    store.refuse_live(path)
     _refuse_reentry(path)
     if not path.exists():
         _guard_live(path, lambda: 0)

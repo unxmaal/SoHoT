@@ -34,6 +34,32 @@ def _home(tmp_path_factory, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _live_store_untouched():
+    """A test that reached the live store fails, though the code under test swallowed the refusal. #1826."""
+    from harness import store
+    del store.REFUSALS[:]
+    yield
+    if store.REFUSALS:
+        got, store.REFUSALS[:] = list(store.REFUSALS), []
+        pytest.fail(f"reached the live store: {got}")
+
+
+def _guard_sqlite():
+    """sqlite3.connect refuses the live discovery.db for the whole session; no monkeypatch.undo() reaches it. #1826."""
+    import sqlite3
+    from harness import store
+    if getattr(sqlite3.connect, "real", None) is not None:
+        return
+
+    def connect(database, *args, **kwargs):
+        store.refuse_live(database)
+        return connect.real(database, *args, **kwargs)
+
+    connect.real = sqlite3.connect
+    sqlite3.connect = connect
+
+
+@pytest.fixture(autouse=True)
 def _pg_schema(request, monkeypatch):
     """On LOCALHARNESS_STORE=postgres every test gets its own empty schema, as it gets its own home. #1507."""
     import os
@@ -47,6 +73,7 @@ def _pg_schema(request, monkeypatch):
         return
     import uuid
     import psycopg
+    store.refuse_live(postgres=True)
     name = f"t_{uuid.uuid4().hex[:16]}"
     with psycopg.connect(store.dsn(), autocommit=True) as admin:
         admin.execute(f"CREATE SCHEMA {name}")
@@ -170,6 +197,9 @@ def pytest_configure(config):
     from harness import store
     # The suite never takes its backend from the developer's home store.json; check-postgres sets it. #1614.
     os.environ.setdefault(store.BACKEND_ENV, store.SQLITE)
+    # Not a monkeypatch, so no test's monkeypatch.undo() drops it; a pytest a test starts inherits it. #1826.
+    os.environ[store.GUARD_ENV] = store.guard_flag(paths.DEFAULT_HOME, os.environ.get(store.GUARD_ENV, ""))
+    _guard_sqlite()
     # faulthandler's timed dump of a running thread can spin forever in CPython 3.12 and wedge the worker (#1351).
     if not _running:
         _hang_watch()
