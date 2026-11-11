@@ -903,5 +903,10 @@
   "number": 552,
   "title": "check-windows: vllm.served stops its child with os.killpg, which Windows does not have; 4 test_vllm tests fail",
   "created": "2026-10-07T07:45:54Z"
+ },
+ {
+  "number": 703,
+  "title": "Assumptions 14: Shared store and multiple machines: job claims, locks, scheduling and gateway restarts",
+  "created": "2026-10-11T13:33:51Z"
  }
 ]

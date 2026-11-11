@@ -219,10 +219,15 @@ INDEX = {
                 "the run a queued job stored; a retried job's newest run is its latest attempt (#526)",
             "harness/runs.py:for_job":
                 "the run a queued job stored; a retried job's newest run is its latest attempt (#636)",
-            "harness/sweeps.py:_key":
-                "the newest sweep of one knob, lane, model and machine; a settled sweep is never edited (#636)",
         },
         "instances": _i(225, 253, 254, 393, 399, 522, rules=(382, 389)), "scanners": []},
+    "a-lifecycle-with-no-declared-state": {
+        "detector": "unguarded_transition",
+        "waivers": {
+            "harness/workqueue.py:cancel":
+                "_only_pending appends WHERE id = ? AND state = 'pending' to the UPDATE it is handed (#628)",
+        },
+        "instances": _i(703, 393, 399, rules=(669, 389)), "scanners": []},
     "a-proxy-checked-in-place-of-the-property": {
         "review": r"\.exists\(\)|\.is_dir\(\)|returncode == 0|status_code == 200|\.st_size\b",
         "instances": _i(68, 101, 173, 196, 283, 322, 365), "scanners": []},

@@ -186,6 +186,43 @@ def latest_row_state(trees):
     return out
 
 
+_UPDATE = re.compile(r"(?is)\bUPDATE\s+(\w+)\s+SET\b(.*?)(?:\bWHERE\b(.*))?$")
+_STATE_SET = re.compile(r"(?i)(?<![\w.])(?:\w+\.)?(state|status)\s*=(?!=)")
+
+
+def _state_writes(tree):
+    # (node, table, column, guarded) for each UPDATE that sets a state or status column.
+    parts = {id(v) for n in _walk(tree) if isinstance(n, ast.JoinedStr) for v in n.values}
+    for n in _walk(tree):
+        text = _sql_text(n) if id(n) not in parts else None
+        m = _UPDATE.search(text) if text else None
+        if not m:
+            continue
+        where = m.group(3) or ""
+        for col in {c.lower() for c in _STATE_SET.findall(m.group(2))}:
+            guarded = re.search(rf"(?i)\b{col}\w*\b", where) is not None
+            yield n, m.group(1).lower(), col, guarded
+
+
+def unguarded_transition(trees):
+    out, writers = [], {}
+    for rel, tree in _prod(trees).items():
+        if "/migrations/" in rel:  # a migration is a one-time rewrite, not a transition
+            continue
+        owner = _innermost(tree)
+        for n, table, col, guarded in _state_writes(tree):
+            if table != "x":
+                writers.setdefault(f"{table}.{col}", {}).setdefault(rel, n.lineno)
+            if not guarded:
+                out.append(Hit(f"{rel}:{owner.get(id(n), '<module>')}", n.lineno,
+                               f"sets {table}.{col} with no WHERE on the {col} it leaves"))
+    for key, mods in writers.items():
+        if len(mods) > 1:
+            rel, line = min(mods.items())
+            out.append(Hit(f"table:{key}", line, f"{key} written from {len(mods)} modules: {', '.join(sorted(mods))}"))
+    return out
+
+
 _GUARD = re.compile(r"(?:check|guard|ensure|refuse|require)_\w+")
 
 
@@ -425,6 +462,7 @@ DETECTORS = {
     "row_index_keys": row_index_keys,
     "closed_tables": closed_tables,
     "latest_row_state": latest_row_state,
+    "unguarded_transition": unguarded_transition,
     "unreached_guards": unreached_guards,
     "ignored_options": ignored_options,
     "member_defaults": member_defaults,
