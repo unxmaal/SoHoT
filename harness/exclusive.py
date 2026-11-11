@@ -16,6 +16,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import signal
 import sys
 import threading
 import time
@@ -63,6 +64,26 @@ NODE_HELD_ENV = "LH_NODE_LOCK_HELD"
 #: Set while held, so a child that also asks (a helper running `lh ...`)
 #: does not deadlock against its own parent.
 HELD_ENV = "LH_GPU_LOCK_HELD"
+#: The id of the gpu lease HELD_ENV stands for, so a child re-checks it is still in force. #1732.
+LEASE_ENV = "LH_GPU_LEASE_ID"
+
+#: The gpu lease row is the one record of who holds this machine's GPU; the states it can be in. #1732.
+FREE, RESERVED, LOADING, LAPSED, ABANDONED = "free", "reserved", "loading", "lapsed", "abandoned"
+#: Each legal move of a gpu lease row, (from, to) -> the writers that may make it; _move refuses any other. #1732.
+MOVES = {
+    (FREE, RESERVED): {"workqueue"},
+    (FREE, LOADING): {"take"},
+    (RESERVED, RESERVED): {"workqueue"},
+    (RESERVED, LOADING): {"own"},
+    (LOADING, RESERVED): {"own"},
+    (LOADING, LOADING): {"beat"},
+    (RESERVED, FREE): {"workqueue"},
+    (LOADING, FREE): {"release"},
+    (LAPSED, FREE): {"release", "workqueue"},
+    (ABANDONED, FREE): {"reap", "release", "workqueue"},
+    (RESERVED, LAPSED): {"clock"},
+    (LOADING, LAPSED): {"clock"},
+}
 
 #: How often a waiter re-reads the holder to refresh what it reports.
 POLL_SECONDS = 0.5
@@ -111,7 +132,8 @@ def lock_path() -> Path:
 
 
 def holder_path() -> Path:
-    return _dir() / HOLDER
+    """The holder record, in the machine's home beside its generation.lock, whichever home this process writes. #1732."""
+    return _on_machine(_dir) / HOLDER
 
 
 def cloud_lock_path(slot: int) -> Path:
@@ -221,11 +243,60 @@ def _holder_alive(h: dict) -> bool:
     return h.get("job_id") is not None and wq._pid_of(h["job_id"]) is not None
 
 
+class IllegalMove(RuntimeError):
+    """A gpu lease move MOVES does not allow from the row's state, refused before anything is written. #1732."""
+
+
+class LeaseLost(RuntimeError):
+    """The gpu lease a parent holds for this child (LEASE_ENV) is no longer in force. #1732."""
+
+
+def state_of(h: dict | None, now: float | None = None) -> str:
+    """The state of one gpu lease row: a lapsed row whose holder still runs is LAPSED and still holds the GPU. #1732."""
+    if h is None or h.get("released_at") is not None:
+        return FREE
+    if not _holder_alive(h):
+        return ABANDONED
+    if float(h["expires_at"]) <= (time.time() if now is None else now):
+        return LAPSED
+    return LOADING if h.get("state") else RESERVED
+
+
+def _move(conn, h: dict | None, to: str, writer: str, kind: str = "", now: float | None = None) -> dict | None:
+    """The one writer of gpu lease rows here: refuses a move MOVES does not list, else makes it compare-and-swap; the row after, None if it lost. #1732."""
+    from harness import item_lease, resources
+    now = time.time() if now is None else now
+    was = state_of(h, now)
+    if writer not in MOVES.get((was, to), ()):
+        raise IllegalMove(f"gpu lease {h['id'] if h else '-'}: {writer} may not move it from {was} to {to}")
+    if h is None:
+        return item_lease.take(conn, resources.GPU, f"{kind} pid {os.getpid()}", state=kind, detail=kind, now=now,
+                               fits=lambda held: not _lapsed(conn, now))
+    if to == FREE:
+        item_lease.release(conn, h["id"], now=now)
+        return item_lease.row(conn, h["id"])
+    state = kind if to == LOADING else ""
+    if not item_lease.beat(conn, h["id"], now=now, expect=h.get("state") or "", state=state):
+        return None
+    return item_lease.row(conn, h["id"])
+
+
+def _lapsed(conn, now: float) -> list[dict]:
+    """Gpu lease rows past their TTL whose holder still runs: a taker waits behind them. #1732."""
+    from harness import item_lease, resources
+    return [h for h in item_lease.unreleased(conn, resources.GPU) if state_of(h, now) == LAPSED]
+
+
 def _gpu_leases(conn) -> list[dict]:
+    """The gpu lease rows that hold the GPU now: reserved, loading, or lapsed with the holder still running. #1732."""
     from harness import item_lease, resources
     if conn is None:
         return []
-    return [h for h in item_lease.live(conn, resources.GPU) if _holder_alive(h)]
+    now = time.time()
+    rows = [(h, state_of(h, now)) for h in item_lease.unreleased(conn, resources.GPU)]
+    rows = [(h, st) for h, st in rows if st in (RESERVED, LOADING, LAPSED)]
+    live_jobs = {h["job_id"] for h, st in rows if h["job_id"] is not None and st != LAPSED}
+    return [h for h, st in rows if not (st == LAPSED and h["job_id"] in live_jobs)]
 
 
 def _machine_backend(there: Path) -> str:
@@ -273,11 +344,11 @@ def _stop_hint(leases: list[dict]) -> str:
 
 
 def _reap(conn) -> None:
-    """Release this machine's gpu leases whose holder is gone, so a killed holder frees the GPU at once. #1619."""
+    """Release this machine's gpu leases whose holder is gone, lapsed ones too, so a killed holder frees the GPU at once. #1619, #1732."""
     from harness import item_lease, resources
-    for h in item_lease.live(conn, resources.GPU):
-        if not _holder_alive(h):
-            item_lease.release(conn, h["id"])
+    for h in item_lease.unreleased(conn, resources.GPU):
+        if state_of(h) == ABANDONED:
+            _move(conn, h, FREE, "reap")
 
 
 def _own(conn) -> dict | None:
@@ -333,16 +404,17 @@ def _as_is():
 
 
 def _holder(leases: list[dict]) -> dict:
+    """Who holds the GPU, from the lease row; the holder record adds to it only when it names that lease. #1732."""
     from harness import workqueue as wq
     for h in leases:
         if not h.get("state"):
             continue
         rec = holder()
-        if h.get("job_id") is None:
-            return {"kind": h["state"], "pid": h["pid"], "since": h["taken_at"],
-                    **(rec if rec.get("pid") == h["pid"] else {})}
-        if str(rec.get("job") or "") == str(h["job_id"]) and rec.get("pid") and wq.alive(int(rec["pid"])):
-            return rec
+        lapsed = {"lapsed": True} if state_of(h) == LAPSED else {}
+        if rec.get("lease") == h["id"] and rec.get("pid") and wq.alive(int(rec["pid"])):
+            return {**rec, **lapsed}
+        job = {"job": str(h["job_id"])} if h.get("job_id") is not None else {}
+        return {"kind": h["state"], "pid": h["pid"], "since": h["taken_at"], **job, **lapsed}
     if _outside(leases):
         rec = holder()
         return rec if rec.get("pid") and wq.alive(int(rec["pid"])) else {"kind": "another project's lockf"}
@@ -371,31 +443,64 @@ def _flock(announce, poll: float, wait: bool = True):
         os.close(fd)
 
 
-def _beating(lease_id: int):
+def _lost(why: str) -> None:
+    """Stop this holder: its lease is gone or about to lapse, and the GPU must not have two. #1732."""
+    print(f"gpu lease lost ({why}); stopping this process so no second one takes the GPU under it",
+          file=sys.stderr, flush=True)
+    os.kill(os.getpid(), signal.SIGTERM)
+
+
+def _beat(lease_id: int) -> bool:
+    """One beat of a held lease; False when it is no longer this holder's to beat."""
+    from harness import item_lease, resources
+    conn = _conn()
+    try:
+        h = item_lease.row(conn, lease_id)
+        if h is not None and h["resource"] != resources.GPU:
+            return item_lease.beat(conn, lease_id, expect=h["state"])
+        try:
+            return _move(conn, h, LOADING, "beat", kind=(h or {}).get("state") or "") is not None
+        except IllegalMove:
+            return False
+    finally:
+        conn.close()
+
+
+def _beating(lease_id: int, clock=time.monotonic):
+    """Beat the lease every TTL_S/3; a holder whose beat says lost, or fails until TTL_S/3 is left, stops. #1732."""
     from harness import item_lease
     stop = threading.Event()
 
     def keep():
-        while not stop.wait(item_lease.TTL_S / 3):
-            with contextlib.suppress(Exception):
-                conn = _conn()
-                try:
-                    item_lease.beat(conn, lease_id)
-                finally:
-                    conn.close()
+        ok_at, wait = clock(), item_lease.TTL_S / 3
+        while not stop.wait(wait):
+            try:
+                if _beat(lease_id):
+                    ok_at, wait = clock(), item_lease.TTL_S / 3
+                    continue
+                why = "its lease lapsed, was released or changed hands"
+            except Exception as exc:  # noqa: BLE001 - a store that will not answer is retried until the deadline
+                gone = clock() - ok_at
+                why = f"no beat for {gone:.0f}s: {exc}"
+                if gone < item_lease.TTL_S * 2 / 3:
+                    wait = item_lease.TTL_S / 12
+                    continue
+            if not stop.is_set():
+                _lost(why)
+            return
     threading.Thread(target=keep, name="gpu-lease", daemon=True).start()
     return stop
 
 
 @contextlib.contextmanager
 def _gpu(kind: str, announce, poll: float, wait: bool = True):
-    """The gpu lease, then the flock other projects' `lockf -k generation.lock` takes (DECISION #210); yields (taken, waited). #1619."""
-    with _lease(kind, announce, poll, wait) as (got, waited):
+    """The gpu lease, then the flock other projects' `lockf -k generation.lock` takes (DECISION #210); yields (taken, waited, lease id). #1619."""
+    with _lease(kind, announce, poll, wait) as (got, waited, lease):
         if not got:
-            yield False, waited
+            yield False, waited, None
             return
         with _flock(announce, poll, wait) as (locked, lock_waited):
-            yield locked, waited or lock_waited
+            yield locked, waited or lock_waited, lease
 
 
 @contextlib.contextmanager
@@ -409,21 +514,27 @@ def _lease(kind: str, announce, poll: float, wait: bool = True):
             raise refuse(kind, exc) from exc
         if announce:
             announce(f"no gpu lease ({exc}); {kind} holds the local lock only")
-        yield True, False
+        yield True, False, None
         return
     try:
         own = _own(conn)
-        if own is not None and item_lease.beat(conn, own["id"], state=kind):
+        try:
+            own = own and _move(conn, own, LOADING, "own", kind=kind)
+        except IllegalMove:
+            own = None
+        if own:
+            stop = _beating(own["id"])
             try:
-                yield True, False
+                yield True, False, own["id"]
             finally:
+                stop.set()
                 with contextlib.suppress(Exception):
-                    item_lease.beat(conn, own["id"], state="")
+                    _move(conn, item_lease.row(conn, own["id"]), RESERVED, "own")
             return
         waited, said = False, None
         while True:
             _reap(conn)
-            got = item_lease.take(conn, resources.GPU, f"{kind} pid {os.getpid()}", state=kind, detail=kind)
+            got = _move(conn, None, LOADING, "take", kind=kind)
             if got is not None or not wait:
                 break
             waited = True
@@ -440,15 +551,15 @@ def _lease(kind: str, announce, poll: float, wait: bool = True):
                 said = who.split(" for ")[0]
             time.sleep(poll)
         if got is None:
-            yield False, waited
+            yield False, waited, None
             return
         stop = _beating(got["id"])
         try:
-            yield True, waited
+            yield True, waited, got["id"]
         finally:
             stop.set()
             with contextlib.suppress(Exception):
-                item_lease.release(conn, got["id"])
+                _move(conn, item_lease.row(conn, got["id"]), FREE, "release")
     finally:
         conn.close()
 
@@ -499,10 +610,10 @@ def _node(node: str, kind: str, announce, poll: float):
 @contextlib.contextmanager
 def gpu_now(kind: str):
     """Hold this machine's gpu lease only if it is free now, or this process's job holds it; yields whether held. #1619."""
-    if os.environ.get(HELD_ENV) == "1":
+    if _inherited():
         yield True
         return
-    with _gpu(kind, None, POLL_SECONDS, wait=False) as (got, _):
+    with _gpu(kind, None, POLL_SECONDS, wait=False) as (got, _, _lease_id):
         yield got
 
 
@@ -700,7 +811,7 @@ def held(kind: str, announce=None, poll: float = POLL_SECONDS, deadline_s: float
         with _named(), _node(node, kind, announce, poll) as waited:
             yield waited
         return
-    if kind not in EXCLUSIVE | BATCH or os.environ.get(HELD_ENV) == "1":
+    if kind not in EXCLUSIVE | BATCH or _inherited():
         yield False
         return
     if remote(kind):
@@ -709,13 +820,13 @@ def held(kind: str, announce=None, poll: float = POLL_SECONDS, deadline_s: float
             yield False
         return
 
-    with _gpu(kind, announce, poll) as (_, waited), _leased(announce, poll) as lease_waited:
-        _write_holder(kind, deadline_s)
-        os.environ[HELD_ENV] = "1"
+    with _gpu(kind, announce, poll) as (_, waited, lease), _leased(announce, poll) as lease_waited:
+        _write_holder(kind, deadline_s, lease=lease)
+        _hand_down(lease)
         try:
             yield waited or lease_waited
         finally:
-            os.environ.pop(HELD_ENV, None)
+            _hand_down(None, held=False)
             with contextlib.suppress(OSError):
                 holder_path().unlink()
 
@@ -761,10 +872,10 @@ def _cloud(kind: str, announce, poll: float, deadline_s: float | None):
 @contextlib.contextmanager
 def try_held(kind: str):
     """Hold the machine for `kind` only if it is free now; yields whether it is held."""
-    if os.environ.get(HELD_ENV) == "1":
+    if _inherited():
         yield True
         return
-    with _gpu(kind, None, POLL_SECONDS, wait=False) as (got, _):
+    with _gpu(kind, None, POLL_SECONDS, wait=False) as (got, _, lease):
         if not got:
             yield False
             return
@@ -778,12 +889,12 @@ def try_held(kind: str):
                 yield False
                 return
             with _renewing(mine, who) if who else contextlib.nullcontext():
-                _write_holder(kind)
-                os.environ[HELD_ENV] = "1"
+                _write_holder(kind, lease=lease)
+                _hand_down(lease)
                 try:
                     yield True
                 finally:
-                    os.environ.pop(HELD_ENV, None)
+                    _hand_down(None, held=False)
                     with contextlib.suppress(OSError):
                         holder_path().unlink()
 
@@ -804,9 +915,40 @@ def beat(now: float | None = None) -> None:
         os.replace(tmp, path)
 
 
-def _write_holder(kind: str, deadline_s: float | None = None, path: Path | None = None) -> None:
+def _hand_down(lease: int | None, held: bool = True) -> None:
+    """Tell children this process holds the GPU and under which lease (None: the flock alone), or no longer. #1732."""
+    os.environ.pop(LEASE_ENV, None)
+    if not held:
+        os.environ.pop(HELD_ENV, None)
+        return
+    os.environ[HELD_ENV] = "1"
+    if lease is not None:
+        os.environ[LEASE_ENV] = str(lease)
+
+
+def _inherited() -> bool:
+    """Whether a parent holds the GPU for this process; LeaseLost when the lease it names is no longer in force. #1732."""
+    if os.environ.get(HELD_ENV) != "1":
+        return False
+    lease = os.environ.get(LEASE_ENV, "").strip()
+    if not lease.isdigit():
+        return True
+    from harness import item_lease
+    try:
+        with _machine() as conn:
+            h = item_lease.row(conn, int(lease)) if conn is not None else None
+    except StoreDown:
+        return True
+    if h is not None and state_of(h) in (RESERVED, LOADING):
+        return True
+    raise LeaseLost(f"the gpu lease {lease} this process was started under is {state_of(h)}, so it does not hold the GPU")
+
+
+def _write_holder(kind: str, deadline_s: float | None = None, path: Path | None = None, lease: int | None = None) -> None:
     from harness import workqueue
     record = {"kind": kind, "pid": os.getpid(), "since": time.time()}
+    if lease is not None:
+        record["lease"] = int(lease)
     if hasattr(os, "getpgid"):
         record["pgid"] = os.getpgid(0)
     if os.environ.get(workqueue.JOB_ENV, "").strip():
