@@ -112,15 +112,63 @@ UP_TTL_S = 10.0
 #: node name -> (monotonic time, reachable).
 _REACH: dict = {}
 _REACHING: dict = {}
-#: node name -> the routing state last written to the reach log. #1808.
+#: node name, or (node, model name), -> the routing state last written to the reach log. #1808, #1810.
 _ROUTED: dict = {}
+#: (node, model name) -> monotonic time the node answered that name with a server error. #1810.
+_NAME_DOWN: dict = {}
+#: model name -> (monotonic time, NAME or NODE, why) of its last node failure, from LiteLLM's fallback event. #1810.
+_FAULT: dict = {}
+FAULT_TTL_S = 900.0
+NAME, NODE = "name", "node"
+#: openai/httpx/LiteLLM classes meaning the node sent no answer; LiteLLM reports a dropped connection as a 500.
+_NODE_FAULTS = frozenset({"APIConnectionError", "APITimeoutError", "Timeout", "TransportError"})
 
 
-def _routed(name: str, ok: bool, why: str) -> None:
+def _routed(name: str, ok: bool, why: str, model: str = "") -> None:
     state = node_reach.UP if ok else node_reach.DOWN
-    if _ROUTED.get(name, node_reach.UP) != state:
-        _ROUTED[name] = state
-        node_reach.record(name, state, why)
+    key = (name, model) if model else name
+    if _ROUTED.get(key, node_reach.UP) != state:
+        _ROUTED[key] = state
+        node_reach.record(name, state, why, model=model)
+
+
+def fault(exc) -> tuple[str, str]:
+    """(NAME, why) for an HTTP 5xx the node answered, else (NODE, why): refused, dropped, timed out or unknown."""
+    kinds, seen, link = set(), set(), exc
+    while link is not None and id(link) not in seen:
+        seen.add(id(link))
+        kinds |= {c.__name__ for c in type(link).__mro__}
+        if "Connection error" in str(link):
+            kinds.add("APIConnectionError")
+        link = getattr(link, "__cause__", None) or getattr(link, "__context__", None)
+    try:
+        status = int(getattr(exc, "status_code", 0) or 0)
+    except (TypeError, ValueError):
+        status = 0
+    why = f"{type(exc).__name__} {status}" if status else type(exc).__name__
+    if status >= 500 and kinds & _NODE_FAULTS:
+        return NODE, f"{why}, no answer from the node"
+    return (NAME if status >= 500 else NODE), why
+
+
+def _note_fault(model, exc) -> None:
+    now = time.monotonic()
+    for key in [k for k, v in _FAULT.items() if now - v[0] > FAULT_TTL_S]:
+        _FAULT.pop(key, None)
+    if model and exc is not None:
+        _FAULT[str(model)] = (now, *fault(exc))
+
+
+def _name_down(node: str, model: str, cooldown: float) -> bool:
+    """Whether the node failed this one name inside its cooldown; an ended mark is dropped and logged up."""
+    seen = _NAME_DOWN.get((node, model))
+    if seen is None:
+        return False
+    if time.monotonic() - seen < cooldown:
+        return True
+    _NAME_DOWN.pop((node, model), None)
+    _routed(node, True, "its cooldown ended", model=model)
+    return False
 
 
 async def _connects(base: str, timeout: float, ipv4: bool = True) -> bool:
@@ -310,6 +358,9 @@ class ServedModel(CustomLogger):
                 # Waiting out the connect timeout and retries ends in a bare 500. #823.
                 _refuse(f"node {entry[nodes.NODE_KEY]} is down and {nodes.NO_LOCAL_COPY} {model}")
             data["model"] = model + nodes.LOCAL_SUFFIX
+        elif entry.get(nodes.NODE_KEY) and _entry(model + nodes.LOCAL_SUFFIX) \
+                and _name_down(str(entry[nodes.NODE_KEY]), model, _cooldown(entry)):
+            data["model"] = model + nodes.LOCAL_SUFFIX
         await hold_for_batch(data)
         return data
 
@@ -320,6 +371,13 @@ class ServedModel(CustomLogger):
     async def async_post_call_failure_hook(self, request_data, original_exception, user_api_key_dict,
                                            traceback_str=None):
         await _finished((request_data or {}).get("litellm_call_id"))
+
+    async def log_success_fallback_event(self, original_model_group, kwargs, original_exception):
+        """LiteLLM awaits this before the reply's headers hook: it says why the node failed the name. #1810."""
+        _note_fault(original_model_group, original_exception)
+
+    async def log_failure_fallback_event(self, original_model_group, kwargs, original_exception):
+        _note_fault(original_model_group, original_exception)
 
     async def async_log_success_event(self, kwargs, response_obj, start_time, end_time):
         await _finished((kwargs or {}).get("litellm_call_id"))
@@ -357,9 +415,16 @@ class ServedModel(CustomLogger):
             headers["x-sohot-fallback"] = str(routed[nodes.NODE_KEY])
             # Only a request sent to the node marks it down; one already sent @local must not extend the mark. #1808.
             if not str(data.get("model") or "").endswith(nodes.LOCAL_SUFFIX):
-                # A node that failed one name is skipped for every name it holds until its cooldown ends.
-                _REACH[str(routed[nodes.NODE_KEY])] = (time.monotonic(), False)
-                _routed(str(routed[nodes.NODE_KEY]), False, f"{asked} fell back")
+                where = str(routed[nodes.NODE_KEY])
+                at, kind, why = _FAULT.pop(asked, (0.0, NODE, ""))
+                if kind == NAME and time.monotonic() - at <= FAULT_TTL_S:
+                    # The node answered with a server error: only this name is skipped. #1810.
+                    _NAME_DOWN[(where, asked)] = time.monotonic()
+                    _routed(where, False, f"{asked} answered {why}", model=asked)
+                else:
+                    # Refused, dropped, timed out or unexplained: every name the node holds is skipped.
+                    _REACH[where] = (time.monotonic(), False)
+                    _routed(where, False, f"{asked} fell back" + (f": {why}" if why else ""))
         return headers or None
 
 
