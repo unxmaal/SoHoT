@@ -563,7 +563,7 @@ def test_ps_output_parses_elapsed_times_in_every_form():
     assert [(p.pid, p.elapsed_s) for p in got] == [(12, 62.0), (13, 86400 + 7384.0)]
 
 
-def test_progress_files_are_read_from_run_directories_and_only_while_running(tmp_path):
+def test_progress_files_are_read_from_run_directories_while_running_or_unreadable(tmp_path):
     for name, state in (("a", "running"), ("b", "done")):
         d = tmp_path / name
         d.mkdir()
@@ -571,7 +571,7 @@ def test_progress_files_are_read_from_run_directories_and_only_while_running(tmp
     (tmp_path / "c").mkdir()
     (tmp_path / "c" / "progress.json").write_text("{torn", encoding="utf-8")
     got = wd.ProgressFiles([tmp_path]).runs()
-    assert [r["_dir"] for r in got] == [str(tmp_path / "a")]
+    assert [r["_dir"] for r in got] == [str(tmp_path / "a"), str(tmp_path / "c")]
     assert wd.ProgressFiles([tmp_path / "missing"]).runs() == []
 
 

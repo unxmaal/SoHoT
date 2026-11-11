@@ -26,7 +26,7 @@ import sys
 import time
 from pathlib import Path
 
-from harness import audio, completion, context, delegate, ds4, env, knobs, paths, reasons, router
+from harness import audio, completion, context, delegate, ds4, env, knobs, paths, reasons, router, run_state
 from harness.engines import Engine, names as engine_names, parse_options, resolve
 from harness.checks import speech as speech_check
 
@@ -1713,9 +1713,9 @@ def _execute_at(args, overrides: dict) -> int:
                  kept=len(results) - fresh, dropped=eye.left_cases())
         if outdir:
             watch.mark_stop(outdir, watch.INCUMBENT_SILENT)
-        progress.write("stopped", stopped.why)
+        progress.write(run_state.W_STOPPED, stopped.why)
         return watch.SILENT
-    state, why = ("paused", stopped.why) if stopped else ("done", "")
+    state, why = (run_state.W_PAUSED, stopped.why) if stopped else (run_state.W_DONE, "")
     code = watch.PAUSED if stopped else 0
 
     if not results:

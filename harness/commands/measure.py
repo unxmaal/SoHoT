@@ -1223,7 +1223,7 @@ def _confirm_job(vid: int) -> int:
 def _confirm_dir(lane: str, pair: list, repeat: int, side: str, since: float = 0.0) -> tuple:
     """(dir, None) for the newest unfinished confirmation of this pair and exam, to resume; (dir, receipt) for one
     finished since `since` that no verdict was read from, to record; (None, None) for neither. #1357."""
-    from harness import holdout
+    from harness import holdout, run_state
     from harness import memory_store as ms
     for out in sorted((paths.home() / "runs").glob(f"*-confirm-{lane}"), reverse=True):
         had = watch.read(out)
@@ -1231,7 +1231,7 @@ def _confirm_dir(lane: str, pair: list, repeat: int, side: str, since: float = 0
         if not (had and list(ident.get("candidates") or ()) == list(pair) and int(ident.get("repeat") or 1) == repeat
                 and (ident.get("split") or "all") == side):
             continue
-        if watch.read_progress(out).get("state") != "done":
+        if run_state.of(out).written != run_state.W_DONE:
             return out, None
         if ident.get("split_version", holdout.version(lane)) != holdout.version(lane):
             continue

@@ -431,11 +431,11 @@ class ProgressFiles:
             if m and Path(m.group(1)).is_absolute():
                 found.add(Path(m.group(1)) / self.NAME)
         out = []
+        from harness import run_state
         for path in sorted(found):
-            from evals.watch import read_progress
-            got = read_progress(path.parent)
-            if isinstance(got, dict) and got.get("state") == "running":
-                out.append({**got, "_dir": str(path.parent)})
+            state = run_state.of(path.parent)
+            if state.name in run_state.PAUSABLE:
+                out.append({**state.progress, "_dir": str(path.parent)})
         return out
 
     def pause(self, run: dict, reason: str = "") -> str:

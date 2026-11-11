@@ -9,6 +9,8 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from harness import run_state
+
 #: Exit status of a run paused at --stop-at or on request, rows checkpointed. #813.
 PAUSED = 75
 #: Exit status of a --resume whose checkpoint is another exam. #813.
@@ -18,14 +20,14 @@ SILENT = 78
 #: The stop file reason of that run. #1656.
 INCUMBENT_SILENT = "incumbent_silent"
 
-CHECKPOINT = "checkpoint.jsonl"
-PROGRESS = "progress.json"
+CHECKPOINT = run_state.CHECKPOINT
+PROGRESS = run_state.PROGRESS
 #: Touch this file in a run's directory, or send the run SIGUSR1, and it pauses after the case in flight.
-PAUSE_FILE = "pause"
+PAUSE_FILE = run_state.PAUSE_FILE
 #: How a run that paused at its stop time says so. #1618.
 AT_STOP_TIME = "paused at its stop time"
 #: The watchdog writes this, naming its criterion, before it signals a run to stop. #1409.
-STOP_FILE = "stopped"
+STOP_FILE = run_state.STOP_FILE
 #: The one stop that ends a run as a suspected harness defect rather than pausing it. #1409.
 OVERRUN = "overrun"
 #: The pause reason of a case whose KV would leave less than memory.MIN_HEADROOM_GB safely available. #1482.
@@ -282,7 +284,9 @@ class Progress:
 
     def write(self, state: str = "", why: str = "", run_id=None) -> dict:
         pgid = os.getpgid(0) if hasattr(os, "getpgid") else None
-        state = state or ("yielding" if self.eye.yielding_since is not None else "running")
+        state = state or (run_state.W_YIELDING if self.eye.yielding_since is not None else run_state.W_RUNNING)
+        if state not in run_state.WRITTEN:
+            raise ValueError(f"progress state {state!r} is none of {run_state.WRITTEN}")
         got = {"state": state, "why": why, "done": self.done, "total": self.total,
                "serving_yields": self.eye.served(),
                "specs": self.specs, "planned_s_per_case": self.eye.planned,
