@@ -229,7 +229,7 @@
   "heading": "A lifecycle with no declared state",
   "source": "SKILL.md",
   "tier": 2,
-  "bitten": 2,
+  "bitten": 3,
   "trigger": "does an entity move through stages (queued, running, paused, done; deployed, rolled back; pending, closed)? Is its current stage one field, written only by one function that refuses an illegal move? Or is it inferred from which columns are null, which flags are set, whether a file or process exists, or which row is newest, and written from several places?",
   "test_shape": "list the states and the legal moves as a table in one module. Assert every write goes through it, that an illegal move is refused, and that a concurrent second claim of the same move loses. If the stage is inferred, build the combination no branch handles and assert it is refused rather than read as some state. `State is whichever row came last` is the newest-row special case."
  },
