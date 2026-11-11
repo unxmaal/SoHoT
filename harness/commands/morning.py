@@ -175,6 +175,10 @@ def render(r: dict) -> list[str]:
         out.append(f"canary    {r['canary']}")
     if r.get("parked"):
         out.append("nodes     " + ", ".join(f"{n} parked" for n in r["parked"]))
+    if r.get("reach"):
+        from harness import node_reach
+        out.extend(("          " if r.get("parked") or i else "nodes     ") + node_reach.line(n)
+                   for i, n in enumerate(r["reach"]))
     d = r["deploy"]
     if not d.get("available"):
         out.append(f"deploy    unavailable: {d.get('why')}")
@@ -190,7 +194,7 @@ def render(r: dict) -> list[str]:
 
 
 def cmd_morning(a) -> int:
-    from harness import audio_models, canary, context_report as cr, heartbeat, monitor, morning, paths
+    from harness import audio_models, canary, context_report as cr, heartbeat, monitor, morning, node_reach, paths
 
     now = time.time()
     try:
@@ -204,7 +208,8 @@ def cmd_morning(a) -> int:
         r = morning.gather(conn, now, since, beat=heartbeat.summary(), where=paths.deploy_checkout(),
                            health=morning.lane_health, canary=canary.morning_line, parked=morning.parked_nodes,
                            incumbent=morning.repo_incumbent, monitor=monitor.morning, pulls=morning.stuck_prs,
-                           tts=audio_models.morning, waiting=morning.deploy_wait)
+                           tts=audio_models.morning, waiting=morning.deploy_wait,
+                           reach=node_reach.summary)
     finally:
         conn.close()
     lines = render(r)
