@@ -15,7 +15,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from harness import deploy_switch, paths
+from harness import deploy_switch, job_state as js, paths
 from harness import workqueue as wq
 
 KIND = "deploy"
@@ -134,9 +134,9 @@ def _wait_alerted() -> Path:
 def waiting_since(conn, job_id) -> tuple[float, int]:
     """(when, first job id) deploys began waiting: this job's queueing, or that of the pending jobs it superseded. #1672."""
     key, since, first = int(job_id), None, int(job_id)
-    for r in conn.execute("SELECT id, created_at, state, note FROM jobs WHERE kind = ? AND id <= ? ORDER BY id DESC",
+    for r in conn.execute("SELECT id, created_at, state, reason FROM jobs WHERE kind = ? AND id <= ? ORDER BY id DESC",
                           (KIND, key)).fetchall():
-        if int(r["id"]) != key and not (r["state"] == wq.CANCELLED and str(r["note"] or "").startswith(SUPERSEDED)):
+        if int(r["id"]) != key and not (r["state"] == wq.CANCELLED and r["reason"] == js.SUPERSEDED):
             break
         since, first = float(r["created_at"]), int(r["id"])
     return (time.time() if since is None else since), first
@@ -336,10 +336,9 @@ def _queue(conn, now, *, src, sha: str, force: bool, green, environ) -> dict:
             more = f"; nor did the {len(wants) - 1} older main commit(s) since live {deployed[:12]}" if len(wants) > 1 else ""
             return {"queued": None, "why": refused[0] + more, "superseded": []}
         superseded = [wq.label(r["id"]) for r in c.execute(
-            "SELECT id FROM jobs WHERE kind = ? AND state = ? AND output != ?", (KIND, wq.PENDING, want))]
-        c.execute("UPDATE jobs SET state = ?, finished_at = ?, note = ? WHERE kind = ? AND state = ? AND output != ?",
-                  (wq.CANCELLED, time.time() if now is None else now, f"{SUPERSEDED}{want[:12]}", KIND,
-                   wq.PENDING, want))
+            "SELECT id FROM jobs WHERE kind = ? AND state = ? AND output != ?", (KIND, wq.PENDING, want)).fetchall()
+            if js.move(c, r["id"], wq.PENDING, wq.CANCELLED, js.SUPERSEDED, f"{SUPERSEDED}{want[:12]}",
+                       finished_at=time.time() if now is None else now)]
         c.commit()
         job = wq.add([*SOH, "deploy", "run", want], title=f"deploy {want[:12]}", cwd=str(src), kind=KIND,
                      output=want, priority=PRIORITY, requested_by="deploy", conn=c)
@@ -668,8 +667,8 @@ def settle(conn=None, now: float | None = None, alive=wq.alive) -> list[dict]:
 
 
 def _close_job(c, job_id, state: str, rc, note: str, now: float) -> None:
-    c.execute("UPDATE jobs SET state = ?, rc = COALESCE(?, rc), finished_at = ?, note = ? WHERE id = ? AND state = ?",
-              (state, rc, now, note[:2000], int(job_id), wq.RUNNING))
+    why = js.INTERRUPTED if rc is None else js.DEPLOYED if state == wq.DONE else js.DEPLOY_FAILED
+    js.move(c, job_id, wq.RUNNING, state, why, note[:2000], finished_at=now, **({} if rc is None else {"rc": rc}))
     c.commit()
 
 

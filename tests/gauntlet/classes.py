@@ -223,10 +223,7 @@ INDEX = {
         "instances": _i(225, 253, 254, 393, 399, 522, rules=(382, 389)), "scanners": []},
     "a-lifecycle-with-no-declared-state": {
         "detector": "unguarded_transition",
-        "waivers": {
-            "harness/workqueue.py:cancel":
-                "_only_pending appends WHERE id = ? AND state = 'pending' to the UPDATE it is handed (#628)",
-        },
+        "waivers": {},
         "instances": _i(703, 393, 399, rules=(669, 389)), "scanners": []},
     "a-proxy-checked-in-place-of-the-property": {
         "review": r"\.exists\(\)|\.is_dir\(\)|returncode == 0|status_code == 200|\.st_size\b",

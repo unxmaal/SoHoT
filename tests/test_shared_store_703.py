@@ -16,6 +16,7 @@ from harness import memory_store as ms
 from harness import reasons
 from harness import workqueue as wq
 from tests import conftest
+from tests import job_rows
 
 REPO = Path(__file__).resolve().parent.parent
 OTHER = {"hw_model": "Other1,1", "os": "Linux", "arch": "x86_64", "host": "b-host"}
@@ -120,7 +121,7 @@ def test_a_machine_with_no_machines_row_recovers_nothing(monkeypatch):
 def test_recover_still_fails_this_machines_own_interrupted_job():
     job = wq.add([sys.executable, "-c", "pass"])
     job["state"] = wq.RUNNING
-    wq._write(job)
+    job_rows.put(job)
     wq.run_pending()
     got = wq.get(job["id"])
     assert got["state"] == wq.FAILED and "interrupted" in got["note"]

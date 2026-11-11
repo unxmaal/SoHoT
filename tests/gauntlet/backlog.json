@@ -17,11 +17,7 @@
  ],
  "a-lifecycle-with-no-declared-state": [
   "harness/paused.py:save",
-  "harness/paused.py:settle",
-  "harness/workqueue.py:_next_item",
-  "harness/workqueue.py:_repend",
-  "harness/workqueue.py:_write",
-  "table:jobs.state"
+  "harness/paused.py:settle"
  ],
  "each-half-verified-against-its-own-spec-the-seam-against-nothing": [
   "env:ACESTEP_ROOT",

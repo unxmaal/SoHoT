@@ -245,6 +245,12 @@ def _add_job_resource(conn) -> None:
         conn.execute("ALTER TABLE jobs ADD COLUMN resource TEXT NOT NULL DEFAULT ''")
 
 
+def _add_job_reason(conn) -> None:
+    """jobs.reason on an older store; an earlier job's reason is '' unless its note names one. #1728."""
+    if "reason" not in _columns(conn, "jobs"):
+        conn.execute("ALTER TABLE jobs ADD COLUMN reason TEXT NOT NULL DEFAULT ''")
+
+
 def _add_request_purpose(conn) -> None:
     """gateway_requests.purpose on an older store; every earlier row is 'unknown'. #825."""
     if "purpose" not in _columns(conn, "gateway_requests"):

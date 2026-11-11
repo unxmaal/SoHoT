@@ -6,6 +6,7 @@ import pytest
 from harness import adopt, cli, lanes, reverify, runs, workqueue as wq
 from harness import memory_store as ms
 from tests import conftest
+from tests import job_rows
 
 DAY = 86400.0
 NOW = 1_800_000_000.0
@@ -211,7 +212,7 @@ def test_a_usage_regression_already_reverified_since_the_switch_does_not_requeue
     _switch_with_errors(conn)
     check(conn)
     job = queued(conn)[0]
-    wq._write({**job, "state": wq.DONE, "rc": 0}, conn=conn)
+    job_rows.put({**job, "state": wq.DONE, "rc": 0}, conn=conn)
     record_run(conn, "code", cases("q3-4b", 10), at=NOW + 60, job_id=job["id"])
     check(conn, now=NOW + 120)
     assert len(queued(conn)) == 1
@@ -271,7 +272,7 @@ def _queue_and_finish(conn, results, *, rc=0, state=wq.DONE, failure_class="",
                       lane="code"):
     check(conn, lane=lane)
     job = queued(conn)[-1]
-    wq._write({**job, "state": state, "rc": rc}, conn=conn)
+    job_rows.put({**job, "state": state, "rc": rc}, conn=conn)
     if results is not None:
         record_run(conn, lane, results, at=NOW + 60, job_id=job["id"],
                    failure_class=failure_class,
@@ -399,7 +400,7 @@ def test_a_resumed_rerun_is_judged_once_its_continuation_finishes(upgraded):
     job = _queue_and_finish(conn, cases("q3-4b", 3, total=3), rc=75, state=wq.PAUSED)
     check(conn, now=NOW + 120)
     nxt = _continuation(conn, {job["id"]})
-    wq._write({**nxt, "state": wq.DONE, "rc": 0}, conn=conn)
+    job_rows.put({**nxt, "state": wq.DONE, "rc": 0}, conn=conn)
     rid = runs.for_job(conn, int(job["id"]))["id"]
     conn.execute("UPDATE runs SET job_id = ? WHERE id = ?", (int(nxt["id"]), rid))
     record_run(conn, "code", cases("q3-4b", 10), at=NOW + 200, job_id=nxt["id"],
@@ -421,7 +422,7 @@ def test_a_paused_continuation_keeps_one_out_and_resume(upgraded):
     job = _queue_and_finish(conn, cases("q3-4b", 2, total=2), rc=75, state=wq.PAUSED)
     check(conn, now=NOW + 120)
     first = _continuation(conn, {job["id"]})
-    wq._write({**first, "state": wq.PAUSED, "rc": 75}, conn=conn)
+    job_rows.put({**first, "state": wq.PAUSED, "rc": 75}, conn=conn)
     rid = runs.for_job(conn, int(job["id"]))["id"]
     conn.execute("UPDATE runs SET job_id = ? WHERE id = ?", (int(first["id"]), rid))
     check(conn, now=NOW + 300)
@@ -442,7 +443,7 @@ def test_an_incumbent_that_now_beats_the_served_model_is_flagged(conn):
     adopt.record(conn, adopt.Verdict("code", "q3-4b", "q3-8b", True, "won"))
     check(conn)
     job = queued(conn)[0]
-    wq._write({**job, "state": wq.DONE, "rc": 0}, conn=conn)
+    job_rows.put({**job, "state": wq.DONE, "rc": 0}, conn=conn)
     record_run(conn, "code", cases("q3-8b", 1) + cases("q3-4b", 10),
                at=NOW + 60, job_id=job["id"])
     check(conn, now=NOW + 120)

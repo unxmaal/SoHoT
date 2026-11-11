@@ -631,6 +631,34 @@ Test: tests/test_workqueue.py::test_cancel_refuses_a_finished_job
 - **THEN** cancel raises "no process"
 Test: tests/test_workqueue.py::test_cancel_refuses_a_running_job_with_no_process_on_this_machine
 
+### Requirement: A job's state moves only by one transition table, each move a compare-and-swap
+harness/job_state.py SHALL hold the only table of legal `jobs.state` moves, each with the reasons it may carry, and every state write SHALL be one UPDATE guarded by the state it leaves that also writes `jobs.reason`; nothing leaves `done`, `failed`, `cancelled` or `paused`. A running job's exit SHALL be chosen from its flag files and rc in one order (cancel, deploy stop, deploy hand-off, rc 0 or other, then for rc 75 the item flag, the deploy pause flag, a contention pause, else `paused`), and its flag files SHALL be cleared when it leaves running. A job's pid file SHALL name its process only while that pid leads its own process group.
+
+#### Scenario: A cancel racing a natural exit
+- **WHEN** a job's process exits 0 and the worker records it `done` before the cancel stops a process already gone
+- **THEN** the job stays `done` with rc 0
+Test: tests/test_job_state_1728.py::test_a_cancel_racing_a_natural_exit_cannot_turn_done_into_cancelled
+
+#### Scenario: An illegal move
+- **WHEN** a move out of a terminal state, or with a reason its move does not carry, is asked
+- **THEN** it is refused and nothing is written
+Test: tests/test_job_state_1728.py::test_an_illegal_move_is_refused_and_writes_nothing
+
+#### Scenario: A second writer
+- **WHEN** two writers move the same running job
+- **THEN** the second finds it no longer running and writes nothing
+Test: tests/test_job_state_1728.py::test_a_second_writer_of_the_same_move_loses
+
+#### Scenario: Flag precedence
+- **WHEN** a job exits with any set of cancel, stop, item and deploy flags and any rc
+- **THEN** it moves as the order above says
+Test: tests/test_job_state_1728.py::test_an_exit_moves_by_flag_precedence_then_rc
+
+#### Scenario: A reused pid
+- **WHEN** a job's pid file names a live process that leads no process group
+- **THEN** it is not the job's process
+Test: tests/test_job_state_1728.py::test_a_live_pid_that_leads_no_group_is_not_the_jobs_process
+
 ### Requirement: A job's environment names it so its runs link back
 run_one SHALL set `LH_JOB_ID` to the job id in the command's environment, and a run stored under that variable SHALL be linked to the job; a run stored with no or an unknown job id SHALL link to none.
 
