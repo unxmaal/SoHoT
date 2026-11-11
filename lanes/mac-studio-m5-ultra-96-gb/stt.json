@@ -143,43 +143,6 @@
    "until": "version:mlx-audio>0.5.3"
   },
   {
-   "candidate": "stt:mlx-community/nemotron-3.5-asr-streaming-0.6b-8bit",
-   "decided_at": "2026-11-03T03:22:25Z",
-   "detail": "stt: does not beat the incumbent on the lane's metric; significantly worse: 19 lost against 5 gained, p=0.01; comparison 3 on this holdout, so alpha 0.05/3 = 0.0167; dev: 8 gained, 77 lost, p=0.00",
-   "exam": {
-    "about": "0.6B params, 8bit",
-    "candidate": "nemotron-3.5-asr-streaming-0.6b-8bit",
-    "cases": 480,
-    "first_s": 1.283,
-    "median_s": 0.149,
-    "metrics": {
-     "wer": 0.0329
-    },
-    "model": "nemotron-3.5-asr-streaming-0.6b-8bit",
-    "not_run": "",
-    "pass_rate": 0.967,
-    "passed": 464,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-03T03:22:25Z",
-    "served_as": "",
-    "source": "",
-    "total": 480,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "declined",
-   "proposal": "mlx-community/nemotron-3.5-asr-streaming-0.6b-8bit",
-   "reason": "candidate",
-   "receipt_key": "nemotron-3.5-asr-streaming-0.6b-8bit",
-   "run_id": 679,
-   "serves": false,
-   "status": "rejected",
-   "tier": "adopt",
-   "until": ""
-  },
-  {
    "candidate": "stt:mlx-community/whisper-large-v3-mlx",
    "decided_at": "2026-10-19T22:58:04Z",
    "detail": "stt: lane too small, needs 261 holdout cases: 133 cannot show +0.20 per cell at power 0.8 at any repeat up to 16, so about 427 more stt cases are needed before a null says anything about whisper-large",
@@ -433,6 +396,117 @@
    "until": ""
   },
   {
+   "candidate": "stt:mlx-community/nemotron-3.5-asr-streaming-0.6b-8bit",
+   "decided_at": "2026-11-11T03:09:11Z",
+   "detail": "1 case(s) passed a screen",
+   "exam": {
+    "about": "0.6B params, 8bit",
+    "candidate": "nemotron-3.5-asr-streaming-0.6b-8bit",
+    "cases": 480,
+    "first_s": 1.283,
+    "median_s": 0.149,
+    "metrics": {
+     "wer": 0.0329
+    },
+    "model": "nemotron-3.5-asr-streaming-0.6b-8bit",
+    "not_run": "",
+    "pass_rate": 0.967,
+    "passed": 464,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-03T03:22:25Z",
+    "served_as": "",
+    "source": "",
+    "total": 480,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "screened",
+   "proposal": "mlx-community/nemotron-3.5-asr-streaming-0.6b-8bit",
+   "reason": "candidate",
+   "receipt_key": "nemotron-3.5-asr-streaming-0.6b-8bit",
+   "run_id": 826,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "stt:mlx-community/whisper-tiny",
+   "decided_at": "2026-11-11T03:10:01Z",
+   "detail": "1 case(s) passed a screen",
+   "exam": {
+    "about": "",
+    "candidate": "whisper-tiny",
+    "cases": 480,
+    "first_s": 3.573,
+    "median_s": 0.093,
+    "metrics": {
+     "wer": 0.0924
+    },
+    "model": "whisper-tiny",
+    "not_run": "",
+    "pass_rate": 0.815,
+    "passed": 391,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-02T07:47:31Z",
+    "served_as": "",
+    "source": "",
+    "total": 480,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "screened",
+   "proposal": "mlx-community/whisper-tiny",
+   "reason": "candidate",
+   "receipt_key": "whisper-tiny",
+   "run_id": 832,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "stt:mlx-community/whisper-tiny,backend=whisper",
+   "decided_at": "2026-11-11T03:10:01Z",
+   "detail": "1 case(s) passed a screen",
+   "exam": {
+    "about": "",
+    "candidate": "whisper-tiny",
+    "cases": 480,
+    "first_s": 3.573,
+    "median_s": 0.093,
+    "metrics": {
+     "wer": 0.0924
+    },
+    "model": "whisper-tiny",
+    "not_run": "",
+    "pass_rate": 0.815,
+    "passed": 391,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-02T07:47:31Z",
+    "served_as": "",
+    "source": "",
+    "total": 480,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "screened",
+   "proposal": "mlx-community/whisper-tiny",
+   "reason": "candidate",
+   "receipt_key": "whisper-tiny",
+   "run_id": 832,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "stt:mlx-community/Qwen3-ASR-0.6B-4bit",
    "decided_at": "2026-10-19T11:51:28Z",
    "detail": "fits: MLX-native, smallest variant model.safetensors: 0.7 GiB of 1 weight file",
@@ -446,83 +520,9 @@
    "status": "pending",
    "tier": "inspect",
    "until": ""
-  },
-  {
-   "candidate": "stt:mlx-community/whisper-tiny",
-   "decided_at": "2026-11-10T02:10:02Z",
-   "detail": "retest 2/3: declined at adopt",
-   "exam": {
-    "about": "",
-    "candidate": "whisper-tiny",
-    "cases": 480,
-    "first_s": 3.573,
-    "median_s": 0.093,
-    "metrics": {
-     "wer": 0.0924
-    },
-    "model": "whisper-tiny",
-    "not_run": "",
-    "pass_rate": 0.815,
-    "passed": 391,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-02T07:47:31Z",
-    "served_as": "",
-    "source": "",
-    "total": 480,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "queued",
-   "proposal": "mlx-community/whisper-tiny",
-   "reason": "reopened",
-   "receipt_key": "whisper-tiny",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "inspect",
-   "until": ""
-  },
-  {
-   "candidate": "stt:mlx-community/whisper-tiny,backend=whisper",
-   "decided_at": "2026-11-10T02:10:02Z",
-   "detail": "retest 2/3: declined at adopt",
-   "exam": {
-    "about": "",
-    "candidate": "whisper-tiny",
-    "cases": 480,
-    "first_s": 3.573,
-    "median_s": 0.093,
-    "metrics": {
-     "wer": 0.0924
-    },
-    "model": "whisper-tiny",
-    "not_run": "",
-    "pass_rate": 0.815,
-    "passed": 391,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-02T07:47:31Z",
-    "served_as": "",
-    "source": "",
-    "total": 480,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "queued",
-   "proposal": "mlx-community/whisper-tiny",
-   "reason": "reopened",
-   "receipt_key": "whisper-tiny",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "inspect",
-   "until": ""
   }
  ],
- "cursor": 1794192890261071,
+ "cursor": 1794366601930195,
  "events": [
   {
    "at": "2026-09-08T02:00:21Z",
@@ -1228,6 +1228,36 @@
    "reason": "limit",
    "run_id": 769,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-11T03:09:11Z",
+   "candidate": "stt:mlx-community/nemotron-3.5-asr-streaming-0.6b-8bit",
+   "chosen": null,
+   "detail": "1 case(s) passed a screen",
+   "how": "",
+   "id": 1794366551822834,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 826,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-11T03:10:01Z",
+   "candidate": "stt:mlx-community/whisper-tiny,backend=whisper",
+   "chosen": null,
+   "detail": "1 case(s) passed a screen",
+   "how": "",
+   "id": 1794366601930195,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 832,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -1492,7 +1522,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-10T08:00:30Z",
+ "generated_at": "2026-11-11T06:06:36Z",
  "knobs": [],
  "lane": {
   "cases": 480,
