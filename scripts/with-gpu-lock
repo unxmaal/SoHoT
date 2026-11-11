@@ -4,6 +4,7 @@
 For any project that loads models on this machine. Standard library only.
 """
 import os
+import signal
 import subprocess
 import sys
 from pathlib import Path
@@ -32,6 +33,15 @@ try:
     with exclusive.held("install" if repair else "external",
                         announce=lambda m: print(f"with-gpu-lock: {m}",
                                                  file=sys.stderr, flush=True)):
-        sys.exit(subprocess.call(argv, env=os.environ))
-except exclusive.StoreDown as exc:
+        child = subprocess.Popen(argv, env=os.environ)
+        # A holder stopped for a lost lease takes its command with it. #1732.
+        signal.signal(signal.SIGTERM, lambda *_: child.terminate())
+        try:
+            rc = child.wait()
+        except BaseException:
+            child.kill()
+            child.wait()
+            raise
+        sys.exit(rc)
+except (exclusive.StoreDown, exclusive.LeaseLost) as exc:
     sys.exit(f"with-gpu-lock: {exc}")

@@ -82,14 +82,29 @@ def take(conn, resource: str, item: str, *, job_id=None, pid: int | None = None,
     return None
 
 
-def beat(conn, lease_id: int, ttl_s: float = TTL_S, now: float | None = None, **fields) -> bool:
-    """Extend a lease ttl_s from now, setting any of state, detail, mem_gb; False once it lapsed or was released."""
+def beat(conn, lease_id: int, ttl_s: float = TTL_S, now: float | None = None, expect: str | None = None,
+         **fields) -> bool:
+    """Extend a lease ttl_s from now, setting any of state, detail, mem_gb; False once it lapsed, was released or its state is not `expect`."""
     now = time.time() if now is None else now
     sets = "".join(f", {k} = ?" for k in fields)
+    cas, was = (" AND state = ?", (expect,)) if expect is not None else ("", ())
     got = conn.execute(f"UPDATE leases SET beat_at = ?, expires_at = ?{sets} WHERE id = ? AND released_at IS NULL "
-                       "AND expires_at > ?", (now, now + ttl_s, *fields.values(), int(lease_id), now)).rowcount == 1
+                       f"AND expires_at > ?{cas}", (now, now + ttl_s, *fields.values(), int(lease_id), now, *was)
+                       ).rowcount == 1
     conn.commit()
     return got
+
+
+def unreleased(conn, resource: str) -> list[dict]:
+    """This machine's leases on `resource` not yet released, lapsed ones too, oldest first. #1732."""
+    where, args = _here(conn)
+    return [dict(r) for r in conn.execute(
+        f"SELECT * FROM leases WHERE {where} AND released_at IS NULL AND resource = ? ORDER BY id", (*args, resource))]
+
+
+def row(conn, lease_id: int) -> dict | None:
+    got = conn.execute("SELECT * FROM leases WHERE id = ?", (int(lease_id),)).fetchone()
+    return None if got is None else dict(got)
 
 
 def release(conn, lease_id: int, now: float | None = None) -> None:
