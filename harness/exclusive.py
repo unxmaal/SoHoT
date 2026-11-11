@@ -208,25 +208,86 @@ def _alert(kind: str, message: str) -> None:
         monitor.alert(kind, {"MONIT_SERVICE": "gpu", "MONIT_DESCRIPTION": message})
 
 
-def refuse(who: str, exc: Exception) -> StoreDown:
-    """The refusal to raise for `who`; the first of an outage is recorded and alerted, once. #1648."""
-    reason = f"{who} refused: {exc}"
+class StoreSkewed(StoreDown):
+    """The store answers but at a schema this code will not use: refused like an outage, logged, never alerted. #1793."""
+
+
+def _chain(exc: BaseException | None):
+    seen = set()
+    while exc is not None and id(exc) not in seen:
+        seen.add(id(exc))
+        yield exc
+        exc = exc.__cause__ or exc.__context__
+
+
+def _skewed(exc: BaseException) -> bool:
+    from harness.memory_store.connection import LiveStoreRefused
+    from harness.memory_store.migrations import NewerStore
+    return any(isinstance(e, (LiveStoreRefused, NewerStore)) for e in _chain(exc))
+
+
+def _cause(exc: BaseException) -> str:
+    """The class of the failure under a refusal: a marker for one cause never hides an outage from another. #1793."""
+    root = list(_chain(exc))[-1]
+    return type(root).__qualname__
+
+
+def owner() -> bool:
+    """Whether this process speaks for its home's gpu refusals: in the live home only the deploy checkout does. #1793."""
+    from harness import monitor
+    return not monitor.live_home() or paths.runs_elsewhere() is None
+
+
+def _mark(path: Path, record: dict, exclusive: bool) -> bool:
+    """Write the refusal marker whole; exclusive, False when one already stands. #1793."""
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}")
+    tmp.write_text(json.dumps(record), encoding="utf-8")
     try:
-        fd = os.open(refused_path(), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+        if not exclusive:
+            os.replace(tmp, path)
+            return True
+        os.link(tmp, path)
+        return True
+    except FileExistsError:
+        return False
+    finally:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+
+
+def refuse(who: str, exc: Exception) -> StoreDown:
+    """The refusal to raise for `who`; the owner records and alerts the first of an outage once per cause. #1648, #1793."""
+    reason = f"{who} refused: {exc}"
+    if isinstance(exc, StoreSkewed):
+        print(f"{time.strftime('%H:%M:%S')} {reason} (schema skew, not alerted)", file=sys.stderr, flush=True)
+        return StoreSkewed(reason)
+    if not owner():
+        return StoreDown(reason)
+    record = {"at": time.time(), "who": who, "pid": os.getpid(), "reason": reason,
+              "writer": str(paths.REPO), "cause": _cause(exc)}
+    try:
+        if not _mark(refused_path(), record, exclusive=True):
+            was = refusal()
+            if was.get("writer") == record["writer"] and was.get("cause") == record["cause"]:
+                return StoreDown(reason)
+            _mark(refused_path(), record, exclusive=False)
     except OSError:
         return StoreDown(reason)
-    with os.fdopen(fd, "w", encoding="utf-8") as fh:
-        json.dump({"at": time.time(), "who": who, "pid": os.getpid(), "reason": reason}, fh)
     _alert("gpu-refused", reason)
     return StoreDown(reason)
 
 
 def _store():
-    """A store connection; StoreDown naming why when none opens. A connect ends a recorded refusal. #1648."""
+    """A store connection; StoreDown naming why when none opens, StoreSkewed when it is at another schema. A connect ends a recorded refusal. #1648, #1793."""
     try:
         conn = _conn()
     except Exception as exc:  # noqa: BLE001 - any failure to open is the store being unreachable
+        if _skewed(exc):
+            raise StoreSkewed(f"the store answers at a schema this checkout ({paths.REPO}) will not use, "
+                              f"so no gpu lease can be taken or checked: {exc}") from exc
         raise StoreDown(f"the store is unreachable, so no gpu lease can be taken or checked: {exc}") from exc
+    if not refused_path().exists() or not owner():
+        return conn
     try:
         os.unlink(refused_path())
     except OSError:

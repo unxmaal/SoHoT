@@ -25,6 +25,10 @@ class MigrationReentered(RuntimeError):
     """A migration step tried to open the store it is migrating. #495."""
 
 
+class NewerStore(RuntimeError):
+    """The store is at a schema newer than this code speaks. #1793."""
+
+
 #: The store a migration in this thread is running on: (its file, its connection). #495.
 _MIGRATING = _thread_local()
 
@@ -97,7 +101,7 @@ def _migrate_steps(conn: sqlite3.Connection) -> None:
     if have == SCHEMA_VERSION:
         return
     if have > SCHEMA_VERSION:
-        raise RuntimeError(
+        raise NewerStore(
             f"discovery.db is schema {have}, this code speaks {SCHEMA_VERSION}. "
             f"Refusing to touch a newer store.")
     chain = steps()
