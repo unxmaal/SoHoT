@@ -3150,7 +3150,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-10T08:00:27Z",
+ "generated_at": "2026-11-11T06:06:32Z",
  "knobs": [],
  "lane": {
   "cases": 584,
@@ -3191,7 +3191,7 @@
   "pass_rate": 0.533,
   "serves": "mflux:dev",
   "serves_model": "mflux:dev",
-  "stale": false
+  "stale": true
  },
  "since": 0
 }
