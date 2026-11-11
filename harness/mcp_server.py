@@ -313,7 +313,7 @@ def delegated(call_id: str, outcome: str, why: str = "") -> DelegationOutcome:
         if conn is None:
             raise ToolError("not recorded: this server cannot write the live store")
         try:
-            return DelegationOutcome(**delegations.outcome(conn, call_id, outcome, why))
+            return DelegationOutcome(**delegations.tell(conn, call_id, outcome, why))
         except (ValueError, delegations.UnknownCall) as exc:
             raise ToolError(str(exc)) from exc
 

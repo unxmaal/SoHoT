@@ -1,0 +1,12 @@
+{
+ "event": "push",
+ "createdAt": "2026-11-11T14:02:21Z",
+ "run": {
+  "databaseId": 43034629611,
+  "conclusion": "cancelled",
+  "headSha": "a63fae8d8fa80ca2646908c6bbee0678c8ace59d",
+  "status": "completed",
+  "url": "https://github.com/unxmaal/SoHoT/actions/runs/43034629611"
+ },
+ "jobs": []
+}

@@ -267,7 +267,7 @@ def _add_job_reason(conn) -> None:
 
 
 def _add_adoption_move(conn) -> None:
-    """adoptions.move, why and leaves on an older store; v96's data step chains the rows. #1735."""
+    """adoptions.move, why and leaves on an older store; v100's data step chains the rows. #1735."""
     have = _columns(conn, "adoptions")
     for col, ddl in (("move", "TEXT NOT NULL DEFAULT 'adopt'"), ("why", "TEXT NOT NULL DEFAULT ''"),
                      ("leaves", "INTEGER NOT NULL DEFAULT 0")):

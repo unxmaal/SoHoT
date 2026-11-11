@@ -44,6 +44,10 @@ KNOBS = [
     _k("deploy_probe_timeout", [f"{Q}:PROBE_TIMEOUT_S"], [120.0, 300.0, 600.0], unit="s",
        note="seconds the new release's `launchd.sh probe` may take before the switch; it waits PREFLIGHT_WAIT_S 60 "
             "for its launchd agent, and a timeout fails the deploy before the flip (#1516)"),
+    _k("deploy_quiesce_timeout", [f"{Q}:QUIESCE_TIMEOUT_S"], [120.0, 600.0, 1800.0], unit="s",
+       note="seconds a deploy due to migrate the store waits, queue paused, for every other job running here to "
+            "end; past it the deploy fails not quiesced with the store unmigrated. A deploy starts only when "
+            "nothing runs and nothing starts beside it, so the wait is normally 0 (#1795)"),
     _k("deploy_retries", [f"{Q}:RETRIES"], [1, 3, 6],
        note="times the poll queues a sha whose deploy job failed again, each after deploy_retry_after; each failed "
             "attempt restarts the services twice. 2026-11-09: deploy 21 rolled back because the previous release "

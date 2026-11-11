@@ -99,7 +99,7 @@ def _old_store(path):
     conn.execute("INSERT INTO candidates (spec, receipt_key, lane, created_at) "
                  "VALUES ('org/a', 'org/a', 'code', 0)")
     cid = conn.execute("SELECT id FROM candidates").fetchone()[0]
-    conn.execute("DROP INDEX ux_adoptions_chain")  # an old store has no adoption chain; v96 builds it. #1735
+    conn.execute("DROP INDEX ux_adoptions_chain")  # an old store has no adoption chain; v100 builds it. #1735
     for key in ("studio_a", "studio_b", "m2"):
         mid = rows[key]
         conn.execute("INSERT INTO verdicts (outcome, tier, detail, decided_at, "

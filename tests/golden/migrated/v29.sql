@@ -52,6 +52,8 @@ table gateway_requests [('id', 'INTEGER', 0, None, 1), ('at', 'REAL', 1, None, 0
   index ix_greq_at unique=0 ['at']
   index ix_greq_call unique=0 ['call_id']
 table gateway_samples [('request_id', 'INTEGER', 0, None, 1), ('prompt', 'TEXT', 1, "''", 0), ('completion', 'TEXT', 1, "''", 0)]
+table gateway_switch_runs [('id', 'INTEGER', 0, None, 1), ('state', 'TEXT', 1, None, 0), ('reason', 'TEXT', 1, "''", 0), ('live', 'INTEGER', 0, None, 0), ('pid', 'INTEGER', 0, None, 0), ('pgid', 'INTEGER', 0, None, 0), ('started', 'TEXT', 1, "''", 0), ('requested_at', 'REAL', 0, None, 0), ('updated_at', 'REAL', 1, None, 0), ('config', 'TEXT', 1, "''", 0), ('before', 'TEXT', 0, None, 0), ('target', 'TEXT', 0, None, 0), ('moved', 'TEXT', 1, "'{}'", 0), ('detail', 'TEXT', 1, "''", 0)]
+  index sqlite_autoindex_gateway_switch_runs_1 unique=1 ['live']
 table gateway_switches [('id', 'INTEGER', 0, None, 1), ('lane', 'TEXT', 1, None, 0), ('old_spec', 'TEXT', 1, None, 0), ('new_spec', 'TEXT', 1, None, 0), ('how', 'TEXT', 1, None, 0), ('requested_at', 'REAL', 1, None, 0), ('switched_at', 'REAL', 1, None, 0), ('in_flight', 'INTEGER', 0, None, 0), ('outcome', 'TEXT', 1, "'switched'", 0), ('reason', 'TEXT', 1, "''", 0)]
 table holds [('id', 'INTEGER', 0, None, 1), ('machine_id', 'INTEGER', 0, None, 0), ('kind', 'TEXT', 1, None, 0), ('held_at', 'REAL', 1, None, 0), ('said', 'TEXT', 1, None, 0), ('until', 'REAL', 0, None, 0), ('released_at', 'REAL', 0, None, 0)]
 table human_votes [('id', 'INTEGER', 0, None, 1), ('lane', 'TEXT', 1, None, 0), ('run', 'TEXT', 1, "''", 0), ('case_id', 'TEXT', 1, None, 0), ('left_candidate', 'TEXT', 1, None, 0), ('right_candidate', 'TEXT', 1, None, 0), ('winner', 'TEXT', 1, "''", 0), ('shown_first', 'TEXT', 1, "''", 0), ('voter', 'TEXT', 1, "''", 0), ('machine_id', 'INTEGER', 0, None, 0), ('at', 'REAL', 1, None, 0)]
@@ -93,7 +95,7 @@ table meta [('key', 'TEXT', 0, None, 1), ('value', 'TEXT', 0, None, 0)]
   index sqlite_autoindex_meta_1 unique=1 ['key']
   ('artifact_split', '{"code": {"missing": 4, "none": 2, "path": 0, "resolved": 0, "text": 4}, "image": {"missing": 0, "none": 2, "path": 2, "resolved": 0, "text": 0}, "tts": {"missing": 0, "none": 0, "path": 4, "resolved": 0, "text": 0}}')
   ('candidate_guesses', '[{"adoption": 2, "from": "the adopt verdict/'s machine; no vote or judged run names one", "lane": "svg", "machine": 4, "proposal": "org-l/svg-thing", "spec": "mlx:org-l/svg-thing"}]')
-  ('schema', '96')
+  ('schema', '100')
 table otel_events [('id', 'INTEGER', 0, None, 1), ('key', 'TEXT', 1, None, 0), ('received_at', 'REAL', 1, None, 0), ('at', 'REAL', 1, None, 0), ('session_id', 'TEXT', 1, "''", 0), ('prompt_id', 'TEXT', 1, "''", 0), ('name', 'TEXT', 1, None, 0), ('tool', 'TEXT', 1, "''", 0), ('model', 'TEXT', 1, "''", 0), ('query_source', 'TEXT', 1, "''", 0), ('success', 'INTEGER', 0, None, 0), ('duration_ms', 'REAL', 0, None, 0), ('input_tokens', 'REAL', 0, None, 0), ('output_tokens', 'REAL', 0, None, 0), ('cache_read_tokens', 'REAL', 0, None, 0), ('cache_creation_tokens', 'REAL', 0, None, 0), ('cache_creation_5m_tokens', 'REAL', 0, None, 0), ('cache_creation_1h_tokens', 'REAL', 0, None, 0), ('cost_usd', 'REAL', 0, None, 0), ('result_bytes', 'REAL', 0, None, 0), ('attrs', 'TEXT', 1, "'{}'", 0)]
   index ix_otel_events_at unique=0 ['at', 'name']
   index ix_otel_events_session unique=0 ['session_id', 'at']

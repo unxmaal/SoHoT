@@ -537,14 +537,14 @@ def parked_nodes() -> list[str]:
 
 def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, where=None, lanes=None,
            health=None, stalls=None, canary=None, parked=None, incumbent=None, monitor=None, pulls=None,
-           tts=None, waiting=None) -> dict:
+           tts=None, waiting=None, reach=None) -> dict:
     """`health` probes the headline's lane (lane_health), `canary` reads its receipts (canary.morning_line); None skips either."""
     r = {"lane": health(MODEL_LANE) if health else {"lane": MODEL_LANE, "generating": None, "why": "not probed"},
          "generated": now, "since": since, "sweep": sweep(conn, since, beat), "watchdog": watchdog(conn, since),
          "ci": ci(now, gh=gh or _gh), "ledger": ledger_row(conn, now), "ratio": ratio(conn, now), "stale": (lanes or stale_lanes)(conn),
          "stalled": (stalls or stalled)(conn), "deploy": deploy(where, git=git or _git),
          "canary": canary(now) if canary else "", "incidents": incidents(conn, since, now),
-         "parked": parked() if parked else [], "checks": sweep_checks(conn, since),
+         "parked": parked() if parked else [], "reach": reach(since, now) if reach else [], "checks": sweep_checks(conn, since),
          "incumbent": incumbent(conn) if incumbent else None,
          "families": families(conn), "yield": yield_stops(conn), "api_spend": api_spend(conn),
          "engines": engines(conn, since), "idle": _idle(conn, since),

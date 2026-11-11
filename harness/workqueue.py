@@ -1359,8 +1359,11 @@ def run_pending(popen=None, gate=lambda: (True, ""), clock=time.time, watch: flo
         while True:
             finished.clear()
             live = {t: c for t, c in live.items() if t.is_alive()}
-            deploy_turn(clock())
-            nxt = None if errors or handed.is_set() else _startable(live, clock())
+            # Nothing starts beside a deploy, and once it migrates this release's store reads are refused. #1795.
+            deploying = any(c == DEPLOY for c, _ in live.values())
+            if not deploying:
+                deploy_turn(clock())
+            nxt = None if errors or handed.is_set() or deploying else _startable(live, clock())
             if nxt is not None and gate()[0]:
                 t = threading.Thread(target=work, args=(nxt[0],), name=f"job-{nxt[0]['id']}")
                 live[t] = (nxt[1], nxt[0]["id"])

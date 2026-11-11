@@ -78,7 +78,8 @@ def fake_gh(own_runs, pr_runs, jobs, calls):
         calls.append(argv)
         if argv[:2] == ["run", "list"]:
             return json.dumps(pr_runs if argv[argv.index("--event") + 1] == "pull_request" else own_runs)
-        return json.dumps({"jobs": [{"name": g.JOB, "status": "completed", "conclusion": jobs[int(argv[2])]}]})
+        rid = int(argv[2])
+        return json.dumps({"jobs": [{"name": g.JOB, "status": "completed", "conclusion": jobs[rid]}] if rid in jobs else []})
     return gh
 
 

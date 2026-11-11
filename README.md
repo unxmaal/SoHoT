@@ -625,7 +625,7 @@ challenger that wins two cases and loses one, the same way on every draw, is
 never adopted at any repeat (the old cell count adopted it from repeat 14).
 
 What a lane serves on a machine is a chain of named moves in `adoptions`
-(schema 96, #1735): each row adopts a model or withdraws the one serving, and
+(schema 100, #1735): each row adopts a model or withdraws the one serving, and
 leaves the lane's previous row, so two writers that read the same head cannot
 both land. `soh adopt --serving` prints every lane on every machine with its
 state: adopted, withdrawn, or configured default, never adopted. A by-hand
@@ -795,6 +795,10 @@ adopted here, through the same route `soh code` uses:
   from the caller's transcript (an MCP result, or a Bash call of `soh local`) or records it
   unknown after 24 h. `soh ledger` flags each day with Claude Code tokens and no delegation
   at all, and `soh morning` lists last night's as needing a person.
+- From a checkout at another schema than the live store, those rows and the outcome go to
+  `~/localharness/delegations-spool/` (one file a record) instead; the deployed release's
+  hourly `soh delegated --close` lands each once and keeps any it cannot (a column the store
+  lacks) as held, named in its log.
 
 Both answer directly rather than queueing. Prompts are capped at 100,000
 characters and calls time out after 300 s. When something holds the machine lock
@@ -3453,7 +3457,7 @@ the module, constant or launchd unit together with its capability entry, knob or
 line, schedule and UNIT_OUTPUTS entry; run `make precheck` before `make check`.
 
 CI runs `make check` on an Apple Silicon runner for every push and pull
-request. Linux and Windows run nightly on main (06:00 UTC), from the Actions
+request. Linux and Windows run nightly on main (06:17 UTC), from the Actions
 tab on demand, or on a pull request labelled `full-ci`; a failing night opens
 or updates the issue "Nightly CI is failing on main". Each runner reports
 which tests it skipped and why. A

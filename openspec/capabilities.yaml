@@ -40,6 +40,7 @@ capabilities:
       - harness/paired.py
       - harness/gateway_switch.py
       - harness/adoption_state.py
+      - harness/gateway_switch_state.py
 
   - name: measure
     summary: The measure tier, its pauses, looks and resumes, and the order the measure queue is spent in.
@@ -195,6 +196,7 @@ capabilities:
       - harness/slot_probe.py
       - harness/throughput.py
       - harness/purpose.py
+      - harness/node_reach.py
 
   - name: local-delegation
     summary: local_complete and local_decide over MCP or `soh local`, handed to a lane's adopted local model, and what became of each answer.
@@ -493,6 +495,7 @@ capabilities:
       - harness/ci_rerun.py
       - harness/dora.py
       - harness/deploy_state.py
+      - harness/store_ahead.py
 
   - name: repo-hygiene
     summary: What a public reader gets, personal setup kept out of it, stated claims, coverage, specs and the gauntlet.

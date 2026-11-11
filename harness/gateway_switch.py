@@ -247,16 +247,20 @@ def _await_serving(base, want, clock, sleep, poll_s) -> str:
 def switch(base: str | None = None, restart=restart_service, requested_at=None,
            idle_s: float = IDLE_S, max_wait_s: float = MAX_WAIT_S,
            poll_s: float = POLL_S, clock=time.time, sleep=time.sleep,
-           log=None, config=None, drain_s: float = DRAIN_S) -> list[dict]:
-    """Regenerate the served config and restart once quiet, if any lane alias moved."""
+           log=None, config=None, drain_s: float = DRAIN_S, advance=None) -> list[dict]:
+    """Regenerate the served config and restart once quiet, if any lane alias moved; `advance` moves its state row."""
+    import json
     from harness import adopt, gateway
+    from harness import gateway_switch_state as st
     from harness.completion import DEFAULT_GATEWAY
     base = base or DEFAULT_GATEWAY
+    advance = advance or (lambda *a, **k: None)
     requested_at = clock() if requested_at is None else requested_at
     path = gateway.served_path(config)
     before = path.read_text(encoding="utf-8") if path.exists() else None
     old = _aliases(gateway.load(path))
     if _aliases(gateway.served(config)) == old:
+        advance(st.REQUESTED, st.SERVING, st.UNCHANGED)
         return []
     if restart is restart_service and not can_restart():
         defaults, new = adopt.lane_defaults(), _aliases(gateway.served(config))
@@ -264,6 +268,7 @@ def switch(base: str | None = None, restart=restart_service, requested_at=None,
                  for lane in new if new[lane] != old.get(lane)}
         _record(moved, old, {"how": "none", "in_flight": None, "switched_at": clock()},
                 requested_at, FAILED, f"no restart method on {sys.platform}", log)
+        advance(st.REQUESTED, st.FAILED, st.NO_RESTART)
         return []
     moved = {}
     for attempt in range(RETRIES):
@@ -271,13 +276,19 @@ def switch(base: str | None = None, restart=restart_service, requested_at=None,
             sleep(BACKOFF_S * 2 ** (attempt - 1))
         restarted = {}
 
-        def regenerate_and_restart():
+        def regenerate_and_restart(attempt=attempt):
+            if attempt:
+                advance(st.RESTARTING, st.WRITING, st.RETRY)
+            else:
+                advance(st.REQUESTED, st.WRITING, st.QUIET, before=before)
             defaults = adopt.lane_defaults()
             gateway.write_served(config, defaults)
             new = _aliases(gateway.load(path))
             moved.clear()
             moved.update({lane: (defaults.get(lane, ""), new[lane].get("model"))
                           for lane in new if new[lane] != old.get(lane)})
+            advance(st.WRITING, st.RESTARTING, st.WRITTEN, target=path.read_text(encoding="utf-8"),
+                    moved=json.dumps(moved, sort_keys=True))
             try:
                 restarted["ok"] = restart() is not False
             except Exception as exc:  # noqa: BLE001
@@ -291,7 +302,9 @@ def switch(base: str | None = None, restart=restart_service, requested_at=None,
         else:
             why = "the gateway restart failed" + (f": {restarted['why']}" if restarted.get("why") else "")
         if not why:
-            return _record(moved, old, got, requested_at, SWITCHED, "", log)
+            rows = _record(moved, old, got, requested_at, SWITCHED, "", log)
+            advance(st.RESTARTING, st.SERVING, st.SERVED)
+            return rows
         _record(moved, old, {**got, "switched_at": clock()}, requested_at, FAILED, why, log)
     cuts.cut("harness/gateway_switch.py:RETRIES", f"the switch gave up after {RETRIES} attempts and restores the old config",
              kept=0, dropped=len(moved))
@@ -305,6 +318,7 @@ def switch(base: str | None = None, restart=restart_service, requested_at=None,
                 log(f"restoring the old config: {type(exc).__name__}: {exc}")
         if log:
             log("the old config is restored" + ("" if back else ", but its restart failed too"))
+    advance(st.RESTARTING, st.FAILED, st.GAVE_UP)
     return []
 
 
@@ -332,6 +346,89 @@ def _record(moved, old, got, requested_at, outcome, reason, log) -> list[dict]:
     return rows
 
 
+def _gone_record(row, moved, old, outcome, reason, log) -> list[dict]:
+    got = {"how": "reconciled", "in_flight": None, "switched_at": time.time()}
+    return _record(moved, old, got, row["requested_at"] or got["switched_at"], outcome, reason, log)
+
+
+def settle(conn, row: dict, why: str, serving=None, log=None) -> str:
+    """End a switch whose process died or raised: finished if the gateway serves its target, else the old served config is put back."""
+    import json
+    from pathlib import Path
+
+    import yaml
+
+    from harness import gateway
+    from harness import gateway_switch_state as st
+    stop_drain()
+    frm, rid = row["state"], row["id"]
+    if frm == st.REQUESTED:
+        st.move(conn, rid, frm, st.FAILED, why, detail=f"the switch process {why} before it wrote anything")
+        return st.FAILED
+    path = Path(row["config"])
+    current = path.read_text(encoding="utf-8") if path.exists() else None
+    before, target = row["before"], row["target"]
+    moved = {lane: tuple(v) for lane, v in json.loads(row["moved"] or "{}").items()}
+    old = _aliases(yaml.safe_load(before) or {}) if before else {}
+    if frm == st.RESTARTING and current == target and moved:
+        if serving is None:
+            from harness.completion import DEFAULT_GATEWAY
+
+            def serving(want):
+                return not_serving(DEFAULT_GATEWAY, want)
+        if not serving({gateway.LANE_ALIAS.format(lane): model for lane, (_, model) in moved.items()}):
+            if st.move(conn, rid, frm, st.SERVING, st.FINISHED,
+                       detail=f"the switch process {why}; the gateway already serves its target"):
+                _gone_record(row, moved, old, SWITCHED, "", log)
+            return st.SERVING
+    if frm == st.RESTARTING and current not in (before, target):
+        st.move(conn, rid, frm, st.FAILED, st.SUPERSEDED,
+                detail=f"the switch process {why}; another writer changed the served config since")
+        return st.FAILED
+    if before is not None and current != before:
+        path.write_text(before, encoding="utf-8")
+    note = f"the switch process {why} while {frm}; the old served config is back for the next switch"
+    if st.move(conn, rid, frm, st.FAILED, why, detail=note) and moved:
+        _gone_record(row, moved, old, FAILED, note, log)
+    if log:
+        log(f"switch {rid}: {note}")
+    return st.FAILED
+
+
+def reconcile(conn, alive=None, serving=None, log=None) -> dict | None:
+    """The in-flight switch, settled first if its process is gone; None when no switch holds the slot."""
+    from harness import gateway_switch_state as st
+    row = st.live(conn)
+    if row is None:
+        return None
+    if (alive or st.alive)(row) is False:
+        settle(conn, row, st.DIED, serving, log)
+        return st.get(conn, row["id"])
+    return row
+
+
+def view(conn, config=None, alive=None) -> dict:
+    """How the gateway switch stands, read-only: the live switch's state or orphaned; with none, serving or stale against the adoptions."""
+    from harness import adopt, gateway
+    from harness import gateway_switch_state as st
+    row = st.live(conn)
+    if row is not None:
+        gone = (alive or st.alive)(row) is False
+        return {"state": st.ORPHANED if gone else row["state"], "switch": row["id"],
+                "why": (f"switch {row['id']} is {row['state']} but its process is gone" if gone
+                        else f"switch {row['id']} is {row['state']} ({row['reason']})")}
+    path = gateway.served_path(config)
+    if not path.exists():
+        return {"state": st.UNWRITTEN, "switch": None, "why": f"no served config at {path}"}
+    have = _aliases(gateway.load(path))
+    want = _aliases(gateway.served(config, adopt.lane_defaults(conn)))
+    off = sorted(lane for lane in set(have) | set(want) if have.get(lane) != want.get(lane))
+    if off:
+        return {"state": st.STALE, "switch": None,
+                "why": f"the served config does not name what {', '.join(off)} adopted, and no switch is in flight"}
+    return {"state": st.SERVING, "switch": None, "why": ""}
+
+
 def waiter(requested_at: float) -> tuple[list[str], dict]:
     """The detached switch's argv and env, without the caller's hold on the machine lock."""
     from harness import exclusive
@@ -340,13 +437,22 @@ def waiter(requested_at: float) -> tuple[list[str], dict]:
              "--requested-at", repr(float(requested_at))], env)
 
 
-def spawn(requested_at: float | None = None, popen=None) -> None:
-    """Start the switch detached: it may wait hours for a run to free the machine lock."""
+def spawn(requested_at: float | None = None, popen=None, alive=None) -> None:
+    """Start the switch detached, after settling a dead one; none when a live switch holds the slot, as it re-reads on settling."""
     import subprocess
     from harness import gateway, paths
+    from harness import gateway_switch_state as st
+    from harness import memory_store as ms
     if not can_restart():
         # Recorded as a failed switch, so report and judge do not read the lane as served. #703.
         switch(requested_at=requested_at)
+        return
+    conn = ms.connect()
+    try:
+        row = reconcile(conn, alive=alive)
+    finally:
+        conn.close()
+    if row is not None and row["state"] in st.LIVE:
         return
     argv, env = waiter(time.time() if requested_at is None else requested_at)
     log = open(paths.logs() / "gateway-switch.log", "a", encoding="utf-8")
@@ -366,6 +472,7 @@ def deadline_s(max_wait_s: float, drain_s: float) -> float:
 
 def main(argv=None) -> int:
     from harness import exclusive
+    from harness import gateway_switch_state as st
     p = argparse.ArgumentParser(prog="python -m harness.gateway_switch")
     p.add_argument("--requested-at", type=float, default=None)
     p.add_argument("--idle-s", type=float, default=IDLE_S)
@@ -376,15 +483,82 @@ def main(argv=None) -> int:
         print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} gateway-switch: {msg}",
               file=sys.stderr, flush=True)
 
-    # After any run that loads models, so a restart never lands mid-measurement. #319.
+    requested_at = a.requested_at
     try:
-        with exclusive.held("external", announce=log, deadline_s=deadline_s(a.max_wait_s, DRAIN_S)):
-            switch(requested_at=a.requested_at, idle_s=a.idle_s,
-                   max_wait_s=a.max_wait_s, log=log)
+        # A switch that served re-reads the adoptions: one made while it held the slot lost its own claim.
+        while run(requested_at, a.idle_s, a.max_wait_s, log) == st.SERVING and pending():
+            requested_at = None
     except exclusive.StoreDown as exc:
         log(str(exc))
         return 1
     return 0
+
+
+def pending(config=None) -> bool:
+    """Whether the served config's lane aliases differ from what the adoptions say now."""
+    from harness import gateway
+    return _aliases(gateway.served(config)) != _aliases(gateway.load(gateway.served_path(config)))
+
+
+def _advance(rid):
+    from harness import gateway_switch_state as st
+    from harness import memory_store as ms
+
+    def advance(frm, to, reason, **cols):
+        conn = ms.connect()
+        try:
+            if not st.move(conn, rid, frm, to, reason, **cols):
+                raise st.Lost(f"switch {rid} is no longer {frm}: another writer settled it")
+        finally:
+            conn.close()
+    return advance
+
+
+def run(requested_at, idle_s, max_wait_s, log, held=None, alive=None, ident=None, switch_fn=None,
+        base=None) -> str:
+    """Claim the one in-flight slot, switch under the machine lock, and return the state the switch ended in ('' when it lost the claim)."""
+    from harness import exclusive, gateway
+    from harness import gateway_switch_state as st
+    from harness import memory_store as ms
+    from harness.completion import DEFAULT_GATEWAY
+
+    def serving(want):
+        return not_serving(base or DEFAULT_GATEWAY, want)
+    conn = ms.connect()
+    try:
+        reconcile(conn, alive=alive, serving=serving, log=log)
+        try:
+            rid = st.claim(conn, requested_at=time.time() if requested_at is None else requested_at,
+                           config=str(gateway.served_path()), **(ident or st.me()))
+        except st.Lost as exc:
+            log(f"{exc}; it re-reads the adoptions once it settles")
+            return ""
+    finally:
+        conn.close()
+    try:
+        # After any run that loads models, so a restart never lands mid-measurement. #319.
+        with (held or exclusive.held)("external", announce=log, deadline_s=deadline_s(max_wait_s, DRAIN_S)):
+            (switch_fn or switch)(base=base, requested_at=requested_at, idle_s=idle_s, max_wait_s=max_wait_s,
+                                  log=log, advance=_advance(rid))
+    except st.Lost as exc:
+        log(str(exc))
+        return ""
+    except BaseException as exc:
+        conn = ms.connect()
+        try:
+            row = st.get(conn, rid)
+            if row and row["state"] in st.LIVE:
+                settle(conn, row, st.RAISED, serving, log)
+        except Exception as inner:  # noqa: BLE001
+            log(f"switch {rid} raised {type(exc).__name__} and could not be settled: {inner}")
+        finally:
+            conn.close()
+        raise
+    conn = ms.connect()
+    try:
+        return st.get(conn, rid)["state"]
+    finally:
+        conn.close()
 
 
 if __name__ == "__main__":
