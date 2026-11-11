@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 98
+SCHEMA_VERSION = 99
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -688,7 +688,16 @@ CREATE TABLE IF NOT EXISTS watchdog_actions (
     dry_run     INTEGER NOT NULL DEFAULT 1,
     -- JSON: the measurements that tripped it, how the subject was identified, the fingerprint.
     evidence    TEXT NOT NULL DEFAULT '{}',
-    outcome     TEXT NOT NULL DEFAULT ''
+    -- The sentence for display; code decides on the columns below. #1778.
+    outcome     TEXT NOT NULL DEFAULT '',
+    -- watchdog.RESULTS: acted, held, refused, failed, unavailable or dry_run.
+    result      TEXT NOT NULL DEFAULT '',
+    -- 1 when this act put a notification on the desktop.
+    notified    INTEGER NOT NULL DEFAULT 0,
+    -- The queue job the subject is; its process group; its eval's run directory (watchdog.canon).
+    job_id      INTEGER,
+    pgid        INTEGER,
+    run_dir     TEXT NOT NULL DEFAULT ''
 );
 
 -- One known-answer completion the watchdog sent a text lane, or why it sent none. #924.

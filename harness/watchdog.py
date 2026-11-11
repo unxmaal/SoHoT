@@ -82,6 +82,28 @@ _HELD_WHAT = {"watchdog_escalate_after": "findings escalated after repeated trip
               "watchdog_escalate_window": "findings not escalated: their earlier trips fell outside the window",
               "watchdog_notify_every": "notifications held: shown too recently"}
 UNPAUSABLE = "no progress file to pause through: notified instead, and it runs on"
+#: watchdog_actions.result: what came of an act. Readers decide on it; the outcome sentence is display only. #1778.
+ACTED, WITHHELD, REFUSED, FAILED, UNAVAILABLE, DRY = "acted", "held", "refused", "failed", "unavailable", "dry_run"
+RESULTS = (ACTED, WITHHELD, REFUSED, FAILED, UNAVAILABLE, DRY)
+
+
+class Said(str):
+    """An act's outcome sentence carrying its result code and whether it put a notification on the desktop."""
+
+    def __new__(cls, text: str, result: str = ACTED, notified: bool = False):
+        s = super().__new__(cls, text)
+        s.result, s.notified = result, notified
+        return s
+
+
+def said(got, action: str = "") -> Said:
+    """A hand's answer as a Said; a bare string is an act done that showed nothing."""
+    return got if isinstance(got, Said) else Said(str(got), ACTED)
+
+
+def canon(path) -> str:
+    """The one spelling a run directory is stored and looked up by."""
+    return os.path.realpath(str(path))
 
 ACT_ENV = "LH_WATCHDOG_ACT"
 FILE_ENV = "LH_WATCHDOG_FILE"
@@ -119,6 +141,8 @@ class Subject:
     progress: dict | None = None
     children: list = field(default_factory=list)
     detail: dict = field(default_factory=dict)
+    #: The queue job this subject is, by id.
+    job_id: int | None = None
 
     def runs(self) -> list[dict]:
         """The progress files this subject's evals write, its own first."""
@@ -444,8 +468,8 @@ class ProgressFiles:
         where = Path(run["_dir"])
         target = Path(run.get("pause_file") or where / self.PAUSE_FILE)
         if target.parent.resolve() != where.resolve() or target.name != self.PAUSE_FILE:
-            return f"refused: pause file {target} is outside the run directory {where}"
-        return f"pause file written: {ask_pause(where, reason)}"
+            return Said(f"refused: pause file {target} is outside the run directory {where}", REFUSED)
+        return Said(f"pause file written: {ask_pause(where, reason)}")
 
     def mark_stop(self, run: dict, reason: str) -> str:
         """Write the run's stop file naming why, so its measure step can tell an overrun from any other stop. #1409."""
@@ -502,6 +526,7 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
         orphan = state not in ("running", "") or not probes.worker_running()
         s = Subject("job", f"job {job_id}", "a work queue pid file names its group leader", pid=pid, pgid=pid,
                     elapsed_s=p.elapsed_s, command=p.command, orphan=orphan,
+                    job_id=int(job_id) if str(job_id).isdigit() else None,
                     detail={"title": row.get("title", ""), "state": state,
                             "requested_by": row.get("requested_by", "")})
         jobs[pid] = s
@@ -1131,8 +1156,8 @@ def desktop(title: str, message: str, subtitle: str = "", run=subprocess.run, pl
     """One macOS desktop notification through osascript; the outcome string. #818, #867."""
     platform = platform or sys.platform
     if platform != "darwin":
-        return (f"notify unavailable: no desktop notifier on {platform} (macOS osascript only); "
-                "the row and the log line are the notice")
+        return Said(f"notify unavailable: no desktop notifier on {platform} (macOS osascript only); "
+                    "the row and the log line are the notice", UNAVAILABLE)
     message = message[:200]
     # argv, not string interpolation, so a command line in the subject cannot break the AppleScript.
     script = ["osascript", "-e", "on run argv", "-e",
@@ -1141,10 +1166,10 @@ def desktop(title: str, message: str, subtitle: str = "", run=subprocess.run, pl
     try:
         got = run(script, capture_output=True, text=True, timeout=NOTIFY_TIMEOUT_S)
     except (OSError, subprocess.SubprocessError) as exc:
-        return f"notify failed: {exc}"
+        return Said(f"notify failed: {exc}", FAILED)
     if got.returncode != 0:
-        return f"notify failed: osascript rc {got.returncode}: {(got.stderr or '').strip()[:200]}"
-    return f"{NOTIFIED}: {message}"
+        return Said(f"notify failed: osascript rc {got.returncode}: {(got.stderr or '').strip()[:200]}", FAILED)
+    return Said(f"{NOTIFIED}: {message}", ACTED, notified=True)
 
 
 class Hands:
@@ -1159,7 +1184,7 @@ class Hands:
         self.platform = sys.platform if platform is None else platform
 
     def note(self, f: Finding) -> str:
-        return "noted"
+        return Said("noted")
 
     def notify(self, f: Finding) -> str:
         return desktop(NOTIFY_TITLE, f"{f.criterion}: {f.subject.key}", BY_ID[f.criterion].what,
@@ -1167,7 +1192,7 @@ class Hands:
 
     def file(self, f: Finding) -> str:
         if self.environ.get(FILE_ENV, "") != "1":
-            return f"not filed: {FILE_ENV} is not 1"
+            return Said(f"not filed: {FILE_ENV} is not 1", REFUSED)
         from harness import paths, privacy
         fp = fingerprint(f)
         title = f"watchdog: {f.criterion} on {f.subject.kind} ({BY_ID[f.criterion].what})"
@@ -1177,35 +1202,37 @@ class Hands:
                 f"{FINGERPRINT} {fp}\n")
         found = privacy.check_post(f"{title}\n{body}")
         if found:
-            return f"not filed: privacy: the issue would hold {', '.join(sorted({x.name for x in found}))}"
+            return Said(f"not filed: privacy: the issue would hold {', '.join(sorted({x.name for x in found}))}",
+                        REFUSED)
         try:
             seen = self.run(["gh", "issue", "list", "--state", "open", "--search", f"{fp} in:body",
                              "--json", "number", "--limit", "1"], capture_output=True, text=True,
                             timeout=GH_TIMEOUT_S, cwd=paths.REPO)
             if seen.returncode != 0:
-                return f"not filed: gh issue list failed: {seen.stderr.strip()[:200]}"
+                return Said(f"not filed: gh issue list failed: {seen.stderr.strip()[:200]}", FAILED)
             hits = json.loads(seen.stdout or "[]")
             if hits:
                 return f"already filed: #{hits[0]['number']}"
             made = self.run(["gh", "issue", "create", "--title", title, "--body", body], capture_output=True,
                             text=True, timeout=GH_TIMEOUT_S, cwd=paths.REPO)
         except (OSError, subprocess.SubprocessError, ValueError) as exc:
-            return f"not filed: {exc}"
+            return Said(f"not filed: {exc}", FAILED)
         if made.returncode != 0:
-            return f"not filed: gh issue create failed: {made.stderr.strip()[:200]}"
+            return Said(f"not filed: gh issue create failed: {made.stderr.strip()[:200]}", FAILED)
         return f"filed: {made.stdout.strip()}"
 
     def pause(self, f: Finding) -> str:
         runs = f.subject.runs()
         if not runs:
-            return "pause unavailable: no progress file to pause through"
-        return "; ".join(self.reader.pause(r, f.criterion) for r in runs)
+            return Said("pause unavailable: no progress file to pause through", UNAVAILABLE)
+        got = [said(self.reader.pause(r, f.criterion)) for r in runs]
+        return Said("; ".join(got), ACTED if any(g.result == ACTED for g in got) else got[0].result)
 
     def _group(self, s: Subject) -> str:
         from harness import workqueue
         if s.pgid is None:
-            return f"refused: {s.key} has no process group made only of SoHoT processes"
-        return f"group {s.pgid}: {workqueue.stop_group(s.pgid, grace=STOP_GRACE_S)}"
+            return Said(f"refused: {s.key} has no process group made only of SoHoT processes", REFUSED)
+        return Said(f"group {s.pgid}: {workqueue.stop_group(s.pgid, grace=STOP_GRACE_S)}")
 
     def stop(self, f: Finding) -> str:
         if f.subject.pgid is not None:
@@ -1215,7 +1242,7 @@ class Hands:
 
     def reap(self, f: Finding) -> str:
         if not f.subject.orphan:
-            return f"refused: {f.subject.key} is not an orphan"
+            return Said(f"refused: {f.subject.key} is not an orphan", REFUSED)
         return self._group(f.subject)
 
     def unload(self, f: Finding) -> str:
@@ -1234,14 +1261,15 @@ class Hands:
                                          f"past {f.evidence['limit_s']:.0f}s")
         stem = f.subject.detail.get("stem", "")
         gone = router.release([stem], "watchdog: resident with nothing running", say=self.say)
-        return f"unloaded {stem}" if gone else f"kept {stem}: protected, gone, or a run is in flight"
+        return Said(f"unloaded {stem}") if gone else Said(f"kept {stem}: protected, gone, or a run is in flight",
+                                                          REFUSED)
 
     def _unload_idle(self, idle: list, keep=None,
                      why: str = "watchdog: memory at warn, resident with no running eval using it") -> str:
         """Give back each idle model a memory_warn or idle_unload finding named. #1082, #1157."""
         from harness import mlx_server, router
         if not idle:
-            return "nothing idle to unload: every resident model is in use or served"
+            return Said("nothing idle to unload: every resident model is in use or served", UNAVAILABLE)
         out = []
         for m in idle:
             if m.get("server") == "mlx":
@@ -1249,7 +1277,7 @@ class Hands:
             else:
                 gone = bool(router.release([m["model"]], why, keep=keep, say=self.say, proven_idle=True))
             out.append(f"{'unloaded' if gone else 'kept'} {m['server']} {m['model']}")
-        return "; ".join(out)
+        return Said("; ".join(out), ACTED if any(o.startswith("unloaded") for o in out) else REFUSED)
 
     def restart(self, f: Finding) -> str:
         from harness import paths
@@ -1257,36 +1285,36 @@ class Hands:
         if service in ("mlx", "interactive"):
             return self._kickstart(service)
         if service not in ("gateway", audio_models.SERVICE):
-            return f"refused: {service or f.subject.kind} is not a service the watchdog restarts"
+            return Said(f"refused: {service or f.subject.kind} is not a service the watchdog restarts", REFUSED)
         try:
             got = self.run(["/bin/bash", str(paths.REPO / "scripts" / "launchd.sh"), "restart", service],
                            capture_output=True, text=True, timeout=RESTART_TIMEOUT_S)
         except subprocess.TimeoutExpired:
-            return f"restart of {service} still waiting on the GPU lock after {RESTART_TIMEOUT_S:.0f}s"
+            return Said(f"restart of {service} still waiting on the GPU lock after {RESTART_TIMEOUT_S:.0f}s", FAILED)
         except OSError as exc:
-            return f"restart of {service} failed: {exc}"
-        return f"restarted {service}" if got.returncode == 0 else \
-            f"restart of {service} failed rc {got.returncode}: {got.stderr.strip()[:200]}"
+            return Said(f"restart of {service} failed: {exc}", FAILED)
+        return Said(f"restarted {service}") if got.returncode == 0 else \
+            Said(f"restart of {service} failed rc {got.returncode}: {got.stderr.strip()[:200]}", FAILED)
 
     def _kickstart(self, service: str) -> str:
         """kickstart -k without the GPU lock: a server that cannot generate has no work in flight to protect."""
         if self.platform != "darwin":
-            return f"refused: restarting {service} needs launchd (macOS); this is {self.platform}"
+            return Said(f"refused: restarting {service} needs launchd (macOS); this is {self.platform}", REFUSED)
         try:
             got = self.run(["launchctl", "kickstart", "-k", f"gui/{os.getuid()}/{LABEL}.{service}"],
                            capture_output=True, text=True, timeout=RESTART_TIMEOUT_S)
         except (AttributeError, OSError, subprocess.SubprocessError) as exc:
-            return f"restart of {service} failed: {exc}"
-        return f"restarted {service}" if got.returncode == 0 else \
-            f"restart of {service} failed rc {got.returncode}: {(got.stderr or '').strip()[:200]}"
+            return Said(f"restart of {service} failed: {exc}", FAILED)
+        return Said(f"restarted {service}") if got.returncode == 0 else \
+            Said(f"restart of {service} failed rc {got.returncode}: {(got.stderr or '').strip()[:200]}", FAILED)
 
     def do(self, action: str, f: Finding) -> str:
         if action not in ACTIONS:
             raise ValueError(f"not a watchdog action: {action}")
         try:
-            return getattr(self, action)(f)
+            return said(getattr(self, action)(f), action)
         except Exception as exc:  # noqa: BLE001 - one failed action must not cost the rest of the wake
-            return f"{action} failed: {type(exc).__name__}: {exc}"
+            return Said(f"{action} failed: {type(exc).__name__}: {exc}", FAILED)
 
 
 # --- record ----------------------------------------------------------------------
@@ -1313,12 +1341,9 @@ def overrun_stopped(conn, out) -> bool:
     from evals import watch
     if watch.stop_reason(out) == watch.OVERRUN:
         return True
-    # The evidence is JSON text: a backslash (every Windows path) or a non-ASCII name is escaped there.
-    out = json.dumps(str(out))[1:-1]
     row = conn.execute(
-        "SELECT 1 FROM watchdog_actions WHERE criterion = ? AND action = ? AND dry_run = 0 AND outcome LIKE 'group %' "
-        "AND (instr(evidence, ?) > 0 OR instr(evidence, ?) > 0) LIMIT 1",
-        (watch.OVERRUN, STOP, f"--out {out} ", f'--out {out}"')).fetchone()
+        "SELECT 1 FROM watchdog_actions WHERE criterion = ? AND action = ? AND dry_run = 0 AND result = ? "
+        "AND run_dir = ? LIMIT 1", (watch.OVERRUN, STOP, ACTED, canon(out))).fetchone()
     return row is not None
 
 
@@ -1326,8 +1351,8 @@ def notified_since(conn, f: Finding, now: float) -> float | None:
     """When this criterion last put a notification on this subject's desktop inside NOTIFY_EVERY_S, this machine."""
     row = conn.execute(
         "SELECT MAX(at) AS at FROM watchdog_actions WHERE criterion = ? AND subject = ? AND dry_run = 0 "
-        "AND instr(outcome, ?) > 0 AND at >= ? AND (machine_id = ? OR (machine_id IS NULL AND ? IS NULL))",
-        (f.criterion, f.subject.key, f"{NOTIFIED}:", now - NOTIFY_EVERY_S, _machine(conn), _machine(conn))
+        "AND notified = 1 AND at >= ? AND (machine_id = ? OR (machine_id IS NULL AND ? IS NULL))",
+        (f.criterion, f.subject.key, now - NOTIFY_EVERY_S, _machine(conn), _machine(conn))
     ).fetchone()
     return None if row["at"] is None else float(row["at"])
 
@@ -1336,25 +1361,36 @@ def notified_since(conn, f: Finding, now: float) -> float | None:
 PUSHED = ("memory_stuck",)
 
 
-def _act(conn, hands: Hands, action: str, f: Finding, now: float) -> str:
+def _act(conn, hands: Hands, action: str, f: Finding, now: float) -> Said:
     if action == NOTIFY:
         last = notified_since(conn, f, now)
         if last is not None:
-            return f"{HELD}: shown {now - last:.0f}s ago (once per {NOTIFY_EVERY_S:.0f}s per criterion and subject)"
-    done = hands.do(action, f)
+            return Said(f"{HELD}: shown {now - last:.0f}s ago (once per {NOTIFY_EVERY_S:.0f}s per criterion and "
+                        "subject)", WITHHELD)
+    done = said(hands.do(action, f), action)
     if action == PAUSE and f.criterion in PUSHED and notified_since(conn, f, now) is None:
-        done = f"{done}; {hands.do(NOTIFY, f)}"
+        shown = said(hands.do(NOTIFY, f), NOTIFY)
+        done = Said(f"{done}; {shown}", done.result, shown.notified)
     return done
+
+
+def run_dir(s: Subject) -> str:
+    """The run directory a subject's own eval writes, from its progress file or an absolute --out; '' when none."""
+    m = re.search(r"--out[= ](\S+)", s.command or "")
+    d = (s.progress or {}).get("_dir") or (m.group(1) if m and Path(m.group(1)).is_absolute() else "")
+    return canon(d) if d else ""
 
 
 def record(conn, f: Finding, action: str, escalated: bool, dry_run: bool, outcome: str, now: float) -> int:
     evidence = {**f.evidence, "identified_by": f.subject.why, "pid": f.subject.pid, "pgid": f.subject.pgid,
                 "command": f.subject.command, "owner": f.subject.owner, "fingerprint": fingerprint(f)}
+    got = Said(outcome, DRY) if dry_run else said(outcome, action)
     cur = conn.execute(
         "INSERT INTO watchdog_actions (at, machine_id, criterion, subject, action, escalated, dry_run, "
-        "evidence, outcome) VALUES (?,?,?,?,?,?,?,?,?)",
+        "evidence, outcome, result, notified, job_id, pgid, run_dir) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (now, _machine(conn), f.criterion, f.subject.key, action, int(escalated), int(dry_run),
-         json.dumps(evidence, default=str, sort_keys=True), outcome))
+         json.dumps(evidence, default=str, sort_keys=True), str(got), got.result, int(got.notified),
+         f.subject.job_id, f.subject.pgid, run_dir(f.subject)))
     conn.commit()
     return cur.lastrowid
 
@@ -1405,8 +1441,8 @@ def wake(conn, probes: Probes | None = None, hands: Hands | None = None, act: bo
             if action == PAUSE and not f.subject.runs():
                 # A time or memory limit never stops a job; one with nothing to pause through is told about. #1371.
                 action, f = NOTIFY, Finding(f.criterion, f.subject, {**f.evidence, "unpausable": UNPAUSABLE})
-            outcome = _act(conn, hands, action, f, now) if act else "dry-run"
-            if outcome.startswith(HELD):
+            outcome = _act(conn, hands, action, f, now) if act else Said("dry-run", DRY)
+            if outcome.result == WITHHELD:
                 held_knob = "watchdog_notify_every"
                 held[held_knob] = held.get(held_knob, 0) + 1
             row = record(conn, f, action, escalated, not act, outcome, now)
