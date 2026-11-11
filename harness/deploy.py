@@ -44,6 +44,8 @@ MIGRATE_TIMEOUT_S = 1800.0
 QUIESCE_TIMEOUT_S = 600.0
 #: The detail of a deploy that stopped because a job still ran here when it was due to migrate; the store kept its schema.
 NOT_QUIESCED = "not quiesced"
+#: The durable steps before the switch, each named in the record as it is about to be taken. #1752.
+PAUSE, BACKUP, MIGRATE, RECORD = "pause", "backup", "migrate", "record"
 #: How long a handed-off switch may take to start and record its pid before settle calls the deploy interrupted.
 HANDOFF_GRACE_S = 300.0
 #: How long launchctl may take to load the switch's one-shot unit.
@@ -640,13 +642,19 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
                     raise DeployError(f"deploy {deploy_id} left {at[0]} under the job: {stage_of(c, deploy_id)}")
                 at[0] = to
 
-            held = []
+            held, rec, path = [], {}, record_path(deploy_id)
+
+            def taking(step: str, **more) -> None:
+                rec.update(taking=step, **more)
+                deploy_switch.save(path, rec)
 
             def stop(why: str) -> int:
                 if held and not held[0]:
                     wq.resume()
                 if not finish(c, deploy_id, FAILED, why, now(), leaves=at[0], writer=ds.JOB):
                     log.write(f"--- deploy {deploy_id} left {at[0]} under the job: {stage_of(c, deploy_id)}\n")
+                if rec:
+                    taking(rec["taking"], stage=FAILED, outcome=FAILED, detail=why[:2000], finished_at=now())
                 log.write(f"--- failed: {why}\n")
                 log.flush()
                 _alert(steps, previous, f"deploy of {sha[:12]} failed before the switch: {why}", log)
@@ -685,9 +693,19 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
                        site_knob="harness/deploy.py:SMOKE_TIMEOUT_S")
             if why:
                 return stop(f"smoke before the switch: {why}")
-            # Paused before the migration, so no job of this release starts against the new schema. #1795.
+            # Each durable step below is recorded before it is taken, so settle can undo a death at any point. #1752.
+            note = f"deploy {deploy_id} of {sha[:12]}"
             held.append(wq.paused())
-            wq.pause(f"deploy {deploy_id} of {sha[:12]}")
+            rec.update({"id": deploy_id, "sha": sha, "job_id": job_id, "link": str(link), "release": str(release),
+                        "previous": str(previous), "previous_sha": previous_sha, "db": str(ms.db_path()),
+                        "backup": "", "migrated": False, "queue_was_paused": held[0], "pause_note": note,
+                        "queue_flag": str(wq._pause_flag()), "install": steps.install,
+                        "rollback_install": steps.install, "verify": [steps.smoke, steps.coherence],
+                        "repair": steps.repair, "alert": steps.alert, "log": str(log_path),
+                        "install_env": str(install_env.path()), "stage": at[0], "outcome": "", "run_pid": os.getpid()})
+            taking(PAUSE)
+            # Paused before the migration, so no job of this release starts against the new schema. #1795.
+            wq.pause(note)
             have, want = _store_schema(c), wq.code_schema(release) or 0
             schema = {"schema_from": have, "schema_to": max(have, want)}
             saved, migrated = "", want > have
@@ -696,32 +714,24 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
                 if why:
                     return stop(f"{NOT_QUIESCED}: {why}; the store stays at schema {have}")
                 saved = str(backups_dir() / f"discovery-{deploy_id}-pre{want}.db")
+                taking(BACKUP, stage=ds.MIGRATING, backup=saved, **schema)
                 # Written before the copy, so a restored store still names its own backup.
                 try:
                     go(ds.MIGRATING, backup=saved, **schema)
                 except DeployError as exc:
                     return stop(str(exc))
                 backup(ms.db_path(), Path(saved))
+                taking(MIGRATE, migrated=True)
                 why = _run(steps.migrate, release, MIGRATE_TIMEOUT_S, log, {paths.ALLOW_MIGRATE_ENV: "1"},
                            site_knob="harness/deploy.py:MIGRATE_TIMEOUT_S")
                 if why:
                     deploy_switch.restore(Path(saved), ms.db_path())
                     return stop(f"migration to schema {want}: {why}; store restored from {saved}")
-            rec = {"id": deploy_id, "sha": sha, "job_id": job_id, "link": str(link), "release": str(release),
-                   "previous": str(previous), "previous_sha": previous_sha, "db": str(ms.db_path()),
-                   "backup": saved, "migrated": migrated, "queue_was_paused": held[0],
-                   "queue_flag": str(wq._pause_flag()), "install": steps.install,
-                   "rollback_install": steps.install, "verify": [steps.smoke, steps.coherence], "repair": steps.repair,
-                   "alert": steps.alert, "log": str(log_path), "install_env": str(install_env.path()),
-                   "stage": ds.HANDED_OFF, "outcome": "",
-                   "handed_at": now()}
-            path = record_path(deploy_id)
-            deploy_switch.save(path, rec)
+            taking(RECORD, stage=ds.HANDED_OFF, handed_at=now())
             try:
                 go(ds.HANDED_OFF, **({} if migrated else schema))
                 how = spawn(path, release)
             except (DeployError, OSError, subprocess.SubprocessError) as exc:
-                path.unlink(missing_ok=True)
                 if migrated:
                     deploy_switch.restore(Path(saved), ms.db_path())
                     # The restore put the row back as the backup saw it.
@@ -743,10 +753,91 @@ def _read(path: Path) -> dict:
         return {}
 
 
+def _running(rec: dict, now: float, alive) -> bool:
+    """Whether the job or switch behind an outcome-less record may still be at work."""
+    if rec.get("pid") and alive(int(rec["pid"])):
+        return True
+    if rec.get("run_pid") and rec.get("stage") in ds.JOB_STAGES and alive(int(rec["run_pid"])):
+        return True
+    return rec.get("stage") == ds.HANDED_OFF and now - float(rec.get("handed_at") or 0) < HANDOFF_GRACE_S
+
+
+def _lift(rec: dict) -> str:
+    """Lift the queue pause this deploy set, never one its owner set before or after it; what became of it."""
+    flag = Path(rec.get("queue_flag") or wq._pause_flag())
+    if not flag.exists():
+        return ""
+    if rec.get("queue_was_paused"):
+        return "the queue stays paused, as its owner had it"
+    note = rec.get("pause_note")
+    try:
+        text = flag.read_text(encoding="utf-8")
+    except OSError:
+        text = ""
+    if note and note not in text:
+        return "the queue stays paused: its owner paused it after the deploy did"
+    flag.unlink(missing_ok=True)
+    return "the queue pause it set is lifted"
+
+
+def _schema_now(db) -> int:
+    from harness import store
+    conn = store.open_ro(db)
+    try:
+        return _store_schema(conn)
+    finally:
+        conn.close()
+
+
+def _undo(rec: dict) -> tuple[str, bool]:
+    """Bring the store back to the schema the linked release speaks from the recorded backup; (what it found, ok)."""
+    from harness import memory_store as ms
+    if not rec.get("backup"):
+        return "", True
+    link = rec.get("link") or paths.deploy_link()
+    speaks = wq.code_schema(os.path.realpath(link)) if link else None
+    db = Path(rec.get("db") or ms.db_path())
+    have = _schema_now(db)
+    if speaks is None:
+        return f"the store is at schema {have} and no linked release says which schema it speaks", True
+    if have <= speaks:
+        return f"the linked release (schema {speaks}) reads the store at schema {have}, so it is not restored", True
+    try:
+        got = deploy_switch.restore(Path(rec["backup"]), db)
+    except Exception as exc:  # noqa: BLE001 - any failure leaves the store ahead; said, and the queue stays paused
+        return (f"the store at schema {have} is ahead of the linked release (schema {speaks}) and its restore from "
+                f"{rec['backup']} FAILED ({deploy_switch.named(exc)})"), False
+    return (f"the store was at schema {have}, ahead of the linked release (schema {speaks}); restored from "
+            f"{rec['backup']} (schema {got})"), True
+
+
+def recover(now: float | None = None, alive=wq.alive) -> list[dict]:
+    """Undo each deploy that died before its switch started, reading no store row: settle runs it first. #1752."""
+    now = time.time() if now is None else now
+    out = []
+    for path in sorted(records_dir().glob("*.json")):
+        rec = _read(path)
+        if not rec or rec.get("outcome") or rec.get("stage") not in ds.JOB_STAGES or _running(rec, now, alive):
+            continue
+        step = rec.get("taking") or rec["stage"]
+        head = (f"the switch it handed off never started within {HANDOFF_GRACE_S:.0f} s" if step in (RECORD, ds.HANDED_OFF)
+                else f"the job died at its {step} step, before the switch")
+        found, ok = _undo(rec)
+        lifted = _lift(rec) if ok else "the queue stays paused until the store is put right"
+        why = "; ".join(filter(None, (head, found, lifted)))
+        rec.update(stage=INTERRUPTED, outcome=INTERRUPTED, detail=why[:2000], finished_at=now)
+        deploy_switch.save(path, rec)
+        _alert_here(f"deploy {rec.get('id', path.stem)} of {str(rec.get('sha', ''))[:12]} interrupted: {why}")
+        out.append({"deploy": rec.get("id", path.stem), "outcome": INTERRUPTED, "detail": why})
+    return out
+
+
 def settle(conn=None, now: float | None = None, alive=wq.alive) -> list[dict]:
     """Close every unfinished deploy of this machine whose job or switch has ended; a deploy job is never left running."""
     now = time.time() if now is None else now
     settled = []
+    # Before the store is opened: a deploy that died after migrating leaves it ahead of this code. #1752.
+    recover(now, alive)
     with wq._store(conn) as c:
         where, args = wq._here(c)
         for row in c.execute(f"SELECT * FROM deploys WHERE outcome = '' AND {where} ORDER BY id", args).fetchall():
@@ -799,18 +890,15 @@ def _settle_one(c, row: dict, now: float, alive) -> dict | None:
             cuts.cut(site_knob, t["what"], kept=0, dropped=1, conn=c)
         if job is not None:
             ok = got == DEPLOYED
-            _close_job(c, job["id"], wq.DONE if ok else wq.FAILED, 0 if ok else 1,
+            _close_job(c, job["id"], wq.DONE if ok else wq.FAILED, 0 if ok else None if got == INTERRUPTED else 1,
                        f"deploy {row['id']} {got}: {rec.get('detail', '')}", now)
         return {"deploy": row["id"], "outcome": got}
     if rec:
-        if rec.get("pid") and alive(int(rec["pid"])):
-            return None
-        if rec.get("stage") == ds.HANDED_OFF and now - float(rec.get("handed_at") or 0) < HANDOFF_GRACE_S:
+        if _running(rec, now, alive):
             return None
         seen = view({**row, **{k: rec[k] for k in ("release", "previous") if rec.get(k)}}, rec, Path(rec["link"]))
         why = f"the switch stopped at {rec.get('stage')} without an outcome; {said(seen)}"
-        if not rec.get("queue_was_paused"):
-            Path(rec["queue_flag"]).unlink(missing_ok=True)
+        _lift(rec)
     else:
         if job is not None and job["state"] == wq.RUNNING and wq._pid_of(job["id"]) is not None:
             return None
