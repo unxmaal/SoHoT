@@ -10,6 +10,9 @@ from http.server import BaseHTTPRequestHandler
 
 from harness.loopback import ThreadingHTTPServer
 
+#: What a 503 asks the exporter to wait while the store is ahead of this release. #1799.
+RETRY_AFTER_S = 30.0
+
 HOST, PORT = "127.0.0.1", 4318
 LOOPBACK = ("127.0.0.1", "localhost")
 PREFIX = "claude_code."
@@ -265,20 +268,36 @@ def server(host: str = HOST, port: int = PORT, sink=None, clock=None) -> Threadi
     import time
     if host not in LOOPBACK:
         raise ValueError(f"the OTLP receiver binds loopback only ({', '.join(LOOPBACK)}), not {host!r}")
+    import threading
+
+    from harness import store_ahead
     sink = sink or _store_sink
     clock = clock or time.time
+    told: set = set()
 
     class Handler(BaseHTTPRequestHandler):
         def do_POST(self):
             n = int(self.headers.get("Content-Length") or 0)
-            status, body = handle(self.path, self.headers.get("Content-Type", ""),
-                                  self.headers.get("Content-Encoding", ""), self.rfile.read(n), sink, clock())
+            kind = ""
+            try:
+                status, body = handle(self.path, self.headers.get("Content-Type", ""),
+                                      self.headers.get("Content-Encoding", ""), self.rfile.read(n), sink, clock())
+            except Exception as exc:  # noqa: BLE001 - only a newer store is answered here; anything else raises
+                if store_ahead.newer(exc) is None:
+                    raise
+                # The exporter retries a 503, so the batch reaches the release that speaks the store. #1799.
+                kind, text = store_ahead.answer(exc, told)
+                status, body = 503, {"error": text}
             out = json.dumps(body).encode()
             self.send_response(status)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(out)))
+            if kind:
+                self.send_header("Retry-After", str(int(RETRY_AFTER_S)))
             self.end_headers()
             self.wfile.write(out)
+            if kind == store_ahead.SUPERSEDED:
+                threading.Thread(target=self.server.shutdown, daemon=True).start()
 
         def log_message(self, fmt, *args):
             return None

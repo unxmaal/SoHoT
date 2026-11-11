@@ -118,9 +118,9 @@ def test_a_live_store_at_another_schema_is_left_alone_with_one_line(live_pg, cap
     got = local_tools.complete(prompt="write add", lane="code")
     assert got["call_id"] and got["text"]
     err = capsys.readouterr().err
-    assert err.count("not recorded in the live store") == 1, err
-    assert f"schema {SCHEMA_VERSION - 1}" in err
-    assert cli.main(["delegated", got["call_id"], "used"]) == 1
+    assert err.count(f"live store is at schema {SCHEMA_VERSION - 1}") == 1, err
+    # Spooled for the deployed release to land (#1789), never written at another schema.
+    assert cli.main(["delegated", got["call_id"], "used"]) == 0
     assert _digest(live_pg) == before
 
 
