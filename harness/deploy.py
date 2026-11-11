@@ -40,6 +40,10 @@ SMOKE_TIMEOUT_S = 1200.0
 PROBE_TIMEOUT_S = 300.0
 #: How long the new release's migration of the live store may take.
 MIGRATE_TIMEOUT_S = 1800.0
+#: How long a deploy due to migrate waits, the queue paused, for every other job running here to end. #1795.
+QUIESCE_TIMEOUT_S = 600.0
+#: The detail of a deploy that stopped because a job still ran here when it was due to migrate; the store kept its schema.
+NOT_QUIESCED = "not quiesced"
 #: How long a handed-off switch may take to start and record its pid before settle calls the deploy interrupted.
 HANDOFF_GRACE_S = 300.0
 #: How long launchctl may take to load the switch's one-shot unit.
@@ -567,8 +571,27 @@ def spawn_switch(record: Path, release_for_log: Path) -> str:
     return f"pid {child.pid}"
 
 
+def _quiesce(c, job_id, log, sleep=time.sleep) -> str:
+    """'' once no job but this deploy runs here, else the jobs still running at QUIESCE_TIMEOUT_S. #1795."""
+    from harness import cuts
+    end, said = time.monotonic() + QUIESCE_TIMEOUT_S, False
+    while True:
+        left = [wq.label(j["id"]) for j in wq.running_here(c)
+                if wq._key(j["id"]) != wq._key(job_id) and wq._pid_of(j["id"]) is not None]
+        if not left:
+            return ""
+        if time.monotonic() >= end:
+            cuts.cut("harness/deploy.py:QUIESCE_TIMEOUT_S", "deploy quiesce", kept=0, dropped=1, conn=c)
+            return f"job {', '.join(left)} still running here after {QUIESCE_TIMEOUT_S:.0f} s"
+        if not said:
+            log.write(f"--- waiting up to {QUIESCE_TIMEOUT_S:.0f} s for job {', '.join(left)} before the migration\n")
+            log.flush()
+            said = True
+        sleep(min(2.0, max(0.0, end - time.monotonic())))
+
+
 def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: Steps | None = None,
-        spawn=spawn_switch, now=time.time) -> int:
+        spawn=spawn_switch, now=time.time, sleep=time.sleep) -> int:
     """The deploy job: build, smoke, back up and migrate, then hand off the switch; HANDED_OFF, or 1 when it stopped."""
     from harness import memory_store as ms
     steps = steps or Steps()
@@ -590,7 +613,11 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
                     raise DeployError(f"deploy {deploy_id} left {at[0]} under the job: {stage_of(c, deploy_id)}")
                 at[0] = to
 
+            held = []
+
             def stop(why: str) -> int:
+                if held and not held[0]:
+                    wq.resume()
                 if not finish(c, deploy_id, FAILED, why, now(), leaves=at[0], writer=ds.JOB):
                     log.write(f"--- deploy {deploy_id} left {at[0]} under the job: {stage_of(c, deploy_id)}\n")
                 log.write(f"--- failed: {why}\n")
@@ -631,10 +658,16 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
                        site_knob="harness/deploy.py:SMOKE_TIMEOUT_S")
             if why:
                 return stop(f"smoke before the switch: {why}")
+            # Paused before the migration, so no job of this release starts against the new schema. #1795.
+            held.append(wq.paused())
+            wq.pause(f"deploy {deploy_id} of {sha[:12]}")
             have, want = _store_schema(c), wq.code_schema(release) or 0
             schema = {"schema_from": have, "schema_to": max(have, want)}
             saved, migrated = "", want > have
             if migrated:
+                why = _quiesce(c, job_id, log, sleep)
+                if why:
+                    return stop(f"{NOT_QUIESCED}: {why}; the store stays at schema {have}")
                 saved = str(backups_dir() / f"discovery-{deploy_id}-pre{want}.db")
                 # Written before the copy, so a restored store still names its own backup.
                 try:
@@ -649,21 +682,18 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
                     return stop(f"migration to schema {want}: {why}; store restored from {saved}")
             rec = {"id": deploy_id, "sha": sha, "job_id": job_id, "link": str(link), "release": str(release),
                    "previous": str(previous), "previous_sha": previous_sha, "db": str(ms.db_path()),
-                   "backup": saved, "migrated": migrated, "queue_was_paused": wq.paused(),
+                   "backup": saved, "migrated": migrated, "queue_was_paused": held[0],
                    "queue_flag": str(wq._pause_flag()), "install": steps.install,
                    "rollback_install": steps.install, "verify": [steps.smoke, steps.coherence], "repair": steps.repair,
                    "alert": steps.alert, "log": str(log_path), "install_env": str(install_env.path()),
                    "stage": ds.HANDED_OFF, "outcome": "",
                    "handed_at": now()}
-            wq.pause()
             path = record_path(deploy_id)
             deploy_switch.save(path, rec)
             try:
                 go(ds.HANDED_OFF, **({} if migrated else schema))
                 how = spawn(path, release)
             except (DeployError, OSError, subprocess.SubprocessError) as exc:
-                if not rec["queue_was_paused"]:
-                    wq.resume()
                 path.unlink(missing_ok=True)
                 if migrated:
                     deploy_switch.restore(Path(saved), ms.db_path())
