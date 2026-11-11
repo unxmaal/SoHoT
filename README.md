@@ -1161,7 +1161,15 @@ need. Scores are appended per search, so a stopped run resumes. `--no-model`
 reports from what is stored. `--strict` counts a reference only when the kind is
 named beside the id. The filter keeps every hit when in doubt, keeps every hit
 whose id the caller named, and is not wired into any session until the
-held-out gate passes.
+held-out gate passes. The eval also scores a lexical arm with no model (idf of
+the words a hit shares with the query and need, idf from the tuning weeks'
+hits, written to `vocab.json`) and the mean of decide and lexical. A local arm
+ships only when its gate holds and it keeps more referenced hits than lexical
+at its own kept tokens (#1690); the report's `ship` names the arm.
+`soh kb-filter --hook --dir DIR` is the PostToolUse hook that runs that arm on
+each `mcp__mcm-engine__search` result, shows the kept hits and names the rest
+by id, and leaves the result whole on any failure. `soh kb-filter --settings
+--dir DIR` prints the settings block that turns it on; nothing installs it.
 
 `soh ledger` joins cloud and local per day (#826). Cloud is Claude Code's
 input, output and cache tokens from

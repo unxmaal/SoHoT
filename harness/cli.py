@@ -690,9 +690,15 @@ def build_parser() -> argparse.ArgumentParser:
                      help="transcript root (default $SOH_CLAUDE_PROJECTS or ~/.claude/projects)")
     ctx.set_defaults(func=context_cmd.cmd_context)
     kbf = sub.add_parser("kb-filter", help="--eval: does a local model keep the KB search hits sessions "
-                         "referenced later, against a position cut, on the newest week (#1334)")
-    kbf.add_argument("--eval", action="store_true", required=True, help="build the labelled set, score, report")
-    kbf.add_argument("--dir", required=True, help="working directory: set.jsonl, <arm>.jsonl scores, report.json")
+                         "referenced later, against a lexical and a position cut, on the newest week; --hook runs "
+                         "the arm the report ships (#1334)")
+    kbf_how = kbf.add_mutually_exclusive_group(required=True)
+    kbf_how.add_argument("--eval", action="store_true", help="build the labelled set, score, report")
+    kbf_how.add_argument("--hook", action="store_true", help="read a PostToolUse event on stdin and print the "
+                         "filtered search result, by the arm and cuts in DIR's report")
+    kbf_how.add_argument("--settings", action="store_true", help="print the settings.json block that runs --hook")
+    kbf.add_argument("--dir", required=True, help="working directory: set.jsonl, <arm>.jsonl scores, report.json, "
+                     "vocab.json")
     kbf.add_argument("--since", default="30d", help="transcripts from here build the labelled set")
     kbf.add_argument("--days", type=float, default=7.0, help="the newest DAYS of searches are held out")
     kbf.add_argument("--tune", type=int, default=300, help="earlier searches the decide threshold is tuned on")
