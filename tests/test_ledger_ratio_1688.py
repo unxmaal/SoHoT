@@ -5,7 +5,7 @@ import json
 import subprocess
 from datetime import datetime, timezone
 
-from harness import cli, ledger, morning
+from harness import cli, ledger, morning, paths
 from harness import memory_store as ms
 from harness.commands import morning as morning_cmd
 from tests.test_morning_867 import _beat, _gh, _git
@@ -114,6 +114,7 @@ def test_morning_leads_with_the_ratio_and_the_target_from_recorded_days(monkeypa
     _ccusage(monkeypatch)
     _rows((local("2026-10-08"), "sohot-decide", "decide", "unknown", 12000, 6000),
           (local("2026-10-08"), "sohot-code", "code", "eval", 900_000, 90_000))
+    monkeypatch.setattr(paths, "DEFAULT_HOME", paths.home())
     assert cli.main(["ledger", "--since", "2026-10-08", "--record"]) == 0
     capsys.readouterr()
     now = local("2026-10-09", 6)

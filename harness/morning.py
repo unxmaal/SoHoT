@@ -213,10 +213,14 @@ def ratio(conn, now: float) -> dict | None:
     """Local over cloud tokens for yesterday and the week to it, from ledger_days' recorded counts. #1688."""
     if not _has(conn, "ledger_days"):
         return None
-    from harness import ledger
+    from harness import ledger, store
     yesterday = ledger.day_of(now - 86400)
     first = ledger.ratio_over({}, yesterday, ledger.RATIO_DAYS)["first_day"]
-    days = {r["day"]: r["ratio"] for r in ledger.recorded(conn, first) if r.get("ratio")}
+    try:
+        got = ledger.recorded(conn, first)
+    except store.Unread:
+        return None
+    days = {r["day"]: r["ratio"] for r in got if r.get("ratio")}
     return ledger.headline(days, yesterday)
 
 
