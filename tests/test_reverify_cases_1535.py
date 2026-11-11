@@ -6,6 +6,7 @@ from harness import workqueue as wq
 from harness.commands import reverify as reverify_cmd
 from tests.test_reverify import (DAY, NOW, VERSIONS, _latest, check, conn, on,  # noqa: F401
                                  powered, queued, record_run)
+from tests import job_rows
 
 pytestmark = pytest.mark.usefixtures("powered")
 
@@ -68,7 +69,7 @@ def test_a_baseline_that_shares_no_case_with_the_lane_has_nothing_to_pair_on(con
 
 def _rerun(conn, results):
     job = queued(conn)[-1]
-    wq._write({**job, "state": wq.DONE, "rc": 0}, conn=conn)
+    job_rows.put({**job, "state": wq.DONE, "rc": 0}, conn=conn)
     record_run(conn, "code", results, at=NOW + 60, job_id=job["id"])
     return check(conn, now=NOW + 120)
 
@@ -111,7 +112,7 @@ def test_a_flagged_lane_whose_cases_grew_keeps_its_rerun_spacing(conn, lane):
     lane["all"] = set(_ids(15))
     check(conn)
     job = queued(conn)[-1]
-    wq._write({**job, "state": wq.FAILED, "rc": 1}, conn=conn)
+    job_rows.put({**job, "state": wq.FAILED, "rc": 1}, conn=conn)
     check(conn, now=NOW + 120)
     assert _latest(conn)["outcome"] == reverify.UNRUN
     entry = _entry(check(conn, now=NOW + DAY))

@@ -16,12 +16,10 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
-from harness import exclusive, paths, resources
+from harness import exclusive, job_state as js, paths, resources
 
-PENDING, RUNNING, DONE, FAILED = "pending", "running", "done", "failed"
-CANCELLED = "cancelled"
-#: A job whose command paused on request with its work checkpointed (evals.watch.PAUSED). #1357.
-PAUSED = "paused"
+PENDING, RUNNING, DONE, FAILED = js.PENDING, js.RUNNING, js.DONE, js.FAILED
+CANCELLED, PAUSED = js.CANCELLED, js.PAUSED
 #: The resource classes the worker starts by; a deploy runs alone. #1153, #1506, #1508.
 GPU, CLOUD, DEPLOY = resources.GPU, resources.NETWORK, resources.DEPLOY
 #: How often a worker with jobs running looks for one it can start beside them. #1153.
@@ -98,7 +96,7 @@ def _row(conn, r) -> dict:
             "argv": json.loads(r["argv"] or "[]"), "cwd": r["cwd"],
             "state": r["state"], "added": _iso(r["created_at"]),
             "started": _iso(r["started_at"]), "finished": _iso(r["finished_at"]),
-            "rc": r["rc"], "log": r["log"], "note": r["note"],
+            "rc": r["rc"], "log": r["log"], "note": r["note"], "reason": r["reason"],
             "requested_by": r["requested_by"], "machine_id": r["machine_id"],
             "not_before": _iso(r["not_before"]), "runs": runs,
             "resource": r["resource"]}
@@ -258,10 +256,10 @@ def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
         machine = _machine(c)
         # The store assigns the id inside the insert, so two writers cannot collide. #418.
         cur = c.execute(
-            "INSERT INTO jobs (title, kind, output, priority, argv, cwd, state, "
-            "created_at, requested_by, machine_id, not_before, resource) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO jobs (title, kind, output, priority, argv, cwd, state, reason, "
+            "created_at, requested_by, machine_id, not_before, resource) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (title or " ".join(argv), kind, output, int(priority),
-             json.dumps([str(a) for a in argv]), cwd or os.getcwd(), PENDING,
+             json.dumps([str(a) for a in argv]), cwd or os.getcwd(), PENDING, js.ADDED,
              time.time(), requested_by, machine,
              None if not_before is None else float(not_before), resource))
         c.commit()
@@ -365,6 +363,11 @@ def _only_pending(c, job_id, sql: str, args=(), verb: str = "changed") -> None:
                                      (*args, key, PENDING)).rowcount == 1:
         c.commit()
         return
+    _not_pending(c, job_id, verb)
+
+
+def _not_pending(c, job_id, verb: str):
+    """Raise why a job that is not pending, or not there, cannot be `verb`."""
     c.rollback()
     job = get(job_id, conn=c)
     if job is None:
@@ -385,8 +388,9 @@ def cancel(job_id: str, conn=None, grace: float = CANCEL_GRACE_S) -> dict:
         job = get(job_id, conn=c)
         if job is None or job["state"] != RUNNING:
             note = f"cancelled by soh jobs cancel at {time.strftime(_STAMP)}; before it started"
-            _only_pending(c, job_id, "UPDATE jobs SET state = ?, finished_at = ?, note = ?",
-                          (CANCELLED, time.time(), note), verb="cancelled")
+            if job is None or not js.move(c, job["id"], PENDING, CANCELLED, js.CANCEL, note, finished_at=time.time()):
+                _not_pending(c, job_id, "cancelled")
+            c.commit()
             return get(job_id, conn=c)
     pid = _pid_of(job["id"])
     if pid is None:
@@ -399,16 +403,15 @@ def cancel(job_id: str, conn=None, grace: float = CANCEL_GRACE_S) -> dict:
     return get(job["id"]) or job
 
 
-def _settle_cancelled(job: dict, how: str = "", rc=None) -> None:
+def _settle_cancelled(job: dict, how: str = "") -> bool:
+    """Move a running job cancelled; False when its worker recorded its exit first, which then stands. #1728."""
     said = {"term": "stopped on request", "kill": "killed after the grace period",
             "gone": "had already exited"}.get(how, "stopped")
-    note = f"cancelled by soh jobs cancel at {time.strftime(_STAMP)}; {said}"
-    stored = get(job["id"])
-    if not how and stored and stored["state"] == CANCELLED:
-        note = stored["note"]
-    job.update(state=CANCELLED, finished=job.get("finished") or time.strftime(_STAMP),
-               note=note, rc=job.get("rc") if rc is None else rc)
-    _write(job)
+    with _store() as c:
+        took = js.move(c, job["id"], RUNNING, CANCELLED, js.CANCEL,
+                       f"cancelled by soh jobs cancel at {time.strftime(_STAMP)}; {said}", finished_at=time.time())
+        c.commit()
+    return took
 
 
 def _pids() -> Path:
@@ -459,12 +462,38 @@ def itemized(job: dict) -> bool:
             and not {"--confirm", "--power", "--from-measurement", "--dry-run"} & set(argv))
 
 
+def _flag_files(job_id) -> dict:
+    """job_state flag name -> its file beside the job's pid file."""
+    return {js.CANCEL_FLAG: _cancel_flag(job_id), js.STOP_FLAG: _stop_flag(job_id),
+            js.ITEM_FLAG: _item_flag(job_id), js.DEPLOY_FLAG: _deploy_flag(job_id)}
+
+
+def _flags(job_id) -> frozenset:
+    """The flags set for a job, read once to choose its next move."""
+    return frozenset(k for k, f in _flag_files(job_id).items() if f.exists())
+
+
+def _clear_flags(job_id) -> None:
+    for f in _flag_files(job_id).values():
+        f.unlink(missing_ok=True)
+
+
 def _pid_of(job_id) -> int | None:
     try:
         pid = int(_pid_file(job_id).read_text(encoding="utf-8").strip())
     except (OSError, ValueError):
         return None
-    return pid if alive(pid) else None
+    return pid if alive(pid) and _leads(pid) else None
+
+
+def _leads(pid: int) -> bool:
+    """Whether pid still leads its own process group, as a job's started process does; a reused pid does not. #1728."""
+    if sys.platform == "win32":
+        return True
+    try:
+        return os.getpgid(int(pid)) == int(pid)
+    except OSError:
+        return False
 
 
 def spawn_group(argv, cwd, stdout, env) -> subprocess.Popen:
@@ -591,18 +620,6 @@ def stop_group(pid: int, grace: float = CANCEL_GRACE_S, sleep=time.sleep, proc=N
     return "kill"
 
 
-def _write(job: dict, conn=None) -> None:
-    """Store a job dict's mutable fields back to its row."""
-    with _store(conn) as c:
-        c.execute("UPDATE jobs SET state = ?, started_at = ?, finished_at = ?, "
-                  "rc = ?, log = ?, note = ?, priority = ? WHERE id = ?",
-                  (job["state"], _epoch(job.get("started")),
-                   _epoch(job.get("finished")), job.get("rc"),
-                   job.get("log") or "", job.get("note") or "",
-                   int(job.get("priority") or 0), int(job["id"])))
-        c.commit()
-
-
 def _pause_flag() -> Path:
     return root() / "paused"
 
@@ -695,11 +712,8 @@ def _claim(job: dict, log: Path) -> bool:
     started = time.strftime(_STAMP)
     with _store() as c:
         mid = _machine(c)
-        took = c.execute(
-            "UPDATE jobs SET state = ?, started_at = ?, log = ?, machine_id = ? "
-            "WHERE id = ? AND state = ? AND (machine_id = ? OR machine_id IS NULL)",
-            (RUNNING, _epoch(started), str(log), mid, int(job["id"]), PENDING,
-             mid)).rowcount == 1
+        took = js.move(c, job["id"], PENDING, RUNNING, js.CLAIMED, started_at=_epoch(started), log=str(log),
+                       machine_id=mid, where="(machine_id = ? OR machine_id IS NULL)", args=(mid,))
         c.commit()
     if took:
         job.update(state=RUNNING, started=started, log=str(log), machine_id=mid)
@@ -708,8 +722,7 @@ def _claim(job: dict, log: Path) -> bool:
 
 def _unclaim(job: dict, why: str) -> None:
     with _store() as c:
-        c.execute("UPDATE jobs SET state = ?, started_at = NULL, log = '', note = ? WHERE id = ? AND state = ?",
-                  (PENDING, why, int(job["id"]), RUNNING))
+        js.move(c, job["id"], RUNNING, PENDING, js.UNCLAIMED, why, started_at=None, log="")
         c.commit()
 
 
@@ -735,6 +748,10 @@ def leased(job: dict, pid: int | None = None):
     n = admission.need(job) if cls == GPU and pid is None else admission.Need(None, why="not a new gpu load")
 
     def fits(held):
+        lapsed = exclusive._lapsed(c, time.time())
+        if lapsed:
+            said["why"] = f"gpu lease {lapsed[0]['id']} ({lapsed[0]['item']}) lapsed while its holder still runs"
+            return False
         ok, said["why"] = admission.admit(n, held)
         return ok
     with _store() as c:
@@ -748,12 +765,24 @@ def leased(job: dict, pid: int | None = None):
     stop = threading.Event()
 
     def keep():
-        while not stop.wait(item_lease.TTL_S / 3):
+        ok_at, wait = time.monotonic(), item_lease.TTL_S / 3
+        while not stop.wait(wait):
             try:
                 with _store() as c:
-                    item_lease.beat(c, got["id"])
-            except Exception as exc:  # noqa: BLE001 - a missed beat lapses the lease, which recovery reads
+                    if item_lease.beat(c, got["id"]):
+                        ok_at, wait = time.monotonic(), item_lease.TTL_S / 3
+                        continue
+                why = "its lease lapsed or was released"
+            except Exception as exc:  # noqa: BLE001 - a store that will not answer is retried until the deadline
+                gone = time.monotonic() - ok_at
+                why = f"no lease beat for {gone:.0f}s: {exc}"
                 print(f"{time.strftime('%H:%M:%S')} job {job['id']}: lease beat failed: {exc}", flush=True)
+                if gone < item_lease.TTL_S * 2 / 3:
+                    wait = item_lease.TTL_S / 12
+                    continue
+            if not stop.is_set():
+                _lease_lost(job, why)
+            return
 
     beating = threading.Thread(target=keep, name=f"lease-{job['id']}", daemon=True)
     beating.start()
@@ -763,6 +792,15 @@ def leased(job: dict, pid: int | None = None):
         stop.set()
         with _store() as c:
             item_lease.release(c, got["id"])
+
+
+def _lease_lost(job: dict, why: str) -> None:
+    """Stop a job whose lease is gone or about to lapse, so no second job takes its class under it. #1728, #1732."""
+    from harness import executors
+    print(f"{time.strftime('%H:%M:%S')} job {job['id']}: lease lost ({why}); stopping it", flush=True)
+    pid = _pid_of(job["id"])
+    if pid is not None:
+        executors.for_job(job).stop(pid, CANCEL_GRACE_S)
 
 
 def run_one(job: dict, popen=None) -> dict | None:
@@ -803,19 +841,17 @@ def job_venv(cwd, environ) -> dict:
 def _run_claimed(job: dict, log: Path, popen=None) -> dict | None:
     with _store() as c:
         stale = stale_schema(job["cwd"] or ".", c)
-    if stale:
-        log.write_text(f"not started: {stale}\n", encoding="utf-8")
-        job.update(rc=None, state=FAILED, note=f"not started: {stale}", finished=time.strftime(_STAMP))
-        _write(job)
-        return get(job["id"]) or job
+        if stale:
+            log.write_text(f"not started: {stale}\n", encoding="utf-8")
+            js.move(c, job["id"], RUNNING, FAILED, js.NOT_STARTED, f"not started: {stale}", rc=None,
+                    finished_at=time.time())
+            c.commit()
+            return get(job["id"], conn=c) or job
     env = {**job_venv(job["cwd"] or ".", os.environ), JOB_ENV: str(int(job["id"]))}
     env.pop(ITEM_ENV, None)
     if itemized(job):
         env[ITEM_ENV] = f"{ITEM_S:g}"
-    _cancel_flag(job["id"]).unlink(missing_ok=True)
-    _item_flag(job["id"]).unlink(missing_ok=True)
-    _deploy_flag(job["id"]).unlink(missing_ok=True)
-    _stop_flag(job["id"]).unlink(missing_ok=True)
+    _clear_flags(job["id"])
     popen = popen or _in_group(job)
     # No machine lock here: each command takes it for the part that loads a
     # model, so a job that is downloading does not block a GPU run. #371.
@@ -826,24 +862,39 @@ def _run_claimed(job: dict, log: Path, popen=None) -> dict | None:
         except OSError as exc:
             out.write(f"could not start: {exc}\n")
             rc = 127
-    flag = _cancel_flag(job["id"])
     job.update(rc=rc, finished=time.strftime(_STAMP))
-    if flag.exists():
-        flag.unlink(missing_ok=True)
-        _settle_cancelled(job, rc=rc)
-    elif _stop_flag(job["id"]).exists():
-        with _store() as c:
-            _repend_stopped(c, job)
-    else:
-        from evals import watch
-        from harness import deploy
-        if job.get("kind") == DEPLOY and rc == deploy.HANDED_OFF:
-            # Left running and unwritten: the store may be migrated past this code; settle closes it. #1506.
-            return {**job, "state": RUNNING, "handed_off": True}
-        job.update(state=DONE if rc == 0 else PAUSED if rc == watch.PAUSED else FAILED)
-        if not (job["state"] == PAUSED and (_next_item(job) or _repend(job))):
-            _write(job)
+    if _settle_exit(job, rc):
+        # Left running and unwritten: the store may be migrated past this code; settle closes it. #1506.
+        return {**job, "state": RUNNING, "handed_off": True}
     return get(job["id"]) or job
+
+
+def _settle_exit(job: dict, rc) -> bool:
+    """Move a job whose process exited, as job_state.exit_move chooses from its flags and rc; True when a handed-off deploy stays running. #1728."""
+    from evals import watch
+    from harness import contention, deploy
+    flags = _flags(job["id"])
+    handed = job.get("kind") == DEPLOY and rc == deploy.HANDED_OFF
+    with _store() as c:
+        contended = rc == watch.PAUSED and js.DEPLOY_FLAG not in flags and contention.paused_for(c, job)
+        to, why = js.exit_move(rc, flags, handed, contended)
+        if to == RUNNING:
+            return True
+        argv = _item_argv(c, job) if why == js.NEXT_ITEM else None
+        if why == js.NEXT_ITEM and argv is None:
+            to, why = js.exit_move(rc, flags - {js.ITEM_FLAG}, handed, contended)
+        if why == js.DEPLOY_STOP:
+            _repend_stopped(c, job)
+        elif why in (js.DEPLOY_PAUSE, js.CONTENTION_PAUSE):
+            _repend(c, job, why)
+        elif why == js.NEXT_ITEM:
+            _next_item(c, job, argv)
+        else:
+            note = f"cancelled by soh jobs cancel at {time.strftime(_STAMP)}; stopped" if why == js.CANCEL else None
+            js.move(c, job["id"], RUNNING, to, why, note, rc=rc, finished_at=_epoch(job["finished"]))
+            c.commit()
+    _clear_flags(job["id"])
+    return False
 
 
 def resume_argv(argv: list, out) -> list[str]:
@@ -876,46 +927,41 @@ def confirms(job: dict) -> bool:
     return resources._verb(argv) == "adopt" and "--confirm" in argv
 
 
-def _next_item(job: dict) -> bool:
-    """A job that stopped at its item's end waits again for its next item, resumed where it stopped. #1618."""
-    flag = _item_flag(job["id"])
-    if not flag.exists():
-        return False
-    flag.unlink(missing_ok=True)
+def _item_argv(c, job: dict) -> list | None:
+    """The argv of a job's next item: its eval resumed from its stored run, or its own; None when an eval stored none. #1618."""
     from evals import run
-    with _store() as c:
-        argv = _resumed(c, job) if run.queued_args(job["argv"]) is not None else list(job["argv"])
-        if argv is None:
-            return False
-        took = (_epoch(job.get("finished")) or time.time()) - (_epoch(job.get("started")) or time.time())
-        c.execute("UPDATE jobs SET state = ?, finished_at = NULL, rc = ?, argv = ?, note = ? WHERE id = ?",
-                  (PENDING, job.get("rc"), json.dumps(argv),
-                   f"item ended after {took:.0f}s of a planned {ITEM_S:.0f}s; the next item waits its turn",
-                   int(job["id"])))
-        c.commit()
-    from harness import cuts
-    cuts.cut("queue_item", f"job {label(job['id'])}: an item ended after {took:.0f}s; the next waits its turn", kept=1)
-    return True
+    return _resumed(c, job) if run.queued_args(job["argv"]) is not None else list(job["argv"])
 
 
-def _repend(job: dict) -> bool:
+def _next_item(c, job: dict, argv: list) -> bool:
+    """A job that stopped at its item's end waits again for its next item, resumed where it stopped. #1618."""
+    took = (_epoch(job.get("finished")) or time.time()) - (_epoch(job.get("started")) or time.time())
+    moved = js.move(c, job["id"], RUNNING, PENDING, js.NEXT_ITEM,
+                    f"item ended after {took:.0f}s of a planned {ITEM_S:.0f}s; the next item waits its turn",
+                    finished_at=None, rc=job.get("rc"), argv=json.dumps(argv))
+    c.commit()
+    if moved:
+        from harness import cuts
+        cuts.cut("queue_item", f"job {label(job['id'])}: an item ended after {took:.0f}s; the next waits its turn", kept=1)
+    return moved
+
+
+def _repend(c, job: dict, why: str) -> bool:
     """A job paused for contention or a deploy waits again to resume where it stopped, unless it queued its own continuation. #1509, #1672."""
-    from harness import contention
-    flag = _deploy_flag(job["id"])
-    for_deploy = flag.exists()
-    flag.unlink(missing_ok=True)
-    with _store() as c:
-        if not (for_deploy or contention.paused_for(c, job)) or c.execute(
-                "SELECT 1 FROM jobs WHERE argv = ? AND state = ? AND id != ?",
-                (json.dumps([str(a) for a in job["argv"]]), PENDING, int(job["id"]))).fetchone():
-            return False
-        argv = _resumed(c, job) or list(job["argv"])
-        why = ("paused for a deploy at {}; resumes after it" if for_deploy else
-               "paused for contention at {}; resumes when the contention gate opens").format(job.get("finished"))
-        c.execute("UPDATE jobs SET state = ?, finished_at = NULL, rc = ?, argv = ?, note = ? WHERE id = ?",
-                  (PENDING, job.get("rc"), json.dumps(argv), why, int(job["id"])))
+    twin = c.execute("SELECT id FROM jobs WHERE argv = ? AND state = ? AND id != ?",
+                     (json.dumps([str(a) for a in job["argv"]]), PENDING, int(job["id"]))).fetchone()
+    if twin is not None:
+        moved = js.move(c, job["id"], RUNNING, PAUSED, js.CONTINUED, f"paused; job {label(twin[0])} continues it",
+                        rc=job.get("rc"), finished_at=_epoch(job.get("finished")))
         c.commit()
-    return True
+        return moved
+    argv = _resumed(c, job) or list(job["argv"])
+    note = ("paused for a deploy at {}; resumes after it" if why == js.DEPLOY_PAUSE else
+            "paused for contention at {}; resumes when the contention gate opens").format(job.get("finished"))
+    moved = js.move(c, job["id"], RUNNING, PENDING, why, note, finished_at=None, rc=job.get("rc"),
+                    argv=json.dumps(argv))
+    c.commit()
+    return moved
 
 
 def _deploy_flag(job_id) -> Path:
@@ -932,18 +978,18 @@ def paused_for_deploy(environ=None) -> bool:
     return key is not None and _deploy_flag(key).exists()
 
 
-def _repend_stopped(c, job: dict) -> None:
-    """A job a deploy stopped waits again, resumed where it stopped when it can be. #1675."""
+def _repend_stopped(c, job: dict) -> bool:
+    """A running job a deploy stopped waits again, resumed where it stopped when it can be; False when its exit was recorded first. #1675."""
     try:
         said = json.loads(_stop_flag(job["id"]).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         said = {}
     argv = (said.get("argv") if isinstance(said, dict) else None) or _resumed(c, job) or list(job["argv"])
-    c.execute("UPDATE jobs SET state = ?, started_at = NULL, finished_at = NULL, argv = ?, note = ? "
-              "WHERE id = ? AND state IN (?, ?)",
-              (PENDING, json.dumps(argv), f"stopped for a deploy at {time.strftime(_STAMP)}; resumes after it",
-               int(job["id"]), RUNNING, PENDING))
+    moved = js.move(c, job["id"], RUNNING, PENDING, js.DEPLOY_STOP,
+                    f"stopped for a deploy at {time.strftime(_STAMP)}; resumes after it",
+                    started_at=None, finished_at=None, argv=json.dumps(argv))
     c.commit()
+    return moved
 
 
 def _stopped_argv(job: dict, pids: set) -> list[str] | None:
@@ -1091,18 +1137,22 @@ def _ask_loop(sig, evals) -> list[str]:
 
 
 def _settle_gone(c, job: dict) -> None:
-    """A running job whose worker and process are gone: an eval that stored a run, or a confirm, waits again to resume it, else it failed."""
-    if _stop_flag(job["id"]).exists():
+    """A running job whose worker and process are gone, as job_state.gone_move chooses: an eval that stored a run, or a confirm, waits again to resume it, else it failed."""
+    flags = _flags(job["id"])
+    argv = None if flags & {js.CANCEL_FLAG, js.STOP_FLAG} else _resumed(c, job)
+    to, why = js.gone_move(flags, argv is not None)
+    if why == js.DEPLOY_STOP:
         _repend_stopped(c, job)
-        return
-    argv = _resumed(c, job)
-    if argv is not None:
-        c.execute("UPDATE jobs SET state = ?, started_at = NULL, argv = ?, note = ? WHERE id = ? AND state = ?",
-                  (PENDING, json.dumps(argv), "its worker went away; resumes from its stored run", int(job["id"]), RUNNING))
+    elif why == js.WORKER_GONE:
+        js.move(c, job["id"], RUNNING, PENDING, why, "its worker went away; resumes from its stored run",
+                started_at=None, argv=json.dumps(argv))
+    elif why == js.CANCEL:
+        js.move(c, job["id"], RUNNING, CANCELLED, why, "cancelled by soh jobs cancel; its worker went away "
+                "before it recorded the exit", finished_at=time.time())
     else:
-        c.execute("UPDATE jobs SET state = ?, note = ? WHERE id = ? AND state = ?",
-                  (FAILED, "interrupted; add it again to retry", int(job["id"]), RUNNING))
+        js.move(c, job["id"], RUNNING, to, why, "interrupted; add it again to retry")
     c.commit()
+    _clear_flags(job["id"])
 
 
 def _recover() -> list[dict]:

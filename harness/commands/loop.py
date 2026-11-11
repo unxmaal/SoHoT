@@ -893,6 +893,7 @@ def _reopen_revisitable() -> list[dict]:
     finally:
         store.close()
     heartbeat.note(heartbeat.REVISIT_CASES, counts)
+    heartbeat.note(heartbeat.REVISIT_MET, sorted(r["verdict_id"] for r in rows))
     heartbeat.mark(heartbeat.REOPENED_REVISITABLE, began)
     print(f"  requeued {len(rows)} refusal(s) whose until is met here")
     for r in rows:

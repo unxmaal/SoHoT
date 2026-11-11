@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 93
+SCHEMA_VERSION = 94
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -291,7 +291,9 @@ CREATE TABLE IF NOT EXISTS jobs (
     -- 1 when the owner let this measurement job start through a benchmark hold. #1564.
     despite_hold INTEGER NOT NULL DEFAULT 0,
     -- The resource class the job declared (resources.CLASSES); '' is classified from its command. #1508.
-    resource     TEXT NOT NULL DEFAULT ''
+    resource     TEXT NOT NULL DEFAULT '',
+    -- Why the job holds its state (job_state reasons), written with state by every move. #1728.
+    reason       TEXT NOT NULL DEFAULT ''
 );
 
 -- One technique proposal triaged once: into a method (a registered one, or a drafted template), or left wanted. #993.

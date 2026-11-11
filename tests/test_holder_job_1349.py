@@ -10,6 +10,7 @@ from evals import claims_judge
 from harness import delegate, exclusive, pressure
 from harness import workqueue as wq
 from tests.test_mcp_delegate import fake  # noqa: F401
+from tests import job_rows
 
 SCHEMA = {"urgent": {"type": "boolean", "description": "needs action today"}}
 
@@ -17,7 +18,7 @@ SCHEMA = {"urgent": {"type": "boolean", "description": "needs action today"}}
 def _running(title):
     job = wq.add(["sh", "-c", "true"], title=title)
     job.update(state=wq.RUNNING, started=time.strftime(wq._STAMP))
-    wq._write(job)
+    job_rows.put(job)
     return job
 
 

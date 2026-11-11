@@ -6,6 +6,7 @@ from harness import memory_store as ms
 from harness.checks import claims as claims_check
 from tests import conftest
 from tests.test_reverify import powered  # noqa: F401
+from tests import job_rows
 
 pytestmark = pytest.mark.usefixtures("powered")
 
@@ -69,7 +70,7 @@ def decide_rows(spec, accs):
 def finish(conn, rows, lane="decide"):
     reverify.check(conn, now=NOW, lane=lane)
     job = [j for j in wq.jobs(conn=conn) if j["requested_by"] == reverify.REQUESTED_BY][-1]
-    wq._write({**job, "state": wq.DONE, "rc": 0}, conn=conn)
+    job_rows.put({**job, "state": wq.DONE, "rc": 0}, conn=conn)
     record(conn, lane, rows, at=NOW + 60, job_id=job["id"], versions=UPGRADED)
     reverify.check(conn, now=NOW + 120, lane=lane)
     return dict(conn.execute("SELECT * FROM reverifications WHERE job_id = ?", (job["id"],)).fetchone())

@@ -17,6 +17,7 @@ capabilities:
       - harness/executors.py
       - harness/item_lease.py
       - harness/admission.py
+      - harness/job_state.py
 
   - name: watchdog
     summary: The periodic judge of running jobs and served models, acting from a fixed set and recording each act.
@@ -489,6 +490,7 @@ capabilities:
       - harness/ci_budget.py
       - harness/ci_rerun.py
       - harness/dora.py
+      - harness/deploy_state.py
 
   - name: repo-hygiene
     summary: What a public reader gets, personal setup kept out of it, stated claims, coverage, specs and the gauntlet.

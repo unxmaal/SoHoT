@@ -14,6 +14,7 @@ from harness import workqueue as wq
 from harness.completion import DEFAULT_GATEWAY
 from harness.loopback import ThreadingHTTPServer
 from tests.test_mcp_delegate import fake  # noqa: F401
+from tests import job_rows
 
 
 @pytest.mark.parametrize("holder, resident, level, ok", [
@@ -51,7 +52,7 @@ def _hold(kind="eval", job_id=None):
 def held_by_job():
     job = wq.add(["soh", "eval", "decide"], title="decide eval")
     job.update(state=wq.RUNNING, started=time.strftime(wq._STAMP))
-    wq._write(job)
+    job_rows.put(job)
     child = _hold(job_id=job["id"])
     yield job
     child.kill()
@@ -114,10 +115,10 @@ def test_the_running_job_is_named_with_an_estimate_from_earlier_runs():
     for start, end in ((100, 70), (60, 30)):
         old = wq.add(["soh", "eval"], title="decide eval")
         old.update(state=wq.DONE, started=_ago(start), finished=_ago(end), rc=0)
-        wq._write(old)
+        job_rows.put(old)
     job = wq.add(["soh", "eval"], title="decide eval")
     job.update(state=wq.RUNNING, started=_ago(10))
-    wq._write(job)
+    job_rows.put(job)
     got = delegate.running_job()
     assert f"job {job['id']} (decide eval)" in got
     assert "about 20 min left" in got
@@ -126,7 +127,7 @@ def test_the_running_job_is_named_with_an_estimate_from_earlier_runs():
 def test_a_running_job_with_no_history_says_so():
     job = wq.add(["soh", "eval"], title="first of its kind")
     job.update(state=wq.RUNNING, started=_ago(5))
-    wq._write(job)
+    job_rows.put(job)
     assert "no earlier run to estimate from" in delegate.running_job()
 
 

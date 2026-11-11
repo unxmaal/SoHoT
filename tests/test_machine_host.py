@@ -17,6 +17,7 @@ from evals.runners.base import BaseRunner
 from harness import completion, delegate, machine, migration_check, runs
 from harness import memory_store as ms
 from harness import workqueue as wq
+from tests import job_rows
 
 ROOT = Path(__file__).resolve().parents[1]
 OS = "macOS-27.0.1-arm64-arm-64bit"
@@ -232,7 +233,7 @@ def _ago(minutes):
 def _done(title, minutes, machine_id=None):
     job = wq.add(["soh", "eval"], title=title)
     job.update(state=wq.DONE, started=_ago(minutes + 1), finished=_ago(1), rc=0)
-    wq._write(job)
+    job_rows.put(job)
     if machine_id is not None:
         conn = ms.connect()
         try:
@@ -262,7 +263,7 @@ def test_an_estimate_from_other_machines_says_so():
     _done("slow", 60, _other_machine())
     job = wq.add(["soh", "eval"], title="slow")
     job.update(state=wq.RUNNING, started=_ago(10))
-    wq._write(job)
+    job_rows.put(job)
     got = delegate.running_job()
     assert "about 50 min left" in got and "other or unrecorded machines" in got
 

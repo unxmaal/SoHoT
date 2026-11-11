@@ -90,8 +90,10 @@ REOPENED_REVISITABLE = "reopened_revisitable_1055"
 MOVED_PAST_SCREEN = "moved_past_screen_1060"
 #: The {lane: cases} that last requeue judged cases: untils by. #1361.
 REVISIT_CASES = "revisit_cases_1361"
+#: The verdict ids that last requeue found met, for every until kind. #1749.
+REVISIT_MET = "revisit_met_1749"
 KEPT = (REOPENED_TOO_BIG, REDERIVED_ATTACHMENTS, REQUEUED_OLD_SIZING, REOPENED_UNRANKED, REWROTE_RUNNER_GAPS,
-        REOPENED_REVISITABLE, MOVED_PAST_SCREEN, REVISIT_CASES)
+        REOPENED_REVISITABLE, MOVED_PAST_SCREEN, REVISIT_CASES, REVISIT_MET)
 
 
 def code_commit(repo: Path | None = None) -> str:

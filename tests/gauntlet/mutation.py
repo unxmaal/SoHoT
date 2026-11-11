@@ -99,7 +99,7 @@ LEFT_OUT = {
     "harness/memory_store/transitions.py": ("test_blame_audit.py", "test_live_audit.py", "test_lane_too_small_1049.py",
                                             "test_lane_until_1053.py", "test_loop_revisit_1055.py",
                                             "test_revisit_tier_1060.py", "test_revisitable_after_deploy_1361.py",
-                                            "test_site.py", "test_futility_lane_too_small_1452.py"),
+                                            "test_revisitable_met_1749.py", "test_site.py", "test_futility_lane_too_small_1452.py"),
     "harness/reasons.py": (
         "test_owner_decline_1564.py", "test_runtime_trials_1474.py", "test_repo_repair_890.py", "test_agent_cut_call_1547.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_staging_torch_1358.py",
         "test_vision_engines_1282.py",
@@ -116,7 +116,7 @@ LEFT_OUT = {
         "test_repo_causes_1170.py", "test_pool_full_retry_755.py", "test_engine_timeout_708.py", "test_reply_cap_1352.py",
         "test_engine_timeout_1256.py", "test_trocr_tokenizer_1025.py", "test_fetch_files_1040.py", "test_lane_too_small_1049.py",
         "test_lane_until_1053.py", "test_loop_revisit_1055.py", "test_revisit_tier_1060.py",
-        "test_revisitable_after_deploy_1361.py", "test_adopt_effect_confirm_725.py", "test_min_effect_1320.py", "test_technique_triage_993.py",
+        "test_revisitable_after_deploy_1361.py", "test_revisitable_met_1749.py", "test_adopt_effect_confirm_725.py", "test_min_effect_1320.py", "test_technique_triage_993.py",
         "test_exam_price_1354.py", "test_limit_cuts_1087_evals.py", "test_limit_cuts_1087_harness_di.py",
         "test_futility_lane_too_small_1452.py", "test_sustained_warn_1482.py", "test_technique_kinds_1476.py",
         "test_engine_trials_1475.py", "test_screen_server_killer_1544.py", "test_mflux_second_repo_1546.py", "test_interactive_1561.py",

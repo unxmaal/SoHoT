@@ -15,12 +15,6 @@
   "harness/mcp_server.py:MIME",
   "harness/screen.py:ENGINE_RUNTIMES"
  ],
- "a-lifecycle-with-no-declared-state": [
-  "harness/workqueue.py:_next_item",
-  "harness/workqueue.py:_repend",
-  "harness/workqueue.py:_write",
-  "table:jobs.state"
- ],
  "each-half-verified-against-its-own-spec-the-seam-against-nothing": [
   "env:ACESTEP_ROOT",
   "env:DECIDER_BIN",
@@ -71,7 +65,6 @@
  "state-is-whichever-row-came-last": [
   "harness/commands/discover.py:_judge_neighbors",
   "harness/memory_store/proposals.py:judgeable",
-  "harness/publish.py:_accelerator_name",
-  "harness/sweeps.py:_key"
+  "harness/publish.py:_accelerator_name"
  ]
 }

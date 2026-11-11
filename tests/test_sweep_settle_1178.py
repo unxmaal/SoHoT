@@ -3,6 +3,7 @@ import json
 
 from harness import reasons, runs, sweeps, workqueue as wq
 from tests.test_knob_sweeps import ENV, NOW, _SEQ, binding_budget, conn, queued, serving  # noqa: F401
+from tests import job_rows
 
 
 def _store(conn, job_id, rows):
@@ -20,7 +21,7 @@ def _rows(passed, total, failure="content_failed", seconds=1.0):
 
 def finish(conn, by_value):
     for job in queued(conn):
-        wq._write({**job, "state": wq.DONE, "rc": 0}, conn=conn)
+        job_rows.put({**job, "state": wq.DONE, "rc": 0}, conn=conn)
     row = conn.execute("SELECT jobs FROM knob_sweeps ORDER BY id DESC").fetchone()
     for value, job_id in json.loads(row["jobs"]):
         if value in by_value:
