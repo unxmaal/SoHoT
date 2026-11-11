@@ -458,8 +458,8 @@ def as_work(lane: str, spec: str, where: serving.Route, stream: bool, delegation
             if direct:
                 write(usage.direct_row(lane, spec, where.model, at, error=exc, stream=stream, tag=tag))
             raise
-    # One id for the delegation and its request row: LiteLLM's via the gateway, ours when direct. #829.
-    call_id = got.get("call_id") or (delegations.new_id() if delegation else "")
+    # One id for the delegation and its request rows: LiteLLM's via the gateway, else the delegation's own. #829, #1721.
+    call_id = got.get("call_id") or delegations.behalf() or (delegations.new_id() if delegation else "")
     if direct:
         write({**usage.direct_row(lane, spec, got.get("model") or where.model, at, got,
                                   stream=stream, tag=tag), "call_id": call_id})

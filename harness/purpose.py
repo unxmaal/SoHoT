@@ -17,10 +17,13 @@ ENV = "SOHOT_PURPOSE"
 HEADER = "x-litellm-tags"
 TAG_PREFIX = "purpose:"
 JOB_PREFIX = "job:"
+#: The delegation a request was made for, so the gateway's row carries its call_id. #1721.
+DELEGATION_PREFIX = "delegation:"
 #: workqueue.JOB_ENV, named here so purpose stays free of the queue's imports.
 JOB_ENV = "LH_JOB_ID"
 
 _CURRENT: contextvars.ContextVar[str] = contextvars.ContextVar("sohot_purpose", default="")
+_DELEGATION: contextvars.ContextVar[str] = contextvars.ContextVar("sohot_delegation", default="")
 
 
 def _known(p) -> str:
@@ -33,10 +36,12 @@ def current(environ=None) -> str:
 
 
 def headers(environ=None) -> dict:
-    """The request tags: purpose:<p>, and job:<id> inside a queued job so a metered request names its caller (#1214)."""
+    """The request tags: purpose:<p>; job:<id> inside a queued job (#1214); delegation:<call_id> on a delegation's behalf."""
     p = current(environ)
     job = str((os.environ if environ is None else environ).get(JOB_ENV) or "").strip()
-    tags = ([TAG_PREFIX + p] if p else []) + ([JOB_PREFIX + job] if job else [])
+    d = _DELEGATION.get()
+    tags = ([TAG_PREFIX + p] if p else []) + ([JOB_PREFIX + job] if job else []) + (
+        [DELEGATION_PREFIX + d] if d else [])
     return {HEADER: ",".join(tags)} if tags else {}
 
 
@@ -48,6 +53,29 @@ def using(p: str):
         yield
     finally:
         _CURRENT.reset(token)
+
+
+@contextlib.contextmanager
+def delegating(call_id: str):
+    """Requests sent inside the block are delegation `call_id`'s; an inner block without one keeps the outer's."""
+    token = _DELEGATION.set(str(call_id or "") or _DELEGATION.get())
+    try:
+        yield
+    finally:
+        _DELEGATION.reset(token)
+
+
+def delegation() -> str:
+    return _DELEGATION.get()
+
+
+def delegation_of(tags) -> str:
+    """The delegation call_id a request's tags name, else ""."""
+    for t in tags if isinstance(tags, (list, tuple)) else []:
+        t = str(t).strip()
+        if t.lower().startswith(DELEGATION_PREFIX):
+            return t[len(DELEGATION_PREFIX):].strip()
+    return ""
 
 
 def set_process(p: str) -> None:

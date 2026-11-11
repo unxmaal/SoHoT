@@ -1,7 +1,6 @@
 """Each delegated subtask and what became of its answer: reported, inferred from the caller's transcript, or expired. #829, #1158."""
 from __future__ import annotations
 
-import contextvars
 import hashlib
 import json
 import math
@@ -62,23 +61,22 @@ def record(conn, call_id: str, lane: str, spec: str = "", model: str = "",
     return call_id
 
 
-_BEHALF = contextvars.ContextVar("delegation_behalf", default=False)
 #: Why the live store was not written, once printed: one stderr line a process. #1717.
 _SKIPPED: set = set()
 
 
 @contextmanager
-def on_behalf(yes: bool = True):
-    """Requests made meanwhile are a delegation's: their rows go where its delegations row goes. #1717."""
-    token = _BEHALF.set(bool(yes) or _BEHALF.get())
-    try:
+def on_behalf(call_id: str):
+    """Requests made meanwhile are delegation `call_id`'s: their rows go where it goes and carry its id. #1717, #1721."""
+    from harness import purpose
+    with purpose.delegating(call_id):
         yield
-    finally:
-        _BEHALF.reset(token)
 
 
-def behalf() -> bool:
-    return _BEHALF.get()
+def behalf() -> str:
+    """The call_id of the delegation the current requests are made for, else ""."""
+    from harness import purpose
+    return purpose.delegation()
 
 
 @contextmanager
@@ -190,6 +188,14 @@ def instruction(call_id: str, cli: bool = False) -> str:
            else f"call delegated with call_id {call_id!r} and that outcome")
     return (f"Once you have used, edited or discarded this answer, {how}. Unreported, it is inferred from this "
             f"session's later tool inputs, or recorded unknown after {EXPIRY_H:g} h.")
+
+
+def rows(conn, call_id: str) -> dict:
+    """Delegation `call_id`'s own row (or None) and every gateway_requests row carrying its id, oldest first. #1721."""
+    d = conn.execute("SELECT * FROM delegations WHERE call_id = ?", (call_id,)).fetchone()
+    got = conn.execute("SELECT at, alias, lane, client, purpose, prompt_tokens, completion_tokens, error_class "
+                       "FROM gateway_requests WHERE call_id = ? ORDER BY at", (call_id,)).fetchall()
+    return {"call_id": call_id, "delegation": dict(d) if d else None, "requests": [dict(r) for r in got]}
 
 
 def report(conn, since: float, now: float | None = None) -> list[dict]:

@@ -141,10 +141,10 @@ def test_other_rows_keep_the_branch_guard(live_sqlite):
 
 def test_requests_made_on_a_delegation_s_behalf_take_its_route(live_sqlite):
     from harness import delegate
-    with delegations.on_behalf():
+    with delegations.on_behalf("local-1"):
         delegate.complete("code", "write add")
     (r,) = _rows(live_sqlite, "gateway_requests")
-    assert r["call_id"] == "" and r["client"] == usage.DIRECT_CLIENT
+    assert r["call_id"] == "local-1" and r["client"] == usage.DIRECT_CLIENT
 
 
 @pytest.mark.parametrize("delegated", [True, False])
@@ -158,7 +158,7 @@ def test_ask_s_requests_are_on_behalf_only_of_a_delegation(tmp_path, delegated):
         return {"text": "none", "lane": lane, "prompt_tokens": 1, "completion_tokens": 1}
     ask.ask([str(tmp_path / "a.log")], "what failed", roots=[ask.Root(tmp_path)], delegated=delegated,
             complete=complete)
-    assert seen and set(seen) == {delegated} and not delegations.behalf()
+    assert seen and {bool(c) for c in seen} == {delegated} and len(set(seen)) == 1 and not delegations.behalf()
 
 
 def test_under_the_test_home_nothing_reaches_the_real_home(monkeypatch, elsewhere):
@@ -191,4 +191,4 @@ def test_spans_requests_are_on_behalf_only_of_a_delegation(tmp_path, delegated):
         seen.append(delegations.behalf())
         return inner(*a, **kw)
     spans.ask_file(str(tmp_path / "a.py"), "q", roots=[ask.Root(tmp_path)], delegated=delegated, complete=complete)
-    assert seen and set(seen) == {delegated} and not delegations.behalf()
+    assert seen and {bool(c) for c in seen} == {delegated} and len(set(seen)) == 1 and not delegations.behalf()

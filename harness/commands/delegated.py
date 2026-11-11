@@ -19,6 +19,8 @@ def cmd_delegated(a) -> int:
 
     if getattr(a, "close", False):
         return _close(a)
+    if a.call_id and not a.outcome and not a.report:
+        return _show(a.call_id)
     if not a.report and not (a.call_id and a.outcome):
         note("give a call id and used|edited|discarded, or --report, or --close")
         emit(False, error="call id and outcome, or --report, or --close")
@@ -78,6 +80,27 @@ def cmd_delegated(a) -> int:
                  f"{_secs(w['median_wait_s']):>8} {_secs(w['max_wait_s']):>7} {_secs(w['p95_s']):>7}  {target}")
     emit(report=rows, waits=waits, since=a.since)
     return 0
+
+
+def _show(call_id: str) -> int:
+    """`soh delegated CALL_ID`: the delegation and the gateway_requests rows that carry its id, read-only. #1721."""
+    from harness import delegations
+    from harness.commands.common import lent_store
+    with lent_store() as conn:
+        got = delegations.rows(conn, call_id)
+    d, reqs = got["delegation"], got["requests"]
+    if d is None:
+        note(f"no delegation has call id {call_id!r}")
+    else:
+        note(f"{call_id}: lane {d['lane']}, {d['prompt_tokens'] or 0} in / {d['completion_tokens'] or 0} out, "
+             f"outcome {d['outcome'] or 'pending'}")
+    note(f"{len(reqs)} gateway request(s) carry it" + (":" if reqs else ""))
+    for r in reqs:
+        note(f"  {r['at']:.0f} {r['alias'] or '-':<16} {r['client'] or '-':<14} {r['purpose'] or '-':<8} "
+             f"{r['prompt_tokens'] or 0:>7} in {r['completion_tokens'] or 0:>6} out"
+             + (f"  {r['error_class']}" if r["error_class"] else ""))
+    emit(d is not None, **got)
+    return 0 if d is not None else 1
 
 
 def _close(a) -> int:

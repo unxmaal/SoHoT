@@ -389,10 +389,11 @@ def ask(raws, question: str, lane: str = "extract", roots: list[Root] | None = N
     if thinking is None and lane == "code":
         thinking = False
     replies: list[dict] = []
+    from harness import delegations
+    call_id = delegations.new_id() if delegated else ""
 
     def call(prompt: str) -> str:
-        from harness import delegations
-        with delegations.on_behalf(delegated):
+        with delegations.on_behalf(call_id):
             got = complete(lane, prompt, system=system or SYSTEM, max_tokens=max_tokens, thinking=thinking,
                            tag=delegate.tag_of(delegated))
         replies.append(got)
@@ -413,8 +414,7 @@ def ask(raws, question: str, lane: str = "extract", roots: list[Root] | None = N
            "files": [{"path": f.path, "bytes": f.size} for f in files], "parts": parts, "calls": calls,
            "scanned": scanned, "model_text": model_text}
     if delegated:
-        from harness import delegations
-        out = delegations.note(out, delegations.new_id())
+        out = delegations.note(out, call_id)
     return out
 
 
