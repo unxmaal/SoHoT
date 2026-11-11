@@ -1,9 +1,11 @@
 """Each delegated subtask and what became of its answer: reported, inferred from the caller's transcript, or expired. #829, #1158."""
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import math
+import os
 import re
 import statistics
 import sys
@@ -48,21 +50,35 @@ def new_id() -> str:
     return "local-" + uuid.uuid4().hex
 
 
+def _row(call_id: str, lane: str, spec: str = "", model: str = "", seconds=None, prompt_tokens=None,
+         completion_tokens=None, id_source: str = LOCAL, at: float | None = None) -> dict:
+    return {"call_id": call_id, "id_source": id_source, "at": time.time() if at is None else at, "lane": lane,
+            "spec": spec, "model": model, "seconds": seconds, "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens}
+
+
 def record(conn, call_id: str, lane: str, spec: str = "", model: str = "",
            seconds=None, prompt_tokens=None, completion_tokens=None,
            id_source: str = LOCAL, at: float | None = None) -> str:
+    r = _row(call_id, lane, spec, model, seconds, prompt_tokens, completion_tokens, id_source, at)
     conn.execute(
         "INSERT OR REPLACE INTO delegations (call_id, id_source, at, lane, spec, model, "
         "seconds, prompt_tokens, completion_tokens, outcome, why, outcome_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, '', NULL)",
-        (call_id, id_source, time.time() if at is None else at, lane, spec, model,
-         seconds, prompt_tokens, completion_tokens))
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, '', NULL)", tuple(r.values()))
     conn.commit()
     return call_id
 
 
 #: Why the live store was not written, once printed: one stderr line a process. #1717.
 _SKIPPED: set = set()
+
+#: Under the live home: one file per record a checkout at another schema could not write, until drain() lands it. #1789.
+SPOOL = "delegations-spool"
+#: What drain() made of a spooled record; a held one stays in the spool and is tried again next drain. #1789.
+LANDED, DUPLICATE, HELD = "landed", "duplicate", "held"
+SPOOL_STATES = (LANDED, DUPLICATE, HELD)
+#: The record kinds, in the order drain() lands them: an outcome needs its delegation first.
+SPOOLED_KINDS = ("delegation", "request", "outcome")
 
 
 @contextmanager
@@ -79,9 +95,30 @@ def behalf() -> str:
     return purpose.delegation()
 
 
+class Spool:
+    """The live store at another schema than this checkout's: its rows go to the spool instead. #1789."""
+
+    def __init__(self, conn, have):
+        self.conn, self.have = conn, have
+
+    def close(self) -> None:
+        self.conn.close()
+
+    def put(self, kind: str, **body) -> str:
+        return spool(kind, **body)
+
+    def knows(self, call_id: str) -> bool:
+        if any(r.get("kind") == "delegation" for r in spooled(call_id)):
+            return True
+        try:
+            return self.conn.execute("SELECT 1 FROM delegations WHERE call_id = ?", (call_id,)).fetchone() is not None
+        except Exception:  # noqa: BLE001 - unreadable at its schema: spool the outcome rather than lose it
+            return True
+
+
 @contextmanager
 def ledger():
-    """Where a delegation's rows go, or None: usage.target(), else from another checkout the live store as it stands. #1717."""
+    """Where a delegation's rows go: usage.target(), else the live store as it stands, a Spool at another schema, or None. #1717, #1789."""
     from harness import paths, usage
     from harness import memory_store as ms
     path = usage.target()
@@ -98,15 +135,19 @@ def ledger():
             conn.close()
 
 
+def _once(line: str) -> None:
+    if line not in _SKIPPED:
+        _SKIPPED.add(line)
+        print(line, file=sys.stderr)
+
+
 def _skip(why: str):
-    if why not in _SKIPPED:
-        _SKIPPED.add(why)
-        print(f"delegations: not recorded in the live store ({why})", file=sys.stderr)
+    _once(f"delegations: not recorded in the live store ({why})")
     return None
 
 
 def _live_as_is(path: Path):
-    """The live store opened to append, never to migrate: no DDL, and only at this code's schema. #1717."""
+    """The live store opened to append, never to migrate: no DDL; at another schema, a Spool. #1717, #1789."""
     from harness import store
     from harness.memory_store import connection as mc
     from harness.memory_store.schema import SCHEMA_VERSION
@@ -122,8 +163,9 @@ def _live_as_is(path: Path):
         conn.close()
         raise
     if have != SCHEMA_VERSION:
-        conn.close()
-        return _skip(f"it is at schema {have}, this checkout speaks {SCHEMA_VERSION}")
+        _once(f"delegations: the live store is at schema {have}, this checkout speaks {SCHEMA_VERSION}: "
+              f"spooled to {spool_dir()} for the deployed release to land")
+        return Spool(conn, have)
     return conn
 
 
@@ -131,12 +173,13 @@ def note(got: dict, call_id: str, gateway: bool = False) -> dict:
     """Record a delegate.complete/decide result as delegation `call_id`; a store failure never fails the call."""
     try:
         with ledger() as conn:
-            if conn is not None:
-                record(conn, call_id, got["lane"], spec=got.get("spec", ""),
-                       model=got.get("model", ""), seconds=got.get("seconds"),
-                       prompt_tokens=got.get("prompt_tokens"),
-                       completion_tokens=got.get("completion_tokens"),
-                       id_source=GATEWAY if gateway else LOCAL)
+            row = _row(call_id, got["lane"], spec=got.get("spec", ""), model=got.get("model", ""),
+                       seconds=got.get("seconds"), prompt_tokens=got.get("prompt_tokens"),
+                       completion_tokens=got.get("completion_tokens"), id_source=GATEWAY if gateway else LOCAL)
+            if isinstance(conn, Spool):
+                conn.put("delegation", call_id=call_id, row=row)
+            elif conn is not None:
+                record(conn, **row)
     except Exception as exc:  # noqa: BLE001
         print(f"delegations: not recorded ({exc})", file=sys.stderr)
     return {**got, "call_id": call_id}
@@ -149,23 +192,36 @@ def request(row: dict) -> bool:
         with ledger() as conn:
             if conn is None:
                 return False
-            usage.append(conn, row)
+            if isinstance(conn, Spool):
+                bound = usage.bound(row)
+                conn.put("request", call_id=bound["call_id"], row=bound)
+            else:
+                usage.append(conn, row)
         return True
     except Exception as exc:  # noqa: BLE001
         print(f"delegations: request row not recorded ({exc})", file=sys.stderr)
         return False
 
 
-def outcome(conn, call_id: str, what: str, why: str = "", at: float | None = None) -> dict:
-    """Set a delegation's outcome; re-recording overwrites and keeps the old one in `why`."""
+def _what(what: str) -> str:
     what = (what or "").strip().lower()
     if what not in OUTCOMES:
         raise ValueError(f"outcome must be one of used, edited, discarded, not {what!r}")
+    return what
+
+
+def _unknown(call_id: str) -> UnknownCall:
+    return UnknownCall(f"no delegation has call id {call_id!r}; local_complete, local_decide "
+                       f"and `soh local` return it as call_id")
+
+
+def outcome(conn, call_id: str, what: str, why: str = "", at: float | None = None) -> dict:
+    """Set a delegation's outcome; re-recording overwrites and keeps the old one in `why`."""
+    what = _what(what)
     row = conn.execute("SELECT outcome, why FROM delegations WHERE call_id = ?",
                        (call_id,)).fetchone()
     if row is None:
-        raise UnknownCall(f"no delegation has call id {call_id!r}; local_complete, local_decide "
-                          f"and `soh local` return it as call_id")
+        raise _unknown(call_id)
     prev, prev_why = row["outcome"], row["why"]
     note_ = ""
     if prev is not None:
@@ -175,6 +231,128 @@ def outcome(conn, call_id: str, what: str, why: str = "", at: float | None = Non
                  (what, why, time.time() if at is None else at, call_id))
     conn.commit()
     return {"call_id": call_id, "outcome": what, "why": why, "previous": prev, "note": note_}
+
+
+def tell(conn, call_id: str, what: str, why: str = "") -> dict:
+    """outcome() on a store; on a Spool the outcome is checked, then spooled for the deployed release. #1789."""
+    if not isinstance(conn, Spool):
+        return outcome(conn, call_id, what, why)
+    what = _what(what)
+    if not conn.knows(call_id):
+        raise _unknown(call_id)
+    conn.put("outcome", call_id=call_id, outcome=what, why=why, at=time.time())
+    return {"call_id": call_id, "outcome": what, "why": why, "previous": None,
+            "note": f"spooled: the live store is at schema {conn.have}; the deployed release lands it"}
+
+
+# --- the spool a checkout at another schema writes and the deployed release drains (#1789) ---------
+
+def spool_dir() -> Path:
+    from harness import paths
+    return Path(paths.home()) / SPOOL
+
+
+def spool(kind: str, **body) -> str:
+    """Write one record as its own file, fsynced and renamed into place; its id."""
+    from harness.memory_store.schema import SCHEMA_VERSION
+    rec = {"id": uuid.uuid4().hex, "kind": kind, "schema": SCHEMA_VERSION, "spooled_at": time.time(), **body}
+    d = spool_dir()
+    d.mkdir(parents=True, exist_ok=True)
+    name = f"{time.time_ns():020d}-{rec['id']}.json"
+    part = d / f".{name}.part"
+    with open(part, "w", encoding="utf-8") as fh:
+        fh.write(json.dumps(rec, sort_keys=True) + "\n")
+        fh.flush()
+        os.fsync(fh.fileno())
+    os.replace(part, d / name)
+    with contextlib.suppress(OSError):
+        fd = os.open(d, os.O_RDONLY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+    return rec["id"]
+
+
+def _records() -> list[tuple[Path, dict | None]]:
+    d = spool_dir()
+    if not d.is_dir():
+        return []
+    out = []
+    for p in sorted(d.glob("*.json")):
+        try:
+            rec = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            rec = None
+        out.append((p, rec if isinstance(rec, dict) else None))
+    return out
+
+
+def spooled(call_id: str | None = None) -> list[dict]:
+    """The readable spooled records, oldest first; only `call_id`'s when given."""
+    return [r for _, r in _records() if r is not None and (call_id is None or r.get("call_id") == call_id)]
+
+
+def _land(conn, rec: dict, known: dict) -> tuple[str, str]:
+    from harness.memory_store.schema import _columns
+    kind = rec.get("kind")
+    if kind == "outcome":
+        what, at = rec.get("outcome"), rec.get("at")
+        row = conn.execute("SELECT outcome, outcome_at FROM delegations WHERE call_id = ?",
+                           (rec.get("call_id"),)).fetchone()
+        if row is None:
+            return HELD, "its delegation is not in this store yet"
+        if row["outcome"] == what and row["outcome_at"] == at:
+            return DUPLICATE, ""
+        outcome(conn, rec["call_id"], what, rec.get("why") or "", at=at)
+        return LANDED, ""
+    table = {"delegation": "delegations", "request": "gateway_requests"}.get(kind)
+    row = rec.get("row")
+    if table is None or not isinstance(row, dict):
+        return HELD, f"a record of kind {kind!r} this release does not know"
+    if table not in known:
+        known[table] = _columns(conn, table) - {"id"}
+    unknown = sorted(set(row) - known[table])
+    if unknown:
+        return HELD, f"columns {table} does not have here: {', '.join(unknown)}"
+    if table == "delegations":
+        seen = conn.execute("SELECT 1 FROM delegations WHERE call_id = ?", (row.get("call_id"),)).fetchone()
+    else:
+        seen = conn.execute("SELECT 1 FROM gateway_requests WHERE call_id = ? AND at = ?",
+                            (row.get("call_id") or "", row.get("at"))).fetchone()
+    if seen is not None:
+        return DUPLICATE, ""
+    cols = sorted(row)
+    conn.execute(f"INSERT INTO {table} ({', '.join(cols)}) VALUES ({', '.join('?' for _ in cols)})",
+                 tuple(row[c] for c in cols))
+    conn.commit()
+    return LANDED, ""
+
+
+def drain(conn) -> dict:
+    """Land the spool's records in `conn`'s store once each, keyed by call_id, with no DDL; one it cannot land stays held. #1789."""
+    got: dict = {s: 0 for s in SPOOL_STATES} | {"held_records": []}
+    recs = _records()
+    kinds = list(SPOOLED_KINDS)
+    recs.sort(key=lambda pr: (kinds.index(k) if (k := (pr[1] or {}).get("kind")) in kinds else len(kinds), pr[0].name))
+    known: dict = {}
+    for path, rec in recs:
+        if rec is None:
+            state, why = HELD, "not a JSON record"
+        else:
+            try:
+                state, why = _land(conn, rec, known)
+            except Exception as exc:  # noqa: BLE001 - this store will not take it: keep it for a release that will
+                with contextlib.suppress(Exception):
+                    conn.rollback()
+                state, why = HELD, f"{type(exc).__name__}: {exc}"
+        got[state] += 1
+        if state == HELD:
+            got["held_records"].append({"file": path.name, "kind": (rec or {}).get("kind"),
+                                        "call_id": (rec or {}).get("call_id"), "why": why})
+        else:
+            path.unlink(missing_ok=True)
+    return got
 
 
 def kind(outcome) -> str:
