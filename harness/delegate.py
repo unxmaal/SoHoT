@@ -11,6 +11,7 @@ import contextlib
 import json
 import os
 import statistics
+import sys
 import time
 import urllib.request
 
@@ -95,7 +96,11 @@ def busy() -> str:
     """What other than this process's own job holds the machine lock, or "". Never waits."""
     if os.environ.get(exclusive.HELD_ENV) == "1":
         return ""
-    record = exclusive.gpu_holder()
+    try:
+        record = exclusive.gpu_holder(as_is=True)
+    except exclusive.Unread as exc:
+        print(f"delegate: not known to be busy ({exc})", file=sys.stderr)
+        return ""
     return "" if not record or _mine(record) else exclusive.describe(record)
 
 

@@ -301,10 +301,35 @@ def _outside(leases: list[dict]) -> bool:
     return not any(h.get("state") for h in leases) and _taken(paths.home() / "queue" / LOCK)
 
 
-def gpu_holder() -> dict:
-    """The holder record of the model-loading process on this machine's gpu lease, {} when none holds it. #1619."""
-    with _machine() as conn:
+def gpu_holder(as_is: bool = False) -> dict:
+    """The holder record of the model-loading process on this machine's gpu lease, {} when none holds it; as_is from another checkout reads the live store unmigrated. #1619, #1719."""
+    with (_as_is() if as_is and _elsewhere() else _machine()) as conn:
         return _holder(_gpu_leases(conn))
+
+
+class Unread(RuntimeError):
+    """The live store opened as it stands, but its gpu lease could not be read. #1719."""
+
+
+def _elsewhere() -> bool:
+    from harness import memory_store as ms
+    return paths.live_from_elsewhere(ms.db_path())
+
+
+@contextlib.contextmanager
+def _as_is():
+    """The live store as it stands, to read its gpu lease from a checkout that may not speak its schema: no DDL, no migration. #1719."""
+    from harness import store
+    try:
+        conn = store.open_as_is()
+    except Exception as exc:  # noqa: BLE001 - any failure to open is the store being unreachable
+        raise StoreDown(f"the store is unreachable, so no gpu lease can be checked: {exc}") from exc
+    try:
+        yield conn
+    except Exception as exc:  # noqa: BLE001 - a lease table this checkout cannot read is one it cannot check
+        raise Unread(f"the live store's gpu lease could not be read as it stands: {exc}") from exc
+    finally:
+        conn.close()
 
 
 def _holder(leases: list[dict]) -> dict:
