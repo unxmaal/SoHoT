@@ -216,6 +216,74 @@ def env_digest(task: Path, extras=()) -> str:
     return h.hexdigest()[:16]
 
 
+#: platform.machine() spellings on macOS, Linux and Windows -> uv's architecture names. #1712.
+UV_ARCH = {"arm64": "aarch64", "aarch64": "aarch64", "amd64": "x86_64", "x86_64": "x86_64", "x64": "x86_64",
+           "i386": "x86", "i686": "x86", "x86": "x86", "armv7l": "armv7"}
+UV_OS = {"darwin": "macos", "linux": "linux", "win32": "windows"}
+
+
+def host_platform() -> tuple:
+    """(os, arch, libc) of this host in uv's names, read at call time."""
+    import platform
+    machine = platform.machine().lower()
+    system = UV_OS.get(sys.platform, sys.platform)
+    libc = ("gnu" if platform.libc_ver()[0] == "glibc" else "musl") if system == "linux" else "none"
+    return system, UV_ARCH.get(machine, machine), libc
+
+
+def python_request(task: Path) -> str:
+    """The interpreter the project asks for: .python-version's first entry, else requires-python, else ""."""
+    f = task / ".python-version"
+    if f.is_file():
+        for line in f.read_text(encoding="utf-8", errors="replace").splitlines():
+            if line.strip() and not line.strip().startswith("#"):
+                return line.strip()
+    p = task / "pyproject.toml"
+    if p.is_file():
+        import tomllib
+        try:
+            return str((tomllib.loads(p.read_text(encoding="utf-8")).get("project") or {}).get("requires-python") or "")
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError):
+            return ""
+    return ""
+
+
+def _runs_here(entry: dict, host: tuple) -> bool:
+    system, arch, libc = host
+    got = str(entry.get("libc") or "none")
+    return (entry.get("os") == system and entry.get("arch") == arch and bool(entry.get("path"))
+            and (got.startswith("gnu") if libc == "gnu" else got == libc))
+
+
+def interpreter(task: Path, uv: str, env: dict) -> str:
+    """The installed interpreter for this host's OS and architecture that the project asks for, managed first then newest. #1712."""
+    want, host = python_request(task), host_platform()
+    run = dict(cwd=task, capture_output=True, text=True, timeout=ENV_TIMEOUT_S, env=env)
+    got = subprocess.run([uv, "python", "list", *([want] if want else []), "--only-installed",
+                          "--output-format", "json"], **run)
+    if got.returncode:
+        raise RepoEnvError(f"uv python list failed: {got.stderr.strip()[-400:]}")
+    try:
+        found = [e for e in json.loads(got.stdout or "[]") if isinstance(e, dict)]
+    except ValueError as exc:
+        raise RepoEnvError(f"uv python list printed no JSON: {got.stdout.strip()[:200]}") from exc
+    mine = [e for e in found if _runs_here(e, host)]
+    if not mine:
+        system, arch, _ = host
+        others = ", ".join(sorted({str(e.get("key")) for e in found})) or "none"
+        hint = f"cpython-{want}-{system}-{arch}" if re.fullmatch(r"\d+(\.\d+)*", want) else f"a {system}-{arch} CPython"
+        raise RepoEnvError(f"no {system}-{arch} Python {want or '(any version)'} is installed for {task.name} "
+                           f"(others uv found: {others}); install one with: uv python install {hint}")
+    home = subprocess.run([uv, "python", "dir"], **run).stdout.strip()
+
+    def rank(e):
+        v = e.get("version_parts") or {}
+        managed = bool(home) and (task / str(e["path"])).is_relative_to(task / home)
+        return managed, v.get("major", 0), v.get("minor", 0), v.get("patch", 0)
+    # uv prints a path under the working directory relative to it.
+    return str(task / str(max(mine, key=rank)["path"]))
+
+
 def prepare(task: Path, extras=()) -> Path:
     """The venv `uv sync --frozen` builds from the pristine base checkout, cached per lockfile digest and extras."""
     if not (task / "uv.lock").is_file():
@@ -228,7 +296,8 @@ def prepare(task: Path, extras=()) -> Path:
     env = {**os.environ, "UV_PROJECT_ENVIRONMENT": str(tmp)}
     env.pop("VIRTUAL_ENV", None)
     try:
-        got = subprocess.run([uv, "sync", "--frozen", "--no-install-project", "--quiet",
+        python = interpreter(task, uv, env)
+        got = subprocess.run([uv, "sync", "--frozen", "--no-install-project", "--quiet", "--python", python,
                               *(a for x in sorted(extras) for a in ("--extra", x))], cwd=task,
                              capture_output=True, text=True, timeout=ENV_TIMEOUT_S, env=env)
     except subprocess.TimeoutExpired as exc:

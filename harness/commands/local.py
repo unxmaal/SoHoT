@@ -23,7 +23,8 @@ def add_parser(sub) -> None:
     c.add_argument("--thinking", choices=("on", "off"), default=None, help="a hybrid model's reasoning")
     c.add_argument("--paths", nargs="+", default=None, help="files the server reads itself, as local_complete paths")
     c.add_argument("-q", "--question", default="", help="what to find in --paths")
-    c.add_argument("--mode", choices=("", "spans"), default="", help="spans: the lines of one file that answer -q")
+    c.add_argument("--mode", choices=("", "spans", "digest"), default="", help="spans: the lines of one file that "
+                   "answer -q; digest: a checked digest of logs (as `soh digest`)")
     c.add_argument("--json", action="store_true", help=JSON_HELP)
     c.set_defaults(func=cmd_complete)
     d = verbs.add_parser("decide", help="classify with the decide lane's adopted model, as local_decide")
@@ -65,7 +66,7 @@ def _done(got: dict, answer: str) -> int:
 def cmd_complete(a) -> int:
     from harness import completion, local_tools
     prompt = a.prompt or ("" if a.paths else _stdin())
-    if not prompt.strip() and not (a.paths and a.question.strip()):
+    if not prompt.strip() and not (a.paths and (a.question.strip() or a.mode == "digest")):
         return _failed(ValueError("give a prompt (or stdin), or --paths with -q QUESTION"))
     try:
         got = local_tools.complete(prompt, a.lane, a.system, max_tokens=a.max_tokens, temperature=a.temperature,

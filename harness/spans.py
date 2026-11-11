@@ -241,7 +241,7 @@ def ask_file(raw, question: str, *, lane: str = "code", roots=None, cwd: Path | 
              max_tokens: int | None = None, model: str | None = None, delegated: bool = False,
              complete=None) -> dict:
     """One file read inside #1335's roots (harness/ask.read), as spans or whole, in local_complete's shape."""
-    from harness import ask, purpose
+    from harness import ask
     if not (question or "").strip():
         raise ask.Refused("spans needs a question")
     files = ask.read(raw, ask.default_roots(cwd) if roots is None else roots, cwd)
@@ -250,7 +250,9 @@ def ask_file(raw, question: str, *, lane: str = "code", roots=None, cwd: Path | 
     f, replies, base = files[0], [], complete or delegate.complete
 
     def call(lane_: str, prompt_: str, **kw) -> dict:
-        got = base(lane_, prompt_, tag=purpose.WORK if delegated else purpose.INTERNAL, **kw)
+        from harness import delegations
+        with delegations.on_behalf(delegated):
+            got = base(lane_, prompt_, tag=delegate.tag_of(delegated), **kw)
         replies.append(got)
         return got
     got = answer(f.text, question, name=f.path, lane=lane, complete=call, max_tokens=max_tokens, model=model)

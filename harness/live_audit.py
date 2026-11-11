@@ -78,12 +78,13 @@ def _served_matches(served: dict | None, wanted: dict, path=None) -> list:
             if served.get(lane, {}).get("model") != wanted.get(lane, {}).get("model")]
 
 
-def _gateway_errors(conn) -> list:
+def _gateway_errors(conn) -> tuple[list, list]:
+    """(failures, warnings): error rates over the bar fail; a window the writer dropped rows from only warns. #700, #1714."""
     import time
 
     from harness import usage
-    # Rates over a window the writer dropped rows from are not rates of real use. #700.
-    out = usage.drop_warning(conn, time.time() - usage.parse_since(usage.DEFAULT_SINCE))
+    dropped = usage.drop_warning(conn, time.time() - usage.parse_since(usage.DEFAULT_SINCE))
+    out = []
     few = []
     for lane, s in sorted(usage.real_use(conn).items()):
         if s["requests"] < MIN_REQUESTS:
@@ -97,7 +98,7 @@ def _gateway_errors(conn) -> list:
     if few:
         from harness import cuts
         cuts.cut("harness/live_audit.py:MIN_REQUESTS", f"error rates of {', '.join(few)} left unjudged", dropped=len(few))
-    return out
+    return (out + dropped if out else []), ([] if out else dropped)
 
 
 def _survived(check: str, rows: list, at=...) -> tuple[list, list, float | None]:
@@ -387,11 +388,12 @@ def audit(path=None, config=None, cases=None) -> dict:
             served, wanted = serving(conn, config)
         here = _facts_here(conn)
         late, held = _sweep_on_schedule(conn)
+        errors, dropped = _gateway_errors(conn)
         checks = mc.invariants(conn) + [
             mc._check("adoptions_pass_here", _adoptions_pass_here(conn)),
             mc._check("no_reference_served", _no_reference_served(conn, served or {})),
             mc._check("served_matches_adoption", _served_matches(served, wanted, gateway.served_path(config))),
-            mc._check("gateway_errors", _gateway_errors(conn)),
+            mc._check("gateway_errors", errors),
             mc._check("sweep_on_schedule", late),
             mc._check("sweep_on_deployed_code", []),
         ]
@@ -424,6 +426,8 @@ def audit(path=None, config=None, cases=None) -> dict:
         drifted = _venv_drift(path)
         if drifted:
             warnings["venv_matches_script"] = "rebuilt from empty on its next run: " + mc._say(drifted)
+        if dropped:
+            warnings["gateway_errors"] = "; ".join(dropped)
         notes = {"sweep_on_schedule": held} if held else {}
         moved = _sweep_on_deployed_code()
         if moved:

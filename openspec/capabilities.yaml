@@ -215,6 +215,9 @@ capabilities:
       - harness/spans.py
       - harness/commands/spans.py
       - evals/spans_recall.py
+      - harness/digest.py
+      - harness/commands/digest.py
+      - evals/digest_ab.py
       - harness/kb_filter.py
       - harness/commands/kb_filter.py
 
@@ -322,6 +325,8 @@ capabilities:
       - evals/analysis/
       - harness/repo_gate.py
       - harness/commands/repo_screen.py
+      - evals/atomic.py
+      - harness/commands/atomic.py
 
   - name: claims-lane
     summary: Claims cases imported local-only, judged by a rubric only once it separates, and read back per candidate.

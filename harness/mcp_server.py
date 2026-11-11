@@ -208,6 +208,8 @@ class LocalCompletion(BaseModel):
     #: With mode "spans": "spans" or "whole", and the (first, last) line ranges quoted. #1336.
     mode: str | None = None
     spans: list | None = None
+    #: With mode "digest": items the check found, kept and added, and whether its planted-failure control was caught. #1690.
+    check: dict | None = None
 
 
 class LocalDecision(BaseModel):
@@ -255,6 +257,9 @@ def _delegated(call, *args, **kw) -> dict:
     "checked against the file, and you get those lines numbered as Read shows "
     "them (then Read with offset/limit for more), or the whole file when it "
     "doubts. "
+    "For a test or CI log, pass `paths` and mode \"digest\" (question optional): you get the "
+    "failing tests, error lines, counts and exits, any the model left out added by a check, "
+    "and a pointer to the raw file; read that instead of the log. "
     "`lane` defaults to code for a prompt and for spans, and extract for paths. "
     "`system` replaces the lane's own system prompt. "
     "While a batch run holds the machine it answers at once if the model is "
@@ -304,14 +309,13 @@ def local_decide(question: str, schema: dict, context: str = "") -> LocalDecisio
     "edited, or discarded, with an optional why. `call_id` is the one that "
     "call returned. Recording again overwrites and keeps the earlier outcome in why."))
 def delegated(call_id: str, outcome: str, why: str = "") -> DelegationOutcome:
-    from harness import memory_store as ms
-    conn = ms.connect()
-    try:
-        return DelegationOutcome(**delegations.outcome(conn, call_id, outcome, why))
-    except (ValueError, delegations.UnknownCall) as exc:
-        raise ToolError(str(exc)) from exc
-    finally:
-        conn.close()
+    with delegations.ledger() as conn:
+        if conn is None:
+            raise ToolError("not recorded: this server cannot write the live store")
+        try:
+            return DelegationOutcome(**delegations.outcome(conn, call_id, outcome, why))
+        except (ValueError, delegations.UnknownCall) as exc:
+            raise ToolError(str(exc)) from exc
 
 
 # ---------------------------------------------------------------------------

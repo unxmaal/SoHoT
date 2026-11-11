@@ -1,0 +1,430 @@
+{
+ "entries": [
+  {
+   "id": "34163437830",
+   "run": 34163437830,
+   "file": "logs/34163437830.log.gz",
+   "bytes": 9317,
+   "sha256": "e5133d94efe89e397bf4ac37866517a311a64d7a4bfdfe56ab61cbea5dc4bd06",
+   "tests": [
+    "test_a_broken_stage_carries_its_reason_and_is_not_a_gap"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [test] Error 1"
+   ]
+  },
+  {
+   "id": "34386248723",
+   "run": 34386248723,
+   "file": "logs/34386248723.log.gz",
+   "bytes": 494816,
+   "sha256": "ec7153481ea7c4012d0f64b62f9db1a8031151dc75aa11c94b26a6e869da34cb",
+   "tests": [
+    "test_a_candidate_that_does_not_exist_is_skipped",
+    "test_a_crash_carries_the_childs_stderr",
+    "test_each_case_gets_its_own_output_directory",
+    "test_exit_zero_with_no_svg_is_a_failure",
+    "test_the_prompt_and_the_flags_reach_the_script",
+    "test_the_svg_it_wrote_is_the_artifact"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [Makefile:7: test] Error 1"
+   ]
+  },
+  {
+   "id": "34411718588",
+   "run": 34411718588,
+   "file": "logs/34411718588.log.gz",
+   "bytes": 487477,
+   "sha256": "1f9ecbb679b98a5bef6171157ff2e6f304ae3853e13568d3ae79069a7fe578e6",
+   "tests": [
+    "test_candidates_carry_their_relevance"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [Makefile:7: test] Error 1"
+   ]
+  },
+  {
+   "id": "34652313291",
+   "run": 34652313291,
+   "file": "logs/34652313291.log.gz",
+   "bytes": 37086,
+   "sha256": "035d1d096baa341550560bd1673a364433a5b9dbe168f15e8ac1af612d521e63",
+   "tests": [
+    "test_a_page_that_parses_but_renders_blank_fails",
+    "test_a_page_with_visible_text_has_ink",
+    "test_a_real_page_reports_its_ink",
+    "test_an_empty_body_renders_blank",
+    "test_check_html_fails_a_page_that_renders_nothing",
+    "test_check_html_passes_a_real_page",
+    "test_rasterizes_a_page_to_a_png",
+    "test_the_default_is_the_same_in_every_shell[sh]",
+    "test_white_on_white_renders_blank"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [Makefile:7: test] Error 1"
+   ]
+  },
+  {
+   "id": "34655510141",
+   "run": 34655510141,
+   "file": "logs/34655510141.log.gz",
+   "bytes": 39872,
+   "sha256": "8c9575df9075dca7c7af5cbc5678d15b5cea5413b74fb412249ce664cc599cd2",
+   "tests": [
+    "test_a_page_that_parses_but_renders_blank_fails",
+    "test_a_page_with_visible_text_has_ink",
+    "test_a_real_page_reports_its_ink",
+    "test_an_empty_body_renders_blank",
+    "test_check_html_fails_a_page_that_renders_nothing",
+    "test_check_html_passes_a_real_page",
+    "test_rasterizes_a_page_to_a_png",
+    "test_white_on_white_renders_blank"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [Makefile:7: test] Error 1"
+   ]
+  },
+  {
+   "id": "34713173649",
+   "run": 34713173649,
+   "file": "logs/34713173649.log.gz",
+   "bytes": 50837,
+   "sha256": "8054d992205de936f5727ee1f8d780088a2cf1c1f52f2810e8c32dbf04224a0d",
+   "tests": [
+    "test_absent_fonts_are_reported",
+    "test_fonts_that_exist_are_not_reported_missing"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [test] Error 1"
+   ]
+  },
+  {
+   "id": "34778509531",
+   "run": 34778509531,
+   "file": "logs/34778509531.log.gz",
+   "bytes": 123929,
+   "sha256": "5dff3a8207d56b55603c072d524bb230a88bef35f732440be6f487d3e58e51fb",
+   "tests": [
+    "test_main_emits_parseable_json",
+    "test_main_prints_the_four_and_their_caveat",
+    "test_main_says_when_the_ci_half_is_missing"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [Makefile:7: test] Error 1",
+    "make: *** [test] Error 1"
+   ]
+  },
+  {
+   "id": "35398768376",
+   "run": 35398768376,
+   "file": "logs/35398768376.log.gz",
+   "bytes": 666196,
+   "sha256": "456e2b784d8ef04237dba6fae8dae432f32154944a1a0760d3d3816602c68270",
+   "tests": [
+    "test_every_named_lane_has_cases_to_measure_it"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [Makefile:14: test] Error 1",
+    "make: *** [test] Error 1"
+   ]
+  },
+  {
+   "id": "35400607550",
+   "run": 35400607550,
+   "file": "logs/35400607550.log.gz",
+   "bytes": 663465,
+   "sha256": "f4bd3dd3e5822df170317f723ac87724454c5c6bdb5c1c1112b2a38e84407f98",
+   "tests": [
+    "test_every_named_lane_has_cases_to_measure_it"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [Makefile:14: test] Error 1",
+    "make: *** [test] Error 1"
+   ]
+  },
+  {
+   "id": "35402552526",
+   "run": 35402552526,
+   "file": "logs/35402552526.log.gz",
+   "bytes": 668658,
+   "sha256": "7581b728f6517e9c4fbf0e8ec18330735cc91104322d28c4fb27890acdc44969",
+   "tests": [
+    "test_every_named_lane_has_cases_to_measure_it"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [Makefile:14: test] Error 1",
+    "make: *** [test] Error 1"
+   ]
+  },
+  {
+   "id": "35786511834",
+   "run": 35786511834,
+   "file": "logs/35786511834.log.gz",
+   "bytes": 16984,
+   "sha256": "f6fd7f2c603766df98060d7953a80ca5ceb3bab668b94664683667eda1628c23",
+   "tests": [
+    "test_an_absolute_reference_is_left_alone"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [Makefile:14: test] Error 1"
+   ]
+  },
+  {
+   "id": "37375134672",
+   "run": 37375134672,
+   "file": "logs/37375134672.log.gz",
+   "bytes": 48647,
+   "sha256": "4505b90a82d290249306c1273a985370191c368f7a716a68cde7e1757016fcd4",
+   "tests": [
+    "test_a_warm_server_reads_the_same_with_or_without_the_warmup"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [test] Error 1"
+   ]
+  },
+  {
+   "id": "37478622440",
+   "run": 37478622440,
+   "file": "logs/37478622440.log.gz",
+   "bytes": 32503,
+   "sha256": "2ba78b53e83e51a57be91a126857c9097e8bd5430201e3599cf1b627937507b9",
+   "tests": [
+    "test_a_candidate_travels_from_sweep_to_the_screen",
+    "test_a_model_a_runner_can_load_is_still_fetched",
+    "test_a_runnable_candidate_is_still_fetched",
+    "test_an_ordinary_model_is_not_refused_as_an_attachment"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [Makefile:14: test] Error 1"
+   ]
+  },
+  {
+   "id": "37526870750",
+   "run": 37526870750,
+   "file": "logs/37526870750.log.gz",
+   "bytes": 22085,
+   "sha256": "b986c85604f37af1a8abcac9c9f8e5c958c4562d3864e7595f8254bd0b548c7b",
+   "tests": [
+    "test_stream_run_times_each_line_as_it_arrives"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [Makefile:14: test] Error 1"
+   ]
+  },
+  {
+   "id": "37555294647",
+   "run": 37555294647,
+   "file": "logs/37555294647.log.gz",
+   "bytes": 170542,
+   "sha256": "6d85eab2b4ba0cf1a81046ded9051a547bdb77af9e0308c7eadadab4aad92aaf",
+   "tests": [
+    "test_each_golden_migrates_to_the_recorded_content[10]",
+    "test_each_golden_migrates_to_the_recorded_content[18]",
+    "test_each_golden_migrates_to_the_recorded_content[24]",
+    "test_each_golden_migrates_to_the_recorded_content[29]"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [Makefile:14: test] Error 1"
+   ]
+  },
+  {
+   "id": "37573814893",
+   "run": 37573814893,
+   "file": "logs/37573814893.log.gz",
+   "bytes": 25772,
+   "sha256": "969213a8fa7c9d1466ff52faedd9f0e58509429af3bfa36a70fd5f0c45341223",
+   "tests": [
+    "test_served_starts_the_child_waits_for_it_and_stops_it"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [test] Error 1"
+   ]
+  },
+  {
+   "id": "38153610346",
+   "run": 38153610346,
+   "file": "logs/38153610346.log.gz",
+   "bytes": 77916,
+   "sha256": "4c685733631d26e0f274071404de1340c11c094bae5e0f74577d23841fcdd264",
+   "tests": [
+    "test_no_new_gating_constant_is_unregistered",
+    "test_sensitivity_inventory_counts_what_the_registry_covers"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [test] Error 1"
+   ]
+  },
+  {
+   "id": "38165560336",
+   "run": 38165560336,
+   "file": "logs/38165560336.log.gz",
+   "bytes": 79097,
+   "sha256": "c8a04ac741046ee0d657ac2e3aa70863053c4794029337f43c49ff839114600f",
+   "tests": [
+    "test_the_store_answers_one_slot_of_a_sized_pool",
+    "test_the_store_answers_when_the_router_cannot"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [test] Error 1"
+   ]
+  },
+  {
+   "id": "38396759185",
+   "run": 38396759185,
+   "file": "logs/38396759185.log.gz",
+   "bytes": 39173,
+   "sha256": "abbf1c12524ec8f6beee80be31a8ae0fcfa8e364efdd44eadab214ce8d563bf1",
+   "tests": [
+    "test_the_rubric_eval_sends_the_key"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [test] Error 1"
+   ]
+  },
+  {
+   "id": "39032480969",
+   "run": 39032480969,
+   "file": "logs/39032480969.log.gz",
+   "bytes": 82255,
+   "sha256": "9c60bcfb2529926f7622301f45aa44728e553b20068e4074adf0a67448807c81",
+   "tests": [
+    "test_the_build_reproduces_the_committed_golden[v10]",
+    "test_the_build_reproduces_the_committed_golden[v18]",
+    "test_the_build_reproduces_the_committed_golden[v24]",
+    "test_the_build_reproduces_the_committed_golden[v29]",
+    "test_the_build_reproduces_the_committed_golden[v34]",
+    "test_the_build_reproduces_the_committed_golden[v38]",
+    "test_the_build_reproduces_the_committed_golden[v41]"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [test] Error 1"
+   ]
+  },
+  {
+   "id": "39599922451",
+   "run": 39599922451,
+   "file": "logs/39599922451.log.gz",
+   "bytes": 41168,
+   "sha256": "5d13efeb865a20d09fff57c39d150e413386bc69352ae4fca06495bdaf9dcde4",
+   "tests": [
+    "test_a_held_router_is_not_restarted_and_the_night_restarts_it_once"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [test] Error 1"
+   ]
+  },
+  {
+   "id": "40017092218",
+   "run": 40017092218,
+   "file": "logs/40017092218.log.gz",
+   "bytes": 42613,
+   "sha256": "c473eea5dd5f0dbe944397772dbadb0a26a66da67d2060ac8f7afcd058301e6c",
+   "tests": [
+    "test_older_slot_shapes_are_read_and_an_unknown_one_fails"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [test] Error 1"
+   ]
+  },
+  {
+   "id": "40251383742",
+   "run": 40251383742,
+   "file": "logs/40251383742.log.gz",
+   "bytes": 160998,
+   "sha256": "3dcdbf7fa1bb36f9639c992d5cf005aa6e46d06f1967da1e7f3c65a871c2f094",
+   "tests": [
+    "test_every_launchd_unit_declares_its_output"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [test] Error 1"
+   ]
+  },
+  {
+   "id": "41154342278",
+   "run": 41154342278,
+   "file": "logs/41154342278.log.gz",
+   "bytes": 176866,
+   "sha256": "bcbe61d1f15491a86f9ad476e91a9fe59ce8c9be5c0716931b686d1fd048c459",
+   "tests": [
+    "test_a_paired_run_is_cut_into_look_slices_inside_its_budget"
+   ],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [test] Error 1"
+   ]
+  },
+  {
+   "id": "34163358263",
+   "run": 34163358263,
+   "file": "logs/34163358263.log.gz",
+   "bytes": 845,
+   "sha256": "4de1dfa3700649a4c94f42b4691208c6ce09fe4dfc10fe9dbcee456ffbdc0111",
+   "tests": [],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [lint] Error 127"
+   ]
+  },
+  {
+   "id": "37781531757",
+   "run": 37781531757,
+   "file": "logs/37781531757.log.gz",
+   "bytes": 29024,
+   "sha256": "6826fbc8b0174cd3d4c37d4010990afa616cc3d276bb4519500d648b6894a536",
+   "tests": [],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [mutation] Error 1"
+   ]
+  },
+  {
+   "id": "39053915248",
+   "run": 39053915248,
+   "file": "logs/39053915248.log.gz",
+   "bytes": 39863,
+   "sha256": "02546774f78010db60b9e8981da980339ef32385cbc416d079be8b0cd3bf0cda",
+   "tests": [],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [test] Error 1"
+   ]
+  },
+  {
+   "id": "40127791020",
+   "run": 40127791020,
+   "file": "logs/40127791020.log.gz",
+   "bytes": 44486,
+   "sha256": "c2fde6cd0b04ea81626d45107f1287a38f213ed729cc214e09bbb7694c544daf",
+   "tests": [],
+   "exits": [
+    "##[error]Process completed with exit code 2.",
+    "make: *** [test] Error 1"
+   ]
+  }
+ ],
+ "refused": []
+}

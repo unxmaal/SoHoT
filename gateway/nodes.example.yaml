@@ -31,4 +31,4 @@ nodes:
     #   ssh: NODE_USER@NODE_HOST        # or a Host in ~/.ssh/config; key auth, no prompt
     #   key: ~/.ssh/NODE_DEPLOY_KEY     # optional
     #   dir: NODE_DEPLOY_DIR            # optional; default the node's $LOCALHARNESS_HOME/deploy
-    #   role: interactive               # its LH_ROLE: interactive when lanes: is set, else node
+    #   role: interactive               # optional; overrides the node's own ~/localharness/role, never defaulted

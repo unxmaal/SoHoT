@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import itertools
 import os
+from contextlib import contextmanager
 import subprocess
 import sys
 import tempfile
@@ -38,12 +39,41 @@ _SEQ = itertools.count()
 
 ENV_VAR = "LOCALHARNESS_HOME"
 DEFAULT_HOME = Path.home() / "localharness"
+#: The home whose gpu lease and generation.lock hold this machine while LOCALHARNESS_HOME is MACHINE_FOR_ENV. #1703.
+MACHINE_ENV = "LH_MACHINE_HOME"
+MACHINE_FOR_ENV = "LH_MACHINE_FOR"
+#: The machine home's LOCALHARNESS_STORE, as it was before the scratch home pinned SQLite. #1703.
+MACHINE_STORE_ENV = "LH_MACHINE_STORE"
+
+_seat = local()
 
 
 def home() -> Path:
     """The single root. Absolute, always: see the module docstring."""
+    seated = getattr(_seat, "home", None)
+    if seated is not None:
+        return seated
     raw = os.environ.get(ENV_VAR)
     return (Path(raw).expanduser().resolve() if raw else DEFAULT_HOME)
+
+
+def machine_home() -> Path:
+    """Where this machine's gpu lease and generation.lock live: LH_MACHINE_HOME for the scratch home it names, else this home. #1703."""
+    raw, scratch, here = os.environ.get(MACHINE_ENV), os.environ.get(MACHINE_FOR_ENV), home()
+    if raw and scratch and Path(scratch).expanduser().resolve() == here:
+        return Path(raw).expanduser().resolve()
+    return here
+
+
+@contextmanager
+def seated(where: Path):
+    """home() is `where` on this thread meanwhile. #1703."""
+    was = getattr(_seat, "home", None)
+    _seat.home = Path(where)
+    try:
+        yield
+    finally:
+        _seat.home = was
 
 
 #: The checkout this code was imported from.
@@ -129,6 +159,9 @@ def eval_home(scratch: Path | None = None, *, live: bool = False, reads_live: bo
         raise LiveHomeRefused(f"{where} is the live home, not a scratch one")
     where.mkdir(parents=True, exist_ok=True)
     from harness import store
+    os.environ[MACHINE_ENV] = os.environ.get(MACHINE_ENV) or str(home())
+    os.environ[MACHINE_FOR_ENV] = str(where)
+    os.environ[MACHINE_STORE_ENV] = os.environ.get(store.BACKEND_ENV, "")
     os.environ[ENV_VAR] = str(where)
     # A scratch home's store is its own SQLite file, even where LOCALHARNESS_STORE names a shared Postgres. #1579.
     os.environ[store.BACKEND_ENV] = store.SQLITE

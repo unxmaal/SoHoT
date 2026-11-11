@@ -310,7 +310,7 @@ def _gate(where: serving.Route) -> bool | None:
 
 def _holder(held: str) -> str:
     """The lock's holder with its own queued job, never the queue's current one: that may be this caller. #1349."""
-    owner = str(exclusive.holder().get("job") or "").strip()
+    owner = str(exclusive.machine_holder().get("job") or "").strip()
     job = running_job(job_id=owner) if owner else ""
     return f"{held} under {job}" if job else held
 
@@ -441,7 +441,9 @@ def as_work(lane: str, spec: str, where: serving.Route, stream: bool, delegation
     `delegation` also records the result as a delegations row sharing the request row's call_id. #829.
     """
     direct = not completion.is_gateway(where.base)
-    from harness import usage
+    from harness import delegations, usage
+    # A delegation's request row goes where its delegations row goes, the live store included. #1717.
+    write = delegations.request if delegation or delegations.behalf() else usage.record
     got: dict = {}
     at = time.time()
     with purpose.using(tag):
@@ -449,20 +451,25 @@ def as_work(lane: str, spec: str, where: serving.Route, stream: bool, delegation
             yield got
         except Exception as exc:
             if direct:
-                usage.record(usage.direct_row(lane, spec, where.model, at, error=exc, stream=stream, tag=tag))
+                write(usage.direct_row(lane, spec, where.model, at, error=exc, stream=stream, tag=tag))
             raise
-    from harness import delegations
     # One id for the delegation and its request row: LiteLLM's via the gateway, ours when direct. #829.
     call_id = got.get("call_id") or (delegations.new_id() if delegation else "")
     if direct:
-        usage.record({**usage.direct_row(lane, spec, got.get("model") or where.model, at, got,
-                                         stream=stream, tag=tag), "call_id": call_id})
+        write({**usage.direct_row(lane, spec, got.get("model") or where.model, at, got,
+                                  stream=stream, tag=tag), "call_id": call_id})
     if delegation:
         got.update(delegations.note(got, call_id, gateway=bool(got.get("call_id"))))
 
 
-def _tag(delegated: bool) -> str:
-    return purpose.WORK if delegated else purpose.INTERNAL
+def tag_of(delegated: bool) -> str:
+    """work for a delegation; eval or smoke inside a process measuring the lane; else internal. #1701"""
+    if delegated:
+        return purpose.WORK
+    return purpose.current() if purpose.current() in purpose.MEASURING else purpose.INTERNAL
+
+
+_tag = tag_of
 
 
 def complete(lane: str, prompt: str, system: str | None = None,

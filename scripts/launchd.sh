@@ -261,7 +261,7 @@ _watchdog_env() {
 }
 
 usage() {
-  echo "usage: $0 {deploy|deploy-path|generate [DIR]|install|reinstall|uninstall|status|probe}" >&2
+  echo "usage: $0 {deploy|deploy-path|units|generate [DIR]|install|reinstall|uninstall|status|probe}" >&2
   exit 2
 }
 
@@ -745,6 +745,13 @@ case "${1:-}" in
   deploy)    deploy ;;
   # The one definition of DEPLOY; harness/paths.py asks here. #455.
   deploy-path) printf '%s\n' "$DEPLOY" ;;
+  # This role's units, then each SoHoT unit launchd has loaded or holds disabled; a node deploy compares them. #1707.
+  units)
+    for service in $(units); do echo "want $service"; done
+    for service in $SERVICES; do
+      if launchctl print "gui/$UID/$PREFIX.$service" >/dev/null 2>&1; then echo "loaded $service"
+      elif _disabled "$PREFIX.$service"; then echo "disabled $service"; fi
+    done ;;
   generate)  shift; generate "${1:-}" ;;
   probe)     preflight && echo "ok: a launchd agent can read $(_hf_root)" ;;
   install)
