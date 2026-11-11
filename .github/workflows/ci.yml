@@ -549,7 +549,7 @@ jobs:
         # Fails on a new surviving mutant, or on a pinned one that is now killed and still listed.
         run: make mutation MUTATION_ARGS="--module ${{ matrix.module }}${{ matrix.shard && format(' --shard {0}', matrix.shard) || '' }} --found .logs/mutation-found.json"
 
-      - name: Survivors for `python -m tests.gauntlet.mutation pin --from`
+      - name: Survivors for `gauntlet mutation --config tests.gauntlet.mutation:CONFIG pin --from`
         if: always()
         uses: actions/upload-artifact@v4
         with:

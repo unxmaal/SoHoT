@@ -360,13 +360,15 @@ def test_the_knob_scan_analyses_each_source_text_once_and_hands_out_copies():
 
 
 def test_the_tree_scans_parse_each_text_once_and_still_name_what_does_not_parse():
+    from gauntlet import detectors
+    from gauntlet import scanners as gscanners
+
     from tests import layout_scan
-    from tests.gauntlet import detectors, scanners
     text = "def f_1571():\n    return 1\n"
-    before = scanners.tree.cache_info()
+    before = gscanners.tree.cache_info()
     first = detectors.parse({"a.py": text})["a.py"]
-    assert scanners._parse(text, "b.py")[0] is first and scanners.tree.cache_info().misses - before.misses == 1
-    assert scanners._parse("def (:\n", "c.py") == (None, ["c.py:1: does not parse, so it was not scanned"])
+    assert gscanners._parse(text, "b.py")[0] is first and gscanners.tree.cache_info().misses - before.misses == 1
+    assert gscanners._parse("def (:\n", "c.py") == (None, ["c.py:1: does not parse, so it was not scanned"])
     assert detectors.parse({"c.py": "def (:\n"}) == {}
     mods = layout_scan.code_modules()
     mods["planted_1571"] = ""

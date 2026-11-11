@@ -113,7 +113,7 @@ def test_adopt_mutation_is_split_since_one_job_ran_past_its_limit():
 def test_make_mutation_redirects_its_output():
     make = (Path(__file__).resolve().parents[1] / "Makefile").read_text(encoding="utf-8")
     recipe = make.split("\nmutation:", 1)[1].split("\n\n", 1)[0]
-    assert "tests.gauntlet.mutation run" in recipe and "> " in recipe
+    assert "gauntlet mutation --config tests.gauntlet.mutation:CONFIG run" in recipe and "> " in recipe
 
 
 def test_a_new_pages_publish_cancels_a_stuck_one():

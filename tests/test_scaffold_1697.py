@@ -112,12 +112,19 @@ def test_an_unhomed_probe_is_named_with_its_eval_waived_line(tmp_path):
 
 def test_a_detector_hit_with_no_bound_test_is_named_with_its_marker(tmp_path):
     root = tree(tmp_path, {"harness/u.py": 'def f(b):\n    return b != "http://localhost:4000"\n',
-                           "tests/gauntlet/backlog.json": "{}\n", "tests/test_gauntlet_detectors.py": "BACKLOG_PIN = 0\n"})
+                           "tests/gauntlet/backlog.json": "{}\n", "tests/gauntlet/registry.py": "BACKLOG_PIN = 0\n"})
     got = text_of(precheck.detector_bindings(root))
     assert '@pytest.mark.gauntlet("identity-by-name-not-by-content", site="harness/u.py:f")' in got
     tree(root, {"tests/test_u.py": 'import pytest\n@pytest.mark.gauntlet("identity-by-name-not-by-content", '
                                    'site="harness/u.py:f")\ndef test_f():\n    pass\n'})
     assert precheck.detector_bindings(root) == []
+
+
+def test_an_unregistered_move_table_is_named_with_its_move_table_line(tmp_path):
+    root = tree(tmp_path, {"harness/thing_state.py": 'A, B = "a", "b"\nMOVES = {(A, B), (B, A)}\n'})
+    got = text_of(precheck.move_tables(root))
+    assert 'MoveTable("harness/thing_state.py:MOVES", <module>.MOVES' in got
+    assert precheck.move_tables(REPO) == []
 
 
 def test_a_new_mode_flag_is_named_with_its_not_run_line(tmp_path):

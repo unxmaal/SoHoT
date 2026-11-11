@@ -11,8 +11,8 @@ from harness import binding, knobs, paired, reasons, runs
 from harness import memory_store as ms
 from harness.checks import code as code_check
 from harness.engines import Engine
-from tests.gauntlet import scanners
 from tests import conftest
+from tests.gauntlet import scanners
 
 SLEEPER = "import time\ntime.sleep(30)\n"
 
