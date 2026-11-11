@@ -231,12 +231,16 @@ def _specs(conn) -> dict:
     return {gateway.LANE_ALIAS.format(lane): spec for lane, spec in got.items()}
 
 
+def bound(r: dict) -> dict:
+    """A request row as its gateway_requests columns bind it."""
+    return {**{c: r.get(c) for c in COLUMNS}, "purpose": r.get("purpose") or purpose.UNKNOWN,
+            "call_id": r.get("call_id") or ""}
+
+
 def _insert_one(conn, r: dict):
     sql = (f"INSERT INTO gateway_requests ({', '.join(COLUMNS)}) VALUES "
            f"({', '.join(':' + c for c in COLUMNS)})")
-    return conn.execute(sql, {**{c: r.get(c) for c in COLUMNS},
-                              "purpose": r.get("purpose") or purpose.UNKNOWN,
-                              "call_id": r.get("call_id") or ""})
+    return conn.execute(sql, bound(r))
 
 
 def append(conn, r: dict) -> None:
