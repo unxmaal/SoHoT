@@ -31,6 +31,92 @@ FALLBACK_MIN_CASES = 20
 #: GPU seconds a reply-budget sweep, all its values together, may be projected to take before it is refused. #1020, #1509.
 BUDGET_S = 11 * 3600.0
 
+#: A sweep's state is its outcome column: OPEN while its jobs run, then one settled outcome. #1733.
+OPEN = ""
+SETTLED = (CHOSEN, UNINFORMATIVE, UNRUN, CANCELLED)
+FOUND = (NOT_BINDING, NOT_BINDING_LANE)
+#: Why a sweep row moves: queued, a not-binding finding recorded, settled, a paused job resumed, or refiled (#1009).
+QUEUED, RECORDED, JUDGED, RESUMED, REFILED = "queued", "recorded", "judged", "resumed", "refiled"
+#: (outcome it leaves, outcome it enters) -> the reasons that may move it; None leaves no open sweep for the key. #1733.
+MOVES: dict[tuple, frozenset[str]] = {
+    (None, OPEN): frozenset({QUEUED}),
+    **{(None, to): frozenset({RECORDED}) for to in FOUND},
+    (OPEN, OPEN): frozenset({RESUMED}),
+    **{(OPEN, to): frozenset({JUDGED}) for to in SETTLED},
+    # The one move out of a settled sweep: a chosen one re-decided under the #1009 floor rule.
+    (CHOSEN, UNINFORMATIVE): frozenset({REFILED}),
+}
+#: A job of a sweep whose row no longer exists: it runs nothing more, as a cancelled one. #1733.
+GONE = "gone"
+_INSERTS = frozenset({"jobs", "trigger", "queued_at", "settled_at", "chosen", "cost", "detail"})
+_UPDATES = frozenset({"jobs", "settled_at", "chosen", "cost", "detail"})
+_LEDGER = "knob-sweep:"
+
+
+class IllegalMove(ValueError):
+    """A knob sweep write MOVES refuses, refused before anything is written. #1733."""
+
+
+def refused(frm, to: str, reason: str) -> str:
+    """Why a sweep may not move from `frm` to `to` for `reason`, or '' if it may."""
+    allowed = MOVES.get((frm, to))
+    if allowed is None:
+        return f"no sweep moves from {'nothing' if frm is None else frm or 'open'} to {to or 'open'}"
+    if reason not in allowed:
+        return f"{reason or 'no reason'} does not move a sweep from {frm} to {to}; {', '.join(sorted(allowed))} may"
+    return ""
+
+
+def _where(sw: dict) -> tuple[str, tuple]:
+    mid = sw["machine_id"]
+    same = "machine_id IS NULL" if mid is None else "machine_id = ?"
+    return (f"knob = ? AND lane = ? AND spec = ? AND {same}",
+            (sw["knob"], sw["lane"], sw["spec"], *(() if mid is None else (mid,))))
+
+
+def _open(conn, sw: dict) -> dict | None:
+    """The key's open sweep, of which _move lets there be one."""
+    where, args = _where(sw)
+    row = conn.execute(f"SELECT * FROM knob_sweeps WHERE {where} AND outcome = ? ORDER BY id", (*args, OPEN)).fetchone()
+    return dict(row) if row else None
+
+
+def _found(conn, sw: dict, detail: str) -> bool:
+    where, args = _where(sw)
+    return conn.execute(f"SELECT 1 FROM knob_sweeps WHERE {where} AND outcome IN (?, ?) AND detail = ?",
+                        (*args, *FOUND, detail)).fetchone() is not None
+
+
+def _move(conn, sw: dict, frm, to: str, reason: str, **cols) -> int | None:
+    """The one writer of knob_sweeps: refuses a move MOVES does not list, else compare-and-swap on the state it leaves; the row id, None if it lost. Commits. #1733."""
+    from harness import item_lease
+    why = refused(frm, to, reason)
+    if why:
+        raise IllegalMove(f"knob sweep {sw.get('id', '-')}: {why}")
+    unknown = set(cols) - (_INSERTS if frm is None else _UPDATES)
+    if unknown:
+        raise IllegalMove(f"a sweep move does not set {', '.join(sorted(unknown))}")
+    if frm is not None:
+        sets = "".join(f", {k} = ?" for k in cols)
+        cas, was = (" AND jobs = ?", (sw["jobs"],)) if reason == RESUMED else ("", ())
+        won = conn.execute(f"UPDATE knob_sweeps SET outcome = ?{sets} WHERE id = ? AND outcome = ?{cas}",
+                           (to, *cols.values(), int(sw["id"]), frm, *was)).rowcount == 1
+        conn.commit()
+        return int(sw["id"]) if won else None
+    conn.commit()
+    key = _LEDGER + json.dumps([sw["knob"], sw["lane"], sw["spec"], sw["machine_id"]])
+    seen = item_lease._version(conn, key)
+    if _open(conn, sw) is not None or (to in FOUND and _found(conn, sw, cols.get("detail", ""))):
+        return None
+    row = {k: sw[k] for k in ("knob", "lane", "spec", "candidate_id", "machine_id")} | cols | {"outcome": to}
+    cur = conn.execute(f"INSERT INTO knob_sweeps ({', '.join(row)}) VALUES ({', '.join('?' * len(row))})",
+                       tuple(row.values()))
+    if not item_lease._bump(conn, key, seen):
+        conn.rollback()
+        return None
+    conn.commit()
+    return int(cur.lastrowid)
+
 
 def _flag(k, value) -> list[str]:
     if k.receipt == "max_tokens":
@@ -44,25 +130,23 @@ def argv(item: dict, k, value) -> list[str]:
     return reverify.argv({**item, "incumbent": ""}) + _flag(k, value)
 
 
-def _key(conn, knob: str, lane: str, spec: str, mid) -> dict | None:
-    same = "machine_id IS NULL" if mid is None else "machine_id = ?"
-    row = conn.execute(f"SELECT * FROM knob_sweeps WHERE knob = ? AND lane = ? AND spec = ? AND {same} "
-                       "ORDER BY id DESC LIMIT 1", (knob, lane, spec, *(() if mid is None else (mid,)))).fetchone()
-    return dict(row) if row else None
-
-
-def _skip(conn, last: dict | None, now: float) -> str:
-    """Why a sweep is not queued: one is waiting, one decided, or one the harness could not run is still recent."""
+def _skip(conn, sw: dict, now: float) -> str:
+    """Why a sweep is not queued: one is open, one chose a value, or one the harness could not run is still recent."""
     from harness import reverify
-    if last is None or last["outcome"] in (NOT_BINDING, NOT_BINDING_LANE):
-        return ""
-    if not last["outcome"]:
-        return f"already queued as sweep {last['id']}"
-    if last["outcome"] == CHOSEN:
-        return f"swept already for this model and machine: chose {json.loads(last['chosen'])}"
-    days = reverify.days_for(conn, last["lane"])
-    if now - (last["settled_at"] or 0) < days * 86400.0:
-        return f"sweep {last['id']} was {last['outcome']}: {last['detail']}; retried after {days:g} days"
+    got = _open(conn, sw)
+    if got is not None:
+        return f"already queued as sweep {got['id']}"
+    where, args = _where(sw)
+    got = conn.execute(f"SELECT * FROM knob_sweeps WHERE {where} AND outcome = ? ORDER BY id", (*args, CHOSEN)).fetchone()
+    if got is not None:
+        return f"swept already for this model and machine: chose {json.loads(got['chosen'])}"
+    days = reverify.days_for(conn, sw["lane"])
+    recent = conn.execute(f"SELECT * FROM knob_sweeps WHERE {where} AND outcome IN (?, ?, ?) AND settled_at > ? "
+                          "ORDER BY settled_at, id", (*args, UNRUN, CANCELLED, UNINFORMATIVE, now - days * 86400.0)
+                          ).fetchall()
+    if recent:
+        got = recent[-1]
+        return f"sweep {got['id']} was {got['outcome']}: {got['detail']}; retried after {days:g} days"
     return ""
 
 
@@ -299,46 +383,39 @@ def plan(conn, *, now: float | None = None) -> list[dict]:
                 out.append({**entry, "argv": {}, "skip": ev["detail"]})
                 continue
         entry["argv"] = {v: argv(swept, k, v) for v in k.values_for(row["lane"])}
-        entry["skip"] = (_skip(conn, _key(conn, k.name, row["lane"], swept["spec"], mid), now)
-                         or _budget(conn, entry, k, swept, machines))
+        entry["skip"] = _skip(conn, entry, now) or _budget(conn, entry, k, swept, machines)
         out.append(entry)
     return out
 
 
 def _not_binding(conn, entry: dict, now: float) -> dict | None:
-    """Record a knob the stored runs show is not binding, once per distinct finding. #1020."""
-    last = _key(conn, entry["knob"], entry["lane"], entry["spec"], entry["machine_id"])
-    if last and last["outcome"] in (NOT_BINDING, NOT_BINDING_LANE) and last["detail"] == entry["skip"][:500]:
-        return None
+    """Record a knob the stored runs show is not binding, once per distinct finding and never over an open sweep. #1020, #1733."""
     ev = entry["evidence"]
     keys = ("cut", "passed", "where") if ev.get("lane") else (
         "cut", "passed", "wrong", "again", "top", "low", "high", "clean", "confounded")
-    cost = {k: ev[k] for k in keys}
-    cur = conn.execute(
-        "INSERT INTO knob_sweeps (knob, lane, spec, candidate_id, machine_id, jobs, trigger, queued_at, settled_at, "
-        "outcome, cost, detail) VALUES (?,?,?,?,?,'[]',?,?,?,?,?,?)",
-        (entry["knob"], entry["lane"], entry["spec"], entry["candidate_id"], entry["machine_id"],
-         json.dumps(entry["trigger"]), now, now, NOT_BINDING_LANE if ev.get("lane") else NOT_BINDING,
-         json.dumps(cost), entry["skip"][:500]))
-    conn.commit()
-    return {**entry, "sweep": cur.lastrowid}
+    got = _move(conn, entry, None, NOT_BINDING_LANE if ev.get("lane") else NOT_BINDING, RECORDED,
+                jobs="[]", trigger=json.dumps(entry["trigger"]), queued_at=now, settled_at=now,
+                cost=json.dumps({k: ev[k] for k in keys}), detail=entry["skip"][:500])
+    return None if got is None else {**entry, "sweep": got}
 
 
-def _queue(conn, entry: dict, now: float, add) -> dict:
+def _queue(conn, entry: dict, now: float, add) -> dict | None:
+    """Queue one job per value and open the sweep; a writer that loses the open cancels the jobs it queued. #1733."""
     from harness import paths
+    from harness import workqueue as wq
     jobs = []
     for value, cmd in entry["argv"].items():
         job = add(cmd, title=f"sweep {entry['knob']}={value:g} on {entry['lane']}: {entry['spec']}",
                   cwd=str(paths.REPO), priority=PRIORITY, requested_by=REQUESTED_BY,
                   not_before=entry.get("not_before"), conn=conn)
         jobs.append([value, int(job["id"])])
-    cur = conn.execute(
-        "INSERT INTO knob_sweeps (knob, lane, spec, candidate_id, machine_id, jobs, trigger, queued_at) "
-        "VALUES (?,?,?,?,?,?,?,?)",
-        (entry["knob"], entry["lane"], entry["spec"], entry["candidate_id"], entry["machine_id"],
-         json.dumps(jobs), json.dumps(entry["trigger"]), now))
-    conn.commit()
-    return {**entry, "sweep": cur.lastrowid, "jobs": jobs}
+    got = _move(conn, entry, None, OPEN, QUEUED, jobs=json.dumps(jobs), trigger=json.dumps(entry["trigger"]),
+                queued_at=now)
+    if got is None:
+        for _, job_id in jobs:
+            wq.cancel(job_id, conn=conn)
+        return None
+    return {**entry, "sweep": got, "jobs": jobs}
 
 
 def _floor(outcomes: dict, metric: str) -> float:
@@ -513,7 +590,7 @@ def uninformative(k, sw: dict, cost: dict) -> str:
 
 
 def refile(conn) -> int:
-    """Re-decide as uninformative every chosen sweep whose values all sat at the floor or the ceiling; the count changed. #1009."""
+    """Re-decide as uninformative every chosen sweep whose values all sat at the floor or the ceiling, the one named move out of a settled sweep; the count changed. #1009, #1733."""
     n = 0
     for r in conn.execute("SELECT * FROM knob_sweeps WHERE outcome = ?", (CHOSEN,)).fetchall():
         sw, cost = dict(r), json.loads(r["cost"] or "{}")
@@ -523,33 +600,78 @@ def refile(conn) -> int:
         for row in cost.values():
             row.update(tied=False, underpowered=False, power=None if row.get("best") else row.get("power"),
                        best=False)
-        conn.execute("UPDATE knob_sweeps SET outcome = ?, chosen = '', cost = ?, detail = ? WHERE id = ?",
-                     (UNINFORMATIVE, json.dumps(cost), uninformative(k, sw, cost)[:500], sw["id"]))
-        n += 1
-    conn.commit()
+        said = f"refiled from chosen {sw['chosen']} (#1009): {uninformative(k, sw, cost)}"
+        n += _move(conn, sw, CHOSEN, UNINFORMATIVE, REFILED, chosen="", cost=json.dumps(cost),
+                   detail=said[:500]) is not None
     return n
 
 
-def settle(conn, *, now: float, write: bool = True) -> list[dict]:
-    """Decide every sweep whose jobs are no longer pending or running."""
+def _job_state(conn, job_id) -> str:
+    """A sweep job's queue state, GONE when its row no longer exists. #1733."""
+    from harness import workqueue as wq
+    got = wq.get(job_id, conn=conn)
+    return GONE if got is None else got["state"]
+
+
+def _ended(states: list[str]) -> bool:
+    """Whether a sweep's jobs will run nothing more: each done, failed, cancelled or gone, none paused or unknown."""
+    from harness import job_state as js
+    return all(s in (js.DONE, js.FAILED, js.CANCELLED, GONE) for s in states)
+
+
+def _dropped(states: list[str]) -> str:
+    """The detail of a sweep none of whose jobs ran because each was cancelled or deleted; '' otherwise."""
+    from harness import job_state as js
+    if not states or any(s not in (js.CANCELLED, GONE) for s in states):
+        return ""
+    if all(s == js.CANCELLED for s in states):
+        return "every job was cancelled"
+    return "every job was deleted" if all(s == GONE for s in states) else "every job was cancelled or deleted"
+
+
+def _resume(conn, sw: dict, value, job: dict, add) -> dict | None:
+    """Queue a paused value's continuation from its checkpoint and point the open sweep at it; None if another writer moved the sweep. #1733."""
+    from harness import paths, runs
+    from harness import workqueue as wq
+    run = runs.for_job(conn, int(job["id"]))
+    argv = job["argv"] if run is None else wq.resume_argv(job["argv"], runs.run_dir(run["path"]))
+    nxt = add(argv, title=job["title"] or f"sweep {sw['knob']}={value:g} on {sw['lane']}: {sw['spec']}",
+              cwd=job["cwd"] or str(paths.REPO), priority=PRIORITY, requested_by=REQUESTED_BY, conn=conn)
+    jobs = [[v, int(nxt["id"]) if int(j) == int(job["id"]) else j] for v, j in json.loads(sw["jobs"])]
+    if _move(conn, sw, OPEN, OPEN, RESUMED, jobs=json.dumps(jobs)) is None:
+        wq.cancel(nxt["id"], conn=conn)
+        return None
+    sw["jobs"] = json.dumps(jobs)
+    return {"id": sw["id"], "knob": sw["knob"], "lane": sw["lane"], "value": value, "paused": job["id"],
+            "job": nxt["id"]}
+
+
+def settle(conn, *, now: float, write: bool = True, add=None, resumed: list | None = None) -> list[dict]:
+    """Decide every open sweep whose jobs will run nothing more; a paused job is resumed into `resumed`, never judged. #1733."""
+    from harness import job_state as js
     from harness import workqueue as wq
     out = []
-    for r in conn.execute("SELECT * FROM knob_sweeps WHERE outcome = '' ORDER BY id").fetchall():
+    for r in conn.execute("SELECT * FROM knob_sweeps WHERE outcome = ? ORDER BY id", (OPEN,)).fetchall():
         sw = dict(r)
-        states = [(wq.get(j, conn=conn) or {}).get("state") for _, j in json.loads(sw["jobs"])]
-        if any(s in (wq.PENDING, wq.RUNNING) for s in states):
+        jobs = json.loads(sw["jobs"])
+        states = [_job_state(conn, j) for _, j in jobs]
+        paused = [(v, j) for (v, j), s in zip(jobs, states) if s == js.PAUSED]
+        if paused:
+            for value, job_id in paused if write else ():
+                got = _resume(conn, sw, value, wq.get(job_id, conn=conn), add or wq.add)
+                if got is not None and resumed is not None:
+                    resumed.append(got)
+            continue
+        if not _ended(states):
             continue
         outcome, chosen, cost, detail = judge(conn, sw)
-        if outcome == UNRUN and states and all(s == wq.CANCELLED for s in states):
-            outcome, detail = CANCELLED, "every job was cancelled"
-        if write:
-            conn.execute("UPDATE knob_sweeps SET outcome = ?, chosen = ?, cost = ?, detail = ?, settled_at = ? "
-                         "WHERE id = ?", (outcome, json.dumps(chosen) if chosen is not None else "",
-                                          json.dumps(cost), detail[:500], now, sw["id"]))
+        if outcome == UNRUN and _dropped(states):
+            outcome, detail = CANCELLED, _dropped(states)
+        if write and _move(conn, sw, OPEN, outcome, JUDGED, chosen=json.dumps(chosen) if chosen is not None else "",
+                           cost=json.dumps(cost), detail=detail[:500], settled_at=now) is None:
+            continue
         out.append({"id": sw["id"], "knob": sw["knob"], "lane": sw["lane"], "spec": sw["spec"],
                     "outcome": outcome, "chosen": chosen, "cost": cost, "detail": detail})
-    if write:
-        conn.commit()
     return out
 
 
@@ -557,7 +679,8 @@ def check(conn, *, now: float | None = None, dry_run: bool = False, add=None) ->
     """Settle finished sweeps, then queue one for each binding knob not yet swept here."""
     from harness import workqueue as wq
     now = time.time() if now is None else now
-    settled = settle(conn, now=now, write=not dry_run)
+    resumed: list = []
+    settled = settle(conn, now=now, write=not dry_run, add=add, resumed=resumed)
     planned = plan(conn, now=now)
     queued, refused = [], []
     from harness import hold
@@ -565,17 +688,21 @@ def check(conn, *, now: float | None = None, dry_run: bool = False, add=None) ->
     if not dry_run and held is None:
         for entry in planned:
             if not entry["skip"]:
-                queued.append(_queue(conn, entry, now, add or wq.add))
+                got = _queue(conn, entry, now, add or wq.add)
+                queued += [got] if got else []
             elif entry.get("evidence") and entry["evidence"]["binding"] is False:
                 got = _not_binding(conn, entry, now)
                 refused += [got] if got else []
-    return {"settled": settled, "planned": planned, "queued": queued, "not_binding": refused, "dry_run": dry_run,
+    return {"settled": settled, "resumed": resumed, "planned": planned, "queued": queued, "not_binding": refused,
+            "dry_run": dry_run,
             "held": hold.line(held, now) if held else ""}
 
 
 def render(got: dict) -> str:
     from harness import power
     lines = [f"  {s['detail'] or s['outcome']}" for s in got["settled"]]
+    lines += [f"  sweep {r['id']} {r['knob']}={r['value']:g} on {r['lane']}: job {r['paused']} paused, "
+              f"resumed as job {r['job']}" for r in got.get("resumed", ())]
     lines += [f"  queued nothing: {got['held']}"] if got.get("held") and not got.get("dry_run") else []
     for p in got["planned"]:
         t = p["trigger"]
