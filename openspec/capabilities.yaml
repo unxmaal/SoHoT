@@ -18,6 +18,7 @@ capabilities:
       - harness/item_lease.py
       - harness/admission.py
       - harness/job_state.py
+      - harness/proc_identity.py
 
   - name: watchdog
     summary: The periodic judge of running jobs and served models, acting from a fixed set and recording each act.

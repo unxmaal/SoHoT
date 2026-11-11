@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 98
+SCHEMA_VERSION = 99
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -410,7 +410,10 @@ CREATE TABLE IF NOT EXISTS leases (
     taken_at     REAL NOT NULL,
     beat_at      REAL NOT NULL,
     expires_at   REAL NOT NULL,
-    released_at  REAL
+    released_at  REAL,
+    -- The holder's process group and ps start time, so a reused pid is not the holder. #1772.
+    pgid         INTEGER,
+    started      TEXT NOT NULL DEFAULT ''
 );
 
 -- One deploy of a main commit through the work queue: built alongside, switched, verified or rolled back. #1506.
