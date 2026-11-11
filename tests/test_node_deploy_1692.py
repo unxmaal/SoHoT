@@ -50,7 +50,7 @@ class Fake:
             return rc, f"{said}\nrole {self.role}" if rc == 0 else said
         if args[0] == "units":
             return 0, "\n".join([f"role {self.role}", *(f"want {u}" for u in UNITS.get(self.role, [])),
-                                 *(f"loaded {u}" for u in self.loaded)])
+                                 *(f"loaded {u}" for u in self.loaded), f"machine {FP}"])
         rc, said = self.install.get(args[2], (0, "reinstalled"))
         if rc == 0:
             self.role = args[3] or self.role
@@ -295,13 +295,14 @@ def test_the_node_script_checks_out_the_sha_syncs_and_reinstalls_in_the_checkout
     assert said.splitlines() == [old, "role interactive"]
     env["LH_ROLE"] = "node"
     rc, said = local(node_deploy.ssh_argv(n, "units", ""), node_deploy.SCRIPT, 30)
-    assert rc == 0 and said.splitlines() == ["role interactive", "want interactive", "loaded x"], \
+    assert rc == 0 and said.splitlines() == ["role interactive", "want interactive", "loaded x", "machine "], \
         "launchd.sh units reads the role file, never an LH_ROLE the ssh session carries"
     del env["LH_ROLE"]
     rc, said = local(node_deploy.ssh_argv(n, "install", n.deploy_dir, new, "interactive"), node_deploy.SCRIPT, 30)
     assert rc == 0, said
     assert _git(repo, "rev-parse", "HEAD") == new
     assert calls.read_text(encoding="utf-8").splitlines() == [
-        "uv sync --frozen", f"launchd reinstall interactive {home}/lh/deploy"]
+        "uv run --no-sync python -m harness.nodes fingerprint", "uv sync --frozen",
+        f"launchd reinstall interactive {home}/lh/deploy"]
     rc, said = local(node_deploy.ssh_argv(n, "install", n.deploy_dir, "c" * 40, "interactive"), node_deploy.SCRIPT, 30)
     assert rc != 0 and _git(repo, "rev-parse", "HEAD") == new
