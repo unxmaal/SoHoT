@@ -136,6 +136,31 @@ def test_why_not_names_each_skip_path(store, tmp_path):
     assert fetching.why_not(rows["org/fine"], budget=4 * GIB)[0] == fetching.OVER_BUDGET
 
 
+def _attempt(conn, name, path, failed):
+    rid = downloads.start(conn, name, downloads.GGUF, path, file=path.name, proposal=name)
+    if failed is not None:
+        if not failed:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(b"GGUF" + bytes(64))
+        downloads.finish(conn, rid, failed=failed)
+
+
+@pytest.mark.gauntlet("state-is-whichever-row-came-last", site="harness/fetching.py:queued")
+def test_a_failed_fetch_holds_only_while_it_is_the_newest_attempt(store, tmp_path, monkeypatch):
+    """The newest fetch row decides failed_at: a later success or a fetch in flight clears an older failure."""
+    monkeypatch.setattr(fetching, "have", lambda *a, **k: False)
+    plans = {"org/retried": (True, False), "org/inflight": (True, None), "org/regressed": (False, True)}
+    for name, tries in plans.items():
+        _seen(store, name)
+        ms.decide(store, name, "queued", tier="inspect", detail=f"fits: {name}")
+        for i, failed in enumerate(tries):
+            _attempt(store, name, tmp_path / "gguf" / f"{name.split('/')[1]}-{i}.gguf", failed)
+    rows = {r["name"]: r for r in fetching.queued(store)}
+    assert rows["org/retried"]["last_fetch_complete"] == 1
+    assert {n: bool(rows[n]["failed_at"]) for n in plans} == {
+        "org/retried": False, "org/inflight": False, "org/regressed": True}
+
+
 def test_fetch_skips_exactly_the_rows_why_not_names(store, tmp_path, monkeypatch):
     _skip_store(store, tmp_path)
     tried = []

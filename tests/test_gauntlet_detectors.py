@@ -86,6 +86,32 @@ def test_a_newest_row_query_that_is_not_state_is_left_alone():
     quiet_then_fires(detectors.latest_row_state, innocent, bad)
 
 
+def test_an_unguarded_state_write_and_a_second_writer_module_are_found():
+    """#703: jobs.state was set WHERE id = ? alone, and from more than one module."""
+    files = {"harness/a.py": ("def claim(c, i):\n"
+                              "    c.execute(\"UPDATE jobs SET note = ?, \"\n"
+                              "              \"state = ? WHERE id = ?\", (\"\", \"running\", i))\n"),
+             "harness/b.py": ("class W:\n    def close(self, c, i):\n"
+                              "        c.execute(f\"UPDATE jobs SET state = 'done' WHERE id = {i} AND state = 'running'\")\n")}
+    assert sites(detectors.unguarded_transition, files) == ["harness/a.py:claim", "table:jobs.state"]
+
+
+def test_a_guarded_state_write_from_one_module_is_left_alone():
+    innocent = {"harness/q.py": ("def claim(c, i):\n"
+                                 "    c.execute(\"UPDATE jobs SET state = ? WHERE id = ? AND state='pending'\", (i,))\n"
+                                 "def move(c, i, v):\n"
+                                 "    c.execute(\"UPDATE proposals SET state = ?, state_verdict_id = ? \"\n"
+                                 "              \"WHERE id = ? AND COALESCE(state_verdict_id, 0) = ?\", (i, v))\n"
+                                 "def note(c, i):\n    c.execute(\"UPDATE jobs SET note = ? WHERE id = ? AND state = ?\")\n"
+                                 "S = \"SELECT state FROM jobs WHERE status = 1\"\n"),
+                "harness/memory_store/migrations/v9.py": "Q = \"UPDATE jobs SET state = 'done' WHERE id = 1\"\n"}
+    assert sites(detectors.unguarded_transition, innocent) == []
+    second = {"harness/r.py": "def f(c):\n    c.execute(\"update jobs set state = 'x' where id = 1 and state = 'y'\")\n"}
+    assert sites(detectors.unguarded_transition, {**innocent, **second}) == ["table:jobs.state"]
+    bad = {"harness/q.py": innocent["harness/q.py"] + "def g(c):\n    c.execute(\"UPDATE jobs SET status = 1\")\n"}
+    quiet_then_fires(detectors.unguarded_transition, innocent, bad)
+
+
 def test_a_guard_only_tests_call_is_found():
     files = {"harness/m.py": "def check_model(r):\n    return r\ndef ensure_dir(p):\n    return p\n",
              "harness/n.py": "from harness import m\nm.ensure_dir(1)\n",
@@ -285,7 +311,7 @@ def test_no_binding_or_waiver_names_a_site_no_detector_finds(tree_ledger):
 
 
 # Unbound hits pinned when the detectors landed; lower it as the backlog is bound.
-BACKLOG_PIN = 61
+BACKLOG_PIN = 67
 
 
 def test_every_detector_s_hits_are_reported_per_class(tree_ledger):
