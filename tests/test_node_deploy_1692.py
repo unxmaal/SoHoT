@@ -1,6 +1,7 @@
 """A Studio deploy brings each unparked node to its sha over ssh, rolls a failed node back, and retries a down one. #1692."""
 from __future__ import annotations
 
+import json
 import os
 import shlex
 import subprocess
@@ -38,12 +39,15 @@ class Fake:
     """ssh as a table: (mode, sha) -> (rc, output), over a node whose role file and loaded units each install sets."""
 
     def __init__(self, head=(0, OLD), install=None, role="interactive", extra=()):
-        self.head, self.install, self.calls = head, dict(install or {}), []
+        self.head, self.install, self.calls, self.polled, self.busy = head, dict(install or {}), [], [], []
         self.role, self.loaded, self.extra = role, list(UNITS.get(role, [])), list(extra)
 
     def __call__(self, argv, script, timeout):
         assert script == node_deploy.SCRIPT and argv[0] == "ssh"
         args = shlex.split(argv[-1])[3:]
+        if args[0] == "state":
+            self.polled.append(args)
+            return 0, json.dumps({"interactive": self.busy.pop(0) if self.busy else 0})
         self.calls.append((argv[-2], *args))
         if args[0] == "head":
             rc, said = self.head
