@@ -731,10 +731,15 @@ Test: tests/test_watchdog.py::test_pause_of_a_job_pauses_each_eval_under_it
 - **THEN** the run's next case stops on the pause
 Test: tests/test_watchdog.py::test_a_real_evals_run_progress_file_is_read_and_paused_through_its_own_hook
 
-#### Scenario: Only running runs
+#### Scenario: Running and unknown runs
 - **WHEN** run directories hold running, finished and torn progress files
-- **THEN** only the running one is read
-Test: tests/test_watchdog.py::test_progress_files_are_read_from_run_directories_and_only_while_running
+- **THEN** the running one and the torn one (state unknown, #1729) are read, the finished one is not
+Test: tests/test_watchdog.py::test_progress_files_are_read_from_run_directories_while_running_or_unreadable
+
+#### Scenario: A yielding run is pausable
+- **WHEN** a live run's progress file says yielding
+- **THEN** it is read and paused through its pause file
+Test: tests/test_run_state_1729.py::test_the_watchdog_has_a_yielding_run_to_pause
 
 ### Requirement: Lane probes each wake
 Each wake SHALL send one known-answer completion to every text lane that is resident and not held, record each outcome in `lane_probes`, print one line per lane, and never print all clear while a lane is down; a cold lane or a held machine SHALL get no completion, and a probe that cannot run SHALL be a gap.

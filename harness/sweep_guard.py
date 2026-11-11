@@ -14,10 +14,19 @@ import sys
 import time
 from pathlib import Path
 
+try:
+    from harness import run_state
+except ImportError:  # run as a file: python3 -I puts neither the checkout nor this directory on sys.path
+    import importlib.util
+    _spec = importlib.util.spec_from_file_location("run_state", Path(__file__).with_name("run_state.py"))
+    run_state = importlib.util.module_from_spec(_spec)
+    sys.modules["run_state"] = run_state
+    _spec.loader.exec_module(run_state)
+
 OVERRIDE = "LH_DEPLOY_DURING_SWEEP"
-#: harness/heartbeat.path(), evals/watch.PROGRESS and harness/paths.runs(), restated because this imports nothing.
+#: harness/heartbeat.path() and harness/paths.runs(), restated because this imports nothing but run_state.
 HEARTBEAT = "loop-heartbeat.json"
-PROGRESS = "progress.json"
+PROGRESS = run_state.PROGRESS
 RUNS = "runs"
 LOOP = re.compile(r"(?:serve-discover\.sh|serve-canary\.sh|\bdiscover\b.*--loop|\bsoh\b.*\bcanary\b)")
 EVAL = re.compile(r"(?:-m\s+evals\.run\b|evals/run\.py\b)")
@@ -75,8 +84,9 @@ def running(root: Path, alive=alive, command_of=command_of) -> list[dict]:
         candidates.append(("discover loop", _pid(beat.get("pid")), beat.get("started"), beat.get("commit", ""), LOOP))
     runs = root / RUNS
     for path in sorted(runs.glob(f"*/{PROGRESS}")) if runs.is_dir() else []:
-        got = _read(path)
-        if got.get("state") == "running":
+        state = run_state.of(path.parent, alive=lambda pid, pgid: alive(_pid(pid)))
+        if state.name in run_state.LIVE:
+            got = state.progress
             candidates.append((f"eval {path.parent.name}", _pid(got.get("pid")), got.get("started_at"), "", EVAL))
     for what, pid, started, commit, pattern in candidates:
         if not alive(pid):

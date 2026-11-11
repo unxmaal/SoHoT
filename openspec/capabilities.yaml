@@ -282,6 +282,7 @@ capabilities:
       - harness/degenerate.py
       - harness/commands/degenerate.py
       - harness/convertible.py
+      - harness/run_state.py
 
   - name: lane-grading
     summary: The checks that grade each lane's replies, and the noise floors their pass thresholds stand on.
