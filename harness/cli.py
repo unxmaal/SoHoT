@@ -1264,11 +1264,14 @@ def main(argv: list[str] | None = None) -> int:
     if not getattr(a, "func", None):
         ap.print_help(sys.stderr)
         return 2
-    from harness import exclusive
+    from harness import exclusive, store_ahead
+    from harness.memory_store.migrations import NewerStore
     try:
         return a.func(a)
     except exclusive.StoreDown as exc:
-        return common.err(str(exc))
+        return store_ahead.said(common._VERB, exc) if store_ahead.newer(exc) else common.err(str(exc))
+    except NewerStore as exc:
+        return store_ahead.said(common._VERB, exc)
 
 
 if __name__ == "__main__":
