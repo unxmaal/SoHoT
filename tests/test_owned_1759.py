@@ -1,0 +1,211 @@
+"""A server started in its own session dies with its owner: TERM stops it, a SIGKILLed owner's is reaped, a reused pid is not (#1759)."""
+import contextlib
+import json
+import os
+import signal
+import subprocess
+import sys
+import textwrap
+import time
+from pathlib import Path
+
+import pytest
+
+from harness import memory_store as ms
+from harness import owned, vllm
+from harness import watchdog as wd
+
+pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="process groups and start times are POSIX")
+
+ROOT = Path(__file__).resolve().parents[1]
+
+OWNER = textwrap.dedent("""
+    import sys, time
+    from harness import vllm
+    vllm._probe = lambda base, listed=None: ""
+    out = sys.argv[1]
+    with vllm.served(["sleep", "300"], 1, log=out + "/srv.log", timeout=5) as srv:
+        open(out + "/child.pid", "w").write(str(srv.proc.pid))
+        time.sleep(300)
+""")
+
+# A TERM that lands while the child is being started is held until the child is recorded, then honoured. #916.
+TERM_IN_POPEN = textwrap.dedent("""
+    import os, signal, subprocess, sys, time
+    from harness import owned
+    real = subprocess.Popen
+    def popen(*a, **k):
+        p = real(*a, **k)
+        open(sys.argv[1] + "/child.pid", "w").write(str(p.pid))
+        os.kill(os.getpid(), signal.SIGTERM)
+        time.sleep(0.5)
+        return p
+    owned.subprocess.Popen = popen
+    owned.start(["sleep", "300"])
+    time.sleep(300)
+""")
+
+
+def _wait(pred, timeout=15.0):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if pred():
+            return True
+        time.sleep(0.05)
+    return pred()
+
+
+@pytest.fixture
+def strays():
+    """pids a test may leave running; each one's group is killed at teardown."""
+    pids = []
+    yield pids
+    for pid in pids:
+        with contextlib.suppress(OSError):
+            os.killpg(pid, signal.SIGKILL)
+
+
+def _owner(tmp_path, script):
+    path = tmp_path / "owner.py"
+    path.write_text(script, encoding="utf-8")
+    env = {**os.environ, "PYTHONPATH": str(ROOT)}
+    proc = subprocess.Popen([sys.executable, str(path), str(tmp_path)], cwd=ROOT, env=env,
+                            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, start_new_session=True)
+    pidfile = tmp_path / "child.pid"
+    assert _wait(lambda: pidfile.exists() and pidfile.read_text(encoding="utf-8").strip()), proc.stderr.read().decode()
+    return proc, int(pidfile.read_text(encoding="utf-8"))
+
+
+def _records():
+    return sorted(owned.root().glob("*.json"))
+
+
+def test_sigterm_to_the_owner_stops_the_server_it_started(tmp_path, strays):
+    proc, child = _owner(tmp_path, OWNER)
+    strays.append(child)
+    rec = owned.identity(child)
+    assert owned.same(rec) is True
+    assert _wait(lambda: len(_records()) == 1)
+    proc.send_signal(signal.SIGTERM)
+    assert proc.wait(timeout=30) == -signal.SIGTERM
+    assert _wait(lambda: owned.same(rec) is False), "the server outlived its TERMed owner"
+    assert _records() == []
+
+
+def test_a_term_inside_popen_still_stops_the_child(tmp_path, strays):
+    proc, child = _owner(tmp_path, TERM_IN_POPEN)
+    strays.append(child)
+    rec = owned.identity(child)
+    assert proc.wait(timeout=30) == -signal.SIGTERM
+    assert _wait(lambda: owned.same(rec) is False), "a TERM during Popen orphaned the child"
+
+
+def test_a_sigkilled_owner_s_server_is_reaped_by_the_next_owner(tmp_path, strays):
+    proc, child = _owner(tmp_path, OWNER)
+    strays.append(child)
+    rec = owned.identity(child)
+    assert _wait(lambda: len(_records()) == 1)
+    proc.kill()
+    proc.wait(timeout=10)
+    time.sleep(0.3)
+    assert owned.same(rec) is True, "SIGKILL left nothing to reap"
+    lines = owned.reap()
+    assert any(f"pid {child}" in line and "stopped" in line for line in lines), lines
+    assert _wait(lambda: owned.same(rec) is False)
+    assert _records() == []
+
+
+def _dead_owner() -> dict:
+    gone = subprocess.Popen(["true"])
+    gone.wait()
+    return {"pid": gone.pid, "pgid": gone.pid, "started": "1.000000"}
+
+
+def _plant(children):
+    owned.root().mkdir(parents=True, exist_ok=True)
+    owner = _dead_owner()
+    (owned.root() / f"{owner['pid']}-x.json").write_text(
+        json.dumps({"owner": owner, "children": children}), encoding="utf-8")
+
+
+def test_a_recorded_pid_now_naming_another_process_is_not_killed(strays):
+    stranger = subprocess.Popen(["sleep", "300"], start_new_session=True)
+    strays.append(stranger.pid)
+    real = owned.identity(stranger.pid)
+    _plant([{**real, "started": "2.000000", "cmd": "vllm serve"},
+            {**real, "pgid": real["pgid"] + 1, "cmd": "vllm serve"}])
+    lines = owned.reap(grace=1)
+    assert not any("stopped" in line for line in lines), lines
+    time.sleep(0.3)
+    assert stranger.poll() is None, "the reaper killed a process that only reuses a recorded pid"
+    assert _records() == []
+
+
+def test_the_watchdog_wake_reaps_a_dead_owner_s_server(tmp_path, strays):
+    child = subprocess.Popen(["sleep", "300"], start_new_session=True)
+    strays.append(child.pid)
+    _plant([{**owned.identity(child.pid), "cmd": "sleep 300"}])
+    said = []
+    wd.wake(ms.connect(), Quiet(tmp_path), wd.Hands(), act=False, say=said.append)
+    assert any("would stop" in s for s in said) and child.poll() is None
+    wd.wake(ms.connect(), Quiet(tmp_path), wd.Hands(), act=True, say=said.append)
+    assert child.wait(timeout=15) == -signal.SIGTERM
+    assert _records() == []
+
+
+def test_served_records_its_child_and_forgets_it_and_its_handlers_on_exit(tmp_path, monkeypatch):
+    monkeypatch.setattr(vllm, "_probe", lambda base, listed=None: "")
+    before = signal.getsignal(signal.SIGTERM)
+    with vllm.served(["sleep", "300"], 1, log=tmp_path / "s.log", timeout=5) as srv:
+        got = json.loads(_records()[0].read_text(encoding="utf-8"))
+        assert [c["pid"] for c in got["children"]] == [srv.proc.pid]
+        assert got["owner"]["pid"] == os.getpid()
+        assert signal.getsignal(signal.SIGTERM) is owned._on_signal
+    assert srv.proc.poll() is not None
+    assert _records() == []
+    assert signal.getsignal(signal.SIGTERM) is before
+
+
+class Quiet(wd.Probes):
+    """A machine with nothing running, so a wake judges nothing and only reaps."""
+
+    def __init__(self, tmp_path):
+        self.tmp = tmp_path
+
+    def processes(self):
+        return []
+
+    def launchd_loaded(self, service):
+        return False
+
+    def launchd_pid(self, service):
+        return None
+
+    def heartbeat(self):
+        return None
+
+    def job_pids(self):
+        return {}
+
+    def progress(self, evals):
+        return []
+
+    def lock(self):
+        return {}
+
+    def resident(self):
+        return []
+
+    def pressure(self):
+        return None
+
+    def gateway_up(self):
+        return None
+
+    def fallbacks(self, conn):
+        return []
+
+    def state(self):
+        d = self.tmp / "wd"
+        d.mkdir(exist_ok=True)
+        return d

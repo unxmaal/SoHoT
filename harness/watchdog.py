@@ -1420,7 +1420,9 @@ def wake(conn, probes: Probes | None = None, hands: Hands | None = None, act: bo
             cuts.cut(held_knob, _HELD_WHAT[held_knob], dropped=n, conn=conn)
         for cid, why in skipped.items():
             say(f"skipped {cid}: {why}")
-        from harness import lane_probe
+        from harness import lane_probe, owned
+        for line in owned.reap(act=act):
+            say(f"{'' if act else '[dry-run] '}{line}")
         for r in world.lanes or []:
             say(lane_probe.line(r))
         if "lanes" in world.gaps:
