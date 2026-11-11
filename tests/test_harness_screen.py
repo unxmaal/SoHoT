@@ -379,7 +379,7 @@ def test_a_recorded_snapshot_offline_loads_cannot_open_goes_back_to_fetch(monkey
     conn = ms.connect()
     ms.record(conn, Seen(name="org/noref", source="t", kind="weights", lane="code", why="seeded"))
     rid = downloads.record(conn, "org/noref", downloads.HUB, snap.parent.parent)["id"]
-    conn.execute("UPDATE downloads SET complete = 1 WHERE id = ?", (rid,))
+    conn.execute("UPDATE downloads SET complete = 1, state = 'complete' WHERE id = ?", (rid,))
     conn.commit()
     assert fetching.have("org/noref", conn), "the row as a scan before #799 wrote it"
     conn.close()

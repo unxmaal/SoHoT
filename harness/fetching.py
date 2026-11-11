@@ -25,7 +25,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from harness import cuts, downloads, knobs
+from harness import cuts, download_state, downloads, knobs
 from harness import memory_store as ms
 from harness import rank
 from harness import lanes, reasons, screen, variants
@@ -349,11 +349,12 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
                p.size_bytes,
                -- When its newest fetch download finished incomplete, none complete since. #925.
                (SELECT d.finished_at FROM downloads d
-                 WHERE d.proposal_id = p.id AND d.origin = 'fetch' AND d.removed_at IS NULL
+                 WHERE d.proposal_id = p.id AND d.origin = 'fetch' AND d.state <> 'removed'
                  ORDER BY d.id DESC LIMIT 1) AS last_fetch_at,
-               (SELECT d.complete FROM downloads d
-                 WHERE d.proposal_id = p.id AND d.origin = 'fetch' AND d.removed_at IS NULL
-                 ORDER BY d.id DESC LIMIT 1) AS last_fetch_complete,
+               -- A stood-down download is no failure, so only 'incomplete' reads as one. #1734.
+               (SELECT d.state FROM downloads d
+                 WHERE d.proposal_id = p.id AND d.origin = 'fetch' AND d.state <> 'removed'
+                 ORDER BY d.id DESC LIMIT 1) AS last_fetch_state,
                -- Inspect has answered since the last reopen; a 429 writes nothing. #798.
                COALESCE((SELECT CASE WHEN vi.tier = 'inspect' AND vi.outcome = 'queued'
                                 AND vi.reason NOT IN (:reopened, :harness) THEN 1 ELSE 0 END
@@ -382,7 +383,7 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
             return r["registry"] != ms.GITHUB
         return not kind or r["kind"] == kind
 
-    out = [{**dict(r), "failed_at": r["last_fetch_at"] if r["last_fetch_at"] and not r["last_fetch_complete"]
+    out = [{**dict(r), "failed_at": r["last_fetch_at"] if r["last_fetch_state"] == download_state.INCOMPLETE
             else None} for r in rows
            if r["outcome"] == "queued" and r["tier"] in tiers
            and downloadable(r)
@@ -508,7 +509,7 @@ def _download(repo, snapshot, listing, hf_download, text, conn, require_weights,
         if snapshot is None:
             from huggingface_hub import snapshot_download as snapshot
         with downloads.store(conn) as c:
-            rid = downloads.start(c, repo, downloads.HUB, downloads.hub_dir(repo))
+            rid = downloads.start(c, repo, downloads.HUB, downloads.hub_dir(repo), reason=download_state.REFETCH)
             try:
                 # Only the variant inspect sized, not every copy the repo holds. #947.
                 with downloads.landing(downloads.hub_dir(repo), what=repo):

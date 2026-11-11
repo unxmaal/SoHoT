@@ -47,7 +47,6 @@ harness/discover.py:external(limit)
 harness/discover.py:from_feeds(limit)
 harness/disk.py:GRACE_SECONDS
 harness/dora.py:DEFAULT_DAYS
-harness/downloads.py:IN_FLIGHT_SECONDS
 harness/ds4.py:START_FLOOR_S
 harness/ds4.py:START_S_PER_GIB
 harness/ds4.py:_models->_DIRECT.open(timeout)

@@ -257,22 +257,20 @@ def test_rejected_weights_inside_their_grace_are_one_cut_per_cleanup(conn, tmp_p
     assert len(_cuts()) == 1
 
 
-def test_a_partial_download_kept_by_its_age_alone_is_a_cut(conn, tmp_path, monkeypatch):
+def test_a_fetching_row_nobody_holds_is_cleared_by_no_clock_and_no_cut(conn, tmp_path, monkeypatch):
     from harness import disk, downloads
     hub = tmp_path / "hub"
     blob = hub / "models--org--x" / "blobs" / "abc.incomplete"
     blob.parent.mkdir(parents=True)
     blob.write_bytes(b"abc")
     now = time.time()
-    row = {"path": str(blob.parent.parent), "started_at": now - 60, "finished_at": None, "repo": "org/x"}
+    row = {"path": str(blob.parent.parent), "state": "fetching", "started_at": now - 60, "finished_at": None,
+           "repo": "org/x"}
     monkeypatch.setattr(disk, "_rows", lambda c: {downloads.key(blob.parent.parent): row})
     inv = disk.Inventory(str(hub), str(tmp_path / "gguf"), [],
                          [{"path": str(blob), "dir": str(blob.parent.parent), "size": 3}], [])
-    assert disk.clear_incomplete(inv, conn, now=now) == []
-    assert _cuts() == [("harness/downloads.py:IN_FLIGHT_SECONDS", None, 1)]
-    row["started_at"] = now - 3 * 86400
     assert len(disk.clear_incomplete(inv, conn, now=now)) == 1
-    assert len(_cuts()) == 1
+    assert _cuts() == []
 
 
 # ---- ds4 and vllm ---------------------------------------------------------------------------------

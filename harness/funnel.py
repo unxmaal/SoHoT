@@ -48,7 +48,7 @@ def _histories(conn) -> dict[int, list[dict]]:
 def _downloads(conn) -> dict[int, dict]:
     """Per proposal: how many download rows it has, and when a complete one still present finished."""
     out: dict[int, dict] = {}
-    for d in conn.execute("SELECT proposal_id, COUNT(*) AS n, MAX(CASE WHEN complete = 1 AND removed_at IS NULL "
+    for d in conn.execute("SELECT proposal_id, COUNT(*) AS n, MAX(CASE WHEN state = 'complete' "
                           "THEN finished_at END) AS landed FROM downloads WHERE proposal_id IS NOT NULL "
                           "GROUP BY proposal_id"):
         out[d["proposal_id"]] = {"rows": d["n"], "landed": d["landed"]}

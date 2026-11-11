@@ -239,6 +239,21 @@ def _add_job_despite_hold(conn) -> None:
         conn.execute("ALTER TABLE jobs ADD COLUMN despite_hold INTEGER NOT NULL DEFAULT 0")
 
 
+def _add_download_state(conn) -> None:
+    """downloads.state and reason on an older store; early() maps each earlier row from its timestamps. #1734."""
+    for col, ddl in (("state", "TEXT NOT NULL DEFAULT 'incomplete'"), ("reason", "TEXT NOT NULL DEFAULT ''")):
+        if col not in _columns(conn, "downloads"):
+            conn.execute(f"ALTER TABLE downloads ADD COLUMN {col} {ddl}")
+
+
+def _backfill_download_state(conn) -> None:
+    """Each download row nothing has moved yet gets the state its timestamps and complete flag imply. #1734."""
+    conn.execute("UPDATE downloads SET reason = 'backfill', state = CASE "
+                 "WHEN removed_at IS NOT NULL THEN 'removed' WHEN complete = 1 THEN 'complete' "
+                 "WHEN started_at IS NOT NULL AND finished_at IS NULL THEN 'fetching' "
+                 "ELSE 'incomplete' END WHERE reason = ''")
+
+
 def _add_job_resource(conn) -> None:
     """jobs.resource on an older store; every earlier job is classified from its command. #1508."""
     if "resource" not in _columns(conn, "jobs"):

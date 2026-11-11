@@ -305,7 +305,7 @@ def out_of_time(until: float | None, per_s: float, now: float) -> bool:
 
 def snapshot_gap(row: dict, conn) -> str:
     """Why an offline load cannot open a ready row's recorded weights, its rows stood down; "" when it can. #799."""
-    from harness import downloads, fetching, methods
+    from harness import download_state, downloads, fetching, methods
     name = row["name"]
     target = methods.weights_of(name) if methods.is_method(name) else name
     if not target:
@@ -317,7 +317,7 @@ def snapshot_gap(row: dict, conn) -> str:
         kind = downloads.GGUF if path.name.lower().endswith(".gguf") else downloads.HUB
         gap = downloads.offline_gap(kind, path)
         if gap:
-            downloads.stand_down(conn, repo)
+            downloads.stand_down(conn, repo, download_state.OFFLINE_GAP)
             return gap
     return ""
 
@@ -489,8 +489,8 @@ def _report_screen(a) -> int:
                 verdict = repeat_kill(store, r["name"], r["candidate"], verdict, (stored or {}).get("environment"))
             tier = ms.SCREEN
             if verdict.failure_class in reasons.REFETCH:
-                from harness import downloads
-                downloads.stand_down(store, r["name"])
+                from harness import download_state, downloads
+                downloads.stand_down(store, r["name"], download_state.REFETCH_CLASS)
                 tier = ms.FETCH
             if verdict.failure_class == reasons.ATTACHMENT:
                 # A drafter is the fetch tier's attachment decline, so no retest refetches it. #1039.

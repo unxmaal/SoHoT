@@ -491,7 +491,7 @@ def _requeue_mps_aborts(conn) -> None:
 
 def _requeue_screens_of_unresolvable_snapshots(conn) -> None:
     """A warm-up 404 for no cached snapshot screened our hub dir, not the model; back to fetch unless it now opens. #799."""
-    from harness import downloads
+    from harness import download_state, downloads
     phrase = "cannot find an appropriate cached snapshot folder"
     has_downloads = downloads._has_table(conn, "downloads")
     for r in _stated(conn, "p.state = 'broken' AND v.tier = ?", (SCREEN,)):
@@ -503,7 +503,7 @@ def _requeue_screens_of_unresolvable_snapshots(conn) -> None:
             tier = SCREEN
         else:
             if has_downloads:
-                downloads.stand_down(conn, r["name"])
+                downloads.stand_down(conn, r["name"], download_state.NO_SNAPSHOT)
             tier = "fetch"
         _migration_retraction(conn, r["id"], r["name"], "queued", tier,
                               f"retracted: no cached snapshot an offline load could open "
@@ -512,7 +512,7 @@ def _requeue_screens_of_unresolvable_snapshots(conn) -> None:
     if has_downloads:
         for row in downloads.complete_hub(conn):
             if downloads.offline_gap(downloads.HUB, row["path"]):
-                downloads.stand_down(conn, row["repo"])
+                downloads.stand_down(conn, row["repo"], download_state.OFFLINE_GAP)
 
 
 def _rewrite_runner_gap_untils(conn) -> None:
