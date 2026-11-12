@@ -16,7 +16,7 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
-from harness import exclusive, job_state as js, paths, resources
+from harness import exclusive, job_state as js, paths, queue_hold, resources
 
 PENDING, RUNNING, DONE, FAILED = js.PENDING, js.RUNNING, js.DONE, js.FAILED
 CANCELLED, PAUSED = js.CANCELLED, js.PAUSED
@@ -633,8 +633,9 @@ def paused() -> bool:
     return _pause_flag().exists()
 
 
-def pause(why: str = "") -> None:
-    _pause_flag().write_text(f"{time.strftime(_STAMP)} {why}".strip(), encoding="utf-8")
+def pause(why: str = "", holder: int | None = None) -> None:
+    """Pause the queue; a holder pid makes it a hold that ends with that process, not an owner's pause. #1760."""
+    _pause_flag().write_text(queue_hold.text(why, holder), encoding="utf-8")
 
 
 def resume() -> None:
@@ -661,8 +662,12 @@ def _pressed(level, now: float) -> tuple[bool, str]:
 def gate(sample=None, now: float | None = None) -> tuple[bool, str]:
     """(open, why): may the next job start now? A running job always finishes. #573."""
     from harness import env, pressure
+    lifted = queue_hold.lift([_held_flag(), _pause_flag()])
     if paused():
-        return False, "paused (soh jobs resume)"
+        return False, queue_hold.why_paused(_pause_flag())
+    if lifted:
+        ok, why = gate(sample, now)
+        return ok, f"{'; '.join(lifted)}; {why}"
     from harness import serve_lease
     serving = serve_lease.held()
     if serving:
@@ -677,10 +682,11 @@ def gate(sample=None, now: float | None = None) -> tuple[bool, str]:
     return True, "memory pressure normal" if p.level is not None else "memory pressure unknown"
 
 
-def quiesce(wait=0.5, sleep=time.sleep, is_running=None) -> bool:
+def quiesce(wait=0.5, sleep=time.sleep, is_running=None, holder: int | None = None) -> bool:
     """Pause the queue and wait until no job is running; return the prior paused state. #577."""
     was_paused = paused()
-    pause()
+    if not was_paused:
+        pause(holder=holder)  # an owner's pause is never turned into a holder's. #1760
     is_running = is_running or running
     while is_running():
         sleep(wait)
@@ -1017,13 +1023,15 @@ def _held_flag() -> Path:
     return root() / "paused.deploy"
 
 
-def hold_for_deploy(grace: float = CANCEL_GRACE_S, stop=None, tree=None, stop_rest=None) -> list[str]:
+def hold_for_deploy(grace: float = CANCEL_GRACE_S, stop=None, tree=None, stop_rest=None, holder=None) -> list[str]:
     """LH_DEPLOY_DURING_SWEEP: pause the queue for the install, then stop each job running here, every process under it, to resume after. #1675."""
     from harness import executors, sweep_guard
-    said = []
+    said = queue_hold.lift([_held_flag(), _pause_flag()])
     if not paused():
-        pause(f"held for a deploy by pid {os.getpid()}")
-        _held_flag().write_text(_pause_flag().read_text(encoding="utf-8"), encoding="utf-8")
+        # The marker goes down before the pause it marks, so no death between them leaves an owner-looking pause. #1754.
+        text = queue_hold.text(f"held for a deploy by pid {holder or os.getpid()}", holder)
+        _held_flag().write_text(text, encoding="utf-8")
+        _pause_flag().write_text(text, encoding="utf-8")
         said.append("queue held for the deploy; it is released when the install ends")
     elif _held_flag().exists():
         said.append("queue already held for a deploy; it is released when the install ends")
@@ -1050,15 +1058,7 @@ def hold_for_deploy(grace: float = CANCEL_GRACE_S, stop=None, tree=None, stop_re
 
 def release_for_deploy() -> str:
     """Lift the hold hold_for_deploy set, whatever the install did; an owner's pause, or one set since, stays. #1675."""
-    flag = _held_flag()
-    if not flag.exists():
-        return "queue not held for a deploy; left as it was"
-    mine = flag.read_text(encoding="utf-8")
-    flag.unlink(missing_ok=True)
-    if paused() and _pause_flag().read_text(encoding="utf-8") == mine:
-        resume()
-        return "queue released after the deploy"
-    return "queue left as it is: it was paused again during the deploy (soh jobs resume)"
+    return queue_hold.release(_held_flag(), _pause_flag())
 
 
 def _tree(pid: int) -> list[tuple[int, str]]:
@@ -1489,10 +1489,10 @@ def serve(poll: float = 30.0, sleep=time.sleep, popen=None,
 if __name__ == "__main__":
     import sys
     if sys.argv[1:] == ["quiesce"]:
-        print("was-paused" if quiesce() else "was-running")
+        print("was-paused" if quiesce(holder=queue_hold.from_env()) else "was-running")
         sys.exit(0)
     if sys.argv[1:] == ["hold-for-deploy"]:
-        print("\n".join(hold_for_deploy()), flush=True)
+        print("\n".join(hold_for_deploy(holder=queue_hold.from_env())), flush=True)
         sys.exit(0)
     if sys.argv[1:] == ["release-for-deploy"]:
         print(release_for_deploy(), flush=True)
