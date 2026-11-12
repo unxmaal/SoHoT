@@ -1382,8 +1382,8 @@ def knob_overrides(pairs) -> dict:
 
 def _execute(args) -> int:
     overrides = knob_overrides(getattr(args, "knob", None))
-    with knobs.rebind(overrides), pinned_arms(args):
-        return _execute_at(args, overrides)
+    with knobs.rebind(overrides), pinned_arms(args), contextlib.ExitStack() as held:
+        return _execute_at(args, overrides, held)
 
 
 @contextlib.contextmanager
@@ -1551,7 +1551,7 @@ def argv_screen_refusal(argv) -> str:
     return screen_refusal(args, split_candidates(args.candidates), cases)
 
 
-def _execute_at(args, overrides: dict) -> int:
+def _execute_at(args, overrides: dict, held: contextlib.ExitStack) -> int:
     from harness import holdout
     side, chosen, cases = _plan(args)
     harness = harness_of(args)
@@ -1592,6 +1592,10 @@ def _execute_at(args, overrides: dict) -> int:
     outdir = resolve_outdir(args.out, args.modality)
     if outdir:
         outdir.mkdir(parents=True, exist_ok=True)
+    refused = watch.claim(outdir, held)
+    if refused:
+        print(f"refused: {refused}; one writer per run directory (#1740)", file=sys.stderr)
+        return 1
     running = {holdout.base_id(c.id) for c in cases}
     idents = {c: content_identity(args.modality, c, budget, ladder, overrides,
                                   [x for x in chosen if x.id in running], harness) for c in candidates}
@@ -1618,6 +1622,10 @@ def _execute_at(args, overrides: dict) -> int:
     restored: dict = {}
     for row in (had or ({}, []))[1]:
         restored.setdefault(row.get("candidate"), []).append(row)
+    # Progress names this process before the checkpoint exists, so no exit leaves a dir with no state. #1740.
+    prior = watch.read_progress(outdir) if had else {}
+    watch.Progress(outdir, watch.Watch(outdir=outdir), {}, int(prior.get("total") or 0),
+                   int(prior.get("done") or 0)).write()
     ckpt = watch.Checkpoint(outdir, identity, keep=bool(had))
     # A pause request was for the run it paused, not this one.
     (outdir / watch.PAUSE_FILE).unlink(missing_ok=True)

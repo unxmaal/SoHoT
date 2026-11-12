@@ -97,8 +97,9 @@ def cache_caps(argv: list[str]) -> list[str]:
     return out
 
 
-def generating(base: str, timeout: float, opener=urllib.request.urlopen) -> bool | None:
+def generating(base: str, timeout: float, opener=None) -> bool | None:
     """True when the server at `base` can generate, False when it answers that it cannot, None when it did not answer."""
+    opener = opener or urllib.request.urlopen
     try:
         with opener(base.rstrip("/") + HEALTH_PATH, timeout=timeout) as r:
             return r.status == 200
@@ -108,8 +109,9 @@ def generating(base: str, timeout: float, opener=urllib.request.urlopen) -> bool
         return None
 
 
-def held(base: str, timeout: float, opener=urllib.request.urlopen) -> str | None:
+def held(base: str, timeout: float, opener=None) -> str | None:
     """The model the server at `base` holds now, None when it holds none or did not answer."""
+    opener = opener or urllib.request.urlopen
     try:
         with opener(base.rstrip("/") + LOADED_PATH, timeout=timeout) as r:
             got = json.loads(r.read() or b"{}").get("model")
@@ -118,8 +120,9 @@ def held(base: str, timeout: float, opener=urllib.request.urlopen) -> str | None
     return str(got) if got else None
 
 
-def activity(base: str, timeout: float, opener=urllib.request.urlopen) -> dict | None:
+def activity(base: str, timeout: float, opener=None) -> dict | None:
     """{"model", "boot", "in_flight"} from the server at `base`, None when it did not answer; old servers lack the last two."""
+    opener = opener or urllib.request.urlopen
     try:
         with opener(base.rstrip("/") + LOADED_PATH, timeout=timeout) as r:
             got = json.loads(r.read() or b"{}")
@@ -138,8 +141,9 @@ def _swap_to_boot(base: str, timeout: float, opener) -> None:
 
 
 def release(model: str, why: str, *, base: str = "", keep=None, timeout: float | None = None,
-            opener=urllib.request.urlopen, say=print) -> bool:
+            opener=None, say=print) -> bool:
     """Swap the mlx server off `model` when it still holds it and nothing protects it; True when it let go. #1082."""
+    opener = opener or urllib.request.urlopen
     from harness import serving
     base = base or serving.MLX_URL
     timeout = SWAP_TIMEOUT_S if timeout is None else timeout

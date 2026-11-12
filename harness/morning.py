@@ -280,8 +280,9 @@ def _gh(argv: list[str]) -> str:
     return got.stdout
 
 
-def ci(now: float, gh=_gh) -> dict:
+def ci(now: float, gh=None) -> dict:
     """The newest scheduled nightly run and each job's conclusion; unavailable when gh cannot say."""
+    gh = gh or _gh
     try:
         runs = json.loads(gh(["run", "list", "--workflow", NIGHTLY_WORKFLOW, "--event", "schedule", "-L", "1",
                               "--json", "databaseId,status,conclusion,createdAt,headSha,url"]) or "[]")
@@ -395,8 +396,9 @@ def _git(argv: list[str]) -> str:
     return got.stdout.strip()
 
 
-def deploy(where: Path | None, git=_git) -> dict:
+def deploy(where: Path | None, git=None) -> dict:
     """The deploy checkout's commit against origin/main, after a fetch."""
+    git = git or _git
     if where is None or not (Path(where) / ".git").exists():
         return {"available": False, "why": "no deploy checkout on this machine"}
     d = ["-C", str(where)]

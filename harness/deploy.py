@@ -642,8 +642,9 @@ def _quiesce(c, job_id, log, sleep=time.sleep) -> str:
 
 
 def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: Steps | None = None,
-        spawn=spawn_switch, now=time.time, sleep=time.sleep) -> int:
+        spawn=None, now=time.time, sleep=time.sleep) -> int:
     """The deploy job: build, smoke, back up and migrate, then hand off the switch; HANDED_OFF, or 1 when it stopped."""
+    spawn = spawn or spawn_switch
     from harness import memory_store as ms
     steps = steps or Steps()
     link = Path(link) if link is not None else paths.deploy_link()

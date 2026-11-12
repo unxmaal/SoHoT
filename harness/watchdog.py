@@ -460,6 +460,9 @@ class ProgressFiles:
             state = run_state.of(path.parent)
             if state.name in run_state.PAUSABLE:
                 out.append({**state.progress, "_dir": str(path.parent)})
+            elif state.name in (run_state.CRASHED, run_state.SIGNALLED):
+                # Its process is gone, so no one acts on its pause; a paused run's pause file still says why. #1740.
+                (path.parent / self.PAUSE_FILE).unlink(missing_ok=True)
         return out
 
     def pause(self, run: dict, reason: str = "") -> str:

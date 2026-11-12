@@ -30,8 +30,9 @@ def port(base: str = "") -> int:
     return urllib.parse.urlsplit(base or base_url()).port or 80
 
 
-def loaded(base: str = "", timeout: float | None = None, opener=urllib.request.urlopen) -> list[str] | None:
+def loaded(base: str = "", timeout: float | None = None, opener=None) -> list[str] | None:
     """The model ids the server holds (its GET /v1/models is its load cache), or None when it cannot be asked."""
+    opener = opener or urllib.request.urlopen
     try:
         with opener(f"{base or base_url()}/models", timeout=TIMEOUT_S if timeout is None else timeout) as r:
             got = json.loads(r.read())
@@ -55,8 +56,9 @@ def model_of(spec: str) -> str:
 
 
 def release(model: str, why: str, *, base: str = "", keep=None, timeout: float | None = None,
-            opener=urllib.request.urlopen, say=print) -> bool:
+            opener=None, say=print) -> bool:
     """DELETE `model` from the server when it holds it and nothing serves it or waits on it; True when it let go."""
+    opener = opener or urllib.request.urlopen
     timeout = TIMEOUT_S if timeout is None else timeout
     if not model or model not in (loaded(base, timeout, opener) or []):
         return False
