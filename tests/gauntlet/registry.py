@@ -1,19 +1,22 @@
 """This repo's gauntlet registry, handed to the pinned gauntlet package's ratchets and CLI (#492, #1785)."""
 
+import json
+import subprocess
 from pathlib import Path
 
+from gauntlet import registry as gauntlet_registry
 from gauntlet.moves import MoveTable, reopens_by
-from gauntlet.registry import Registry
 
 from harness import deploy_state, download_state, exclusive, gateway_switch_state, job_state, paused, repo, sweeps
+from harness import knob_backlog
 from tests.gauntlet import classes
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
 # The agent lane's case repos are broken on purpose; they are inputs to a model, not code here.
 NOT_PRODUCTION = ("tests/", "evals/cases/")
-# Unbound hits pinned when the detectors landed; lower it as the backlog is bound.
-BACKLOG_PIN = 856
+# Unbound hits from before the detectors, one "<class id> <site>" per line; no row joins it after the merge base (#1846).
+BACKLOG_REL = "tests/gauntlet/backlog.txt"
 
 
 # make precheck runs only these; the rest are whole-tree costly and stay in make check (#1832).
@@ -98,11 +101,48 @@ OPEN_ISSUES = {
 
 MOVE_WAIVERS: dict = {}
 
+def parse_backlog(text: str) -> dict[str, list[str]]:
+    out = {}
+    for line in text.splitlines():
+        cid, _, site = line.partition(" ")
+        out.setdefault(cid, []).append(site)
+    return out
+
+
+def load_backlog(root=REPO) -> dict[str, list[str]]:
+    path = Path(root) / BACKLOG_REL
+    return parse_backlog(path.read_text(encoding="utf-8")) if path.exists() else {}
+
+
+def _rows_at(root, ref: str) -> list[str]:
+    def show(rel):
+        return subprocess.run(["git", "-C", str(root), "show", f"{ref}:{rel}"], capture_output=True, text=True)
+    got = show(BACKLOG_REL)
+    if got.returncode == 0:
+        return got.stdout.splitlines()
+    old = show("tests/gauntlet/backlog.json")  # where the rows lived before #1846
+    return [f"{cid} {s}" for cid, rows in json.loads(old.stdout or "{}").items() for s in rows]
+
+
+def backlog_added(root=REPO, base: str = knob_backlog.BASE) -> list[str] | None:
+    """Backlog rows the working tree holds and its merge base with `base` did not; None when there is no merge base."""
+    fork = knob_backlog.merge_base(root, base)
+    if not fork:
+        return None
+    now = {f"{cid} {s}" for cid, rows in load_backlog(root).items() for s in rows}
+    return sorted(now - set(_rows_at(root, fork)))
+
+
+class Registry(gauntlet_registry.Registry):
+    def backlog(self):
+        return load_backlog(self.root)
+
+
 REGISTRY = Registry(
     root=REPO,
     index=classes.INDEX, pending=classes.PENDING, unclassified=classes.UNCLASSIFIED,
     snapshot_file=HERE / "skill_classes.json", defects_file=HERE / "defects.json",
-    backlog_file=HERE / "backlog.json", backlog_pin=BACKLOG_PIN,
+    backlog_file=REPO / BACKLOG_REL,
     repo_slug="unxmaal/SoHoT",
     production=production,
     code_paths=r"^(?:harness/|scripts/|evals/(?!cases/))",
