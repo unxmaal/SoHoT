@@ -855,7 +855,6 @@
   "evals/analysis/laya_finetune.py:report",
   "evals/run.py:store_run",
   "evals/vision.py:check_alignment",
-  "evals/watch.py:Checkpoint.add",
   "harness/adopt.py:record",
   "harness/ask.py:failure_lines",
   "harness/batch.py:claim",

@@ -253,7 +253,7 @@ def read(outdir) -> tuple[dict, list[dict]] | None:
         try:
             lines.append(json.loads(line))
         except ValueError:
-            break   # a kill mid-write leaves a torn last line
+            continue   # a torn line, or one an older resume glued a row onto (#1757)
     if not lines or "identity" not in lines[0]:
         return None
     return lines[0]["identity"], [x["row"] for x in lines[1:] if "row" in x]
@@ -266,10 +266,22 @@ class Checkpoint:
         self.path = Path(outdir) / CHECKPOINT
         if not keep:
             self.path.write_text(json.dumps({"identity": identity}) + "\n", encoding="utf-8")
+        else:
+            self._cut_torn()
+
+    def _cut_torn(self) -> None:
+        """Drop a last line a kill left with no newline, so the next row starts its own line. #1757."""
+        data = self.path.read_bytes() if self.path.is_file() else b""
+        if data and not data.endswith(b"\n"):
+            tmp = self.path.with_suffix(".cut")
+            tmp.write_bytes(data[:data.rfind(b"\n") + 1])
+            os.replace(tmp, self.path)
 
     def add(self, row: dict, wall_s: float) -> None:
         with self.path.open("a", encoding="utf-8") as f:
             f.write(json.dumps({"row": {**row, "wall_s": round(wall_s, 3)}}, default=str) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
 
 
 class Progress:
