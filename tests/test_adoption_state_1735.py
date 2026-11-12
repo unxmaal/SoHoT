@@ -112,10 +112,10 @@ def test_the_store_refuses_a_racer_that_read_the_head_before_the_winner_wrote(co
     head = _adopt(conn, "code", "org/a")
     stale = st.chains(conn, "code")
     _adopt(conn, "code", "org/b")
-    monkeypatch.setattr(st, "chains", lambda c, lane=None: stale)
-    with pytest.raises(st.Lost, match="another writer left adoption"):
-        _adopt(conn, "code", "org/c")
-    monkeypatch.undo()
+    with monkeypatch.context() as m:
+        m.setattr(st, "chains", lambda c, lane=None: stale)
+        with pytest.raises(st.Lost, match="another writer left adoption"):
+            _adopt(conn, "code", "org/c")
     assert [r["spec"] for r in st.history(conn)] == ["org/a", "org/b"]
     assert [r["leaves"] for r in st.history(conn)] == [0, head]
 
