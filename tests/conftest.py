@@ -10,8 +10,16 @@ import socket
 from pathlib import Path
 
 import pytest
+from hypothesis import settings as hypothesis_settings
 
 from harness import paths
+
+# Bounded and reproducible in make check; the nightly passes --hypothesis-profile=deep. #1766
+hypothesis_settings.register_profile("check", max_examples=60, stateful_step_count=25, derandomize=True,
+                                     database=None, deadline=None, print_blob=True)
+hypothesis_settings.register_profile("deep", max_examples=200, stateful_step_count=40, database=None,
+                                     deadline=None, print_blob=True)
+hypothesis_settings.load_profile("check")
 
 
 @pytest.fixture(autouse=True)
