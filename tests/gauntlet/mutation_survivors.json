@@ -1039,6 +1039,7 @@
   "harness.serving:mlx_parallel:path ''->'or True'",
   "harness.serving:mlx_parallel:per 'or'->'and'",
   "harness.serving:route:or \"''\"->\"'XXXX'\"",
+  "harness.serving:router_stem:or \"''\"->\"'XXXX'\"",
   "harness.serving:template_options:or \"''\"->\"'XXXX'\"",
   "harness.serving:text_spec:( \"','\"->\"'XX,XX'\"",
   "harness.serving:text_spec:or \"''\"->\"'XXXX'\"",
