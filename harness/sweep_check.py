@@ -155,11 +155,12 @@ def _machine(conn):
 
 def previous(conn, start: float) -> str:
     """The verdict the last recorded check of tonight's sweep gave, '' when none."""
-    m = _machine(conn)
+    from harness import machine_scope
+    here, mine = machine_scope.where("watchdog_actions.mine", _machine(conn))
     row = conn.execute(
         "SELECT evidence FROM watchdog_actions WHERE criterion = ? AND at >= ? "
-        "AND (machine_id = ? OR (machine_id IS NULL AND ? IS NULL)) ORDER BY at DESC, id DESC LIMIT 1",
-        (CRITERION, start - START_SLACK_S, m, m)).fetchone()
+        f"AND {here} ORDER BY at DESC, id DESC LIMIT 1",
+        (CRITERION, start - START_SLACK_S, *mine)).fetchone()
     try:
         return str(json.loads(row["evidence"] or "{}").get("verdict") or "") if row else ""
     except ValueError:

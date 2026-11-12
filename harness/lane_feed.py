@@ -145,10 +145,11 @@ def _candidates(conn, lane: str, exams: list[dict], held: dict) -> tuple[list[di
 
 def _knobs(conn, mid, lane: str) -> list[dict]:
     from harness import lanes as L
+    from harness import machine_scope
     from harness.publish import _iso
-    rows = conn.execute(
-        "SELECT * FROM knob_sweeps WHERE settled_at IS NOT NULL AND (machine_id IS NULL OR machine_id = ?) "
-        "ORDER BY settled_at, id", (mid,)).fetchall()
+    here, mine = machine_scope.where("knob_sweeps.mine", mid)
+    rows = conn.execute(f"SELECT * FROM knob_sweeps WHERE settled_at IS NOT NULL AND {here} ORDER BY settled_at, id",
+                        mine).fetchall()
     return [{"id": r["id"], "knob": r["knob"], "candidate": r["spec"], "outcome": r["outcome"],
              "chosen": _json(r["chosen"]), "detail": r["detail"], "queued_at": _iso(r["queued_at"]),
              "settled_at": _iso(r["settled_at"]), "_t": r["settled_at"]}
@@ -157,12 +158,13 @@ def _knobs(conn, mid, lane: str) -> list[dict]:
 
 def _adoptions(conn, mid, lane: str) -> list[dict]:
     from harness import lanes as L
+    from harness import machine_scope
+    here, mine = machine_scope.where("adoptions.served", mid, "a.machine_id")
     rows = conn.execute(
         "SELECT a.id, a.lane, a.adopted_at, a.how, a.verdict_id, a.run_id, c.spec, i.spec AS incumbent, "
         "v.reason, v.detail, v.outcome, v.tier FROM adoptions a JOIN candidates c ON c.id = a.candidate_id "
         "LEFT JOIN candidates i ON i.id = a.incumbent_id LEFT JOIN verdicts v ON v.id = a.verdict_id "
-        "WHERE a.machine_id = ? OR a.all_machines = 1 OR a.machine_id IS NULL ORDER BY a.adopted_at, a.id",
-        (mid,)).fetchall()
+        f"WHERE a.all_machines = 1 OR {here} ORDER BY a.adopted_at, a.id", mine).fetchall()
     return [dict(r) for r in rows if L.canonical(r["lane"]) == lane]
 
 

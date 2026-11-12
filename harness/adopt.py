@@ -544,13 +544,14 @@ def queue_confirmation(conn, vid: int, verdict: Verdict, now: float | None = Non
     """Queue the dev run (at `start`, else when the contention gate opens) that confirms or refuses a held holdout win, once per verdict. #725, #1509."""
     import os
 
-    from harness import paths, workqueue
+    from harness import machine_scope, paths, workqueue
     argv = confirm_argv(vid)
     # The job this runs in is not the continuation it queues. #1357.
     mine = os.environ.get(workqueue.JOB_ENV, "").strip()
     mine = int(mine) if mine.isdigit() else None
-    have = conn.execute("SELECT id FROM jobs WHERE argv = ? AND state IN (?, ?) AND id IS NOT ?",
-                        (json.dumps(argv), workqueue.PENDING, workqueue.RUNNING, mine)).fetchone()
+    here, args = machine_scope.here(conn, "jobs.twin")
+    have = conn.execute(f"SELECT id FROM jobs WHERE argv = ? AND state IN (?, ?) AND id IS NOT ? AND {here}",
+                        (json.dumps(argv), workqueue.PENDING, workqueue.RUNNING, mine, *args)).fetchone()
     if have is not None:
         return None
     return workqueue.add(argv, title=(f"confirm {verdict.lane}: {verdict.challenger} over {verdict.incumbent} "
@@ -746,14 +747,14 @@ def _ids(conn, machine) -> tuple:
 
 def _resolve(conn, machine) -> tuple[dict[str, dict], dict[str, dict]]:
     """(lane -> served row, lane -> newer by-hand row refused for not fitting)."""
+    from harness import machine_scope
     ids = _ids(conn, machine)
-    marks = ",".join("?" * len(ids)) or "NULL"
+    here, args = machine_scope.where("adoptions.served", list(ids), "a.machine_id")
     rows = conn.execute(
         "SELECT a.*, c.spec FROM adoptions a "
         "JOIN candidates c ON c.id = a.candidate_id "
-        "WHERE a.all_machines = 1 OR a.machine_id IS NULL "
-        f"OR a.machine_id IN ({marks}) "
-        "ORDER BY a.adopted_at, a.id", ids).fetchall()
+        f"WHERE a.all_machines = 1 OR {here} "
+        "ORDER BY a.adopted_at, a.id", args).fetchall()
     out: dict[str, dict] = {}
     refused: dict[str, dict] = {}
     for row in rows:

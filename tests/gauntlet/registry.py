@@ -13,7 +13,7 @@ REPO = HERE.parent.parent
 # The agent lane's case repos are broken on purpose; they are inputs to a model, not code here.
 NOT_PRODUCTION = ("tests/", "evals/cases/")
 # Unbound hits pinned when the detectors landed; lower it as the backlog is bound.
-BACKLOG_PIN = 861
+BACKLOG_PIN = 834
 
 
 # make precheck runs only these; the rest are whole-tree costly and stay in make check (#1832).
@@ -47,7 +47,8 @@ MAINS = ("nodes", "install_env", "engine_smoke", "slot_probe", "router", "intera
 EFFECTS = ("desktop", "monitor.post", "monitor.alert", "_gh", "gh_run", "_ssh", "spawn_switch", "pause_all", "urlopen",
            "ask_model", "install", "gather", "verify", "notify")
 DETECTOR_CONFIG = {
-    "unscoped_query": {"columns": ("machine_id",), "helpers": ("here", "_here", "all_machines", "machine_row")},
+    "unscoped_query": {"columns": ("machine_id",), "helpers": ("here", "_here", "all_machines", "machine_row"),
+                       "null_helper": "harness/machine_scope.py:where"},
     "prose_match": {"fields": ("note", "detail", "reason", "why", "evidence", "outcome", "said", "summary", "subject"),
                     "migrations": ("harness/memory_store/migrations/",)},
     "empty_on_failure": {"choosers": ("backend",)},
@@ -81,8 +82,6 @@ OPEN_ISSUES = {
     1759: (OW, (r"^harness/vllm\.py:served$",)),
     1762: (WT, (r"^harness/workqueue\.py:quiesce$",)),
     1763: (WT, (r"^harness/exclusive\.py:_beating\.keep$",)),
-    1769: (SC, (r":null-scope$",)),
-    1770: (SC, (r"^harness/adopt\.py:queue_confirmation:jobs$", r"^harness/workqueue\.py:_repend:jobs$")),
     1775: (CA, (r"^harness/nodes\.py:_record$",)),
     1777: (FT, (r"^harness/repo_gate\.py:(owed|verdict):detail$",)),
     1778: (FT, (r"^harness/watchdog\.py:(notified_since|overrun_stopped|wake):(outcome|evidence)$",)),

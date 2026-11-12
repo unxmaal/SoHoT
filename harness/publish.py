@@ -432,13 +432,14 @@ def _serves_model(spec: str, conn) -> str:
 
 
 def _adoptions(conn, mid: int) -> list[dict]:
-    from harness import adopt
+    from harness import adopt, machine_scope
+    here, mine = machine_scope.where("adoptions.served", mid, "a.machine_id")
     rows = conn.execute(
         "SELECT a.*, c.spec, i.spec AS incumbent "
         "FROM adoptions a JOIN candidates c ON c.id = a.candidate_id "
         "LEFT JOIN candidates i ON i.id = a.incumbent_id "
-        "WHERE a.machine_id = ? OR a.all_machines = 1 OR a.machine_id IS NULL "
-        "ORDER BY a.adopted_at, a.id", (mid,)).fetchall()
+        f"WHERE a.all_machines = 1 OR {here} "
+        "ORDER BY a.adopted_at, a.id", mine).fetchall()
     return [{"lane": r["lane"], "candidate": r["spec"],
              "incumbent": r["incumbent"] or "", "how": r["how"],
              "scope": adopt.describe(dict(r), mid),

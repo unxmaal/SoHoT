@@ -275,12 +275,9 @@ def order(got: list[dict]) -> list[dict]:
 
 
 def _here(c) -> tuple[str, tuple]:
-    """Jobs this machine's worker owns: a shared store holds other machines' too."""
-    from harness import memory_store as ms
-    mid = ms.machine_row(c)
-    if mid is None:
-        return "machine_id IS NULL", ()
-    return "(machine_id = ? OR machine_id IS NULL)", (mid,)
+    """Jobs this machine's worker may take: a shared store holds other machines' too."""
+    from harness import machine_scope
+    return machine_scope.here(c, "jobs.claimable")
 
 
 def pending(conn=None) -> list[dict]:
@@ -311,12 +308,8 @@ def ready(conn=None, now: float | None = None) -> list[dict]:
 
 def _claimed(c) -> tuple[str, tuple]:
     """Jobs this machine claimed: an unowned running job is nobody's to recover. #703."""
-    from harness import memory_store as ms
-    mid = ms.machine_row(c)
-    if mid is None:
-        # _claim stamps the machine, so a machine with no row has claimed nothing.
-        return "1 = 0", ()
-    return "machine_id = ?", (mid,)
+    from harness import machine_scope
+    return machine_scope.here(c, "jobs.claimed")
 
 
 def running_here(conn=None) -> list[dict]:
@@ -336,16 +329,10 @@ def current(conn=None) -> dict | None:
 def durations(title: str, conn=None, anywhere: bool = False) -> list[float]:
     """Seconds each finished, successful job with this title took here, or on any machine. #588, #697."""
     with _store(conn) as c:
-        if anywhere:
-            where, args = "1 = 1", ()
-        else:
-            # An unstamped job ran on some machine, not necessarily this one.
-            from harness import memory_store as ms
-            mid = ms.machine_row(c)
-            where, args = ("machine_id = ?", (mid,)) if mid is not None else ("0 = 1", ())
+        here, args = ("1 = 1", ()) if anywhere else _claimed(c)
         rows = c.execute("SELECT started_at, finished_at FROM jobs WHERE state = ? "
                          "AND title = ? AND started_at IS NOT NULL "
-                         f"AND finished_at IS NOT NULL AND {where}",
+                         f"AND finished_at IS NOT NULL AND {here}",
                          (DONE, title, *args)).fetchall()
     return [float(r[1]) - float(r[0]) for r in rows if r[1] >= r[0]]
 
@@ -715,10 +702,12 @@ def _in_group(job: dict):
 def _claim(job: dict, log: Path) -> bool:
     """Take a pending job for this machine in one statement, so two workers cannot both run it. #703."""
     started = time.strftime(_STAMP)
+    from harness import machine_scope
     with _store() as c:
         mid = _machine(c)
+        here, args = machine_scope.where("jobs.claimable", mid)
         took = js.move(c, job["id"], PENDING, RUNNING, js.CLAIMED, started_at=_epoch(started), log=str(log),
-                       machine_id=mid, where="(machine_id = ? OR machine_id IS NULL)", args=(mid,))
+                       machine_id=mid, where=here, args=args)
         c.commit()
     if took:
         job.update(state=RUNNING, started=started, log=str(log), machine_id=mid)
@@ -956,8 +945,10 @@ def _next_item(c, job: dict, argv: list) -> bool:
 
 def _repend(c, job: dict, why: str) -> bool:
     """A job paused for contention or a deploy waits again to resume where it stopped, unless it queued its own continuation. #1509, #1672."""
-    twin = c.execute("SELECT id FROM jobs WHERE argv = ? AND state = ? AND id != ?",
-                     (json.dumps([str(a) for a in job["argv"]]), PENDING, int(job["id"]))).fetchone()
+    from harness import machine_scope
+    here, mine = machine_scope.where("jobs.twin", job.get("machine_id"))
+    twin = c.execute(f"SELECT id FROM jobs WHERE argv = ? AND state = ? AND id != ? AND {here}",
+                     (json.dumps([str(a) for a in job["argv"]]), PENDING, int(job["id"]), *mine)).fetchone()
     if twin is not None:
         moved = js.move(c, job["id"], RUNNING, PAUSED, js.CONTINUED, f"paused; job {label(twin[0])} continues it",
                         rc=job.get("rc"), finished_at=_epoch(job.get("finished")))
