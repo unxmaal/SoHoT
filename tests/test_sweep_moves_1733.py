@@ -131,27 +131,25 @@ def test_a_second_settle_racing_the_same_sweep_loses(conn, serving, monkeypatch)
     assert row["outcome"] == sweeps.CHOSEN and row["settled_at"] == NOW + 100
 
 
-def test_a_second_writer_opening_the_same_sweep_loses_and_cancels_its_jobs(conn, serving, monkeypatch):
+def test_a_second_writer_opening_the_same_sweep_loses_and_keeps_no_job(conn, serving, monkeypatch):
+    from harness import item_lease
     binding_budget(conn)
     entry = next(p for p in sweeps.plan(conn, now=NOW) if not p["skip"])
+    key = sweeps._LEDGER + json.dumps([entry["knob"], entry["lane"], entry["spec"], entry["machine_id"]])
+    stale = item_lease._version(conn, key)
     other = ms.connect()
-    real = sweeps._open
-    first = []
-
-    def raced(c, sw):
-        if c is conn and not first:
-            first.append(sweeps._queue(other, entry, NOW, wq.add))
-        return None if c is conn else real(c, sw)
-    monkeypatch.setattr(sweeps, "_open", raced)
     try:
-        assert sweeps._queue(conn, entry, NOW, wq.add) is None
+        first = sweeps._queue(other, entry, NOW, wq.add)
     finally:
         other.close()
-    assert first[0] is not None
+    # This writer read the ledger before the other committed, and did not see its open sweep.
+    real_open, real_version = sweeps._open, item_lease._version
+    monkeypatch.setattr(sweeps, "_open", lambda c, sw: None if c is conn else real_open(c, sw))
+    monkeypatch.setattr(item_lease, "_version", lambda c, k: stale if c is conn and k == key else real_version(c, k))
+    assert sweeps._queue(conn, entry, NOW, wq.add) is None
     rows = conn.execute("SELECT id, outcome FROM knob_sweeps").fetchall()
-    assert [(r["id"], r["outcome"]) for r in rows] == [(first[0]["sweep"], sweeps.OPEN)]
-    mine = {j for _, j in first[0]["jobs"]}
-    assert {j["state"] for j in wq.jobs(conn=conn) if int(j["id"]) not in mine} == {wq.CANCELLED}
+    assert [(r["id"], r["outcome"]) for r in rows] == [(first["sweep"], sweeps.OPEN)]
+    assert {int(j["id"]) for j in wq.jobs(conn=conn)} == {j for _, j in first["jobs"]}
 
 
 def _chosen(conn, cost, outcome=sweeps.CHOSEN):

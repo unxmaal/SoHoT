@@ -569,6 +569,7 @@ _POOL: dict = {}
 def use_pool(max_size: int = POOL_MAX):
     """From now on this process borrows its Postgres connections from one pool (RULE #119): long-lived services."""
     if "pool" not in _POOL:
+        refuse_live(postgres=True)
         import atexit
         from psycopg_pool import ConnectionPool
         import psycopg
@@ -603,13 +604,75 @@ def secret(user: str, lookup=None) -> str:
     return lookup(SECRET_SERVICE, user)
 
 
+def _where(e, m) -> tuple:
+    return (e.get("PGHOST") or m.get("host") or "localhost", e.get("PGPORT") or str(m.get("port") or 5432),
+            e.get("PGDATABASE") or m.get("dbname") or "discovery")
+
+
+def pg_target(environ=None, home=None) -> str:
+    """host:port/dbname a connection would reach, every loopback host spelled `local`. #1826."""
+    host, port, db = _where(os.environ if environ is None else environ, marker(home))
+    host = "local" if host in ("localhost", "127.0.0.1", "::1") or host.startswith("/") else host
+    return f"{host}:{port}/{db}"
+
+
+#: Set once per pytest session by tests/conftest.py, read at every connect: the live store no test may open. #1826.
+GUARD_ENV = "SOHOT_TEST_LIVE"
+#: Every refusal this process made; conftest fails a test that leaves one here, even one the code swallowed.
+REFUSALS: list = []
+
+
+class LiveStoreUnderTest(RuntimeError):
+    """A test run tried to open the live store. #1826."""
+
+
+def guard_flag(live_home, inherited="") -> str:
+    """GUARD_ENV's value: each live home's discovery.db and, when its store.json says Postgres, that Postgres."""
+    import json
+    pg = pg_target({}, live_home) if marker(live_home).get("backend") == POSTGRES else ""
+    entry = {"db": str((Path(live_home) / "discovery.db").resolve()), "postgres": pg}
+    got = json.loads(inherited) if inherited else []
+    return json.dumps(got if entry in got else got + [entry])
+
+
+def _sqlite_file(database) -> Path | None:
+    from urllib.request import url2pathname
+    raw = os.fsdecode(database) if isinstance(database, (str, bytes, os.PathLike)) else ""
+    if raw.startswith("file:"):
+        raw = url2pathname(raw[5:].split("?", 1)[0])
+    return None if raw in ("", ":memory:") else Path(raw)
+
+
+def _refuse(what: str) -> None:
+    REFUSALS.append(what)
+    raise LiveStoreUnderTest(f"a test reached the live store ({what}); {GUARD_ENV} refuses it before any "
+                             f"connection. A test pins its own LOCALHARNESS_HOME and never calls monkeypatch.undo().")
+
+
+def refuse_live(database=None, *, postgres=False, environ=None) -> None:
+    """Under pytest, refuse the live SQLite file, a Postgres store opened from the live home, or the live Postgres."""
+    import json
+    raw = os.environ.get(GUARD_ENV)
+    if not raw:
+        return
+    for live in json.loads(raw):
+        if postgres:
+            from harness import paths
+            if (Path(paths.home()) / "discovery.db").resolve() == Path(live["db"]):
+                _refuse(f"Postgres from the live home {paths.home()}")
+            if live["postgres"] and pg_target(environ) == live["postgres"]:
+                _refuse(f"Postgres {live['postgres']}")
+            continue
+        got = _sqlite_file(database)
+        if got is not None and got.name == Path(live["db"]).name and got.resolve() == Path(live["db"]):
+            _refuse(str(got))
+
+
 def dsn(environ=None, *, read_only=False, home=None, lookup=None) -> str:
     """Where the store's Postgres is: PG* variables, else the home's store.json, password else the Keychain."""
     e = os.environ if environ is None else environ
     m = marker(home)
-    host = e.get("PGHOST") or m.get("host") or "localhost"
-    port = e.get("PGPORT") or str(m.get("port") or 5432)
-    db = e.get("PGDATABASE") or m.get("dbname") or "discovery"
+    host, port, db = _where(e, m)
     role = reader(e, home) if read_only else ""
     user = role or e.get("PGUSER") or m.get("user") or "discovery"
     password = (e.get("PGPASSWORD_RO") if role else e.get("PGPASSWORD")) or secret(user, lookup)
@@ -653,6 +716,7 @@ def open_ro(path=None):
     home_db = Path(paths.home()) / "discovery.db"
     if home_postgres(path):
         return postgres_connect(read_only=True)
+    refuse_live(path or home_db)
     conn = sqlite3.connect(f"{Path(path or home_db).resolve().as_uri()}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
     return conn
@@ -665,6 +729,7 @@ def open_as_is(path=None):
     from harness.memory_store import connection as mc
     if home_postgres(path):
         return postgres_connect()
+    refuse_live(path or Path(paths.home()) / "discovery.db")
     conn = sqlite3.connect(f"{Path(path or Path(paths.home()) / 'discovery.db').resolve().as_uri()}?mode=rw",
                            uri=True, timeout=mc.BUSY_TIMEOUT_SECONDS, factory=mc._Store)
     conn.row_factory = sqlite3.Row
@@ -673,6 +738,7 @@ def open_as_is(path=None):
 
 def postgres_connect(environ=None, *, read_only=False, cls=None):
     """Open the Postgres store; read_only as the reader role in read-only transactions. psycopg is lazy."""
+    refuse_live(postgres=True, environ=environ)
     try:
         import psycopg
     except ImportError as exc:  # pragma: no cover - exercised by the message
@@ -686,3 +752,162 @@ def postgres_connect(environ=None, *, read_only=False, cls=None):
     return (cls or PostgresConnection)(_as_sqlite_binds(psycopg.connect(
         dsn(environ, read_only=read_only), row_factory=row_factory, autocommit=False,
         cursor_factory=psycopg.ClientCursor)))
+
+
+ANSWERED, NO_STORE, UNREADABLE, WRONG_STORE, MISSING_TABLE, FAILED = (
+    "answered", "no_store", "unreadable", "wrong_store", "missing_table", "failed")
+
+
+class Unread(RuntimeError):
+    """A store read that did not answer; `outcome` names why, so it never passes for no rows. #1781."""
+
+    def __init__(self, outcome: str, why: str):
+        super().__init__(f"{outcome}: {why}")
+        self.outcome, self.why = outcome, why
+
+
+def _open_errors() -> tuple:
+    try:
+        import psycopg
+    except ImportError:
+        return (OSError, RuntimeError, sqlite3.Error)
+    return (OSError, RuntimeError, sqlite3.Error, psycopg.Error)
+
+
+def require(conn, table: str) -> None:
+    """Unread missing_table when `table` is not in the store's schema, failed when asking fails."""
+    try:
+        present = has_table(conn, table)
+        where = "" if present else (f"schema {conn.execute('SELECT current_schema() AS s').fetchone()['s']}"
+                                    if dialect(conn) == POSTGRES else "the SQLite file")
+    except sqlite3.Error as exc:
+        raise Unread(FAILED, f"{table}: {type(exc).__name__}: {exc}") from exc
+    if not present:
+        raise Unread(MISSING_TABLE, f"no table {table} in {where}")
+
+
+def read(conn, table: str, sql: str, args=()) -> list:
+    """The rows of `sql` on `table`, or Unread missing_table or failed, never []. #1781."""
+    require(conn, table)
+    return query(conn, sql, args)
+
+
+_MISSING = re.compile(r"no such table|relation .* does not exist", re.I)
+
+
+def query(conn, sql: str, args=()) -> list:
+    """The rows of `sql`, or Unread: missing_table when the store has no such table, failed on any other error."""
+    try:
+        return conn.execute(sql, args).fetchall()
+    except sqlite3.Error as exc:
+        raise Unread(MISSING_TABLE if _MISSING.search(str(exc)) else FAILED,
+                     f"{type(exc).__name__}: {exc}") from exc
+
+
+class Chosen:
+    """The store a reader chose: backend, where, schema, whether it is the live one, and how the open went. #1781."""
+
+    def __init__(self, backend: str, where: str, *, code_schema: int, live: bool, why_not_live: str = ""):
+        self.backend, self.where, self.code_schema = backend, where, code_schema
+        self.live, self.why_not_live = live, why_not_live
+        self.schema: int | None = None
+        self.outcome, self.why, self.conn = ANSWERED, "", None
+
+    def refuse(self, outcome: str, why: str) -> "Chosen":
+        self.outcome, self.why = outcome, why
+        return self
+
+    def line(self) -> str:
+        return describe(self.as_dict())
+
+    def as_dict(self) -> dict:
+        return {"backend": self.backend, "where": self.where, "schema": self.schema, "code_schema": self.code_schema,
+                "live": self.live, "why_not_live": self.why_not_live, "outcome": self.outcome, "why": self.why}
+
+    def close(self) -> None:
+        if self.conn is not None:
+            self.conn.close()
+            self.conn = None
+
+
+def describe(c: dict) -> str:
+    """One line naming a chosen store: backend, where, schema, and whatever makes it not the live one or unread."""
+    at = "" if c["schema"] is None else f", schema {c['schema']}"
+    skew = "" if c["schema"] in (None, c["code_schema"]) else f" (this code speaks {c['code_schema']})"
+    tail = "" if c["live"] or c["outcome"] == WRONG_STORE else f"; NOT the live store: {c['why_not_live']}"
+    bad = "" if c["outcome"] == ANSWERED else f"; {c['outcome'].upper()}: {c['why']}"
+    return f"{c['backend']} {c['where']}{at}{skew}{tail}{bad}"
+
+
+def _default_label() -> str:
+    from harness import paths
+    try:
+        return "~/" + Path(paths.DEFAULT_HOME).resolve().relative_to(Path.home().resolve()).as_posix()
+    except ValueError:
+        return "<default home>"
+
+
+def _shown(path: Path, home: Path) -> str:
+    """A path as a report may print it: under the default home relative to ~, under another home as <LOCALHARNESS_HOME>."""
+    from harness import paths
+    for root, label in ((Path(paths.DEFAULT_HOME), _default_label()), (home, f"<{paths.ENV_VAR}>")):
+        try:
+            return label + "/" + Path(path).resolve().relative_to(root.resolve()).as_posix()
+        except ValueError:
+            continue
+    return str(path)
+
+
+def _overrides(home: Path) -> list[str]:
+    """What in this process's environment names another store than the home's store.json does."""
+    m = marker(home)
+    if not m.get("backend"):
+        return []
+    out = []
+    env = (os.environ.get(BACKEND_ENV) or "").strip().lower()
+    if env and env != str(m["backend"]).lower():
+        stale = f"; {_shown(home / 'discovery.db', home)} is the pre-cutover file" if env == SQLITE else ""
+        out.append(f"{BACKEND_ENV}={env} overrides {_shown(home / MARKER, home)} (backend {m['backend']}){stale}")
+    if backend() == POSTGRES:
+        for var, key in (("PGHOST", "host"), ("PGPORT", "port"), ("PGDATABASE", "dbname")):
+            got = os.environ.get(var)
+            if got and m.get(key) is not None and got != str(m[key]):
+                out.append(f"{var}={got} overrides {MARKER}'s {key} {m[key]}")
+    return out
+
+
+def choose_read() -> Chosen:
+    """This home's store opened read-only by the one chooser ledger, inventory and context share. #1781."""
+    from harness import paths
+    from harness.memory_store import connection as mc
+    home = Path(paths.home())
+    kind = backend()
+    if kind == POSTGRES:
+        e, m = os.environ, marker(home)
+        role = reader(e, home) or e.get("PGUSER") or m.get("user") or "discovery"
+        where = (f"{e.get('PGHOST') or m.get('host') or 'localhost'}:{e.get('PGPORT') or m.get('port') or 5432}/"
+                 f"{e.get('PGDATABASE') or m.get('dbname') or 'discovery'} as {role}")
+    else:
+        where = _shown(home / "discovery.db", home)
+    wrong = _overrides(home)
+    default = home.resolve() == Path(paths.DEFAULT_HOME).resolve()
+    why_not = "; ".join(wrong) if wrong else ("" if default else f"{paths.ENV_VAR} is not the default home {_default_label()}")
+    c = Chosen(kind, where, code_schema=mc.SCHEMA_VERSION, live=default and not wrong, why_not_live=why_not)
+    if wrong:
+        return c.refuse(WRONG_STORE, why_not)
+    if kind == SQLITE and not (home / "discovery.db").is_file():
+        return c.refuse(NO_STORE, f"no store at {where}")
+    try:
+        conn = open_ro(home / "discovery.db") if kind == SQLITE else postgres_connect(read_only=True)
+    except _open_errors() as exc:
+        return c.refuse(UNREADABLE, f"{type(exc).__name__}: {exc}")
+    try:
+        c.schema = mc._stored_schema(conn)
+    except sqlite3.Error as exc:
+        conn.close()
+        return c.refuse(UNREADABLE, f"{type(exc).__name__}: {exc}")
+    if not c.schema:
+        conn.close()
+        return c.refuse(NO_STORE, f"no meta table in {where}: an empty store")
+    c.conn = conn
+    return c

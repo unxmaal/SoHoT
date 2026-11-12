@@ -655,19 +655,17 @@ def record(conn, verdict: Verdict, spec: str = "",
     if serve:
         if verdict.how not in HOW:
             raise ValueError(f"unknown adoption kind {verdict.how!r}")
+        from harness import adoption_state
         mid = conn.execute("SELECT machine_id FROM verdicts WHERE id = ?",
                            (vid,)).fetchone()
         mid = mid["machine_id"] if mid else None
         inc = _incumbent_id(conn, verdict.lane, verdict.incumbent)
-        conn.execute(
-            "INSERT OR IGNORE INTO adoptions (lane, candidate_id, incumbent_id, "
-            "run_id, verdict_id, machine_id, how, adopted_at, all_machines, "
-            "votes, agreement, forced, cost) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (verdict.lane.strip().lower(), cid, inc, run_id, vid, mid,
-             verdict.how, _now(), int(verdict.all_machines), verdict.votes,
-             verdict.agreement, int(verdict.forced),
-             json.dumps(cost(conn, cid, inc, mid), sort_keys=True)))
         conn.commit()
+        adoption_state.move(
+            conn, verdict.lane, adoption_state.ADOPT, cid, how=verdict.how, machine_id=mid,
+            why=detail[:200], all_machines=verdict.all_machines, verdict_id=vid, run_id=run_id,
+            incumbent_id=inc, votes=verdict.votes, agreement=verdict.agreement, forced=verdict.forced,
+            cost=cost(conn, cid, inc, mid))
         from harness import gateway
         if verdict.lane.strip().lower() in gateway.TEXT_LANES:
             try:
@@ -699,11 +697,6 @@ def _schema_guard(verdict: Verdict, spec: str) -> Verdict:
                    f"lane's response_format would be refused or silently dropped "
                    f"({verdict.why})", verdict.how, reasons.REFUSED_BY_GATEWAY,
                    verdict.evidence)
-
-
-def _now() -> float:
-    import time
-    return time.time()
 
 
 def _incumbent_id(conn, lane: str, name: str) -> int | None:
@@ -744,45 +737,16 @@ def _ids(conn, machine) -> tuple:
     return () if machine is None else (machine,)
 
 
-def _resolve(conn, machine) -> tuple[dict[str, dict], dict[str, dict]]:
-    """(lane -> served row, lane -> newer by-hand row refused for not fitting)."""
-    ids = _ids(conn, machine)
-    marks = ",".join("?" * len(ids)) or "NULL"
-    rows = conn.execute(
-        "SELECT a.*, c.spec FROM adoptions a "
-        "JOIN candidates c ON c.id = a.candidate_id "
-        "WHERE a.all_machines = 1 OR a.machine_id IS NULL "
-        f"OR a.machine_id IN ({marks}) "
-        "ORDER BY a.adopted_at, a.id", ids).fetchall()
-    out: dict[str, dict] = {}
-    refused: dict[str, dict] = {}
-    for row in rows:
-        if is_reference(row["spec"]):
-            continue
-        if row["how"] == BY_HAND:
-            ok, why = fit(conn, row["candidate_id"], ids[0] if ids else None)
-            if not ok:
-                refused[row["lane"]] = {**dict(row), "why": why}
-                continue
-        out[row["lane"]] = dict(row)
-        refused.pop(row["lane"], None)
-    return out, refused
-
-
 def current(conn, machine=HERE) -> dict[str, dict]:
-    """lane -> the adoption row a machine serves, with its spec.
-
-    The newest adoption for the lane made on that machine, or made with
-    --all-machines and fitting there. One no machine is recorded for serves
-    everywhere, as every adoption did before #412. `machine` is HERE, a machine
-    id, or a tuple of ids. A reference model is never a lane default. #374, #412, #485.
-    """
-    return _resolve(conn, machine)[0]
+    """lane -> the adoption row a machine serves, with its spec: adoption_state.table's adopted lanes. #374, #412, #485, #1735."""
+    from harness import adoption_state as st
+    return {lane: s.row for lane, s in st.table(conn, machine, typed={}).items() if s.state == st.ADOPTED}
 
 
 def refused(conn, machine=HERE) -> list[dict]:
     """By-hand adoptions this machine would serve but cannot fit, newest per lane. #485."""
-    return sorted(_resolve(conn, machine)[1].values(), key=lambda r: r["lane"])
+    from harness import adoption_state as st
+    return [s.refused for _, s in sorted(st.table(conn, machine, typed={}).items()) if s.refused]
 
 
 def _ceiling_gb(conn, machine_id) -> float:
@@ -899,10 +863,9 @@ def describe(row: dict, machine_id=None) -> str:
 
 def everywhere(conn) -> dict[str, set[str]]:
     """lane -> every spec some machine in the store serves by adoption."""
+    from harness import adoption_state as st
     out: dict[str, set[str]] = {}
-    mids = [r["machine_id"] for r in conn.execute(
-        "SELECT DISTINCT machine_id FROM adoptions").fetchall()]
-    for mid in mids:
+    for mid in {r["machine_id"] for r in st.history(conn)}:
         for lane, row in current(conn, mid).items():
             out.setdefault(lane, set()).add(row["spec"])
     return out
@@ -915,13 +878,13 @@ def adopted(conn, machine=HERE) -> dict[str, str]:
 
 def lane_defaults(conn=None, machine=HERE, typed=None) -> dict[str, str]:
     """What every lane serves now: its adoption here, else the typed default; a store that cannot be read raises. #1432."""
-    from harness import runs
+    from harness import adoption_state as st, runs
     if typed is None:
         from harness import winners
         typed = winners.typed()
     with runs.store(conn) as c:
-        got = adopted(c, machine)
-    return {**dict(typed), **got}
+        got = st.table(c, machine, typed)
+    return {lane: s.spec for lane, s in got.items() if lane in typed or s.state == st.ADOPTED}
 
 
 def default_for(lane: str, fallback: str, conn=None, machine=HERE) -> str:

@@ -5,7 +5,6 @@ import datetime as _dt
 import json
 import re
 import shutil
-import sqlite3
 import subprocess
 import time
 from pathlib import Path
@@ -296,22 +295,22 @@ def _columns(conn, table: str) -> set[str]:
 
 
 def gateway_rows(conn, since: float) -> list[tuple]:
-    """(at, alias, lane, client, purpose, prompt_tokens, completion_tokens, call_id) since `since`."""
+    """(at, alias, lane, client, purpose, prompt_tokens, completion_tokens, call_id) since `since`; store.Unread when unread."""
+    from harness import store
+    store.require(conn, "gateway_requests")
     have = _columns(conn, "gateway_requests")
-    if not have:
-        return []
     purpose = "purpose" if "purpose" in have else f"'{UNKNOWN}'"
     call_id = "call_id" if "call_id" in have else "''"
-    return [tuple(r) for r in conn.execute(
-        f"SELECT at, alias, lane, client, {purpose}, prompt_tokens, completion_tokens, {call_id} "
-        f"FROM gateway_requests WHERE at >= ?", (since,))]
+    return [tuple(r) for r in store.read(
+        conn, "gateway_requests", f"SELECT at, alias, lane, client, {purpose}, prompt_tokens, completion_tokens, "
+        f"{call_id} FROM gateway_requests WHERE at >= ?", (since,))]
 
 
 def delegation_rows(conn, since: float) -> list[tuple]:
-    """(call_id, at, lane, outcome, prompt_tokens, completion_tokens) of each delegation since `since`; [] before schema 69."""
-    if not _columns(conn, "delegations"):
-        return []
-    return [tuple(r) for r in conn.execute(
+    """(call_id, at, lane, outcome, prompt_tokens, completion_tokens) of each delegation since `since`; store.Unread when unread."""
+    from harness import store
+    return [tuple(r) for r in store.read(
+        conn, "delegations",
         "SELECT call_id, at, lane, outcome, prompt_tokens, completion_tokens FROM delegations WHERE at >= ?",
         (since,))]
 
@@ -809,12 +808,10 @@ def record(conn, ledger: dict, now: float) -> int:
 
 
 def recorded(conn, first_day: str) -> list[dict]:
-    """Each recorded day with its Claude tokens, read from the detail."""
-    try:
-        rows = conn.execute("SELECT day, recorded_at, energy_kwh, detail FROM ledger_days WHERE day >= ? "
-                            "ORDER BY day", (first_day,)).fetchall()
-    except sqlite3.OperationalError:
-        return []
+    """Each recorded day with its Claude tokens, read from the detail; store.Unread when unread."""
+    from harness import store
+    rows = store.read(conn, "ledger_days", "SELECT day, recorded_at, energy_kwh, detail FROM ledger_days "
+                      "WHERE day >= ? ORDER BY day", (first_day,))
     out = []
     for r in rows:
         try:

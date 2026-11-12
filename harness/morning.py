@@ -81,9 +81,11 @@ def sweep(conn, since: float, beat: dict | None) -> dict:
             "SELECT id, lane, challenger, state, done, total, paused_at FROM paused_runs "
             "WHERE paused_at >= ? OR state = 'paused' ORDER BY paused_at", (since,))]
     if _has(conn, "adoptions"):
-        out["settled"]["adopted"] = [dict(r) for r in conn.execute(
-            "SELECT a.lane, c.spec, a.how, a.adopted_at FROM adoptions a JOIN candidates c "
-            "ON c.id = a.candidate_id WHERE a.adopted_at >= ? ORDER BY a.adopted_at", (since,))]
+        from harness import adoption_state as st
+        moved = [{k: r[k] for k in ("lane", "spec", "how", "adopted_at", "move", "why")}
+                 for r in st.history(conn, since=since)]
+        out["settled"]["adopted"] = [r for r in moved if r["move"] == st.ADOPT]
+        out["settled"]["withdrawn"] = [r for r in moved if r["move"] == st.WITHDRAW]
     out["stopped"] = [w for w in watchdog(conn, since) if w["action"] == "stop"]
     if beat:
         from harness import heartbeat
@@ -213,10 +215,14 @@ def ratio(conn, now: float) -> dict | None:
     """Local over cloud tokens for yesterday and the week to it, from ledger_days' recorded counts. #1688."""
     if not _has(conn, "ledger_days"):
         return None
-    from harness import ledger
+    from harness import ledger, store
     yesterday = ledger.day_of(now - 86400)
     first = ledger.ratio_over({}, yesterday, ledger.RATIO_DAYS)["first_day"]
-    days = {r["day"]: r["ratio"] for r in ledger.recorded(conn, first) if r.get("ratio")}
+    try:
+        got = ledger.recorded(conn, first)
+    except store.Unread:
+        return None
+    days = {r["day"]: r["ratio"] for r in got if r.get("ratio")}
     return ledger.headline(days, yesterday)
 
 
@@ -494,7 +500,8 @@ def needs(r: dict) -> list[str]:
     d = r["deploy"]
     if d.get("available") and d["behind"]:
         out.append(f"deploy is {d['behind']} commit(s) behind origin/main")
-    from harness import contention, deploy as deploys
+    from harness import contention, deploy as deploys, deploy_repair
+    out.extend(deploy_repair.lines(r.get("deploy_repairs") or []))
     out.extend(deploys.line(x) for x in r.get("deploys") or [] if x["outcome"] not in ("", deploys.DEPLOYED))
     w = r.get("deploy_wait")
     if w and w["why"] and w["waited"] >= contention.DEPLOY_ALERT_S:
@@ -548,6 +555,7 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "engines": engines(conn, since), "idle": _idle(conn, since),
          "runtimes": runtimes(conn, since), "techniques": techniques(conn, since),
          "monitor": monitor(since) if monitor else None, "deploys": deploys_since(conn, since),
+         "deploy_repairs": deploy_repairs(),
          "pulls": pulls(now) if pulls else None, "tts": tts() if tts else None,
          "deploy_wait": waiting(conn, now) if waiting else None}
     from harness import hold
@@ -573,6 +581,12 @@ def deploys_since(conn, since: float) -> list[dict]:
         return deploy.since(conn, since)
     except sqlite3.OperationalError:
         return []
+
+
+def deploy_repairs() -> list[dict]:
+    """Deploys left with the store ahead of the code and not repaired, at any age: read from their records. #1841."""
+    from harness import deploy_repair
+    return deploy_repair.pending()
 
 
 def deploy_wait(conn, now: float) -> dict | None:

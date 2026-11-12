@@ -1,4 +1,4 @@
-"""`soh gauntlet audit|review`: the gauntlet's two questions from the CLI (#492)."""
+"""`soh gauntlet audit|review`: the gauntlet's two questions from the CLI, over the pinned package (#492, #1785)."""
 
 import json
 
@@ -25,8 +25,8 @@ def test_soh_gauntlet_audit_offline_reads_the_snapshot(capsys):
 
 
 def test_a_failing_audit_is_not_ok_under_json(capsys, monkeypatch):
-    from tests.gauntlet import classes
-    monkeypatch.setattr(classes, "UNCLASSIFIED", {})
+    from tests.gauntlet.registry import REGISTRY
+    monkeypatch.setattr(REGISTRY, "unclassified", {})
     rc = cli.main(["gauntlet", "audit", "--offline", "--json"])
     got = json.loads(capsys.readouterr().out)
     assert rc == 1 and got["ok"] is False and "no class" in got["report"]

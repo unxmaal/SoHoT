@@ -292,20 +292,16 @@ def typed_anywhere() -> dict[str, tuple[str, ...]]:
 
 
 def served_ids(conn) -> dict[str, int]:
-    """lane -> the candidates row of what it serves: adopted here, else typed.
-
-    #429; the adopted row comes from `adoptions`, by id. #412.
-    """
-    from harness import adopt, candidates, screen
-    held = adopt.current(conn)
-    out = {lane: row["candidate_id"] for lane, row in held.items()}
-    for lane, name in typed().items():
-        if lane in out:
-            continue
-        spec = screen.candidate_for(lane, name) or name
-        cid = candidates.served(conn, spec, lane=lane)
-        if cid:
-            out[lane] = cid
+    """lane -> the candidates row of what it serves here: its adoption, else its configured default's row. #429, #1735."""
+    from harness import adoption_state as st, candidates, screen
+    out = {}
+    for lane, s in st.table(conn, typed=typed()).items():
+        if s.state == st.ADOPTED:
+            out[lane] = s.candidate_id
+        elif s.spec:
+            cid = candidates.served(conn, screen.candidate_for(lane, s.spec) or s.spec, lane=lane)
+            if cid:
+                out[lane] = cid
     return out
 
 

@@ -410,7 +410,10 @@ CREATE TABLE IF NOT EXISTS leases (
     taken_at     REAL NOT NULL,
     beat_at      REAL NOT NULL,
     expires_at   REAL NOT NULL,
-    released_at  REAL
+    released_at  REAL,
+    -- The holder's process group and ps start time, so a reused pid is not the holder. #1772.
+    pgid         INTEGER,
+    started      TEXT NOT NULL DEFAULT ''
 );
 
 -- One deploy of a main commit through the work queue: built alongside, switched, verified or rolled back. #1506.
@@ -513,7 +516,11 @@ CREATE TABLE IF NOT EXISTS adoptions (
     agreement    REAL,
     forced       INTEGER NOT NULL DEFAULT 0,
     -- json median_s/peak_gb against the incumbent's, on machine_id. #485.
-    cost         TEXT NOT NULL DEFAULT '{}'
+    cost         TEXT NOT NULL DEFAULT '{}',
+    -- The named move (adoption_state.KINDS), why it was made, and the lane's adoption it leaves (0: none). #1735.
+    move         TEXT NOT NULL DEFAULT 'adopt',
+    why          TEXT NOT NULL DEFAULT '',
+    leaves       INTEGER NOT NULL DEFAULT 0
 );
 
 -- Each time the gateway's sohot-<lane> alias moved to a new adoption. #483.

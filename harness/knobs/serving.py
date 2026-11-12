@@ -19,6 +19,10 @@ KNOBS = [
        note="GGUF metadata arrays longer than this are skipped unread: tokenizer vocabularies, never a per-layer array (#498)"),
     _k("gpu_fraction", ["harness/memory.py:GPU_FRACTION"], [0.65, 0.75, 0.85],
        note="share of RAM Metal hands out when sysctl iogpu.wired_limit_mb is unset; measured on 32 GB (#699)"),
+    _k("gpu_wait", ["harness/exclusive.py:GPU_WAIT_S"], [14400.0, 28800.0, 43200.0], unit="s",
+       note="seconds exclusive.held waits for the GPU (lease, flock and batch lease) before it gives up with "
+            "WaitExpired and one gpu-refused alert; sweep-check.log saw a screen step wait behind an eval "
+            "held 25978 s (pid 10550), so the bound sits above that (#1763)"),
     _k("interactive_budget_gb", ["harness/interactive.py:BUDGET_GB"], [25.0, 30.0, 35.0, 40.0],
        limit="interactive_budget_gb", unit="GiB",
        note="memory the interactive server's pinned lane models may hold for good, weights plus KV plus compute; "
