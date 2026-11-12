@@ -245,6 +245,47 @@ INDEX = {
     "history-reconstructed-from-present-state": {
         "review": r"(?i)\bbackfill\w*|\bUPDATE\s+\w+\s+SET\b",
         "instances": _i(506, 516, rules=(292,)), "scanners": []},
+    "two-durable-writes-with-no-repair-for-the-gap": {
+        "detector": ["commit_then_link", "torn_append"],
+        "waivers": {
+            "harness/reverify.py:_queue":
+                "#1825 put the job and its reverification in one transaction; the first write left is candidates.ensure, "
+                "an INSERT OR IGNORE get-or-create the next queue returns",
+        },
+        "instances": _i(rules=(1552,)), "scanners": []},
+    "a-child-that-outlives-its-owner": {
+        "detector": "orphanable_child", "waivers": {},
+        "instances": _i(rules=(1019,)), "scanners": []},
+    "a-wait-with-no-deadline-owner-or-end-state": {
+        "detector": ["undeadlined_wait", "terminal_without_reader"], "waivers": {},
+        "instances": _i(rules=(1476, 1541)), "scanners": []},
+    "a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null": {
+        "detector": "unscoped_query", "waivers": {},
+        "instances": _i(703, rules=(669, 1235)), "scanners": []},
+    "a-stored-pid-trusted-as-the-same-process": {
+        "detector": "stored_pid_liveness", "waivers": {},
+        "instances": _i(rules=(1426, 1515)), "scanners": []},
+    "a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates": {
+        "detector": "uncached_key", "waivers": {},
+        "instances": _i(187, rules=(258, 670, 691)), "scanners": []},
+    "a-decision-read-back-out-of-a-sentence-the-code-wrote": {
+        "detector": "prose_match", "waivers": {},
+        "instances": _i(rules=(829,)), "scanners": []},
+    "nothing-and-failed-return-the-same-value": {
+        "detector": "empty_on_failure", "waivers": {},
+        "instances": _i(rules=(1262,)), "scanners": []},
+    "a-stored-value-with-no-live-writer-or-no-reader": {
+        "detector": "unpaired_column", "waivers": {},
+        "instances": _i(rules=(1513,)), "scanners": []},
+    "a-deploy-runs-two-releases-at-once": {
+        "detector": "one_sided_schema_check", "waivers": {},
+        "instances": _i(rules=(1415, 1417, 1478)), "scanners": []},
+    "an-effect-reachable-from-a-run-that-is-not-the-live-deploy": {
+        "detector": "effect_reachable", "waivers": {},
+        "instances": _i(rules=(1510, 1530)), "scanners": []},
+    "an-order-the-code-needs-but-does-not-check": {
+        "detector": "unchecked_order", "waivers": {},
+        "instances": _i(rules=(1332, 1428, 1441)), "scanners": []},
 }
 
 # Proposed classes with no skill entry yet; add the entry to SKILL.md, regenerate the snapshot, move here into INDEX.

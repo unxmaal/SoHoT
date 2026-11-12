@@ -190,20 +190,27 @@ def _trees(root, tests=False):
 
 
 def detector_bindings(root=REPO) -> list[Problem]:
-    """tests/test_gauntlet_detectors.py: a detector hit is bound to a test, waived, or in the shrinking backlog."""
-    from gauntlet import detectors
+    """tests/test_gauntlet_detectors.py for registry.PRECHECK_DETECTORS: a hit is bound, waived or in the backlog."""
+    from gauntlet import detectors, ratchet
 
     from tests.gauntlet import classes, registry
     pin = pinned(root, "tests/gauntlet/registry.py", "BACKLOG_PIN")
-    led = detectors.ledger(detectors.run(detectors.parse(_trees(root)), classes.INDEX, registry.production),
-                           detectors.bindings(_trees(root, tests=True)), classes.INDEX)
+    trees = detectors.parse(_trees(root))
+    config = ratchet.detector_config(registry.REGISTRY)
+    # A registered move table is read only where its module is in the tree checked.
+    config["terminal_without_reader"]["tables"] = [t for t in registry.MOVES if t.site.split(":")[0] in trees]
+    index = {cid: e for cid, e in classes.INDEX.items()
+             if (named := set(detectors.names(e))) and named <= registry.PRECHECK_DETECTORS}
+    run = detectors.run(trees, index, registry.production, None, config)
+    led = detectors.ledger(run, detectors.bindings(_trees(root, tests=True)), index)
     backlog = json.loads((Path(root) / "tests/gauntlet/backlog.json").read_text(encoding="utf-8"))
     out = [_p("gauntlet", f"{cid}: {s} trips a gauntlet trigger with no bound test",
               f"mark the test that pins it: @pytest.mark.gauntlet({scaffold.q(cid)}, site={scaffold.q(s)})",
               f"or waive it in tests/gauntlet/classes.py INDEX[{scaffold.q(cid)}]['waivers']:",
               scaffold.why_line(s, "<why the trigger does not apply here>"))
            for cid, row in led.items() for s in row["unbound"] if s not in backlog.get(cid, [])]
-    gone = [(cid, s) for cid, rows in backlog.items() for s in rows if s not in led.get(cid, {}).get("unbound", [])]
+    gone = [(cid, s) for cid, rows in backlog.items() if cid in index for s in rows
+            if s not in led.get(cid, {}).get("unbound", [])]
     total = sum(len(v) for v in backlog.values()) - len(gone)
     out += [_p("gauntlet", f"{cid}: {s} is bound, waived or gone",
                f"delete it from tests/gauntlet/backlog.json and set BACKLOG_PIN = {total} in tests/gauntlet/registry.py")

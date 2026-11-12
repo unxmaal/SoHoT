@@ -358,7 +358,7 @@ sweep_guard() {
 _queue_for_deploy() {
   local uv
   uv="$(_find_uv)" || return 1
-  (cd "$REPO" && "$uv" run --quiet python -m harness.workqueue "$1-for-deploy")
+  (cd "$REPO" && LH_QUEUE_HOLDER=$$ "$uv" run --quiet python -m harness.workqueue "$1-for-deploy")
 }
 
 # install or reinstall under the GPU lock. LH_DEPLOY_DURING_SWEEP=1 first holds the queue and stops its
@@ -595,7 +595,7 @@ install_units() {
     if [ "$service" = worker ]; then
       # Reloading the worker kills its running job, so let that job finish first. #577.
       echo "waiting for any running queued job to finish before reloading the worker"
-      if ! was=$(cd "$DEPLOY" && "$UV" run python -m harness.workqueue quiesce); then
+      if ! was=$(cd "$DEPLOY" && LH_QUEUE_HOLDER=$$ "$UV" run python -m harness.workqueue quiesce); then
         echo "could not quiesce the queue; reloading the worker anyway" >&2
         was=""
       fi
