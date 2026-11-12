@@ -307,7 +307,6 @@
   "harness.adopt:record:{ \"'partial'\"->\"'XXpartialXX'\"",
   "harness.adopt:record:{ \"'planned_alpha'\"->\"'PLANNED_ALPHA'\"",
   "harness.adopt:record:{ \"'planned_alpha'\"->\"'XXplanned_alphaXX'\"",
-  "harness.adopt:refused:, 'machine'->'None'",
   "harness.adopt:refused:= '{ }'->'None'",
   "harness.adopt:refused:machine ', typed = { }'->''",
   "harness.adopt:screened_cases:f\" \"SELECT DISTINCT x.case_id FROM results x JOIN runs u ON u.id = x.run_id WHERE u.lane = ? AND u.tier = 'screen' AND x.candidate IN (\"->\"SELECT DISTINCT X.CASE_ID FROM RESULTS X JOIN RUNS U ON U.ID = X.RUN_ID WHERE u.lane = ? AND u.tier = 'screen' AND x.candidate IN (\"",
