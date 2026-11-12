@@ -71,5 +71,5 @@ def same(rec: dict) -> bool | None:
         return None
     got = _proc(int(rec["pid"]))
     if got is None:
-        return False
+        return None  # the pid exists; an unread start time cannot say it is another process. #1836
     return got[0] == rec["started"] and not got[1]

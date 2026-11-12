@@ -63,6 +63,24 @@
   "test_shape": "construct a case where the proxy holds and the property does not (an empty model directory, a server that started and answers nothing) and assert the check fails."
  },
  {
+  "id": "a-deploy-runs-two-releases-at-once",
+  "heading": "A deploy runs two releases at once",
+  "source": "SKILL.md",
+  "tier": 1,
+  "bitten": 7,
+  "trigger": "does this change deploy logic, a migration, the schema version, a job's working directory, or anything a node or gateway reports? Which release's code runs each step, and against which release's data?",
+  "test_shape": "run release N-1's code against N's data and steps, and N against N-1's: migrate, then open the store from N-1; queue under N-1, deploy N, run the job; smoke N against N-1's services; verify a node on N-1 from N. Detector `one_sided_schema_check`: an ordering comparison against a version the consumer names that refuses one direction of skew only; a `!=` against one whose branch drops the work and says nothing more than a log line; a check entry point the consumer names that reaches no phase marker. Blind to orchestration versus step behaviour, to processes alive at deploy time, and to comparisons inside SQL."
+ },
+ {
+  "id": "an-order-the-code-needs-but-does-not-check",
+  "heading": "An order the code needs but does not check",
+  "source": "SKILL.md",
+  "tier": 1,
+  "bitten": 7,
+  "trigger": "does B silently depend on A having happened first: env sourced, schema migrated, queue paused, backend chosen, a hook stubbed? Does B check it, or does A only usually come first?",
+  "test_shape": "do B without A and assert B refuses or does A itself: stub a hook after import and call the default path; run the entry point with the env unset; switch the home with the shared backend selected; open the store from old code after the migrate. Detector `unchecked_order`: an effect the consumer names bound as a default argument; an environment, home or consumer-named read at import; a consumer-named entry point whose reach never calls the guard, in a module that names what the guard sets up; a home variable set without its paired backend. Blind to orders between processes and between functions."
+ },
+ {
   "id": "a-fact-recorded-without-its-context",
   "heading": "A fact recorded without its context",
   "source": "SKILL.md",
@@ -126,6 +144,24 @@
   "test_shape": "edit the content, hold the id fixed, assert the check notices. Fix with a digest over the parts that change the meaning, compared only when both sides carry one, so existing records stay valid."
  },
  {
+  "id": "a-test-that-bounds-a-measured-duration",
+  "heading": "A test that bounds a measured duration",
+  "source": "SKILL.md",
+  "tier": 2,
+  "bitten": 5,
+  "trigger": "does a test compare an elapsed time (perf_counter, time.time, a measured wait or TTFT) against a number? Is any of that time spent in something the test does not control: interpreter startup, a sleeping fake, the scheduler under parallel workers?",
+  "test_shape": "assert what the duration stood for. Order (acquired after released, reasoning before answer), counts (peak in-flight requests), lower bounds that a slow machine cannot break, or a structural fact (the holder is still alive). Keep a time bound only if it is loose enough to mean \"did not hang\"."
+ },
+ {
+  "id": "an-effect-reachable-from-a-run-that-is-not-the-live-deploy",
+  "heading": "An effect reachable from a run that is not the live deploy",
+  "source": "SKILL.md",
+  "tier": 1,
+  "bitten": 5,
+  "trigger": "can a test, a scratch home or a non-deploy checkout reach this alert, webhook, push, restart, signal, ssh or download? What stops it: a gate in the effect itself, a stub, or each caller remembering to pass a fake?",
+  "test_shape": "call each effect's caller under pytest with no hook passed, from a scratch home, and from a non-deploy checkout on the live home with the store one schema ahead; assert no real binary ran, no webhook was sent and no marker landed in the live home. Detector `effect_reachable`: a call to an effect the consumer names where neither the caller nor the effect's own definition consults the consumer's live-run predicate; an effect bound as a default argument; a spawn of an effect binary the consumer's guard list lacks. Blind to argv built from parameters or other functions' returns, to effects in shell grandchildren, and to a gate that asks \"is this the live home\" when the question is \"is this the deploy code\"."
+ },
+ {
   "id": "a-number-without-its-configuration",
   "heading": "A number without its configuration",
   "source": "SKILL.md",
@@ -162,13 +198,13 @@
   "test_shape": "assert the run's own provenance matches its label. Trace where each input actually came from rather than trusting the parameter you passed."
  },
  {
-  "id": "a-test-that-bounds-a-measured-duration",
-  "heading": "A test that bounds a measured duration",
+  "id": "a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates",
+  "heading": "A copy whose key leaves out an input, or that nothing invalidates",
   "source": "SKILL.md",
-  "tier": 2,
-  "bitten": 5,
-  "trigger": "does a test compare an elapsed time (perf_counter, time.time, a measured wait or TTFT) against a number? Is any of that time spent in something the test does not control: interpreter startup, a sleeping fake, the scheduler under parallel workers?",
-  "test_shape": "assert what the duration stood for. Order (acquired after released, reasoning before answer), counts (peak in-flight requests), lower bounds that a slow machine cannot break, or a structural fact (the holder is still alive). Keep a time bound only if it is loose enough to mean \"did not hang\"."
+  "tier": 1,
+  "bitten": 4,
+  "trigger": "is this value derived from a file, process, row or remote, and kept (an `lru_cache`, a cache file, a derived column, a recorded digest)? What changes the source without changing the key? Does a long-lived process write back something it cached when it started?",
+  "test_shape": "fill the cache, then change the source while holding the key fixed, one input at a time (file bytes, mtime, a ceiling, the installed version), and read again: assert the cached value is refused or refreshed. Detector `uncached_key`: an `lru_cache` or `cache` over file reads or subprocesses with no mtime or version among its arguments; a JSON file read and written back with no lock; a process-lifetime cache whose value reaches a persistent write."
  },
  {
   "id": "a-part-s-cost-reported-as-the-whole-s",
@@ -234,6 +270,60 @@
   "test_shape": "list the states and the legal moves as a table in one module. Assert every write goes through it, that an illegal move is refused, and that a concurrent second claim of the same move loses. If the stage is inferred, build the combination no branch handles and assert it is refused rather than read as some state. `State is whichever row came last` is the newest-row special case."
  },
  {
+  "id": "a-child-that-outlives-its-owner",
+  "heading": "A child that outlives its owner",
+  "source": "SKILL.md",
+  "tier": 1,
+  "bitten": 3,
+  "trigger": "does this start a process in its own session (`start_new_session`, `setsid`, a shell `&`), or write a marker file (a pause flag, a hold, a lock), whose only cleanup is in `finally`, `atexit`, `__exit__` or an EXIT trap? A SIGTERM with the default handler skips all of those and SIGKILL skips everything, so who stops the child or lifts the flag when the owner dies?",
+  "test_shape": "start the owner for real, send it SIGTERM and then SIGKILL, and assert no child process and no flag is left behind. Detector `orphanable_child`: a new-session Popen stopped only on the way out, reached from an entry point that installs no SIGTERM handler; and a marker file with no owner pid or expiry that one path alone lifts."
+ },
+ {
+  "id": "a-wait-with-no-deadline-owner-or-end-state",
+  "heading": "A wait with no deadline, owner or end state",
+  "source": "SKILL.md",
+  "tier": 1,
+  "bitten": 3,
+  "trigger": "does this poll, retry or hold something pending? Is there a comparison to a clock or a cap on the loop, does anyone hear when it expires, and does it end in a named state? For a state no move leaves, does anything other than its writers ever read it to settle, expire or report it?",
+  "test_shape": "hold the condition true forever on a fake clock, and assert the wait ends in a named state and that an alert fires. Detectors: `undeadlined_wait`, a while loop that sleeps or waits with no comparison to a clock set before it and no capped counter, exempted only by a waiver with a reason; `terminal_without_reader`, a state with no outgoing move in a move table and no reader outside the modules that write it."
+ },
+ {
+  "id": "a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null",
+  "heading": "A shared-store query with no scope, or a scope with its own idea of NULL",
+  "source": "SKILL.md",
+  "tier": 1,
+  "bitten": 3,
+  "trigger": "does this query read or write a table that several machines, homes or tenants share? Does it filter on the scope column? Does it treat an unstamped (NULL) row the same way as every other query?",
+  "test_shape": "seed two scopes plus an unstamped row in one store; assert each query sees only its own scope, and that every query gives NULL the one documented meaning. Red-proof by dropping the scope predicate. Detector `unscoped_query`: an SQL string on a table the consumer declares scoped (or whose CREATE TABLE names a scope column) with no scope predicate and no `WHERE id =`; and a `scope IS NULL` written anywhere but the one helper the consumer names for it."
+ },
+ {
+  "id": "a-stored-pid-trusted-as-the-same-process",
+  "heading": "A stored pid trusted as the same process",
+  "source": "SKILL.md",
+  "tier": 1,
+  "bitten": 3,
+  "trigger": "is a pid, pgid or port read back from a file or row, or after a restart, and checked only for liveness? What else could hold that number now?",
+  "test_shape": "store a pid, let the process die, and start an unrelated process under that pid (or fake one); assert the check says gone and the state that depends on it (a lease, a deploy, a yielder) is freed. Detector `stored_pid_liveness`: `os.kill(x, 0)`, or an alive() helper (found, or named by the consumer), fed a value read from a file or row, with no pgid, start-time or command check in the same function."
+ },
+ {
+  "id": "a-decision-read-back-out-of-a-sentence-the-code-wrote",
+  "heading": "A decision read back out of a sentence the code wrote",
+  "source": "SKILL.md",
+  "tier": 1,
+  "bitten": 3,
+  "trigger": "does code decide what to do by matching a prefix, substring, LIKE, GLOB or regex in a note, detail, reason or log field that code also writes as prose?",
+  "test_shape": "reword the writer's sentence (or the constant it starts with) and assert the reader's decision does not change; red-proof by showing the reader flips today. Detector `prose_match`: SQL `LIKE`, `GLOB` or `instr()`, `startswith`/`endswith`, `\"x\" in` or a regex against a field the consumer names as stored prose. Blind to needles built from variables, `==` against formatted labels, JSON read with `.get`, and SQL written in lowercase."
+ },
+ {
+  "id": "nothing-and-failed-return-the-same-value",
+  "heading": "Nothing and failed return the same value",
+  "source": "SKILL.md",
+  "tier": 1,
+  "bitten": 3,
+  "trigger": "does a read return [], {}, None or 0 both when there is nothing and when the read failed or hit the wrong store, and does the caller act on it or record it?",
+  "test_shape": "run the reader against an empty store, an unreadable store and the wrong store (a stale file beside the real one); only the first may report \"none\", and the others must say which store they read. Detector `empty_on_failure`: an except around a store or file read that returns an empty literal; a \"none found\" message shown for a value an except path leaves empty; a store chosen by the consumer's chooser call in more than one module."
+ },
+ {
   "id": "a-check-whose-input-differs-between-the-desk-and-ci",
   "heading": "A check whose input differs between the desk and CI",
   "source": "SKILL.md",
@@ -268,6 +358,33 @@
   "bitten": 2,
   "trigger": "is a summary statistic standing in for the thing being measured? What can this statistic NOT see? A count cannot see order. A mean cannot see spread. A top-1 cannot see anything below it.",
   "test_shape": "none. Ask the question before running the experiment, and if the statistic is blind to the effect, a null result is uninformative rather than negative."
+ },
+ {
+  "id": "a-retraction-never-reaches-the-actor",
+  "heading": "A retraction never reaches the actor",
+  "source": "SKILL.md",
+  "tier": 3,
+  "bitten": 2,
+  "trigger": "has a command, plan or instruction been handed to someone who will act on it later? If it is withdrawn, what guarantees they see the withdrawal before they act?",
+  "test_shape": "none mechanical. Put any retraction first, in bold, on the channel the actor reads at the moment of acting; never reverse a handed-out command mid-message. Assume an actor who read the first version acts on it."
+ },
+ {
+  "id": "a-result-produced-never-read",
+  "heading": "A result produced, never read",
+  "source": "SKILL.md",
+  "tier": 1,
+  "bitten": 2,
+  "trigger": "did a job, eval or probe finish? Is anything waiting on its output, and has anyone opened the output since it landed?",
+  "test_shape": "finish a job with a planted report, assert the status lists it as unread until it is acknowledged."
+ },
+ {
+  "id": "a-stored-value-with-no-live-writer-or-no-reader",
+  "heading": "A stored value with no live writer, or no reader",
+  "source": "SKILL.md",
+  "tier": 1,
+  "bitten": 2,
+  "trigger": "for each column, file or key this change stores or reads: does something live write it, and does something live read it?",
+  "test_shape": "for a new column, one test that drives its production writer and then its production reader in one live path and asserts the reader sees the value; for a removed writer, assert the reader went too. Detector `unpaired_column`: each column from CREATE TABLE and ALTER TABLE in the consumer's migration paths with no INSERT, UPDATE SET or upsert naming it, or no read naming it, in production code. Blind to JSON keys, run-dir files, meta keys and readers outside the scanned scope."
  },
  {
   "id": "a-failure-mode-inferred-not-observed",
@@ -315,22 +432,13 @@
   "test_shape": "migrate a historical store on a machine whose present state differs from the past (no weights, different adoptions) and assert the backfilled decision matches its receipt."
  },
  {
-  "id": "a-retraction-never-reaches-the-actor",
-  "heading": "A retraction never reaches the actor",
-  "source": "SKILL.md",
-  "tier": 3,
-  "bitten": 2,
-  "trigger": "has a command, plan or instruction been handed to someone who will act on it later? If it is withdrawn, what guarantees they see the withdrawal before they act?",
-  "test_shape": "none mechanical. Put any retraction first, in bold, on the channel the actor reads at the moment of acting; never reverse a handed-out command mid-message. Assume an actor who read the first version acts on it."
- },
- {
-  "id": "a-result-produced-never-read",
-  "heading": "A result produced, never read",
+  "id": "two-durable-writes-with-no-repair-for-the-gap",
+  "heading": "Two durable writes with no repair for the gap",
   "source": "SKILL.md",
   "tier": 1,
-  "bitten": 2,
-  "trigger": "did a job, eval or probe finish? Is anything waiting on its output, and has anyone opened the output since it landed?",
-  "test_shape": "finish a job with a planted report, assert the status lists it as unread until it is acknowledged."
+  "bitten": 1,
+  "trigger": "does an operation commit a row, file, flag or process and then write a second thing that refers to it? What is left if it dies between the two, and what repairs it?",
+  "test_shape": "inject a death between the two writes, run the settle or recover path, and assert no duplicate, no stranded flag, and that the stores agree. Detectors: `commit_then_link`, a helper that commits and whose returned id a second write then stores, with no shared transaction and no dedup key; `torn_append`, a line-per-record file appended with no newline repair while its reader stops at the first line it cannot parse."
  },
  {
   "id": "boundary-and-fencepost",
@@ -565,5 +673,14 @@
   "bitten": null,
   "trigger": "is a flag read from an env var, a config file, or a CLI string and then used as a boolean?",
   "test_shape": "pass `\"false\"`, `\"0\"`, `\"\"`, and unset, and assert each maps to the intended boolean. The string `\"false\"` is truthy in most languages."
+ },
+ {
+  "id": "irreplaceable-state-with-no-guard-on-its-destruction",
+  "heading": "28. Irreplaceable state with no guard on its destruction",
+  "source": "general-corpus.md",
+  "tier": 2,
+  "bitten": null,
+  "trigger": "does declarative code own something a re-run cannot rebuild: a database, a bucket of objects, a DNS zone whose delegation lives elsewhere, a volume? Can a plan destroy it, or destroy it without keeping a copy?",
+  "test_shape": "plan a change that forces replacement (rename, a changed immutable argument) and assert the plan refuses. Feed every deploy var file and assert none makes the final-snapshot skip true."
  }
 ]
