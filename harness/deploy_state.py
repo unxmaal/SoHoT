@@ -11,12 +11,14 @@ ROLLBACK_INSTALLED, ROLLBACK_VERIFIED = "rollback_installed", "rollback_verified
 DEPLOYED, ROLLED_BACK, FAILED, INTERRUPTED = "deployed", "rolled_back", "failed", "interrupted"
 #: A rollback whose store restore failed: the deploy failed and its own release still serves, on purpose (RULE #1417).
 FAILED_FORWARD = "failed_forward"
+#: A switch that died with no restart left while the store is past the previous release's schema: it waits on a repair. #1841.
+STORE_AHEAD = "store_ahead"
 
 #: The job's stages (deploys row), then the switch's (its record), then the outcomes; stage equals outcome once settled.
 JOB_STAGES = (BUILDING, SMOKING, MIGRATING, HANDED_OFF)
 SWITCH_STAGES = (SWITCHING, FLIPPED, INSTALLED, VERIFIED, ROLLING_BACK, FLIPPED_BACK, RESTORED, RESTORE_FAILED,
                  ROLLBACK_INSTALLED, ROLLBACK_VERIFIED)
-OUTCOMES = (DEPLOYED, ROLLED_BACK, FAILED, FAILED_FORWARD, INTERRUPTED)
+OUTCOMES = (DEPLOYED, ROLLED_BACK, FAILED, FAILED_FORWARD, INTERRUPTED, STORE_AHEAD)
 STAGES = (*JOB_STAGES, *SWITCH_STAGES, *OUTCOMES)
 RUNNING = frozenset(JOB_STAGES + SWITCH_STAGES)
 

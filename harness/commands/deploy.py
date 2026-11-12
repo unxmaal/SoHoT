@@ -1,4 +1,4 @@
-"""`soh deploy [status|poll|now|pause|resume]`: deploys as work-queue jobs, one per green main commit. #1506."""
+"""`soh deploy [status|poll|now|pause|resume|repair]`: deploys as work-queue jobs, one per green main commit. #1506."""
 from __future__ import annotations
 
 import os
@@ -32,6 +32,27 @@ def _poll(force: bool, sha: str, nodes: bool = False) -> int:
     return 0
 
 
+def _repair(which: str) -> int:
+    """No id: the deploys waiting on a repair; an id: do its repair (#1841)."""
+    from harness import deploy_repair
+    if not which:
+        waiting = deploy_repair.pending()
+        for line in deploy_repair.lines(waiting):
+            note(line)
+        if not waiting:
+            note("no deploy waits on a repair")
+        emit(pending=waiting)
+        return 0
+    if not which.isdigit():
+        return err(f"soh deploy repair takes a deploy number, not {which!r}")
+    got = deploy_repair.repair(int(which))
+    if not got["ok"]:
+        return err(f"deploy {which} not repaired: {got['detail']}")
+    note(f"deploy {which} repaired ({got['how']}): {got['detail']}")
+    emit(**got)
+    return 0
+
+
 def cmd_deploy(a) -> int:
     from harness import deploy
     from harness import memory_store as ms
@@ -48,6 +69,8 @@ def cmd_deploy(a) -> int:
         return 0
     if a.action == "poll":
         return _poll(False, "", nodes=True)
+    if a.action == "repair":
+        return _repair(a.sha)
     if a.action == "nodes":
         got = _nodes(retry=True)
         if got["why"] or not got["nodes"]:

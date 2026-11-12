@@ -47,18 +47,18 @@ def repo(tmp_path):
     return root
 
 
-def _sole_and_last() -> tuple[str, str, str]:
-    """A class's only row, and the last and third-to-last rows of a class with three or more."""
+def _class_and_last() -> tuple[tuple[str, ...], str, str]:
+    """Every row of the smallest class, and the last and third-to-last rows of another class with three or more."""
     backlog = registry.load_backlog()
-    sole = next(f"{cid} {rows[0]}" for cid, rows in backlog.items() if len(rows) == 1)
-    cid, rows = next((cid, rows) for cid, rows in backlog.items() if len(rows) >= 3)
-    return sole, f"{cid} {rows[-1]}", f"{cid} {rows[-3]}"
+    small, rows = min(backlog.items(), key=lambda kv: len(kv[1]))
+    cid, big = next((cid, big) for cid, big in backlog.items() if len(big) >= 3 and cid != small)
+    return tuple(f"{small} {s}" for s in rows), f"{cid} {big[-1]}", f"{cid} {big[-3]}"
 
 
 def test_dropping_rows_needs_no_other_edit_and_adding_or_swapping_one_fails(repo):
     git(repo, "checkout", "-q", "-b", "work")
-    sole, last, _ = _sole_and_last()
-    kept = [s for s in _lines(repo) if s not in (sole, last)]
+    whole, last, _ = _class_and_last()
+    kept = [s for s in _lines(repo) if s not in (*whole, last)]
     _write(repo, kept)
     _assert_no_row_joins_the_backlog(repo)
     reg = dataclasses.replace(registry.REGISTRY, root=repo)
@@ -69,7 +69,7 @@ def test_dropping_rows_needs_no_other_edit_and_adding_or_swapping_one_fails(repo
     _write(repo, sorted([*kept, new]))
     with pytest.raises(AssertionError, match=r"a-child-that-outlives-its-owner harness/new\.py:spawn"):
         _assert_no_row_joins_the_backlog(repo)
-    swapped = sorted([*(s for s in _lines() if s != sole), new])
+    swapped = sorted([*(s for s in _lines() if s != whole[0]), new])
     assert len(swapped) == len(_lines())
     _write(repo, swapped)
     with pytest.raises(AssertionError, match=r"harness/new\.py:spawn"):
@@ -77,15 +77,15 @@ def test_dropping_rows_needs_no_other_edit_and_adding_or_swapping_one_fails(repo
 
 
 def test_two_branches_dropping_different_rows_merge_cleanly_and_the_ratchet_stays_green(repo):
-    sole, last, third = _sole_and_last()
-    for name, drop in (("left", (sole, last)), ("right", (third,))):
+    whole, last, third = _class_and_last()
+    for name, drop in (("left", (*whole, last)), ("right", (third,))):
         git(repo, "checkout", "-q", "-b", name, "main")
         _write(repo, [s for s in _lines(repo) if s not in drop])
         git(repo, "commit", "-q", "-am", name)
     assert git(repo, "merge-tree", "--write-tree", "left", "right", check=False).returncode == 0
     git(repo, "checkout", "-q", "left")
     git(repo, "merge", "-q", "--no-edit", "right")
-    assert set(_lines()) - set(_lines(repo)) == {sole, last, third}
+    assert set(_lines()) - set(_lines(repo)) == {*whole, last, third}
     _assert_no_row_joins_the_backlog(repo)
 
 
