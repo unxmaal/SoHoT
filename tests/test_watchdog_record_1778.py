@@ -139,6 +139,7 @@ def _legacy(conn, subject, action, dry_run, outcome, evidence):
                  "VALUES (0, 'c', ?, ?, 0, ?, ?, ?)", (subject, action, dry_run, json.dumps(evidence), outcome))
 
 
+@pytest.mark.gauntlet("a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null", site="harness/memory_store/migrations/v102.py:data:watchdog_actions")
 def test_the_migration_reads_each_earlier_rows_fields_from_its_text_once(tmp_path):
     out = tmp_path / "run"
     conn = ms.connect()

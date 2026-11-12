@@ -94,10 +94,6 @@ a-decision-read-back-out-of-a-sentence-the-code-wrote harness/runner_gaps.py:mod
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/runs.py:class_cut_calls:detail
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/spans.py:redos:said
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/store_service.py:_inspect:said
-a-decision-read-back-out-of-a-sentence-the-code-wrote harness/watchdog.py:notified_since:outcome
-a-decision-read-back-out-of-a-sentence-the-code-wrote harness/watchdog.py:overrun_stopped:evidence
-a-decision-read-back-out-of-a-sentence-the-code-wrote harness/watchdog.py:overrun_stopped:outcome
-a-decision-read-back-out-of-a-sentence-the-code-wrote harness/watchdog.py:wake:outcome
 a-deploy-runs-two-releases-at-once harness/deploy.py:_undo:one-sided
 a-deploy-runs-two-releases-at-once harness/deploy.py:run:one-sided
 a-deploy-runs-two-releases-at-once harness/engine_smoke.py:__main__:both-phases
