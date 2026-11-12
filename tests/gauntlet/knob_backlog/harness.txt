@@ -135,5 +135,4 @@ harness/vllm.py:served(timeout)
 harness/workqueue.py:CANCEL_GRACE_S
 harness/workqueue.py:_git->subprocess.run(timeout)
 harness/workqueue.py:environ(LH_QUEUE_POLL)
-harness/workqueue.py:quiesce(wait)
 harness/workqueue.py:serve(poll)

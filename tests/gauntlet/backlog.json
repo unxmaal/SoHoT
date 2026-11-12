@@ -489,7 +489,6 @@
   "harness/throughput.py:_Peak._run",
   "harness/workqueue.py:_watch_left",
   "harness/workqueue.py:leased.keep",
-  "harness/workqueue.py:quiesce",
   "harness/workqueue.py:run_pending",
   "harness/workqueue.py:serve"
  ],

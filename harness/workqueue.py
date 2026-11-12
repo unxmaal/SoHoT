@@ -682,17 +682,6 @@ def gate(sample=None, now: float | None = None) -> tuple[bool, str]:
     return True, "memory pressure normal" if p.level is not None else "memory pressure unknown"
 
 
-def quiesce(wait=0.5, sleep=time.sleep, is_running=None, holder: int | None = None) -> bool:
-    """Pause the queue and wait until no job is running; return the prior paused state. #577."""
-    was_paused = paused()
-    if not was_paused:
-        pause(holder=holder)  # an owner's pause is never turned into a holder's. #1760
-    is_running = is_running or running
-    while is_running():
-        sleep(wait)
-    return was_paused
-
-
 def _runner_lock():
     """An fd holding the one-runner lock, or None if a runner already has it."""
     fd = os.open(root() / "runner.lock", os.O_RDWR | os.O_CREAT, 0o644)
@@ -1489,8 +1478,8 @@ def serve(poll: float = 30.0, sleep=time.sleep, popen=None,
 if __name__ == "__main__":
     import sys
     if sys.argv[1:] == ["quiesce"]:
-        print("was-paused" if quiesce(holder=queue_hold.from_env()) else "was-running")
-        sys.exit(0)
+        from harness import quiesce as _quiesce
+        sys.exit(_quiesce.cli())
     if sys.argv[1:] == ["hold-for-deploy"]:
         print("\n".join(hold_for_deploy(holder=queue_hold.from_env())), flush=True)
         sys.exit(0)
