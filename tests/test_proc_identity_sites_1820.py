@@ -1,4 +1,5 @@
 """Every stored pid is judged by harness/proc_identity: a reused pid is never taken for the process that held it (#1820)."""
+import ast
 import os
 import re
 import subprocess
@@ -64,25 +65,35 @@ def test_a_ps_that_cannot_answer_leaves_an_old_switch_row_unjudged_not_dead(monk
 
 @POSIX
 def test_a_job_pid_reused_by_another_group_leader_is_not_the_jobs_process(leader):
+    from harness import executors
     job = wq.add(["soh-batch-job"], title="batch")
     started = proc_identity.started(leader.pid)
-    wq._pid_file(job["id"]).write_text(f"{leader.pid} {started}", encoding="utf-8")
+    pid_file = wq._pid_file(job["id"])
+    pid_file.write_text(str(leader.pid), encoding="utf-8")
+    executors.started_file(pid_file).write_text(f"{leader.pid} {started}", encoding="utf-8")
     assert wq._pid_of(job["id"]) == leader.pid
-    wq._pid_file(job["id"]).write_text(f"{leader.pid} {_earlier(started)}", encoding="utf-8")
+    executors.started_file(pid_file).write_text(f"{leader.pid} {_earlier(started)}", encoding="utf-8")
     assert wq._pid_of(job["id"]) is None
+    executors.started_file(pid_file).write_text(f"{leader.pid + 1} {_earlier(started)}", encoding="utf-8")
+    assert wq._pid_of(job["id"]) == leader.pid, "a start time left for another pid is not this one's"
 
 
 @POSIX
-def test_a_jobs_pid_file_records_its_start_time_and_the_watchdog_still_reads_the_pid(tmp_path):
+def test_a_jobs_pid_file_stays_a_bare_pid_an_older_release_reads_and_its_start_time_sits_beside_it(tmp_path):
     from harness import executors, watchdog
     job = wq.add(["soh-batch-job"], title="batch")
     pid_file = wq._pid_file(job["id"])
-    script = f"import pathlib; print(pathlib.Path({str(pid_file)!r}).read_text())"
+    beside = executors.started_file(pid_file)
+    script = (f"import pathlib; print(repr(pathlib.Path({str(pid_file)!r}).read_text())); "
+              f"print(pathlib.Path({str(beside)!r}).read_text())")
     with open(tmp_path / "out.log", "w", encoding="utf-8") as out:
         child = executors.Host().run(job, [sys.executable, "-c", script], stdout=out)
-    recorded = (tmp_path / "out.log").read_text(encoding="utf-8").split()
-    assert recorded[0] == str(child.pid) and len(recorded) == 2 and re.fullmatch(r"\d+(\.\d+)?", recorded[1])
-    pid_file.write_text(" ".join(recorded), encoding="utf-8")
+    pid_text, started_line = (tmp_path / "out.log").read_text(encoding="utf-8").splitlines()[:2]
+    assert int(ast.literal_eval(pid_text).strip()) == child.pid  # the parser of every release before #1820
+    pid, started = started_line.split()
+    assert pid == str(child.pid) and re.fullmatch(r"\d+(\.\d+)?", started)
+    assert not pid_file.exists() and not beside.exists()
+    pid_file.write_text(str(child.pid), encoding="utf-8")
     assert watchdog.Probes().job_pids()[pid_file.stem] == child.pid
 
 

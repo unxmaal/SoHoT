@@ -27,7 +27,8 @@ class Host:
         from harness import workqueue as wq
         child = wq.spawn_group(argv, cwd, stdout, env)
         pid_file = wq._pid_file(job["id"])
-        pid_file.write_text(f"{child.pid} {proc_identity.started(child.pid)}".strip(), encoding="utf-8")
+        started_file(pid_file).write_text(f"{child.pid} {proc_identity.started(child.pid)}", encoding="utf-8")
+        pid_file.write_text(str(child.pid), encoding="utf-8")
         try:
             child.wait()
             left = self.stop(child.pid)
@@ -35,6 +36,7 @@ class Host:
                 stdout.write(f"stopped processes the job left running: {left}\n")
         finally:
             pid_file.unlink(missing_ok=True)
+            started_file(pid_file).unlink(missing_ok=True)
         return child
 
     def stop(self, pid: int, grace: float | None = None) -> str:
@@ -42,10 +44,19 @@ class Host:
         return wq.stop_group(pid) if grace is None else wq.stop_group(pid, grace=grace)
 
 
+def started_file(pid_file):
+    """Beside a job's pid file, "<pid> <start time>": the pid file stays a bare integer that older releases read. #1820."""
+    return pid_file.with_suffix(".started")
+
+
 def pid_record(path) -> tuple[int, str]:
-    """(pid, start time or '') from the pid file Host.run writes; OSError or ValueError when it holds none. #1820."""
-    pid, *started = path.read_text(encoding="utf-8").split()
-    return int(pid), started[0] if started else ""
+    """(pid, start time or '') for a job's pid file; '' when no start time was recorded for that pid. #1820."""
+    pid = int(path.read_text(encoding="utf-8").strip())
+    try:
+        got = started_file(path).read_text(encoding="utf-8").split()
+    except OSError:
+        return pid, ""
+    return pid, got[1] if len(got) == 2 and got[0] == str(pid) else ""
 
 
 EXECUTORS: dict[str, Executor] = {HOST: Host()}
