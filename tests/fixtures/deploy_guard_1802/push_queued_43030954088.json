@@ -1,0 +1,94 @@
+{
+ "event": "push",
+ "createdAt": "2026-11-11T13:38:28Z",
+ "run": {
+  "databaseId": 43030954088,
+  "conclusion": "",
+  "headSha": "30a48cac6cb1b481a5258b633f1e3adb5db20ae1",
+  "status": "queued",
+  "url": "https://github.com/unxmaal/SoHoT/actions/runs/43030954088"
+ },
+ "jobs": [
+  {
+   "name": "store-touched",
+   "status": "completed",
+   "conclusion": "success",
+   "startedAt": "2026-11-11T13:57:29Z",
+   "completedAt": "2026-11-11T13:57:36Z",
+   "databaseId": 130567458129,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43030954088/job/130567458129"
+  },
+  {
+   "name": "check-macos",
+   "status": "queued",
+   "conclusion": "",
+   "startedAt": "2026-11-11T13:57:26Z",
+   "completedAt": "0001-01-01T00:00:00Z",
+   "databaseId": 130567458727,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43030954088/job/130567458727"
+  },
+  {
+   "name": "coverage-map",
+   "status": "completed",
+   "conclusion": "skipped",
+   "startedAt": "2026-11-11T13:57:26Z",
+   "completedAt": "2026-11-11T13:57:26Z",
+   "databaseId": 130567460091,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43030954088/job/130567460091"
+  },
+  {
+   "name": "mutation-plan",
+   "status": "completed",
+   "conclusion": "skipped",
+   "startedAt": "2026-11-11T13:57:26Z",
+   "completedAt": "2026-11-11T13:57:26Z",
+   "databaseId": 130567460107,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43030954088/job/130567460107"
+  },
+  {
+   "name": "mutation (${{ matrix.module }}${{ ((matrix.shard && format(' {0}', matrix.shard)) || '') }})",
+   "status": "completed",
+   "conclusion": "skipped",
+   "startedAt": "2026-11-11T13:57:26Z",
+   "completedAt": "2026-11-11T13:57:26Z",
+   "databaseId": 130567460458,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43030954088/job/130567460458"
+  },
+  {
+   "name": "check-linux",
+   "status": "completed",
+   "conclusion": "skipped",
+   "startedAt": "2026-11-11T13:57:26Z",
+   "completedAt": "2026-11-11T13:57:26Z",
+   "databaseId": 130567460581,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43030954088/job/130567460581"
+  },
+  {
+   "name": "mutation-changed",
+   "status": "completed",
+   "conclusion": "skipped",
+   "startedAt": "2026-11-11T13:57:27Z",
+   "completedAt": "2026-11-11T13:57:26Z",
+   "databaseId": 130567462638,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43030954088/job/130567462638"
+  },
+  {
+   "name": "check-windows",
+   "status": "completed",
+   "conclusion": "skipped",
+   "startedAt": "2026-11-11T13:57:32Z",
+   "completedAt": "2026-11-11T13:57:26Z",
+   "databaseId": 130567509482,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43030954088/job/130567509482"
+  },
+  {
+   "name": "check-postgres",
+   "status": "completed",
+   "conclusion": "skipped",
+   "startedAt": "2026-11-11T13:57:37Z",
+   "completedAt": "2026-11-11T13:57:36Z",
+   "databaseId": 130567549133,
+   "url": "https://github.com/unxmaal/SoHoT/actions/runs/43030954088/job/130567549133"
+  }
+ ]
+}

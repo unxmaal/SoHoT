@@ -6,12 +6,13 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
   schedule:
-    # 06:00 UTC: Linux and Windows run on main overnight, after the day's merges.
-    - cron: "0 6 * * *"
+    # 06:17 UTC: Linux and Windows run on main overnight, after the day's merges. "0 6" started 6-9 h late (#1802).
+    - cron: "17 6 * * *"
   workflow_dispatch:
 
 concurrency:
-  group: check-${{ github.event_name }}-${{ github.ref }}
+  # A push gets its own group: in a shared one the next merge's run waited for this whole run, check-postgres too (#1802).
+  group: check-${{ github.event_name }}-${{ github.event_name == 'push' && github.sha || github.ref }}
   # A main run always finishes, or merges faster than check-macos would leave no main sha green (#1702).
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
@@ -520,6 +521,8 @@ jobs:
     # One job per module, and adopt.py in two shards: it outgrew 120 minutes and a cancelled job reports nothing (#840, #1588).
     strategy:
       fail-fast: false
+      # macOS runners are 5 at once and handed out oldest job first; queued legs starved main's check-macos (#1802).
+      max-parallel: 2
       matrix:
         include:
           - module: harness/memory_store/transitions.py
@@ -546,7 +549,7 @@ jobs:
         # Fails on a new surviving mutant, or on a pinned one that is now killed and still listed.
         run: make mutation MUTATION_ARGS="--module ${{ matrix.module }}${{ matrix.shard && format(' --shard {0}', matrix.shard) || '' }} --found .logs/mutation-found.json"
 
-      - name: Survivors for `python -m tests.gauntlet.mutation pin --from`
+      - name: Survivors for `gauntlet mutation --config tests.gauntlet.mutation:CONFIG pin --from`
         if: always()
         uses: actions/upload-artifact@v4
         with:

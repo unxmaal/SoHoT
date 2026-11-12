@@ -262,7 +262,7 @@ def _usage(conn) -> dict:
     except Exception:  # noqa: BLE001
         out = {"real_use": {}, "usage_warnings": []}
     from harness import gateway_switch
-    return {**out, "failed_switches": gateway_switch.unresolved(conn)}
+    return {**out, "failed_switches": gateway_switch.unresolved(conn), "gateway_switch": gateway_switch.view(conn)}
 
 
 def real_use_rows(real: dict) -> str:
@@ -289,6 +289,9 @@ def _real_use_section(now: dict) -> str:
     warns += "".join(f'<p><span class="tag bad">switch failed</span> sohot-{_esc(f["lane"])} -&gt; '
                      f'{_esc(f["new_spec"])}, {f["attempts"]} attempt(s): {_esc(f["reason"])}</p>'
                      for f in now.get("failed_switches") or [])
+    sw = now.get("gateway_switch") or {}
+    if sw.get("state") in ("orphaned", "stale"):
+        warns += f'<p><span class="tag bad">switch {_esc(sw["state"])}</span> {_esc(sw["why"])}</p>'
     body = (f"{REAL_USE_HEAD}\n{real_use_rows(real)}\n</table>" if real else
             '<p class="note">No requests through the gateway in the last 7 days.</p>')
     return f"""

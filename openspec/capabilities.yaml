@@ -18,6 +18,8 @@ capabilities:
       - harness/item_lease.py
       - harness/admission.py
       - harness/job_state.py
+      - harness/proc_identity.py
+      - harness/paused_jobs.py
 
   - name: watchdog
     summary: The periodic judge of running jobs and served models, acting from a fixed set and recording each act.
@@ -39,6 +41,7 @@ capabilities:
       - harness/effects.py
       - harness/paired.py
       - harness/gateway_switch.py
+      - harness/gateway_switch_state.py
 
   - name: measure
     summary: The measure tier, its pauses, looks and resumes, and the order the measure queue is spent in.
@@ -195,6 +198,7 @@ capabilities:
       - harness/throughput.py
       - harness/purpose.py
       - harness/owned.py
+      - harness/node_reach.py
 
   - name: local-delegation
     summary: local_complete and local_decide over MCP or `soh local`, handed to a lane's adopted local model, and what became of each answer.
@@ -493,6 +497,7 @@ capabilities:
       - harness/ci_rerun.py
       - harness/dora.py
       - harness/deploy_state.py
+      - harness/deploy_hold.py
       - harness/store_ahead.py
 
   - name: repo-hygiene

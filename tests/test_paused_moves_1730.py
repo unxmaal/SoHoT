@@ -1,7 +1,7 @@
 """paused_runs moves only through paused.MOVES by compare-and-swap, is scoped to this machine, and a run dir has one name. #1730."""
+import functools
 import itertools
 import json
-import threading
 import time
 
 import pytest
@@ -9,6 +9,7 @@ import pytest
 from evals import watch
 from harness import memory_store as ms
 from harness import paused, run_state, watchdog
+from tests.racing import race
 
 INC, CH = "llamacpp:Inc", "org/challenger"
 
@@ -78,21 +79,17 @@ def test_two_racing_settles_one_wins_and_the_loser_writes_nothing(db):
         pid = _save(conn)
     finally:
         conn.close()
-    gate, got = threading.Barrier(2), {}
+    got = {}
 
-    def settle(to):
+    def settle(to, start):
         c = db()
         try:
-            gate.wait()
+            start()
             got[to] = paused.settle(c, pid, to, f"by {to}")
         finally:
             c.close()
 
-    threads = [threading.Thread(target=settle, args=(to,)) for to in (paused.DONE, paused.STALE)]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join()
+    race([functools.partial(settle, to) for to in (paused.DONE, paused.STALE)])
     assert sorted(got.values()) == [False, True]
     (won,) = [to for to, ok in got.items() if ok]
     conn = db()

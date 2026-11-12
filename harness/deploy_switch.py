@@ -190,22 +190,48 @@ def _repair(rec: dict, cwd: str, log, end: float) -> None:
     log.write(f"--- repair before smoke: {why or 'done'}\n")
 
 
+def _size(log) -> int | None:
+    try:
+        log.flush()
+        return os.fstat(log.fileno()).st_size
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
+def _audited(rec: dict, log, start: int | None, why: str) -> str:
+    """why; the audit checks the failed step's output names as FAIL go in rec['audit_failed'] for the poll. #1805."""
+    if start is not None:
+        try:
+            from harness import deploy_hold  # only on a failed step: the switch starts on the stdlib and deploy_state
+            log.flush()
+            with open(log.name, "rb") as f:
+                f.seek(start)
+                got = deploy_hold.failed(f.read().decode("utf-8", "replace"))
+        except (OSError, ValueError, AttributeError, ImportError):
+            got = {}
+        if got:
+            rec["audit_failed"] = got
+    return why
+
+
 def forward(rec: dict, log, end: float, path=None) -> str:
     """Switch to the new release, reinstall its units, verify; '' when it all passed by `end` (monotonic)."""
     flip(Path(rec["link"]), Path(rec["release"]))
     rec["switched_at"] = time.time()
     _keep(rec, ds.FLIPPED, path)
+    start = _size(log)
     why = _step(rec, rec["install"], rec["release"], INSTALL_TIMEOUT_S, log, "install",
                 site_knob="harness/deploy_switch.py:INSTALL_TIMEOUT_S", end=end)
     if why:
-        return why
+        return _audited(rec, log, start, why)
     _keep(rec, ds.INSTALLED, path)
     _repair(rec, rec["release"], log, end)
     for argv in rec["verify"]:
+        start = _size(log)
         why = _step(rec, argv, rec["release"], VERIFY_TIMEOUT_S, log, " ".join(map(str, argv[-2:])),
                     site_knob="harness/deploy_switch.py:VERIFY_TIMEOUT_S", end=end)
         if why:
-            return why
+            return _audited(rec, log, start, why)
     _keep(rec, ds.VERIFIED, path)
     return ""
 

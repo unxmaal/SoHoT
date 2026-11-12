@@ -39,7 +39,7 @@ diagram:                  ## check the front page diagram's model against the re
 
 mutation:                 ## NIGHTLY: mutate the core modules, ratchet survivors against the pin
 	@mkdir -p .logs
-	uv run --group mutation --group mcp python -m tests.gauntlet.mutation run $(MUTATION_ARGS) \
+	uv run --group mutation --group mcp gauntlet mutation --config tests.gauntlet.mutation:CONFIG run $(MUTATION_ARGS) \
 	  > .logs/mutation.log 2>&1; status=$$?; tail -n 40 .logs/mutation.log; exit $$status
 
 secret-gh:                ## put a GitHub token in the cluster, with no trailing newline
