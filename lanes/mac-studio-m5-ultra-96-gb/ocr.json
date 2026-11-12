@@ -8,24 +8,22 @@
     "about": "",
     "candidate": "hf-ocr/PaddleOCR-VL-1.6",
     "cases": 448,
-    "first_s": 19.746,
-    "median_s": 7.476,
+    "first_s": 18.149,
+    "median_s": 7.639,
     "metrics": {
-     "busy_wait_s": 64.006,
-     "cer": 0.8116,
-     "engine_rerun_wait_s": 64.006
+     "cer": 0.6458
     },
     "model": "hf-ocr/PaddleOCR-VL-1.6",
     "not_run": "",
-    "pass_rate": 0.784,
-    "passed": 279,
+    "pass_rate": 0.828,
+    "passed": 371,
     "peak_gb": 0.01,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-07T06:29:12Z",
+    "run_at": "2026-11-11T09:17:51Z",
     "served_as": "",
     "source": "",
-    "total": 356,
+    "total": 448,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -92,22 +90,22 @@
     "about": "",
     "candidate": "osocr/auto",
     "cases": 448,
-    "first_s": 0.304,
-    "median_s": 0.303,
+    "first_s": 0.423,
+    "median_s": 0.302,
     "metrics": {
-     "cer": 0.2104
+     "cer": 0.1696
     },
     "model": "osocr/auto",
     "not_run": "",
-    "pass_rate": 0.649,
-    "passed": 231,
+    "pass_rate": 0.721,
+    "passed": 323,
     "peak_gb": 0.25,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-07T06:29:12Z",
+    "run_at": "2026-11-11T09:17:51Z",
     "served_as": "",
     "source": "",
-    "total": 356,
+    "total": 448,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -360,50 +358,48 @@
     {
      "about": "",
      "candidate": "hf-ocr/PaddleOCR-VL-1.6",
-     "first_s": 19.746,
-     "median_s": 7.476,
+     "first_s": 18.149,
+     "median_s": 7.639,
      "metrics": {
-      "busy_wait_s": 64.006,
-      "cer": 0.8116,
-      "engine_rerun_wait_s": 64.006
+      "cer": 0.6458
      },
      "model": "hf-ocr/PaddleOCR-VL-1.6",
      "not_run": "",
-     "pass_rate": 0.784,
-     "passed": 279,
+     "pass_rate": 0.828,
+     "passed": 371,
      "peak_gb": 0.01,
      "reference": false,
-     "run_at": "2026-11-07T06:29:12Z",
+     "run_at": "2026-11-11T09:17:51Z",
      "served_as": "",
      "source": "",
-     "total": 356,
+     "total": 448,
      "ttft_median_s": null,
      "ttft_p95_s": null
     },
     {
      "about": "",
      "candidate": "osocr/auto",
-     "first_s": 0.304,
-     "median_s": 0.303,
+     "first_s": 0.423,
+     "median_s": 0.302,
      "metrics": {
-      "cer": 0.2104
+      "cer": 0.1696
      },
      "model": "osocr/auto",
      "not_run": "",
-     "pass_rate": 0.649,
-     "passed": 231,
+     "pass_rate": 0.721,
+     "passed": 323,
      "peak_gb": 0.25,
      "reference": false,
-     "run_at": "2026-11-07T06:29:12Z",
+     "run_at": "2026-11-11T09:17:51Z",
      "served_as": "",
      "source": "",
-     "total": 356,
+     "total": 448,
      "ttft_median_s": null,
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-11-07T06:29:12Z",
-   "runs": 2
+   "run_at": "2026-11-11T09:17:51Z",
+   "runs": 3
   },
   {
    "cases": 450,
@@ -551,7 +547,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-09T08:03:20Z",
+ "generated_at": "2026-11-12T04:30:51Z",
  "knobs": [],
  "lane": {
   "cases": 448,
@@ -570,17 +566,15 @@
   "adopted_at": "2026-11-07T06:29:12Z",
   "adopted_how": "measured",
   "incumbent": "osocr:auto",
-  "measured_at": "2026-11-07T06:29:12Z",
-  "median_s": 7.476,
+  "measured_at": "2026-11-11T09:17:51Z",
+  "median_s": 7.639,
   "metrics": {
-   "busy_wait_s": 64.006,
-   "cer": 0.8116,
-   "engine_rerun_wait_s": 64.006
+   "cer": 0.6458
   },
   "not_run": "",
   "parked": "",
   "parked_until": "",
-  "pass_rate": 0.784,
+  "pass_rate": 0.828,
   "serves": "hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6",
   "serves_model": "hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6",
   "stale": false
