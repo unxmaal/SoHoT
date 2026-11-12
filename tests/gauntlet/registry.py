@@ -13,7 +13,7 @@ REPO = HERE.parent.parent
 # The agent lane's case repos are broken on purpose; they are inputs to a model, not code here.
 NOT_PRODUCTION = ("tests/", "evals/cases/")
 # Unbound hits pinned when the detectors landed; lower it as the backlog is bound.
-BACKLOG_PIN = 860
+BACKLOG_PIN = 857
 
 
 # make precheck runs only these; the rest are whole-tree costly and stay in make check (#1832).
@@ -41,6 +41,8 @@ MOVES = (
               terminal=(download_state.REMOVED,), states=download_state.STATES),
     MoveTable("harness/gateway_switch_state.py:MOVES", gateway_switch_state.MOVES, initial=(gateway_switch_state.NONE,),
               terminal=(gateway_switch_state.SERVING, gateway_switch_state.FAILED), states=gateway_switch_state.STATES),
+    MoveTable("harness/exclusive.py:MOVES", exclusive.MOVES, initial=(exclusive.FREE,),
+              states=(exclusive.FREE, exclusive.RESERVED, exclusive.LOADING, exclusive.LAPSED, exclusive.ABANDONED)),
 )
 
 MAINS = ("nodes", "install_env", "engine_smoke", "slot_probe", "router", "interactive")
@@ -94,10 +96,7 @@ OPEN_ISSUES = {
     1796: (OR, (r":default:",)),
 }
 
-MOVE_WAIVERS = {
-    "harness/exclusive.py:MOVES": f"#1821: state_of derives {exclusive.ABANDONED!r} when a holder dies, but no move "
-                                  "enters it, so the check finds it unreachable; register it when #1821 lists that move",
-}
+MOVE_WAIVERS: dict = {}
 
 REGISTRY = Registry(
     root=REPO,
