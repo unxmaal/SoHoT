@@ -1,7 +1,4 @@
 {
- "a-child-that-outlives-its-owner": [
-  "harness/vllm.py:served"
- ],
  "a-closed-table-fronting-an-open-set": [
   "evals/core.py:ASSERTION_KEYS",
   "evals/core.py:CHECKERS",

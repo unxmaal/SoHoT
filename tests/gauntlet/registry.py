@@ -13,7 +13,7 @@ REPO = HERE.parent.parent
 # The agent lane's case repos are broken on purpose; they are inputs to a model, not code here.
 NOT_PRODUCTION = ("tests/", "evals/cases/")
 # Unbound hits pinned when the detectors landed; lower it as the backlog is bound.
-BACKLOG_PIN = 861
+BACKLOG_PIN = 860
 
 
 # make precheck runs only these; the rest are whole-tree costly and stay in make check (#1832).
@@ -78,7 +78,6 @@ VS, OR = "a-deploy-runs-two-releases-at-once", "an-order-the-code-needs-but-does
 # Backlog rows an open #1748 high names: {issue: (class, site patterns)}; each pattern must still match a backlog row.
 OPEN_ISSUES = {
     1757: (CR, (r"^evals/watch\.py:Checkpoint\.add$",)),
-    1759: (OW, (r"^harness/vllm\.py:served$",)),
     1762: (WT, (r"^harness/workqueue\.py:quiesce$",)),
     1763: (WT, (r"^harness/exclusive\.py:_beating\.keep$",)),
     1769: (SC, (r":null-scope$",)),

@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from harness import memory_store as ms
-from harness import owned, vllm
+from harness import owned, proc_identity, vllm
 from harness import watchdog as wd
 
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="process groups and start times are POSIX")
@@ -139,6 +139,20 @@ def test_a_recorded_pid_now_naming_another_process_is_not_killed(strays):
     time.sleep(0.3)
     assert stranger.poll() is None, "the reaper killed a process that only reuses a recorded pid"
     assert _records() == []
+
+
+def test_a_live_owner_whose_start_time_cannot_be_read_is_not_taken_for_gone(monkeypatch, strays):
+    child = subprocess.Popen(["sleep", "300"], start_new_session=True)
+    strays.append(child.pid)
+    owned.root().mkdir(parents=True, exist_ok=True)
+    owner = owned.identity(os.getpid())
+    record = owned.root() / f"{owner['pid']}-live.json"
+    record.write_text(json.dumps({"owner": owner, "children": [{**owned.identity(child.pid), "cmd": "sleep 300"}]}),
+                      encoding="utf-8")
+    monkeypatch.setattr(proc_identity, "_proc", lambda pid: None)
+    assert owned.reap(grace=1) == []
+    assert child.poll() is None, "an unread start time took a live owner for gone and its server was stopped"
+    assert record.exists()
 
 
 def test_the_watchdog_wake_reaps_a_dead_owner_s_server(tmp_path, strays):
