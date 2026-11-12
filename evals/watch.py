@@ -9,7 +9,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from harness import run_state
+from harness import proc_identity, run_state
 
 #: Exit status of a run paused at --stop-at or on request, rows checkpointed. #813.
 PAUSED = 75
@@ -304,7 +304,8 @@ class Progress:
                "specs": self.specs, "planned_s_per_case": self.eye.planned,
                "observed_s_per_case": {k: self.eye.observed(k) for k in self.eye.walls},
                "started_at": self.started, "last_progress_at": self.at,
-               "pid": os.getpid(), "pgid": pgid, "pause_file": str(self.path.parent / PAUSE_FILE),
+               "pid": os.getpid(), "pgid": pgid, "pid_started": proc_identity.started(os.getpid()),
+               "pause_file": str(self.path.parent / PAUSE_FILE),
                "run_id": run_id}
         tmp = self.path.with_suffix(".tmp")
         tmp.write_text(json.dumps(got, indent=2, default=str), encoding="utf-8")
