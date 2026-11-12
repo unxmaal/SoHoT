@@ -122,6 +122,10 @@ def blocked(running=None) -> str:
     """Why a deploy may not start now, or ''; the queue also holds it behind the contention gate (#1509)."""
     if paused():
         return "deploys are paused (soh deploy resume)"
+    from harness import deploy_repair
+    waiting = deploy_repair.lines(deploy_repair.pending())
+    if waiting:
+        return "; ".join(waiting)
     from harness import sweep_guard
     found = (running or sweep_guard.running)(paths.home())
     if found:
@@ -829,13 +833,45 @@ def _undo(rec: dict) -> tuple[str, bool]:
             f"{rec['backup']} (schema {got})"), True
 
 
-def recover(now: float | None = None, alive=wq.alive) -> list[dict]:
-    """Undo each deploy that died before its switch started, reading no store row: settle runs it first. #1752."""
+def _speaks(schema: int) -> bool:
+    from harness.memory_store import migrations
+    return schema <= migrations.SCHEMA_VERSION
+
+
+def _stranded(rec: dict, path: Path, now: float, spawn) -> dict | None:
+    """A dead switch past the migration: resumed here if this code cannot open the store, else STORE_AHEAD once spent. #1841."""
+    from harness import deploy_repair
+    got = deploy_repair.ahead(rec)
+    if got is None:
+        return None
+    failed = ""
+    if int(rec.get("resumed") or 0) < RESUMES:
+        if _speaks(got["store"]):
+            return None
+        failed = _resume(rec, {"id": rec.get("id", path.stem)}, now, spawn)
+        if not failed:
+            return None
+    else:
+        rec.setdefault("timed_out", []).append({"site": "harness/deploy.py:RESUMES",
+                                                "what": f"deploy {rec.get('id', path.stem)} resume"})
+    why = f"the switch died at {rec['stage']} " + (f"and {failed}" if failed else "with no restart left")
+    return deploy_repair.strand(rec, path, got, why, now)
+
+
+def recover(now: float | None = None, alive=wq.alive, spawn=None) -> list[dict]:
+    """Undo each deploy that died before its switch, end one whose dead switch left the store ahead; no store read. #1752."""
     now = time.time() if now is None else now
     out = []
     for path in sorted(records_dir().glob("*.json")):
         rec = _read(path)
-        if not rec or rec.get("outcome") or rec.get("stage") not in ds.JOB_STAGES or _running(rec, now, alive):
+        if not rec or rec.get("outcome") or _running(rec, now, alive):
+            continue
+        if rec.get("stage") in ds.SWITCH_STAGES:
+            got = _stranded(rec, path, now, spawn or respawn)
+            if got:
+                out.append(got)
+            continue
+        if rec.get("stage") not in ds.JOB_STAGES:
             continue
         step = rec.get("taking") or rec["stage"]
         head = (f"the switch it handed off never started within {HANDOFF_GRACE_S:.0f} s" if step in (RECORD, ds.HANDED_OFF)
@@ -878,25 +914,33 @@ def settle(conn=None, now: float | None = None, alive=wq.alive, spawn=None) -> l
     """Close every unfinished deploy of this machine whose job or switch has ended; a deploy job is never left running."""
     now = time.time() if now is None else now
     spawn = spawn or respawn
-    settled = []
     # Before the store is opened: a deploy that died after migrating leaves it ahead of this code. #1752.
-    recover(now, alive)
-    with wq._store(conn) as c:
-        where, args = wq._here(c)
-        for row in c.execute(f"SELECT * FROM deploys WHERE outcome = '' AND {where} ORDER BY id", args).fetchall():
-            try:
-                got = _settle_one(c, dict(row), now, alive, spawn)
-            except ds.IllegalMove as exc:
-                print(f"deploy settle: {exc}", file=sys.stderr)
-                continue
-            if got:
-                settled.append(got)
-        claimed, cargs = wq._claimed(c)
-        for job in c.execute(f"SELECT id FROM jobs WHERE kind = ? AND state = ? AND {claimed} AND id NOT IN "
-                             "(SELECT job_id FROM deploys WHERE job_id IS NOT NULL)", (KIND, wq.RUNNING, *cargs)):
-            if wq._pid_of(job["id"]) is None:
-                _close_job(c, job["id"], wq.FAILED, None, "interrupted before it recorded a deploy", now)
-                settled.append({"job": wq.label(job["id"]), "outcome": INTERRUPTED})
+    done = recover(now, alive, spawn)
+    settled = []
+    try:
+        with wq._store(conn) as c:
+            where, args = wq._here(c)
+            for row in c.execute(f"SELECT * FROM deploys WHERE outcome = '' AND {where} ORDER BY id", args).fetchall():
+                try:
+                    got = _settle_one(c, dict(row), now, alive, spawn)
+                except ds.IllegalMove as exc:
+                    print(f"deploy settle: {exc}", file=sys.stderr)
+                    continue
+                if got:
+                    settled.append(got)
+            claimed, cargs = wq._claimed(c)
+            for job in c.execute(f"SELECT id FROM jobs WHERE kind = ? AND state = ? AND {claimed} AND id NOT IN "
+                                 "(SELECT job_id FROM deploys WHERE job_id IS NOT NULL)", (KIND, wq.RUNNING, *cargs)):
+                if wq._pid_of(job["id"]) is None:
+                    _close_job(c, job["id"], wq.FAILED, None, "interrupted before it recorded a deploy", now)
+                    settled.append({"job": wq.label(job["id"]), "outcome": INTERRUPTED})
+    except RuntimeError as exc:
+        from harness import store_ahead
+        if store_ahead.newer(exc) is None:
+            raise
+        # The linked release's worker cannot open a store a deploy left ahead of it: recover() was all it could do.
+        print(f"deploy settle: {exc}", file=sys.stderr)
+        return done
     return settled
 
 
@@ -948,6 +992,12 @@ def _settle_one(c, row: dict, now: float, alive, spawn=None) -> dict | None:
             else:
                 from harness import cuts
                 cuts.cut("harness/deploy.py:RESUMES", f"deploy {row['id']} resume", kept=0, dropped=1, conn=c)
+            from harness import deploy_repair
+            got = deploy_repair.ahead(rec)
+            if got is not None:
+                deploy_repair.strand(rec, record_path(row["id"]), got, f"the switch died at {rec['stage']}"
+                                     + (f" and {failed}" if failed else " with no restart left"), now)
+                return _settle_one(c, row, now, alive, spawn)
         seen = view({**row, **{k: rec[k] for k in ("release", "previous") if rec.get(k)}}, rec, Path(rec["link"]))
         why = "; ".join(filter(None, (f"the switch stopped at {rec.get('stage')} without an outcome", failed, said(seen))))
         _lift(rec)
