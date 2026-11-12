@@ -2,13 +2,15 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
-import sys
 import time
 
-from harness import store
+from harness import proc_identity, store
 
 PS_TIMEOUT_S = 5.0
+#: A start time as proc_identity keeps it; any other gateway_switch_runs.started is a ps lstart written before #1820.
+_PROC_STARTED = re.compile(r"\d+(\.\d+)?")
 
 NONE = ""
 REQUESTED, WRITING, RESTARTING, SERVING, FAILED = "requested", "writing", "restarting", "serving", "failed"
@@ -122,9 +124,17 @@ def get(conn, rid) -> dict | None:
 
 
 def started(pid: int) -> str:
-    """The process's start time as ps prints it, '' when it cannot say: with the group, what tells a reused pid apart."""
-    if sys.platform == "win32":
-        return ""
+    """The process's start time as proc_identity reads it, '' when it cannot say. #1820."""
+    return proc_identity.started(pid)
+
+
+def me() -> dict:
+    """This process's identity, for claim(): pid, process group and start time."""
+    return proc_identity.identity(os.getpid())
+
+
+def _lstart(pid: int) -> str:
+    """The start time as `ps -o lstart` prints it, how rows claimed before #1820 recorded it; '' when it cannot say."""
     try:
         out = subprocess.run(["ps", "-o", "lstart=", "-p", str(int(pid))], capture_output=True,
                              text=True, timeout=PS_TIMEOUT_S)
@@ -133,30 +143,12 @@ def started(pid: int) -> str:
     return " ".join(out.stdout.split()) if out.returncode == 0 else ""
 
 
-def me() -> dict:
-    """This process's identity, for claim(): pid, process group and start time."""
-    pid = os.getpid()
-    pgid = os.getpgid(0) if sys.platform != "win32" else None
-    return {"pid": pid, "pgid": pgid, "started": started(pid)}
-
-
 def alive(row: dict) -> bool | None:
     """Whether the process a switch row names still runs: same pid, same group and same start time; None when it cannot say."""
-    pid = row.get("pid")
-    if not pid or sys.platform == "win32":
-        return None
-    try:
-        group = os.getpgid(int(pid))
-    except ProcessLookupError:
+    recorded = str(row.get("started") or "")
+    if not recorded or not row.get("pid") or _PROC_STARTED.fullmatch(recorded):
+        return proc_identity.same(row)
+    if proc_identity.same({**row, "started": ""}) is False:
         return False
-    except OSError:
-        return None
-    if row.get("pgid") is not None and group != int(row["pgid"]):
-        return False
-    if row.get("started"):
-        now = started(int(pid))
-        if not now:
-            return None
-        if now != row["started"]:
-            return False
-    return True
+    now = _lstart(int(row["pid"]))
+    return (now == recorded) if now else None

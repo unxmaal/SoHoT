@@ -22,6 +22,7 @@ if __name__ == "__main__":
     sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from harness import deploy_state as ds  # noqa: E402 - after the release root joins sys.path
+from harness import proc_identity  # noqa: E402
 
 #: How long the new release's `launchd.sh reinstall` may take: the worker quiesce, deferred periodic units, preflight and the audit.
 INSTALL_TIMEOUT_S = 3600.0
@@ -236,13 +237,24 @@ def forward(rec: dict, log, end: float, path=None) -> str:
     return ""
 
 
+#: Stages a rollback has reached; a resumed rollback goes on from the one recorded. #1753.
+_BACK = (ds.ROLLING_BACK, ds.FLIPPED_BACK, ds.RESTORED, ds.RESTORE_FAILED, ds.ROLLBACK_INSTALLED, ds.ROLLBACK_VERIFIED)
+
+
 def rollback(rec: dict, why: str, log, end: float, path=None) -> str:
     """Back to the previous release, the store backup if a migration ran, its units; what the rollback itself found."""
-    _keep(rec, ds.ROLLING_BACK, path)
-    flip(Path(rec["link"]), Path(rec["previous"]))
-    _keep(rec, ds.FLIPPED_BACK, path)
+    if rec.get("stage") not in _BACK:
+        rec["rollback_why"] = why
+        _keep(rec, ds.ROLLING_BACK, path)
     said = []
-    if rec.get("migrated") and rec.get("backup"):
+    if rec["stage"] == ds.ROLLING_BACK:
+        flip(Path(rec["link"]), Path(rec["previous"]))
+        _keep(rec, ds.FLIPPED_BACK, path)
+    if rec["stage"] == ds.RESTORE_FAILED:
+        flip(Path(rec["link"]), Path(rec["release"]))
+        return (f"the store restore had FAILED ({rec.get('restore_failed', '')}); the link is back on "
+                f"{rec['release']} and its units stay")
+    if rec["stage"] == ds.FLIPPED_BACK and rec.get("migrated") and rec.get("backup"):
         try:
             said.append(f"store restored from {rec['backup']} (schema {restore(Path(rec['backup']), Path(rec['db']))})")
         except Exception as exc:  # noqa: BLE001 - any failure leaves the store on the new schema, handled below
@@ -253,11 +265,13 @@ def rollback(rec: dict, why: str, log, end: float, path=None) -> str:
             return (f"store restore from {rec['backup']} FAILED ({named(exc)}); the store keeps the new schema, so "
                     f"the link is back on {rec['release']} and its units stay")
         _keep(rec, ds.RESTORED, path)
-    bad = _step(rec, rec["rollback_install"], rec["previous"], INSTALL_TIMEOUT_S, log, "rollback install",
-                site_knob="harness/deploy_switch.py:INSTALL_TIMEOUT_S", end=end)
-    said.append(bad or "previous release reinstalled")
-    _keep(rec, ds.ROLLBACK_INSTALLED, path)
-    if not bad and rec["verify"]:
+    bad = ""
+    if rec["stage"] in (ds.FLIPPED_BACK, ds.RESTORED):
+        bad = _step(rec, rec["rollback_install"], rec["previous"], INSTALL_TIMEOUT_S, log, "rollback install",
+                    site_knob="harness/deploy_switch.py:INSTALL_TIMEOUT_S", end=end)
+        said.append(bad or "previous release reinstalled")
+        _keep(rec, ds.ROLLBACK_INSTALLED, path)
+    if rec["stage"] == ds.ROLLBACK_INSTALLED and not bad and rec["verify"]:
         # The new release's verb: the previous one may predate it, and the files it moves stay moved. #1674.
         _repair(rec, rec["release"], log, end)
         bad = _step(rec, rec["verify"][0], rec["previous"], VERIFY_TIMEOUT_S, log, "smoke after rollback",
@@ -280,6 +294,15 @@ def alert(rec: dict, message: str, log) -> None:
         log.write(f"alert did not run: {exc}\n")
 
 
+def _resumed(rec: dict, died: str) -> str:
+    """'' when a dead switch had verified its release, else why its rollback runs or goes on."""
+    if died == ds.VERIFIED:
+        return ""
+    if died in _BACK:
+        return f"{rec.get('rollback_why') or 'the switch was rolling back'}; the switch died at {died} and was resumed"
+    return f"the switch died at {died} and was resumed to roll back"
+
+
 def _end(rec: dict) -> None:
     """The outcome becomes the stage; one MOVES does not list from where the switch stopped ends failed, never unrecorded."""
     try:
@@ -294,14 +317,26 @@ def switch(path: Path) -> dict:
     rec = load(path)
     # Launchd gave this process no shell profile; every step runs in what the owner's install recorded. #1518.
     os.environ.update(read_install_env(rec["install_env"]) if rec.get("install_env") else {})
-    # The record handed to the switch is the hand-off.
+    # The record handed to the switch is the hand-off; settle hands a dead switch back with `resume` naming its stage. #1753.
     rec.setdefault("stage", ds.HANDED_OFF)
-    rec.update(pid=os.getpid(), switch_started=time.time())
-    _keep(rec, ds.SWITCHING, path)
+    died = rec.pop("resume", "")
+    if died and (died != rec["stage"] or died not in ds.SWITCH_STAGES or rec.get("outcome")):
+        raise ds.IllegalMove(f"deploy: settle handed a resume at {died}, but the record is at {rec['stage']}")
+    # Its pid with group and start time: a pid alone is reused after a reboot. #1773.
+    me = proc_identity.identity(os.getpid())
+    rec.update(pid=me["pid"], identity=me, switch_started=time.time())
+    if died:
+        save(path, rec)
+    else:
+        _keep(rec, ds.SWITCHING, path)
     Path(rec["log"]).parent.mkdir(parents=True, exist_ok=True)
     with open(rec["log"], "a", encoding="utf-8") as log:
         try:
-            why = forward(rec, log, time.monotonic() + SWITCH_DEADLINE_S, path)
+            if died:
+                log.write(f"--- resuming deploy {rec.get('id', '')}: the switch died at {died}\n")
+                why = _resumed(rec, died)
+            else:
+                why = forward(rec, log, time.monotonic() + SWITCH_DEADLINE_S, path)
         except Exception as exc:  # noqa: BLE001 - whatever stopped the switch, it rolls back and says why
             log.write(traceback.format_exc())
             why = f"switch failed: {named(exc)}"
