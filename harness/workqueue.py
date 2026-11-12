@@ -224,7 +224,9 @@ REMEASURES = ("sweep", "reverify")
 
 def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
         output: str = "", priority: int = 0, requested_by: str = "",
-        not_before: float | None = None, conn=None, resource: str = "") -> dict:
+        not_before: float | None = None, conn=None, resource: str = "", commit: bool = True) -> dict:
+    if not commit and conn is None:
+        raise ValueError("an uncommitted job needs the caller's connection")
     if resource:
         resources.check(resource)
     if not argv:
@@ -262,7 +264,8 @@ def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
              json.dumps([str(a) for a in argv]), cwd or os.getcwd(), PENDING, js.ADDED,
              time.time(), requested_by, machine,
              None if not_before is None else float(not_before), resource))
-        c.commit()
+        if commit:
+            c.commit()
         return _select(c, "WHERE id = ?", (cur.lastrowid,))[0]
 
 
@@ -387,8 +390,10 @@ def cancel(job_id: str, conn=None, grace: float = CANCEL_GRACE_S) -> dict:
     with _store(conn) as c:
         job = get(job_id, conn=c)
         if job is None or job["state"] != RUNNING:
-            note = f"cancelled by soh jobs cancel at {time.strftime(_STAMP)}; before it started"
-            if job is None or not js.move(c, job["id"], PENDING, CANCELLED, js.CANCEL, note, finished_at=time.time()):
+            frm = PAUSED if job is not None and job["state"] == PAUSED else PENDING
+            note = f"cancelled by soh jobs cancel at {time.strftime(_STAMP)}; " + (
+                "it was paused" if frm == PAUSED else "before it started")
+            if job is None or not js.move(c, job["id"], frm, CANCELLED, js.CANCEL, note, finished_at=time.time()):
                 _not_pending(c, job_id, "cancelled")
             c.commit()
             return get(job_id, conn=c)
@@ -891,6 +896,9 @@ def _settle_exit(job: dict, rc) -> bool:
             _next_item(c, job, argv)
         else:
             note = f"cancelled by soh jobs cancel at {time.strftime(_STAMP)}; stopped" if why == js.CANCEL else None
+            if why == js.CHECKPOINTED:
+                from harness import paused_jobs
+                why, note = paused_jobs.cause(c, job)
             js.move(c, job["id"], RUNNING, to, why, note, rc=rc, finished_at=_epoch(job["finished"]))
             c.commit()
     _clear_flags(job["id"])
@@ -1447,11 +1455,13 @@ def import_json(conn) -> dict:
 def serve(poll: float = 30.0, sleep=time.sleep, popen=None,
           gate_fn=None, forever=True, clock=time.time) -> None:
     """The worker service: check the gate every `poll` seconds, run what waits."""
+    from harness import paused_jobs
     gate_fn = gate_fn or gate
     said = ""
     while True:
         settle_deploys()
         deploy_turn(clock())
+        paused_jobs.turn(clock())
         try:
             waiting = ready(now=clock())
         except RuntimeError as exc:

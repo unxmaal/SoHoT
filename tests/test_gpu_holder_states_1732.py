@@ -4,7 +4,6 @@ import os
 import subprocess
 import sys
 import textwrap
-import threading
 import time
 from pathlib import Path
 
@@ -13,6 +12,7 @@ import pytest
 from harness import exclusive, item_lease, paths, resources
 from harness import memory_store as ms
 from harness import workqueue as wq
+from tests.racing import race
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -148,23 +148,18 @@ def test_two_writers_racing_the_same_move_one_loses():
 
 def test_two_takers_racing_for_a_free_gpu_never_both_win():
     ms.connect().close()
-    lock, barrier, won = threading.Lock(), threading.Barrier(4), []
+    won = []
 
-    def go():
-        with lock:
-            conn = ms.connect()
+    def go(start):
+        conn = ms.connect()
         try:
-            barrier.wait()
+            start()
             got = exclusive._move(conn, None, exclusive.LOADING, "take", kind="image")
             if got is not None:
                 won.append(got["id"])
         finally:
             conn.close()
-    threads = [threading.Thread(target=go) for _ in range(4)]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join()
+    race([go] * 4)
     assert len(won) == 1
 
 

@@ -8,7 +8,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from harness import cuts, deploy, deploy_switch, paths
+from harness import cuts, deploy, deploy_switch, gateway_switch, node_reach, paths
 from harness import nodes as nodes_mod
 from harness import workqueue as wq
 
@@ -26,6 +26,10 @@ INSTALL_TIMEOUT_S = 1800.0
 #: How long a reinstalled node may take to answer /models before its smoke.
 WARM_S = 300.0
 WARM_POLL_S = 5.0
+#: How long a node out of the gateway's routing may take to finish its in-flight requests before its restart. #1815.
+DRAIN_S = 120.0
+DRAIN_POLL_S = 2.0
+DRAINED, DRAIN_DEADLINE = "drained", "deadline"
 LOG = "deploy-nodes.log"
 _SHA = re.compile(r"^[0-9a-f]{40}$")
 _SAID = re.compile(r"^(role|want|loaded|disabled)(?: (\S*))?$")
@@ -39,7 +43,11 @@ case "$dir" in "~") dir="$HOME" ;; "~/"*) dir="$HOME/${dir#\~/}" ;; esac
 role() { printf 'role %s\n' "$(if [ -f "$home/role" ]; then tr -d '[:space:]' < "$home/role"; fi)"; }
 cd "$dir"
 if [ "$1" = head ]; then git rev-parse HEAD; role; exit 0; fi
-if [ "$1" = units ]; then role; LH_ROLE= bash scripts/launchd.sh units 2>&1 || true; exit 0; fi
+if [ "$1" = units ]; then
+  role; LH_ROLE= bash scripts/launchd.sh units 2>&1 || true
+  printf 'machine %s\n' "$({ uv run --no-sync python -m harness.nodes fingerprint 2>/dev/null || true; } | tail -n 1)"
+  exit 0
+fi
 if [ "$1" = state ]; then exec uv run --no-sync python -m harness.node_state; fi
 git cat-file -e "$3^{commit}" 2>/dev/null || git fetch -q origin main
 git checkout -q --detach "$3"
@@ -73,8 +81,25 @@ def _smoke(node: nodes_mod.Node) -> list[tuple[bool, str]]:
     return nodes_mod.smoke(completion.gateway_url(), gateway_key.key(), [node])
 
 
-def verify(node: nodes_mod.Node, *, get=None, smoke=None, sleep=time.sleep, clock=time.monotonic) -> str:
-    """'' when the node passes `nodes check`, answers /models within WARM_S and passes `nodes smoke`; else why."""
+class StudioSide(str):
+    """Why verify passed a node that answers itself but not through this machine's gateway: no rollback. #1791."""
+
+
+def _direct(node: nodes_mod.Node, ask) -> list[str]:
+    out = []
+    for model in node.models:
+        try:
+            r = ask(node, model)
+        except Exception as exc:  # noqa: BLE001 - any failure to answer is the node's
+            out.append(f"node {node.name} {model}: did not answer when asked directly ({exc})")
+            continue
+        if r.status_code >= 400:
+            out.append(f"node {node.name} {model}: HTTP {r.status_code} when asked directly")
+    return out
+
+
+def verify(node: nodes_mod.Node, *, get=None, smoke=None, ask=None, sleep=time.sleep, clock=time.monotonic) -> str:
+    """'' when the node passes `nodes check`, answers /models within WARM_S and passes `nodes smoke`; else why. #1791."""
     why = nodes_mod.unidentified(node)
     if why:
         return f"nodes check: {why}"
@@ -84,8 +109,56 @@ def verify(node: nodes_mod.Node, *, get=None, smoke=None, sleep=time.sleep, cloc
             cuts.cut("harness/node_deploy.py:WARM_S", f"node {node.name} not answering after its install", dropped=1)
             return f"node {node.name} did not answer {node.api_base}/models within {WARM_S:.0f} s of its install"
         sleep(WARM_POLL_S)
-    bad = [line for ok, line in (smoke or _smoke)(node) if not ok]
-    return "nodes smoke: " + "; ".join(bad) if bad else ""
+    smoke = smoke or _smoke
+    bad = [line for ok, line in smoke(node) if not ok]
+    if bad and all(isinstance(b, nodes_mod.ViaGateway) for b in bad):
+        # The gateway holds a node it saw go down during the install out of routing for its cooldown.
+        sleep(node.cooldown + WARM_POLL_S)
+        bad = [line for ok, line in smoke(node) if not ok]
+    if not bad:
+        return ""
+    if any(not isinstance(b, nodes_mod.ViaGateway) for b in bad):
+        return "nodes smoke: " + "; ".join(bad)
+    failed = _direct(node, ask or nodes_mod.ask_node)
+    if failed:
+        return "nodes smoke: " + "; ".join(bad + failed)
+    return StudioSide(f"node {node.name} answers {', '.join(node.models)} itself, but this machine's gateway does not "
+                      f"serve them from it: " + "; ".join(bad))
+
+
+def in_flight(node: nodes_mod.Node, runner=None) -> int | None:
+    """Requests the node's own server is processing now, from its report over ssh; None when it will not say."""
+    from harness import node_state
+    got = node_state.read(node, runner=runner, fresh_s=0)
+    busy = None if got.get("error") else got.get("interactive")
+    return busy if isinstance(busy, int) else None
+
+
+def drain(node: nodes_mod.Node, why: str, *, busy, sleep=time.sleep, clock=time.monotonic) -> dict:
+    """Take the node out of the gateway's routing, then wait up to DRAIN_S for its in-flight requests. #1815."""
+    gateway_switch.start_drain(time.time() + DRAIN_S + INSTALL_TIMEOUT_S + WARM_S, node=node.name)
+    node_reach.record(node.name, node_reach.DOWN, f"draining for {why}")
+    start = clock()
+    while True:
+        left = busy(node)
+        if left == 0:
+            outcome = DRAINED
+            break
+        if clock() - start >= DRAIN_S:
+            outcome = DRAIN_DEADLINE
+            cuts.cut("deploy_node_drain", f"node {node.name} still busy before its restart", dropped=1)
+            break
+        sleep(DRAIN_POLL_S)
+    waited = clock() - start
+    said = f"{'unknown' if left is None else left} in flight"
+    node_reach.record(node.name, node_reach.DOWN, f"drain {outcome} after {waited:.0f} s, {said}; restarting it")
+    return {"outcome": outcome, "in_flight": left, "waited_s": round(waited, 1)}
+
+
+def undrain(node: nodes_mod.Node, why: str) -> None:
+    """Put the node back in the gateway's routing. #1815."""
+    gateway_switch.stop_drain(node=node.name)
+    node_reach.record(node.name, node_reach.UP, why)
 
 
 def _tail(said: str, n: int = 300) -> str:
@@ -152,10 +225,30 @@ def units_match(node: nodes_mod.Node, role: str, runner, log, *, strict: bool = 
     loaded = set(got.get("loaded") or [])
     extra, missing = sorted(loaded - want), sorted(want - loaded - set(got.get("disabled") or []))
     parts = ([f"extra {', '.join(extra)}"] if extra else []) + ([f"missing {', '.join(missing)}"] if missing else [])
-    return rc, f"its loaded units are not the {role} set: {'; '.join(parts)}" if parts else ""
+    if parts:
+        return rc, f"its loaded units are not the {role} set: {'; '.join(parts)}"
+    return rc, same_machine(node, said, strict=strict)
 
 
-def _one(node: nodes_mod.Node, sha: str, prior: dict, *, runner, check, alert, log, mark, now) -> dict:
+def same_machine(node: nodes_mod.Node, said: str, *, strict: bool = True) -> str:
+    """'' when the fingerprint the node reports for itself is the one nodes.yaml names; else why, naming both. #1791."""
+    from harness import machine
+    if not node.fingerprint:
+        return ""
+    have = next((ln.strip()[len("machine"):].strip() for ln in reversed((said or "").splitlines())
+                 if ln.strip() == "machine" or ln.strip().startswith("machine ")), "")
+    if not have:
+        return "it did not report its machine fingerprint (`python -m harness.nodes fingerprint`)" if strict else ""
+    got = machine.parse_fingerprint(have)
+    real = machine.fingerprint(got["hw_model"], got["os"], got["arch"], got["host"]) if got else have
+    if real == node.fingerprint:
+        return ""
+    return (f"machine fingerprint mismatch: {node.ssh} reports {real}, but {nodes_mod.path().name} names node "
+            f"{node.name} {node.fingerprint}; its replies would be filed under the wrong machine")
+
+
+def _one(node: nodes_mod.Node, sha: str, prior: dict, *, runner, check, alert, log, mark, now, busy=None,
+         sleep=time.sleep, clock=time.monotonic) -> dict:
     base = {"sha": sha, "at": now(), "tries": int(prior.get("tries") or 0) + 1}
     if not node.ssh:
         return {**base, "outcome": UNCONFIGURED, "detail": f"no deploy: ssh in {nodes_mod.path()}, so no deploy reaches it"}
@@ -184,6 +277,19 @@ def _one(node: nodes_mod.Node, sha: str, prior: dict, *, runner, check, alert, l
     back_role = was or role
     mark({**base, "outcome": INSTALLING, "pid": os.getpid(), "previous_sha": previous, "previous_role": was, "role": role,
           "started": True})
+    base["drain"] = drain(node, f"the deploy of {sha[:12]}", busy=busy or (lambda n: in_flight(n, runner)),
+                          sleep=sleep, clock=clock)
+    log.write(f"--- node {node.name} drain {base['drain']}\n")
+    out = {**base, "outcome": FAILED, "detail": "the install did not finish"}
+    try:
+        out = _install(node, sha, role, previous, was, back_role, base, runner=runner, check=check, alert=alert, log=log)
+        return out
+    finally:
+        undrain(node, f"the deploy of {sha[:12]} ended {out['outcome']}")
+
+
+def _install(node, sha, role, previous, was, back_role, base, *, runner, check, alert, log) -> dict:
+    """Install SHA as ROLE on a drained node, verify it, and roll it back to PREVIOUS when it fails."""
     rc, said = runner(ssh_argv(node, "install", node.deploy_dir, sha, role), SCRIPT, INSTALL_TIMEOUT_S)
     log.write(f"--- node {node.name} install {sha[:12]} as {role} rc {rc}\n{said}\n")
     if rc is None and said.startswith("timed out"):
@@ -197,15 +303,18 @@ def _one(node: nodes_mod.Node, sha: str, prior: dict, *, runner, check, alert, l
     if rc == SSH_DOWN:
         return {**base, "outcome": DOWN, "previous_sha": previous, "previous_role": was, "started": True,
                 "detail": f"ssh {node.ssh} dropped during the install: {_tail(said)}; tried again at the next deploy poll"}
-    if not why:
+    if not why or isinstance(why, StudioSide):
+        if why:
+            alert(f"node {node.name} deployed {sha[:12]}, but {why}")
         return {**base, "outcome": DEPLOYED, "previous_sha": previous, "previous_role": was, "role": role,
-                "detail": f"serving {sha[:12]} as {role}"}
+                "detail": f"serving {sha[:12]} as {role}" + (f"; {why}" if why else "")}
     rc, said = runner(ssh_argv(node, "install", node.deploy_dir, previous, back_role), SCRIPT, INSTALL_TIMEOUT_S)
     log.write(f"--- node {node.name} rollback to {previous[:12]} as {back_role} rc {rc}\n{said}\n")
     if rc != 0:
         back = f"rollback install exited rc {rc}: {_tail(said)}"
     else:
         back = units_match(node, back_role, runner, log, strict=False)[1] or check(node)
+        back = "" if isinstance(back, StudioSide) else back
     out = {**base, "outcome": FAILED if back else ROLLED_BACK, "previous_sha": previous, "role": back_role,
            "detail": f"{why}; rolled back to {previous[:12]} as {back_role}" + (f", which fails too: {back}" if back else "")}
     alert(f"node {node.name} deploy of {sha[:12]} {out['outcome']}: {out['detail']}")
@@ -213,7 +322,7 @@ def _one(node: nodes_mod.Node, sha: str, prior: dict, *, runner, check, alert, l
 
 
 def follow(conn=None, *, retry: bool = False, runner=_ssh, check=verify, alert=None, load=None,
-           now=time.time) -> dict:
+           now=time.time, busy=None, sleep=time.sleep, clock=time.monotonic) -> dict:
     """Each unparked node due a deploy of the sha this machine last deployed; the record's `nodes` holds every outcome."""
     why = deploy.blocked()
     t = None if why else target(conn)
@@ -241,7 +350,7 @@ def follow(conn=None, *, retry: bool = False, runner=_ssh, check=verify, alert=N
                 deploy_switch.save(path, rec)
 
             got = _one(node, t["sha"], done.get(node.name) or {}, runner=runner, check=check, alert=alert, log=log,
-                       mark=mark, now=now)
+                       mark=mark, now=now, busy=busy, sleep=sleep, clock=clock)
             mark(got)
             acted[node.name] = got
     return {"deploy": t["id"], "sha": t["sha"], "why": "", "nodes": acted}

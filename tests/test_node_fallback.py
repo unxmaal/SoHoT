@@ -18,6 +18,7 @@ pytest.importorskip("litellm", reason="needs litellm: make test-litellm")
 httpx = pytest.importorskip("httpx")
 
 from harness import gateway  # noqa: E402
+from harness import node_reach  # noqa: E402
 from harness import nodes as nodes_mod  # noqa: E402
 from harness.loopback import ThreadingHTTPServer  # noqa: E402
 
@@ -27,24 +28,25 @@ KEY = "sk-test-node"
 NODE_KEY = "node-secret"
 MODEL = "Qwen2.5-7B-Instruct-Q4_K_M"
 TIMEOUT = 3
+#: A message the fake node answers with HTTP 500, whatever name asked for it. #1810.
+FAIL = "fail-this-one"
 
 
-def _server(who, seen, first_delay=0.0, failing=None):
+def _server(who, seen, first_delay=0.0, failing=None, fail_on=None):
     class Upstream(BaseHTTPRequestHandler):
         def log_message(self, *a):
             pass
 
         def do_POST(self):
             seen.append(self.headers.get("Authorization", ""))
-            if failing is not None and failing.is_set():
-                self.rfile.read(int(self.headers["Content-Length"]))
+            body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            if (failing is not None and failing.is_set()) or body["messages"][-1]["content"] == fail_on:
                 self.send_response(500)
                 self.send_header("Content-Length", "0")
                 self.end_headers()
                 return
             if len(seen) == 1 and first_delay:
                 time.sleep(first_delay)
-            body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
             if body.get("stream"):
                 self.send_response(200)
                 self.send_header("Content-Type", "text/event-stream")
@@ -69,6 +71,34 @@ def _server(who, seen, first_delay=0.0, failing=None):
     up = ThreadingHTTPServer(("127.0.0.1", 0), Upstream)
     threading.Thread(target=up.serve_forever, daemon=True).start()
     return up
+
+
+class Drops:
+    """Takes every connection and closes it on the first bytes of a request, answering nothing."""
+
+    def __init__(self):
+        self.sock = socket.socket()
+        self.sock.bind(("127.0.0.1", 0))
+        self.sock.listen(64)
+        self.port = self.sock.getsockname()[1]
+        self.requests = 0
+        threading.Thread(target=self._run, daemon=True).start()
+
+    def _run(self):
+        try:
+            while True:
+                conn = self.sock.accept()[0]
+                threading.Thread(target=self._drop, args=(conn,), daemon=True).start()
+        except OSError:
+            return
+
+    def _drop(self, conn):
+        with conn:
+            if conn.recv(65536):
+                self.requests += 1
+
+    def close(self):
+        self.sock.close()
 
 
 class Hung:
@@ -161,9 +191,9 @@ general_settings:
     return base, proc, studio, studio_seen, node_seen
 
 
-def _ask(base, model=MODEL, stream=False):
+def _ask(base, model=MODEL, stream=False, content="hi"):
     started = time.monotonic()
-    body = {"model": model, "messages": [{"role": "user", "content": "hi"}]}
+    body = {"model": model, "messages": [{"role": "user", "content": content}]}
     if stream:
         body["stream"] = True
         with httpx.stream("POST", f"{base}/v1/chat/completions", timeout=60, json=body,
@@ -284,3 +314,42 @@ def test_a_node_that_failed_and_recovered_is_routed_again_under_steady_traffic(t
     assert all(not by_node for _, by_node in served_by[:-1]) and len(node_seen) == failing_seen + 1
     node.shutdown()
 
+
+
+def test_a_server_error_for_one_name_leaves_the_others_on_the_node(tmp_path, stop):
+    """#1810: the node answered 500 for one name; its other names keep going to it, the failed one does not."""
+    node_seen = []
+    node = _server("from-node", node_seen, fail_on=FAIL)
+    base, proc, _, studio_seen, _ = _proxy(tmp_path, f"http://127.0.0.1:{node.server_address[1]}/v1")
+    stop(proc)
+    code, h, text, _ = _ask(base, content=FAIL)
+    assert code == 200 and "from-studio" in text and h["x-sohot-fallback"] == "pc", text
+    tried = len(node_seen)
+    code, h, text, _ = _ask(base, "eval-7b")
+    assert code == 200 and "from-node" in text and h["x-sohot-node"] == "pc", "a 500 for one name downed the node"
+    code, h, text, _ = _ask(base)
+    assert "from-studio" in text and h["x-sohot-fallback"] == "pc"
+    assert len(node_seen) == tried + 1, "the name that failed was sent to the node again inside its cooldown"
+    rows = node_reach.read()
+    assert [(r["node"], r.get("model"), r["state"]) for r in rows] == [("pc", MODEL, "down")], rows
+    assert rows[0]["why"] == f"{MODEL} answered InternalServerError 500"
+    node.shutdown()
+
+
+def test_a_node_that_drops_the_request_takes_every_name_out(tmp_path, stop):
+    """#1810: no answer at all is the node's fault, not the name's."""
+    drops = Drops()
+    try:
+        base, proc, *_ = _proxy(tmp_path, f"http://127.0.0.1:{drops.port}/v1")
+        stop(proc)
+        code, h, text, _ = _ask(base)
+        assert code == 200 and "from-studio" in text and h["x-sohot-fallback"] == "pc", text
+        dialled = drops.requests
+        code, h, text, _ = _ask(base, "eval-7b")
+        assert "from-studio" in text and h["x-sohot-fallback"] == "pc"
+        assert drops.requests == dialled, "a node that dropped a request was sent another name at once"
+        rows = node_reach.read()
+        assert [(r["node"], r.get("model"), r["state"]) for r in rows] == [("pc", None, "down")], rows
+        assert rows[0]["why"] == f"{MODEL} fell back: InternalServerError 500, no answer from the node", rows
+    finally:
+        drops.close()

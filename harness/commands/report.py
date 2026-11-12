@@ -53,6 +53,9 @@ def cmd_report(a) -> int:
     for f in state.get("failed_switches") or []:
         print(f"  sohot-{f['lane']} did not switch to {f['new_spec']} after "
               f"{f['attempts']} attempt(s): {f['reason']}")
+    sw = state.get("gateway_switch") or {}
+    if sw.get("state") in ("orphaned", "stale"):
+        print(f"  gateway switch {sw['state']}: {sw['why']}")
     if stale:
         print(f"  {len(stale)} lane(s) not measured within their re-verify "
               f"threshold: {', '.join(stale)}")

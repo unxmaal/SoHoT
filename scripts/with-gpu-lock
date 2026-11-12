@@ -43,5 +43,5 @@ try:
             child.wait()
             raise
         sys.exit(rc)
-except (exclusive.StoreDown, exclusive.LeaseLost) as exc:
+except (exclusive.StoreDown, exclusive.LeaseLost, exclusive.WaitExpired) as exc:
     sys.exit(f"with-gpu-lock: {exc}")

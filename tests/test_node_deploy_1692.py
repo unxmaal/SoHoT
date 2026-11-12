@@ -1,6 +1,7 @@
 """A Studio deploy brings each unparked node to its sha over ssh, rolls a failed node back, and retries a down one. #1692."""
 from __future__ import annotations
 
+import json
 import os
 import shlex
 import subprocess
@@ -38,19 +39,22 @@ class Fake:
     """ssh as a table: (mode, sha) -> (rc, output), over a node whose role file and loaded units each install sets."""
 
     def __init__(self, head=(0, OLD), install=None, role="interactive", extra=()):
-        self.head, self.install, self.calls = head, dict(install or {}), []
+        self.head, self.install, self.calls, self.polled, self.busy = head, dict(install or {}), [], [], []
         self.role, self.loaded, self.extra = role, list(UNITS.get(role, [])), list(extra)
 
     def __call__(self, argv, script, timeout):
         assert script == node_deploy.SCRIPT and argv[0] == "ssh"
         args = shlex.split(argv[-1])[3:]
+        if args[0] == "state":
+            self.polled.append(args)
+            return 0, json.dumps({"interactive": self.busy.pop(0) if self.busy else 0})
         self.calls.append((argv[-2], *args))
         if args[0] == "head":
             rc, said = self.head
             return rc, f"{said}\nrole {self.role}" if rc == 0 else said
         if args[0] == "units":
             return 0, "\n".join([f"role {self.role}", *(f"want {u}" for u in UNITS.get(self.role, [])),
-                                 *(f"loaded {u}" for u in self.loaded)])
+                                 *(f"loaded {u}" for u in self.loaded), f"machine {FP}"])
         rc, said = self.install.get(args[2], (0, "reinstalled"))
         if rc == 0:
             self.role = args[3] or self.role
@@ -295,13 +299,14 @@ def test_the_node_script_checks_out_the_sha_syncs_and_reinstalls_in_the_checkout
     assert said.splitlines() == [old, "role interactive"]
     env["LH_ROLE"] = "node"
     rc, said = local(node_deploy.ssh_argv(n, "units", ""), node_deploy.SCRIPT, 30)
-    assert rc == 0 and said.splitlines() == ["role interactive", "want interactive", "loaded x"], \
+    assert rc == 0 and said.splitlines() == ["role interactive", "want interactive", "loaded x", "machine "], \
         "launchd.sh units reads the role file, never an LH_ROLE the ssh session carries"
     del env["LH_ROLE"]
     rc, said = local(node_deploy.ssh_argv(n, "install", n.deploy_dir, new, "interactive"), node_deploy.SCRIPT, 30)
     assert rc == 0, said
     assert _git(repo, "rev-parse", "HEAD") == new
     assert calls.read_text(encoding="utf-8").splitlines() == [
-        "uv sync --frozen", f"launchd reinstall interactive {home}/lh/deploy"]
+        "uv run --no-sync python -m harness.nodes fingerprint", "uv sync --frozen",
+        f"launchd reinstall interactive {home}/lh/deploy"]
     rc, said = local(node_deploy.ssh_argv(n, "install", n.deploy_dir, "c" * 40, "interactive"), node_deploy.SCRIPT, 30)
     assert rc != 0 and _git(repo, "rev-parse", "HEAD") == new

@@ -12,7 +12,7 @@ import pytest
 import shells
 from harness import deploy, deploy_switch, node_deploy
 from harness import memory_store as ms
-from test_node_deploy_1692 import NEW, OLD, UNITS, Fake, _follow, _node, _record, _yaml
+from test_node_deploy_1692 import FP, NEW, OLD, UNITS, Fake, _follow, _node, _record, _yaml
 
 REPO = Path(__file__).resolve().parent.parent
 
@@ -97,7 +97,7 @@ def test_units_match_names_what_differs(tmp_path, said, why):
     n = node_deploy.nodes_mod.load(_yaml(tmp_path, _plain("styx", deploy={"ssh": "styx"})))[0]
     log = open(os.devnull, "w", encoding="utf-8")
     try:
-        rc, got = node_deploy.units_match(n, "interactive", lambda a, s, t: (0, said), log)
+        rc, got = node_deploy.units_match(n, "interactive", lambda a, s, t: (0, f"{said}\nmachine {FP}"), log)
     finally:
         log.close()
     assert rc == 0 and (why in got if why else got == "")

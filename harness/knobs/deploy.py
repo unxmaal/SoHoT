@@ -32,6 +32,8 @@ KNOBS = [
     _k("deploy_migrate_timeout", [f"{Q}:MIGRATE_TIMEOUT_S"], [600.0, 1800.0, 3600.0], unit="s",
        note="seconds the new release's migration of the live store may take before the backup is restored; "
             "FINDING #278: six stores up to schema 42 migrated in 0-2.1 s (#1506)"),
+    _k("deploy_node_drain", ["harness/node_deploy.py:DRAIN_S"], [30.0, 120.0, 300.0], unit="s",
+       note="how long a node deploy waits for the node's in-flight requests, with the node out of the gateway's routing, before it restarts the node anyway; node lanes answer in seconds (#1815)"),
     _k("deploy_node_install_timeout", ["harness/node_deploy.py:INSTALL_TIMEOUT_S"], [900.0, 1800.0, 3600.0],
        unit="s", note="seconds a node's checkout, uv sync and launchd.sh reinstall over ssh may take; a timeout "
                       "rolls the node back to its previous checkout and alerts (#1692)"),
@@ -99,6 +101,8 @@ NOT_GATING = {
                          "sweep, so the deploy refuses rather than guesses (#1000)",
     f"{S}:STOP_GRACE_S": "how long an overridden sweep has between TERM and KILL; the same role as "
                          "watchdog.STOP_GRACE_S (#1000)",
+    "harness/node_deploy.py:DRAIN_POLL_S": "it paces how often a draining node is asked how many requests it is processing; DRAIN_S bounds the wait (#1815)",
+    "harness/node_deploy.py:in_flight->node_state.read(fresh_s)": "a drain asks the node for its in-flight count on every poll; a cached report would show requests already finished (#1815)",
 }
 
 NEVER_CUTS = {

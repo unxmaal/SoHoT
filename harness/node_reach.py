@@ -14,10 +14,12 @@ def path() -> Path:
     return paths.home() / "nodes" / "reach.jsonl"
 
 
-def record(node: str, state: str, why: str = "", at: float | None = None, where: Path | None = None) -> None:
-    """Append one transition; a write that fails costs the log a line, never the request."""
+def record(node: str, state: str, why: str = "", at: float | None = None, where: Path | None = None,
+           model: str = "") -> None:
+    """Append one transition, of the whole node or of one model name on it; a failed write never fails the request."""
     p = where or path()
-    line = json.dumps({"at": time.time() if at is None else at, "node": node, "state": state, "why": why})
+    row = {"at": time.time() if at is None else at, "node": node, "state": state, "why": why}
+    line = json.dumps({**row, "model": model} if model else row)
     try:
         p.parent.mkdir(parents=True, exist_ok=True)
         with p.open("a", encoding="utf-8") as f:
@@ -42,11 +44,11 @@ def read(where: Path | None = None) -> list[dict]:
 
 
 def outages(rows: list[dict], since: float, now: float) -> dict:
-    """{node: [{start, end (None while still down), why}]} for each time out of routing that overlaps [since, now]."""
+    """{node or node/model: [{start, end (None while still down), why}]} for each time out of routing in [since, now]."""
     by: dict = {}
     open_: dict = {}
     for r in rows:
-        node, at = str(r["node"]), float(r["at"])
+        node, at = str(r["node"]) + (f"/{r['model']}" if r.get("model") else ""), float(r["at"])
         if at > now:
             break
         if r["state"] == DOWN and node not in open_:

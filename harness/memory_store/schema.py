@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 95
+SCHEMA_VERSION = 99
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -410,7 +410,10 @@ CREATE TABLE IF NOT EXISTS leases (
     taken_at     REAL NOT NULL,
     beat_at      REAL NOT NULL,
     expires_at   REAL NOT NULL,
-    released_at  REAL
+    released_at  REAL,
+    -- The holder's process group and ps start time, so a reused pid is not the holder. #1772.
+    pgid         INTEGER,
+    started      TEXT NOT NULL DEFAULT ''
 );
 
 -- One deploy of a main commit through the work queue: built alongside, switched, verified or rolled back. #1506.
@@ -531,6 +534,25 @@ CREATE TABLE IF NOT EXISTS gateway_switches (
     -- 'switched' once the gateway serves the new alias, else 'failed' with its reason. #522.
     outcome      TEXT NOT NULL DEFAULT 'switched',
     reason       TEXT NOT NULL DEFAULT ''
+);
+
+-- One switch process: gateway_switch_state.STATES, written only by gateway_switch_state.claim/move. #1736.
+CREATE TABLE IF NOT EXISTS gateway_switch_runs (
+    id           INTEGER PRIMARY KEY,
+    state        TEXT NOT NULL,
+    reason       TEXT NOT NULL DEFAULT '',
+    -- 1 while in flight, NULL once settled: UNIQUE lets one switch hold the slot.
+    live         INTEGER UNIQUE,
+    pid          INTEGER,
+    pgid         INTEGER,
+    started      TEXT NOT NULL DEFAULT '',
+    requested_at REAL,
+    updated_at   REAL NOT NULL,
+    config       TEXT NOT NULL DEFAULT '',
+    before       TEXT,
+    target       TEXT,
+    moved        TEXT NOT NULL DEFAULT '{}',
+    detail       TEXT NOT NULL DEFAULT ''
 );
 
 -- One request through the gateway, with no prompt or completion text. #481.

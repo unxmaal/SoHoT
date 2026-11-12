@@ -2,6 +2,8 @@
 from harness.knobs.base import _k
 
 KNOBS = [
+    _k("job_pause_expiry", ["harness/paused_jobs.py:EXPIRY_S"], [21600.0, 86400.0, 172800.0], unit="s",
+       note="seconds a paused queue job waits for its pause's cause to clear before it fails expired with one alert (#1764)"),
     _k("queue_item", ["harness/workqueue.py:ITEM_S"], [300.0, 600.0, 1800.0], unit="s",
        note="seconds of cases one queue item of a gpu eval or paired adopt runs before the job goes back to pending and "
             "its next item is taken like any job; at least one case runs, none is cut (#1618)"),

@@ -15,7 +15,7 @@ from harness import paths, store
 
 INVARIANTS = ("integrity", "foreign_keys", "schema", "proposal_state",
               "verdict_reason", "adoptions_resolve", "machines_unique",
-              "downloads_sane", "results_split")
+              "downloads_sane", "switch_runs_sane", "results_split")
 
 #: Shown in a failing check's detail; the rest are counted.
 SHOWN = 5
@@ -152,6 +152,13 @@ def _downloads(conn) -> list:
     return bad
 
 
+def _switch_runs(conn) -> list:
+    from harness import gateway_switch_state as st
+    return [f"gateway switch {r['id']}: state {r['state']!r} with live {r['live']!r}"
+            for r in conn.execute("SELECT id, state, live FROM gateway_switch_runs ORDER BY id")
+            if r["state"] not in st.STATES or (r["live"] == 1) != (r["state"] in st.LIVE)]
+
+
 def _results(conn) -> list:
     cols = ms._columns(conn, "results")
     bad = [f"results lacks {c}" for c in ("output", "artifact_path")
@@ -181,6 +188,7 @@ def invariants(conn) -> list[Check]:
         _check("adoptions_resolve", _adoptions(conn)),
         _check("machines_unique", _machines(conn)),
         _check("downloads_sane", _downloads(conn)),
+        _check("switch_runs_sane", _switch_runs(conn)),
         _check("results_split", _results(conn)),
     ]
 
