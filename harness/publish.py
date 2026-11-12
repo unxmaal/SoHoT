@@ -456,9 +456,11 @@ def _real_use(conn, now: float) -> dict:
 
 def _trends(conn, now: float) -> dict:
     """This machine's daily series (#827); {} when they cannot be read, so a report still publishes."""
-    from harness import trends
+    from harness import store, trends
     try:
         return trends.gather(conn, now)
+    except store.Unread as u:
+        return {"error": f"trends unread: {u.outcome}"}
     except (OSError, ValueError) as exc:
         return {"error": f"trends unavailable: {type(exc).__name__}"}
 

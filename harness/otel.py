@@ -4,7 +4,6 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
-import sqlite3
 from collections import defaultdict
 from http.server import BaseHTTPRequestHandler
 
@@ -212,12 +211,9 @@ def store(conn, metrics: list[dict] = (), events: list[dict] = ()) -> dict:
 
 
 def _select(conn, table: str, since: float, until: float, name: str = "") -> list[dict]:
+    from harness import store
     sql = f"SELECT * FROM {table} WHERE at >= ? AND at < ?" + (" AND name = ?" if name else "") + " ORDER BY at"
-    try:
-        rows = conn.execute(sql, (since, until, name) if name else (since, until)).fetchall()
-    except sqlite3.OperationalError:
-        return []
-    return [dict(r) for r in rows]
+    return [dict(r) for r in store.read(conn, table, sql, (since, until, name) if name else (since, until))]
 
 
 def events(conn, since: float, until: float, name: str = "") -> list[dict]:

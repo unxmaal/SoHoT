@@ -644,15 +644,12 @@ nothing-and-failed-return-the-same-value harness/checks/ocr.py:check:none-messag
 nothing-and-failed-return-the-same-value harness/checks/render.py:_remove_tree:except
 nothing-and-failed-return-the-same-value harness/claude_news.py:installed:except
 nothing-and-failed-return-the-same-value harness/commands/common.py:lent_store:chooser
-nothing-and-failed-return-the-same-value harness/commands/context.py:_read_conn:chooser
 nothing-and-failed-return-the-same-value harness/commands/degenerate.py:_results:except
 nothing-and-failed-return-the-same-value harness/commands/discover.py:_report_quants:none-message
 nothing-and-failed-return-the-same-value harness/commands/gguf_aux.py:_stamp:except
 nothing-and-failed-return-the-same-value harness/commands/headless.py:cmd_headless:none-message
 nothing-and-failed-return-the-same-value harness/commands/interactive.py:cmd_interactive:none-message
-nothing-and-failed-return-the-same-value harness/commands/inventory.py:open_store:chooser
 nothing-and-failed-return-the-same-value harness/commands/lanes.py:_gold:except
-nothing-and-failed-return-the-same-value harness/commands/ledger.py:gather:chooser
 nothing-and-failed-return-the-same-value harness/commands/measure.py:_stopped_at:except
 nothing-and-failed-return-the-same-value harness/commands/store.py:cmd_disk:none-message
 nothing-and-failed-return-the-same-value harness/commands/vision.py:run_command:none-message
@@ -708,7 +705,6 @@ nothing-and-failed-return-the-same-value harness/inventory_time.py:_text:except
 nothing-and-failed-return-the-same-value harness/inventory_weight.py:gather.guard:except
 nothing-and-failed-return-the-same-value harness/inventory_weight.py:routed:except
 nothing-and-failed-return-the-same-value harness/ledger.py:macmon_version:except
-nothing-and-failed-return-the-same-value harness/ledger.py:recorded:except
 nothing-and-failed-return-the-same-value harness/local_catches.py:head:except
 nothing-and-failed-return-the-same-value harness/machine.py:_mflux_cli:except
 nothing-and-failed-return-the-same-value harness/machine.py:_uv_with_pins:except
@@ -744,7 +740,6 @@ nothing-and-failed-return-the-same-value harness/nodes.py:_all:except
 nothing-and-failed-return-the-same-value harness/nodes.py:_records:except
 nothing-and-failed-return-the-same-value harness/nodes.py:builds:none-message
 nothing-and-failed-return-the-same-value harness/nodes.py:keychain:except
-nothing-and-failed-return-the-same-value harness/otel.py:_select:except
 nothing-and-failed-return-the-same-value harness/paths.py:deploy_link:except
 nothing-and-failed-return-the-same-value harness/pressure.py:_sysctl:except
 nothing-and-failed-return-the-same-value harness/pressure.py:_vm_stat:except
@@ -774,8 +769,6 @@ nothing-and-failed-return-the-same-value harness/sweep_guard.py:command_of:excep
 nothing-and-failed-return-the-same-value harness/technique_triage.py:parse_draft:except
 nothing-and-failed-return-the-same-value harness/torch_device.py:_config_dtypes:except
 nothing-and-failed-return-the-same-value harness/torch_device.py:_header_dtypes:except
-nothing-and-failed-return-the-same-value harness/trends.py:delegation_rows:except
-nothing-and-failed-return-the-same-value harness/trends.py:ledger_rows:except
 nothing-and-failed-return-the-same-value harness/venv_drift.py:_words:except
 nothing-and-failed-return-the-same-value harness/vllm.py:_tail:except
 nothing-and-failed-return-the-same-value harness/volume.py:describe:except
