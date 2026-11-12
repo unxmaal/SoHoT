@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from harness import deploy_state as ds
-from harness import deploy_switch, job_state as js, paths
+from harness import deploy_switch, job_state as js, paths, proc_identity
 from harness import workqueue as wq
 
 KIND = "deploy"
@@ -51,6 +51,8 @@ HANDOFF_GRACE_S = 300.0
 #: How long launchctl may take to load the switch's one-shot unit.
 LAUNCHCTL_TIMEOUT_S = 60.0
 SWITCH_LABEL = "com.unxmaal.localharness.deploy-switch"
+#: How many times settle starts a dead switch again from the stage its record names before it calls the deploy interrupted. #1753.
+RESUMES = 1
 #: The switch unit's program: the one the Full Disk Access grant names, SIP-protected, so the grant never lapses. #1516.
 SWITCH_SHELL = "/bin/bash"
 SMOKE_PHASE_ENV = deploy_switch.SMOKE_PHASE_ENV
@@ -702,7 +704,8 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
                         "queue_flag": str(wq._pause_flag()), "install": steps.install,
                         "rollback_install": steps.install, "verify": [steps.smoke, steps.coherence],
                         "repair": steps.repair, "alert": steps.alert, "log": str(log_path),
-                        "install_env": str(install_env.path()), "stage": at[0], "outcome": "", "run_pid": os.getpid()})
+                        "install_env": str(install_env.path()), "stage": at[0], "outcome": "", "run_pid": os.getpid(),
+                        "run_identity": proc_identity.identity(os.getpid())})
             taking(PAUSE)
             # Paused before the migration, so no job of this release starts against the new schema. #1795.
             wq.pause(note)
@@ -753,11 +756,26 @@ def _read(path: Path) -> dict:
         return {}
 
 
+def _is(pid, ident, since, alive) -> bool:
+    """Whether pid is still the process a record names: alive, and neither its identity nor its start time says another."""
+    if not pid or not alive(int(pid)):
+        return False
+    if isinstance(ident, dict) and ident.get("pid") == int(pid):
+        got = proc_identity.same(ident)
+        if got is not None:
+            return got
+    # A record without an identity (an older switch wrote it): a process that began after the record did is not it. #1773.
+    began = proc_identity.began(int(pid))
+    return began is None or not since or began <= float(since)
+
+
 def _running(rec: dict, now: float, alive) -> bool:
     """Whether the job or switch behind an outcome-less record may still be at work."""
-    if rec.get("pid") and alive(int(rec["pid"])):
+    if _is(rec.get("pid"), rec.get("identity"), rec.get("switch_started"), alive):
         return True
-    if rec.get("run_pid") and rec.get("stage") in ds.JOB_STAGES and alive(int(rec["run_pid"])):
+    if rec.get("stage") in ds.JOB_STAGES and _is(rec.get("run_pid"), rec.get("run_identity"), None, alive):
+        return True
+    if rec.get("resumed_at") and now - float(rec["resumed_at"]) < HANDOFF_GRACE_S:
         return True
     return rec.get("stage") == ds.HANDED_OFF and now - float(rec.get("handed_at") or 0) < HANDOFF_GRACE_S
 
@@ -832,9 +850,34 @@ def recover(now: float | None = None, alive=wq.alive) -> list[dict]:
     return out
 
 
-def settle(conn=None, now: float | None = None, alive=wq.alive) -> list[dict]:
+def respawn(record: Path, release_for_log: Path) -> str:
+    """How settle starts a dead switch again: only from the live home, since the switch unit's label is the machine's."""
+    if Path(paths.home()).resolve() != Path(paths.DEFAULT_HOME).resolve():
+        raise DeployError(f"{paths.home()} is not the live home, so it starts no deploy switch")
+    return spawn_switch(record, release_for_log)
+
+
+def _resume(rec: dict, row: dict, now: float, spawn) -> str:
+    """Start the switch again on its record, which goes on from the stage it died at; '' once started, else why not. #1753."""
+    path = record_path(row["id"])
+    rec.update(resumed=int(rec.get("resumed") or 0) + 1, resumed_at=now, resume=rec["stage"])
+    deploy_switch.save(path, rec)
+    target = Path(rec.get("release") or rec.get("previous") or paths.home())
+    try:
+        how = spawn(path, target if target.is_dir() else paths.home())
+    except (DeployError, OSError, subprocess.SubprocessError) as exc:
+        rec.pop("resumed_at", None)
+        rec.pop("resume", None)
+        deploy_switch.save(path, rec)
+        return f"starting it again failed: {exc}"
+    print(f"deploy {row['id']}: the switch died at {rec.get('stage')}; resumed by {how}", file=sys.stderr)
+    return ""
+
+
+def settle(conn=None, now: float | None = None, alive=wq.alive, spawn=None) -> list[dict]:
     """Close every unfinished deploy of this machine whose job or switch has ended; a deploy job is never left running."""
     now = time.time() if now is None else now
+    spawn = spawn or respawn
     settled = []
     # Before the store is opened: a deploy that died after migrating leaves it ahead of this code. #1752.
     recover(now, alive)
@@ -842,7 +885,7 @@ def settle(conn=None, now: float | None = None, alive=wq.alive) -> list[dict]:
         where, args = wq._here(c)
         for row in c.execute(f"SELECT * FROM deploys WHERE outcome = '' AND {where} ORDER BY id", args).fetchall():
             try:
-                got = _settle_one(c, dict(row), now, alive)
+                got = _settle_one(c, dict(row), now, alive, spawn)
             except ds.IllegalMove as exc:
                 print(f"deploy settle: {exc}", file=sys.stderr)
                 continue
@@ -873,7 +916,7 @@ def _hold_inputs(c, rec: dict, path: Path) -> None:
         print(f"deploy settle: no audit fingerprint for deploy {rec.get('id')}: {exc}", file=sys.stderr)
 
 
-def _settle_one(c, row: dict, now: float, alive) -> dict | None:
+def _settle_one(c, row: dict, now: float, alive, spawn=None) -> dict | None:
     rec = _read(record_path(row["id"]))
     job = wq.get(row["job_id"], conn=c) if row["job_id"] is not None else None
     got = ds.outcome_of(rec)
@@ -896,8 +939,17 @@ def _settle_one(c, row: dict, now: float, alive) -> dict | None:
     if rec:
         if _running(rec, now, alive):
             return None
+        failed = ""
+        if rec.get("stage") in ds.SWITCH_STAGES:
+            if int(rec.get("resumed") or 0) < RESUMES:
+                failed = _resume(rec, row, now, spawn or respawn)
+                if not failed:
+                    return None
+            else:
+                from harness import cuts
+                cuts.cut("harness/deploy.py:RESUMES", f"deploy {row['id']} resume", kept=0, dropped=1, conn=c)
         seen = view({**row, **{k: rec[k] for k in ("release", "previous") if rec.get(k)}}, rec, Path(rec["link"]))
-        why = f"the switch stopped at {rec.get('stage')} without an outcome; {said(seen)}"
+        why = "; ".join(filter(None, (f"the switch stopped at {rec.get('stage')} without an outcome", failed, said(seen))))
         _lift(rec)
     else:
         if job is not None and job["state"] == wq.RUNNING and wq._pid_of(job["id"]) is not None:

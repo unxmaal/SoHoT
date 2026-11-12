@@ -15,11 +15,10 @@ from tests.test_mcp_delegate import fake  # noqa: F401
 from tests.test_pause_813 import _args, clock, quiet  # noqa: F401
 
 
-def _until(cond, what, limit=20.0):
-    end = time.monotonic() + limit
+def _until(cond, what, thread):
+    """Wait for `cond` while `thread` runs; conftest's hang watch is the only time bound, never runner speed. #1847."""
     while not cond():
-        if time.monotonic() > end:
-            raise AssertionError(f"never: {what}")
+        assert thread.is_alive() or cond(), f"never: {what}; its thread ended first"
         time.sleep(0.01)
 
 
@@ -108,23 +107,36 @@ class _Eval:
         def generate(case):
             if len(runner.ran) + 1 == gate_at:
                 self.inside.set()
-                assert self.go.wait(30)
+                self.go.wait()
             return gen(case)
         runner.generate = generate
         self.out = tmp_path / "run"
         args = _args(self.out, candidates=f"{INC},{CH}", stop_at=clock.now + 59.0,
                      plan_s=plan_s and [plan_s, plan_s])
-        self.rc = None
-        self.thread = threading.Thread(target=lambda: setattr(self, "rc", R._execute(args)), daemon=True)
+        self.rc = self.error = None
+
+        def run():
+            try:
+                self.rc = R._execute(args)
+            except BaseException as err:
+                self.error = err
+        self.thread = threading.Thread(target=run, daemon=True)
 
     def __enter__(self):
         self.thread.start()
-        assert self.inside.wait(30)
+        try:
+            _until(self.inside.is_set, "the eval reaches its held case", self.thread)
+        finally:
+            if not self.inside.is_set():
+                self.__exit__(None, None, None)
         return self
 
-    def __exit__(self, *exc):
+    def __exit__(self, kind, *exc):
+        # Joined however the test ends, so no eval thread outlives it and runs on the next test's patches. #1847.
         self.go.set()
-        self.thread.join(30)
+        self.thread.join()
+        if self.error is not None and kind is None:
+            raise AssertionError("the eval thread raised") from self.error
 
 
 def _delegating(monkeypatch, eval_):
@@ -151,15 +163,15 @@ def test_a_delegation_takes_the_lease_the_eval_yields_after_its_case_and_resumes
         asked = threading.Thread(target=lambda: answered.update(
             delegate.complete("code", "write add", delegated=True)))
         asked.start()
-        _until(lambda: serve_lease.holders(), "the delegation takes the lease")
+        _until(lambda: serve_lease.holders(), "the delegation takes the lease", asked)
         assert serve_lease.holders()[0]["state"] == serve_lease.WAITING
         # Nothing loads under the case in flight.
         assert fake.seen == []
         ev.go.set()
-        asked.join(30)
+        asked.join()
         assert answered["text"] and len(fake.seen) == 1
         assert answered["serve_wait_s"] > 0
-        ev.thread.join(30)
+        ev.thread.join()
     # The eval finished its case, answered nothing beside a case, and took up the paired order where it stopped.
     assert ev.log == [INC, CH, INC, "ANSWER", CH, INC, CH]
     assert ev.rc == watch.PAUSED
@@ -238,11 +250,12 @@ def test_a_streaming_case_past_the_bound_is_cut_run_again_after_the_yield_and_ne
     thread = threading.Thread(target=lambda: result.update(rc=R._execute(
         _args(out, candidates=f"{INC},{CH}", stop_at=clock.now + 59.0))), daemon=True)
     thread.start()
-    assert inside.wait(30)
-    ev = type("E", (), {"thread": thread})
-    _delegating(monkeypatch, ev)
-    got = delegate.complete("code", "write add", delegated=True)
-    thread.join(30)
+    try:
+        _until(inside.is_set, "the eval reaches its streaming case", thread)
+        _delegating(monkeypatch, type("E", (), {"thread": thread}))
+        got = delegate.complete("code", "write add", delegated=True)
+    finally:
+        thread.join()
     assert got["text"] and got["serve_wait_s"] > 0
     # The cut case left no row and no log line; it ran again, whole, after the delegation answered.
     assert log == [INC, CH, "ANSWER", INC, CH, INC, CH]
