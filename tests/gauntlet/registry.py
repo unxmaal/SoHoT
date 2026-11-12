@@ -17,6 +17,8 @@ REPO = HERE.parent.parent
 NOT_PRODUCTION = ("tests/", "evals/cases/")
 # Unbound hits from before the detectors, one "<class id> <site>" per line; no row joins it after the merge base (#1846).
 BACKLOG_REL = "tests/gauntlet/backlog.txt"
+# unguarded_transition's columns; gauntlet v0.3.4 takes no config for it, so tests/test_outcome_cas_1739.py applies them.
+TRANSITION_COLUMNS = ("state", "status", "outcome")
 
 
 # make precheck runs only these; the rest are whole-tree costly and stay in make check (#1832).
