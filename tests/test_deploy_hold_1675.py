@@ -218,7 +218,7 @@ def test_an_install_waiting_on_a_queued_job_names_how_to_stop_it():
 @pytest.fixture(autouse=True)
 def _leads(monkeypatch):
     """This process stands in for a job's process, which as a real job's would lead its own group. #1728."""
-    monkeypatch.setattr(wq, "_leads", lambda pid: True)
+    monkeypatch.setattr(wq, "_leads", lambda pid, started="": True)
 
 
 # --- the scheduled sweep yields to a due deploy -----------------------------------------------------------------

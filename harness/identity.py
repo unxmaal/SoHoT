@@ -59,11 +59,23 @@ def _sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def file_digest(path, cache: Path | None = None) -> str:
-    """sha256 of a file's bytes, cached by (real path, size, mtime) so a large GGUF is read once."""
+def file_stat(path) -> tuple[Path, int, int]:
+    """(real path, size, mtime_ns): what a cached file digest is keyed by."""
     real = Path(os.path.realpath(path))
     st = real.stat()
-    key = f"{real}|{st.st_size}|{st.st_mtime_ns}"
+    return real, st.st_size, st.st_mtime_ns
+
+
+def cached_digest(path, cache: Path | None = None) -> str:
+    """The sha256 file_digest cached for the file as it is now, "" when it has not hashed these bytes; never reads them."""
+    real, size, mtime = file_stat(path)
+    return str(_load_cache(cache or cache_path()).get(f"{real}|{size}|{mtime}") or "")
+
+
+def file_digest(path, cache: Path | None = None) -> str:
+    """sha256 of a file's bytes, cached by (real path, size, mtime) so a large GGUF is read once."""
+    real, size, mtime = file_stat(path)
+    key = f"{real}|{size}|{mtime}"
     where = cache or cache_path()
     got = _load_cache(where)
     if key in got:

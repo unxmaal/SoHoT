@@ -432,17 +432,12 @@ def _serves_model(spec: str, conn) -> str:
 
 
 def _adoptions(conn, mid: int) -> list[dict]:
-    from harness import adopt
-    rows = conn.execute(
-        "SELECT a.*, c.spec, i.spec AS incumbent "
-        "FROM adoptions a JOIN candidates c ON c.id = a.candidate_id "
-        "LEFT JOIN candidates i ON i.id = a.incumbent_id "
-        "WHERE a.machine_id = ? OR a.all_machines = 1 OR a.machine_id IS NULL "
-        "ORDER BY a.adopted_at, a.id", (mid,)).fetchall()
+    from harness import adopt, adoption_state as st
     return [{"lane": r["lane"], "candidate": r["spec"],
              "incumbent": r["incumbent"] or "", "how": r["how"],
-             "scope": adopt.describe(dict(r), mid),
-             "adopted_at": _iso(r["adopted_at"])} for r in rows]
+             "scope": adopt.describe(r, mid),
+             "adopted_at": _iso(r["adopted_at"]),
+             **({"move": r["move"]} if r["move"] != st.ADOPT else {})} for r in st.history(conn, mid)]
 
 
 def _real_use(conn, now: float) -> dict:
@@ -456,9 +451,11 @@ def _real_use(conn, now: float) -> dict:
 
 def _trends(conn, now: float) -> dict:
     """This machine's daily series (#827); {} when they cannot be read, so a report still publishes."""
-    from harness import trends
+    from harness import store, trends
     try:
         return trends.gather(conn, now)
+    except store.Unread as u:
+        return {"error": f"trends unread: {u.outcome}"}
     except (OSError, ValueError) as exc:
         return {"error": f"trends unavailable: {type(exc).__name__}"}
 

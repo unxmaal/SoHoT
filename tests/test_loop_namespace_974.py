@@ -5,13 +5,16 @@ import io
 from pathlib import Path
 
 import pytest
+from gauntlet import scanners as gscanners
 
 from harness import inspect as ins
-from harness import neighbors
 from harness import machine as _machine
 from harness import memory_store as ms
-from harness import reasons
-from harness.commands import common, discover as discover_cmd, loop as loop_cmd, screen as screen_cmd
+from harness import neighbors, reasons
+from harness.commands import common
+from harness.commands import discover as discover_cmd
+from harness.commands import loop as loop_cmd
+from harness.commands import screen as screen_cmd
 from harness.memory import Accelerator
 from tests.gauntlet import scanners
 
@@ -122,7 +125,7 @@ def test_a_parsed_namespace_or_one_never_handed_to_a_verb_is_left_alone():
 
 
 def test_no_verb_is_handed_a_hand_made_namespace():
-    found = scanners.scan_tree(REPO, scanners.handmade_namespaces, scanners.is_python,
+    found = gscanners.scan_tree(REPO, scanners.handmade_namespaces, gscanners.is_python,
                                lambda rel: rel.startswith("harness/"))
     assert not found, ("a hand-made Namespace misses whatever field its writer forgot, and the verb reading it "
                        "crashes; the discovery loop died that way at inspect (#974):\n  " + "\n  ".join(found))

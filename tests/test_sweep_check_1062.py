@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
+from gauntlet import scanners as gscanners
 
 from harness import heartbeat, morning
 from harness import memory_store as ms
@@ -16,7 +17,6 @@ from harness import sweep_check as sc
 from harness import watchdog as wd
 from harness.commands import morning as morning_cmd
 from tests import shells
-from tests.gauntlet import scanners
 
 REPO = Path(__file__).resolve().parents[1]
 FIX = REPO / "tests" / "fixtures" / "launchctl"
@@ -210,7 +210,7 @@ def _pgrep(text, rel):
 
 
 def test_no_supervision_code_reads_process_state_with_pgrep():
-    found = set(scanners.scan_tree(REPO, _pgrep, lambda p: p.suffix in (".py", ".sh"),
+    found = set(gscanners.scan_tree(REPO, _pgrep, lambda p: p.suffix in (".py", ".sh"),
                                    lambda rel: rel.startswith(("harness/", "scripts/"))))
     assert found <= PGREP_KNOWN, sorted(found - PGREP_KNOWN)
 

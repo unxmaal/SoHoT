@@ -40,9 +40,8 @@ def seen(conn, name, gib=15.0, lane="code"):
     conn.commit()
 
 
-def refused(conn, name, at, *, gib=15.0, budget=40, until=""):
-    ms.decide(conn, name, "queued", tier="fetch", reason="limit", at=at, until=until,
-              detail=f"{gib:.1f} GiB {fetching.PASSED} {budget} GiB budget ({at % 997:.1f} GiB already fetched)")
+def refused(conn, name, at, *, gib=15.0, budget=40):
+    fetching.refuse_over_budget(conn, name, int(gib * GIB), budget * GIB, int(at % 37 * GIB), at=at)
 
 
 def test_a_row_the_budget_keeps_passing_over_rises_above_fresh_rows_of_higher_base_value(conn):
@@ -60,7 +59,7 @@ def test_a_row_the_budget_keeps_passing_over_rises_above_fresh_rows_of_higher_ba
 def test_the_pass_over_term_counts_only_refusals_of_rows_that_fit_the_whole_budget(conn):
     seen(conn, "a/Peer-27B-GGUF")
     refused(conn, "a/Peer-27B-GGUF", NOW - 3 * DAY)
-    refused(conn, "a/Peer-27B-GGUF", NOW - 2 * DAY, gib=65.0, until="limit:download_budget_gib>40")
+    refused(conn, "a/Peer-27B-GGUF", NOW - 2 * DAY, gib=65.0)
     ms.decide(conn, "a/Peer-27B-GGUF", "queued", tier="fetch", reason="limit", at=NOW - DAY,
               detail=f"waiting on b/base, the base its runner needs, is 30.0 GiB and would take this run past its 40 GiB budget")
     refused(conn, "a/Peer-27B-GGUF", NOW - 3 * DAY + 3600)

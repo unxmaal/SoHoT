@@ -27,6 +27,18 @@ def _busy(get, stems) -> int | None:
     return total
 
 
+def served_file(path) -> dict:
+    """{size, mtime_ns, sha256} of a pinned GGUF now; sha256 only when this node already hashed these bytes. #1775."""
+    from harness import identity
+    if not path:
+        return {}
+    try:
+        _, size, mtime = identity.file_stat(path)
+        return {"size": size, "mtime_ns": mtime, "sha256": identity.cached_digest(path)}
+    except OSError as exc:
+        return {"error": f"{type(exc).__name__}: {exc}"}
+
+
 def report(get=None, sample=None) -> dict:
     """What this node says about itself: pressure, budget, pinned set, its lock and the interactive requests in flight."""
     from harness import exclusive, interactive, memory, pressure, router, serving
@@ -41,7 +53,8 @@ def report(get=None, sample=None) -> dict:
     pinned = float(plan.get("bytes") or 0) / GIB
     lock = exclusive.holder() if exclusive._taken(exclusive.lock_path()) else {}
     models = {e["stem"]: {"lane": lane, "ctx": int(e.get("ctx") or 0) or None, "slots": int(e.get("slots") or 0) or None,
-                          "resident": held.get(e["stem"]) in router.RESIDENT} for lane, e in lanes.items()}
+                          "resident": held.get(e["stem"]) in router.RESIDENT, "file": served_file(e.get("path"))}
+              for lane, e in lanes.items()}
     return {"at": time.time(), "level": p.level, "alarming": p.alarming, "available_gb": round(memory.available_gb(), 2),
             "ceiling_gb": round(ceiling, 2), "reserve_gb": reserve, "pinned_gb": round(pinned, 2),
             "room_gb": round(ceiling - reserve - pinned, 2), "lock": lock, "models": models,

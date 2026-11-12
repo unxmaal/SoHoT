@@ -5,9 +5,10 @@ import sys
 from pathlib import Path
 
 import pytest
+from gauntlet import mutation
 
 from harness import ci_history
-from tests.gauntlet import mutation, scope
+from tests.gauntlet import scope
 
 REPO = Path(__file__).resolve().parent.parent
 

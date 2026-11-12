@@ -25,27 +25,23 @@ def local_tokens(b: dict | None) -> str:
 
 
 def gather(a, now: float) -> dict:
-    """Every source read once; the live store only through a read-only connection."""
-    from harness import context_report as cr, ledger, memory_store as ms, otel, store
+    """Every source read once; the store chosen by store.choose_read, read-only, each read's outcome kept. #1781."""
+    from harness import context_report as cr, ledger, otel, store
 
     since = cr.parse_when(a.since, now)
     first_day = ledger.days_between(since, now)[0]
     start = ledger.day_start(first_day)
     week = ledger.days_between(now - ledger.RATIO_DAYS * 86400, now)[0]
-    rows, dels, history, ev = [], [], [], []
-    if store.backend() == store.POSTGRES:
-        conn = ms.connect()
-    else:
-        path = ms.db_path()
-        conn = ledger.open_ro(path) if path.exists() else None
-    if conn is not None:
-        try:
-            rows = ledger.gateway_rows(conn, start)
-            dels = ledger.delegation_rows(conn, start)
-            history = ledger.recorded(conn, min(first_day, week))
-            ev = otel.events(conn, start, now + 1)
-        finally:
-            conn.close()
+    chosen = store.choose_read()
+    try:
+        reads, got = read_all(chosen, {
+            "gateway_requests": lambda c: ledger.gateway_rows(c, start),
+            "delegations": lambda c: ledger.delegation_rows(c, start),
+            "ledger_days": lambda c: ledger.recorded(c, min(first_day, week)),
+            "otel_events": lambda c: otel.events(c, start, now + 1)})
+    finally:
+        chosen.close()
+    rows, dels, history, ev = (got[k] for k in ("gateway_requests", "delegations", "ledger_days", "otel_events"))
     root = cr.default_root()
     files = list(cr.transcripts(root, newer_than=start)) if root.is_dir() else []
     ctx = cr.scan(files, since=start)
@@ -59,7 +55,36 @@ def gather(a, now: float) -> dict:
         recorded_ratio={h["day"]: h["ratio"] for h in history if h.get("ratio")})
     out["recorded"] = [h for h in history if h["day"] >= first_day]
     out["otel"] = otel_days(ev)
+    out["store"], out["reads"] = chosen.as_dict(), reads
     return out
+
+
+def read_all(chosen, readers: dict) -> tuple[dict, dict]:
+    """Each reader's outcome (answered with its row count, or why not) and rows, [] only beside an outcome that says so."""
+    from harness import store
+    reads, got = {}, {}
+    for name, fn in readers.items():
+        got[name] = []
+        if chosen.conn is None:
+            reads[name] = {"outcome": chosen.outcome, "why": chosen.why}
+            continue
+        try:
+            got[name] = fn(chosen.conn)
+        except store.Unread as u:
+            reads[name] = {"outcome": u.outcome, "why": u.why}
+            continue
+        reads[name] = {"outcome": store.ANSWERED, "rows": len(got[name])}
+    return reads, got
+
+
+def unread(L: dict) -> list[str]:
+    """Why this ledger may not be recorded: a store that is not the live one, or any read that did not answer."""
+    from harness import store
+    s = L.get("store") or {}
+    out = [] if s.get("live") else [f"not the live store: {s.get('why_not_live') or s.get('why') or 'unknown'}"]
+    out += [f"{name} {r['outcome']}: {r.get('why', '')}" for name, r in (L.get("reads") or {}).items()
+            if r["outcome"] != store.ANSWERED]
+    return out if L.get("reads") else out + ["no read was made"]
 
 
 def otel_days(ev: list[dict], tz=None) -> dict:
@@ -74,7 +99,14 @@ def otel_days(ev: list[dict], tz=None) -> dict:
 def show(L: dict) -> None:
     from harness import ledger
     w, s = L["window"], L["assumptions"]
-    note(ledger.ratio_line(L["ratio"]))
+    gw = (L.get("reads") or {}).get("gateway_requests") or {"outcome": "answered"}
+    if gw["outcome"] != "answered":
+        note(f"local:cloud UNREAD: gateway_requests {gw['outcome']}: {gw.get('why', '')}")
+    else:
+        note(ledger.ratio_line(L["ratio"]))
+    if "store" in L:
+        from harness import store
+        note(f"store     {store.describe(L['store'])}")
     note(f"ledger {w['first_day']} .. {w['last_day']}")
     for line in cloud_lines(L["cloud"]):
         note(line)
@@ -95,8 +127,13 @@ def show(L: dict) -> None:
     for p, b in L["local"].items():
         kind = "displaced" if p == "work" else "cost" if p in ("eval", "smoke") else "not counted"
         note(f"local     {p:<9} {b['requests']:>7,} reqs {_tok(b['input']):>8} in {_tok(b['output']):>8} out  ({kind})")
-    if not L["local"]:
-        note("local     no gateway requests in the window")
+    if gw["outcome"] != "answered":
+        note(f"local     UNREAD gateway_requests {gw['outcome']}: {gw.get('why', '')}")
+    elif not L["local"]:
+        note("local     none: no gateway requests in the window")
+    for name, r in (L.get("reads") or {}).items():
+        if name != "gateway_requests" and r["outcome"] not in ("answered", (L.get("store") or {}).get("outcome")):
+            note(f"UNREAD    {name} {r['outcome']}: {r.get('why', '')}")
     dg = L["delegated"]
     outcomes = ", ".join(f"{k} {v}" for k, v in sorted(dg["outcomes"].items())) or "none"
     note(f"delegated {dg['requests']:,} requests inside work, joined on call_id (outcomes: {outcomes})"
@@ -200,18 +237,17 @@ def _otel_sum(od: dict) -> dict:
 
 def gather_compare(day: str, tz=None) -> dict:
     """One day from every source: OTel events and metrics, ccusage, transcripts. #868."""
-    from harness import context_report as cr, ledger, otel
-    from harness.commands.context import _read_conn
+    from harness import context_report as cr, ledger, otel, store
     import datetime as _dt
     start = ledger.day_start(day, tz)
     end = ledger.day_start((_dt.date.fromisoformat(day) + _dt.timedelta(days=1)).isoformat(), tz)
-    ev, mt = [], []
-    conn = _read_conn()
-    if conn is not None:
-        try:
-            ev, mt = otel.events(conn, start, end), otel.metrics(conn, start, end)
-        finally:
-            conn.close()
+    picked = store.choose_read()
+    try:
+        reads, got = read_all(picked, {"otel_events": lambda c: otel.events(c, start, end),
+                                       "otel_metrics": lambda c: otel.metrics(c, start, end)})
+    finally:
+        picked.close()
+    ev, mt = got["otel_events"], got["otel_metrics"]
     cc = ledger.cloud(day)
     root = cr.default_root()
     files = list(cr.transcripts(root, newer_than=start)) if root.is_dir() else []
@@ -229,6 +265,11 @@ def gather_compare(day: str, tz=None) -> dict:
         C["notes"]["gap"] = (f"OTel output {g['otel_output']:,} over {g['otel_requests']:,} requests is "
                              f"{g['ratio']:.2f}x the transcripts' {g['transcript_output']:,} over the "
                              f"{g['transcript_messages']:,} messages they kept of the same requests")
+    C["notes"]["store"] = picked.line()
+    for name, r in reads.items():
+        if r["outcome"] != store.ANSWERED:
+            C["notes"][name] = f"UNREAD {r['outcome']}: {r['why']}"
+    C["store"], C["reads"] = picked.as_dict(), reads
     return C
 
 
@@ -275,7 +316,13 @@ def cmd_ledger(a) -> int:
         note(str(exc))
         emit(False, error=str(exc))
         return 2
+    show(L)
     if a.record:
+        refused = unread(L)
+        if refused:
+            note("--record refused, nothing written to ledger_days: " + "; ".join(refused))
+            emit(False, error="record refused", refused=refused, **L)
+            return 1
         from harness import memory_store as ms
         conn = ms.connect()
         try:
@@ -283,6 +330,5 @@ def cmd_ledger(a) -> int:
         finally:
             conn.close()
         note(f"recorded {n} days in ledger_days")
-    show(L)
     emit(**L)
     return 0

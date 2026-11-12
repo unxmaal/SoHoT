@@ -121,7 +121,10 @@ def load_run(path) -> Run:
         return Run(path, got.get("receipt") or {}, list(got.get("rows") or []))
     rows, identity = [], {}
     for line in (path / "checkpoint.jsonl").read_text(encoding="utf-8").splitlines():
-        entry = json.loads(line) if line.strip() else {}
+        try:
+            entry = json.loads(line) if line.strip() else {}
+        except ValueError:
+            continue   # a torn line (#1757)
         identity = entry.get("identity") or identity
         if "row" in entry:
             rows.append(entry["row"])

@@ -1,4 +1,5 @@
 """Queue items run under leases: taken by class, beaten, lapsed; a gone worker's jobs are retaken; delegations are rows. #1558."""
+import functools
 import os
 import subprocess
 import sys
@@ -11,6 +12,7 @@ import pytest
 from harness import item_lease, resources, serve_lease
 from harness import memory_store as ms
 from harness import workqueue as wq
+from tests.racing import race
 
 
 def _conn():
@@ -43,21 +45,17 @@ def test_a_class_at_capacity_takes_no_second_lease_until_the_first_is_released()
 
 
 def test_two_takers_racing_for_the_last_place_never_both_win():
-    got, start, opening = [], threading.Barrier(6), threading.Lock()
-    _conn().close()
+    got = []
 
-    def taker(n):
-        with opening:  # a fresh store's first connects race on journal_mode; the race under test is the take
-            c = _conn()
-        start.wait()
-        got.append(item_lease.take(c, resources.GPU, f"job {n:04d}"))
-        c.close()
+    def taker(n, start):
+        c = _conn()
+        try:
+            start()
+            got.append(item_lease.take(c, resources.GPU, f"job {n:04d}"))
+        finally:
+            c.close()
 
-    threads = [threading.Thread(target=taker, args=(n,)) for n in range(6)]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join(30)
+    race([functools.partial(taker, n) for n in range(6)])
     assert sum(1 for g in got if g) == 1 and len(got) == 6
     assert len(item_lease.live(_conn(), resources.GPU)) == 1
 

@@ -22,13 +22,23 @@ def _day(at: float) -> str:
 
 
 def open_store():
-    """The live store read-only (SQLite mode=ro), or a Postgres connection; None when there is no store."""
-    from harness import ledger, store
-    from harness import memory_store as ms
-    if store.backend() == store.POSTGRES:
-        return ms.connect()
-    path = ms.db_path()
-    return ledger.open_ro(path) if path.exists() else None
+    """The store store.choose_read picks, named on stderr; the connection, or None after saying why it is unread. #1781."""
+    from harness import store
+    chosen = store.choose_read()
+    note(f"store: {chosen.line()}")
+    if chosen.conn is None:
+        why = f"store UNREAD {chosen.outcome}: {chosen.why}"
+        note(why)
+        emit(False, error=why, outcome=chosen.outcome, store=chosen.as_dict())
+    return chosen.conn
+
+
+def unread(u) -> int:
+    """A store read that did not answer ends the report with its outcome, never a table of zeros. #1781."""
+    why = f"store UNREAD {u.outcome}: {u.why}"
+    note(why)
+    emit(False, error=why, outcome=u.outcome)
+    return 1
 
 
 def show(L: dict) -> None:
@@ -75,7 +85,7 @@ def show(L: dict) -> None:
 
 
 def cmd_time(a) -> int:
-    from harness import inventory_time as it, paths
+    from harness import inventory_time as it, paths, store
 
     now = time.time()
     since = None
@@ -89,11 +99,11 @@ def cmd_time(a) -> int:
             return 2
     conn = open_store()
     if conn is None:
-        note("no store")
-        emit(False, error="no store")
         return 1
     try:
         src = it.gather(conn, paths.home(), now, since)
+    except store.Unread as u:
+        return unread(u)
     finally:
         conn.close()
     prs = issues = None
@@ -114,7 +124,7 @@ def cmd_time(a) -> int:
 
 
 def cmd_weight(a) -> int:
-    from harness import inventory_weight as iw, paths
+    from harness import inventory_weight as iw, paths, store
 
     now = time.time()
     since = None
@@ -128,12 +138,12 @@ def cmd_weight(a) -> int:
             return 2
     conn = open_store()
     if conn is None:
-        note("no store")
-        emit(False, error="no store")
         return 1
     try:
         src = iw.gather(conn, paths.home(), now, since, kinds=a.kind or iw.KINDS, junit=a.junit, ci=not a.no_ci,
                         ci_cache=Path(a.ci_cache) if a.ci_cache else None)
+    except store.Unread as u:
+        return unread(u)
     finally:
         conn.close()
     L = iw.build(src, min_models=iw.MIN_MODELS if a.min_models is None else a.min_models,

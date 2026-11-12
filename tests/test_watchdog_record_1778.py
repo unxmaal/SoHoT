@@ -6,7 +6,7 @@ import pytest
 from harness import contention, paused_jobs
 from harness import memory_store as ms
 from harness import watchdog as wd
-from harness.memory_store.migrations import v99
+from harness.memory_store.migrations import v102
 from tests.test_limit_cuts_1087_harness_tz import _knobs
 from tests.test_watchdog import NIGHT, Fake, Notifier, P, _fallbacks, _rows, run
 
@@ -151,14 +151,14 @@ def test_the_migration_reads_each_earlier_rows_fields_from_its_text_once(tmp_pat
         _legacy(conn, "gateway", "restart", 0, "restart of gateway failed rc 1: x", {})
         _legacy(conn, "gateway", "notify", 0, "notify unavailable: no desktop notifier on linux", {})
         _legacy(conn, "gateway", "notify", 1, "dry-run", {})
-        v99.data(conn)
+        v102.data(conn)
         got = [tuple(r[k] for k in ("result", "notified", "job_id", "pgid", "run_dir")) for r in _rows(conn)]
         assert got == [(wd.ACTED, 0, None, 5, wd.canon(out)), (wd.ACTED, 1, 12, 12, ""), (wd.REFUSED, 0, None, None, ""),
                        (wd.WITHHELD, 0, None, None, ""), (wd.REFUSED, 0, None, None, ""), (wd.FAILED, 0, None, None, ""),
                        (wd.UNAVAILABLE, 0, None, None, ""), (wd.DRY, 0, None, None, "")]
-        assert set(v99._result(o, d) for o, d in [("noted", 0), ("x", 1)]) <= set(wd.RESULTS)
+        assert set(v102._result(o, d) for o, d in [("noted", 0), ("x", 1)]) <= set(wd.RESULTS)
         conn.execute("UPDATE watchdog_actions SET outcome = 'refused: reworded'")
-        v99.data(conn)
+        v102.data(conn)
         assert [r["result"] for r in _rows(conn)][0] == wd.ACTED
     finally:
         conn.close()

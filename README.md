@@ -624,6 +624,15 @@ case assumes `rho` 1 until a run measures it. The negative control is pinned: a
 challenger that wins two cases and loses one, the same way on every draw, is
 never adopted at any repeat (the old cell count adopted it from repeat 14).
 
+What a lane serves on a machine is a chain of named moves in `adoptions`
+(schema 100, #1735): each row adopts a model or withdraws the one serving, and
+leaves the lane's previous row, so two writers that read the same head cannot
+both land. `soh adopt --serving` prints every lane on every machine with its
+state: adopted, withdrawn, or configured default, never adopted. A by-hand
+adoption the machine cannot fit is named on that line. `soh adopt --lane L
+--withdraw "why"` withdraws the lane's adoption on this machine
+(`--all-machines` everywhere), and the configured default serves again.
+
 `soh adopt --power` prints, per lane, the repeat that reaches power 0.8 to
 detect `--effect` at alpha 0.05, the holdout size needed when no repeat up to
 16 can (and how many more holdout and lane cases that is), and the projected
@@ -3510,8 +3519,11 @@ including conclusions that turned out wrong and how they were caught.
 Every missed defect is traced to the logical failing behind it, that failing
 becomes a generic class with a test shape, and later code is tested against
 every class that has bitten (#492). The classes are defined once, in the
-gauntlet skill (`SKILL.md` and `general-corpus.md`). This repo binds its
-defects to them in `tests/gauntlet/classes.py`: `INDEX` maps a class id to its
+[gauntlet](https://github.com/unxmaal/gauntlet) package's corpus (`SKILL.md`
+and `general-corpus.md`), pinned to a tag in the dev dependencies; the tests read
+that pinned copy, never the local skill directory (#1785). This repo binds its
+defects to them in `tests/gauntlet/classes.py`, handed to the package as
+`tests/gauntlet/registry.py`'s `REGISTRY`: `INDEX` maps a class id to its
 instances here (issues and KB rules) and any scanner tests, `PENDING` holds
 proposed classes that have no skill entry yet, and `UNCLASSIFIED` gives a
 one-line reason for a defect that fits nothing.
@@ -3521,24 +3533,27 @@ class it belongs to (or a `PENDING` entry, then add the class to the skill and
 move it into `INDEX`), and refresh the snapshots:
 
 ```bash
-uv run python -m tests.gauntlet snapshot-defects   # closed `defect` issues, via gh
-uv run python -m tests.gauntlet snapshot-skill     # class ids from the skill
-uv run python -m tests.gauntlet audit              # gaps, classes per tier, kill rate
+uv run gauntlet snapshot-defects --registry tests.gauntlet.registry:REGISTRY  # closed `defect` issues, via gh
+uv run gauntlet snapshot-skill --registry tests.gauntlet.registry:REGISTRY    # class ids from the pinned corpus
+uv run gauntlet audit --registry tests.gauntlet.registry:REGISTRY             # gaps, classes per tier, kill rate
 ```
 
 `audit` lists closed defects no class names and closing references to them in
 `main`'s history and merged PR bodies; `--offline` uses the committed
 snapshot. CI checks the registry against the snapshot without network.
 
-Tier-2 classes with an honest trigger detector (`tests/gauntlet/detectors.py`,
+Tier-2 classes with an honest trigger detector (the package's `gauntlet.detectors`,
 named by the `detector` field in `INDEX`) find the sites where the trigger
 fires, such as a fixed table looked up with a fallback or an environment
 variable read with no test of who sets it. Every hit needs a test bound to it
 with `@pytest.mark.gauntlet("<class id>", site="<site the detector names>")`,
 or a waiver in the class's `waivers` with a one-line reason, so new code that
 trips a detector fails CI until it gets its own test. The hits that predate the
-detectors sit in `tests/gauntlet/backlog.json`, which may only shrink. The
-classes no detector can find carry a `review` regex instead, and
+detectors sit in `tests/gauntlet/backlog.txt`, one `<class id> <site>` per line,
+and no row may join it after the merge base with `origin/main`. Every
+module-level `MOVES` table is registered in the registry's `MOVES` and checked
+for unreachable states, dead ends and terminals that move, or waived there with
+an issue. The classes no detector can find carry a `review` regex instead, and
 `soh gauntlet review [range]` (default `origin/main...HEAD`) prints each one
 whose heuristic fires on the added lines, as its trigger question and test
 shape from the skill; `soh gauntlet audit` is the audit above.

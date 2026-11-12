@@ -280,11 +280,11 @@ class Probes:
 
     def job_pids(self) -> dict:
         """Queue job id -> the pid of its group leader, from the files the worker leaves. #628."""
-        from harness import workqueue
+        from harness import executors, workqueue
         out = {}
         for f in sorted(workqueue._pids().glob("*.pid")):
             with contextlib.suppress(OSError, ValueError):
-                out[f.stem] = int(f.read_text(encoding="utf-8").strip())
+                out[f.stem] = executors.pid_record(f)[0]
         return out
 
     def job(self, job_id: str) -> dict | None:

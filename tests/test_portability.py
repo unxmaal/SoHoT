@@ -12,7 +12,7 @@ import sys
 import tomllib
 from pathlib import Path
 
-from tests.gauntlet import scanners
+from gauntlet import scanners as gscanners
 
 REPO = Path(__file__).resolve().parents[1]
 #: The tests too. `open("scripts/env.sh").read()` in a test fails on
@@ -67,7 +67,7 @@ def test_no_temp_file_is_opened_as_text_without_an_explicit_encoding():
     """#1068: rsvg-convert reads the SVG render.py wrote as UTF-8; Windows wrote it in the locale codepage."""
     offenders = []
     for path in _sources():
-        offenders += scanners.text_tempfiles(path.read_text(encoding="utf-8"), path.relative_to(REPO).as_posix())
+        offenders += gscanners.text_tempfiles(path.read_text(encoding="utf-8"), path.relative_to(REPO).as_posix())
     assert not offenders, "\n  ".join(["text-mode temp files with no encoding:", *offenders])
 
 
@@ -90,7 +90,7 @@ def test_no_posix_only_primitive_is_used_without_a_platform_guard():
     """#552: harness/vllm.py stopped its child with os.killpg, which Windows does not have."""
     offenders = []
     for path in _sources():
-        offenders += scanners.posix_primitives(path.read_text(encoding="utf-8"),
+        offenders += gscanners.posix_primitives(path.read_text(encoding="utf-8"),
                                                path.relative_to(REPO).as_posix())
     assert not offenders, "a POSIX-only primitive with no platform guard:\n  " + "\n  ".join(offenders)
 
@@ -101,7 +101,7 @@ def test_no_test_runs_a_bare_shell_name():
     for path in _sources():
         rel = path.relative_to(REPO).as_posix()
         if rel.startswith("tests/"):
-            offenders += scanners.bare_shells(path.read_text(encoding="utf-8"), rel)
+            offenders += gscanners.bare_shells(path.read_text(encoding="utf-8"), rel)
     assert not offenders, "a bare shell name in a subprocess argv:\n  " + "\n  ".join(offenders)
 
 
@@ -110,7 +110,7 @@ def test_no_source_spells_a_relative_path_with_native_separators():
     offenders = []
     for path in _sources():
         rel = path.relative_to(REPO).as_posix()
-        offenders += scanners.native_relpaths(path.read_text(encoding="utf-8"), rel)
+        offenders += gscanners.native_relpaths(path.read_text(encoding="utf-8"), rel)
     assert not offenders, "a relative path spelled with native separators:\n  " + "\n  ".join(offenders)
 
 
@@ -118,7 +118,7 @@ def test_no_test_grows_a_file_to_fake_its_size():
     """#838: an 18 GiB truncate() is sparse on macOS and filled the Windows runner's disk."""
     offenders = []
     for path in _sources():
-        offenders += scanners.grown_files(path.read_text(encoding="utf-8"), path.relative_to(REPO).as_posix())
+        offenders += gscanners.grown_files(path.read_text(encoding="utf-8"), path.relative_to(REPO).as_posix())
     assert not offenders, "a file grown to fake its size:\n  " + "\n  ".join(offenders)
 
 
@@ -178,7 +178,7 @@ def _closure(roots):
 
 def _skip_covered(text, rel, requirements):
     """Distributions a file's module-level importorskip covers: the skipped one's whole group."""
-    skipped = set().union(*(_dists(m) for m in scanners.module_skips(text, rel)))
+    skipped = set().union(*(_dists(m) for m in gscanners.module_skips(text, rel)))
     groups = {g for d, _, g in requirements if d in skipped and g}
     return skipped | {d for d, _, g in requirements if g in groups}
 
@@ -193,7 +193,7 @@ def test_every_module_a_test_imports_is_installed_on_every_platform():
         rel = path.relative_to(REPO).as_posix()
         text = path.read_text(encoding="utf-8")
         covered = everywhere | _skip_covered(text, rel, requirements)
-        offenders += [f"{rel}:{line}: {top}" for line, top in scanners.unguarded_imports(text, rel)
+        offenders += [f"{rel}:{line}: {top}" for line, top in gscanners.unguarded_imports(text, rel)
                       if _third_party(top) and not _dists(top) & covered]
     assert not offenders, (
         "a test imports a module no unmarked requirement in [project] or the groups `make test` syncs "

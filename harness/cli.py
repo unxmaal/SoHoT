@@ -1066,9 +1066,10 @@ def build_parser() -> argparse.ArgumentParser:
     dep = sub.add_parser("deploy", help="deploys as queue jobs: each green main commit built alongside, switched, "
                          "verified or rolled back, behind the contention gate. #1506, #1509")
     dep.add_argument("action", nargs="?", default="status",
-                     choices=("status", "poll", "now", "pause", "resume", "run", "migrate", "nodes"),
+                     choices=("status", "poll", "now", "pause", "resume", "run", "migrate", "nodes", "repair"),
                      help="now [SHA] queues origin/main (or SHA) at once; nodes deploys each node behind this "
-                          "machine's sha, failed ones too; run and migrate are the job's own steps")
+                          "machine's sha, failed ones too; repair [ID] lists or does the repair of a deploy left "
+                          "store_ahead; run and migrate are the job's own steps")
     dep.add_argument("sha", nargs="?", default="")
     dep.set_defaults(func=deploy_cmd.cmd_deploy)
     spc = sub.add_parser("specs", help="per capability in openspec/: scenarios, bound to a test, untested; "
@@ -1133,6 +1134,12 @@ def build_parser() -> argparse.ArgumentParser:
                      help="the smallest per-cell pass-rate gain worth adopting for")
     ado.add_argument("--unscreened", action="store_true",
                      help="repo lane: measure a challenger whose repo screen has not survived, or has not run (#1353)")
+    ado.add_argument("--serving", action="store_true",
+                     help="print what every lane serves on every machine and the named state that says so (#1735)")
+    ado.add_argument("--withdraw", default="", metavar="WHY",
+                     help="with --lane: withdraw the lane's adoption on this machine, saying why; its configured "
+                          "default serves (#1735)")
+    ado.add_argument("--all-machines", action="store_true", help="with --withdraw: withdraw it on every machine")
     ado.set_defaults(func=adopt_cmd.cmd_adopt)
 
     rpl = sub.add_parser(
