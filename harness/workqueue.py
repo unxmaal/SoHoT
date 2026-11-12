@@ -484,21 +484,18 @@ def _clear_flags(job_id) -> None:
 
 
 def _pid_of(job_id) -> int | None:
+    from harness import executors
     try:
-        pid = int(_pid_file(job_id).read_text(encoding="utf-8").strip())
+        pid, started = executors.pid_record(_pid_file(job_id))
     except (OSError, ValueError):
         return None
-    return pid if alive(pid) and _leads(pid) else None
+    return pid if alive(pid) and _leads(pid, started) else None
 
 
-def _leads(pid: int) -> bool:
-    """Whether pid still leads its own process group, as a job's started process does; a reused pid does not. #1728."""
-    if sys.platform == "win32":
-        return True
-    try:
-        return os.getpgid(int(pid)) == int(pid)
-    except OSError:
-        return False
+def _leads(pid: int, started: str = "") -> bool:
+    """Whether pid is still the job's started process: its own group's leader, started when its pid file says; a reused pid is not. #1728, #1820."""
+    from harness import proc_identity
+    return proc_identity.same({"pid": int(pid), "pgid": int(pid), "started": started}) is not False
 
 
 def spawn_group(argv, cwd, stdout, env) -> subprocess.Popen:

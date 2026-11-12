@@ -18,7 +18,7 @@ NORMAL = pressure.Pressure(level=pressure.NORMAL)
 @pytest.fixture(autouse=True)
 def _leads(monkeypatch):
     """This process stands in for a job's process, which as a real job's would lead its own group. #1728."""
-    monkeypatch.setattr(wq, "_leads", lambda pid: True)
+    monkeypatch.setattr(wq, "_leads", lambda pid, started="": True)
 
 
 @pytest.fixture
