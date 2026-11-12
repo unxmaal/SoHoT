@@ -132,6 +132,7 @@ def test_the_aging_reads_need_no_sqlite_only_construct_on_postgres(conn):
         assert "AS BIGINT" not in pg, "Postgres rounds a CAST to integer where SQLite truncates"
 
 
+@pytest.mark.gauntlet("a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null", site="harness/memory_store/migrations/v101.py:data:verdicts")
 def test_the_backfill_classes_exactly_the_rows_the_sentence_reader_counted(conn):
     from harness.memory_store.migrations import v101
     for name in ("org/a", "org/b", "org/c"):
