@@ -89,6 +89,14 @@ jobs:
           fi
           if [ -s "$listing" ]; then echo "SOHOT_SELECTED=$listing" >> "$GITHUB_ENV"; fi
 
+      - name: Restore the tree-scan cache
+        # Scanner results keyed by the text they read, so a stale entry is never served, only missed (#1590).
+        uses: actions/cache/restore@v4
+        with:
+          path: .pytest_cache/d/tree-scan
+          key: tree-scan-${{ github.sha }}
+          restore-keys: tree-scan-
+
       - name: make check
         # The same command a person runs locally. CI running something else is
         # how a repo gets a green badge and a broken checkout.
@@ -98,6 +106,14 @@ jobs:
           SOHOT_TEST_LOG: /tmp/test-times.tsv
         # user+sys over real x cores says whether the runner's cores were busy or waiting (#1146).
         run: set -o pipefail && /usr/bin/time -p make check 2>&1 | tee /tmp/check.log
+
+      - name: Save the tree-scan cache
+        # Saved failed or not: an entry is right whenever its key matches, so the next run starts warm (#1590).
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .pytest_cache/d/tree-scan
+          key: tree-scan-${{ github.sha }}
 
       - name: Where the time went
         if: always()

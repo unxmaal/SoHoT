@@ -4,6 +4,7 @@ from pathlib import Path
 
 from gauntlet import scanners as gscanners
 
+from tests import tree_cache
 from tests.gauntlet import scanners
 
 REPO = Path(__file__).resolve().parent.parent
@@ -56,23 +57,23 @@ def _fail_with(found, why):
 
 
 def test_no_function_has_a_mutable_default():
-    _fail_with(gscanners.scan_tree(REPO, gscanners.mutable_defaults, gscanners.is_python),
+    _fail_with(tree_cache.scan_tree(REPO, gscanners.mutable_defaults, gscanners.is_python),
                "a mutable default is shared by every call; default to None and build it inside")
 
 
 def test_no_shell_script_ignores_a_failure_it_could_see():
-    _fail_with(gscanners.scan_tree(REPO, gscanners.unchecked_status_shell, gscanners.is_shell),
+    _fail_with(tree_cache.scan_tree(REPO, gscanners.unchecked_status_shell, gscanners.is_shell),
                "set -o pipefail, or end the pipeline in a `grep -q` probe; guard each cd without errexit")
 
 
 def test_no_test_binds_or_writes_a_fixed_shared_resource():
-    _fail_with(gscanners.scan_tree(REPO, gscanners.fixed_resources, gscanners.is_python, _tests_only),
+    _fail_with(tree_cache.scan_tree(REPO, gscanners.fixed_resources, gscanners.is_python, _tests_only),
                "two suites at once (parallel worktrees) collide on a fixed resource; ask the OS for one")
 
 
 def test_the_live_home_is_derived_only_in_harness_paths():
-    found = (gscanners.scan_tree(REPO, scanners.live_home_python, gscanners.is_python)
-             + gscanners.scan_tree(REPO, scanners.live_home_shell, _shellish))
+    found = (tree_cache.scan_tree(REPO, scanners.live_home_python, gscanners.is_python)
+             + tree_cache.scan_tree(REPO, scanners.live_home_shell, _shellish))
     _fail_with(found, "conftest redirects LOCALHARNESS_HOME; a path derived any other way is the live one")
 
 
@@ -104,8 +105,8 @@ def test_the_shared_offline_guard_and_a_child_env_are_left_alone():
 
 
 def test_no_code_flips_the_offline_guard_except_through_env_online():
-    _fail_with(gscanners.scan_tree(REPO, scanners.offline_flips, gscanners.is_python,
-                                  lambda rel: not _tests_only(rel)),
+    _fail_with(tree_cache.scan_tree(REPO, scanners.offline_flips, gscanners.is_python,
+                                   lambda rel: not _tests_only(rel)),
                "huggingface_hub reads HF_HUB_OFFLINE once at import, so the env var alone lifts nothing; "
                "wrap the call in harness.env.online() (#931, RULE #208)")
 
@@ -129,8 +130,8 @@ def test_a_sum_inside_variants_or_over_one_variant_is_left_alone():
 
 
 def test_no_code_adds_up_a_listing_outside_variants():
-    _fail_with(gscanners.scan_tree(REPO, scanners.listing_sums, gscanners.is_python,
-                                  lambda rel: rel.startswith("harness/")),
+    _fail_with(tree_cache.scan_tree(REPO, scanners.listing_sums, gscanners.is_python,
+                                   lambda rel: rel.startswith("harness/")),
                "a listing's sum is the repo, not what runs; hf_facts and card_description reported it "
                "after the verdict stopped (#964, gauntlet one-question-two-answers)")
 
@@ -141,8 +142,8 @@ CONFIG_LESS_PIN = 148
 
 
 def test_swallowed_errors_are_an_inventory_that_only_shrinks():
-    found = (gscanners.scan_tree(REPO, gscanners.swallowed_python, gscanners.is_python)
-             + gscanners.scan_tree(REPO, gscanners.swallowed_shell, _shellish))
+    found = (tree_cache.scan_tree(REPO, gscanners.swallowed_python, gscanners.is_python)
+             + tree_cache.scan_tree(REPO, gscanners.swallowed_shell, _shellish))
     msg = gscanners.ratchet(found, SWALLOWED_PIN, "swallowed errors (empty except, bare except, || true)")
     assert msg is None, msg
 
@@ -230,7 +231,7 @@ def test_every_wall_bound_waiver_names_a_test_that_exists():
 
 
 def test_no_test_bounds_measured_wall_time_from_above():
-    _fail_with(gscanners.scan_tree(REPO, scanners.wall_bounds, gscanners.is_python, _tests_only),
+    _fail_with(tree_cache.scan_tree(REPO, scanners.wall_bounds, gscanners.is_python, _tests_only),
                "a loaded machine (make check -n auto beside other suites) overruns any upper bound on wall time; "
                "assert order, a count, a lower bound or a structural fact, or inject the clock (#1423)")
 
@@ -251,7 +252,7 @@ def test_identity_checks_that_do_not_sniff_for_a_double_are_left_alone():
 
 
 def test_no_production_code_sniffs_for_a_test_double():
-    _fail_with(gscanners.scan_tree(REPO, scanners.double_sniffs, gscanners.is_python, lambda rel: not _tests_only(rel)),
+    _fail_with(tree_cache.scan_tree(REPO, scanners.double_sniffs, gscanners.is_python, lambda rel: not _tests_only(rel)),
                "production code that checks whether a name was replaced runs one path under test and another live; "
                "tests name the machine at environment.identity instead (#1437, #451)")
 
@@ -271,6 +272,6 @@ def test_a_test_that_names_the_machine_at_the_seam_is_left_alone():
 
 
 def test_no_test_replaces_this_machine():
-    _fail_with(gscanners.scan_tree(REPO, scanners.machine_stand_ins, gscanners.is_python, _tests_only),
+    _fail_with(tree_cache.scan_tree(REPO, scanners.machine_stand_ins, gscanners.is_python, _tests_only),
                "a replaced this_machine reaches some callers and not this_fingerprint or the gateway; "
                "use conftest machine_is / machine_has (#1437)")

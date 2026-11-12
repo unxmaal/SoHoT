@@ -517,6 +517,10 @@ def eval_entry_points(text, rel):
     return out
 
 
+def eval_entry_keys(text, rel):
+    return [key for _, key in eval_entry_points(text, rel)]
+
+
 def _is_main(test):
     return (isinstance(test, ast.Compare) and isinstance(test.left, ast.Name) and test.left.id == "__name__"
             and _strings(test.comparators) == ["__main__"])

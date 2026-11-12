@@ -390,6 +390,21 @@ def test_mutation_never_runs_in_a_push_run_and_leaves_macos_runners_for_check_ma
     assert 1 <= mutation["strategy"]["max-parallel"] <= 2
 
 
+def test_macos_keeps_the_tree_scan_cache_across_runs():
+    """Restored before make check and saved after it, failed or not, where conftest points the scanners (#1590)."""
+    from tests import tree_cache
+    doc, _ = _ci()
+    steps = doc["jobs"]["check-macos"]["steps"]
+    at = {s.get("name"): i for i, s in enumerate(steps)}
+    restore, save = steps[at["Restore the tree-scan cache"]], steps[at["Save the tree-scan cache"]]
+    assert at["Restore the tree-scan cache"] < at["make check"] < at["Save the tree-scan cache"]
+    assert restore["uses"].startswith("actions/cache/restore@") and save["uses"].startswith("actions/cache/save@")
+    assert restore["with"]["path"] == save["with"]["path"] == f".pytest_cache/d/{tree_cache.CACHE_NAME}"
+    key = restore["with"]["key"]
+    assert key == save["with"]["key"] and "github.sha" in key and key.startswith(restore["with"]["restore-keys"])
+    assert save["if"] == "always()"
+
+
 def test_the_nightly_is_not_scheduled_on_the_hour():
     """'0 6 * * *' started 11:54-15:39 UTC on 2026-10-28..11-11, among the day's merges (#1802)."""
     _, on = _ci()
