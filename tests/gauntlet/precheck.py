@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import ast
-import json
 import os
 import sys
 import time
@@ -193,8 +192,8 @@ def detector_bindings(root=REPO) -> list[Problem]:
     """tests/test_gauntlet_detectors.py for registry.PRECHECK_DETECTORS: a hit is bound, waived or in the backlog."""
     from gauntlet import detectors, ratchet
 
+    from harness import knob_backlog
     from tests.gauntlet import classes, registry
-    pin = pinned(root, "tests/gauntlet/registry.py", "BACKLOG_PIN")
     trees = detectors.parse(_trees(root))
     config = ratchet.detector_config(registry.REGISTRY)
     # A registered move table is read only where its module is in the tree checked.
@@ -203,7 +202,7 @@ def detector_bindings(root=REPO) -> list[Problem]:
              if (named := set(detectors.names(e))) and named <= registry.PRECHECK_DETECTORS}
     run = detectors.run(trees, index, registry.production, None, config)
     led = detectors.ledger(run, detectors.bindings(_trees(root, tests=True)), index)
-    backlog = json.loads((Path(root) / "tests/gauntlet/backlog.json").read_text(encoding="utf-8"))
+    backlog = registry.load_backlog(root)
     out = [_p("gauntlet", f"{cid}: {s} trips a gauntlet trigger with no bound test",
               f"mark the test that pins it: @pytest.mark.gauntlet({scaffold.q(cid)}, site={scaffold.q(s)})",
               f"or waive it in tests/gauntlet/classes.py INDEX[{scaffold.q(cid)}]['waivers']:",
@@ -211,13 +210,11 @@ def detector_bindings(root=REPO) -> list[Problem]:
            for cid, row in led.items() for s in row["unbound"] if s not in backlog.get(cid, [])]
     gone = [(cid, s) for cid, rows in backlog.items() if cid in index for s in rows
             if s not in led.get(cid, {}).get("unbound", [])]
-    total = sum(len(v) for v in backlog.values()) - len(gone)
     out += [_p("gauntlet", f"{cid}: {s} is bound, waived or gone",
-               f"delete it from tests/gauntlet/backlog.json and set BACKLOG_PIN = {total} in tests/gauntlet/registry.py")
-            for cid, s in gone]
-    if not gone and total != pin:
-        out.append(_p("gauntlet", f"tests/gauntlet/backlog.json holds {total}, pinned at {pin}",
-                      f"set BACKLOG_PIN = {total} in tests/gauntlet/registry.py"))
+               f"delete this line from {registry.BACKLOG_REL}:", f"{cid} {s}") for cid, s in gone]
+    out += [_p("gauntlet", f"{row} joined the backlog after the merge base with {knob_backlog.BASE}",
+               f"delete this line from {registry.BACKLOG_REL} and bind or waive the hit instead:", row)
+            for row in registry.backlog_added(root) or []]
     return out
 
 

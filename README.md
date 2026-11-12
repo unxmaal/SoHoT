@@ -3540,7 +3540,8 @@ variable read with no test of who sets it. Every hit needs a test bound to it
 with `@pytest.mark.gauntlet("<class id>", site="<site the detector names>")`,
 or a waiver in the class's `waivers` with a one-line reason, so new code that
 trips a detector fails CI until it gets its own test. The hits that predate the
-detectors sit in `tests/gauntlet/backlog.json`, which may only shrink. Every
+detectors sit in `tests/gauntlet/backlog.txt`, one `<class id> <site>` per line,
+and no row may join it after the merge base with `origin/main`. Every
 module-level `MOVES` table is registered in the registry's `MOVES` and checked
 for unreachable states, dead ends and terminals that move, or waived there with
 an issue. The classes no detector can find carry a `review` regex instead, and
