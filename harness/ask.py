@@ -64,6 +64,8 @@ class Root:
     path: Path
     #: A directory name the file must sit beneath inside the root, or "" for anywhere in it.
     under: str = ""
+    #: `under` must be the root's own child, not a directory deeper in it.
+    top: bool = False
 
 
 @dataclass(frozen=True)
@@ -97,29 +99,59 @@ def worktree(cwd: Path) -> Path:
     return here
 
 
+def running_checkout() -> Path:
+    from harness import paths
+    return paths.REPO
+
+
+def worktrees(repo: Path) -> list[Path]:
+    """Every git worktree of the repository holding `repo`, main checkout first; [] outside one or when .git is unreadable."""
+    from harness import repo as checkout
+    top = worktree(repo)
+    if not (top / ".git").exists():
+        return []
+    try:
+        _, common = checkout.git_dirs(top)
+        out = [common.parent] if common.name == ".git" else []
+        out += [Path(f.read_text(encoding="utf-8").strip()).parent for f in sorted(common.glob("worktrees/*/gitdir"))]
+    except (OSError, UnicodeDecodeError, IndexError):
+        return []
+    return list(dict.fromkeys(Path(os.path.realpath(p)) for p in out))
+
+
 def default_roots(cwd: Path | None = None) -> list[Root]:
     from harness import paths
     out = [*claude_roots(), Root(paths.logs()), *configured()]
+    out += [Root(wt, "tmp", top=True) for wt in worktrees(running_checkout())]
     if cwd is not None:
         out.append(Root(worktree(cwd)))
     return out
 
 
-def _under(path: Path, base: Path, under: str) -> bool:
+def _under(path: Path, base: Path, under: str, top: bool = False) -> bool:
     try:
         rel = path.relative_to(base)
     except ValueError:
         return False
-    return not under or under in rel.parts[:-1]
+    dirs = rel.parts[:-1]
+    return not under or under in (dirs[:1] if top else dirs)
 
 
 def _inside(real: Path, root: Root) -> bool:
-    return _under(real, Path(os.path.realpath(root.path)), root.under)
+    return _under(real, Path(os.path.realpath(root.path)), root.under, root.top)
 
 
 def _named(lexical: Path, root: Root) -> bool:
     bases = {Path(os.path.abspath(root.path)), Path(os.path.realpath(root.path))}
-    return any(_under(lexical, b, root.under) for b in bases)
+    return any(_under(lexical, b, root.under, root.top) for b in bases)
+
+
+def _names(roots: list[Root]) -> str:
+    out = [f"{r.path}" + (f" (under {r.under}/)" if r.under else "") for r in roots if not r.top]
+    tops = [r for r in roots if r.top]
+    if tops:
+        out.append(f"{tops[0].under}/ of {len(tops)} git worktrees of {tops[0].path}")
+    return ", ".join(out)
 
 
 def check(raw, roots: list[Root], cwd: Path | None = None) -> Path:
@@ -137,7 +169,7 @@ def check(raw, roots: list[Root], cwd: Path | None = None) -> Path:
     real = Path(os.path.realpath(p))
     if any(_inside(real, r) for r in roots):
         return real
-    names = ", ".join(f"{r.path}" + (f" (under {r.under}/)" if r.under else "") for r in roots)
+    names = _names(roots)
     if any(_named(Path(os.path.abspath(p)), r) for r in roots):
         raise Refused(f"{text} is a symlink out of the roots this reads: {names}")
     raise Refused(f"{text} is outside the roots this reads: {names}. Set {ROOTS_ENV} to add one")

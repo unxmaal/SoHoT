@@ -67,8 +67,9 @@ def test_the_agent_lane_s_deliberately_broken_case_repos_are_not_production():
     assert not REGISTRY.production("tests/test_x.py")
 
 
-def test_the_exclusive_waiver_stands_only_while_its_table_is_unsound():
-    """#1821: when exclusive.MOVES lists the move into abandoned, register it instead of waiving it."""
-    table = moves.MoveTable("harness/exclusive.py:MOVES", exclusive.MOVES, initial=(exclusive.FREE,))
-    assert table.findings(), "exclusive.MOVES is sound now: move it from MOVE_WAIVERS into MOVES in the registry"
-    assert "harness/exclusive.py:MOVES" in registry.MOVE_WAIVERS
+def test_exclusive_moves_is_registered_and_sound():
+    """#1821: the gpu lease table lists the move a holder's death makes into abandoned."""
+    table = next(t for t in registry.MOVES if t.site == "harness/exclusive.py:MOVES")
+    assert table.findings() == []
+    assert "harness/exclusive.py:MOVES" not in registry.MOVE_WAIVERS
+    assert moves.MoveTable(table.site, exclusive.MOVES, initial=(exclusive.FREE,)).findings() == []

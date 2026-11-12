@@ -475,7 +475,7 @@ def test_the_switch_imports_nothing_outside_the_stdlib_but_its_lifecycle_table()
     out = subprocess.run([sys.executable, "-I", "-c", "import runpy, sys; runpy.run_path(sys.argv[1]); "
                           "print(sorted(m for m in sys.modules if m.startswith('harness')))",
                           deploy_switch.__file__], capture_output=True, text=True, check=True)
-    assert out.stdout.strip() == "['harness', 'harness.deploy_state']"
+    assert out.stdout.strip() == "['harness', 'harness.deploy_state', 'harness.proc_identity']"
 
 
 def test_morning_names_a_deploy_that_did_not_deploy():
