@@ -3,7 +3,7 @@ import pytest
 import yaml
 
 from evals import run as R
-from harness import context, gateway, identity, nodes
+from harness import context, gateway, identity, node_state, nodes
 
 MODEL = "Stem"
 NODE_BASE = "http://node1.invalid:8083"
@@ -34,6 +34,7 @@ def _nodes(tmp_path, monkeypatch, sha=SHA, machine=AWAY, lanes=()):
     cfg.write_text(BASE, encoding="utf-8")
     gateway.write_served(cfg, defaults={lane: MODEL for lane in lanes}, nodes=nodes.load())
     monkeypatch.setenv("GATEWAY_CONFIG", str(cfg))
+    monkeypatch.setattr(node_state, "read", lambda node: {"models": {MODEL: {"file": {"size": 7, "mtime_ns": 1, "sha256": SHA}}}})
 
 
 @pytest.fixture

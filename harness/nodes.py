@@ -559,24 +559,51 @@ def _records() -> dict:
     return got if isinstance(got, dict) else {}
 
 
-def recorded(node: Node, model: str) -> str:
-    """The sha256 this node last reported for a model, "" when it reported none or was another machine then."""
+def _entry(node: Node, model: str) -> dict:
+    """{sha256, size?, mtime_ns?, at} this node last reported for a model, {} for none or another machine then."""
     got = _records().get(node.name) or {}
     if not isinstance(got, dict) or got.get("machine") != node.identity:
-        return ""
-    return str((got.get("models") or {}).get(node.node_id(model)) or "")
+        return {}
+    one = (got.get("models") or {}).get(node.node_id(model))
+    one = one if isinstance(one, dict) else {"sha256": one} if one else {}
+    return {**one, "at": got.get("at") or ""} if one.get("sha256") else {}
 
 
-def digest(node: Node, model: str) -> tuple[str, str]:
-    """(sha256, "") from nodes.yaml or what the node reported, else ("", why there is none or they disagree)."""
-    mine, got = node.sha256(model), recorded(node, model)
+def recorded(node: Node, model: str) -> str:
+    """The sha256 this node last reported for a model, "" when it reported none or was another machine then."""
+    return str(_entry(node, model).get("sha256") or "")
+
+
+def _file(state: dict, node: Node, model: str) -> dict:
+    return ((state.get("models") or {}).get(node.node_id(model)) or {}).get("file") or {}
+
+
+def digest(node: Node, model: str, read=None) -> tuple[str, str]:
+    """(sha256, "") when the node's file now is the one nodes.yaml or its report names, else ("", why not). #1775."""
+    rec = _entry(node, model)
+    mine, got = node.sha256(model), str(rec.get("sha256") or "")
     if mine and got and mine != got:
         return "", (f"{path().name} records sha256 {mine} for {model} on node {node.name}, "
                     f"but the node reports {got}")
-    if mine or got:
-        return mine or got, ""
-    return "", (f"{path().name} records no sha256 for {model} on node {node.name}, and the node has "
-                f"reported none to {record_path()}")
+    want = mine or got
+    if not want:
+        return "", (f"{path().name} records no sha256 for {model} on node {node.name}, and the node has "
+                    f"reported none to {record_path()}")
+    from harness import node_state
+    state = (read or node_state.read)(node)
+    now, at = _file(state, node, model), f" (reported {rec['at']})" if rec.get("at") else ""
+    if now.get("sha256"):
+        return (want, "") if now["sha256"] == want else ("", (
+            f"node {node.name} now serves {model} from a file with sha256 {now['sha256']}, not the {want} "
+            f"recorded{at}: it changed under the same name"))
+    if "size" in now:
+        if got == want and (rec.get("size"), rec.get("mtime_ns")) == (now["size"], now["mtime_ns"]):
+            return want, ""
+        return "", (f"node {node.name}'s file for {model} is not the one sha256 {want} was recorded for{at} "
+                    f"(size {now['size']}, mtime_ns {now['mtime_ns']}) and the node has not hashed it; "
+                    f"restart its server, then run `python -m harness.nodes check`")
+    why = state.get("error") or now.get("error") or "its report names no file for it (a release before #1775)"
+    return "", f"node {node.name} cannot show its file for {model} is still the one sha256 {want} names: {why}"
 
 
 def _record(node: Node, reported: dict) -> None:
@@ -597,9 +624,11 @@ def _reported(tags) -> str:
                  and _SHA.match(t[len(DIGEST_TAG):].lower())), "")
 
 
-def digests(nodes: list[Node], get=None) -> list[tuple[str, str]]:
-    """(PASS|FAIL|WARN, line) per node model: the sha256 its /v1/models tags, recorded, and checked against nodes.yaml. #1683."""
+def digests(nodes: list[Node], get=None, read=None) -> list[tuple[str, str]]:
+    """(PASS|FAIL|WARN, line) per node model: the sha256 its /v1/models tags, recorded with the file it names, and checked against nodes.yaml. #1683, #1775."""
+    from harness import node_state
     get = get or (lambda url, node: _get_models(url, node, DIGEST_TIMEOUT_S))
+    read = read or node_state.read
     out = []
     for node in nodes:
         try:
@@ -613,7 +642,7 @@ def digests(nodes: list[Node], get=None) -> list[tuple[str, str]]:
                                 f"recorded for {', '.join(node.models)}"))
             continue
         tags = ids if isinstance(ids, dict) else dict.fromkeys(ids, ())
-        reported = {}
+        reported, state = {}, read(node)
         for model in node.models:
             nid = node.node_id(model)
             got, mine = _reported(tags.get(nid)), node.sha256(model)
@@ -621,7 +650,15 @@ def digests(nodes: list[Node], get=None) -> list[tuple[str, str]]:
                 out.append(("WARN", f"node {node.name} reports no sha256 for {nid} (its release or preset tags "
                                     f"none){'' if mine else '; its runs carry no model digest'}"))
                 continue
-            reported[nid] = got
+            now = _file(state, node, model)
+            if now.get("sha256") == got:
+                reported[nid] = {"sha256": got, "size": now["size"], "mtime_ns": now["mtime_ns"]}
+            else:
+                reported[nid] = {"sha256": got}
+                if "size" in now:
+                    out.append(("WARN", f"node {node.name} {model}: its server tags sha256 {got}, but its file "
+                                        f"changed since it was hashed; its runs carry no model digest until "
+                                        f"the server restarts"))
             if mine and mine != got:
                 out.append(("FAIL", f"node {node.name} {model}: {path().name} records sha256 {mine}, "
                                     f"the node reports {got}"))
