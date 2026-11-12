@@ -17,6 +17,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from harness import exclusive, job_state as js, paths, queue_hold, resources
+from harness.job_release import stale_schema
 
 PENDING, RUNNING, DONE, FAILED = js.PENDING, js.RUNNING, js.DONE, js.FAILED
 CANCELLED, PAUSED = js.CANCELLED, js.PAUSED
@@ -204,18 +205,6 @@ def code_schema(cwd) -> int | None:
     schema = _schema_file(cwd)
     m = schema and re.search(r"^SCHEMA_VERSION\s*=\s*(\d+)", schema.read_text(encoding="utf-8"), re.M)
     return int(m.group(1)) if m else None
-
-
-def stale_schema(cwd, conn) -> str:
-    """Why a job in cwd would refuse this store (its code speaks an older schema), or ''. #1348."""
-    code = code_schema(cwd)
-    row = conn.execute("SELECT value FROM meta WHERE key='schema'").fetchone()
-    store = int(row["value"]) if row else 0
-    if code is None or code >= store:
-        return ""
-    top = _schema_file(cwd).parents[2]
-    return (f"the job's code ({top}) speaks schema {code} but the store is schema {store}, "
-            f"so it would refuse the store when it starts; queue from the deploy or update that checkout")
 
 
 #: Planners that rerun a model the lane already measured (a knob sweep, a reverify), so no repo screen comes first. #1353
@@ -847,7 +836,10 @@ def job_venv(cwd, environ) -> dict:
 
 
 def _run_claimed(job: dict, log: Path, popen=None) -> dict | None:
+    from harness import job_release
     with _store() as c:
+        if job_release.start(c, job, log, stale_schema(job["cwd"] or ".", c)) == job_release.REFUSED:
+            return get(job["id"], conn=c) or job
         stale = stale_schema(job["cwd"] or ".", c)
         if stale:
             log.write_text(f"not started: {stale}\n", encoding="utf-8")

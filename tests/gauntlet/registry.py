@@ -94,7 +94,6 @@ OPEN_ISSUES = {
     1781: (EF, (r"^harness/commands/(context|inventory|ledger)\.py:\w+:chooser$", r"^harness/otel\.py:_select:except$",
               r"^harness/trends\.py:(ledger|delegation)_rows:except$")),
     1782: (EF, (r"^harness/rank\.py:(incumbent_bases|passed_over):except$",)),
-    1788: (VS, (r"^harness/workqueue\.py:stale_schema:one-sided$",)),
     1790: (VS, (r"^harness/(nodes|install_env|engine_smoke|slot_probe|router|interactive)\.py:__main__:both-phases$",)),
     1796: (OR, (r":default:",)),
 }
