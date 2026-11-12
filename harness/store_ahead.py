@@ -19,6 +19,8 @@ RELOAD = "reload"
 STALE = "stale"
 #: Not a deployed release (a checkout or worktree): its code is older than the store.
 BEHIND = "behind"
+#: A deploy ended with the store ahead of the code and waits on its repair (soh deploy repair). #1841.
+REPAIR = "repair"
 #: Waiting on a reload that is coming: skipped quietly, exit 0, no alert.
 QUIET = frozenset({SUPERSEDED, RELOAD})
 
@@ -55,7 +57,10 @@ def deploy_running(now: float | None = None, connect=None) -> bool:
 
 
 def verdict(root: Path | None = None, link=None, running=None) -> str:
-    """Which of SUPERSEDED, RELOAD, STALE or BEHIND this process is, for a store ahead of its code."""
+    """Which of REPAIR, SUPERSEDED, RELOAD, STALE or BEHIND this process is, for a store ahead of its code."""
+    from harness import deploy_repair
+    if deploy_repair.pending():
+        return REPAIR
     root = Path(root or paths.REPO).resolve()
     if root.parent != (paths.home() / "releases").resolve():
         return BEHIND
@@ -75,6 +80,10 @@ def line(kind: str, exc: BaseException, root: Path | None = None) -> str:
     if kind == RELOAD:
         return (f"store ahead, waiting for reload: the store is schema {have}, release {name} speaks {speaks}; "
                 f"the running deploy's switch reloads this unit")
+    if kind == REPAIR:
+        from harness import deploy_repair
+        return (f"store ahead: the store is schema {have}, release {name} speaks {speaks}; "
+                + "; ".join(deploy_repair.lines(deploy_repair.pending())))
     if kind == STALE:
         return (f"store ahead of the linked release: the store is schema {have}, the linked release {name} speaks "
                 f"{speaks} and no deploy is running, so nothing will reload it; link a release that speaks {have}")

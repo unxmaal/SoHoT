@@ -498,7 +498,8 @@ def needs(r: dict) -> list[str]:
     d = r["deploy"]
     if d.get("available") and d["behind"]:
         out.append(f"deploy is {d['behind']} commit(s) behind origin/main")
-    from harness import contention, deploy as deploys
+    from harness import contention, deploy as deploys, deploy_repair
+    out.extend(deploy_repair.lines(r.get("deploy_repairs") or []))
     out.extend(deploys.line(x) for x in r.get("deploys") or [] if x["outcome"] not in ("", deploys.DEPLOYED))
     w = r.get("deploy_wait")
     if w and w["why"] and w["waited"] >= contention.DEPLOY_ALERT_S:
@@ -552,6 +553,7 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "engines": engines(conn, since), "idle": _idle(conn, since),
          "runtimes": runtimes(conn, since), "techniques": techniques(conn, since),
          "monitor": monitor(since) if monitor else None, "deploys": deploys_since(conn, since),
+         "deploy_repairs": deploy_repairs(),
          "pulls": pulls(now) if pulls else None, "tts": tts() if tts else None,
          "deploy_wait": waiting(conn, now) if waiting else None}
     from harness import hold
@@ -577,6 +579,12 @@ def deploys_since(conn, since: float) -> list[dict]:
         return deploy.since(conn, since)
     except sqlite3.OperationalError:
         return []
+
+
+def deploy_repairs() -> list[dict]:
+    """Deploys left with the store ahead of the code and not repaired, at any age: read from their records. #1841."""
+    from harness import deploy_repair
+    return deploy_repair.pending()
 
 
 def deploy_wait(conn, now: float) -> dict | None:
