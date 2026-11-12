@@ -244,6 +244,17 @@ def batch_of(data: dict) -> str:
     return ""
 
 
+def _smoke(data: dict) -> bool:
+    """Whether a request is tagged purpose:smoke, so a node deploy's own verify still reaches the draining node. #1815."""
+    from harness import purpose
+    got = (data.get("metadata") or {}).get("tags")
+    tags = list(got) if isinstance(got, (list, tuple)) else []
+    for key, value in ((data.get("proxy_server_request") or {}).get("headers") or {}).items():
+        if str(key).lower() == purpose.HEADER:
+            tags += str(value or "").split(",")
+    return purpose.of_tags(tags) == purpose.SMOKE
+
+
 def _addressed_here(data: dict) -> bool:
     """Whether the request reached this gateway by a loopback name, so its client runs on this host. #1231."""
     import ipaddress
@@ -353,7 +364,14 @@ class ServedModel(CustomLogger):
             _refuse(f"{gateway_switch.DRAINING} for an alias switch; retry once it has restarted")
         model = str(data.get("model") or "")
         entry = _entry(model)
-        if entry.get(nodes.NODE_KEY) and not await reachable(entry):
+        where = str(entry.get(nodes.NODE_KEY) or "")
+        if where and gateway_switch.draining(node=where) and not _smoke(data):
+            # A node deploy is about to restart it: new work goes to this machine's copy. #1815.
+            if not _entry(model + nodes.LOCAL_SUFFIX):
+                _refuse(f"{gateway_switch.DRAINING} node {where} for its deploy and {nodes.NO_LOCAL_COPY} {model}; "
+                        f"retry once the node is back")
+            data["model"] = model + nodes.LOCAL_SUFFIX
+        elif entry.get(nodes.NODE_KEY) and not await reachable(entry):
             if not _entry(model + nodes.LOCAL_SUFFIX):
                 # Waiting out the connect timeout and retries ends in a bare 500. #823.
                 _refuse(f"node {entry[nodes.NODE_KEY]} is down and {nodes.NO_LOCAL_COPY} {model}")

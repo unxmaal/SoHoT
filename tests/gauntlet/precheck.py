@@ -152,10 +152,15 @@ def _text(path: Path) -> str:
 
 def mutation_tests(root=REPO) -> list[Problem]:
     """tests/test_gauntlet_mutation.py: a test file importing a mutated module is selected for it or left out."""
+    import dataclasses
+
+    from gauntlet.mutation import unplaced
+
     from tests.gauntlet import mutation
+    cfg = dataclasses.replace(mutation.CONFIG, root=Path(root))
     out = []
     for module in mutation.MODULES:
-        for name in mutation.unplaced(module, Path(root)):
+        for name in unplaced(cfg, module):
             out.append(_p("mutation", f"tests/{name} imports {module} and is neither selected nor left out",
                           f"add to tests/gauntlet/mutation.py LEFT_OUT[{scaffold.q(module)}]: {scaffold.q(name)},",
                           f"or to MODULES[{scaffold.q(module)}] (then re-pin): \"tests/{name}\","))
@@ -164,9 +169,11 @@ def mutation_tests(root=REPO) -> list[Problem]:
 
 def eval_homes(root=REPO) -> list[Problem]:
     """tests/test_eval_home_1346.py: an eval or probe entry runs from a scratch home or says why not."""
+    from gauntlet.scanners import is_python, scan_tree
+
     from tests.gauntlet import scanners
     out = []
-    for found in scanners.scan_tree(root, scanners.unhomed_evals, scanners.is_python):
+    for found in scan_tree(root, scanners.unhomed_evals, is_python):
         key = found.split("'")[1] if "'" in found else found
         out.append(_p("eval home", found, "call paths.eval_home in its handler and add to tests/gauntlet/scanners.py "
                       "EVAL_HOMED:", scaffold.why_line(key, "<the file whose handler calls paths.eval_home>"),
@@ -174,12 +181,22 @@ def eval_homes(root=REPO) -> list[Problem]:
     return out
 
 
+def _trees(root, tests=False):
+    from gauntlet import detectors
+
+    from harness import repo
+    from tests.gauntlet import registry
+    return detectors.sources(root, tests=tests, production=registry.production, lister=repo.publishable)
+
+
 def detector_bindings(root=REPO) -> list[Problem]:
     """tests/test_gauntlet_detectors.py: a detector hit is bound to a test, waived, or in the shrinking backlog."""
-    from tests.gauntlet import classes, detectors
-    pin = pinned(root, "tests/test_gauntlet_detectors.py", "BACKLOG_PIN")
-    led = detectors.ledger(detectors.run(detectors.parse(detectors.sources(root)), classes.INDEX),
-                           detectors.bindings(detectors.sources(root, tests=True)), classes.INDEX)
+    from gauntlet import detectors
+
+    from tests.gauntlet import classes, registry
+    pin = pinned(root, "tests/gauntlet/registry.py", "BACKLOG_PIN")
+    led = detectors.ledger(detectors.run(detectors.parse(_trees(root)), classes.INDEX, registry.production),
+                           detectors.bindings(_trees(root, tests=True)), classes.INDEX)
     backlog = json.loads((Path(root) / "tests/gauntlet/backlog.json").read_text(encoding="utf-8"))
     out = [_p("gauntlet", f"{cid}: {s} trips a gauntlet trigger with no bound test",
               f"mark the test that pins it: @pytest.mark.gauntlet({scaffold.q(cid)}, site={scaffold.q(s)})",
@@ -189,12 +206,26 @@ def detector_bindings(root=REPO) -> list[Problem]:
     gone = [(cid, s) for cid, rows in backlog.items() for s in rows if s not in led.get(cid, {}).get("unbound", [])]
     total = sum(len(v) for v in backlog.values()) - len(gone)
     out += [_p("gauntlet", f"{cid}: {s} is bound, waived or gone",
-               f"delete it from tests/gauntlet/backlog.json and set BACKLOG_PIN = {total} in tests/test_gauntlet_detectors.py")
+               f"delete it from tests/gauntlet/backlog.json and set BACKLOG_PIN = {total} in tests/gauntlet/registry.py")
             for cid, s in gone]
     if not gone and total != pin:
         out.append(_p("gauntlet", f"tests/gauntlet/backlog.json holds {total}, pinned at {pin}",
-                      f"set BACKLOG_PIN = {total} in tests/test_gauntlet_detectors.py"))
+                      f"set BACKLOG_PIN = {total} in tests/gauntlet/registry.py"))
     return out
+
+
+def move_tables(root=REPO) -> list[Problem]:
+    """tests/test_gauntlet_detectors.py: every declared move table is registered for the soundness check, or waived."""
+    from gauntlet import detectors
+
+    from tests.gauntlet import registry
+    found = [h.site for h in detectors.move_tables(detectors.parse(_trees(root)), registry.production)]
+    known = {t.site for t in registry.MOVES} | set(registry.MOVE_WAIVERS)
+    return [_p("move tables", f"{site} declares moves no MoveTable registers",
+               "add to tests/gauntlet/registry.py MOVES: "
+               f"MoveTable({scaffold.q(site)}, <module>.MOVES, initial=(<born in>,), terminal=(<nothing leaves>,)),",
+               "or to MOVE_WAIVERS:", scaffold.why_line(site, "<why it is not checked>"))
+            for site in sorted(set(found) - known)]
 
 
 def _keys(root, rel: str, name: str) -> set[str]:
@@ -231,7 +262,7 @@ def mode_flags(root=REPO, parser=None) -> list[Problem]:
 
 
 CHECKS = (knob_sites, knob_backlog_lines, knob_entries, limit_traces, module_layout, unit_outputs, mutation_tests,
-          eval_homes, detector_bindings, mode_flags)
+          eval_homes, detector_bindings, move_tables, mode_flags)
 
 
 def _run(name: str) -> list[Problem]:

@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 import pytest
+from gauntlet import scanners as gscanners
 
 from harness import cuts, paths, purpose
 from harness import memory_store as ms
@@ -128,17 +129,17 @@ def test_a_homed_or_waived_entry_and_an_ordinary_option_are_left_alone():
 
 def _calls_eval_home(rel):
     tree = ast.parse((REPO / rel).read_text(encoding="utf-8"))
-    return any(isinstance(n, ast.Call) and scanners._call_name(n) == "eval_home" for n in ast.walk(tree))
+    return any(isinstance(n, ast.Call) and gscanners._call_name(n) == "eval_home" for n in ast.walk(tree))
 
 
 def test_every_eval_or_probe_entry_runs_from_a_scratch_home_or_says_why_not():
-    unhomed = scanners.scan_tree(REPO, scanners.unhomed_evals, scanners.is_python)
+    unhomed = gscanners.scan_tree(REPO, scanners.unhomed_evals, gscanners.is_python)
     keys = [u.split("'")[1] for u in unhomed]
     assert not unhomed, ("an eval or probe on the default home writes rows that pass for real work:\n" + "\n".join(unhomed)
                          + "\nor waive one in tests/gauntlet/scanners.py EVAL_WAIVED:\n" + "\n".join(
                              f'    "{k}": "<why its rows never pass for real work>",' for k in keys))
-    found = set(scanners.scan_tree(REPO, lambda t, r: [k for _, k in scanners.eval_entry_points(t, r)],
-                                   scanners.is_python))
+    found = set(gscanners.scan_tree(REPO, lambda t, r: [k for _, k in scanners.eval_entry_points(t, r)],
+                                   gscanners.is_python))
     registered = set(scanners.EVAL_HOMED) | set(scanners.EVAL_WAIVED)
     assert registered <= found, f"registered eval entries no longer in the tree: {sorted(registered - found)}"
     assert not set(scanners.EVAL_HOMED) & set(scanners.EVAL_WAIVED)

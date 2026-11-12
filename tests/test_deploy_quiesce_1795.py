@@ -101,7 +101,8 @@ def test_a_job_that_never_ends_fails_the_deploy_not_quiesced_with_the_store_unmi
     assert d["outcome"] == deploy.FAILED and d["detail"].startswith(f"{deploy.NOT_QUIESCED}: job {other['id']} ")
     assert f"the store stays at schema {ms.SCHEMA_VERSION}" in d["detail"]
     assert d["backup"] == "" and _schema() == ms.SCHEMA_VERSION and "planted_by_migration" not in _tables()
-    assert _git(world["link"], "rev-parse", "HEAD") == world["first"] and not deploy.record_path(d["id"]).exists()
+    assert _git(world["link"], "rev-parse", "HEAD") == world["first"]
+    assert deploy_switch.load(deploy.record_path(d["id"]))["outcome"] == deploy.FAILED
     steps = world["log"].read_text(encoding="utf-8")
     assert "migrate" not in steps and "reinstall" not in steps
     assert wq.paused() == owner_paused, "the deploy lifts only the pause it set"

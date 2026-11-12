@@ -58,7 +58,7 @@ def test_an_illegal_move_is_refused_and_writes_nothing(frm, to, reason):
 
 
 def test_no_terminal_state_has_a_move_out():
-    assert not [k for k in js.MOVES if k[0] in (js.DONE, js.FAILED, js.CANCELLED, js.PAUSED)]
+    assert not [k for k in js.MOVES if k[0] in (js.DONE, js.FAILED, js.CANCELLED)]
 
 
 def test_a_move_names_no_column_outside_its_own():

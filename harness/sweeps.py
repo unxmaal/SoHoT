@@ -87,8 +87,8 @@ def _found(conn, sw: dict, detail: str) -> bool:
                         (*args, *FOUND, detail)).fetchone() is not None
 
 
-def _move(conn, sw: dict, frm, to: str, reason: str, **cols) -> int | None:
-    """The one writer of knob_sweeps: refuses a move MOVES does not list, else compare-and-swap on the state it leaves; the row id, None if it lost. Commits. #1733."""
+def _move(conn, sw: dict, frm, to: str, reason: str, commit: bool = True, **cols) -> int | None:
+    """The one writer of knob_sweeps: refuses a move MOVES does not list, else compare-and-swap on the state it leaves; the row id, None if it lost. Commits unless commit=False. #1733."""
     from harness import item_lease
     why = refused(frm, to, reason)
     if why:
@@ -101,9 +101,11 @@ def _move(conn, sw: dict, frm, to: str, reason: str, **cols) -> int | None:
         cas, was = (" AND jobs = ?", (sw["jobs"],)) if reason == RESUMED else ("", ())
         won = conn.execute(f"UPDATE knob_sweeps SET outcome = ?{sets} WHERE id = ? AND outcome = ?{cas}",
                            (to, *cols.values(), int(sw["id"]), frm, *was)).rowcount == 1
-        conn.commit()
+        if commit:
+            conn.commit()
         return int(sw["id"]) if won else None
-    conn.commit()
+    if commit:
+        conn.commit()
     key = _LEDGER + json.dumps([sw["knob"], sw["lane"], sw["spec"], sw["machine_id"]])
     seen = item_lease._version(conn, key)
     if _open(conn, sw) is not None or (to in FOUND and _found(conn, sw, cols.get("detail", ""))):
@@ -112,9 +114,11 @@ def _move(conn, sw: dict, frm, to: str, reason: str, **cols) -> int | None:
     cur = conn.execute(f"INSERT INTO knob_sweeps ({', '.join(row)}) VALUES ({', '.join('?' * len(row))})",
                        tuple(row.values()))
     if not item_lease._bump(conn, key, seen):
-        conn.rollback()
+        if commit:
+            conn.rollback()
         return None
-    conn.commit()
+    if commit:
+        conn.commit()
     return int(cur.lastrowid)
 
 
@@ -400,22 +404,22 @@ def _not_binding(conn, entry: dict, now: float) -> dict | None:
 
 
 def _queue(conn, entry: dict, now: float, add) -> dict | None:
-    """Queue one job per value and open the sweep; a writer that loses the open cancels the jobs it queued. #1733."""
+    """Queue one job per value and open the sweep in one transaction; a writer that loses the open keeps no job. #1733, #1756."""
+    from harness import job_state as js
     from harness import paths
-    from harness import workqueue as wq
-    jobs = []
-    for value, cmd in entry["argv"].items():
-        job = add(cmd, title=f"sweep {entry['knob']}={value:g} on {entry['lane']}: {entry['spec']}",
-                  cwd=str(paths.REPO), priority=PRIORITY, requested_by=REQUESTED_BY,
-                  not_before=entry.get("not_before"), conn=conn)
-        jobs.append([value, int(job["id"])])
-    got = _move(conn, entry, None, OPEN, QUEUED, jobs=json.dumps(jobs), trigger=json.dumps(entry["trigger"]),
-                queued_at=now)
+    values = list(entry["argv"])
+    specs = [(cmd, {"title": f"sweep {entry['knob']}={value:g} on {entry['lane']}: {entry['spec']}",
+                    "cwd": str(paths.REPO), "priority": PRIORITY, "requested_by": REQUESTED_BY,
+                    "not_before": entry.get("not_before")}) for value, cmd in entry["argv"].items()]
+
+    def own(rows):
+        pairs = [[v, int(r["id"])] for v, r in zip(values, rows)]
+        return _move(conn, entry, None, OPEN, QUEUED, commit=False, jobs=json.dumps(pairs),
+                     trigger=json.dumps(entry["trigger"]), queued_at=now)
+    got, rows = js.add_owned(conn, specs, own, add)
     if got is None:
-        for _, job_id in jobs:
-            wq.cancel(job_id, conn=conn)
         return None
-    return {**entry, "sweep": got, "jobs": jobs}
+    return {**entry, "sweep": got, "jobs": [[v, int(r["id"])] for v, r in zip(values, rows)]}
 
 
 def _floor(outcomes: dict, metric: str) -> float:
@@ -630,17 +634,23 @@ def _dropped(states: list[str]) -> str:
 
 
 def _resume(conn, sw: dict, value, job: dict, add) -> dict | None:
-    """Queue a paused value's continuation from its checkpoint and point the open sweep at it; None if another writer moved the sweep. #1733."""
+    """Queue a paused value's continuation and point the open sweep at it in one transaction; None if another writer moved the sweep. #1733, #1755."""
+    from harness import job_state as js
     from harness import paths, runs
     from harness import workqueue as wq
     run = runs.for_job(conn, int(job["id"]))
     argv = job["argv"] if run is None else wq.resume_argv(job["argv"], runs.run_dir(run["path"]))
-    nxt = add(argv, title=job["title"] or f"sweep {sw['knob']}={value:g} on {sw['lane']}: {sw['spec']}",
-              cwd=job["cwd"] or str(paths.REPO), priority=PRIORITY, requested_by=REQUESTED_BY, conn=conn)
-    jobs = [[v, int(nxt["id"]) if int(j) == int(job["id"]) else j] for v, j in json.loads(sw["jobs"])]
-    if _move(conn, sw, OPEN, OPEN, RESUMED, jobs=json.dumps(jobs)) is None:
-        wq.cancel(nxt["id"], conn=conn)
+    jobs: list = []
+
+    def own(rows):
+        jobs[:] = [[v, int(rows[0]["id"]) if int(j) == int(job["id"]) else j] for v, j in json.loads(sw["jobs"])]
+        return _move(conn, sw, OPEN, OPEN, RESUMED, commit=False, jobs=json.dumps(jobs))
+    got, rows = js.add_owned(conn, [(argv, {
+        "title": job["title"] or f"sweep {sw['knob']}={value:g} on {sw['lane']}: {sw['spec']}",
+        "cwd": job["cwd"] or str(paths.REPO), "priority": PRIORITY, "requested_by": REQUESTED_BY})], own, add)
+    if got is None:
         return None
+    nxt = rows[0]
     sw["jobs"] = json.dumps(jobs)
     return {"id": sw["id"], "knob": sw["knob"], "lane": sw["lane"], "value": value, "paused": job["id"],
             "job": nxt["id"]}

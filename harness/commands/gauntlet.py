@@ -10,23 +10,25 @@ from harness.commands.common import emit, err
 
 #: The checkout this harness runs from; the gauntlet registry lives in its tests/.
 CHECKOUT = Path(__file__).resolve().parents[2]
+REGISTRY = "tests.gauntlet.registry:REGISTRY"
 
 
 def _gauntlet():
-    if not (CHECKOUT / "tests" / "gauntlet").is_dir():
-        return None
     if str(CHECKOUT) not in sys.path:
         sys.path.insert(0, str(CHECKOUT))
-    from tests.gauntlet import __main__ as gauntlet
-    return gauntlet
+    from gauntlet import cli
+    return cli
 
 
 def cmd_gauntlet(a) -> int:
-    """Run `python -m tests.gauntlet <action>` from this checkout, as text or as one --json object."""
-    gauntlet = _gauntlet()
-    if gauntlet is None:
-        return err(f"soh gauntlet needs a SoHoT checkout; {CHECKOUT} has no tests/gauntlet")
-    argv = [a.action]
+    """Run the pinned gauntlet package's `<action>` over this checkout's registry, as text or as one --json object."""
+    if not (CHECKOUT / "tests" / "gauntlet" / "registry.py").is_file():
+        return err(f"soh gauntlet needs a SoHoT checkout; {CHECKOUT} has no tests/gauntlet/registry.py")
+    try:
+        gauntlet = _gauntlet()
+    except ImportError:
+        return err("soh gauntlet needs the gauntlet package: `uv sync` installs it with the dev group")
+    argv = [a.action, "--registry", REGISTRY]
     if a.action == "audit":
         if a.range:
             return err("audit takes no range; name its history with --ref")

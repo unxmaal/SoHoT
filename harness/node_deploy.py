@@ -8,7 +8,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from harness import cuts, deploy, deploy_switch, paths
+from harness import cuts, deploy, deploy_switch, gateway_switch, node_reach, paths
 from harness import nodes as nodes_mod
 from harness import workqueue as wq
 
@@ -26,6 +26,10 @@ INSTALL_TIMEOUT_S = 1800.0
 #: How long a reinstalled node may take to answer /models before its smoke.
 WARM_S = 300.0
 WARM_POLL_S = 5.0
+#: How long a node out of the gateway's routing may take to finish its in-flight requests before its restart. #1815.
+DRAIN_S = 120.0
+DRAIN_POLL_S = 2.0
+DRAINED, DRAIN_DEADLINE = "drained", "deadline"
 LOG = "deploy-nodes.log"
 _SHA = re.compile(r"^[0-9a-f]{40}$")
 _SAID = re.compile(r"^(role|want|loaded|disabled)(?: (\S*))?$")
@@ -122,6 +126,41 @@ def verify(node: nodes_mod.Node, *, get=None, smoke=None, ask=None, sleep=time.s
                       f"serve them from it: " + "; ".join(bad))
 
 
+def in_flight(node: nodes_mod.Node, runner=None) -> int | None:
+    """Requests the node's own server is processing now, from its report over ssh; None when it will not say."""
+    from harness import node_state
+    got = node_state.read(node, runner=runner, fresh_s=0)
+    busy = None if got.get("error") else got.get("interactive")
+    return busy if isinstance(busy, int) else None
+
+
+def drain(node: nodes_mod.Node, why: str, *, busy, sleep=time.sleep, clock=time.monotonic) -> dict:
+    """Take the node out of the gateway's routing, then wait up to DRAIN_S for its in-flight requests. #1815."""
+    gateway_switch.start_drain(time.time() + DRAIN_S + INSTALL_TIMEOUT_S + WARM_S, node=node.name)
+    node_reach.record(node.name, node_reach.DOWN, f"draining for {why}")
+    start = clock()
+    while True:
+        left = busy(node)
+        if left == 0:
+            outcome = DRAINED
+            break
+        if clock() - start >= DRAIN_S:
+            outcome = DRAIN_DEADLINE
+            cuts.cut("deploy_node_drain", f"node {node.name} still busy before its restart", dropped=1)
+            break
+        sleep(DRAIN_POLL_S)
+    waited = clock() - start
+    said = f"{'unknown' if left is None else left} in flight"
+    node_reach.record(node.name, node_reach.DOWN, f"drain {outcome} after {waited:.0f} s, {said}; restarting it")
+    return {"outcome": outcome, "in_flight": left, "waited_s": round(waited, 1)}
+
+
+def undrain(node: nodes_mod.Node, why: str) -> None:
+    """Put the node back in the gateway's routing. #1815."""
+    gateway_switch.stop_drain(node=node.name)
+    node_reach.record(node.name, node_reach.UP, why)
+
+
 def _tail(said: str, n: int = 300) -> str:
     lines = [ln.strip() for ln in (said or "").splitlines() if ln.strip()]
     return (" | ".join(lines[-3:]) or "no output")[-n:]
@@ -208,7 +247,8 @@ def same_machine(node: nodes_mod.Node, said: str, *, strict: bool = True) -> str
             f"{node.name} {node.fingerprint}; its replies would be filed under the wrong machine")
 
 
-def _one(node: nodes_mod.Node, sha: str, prior: dict, *, runner, check, alert, log, mark, now) -> dict:
+def _one(node: nodes_mod.Node, sha: str, prior: dict, *, runner, check, alert, log, mark, now, busy=None,
+         sleep=time.sleep, clock=time.monotonic) -> dict:
     base = {"sha": sha, "at": now(), "tries": int(prior.get("tries") or 0) + 1}
     if not node.ssh:
         return {**base, "outcome": UNCONFIGURED, "detail": f"no deploy: ssh in {nodes_mod.path()}, so no deploy reaches it"}
@@ -237,6 +277,19 @@ def _one(node: nodes_mod.Node, sha: str, prior: dict, *, runner, check, alert, l
     back_role = was or role
     mark({**base, "outcome": INSTALLING, "pid": os.getpid(), "previous_sha": previous, "previous_role": was, "role": role,
           "started": True})
+    base["drain"] = drain(node, f"the deploy of {sha[:12]}", busy=busy or (lambda n: in_flight(n, runner)),
+                          sleep=sleep, clock=clock)
+    log.write(f"--- node {node.name} drain {base['drain']}\n")
+    out = {**base, "outcome": FAILED, "detail": "the install did not finish"}
+    try:
+        out = _install(node, sha, role, previous, was, back_role, base, runner=runner, check=check, alert=alert, log=log)
+        return out
+    finally:
+        undrain(node, f"the deploy of {sha[:12]} ended {out['outcome']}")
+
+
+def _install(node, sha, role, previous, was, back_role, base, *, runner, check, alert, log) -> dict:
+    """Install SHA as ROLE on a drained node, verify it, and roll it back to PREVIOUS when it fails."""
     rc, said = runner(ssh_argv(node, "install", node.deploy_dir, sha, role), SCRIPT, INSTALL_TIMEOUT_S)
     log.write(f"--- node {node.name} install {sha[:12]} as {role} rc {rc}\n{said}\n")
     if rc is None and said.startswith("timed out"):
@@ -269,7 +322,7 @@ def _one(node: nodes_mod.Node, sha: str, prior: dict, *, runner, check, alert, l
 
 
 def follow(conn=None, *, retry: bool = False, runner=_ssh, check=verify, alert=None, load=None,
-           now=time.time) -> dict:
+           now=time.time, busy=None, sleep=time.sleep, clock=time.monotonic) -> dict:
     """Each unparked node due a deploy of the sha this machine last deployed; the record's `nodes` holds every outcome."""
     why = deploy.blocked()
     t = None if why else target(conn)
@@ -297,7 +350,7 @@ def follow(conn=None, *, retry: bool = False, runner=_ssh, check=verify, alert=N
                 deploy_switch.save(path, rec)
 
             got = _one(node, t["sha"], done.get(node.name) or {}, runner=runner, check=check, alert=alert, log=log,
-                       mark=mark, now=now)
+                       mark=mark, now=now, busy=busy, sleep=sleep, clock=clock)
             mark(got)
             acted[node.name] = got
     return {"deploy": t["id"], "sha": t["sha"], "why": "", "nodes": acted}

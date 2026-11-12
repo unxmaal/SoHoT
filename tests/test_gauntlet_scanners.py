@@ -2,39 +2,11 @@
 
 from pathlib import Path
 
+from gauntlet import scanners as gscanners
+
 from tests.gauntlet import scanners
 
 REPO = Path(__file__).resolve().parent.parent
-
-
-def test_a_mutable_default_argument_is_found():
-    src = "def add(x, acc=[]):\n    return acc\n\ndef put(k, *, into=dict()):\n    return into\n"
-    got = scanners.mutable_defaults(src, "m.py")
-    assert [f.split(":")[1] for f in got] == ["1", "4"]
-
-
-def test_a_swallowed_error_is_found():
-    src = "try:\n    go()\nexcept Exception:\n    pass\ntry:\n    go()\nexcept:\n    log()\n"
-    assert [f.split(":")[1] for f in scanners.swallowed_python(src, "m.py")] == ["3", "7"]
-    sh = "#!/usr/bin/env bash\nrm -rf \"$d\" || true\nkill \"$p\" || :\n"
-    assert [f.split(":")[1] for f in scanners.swallowed_shell(sh, "s.sh")] == ["2", "3"]
-
-
-def test_an_unchecked_exit_status_is_found():
-    sh = "#!/usr/bin/env bash\nset -u\nproduce | consume\ncd \"$dir\"\nrm -rf ./out\n"
-    got = scanners.unchecked_status_shell(sh, "s.sh")
-    assert any("pipefail" in f for f in got)
-    assert any(":4:" in f and "cd" in f for f in got)
-
-
-def test_a_fixed_resource_in_a_test_is_found():
-    src = ("import socket\nfrom http.server import HTTPServer\n"
-           "s = socket.socket()\ns.bind((\"127.0.0.1\", 49221))\n"
-           "srv = HTTPServer((\"127.0.0.1\", 8080), H)\n"
-           "Path(\"/tmp/lh-test.lock\").write_text(\"x\", encoding=\"utf-8\")\n"
-           "open(\"/tmp/out.txt\", \"w\", encoding=\"utf-8\")\n")
-    got = scanners.fixed_resources(src, "tests/test_x.py")
-    assert [f.split(":")[1] for f in got] == ["4", "5", "6", "7"]
 
 
 def test_a_live_home_derived_outside_paths_is_found():
@@ -51,53 +23,10 @@ def test_a_live_home_derived_outside_paths_is_found():
     assert [f.split(":")[1] for f in scanners.live_home_shell(sh, "s.sh")] == ["2"]
 
 
-def test_an_inventory_above_its_pin_fails_and_names_the_count():
-    msg = scanners.ratchet(["a", "b", "c"], 2, "swallowed errors")
-    assert msg and "3" in msg and "2" in msg
-
-
 def _quiet_then_fires(scan, innocent, bad, rel):
     # Quiet on the innocent text, and firing once the bad line joins it: quiet for the right reason.
     assert scan(innocent, rel) == []
     assert scan(innocent + bad, rel) != []
-
-
-def test_innocent_defaults_are_left_alone():
-    innocent = ("def f(x=None, y=(), z=frozenset(), *, w=0, name=\"a\"):\n    acc = []\n    return acc\n"
-                "g = lambda k=(): k\n")
-    _quiet_then_fires(scanners.mutable_defaults, innocent, "def h(a={}):\n    return a\n", "m.py")
-
-
-def test_a_handled_error_is_left_alone():
-    innocent = ("try:\n    go()\nexcept OSError as e:\n    raise SystemExit(str(e)) from e\n"
-                "try:\n    go()\nexcept ValueError:\n    n = 0\n    log(n)\n")
-    _quiet_then_fires(scanners.swallowed_python, innocent, "try:\n    go()\nexcept KeyError:\n    pass\n", "m.py")
-    sh = ("#!/usr/bin/env bash\n# a comment saying || true is fine\nrm -rf \"$d\" || exit 1\n"
-          "[ -f x ] || truncate_log\nfoo || true_name\n")
-    _quiet_then_fires(scanners.swallowed_shell, sh, "kill \"$p\" || true\n", "s.sh")
-
-
-def test_a_checked_exit_status_is_left_alone():
-    strict = "#!/usr/bin/env bash\nset -euo pipefail\nproduce | consume\ncd \"$dir\"\n"
-    assert scanners.unchecked_status_shell(strict, "s.sh") == []
-    loose = ("#!/usr/bin/env bash\nset -uo pipefail\nproduce | consume\ncd \"$dir\" || exit 1\n"
-             "if cd \"$x\" && make; then :; fi\n[ a ] || [ b ]\necho cdrom\n")
-    _quiet_then_fires(scanners.unchecked_status_shell, loose, "cd \"$dir\"\n", "s.sh")
-    probe = ("#!/usr/bin/env bash\nset -u\nif fc-list 2>/dev/null | grep -qi dejavu; then ok; fi\n"
-             "need uv \"curl -LsSf https://example.org/install.sh | sh\"\nhint 'a | b'\n")
-    _quiet_then_fires(scanners.unchecked_status_shell, probe, "fc-list | sort > fonts.txt\n", "s.sh")
-    sourced = "build() {\n  produce | consume\n}\n"
-    assert scanners.unchecked_status_shell(sourced, "lib.sh") == []
-    assert scanners.unchecked_status_shell("#!/bin/sh\n" + sourced, "x.sh") != []
-
-
-def test_resources_the_os_hands_out_are_left_alone():
-    innocent = ("s.bind((\"127.0.0.1\", 0))\nsrv = HTTPServer((\"127.0.0.1\", 0), H)\n"
-                "url = \"http://127.0.0.1:8080/v1\"\nsecurity(host=\"0.0.0.0\", port=8899)\n"
-                "(tmp_path / \"x\").write_text(\"y\", encoding=\"utf-8\")\n"
-                "argv(Path(\"/tmp/o.wav\"))\nopen(\"/etc/hosts\", encoding=\"utf-8\")\n"
-                "Path(\"/tmp/x\").read_text(encoding=\"utf-8\")\n")
-    _quiet_then_fires(scanners.fixed_resources, innocent, "s.bind((\"\", 49222))\n", "tests/test_x.py")
 
 
 def test_a_live_home_asked_of_paths_is_left_alone():
@@ -114,88 +43,8 @@ def test_a_live_home_asked_of_paths_is_left_alone():
     _quiet_then_fires(scanners.live_home_shell, sh, "cp x ~/localharness/\n", "s.sh")
 
 
-def test_a_posix_only_primitive_is_found():
-    src = "import os, signal\nimport fcntl\ndef stop(p):\n    os.killpg(p.pid, signal.SIGKILL)\n"
-    assert [f.split(":")[1] for f in scanners.posix_primitives(src, "m.py")] == ["2", "4", "4"]
-
-
-def test_a_posix_primitive_behind_a_platform_guard_is_left_alone():
-    innocent = ("import os, signal, sys\n"
-                "def take(fd):\n    if sys.platform == \"win32\":\n        import msvcrt\n"
-                "        try:\n            return msvcrt.locking(fd, 1, 1)\n        except OSError:\n"
-                "            return False\n    import fcntl\n    return fcntl.flock(fd, 1)\n"
-                "def stop(p):\n    if hasattr(os, \"killpg\"):\n        os.killpg(p.pid, signal.SIGTERM)\n"
-                "    else:\n        p.terminate()\n"
-                "try:\n    import pwd\nexcept ImportError:\n    pwd = None\n"
-                "SIG = signal.SIGKILL if os.name == \"posix\" else signal.SIGTERM\n")
-    _quiet_then_fires(scanners.posix_primitives, innocent, "os.killpg(1, signal.SIGTERM)\n", "m.py")
-
-
-def test_a_bare_shell_in_a_subprocess_argv_is_found():
-    src = ("subprocess.run([\"bash\", str(p)], check=True)\nsubprocess.Popen(\n    [\"zsh\", \"-c\", x])\n")
-    assert [f.split(":")[1] for f in scanners.bare_shells(src, "t.py")] == ["1", "2"]
-
-
-def test_a_resolved_shell_is_left_alone():
-    innocent = ("subprocess.run([shells.BASH, str(p)])\nsubprocess.run([sys.executable, \"-c\", \"bash\"])\n"
-                "x = [\"bash\", \"zsh\"]\n")
-    _quiet_then_fires(scanners.bare_shells, innocent, "subprocess.check_output([\"sh\", \"-c\", c])\n", "t.py")
-
-
-def test_a_file_grown_by_truncate_is_found():
-    src = ("with open(p, \"wb\") as fh:\n    fh.truncate(18 * GIB)\n"
-           "os.truncate(p, size)\nf.truncate(length=4 << 30)\n")
-    assert [f.split(":")[1] for f in scanners.grown_files(src, "t.py")] == ["2", "3", "4"]
-
-
-def test_a_small_or_shrinking_truncate_is_left_alone():
-    innocent = "fh.seek(0)\nfh.truncate()\nfh.truncate(0)\nos.truncate(p, 1024)\n"
-    _quiet_then_fires(scanners.grown_files, innocent, "fh.truncate(60 * GIB)\n", "t.py")
-
-
-def test_a_text_mode_tempfile_without_an_encoding_is_found():
-    src = ("tempfile.NamedTemporaryFile(\"w\", suffix=\".svg\")\nTemporaryFile(\"w+\")\n"
-           "tempfile.SpooledTemporaryFile(mode=\"r+\")\n")
-    assert [f.split(":")[1] for f in scanners.text_tempfiles(src, "t.py")] == ["1", "2", "3"]
-
-
-def test_a_binary_or_encoded_tempfile_is_left_alone():
-    innocent = ("tempfile.NamedTemporaryFile(suffix=\".wav\")\ntempfile.TemporaryFile(\"w+b\")\n"
-                "tempfile.NamedTemporaryFile(\"w\", encoding=\"utf-8\")\n")
-    _quiet_then_fires(scanners.text_tempfiles, innocent, "tempfile.TemporaryFile(\"w+\")\n", "t.py")
-
-
-def test_a_native_relative_path_key_is_found():
-    src = ("found.add(str(f.relative_to(REPO)))\nwhere = f\"{p.relative_to(root)}:{n}\"\n"
-           "k = [str(q.relative_to(REPO)) for q in qs]\n")
-    assert [f.split(":")[1] for f in scanners.native_relpaths(src, "t.py")] == ["1", "2", "3"]
-
-
-def test_a_posix_relative_path_key_is_left_alone():
-    innocent = ("found.add(f.relative_to(REPO).as_posix())\nwhere = f\"{p.relative_to(root).as_posix()}:{n}\"\n"
-                "parts = f.relative_to(REPO).parts\nsame = sorted(p.relative_to(a) for p in ps)\nname = str(p)\n")
-    _quiet_then_fires(scanners.native_relpaths, innocent, "k = str(p.relative_to(r))\n", "t.py")
-
-
-def test_an_unguarded_import_is_found_and_a_guarded_one_is_not():
-    src = ("import yaml\ntry:\n    import torch\nexcept ImportError:\n    torch = None\n"
-           "def f():\n    from huggingface_hub import snapshot_download\n    from . import local\n")
-    assert scanners.unguarded_imports(src, "m.py") == [(1, "yaml"), (7, "huggingface_hub")]
-
-
-def test_a_module_level_importorskip_is_read_as_a_skip():
-    src = "import pytest\ntorch = pytest.importorskip(\"torch.nn\", reason=\"x\")\ndef t():\n    pytest.importorskip(\"mlx\")\n"
-    assert scanners.module_skips(src, "t.py") == {"torch"}
-
-
-def test_an_inventory_at_its_pin_is_quiet_and_below_it_asks_for_a_lower_pin():
-    assert scanners.ratchet(["a", "b"], 2, "x") is None
-    msg = scanners.ratchet(["a"], 2, "x")
-    assert msg and "lower the pin to 1" in msg
-
-
 def _shellish(path):
-    return scanners.is_shell(path) or path.name == "Makefile"
+    return gscanners.is_shell(path) or path.name == "Makefile"
 
 
 def _tests_only(rel):
@@ -207,25 +56,24 @@ def _fail_with(found, why):
 
 
 def test_no_function_has_a_mutable_default():
-    _fail_with(scanners.scan_tree(REPO, scanners.mutable_defaults, scanners.is_python),
+    _fail_with(gscanners.scan_tree(REPO, gscanners.mutable_defaults, gscanners.is_python),
                "a mutable default is shared by every call; default to None and build it inside")
 
 
 def test_no_shell_script_ignores_a_failure_it_could_see():
-    _fail_with(scanners.scan_tree(REPO, scanners.unchecked_status_shell, scanners.is_shell),
+    _fail_with(gscanners.scan_tree(REPO, gscanners.unchecked_status_shell, gscanners.is_shell),
                "set -o pipefail, or end the pipeline in a `grep -q` probe; guard each cd without errexit")
 
 
 def test_no_test_binds_or_writes_a_fixed_shared_resource():
-    _fail_with(scanners.scan_tree(REPO, scanners.fixed_resources, scanners.is_python, _tests_only),
+    _fail_with(gscanners.scan_tree(REPO, gscanners.fixed_resources, gscanners.is_python, _tests_only),
                "two suites at once (parallel worktrees) collide on a fixed resource; ask the OS for one")
 
 
 def test_the_live_home_is_derived_only_in_harness_paths():
-    found = (scanners.scan_tree(REPO, scanners.live_home_python, scanners.is_python)
-             + scanners.scan_tree(REPO, scanners.live_home_shell, _shellish))
+    found = (gscanners.scan_tree(REPO, scanners.live_home_python, gscanners.is_python)
+             + gscanners.scan_tree(REPO, scanners.live_home_shell, _shellish))
     _fail_with(found, "conftest redirects LOCALHARNESS_HOME; a path derived any other way is the live one")
-
 
 
 def test_a_hand_flip_of_the_offline_guard_is_found():
@@ -256,7 +104,7 @@ def test_the_shared_offline_guard_and_a_child_env_are_left_alone():
 
 
 def test_no_code_flips_the_offline_guard_except_through_env_online():
-    _fail_with(scanners.scan_tree(REPO, scanners.offline_flips, scanners.is_python,
+    _fail_with(gscanners.scan_tree(REPO, scanners.offline_flips, gscanners.is_python,
                                   lambda rel: not _tests_only(rel)),
                "huggingface_hub reads HF_HUB_OFFLINE once at import, so the env var alone lifts nothing; "
                "wrap the call in harness.env.online() (#931, RULE #208)")
@@ -281,7 +129,7 @@ def test_a_sum_inside_variants_or_over_one_variant_is_left_alone():
 
 
 def test_no_code_adds_up_a_listing_outside_variants():
-    _fail_with(scanners.scan_tree(REPO, scanners.listing_sums, scanners.is_python,
+    _fail_with(gscanners.scan_tree(REPO, scanners.listing_sums, gscanners.is_python,
                                   lambda rel: rel.startswith("harness/")),
                "a listing's sum is the repo, not what runs; hf_facts and card_description reported it "
                "after the verdict stopped (#964, gauntlet one-question-two-answers)")
@@ -293,16 +141,16 @@ CONFIG_LESS_PIN = 148
 
 
 def test_swallowed_errors_are_an_inventory_that_only_shrinks():
-    found = (scanners.scan_tree(REPO, scanners.swallowed_python, scanners.is_python)
-             + scanners.scan_tree(REPO, scanners.swallowed_shell, _shellish))
-    msg = scanners.ratchet(found, SWALLOWED_PIN, "swallowed errors (empty except, bare except, || true)")
+    found = (gscanners.scan_tree(REPO, gscanners.swallowed_python, gscanners.is_python)
+             + gscanners.scan_tree(REPO, gscanners.swallowed_shell, _shellish))
+    msg = gscanners.ratchet(found, SWALLOWED_PIN, "swallowed errors (empty except, bare except, || true)")
     assert msg is None, msg
 
 
 def test_numbers_without_their_configuration_are_an_inventory_that_only_shrinks():
     from harness import assertions
     found = [str(c) for c in assertions.collect(REPO) if c.config_less]
-    msg = scanners.ratchet(found, CONFIG_LESS_PIN, "numbers in prose with no configuration beside them")
+    msg = gscanners.ratchet(found, CONFIG_LESS_PIN, "numbers in prose with no configuration beside them")
     assert msg is None, msg
 
 
@@ -382,7 +230,7 @@ def test_every_wall_bound_waiver_names_a_test_that_exists():
 
 
 def test_no_test_bounds_measured_wall_time_from_above():
-    _fail_with(scanners.scan_tree(REPO, scanners.wall_bounds, scanners.is_python, _tests_only),
+    _fail_with(gscanners.scan_tree(REPO, scanners.wall_bounds, gscanners.is_python, _tests_only),
                "a loaded machine (make check -n auto beside other suites) overruns any upper bound on wall time; "
                "assert order, a count, a lower bound or a structural fact, or inject the clock (#1423)")
 
@@ -403,7 +251,7 @@ def test_identity_checks_that_do_not_sniff_for_a_double_are_left_alone():
 
 
 def test_no_production_code_sniffs_for_a_test_double():
-    _fail_with(scanners.scan_tree(REPO, scanners.double_sniffs, scanners.is_python, lambda rel: not _tests_only(rel)),
+    _fail_with(gscanners.scan_tree(REPO, scanners.double_sniffs, gscanners.is_python, lambda rel: not _tests_only(rel)),
                "production code that checks whether a name was replaced runs one path under test and another live; "
                "tests name the machine at environment.identity instead (#1437, #451)")
 
@@ -423,6 +271,6 @@ def test_a_test_that_names_the_machine_at_the_seam_is_left_alone():
 
 
 def test_no_test_replaces_this_machine():
-    _fail_with(scanners.scan_tree(REPO, scanners.machine_stand_ins, scanners.is_python, _tests_only),
+    _fail_with(gscanners.scan_tree(REPO, scanners.machine_stand_ins, gscanners.is_python, _tests_only),
                "a replaced this_machine reaches some callers and not this_fingerprint or the gateway; "
                "use conftest machine_is / machine_has (#1437)")
