@@ -101,7 +101,7 @@ def _mine() -> dict | None:
     return wq.get(key) if key else None
 
 
-def queue(name: str, cycle: str, a, conn=None, again: bool = False) -> dict:
+def queue(name: str, cycle: str, a, conn=None, again: bool = False, commit: bool = True) -> dict:
     """Queue step `name` of `cycle` once, or with `again` this job's own continuation once; an earlier job of it comes back with `existed`."""
     from harness import paths
     from harness import memory_store as ms
@@ -117,7 +117,7 @@ def queue(name: str, cycle: str, a, conn=None, again: bool = False) -> dict:
                 return {**wq.get(job, conn), "existed": True}
         return wq.add(words, title=f"discover {name} (cycle {cycle})", cwd=str(paths.REPO),
                       priority=int((me or {}).get("priority") or 0), requested_by="discover",
-                      resource=step(name).resource, conn=conn)
+                      resource=step(name).resource, conn=conn, commit=commit)
     finally:
         if own:
             conn.close()
@@ -310,11 +310,23 @@ def _next(a, me: Step, cycle: str, sweep, seen: list, rc: int) -> int:
         _end(cycle, loop_cmd._why_nonzero(1 if seen else 0, seen))
         print(f"\nsweep {cycle} is closed: its {me.name} step is its last")
         return rc
+    from harness import memory_store as ms
+    conn = ms.connect()
     try:
-        job = queue(after.name, cycle, a, again=after is me)
+        job = queue(after.name, cycle, a, conn=conn, again=after is me, commit=False)
+        if not job.get("existed"):
+            # The heartbeat names the next step before a worker can see it, or that step's attach is overwritten. #1865.
+            try:
+                heartbeat.handoff(job["id"], after.tier)
+            finally:
+                conn.commit()
     except ValueError as exc:
-        print(f"sweep {cycle} stops: its {after.name} step could not be queued ({exc})", file=sys.stderr)
-        _end(cycle, 1, error=str(exc))
+        job = {"refused": str(exc)}
+    finally:
+        conn.close()
+    if job.get("refused"):
+        print(f"sweep {cycle} stops: its {after.name} step could not be queued ({job['refused']})", file=sys.stderr)
+        _end(cycle, 1, error=job["refused"])
         return 1
     if job.get("existed"):
         print(f"\nthe {after.name} step of sweep {cycle} is already job {job['id']}; not queuing another", flush=True)
@@ -322,6 +334,5 @@ def _next(a, me: Step, cycle: str, sweep, seen: list, rc: int) -> int:
     if after is me:
         # A run paused on request waits in the queue; its model must not hold memory the requester needs.
         _unload("the discovery loop's measure paused on request")
-    heartbeat.handoff(job["id"], after.tier)
     print(f"\nqueued the {after.name} step of sweep {cycle} as job {job['id']}", flush=True)
     return rc
