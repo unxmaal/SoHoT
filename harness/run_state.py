@@ -12,6 +12,8 @@ PROGRESS = "progress.json"
 CHECKPOINT = "checkpoint.jsonl"
 PAUSE_FILE = "pause"
 STOP_FILE = "stopped"
+#: Locked by the one evals.run writing the directory, holding its proc_identity. #1740.
+WRITER = "writer.lock"
 
 #: What evals.run writes in progress.json's `state`; Progress.write refuses anything else.
 W_RUNNING, W_YIELDING, W_PAUSED, W_STOPPED, W_DONE = "running", "yielding", "paused", "stopped", "done"

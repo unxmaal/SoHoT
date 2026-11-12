@@ -994,13 +994,13 @@ def _repend_stopped(c, job: dict) -> bool:
 
 def _stopped_argv(job: dict, pids: set) -> list[str] | None:
     """The argv that resumes a bare eval job from the one run its processes were writing, or None. #1675."""
-    from harness import sweep_guard
+    from harness import run_state, sweep_guard
     if "evals.run" not in [str(a) for a in job["argv"]]:
         return None
     outs = set()
     for path in sorted(paths.runs().glob(f"*/{sweep_guard.PROGRESS}")):
-        got = sweep_guard._read(path)
-        if got.get("state") == "running" and sweep_guard._pid(got.get("pid")) in pids:
+        got = run_state.of(path.parent, alive=lambda pid, pgid, started="": sweep_guard._pid(pid) in pids)
+        if got.name in run_state.LIVE and sweep_guard._pid(got.progress.get("pid")) in pids:
             outs.add(path.parent)
     return resume_argv(job["argv"], outs.pop()) if len(outs) == 1 else None
 
