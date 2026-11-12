@@ -165,6 +165,7 @@ def test_a_reference_model_is_refused_by_the_writer(conn):
     assert st.history(conn) == []
 
 
+@pytest.mark.gauntlet("a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null", site="harness/adoption_state.py:move:adoptions")
 def test_a_verdict_recorded_twice_writes_one_row(conn):
     v = ms.decide(conn, "", "measured", tier="adopt", detail="code: won", candidate_id=_cid(conn, "org/a"))
     one = _adopt(conn, "code", "org/a", verdict_id=v)
@@ -172,6 +173,7 @@ def test_a_verdict_recorded_twice_writes_one_row(conn):
     assert len(st.history(conn)) == 1
 
 
+@pytest.mark.gauntlet("a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null", site="harness/adoption_state.py:_rows:adoptions")
 def test_every_reader_agrees_with_the_resolver_on_scope(conn):
     here = ms.machine_row(conn)
     m2 = ms.remember_machine(conn, M2)
@@ -265,6 +267,7 @@ def test_only_the_adoption_state_module_reads_or_writes_the_adoptions_table():
 
 
 @pytest.mark.sqlite_store  # an old-schema store: a Postgres store starts at head. #1631.
+@pytest.mark.gauntlet("a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null", site="harness/memory_store/migrations/v100.py:data:adoptions")
 def test_the_migration_chains_old_rows_in_the_order_they_served(tmp_path, monkeypatch):
     conftest.stand_in_machine(monkeypatch, STUDIO)
     path = tmp_path / "old.db"
