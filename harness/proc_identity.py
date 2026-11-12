@@ -46,6 +46,26 @@ def started(pid: int) -> str:
     return got[0] if got else ""
 
 
+def _boot_epoch() -> float:
+    for line in Path("/proc/stat").read_text(encoding="utf-8").splitlines():
+        if line.startswith("btime "):
+            return float(line.split()[1])
+    raise ValueError("/proc/stat has no btime")
+
+
+def began(pid: int) -> float | None:
+    """When pid started, in seconds since the epoch; None when it is gone or this OS cannot say."""
+    got = _proc(pid)
+    if got is None:
+        return None
+    if sys.platform == "darwin":
+        return float(got[0])
+    try:
+        return _boot_epoch() + int(got[0]) / os.sysconf("SC_CLK_TCK")
+    except (OSError, ValueError):
+        return None
+
+
 def identity(pid: int) -> dict:
     """pid, its group (None where there are none) and its start time ('' when unknown)."""
     pgid = None

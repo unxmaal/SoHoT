@@ -50,6 +50,9 @@ KNOBS = [
        note="seconds a deploy due to migrate the store waits, queue paused, for every other job running here to "
             "end; past it the deploy fails not quiesced with the store unmigrated. A deploy starts only when "
             "nothing runs and nothing starts beside it, so the wait is normally 0 (#1795)"),
+    _k("deploy_resumes", ["harness/deploy.py:RESUMES"], [1, 0, 2], unit="count",
+       note="times settle starts a dead deploy switch again from the stage its record names before it calls the "
+            "deploy interrupted (#1753)"),
     _k("deploy_retries", [f"{Q}:RETRIES"], [1, 3, 6],
        note="times the poll queues a sha whose deploy job failed again, each after deploy_retry_after; each failed "
             "attempt restarts the services twice. 2026-11-09: deploy 21 rolled back because the previous release "

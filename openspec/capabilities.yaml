@@ -20,6 +20,7 @@ capabilities:
       - harness/job_state.py
       - harness/proc_identity.py
       - harness/paused_jobs.py
+      - harness/queue_hold.py
 
   - name: watchdog
     summary: The periodic judge of running jobs and served models, acting from a fixed set and recording each act.
