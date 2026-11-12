@@ -58,13 +58,10 @@ def fold(series: dict, keep: int = MAX_SERIES) -> dict:
 
 
 def ledger_rows(conn, first_day: str) -> list[dict]:
-    """ledger_days rows with their detail parsed; [] before schema 70."""
-    import sqlite3
-    try:
-        rows = conn.execute("SELECT day, energy_kwh, detail FROM ledger_days WHERE day >= ? ORDER BY day",
-                            (first_day,)).fetchall()
-    except sqlite3.OperationalError:
-        return []
+    """ledger_days rows with their detail parsed; store.Unread when the store does not answer. #1781."""
+    from harness import store
+    rows = store.read(conn, "ledger_days", "SELECT day, energy_kwh, detail FROM ledger_days WHERE day >= ? "
+                      "ORDER BY day", (first_day,))
     out = []
     for r in rows:
         r = dict(r)
@@ -77,13 +74,10 @@ def ledger_rows(conn, first_day: str) -> list[dict]:
 
 
 def delegation_rows(conn, since: float) -> list[tuple]:
-    """(at, lane, outcome) per delegation since `since`; [] before schema 69."""
-    import sqlite3
-    try:
-        return [tuple(r) for r in conn.execute(
-            "SELECT at, lane, outcome FROM delegations WHERE at >= ?", (since,))]
-    except sqlite3.OperationalError:
-        return []
+    """(at, lane, outcome) per delegation since `since`; store.Unread when the store does not answer. #1781."""
+    from harness import store
+    return [tuple(r) for r in store.read(conn, "delegations", "SELECT at, lane, outcome FROM delegations WHERE at >= ?",
+                                         (since,))]
 
 
 def _chart(title: str, unit: str, series: dict, note: str = "", **extra) -> dict:

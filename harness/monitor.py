@@ -393,8 +393,9 @@ def desktop(title: str, message: str, run=subprocess.run, which=shutil.which, pl
     return f"notify failed: {first}; {second.removeprefix('notify failed: ')}"
 
 
-def post(text: str, url: str, opener=urllib.request.urlopen) -> str:
+def post(text: str, url: str, opener=None) -> str:
     """POST {"content": text} to the webhook; the outcome never holds the URL."""
+    opener = opener or urllib.request.urlopen
     body = json.dumps({"content": text[:POST_CHARS]}).encode()
     try:
         req = urllib.request.Request(url, data=body, method="POST",
@@ -417,9 +418,10 @@ def growers(home: Path | None = None) -> list[tuple[str, Path]]:
             ("queue", home / "queue"), ("runtime trials", home / runtime_trials.TRIALS_DIR)]
 
 
-def du(found: list[tuple[str, Path]], timeout: float, popen=subprocess.Popen,
+def du(found: list[tuple[str, Path]], timeout: float, popen=None,
        clock=time.monotonic, sleep=time.sleep) -> list[dict]:
     """KiB under each grower by du -sk, all at once and stopped at `timeout`; a du cut short says so."""
+    popen = popen or subprocess.Popen
     procs = []
     for name, path in found:
         if not Path(path).is_dir():
@@ -475,9 +477,10 @@ def live_home(home: Path | None = None) -> bool:
     return Path(home or paths.home()).resolve() == Path(paths.DEFAULT_HOME).resolve()
 
 
-def alert(kind: str, environ=None, *, notify=None, send=None, pause=pause_all, measure=None, clock=time.time,
+def alert(kind: str, environ=None, *, notify=None, send=None, pause=None, measure=None, clock=time.time,
           home: Path | None = None) -> dict:
     """monit's exec action: pause first on disk-pause, then the alert line, the desktop and the webhook; du on disk."""
+    pause = pause or pause_all
     if kind not in KINDS:
         raise ValueError(f"unknown alert kind {kind!r}; one of {', '.join(KINDS)}")
     environ = os.environ if environ is None else environ

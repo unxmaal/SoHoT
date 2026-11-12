@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from harness import adopt, candidates, disk, winners
+from harness import adopt, adoption_state as st, candidates, disk, winners
 from harness import memory_store as ms
 from tests import conftest
 
@@ -93,8 +93,10 @@ def test_a_reference_model_is_never_a_lane_default(conn, spec):
     _adopt(conn, "code", spec)
     assert adopt.adopted(conn) == {"code": "org/local"}
     cid = candidates.ensure(conn, spec, lane="code")
-    conn.execute("INSERT INTO adoptions (lane, candidate_id, how, adopted_at) "
-                 "VALUES ('code', ?, 'measured', 9e12)", (cid,))
+    with pytest.raises(st.IllegalMove, match="reference model"):
+        st.move(conn, "code", st.ADOPT, cid, how="measured", machine_id=None)
+    conn.execute("INSERT INTO adoptions (lane, candidate_id, how, adopted_at, leaves) VALUES ('code', ?, 'measured', "
+                 "9e12, (SELECT MAX(id) FROM adoptions WHERE lane = 'code'))", (cid,))
     assert adopt.adopted(conn) == {"code": "org/local"}
 
 

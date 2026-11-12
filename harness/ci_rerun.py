@@ -90,7 +90,8 @@ def _gh(argv: list[str]) -> str:
     return got.stdout
 
 
-def main(argv=None, gh=_gh, environ=None) -> int:
+def main(argv=None, gh=None, environ=None) -> int:
+    gh = gh or _gh
     env = os.environ if environ is None else environ
     ap = argparse.ArgumentParser(prog="python harness/ci_rerun.py", description=__doc__)
     ap.add_argument("run_id")

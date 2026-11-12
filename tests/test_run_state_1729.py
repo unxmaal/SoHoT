@@ -73,7 +73,7 @@ COMBOS = [
 def test_each_combination_of_the_inputs_maps_to_one_named_state(tmp_path, written, live, pause, stop, raw,
                                                                  checkpoint, want):
     d = _dir(tmp_path, "r", written, pause=pause, stop=stop, raw=raw, checkpoint=checkpoint)
-    got = run_state.of(d, alive=lambda pid, pgid: live)
+    got = run_state.of(d, alive=lambda pid, pgid, started: live)
     assert got.name == want and got.name in run_state.STATES
 
 
@@ -86,9 +86,9 @@ def test_a_contradiction_is_never_read_as_not_running():
 
 def test_the_reasons_come_from_the_stop_and_pause_files(tmp_path):
     d = _dir(tmp_path, "r", "yielding", stop="no_progress")
-    assert run_state.of(d, alive=lambda pid, pgid: False).why == "no_progress"
+    assert run_state.of(d, alive=lambda pid, pgid, started: False).why == "no_progress"
     d = _dir(tmp_path, "s", "running", pause=True)
-    assert run_state.of(d, alive=lambda pid, pgid: True).why == "memory_stuck"
+    assert run_state.of(d, alive=lambda pid, pgid, started: True).why == "memory_stuck"
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="a process group is how a live run is told on POSIX")

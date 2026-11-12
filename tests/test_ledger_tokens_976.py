@@ -8,7 +8,7 @@ from datetime import datetime
 
 import pytest
 
-from harness import cli, ledger, morning, otel, trends
+from harness import cli, ledger, morning, otel, paths, trends
 from harness import memory_store as ms
 from harness.commands import morning as morning_cmd
 from tests import dollar_scan
@@ -82,6 +82,7 @@ def test_morning_shows_last_nights_ledger_in_tokens_and_no_dollar(monkeypatch, c
     ledger.ledger_dir().mkdir(parents=True, exist_ok=True)
     (ledger.ledger_dir() / "ratelimits.jsonl").write_text(
         json.dumps({"at": local("2026-10-08", 9), "five_hour": 80.0, "seven_day": 44.0}) + "\n", encoding="utf-8")
+    monkeypatch.setattr(paths, "DEFAULT_HOME", paths.home())
     assert cli.main(["ledger", "--since", "2026-10-08", "--record"]) == 0
     capsys.readouterr()
     now = local("2026-10-09", 6)

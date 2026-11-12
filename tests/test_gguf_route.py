@@ -617,3 +617,39 @@ def test_a_gguf_fetch_lifts_the_offline_constant_read_at_import(home, monkeypatc
     assert seen == [(False, "0")]
     assert constants.HF_HUB_OFFLINE is True
     assert os.environ["HF_HUB_OFFLINE"] == "1"
+
+
+_STEMS = {"org/repo": "Repo-Q4_K_M", "org/alias": "Alias-Q4", "Org/Alias": "Alias-Q4", "org/repo:Q4": "Tagged-Q4"}
+
+
+@pytest.fixture
+def stems(monkeypatch):
+    monkeypatch.setattr(serving, "gguf_stem", _STEMS.get)
+    monkeypatch.setattr(screen, "gateway_routes",
+                        lambda config=None: ({"org/alias"} if config == "cfg" else set(), "http://up:1"))
+
+
+@pytest.mark.parametrize("spec, want", [
+    ("llamacpp:Stem-Q4,ctx=8,temp=0", "Stem-Q4"),
+    ("llamacpp: Stem-Q4 ", "Stem-Q4"),
+    ("org/repo,ctx=8", "Repo-Q4_K_M"),
+    ("org/repo:Q4", ""),
+    ("q3-4b", ""),
+    ("org/none", ""),
+    (None, ""),
+])
+def test_router_stem_names_the_stem_llama_server_serves_a_spec_under(stems, spec, want):
+    assert serving.router_stem(spec) == want
+
+
+def test_router_stem_leaves_a_gateway_alias_to_the_gateway_it_was_given(stems):
+    assert serving.router_stem("Org/Alias", "cfg") == ""
+    assert serving.router_stem("org/alias") == "Alias-Q4"
+
+
+def test_a_stem_the_interactive_server_answers_goes_there_and_any_other_to_the_router(monkeypatch):
+    from harness import context, interactive, router
+    monkeypatch.setattr(context, "refusal", lambda stem: "")
+    monkeypatch.setitem(interactive._ARMS, "Pinned-Q4", "http://127.0.0.1:9999")
+    assert serving._router_for("Pinned-Q4") == ("http://127.0.0.1:9999", "Pinned-Q4")
+    assert serving._router_for("Other-Q4") == (router.url(), "Other-Q4")

@@ -695,8 +695,8 @@ def _no_real_notifier(monkeypatch):
         record.real = real
         return record
     monkeypatch.setattr(monitor, "desktop", recorder(monitor.desktop, "desktop", lambda *a: "notified", "run"))
-    monkeypatch.setattr(watchdog, "desktop", recorder(watchdog.desktop, "desktop",
-                                                      lambda t, m, *a: f"{watchdog.NOTIFIED}: {m}", "run"))
+    shown = lambda t, m, *a: watchdog.Said(f"{watchdog.NOTIFIED}: {m}", notified=True)  # noqa: E731
+    monkeypatch.setattr(watchdog, "desktop", recorder(watchdog.desktop, "desktop", shown, "run"))
     monkeypatch.setattr(monitor, "post", recorder(monitor.post, "webhook", lambda *a: "posted: HTTP 204", "opener"))
     return sent
 

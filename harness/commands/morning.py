@@ -122,7 +122,8 @@ def render(r: dict) -> list[str]:
                          for w in s["stopped"]))
     adopted = s["settled"]["adopted"]
     out.append(f"settled   {_tally(s['settled']['verdicts'])}"
-               + (f"; adopted {', '.join(a['lane'] + ' ' + a['spec'] for a in adopted)}" if adopted else ""))
+               + (f"; adopted {', '.join(a['lane'] + ' ' + a['spec'] for a in adopted)}" if adopted else "")
+               + "".join(f"; withdrew {w['lane']} {w['spec']}: {w['why']}" for w in s["settled"].get("withdrawn") or []))
     out.extend(f"held      {r[k]}" for k in ("hold", "gpu_hold") if r.get(k))
     out.append(f"watchdog  {len(r['watchdog'])} action(s)")
     for w in r["watchdog"]:

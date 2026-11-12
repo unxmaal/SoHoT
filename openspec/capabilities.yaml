@@ -43,6 +43,7 @@ capabilities:
       - harness/effects.py
       - harness/paired.py
       - harness/gateway_switch.py
+      - harness/adoption_state.py
       - harness/gateway_switch_state.py
 
   - name: measure
