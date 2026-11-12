@@ -112,12 +112,36 @@ def test_an_unhomed_probe_is_named_with_its_eval_waived_line(tmp_path):
 
 def test_a_detector_hit_with_no_bound_test_is_named_with_its_marker(tmp_path):
     root = tree(tmp_path, {"harness/u.py": 'def f(b):\n    return b != "http://localhost:4000"\n',
-                           "tests/gauntlet/backlog.json": "{}\n", "tests/test_gauntlet_detectors.py": "BACKLOG_PIN = 0\n"})
+                           "tests/gauntlet/backlog.json": "{}\n", "tests/gauntlet/registry.py": "BACKLOG_PIN = 0\n"})
     got = text_of(precheck.detector_bindings(root))
     assert '@pytest.mark.gauntlet("identity-by-name-not-by-content", site="harness/u.py:f")' in got
     tree(root, {"tests/test_u.py": 'import pytest\n@pytest.mark.gauntlet("identity-by-name-not-by-content", '
                                    'site="harness/u.py:f")\ndef test_f():\n    pass\n'})
     assert precheck.detector_bindings(root) == []
+
+
+def test_precheck_runs_only_its_cheap_detectors_and_counts_no_skipped_class_row_as_gone(tmp_path, monkeypatch):
+    """#1832: precheck runs registry.PRECHECK_DETECTORS, never the whole v0.2.2 set; make check runs the rest."""
+    from gauntlet import detectors
+
+    from tests.gauntlet import classes, registry
+    ran = []
+    monkeypatch.setattr(detectors, "DETECTORS", {
+        name: (lambda name: lambda *a, **kw: ran.append(name) or [])(name) for name in detectors.DETECTORS})
+    skipped = next(cid for cid, e in classes.INDEX.items()
+                   if detectors.names(e) and not set(detectors.names(e)) <= registry.PRECHECK_DETECTORS)
+    root = tree(tmp_path, {"harness/u.py": "X = 1\n", "tests/gauntlet/registry.py": "BACKLOG_PIN = 1\n",
+                           "tests/gauntlet/backlog.json": f'{{"{skipped}": ["harness/u.py:f"]}}\n'})
+    assert precheck.detector_bindings(root) == []
+    named = {n for e in classes.INDEX.values() for n in detectors.names(e)}
+    assert set(ran) == registry.PRECHECK_DETECTORS and registry.PRECHECK_DETECTORS < named
+
+
+def test_an_unregistered_move_table_is_named_with_its_move_table_line(tmp_path):
+    root = tree(tmp_path, {"harness/thing_state.py": 'A, B = "a", "b"\nMOVES = {(A, B), (B, A)}\n'})
+    got = text_of(precheck.move_tables(root))
+    assert 'MoveTable("harness/thing_state.py:MOVES", <module>.MOVES' in got
+    assert precheck.move_tables(REPO) == []
 
 
 def test_a_new_mode_flag_is_named_with_its_not_run_line(tmp_path):

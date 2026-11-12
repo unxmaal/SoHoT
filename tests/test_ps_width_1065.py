@@ -7,9 +7,9 @@ import sys
 from pathlib import Path
 
 import pytest
+from gauntlet import scanners as gscanners
 
 from harness import sweep_guard, watchdog
-from tests.gauntlet import scanners
 
 REPO = Path(__file__).resolve().parents[1]
 SOURCES = ("harness", "evals", "scripts", "gateway", "tools", "voice", "deploy")
@@ -24,7 +24,7 @@ def _ps(text, rel):
 
 
 def _ps_calls():
-    return scanners.scan_tree(REPO, _ps, lambda p: p.suffix in (".py", ".sh"),
+    return gscanners.scan_tree(REPO, _ps, lambda p: p.suffix in (".py", ".sh"),
                               lambda rel: rel.startswith(tuple(f"{d}/" for d in SOURCES))
                               and "cases" not in rel.split("/"))
 
