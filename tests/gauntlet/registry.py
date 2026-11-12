@@ -16,6 +16,12 @@ NOT_PRODUCTION = ("tests/", "evals/cases/")
 BACKLOG_PIN = 861
 
 
+# make precheck runs only these; the rest are whole-tree costly and stay in make check (#1832).
+PRECHECK_DETECTORS = frozenset({
+    "harness_verdicts", "duplicated_literals", "env_seams", "loopback_equality", "row_index_keys", "unreached_guards",
+    "ignored_options", "closed_tables", "latest_row_state", "unguarded_transition", "member_defaults"})
+
+
 def production(rel):
     return not rel.startswith(NOT_PRODUCTION)
 
