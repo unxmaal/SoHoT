@@ -65,7 +65,8 @@ def newer(entries: list[Entry], since: str | None) -> list[Entry]:
     return [e for e in entries if vkey(e.version) > floor]
 
 
-def fetch(url: str = CHANGELOG_URL, opener=urllib.request.urlopen) -> str:
+def fetch(url: str = CHANGELOG_URL, opener=None) -> str:
+    opener = opener or urllib.request.urlopen
     with opener(url, timeout=FETCH_TIMEOUT_S) as resp:
         return resp.read().decode("utf-8")
 

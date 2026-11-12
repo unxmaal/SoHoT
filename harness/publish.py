@@ -597,12 +597,13 @@ def _create_branch(repo: str, path: str, content: str, message: str, gh) -> None
        {"ref": f"refs/heads/{BRANCH}", "sha": commit["sha"]})
 
 
-def publish(doc: dict, repo: str | None = None, gh=_gh, dispatch: bool = True) -> str:
+def publish(doc: dict, repo: str | None = None, gh=None, dispatch: bool = True) -> str:
     """Write machines/<slug>.json on `reports` through the contents API.
 
     One file per machine and one API commit per write, so a machine never
     rewrites another's file and nothing is force-pushed.
     """
+    gh = gh or _gh
     doc = checked(doc)
     repo = repo or repo_name()
     path = f"machines/{doc['machine']['slug']}.json"
@@ -678,8 +679,9 @@ def lane_docs(conn=None, machine_id: int | None = None, now: float | None = None
         return {lane: lane_feed.lane_feed(c, lane, machine_id=machine_id, now=now) for lane in L.ALL}
 
 
-def publish_lanes(docs: dict[str, dict], slug_: str, repo: str | None = None, gh=_gh) -> dict:
+def publish_lanes(docs: dict[str, dict], slug_: str, repo: str | None = None, gh=None) -> dict:
     """lanes/<slug>/<lane>.json for each lane that passes the scan and changed; a lane that fails is skipped and named."""
+    gh = gh or _gh
     repo = repo or repo_name()
     out = {"written": [], "unchanged": [], "refused": {}}
     for lane, doc in docs.items():
@@ -716,8 +718,9 @@ def set_enabled(on: bool) -> Path:
     return p
 
 
-def publish_here(conn=None, gh=_gh, repo: str | None = None) -> str:
+def publish_here(conn=None, gh=None, repo: str | None = None) -> str:
     """This machine's report and every lane's feed beside it, then one page build."""
+    gh = gh or _gh
     from harness import runs
     with runs.store(conn) as c:
         doc = export(c)

@@ -120,9 +120,10 @@ def _signal(kill, pid: int, sig) -> bool:
     return True
 
 
-def stop(found: list[dict], grace: float = STOP_GRACE_S, alive=alive, kill=os.kill, sleep=time.sleep,
+def stop(found: list[dict], grace: float = STOP_GRACE_S, alive=alive, kill=None, sleep=time.sleep,
          clock=time.monotonic) -> list[int]:
     """TERM each, as the watchdog's stop does, then KILL what outlives `grace`; the pids still alive."""
+    kill = kill or os.kill
     for r in found:
         _signal(kill, r["pid"], signal.SIGTERM)
     deadline = clock() + grace

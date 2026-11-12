@@ -604,3 +604,120 @@ def undone_home_pins(text, rel):
         if pending is not None:
             found.add((pending, "monkeypatch.undo() drops conftest's LOCALHARNESS_HOME; setenv it again after"))
     return out + [f"{rel}:{line}: {why}" for line, why in sorted(found)]
+
+
+CONFTEST = Path(__file__).resolve().parent.parent / "conftest.py"
+
+
+def _module_of(rel):
+    parts = list(Path(rel).with_suffix("").parts)
+    return ".".join(parts[:-1] if parts[-1] == "__init__" else parts)
+
+
+def _import_aliases(nodes, mod="", is_pkg=False):
+    out = {}
+    for n in nodes:
+        if isinstance(n, ast.Import):
+            for a in n.names:
+                out[a.asname or a.name.split(".")[0]] = a.name if a.asname else a.name.split(".")[0]
+        elif isinstance(n, ast.ImportFrom):
+            base = n.module or ""
+            if n.level:
+                up = mod.split(".")[:len(mod.split(".")) - n.level + (1 if is_pkg else 0)]
+                base = ".".join(up + ([n.module] if n.module else []))
+            for a in n.names:
+                out[a.asname or a.name] = f"{base}.{a.name}"
+    return out
+
+
+def _dotted(node, aliases, mod=None):
+    if isinstance(node, ast.Name):
+        return aliases.get(node.id) or (f"{mod}.{node.id}" if mod is not None else None)
+    if isinstance(node, ast.Attribute):
+        base = _dotted(node.value, aliases)
+        return f"{base}.{node.attr}" if base else None
+    return None
+
+
+def _is_autouse(fn):
+    return any(isinstance(d, ast.Call) and _call_name(d) == "fixture"
+               and any(k.arg == "autouse" and isinstance(k.value, ast.Constant) and k.value.value is True
+                       for k in d.keywords) for d in fn.decorator_list)
+
+
+def _loop_names(fn):
+    out = {}
+    for n in ast.walk(fn):
+        if isinstance(n, ast.For) and isinstance(n.target, ast.Name) and isinstance(n.iter, (ast.Tuple, ast.List)):
+            for x in ast.walk(n):
+                out[id(x)] = (n.target.id, _strings(n.iter.elts))
+    return out
+
+
+def conftest_stubs(text=None):
+    """(module, name) every autouse fixture in tests/conftest.py replaces with monkeypatch.setattr. #1796."""
+    if text is None:
+        return _live_stubs()
+    tree = ast.parse(text)
+    top = _import_aliases(tree.body)
+    out = set()
+    for fn in tree.body:
+        if not (isinstance(fn, ast.FunctionDef) and _is_autouse(fn)):
+            continue
+        aliases = {**top, **_import_aliases(n for n in ast.walk(fn) if isinstance(n, (ast.Import, ast.ImportFrom)))}
+        loops = _loop_names(fn)
+        for c in ast.walk(fn):
+            if not (isinstance(c, ast.Call) and _call_name(c) == "setattr" and len(c.args) >= 2):
+                continue
+            owner = _dotted(c.args[0], aliases)
+            name = c.args[1]
+            if isinstance(name, ast.Constant) and isinstance(name.value, str):
+                names = [name.value]
+            elif isinstance(name, ast.Name) and loops.get(id(c), ("",))[0] == name.id:
+                names = loops[id(c)][1]
+            else:
+                names = []
+            out |= {(owner, n) for n in names} if owner else set()
+    return out
+
+
+_STUBS = []
+
+
+def _live_stubs():
+    if not _STUBS:
+        _STUBS.append(frozenset(conftest_stubs(CONFTEST.read_text(encoding="utf-8"))))
+    return _STUBS[0]
+
+
+def _loading_stmts(body):
+    for s in body:
+        yield s
+        if isinstance(s, (ast.If, ast.Try, ast.With, ast.ClassDef)):
+            yield from _loading_stmts([x for x in ast.iter_child_nodes(s) if isinstance(x, ast.stmt)])
+
+
+def stub_bindings(text, rel, stubs=None):
+    """A name conftest stubs for every test, bound when the module loads: a from-import or a default argument. #1796."""
+    tree, out = _parse(text, rel)
+    if tree is None:
+        return out
+    stubs = conftest_stubs() if stubs is None else stubs
+    mod = _module_of(rel)
+    aliases = _import_aliases(tree.body, mod, Path(rel).name == "__init__.py")
+    found = set()
+    for s in _loading_stmts(tree.body):
+        if isinstance(s, ast.ImportFrom):
+            for a in s.names:
+                if tuple(_import_aliases([s], mod, Path(rel).name == "__init__.py")[a.asname or a.name]
+                         .rsplit(".", 1)) in stubs:
+                    found.add((s.lineno, f"imports {a.name} by name"))
+    for fn in ast.walk(tree):
+        if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+            continue
+        for d in fn.args.defaults + [k for k in fn.args.kw_defaults if k is not None]:
+            dotted = _dotted(d, aliases, mod)
+            if dotted and tuple(dotted.rsplit(".", 1)) in stubs:
+                found.add((d.lineno, f"binds {ast.unparse(d)} as a default"))
+    return out + [f"{rel}:{line}: {why}, so conftest's stub of it never reaches this module"
+                  for line, why in sorted(found)]
