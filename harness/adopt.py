@@ -903,11 +903,27 @@ def default_for(lane: str, fallback: str, conn=None, machine=HERE) -> str:
         or fallback
 
 
+def _machine_default(lane: str, fallback: str) -> str:
+    """default_for as the machine's home answers it: from a scratch eval home, its store read-only. #1711."""
+    from harness import memory_store as ms, paths, store
+    if paths.machine_home() == paths.home():
+        return default_for(lane, fallback)
+    ms.this_fingerprint()  # resolved in this home: host_id keeps its file in the home it reads
+    with store.on_machine():
+        conn = store.machine_ro()
+        if conn is None:
+            return fallback
+        try:
+            return default_for(lane, fallback, conn)
+        finally:
+            conn.close()
+
+
 def serving_default(lane: str, fallback: str) -> str:
     """default_for a generation: an unreadable store is said on stderr and the lane serves its constant. #1432."""
     import sys
     try:
-        return default_for(lane, fallback)
+        return _machine_default(lane, fallback)
     except Exception as exc:  # noqa: BLE001 - a generation never fails on the discovery store
         print(f"adopt: the store could not be read ({exc}); {lane} serves its typed default {fallback}", file=sys.stderr)
         return fallback
