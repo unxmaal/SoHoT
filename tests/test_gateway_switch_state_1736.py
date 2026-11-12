@@ -2,12 +2,12 @@
 import contextlib
 import subprocess
 import sys
-import threading
 
 import pytest
 
 from harness import gateway, gateway_switch as gs, gateway_switch_state as st
 from harness import memory_store as ms
+from tests.racing import race
 from tests.test_gateway_switch import STEM, Clock, adopt_for, config, gw  # noqa: F401
 
 GONE = {"pid": 999_999_999, "pgid": 999_999_999, "started": "Thu Jan  1 00:00:00 1970"}
@@ -121,24 +121,19 @@ def test_a_dead_switch_leaves_no_drain_behind(config):
 
 
 def test_two_switches_racing_for_the_slot_one_wins():
-    gate = threading.Barrier(6)
     won, lost = [], []
 
-    def claim():
+    def claim(start):
         conn = ms.connect()
         try:
-            gate.wait()
+            start()
             won.append(st.claim(conn, requested_at=1.0, **GONE))
         except st.Lost:
             lost.append(1)
         finally:
             conn.close()
 
-    threads = [threading.Thread(target=claim) for _ in range(6)]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join()
+    race([claim] * 6)
     assert len(won) == 1 and len(lost) == 5
 
 
