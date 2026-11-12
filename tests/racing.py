@@ -2,9 +2,9 @@
 import threading
 
 
-def race(racers, timeout: float = 60.0) -> None:
+def race(racers, timeout: float = 60.0, barrier=threading.Barrier) -> None:
     """Each racer gets start() to call at the line; the first exception any racer raises is raised here."""
-    gate, failed = threading.Barrier(len(racers), timeout=timeout), []
+    gate, failed = barrier(len(racers), timeout=timeout), []
 
     def run(racer):
         try:

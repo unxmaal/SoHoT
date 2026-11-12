@@ -90,9 +90,15 @@ def test_a_racer_that_dies_before_the_start_fails_the_race_with_its_error_instea
     class Refused(Exception):
         pass
 
+    aborted = []
+
+    class Gate(threading.Barrier):
+        def abort(self):
+            aborted.append(1)
+            super().abort()
+
     def dies(start):
         raise Refused("connect failed")
-    began = time.monotonic()
     with pytest.raises(Refused, match="connect failed"):
-        race([lambda start: start()] * 5 + [dies], timeout=30)
-    assert time.monotonic() - began < 5
+        race([lambda start: start()] * 5 + [dies], timeout=2, barrier=Gate)
+    assert aborted == [1]
