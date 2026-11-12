@@ -94,8 +94,6 @@ OPEN_ISSUES = {
     1775: (CA, (r"^harness/nodes\.py:_record$",)),
     1777: (FT, (r"^harness/repo_gate\.py:(owed|verdict):detail$",)),
     1778: (FT, (r"^harness/watchdog\.py:(notified_since|overrun_stopped|wake):(outcome|evidence)$",)),
-    1779: (FT, (r"^harness/rank\.py:passed_over:detail$",)),
-    1782: (EF, (r"^harness/rank\.py:(incumbent_bases|passed_over):except$",)),
     1788: (VS, (r"^harness/workqueue\.py:stale_schema:one-sided$",)),
     1790: (VS, (r"^harness/(nodes|install_env|engine_smoke|slot_probe|router|interactive)\.py:__main__:both-phases$",)),
 }

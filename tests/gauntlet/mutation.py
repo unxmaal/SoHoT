@@ -90,7 +90,7 @@ LEFT_OUT = {
                                             "test_revisit_tier_1060.py", "test_revisitable_after_deploy_1361.py",
                                             "test_revisitable_met_1749.py", "test_site.py", "test_futility_lane_too_small_1452.py"),
     "harness/reasons.py": (
-        "test_owner_decline_1564.py", "test_runtime_trials_1474.py", "test_repo_repair_890.py", "test_agent_cut_call_1547.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_staging_torch_1358.py",
+        "test_passed_over_class_1779.py", "test_owner_decline_1564.py", "test_runtime_trials_1474.py", "test_repo_repair_890.py", "test_agent_cut_call_1547.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_staging_torch_1358.py",
         "test_vision_engines_1282.py",
         "test_shots_check_1208.py", "test_node_drain_1815.py",
         "test_adopt_retest_1001.py", "test_attachment_tags_949.py", "test_canary_919.py",
@@ -111,7 +111,7 @@ LEFT_OUT = {
         "test_engine_trials_1475.py", "test_screen_server_killer_1544.py", "test_mflux_second_repo_1546.py", "test_interactive_1561.py",
         "test_slot_plan_refusal_1651.py", "test_incumbent_silent_1656.py"),
     "harness/screen.py": (
-        "test_measure_gateway_1660.py", "test_attachment_tags_949.py", "test_lane_too_small_1049.py", "test_vision_engines_1282.py",
+        "test_passed_over_class_1779.py", "test_measure_gateway_1660.py", "test_attachment_tags_949.py", "test_lane_too_small_1049.py", "test_vision_engines_1282.py",
         "test_variants_947.py", "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",
         "test_harness_report.py", "test_incumbent_lookup.py", "test_lane_metric_validity.py", "test_loop_backpressure.py",
         "test_canary_919.py", "test_mps_backend_abort.py", "test_new_lane_loop_faults.py", "test_rank_881.py",
