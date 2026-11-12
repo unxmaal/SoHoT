@@ -397,14 +397,14 @@
   },
   {
    "candidate": "tts:OpenMOSS-Team/MOSS-TTS-v1.5",
-   "decided_at": "2026-11-11T03:09:55Z",
+   "decided_at": "2026-11-12T03:40:36Z",
    "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local dis",
    "exam": null,
    "outcome": "queued",
    "proposal": "OpenMOSS-Team/MOSS-TTS-v1.5",
    "reason": "harness",
    "receipt_key": "MOSS-TTS-v1.5",
-   "run_id": 831,
+   "run_id": 872,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -441,7 +441,7 @@
    "until": "format:.pt"
   }
  ],
- "cursor": 1794366595217727,
+ "cursor": 1794454836809080,
  "events": [
   {
    "at": "2026-09-19T21:17:40Z",
@@ -1042,6 +1042,21 @@
    "reason": "harness",
    "run_id": 831,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-12T03:40:36Z",
+   "candidate": "tts:OpenMOSS-Team/MOSS-TTS-v1.5",
+   "chosen": null,
+   "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local dis",
+   "how": "",
+   "id": 1794454836809080,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "harness",
+   "run_id": 872,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -1212,7 +1227,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-11T06:06:36Z",
+ "generated_at": "2026-11-12T04:30:52Z",
  "knobs": [],
  "lane": {
   "cases": 470,
