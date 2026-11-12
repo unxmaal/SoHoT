@@ -119,20 +119,80 @@ class Spool:
 @contextmanager
 def ledger():
     """Where a delegation's rows go: usage.target(), else the live store as it stands, a Spool at another schema, or None. #1717, #1789."""
-    from harness import paths, usage
+    from harness import paths, store, usage
     from harness import memory_store as ms
     path = usage.target()
-    if path is not None:
-        conn = ms.connect(path)
-    elif paths.evaluating():
-        conn = None
-    else:
-        conn = _live_as_is(ms.db_path())
+    with contextlib.ExitStack() as held:
+        if path is not None:
+            conn = ms.connect(path)
+        elif paths.evaluating():
+            conn = None
+        else:
+            # The live store on the backend its store.json names, whatever LOCALHARNESS_STORE this process inherited. #1852.
+            held.enter_context(store.pinned(_named()))
+            conn = _live_as_is(ms.db_path())
+        try:
+            yield conn
+        finally:
+            if conn is not None:
+                conn.close()
+
+
+def _named(home=None) -> str:
+    from harness import store
+    got = str(store.marker(home).get("backend") or "").strip().lower()
+    return store.POSTGRES if got == store.POSTGRES else store.SQLITE
+
+
+def _live_label() -> str:
+    from harness import paths, store
+    if _named(paths.DEFAULT_HOME) == store.POSTGRES:
+        return f"the live store, Postgres {store.pg_target(home=paths.DEFAULT_HOME)},"
+    return f"the live store {paths.DEFAULT_HOME / 'discovery.db'}"
+
+
+def _live_spool() -> Path | None:
+    """The live home's spool when this process records in a store of its own and a deployed release drains it. #1852."""
+    from harness import paths, store, usage
+    target, live = usage.target(), paths.DEFAULT_HOME
+    if target is None or paths.is_live(target) or paths.deploy_checkout() is None or store.guarded(live):
+        return None
+    return live / SPOOL if (live / store.MARKER).is_file() or (live / "discovery.db").is_file() else None
+
+
+def _mirror(kind: str, **body) -> None:
+    """A row written to a store of this process's own goes to the live ledger too, through its spool. #1852."""
     try:
-        yield conn
-    finally:
-        if conn is not None:
-            conn.close()
+        into = _live_spool()
+        if into is not None:
+            spool(kind, into=into, **body)
+    except Exception as exc:  # noqa: BLE001 - the row is in this process's store; only the live copy is lost
+        print(f"delegations: {kind} not spooled for the live ledger ({exc})", file=sys.stderr)
+
+
+def _in_live(call_id: str) -> bool:
+    """Is `call_id` a delegation in the live store, read-only from any home. #1852."""
+    from harness import paths, store
+    try:
+        with paths.seated(paths.DEFAULT_HOME), store.pinned(_named(paths.DEFAULT_HOME)):
+            conn = store.open_ro(paths.DEFAULT_HOME / "discovery.db")
+            try:
+                return conn.execute("SELECT 1 FROM delegations WHERE call_id = ?", (call_id,)).fetchone() is not None
+            finally:
+                conn.close()
+    except Exception:  # noqa: BLE001 - unreadable: the outcome is refused, naming where it looked
+        return False
+
+
+def looked() -> str:
+    """Where an outcome for a call id is looked for, as a refusal names it. #1852."""
+    from harness import store, usage
+    target = usage.target()
+    if target is None:
+        return f"{_live_label()} and its spool {spool_dir()}"
+    where = f"Postgres {store.pg_target()}" if store.home_postgres(target) else str(target)
+    live = _live_spool()
+    return where + (f", {_live_label()} and its spool {live}" if live is not None else "")
 
 
 def _once(line: str) -> None:
@@ -151,9 +211,6 @@ def _live_as_is(path: Path):
     from harness import store
     from harness.memory_store import connection as mc
     from harness.memory_store.schema import SCHEMA_VERSION
-    named = store.marker().get("backend") or store.SQLITE
-    if store.backend() != named:
-        return _skip(f"this process talks {store.backend()}; the live store is {named}")
     if not store.exists(path):
         return _skip(f"no store at {path}")
     conn = store.open_as_is(path)
@@ -180,6 +237,7 @@ def note(got: dict, call_id: str, gateway: bool = False) -> dict:
                 conn.put("delegation", call_id=call_id, row=row)
             elif conn is not None:
                 record(conn, **row)
+                _mirror("delegation", call_id=call_id, row=row)
     except Exception as exc:  # noqa: BLE001
         print(f"delegations: not recorded ({exc})", file=sys.stderr)
     return {**got, "call_id": call_id}
@@ -197,6 +255,8 @@ def request(row: dict) -> bool:
                 conn.put("request", call_id=bound["call_id"], row=bound)
             else:
                 usage.append(conn, row)
+                bound = usage.bound(row)
+                _mirror("request", call_id=bound["call_id"], row=bound)
         return True
     except Exception as exc:  # noqa: BLE001
         print(f"delegations: request row not recorded ({exc})", file=sys.stderr)
@@ -211,7 +271,7 @@ def _what(what: str) -> str:
 
 
 def _unknown(call_id: str) -> UnknownCall:
-    return UnknownCall(f"no delegation has call id {call_id!r}; local_complete, local_decide "
+    return UnknownCall(f"no delegation has call id {call_id!r} in {looked()}; local_complete, local_decide "
                        f"and `soh local` return it as call_id")
 
 
@@ -234,15 +294,34 @@ def outcome(conn, call_id: str, what: str, why: str = "", at: float | None = Non
 
 
 def tell(conn, call_id: str, what: str, why: str = "") -> dict:
-    """outcome() on a store; on a Spool the outcome is checked, then spooled for the deployed release. #1789."""
-    if not isinstance(conn, Spool):
-        return outcome(conn, call_id, what, why)
+    """outcome() on a store, also spooled for the live ledger when it is not the live store; on a Spool, checked then spooled. #1789, #1852."""
     what = _what(what)
+    if not isinstance(conn, Spool):
+        at = time.time()
+        try:
+            got = outcome(conn, call_id, what, why, at=at)
+        except UnknownCall:
+            return _told_elsewhere(call_id, what, why, at)
+        _mirror("outcome", call_id=call_id, outcome=what, why=why, at=at)
+        return got
     if not conn.knows(call_id):
         raise _unknown(call_id)
     conn.put("outcome", call_id=call_id, outcome=what, why=why, at=time.time())
     return {"call_id": call_id, "outcome": what, "why": why, "previous": None,
             "note": f"spooled: the live store is at schema {conn.have}; the deployed release lands it"}
+
+
+def _told_elsewhere(call_id: str, what: str, why: str, at: float) -> dict:
+    """An outcome for a call another store recorded: spooled beside its delegation in the live spool or store. #1852."""
+    from harness import usage
+    into = spool_dir() if usage.target() is None else _live_spool()
+    known = into is not None and (any(r.get("kind") == "delegation" for r in spooled(call_id, into=into))
+                                  or (into != spool_dir() and _in_live(call_id)))
+    if not known:
+        raise _unknown(call_id)
+    spool("outcome", into=into, call_id=call_id, outcome=what, why=why, at=at)
+    return {"call_id": call_id, "outcome": what, "why": why, "previous": None,
+            "note": f"spooled to {into}: its delegation was recorded under another store; the deployed release lands it"}
 
 
 # --- the spool a checkout at another schema writes and the deployed release drains (#1789) ---------
@@ -252,11 +331,11 @@ def spool_dir() -> Path:
     return Path(paths.home()) / SPOOL
 
 
-def spool(kind: str, **body) -> str:
-    """Write one record as its own file, fsynced and renamed into place; its id."""
+def spool(kind: str, into: Path | None = None, **body) -> str:
+    """Write one record as its own file in `into` (this home's spool), fsynced and renamed into place; its id."""
     from harness.memory_store.schema import SCHEMA_VERSION
     rec = {"id": uuid.uuid4().hex, "kind": kind, "schema": SCHEMA_VERSION, "spooled_at": time.time(), **body}
-    d = spool_dir()
+    d = into or spool_dir()
     d.mkdir(parents=True, exist_ok=True)
     name = f"{time.time_ns():020d}-{rec['id']}.json"
     part = d / f".{name}.part"
@@ -274,8 +353,8 @@ def spool(kind: str, **body) -> str:
     return rec["id"]
 
 
-def _records() -> list[tuple[Path, dict | None]]:
-    d = spool_dir()
+def _records(into: Path | None = None) -> list[tuple[Path, dict | None]]:
+    d = into or spool_dir()
     if not d.is_dir():
         return []
     out = []
@@ -288,9 +367,9 @@ def _records() -> list[tuple[Path, dict | None]]:
     return out
 
 
-def spooled(call_id: str | None = None) -> list[dict]:
+def spooled(call_id: str | None = None, into: Path | None = None) -> list[dict]:
     """The readable spooled records, oldest first; only `call_id`'s when given."""
-    return [r for _, r in _records() if r is not None and (call_id is None or r.get("call_id") == call_id)]
+    return [r for _, r in _records(into) if r is not None and (call_id is None or r.get("call_id") == call_id)]
 
 
 def _land(conn, rec: dict, known: dict) -> tuple[str, str]:

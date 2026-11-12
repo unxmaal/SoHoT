@@ -635,6 +635,14 @@ def guard_flag(live_home, inherited="") -> str:
     return json.dumps(got if entry in got else got + [entry])
 
 
+def guarded(home) -> bool:
+    """Whether this test run guards `home`'s store, so nothing is written for it there. #1852."""
+    import json
+    raw = os.environ.get(GUARD_ENV)
+    db = (Path(home) / "discovery.db").resolve()
+    return bool(raw) and any(Path(live["db"]) == db for live in json.loads(raw))
+
+
 def _sqlite_file(database) -> Path | None:
     from urllib.request import url2pathname
     raw = os.fsdecode(database) if isinstance(database, (str, bytes, os.PathLike)) else ""

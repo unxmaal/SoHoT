@@ -13,7 +13,7 @@ REPO = HERE.parent.parent
 # The agent lane's case repos are broken on purpose; they are inputs to a model, not code here.
 NOT_PRODUCTION = ("tests/", "evals/cases/")
 # Unbound hits pinned when the detectors landed; lower it as the backlog is bound.
-BACKLOG_PIN = 857
+BACKLOG_PIN = 856
 
 
 # make precheck runs only these; the rest are whole-tree costly and stay in make check (#1832).

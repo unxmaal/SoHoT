@@ -691,7 +691,6 @@
   "harness/cuts.py:_own_store:chooser",
   "harness/cuts.py:_spooled:except",
   "harness/day_fetch.py:_release:except",
-  "harness/delegations.py:_live_as_is:chooser",
   "harness/deploy.py:_read:except",
   "harness/deploy.py:backup:chooser",
   "harness/deploy.py:confirm:except",
