@@ -205,7 +205,7 @@ def test_code_the_scaffold_writes_passes_every_registration_ratchet_unchanged(tm
     assert cli.main(["scaffold", "--root", str(root), "--issue", "1697", "unit", "fixture-1697", "soh fixture-1697",
                      "A unit the scaffold test writes", "--hours", "5", "--table", "jobs", "--time-col", "finished_at"]) == 0
     got = _precheck(root)
-    assert f"{root}/harness" in subprocess.run([sys.executable, "-c", "import harness; print(harness.__file__)"],
+    assert str(root / "harness") in subprocess.run([sys.executable, "-c", "import harness; print(harness.__file__)"],
                                                cwd=root, capture_output=True, text=True).stdout, "the copy's code ran"
     assert got.returncode == 0, got.stdout[-4000:] + got.stderr[-2000:]
     caps = (root / scaffold.CAPABILITIES).read_text(encoding="utf-8")
