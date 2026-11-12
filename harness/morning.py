@@ -81,9 +81,11 @@ def sweep(conn, since: float, beat: dict | None) -> dict:
             "SELECT id, lane, challenger, state, done, total, paused_at FROM paused_runs "
             "WHERE paused_at >= ? OR state = 'paused' ORDER BY paused_at", (since,))]
     if _has(conn, "adoptions"):
-        out["settled"]["adopted"] = [dict(r) for r in conn.execute(
-            "SELECT a.lane, c.spec, a.how, a.adopted_at FROM adoptions a JOIN candidates c "
-            "ON c.id = a.candidate_id WHERE a.adopted_at >= ? ORDER BY a.adopted_at", (since,))]
+        from harness import adoption_state as st
+        moved = [{k: r[k] for k in ("lane", "spec", "how", "adopted_at", "move", "why")}
+                 for r in st.history(conn, since=since)]
+        out["settled"]["adopted"] = [r for r in moved if r["move"] == st.ADOPT]
+        out["settled"]["withdrawn"] = [r for r in moved if r["move"] == st.WITHDRAW]
     out["stopped"] = [w for w in watchdog(conn, since) if w["action"] == "stop"]
     if beat:
         from harness import heartbeat

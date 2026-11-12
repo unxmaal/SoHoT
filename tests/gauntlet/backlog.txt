@@ -110,9 +110,7 @@ a-deploy-runs-two-releases-at-once harness/router.py:__main__:both-phases
 a-deploy-runs-two-releases-at-once harness/slot_probe.py:__main__:both-phases
 a-deploy-runs-two-releases-at-once harness/workqueue.py:stale_schema:one-sided
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null evals/repo_screen.py:stored:runs
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null evals/workload_baseline.py:_adopted:adoptions
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null evals/workload_baseline.py:_newest:runs
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/adopt.py:_resolve:null-scope
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/adopt.py:comparisons:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/adopt.py:queue_confirmation:jobs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/adopt.py:screened_cases:runs
@@ -146,7 +144,6 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/commands/discover.py:_report_evidence:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/commands/discover_why.py:_store:sightings
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/commands/families.py:per_night:runs
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/commands/judge.py:_say_adopted:adoptions
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/commands/lanes.py:_knob_sweeps:knob_sweeps
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/commands/loop_steps.py:_jobs_of:jobs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/commands/loop_steps.py:live:jobs
@@ -210,7 +207,6 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/item_lease.py:live:leases
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/item_lease.py:unreleased:leases
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/knob_backlog.py:by_binding:verdicts
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/lane_feed.py:_adoptions:null-scope
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/lane_feed.py:_events:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/lane_feed.py:_knobs:null-scope
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/lane_feed.py:_lane_candidates:verdicts
@@ -311,7 +307,6 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/morning.py:_counts:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/morning.py:idle_lanes:reverifications
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/morning.py:idle_lanes:runs
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/morning.py:sweep:adoptions
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/morning.py:sweep:paused_runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/morning.py:sweep:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/morning.py:watchdog:watchdog_actions
@@ -322,7 +317,6 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/paused_jobs.py:_said:watchdog_actions
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/paused_jobs.py:_twin:jobs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/power.py:served_keys:runs
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/publish.py:_adoptions:null-scope
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/quants.py:unrunnable:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/rank.py:passed_over:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/reply_cap.py:stored:runs
@@ -365,7 +359,6 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/sweeps.py:passing:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/sweeps.py:refile:knob_sweeps
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/sweeps.py:settle:knob_sweeps
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/technique_triage.py:crossings:adoptions
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/technique_triage.py:crossings:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/technique_triage.py:stored_loss:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/watchdog.py:notified_since:null-scope

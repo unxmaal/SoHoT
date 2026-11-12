@@ -28,6 +28,10 @@ def cmd_adopt(a) -> int:
         return measure_cmd.confirm_job(a.confirm)
     if getattr(a, "power", False):
         return cmd_power(a)
+    if getattr(a, "serving", False):
+        return _serving()
+    if getattr(a, "withdraw", ""):
+        return err("--dry-run: a withdrawal writes one row; there is nothing to plan") if dry else _withdraw(a)
     if getattr(a, "from_measurement", False):
         return _dry_run(a) if getattr(a, "dry_run", False) else _from_measurement(a)
     if not a.lane or not a.challenger:
@@ -39,6 +43,43 @@ def cmd_adopt(a) -> int:
         with lent_store():
             return measure_cmd._measure(a, {"name": a.challenger, "lane": lane}, [])
     return measure_cmd._measure_and_adopt(a, {"name": a.challenger, "lane": lane})
+
+
+def _serving() -> int:
+    """Every lane on every machine: its state, what serves, and the adoption that says so. Reads only. #1735."""
+    from harness import adoption_state as st
+    with lent_store() as conn:
+        mids = [r["id"] for r in conn.execute("SELECT id FROM machines ORDER BY id")]
+        rows = [{"machine": mid, "lane": lane, "state": s.state, "spec": s.spec,
+                 "adoption": s.row["id"] if s.row else None,
+                 "refused": s.refused["id"] if s.refused else None, "says": s.says()}
+                for mid in mids for lane, s in st.table(conn, mid).items()]
+    for r in rows:
+        note(f"machine {r['machine']:<3} {r['lane']:<8} {r['state']:<10} {r['says']}")
+    emit(serving=rows)
+    return 0
+
+
+def _withdraw(a) -> int:
+    """Withdraw a lane's adoption on this machine (or every machine); its configured default serves. #1735."""
+    from harness import adoption_state as st, gateway, runs
+    lane = lanes.canonical(a.lane or "")
+    if lane not in lanes.ALL:
+        return err(f"--withdraw needs --lane naming a lane; known: {', '.join(lanes.ALL)}")
+    with runs.store(None) as conn:
+        try:
+            aid = st.withdraw(conn, lane, a.withdraw, all_machines=getattr(a, "all_machines", False))
+        except (st.IllegalMove, st.Lost) as exc:
+            return err(f"not withdrawn: {exc}")
+        now = st.serving(conn, lane)
+    note(f"withdrew {lane} (adoption {aid}); {now.says()}")
+    if lane in gateway.TEXT_LANES:
+        try:
+            gateway.refresh_gateway()
+        except OSError as exc:
+            note(f"the gateway config was not refreshed ({exc}); it serves the old model until it is")
+    emit(lane=lane, adoption=aid, state=now.state, serves=now.spec)
+    return 0
 
 
 def argv_screen_refusal(argv) -> str:

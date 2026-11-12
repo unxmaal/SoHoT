@@ -66,7 +66,7 @@ MODULES = {
         "tests/test_lane_too_small_1049.py", "tests/test_lane_until_1053.py", "tests/test_reverify_lane_metric_733.py",
         "tests/test_adopt_effect_confirm_725.py", "tests/test_min_effect_1320.py",
         "tests/test_limit_cuts_1087_harness_ac.py", "tests/test_limit_cuts_1087_harness_ps.py",
-        "tests/test_adopt_store_given_1673.py"],
+        "tests/test_adopt_store_given_1673.py", "tests/test_adoption_state_1735.py"],
     "harness/serving.py": [
         "tests/test_harness_serving.py", "tests/test_lane_routes.py", "tests/test_gguf_route.py",
         "tests/test_schema_lanes.py", "tests/test_ds4.py", "tests/test_remote_upstreams.py",
@@ -120,7 +120,7 @@ LEFT_OUT = {
         "test_engine_timeout_708.py", "test_engine_timeout_1256.py",
         "test_served_readonly_1247.py", "test_adopt_effect_confirm_725.py",
         "test_confirm_resume_1357.py", "test_store_errors_1432.py", "test_canary_stt_1531.py",
-        "test_mflux_second_repo_1546.py", "test_incumbent_silent_1656.py"),
+        "test_mflux_second_repo_1546.py", "test_incumbent_silent_1656.py", "test_adoption_state_1735.py"),
     "harness/adopt.py": (
         "test_measure_gateway_1660.py", "test_canary_stt_1531.py", "test_technique_triage_993.py", "test_harness_paired.py", "test_reverify_case_sets_1496.py", "test_reverify_power_1504.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
         "test_over_budget_796.py", "test_planted_919.py", "test_projection_696.py", "test_rank_893.py", "test_router_unload.py",

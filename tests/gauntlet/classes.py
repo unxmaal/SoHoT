@@ -207,8 +207,6 @@ INDEX = {
         "waivers": {
             "harness/adopt.py:fit":
                 "ORDER BY peak_kb DESC is the largest measured peak, not the newest row (#533)",
-            "harness/commands/judge.py:_say_adopted":
-                "prints the adoption this command just wrote; display only (#533)",
             "harness/memory_store/transitions.py:decide":
                 "dedupes an exact repeat for a candidate no proposal names; state lives in proposals.state (#409)",
             "harness/memory_store/migrations/columns.py:drop_dead_columns":
