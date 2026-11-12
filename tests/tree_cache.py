@@ -1,4 +1,5 @@
 """Whole-tree scan results kept on disk and keyed by the exact text they read, shared by xdist workers and later runs (#1590)."""
+import dataclasses
 import functools
 import hashlib
 import json
@@ -129,7 +130,7 @@ def frontend_hits(reg, extra=None):
         return _frontend_hits(reg, extra)
     texts = detectors.sources(reg.root, production=reg.production, lister=reg.files)
     mine = {p.relative_to(HERE).as_posix(): p.read_bytes() for p in sorted((HERE / "gauntlet").glob("*.py"))}
-    config = json.dumps([reg.index, reg.detector_config], sort_keys=True, default=repr)
+    config = json.dumps(_canon([reg.index, gratchet.detector_config(reg)]), sort_keys=True)
     digest = _sha(_package(), Path(reg.root).resolve(), repr(tuple(reg.frontends)), config,
                   *(x for rel in sorted(texts) for x in (rel, texts[rel])),
                   *(x for rel in sorted(mine) for x in (rel, mine[rel])))
@@ -139,6 +140,21 @@ def frontend_hits(reg, extra=None):
     got = _frontend_hits(reg, extra)
     _write(where, "frontend_hits", [("", "", digest, json.dumps({cid: [list(h) for h in hits] for cid, hits in got.items()}))])
     return got
+
+
+def _canon(x):
+    """A value the hits depend on as plain JSON, the same in every process: sets sorted, tables by their fields."""
+    if dataclasses.is_dataclass(x) and not isinstance(x, type):
+        return [type(x).__name__, _canon(dataclasses.asdict(x))]
+    if isinstance(x, dict):
+        return sorted(([_canon(k), _canon(v)] for k, v in x.items()), key=json.dumps)
+    if isinstance(x, (set, frozenset)):
+        return sorted((_canon(v) for v in x), key=json.dumps)
+    if isinstance(x, (list, tuple)):
+        return [_canon(v) for v in x]
+    if x is None or isinstance(x, (str, int, float, bool)):
+        return x
+    raise TypeError(f"no stable key for {type(x).__name__}; key it explicitly or leave it out of the registry")
 
 
 _frontend_hits = gratchet.frontend_hits

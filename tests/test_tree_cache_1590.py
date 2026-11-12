@@ -150,6 +150,30 @@ def test_the_detector_hits_are_kept_until_a_production_source_changes(tmp_path, 
     assert again == gauntlet.ratchet.frontend_hits(reg) and again != first, "edited production code is scanned again"
 
 
+@pytest.mark.parametrize("change", ["detector_config", "waiver", "moves"])
+def test_a_registry_change_with_no_source_change_is_never_answered_from_the_cache(tmp_path, cache, change):
+    """The registry's config, waivers and move tables are inputs to the hits, though no file the key reads changed."""
+    root = _tree(tmp_path / "repo", {"harness/q.py": PAIRED})
+    reg = _registry(root)
+    first = tree_cache.frontend_hits(reg)
+    _forge(cache, "", '{"forged": [["harness/q.py:x", 1, "forged"]]}')
+    assert list(tree_cache.frontend_hits(reg)) == ["forged"]
+    if change == "detector_config":
+        reg.detector_config = {"commit_then_link": {"committers": ("add",)}}
+    elif change == "waiver":
+        site = first[registry.CR][0].site
+        reg.index = {registry.CR: {**reg.index[registry.CR], "waivers": {site: "waived in this test"}}}
+    else:
+        reg.moves = registry.MOVES[:1]
+    assert list(tree_cache.frontend_hits(reg)) != ["forged"]
+    assert tree_cache.frontend_hits(reg) == gauntlet.ratchet.frontend_hits(reg)
+
+
+def test_a_registry_value_with_no_stable_key_is_refused_not_guessed():
+    with pytest.raises(TypeError, match="no stable key"):
+        tree_cache._canon({"x": object()})
+
+
 def test_a_kept_hit_reads_back_as_the_hit_gauntlet_returned(tmp_path, cache):
     reg = _registry(_tree(tmp_path / "repo", {"harness/q.py": PAIRED}))
     tree_cache.frontend_hits(reg)
