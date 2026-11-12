@@ -643,7 +643,6 @@ nothing-and-failed-return-the-same-value harness/audio_models.py:loaded:except
 nothing-and-failed-return-the-same-value harness/audit.py:scan_file:except
 nothing-and-failed-return-the-same-value harness/checks/ocr.py:check:none-message
 nothing-and-failed-return-the-same-value harness/checks/render.py:_remove_tree:except
-nothing-and-failed-return-the-same-value harness/ci_rerun.py:decide:none-message
 nothing-and-failed-return-the-same-value harness/claude_news.py:installed:except
 nothing-and-failed-return-the-same-value harness/commands/common.py:lent_store:chooser
 nothing-and-failed-return-the-same-value harness/commands/context.py:_read_conn:chooser
@@ -688,8 +687,6 @@ nothing-and-failed-return-the-same-value harness/exclusive.py:_read:except
 nothing-and-failed-return-the-same-value harness/exclusive.py:store_python:chooser
 nothing-and-failed-return-the-same-value harness/gateway.py:load:except
 nothing-and-failed-return-the-same-value harness/gateway_key.py:FileStore.get:except
-nothing-and-failed-return-the-same-value harness/gateway_switch_state.py:alive:except
-nothing-and-failed-return-the-same-value harness/gateway_switch_state.py:started:except
 nothing-and-failed-return-the-same-value harness/gguf.py:_auxiliary:except
 nothing-and-failed-return-the-same-value harness/gguf.py:auxiliary:except
 nothing-and-failed-return-the-same-value harness/gguf.py:removed:except
