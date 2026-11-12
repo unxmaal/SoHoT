@@ -6,6 +6,7 @@ from pathlib import Path
 from threading import local as _thread_local
 import os
 import sqlite3
+import time
 
 from harness import memory_store as ms, paths, store
 from harness.memory_store.migrations import _refuse_reentry
@@ -105,10 +106,13 @@ def connect(path: Path | None = None):
             # CREATE INDEX IF NOT EXISTS locks its table even when the index exists, so a current store skips the DDL.
             if have == SCHEMA_VERSION:
                 return conn
-            if store.live():
-                _guard_live(paths.DEFAULT_HOME / "discovery.db", lambda: have)
-            conn.executescript(_DDL)
-            ms._migrate(conn)
+            with _pg_migration_lock(conn):
+                have = _pg_schema(conn)
+                if have != SCHEMA_VERSION:
+                    if store.live():
+                        _guard_live(paths.DEFAULT_HOME / "discovery.db", lambda: have)
+                    conn.executescript(_DDL)
+                    ms._migrate(conn)
         except BaseException:
             conn.close()
             raise
@@ -136,7 +140,7 @@ def connect(path: Path | None = None):
     # sweep reads while the judge writes. The caveat is the filesystem: WAL
     # needs real shared memory and is unsafe over NFS-style mounts, so a
     # network-mounted store wants a single writer rather than this.
-    conn.execute("PRAGMA journal_mode = WAL")
+    _wal(conn)
     conn.execute(f"PRAGMA busy_timeout = {int(BUSY_TIMEOUT_SECONDS * 1000)}")
     with store.pinned(store.SQLITE):
         conn.executescript(_DDL)
@@ -146,6 +150,33 @@ def connect(path: Path | None = None):
 
 class LiveStoreRefused(RuntimeError):
     """The live store is behind this code and this code is not the deploy. #455."""
+
+
+def _wal(conn) -> None:
+    """Switch to WAL, retrying while another connect holds the lock: SQLite fails that at once, unwaited. #1772."""
+    deadline = time.monotonic() + BUSY_TIMEOUT_SECONDS
+    while True:
+        try:
+            sqlite3.Connection.execute(conn, "PRAGMA journal_mode = WAL")
+            return
+        except sqlite3.OperationalError as exc:
+            if "locked" not in str(exc) or time.monotonic() >= deadline:
+                _gave_up(exc)
+                raise
+        time.sleep(0.01)
+
+
+@contextmanager
+def _pg_migration_lock(conn):
+    """One migrating connect per Postgres schema at a time, so concurrent first connects never race the DDL. #1772."""
+    key = "hashtext('sohot.migrate'), hashtext(current_schema())"
+    conn.execute(f"SELECT pg_advisory_lock({key})").fetchone()
+    try:
+        yield
+    finally:
+        conn.rollback()
+        conn.execute(f"SELECT pg_advisory_unlock({key})").fetchone()
+        conn.commit()
 
 
 def _pg_schema(conn) -> int:
