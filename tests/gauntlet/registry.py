@@ -5,7 +5,7 @@ from pathlib import Path
 from gauntlet.moves import MoveTable, reopens_by
 from gauntlet.registry import Registry
 
-from harness import deploy_state, download_state, exclusive, gateway_switch_state, job_state, paused, repo, sweeps
+from harness import adoption_state, deploy_state, download_state, exclusive, gateway_switch_state, job_state, paused, repo, sweeps
 from tests.gauntlet import classes
 
 HERE = Path(__file__).resolve().parent
@@ -35,6 +35,9 @@ MOVES = (
               terminal=(download_state.REMOVED,), states=download_state.STATES),
     MoveTable("harness/gateway_switch_state.py:MOVES", gateway_switch_state.MOVES, initial=(gateway_switch_state.NONE,),
               terminal=(gateway_switch_state.SERVING, gateway_switch_state.FAILED), states=gateway_switch_state.STATES),
+    # Keyed (state, move) -> state; the check reads (leaves, enters) pairs.
+    MoveTable("harness/adoption_state.py:MOVES", {(frm, to) for (frm, _), to in adoption_state.MOVES.items()},
+              initial=(adoption_state.NONE, adoption_state.CONFIGURED), states=adoption_state.STATES),
 )
 
 MOVE_WAIVERS = {
