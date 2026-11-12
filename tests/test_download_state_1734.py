@@ -5,12 +5,13 @@ import time
 from pathlib import Path
 
 import pytest
+from gauntlet import detectors
 
 from harness import download_state as ds
 from harness import downloads, fetching, migration_check
 from harness import memory_store as ms
 from harness.memory_store.migrations import columns as cols
-from tests.gauntlet import detectors
+from tests.gauntlet.registry import REGISTRY
 
 REPO = Path(__file__).resolve().parent.parent
 
@@ -206,8 +207,9 @@ def test_a_finish_that_loses_its_move_writes_nothing(w):
 # ---- one writer ----------------------------------------------------------------------------------------
 
 def test_downloads_state_has_one_guarded_writer():
-    trees = detectors.parse(detectors.sources(REPO))
-    assert not [h for h in detectors.unguarded_transition(trees) if "downloads" in h.site or "download_" in h.site]
+    trees = detectors.parse(detectors.sources(REPO, production=REGISTRY.production, lister=REGISTRY.files))
+    hits = detectors.unguarded_transition(trees, REGISTRY.production)
+    assert not [h for h in hits if "downloads" in h.site or "download_" in h.site]
     writers = {rel for rel, tree in trees.items() if "/migrations/" not in rel
                for _n, table, col, _g in detectors._state_writes(tree) if table == "downloads"}
     assert writers == {"harness/download_state.py"}

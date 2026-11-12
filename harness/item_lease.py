@@ -56,10 +56,12 @@ def take(conn, resource: str, item: str, *, job_id=None, pid: int | None = None,
          mem_gb: float | None = None, state: str = "", detail: str = "", ttl_s: float = TTL_S,
          now: float | None = None, fits=None) -> dict | None:
     """A lease on `resource` for `item`, or None while the resource is at capacity or `fits(live)` says no."""
+    from harness import proc_identity
     now = time.time() if now is None else now
     mid = _machine(conn)
     conn.commit()
     key = f"{_LEDGER}{mid}"
+    who = None
     for _ in range(8):
         seen = _version(conn, key)
         held = live(conn, now=now)
@@ -70,10 +72,11 @@ def take(conn, resource: str, item: str, *, job_id=None, pid: int | None = None,
         if fits is not None and not fits(held):
             conn.commit()
             return None
+        who = who or proc_identity.identity(os.getpid() if pid is None else int(pid))
         cur = conn.execute(
-            "INSERT INTO leases (machine_id, resource, item, job_id, pid, priority, mem_gb, state, detail, "
-            "taken_at, beat_at, expires_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-            (mid, resource, item, job_id, os.getpid() if pid is None else int(pid), int(priority), mem_gb, state,
+            "INSERT INTO leases (machine_id, resource, item, job_id, pid, pgid, started, priority, mem_gb, state, "
+            "detail, taken_at, beat_at, expires_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (mid, resource, item, job_id, who["pid"], who["pgid"], who["started"], int(priority), mem_gb, state,
              detail, now, now, now + ttl_s))
         if _bump(conn, key, seen):
             conn.commit()

@@ -73,25 +73,26 @@ def in_flight(base: str) -> int | None:
     return max(got - 1, 0)
 
 
-def _drain_path():
+def _drain_path(node: str = ""):
     from harness import paths
-    return paths.home() / DRAIN_FILE
+    return paths.home() / "nodes" / f"{node}.draining" if node else paths.home() / DRAIN_FILE
 
 
-def start_drain(until: float | None = None) -> None:
-    """Ask the gateway to refuse new requests until `until` (epoch seconds), so a dead switch cannot wedge it."""
+def start_drain(until: float | None = None, node: str = "") -> None:
+    """Ask the gateway to refuse new requests, or to send none to NODE, until `until` (epoch seconds), so a dead caller cannot wedge it."""
     until = time.time() + DRAIN_S + SERVE_WAIT_S if until is None else until
-    _drain_path().write_text(repr(float(until)), encoding="utf-8")
+    _drain_path(node).parent.mkdir(parents=True, exist_ok=True)
+    _drain_path(node).write_text(repr(float(until)), encoding="utf-8")
 
 
-def stop_drain() -> None:
-    _drain_path().unlink(missing_ok=True)
+def stop_drain(node: str = "") -> None:
+    _drain_path(node).unlink(missing_ok=True)
 
 
-def draining(now: float | None = None) -> bool:
-    """Whether the gateway should refuse a new request because a switch is draining it."""
+def draining(now: float | None = None, node: str = "") -> bool:
+    """Whether the gateway should refuse a new request because a switch is draining it, or keep it off a draining NODE. #1815."""
     try:
-        until = float(_drain_path().read_text(encoding="utf-8"))
+        until = float(_drain_path(node).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return False
     return (time.time() if now is None else now) < until

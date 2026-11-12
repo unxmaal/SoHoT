@@ -18,6 +18,8 @@ capabilities:
       - harness/item_lease.py
       - harness/admission.py
       - harness/job_state.py
+      - harness/proc_identity.py
+      - harness/paused_jobs.py
 
   - name: watchdog
     summary: The periodic judge of running jobs and served models, acting from a fixed set and recording each act.
@@ -495,6 +497,7 @@ capabilities:
       - harness/ci_rerun.py
       - harness/dora.py
       - harness/deploy_state.py
+      - harness/deploy_hold.py
       - harness/store_ahead.py
 
   - name: repo-hygiene

@@ -13,8 +13,10 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+from gauntlet.mutation import imported
+
 from tests.gauntlet import covmap
-from tests.gauntlet.mutation import REPO, imported
+from tests.gauntlet.mutation import REPO
 
 FULL = ("pyproject.toml", "uv.lock", "Makefile", ".python-version")
 FULL_UNDER = (".github/workflows/",)
