@@ -96,7 +96,6 @@ OPEN_ISSUES = {
     1782: (EF, (r"^harness/rank\.py:(incumbent_bases|passed_over):except$",)),
     1788: (VS, (r"^harness/workqueue\.py:stale_schema:one-sided$",)),
     1790: (VS, (r"^harness/(nodes|install_env|engine_smoke|slot_probe|router|interactive)\.py:__main__:both-phases$",)),
-    1796: (OR, (r":default:",)),
 }
 
 MOVE_WAIVERS: dict = {}
