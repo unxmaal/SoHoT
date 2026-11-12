@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from harness import context, gateway, identity, nodes
+from harness import context, gateway, identity, node_state, nodes
 
 MODEL = "Stem"
 NODE_BASE = "http://node1.invalid:8083"
@@ -39,6 +39,8 @@ def setup(tmp_path, monkeypatch):
         gateway.write_served(cfg, nodes=nodes.load())
         monkeypatch.setenv("GATEWAY_CONFIG", str(cfg))
         monkeypatch.setattr(context, "_get_json", lambda url, key="": dict(PROPS))
+        monkeypatch.setattr(node_state, "read", lambda node: {
+            "models": {MODEL: {"file": {"size": 7, "mtime_ns": 1, "sha256": SHA}}}})
         return nodes.load()
     return make
 
@@ -58,7 +60,8 @@ def test_a_digest_the_node_reports_is_recorded_and_the_next_identity_carries_it(
     assert nodes.main(["check"]) == 0
     assert f"PASS  node node1 {MODEL}: sha256 {SHA} reported, recorded in" in capsys.readouterr().out
     assert yaml.safe_load(nodes.path().read_text(encoding="utf-8"))["nodes"][0]["models"] == [MODEL], "nodes.yaml is the owner's"
-    assert json.loads(nodes.record_path().read_text(encoding="utf-8"))["node1"]["models"] == {MODEL: SHA}
+    assert json.loads(nodes.record_path().read_text(encoding="utf-8"))["node1"]["models"] == {
+        MODEL: {"sha256": SHA, "size": 7, "mtime_ns": 1}}
     got = identity.served(MODEL)
     assert "unresolved" not in got, got
     assert got["model"] == {MODEL: SHA}

@@ -166,7 +166,7 @@ def test_the_node_report_names_its_pressure_lock_pinned_set_and_interactive_load
                f"/slots?model={STEM}": [{"id": 0, "is_processing": True}, {"id": 1, "is_processing": False}]}
     got = node_state.report(get=lambda path: answers[path], sample=lambda: types.SimpleNamespace(level=1, alarming=False))
     assert got["interactive"] == 1 and got["lock"] == {} and got["pinned_gb"] == 12.3
-    assert got["models"][STEM] == {"lane": "extract", "ctx": 32768, "slots": 2, "resident": True}
+    assert got["models"][STEM] == {"lane": "extract", "ctx": 32768, "slots": 2, "resident": True, "file": {}}
     assert got["room_gb"] == round(got["ceiling_gb"] - got["reserve_gb"] - 12.3, 2)
 
 
