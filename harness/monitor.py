@@ -25,6 +25,8 @@ DISK_PAUSE_GIB = 25
 CYCLE_S = 300
 #: Seconds memory pressure stays at warn or worse before monit alerts.
 MEMORY_WARN_S = 600
+#: Seconds memory pressure stays normal before monit ends its episode with one recovered alert. #1870.
+MEMORY_CALM_S = 3600
 #: Seconds a service port stays closed before monit alerts; launchd restarts it meanwhile.
 SERVICE_DOWN_S = 600
 #: Local hour in which monit asks each cycle whether the store's daily dump is due; the first ask makes it. #1591.
@@ -177,8 +179,9 @@ def render(s: dict) -> str:
     prefix = f"/usr/bin/env PATH={_word(s['path'])} {paths.ENV_VAR}={home}"
     alert = f"{prefix} {_word(s['scripts'])}/monit-alert.sh"
 
-    def then(kind: str, recover: bool = True) -> str:
-        back = f' else if succeeded then exec "{alert} {RECOVERED}"' if recover else ""
+    def then(kind: str, recover: bool = True, calm: int = 1) -> str:
+        after = f" for {calm} cycles" if calm > 1 else ""
+        back = f' else if succeeded{after} then exec "{alert} {RECOVERED}"' if recover else ""
         return f'then exec "{alert} {kind}"{back}'
 
     out = [HEADER, f"set daemon {CYCLE_S}", f"set log {home}/logs/monit.log", f"set pidfile {st}/monit.pid",
@@ -193,7 +196,8 @@ def render(s: dict) -> str:
                 f"    if space free < {int(s['models_floor_gib'])} GB {then('volume-low')}", ""]
     out += [f'check program memory_pressure with path "{prefix} {s["scripts"]}/monit-pressure.sh" '
             f"with timeout {CLI_TIMEOUT_S} seconds",
-            f"    if status != 0 for {cycles(MEMORY_WARN_S)} cycles {then('memory')}", ""]
+            f"    if status != 0 for {cycles(MEMORY_WARN_S)} cycles "
+            f"{then('memory', calm=cycles(MEMORY_CALM_S))}", ""]
     for name, port in s.get("services") or []:
         out += [f"check host service_{_word(name)} with address 127.0.0.1",
                 f"    if failed port {int(port)} type tcp for {cycles(SERVICE_DOWN_S)} cycles {then('service')}", ""]
@@ -496,6 +500,13 @@ def alert(kind: str, environ=None, *, notify=None, send=None, pause=None, measur
     if kind == "disk-pause":
         entry["paused"] = pause(f"monit: {service} {desc}")
     message = f"{kind}: {service}: {desc}".strip()
+    if kind == RECOVERED:
+        opened = open_failure(service, home)
+        if opened is None:
+            entry["held"] = f"not sent: no {service} alert is open, so its failure never paged"
+            notify, send = (lambda *a: entry["held"]), (lambda *a: entry["held"])
+        else:
+            message += _lasted(entry, opened)
     if kind == "disk-pause":
         n = len(entry["paused"].get("runs") or [])
         message += f"; paused the job queue and {n} running eval(s); `soh jobs resume` once space is back"
@@ -512,6 +523,26 @@ def alert(kind: str, environ=None, *, notify=None, send=None, pause=None, measur
         record(after, home)
         entry["du"] = line
     return entry
+
+
+def open_failure(service: str, home: Path | None = None) -> dict | None:
+    """The alert that paged for `service` and has not recovered since, if any."""
+    return next((a for a in still_open(alerts(0, home)) if a.get("service") == service), None)
+
+
+def _lasted(entry: dict, opened: dict) -> str:
+    """How long the failure `opened` lasted, from the cycles monit waited before each alert; recorded in `entry`."""
+    from harness import heartbeat
+    kind, at = opened.get("kind"), float(opened.get("at") or 0)
+    held = {"memory": MEMORY_WARN_S, "service": SERVICE_DOWN_S, "store": SERVICE_DOWN_S}.get(kind)
+    lead = (cycles(held) - 1) * CYCLE_S if held else 0
+    lag = (cycles(MEMORY_CALM_S) - 1) * CYCLE_S if kind == "memory" else 0
+    if lag:
+        from harness import cuts
+        cuts.cut("harness/monitor.py:MEMORY_CALM_S", f"monit {opened.get('service')} recovery held {lag} s of calm")
+    entry["failed_at"], entry["down_s"] = at, round(entry["at"] - lag - (at - lead))
+    when = time.strftime("%m-%d %H:%M", time.localtime(at))
+    return f"; {'episode' if kind == 'memory' else 'down'} about {heartbeat.ago(entry['down_s'])} (alerted {when})"
 
 
 def _bound(kind: str, what: str) -> None:
@@ -570,4 +601,5 @@ def morning(since: float, run=subprocess.run, which=shutil.which, home: Path | N
 
 def line(a: dict) -> str:
     when = time.strftime("%H:%M", time.localtime(float(a.get("at") or 0)))
-    return f"{when} {a.get('kind')} {a.get('service')}: {a.get('description')}"
+    held = " (not sent)" if a.get("held") else ""
+    return f"{when} {a.get('kind')} {a.get('service')}: {a.get('description')}{held}"
