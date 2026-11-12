@@ -75,8 +75,8 @@ def test_a_loss_is_recorded_too(tmp_path):
                             kind="weights", resolved="org/new"))
     adopt.record(conn, adopt.Verdict("tts", "old", "org/new", False, "lost"))
     assert adopt.adopted(conn) == {}
-    got = conn.execute("SELECT outcome, tier FROM verdicts").fetchall()
-    assert [tuple(r) for r in got] == [("declined", "adopt")]
+    got = conn.execute("SELECT outcome, tier, lane FROM verdicts").fetchall()
+    assert [tuple(r) for r in got] == [("declined", "adopt", "tts")]
 
 
 def test_an_unreachable_store_raises_but_a_generation_serves_the_constant_and_says_why(monkeypatch, capsys):

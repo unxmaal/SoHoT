@@ -87,7 +87,6 @@ OPEN_ISSUES = {
     1769: (SC, (r":null-scope$",)),
     1770: (SC, (r"^harness/adopt\.py:queue_confirmation:jobs$", r"^harness/workqueue\.py:_repend:jobs$")),
     1775: (CA, (r"^harness/nodes\.py:_record$",)),
-    1777: (FT, (r"^harness/repo_gate\.py:(owed|verdict):detail$",)),
     1778: (FT, (r"^harness/watchdog\.py:(notified_since|overrun_stopped|wake):(outcome|evidence)$",)),
     1779: (FT, (r"^harness/rank\.py:passed_over:detail$",)),
     1781: (EF, (r"^harness/commands/(context|inventory|ledger)\.py:\w+:chooser$", r"^harness/otel\.py:_select:except$",

@@ -77,7 +77,6 @@ a-decision-read-back-out-of-a-sentence-the-code-wrote harness/inventory_time.py:
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/inventory_weight.py:origin:subject
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/kb_filter.py:named:said
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/lane_probe.py:due:reason
-a-decision-read-back-out-of-a-sentence-the-code-wrote harness/measure_replay.py:owed_at:detail
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/memory_store/revisit.py:gguf_sized_off_lane:detail
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/memory_store/revisit.py:incomplete_copies:detail
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/memory_store/revisit.py:sized_by_repo_total:detail
@@ -87,8 +86,6 @@ a-decision-read-back-out-of-a-sentence-the-code-wrote harness/memory_store/trans
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/node_deploy.py:_install:said
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/quants.py:unrunnable:detail
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/rank.py:passed_over:detail
-a-decision-read-back-out-of-a-sentence-the-code-wrote harness/repo_gate.py:owed:detail
-a-decision-read-back-out-of-a-sentence-the-code-wrote harness/repo_gate.py:verdict:detail
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/reuse.py:replay:why
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/runner_gaps.py:format_name:evidence
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/runner_gaps.py:model_type:evidence

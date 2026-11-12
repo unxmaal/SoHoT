@@ -440,6 +440,7 @@
   "harness.memory_store.transitions:decide:, \"'candidate_id'\"->\"'CANDIDATE_ID'\"",
   "harness.memory_store.transitions:decide:, \"'failure_class'\"->\"'FAILURE_CLASS'\"",
   "harness.memory_store.transitions:decide:, \"'judge'\"->\"'JUDGE'\"",
+  "harness.memory_store.transitions:decide:, \"'lane'\"->\"'LANE'\"",
   "harness.memory_store.transitions:decide:, \"'machine_id'\"->\"'MACHINE_ID'\"",
   "harness.memory_store.transitions:decide:, \"'proposal_id'\"->\"'PROPOSAL_ID'\"",
   "harness.memory_store.transitions:decide:, \"'proposal_id'\"->\"'XXproposal_idXX'\"",
