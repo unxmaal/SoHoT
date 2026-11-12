@@ -83,6 +83,9 @@ MOVES = {
     (ABANDONED, FREE): {"reap", "release", "workqueue"},
     (RESERVED, LAPSED): {"clock"},
     (LOADING, LAPSED): {"clock"},
+    (RESERVED, ABANDONED): {"death"},
+    (LOADING, ABANDONED): {"death"},
+    (LAPSED, ABANDONED): {"death"},
 }
 
 #: How often a waiter re-reads the holder to refresh what it reports.
