@@ -83,7 +83,6 @@ VS, OR = "a-deploy-runs-two-releases-at-once", "an-order-the-code-needs-but-does
 # Backlog rows an open #1748 high names: {issue: (class, site patterns)}; each pattern must still match a backlog row.
 OPEN_ISSUES = {
     1759: (OW, (r"^harness/vllm\.py:served$",)),
-    1762: (WT, (r"^harness/workqueue\.py:quiesce$",)),
     1763: (WT, (r"^harness/exclusive\.py:_beating\.keep$",)),
     1769: (SC, (r":null-scope$",)),
     1770: (SC, (r"^harness/adopt\.py:queue_confirmation:jobs$", r"^harness/workqueue\.py:_repend:jobs$")),

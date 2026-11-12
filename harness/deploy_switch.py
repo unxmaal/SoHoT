@@ -26,6 +26,8 @@ from harness import proc_identity  # noqa: E402
 
 #: How long the new release's `launchd.sh reinstall` may take: the worker quiesce, deferred periodic units, preflight and the audit.
 INSTALL_TIMEOUT_S = 3600.0
+#: The line quiesce.cli says when a job outlived the worker quiesce: the install failed for it. #1762.
+NOT_QUIESCED = "not-quiesced"
 #: How long one verify command (smoke, then soh coherence) may take on the live system.
 VERIFY_TIMEOUT_S = 1800.0
 #: How long the switch (reinstall, then verify) may take in all before it rolls back and alerts; the rollback gets as long again. #1515.
@@ -207,11 +209,15 @@ def _audited(rec: dict, log, start: int | None, why: str) -> str:
             log.flush()
             with open(log.name, "rb") as f:
                 f.seek(start)
-                got = deploy_hold.failed(f.read().decode("utf-8", "replace"))
+                text = f.read().decode("utf-8", "replace")
+            got = deploy_hold.failed(text)
         except (OSError, ValueError, AttributeError, ImportError):
-            got = {}
+            got, text = {}, ""
         if got:
             rec["audit_failed"] = got
+        held = [line for line in text.splitlines() if line.startswith(f"{NOT_QUIESCED}: ")]
+        if held:
+            why = f"{why}: {held[-1]}"
     return why
 
 

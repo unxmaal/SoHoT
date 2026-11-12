@@ -471,7 +471,6 @@ a-wait-with-no-deadline-owner-or-end-state harness/throttle.py:_hold
 a-wait-with-no-deadline-owner-or-end-state harness/throughput.py:_Peak._run
 a-wait-with-no-deadline-owner-or-end-state harness/workqueue.py:_watch_left
 a-wait-with-no-deadline-owner-or-end-state harness/workqueue.py:leased.keep
-a-wait-with-no-deadline-owner-or-end-state harness/workqueue.py:quiesce
 a-wait-with-no-deadline-owner-or-end-state harness/workqueue.py:run_pending
 a-wait-with-no-deadline-owner-or-end-state harness/workqueue.py:serve
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy evals/analysis/demand/__init__.py:public_repo:binary:gh
