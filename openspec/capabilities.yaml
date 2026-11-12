@@ -18,6 +18,7 @@ capabilities:
       - harness/item_lease.py
       - harness/admission.py
       - harness/job_state.py
+      - harness/proc_identity.py
       - harness/paused_jobs.py
 
   - name: watchdog

@@ -87,6 +87,8 @@ MOVES = {
 
 #: How often a waiter re-reads the holder to refresh what it reports.
 POLL_SECONDS = 0.5
+#: Seconds held() waits for the GPU in all before it gives up with WaitExpired. #1763.
+GPU_WAIT_S = 28800.0
 
 
 def _venv_python(root: Path) -> Path:
@@ -297,10 +299,13 @@ def _store():
 
 
 def _holder_alive(h: dict) -> bool:
-    """Whether a gpu lease's holder lives: its process, or for a queued job's, the job's own process. #1619."""
+    """Whether a gpu lease's holder lives: its process by pid, group and start time, or for a queued job's, the job's own process. #1619, #1772."""
+    from harness import proc_identity
     from harness import workqueue as wq
-    if h.get("pid") and wq.alive(int(h["pid"])):
-        return True
+    if h.get("pid"):
+        same = proc_identity.same(h)
+        if same or (same is None and wq.alive(int(h["pid"]))):
+            return True
     return h.get("job_id") is not None and wq._pid_of(h["job_id"]) is not None
 
 
@@ -310,6 +315,26 @@ class IllegalMove(RuntimeError):
 
 class LeaseLost(RuntimeError):
     """The gpu lease a parent holds for this child (LEASE_ENV) is no longer in force. #1732."""
+
+
+class WaitExpired(RuntimeError):
+    """held() waited its whole bound for the GPU and gave up; alerted once. #1763."""
+
+
+class _Wait:
+    """One bound on held()'s whole wait, across the gpu lease, the flock and the batch lease. #1763."""
+
+    def __init__(self, kind: str, seconds: float):
+        self.kind, self.seconds, self.end = kind, float(seconds), time.monotonic() + float(seconds)
+
+    def check(self, who: str) -> None:
+        if time.monotonic() < self.end:
+            return
+        from harness import cuts
+        reason = f"{self.kind} gave up waiting for the GPU after {self.seconds:.0f}s (gpu_wait), behind {who}"
+        cuts.cut("gpu_wait", f"{self.kind}: waited for the GPU", value=self.seconds, kept=0, dropped=1)
+        _alert("gpu-refused", reason)
+        raise WaitExpired(reason)
 
 
 def state_of(h: dict | None, now: float | None = None) -> str:
@@ -483,7 +508,7 @@ def _holder(leases: list[dict]) -> dict:
 
 
 @contextlib.contextmanager
-def _flock(announce, poll: float, wait: bool = True):
+def _flock(announce, poll: float, wait: bool = True, bound: _Wait | None = None):
     """The flock on the machine's generation.lock, which other projects' lockf shares; yields (taken, waited)."""
     fd = os.open(_on_machine(lock_path), os.O_RDWR | os.O_CREAT, 0o644)
     try:
@@ -491,6 +516,8 @@ def _flock(announce, poll: float, wait: bool = True):
         while not (got := _take(fd)) and wait:
             waited = True
             record = machine_holder()
+            if bound is not None:
+                bound.check(describe(record))
             if announce and identity(record) != said:
                 announce(f"waiting for {describe(record)} to finish")
                 said = identity(record)
@@ -554,18 +581,18 @@ def _beating(lease_id: int, clock=time.monotonic):
 
 
 @contextlib.contextmanager
-def _gpu(kind: str, announce, poll: float, wait: bool = True):
+def _gpu(kind: str, announce, poll: float, wait: bool = True, bound: _Wait | None = None):
     """The gpu lease, then the flock other projects' `lockf -k generation.lock` takes (DECISION #210); yields (taken, waited, lease id). #1619."""
-    with _lease(kind, announce, poll, wait) as (got, waited, lease):
+    with _lease(kind, announce, poll, wait, bound) as (got, waited, lease):
         if not got:
             yield False, waited, None
             return
-        with _flock(announce, poll, wait) as (locked, lock_waited):
+        with _flock(announce, poll, wait, bound) as (locked, lock_waited):
             yield locked, waited or lock_waited, lease
 
 
 @contextlib.contextmanager
-def _lease(kind: str, announce, poll: float, wait: bool = True):
+def _lease(kind: str, announce, poll: float, wait: bool = True, bound: _Wait | None = None):
     """This machine's gpu lease for `kind`: its job's own, else one taken, waiting; store down, only REPAIR runs. #1648."""
     from harness import item_lease, resources
     try:
@@ -607,6 +634,8 @@ def _lease(kind: str, announce, poll: float, wait: bool = True):
             who = describe(rec) if rec else "; ".join(item_lease.line(h) for h in leases) or "a gpu lease"
             if kind in REPAIR:
                 who += _stop_hint(leases)
+            if bound is not None:
+                bound.check(who)
             if announce and who.split(" for ")[0] != said:
                 announce(f"waiting for {who} to finish")
                 said = who.split(" for ")[0]
@@ -626,7 +655,7 @@ def _lease(kind: str, announce, poll: float, wait: bool = True):
 
 
 @contextlib.contextmanager
-def _node(node: str, kind: str, announce, poll: float):
+def _node(node: str, kind: str, announce, poll: float, bound: _Wait | None = None):
     """The node's gpu lease, its job's own or one taken, waiting; this machine's lease and flock stay free. #778, #1689."""
     from harness import item_lease, resources
     from harness import workqueue as wq
@@ -650,6 +679,8 @@ def _node(node: str, kind: str, announce, poll: float):
             if got is None:
                 waited = True
                 who = "; ".join(item_lease.line(h) for h in item_lease.live(conn, cls)) or f"a {cls} lease"
+                if bound is not None:
+                    bound.check(who)
                 if announce and who.split(" for ")[0] != said:
                     announce(f"waiting for {who} to finish")
                     said = who.split(" for ")[0]
@@ -834,7 +865,7 @@ def _renewing(mine: str, who: dict):
 
 
 @contextlib.contextmanager
-def _leased(announce, poll: float):
+def _leased(announce, poll: float, bound: _Wait | None = None):
     """Hold this machine's serving lease, the one its gateway gives a remote batch, waiting while another has it. #769."""
     from harness import batch
     with _named() as mine:
@@ -848,6 +879,8 @@ def _leased(announce, poll: float):
         waited, said = False, None
         while (got := _claim(mine, who)):
             waited = True
+            if bound is not None:
+                bound.check(batch.describe(got))
             if announce and got.get("batch") != said:
                 announce(f"waiting for {batch.describe(got)} on this machine to finish")
                 said = got.get("batch")
@@ -857,19 +890,21 @@ def _leased(announce, poll: float):
 
 
 @contextlib.contextmanager
-def held(kind: str, announce=None, poll: float = POLL_SECONDS, deadline_s: float | None = None, node: str = ""):
-    """Hold the machine for `kind`, waiting if someone else has it.
+def held(kind: str, announce=None, poll: float = POLL_SECONDS, deadline_s: float | None = None, node: str = "",
+         wait_s: float | None = None):
+    """Hold the machine for `kind`, waiting if someone else has it, at most wait_s (GPU_WAIT_S), then WaitExpired.
 
     `announce` is called with a sentence the first time this has to wait, and
     again whenever what it is waiting behind changes. Waiting silently for
     forty minutes is indistinguishable from hanging.
     """
+    bound = _Wait(kind, GPU_WAIT_S if wait_s is None else wait_s)
     if kind in CLOUD:
-        with _cloud(kind, announce, poll, deadline_s) as waited:
+        with _cloud(kind, announce, poll, deadline_s, bound) as waited:
             yield waited
         return
     if kind in NODE:
-        with _named(), _node(node, kind, announce, poll) as waited:
+        with _named(), _node(node, kind, announce, poll, bound) as waited:
             yield waited
         return
     if kind not in EXCLUSIVE | BATCH or _inherited():
@@ -881,7 +916,7 @@ def held(kind: str, announce=None, poll: float = POLL_SECONDS, deadline_s: float
             yield False
         return
 
-    with _gpu(kind, announce, poll) as (_, waited, lease), _leased(announce, poll) as lease_waited:
+    with _gpu(kind, announce, poll, bound=bound) as (_, waited, lease), _leased(announce, poll, bound) as lease_waited:
         _write_holder(kind, deadline_s, lease=lease)
         _hand_down(lease)
         try:
@@ -893,7 +928,7 @@ def held(kind: str, announce=None, poll: float = POLL_SECONDS, deadline_s: float
 
 
 @contextlib.contextmanager
-def _cloud(kind: str, announce, poll: float, deadline_s: float | None):
+def _cloud(kind: str, announce, poll: float, deadline_s: float | None, bound: _Wait | None = None):
     """Hold one of CLOUD_SLOTS cloud slots, leaving the GPU lock and the batch lease free. #1135."""
     if os.environ.get(HELD_ENV) == "1" or os.environ.get(CLOUD_HELD_ENV) == "1":
         yield False
@@ -905,6 +940,8 @@ def _cloud(kind: str, announce, poll: float, deadline_s: float | None):
         while (got := next((i for i, fd in enumerate(fds) if _take(fd)), None)) is None:
             waited = True
             records = [_read(cloud_holder_path(i)) for i in range(slots)]
+            if bound is not None:
+                bound.check(", ".join(describe(r) for r in records))
             who = tuple(identity(r) for r in records)
             if announce and who != said:
                 announce(f"waiting for one of {slots} cloud evals to finish: "
