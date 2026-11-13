@@ -10,6 +10,8 @@ import threading
 import time
 from pathlib import Path
 
+from harness.atomic_file import replace
+
 RUNNING = "running"
 FINISHED = "finished"
 #: No progress for this long reads as stalled when the step declared no deadline of its own. #705.
@@ -59,7 +61,7 @@ def _write(data: dict) -> None:
     p.parent.mkdir(parents=True, exist_ok=True)
     tmp = p.with_name(f"{p.name}.{os.getpid()}.{threading.get_ident()}.tmp")
     tmp.write_text(json.dumps(data), encoding="utf-8")
-    os.replace(tmp, p)
+    replace(tmp, p)
 
 
 def read() -> dict | None:

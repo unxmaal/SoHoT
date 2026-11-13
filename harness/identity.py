@@ -9,6 +9,8 @@ import re
 import sys
 from pathlib import Path
 
+from harness.atomic_file import replace
+
 #: Machine facts that only time a run; recorded beside the identity, never matched.
 TIMING = ("swap_used_mb", "available_gb", "thermal")
 #: Library files of a llama.cpp build that a llama-server binary loads.
@@ -41,7 +43,7 @@ def _save_cache(path: Path, got: dict) -> bool:
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
         tmp.write_text(json.dumps(got, sort_keys=True), encoding="utf-8")
-        os.replace(tmp, path)
+        replace(tmp, path)
     except OSError:
         return False
     return True

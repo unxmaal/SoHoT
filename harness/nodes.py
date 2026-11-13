@@ -12,6 +12,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from harness.atomic_file import replace
+
 FILE = "nodes.yaml"
 #: Overrides where the node list is read from.
 ENV_VAR = "SOHOT_NODES"
@@ -616,7 +618,7 @@ def _record(node: Node, reported: dict) -> None:
     where.parent.mkdir(parents=True, exist_ok=True)
     tmp = where.with_name(where.name + ".tmp")
     tmp.write_text(json.dumps(got, indent=1, sort_keys=True) + "\n", encoding="utf-8")
-    os.replace(tmp, where)
+    replace(tmp, where)
 
 
 def _reported(tags) -> str:

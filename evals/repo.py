@@ -16,6 +16,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from harness.atomic_file import replace
 from harness import knobs
 
 SANDBOX_EXEC = "/usr/bin/sandbox-exec"
@@ -916,7 +917,7 @@ def save_validation(case, got: dict, machine: str, commit: str, now: float) -> d
     held[machine] = rec
     tmp = path.with_name(f"{path.name}.{os.getpid()}")
     tmp.write_text(json.dumps(held, indent=1) + "\n", encoding="utf-8")
-    tmp.replace(path)
+    replace(tmp, path)
     return rec
 
 

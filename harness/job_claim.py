@@ -7,6 +7,8 @@ import threading
 import time
 from pathlib import Path
 
+from harness.atomic_file import replace
+
 
 def path(job_id) -> Path:
     """Beside the job's pid file: the identity of the worker that claimed it, until its process has exited."""
@@ -19,7 +21,7 @@ def mark(job_id, pid: int | None = None) -> None:
     to = path(job_id)
     tmp = to.with_suffix(f".claim.{os.getpid()}.{threading.get_ident()}")
     tmp.write_text(json.dumps(proc_identity.identity(pid or os.getpid())), encoding="utf-8")
-    os.replace(tmp, to)
+    replace(tmp, to)
 
 
 def clear(job_id) -> None:
