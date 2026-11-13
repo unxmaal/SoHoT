@@ -102,7 +102,6 @@ a-deploy-runs-two-releases-at-once harness/memory_store/connection.py:_guard_liv
 a-deploy-runs-two-releases-at-once harness/nodes.py:__main__:both-phases
 a-deploy-runs-two-releases-at-once harness/router.py:__main__:both-phases
 a-deploy-runs-two-releases-at-once harness/slot_probe.py:__main__:both-phases
-a-deploy-runs-two-releases-at-once harness/workqueue.py:stale_schema:one-sided
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null evals/repo_screen.py:stored:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null evals/workload_baseline.py:_newest:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/adopt.py:comparisons:verdicts
