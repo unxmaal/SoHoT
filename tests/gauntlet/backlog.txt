@@ -281,10 +281,8 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/reuse.py:replay:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/reuse.py:replay:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/reverify.py:_flagged_runs:reverifications
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/reverify.py:_latest:reverifications
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/reverify.py:_measured:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/reverify.py:judge:runs
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/reverify.py:settle:reverifications
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/routes.py:latest_run:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/runs.py:at:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/runs.py:backfill:verdicts

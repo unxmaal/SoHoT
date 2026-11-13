@@ -93,9 +93,9 @@ def test_a_served_model_whose_reverify_failed_is_not_swept(conn, serving):
     binding_budget(conn)
     cid = conn.execute("SELECT id FROM candidates WHERE spec = 'q3-4b'").fetchone()["id"]
     serving(cid=cid)
-    conn.execute("INSERT INTO reverifications (lane, candidate_id, spec, queued_at, settled_at, outcome, detail) "
-                 "VALUES ('code', ?, 'q3-4b', ?, ?, ?, 'q3-4b passed 0 of 41 in run 470')",
-                 (cid, NOW - DAY, NOW - DAY, reverify.FAILED))
+    conn.execute("INSERT INTO reverifications (lane, candidate_id, spec, queued_at, settled_at, outcome, detail, "
+                 "machine_id) VALUES ('code', ?, 'q3-4b', ?, ?, ?, 'q3-4b passed 0 of 41 in run 470', ?)",
+                 (cid, NOW - DAY, NOW - DAY, reverify.FAILED, ms.machine_row(conn)))
     conn.commit()
     got = sweeps.check(conn, now=NOW)
     assert got["queued"] == [] and "q3-4b passed 0 of 41 in run 470" in got["planned"][0]["skip"]
