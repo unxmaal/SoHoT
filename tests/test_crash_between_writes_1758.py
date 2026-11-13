@@ -58,8 +58,8 @@ def test_a_failed_exit_recorded_before_the_worker_died_is_settled_failed_with_it
 def test_no_exit_record_reads_none_a_recorded_0_reads_0_and_an_unreadable_one_raises(tmp_path):
     pid_file = tmp_path / "0001.pid"
     assert executors.exit_record(pid_file) is None
-    executors.exit_file(pid_file).write_text("0", encoding="utf-8")
-    assert executors.exit_record(pid_file) == 0
+    executors.exit_file(pid_file).write_text("0 123.5", encoding="utf-8")
+    assert executors.exit_record(pid_file) == (0, 123.5)
     executors.exit_file(pid_file).write_text("torn", encoding="utf-8")
     with pytest.raises(ValueError):
         executors.exit_record(pid_file)

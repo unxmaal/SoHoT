@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import subprocess
+import time
 from typing import Protocol
 
 HOST = "host"
@@ -39,7 +40,7 @@ class Host:
         try:
             rc = child.wait()
             # Before the pid file goes, so a worker that dies before settling leaves the exit to settle by. #1758.
-            _write(exit_file(pid_file), str(rc))
+            _write(exit_file(pid_file), f"{rc} {time.time()}")
             left = self.stop(child.pid)
             if left != "gone" and stdout is not None:
                 stdout.write(f"stopped processes the job left running: {left}\n")
@@ -85,15 +86,17 @@ def gated(argv, pid_file) -> list[str]:
 
 
 def exit_file(pid_file):
-    """Beside a job's pid file, its command's exit code, written before the pid file is removed. #1758."""
+    """Beside a job's pid file, "<rc> <epoch>" of its command's exit, written before the pid file is removed. #1758."""
     return pid_file.with_suffix(".exit")
 
 
-def exit_record(pid_file) -> int | None:
+def exit_record(pid_file) -> tuple[int, float] | None:
+    """(rc, when it exited) recorded for a job, None when none was; a garbled record raises."""
     try:
-        return int(exit_file(pid_file).read_text(encoding="utf-8").strip())
+        rc, at = exit_file(pid_file).read_text(encoding="utf-8").split()
     except FileNotFoundError:
         return None
+    return int(rc), float(at)
 
 
 def _write(path, text: str) -> None:
