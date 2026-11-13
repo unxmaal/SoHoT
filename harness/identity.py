@@ -475,11 +475,17 @@ def _uses(node, imports: list | None = None) -> tuple[set, list]:
 _GRADER_MEMO: dict = {}
 
 
+#: A probed file that exists and cannot be read; a digest that saw one is never reused.
+UNREADABLE = "unreadable"
+
+
 def _probe_sha(path: Path) -> str | None:
-    try:
-        return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
-    except OSError:
+    if not path.is_file():
         return None
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return UNREADABLE
 
 
 def grader_digest(lane: str, *, root=None, packages=GRADER_PACKAGES, registry=CHECKER_REGISTRY,
@@ -492,7 +498,10 @@ def grader_digest(lane: str, *, root=None, packages=GRADER_PACKAGES, registry=CH
         return json.loads(held[1])
     probed: dict = {}
     got = _grader_digest(lane, root, packages, registry, also, probed)
-    _GRADER_MEMO[key] = (probed, json.dumps(got))
+    if UNREADABLE in probed.values():
+        _GRADER_MEMO.pop(key, None)
+    else:
+        _GRADER_MEMO[key] = (probed, json.dumps(got))
     return got
 
 

@@ -1,6 +1,7 @@
 """The incumbent's stored draws stand in for a fresh run when its content identity matches. #1094."""
 import json
 import os
+import sys
 import time
 from pathlib import Path
 
@@ -187,6 +188,24 @@ def test_a_module_the_closure_names_that_appears_later_moves_the_grader_digest(g
     assert "fakegrade.deep" not in base["modules"]
     (pkg / "deep.py").write_text("WANT = 'ok'\n", encoding="utf-8")
     assert "fakegrade.deep" in digest()["modules"]
+
+
+@pytest.mark.skipif(sys.platform == "win32" or getattr(os, "geteuid", lambda: 1)() == 0,
+                    reason="chmod 000 does not stop this process reading the file")
+def test_a_digest_that_could_not_read_a_module_is_never_reused(grading, monkeypatch):
+    pkg, digest = grading
+    walks = []
+    real = identity._grader_digest
+    monkeypatch.setattr(identity, "_grader_digest", lambda *a: walks.append(1) or real(*a))
+    (pkg / "deep.py").chmod(0)
+    try:
+        assert identity._probe_sha(pkg / "deep.py") == identity.UNREADABLE != identity._probe_sha(pkg / "gone.py")
+        digest()
+        digest()
+    finally:
+        (pkg / "deep.py").chmod(0o644)
+    assert len(walks) == 2
+    assert "fakegrade.deep" in digest()["modules"] and len(walks) == 3
 
 
 def test_the_code_lane_digest_is_stable_and_lists_its_modules(served):
