@@ -9,6 +9,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from harness.atomic_file import replace
 from harness import proc_identity, run_state
 
 #: Exit status of a run paused at --stop-at or on request, rows checkpointed. #813.
@@ -275,7 +276,7 @@ class Checkpoint:
         if data and not data.endswith(b"\n"):
             tmp = self.path.with_suffix(".cut")
             tmp.write_bytes(data[:data.rfind(b"\n") + 1])
-            os.replace(tmp, self.path)
+            replace(tmp, self.path)
 
     def add(self, row: dict, wall_s: float) -> None:
         with self.path.open("a", encoding="utf-8") as f:
@@ -309,7 +310,7 @@ class Progress:
                "run_id": run_id}
         tmp = self.path.with_suffix(".tmp")
         tmp.write_text(json.dumps(got, indent=2, default=str), encoding="utf-8")
-        os.replace(tmp, self.path)
+        replace(tmp, self.path)
         return got
 
     def case_done(self) -> None:

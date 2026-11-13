@@ -6,6 +6,7 @@ import sys
 import time
 from pathlib import Path
 
+from harness.atomic_file import replace
 from harness import paths
 
 GIB = 1024 ** 3
@@ -96,7 +97,7 @@ def read(node, runner=None, now=None, fresh_s: float = FRESH_S) -> dict:
     _path(node.name).parent.mkdir(parents=True, exist_ok=True)
     tmp = _path(node.name).with_suffix(".tmp")
     tmp.write_text(json.dumps(got, sort_keys=True), encoding="utf-8")
-    tmp.replace(_path(node.name))
+    replace(tmp, _path(node.name))
     return got
 
 

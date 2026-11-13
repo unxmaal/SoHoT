@@ -124,11 +124,10 @@ def test_a_live_store_at_another_schema_is_left_alone_with_one_line(live_pg, cap
     assert _digest(live_pg) == before
 
 
-def test_a_process_on_another_backend_never_writes_the_live_home(tmp_path, monkeypatch, live_pg, capsys):
+def test_a_process_on_another_backend_writes_the_live_store_its_home_names(tmp_path, monkeypatch, live_pg, capsys):
     monkeypatch.setenv(store.BACKEND_ENV, store.SQLITE)
-    monkeypatch.setattr(store, "postgres_connect", lambda *a, **k: pytest.fail("connected"))
-    local_tools.complete(prompt="write add", lane="code")
-    assert "this process talks sqlite" in capsys.readouterr().err
+    got = local_tools.complete(prompt="write add", lane="code")
+    assert [r["call_id"] for r in _rows(live_pg, "delegations")] == [got["call_id"]]   # #1852
     assert not (paths.DEFAULT_HOME / "discovery.db").exists()
 
 

@@ -41,14 +41,15 @@ def _stranded(world, stage=ds.SWITCHING, files=None):
 @posix
 def test_a_switch_killed_after_the_migration_with_no_restart_left_ends_store_ahead_not_unsettled(world, alerts):
     job, path = _stranded(world)
-    got = _old_worker_settles()
+    # The restore's own process (#1879) is started and does not run here.
+    got = _old_worker_settles(start=lambda deploy_id: "launchd")
     rec = deploy_switch.load(path)
     assert rec.get("outcome") == ds.STORE_AHEAD, rec.get("detail") or f"settled {got}, record {rec.get('stage')}"
     assert rec["repair"] == deploy_repair.RESTORE
     assert f"soh deploy repair {rec['id']}" in rec["detail"] and rec["backup"] in rec["detail"]
     assert f"schema {ms.SCHEMA_VERSION + 1}" in rec["detail"] and f"speaks {ms.SCHEMA_VERSION}" in rec["detail"]
-    assert [g["outcome"] for g in got] == [ds.STORE_AHEAD]
-    assert _schema() == ms.SCHEMA_VERSION + 1, "settle repaired on its own after the switch's restarts were spent"
+    assert [g["outcome"] for g in got if "auto_repair" not in g] == [ds.STORE_AHEAD]
+    assert _schema() == ms.SCHEMA_VERSION + 1, "the worker's settle restored the store itself"
     assert wq.paused(), "the queue was let go onto a store its code cannot read"
     assert len(alerts) == 1 and f"soh deploy repair {rec['id']}" in alerts[0]
 
@@ -280,7 +281,6 @@ class Died(BaseException):
 
 @pytest.mark.sqlite_store
 @posix
-@pytest.mark.gauntlet("two-durable-writes-with-no-repair-for-the-gap", site="harness/deploy_repair.py:repair")
 def test_a_repair_killed_after_the_restore_is_finished_by_running_it_again(world, alerts):
     job, path = _stranded(world)
     _old_worker_settles()

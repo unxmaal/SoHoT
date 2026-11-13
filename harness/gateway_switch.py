@@ -24,6 +24,8 @@ import time
 
 from harness import cuts
 
+PROBE_TIMEOUT_S = 5.0
+
 IDLE_S = 60.0
 MAX_WAIT_S = 20 * 60.0
 
@@ -54,14 +56,15 @@ def headers() -> dict:
 def in_flight(base: str) -> int | None:
     """Requests in flight on the gateway besides this probe; None when it will not say."""
     import httpx
+
+    from harness import completion
     try:
-        r = httpx.get(f"{base.rstrip('/')}/health/backlog", headers=headers(),
-                      timeout=5.0)
+        r = completion.http().get(f"{base.rstrip('/')}/health/backlog", headers=headers(), timeout=PROBE_TIMEOUT_S)
     except httpx.ConnectError:
         return 0
     except httpx.HTTPError as exc:
         if cuts.timed_out(exc):
-            cuts.cut("harness/gateway_switch.py:in_flight->httpx.get(timeout)", "/health/backlog gave no answer in time",
+            cuts.cut("gateway_probe_timeout", "/health/backlog gave no answer in time",
                      kept=0, dropped=1)
         return None
     if r.status_code != 200:
@@ -213,11 +216,13 @@ def restart_service() -> bool:
 def not_serving(base: str, want: dict) -> str:
     """'' when the gateway serves every alias in `want` ({alias: model}) as given, else why not."""
     import httpx
+
+    from harness import completion
     try:
-        r = httpx.get(f"{base.rstrip('/')}/model/info", headers=headers(), timeout=5.0)
+        r = completion.http().get(f"{base.rstrip('/')}/model/info", headers=headers(), timeout=PROBE_TIMEOUT_S)
     except httpx.HTTPError as exc:
         if cuts.timed_out(exc):
-            cuts.cut("harness/gateway_switch.py:not_serving->httpx.get(timeout)", "/model/info gave no answer in time",
+            cuts.cut("gateway_probe_timeout", "/model/info gave no answer in time",
                      kept=0, dropped=1)
         return f"the gateway did not answer /model/info: {exc}"
     if r.status_code != 200:
