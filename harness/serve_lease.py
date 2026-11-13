@@ -12,6 +12,13 @@ from harness.atomic_file import replace
 from harness import stale_temp
 from harness import paths
 
+#: Seconds a running eval stays yielded to serving before it pauses for serving. #1765.
+YIELD_WAIT_S = 1800.0
+#: Times one case is cut for a delegation before its run pauses for serving. #1765.
+CUT_TRIES = 3
+#: The pause-file reason of a run that paused for serving; its queue job waits again behind the gates. #1765.
+SERVING_PAUSE = "serving"
+
 #: Seconds a lease outlives a delegation's answer, so a follow-up call skips the model swap back. #1556.
 GRACE_S = 120.0
 #: Seconds a delegation waits for a running eval to reach a case boundary before it refuses. #1556.

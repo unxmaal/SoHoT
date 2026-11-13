@@ -36,7 +36,7 @@ RELEASE_REFUSED = "release_refused"
 #: (state it leaves, state it enters) -> the reasons that move may carry. Nothing leaves done, failed or cancelled; paused leaves only by paused_jobs.settle or a cancel (#1764).
 MOVES: dict[tuple[str, str], frozenset[str]] = {
     (PENDING, RUNNING): frozenset({CLAIMED}),
-    (PENDING, CANCELLED): frozenset({CANCEL, SUPERSEDED}),
+    (PENDING, CANCELLED): frozenset({CANCEL, SUPERSEDED, EXPIRED}),
     (RUNNING, PENDING): frozenset({UNCLAIMED, NEXT_ITEM, DEPLOY_PAUSE, CONTENTION_PAUSE, DEPLOY_STOP, WORKER_GONE}),
     (RUNNING, DONE): frozenset({EXITED, DEPLOYED}),
     (RUNNING, FAILED): frozenset({EXITED, NOT_STARTED, INTERRUPTED, DEPLOY_FAILED, RELEASE_REFUSED}),
