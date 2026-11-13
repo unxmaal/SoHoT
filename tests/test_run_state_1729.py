@@ -172,5 +172,5 @@ def test_a_dead_run_whose_state_is_unknown_is_not_resumed(tmp_path):
 def test_a_deploy_guard_run_as_a_file_finds_the_state_module_beside_it(tmp_path):
     """launchd.sh runs `python3 -I harness/sweep_guard.py HOME`, where no package is importable."""
     (tmp_path / sweep_guard.RUNS).mkdir()
-    got = subprocess.run([sys.executable, "-I", sweep_guard.__file__, str(tmp_path)], capture_output=True, text=True)
+    got = subprocess.run([sys.executable, "-I", "-S", sweep_guard.__file__, str(tmp_path)], capture_output=True, text=True)
     assert got.returncode == 0, got.stderr
