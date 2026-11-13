@@ -16,6 +16,7 @@ from harness.commands import discover as discover_cmd
 from harness.commands import loop as loop_cmd
 from harness.commands import screen as screen_cmd
 from harness.memory import Accelerator
+from tests import tree_cache
 from tests.gauntlet import scanners
 
 REPO = Path(__file__).resolve().parent.parent
@@ -125,8 +126,8 @@ def test_a_parsed_namespace_or_one_never_handed_to_a_verb_is_left_alone():
 
 
 def test_no_verb_is_handed_a_hand_made_namespace():
-    found = gscanners.scan_tree(REPO, scanners.handmade_namespaces, gscanners.is_python,
-                               lambda rel: rel.startswith("harness/"))
+    found = tree_cache.scan_tree(REPO, scanners.handmade_namespaces, gscanners.is_python,
+                                 lambda rel: rel.startswith("harness/"))
     assert not found, ("a hand-made Namespace misses whatever field its writer forgot, and the verb reading it "
                        "crashes; the discovery loop died that way at inspect (#974):\n  " + "\n  ".join(found))
     seen = {k for k, _ in (h for rel in scanners.SAME_PARSER for h in scanners.namespace_handoffs(

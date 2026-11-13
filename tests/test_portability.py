@@ -14,6 +14,8 @@ from pathlib import Path
 
 from gauntlet import scanners as gscanners
 
+from tests import tree_cache
+
 REPO = Path(__file__).resolve().parents[1]
 #: The tests too. `open("scripts/env.sh").read()` in a test fails on
 #: Windows for exactly the same reason the library code did.
@@ -29,6 +31,13 @@ _TEXT_IO = ("read_text", "write_text")
 def _sources():
     for package in PACKAGES:
         yield from sorted((REPO / package).rglob("*.py"))
+
+
+def _texts(only=None):
+    for path in _sources():
+        rel = path.relative_to(REPO).as_posix()
+        if only is None or only(rel):
+            yield path.read_text(encoding="utf-8"), rel
 
 
 def test_no_text_file_is_read_or_written_without_an_explicit_encoding():
@@ -65,9 +74,7 @@ _BSD_DF = re.compile(r"df\s+-[A-Za-z]*g")
 
 def test_no_temp_file_is_opened_as_text_without_an_explicit_encoding():
     """#1068: rsvg-convert reads the SVG render.py wrote as UTF-8; Windows wrote it in the locale codepage."""
-    offenders = []
-    for path in _sources():
-        offenders += gscanners.text_tempfiles(path.read_text(encoding="utf-8"), path.relative_to(REPO).as_posix())
+    offenders = tree_cache.each(gscanners.text_tempfiles, _texts())
     assert not offenders, "\n  ".join(["text-mode temp files with no encoding:", *offenders])
 
 
@@ -88,37 +95,25 @@ def test_no_script_uses_a_bsd_only_df_flag():
 
 def test_no_posix_only_primitive_is_used_without_a_platform_guard():
     """#552: harness/vllm.py stopped its child with os.killpg, which Windows does not have."""
-    offenders = []
-    for path in _sources():
-        offenders += gscanners.posix_primitives(path.read_text(encoding="utf-8"),
-                                               path.relative_to(REPO).as_posix())
+    offenders = tree_cache.each(gscanners.posix_primitives, _texts())
     assert not offenders, "a POSIX-only primitive with no platform guard:\n  " + "\n  ".join(offenders)
 
 
 def test_no_test_runs_a_bare_shell_name():
     """#850: subprocess.run(["bash", ...]) on Windows starts the WSL launcher, which exits 1 with no distribution."""
-    offenders = []
-    for path in _sources():
-        rel = path.relative_to(REPO).as_posix()
-        if rel.startswith("tests/"):
-            offenders += gscanners.bare_shells(path.read_text(encoding="utf-8"), rel)
+    offenders = tree_cache.each(gscanners.bare_shells, _texts(lambda rel: rel.startswith("tests/")))
     assert not offenders, "a bare shell name in a subprocess argv:\n  " + "\n  ".join(offenders)
 
 
 def test_no_source_spells_a_relative_path_with_native_separators():
     """#1077, #1079: str(f.relative_to(root)) is a\\b on Windows, so it never matches a posix-spelled key."""
-    offenders = []
-    for path in _sources():
-        rel = path.relative_to(REPO).as_posix()
-        offenders += gscanners.native_relpaths(path.read_text(encoding="utf-8"), rel)
+    offenders = tree_cache.each(gscanners.native_relpaths, _texts())
     assert not offenders, "a relative path spelled with native separators:\n  " + "\n  ".join(offenders)
 
 
 def test_no_test_grows_a_file_to_fake_its_size():
     """#838: an 18 GiB truncate() is sparse on macOS and filled the Windows runner's disk."""
-    offenders = []
-    for path in _sources():
-        offenders += gscanners.grown_files(path.read_text(encoding="utf-8"), path.relative_to(REPO).as_posix())
+    offenders = tree_cache.each(gscanners.grown_files, _texts())
     assert not offenders, "a file grown to fake its size:\n  " + "\n  ".join(offenders)
 
 

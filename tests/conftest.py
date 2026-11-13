@@ -274,6 +274,10 @@ def pytest_configure(config):
     # Not a monkeypatch, so no test's monkeypatch.undo() drops it; a pytest a test starts inherits it. #1826.
     os.environ[store.GUARD_ENV] = store.guard_flag(paths.DEFAULT_HOME, os.environ.get(store.GUARD_ENV, ""))
     _guard_sqlite()
+    # Whole-tree scan results keyed by the text they read, for every worker and a precheck a test starts. #1590.
+    from tests import tree_cache
+    if getattr(config, "cache", None) is not None and not os.environ.get(tree_cache.ENV):
+        os.environ[tree_cache.ENV] = str(config.cache.mkdir(tree_cache.CACHE_NAME))
     # faulthandler's timed dump of a running thread can spin forever in CPython 3.12 and wedge the worker (#1351).
     if not _running:
         _hang_watch()

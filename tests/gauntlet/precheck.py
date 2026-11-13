@@ -169,11 +169,12 @@ def mutation_tests(root=REPO) -> list[Problem]:
 
 def eval_homes(root=REPO) -> list[Problem]:
     """tests/test_eval_home_1346.py: an eval or probe entry runs from a scratch home or says why not."""
-    from gauntlet.scanners import is_python, scan_tree
+    from gauntlet.scanners import is_python
 
+    from tests import tree_cache
     from tests.gauntlet import scanners
     out = []
-    for found in scan_tree(root, scanners.unhomed_evals, is_python):
+    for found in tree_cache.scan_tree(root, scanners.unhomed_evals, is_python):
         key = found.split("'")[1] if "'" in found else found
         out.append(_p("eval home", found, "call paths.eval_home in its handler and add to tests/gauntlet/scanners.py "
                       "EVAL_HOMED:", scaffold.why_line(key, "<the file whose handler calls paths.eval_home>"),
@@ -276,8 +277,24 @@ CHECKS = (knob_sites, knob_backlog_lines, knob_entries, limit_traces, module_lay
           eval_homes, detector_bindings, move_tables, mode_flags)
 
 
-def _run(name: str) -> list[Problem]:
-    return next(c for c in CHECKS if c.__name__ == name)(REPO)
+#: Checks that each take knobs.inventory share one process, so the inventory is built once, not four times (#1590).
+TOGETHER = (("knob_sites", "knob_backlog_lines", "knob_entries", "limit_traces"),)
+
+
+def groups() -> list[tuple[str, ...]]:
+    """CHECKS in order, as the batches one pool process runs; a batch sits where its first check does."""
+    out, placed = [], set()
+    for check in CHECKS:
+        name = check.__name__
+        if name not in placed:
+            batch = next((g for g in TOGETHER if name in g), (name,))
+            out.append(batch)
+            placed.update(batch)
+    return out
+
+
+def _run(names: tuple[str, ...]) -> list[Problem]:
+    return [p for name in names for p in next(c for c in CHECKS if c.__name__ == name)(REPO)]
 
 
 def render(problems: list[Problem]) -> str:
@@ -286,10 +303,10 @@ def render(problems: list[Problem]) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     started = time.monotonic()
-    names = [c.__name__ for c in CHECKS]
-    workers = max(1, min(len(names), os.cpu_count() or 1))
+    names, batches = [c.__name__ for c in CHECKS], groups()
+    workers = max(1, min(len(batches), os.cpu_count() or 1))
     with ProcessPoolExecutor(max_workers=workers) as pool:
-        problems = [p for got in pool.map(_run, names) for p in got]
+        problems = [p for got in pool.map(_run, batches) for p in got]
     if problems:
         print(render(problems))
     print(f"precheck: {len(problems)} problem(s) in {len(names)} registration ratchets, "

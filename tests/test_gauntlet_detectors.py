@@ -3,9 +3,11 @@
 import re
 
 import gauntlet.ratchet
+import pytest
 from gauntlet import detectors, moves
 
 from harness import exclusive
+from tests import tree_cache
 from tests.gauntlet import registry
 from tests.gauntlet.registry import REGISTRY
 
@@ -43,6 +45,12 @@ def wait(ready):
         time.sleep(1)
 '''
 globals().update({name: _RATCHETS[name] for name in DETECTOR_HALF})
+
+
+@pytest.fixture(autouse=True)
+def _kept_hits(monkeypatch):
+    """The detectors' whole-tree hits come from the tree cache until a production source changes (#1590)."""
+    monkeypatch.setattr(gauntlet.ratchet, "frontend_hits", tree_cache.frontend_hits)
 
 
 def test_each_open_issue_binding_names_a_backlog_row_of_its_class():
