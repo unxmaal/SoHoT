@@ -268,7 +268,7 @@ def upstream(where: serving.Route, config=None) -> tuple[str, str]:
     base = serving.bare(where.base)
     if not is_gateway(base):
         return base, where.model
-    served = gateway.served_path(config)
+    served = gateway.serving_path(config)
     # A lane alias, its node route and @local twin exist only in the config the gateway was started with. #1653.
     for entries in (gateway.load(config), gateway.load(served) if served.exists() else {}):
         for entry in entries.get("model_list") or []:
