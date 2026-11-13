@@ -451,6 +451,8 @@ capabilities:
       - harness/commands/lane_feed.py
       - harness/intervals.py
       - harness/clips.py
+      - harness/burndown.py
+      - harness/commands/burndown.py
 
   - name: canary
     summary: Planted candidates with known verdicts, run for real under an isolated home.
@@ -511,6 +513,8 @@ capabilities:
       - harness/store_ahead.py
       - harness/deploy_repair.py
       - harness/deploy_retry.py
+      - harness/ci_times.py
+      - harness/commands/ci_times.py
 
   - name: repo-hygiene
     summary: What a public reader gets, personal setup kept out of it, stated claims, coverage, specs and the gauntlet.
