@@ -608,7 +608,6 @@ nothing-and-failed-return-the-same-value harness/paths.py:deploy_link:except
 nothing-and-failed-return-the-same-value harness/pressure.py:_sysctl:except
 nothing-and-failed-return-the-same-value harness/pressure.py:_vm_stat:except
 nothing-and-failed-return-the-same-value harness/privacy.py:main_checkout:except
-nothing-and-failed-return-the-same-value harness/queue_pause.py:settle_deploys:except
 nothing-and-failed-return-the-same-value harness/rank.py:serving:except
 nothing-and-failed-return-the-same-value harness/report.py:_load_state:except
 nothing-and-failed-return-the-same-value harness/residency_trace.py:_kv_mlx:except
@@ -669,7 +668,6 @@ state-is-whichever-row-came-last harness/commands/discover.py:_judge_neighbors
 state-is-whichever-row-came-last harness/memory_store/proposals.py:judgeable
 state-is-whichever-row-came-last harness/publish.py:_accelerator_name
 two-durable-writes-with-no-repair-for-the-gap harness/batch.py:claim
-two-durable-writes-with-no-repair-for-the-gap harness/coherence.py:apply
 two-durable-writes-with-no-repair-for-the-gap harness/commands/measure.py:_measure
 two-durable-writes-with-no-repair-for-the-gap harness/commands/measure.py:_record
 two-durable-writes-with-no-repair-for-the-gap harness/commands/sweep_check.py:cmd_sweep_check

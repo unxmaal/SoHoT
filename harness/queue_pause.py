@@ -161,16 +161,30 @@ def _ask_loop(sig, evals) -> list[str]:
     return said
 
 
-def settle_deploys() -> list:
-    """deploy.settle, logged rather than raised: a settle error must not stop the worker. #1506."""
+def _settle_alerted() -> Path:
+    from harness import workqueue as wq
+    return wq.root() / "deploy-settle-alerted"
+
+
+def settle_deploys(alert=None) -> list | None:
+    """deploy.settle, logged rather than raised; None when it failed, alerted once per distinct failure. #1506, #1783."""
     import sqlite3
 
     from harness import deploy
     try:
         got = deploy.settle()
     except (OSError, ValueError, RuntimeError, sqlite3.Error) as exc:
-        print(f"{time.strftime('%H:%M:%S')} deploy settle failed: {exc}", flush=True)
-        return []
+        said = f"deploy settle failed, so no deploy moves until it reads: {type(exc).__name__}: {exc}"[:500]
+        print(f"{time.strftime('%H:%M:%S')} {said}", flush=True)
+        try:
+            before = _settle_alerted().read_text(encoding="utf-8")
+        except OSError:
+            before = ""
+        if before != said:
+            _settle_alerted().write_text(said, encoding="utf-8")
+            (alert or deploy._alert_here)(said)
+        return None
+    _settle_alerted().unlink(missing_ok=True)
     for d in got:
         print(f"{time.strftime('%H:%M:%S')} settled {d}", flush=True)
     return got

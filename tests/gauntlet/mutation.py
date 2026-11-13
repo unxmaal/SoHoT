@@ -89,10 +89,11 @@ LEFT_OUT = {
     "harness/memory_store/transitions.py": ("test_blame_audit.py", "test_live_audit.py", "test_lane_too_small_1049.py",
                                             "test_lane_until_1053.py", "test_loop_revisit_1055.py",
                                             "test_revisit_tier_1060.py", "test_revisitable_after_deploy_1361.py",
-                                            "test_revisitable_met_1749.py", "test_site.py", "test_futility_lane_too_small_1452.py", "test_verdict_lane_1777.py"),
+                                            "test_revisitable_met_1749.py", "test_site.py", "test_futility_lane_too_small_1452.py", "test_verdict_lane_1777.py",
+                                            "test_two_writes_1887.py"),
     "harness/reasons.py": (
         "test_replay_budget_1822.py", "test_passed_over_class_1779.py", "test_owner_decline_1564.py", "test_verdict_lane_1777.py", "test_runtime_trials_1474.py", "test_repo_repair_890.py", "test_agent_cut_call_1547.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_staging_torch_1358.py",
-        "test_vision_engines_1282.py",
+        "test_vision_engines_1282.py", "test_two_writes_1887.py",
         "test_shots_check_1208.py", "test_node_drain_1815.py",
         "test_adopt_retest_1001.py", "test_attachment_tags_949.py", "test_canary_919.py",
         "test_chaos.py", "test_claims_lane.py", "test_gateway_key.py", "test_harness_checks_ocr.py",
