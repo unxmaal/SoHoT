@@ -190,7 +190,8 @@ def watch_deploys(now: float | None = None) -> dict | None:
 
 
 def deploy_turn(now: float) -> None:
-    """Each worker turn: a pending deploy pauses measurement for itself and alerts once if it waits too long. #1672."""
+    """Each worker turn: a pending deploy pauses measurement for itself and alerts once if it waits too long (#1672); a dead gateway switch is settled (#1899)."""
+    from harness import gateway_switch
     try:
         said = preempt_for_deploy(now)
     except Exception as exc:  # noqa: BLE001 - preempting must not stop the worker, on any store
@@ -198,3 +199,4 @@ def deploy_turn(now: float) -> None:
     for line in said:
         print(f"{time.strftime('%H:%M:%S')} {line}", flush=True)
     watch_deploys(now)
+    gateway_switch.turn()

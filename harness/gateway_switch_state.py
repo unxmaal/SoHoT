@@ -118,6 +118,12 @@ def live(conn) -> dict | None:
     return dict(row) if row else None
 
 
+def deaths(conn, requested_at) -> int:
+    """How many switches for the adoption requested at `requested_at` were settled because their process died. #1899."""
+    return int(conn.execute("SELECT COUNT(*) FROM gateway_switch_runs WHERE requested_at = ? AND state = ? "
+                            "AND reason = ?", (requested_at, FAILED, DIED)).fetchone()[0])
+
+
 def get(conn, rid) -> dict | None:
     row = conn.execute("SELECT * FROM gateway_switch_runs WHERE id = ?", (int(rid),)).fetchone()
     return dict(row) if row else None

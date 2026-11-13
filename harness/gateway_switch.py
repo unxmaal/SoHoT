@@ -45,6 +45,8 @@ RETRIES = 3
 BACKOFF_S = 30.0
 SERVE_WAIT_S = 120.0
 SWITCHED, FAILED = "switched", "failed"
+#: Times the worker starts again a switch whose process died, per adoption request, before it alerts instead. #1899.
+RESPAWNS = 1
 
 
 def headers() -> dict:
@@ -411,6 +413,80 @@ def reconcile(conn, alive=None, serving=None, log=None) -> dict | None:
         settle(conn, row, st.DIED, serving, log)
         return st.get(conn, row["id"])
     return row
+
+
+def respawn(requested_at: float) -> None:
+    """Start a dead switch's adoption again; only from the live home, since a detached switch restarts this machine's gateway."""
+    from harness import monitor, paths
+    if not monitor.live_home():
+        raise OSError(f"{paths.home()} is not the live home, so it starts no gateway switch")
+    spawn(requested_at=requested_at)
+
+
+def _alert(message: str) -> None:
+    from harness import gateway_switch_state as st
+    from harness import monitor
+    monitor.alert("service", {"MONIT_SERVICE": "gateway-switch", "MONIT_EVENT": st.GAVE_UP,
+                              "MONIT_DESCRIPTION": message})
+
+
+def _gave_up(row: dict, deaths: int) -> str:
+    when = time.strftime("%Y-%m-%d %H:%M", time.localtime(row["requested_at"])) if row["requested_at"] else "?"
+    return (f"the gateway alias switch for the adoption requested at {when} died {deaths} times (last: switch "
+            f"{row['id']}, while {row['state']}); the worker started it again {deaths - 1} time(s) and stops now. "
+            f"The gateway serves the old aliases until the next adoption, or until `python -m harness.gateway_switch` "
+            f"is run by hand from the deploy checkout")
+
+
+def repair(alive=None, serving=None, start=None, alert=None, config=None, log=None) -> dict | None:
+    """The worker's pass: settle a switch whose process is gone and start it again, RESPAWNS times per adoption, then alert; None when there is nothing to settle here. #1899."""
+    from harness import cuts, paths
+    from harness import gateway_switch_state as st
+    from harness import memory_store as ms
+    if paths.role() != paths.SCHEDULER:
+        return None
+    conn = ms.connect()
+    try:
+        row = st.live(conn)
+        if row is None or (alive or st.alive)(row) is not False:
+            return None
+        settle(conn, row, st.DIED, serving, log)
+        after = st.get(conn, row["id"])
+        deaths = st.deaths(conn, row["requested_at"]) if row["requested_at"] is not None else RESPAWNS + 1
+    finally:
+        conn.close()
+    out = {"switch": row["id"], "state": after["state"], "reason": after["reason"], "respawned": False, "alerted": ""}
+    if (after["state"], after["reason"]) != (st.FAILED, st.DIED) or not pending(config):
+        return out
+    if deaths > RESPAWNS:
+        out["alerted"] = _gave_up(row, deaths)
+        cuts.cut("harness/gateway_switch.py:RESPAWNS", f"switch {row['id']} not started again", kept=0, dropped=1)
+        (alert or _alert)(out["alerted"])
+        return out
+    try:
+        (start or respawn)(row["requested_at"])
+    except OSError as exc:
+        out["alerted"] = (f"the gateway alias switch {row['id']} died and could not be started again ({exc}); the "
+                          f"gateway serves the old aliases until the next adoption")
+        (alert or _alert)(out["alerted"])
+        return out
+    out["respawned"] = True
+    return out
+
+
+def turn() -> dict | None:
+    """repair, from the worker's turn: logged rather than raised, so a repair error never stops the worker. #1899."""
+    stamp = time.strftime("%H:%M:%S")
+    try:
+        got = repair()
+    except Exception as exc:  # noqa: BLE001 - on any store
+        print(f"{stamp} gateway switch repair failed: {exc}", flush=True)
+        return None
+    if got is not None:
+        print(f"{stamp} gateway switch {got['switch']} settled {got['state']} ({got['reason']})"
+              + ("; started again" if got["respawned"] else "")
+              + (f"; alerted: {got['alerted']}" if got["alerted"] else ""), flush=True)
+    return got
 
 
 def view(conn, config=None, alive=None) -> dict:
