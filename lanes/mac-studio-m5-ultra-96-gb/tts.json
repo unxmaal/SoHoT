@@ -397,14 +397,14 @@
   },
   {
    "candidate": "tts:OpenMOSS-Team/MOSS-TTS-v1.5",
-   "decided_at": "2026-11-12T03:40:36Z",
+   "decided_at": "2026-11-13T03:12:25Z",
    "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local dis",
    "exam": null,
    "outcome": "queued",
    "proposal": "OpenMOSS-Team/MOSS-TTS-v1.5",
    "reason": "harness",
    "receipt_key": "MOSS-TTS-v1.5",
-   "run_id": 872,
+   "run_id": 941,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -441,7 +441,7 @@
    "until": "format:.pt"
   }
  ],
- "cursor": 1794454836809080,
+ "cursor": 1794539545376433,
  "events": [
   {
    "at": "2026-09-19T21:17:40Z",
@@ -1057,6 +1057,36 @@
    "reason": "harness",
    "run_id": 872,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-13T02:30:19Z",
+   "candidate": "OpenMOSS-Team/MOSS-TTS-v1.5",
+   "chosen": null,
+   "detail": "not screened: needs 15.8 GB but only 6.2 GB is safely available (24.2 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794537019731533,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-13T03:12:25Z",
+   "candidate": "tts:OpenMOSS-Team/MOSS-TTS-v1.5",
+   "chosen": null,
+   "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local dis",
+   "how": "",
+   "id": 1794539545376433,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "harness",
+   "run_id": 941,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -1227,7 +1257,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-12T04:30:52Z",
+ "generated_at": "2026-11-13T03:38:07Z",
  "knobs": [],
  "lane": {
   "cases": 470,
