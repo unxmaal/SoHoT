@@ -180,6 +180,15 @@ def test_editing_the_grader_or_the_lane_checker_moves_the_grader_digest(grading)
     assert digest() != second
 
 
+def test_a_module_the_closure_names_that_appears_later_moves_the_grader_digest(grading):
+    pkg, digest = grading
+    (pkg / "deep.py").unlink()
+    base = digest()
+    assert "fakegrade.deep" not in base["modules"]
+    (pkg / "deep.py").write_text("WANT = 'ok'\n", encoding="utf-8")
+    assert "fakegrade.deep" in digest()["modules"]
+
+
 def test_the_code_lane_digest_is_stable_and_lists_its_modules(served):
     first, second = _of()["parts"]["exam"], _of()["parts"]["exam"]
     assert first == second

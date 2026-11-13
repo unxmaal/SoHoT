@@ -466,10 +466,32 @@ def _uses(node) -> tuple[set, list]:
     return names, chains
 
 
+#: (lane, root, packages, registry, also) -> ({probed path: sha256 or None}, digest); reused while every probed byte matches.
+_GRADER_MEMO: dict = {}
+
+
+def _probe_sha(path: Path) -> str | None:
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
+    except OSError:
+        return None
+
+
 def grader_digest(lane: str, *, root=None, packages=GRADER_PACKAGES, registry=CHECKER_REGISTRY,
                   also=SCORE_ENTRY) -> dict:
     """{"modules", "names"}: the repo modules a lane's checker reaches by static import and name analysis (nothing is imported), a sha256 per statement reached."""
     root = Path(root) if root is not None else _repo_root()
+    key = (lane, str(root), tuple(packages), tuple(registry), tuple(map(tuple, also)))
+    held = _GRADER_MEMO.get(key)
+    if held is not None and all(_probe_sha(p) == sha for p, sha in held[0].items()):
+        return json.loads(held[1])
+    probed: dict = {}
+    got = _grader_digest(lane, root, packages, registry, also, probed)
+    _GRADER_MEMO[key] = (probed, json.dumps(got))
+    return got
+
+
+def _grader_digest(lane: str, root: Path, packages, registry, also, probed: dict) -> dict:
     parsed: dict = {}
 
     def module(name: str):
@@ -477,7 +499,9 @@ def grader_digest(lane: str, *, root=None, packages=GRADER_PACKAGES, registry=CH
             return None
         if name not in parsed:
             base = root.joinpath(*name.split("."))
-            path = next((f for f in (base / "__init__.py", base.with_suffix(".py")) if f.is_file()), None)
+            for f in (base / "__init__.py", base.with_suffix(".py")):
+                probed[f] = _probe_sha(f)
+            path = next((f for f in (base / "__init__.py", base.with_suffix(".py")) if probed[f] is not None), None)
             try:
                 parsed[name] = _Module(name, path) if path else None
             except (OSError, SyntaxError, UnicodeDecodeError):
