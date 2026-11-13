@@ -675,9 +675,7 @@ state-is-whichever-row-came-last harness/commands/discover.py:_judge_neighbors
 state-is-whichever-row-came-last harness/memory_store/proposals.py:judgeable
 state-is-whichever-row-came-last harness/publish.py:_accelerator_name
 two-durable-writes-with-no-repair-for-the-gap harness/batch.py:claim
-two-durable-writes-with-no-repair-for-the-gap harness/commands/measure.py:_measure
 two-durable-writes-with-no-repair-for-the-gap harness/commands/measure.py:_record
-two-durable-writes-with-no-repair-for-the-gap harness/commands/sweep_check.py:cmd_sweep_check
 two-durable-writes-with-no-repair-for-the-gap harness/cuts.py:flush
 two-durable-writes-with-no-repair-for-the-gap harness/downloads.py:record
 two-durable-writes-with-no-repair-for-the-gap harness/ds4.py:fetch
@@ -686,6 +684,5 @@ two-durable-writes-with-no-repair-for-the-gap harness/fetching.py:_download
 two-durable-writes-with-no-repair-for-the-gap harness/gguf.py:download
 two-durable-writes-with-no-repair-for-the-gap harness/lane_probe.py:wake
 two-durable-writes-with-no-repair-for-the-gap harness/memory_store/migrations/identity.py:backfill_candidates
-two-durable-writes-with-no-repair-for-the-gap harness/runtime_trials.py:trial
 two-durable-writes-with-no-repair-for-the-gap harness/store_copy.py:to_sqlite_report
 two-durable-writes-with-no-repair-for-the-gap harness/workqueue.py:leased

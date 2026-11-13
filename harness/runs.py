@@ -120,7 +120,7 @@ def _candidate(conn, key: str, spec: str, lane: str) -> int | None:
     from harness import candidates as C
     from harness import memory_store as ms
     if spec:
-        return C.ensure(conn, ms._legacy_spec(spec), key=key, lane=lane)
+        return C.ensure(conn, ms._legacy_spec(spec), key=key, lane=lane, commit=False)
     rows = conn.execute("SELECT id, spec FROM candidates WHERE receipt_key = ?",
                         (key,)).fetchall()
     if not rows:

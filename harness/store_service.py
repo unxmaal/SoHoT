@@ -8,7 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from harness.atomic_file import replace
+from harness import atomic_file
 from harness import paths, store
 
 COMPOSE = paths.REPO / "deploy" / "postgres" / "compose.yaml"
@@ -126,7 +126,7 @@ def dump(dest: Path, *, run=subprocess.run) -> Path:
     if got.returncode != 0:
         tmp.unlink(missing_ok=True)
         raise _failed("pg_dump", got)
-    replace(tmp, dest)
+    atomic_file.replace(tmp, dest)
     return dest
 
 
@@ -322,8 +322,8 @@ def switch(to: str, home: Path | None = None, *, port: int = PORT, dry_run: bool
         if not dry_run:
             tmp = on.with_name(on.name + ".tmp")
             tmp.write_text(json.dumps(body, indent=1, sort_keys=True) + "\n", encoding="utf-8")
-            replace(tmp, on)
+            atomic_file.replace(tmp, on)
         return {"ok": True, "backend": store.POSTGRES, "wrote": str(on), "marker": body, "dry_run": dry_run}
     if not dry_run and on.exists():
-        replace(on, off)
+        atomic_file.replace(on, off)
     return {"ok": True, "backend": store.SQLITE, "set_aside": str(off), "dry_run": dry_run}

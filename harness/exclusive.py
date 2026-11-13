@@ -22,7 +22,7 @@ import threading
 import time
 from pathlib import Path
 
-from harness.atomic_file import replace
+from harness import atomic_file
 from harness import stale_temp
 from harness import paths
 
@@ -251,7 +251,7 @@ def _mark(path: Path, record: dict, exclusive: bool) -> bool:
     tmp.write_text(json.dumps(record), encoding="utf-8")
     try:
         if not exclusive:
-            replace(tmp, path)
+            atomic_file.replace(tmp, path)
             return True
         os.link(tmp, path)
         return True
@@ -1008,7 +1008,7 @@ def beat(now: float | None = None) -> None:
     tmp = stale_temp.temp(path, "{name}.{pid}.{thread}.tmp")
     with contextlib.suppress(OSError):
         tmp.write_text(json.dumps(record), encoding="utf-8")
-        replace(tmp, path)
+        atomic_file.replace(tmp, path)
 
 
 def _hand_down(lease: int | None, held: bool = True) -> None:

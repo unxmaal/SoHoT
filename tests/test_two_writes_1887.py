@@ -71,6 +71,7 @@ def test_a_re_decided_verdict_never_lands_without_its_power_and_split(grown):
         conn.close()
 
 
+@pytest.mark.gauntlet("two-durable-writes-with-no-repair-for-the-gap", site="harness/downloads.py:backfill.once")
 def test_a_backfill_killed_before_it_settles_a_gone_path_settles_it_on_the_rerun(tmp_path, monkeypatch):
     manifest = paths.home() / "gguf-sources.json"
     manifest.write_text(json.dumps({"org/gone": "gone-Q4_K_M.gguf"}), encoding="utf-8")

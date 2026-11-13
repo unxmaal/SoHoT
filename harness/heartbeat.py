@@ -9,7 +9,7 @@ import re
 import time
 from pathlib import Path
 
-from harness.atomic_file import replace
+from harness import atomic_file
 from harness import stale_temp
 
 RUNNING = "running"
@@ -61,7 +61,7 @@ def _write(data: dict) -> None:
     p.parent.mkdir(parents=True, exist_ok=True)
     tmp = stale_temp.temp(p, "{name}.{pid}.{thread}.tmp")
     tmp.write_text(json.dumps(data), encoding="utf-8")
-    replace(tmp, p)
+    atomic_file.replace(tmp, p)
 
 
 def read() -> dict | None:

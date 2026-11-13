@@ -16,7 +16,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from harness.atomic_file import replace
+from harness import atomic_file
 from harness import stale_temp
 from harness import knobs
 
@@ -918,7 +918,7 @@ def save_validation(case, got: dict, machine: str, commit: str, now: float) -> d
     held[machine] = rec
     tmp = stale_temp.temp(path, "{name}.{pid}")
     tmp.write_text(json.dumps(held, indent=1) + "\n", encoding="utf-8")
-    replace(tmp, path)
+    atomic_file.replace(tmp, path)
     return rec
 
 
