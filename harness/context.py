@@ -590,7 +590,7 @@ def _get_json(url: str, key: str = "") -> dict:
 def _entry_for(spec: str, config=None) -> dict | None:
     from harness import gateway
     name = (spec or "").partition(",")[0].strip()
-    served = gateway.served_path(config)
+    served = gateway.serving_path(config)
     for entry in gateway.load(served if served.exists() else config).get("model_list") or []:
         if str(entry.get("model_name", "")).lower() == name.lower():
             return entry

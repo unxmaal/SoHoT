@@ -267,12 +267,6 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/migration_check.py:_proposal_state:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/migration_check.py:_verdict_reason:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/models.py:_source:downloads
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/morning.py:_counts:verdicts
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/morning.py:idle_lanes:reverifications
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/morning.py:idle_lanes:runs
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/morning.py:sweep:paused_runs
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/morning.py:sweep:runs
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/morning.py:watchdog:watchdog_actions
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/paused.py:dir_state:paused_runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/paused_jobs.py:_owned:knob_sweeps
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/paused_jobs.py:_owned:reverifications
@@ -307,7 +301,6 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/runs.py:split_artifacts:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/runs.py:stamp_claims_strata:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/store_ahead.py:deploy_running:deploys
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/sweep_check.py:rows:watchdog_actions
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/sweeps.py:_found:knob_sweeps
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/sweeps.py:_open:knob_sweeps
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/sweeps.py:_skip:knob_sweeps
@@ -347,10 +340,6 @@ a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:e
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:engine_trials.classified_by:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:extractions.at:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:extractions.name:no-reader
-a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:gateway_samples.completion:no-reader
-a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:gateway_samples.prompt:no-reader
-a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:human_votes.shown_first:no-reader
-a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:human_votes.voter:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:jobs.night_gate:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:jobs.night_gate:no-writer
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:machine_merges.from_fingerprint:no-reader
@@ -374,7 +363,6 @@ a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:o
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:runtime_trials.channel:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:serve_waits.holder:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:serve_waits.in_flight:no-reader
-a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:sources.retired:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:technique_triage.triaged_at:no-reader
 a-wait-with-no-deadline-owner-or-end-state evals/run.py:warm
 a-wait-with-no-deadline-owner-or-end-state gateway/served_model.py:_renew_inflight
@@ -630,7 +618,6 @@ nothing-and-failed-return-the-same-value harness/paths.py:deploy_link:except
 nothing-and-failed-return-the-same-value harness/pressure.py:_sysctl:except
 nothing-and-failed-return-the-same-value harness/pressure.py:_vm_stat:except
 nothing-and-failed-return-the-same-value harness/privacy.py:main_checkout:except
-nothing-and-failed-return-the-same-value harness/queue_pause.py:settle_deploys:except
 nothing-and-failed-return-the-same-value harness/rank.py:serving:except
 nothing-and-failed-return-the-same-value harness/report.py:_load_state:except
 nothing-and-failed-return-the-same-value harness/residency_trace.py:_kv_mlx:except
@@ -691,7 +678,6 @@ state-is-whichever-row-came-last harness/commands/discover.py:_judge_neighbors
 state-is-whichever-row-came-last harness/memory_store/proposals.py:judgeable
 state-is-whichever-row-came-last harness/publish.py:_accelerator_name
 two-durable-writes-with-no-repair-for-the-gap harness/batch.py:claim
-two-durable-writes-with-no-repair-for-the-gap harness/coherence.py:apply
 two-durable-writes-with-no-repair-for-the-gap harness/commands/measure.py:_record
 two-durable-writes-with-no-repair-for-the-gap harness/cuts.py:flush
 two-durable-writes-with-no-repair-for-the-gap harness/downloads.py:record

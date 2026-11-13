@@ -132,7 +132,8 @@ def test_a_familys_base_forms_are_demoted_once_a_base_form_lost(conn):
 
 
 def fetched(conn, name, at):
-    ms.decide(conn, name, "queued", tier="fetch", reason="candidate", at=at, detail=fetching.DOWNLOADED)
+    ms.decide(conn, name, "queued", tier="fetch", reason="candidate", at=at, detail=fetching.DOWNLOADED_DETAIL,
+              event=fetching.DOWNLOADED)
 
 
 def test_the_replay_shows_what_each_past_fetch_run_would_have_fetched(conn, monkeypatch):

@@ -51,14 +51,15 @@ def test_a_fetch_run_records_its_budget_on_what_it_fetched_and_what_it_refused(c
         seed(conn, f"org/code-{i}")
     got = fetching.run(conn, limit=3, free=1000 * GIB, budget=40 * GIB)
     assert [g["ok"] for g in got] == [True, True, False]
-    said = conn.execute("SELECT detail = ? AS fetched, budget_gib FROM verdicts WHERE tier = 'fetch' ORDER BY id",
+    said = conn.execute("SELECT event = ? AS fetched, budget_gib FROM verdicts WHERE tier = 'fetch' ORDER BY id",
                         (fetching.DOWNLOADED,)).fetchall()
     assert [(bool(r[0]), r[1]) for r in said] == [(True, 40.0), (True, 40.0), (False, 40.0)]
 
 
 def test_a_run_whose_budget_is_not_recorded_is_reported_not_dropped(conn):
     seed(conn, "org/a")
-    ms.decide(conn, "org/a", "queued", tier="fetch", reason=reasons.CANDIDATE, at=NOW - DAY, detail=fetching.DOWNLOADED)
+    ms.decide(conn, "org/a", "queued", tier="fetch", reason=reasons.CANDIDATE, at=NOW - DAY,
+              detail=fetching.DOWNLOADED_DETAIL, event=fetching.DOWNLOADED)
     got = fetch_replay.runs(conn, NOW - 2 * DAY)
     assert [(r["budget"], r["fetched"]) for r in got] == [(None, ["org/a"])]
     lines = fetch_replay.report(conn, 2, now=NOW, **KW)

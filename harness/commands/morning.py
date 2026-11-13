@@ -109,8 +109,11 @@ def render(r: dict) -> list[str]:
                for c in checks)
     out.append(f"screened  {_tally(s['screened'])}")
     runs = s["measured"]["runs"]
+    there = s["measured"].get("elsewhere") or []
     out.append(f"measured  {len(runs)} run(s){': ' + ', '.join(x['lane'] for x in runs) if runs else ''}; "
-               f"verdicts {_tally(s['measured']['verdicts'])}")
+               f"verdicts {_tally(s['measured']['verdicts'])}"
+               + (f"; elsewhere {len(there)}: " + ", ".join(f"{x['lane']} on {morning.machine_name(x)}" for x in there)
+                  if there else ""))
     out.extend(idle_lines(r))
     for p in s["paused"]:
         out.append(f"paused    #{p['id']} {p['lane']} {p['challenger']} {p['state']} at {p['done']}/{p['total']} "

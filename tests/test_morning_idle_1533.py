@@ -16,16 +16,19 @@ NIGHT = datetime(2026, 11, 3, 21, 0).timestamp()
 
 def _store():
     conn = ms.connect()
-    conn.execute("INSERT INTO runs (path, lane, tier, recorded_at) VALUES ('r-image','image','measure',?)", (NIGHT + 600,))
-    conn.execute("INSERT INTO runs (path, lane, tier, recorded_at) VALUES ('r-agent','agent','measure',?)",
-                 (datetime(2026, 11, 2, 0, 37).timestamp(),))
+    me = ms.remember_machine(conn)
+    conn.execute("INSERT INTO runs (machine_id, path, lane, tier, recorded_at) VALUES (?, 'r-image','image','measure',?)",
+                 (me, NIGHT + 600))
+    conn.execute("INSERT INTO runs (machine_id, path, lane, tier, recorded_at) VALUES (?, 'r-agent','agent','measure',?)",
+                 (me, datetime(2026, 11, 2, 0, 37).timestamp()))
     cur = conn.execute("INSERT INTO proposals (name, lane, first_seen, last_seen, state) "
                        "VALUES ('org/Decider-4B','decide',?,?,'screened')", (NIGHT, NIGHT))
     v = conn.execute("INSERT INTO verdicts (proposal_id, outcome, tier, detail, decided_at) VALUES (?,'screened','screen','',?)",
                      (cur.lastrowid, NIGHT + 60)).lastrowid
     conn.execute("UPDATE proposals SET state_verdict_id = ? WHERE id = ?", (v, cur.lastrowid))
     conn.execute("INSERT INTO jobs (id, created_at) VALUES (230, ?)", (NIGHT + 900,))
-    conn.execute("INSERT INTO reverifications (lane, spec, job_id, queued_at) VALUES ('music','m',230,?)", (NIGHT + 900,))
+    conn.execute("INSERT INTO reverifications (machine_id, lane, spec, job_id, queued_at) VALUES (?, 'music','m',230,?)",
+                 (me, NIGHT + 900))
     conn.commit()
     return conn
 
@@ -42,12 +45,12 @@ def test_a_lane_with_nothing_due_says_so_and_a_measured_lane_is_left_out():
     assert "never measured here" in got["video"]["line"]
 
 
-@pytest.mark.gauntlet("state-is-whichever-row-came-last", site="harness/morning.py:idle_lanes")
+@pytest.mark.gauntlet("state-is-whichever-row-came-last", site="harness/morning.py:_reverify")
 def test_the_newest_reverify_by_its_queue_time_is_the_one_said_not_the_last_inserted():
     conn = _store()
     conn.execute("INSERT INTO jobs (id, created_at) VALUES (229, ?)", (NIGHT + 300,))
-    conn.execute("INSERT INTO reverifications (lane, spec, job_id, queued_at, outcome) VALUES ('music','m',229,?,'passed')",
-                 (NIGHT + 300,))
+    conn.execute("INSERT INTO reverifications (machine_id, lane, spec, job_id, queued_at, outcome) "
+                 "VALUES (?, 'music','m',229,?,'passed')", (ms.machine_row(conn), NIGHT + 300))
     conn.commit()
     got = {i["lane"]: i for i in morning.idle_lanes(conn, SINCE)}
     assert got["music"]["reverify_job"] == 230

@@ -254,8 +254,6 @@ INDEX = {
             "harness/commands/screen.py:_report_screen":
                 "the first write is candidates.ensure, an INSERT OR IGNORE get-or-create; a death before the verdict "
                 "leaves the proposal unscreened, and the next screen returns the same row (#1914)",
-            "harness/downloads.py:backfill.once":
-                "open #1887: PR #1890 settles the live row a killed backfill left; bind its test there and drop this",
             "harness/exclusive.py:_lease":
                 "open #1952: the job's own lease goes loading and back to reserved in two commits",
         },
