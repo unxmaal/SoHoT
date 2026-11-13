@@ -68,6 +68,8 @@ jobs:
     env:
       # An unlabelled pull request skips `long` tests and runs only what its change reaches; main, nightly, full-ci run all (#720, #1567).
       SOHOT_FAST_PATH: ${{ (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'full-ci')) && '1' || '0' }}
+      # Push and PR runs leave `nightly` tests, each with a fast twin that runs here, to the nightly and dispatch (#1590).
+      SOHOT_SKIP_NIGHTLY: ${{ (github.event_name == 'push' || github.event_name == 'pull_request') && '1' || '0' }}
 
     steps:
       - uses: actions/checkout@v4

@@ -124,6 +124,7 @@ markers = [
     "real_runtime: may execute a real runtime binary (llama-server, mlx_lm.server, mflux, needle) (#536)",
     "real_effect: may run a real launchctl, ssh, gh, docker or kill, which the suite otherwise refuses (#1794)",
     "long: slow and worth it (a real end-to-end loop, real processes); make check runs it, the per-PR CI fast path skips it (#720)",
+    "nightly(fast): slow, and its fast twin `fast` runs on every PR; push and PR CI leave it to the nightly, make check runs it (#1590)",
     "gauntlet(class_id, site): binds a test to a gauntlet class at a detector's site (#492)",
 ]
 # The repo root, so `from evals...` resolves without a sys.path hack in every
