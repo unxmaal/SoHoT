@@ -48,9 +48,12 @@ def test_two_threads_writing_the_heartbeat_both_land(monkeypatch):
     both = threading.Barrier(2, timeout=10)
     real = os.replace
     errors = []
+    met = set()
 
     def replace(src, dst):
-        both.wait()
+        if threading.get_ident() not in met:  # a Windows retry (#1905) must not wait for a partner again
+            met.add(threading.get_ident())
+            both.wait()
         return real(src, dst)
     monkeypatch.setattr(hb.os, "replace", replace)
 

@@ -23,6 +23,7 @@ capabilities:
       - harness/queue_hold.py
       - harness/quiesce.py
       - harness/job_claim.py
+      - harness/atomic_file.py
 
   - name: watchdog
     summary: The periodic judge of running jobs and served models, acting from a fixed set and recording each act.
