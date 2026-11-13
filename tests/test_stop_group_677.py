@@ -9,6 +9,7 @@ import time
 import pytest
 
 from harness import exclusive, workqueue as wq
+from harness import job_procs
 
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="a POSIX process group and flock")
 
@@ -146,22 +147,22 @@ def test_linux_reads_a_group_of_zombies_as_stopped(tmp_path):
     _stat(tmp_path, 10, "Z", 10)
     _stat(tmp_path, 11, "S", 99)
     (tmp_path / "self").mkdir()
-    assert wq._live_member(10, proc_root=tmp_path) is False
+    assert job_procs._live_member(10, proc_root=tmp_path) is False
     _stat(tmp_path, 12, "S", 10)
-    assert wq._live_member(10, proc_root=tmp_path) is True
-    assert wq._live_member(55, proc_root=tmp_path) is True
+    assert job_procs._live_member(10, proc_root=tmp_path) is True
+    assert job_procs._live_member(55, proc_root=tmp_path) is True
 
 
 def test_macos_reads_a_member_inside_exit_as_alive():
-    assert wq._exiting_member(10, read=lambda pgid: [wq._SZOMB, wq._SZOMB]) is False
-    assert wq._exiting_member(10, read=lambda pgid: []) is False
-    assert wq._exiting_member(10, read=lambda pgid: [wq._SZOMB, 2]) is True
-    assert wq._exiting_member(10, read=lambda pgid: None) is True
+    assert job_procs._exiting_member(10, read=lambda pgid: [job_procs._SZOMB, job_procs._SZOMB]) is False
+    assert job_procs._exiting_member(10, read=lambda pgid: []) is False
+    assert job_procs._exiting_member(10, read=lambda pgid: [job_procs._SZOMB, 2]) is True
+    assert job_procs._exiting_member(10, read=lambda pgid: None) is True
 
 
 @pytest.mark.parametrize("refused", [signal.SIGTERM, 0])
 def test_stop_group_waits_for_a_member_still_inside_exit_after_eperm(monkeypatch, refused):
-    states = [[2, wq._SZOMB]] * 3 + [[wq._SZOMB, wq._SZOMB]]
+    states = [[2, job_procs._SZOMB]] * 3 + [[job_procs._SZOMB, job_procs._SZOMB]]
     reads, sent = [], []
 
     def killpg(pid, sig):
@@ -171,8 +172,8 @@ def test_stop_group_waits_for_a_member_still_inside_exit_after_eperm(monkeypatch
 
     monkeypatch.setattr(wq.sys, "platform", "darwin")
     monkeypatch.setattr(wq.os, "killpg", killpg)
-    real = wq._exiting_member
-    monkeypatch.setattr(wq, "_exiting_member", lambda pgid: real(
+    real = job_procs._exiting_member
+    monkeypatch.setattr(job_procs, "_exiting_member", lambda pgid: real(
         pgid, read=lambda g: reads.append(g) or states[len(reads) - 1]))
     assert wq.stop_group(77, grace=10.0, sleep=lambda s: None) == "term"
     assert len(reads) == len(states)
@@ -182,15 +183,15 @@ def test_stop_group_waits_for_a_member_still_inside_exit_after_eperm(monkeypatch
 def test_macos_reads_a_real_group_s_states_until_its_member_is_a_zombie():
     proc = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(120)"], start_new_session=True)
     try:
-        states = wq._pgrp_states(proc.pid)
-        assert states and wq._SZOMB not in states
+        states = job_procs._pgrp_states(proc.pid)
+        assert states and job_procs._SZOMB not in states
         os.kill(proc.pid, signal.SIGKILL)
         deadline = time.monotonic() + 10
-        while wq._pgrp_states(proc.pid) != [wq._SZOMB] and time.monotonic() < deadline:
+        while job_procs._pgrp_states(proc.pid) != [job_procs._SZOMB] and time.monotonic() < deadline:
             time.sleep(0.02)
-        assert wq._pgrp_states(proc.pid) == [wq._SZOMB]
-        assert wq._exiting_member(proc.pid) is False
+        assert job_procs._pgrp_states(proc.pid) == [job_procs._SZOMB]
+        assert job_procs._exiting_member(proc.pid) is False
     finally:
         proc.kill()
         proc.wait(timeout=30)
-    assert wq._pgrp_states(proc.pid) == []
+    assert job_procs._pgrp_states(proc.pid) == []

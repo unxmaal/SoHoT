@@ -1287,8 +1287,8 @@ def _main(args) -> int:
                 node=node_of(args) if kind in exclusive.NODE else ""))
         except exclusive.StoreDown as exc:
             raise SystemExit(f"evals.run: {exc}") from exc
-        from harness import workqueue
-        item = workqueue.item_s() if args.stop_at is None and args.stop_after is None else None
+        from harness import job_procs
+        item = job_procs.item_s() if args.stop_at is None and args.stop_after is None else None
         if item is not None:
             # The worker runs this job in items: stop at the item's end and say so, so it queues the next. #1618.
             args.stop_after, args.queue_item = item, True
@@ -1710,8 +1710,8 @@ def _execute_at(args, overrides: dict, held: contextlib.ExitStack) -> int:
         if isinstance(exc, watch.Deferred) and outdir:
             watch.ask_pause(outdir, exc.reason)
         elif getattr(args, "queue_item", False) and exc.why.startswith(watch.AT_STOP_TIME):
-            from harness import workqueue
-            workqueue.item_ended()
+            from harness import job_procs
+            job_procs.item_ended()
         print(f"\n{exc.why}", file=sys.stderr, flush=True)
     finally:
         if eye.yielder is not None:

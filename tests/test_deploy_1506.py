@@ -15,6 +15,7 @@ import shells
 from harness import deploy, deploy_switch, paths
 from harness import memory_store as ms
 from harness import workqueue as wq
+from harness import job_settle, queue_pause
 
 BASH = shells.resolve("bash")
 posix = pytest.mark.skipif(sys.platform == "win32" or BASH is None,
@@ -393,7 +394,7 @@ def test_a_deploy_job_cut_off_before_its_handoff_is_settled_failed():
         deploy._insert(c, job["output"], int(job["id"]), paths.home(), "", time.time())
     other = wq.add(["true"], title="cut off too", cwd=str(paths.home()))
     _claim(other)
-    wq._recover()
+    job_settle._recover()
     assert wq.get(job["id"])["state"] == wq.FAILED and wq.get(other["id"])["state"] == wq.FAILED
     d = _deploys()[0]
     assert d["outcome"] == deploy.INTERRUPTED and "before it handed off" in d["detail"]
@@ -402,7 +403,7 @@ def test_a_deploy_job_cut_off_before_its_handoff_is_settled_failed():
 def test_a_deploy_job_cut_off_before_it_recorded_a_deploy_is_settled_failed():
     job = _pending_deploy()
     _claim(job)
-    wq._recover()
+    job_settle._recover()
     got = wq.get(job["id"])
     assert got["state"] == wq.FAILED and "before it recorded a deploy" in got["note"]
 
@@ -413,7 +414,7 @@ def test_a_handed_off_switch_gets_its_grace_before_it_reads_as_dead():
     with wq._store() as c:
         did = deploy._insert(c, job["output"], int(job["id"]), paths.home(), "", time.time())
     deploy_switch.save(deploy.record_path(did), {"stage": "handed_off", "handed_at": time.time(), "outcome": "",
-                                                 "link": str(paths.home()), "queue_flag": str(wq._pause_flag())})
+                                                 "link": str(paths.home()), "queue_flag": str(queue_pause._pause_flag())})
     assert deploy.settle() == [] and wq.get(job["id"])["state"] == wq.RUNNING
     assert deploy.settle(now=time.time() + deploy.HANDOFF_GRACE_S + 1)[0]["outcome"] == deploy.INTERRUPTED
 

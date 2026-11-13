@@ -10,6 +10,7 @@ from evals import run as R
 from evals import watch
 from harness import paths, run_state
 from harness import workqueue as wq
+from harness import queue_pause
 from harness.watchdog import ProgressFiles
 from tests.test_pause_813 import ROOT, Ticking, _args, _run, clock, quiet  # noqa: F401
 
@@ -129,13 +130,13 @@ def test_a_deploy_stopped_yielding_eval_resumes_from_its_dir():
     mine = _progress("20261112-000000-confirm-code", state="yielding", pid=4242, pgid=4242)
     _progress("20261112-000001-other", state="running", pid=5151, pgid=5151)
     _progress("20261112-000002-garbled", state="migrating", pid=6161)
-    assert wq._stopped_argv(job, {4242, 4243}) == wq.resume_argv(job["argv"], mine)
+    assert queue_pause._stopped_argv(job, {4242, 4243}) == wq.resume_argv(job["argv"], mine)
 
 
 def test_a_stopped_argv_names_no_dir_when_none_is_its_own():
     job = {"argv": [sys.executable, "-m", "evals.run", "--modality", "code"]}
     _progress("20261112-000001-other", state="running", pid=5151, pgid=5151)
-    assert wq._stopped_argv(job, {4242}) is None
+    assert queue_pause._stopped_argv(job, {4242}) is None
 
 
 @POSIX

@@ -41,9 +41,9 @@ def _dir(name: str) -> Path:
 
 
 def _alive(pid) -> bool:
-    from harness import workqueue
+    from harness import job_procs
     try:
-        return workqueue.alive(int(pid))
+        return job_procs.alive(int(pid))
     except (TypeError, ValueError):
         return False
 

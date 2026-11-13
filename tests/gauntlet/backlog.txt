@@ -36,6 +36,7 @@ a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/invento
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/machine.py:versions
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/nodes.py:_record
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/publish.py:set_enabled
+a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/queue_pause.py:hold_for_deploy
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/remote_code.py:native_types
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/review.py:write
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/runner_gaps.py:diffusers_pipelines
@@ -47,7 +48,6 @@ a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/unverif
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/volume.py:_save
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/watchdog.py:_idle_since
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/watchdog.py:_swap_rate
-a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/workqueue.py:hold_for_deploy
 a-decision-read-back-out-of-a-sentence-the-code-wrote evals/analysis/repo_failures.py:_evidence:detail
 a-decision-read-back-out-of-a-sentence-the-code-wrote evals/analysis/repo_failures.py:cause:detail
 a-decision-read-back-out-of-a-sentence-the-code-wrote evals/atomic.py:RepoWorkspace.attempt:detail
@@ -413,6 +413,7 @@ a-wait-with-no-deadline-owner-or-end-state harness/gateway_switch.py:_await_serv
 a-wait-with-no-deadline-owner-or-end-state harness/gateway_switch.py:_drain
 a-wait-with-no-deadline-owner-or-end-state harness/gateway_switch.py:wait_then_restart
 a-wait-with-no-deadline-owner-or-end-state harness/interactive.py:warm
+a-wait-with-no-deadline-owner-or-end-state harness/job_settle.py:_watch_left
 a-wait-with-no-deadline-owner-or-end-state harness/job_state.py:MOVES:done
 a-wait-with-no-deadline-owner-or-end-state harness/node_deploy.py:drain
 a-wait-with-no-deadline-owner-or-end-state harness/node_deploy.py:verify
@@ -426,7 +427,6 @@ a-wait-with-no-deadline-owner-or-end-state harness/sweeps.py:MOVES:uninformative
 a-wait-with-no-deadline-owner-or-end-state harness/sweeps.py:MOVES:unrun
 a-wait-with-no-deadline-owner-or-end-state harness/throttle.py:_hold
 a-wait-with-no-deadline-owner-or-end-state harness/throughput.py:_Peak._run
-a-wait-with-no-deadline-owner-or-end-state harness/workqueue.py:_watch_left
 a-wait-with-no-deadline-owner-or-end-state harness/workqueue.py:leased.keep
 a-wait-with-no-deadline-owner-or-end-state harness/workqueue.py:run_pending
 a-wait-with-no-deadline-owner-or-end-state harness/workqueue.py:serve
@@ -605,6 +605,8 @@ nothing-and-failed-return-the-same-value harness/interactive.py:size:except
 nothing-and-failed-return-the-same-value harness/inventory_time.py:_text:except
 nothing-and-failed-return-the-same-value harness/inventory_weight.py:gather.guard:except
 nothing-and-failed-return-the-same-value harness/inventory_weight.py:routed:except
+nothing-and-failed-return-the-same-value harness/job_procs.py:_pid_of:except
+nothing-and-failed-return-the-same-value harness/job_procs.py:_tree:except
 nothing-and-failed-return-the-same-value harness/ledger.py:macmon_version:except
 nothing-and-failed-return-the-same-value harness/local_catches.py:head:except
 nothing-and-failed-return-the-same-value harness/machine.py:_mflux_cli:except
@@ -645,6 +647,7 @@ nothing-and-failed-return-the-same-value harness/paths.py:deploy_link:except
 nothing-and-failed-return-the-same-value harness/pressure.py:_sysctl:except
 nothing-and-failed-return-the-same-value harness/pressure.py:_vm_stat:except
 nothing-and-failed-return-the-same-value harness/privacy.py:main_checkout:except
+nothing-and-failed-return-the-same-value harness/queue_pause.py:settle_deploys:except
 nothing-and-failed-return-the-same-value harness/rank.py:serving:except
 nothing-and-failed-return-the-same-value harness/report.py:_load_state:except
 nothing-and-failed-return-the-same-value harness/residency_trace.py:_kv_mlx:except
@@ -678,10 +681,7 @@ nothing-and-failed-return-the-same-value harness/watchdog.py:Probes.mcp_connecti
 nothing-and-failed-return-the-same-value harness/watchdog.py:Probes.processes:except
 nothing-and-failed-return-the-same-value harness/workqueue.py:_git:except
 nothing-and-failed-return-the-same-value harness/workqueue.py:_not_pending:none-message
-nothing-and-failed-return-the-same-value harness/workqueue.py:_pid_of:except
-nothing-and-failed-return-the-same-value harness/workqueue.py:_tree:except
 nothing-and-failed-return-the-same-value harness/workqueue.py:import_json:chooser
-nothing-and-failed-return-the-same-value harness/workqueue.py:settle_deploys:except
 one-default-tuned-for-one-member-applied-to-all evals/runners/agent.py:__init__(step_timeout)
 one-default-tuned-for-one-member-applied-to-all evals/runners/omnisvg.py:__init__(timeout)
 one-default-tuned-for-one-member-applied-to-all evals/runners/text.py:__init__(timeout)

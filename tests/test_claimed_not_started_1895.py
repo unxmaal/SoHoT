@@ -9,6 +9,7 @@ import pytest
 
 from harness import deploy, job_claim, paths
 from harness import workqueue as wq
+from harness import job_procs, job_settle
 
 WAIT_S = 30.0
 QUICK = [sys.executable, "-c", ""]
@@ -35,7 +36,7 @@ class Held:
             self.at.wait()
             assert self.go.wait(WAIT_S), "the test never released the worker"
             return real(argv, cwd, stdout, env)
-        monkeypatch.setattr(wq, "spawn_group", spawn)
+        monkeypatch.setattr(job_procs, "spawn_group", spawn)
 
         def work():
             try:
@@ -46,7 +47,7 @@ class Held:
         self.thread = threading.Thread(target=work, name=f"held-{job['id']}")
         self.thread.start()
         self.at.wait()
-        assert wq.get(job["id"])["state"] == wq.RUNNING and wq._pid_of(job["id"]) is None
+        assert wq.get(job["id"])["state"] == wq.RUNNING and job_procs._pid_of(job["id"]) is None
 
     def release(self) -> None:
         self.go.set()
@@ -128,7 +129,7 @@ def test_a_claim_whose_worker_pid_was_reused_is_gone():
     job_claim.path(job["id"]).write_text(
         f'{{"pid": {os.getpid()}, "pgid": {os.getpgid(0)}, "started": "1.000000"}}', encoding="utf-8")
     assert not job_claim.starting(job["id"])
-    wq._recover()
+    job_settle._recover()
     assert wq.get(job["id"])["state"] == wq.FAILED
 
 
@@ -136,7 +137,7 @@ def test_recovery_leaves_a_job_its_worker_claimed_and_has_not_started(monkeypatc
     job = wq.add(QUICK, title="measure", cwd=str(paths.home()))
     held = Held(monkeypatch, job)
     try:
-        wq._recover()
+        job_settle._recover()
         state = wq.get(job["id"])["state"]
     finally:
         done = held.finish()
@@ -171,7 +172,7 @@ def test_a_lost_lease_stops_a_job_that_was_still_starting(monkeypatch):
     held = Held(monkeypatch, job)
     seen = _release_when_starting(monkeypatch, held)
     try:
-        wq._lease_lost(job, "lapsed in the test")
+        job_settle._lease_lost(job, "lapsed in the test")
     finally:
         done = held.finish()
     assert True in seen and done["rc"] != 0
@@ -179,7 +180,7 @@ def test_a_lost_lease_stops_a_job_that_was_still_starting(monkeypatch):
 
 @posix
 def test_the_deploy_hold_stops_a_job_that_was_still_starting(monkeypatch):
-    monkeypatch.setattr(wq, "_tree", lambda pid: [(pid, "")])
+    monkeypatch.setattr(job_procs, "_tree", lambda pid: [(pid, "")])
     job = wq.add(SLEEPER, title="measure", cwd=str(paths.home()))
     held = Held(monkeypatch, job)
     seen = _release_when_starting(monkeypatch, held)

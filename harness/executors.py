@@ -25,10 +25,10 @@ class Host:
 
     def run(self, job: dict, argv, cwd=None, stdout=None, env=None) -> subprocess.Popen:
         from harness import proc_identity
-        from harness import workqueue as wq
-        pid_file = wq._pid_file(job["id"])
+        from harness import job_procs
+        pid_file = job_procs._pid_file(job["id"])
         exit_file(pid_file).unlink(missing_ok=True)
-        child = wq.spawn_group(gated(argv, pid_file), cwd, stdout, env)
+        child = job_procs.spawn_group(gated(argv, pid_file), cwd, stdout, env)
         try:
             started_file(pid_file).write_text(f"{child.pid} {proc_identity.started(child.pid)}", encoding="utf-8")
             pid_file.write_text(str(child.pid), encoding="utf-8")
@@ -50,8 +50,8 @@ class Host:
         return child
 
     def stop(self, pid: int, grace: float | None = None) -> str:
-        from harness import workqueue as wq
-        return wq.stop_group(pid) if grace is None else wq.stop_group(pid, grace=grace)
+        from harness import job_procs
+        return job_procs.stop_group(pid) if grace is None else job_procs.stop_group(pid, grace=grace)
 
 
 #: The job's command waits for its own pid in the pid file, so a worker that dies before writing it leaves no job running. #1758.

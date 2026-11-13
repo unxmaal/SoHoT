@@ -13,6 +13,7 @@ from evals import watch
 from harness import adopt, adoption_state as st, executors, run_state, runs, volume
 from harness import memory_store as ms
 from harness import workqueue as wq
+from harness import job_procs, job_settle
 from tests import conftest
 from tests.test_adoption_state_1735 import STUDIO
 from tests.test_pause_813 import Ticking, _args, _run, clock, quiet  # noqa: F401
@@ -33,11 +34,11 @@ def _die(*_a, **_k):
 def test_a_job_that_exited_0_before_its_worker_died_is_settled_by_its_exit_not_as_gone(monkeypatch):
     job = wq.add([sys.executable, "-c", "pass"], title="plain")
     with monkeypatch.context() as m:
-        m.setattr(wq, "_settle_exit", _die)
+        m.setattr(job_settle, "_settle_exit", _die)
         with pytest.raises(Died):
             wq.run_one(wq.get(job["id"]))
-    assert wq.get(job["id"])["state"] == wq.RUNNING and not wq._pid_file(job["id"]).exists()
-    assert wq._recover() == []
+    assert wq.get(job["id"])["state"] == wq.RUNNING and not job_procs._pid_file(job["id"]).exists()
+    assert job_settle._recover() == []
     got = wq.get(job["id"])
     assert (got["state"], got["rc"]) == (wq.DONE, 0), got
 
@@ -45,13 +46,13 @@ def test_a_job_that_exited_0_before_its_worker_died_is_settled_by_its_exit_not_a
 def test_a_failed_exit_recorded_before_the_worker_died_is_settled_failed_with_its_rc(monkeypatch):
     job = wq.add([sys.executable, "-c", "raise SystemExit(3)"], title="plain")
     with monkeypatch.context() as m:
-        m.setattr(wq, "_settle_exit", _die)
+        m.setattr(job_settle, "_settle_exit", _die)
         with pytest.raises(Died):
             wq.run_one(wq.get(job["id"]))
-    wq._recover()
+    job_settle._recover()
     got = wq.get(job["id"])
     assert (got["state"], got["rc"]) == (wq.FAILED, 3), got
-    assert not executors.exit_file(wq._pid_file(job["id"])).exists()
+    assert not executors.exit_file(job_procs._pid_file(job["id"])).exists()
 
 
 @pytest.mark.gauntlet("nothing-and-failed-return-the-same-value", site="harness/executors.py:exit_record:except")
@@ -68,14 +69,14 @@ def test_no_exit_record_reads_none_a_recorded_0_reads_0_and_an_unreadable_one_ra
 _WORKER = textwrap.dedent("""
     import os, sys
     from harness import executors
-    from harness import workqueue as wq
+    from harness import job_procs
     mark, child_at = sys.argv[1], sys.argv[2]
-    real = wq.spawn_group
+    real = job_procs.spawn_group
     def spawn(argv, cwd, stdout, env):
         child = real(argv, cwd, stdout, env)
         open(child_at, "w").write(str(child.pid))
         return child
-    wq.spawn_group = spawn
+    job_procs.spawn_group = spawn
     def died(_pid_file):
         os._exit(9)
     executors.started_file = died
@@ -105,7 +106,7 @@ def test_a_pid_write_that_fails_in_a_live_worker_leaves_no_gate_waiting(monkeypa
     def spawn(argv, cwd, stdout, env):
         seen["child"] = real(argv, cwd, stdout, env)
         return seen["child"]
-    monkeypatch.setattr(wq, "spawn_group", spawn)
+    monkeypatch.setattr(job_procs, "spawn_group", spawn)
     monkeypatch.setattr(executors, "started_file", _die)
     with pytest.raises(Died):
         executors.Host().run({"id": 78}, [sys.executable, "-c", f"open({str(tmp_path / 'ran')!r}, 'w')"])

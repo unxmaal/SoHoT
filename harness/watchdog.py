@@ -280,9 +280,9 @@ class Probes:
 
     def job_pids(self) -> dict:
         """Queue job id -> the pid of its group leader, from the files the worker leaves. #628."""
-        from harness import executors, workqueue
+        from harness import executors, job_procs
         out = {}
-        for f in sorted(workqueue._pids().glob("*.pid")):
+        for f in sorted(job_procs._pids().glob("*.pid")):
             with contextlib.suppress(OSError, ValueError):
                 out[f.stem] = executors.pid_record(f)[0]
         return out
@@ -1232,10 +1232,10 @@ class Hands:
         return Said("; ".join(got), ACTED if any(g.result == ACTED for g in got) else got[0].result)
 
     def _group(self, s: Subject) -> str:
-        from harness import workqueue
+        from harness import job_procs
         if s.pgid is None:
             return Said(f"refused: {s.key} has no process group made only of SoHoT processes", REFUSED)
-        return Said(f"group {s.pgid}: {workqueue.stop_group(s.pgid, grace=STOP_GRACE_S)}")
+        return Said(f"group {s.pgid}: {job_procs.stop_group(s.pgid, grace=STOP_GRACE_S)}")
 
     def stop(self, f: Finding) -> str:
         if f.subject.pgid is not None:

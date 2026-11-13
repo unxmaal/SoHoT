@@ -155,12 +155,12 @@ def _lease(cycle: str) -> dict:
     """{} once `cycle` holds the discover-loop store lease, else its holder; a sweep with no step left frees it."""
     from harness import lease
     from harness import memory_store as ms
-    from harness import workqueue as wq
+    from harness import job_procs
     conn = ms.connect()
     try:
         def stale(cur):
             return cur.get("cycle") == cycle or bool(cur.get("cycle")) and cur["cycle"] not in live(conn, but=cycle)
-        return lease.take(conn, loop_cmd.LEASE, _who(conn, cycle), loop_cmd.LEASE_S, alive=wq.alive, stale=stale)
+        return lease.take(conn, loop_cmd.LEASE, _who(conn, cycle), loop_cmd.LEASE_S, alive=job_procs.alive, stale=stale)
     finally:
         conn.close()
 
