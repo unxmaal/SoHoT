@@ -39,6 +39,8 @@ ERROR_CHARS = 300
 UNPROBED_S = 24 * 3600.0
 #: How a deliberate probe's reason starts; the next one waits UNPROBED_S after it.
 DELIBERATE = "a deliberate night probe"
+#: Every skipped probe of a model not loaded says this; soh inventory time reads it from lane_probes.reason. #1780.
+NOT_RESIDENT = "the model is not resident"
 
 COLUMNS = ("at", "machine_id", "lane", "spec", "base", "upstream", "model", "engine", "outcome", "reason",
            "http_status", "error", "seconds", "prompt_tokens", "completion_tokens")
@@ -372,10 +374,10 @@ def prepare(lane: str, sender: Sender, resolve=None, resident=None, busy=None, h
         from harness.pressure import NORMAL
         got = (level or _level)()
         if got is not None and got > NORMAL:
-            return done(SKIPPED, f"the model is not resident and memory pressure is level {got}; {load} waits")
+            return done(SKIPPED, f"{NOT_RESIDENT} and memory pressure is level {got}; {load} waits")
         row["reason"] = load[:ERROR_CHARS]
     elif loaded is not True:
-        why = "residency unknown" if loaded is None else "the model is not resident"
+        why = "residency unknown" if loaded is None else NOT_RESIDENT
         return done(SKIPPED, f"{why}; a probe would load it" + (f" ({type(exc).__name__}: {exc})" if exc else ""))
     if headers is None:
         from harness import gateway_key, purpose
