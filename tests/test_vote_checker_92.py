@@ -100,6 +100,6 @@ def test_the_command_reads_a_store_without_writing_it(conn, capsys):
     assert conftest.store_state(path) == before
     ro = open_readonly(path)
     try:
-        assert human.metric_agreement(ro, "web") == {"pairs": [], "lanes": {}}
+        assert human.metric_agreement(ro, "web") == {"pairs": [], "lanes": {}, "side": {}}
     finally:
         ro.close()

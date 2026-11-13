@@ -38,7 +38,7 @@ def stage_of(state: str, tier: str, *, downloaded: bool, ranked: bool) -> str:
 
 def _histories(conn) -> dict[int, list[dict]]:
     out: dict[int, list[dict]] = {}
-    for v in conn.execute("SELECT proposal_id, id, outcome, tier, detail, decided_at, "
+    for v in conn.execute("SELECT proposal_id, id, outcome, tier, detail, event, decided_at, "
                           "COALESCE(reopen_kind, '') AS reopen_kind FROM verdicts "
                           "WHERE proposal_id IS NOT NULL ORDER BY proposal_id, id"):
         out.setdefault(v["proposal_id"], []).append(dict(v))
@@ -58,7 +58,7 @@ def _downloads(conn) -> dict[int, dict]:
 def _skipped(history: list[dict], since: float) -> dict | None:
     """The fetch tier's newest skip of this row since its state began: a queued fetch verdict that downloaded nothing. #1084."""
     said = [v for v in history if v["tier"] == "fetch" and v["outcome"] == "queued" and v["decided_at"] >= since]
-    if not said or said[-1]["detail"] == fetching.DOWNLOADED:
+    if not said or said[-1]["event"] == fetching.DOWNLOADED:
         return None
     return said[-1]
 

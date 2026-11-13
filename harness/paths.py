@@ -65,6 +65,15 @@ def machine_home() -> Path:
     return here
 
 
+SCHEDULER = "scheduler"
+
+
+def role() -> str:
+    """This machine's LH_ROLE as scripts/launchd.sh keeps it in this home's role file; scheduler when none is kept. #1899."""
+    path = home() / "role"
+    return (path.read_text(encoding="utf-8").strip() if path.exists() else "") or SCHEDULER
+
+
 @contextmanager
 def seated(where: Path):
     """home() is `where` on this thread meanwhile. #1703."""

@@ -427,9 +427,13 @@ def _inside(path: Path, root: Path) -> bool:
         return False
 
 
+def _young(e: Entry, now: float) -> bool:
+    return now - e.decided_at < GRACE_SECONDS
+
+
 def _graced(e: Entry, now: float) -> str:
     """Why a rejected entry is still inside its grace, or ''."""
-    if now - e.decided_at < GRACE_SECONDS:
+    if _young(e, now):
         return "rejected less than 24 h ago"
     if e.retest_at is not None and now < float(e.retest_at) + GRACE_SECONDS:
         return "kept for the retest due then"
@@ -647,7 +651,7 @@ def table(inv: Inventory, now: float) -> str:
             due = ""
             if g == REJECTED:
                 ok, why = safe_to_delete(e, now, REJECTED, (inv.hub, inv.gguf))
-                due = "  due" if ok else "  (<24 h)" if "24 h" in why else ""
+                due = "  due" if ok else "  (<24 h)" if _young(e, now) else ""
             lines.append(f"  {gib(e.size):>7} GiB {age:6.1f}d  "
                          f"{e.name:55} {e.why}{due}")
     s = summary(inv, now)

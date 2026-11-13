@@ -24,7 +24,7 @@ WORKFLOW_PREFIXES = ("repair:",)
 
 def _entries(config=None) -> list[dict]:
     """The served config's entries when serve-gateway.sh wrote one, else the base config's."""
-    served = gateway.served_path(config)
+    served = gateway.serving_path(config)
     data = gateway.load(served) if served.exists() else gateway.load(config)
     return [e for e in data.get("model_list") or [] if isinstance(e, dict)]
 

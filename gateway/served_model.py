@@ -278,11 +278,11 @@ def _addressed_here(data: dict) -> bool:
 def _claim(deployment: str, batch_id: str, local: bool = False) -> dict:
     from harness import batch
     from harness import memory_store as ms
-    from harness import workqueue as wq
+    from harness import job_procs
     conn = ms.connect()
     try:
         return batch.claim(conn, deployment, batch_id, who=batch.from_gateway(batch_id, local=local),
-                           alive=wq.alive)
+                           alive=job_procs.alive)
     finally:
         conn.close()
 

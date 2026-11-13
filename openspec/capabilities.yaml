@@ -22,6 +22,13 @@ capabilities:
       - harness/paused_jobs.py
       - harness/queue_hold.py
       - harness/quiesce.py
+      - harness/job_release.py
+      - harness/job_claim.py
+      - harness/job_procs.py
+      - harness/job_settle.py
+      - harness/queue_pause.py
+      - harness/atomic_file.py
+      - harness/stale_temp.py
 
   - name: watchdog
     summary: The periodic judge of running jobs and served models, acting from a fixed set and recording each act.
@@ -31,6 +38,8 @@ capabilities:
       - harness/watchdog.py
       - harness/overrun.py
       - harness/idle_unload.py
+      - harness/watchdog_observe.py
+      - harness/watchdog_hands.py
 
   - name: adopt-confirm
     summary: A measured or by-hand winner becomes a lane's served model, through the paired gate and its confirmation.
@@ -45,6 +54,7 @@ capabilities:
       - harness/gateway_switch.py
       - harness/adoption_state.py
       - harness/gateway_switch_state.py
+      - harness/gateway_respawn.py
 
   - name: measure
     summary: The measure tier, its pauses, looks and resumes, and the order the measure queue is spent in.
@@ -201,6 +211,7 @@ capabilities:
       - harness/throughput.py
       - harness/purpose.py
       - harness/node_reach.py
+      - harness/tether.py
 
   - name: local-delegation
     summary: local_complete and local_decide over MCP or `soh local`, handed to a lane's adopted local model, and what became of each answer.
@@ -444,6 +455,8 @@ capabilities:
       - harness/commands/lane_feed.py
       - harness/intervals.py
       - harness/clips.py
+      - harness/burndown.py
+      - harness/commands/burndown.py
 
   - name: canary
     summary: Planted candidates with known verdicts, run for real under an isolated home.
@@ -480,6 +493,7 @@ capabilities:
       - harness/machine.py
       - harness/env.py
       - harness/torch_device.py
+      - harness/machine_scope.py
 
   - name: deploy-guard
     summary: Deploying only a green main commit, never during a sweep or eval, with runner venvs matching their pins; each one a queue job built alongside, switched, verified or rolled back.
@@ -502,6 +516,9 @@ capabilities:
       - harness/deploy_hold.py
       - harness/store_ahead.py
       - harness/deploy_repair.py
+      - harness/deploy_retry.py
+      - harness/ci_times.py
+      - harness/commands/ci_times.py
 
   - name: repo-hygiene
     summary: What a public reader gets, personal setup kept out of it, stated claims, coverage, specs and the gauntlet.

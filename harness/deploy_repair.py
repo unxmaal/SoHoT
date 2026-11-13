@@ -9,7 +9,7 @@ import time
 import traceback
 from pathlib import Path
 
-from harness import deploy, deploy_switch, paths, proc_identity
+from harness import deploy, deploy_switch, job_procs, paths, proc_identity
 from harness import deploy_state as ds
 from harness import workqueue as wq
 
@@ -199,7 +199,7 @@ def repair(deploy_id, only: str = "") -> dict:
     if only and how != only:
         return {"ok": False, "how": how, "detail": f"the repair is now {how}, which only the owner runs: {words}"}
     a = rec.get("auto_repair") or {}
-    if not only and a.get("state") == STARTED and _attempting(a, time.time(), wq.alive):
+    if not only and a.get("state") == STARTED and _attempting(a, time.time(), job_procs.alive):
         return {"ok": False, "how": how, "detail": f"its automatic repair is running (pid {a.get('pid') or 'starting'})"}
     with open(rec.get("log") or paths.logs() / "deploy.log", "a", encoding="utf-8") as log, _install_env(rec):
         log.write(f"=== repair of deploy {deploy_id} {time.strftime('%Y-%m-%dT%H:%M:%S')}: {how}: {words}\n")
@@ -265,7 +265,7 @@ def _take(path: Path, rec: dict, now: float, start_fn) -> dict:
     return {"deploy": rec.get("id", path.stem), "outcome": ds.STORE_AHEAD, "auto_repair": STARTED, "detail": words}
 
 
-def auto(now: float, alive=wq.alive, start_fn=None) -> list[dict]:
+def auto(now: float, alive=job_procs.alive, start_fn=None) -> list[dict]:
     """Each STORE_AHEAD record's one automatic restore: started when due and still verified, failed once its process is gone."""
     d = paths.home() / "deploys"
     if not d.is_dir():

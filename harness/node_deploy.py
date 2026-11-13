@@ -8,7 +8,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from harness import cuts, deploy, deploy_switch, gateway_switch, node_reach, paths
+from harness import cuts, deploy, deploy_switch, gateway_switch, job_procs, node_reach, paths
 from harness import nodes as nodes_mod
 from harness import workqueue as wq
 
@@ -70,7 +70,7 @@ def _ssh(argv: list[str], script: str, timeout: float) -> tuple[int | None, str]
     try:
         got = subprocess.run(argv, input=script, capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:
-        return None, f"timed out after {timeout:.0f} s"
+        return None, deploy_switch.TimedOut(f"timed out after {timeout:.0f} s")
     except OSError as exc:
         return None, f"could not run ssh: {exc}"
     return got.returncode, (got.stdout or "") + (got.stderr or "")
@@ -169,8 +169,8 @@ def _tail(said: str, n: int = 300) -> str:
 def target(conn=None) -> dict | None:
     """This machine's newest deploy that ended deployed, None while a deploy runs or before the first: what nodes follow."""
     with wq._store(conn) as c:
-        where, args = wq._here(c)
-        rows = c.execute(f"SELECT id, sha, outcome FROM deploys WHERE {where} ORDER BY id DESC", args).fetchall()
+        here, args = deploy._here(c)
+        rows = c.execute(f"SELECT id, sha, outcome FROM deploys WHERE {here} ORDER BY id DESC", args).fetchall()
     if not rows or not rows[0]["outcome"]:
         return None
     hit = next((r for r in rows if r["outcome"] == deploy.DEPLOYED), None)
@@ -182,7 +182,7 @@ def _due(prior: dict, retry: bool) -> bool:
     if not prior or got in RETRY:
         return True
     if got == INSTALLING:
-        return not wq.alive(int(prior.get("pid") or 0))
+        return not job_procs.alive(int(prior.get("pid") or 0))
     return retry and got in (ROLLED_BACK, FAILED, REFUSED)
 
 
@@ -292,7 +292,7 @@ def _install(node, sha, role, previous, was, back_role, base, *, runner, check, 
     """Install SHA as ROLE on a drained node, verify it, and roll it back to PREVIOUS when it fails."""
     rc, said = runner(ssh_argv(node, "install", node.deploy_dir, sha, role), SCRIPT, INSTALL_TIMEOUT_S)
     log.write(f"--- node {node.name} install {sha[:12]} as {role} rc {rc}\n{said}\n")
-    if rc is None and said.startswith("timed out"):
+    if rc is None and isinstance(said, deploy_switch.TimedOut):
         cuts.cut("harness/node_deploy.py:INSTALL_TIMEOUT_S", f"node {node.name} install of {sha[:12]}", dropped=1)
     if rc == 0:
         rc, why = units_match(node, role, runner, log)

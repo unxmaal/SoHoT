@@ -22,6 +22,8 @@ import threading
 import time
 from pathlib import Path
 
+from harness.atomic_file import replace
+from harness import stale_temp
 from harness import paths
 
 #: What holds the lock, for a waiter to report. Best-effort and advisory: the
@@ -245,11 +247,11 @@ def owner() -> bool:
 
 def _mark(path: Path, record: dict, exclusive: bool) -> bool:
     """Write the refusal marker whole; exclusive, False when one already stands. #1793."""
-    tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}")
+    tmp = stale_temp.temp(path, "{name}.{pid}.{thread}")
     tmp.write_text(json.dumps(record), encoding="utf-8")
     try:
         if not exclusive:
-            os.replace(tmp, path)
+            replace(tmp, path)
             return True
         os.link(tmp, path)
         return True
@@ -304,12 +306,12 @@ def _store():
 def _holder_alive(h: dict) -> bool:
     """Whether a gpu lease's holder lives: its process by pid, group and start time, or for a queued job's, the job's own process. #1619, #1772."""
     from harness import proc_identity
-    from harness import workqueue as wq
+    from harness import job_procs
     if h.get("pid"):
         same = proc_identity.same(h)
-        if same or (same is None and wq.alive(int(h["pid"]))):
+        if same or (same is None and job_procs.alive(int(h["pid"]))):
             return True
-    return h.get("job_id") is not None and wq._pid_of(h["job_id"]) is not None
+    return h.get("job_id") is not None and job_procs._pid_of(h["job_id"]) is not None
 
 
 class IllegalMove(RuntimeError):
@@ -488,19 +490,19 @@ def _as_is():
 
 def _holder(leases: list[dict]) -> dict:
     """Who holds the GPU, from the lease row; the holder record adds to it only when it names that lease. #1732."""
-    from harness import workqueue as wq
+    from harness import job_procs
     for h in leases:
         if not h.get("state"):
             continue
         rec = holder()
         lapsed = {"lapsed": True} if state_of(h) == LAPSED else {}
-        if rec.get("lease") == h["id"] and rec.get("pid") and wq.alive(int(rec["pid"])):
+        if rec.get("lease") == h["id"] and rec.get("pid") and job_procs.alive(int(rec["pid"])):
             return {**rec, **lapsed}
         job = {"job": str(h["job_id"])} if h.get("job_id") is not None else {}
         return {"kind": h["state"], "pid": h["pid"], "since": h["taken_at"], **job, **lapsed}
     if _outside(leases):
         rec = holder()
-        return rec if rec.get("pid") and wq.alive(int(rec["pid"])) else {"kind": "another project's lockf"}
+        return rec if rec.get("pid") and job_procs.alive(int(rec["pid"])) else {"kind": "another project's lockf"}
     return {}
 
 
@@ -809,10 +811,10 @@ def _named():
 def _claim(mine: str, who: dict) -> dict:
     from harness import batch
     from harness import memory_store as ms
-    from harness import workqueue as wq
+    from harness import job_procs
     conn = ms.connect()
     try:
-        return batch.claim(conn, batch.here(), mine, who=who, alive=wq.alive)
+        return batch.claim(conn, batch.here(), mine, who=who, alive=job_procs.alive)
     finally:
         conn.close()
 
@@ -998,16 +1000,15 @@ def beat(now: float | None = None) -> None:
     """Stamp the GPU lock's holder record with a moment of progress, when this process or an ancestor holds it. #775."""
     if os.environ.get(HELD_ENV) != "1":
         return
-    import threading
     path = holder_path()
     record = _read(path)
     if not record:
         return
     record["beat"] = time.time() if now is None else float(now)
-    tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    tmp = stale_temp.temp(path, "{name}.{pid}.{thread}.tmp")
     with contextlib.suppress(OSError):
         tmp.write_text(json.dumps(record), encoding="utf-8")
-        os.replace(tmp, path)
+        replace(tmp, path)
 
 
 def _hand_down(lease: int | None, held: bool = True) -> None:

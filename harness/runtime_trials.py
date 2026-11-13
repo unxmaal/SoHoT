@@ -521,8 +521,8 @@ def push(rt: Runtime, version: str, v: Verdict, notify=None) -> str:
     """A desktop notification for a blocked install or a regression (RULE #716); "" for any other verdict."""
     if v.outcome not in PUSHED:
         return ""
-    from harness import watchdog
-    return (notify or watchdog.desktop)(NOTIFY_TITLE, v.detail, f"{rt.name} {version} {v.outcome}")
+    from harness import watchdog_hands
+    return (notify or watchdog_hands.desktop)(NOTIFY_TITLE, v.detail, f"{rt.name} {version} {v.outcome}")
 
 
 def prune(rt: Runtime, keep: Path, home: Path | None = None) -> list[str]:

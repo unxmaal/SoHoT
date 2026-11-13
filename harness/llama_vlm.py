@@ -11,7 +11,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from harness import gguf
+from harness import gguf, tether
 
 #: mmproj precisions preferred in turn: the projector is small, so the closest to the source wins.
 MMPROJ_PREFERRED = ("f16", "bf16", "q8_0", "f32")
@@ -99,6 +99,7 @@ def serve(model: Path, mmproj: Path, device: str = "gpu", log=None):
     port = _free_port()
     proc = _popen(argv_for(model, mmproj, port, device), stdout=log or subprocess.DEVNULL,
                   stderr=subprocess.STDOUT if log else subprocess.DEVNULL)
+    watcher = tether.tie(proc)
     base = f"http://127.0.0.1:{port}"
     try:
         give_up = time.monotonic() + LLAMACPP_START_S
@@ -124,6 +125,7 @@ def serve(model: Path, mmproj: Path, device: str = "gpu", log=None):
             proc.wait(timeout=30)
         except subprocess.TimeoutExpired:
             proc.kill()
+        tether.untie(watcher)
 
 
 def ask(base: str, image: str, prompt: str, max_tokens: int, timeout: float) -> tuple[str, bool]:

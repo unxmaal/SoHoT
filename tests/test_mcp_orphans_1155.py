@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 from harness import mcp_peers, paths
-from harness import watchdog as wd
+from harness import watchdog as wd, watchdog_observe
 
 from tests import shells
 from tests.test_watchdog import NIGHT, Fake
@@ -61,7 +61,7 @@ class Unit(Fake):
 
 
 def _found(tmp_path, procs, live):
-    world = wd.observe(Unit(tmp_path, procs, live), None, NIGHT)
+    world = watchdog_observe.observe(Unit(tmp_path, procs, live), None, NIGHT)
     found, skipped = wd.judge(world)
     return [f.subject.key for f in found if f.criterion == "stale_mcp"], skipped, found
 

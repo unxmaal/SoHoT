@@ -140,8 +140,8 @@ def watch(probes, procs) -> dict:
 
 def morning() -> dict:
     """watch() of this machine's tts server for soh morning, read only."""
-    from harness import watchdog
-    probes = watchdog.Probes()
+    from harness import watchdog_observe
+    probes = watchdog_observe.Probes()
     return watch(probes, probes.processes() or [])
 
 

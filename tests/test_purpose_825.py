@@ -147,10 +147,11 @@ def test_a_completion_sends_the_purpose_header(monkeypatch):
         headers = {}
         text = ""
 
-    def post(url, json=None, timeout=None, headers=None):
-        sent.update(headers or {})
-        return R()
-    monkeypatch.setattr(completion.httpx, "post", post)
+    class Client:
+        def post(self, url, json=None, timeout=None, headers=None):
+            sent.update(headers or {})
+            return R()
+    monkeypatch.setattr(completion, "http", Client)
     monkeypatch.setenv(purpose.ENV, "eval")
     completion._send("http://127.0.0.1:1", {"model": "m"}, 1.0)
     assert sent.get("x-litellm-tags") == "purpose:eval"

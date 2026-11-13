@@ -73,7 +73,7 @@ def test_a_paused_run_stays_ahead_of_every_repo_comparison(conn, price, gate, mo
 
 def test_a_repo_winner_owed_its_code_comparison_is_ordered_by_its_key(conn, price, gate, monkeypatch):
     paired_run(conn, "w/Winner-9B", 9, 0, 20)
-    ms.decide(conn, "w/Winner-9B", "measured", tier=ms.ADOPT, reason="candidate", detail="repo: won")
+    ms.decide(conn, "w/Winner-9B", "measured", tier=ms.ADOPT, reason="candidate", detail="repo: won", lane="repo")
     price.update({("w/Winner-9B", "code"): 30.0, ("a/Plain-27B", "code"): 300.0, ("a/Plain-27B", "repo"): 300.0})
     got, _ = queue(conn, [{"name": "a/Plain-27B", "lane": "code"}], monkeypatch)
     assert got == [("w/Winner-9B", "code"), ("a/Plain-27B", "repo"), ("a/Plain-27B", "code")]
@@ -100,7 +100,7 @@ def test_the_replay_leaves_out_a_row_the_gate_holds_that_night(conn, gate):
 
 def test_the_replay_owes_a_code_comparison_only_from_its_repo_win(conn, gate):
     paired_run(conn, "w/Winner-9B", 9, 0, 20, at=NOW - 3 * DAY)
-    ms.decide(conn, "w/Winner-9B", "measured", tier=ms.ADOPT, at=NOW - DAY, reason="candidate", detail="repo: won")
+    ms.decide(conn, "w/Winner-9B", "measured", tier=ms.ADOPT, at=NOW - DAY, reason="candidate", detail="repo: won", lane="repo")
     assert measure_replay.owed_at(conn, NOW - 2 * DAY) == []
     assert [(r["name"], r["lane"]) for r in measure_replay.owed_at(conn, NOW)] == [("w/Winner-9B", "code")]
     assert measure_replay.owed_at(conn, float("inf")) == repo_gate.owed(conn), "the replay and the loop owe the same rows"

@@ -2,7 +2,7 @@
 
 import pytest
 
-from harness import coherence, live_audit
+from harness import coherence, feeds, live_audit
 from harness import inspect as ins
 from harness import memory_store as ms
 from harness import store as backend
@@ -145,7 +145,7 @@ def test_a_name_no_registry_was_written_for_is_asked_of_both():
             return {"pushed_at": "2026-10-18T00:00:00Z"}
 
     def no_model(url):
-        raise RuntimeError("HTTP 404")
+        raise feeds.FeedError("HTTP 404", status=404)
     assert ins.upstream_commit("org/x", "", fetch=no_model, client=Client()) == "2026-10-18T00:00:00Z"
 
     class Missing:

@@ -9,6 +9,7 @@ from evals import watch
 from harness import exclusive, item_lease, runs
 from harness import memory_store as ms
 from harness import workqueue as wq
+from harness import job_procs
 from harness.commands import measure as measure_cmd
 from tests.test_repo_looks_1353 import Slices, _measure
 from tests.test_resume_813 import _pauses, _rows, world  # noqa: F401
@@ -132,7 +133,7 @@ def test_a_queued_adopt_ends_its_item_at_a_look_and_its_next_item_resumes_the_he
     fake = Slices([_rows(6, gained=1, lost=1), _rows(12, gained=2, lost=1)])
     monkeypatch.setattr(measure_cmd, "_launch", fake)
     assert _measure() == watch.PAUSED and len(fake.argvs) == 1
-    assert wq._item_flag(job["id"]).exists()
+    assert job_procs._item_flag(job["id"]).exists()
     conn = world()
     try:
         (p,) = _pauses(conn)

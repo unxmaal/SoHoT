@@ -6,7 +6,7 @@ from pathlib import Path
 from evals import watch
 from harness import ceiling, mlx_server, morning, router
 from harness import memory_store as ms
-from harness import watchdog as wd
+from harness import watchdog as wd, watchdog_hands, watchdog_observe
 from harness.commands import loop as loop_cmd
 from harness.commands import measure as measure_cmd
 from harness.commands import morning as morning_cmd
@@ -36,7 +36,7 @@ class Night(Fake):
         return self._protected
 
 
-class Ladder(wd.Hands):
+class Ladder(watchdog_hands.Hands):
     def __init__(self):
         super().__init__(run=None, environ={})
         self.done = []
@@ -84,7 +84,7 @@ def test_critical_pressure_pauses_with_no_swapping(tmp_path):
 
 
 def _idle(tmp_path, **kw):
-    world = wd.observe(Night(tmp_path, Pressure(level=2, alarming=True), **kw), None, NIGHT)
+    world = watchdog_observe.observe(Night(tmp_path, Pressure(level=2, alarming=True), **kw), None, NIGHT)
     return wd.idle(world)
 
 
@@ -100,7 +100,7 @@ def test_a_model_a_running_eval_uses_or_a_lane_serves_is_never_idle(tmp_path):
 def test_an_eval_with_no_progress_file_makes_nothing_idle(tmp_path):
     fake = Night(tmp_path, Pressure(level=2, alarming=True), resident=["Stale-4B"])
     fake.runs = []
-    assert wd.idle(wd.observe(fake, None, NIGHT)) == []
+    assert wd.idle(watchdog_observe.observe(fake, None, NIGHT)) == []
 
 
 def test_unload_on_warn_releases_each_idle_model_past_the_eval_lock(monkeypatch):
@@ -110,11 +110,11 @@ def test_unload_on_warn_releases_each_idle_model_past_the_eval_lock(monkeypatch)
                         lambda stems, why, **kw: asked.append(("router", stems, kw.get("proven_idle"))) or [])
     f = wd.Finding("memory_warn", wd.Subject("discover", "discover pid 236", "t"),
                    {"idle": [{"server": "router", "model": "Stale-4B"}, {"server": "mlx", "model": EDGE0}]})
-    out = wd.Hands().do(wd.UNLOAD, f)
+    out = watchdog_hands.Hands().do(wd.UNLOAD, f)
     assert asked == [("router", ["Stale-4B"], True), ("mlx", EDGE0)]
     assert out == f"kept router Stale-4B; unloaded mlx {EDGE0}"
     nothing = wd.Finding("memory_warn", f.subject, {"idle": []})
-    assert wd.Hands().do(wd.UNLOAD, nothing).startswith("nothing idle to unload")
+    assert watchdog_hands.Hands().do(wd.UNLOAD, nothing).startswith("nothing idle to unload")
 
 
 class MlxStub:
@@ -163,7 +163,7 @@ def test_release_spec_matches_the_spec_s_model_through_a_method_and_options():
 def test_a_watchdog_pause_names_its_criterion_in_the_pause_file(tmp_path):
     run = {"_dir": str(tmp_path), "pause_file": str(tmp_path / watch.PAUSE_FILE)}
     f = wd.Finding("memory", wd.Subject("eval", "eval pgid 1", "t", progress=run), {})
-    assert "pause file written" in wd.Hands().do(wd.PAUSE, f)
+    assert "pause file written" in watchdog_hands.Hands().do(wd.PAUSE, f)
     assert watch.pause_reason(tmp_path) == "memory"
     (tmp_path / watch.PAUSE_FILE).write_text("", encoding="utf-8")
     assert watch.pause_reason(tmp_path) == ""
