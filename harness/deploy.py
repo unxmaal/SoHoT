@@ -931,6 +931,7 @@ def settle(conn=None, now: float | None = None, alive=job_procs.alive, spawn=Non
                     continue
                 if got:
                     settled.append(got)
+            settled.extend(_orphans(c, now, alive))
             claimed, cargs = wq._claimed(c)
             for job in c.execute(f"SELECT id FROM jobs WHERE kind = ? AND state = ? AND {claimed} AND id NOT IN "
                                  "(SELECT job_id FROM deploys WHERE job_id IS NOT NULL)", (KIND, wq.RUNNING, *cargs)):
@@ -972,6 +973,7 @@ def _settle_one(c, row: dict, now: float, alive, spawn=None) -> dict | None:
             _close_job(c, job["id"], wq.DONE if ok else wq.FAILED, 0 if ok else None if got == INTERRUPTED else 1,
                        f"deploy {row['id']} {got}: {rec.get('detail', '')}", now)
         return {"deploy": row["id"], "outcome": got}
+    out = INTERRUPTED
     if rec:
         if _running(rec, now, alive):
             return None
@@ -991,6 +993,8 @@ def _settle_one(c, row: dict, now: float, alive, spawn=None) -> dict | None:
                                      + (f" and {failed}" if failed else " with no restart left"), now)
                 return _settle_one(c, row, now, alive, spawn)
         seen = view({**row, **{k: rec[k] for k in ("release", "previous") if rec.get(k)}}, rec, Path(rec["link"]))
+        if rec.get("stage") in ds.SWITCH_STAGES and seen["serves"] != ds.RELEASE:
+            out = ds.ABANDONED
         why = "; ".join(filter(None, (f"the switch stopped at {rec.get('stage')} without an outcome", failed, said(seen))))
         _lift(rec)
     else:
@@ -1003,12 +1007,46 @@ def _settle_one(c, row: dict, now: float, alive, spawn=None) -> dict | None:
             why = "the job stopped before it handed off the switch"
         if row["stage"] == ds.MIGRATING:
             why += f"; the store may be part-migrated, its backup is {row['backup'] or 'not named'}"
-    if not move(c, row["id"], row["stage"], INTERRUPTED, ds.SETTLE, detail=why[:2000], finished_at=now):
+    if not move(c, row["id"], row["stage"], out, ds.SETTLE, detail=why[:2000], finished_at=now):
         return None
+    if rec:
+        _close_record(record_path(row["id"]), rec, out, why, now)
     if job is not None:
-        _close_job(c, job["id"], wq.FAILED, None, f"deploy {row['id']} interrupted: {why}", now)
-    _alert_here(f"deploy {row['id']} of {row['sha'][:12]} interrupted: {why}")
-    return {"deploy": row["id"], "outcome": INTERRUPTED}
+        _close_job(c, job["id"], wq.FAILED, None, f"deploy {row['id']} {out}: {why}", now)
+    _alert_here(f"deploy {row['id']} of {row['sha'][:12]} {out}: {why}")
+    return {"deploy": row["id"], "outcome": out}
+
+
+def _close_record(path: Path, rec: dict, outcome: str, why: str, now: float) -> None:
+    """The record ends as its row did; abandoned is written failed plus `abandoned`, which an older release reads. #1971."""
+    rec.update(outcome=outcome, detail=why[:2000], finished_at=now)
+    if outcome == ds.ABANDONED:
+        rec.update(outcome=FAILED, abandoned=why[:2000])
+    deploy_switch.save(path, rec)
+
+
+def _orphans(c, now: float, alive) -> list[dict]:
+    """Abandon each record still at a switch stage whose row an older settle closed: its switch gone, its release not served."""
+    here, args = _here(c)
+    out = []
+    for path in sorted(records_dir().glob("*.json"), key=lambda p: (len(p.stem), p.stem)):
+        rec = _read(path)
+        if (not path.stem.isdigit() or rec.get("outcome") or rec.get("stage") not in ds.SWITCH_STAGES
+                or _running(rec, now, alive)):
+            continue
+        row = c.execute(f"SELECT outcome, sha FROM deploys WHERE id = ? AND outcome <> '' AND {here}",
+                        (int(path.stem), *args)).fetchone()
+        link = rec.get("link") or paths.deploy_link()
+        serves = os.path.realpath(link) if link and (Path(link).is_symlink() or Path(link).exists()) else ""
+        if row is None or _same(serves, rec.get("release")):
+            continue
+        at = time.strftime("%Y-%m-%d %H:%M", time.localtime(float(rec.get("switch_started") or now)))
+        why = (f"the switch stopped at {rec['stage']} ({at}) and its process is gone; its row was closed "
+               f"{row['outcome']} but this record never was; the deploy link serves {serves or 'nothing'}, not its release")
+        _close_record(path, rec, ds.ABANDONED, why, now)
+        _alert_here(f"deploy {path.stem} of {str(rec.get('sha') or row['sha'])[:12]} {ds.ABANDONED}: {why}")
+        out.append({"deploy": int(path.stem), "outcome": ds.ABANDONED, "detail": why})
+    return out
 
 
 def _here(conn) -> tuple[str, tuple]:

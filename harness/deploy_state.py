@@ -21,6 +21,9 @@ SWITCH_STAGES = (SWITCHING, FLIPPED, INSTALLED, VERIFIED, ROLLING_BACK, FLIPPED_
 OUTCOMES = (DEPLOYED, ROLLED_BACK, FAILED, FAILED_FORWARD, INTERRUPTED, STORE_AHEAD)
 STAGES = (*JOB_STAGES, *SWITCH_STAGES, *OUTCOMES)
 RUNNING = frozenset(JOB_STAGES + SWITCH_STAGES)
+#: A dead switch settle will not start again whose release does not serve: closed so no reader takes it for live. #1971.
+ABANDONED = "abandoned"
+OUTCOMES, STAGES = (*OUTCOMES, ABANDONED), (*STAGES, ABANDONED)
 
 #: Writers: the deploy job (harness/deploy.run), the switch (deploy_switch), and settle closing a row from its record.
 JOB, SWITCH, SETTLE = "job", "switch", "settle"
@@ -82,6 +85,9 @@ def check(leaves: str, enters: str, writer: str) -> None:
 def outcome_of(rec: dict) -> str:
     """A switch record's outcome; an older switch wrote failed for a failed restore (RULE #1417)."""
     got = rec.get("outcome") or ""
+    # The record says failed so an older release's settle still closes it (its MOVES lack abandoned). #1971.
+    if got == FAILED and rec.get("abandoned"):
+        return ABANDONED
     if got == FAILED and rec.get("stage") in (FAILED, RESTORE_FAILED) and rec.get("restore_failed"):
         return FAILED_FORWARD
     return got
