@@ -594,7 +594,6 @@ nothing-and-failed-return-the-same-value harness/cuts.py:_machine_id:except
 nothing-and-failed-return-the-same-value harness/cuts.py:_own_store:chooser
 nothing-and-failed-return-the-same-value harness/cuts.py:_spooled:except
 nothing-and-failed-return-the-same-value harness/day_fetch.py:_release:except
-nothing-and-failed-return-the-same-value harness/delegations.py:_live_as_is:chooser
 nothing-and-failed-return-the-same-value harness/deploy.py:_read:except
 nothing-and-failed-return-the-same-value harness/deploy.py:backup:chooser
 nothing-and-failed-return-the-same-value harness/deploy.py:confirm:except
