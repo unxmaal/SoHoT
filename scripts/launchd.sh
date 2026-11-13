@@ -199,13 +199,11 @@ _hf_env() {
   done < <(_hf_pairs)
 }
 
-# HF_ROOT and HF_HOME as the units get them, one NAME=value a line; the fit check runs under the same. #1616.
+# HF_ROOT and HF_HOME as the units get them, one NAME=value a line, from one env.sh run; the fit check runs under the same. #1616, #1881.
 _hf_pairs() {
-  local var val
-  for var in HF_ROOT HF_HOME; do
-    val="$(_hf_var "$var")"
-    if [ -n "$val" ]; then printf '%s=%s\n' "$var" "$val"; fi
-  done
+  (cd "$REPO" && . scripts/env.sh >/dev/null 2>&1 && for var in HF_ROOT HF_HOME; do
+    if [ -n "${!var:-}" ]; then printf '%s=%s\n' "$var" "${!var}"; fi
+  done)
   return 0
 }
 
@@ -342,7 +340,7 @@ $(_schedule "$service")
     <key>HOME</key><string>$HOME</string>
     <!-- stdout is a file here, so an unbuffered log is the only progress. -->
     <key>PYTHONUNBUFFERED</key><string>1</string>
-$(_hf_env)$(_watchdog_env "$service")  </dict>
+${UNIT_HF_ENV-$(_hf_env)}$(_watchdog_env "$service")  </dict>
   <key>ProcessType</key><string>Interactive</string>
 </dict>
 </plist>
@@ -395,6 +393,8 @@ deploy() {
 generate() {
   local dest="${1:-$LH_HOME/launchd}"
   mkdir -p "$dest" "$LH_LOGS"
+  # env.sh once per run, not per unit: each run is about 40 processes, and Git bash pays ~40 ms a fork. #1881.
+  UNIT_HF_ENV="$(_hf_env)"
   for service in $(units); do
     write_plist "$service" "$dest"
     echo "wrote $dest/$PREFIX.$service.plist"
