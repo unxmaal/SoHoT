@@ -11,6 +11,7 @@ from harness import paths, pressure, proc_identity, queue_hold, workqueue as wq
 
 REPO = Path(__file__).resolve().parents[1]
 posix = pytest.mark.skipif(sys.platform == "win32" or shells.BASH is None, reason="POSIX pids and bash")
+identity = pytest.mark.skipif(sys.platform == "win32", reason="proc_identity cannot tell a dead holder on Windows")
 CALM = pressure.Pressure(level=pressure.NORMAL)
 
 # Holds the queue for a deploy as launchd.sh does, and is SIGKILLed right after its Nth write of a queue flag.
@@ -94,6 +95,7 @@ def test_a_holder_that_cannot_be_read_keeps_its_pause(monkeypatch):
     assert not _gate()[0] and _flags() == {"paused", "paused.deploy"}, "None is 'cannot say', never dead"
 
 
+@identity
 def test_a_marker_alone_whose_holder_died_is_lifted_and_the_next_hold_takes_the_queue():
     wq._held_flag().write_text(queue_hold.text("held for a deploy", os.getpid()), encoding="utf-8")
     rec = queue_hold.holder_of(wq._held_flag().read_text(encoding="utf-8"))
