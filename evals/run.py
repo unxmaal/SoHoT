@@ -22,6 +22,7 @@ import argparse
 import contextlib
 import io
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -1817,8 +1818,10 @@ def _execute_at(args, overrides: dict, held: contextlib.ExitStack) -> int:
                                    **({"screen_caveat": caveat} if caveat else {})}
                                for k, v in summarize(results).items()},
                    "rows": [export_row(r) for r in results]}
-        (outdir / "results.json").write_text(json.dumps(payload, indent=2),
-                                             encoding="utf-8")
+        # Replaced whole, so a kill mid-write leaves the export before it, never a torn one. #1758.
+        tmp = outdir / "results.json.tmp"
+        tmp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        os.replace(tmp, outdir / "results.json")
         run_id = store_run(outdir, payload, now)
         print(f"\nartifacts + results.json in {outdir}; stored as run {run_id}")
         progress.write(state, why, run_id)
@@ -2363,8 +2366,10 @@ def store_run(outdir, payload: dict, at: float) -> int | None:
     from harness import runs, workqueue
     conn = ms.connect()
     try:
-        run_id = runs.record(conn, outdir, payload, at=at)
+        # The run and its job in one commit: a death between them must not store a run its job cannot find. #1758.
+        run_id = runs.record(conn, outdir, payload, at=at, commit=False)
         workqueue.link_run(conn, run_id)
+        conn.commit()
         return run_id
     finally:
         conn.close()
