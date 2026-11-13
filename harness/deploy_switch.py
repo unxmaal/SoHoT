@@ -204,7 +204,7 @@ def _size(log) -> int | None:
 
 
 def _audited(rec: dict, log, start: int | None, why: str) -> str:
-    """why; the audit checks the failed step's output names as FAIL go in rec['audit_failed'] for the poll. #1805."""
+    """why; the audit checks the failed step's output names as FAIL go in rec['audit_failed']. #1805."""
     if start is not None:
         try:
             from harness import deploy_hold  # only on a failed step: the switch starts on the stdlib and deploy_state
@@ -363,7 +363,9 @@ def switch(path: Path) -> dict:
                 log.write(traceback.format_exc())
                 rec.update(outcome=FAILED, detail=f"{why}; the rollback itself failed at {rec['stage']}: {named(exc)}")
             head = "this machine is broken, not the release: " if rec.get("environment_broken") else ""
-            alert(rec, f"{head}deploy of {rec['sha'][:12]} {rec['outcome']}: {rec['detail']}", log)
+            # The poll never queues a rolled-back sha again (#1913); keep in step with deploy_retry.command.
+            retry = f"; the poll will not retry it, `soh deploy now {rec['sha']}` does" if rec["outcome"] == ROLLED_BACK else ""
+            alert(rec, f"{head}deploy of {rec['sha'][:12]} {rec['outcome']}: {rec['detail']}{retry}", log)
         if not rec.get("queue_was_paused"):
             Path(rec["queue_flag"]).unlink(missing_ok=True)
         _end(rec)
