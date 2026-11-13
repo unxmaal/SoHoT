@@ -69,7 +69,6 @@ a-decision-read-back-out-of-a-sentence-the-code-wrote harness/deploy_guard.py:tw
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/deploy_switch.py:_step:why
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/disk.py:table:why
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/effects.py:_replayed:detail
-a-decision-read-back-out-of-a-sentence-the-code-wrote harness/fetch_replay.py:runs:detail
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/github.py:_gh:detail
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/inspect.py:hf_model:detail
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/inventory_time.py:_residency:reason

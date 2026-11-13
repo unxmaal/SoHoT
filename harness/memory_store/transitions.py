@@ -246,7 +246,7 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
            candidate_id: int | None = None, reopen: str = "",
            reopen_why: str = "", reason: str = "",
            run_id: int | None = None, ceiling_gb: float | None = None,
-           failure_class: str = "") -> int:
+           failure_class: str = "", budget_gib: float | None = None) -> int:
     """Record what happened to a proposal, and move its state.
 
     The single write path for a verdict and for proposals.state. A move
@@ -307,6 +307,8 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
               "reason": reason, "failure_class": failure_class}
     if ceiling_gb is not None:
         fields["ceiling_gb"] = round(float(ceiling_gb), 1)
+    if budget_gib is not None:
+        fields["budget_gib"] = float(budget_gib)
     if pid is None:
         cols = {**fields, "proposal_id": None}
         vid = conn.execute(
