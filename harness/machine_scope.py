@@ -14,6 +14,7 @@ RULES = {
     "adoptions.served": EVERY,       # a legacy adoption serves everywhere (#412, #485)
     "day_clearances.mine": UNKNOWN,
     "deploys.mine": NOBODY,          # _insert stamps the machine; an unstamped deploy is no machine's to settle or follow
+    "downloads.mine": NOBODY,        # start and born stamp the machine; an unstamped download is on no disk known (#1931)
     "holds.mine": UNKNOWN,
     "jobs.claimable": EVERY,         # an unowned pending job is any worker's; _claim's CAS runs it once (#703)
     "jobs.claimed": NOBODY,          # _claim stamps the runner, so an unstamped job ran nowhere known (#703, #697)

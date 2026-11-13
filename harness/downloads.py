@@ -16,6 +16,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from harness import download_state as ds
+from harness import machine_scope
 
 try:
     import fcntl
@@ -323,19 +324,6 @@ def this_machine(conn) -> int:
     return ms.remember_machine(conn)
 
 
-def mine(conn) -> tuple:
-    """This machine's id, without writing a row; one row per machine. #415."""
-    from harness import runs
-    return tuple(runs.here(conn))
-
-
-def _in(ids) -> tuple[str, tuple]:
-    ids = tuple(ids)
-    if not ids:
-        return "1 = 0", ()
-    return f"machine_id IN ({','.join('?' * len(ids))})", ids
-
-
 def _proposal(conn, name: str):
     if not name:
         return None
@@ -349,8 +337,8 @@ def _proposal(conn, name: str):
 
 def live(conn, *, repo: str = "", kind: str = "", path: str = "") -> list[dict]:
     """This machine's rows not yet removed, newest first."""
-    where, args = _in(mine(conn))
-    sql = f"SELECT * FROM downloads WHERE state <> '{ds.REMOVED}' AND {where}"
+    here, args = machine_scope.here(conn, "downloads.mine")
+    sql = f"SELECT * FROM downloads WHERE state <> '{ds.REMOVED}' AND {here}"
     if repo:
         sql += " AND lower(repo) = ?"
         args += (repo.lower(),)
@@ -625,9 +613,10 @@ def backfill(conn, hub: Path | None = None, ggufs: Path | None = None,
         if key(where) in done:
             return
         done.add(key(where))
-        # A retried migration finds this path's row, live or removed. #496.
-        had = conn.execute("SELECT id, path, state FROM downloads WHERE path = ? ORDER BY id DESC",
-                           (key(where),)).fetchone()
+        # A retried migration finds this machine's row for the path, live or removed; another machine's copy is its own. #496, #1931.
+        here, args = machine_scope.here(conn, "downloads.mine")
+        had = conn.execute(f"SELECT id, path, state FROM downloads WHERE path = ? AND {here} ORDER BY id DESC",
+                           (key(where), *args)).fetchone()
         if had:
             # A run killed after record() and before settle() left it live: the rerun settles it. #1887.
             if had["state"] in (ds.COMPLETE, ds.INCOMPLETE):
@@ -670,9 +659,10 @@ def backfill(conn, hub: Path | None = None, ggufs: Path | None = None,
         partial = r["grp"] == "incomplete"
         repo = r["repo"] or ""
         if partial:
+            here, args = machine_scope.here(conn, "downloads.mine")
             owner = conn.execute(
-                "SELECT repo FROM downloads WHERE path = ? ORDER BY id DESC",
-                (key(Path(r["path"]).parent.parent),)).fetchone()
+                f"SELECT repo FROM downloads WHERE path = ? AND {here} ORDER BY id DESC",
+                (key(Path(r["path"]).parent.parent), *args)).fetchone()
             repo = owner["repo"] if owner else ""
         ds.born(conn, ds.REMOVED, ds.HISTORY, proposal_id=_proposal(conn, repo), repo=repo,
                 kind=GGUF if r["path"].lower().endswith(".gguf") else HUB,
@@ -691,12 +681,3 @@ def backfill(conn, hub: Path | None = None, ggufs: Path | None = None,
 def _has_table(conn, table: str) -> bool:
     from harness import memory_store as ms
     return bool(ms._columns(conn, table))
-
-
-def summary(conn) -> dict:
-    """Rows by kind and state."""
-    out = {}
-    for r in conn.execute("SELECT kind, state, COUNT(*) AS n, COALESCE(SUM(bytes), 0) AS b FROM downloads "
-                          "GROUP BY kind, state"):
-        out.setdefault(r["kind"], {})[r["state"]] = {"count": r["n"], "bytes": r["b"]}
-    return out

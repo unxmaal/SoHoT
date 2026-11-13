@@ -135,11 +135,7 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/deploy.py:waiting_since:jobs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/disk.py:_stored:downloads
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/disk.py:latest_verdicts:verdicts
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/downloads.py:backfill.once:downloads
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/downloads.py:backfill:downloads
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/downloads.py:backfill:verdicts
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/downloads.py:live:downloads
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/downloads.py:summary:downloads
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/effects.py:replay:adoptions
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/effects.py:replay:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/family.py:standing:verdicts
