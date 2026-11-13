@@ -4,6 +4,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import signal
 import subprocess
 import sys
 from pathlib import Path
@@ -29,7 +30,10 @@ for sig in (signal.SIGTERM, getattr(signal, "SIGKILL", signal.SIGTERM)):
     if pi.same(child) is not True:
         break
     try:
-        os.kill(child["pid"], sig)
+        if child.get("pgid") == child["pid"] and hasattr(os, "killpg"):
+            os.killpg(child["pid"], sig)
+        else:
+            os.kill(child["pid"], sig)
     except OSError:
         break
     end = time.monotonic() + grace
@@ -123,5 +127,5 @@ def untie(watcher) -> None:
     if watcher is None:
         return
     with contextlib.suppress(OSError):
-        watcher.kill()
+        watcher.kill() if hasattr(signal, "SIGKILL") else watcher.terminate()
     watcher.wait()

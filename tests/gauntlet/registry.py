@@ -85,7 +85,6 @@ FT, EF = "a-decision-read-back-out-of-a-sentence-the-code-wrote", "nothing-and-f
 VS, OR = "a-deploy-runs-two-releases-at-once", "an-order-the-code-needs-but-does-not-check"
 # Backlog rows an open #1748 high names: {issue: (class, site patterns)}; each pattern must still match a backlog row.
 OPEN_ISSUES = {
-    1759: (OW, (r"^harness/vllm\.py:served$",)),
     1763: (WT, (r"^harness/exclusive\.py:_beating\.keep$",)),
     1775: (CA, (r"^harness/nodes\.py:_record$",)),
     1790: (VS, (r"^harness/(nodes|install_env|engine_smoke|slot_probe|router|interactive)\.py:__main__:both-phases$",)),
