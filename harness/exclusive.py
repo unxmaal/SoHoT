@@ -77,7 +77,7 @@ MOVES = {
     (FREE, LOADING): {"take"},
     (RESERVED, RESERVED): {"workqueue"},
     (RESERVED, LOADING): {"own"},
-    (LOADING, RESERVED): {"own"},
+    (LOADING, RESERVED): {"own", "mend"},
     (LOADING, LOADING): {"beat"},
     (RESERVED, FREE): {"workqueue"},
     (LOADING, FREE): {"release"},
@@ -434,6 +434,24 @@ def _reap(conn) -> None:
     for h in item_lease.unreleased(conn, resources.GPU):
         if state_of(h) == ABANDONED:
             _move(conn, h, FREE, "reap")
+    if _stale_loading(conn):
+        with _flock(None, POLL_SECONDS, wait=False) as (locked, _):
+            if locked:
+                _mend(conn)
+
+
+def _stale_loading(conn) -> list[dict]:
+    """The job gpu leases left loading; whoever holds generation.lock knows their loader is gone. #1952."""
+    from harness import item_lease, resources
+    return [h for h in item_lease.unreleased(conn, resources.GPU)
+            if h.get("job_id") is not None and state_of(h) == LOADING]
+
+
+def _mend(conn) -> None:
+    """Holding generation.lock, put each job gpu lease still loading back to reserved: its loader died between its two moves. #1952."""
+    for h in _stale_loading(conn):
+        with contextlib.suppress(IllegalMove):
+            _move(conn, h, RESERVED, "mend")
 
 
 def _own(conn) -> dict | None:
@@ -494,6 +512,8 @@ def _holder(leases: list[dict]) -> dict:
     for h in leases:
         if not h.get("state"):
             continue
+        if h.get("job_id") is not None and not _taken(paths.machine_home() / "queue" / LOCK):
+            continue  # left loading by a loader that died, so only reserved until the next take mends it. #1952.
         rec = holder()
         lapsed = {"lapsed": True} if state_of(h) == LAPSED else {}
         if rec.get("lease") == h["id"] and rec.get("pid") and job_procs.alive(int(rec["pid"])):
@@ -582,9 +602,12 @@ def _beating(lease_id: int, clock=time.monotonic):
 @contextlib.contextmanager
 def _gpu(kind: str, announce, poll: float, wait: bool = True, bound: _Wait | None = None):
     """The gpu lease, then the flock other projects' `lockf -k generation.lock` takes (DECISION #210); yields (taken, waited, lease id). #1619."""
-    with _lease(kind, announce, poll, wait, bound) as (got, waited, lease):
+    with _lease(kind, announce, poll, wait, bound) as (got, waited, lease, locked):
         if not got:
             yield False, waited, None
+            return
+        if locked:
+            yield True, waited, lease
             return
         with _flock(announce, poll, wait, bound) as (locked, lock_waited):
             yield locked, waited or lock_waited, lease
@@ -592,7 +615,7 @@ def _gpu(kind: str, announce, poll: float, wait: bool = True, bound: _Wait | Non
 
 @contextlib.contextmanager
 def _lease(kind: str, announce, poll: float, wait: bool = True, bound: _Wait | None = None):
-    """This machine's gpu lease for `kind`: its job's own, else one taken, waiting; store down, only REPAIR runs. #1648."""
+    """This machine's gpu lease for `kind`: its job's own, else one taken, waiting; store down, only REPAIR runs; yields (taken, waited, lease id, flock held). #1648, #1952."""
     from harness import item_lease, resources
     try:
         conn = _store()
@@ -601,23 +624,29 @@ def _lease(kind: str, announce, poll: float, wait: bool = True, bound: _Wait | N
             raise refuse(kind, exc) from exc
         if announce:
             announce(f"no gpu lease ({exc}); {kind} holds the local lock only")
-        yield True, False, None
+        yield True, False, None, False
         return
     try:
         own = _own(conn)
-        try:
-            own = own and _move(conn, own, LOADING, "own", kind=kind)
-        except IllegalMove:
-            own = None
         if own:
-            stop = _beating(own["id"])
-            try:
-                yield True, False, own["id"]
-            finally:
-                stop.set()
-                with contextlib.suppress(Exception):
-                    _move(conn, item_lease.row(conn, own["id"]), RESERVED, "own")
-            return
+            # The job's lease is loading only inside generation.lock, so a holder of the lock that finds it loading mends it. #1952.
+            with _flock(announce, poll, wait, bound) as (locked, waited):
+                if not locked:
+                    yield False, waited, None, False
+                    return
+                _mend(conn)
+                try:
+                    own = _move(conn, item_lease.row(conn, own["id"]), LOADING, "own", kind=kind)
+                except IllegalMove:
+                    own = None
+                if own:
+                    stop = _beating(own["id"])
+                    try:
+                        yield True, waited, own["id"], True
+                    finally:
+                        stop.set()
+                        _reserve(conn, own["id"])
+                    return
         waited, said = False, None
         while True:
             _reap(conn)
@@ -640,17 +669,30 @@ def _lease(kind: str, announce, poll: float, wait: bool = True, bound: _Wait | N
                 said = who.split(" for ")[0]
             time.sleep(poll)
         if got is None:
-            yield False, waited, None
+            yield False, waited, None, False
             return
         stop = _beating(got["id"])
         try:
-            yield True, waited, got["id"]
+            yield True, waited, got["id"], False
         finally:
             stop.set()
             with contextlib.suppress(Exception):
                 _move(conn, item_lease.row(conn, got["id"]), FREE, "release")
     finally:
         conn.close()
+
+
+def _reserve(conn, lease_id: int) -> None:
+    """Put the job's own gpu lease back to reserved, still inside generation.lock; said aloud when it cannot, for the next take to mend. #1952."""
+    from harness import item_lease
+    try:
+        if _move(conn, item_lease.row(conn, lease_id), RESERVED, "own") is not None:
+            return
+        why = "it changed under this holder"
+    except Exception as exc:  # noqa: BLE001 - any failure leaves the lease loading, which the next take mends
+        why = str(exc)
+    print(f"gpu lease {lease_id} was not put back to reserved ({why}); the next gpu take mends it",
+          file=sys.stderr, flush=True)
 
 
 @contextlib.contextmanager
