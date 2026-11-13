@@ -64,6 +64,18 @@ def test_a_scratch_eval_home_serves_the_machine_s_adopted_model(machine, tmp_pat
     assert delegate.lane_model("tts") == "org/new"
 
 
+def test_a_scratch_eval_home_reads_adoptions_only_through_the_read_only_connection(machine, tmp_path, monkeypatch,
+                                                                                    capsys):
+    _scratch(tmp_path, monkeypatch)
+
+    def read_write(*a, **kw):
+        raise AssertionError("opened the machine's store read-write")
+
+    monkeypatch.setattr(ms, "connect", read_write)
+    assert adopt.serving_default("tts", "CONST") == "org/new"
+    assert capsys.readouterr().err == ""
+
+
 def test_a_scratch_eval_home_sends_the_key_the_machine_s_server_demands(machine, tmp_path, monkeypatch):
     live, _ = machine
     secret = tmp_path / "key"
