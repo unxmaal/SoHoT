@@ -16,7 +16,7 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
-from harness import exclusive, job_claim, job_state as js, paths, queue_hold, resources
+from harness import exclusive, executors, job_claim, job_state as js, paths, queue_hold, resources
 from harness.job_release import stale_schema
 
 PENDING, RUNNING, DONE, FAILED = js.PENDING, js.RUNNING, js.DONE, js.FAILED
@@ -457,7 +457,7 @@ def _flags(job_id) -> frozenset:
 
 
 def _clear_flags(job_id) -> None:
-    for f in _flag_files(job_id).values():
+    for f in (*_flag_files(job_id).values(), executors.exit_file(_pid_file(job_id))):
         f.unlink(missing_ok=True)
 
 
@@ -854,13 +854,13 @@ def _run_claimed(job: dict, log: Path, popen=None) -> dict | None:
     return get(job["id"]) or job
 
 
-def _settle_exit(job: dict, rc) -> bool:
+def _settle_exit(job: dict, rc, conn=None) -> bool:
     """Move a job whose process exited, as job_state.exit_move chooses from its flags and rc; True when a handed-off deploy stays running. #1728."""
     from evals import watch
     from harness import contention, deploy
     flags = _flags(job["id"])
     handed = job.get("kind") == DEPLOY and rc == deploy.HANDED_OFF
-    with _store() as c:
+    with _store(conn) as c:
         contended = rc == watch.PAUSED and js.DEPLOY_FLAG not in flags and contention.paused_for(c, job)
         to, why = js.exit_move(rc, flags, handed, contended)
         if to == RUNNING:
@@ -1125,6 +1125,9 @@ def _ask_loop(sig, evals) -> list[str]:
 
 def _settle_gone(c, job: dict) -> None:
     """A running job whose worker and process are gone, as job_state.gone_move chooses: an eval that stored a run, or a confirm, waits again to resume it, else it failed."""
+    if (exited := executors.exit_record(_pid_file(job["id"]))) is not None:  # recorded before its worker died. #1758
+        _settle_exit({**job, "rc": exited[0], "finished": _iso(exited[1])}, exited[0], conn=c)
+        return
     flags = _flags(job["id"])
     argv = None if flags & {js.CANCEL_FLAG, js.STOP_FLAG} else _resumed(c, job)
     to, why = js.gone_move(flags, argv is not None)

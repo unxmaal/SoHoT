@@ -246,7 +246,7 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
            candidate_id: int | None = None, reopen: str = "",
            reopen_why: str = "", reason: str = "",
            run_id: int | None = None, ceiling_gb: float | None = None,
-           failure_class: str = "", lane: str = "") -> int:
+           failure_class: str = "", lane: str = "", commit: bool = True) -> int:
     """Record what happened to a proposal, and move its state.
 
     The single write path for a verdict and for proposals.state. A move
@@ -259,6 +259,7 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
     `until` is what would make this verdict worth asking again, as a
     PREDICATE rather than a sentence, written by the caller. See until_met().
     `reason` is why, from reasons.REASONS; a named reopen is `reopened`. #408.
+    commit=False leaves the verdict in the caller's transaction, refused or not. #1887.
     """
     from harness import reasons
     if outcome not in VERDICTS:
@@ -318,7 +319,9 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
             vid = _write(conn, pid, name, fields, reopen=reopen, why=reopen_why)
         except IllegalTransition:
             # remember_machine's write opened a transaction; left open it holds the store's write lock. #1146.
-            conn.commit()
+            if commit:
+                conn.commit()
             raise
-    conn.commit()
+    if commit:
+        conn.commit()
     return vid
