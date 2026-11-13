@@ -115,7 +115,7 @@ def verdict(unit: dict | None, beat: dict | None, now: float, start: float, aliv
         return {"verdict": FINISHED, "line": f"the sweep finished rc 0 at {_hm(b.get('finished') or now)} after "
                                             f"{heartbeat.ago(ran)}"}
     pid = int(b.get("pid") or 0)
-    if not alive(pid):
+    if not heartbeat.live(b, alive):
         return {"verdict": EXITED, "line": f"the sweep's loop (pid {pid}) died without finishing, at {where} "
                                           f"({told})"}
     # A loop waiting behind a holder that still beats is not stalled. #775.

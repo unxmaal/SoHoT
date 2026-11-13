@@ -341,8 +341,6 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/workqueue.py:import_json:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/workqueue.py:set_priority:jobs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/yield_stop.py:stored:runs
-a-stored-pid-trusted-as-the-same-process harness/serve_lease.py:holders.read
-a-stored-pid-trusted-as-the-same-process harness/serve_lease.py:yielders
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:api_spend.cache_write_tokens:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:api_spend.cost_source:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:contamination_probes.detail:no-reader

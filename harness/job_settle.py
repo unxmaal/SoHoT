@@ -113,14 +113,17 @@ def _repend(c, job: dict, why: str) -> bool:
     """A job paused for contention or a deploy waits again to resume where it stopped, unless it queued its own continuation. #1509, #1672."""
     from harness import machine_scope, workqueue as wq
     here, mine = machine_scope.where("jobs.twin", job.get("machine_id"))
+    resumed = _resumed(c, job)
+    # A job that stored a run is carried on only by a job resuming that run, never a fresh one with its argv. #1774.
+    carries = [str(a) for a in (resumed or job["argv"])]
     twin = c.execute(f"SELECT id FROM jobs WHERE argv = ? AND state = ? AND id != ? AND {here}",
-                     (json.dumps([str(a) for a in job["argv"]]), js.PENDING, int(job["id"]), *mine)).fetchone()
+                     (json.dumps(carries), js.PENDING, int(job["id"]), *mine)).fetchone()
     if twin is not None:
         moved = js.move(c, job["id"], js.RUNNING, js.PAUSED, js.CONTINUED, f"paused; job {wq.label(twin[0])} continues it",
                         rc=job.get("rc"), finished_at=wq._epoch(job.get("finished")))
         c.commit()
         return moved
-    argv = _resumed(c, job) or list(job["argv"])
+    argv = resumed or list(job["argv"])
     note = ("paused for a deploy at {}; resumes after it" if why == js.DEPLOY_PAUSE else
             "paused for contention at {}; resumes when the contention gate opens").format(job.get("finished"))
     moved = js.move(c, job["id"], js.RUNNING, js.PENDING, why, note, finished_at=None, rc=job.get("rc"),
