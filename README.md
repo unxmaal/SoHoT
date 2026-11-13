@@ -1737,8 +1737,11 @@ space on the system Data volume (alert under `monitor_disk_alert`; at
 `monitor_disk_pause` it pauses the job queue and every running eval, then
 alerts), the weights volume when it is a separate disk (alert when it is
 unmounted or under the fetch floor), memory pressure (alert after
-`monitor_memory_warn` at warn or worse), and the ports of the installed gateway,
+`monitor_memory_warn` at warn or worse; it recovers only after `monitor_memory_calm` at
+normal, so a flapping episode alerts once), and the ports of the installed gateway,
 mlx and tts units (alert after `monitor_service_down`; launchd restarts them).
+A recovery is sent only when its failure was, and says how long it lasted; monit also runs
+its recovery after a failure too short to alert, and that one is recorded but not sent.
 They live in `harness/knobs/monitor.py`, each with its range and evidence.
 
 An alert runs `scripts/monit-alert.sh`: a desktop notification

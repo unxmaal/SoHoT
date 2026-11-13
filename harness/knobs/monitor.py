@@ -17,6 +17,10 @@ KNOBS = [
     _k("monitor_du_timeout", [f"{M}:DU_TIMEOUT_S"], [10, 30, 60, 120], unit="s",
        note="seconds the du of the known growers may take on a disk alert; a du of runs alone took over 3 min on "
             "11-01, so a cut grower reads 'not measured' (KB sohot-1485-disk-measurements-2026-11-01)"),
+    _k("monitor_memory_calm", [f"{M}:MEMORY_CALM_S"], [1800, 3600, 7200], unit="s",
+       note="seconds memory pressure stays normal before monit ends an episode with one recovered alert; monit.log "
+            "11-02..11-12 had normal stretches of 5, 5, 30 and 35 min between warn runs, which 3600 joins into "
+            "one episode (#1870)"),
     _k("monitor_memory_warn", [f"{M}:MEMORY_WARN_S"], [300, 600, 1200, 1800], unit="s",
        note="seconds memory pressure holds at warn or worse before monit alerts; on 10-31 the watchdog logged 21 "
             "one-wake warn streaks and 8 of two or more before the hang (KB sohot-1482-2026-10-31-hang-evidence)"),
