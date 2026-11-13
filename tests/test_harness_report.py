@@ -318,7 +318,7 @@ def test_tts_shows_its_own_five_of_five_past_a_newer_screen(
     kokoro = "mlx-community/Kokoro-82M-bf16"
     key = _key("tts", kokoro)
     # Windows types kokoro-onnx, so the receipt's specs map must not come from the platform default. #1292.
-    monkeypatch.setattr(audio, "DEFAULT_TTS_MODEL", audio.SPEECH_DEFAULTS["tts"]["win32"])
+    monkeypatch.setattr(audio, "speech_platform", lambda: "win32")
     store_run("20261005-161337-201-0000-tts", "tts",
               {key: {"passed": 5, "total": 5}}, generated=_stamp(1),
               specs={key: screen.candidate_for("tts", kokoro)})

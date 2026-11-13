@@ -44,8 +44,8 @@ def loaded(base: str = "", timeout: float | None = None, opener=None) -> list[st
 def served() -> set[str]:
     """What the unit serves its own clients: the tts and stt lane defaults."""
     from harness import adopt, audio
-    return {adopt.serving_default("tts", audio.DEFAULT_TTS_MODEL),
-            adopt.serving_default("stt", audio.DEFAULT_STT_MODEL)}
+    return {adopt.serving_default("tts", audio.default_tts_model()),
+            adopt.serving_default("stt", audio.default_stt_model())}
 
 
 def model_of(spec: str) -> str:

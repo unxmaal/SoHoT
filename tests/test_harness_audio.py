@@ -110,7 +110,7 @@ def test_transcribe_sends_a_repo_id_never_whisper_1(tmp_path):
     audio.transcribe(clip, base_url=BASE)
     body = route.calls[0].request.read().decode("utf-8", "replace")
     assert "whisper-1" not in body
-    assert "/" in audio.DEFAULT_STT_MODEL
+    assert "/" in audio.default_stt_model()
 
 
 def test_transcribe_on_a_missing_file_fails_before_the_request(tmp_path):
@@ -420,7 +420,7 @@ def test_a_missing_reference_clip_fails_before_the_request(tmp_path):
 
 def test_a_preset_names_a_cloned_voice():
     v = audio.resolve_voice("fr-male")
-    assert v.model != audio.DEFAULT_TTS_MODEL
+    assert v.model != audio.default_tts_model()
     assert v.ref_audio and Path(v.ref_audio).exists()
     assert v.voice == ""
 
@@ -434,7 +434,7 @@ def test_the_preset_speaks_english_in_a_french_voice():
 
 def test_a_kokoro_voice_name_still_resolves_to_kokoro():
     v = audio.resolve_voice("bm_george")
-    assert v.model == audio.DEFAULT_TTS_MODEL
+    assert v.model == audio.default_tts_model()
     assert v.voice == "bm_george"
     assert v.ref_audio is None
     assert v.lang_code == ""
