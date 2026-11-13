@@ -54,6 +54,7 @@ capabilities:
       - harness/gateway_switch.py
       - harness/adoption_state.py
       - harness/gateway_switch_state.py
+      - harness/gateway_respawn.py
 
   - name: measure
     summary: The measure tier, its pauses, looks and resumes, and the order the measure queue is spent in.

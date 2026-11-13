@@ -416,11 +416,27 @@ def reconcile(conn, alive=None, serving=None, log=None) -> dict | None:
 
 
 def respawn(requested_at: float) -> None:
-    """Start a dead switch's adoption again; only from the live home, since a detached switch restarts this machine's gateway."""
-    from harness import monitor, paths
+    """Start a dead switch's adoption again, marked until it claims its row; only from the live home, since a detached switch restarts this machine's gateway."""
+    from harness import gateway_respawn, monitor, paths
+    from harness import memory_store as ms
     if not monitor.live_home():
         raise OSError(f"{paths.home()} is not the live home, so it starts no gateway switch")
-    spawn(requested_at=requested_at)
+    conn = ms.connect()
+    try:
+        after = gateway_respawn.newest(conn)
+    finally:
+        conn.close()
+    spawned_at = time.time()
+    gateway_respawn.mark(requested_at, after, spawned_at)
+    try:
+        proc = spawn(requested_at=requested_at)
+    except BaseException:
+        gateway_respawn.clear()
+        raise
+    if getattr(proc, "pid", None):
+        gateway_respawn.mark(requested_at, after, spawned_at, proc.pid)
+    else:
+        gateway_respawn.clear()
 
 
 def _alert(message: str) -> None:
@@ -438,9 +454,10 @@ def _gave_up(row: dict, deaths: int) -> str:
             f"is run by hand from the deploy checkout")
 
 
-def repair(alive=None, serving=None, start=None, alert=None, config=None, log=None) -> dict | None:
-    """The worker's pass: settle a switch whose process is gone and start it again, RESPAWNS times per adoption, then alert; None when there is nothing to settle here. #1899."""
-    from harness import cuts, paths
+def repair(alive=None, serving=None, start=None, alert=None, config=None, log=None, now=None,
+           same=None) -> dict | None:
+    """The worker's pass: settle a switch whose process is gone, or a respawn that never claimed its row, and start it again, RESPAWNS times per adoption, then alert; None when there is nothing to settle here. #1899, #1904."""
+    from harness import cuts, gateway_respawn, paths
     from harness import gateway_switch_state as st
     from harness import memory_store as ms
     if paths.role() != paths.SCHEDULER:
@@ -448,15 +465,21 @@ def repair(alive=None, serving=None, start=None, alert=None, config=None, log=No
     conn = ms.connect()
     try:
         row = st.live(conn)
-        if row is None or (alive or st.alive)(row) is not False:
+        if row is None:
+            after = gateway_respawn.unclaimed(conn, now=now, same=same, log=log)
+            if after is None:
+                return None
+            row = {**after, "state": "starting"}
+        elif (alive or st.alive)(row) is not False:
             return None
-        settle(conn, row, st.DIED, serving, log)
-        after = st.get(conn, row["id"])
+        else:
+            settle(conn, row, st.DIED, serving, log)
+            after = st.get(conn, row["id"])
         deaths = st.deaths(conn, row["requested_at"]) if row["requested_at"] is not None else RESPAWNS + 1
     finally:
         conn.close()
     out = {"switch": row["id"], "state": after["state"], "reason": after["reason"], "respawned": False, "alerted": ""}
-    if (after["state"], after["reason"]) != (st.FAILED, st.DIED) or not pending(config):
+    if after["state"] != st.FAILED or after["reason"] not in (st.DIED, st.UNCLAIMED) or not pending(config):
         return out
     if deaths > RESPAWNS:
         out["alerted"] = _gave_up(row, deaths)
@@ -519,8 +542,8 @@ def waiter(requested_at: float) -> tuple[list[str], dict]:
              "--requested-at", repr(float(requested_at))], env)
 
 
-def spawn(requested_at: float | None = None, popen=None, alive=None) -> None:
-    """Start the switch detached, after settling a dead one; none when a live switch holds the slot, as it re-reads on settling."""
+def spawn(requested_at: float | None = None, popen=None, alive=None):
+    """Start the switch detached, after settling a dead one, and return its process; none when a live switch holds the slot, as it re-reads on settling."""
     import subprocess
     from harness import gateway, paths
     from harness import gateway_switch_state as st
@@ -528,18 +551,18 @@ def spawn(requested_at: float | None = None, popen=None, alive=None) -> None:
     if not can_restart():
         # Recorded as a failed switch, so report and judge do not read the lane as served. #703.
         switch(requested_at=requested_at)
-        return
+        return None
     conn = ms.connect()
     try:
         row = reconcile(conn, alive=alive)
     finally:
         conn.close()
     if row is not None and row["state"] in st.LIVE:
-        return
+        return None
     argv, env = waiter(time.time() if requested_at is None else requested_at)
     log = open(paths.logs() / "gateway-switch.log", "a", encoding="utf-8")
     try:
-        (popen or subprocess.Popen)(argv, env=env, cwd=str(gateway.REPO),
+        return (popen or subprocess.Popen)(argv, env=env, cwd=str(gateway.REPO),
                                     stdin=subprocess.DEVNULL, stdout=log,
                                     stderr=subprocess.STDOUT, start_new_session=True)
     finally:
