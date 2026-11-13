@@ -6,9 +6,11 @@ import json
 import os
 import plistlib
 import re
-import threading
 import time
 from pathlib import Path
+
+from harness.atomic_file import replace
+from harness import stale_temp
 
 RUNNING = "running"
 FINISHED = "finished"
@@ -57,9 +59,9 @@ def alive(pid: int) -> bool:
 def _write(data: dict) -> None:
     p = path()
     p.parent.mkdir(parents=True, exist_ok=True)
-    tmp = p.with_name(f"{p.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    tmp = stale_temp.temp(p, "{name}.{pid}.{thread}.tmp")
     tmp.write_text(json.dumps(data), encoding="utf-8")
-    os.replace(tmp, p)
+    replace(tmp, p)
 
 
 def read() -> dict | None:

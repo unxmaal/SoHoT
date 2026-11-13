@@ -15,6 +15,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from harness.atomic_file import replace
 from harness import paths
 
 #: Free GiB on the system Data volume below which monit alerts.
@@ -232,7 +233,7 @@ def write_rc(text: str, home: Path | None = None) -> Path:
     tmp = rc.with_suffix(".new")
     tmp.write_text(text, encoding="utf-8")
     tmp.chmod(0o600)
-    tmp.replace(rc)
+    replace(tmp, rc)
     return rc
 
 

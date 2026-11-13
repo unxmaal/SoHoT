@@ -54,7 +54,8 @@ def _flags(job_id) -> frozenset:
 
 
 def _clear_flags(job_id) -> None:
-    for f in _flag_files(job_id).values():
+    from harness import executors
+    for f in (*_flag_files(job_id).values(), executors.exit_file(_pid_file(job_id))):
         f.unlink(missing_ok=True)
 
 

@@ -28,13 +28,13 @@ def _lease_lost(job: dict, why: str) -> None:
         executors.for_job(job).stop(pid, wq.CANCEL_GRACE_S)
 
 
-def _settle_exit(job: dict, rc) -> bool:
+def _settle_exit(job: dict, rc, conn=None) -> bool:
     """Move a job whose process exited, as job_state.exit_move chooses from its flags and rc; True when a handed-off deploy stays running. #1728."""
     from evals import watch
     from harness import contention, deploy, queue_pause, workqueue as wq
     flags = job_procs._flags(job["id"])
     handed = job.get("kind") == resources.DEPLOY and rc == deploy.HANDED_OFF
-    with wq._store() as c:
+    with wq._store(conn) as c:
         contended = rc == watch.PAUSED and js.DEPLOY_FLAG not in flags and contention.paused_for(c, job)
         to, why = js.exit_move(rc, flags, handed, contended)
         if to == js.RUNNING:
@@ -111,9 +111,10 @@ def _next_item(c, job: dict, argv: list) -> bool:
 
 def _repend(c, job: dict, why: str) -> bool:
     """A job paused for contention or a deploy waits again to resume where it stopped, unless it queued its own continuation. #1509, #1672."""
-    from harness import workqueue as wq
-    twin = c.execute("SELECT id FROM jobs WHERE argv = ? AND state = ? AND id != ?",
-                     (json.dumps([str(a) for a in job["argv"]]), js.PENDING, int(job["id"]))).fetchone()
+    from harness import machine_scope, workqueue as wq
+    here, mine = machine_scope.where("jobs.twin", job.get("machine_id"))
+    twin = c.execute(f"SELECT id FROM jobs WHERE argv = ? AND state = ? AND id != ? AND {here}",
+                     (json.dumps([str(a) for a in job["argv"]]), js.PENDING, int(job["id"]), *mine)).fetchone()
     if twin is not None:
         moved = js.move(c, job["id"], js.RUNNING, js.PAUSED, js.CONTINUED, f"paused; job {wq.label(twin[0])} continues it",
                         rc=job.get("rc"), finished_at=wq._epoch(job.get("finished")))
@@ -130,7 +131,10 @@ def _repend(c, job: dict, why: str) -> bool:
 
 def _settle_gone(c, job: dict) -> None:
     """A running job whose worker and process are gone, as job_state.gone_move chooses: an eval that stored a run, or a confirm, waits again to resume it, else it failed."""
-    from harness import queue_pause
+    from harness import executors, queue_pause, workqueue as wq
+    if (exited := executors.exit_record(job_procs._pid_file(job["id"]))) is not None:  # recorded before its worker died. #1758
+        _settle_exit({**job, "rc": exited[0], "finished": wq._iso(exited[1])}, exited[0], conn=c)
+        return
     flags = job_procs._flags(job["id"])
     argv = None if flags & {js.CANCEL_FLAG, js.STOP_FLAG} else _resumed(c, job)
     to, why = js.gone_move(flags, argv is not None)

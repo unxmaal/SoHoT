@@ -148,10 +148,12 @@ def cmd_jobs(a) -> int:
     loop = heartbeat.summary()
     if loop:
         note(loop["line"])
+    from harness import job_release
     conn = ms.connect()
     try:
         gpu = contention.verdict(conn)
         waits = deploy.wait(conn)
+        releases = job_release.plans(conn, got)
     finally:
         conn.close()
     note(f"GPU jobs and deploys: the contention gate is {'open' if gpu['open'] else 'closed'}: {gpu['why']}")
@@ -177,6 +179,7 @@ def cmd_jobs(a) -> int:
               if j["state"] == wq.PENDING and not wq.due(j) else "")
         lock = f" [holds the {j['lock']} lock]" if j.get("lock") else ""
         lock += " [held: benchmarks]" if j["id"] in waiting else ""
+        lock += job_release.suffix(releases.get(j["id"]))
         note(f"  {j['id']}  {j['state']:8}{rc:7}  p{pri:<3} {wq.needs(j):7} {at}{j['title']}{lock}")
     for h in loose:
         note(f"  {h['lock']} lock held by {exclusive.describe(h)}, outside the queue")
@@ -189,5 +192,5 @@ def cmd_jobs(a) -> int:
     for h in leases:
         note(f"  {item_lease.line(h)}")
     emit(running=wq.running(), gate_open=ok, why=why, jobs=got, loop=loop, contention=gpu, deploy_wait=waits, locks=locks,
-         hold=held, held=sorted(waiting), leases=leases)
+         hold=held, held=sorted(waiting), leases=leases, releases=releases)
     return 0

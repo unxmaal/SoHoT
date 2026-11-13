@@ -6,7 +6,6 @@ import pytest
 
 from harness import exclusive, proc_identity
 
-pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="process identity by group and start time is POSIX only")
 
 
 def _me():
@@ -20,6 +19,7 @@ def test_a_live_process_whose_start_time_cannot_be_read_is_not_called_a_differen
     assert proc_identity.same(rec) is None
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="process groups are POSIX")
 @pytest.mark.gauntlet("nothing-and-failed-return-the-same-value", site="harness/proc_identity.py:same:except")
 def test_a_group_lookup_that_fails_for_another_reason_cannot_say(monkeypatch):
     def denied(pid):

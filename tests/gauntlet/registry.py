@@ -55,7 +55,8 @@ DETECTOR_CONFIG = {
     "unguarded_transition": {"columns": ("state", "status", "outcome")},
     # ms.decide commits in memory_store/transitions.py, which gauntlet 0.3.6 does not follow through the package's re-export.
     "commit_then_link": {"committers": ("decide",)},
-    "unscoped_query": {"columns": ("machine_id",), "helpers": ("here", "_here", "all_machines", "machine_row")},
+    "unscoped_query": {"columns": ("machine_id",), "helpers": ("here", "_here", "all_machines", "machine_row"),
+                       "null_helper": "harness/machine_scope.py:where"},
     "prose_match": {"fields": ("note", "detail", "reason", "why", "evidence", "outcome", "said", "summary", "subject"),
                     "migrations": ("harness/memory_store/migrations/",)},
     "empty_on_failure": {"choosers": ("backend",)},
@@ -87,11 +88,7 @@ VS, OR = "a-deploy-runs-two-releases-at-once", "an-order-the-code-needs-but-does
 OPEN_ISSUES = {
     1759: (OW, (r"^harness/vllm\.py:served$",)),
     1763: (WT, (r"^harness/exclusive\.py:_beating\.keep$",)),
-    1769: (SC, (r":null-scope$",)),
-    1770: (SC, (r"^harness/adopt\.py:queue_confirmation:jobs$", r"^harness/job_settle\.py:_repend:jobs$")),
     1775: (CA, (r"^harness/nodes\.py:_record$",)),
-    1777: (FT, (r"^harness/repo_gate\.py:(owed|verdict):detail$",)),
-    1788: (VS, (r"^harness/workqueue\.py:stale_schema:one-sided$",)),
     1790: (VS, (r"^harness/(nodes|install_env|engine_smoke|slot_probe|router|interactive)\.py:__main__:both-phases$",)),
 }
 

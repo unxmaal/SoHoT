@@ -1,7 +1,7 @@
 """A delegation from a scratch eval home is answered where the machine's home answers it: its interactive server and adopted model. #1711."""
 import pytest
 
-from harness import adopt, delegate, interactive, paths, router, serving
+from harness import adopt, delegate, interactive, paths, router, serving, store
 from harness import memory_store as ms
 from tests.conftest import store_state
 
@@ -95,7 +95,9 @@ def test_a_scratch_eval_home_writes_nothing_in_the_machine_s_home(machine, tmp_p
         interactive.write({"lanes": {}})
     with pytest.raises(interactive.NotOwnPlan):
         interactive.clear()
-    assert store_state(live / "discovery.db") == before and _files(live) == files
+    with store.on_machine():
+        after = store_state(live / "discovery.db")
+    assert after == before and _files(live) == files
     assert not (scratch / interactive.PLAN_NAME).exists()
 
 

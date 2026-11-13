@@ -78,10 +78,12 @@ def _owned(conn, job_id: int) -> bool:
 
 def _twin(conn, job: dict, argv: list | None) -> int | None:
     """A later job that carries this paused job's work on: its own argv or its resume argv."""
+    from harness import machine_scope
     said = {json.dumps([str(a) for a in job.get("argv") or []])} | ({json.dumps(argv)} if argv else set())
     marks, states = ",".join("?" * len(said)), ",".join("?" * len(_CARRIES))
-    row = conn.execute(f"SELECT MIN(id) FROM jobs WHERE id > ? AND argv IN ({marks}) AND state IN ({states})",
-                       (int(job["id"]), *sorted(said), *_CARRIES)).fetchone()
+    here, mine = machine_scope.where("jobs.twin", job.get("machine_id"))
+    row = conn.execute(f"SELECT MIN(id) FROM jobs WHERE id > ? AND argv IN ({marks}) AND state IN ({states}) "
+                       f"AND {here}", (int(job["id"]), *sorted(said), *_CARRIES, *mine)).fetchone()
     return None if row is None or row[0] is None else int(row[0])
 
 

@@ -13,6 +13,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from harness.atomic_file import replace
+
 ENV_VAR = "SOHOT_GATEWAY_KEY"
 #: "file" forces the file store on a Mac.
 STORE_ENV = "SOHOT_GATEWAY_STORE"
@@ -62,7 +64,7 @@ class FileStore:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             fh.write(value + "\n")
         os.chmod(tmp, 0o600)
-        os.replace(tmp, self.path)
+        replace(tmp, self.path)
 
 
 def platform_store(platform: str | None = None, which=shutil.which):

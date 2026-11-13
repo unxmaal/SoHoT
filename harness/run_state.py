@@ -65,12 +65,12 @@ def alive(pid, pgid, started="") -> bool | None:
         return None
     if pid <= 0:
         return None
-    if sys.platform == "win32":
-        return _win_alive(pid)
     if started:
         same = proc_identity.same({"pid": pid, "pgid": group, "started": started})
         if same is not None:
             return same
+    if sys.platform == "win32":
+        return _win_alive(pid)
     try:
         # A progress file written before #1843 has no start time. With no group recorded a reused pid cannot be told apart, so it counts as alive.
         return os.getpgid(pid) == group or group is None
