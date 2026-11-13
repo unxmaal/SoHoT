@@ -110,7 +110,8 @@ LEFT_OUT = {
         "test_exam_price_1354.py", "test_limit_cuts_1087_evals.py", "test_limit_cuts_1087_harness_di.py",
         "test_futility_lane_too_small_1452.py", "test_sustained_warn_1482.py", "test_technique_kinds_1476.py",
         "test_engine_trials_1475.py", "test_screen_server_killer_1544.py", "test_mflux_second_repo_1546.py", "test_interactive_1561.py",
-        "test_slot_plan_refusal_1651.py", "test_incumbent_silent_1656.py", "test_machine_scope_1769.py"),
+        "test_slot_plan_refusal_1651.py", "test_incumbent_silent_1656.py", "test_machine_scope_1769.py",
+        "test_download_event_1878.py"),
     "harness/screen.py": (
         "test_replay_budget_1822.py", "test_passed_over_class_1779.py", "test_measure_gateway_1660.py", "test_attachment_tags_949.py", "test_lane_too_small_1049.py", "test_vision_engines_1282.py",
         "test_variants_947.py", "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",
@@ -121,7 +122,8 @@ LEFT_OUT = {
         "test_engine_timeout_708.py", "test_engine_timeout_1256.py",
         "test_served_readonly_1247.py", "test_adopt_effect_confirm_725.py",
         "test_confirm_resume_1357.py", "test_store_errors_1432.py", "test_canary_stt_1531.py",
-        "test_mflux_second_repo_1546.py", "test_incumbent_silent_1656.py", "test_adoption_state_1735.py"),
+        "test_mflux_second_repo_1546.py", "test_incumbent_silent_1656.py", "test_adoption_state_1735.py",
+        "test_download_event_1878.py"),
     "harness/adopt.py": (
         "test_measure_gateway_1660.py", "test_canary_stt_1531.py", "test_technique_triage_993.py", "test_harness_paired.py", "test_reverify_case_sets_1496.py", "test_reverify_power_1504.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
         "test_over_budget_796.py", "test_planted_919.py", "test_projection_696.py", "test_rank_893.py", "test_router_unload.py",
