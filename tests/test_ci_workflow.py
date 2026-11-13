@@ -481,7 +481,7 @@ SUITE_STEPS = {"check-macos": "make check", "check-linux": "make check", "check-
                "check-postgres": "make test-postgres-suite"}
 
 
-def _suite(job: str, tests: str) -> list[str]:
+def _suite(job: str, tests: str, cwd=None) -> list[str]:
     """The argv the job's suite step runs for this `tests` input, with uv, make and tee stubbed to print it."""
     doc, _ = _ci()
     step = next(s for s in doc["jobs"][job]["steps"] if s.get("name") == SUITE_STEPS[job])
@@ -489,7 +489,8 @@ def _suite(job: str, tests: str) -> list[str]:
     stubs = 'uv() { printf "%s\\n" uv "$@"; }; make() { printf "%s\\n" make "$@"; }; tee() { cat; }\n'
     # /usr/bin/time is an absolute path a function cannot stand in for.
     script = stubs + step["run"].replace("/usr/bin/time -p ", "")
-    r = subprocess.run([BASH, "-c", script], env={**os.environ, "TESTS": tests}, capture_output=True, text=True)
+    r = subprocess.run([BASH, "-c", script], env={**os.environ, "TESTS": tests}, capture_output=True, text=True,
+                       cwd=cwd)
     assert r.returncode == 0, r.stderr
     return r.stdout.splitlines()
 
@@ -504,6 +505,8 @@ def test_a_dispatchs_tests_input_reaches_pytest_word_for_word_and_blank_runs_the
     planted = tmp_path / "planted"
     argv = _suite(job, f"$(touch {planted.as_posix()}) ;touch {planted.as_posix()}")
     assert not planted.exists() and "$(touch" in argv, argv
+    (tmp_path / "test_x.py").write_text("", encoding="utf-8")
+    assert "*.py" in _suite(job, "*.py", cwd=tmp_path), "an input is never globbed"
 
 
 def test_no_step_pastes_a_dispatch_input_into_its_script():
