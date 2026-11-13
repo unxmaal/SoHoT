@@ -71,3 +71,65 @@ def test_a_scratch_home_s_store_is_its_own_sqlite_file_and_remembers_the_machine
     paths.scratch_home(tmp_path / "scratch")
     assert os.environ[store.BACKEND_ENV] == store.SQLITE
     assert os.environ[paths.MACHINE_STORE_ENV] == store.POSTGRES
+
+
+@pytest.fixture
+def noted(monkeypatch):
+    monkeypatch.setattr(delegate, "_NOTED", set())
+    return lambda capsys: [ln for ln in capsys.readouterr().err.splitlines() if "#1867" in ln]
+
+
+def _hand_set(tmp_path, monkeypatch):
+    monkeypatch.setenv(paths.ENV_VAR, str(tmp_path / "scratch"))
+    monkeypatch.delenv(paths.MACHINE_ENV)
+
+
+def test_a_hand_set_scratch_home_says_once_which_default_a_lane_fell_back_to(machine, tmp_path, monkeypatch,
+                                                                                capsys, noted):
+    _hand_set(tmp_path, monkeypatch)
+    spec, where = delegate.route("code")
+    delegate.route("code")
+    delegate.route("decide")
+    said = noted(capsys)
+    assert len(said) == 1, said
+    assert "soh --scratch-home DIR" in said[0] and spec in said[0] and where.base in said[0]
+
+
+def test_a_hand_set_home_that_holds_its_own_plan_says_nothing(machine, tmp_path, monkeypatch, capsys, noted):
+    _hand_set(tmp_path, monkeypatch)
+    interactive.write(_plan())
+    assert delegate.route("code")[1].base == URL
+    assert noted(capsys) == []
+
+
+def test_a_model_the_caller_chose_says_nothing(machine, tmp_path, monkeypatch, capsys, noted):
+    _hand_set(tmp_path, monkeypatch)
+    delegate.route("code", chosen="mlx-community/Qwen3-4B-Instruct-2507-4bit")
+    assert noted(capsys) == []
+
+
+@pytest.mark.parametrize("how", ["conftest", "scratch_home", "eval_home"])
+def test_a_bound_or_pinned_home_says_nothing(how, machine, tmp_path, monkeypatch, capsys, noted):
+    if how == "scratch_home":
+        paths.scratch_home(tmp_path / "scratch")
+    elif how == "eval_home":
+        monkeypatch.delenv(paths.ENV_VAR)
+        paths.eval_home(tmp_path / "scratch")
+    else:
+        (machine / interactive.PLAN_NAME).unlink()
+    delegate.route("web")
+    delegate.route("code")
+    assert noted(capsys) == []
+
+
+def test_the_live_home_set_by_hand_is_not_a_scratch_home(monkeypatch):
+    monkeypatch.setenv(paths.ENV_VAR, str(paths.DEFAULT_HOME))
+    monkeypatch.delenv(paths.MACHINE_ENV)
+    assert not paths.unbound_scratch()
+
+
+def test_a_home_seated_in_code_is_not_set_by_hand(tmp_path, monkeypatch):
+    monkeypatch.delenv(paths.ENV_VAR)
+    monkeypatch.delenv(paths.MACHINE_ENV)
+    with paths.seated(tmp_path):
+        assert not paths.unbound_scratch()

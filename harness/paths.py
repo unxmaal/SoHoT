@@ -180,6 +180,11 @@ def scratch_home(where: Path) -> Path:
     return where
 
 
+def unbound_scratch() -> bool:
+    """LOCALHARNESS_HOME was set by hand to a home that is not live, with no machine home bound to it. #1867"""
+    return bool(os.environ.get(ENV_VAR)) and not os.environ.get(MACHINE_ENV) and not is_live(home() / "discovery.db")
+
+
 def _sub(name: str) -> Path:
     d = home() / name
     d.mkdir(parents=True, exist_ok=True)
