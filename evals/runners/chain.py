@@ -27,13 +27,14 @@ from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
 from evals.runners.process import clocked
 
-MFLUX_BIN = Path.home() / ".local/share/uv/tools/mflux/bin"
+#: Under the home at call time, not at import. #1797.
+MFLUX_BIN_REL = ".local/share/uv/tools/mflux/bin"
 
 
 def _mflux(name: str) -> str:
     """Absolute path: an eval launched by launchd has almost no PATH."""
     found = shutil.which(name)
-    return found or str(MFLUX_BIN / name)
+    return found or str(Path.home() / MFLUX_BIN_REL / name)
 
 
 def upscale_seedvr2(src: Path, dst: Path, params: dict,

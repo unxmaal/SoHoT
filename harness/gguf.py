@@ -21,8 +21,8 @@ def models_dir() -> Path:
     raw = os.environ.get("LLAMACPP_MODELS_DIR")
     if raw:
         return Path(raw)
-    hf = os.environ.get("HF_HOME") or Path.home() / ".cache" / "huggingface"
-    return Path(hf) / "gguf"
+    from harness import env
+    return env.weights_home() / "gguf"
 
 #: llama.cpp architectures that only draft tokens for another model. #1674.
 DRAFTERS = ("dflash", "dspark", "eagle", "medusa", "draft")
@@ -488,6 +488,8 @@ def _usage() -> str:
 if __name__ == "__main__":
     import sys
     from harness import downloads as _downloads
+    from harness import env
+    env.guard()
     argv = sys.argv[1:]
     if argv[:1] == ["record"]:
         if len(argv) not in (2, 3):
@@ -495,6 +497,7 @@ if __name__ == "__main__":
         print(record_existing(argv[1], repo=argv[2] if len(argv) == 3 else "",
                               origin=_downloads.SCRIPT))
     elif len(argv) == 2:
-        print(download(argv[0], argv[1], origin=_downloads.SCRIPT))
+        with env.online():
+            print(download(argv[0], argv[1], origin=_downloads.SCRIPT))
     else:
         sys.exit(_usage())
