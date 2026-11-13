@@ -509,8 +509,10 @@ def test_decide_records_the_event_its_writer_names_and_none_when_none_is_given(t
     named = ms.decide(conn, "org/thing", "queued", tier=ms.FETCH, detail="landed", event="downloaded")
     ms.record(conn, ms.Seen(name="org/other", source="feed", url="u"))
     bare = ms.decide(conn, "org/other", "queued", tier=ms.FETCH, detail="downloaded", event=None)
-    got = dict(conn.execute("SELECT id, event FROM verdicts WHERE id IN (?, ?)", (named, bare)).fetchall())
-    assert got == {named: "downloaded", bare: ""}
+    ms.record(conn, ms.Seen(name="org/third", source="feed", url="u"))
+    omitted = ms.decide(conn, "org/third", "queued", tier=ms.FETCH, detail="downloaded")
+    got = dict(conn.execute("SELECT id, event FROM verdicts WHERE id IN (?, ?, ?)", (named, bare, omitted)).fetchall())
+    assert got == {named: "downloaded", bare: "", omitted: ""}
 
 
 def test_decide_records_the_lane_its_writer_names_and_none_when_none_is_given(tmp_path):
