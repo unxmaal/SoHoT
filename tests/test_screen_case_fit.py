@@ -1,6 +1,7 @@
 """#555: the screen gives a candidate a case its method can take, and a
 candidate with no such case is a gap, never harness_error."""
 import argparse
+import os
 from types import SimpleNamespace
 
 import pytest
@@ -112,6 +113,17 @@ def test_the_gap_names_every_case_and_the_methods_it_takes(tmp_path, monkeypatch
         "a": {"methods": ["llm"]}, "b": {"methods": ["llm", "agent"]}}), raising=False)
     assert screen.case_gap("svg", "omnisvg:8B") == (
         "no svg case fits the omnisvg method (a takes llm, b takes llm/agent)")
+
+
+def test_a_case_written_after_the_first_gap_is_read_by_the_next(tmp_path, monkeypatch):
+    root = _cases(tmp_path / "cases", {"a": {"methods": ["llm"]}})
+    monkeypatch.setattr(screen, "CASES", root, raising=False)
+    assert screen.case_gap("svg", "omnisvg:8B") == "no svg case fits the omnisvg method (a takes llm)"
+    d = root / "svg"
+    (d / "b.yaml").write_text(yaml.safe_dump({"id": "b", "modality": "svg", "prompt": "draw b"}), encoding="utf-8")
+    st = os.stat(d)
+    os.utime(d, ns=(st.st_atime_ns, st.st_mtime_ns + 1_000_000_000))
+    assert screen.case_gap("svg", "omnisvg:8B") == ""
 
 
 # ---- the store's card picks the engine and names the gap (#563, #601, #596) ----
