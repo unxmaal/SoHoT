@@ -188,6 +188,9 @@ GATEWAY_HELP = ("send the request here verbatim; by default the model's own "
 
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="soh", description=__doc__.split("\n")[0])
+    ap.add_argument("--scratch-home", metavar="DIR", default=None,
+                    help="run in scratch home DIR, writing nothing in this home but reaching its interactive "
+                         "server, adopted models and gpu lock, as an eval's scratch home does #1867")
     sub = ap.add_subparsers(dest="command")
 
     def media(name, help_, engine_default, func):
@@ -1258,6 +1261,13 @@ VERB_PURPOSE = {
 def main(argv: list[str] | None = None) -> int:
     ap = build_parser()
     a = ap.parse_args(argv)
+    if getattr(a, "scratch_home", None):
+        from pathlib import Path
+        from harness import paths
+        try:
+            paths.scratch_home(Path(a.scratch_home))
+        except (paths.LiveHomeRefused, paths.NoMachineHome) as exc:
+            return common.err(str(exc))
     common._JSON = bool(getattr(a, "json", False))
     common._VERB = getattr(a, "command", "") or ""
     from harness import purpose
