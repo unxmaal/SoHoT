@@ -209,9 +209,9 @@ class Probes:
         return out
 
     def last_use(self, conn, since: float) -> dict:
-        """Served model -> its latest request since `since` that the watchdog or a smoke test did not send."""
+        """Served model -> its latest request since `since` that the watchdog or a smoke test did not send; None without a store."""
         if conn is None:
-            return {}
+            return None
         from harness import gateway, purpose
         out: dict = {}
         for served, at in conn.execute(
@@ -419,7 +419,11 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
         world.gaps["tts"] = f"the tts server could not be read: {type(exc).__name__}: {exc}"[:300]
     try:
         world.served = probes.served()
-        world.idle_since = _idle_since(probes, world, probes.last_use(conn, now - wd.unload_after(now)), now)
+        asked = probes.last_use(conn, now - wd.unload_after(now))
+        if asked is None:
+            world.gaps["served"] = "the served models' requests could not be read: no store, so none is called idle"
+        else:
+            world.idle_since = _idle_since(probes, world, asked, now)
     except Exception as exc:  # noqa: BLE001 - an unreadable server or store gives nothing back this wake
         world.gaps["served"] = f"the served models could not be read: {type(exc).__name__}: {exc}"[:300]
     try:
@@ -435,6 +439,8 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
         world.lanes = probes.lanes(conn, now)
     except Exception as exc:  # noqa: BLE001 - a probe that cannot run is a gap, never a lost wake
         world.gaps["lanes"] = f"the lane probes failed: {type(exc).__name__}: {exc}"[:300]
+    if world.lanes is None and "lanes" not in world.gaps:
+        world.gaps["lanes"] = "the lane probes were not sent: no store, so no open incident could be read or probed"
     return world
 
 
