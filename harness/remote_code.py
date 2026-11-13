@@ -29,10 +29,15 @@ def remote_code_gap(model_type: str, evidence: str, native, pin: str) -> str:
             f"which {pin} does not ship")
 
 
-@functools.lru_cache(maxsize=1)
 def native_types() -> tuple[str, frozenset]:
-    """(pin, model types) from the committed snapshot."""
-    lines = SNAPSHOT.read_text(encoding="utf-8").splitlines()
+    """(pin, model types) from the committed snapshot, read again once it changes. #1797."""
+    st = SNAPSHOT.stat()
+    return _native_types(str(SNAPSHOT), st.st_mtime_ns, st.st_size)
+
+
+@functools.lru_cache(maxsize=4)
+def _native_types(path: str, _mtime_ns: int, _size: int) -> tuple[str, frozenset]:
+    lines = Path(path).read_text(encoding="utf-8").splitlines()
     return lines[0].lstrip("# ").strip(), frozenset(x.strip() for x in lines[1:] if x.strip())
 
 

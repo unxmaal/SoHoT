@@ -212,8 +212,8 @@ def store(conn=None):
 
 
 def hf_home() -> Path:
-    return Path(os.environ.get("HF_HOME")
-                or Path.home() / ".cache" / "huggingface")
+    from harness import env
+    return env.weights_home()
 
 
 def hub_root() -> Path:

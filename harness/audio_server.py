@@ -47,7 +47,13 @@ KOKORO_IDS = (
 WHISPER_PREFIXES = ("Systran/faster-whisper-", "whisper-", "tiny", "base",
                     "small", "medium", "large")
 
-DEFAULT_WHISPER = os.environ.get("WHISPER_MODEL", "base.en")
+#: faster-whisper's model when WHISPER_MODEL names none; the variable is read when the app is built. #1797.
+WHISPER_FALLBACK = "base.en"
+
+
+def default_whisper() -> str:
+    return os.environ.get("WHISPER_MODEL") or WHISPER_FALLBACK
+
 DEFAULT_KOKORO_LANG = "en-gb"
 #: Below this a WAV is silence or a truncated stream. harness/audio.py applies
 #: the same floor to what it receives.
@@ -99,6 +105,7 @@ def build_app():
 
     app = FastAPI()
     state: dict = {}
+    whisper_default = default_whisper()
 
     def kokoro():
         if "kokoro" not in state:
@@ -124,7 +131,7 @@ def build_app():
         without guessing from a 400."""
         return {"object": "list", "data": [
             {"id": KOKORO_IDS[0], "object": "model", "owned_by": "kokoro-onnx"},
-            {"id": DEFAULT_WHISPER, "object": "model",
+            {"id": whisper_default, "object": "model",
              "owned_by": "faster-whisper"},
         ]}
 
@@ -168,7 +175,7 @@ def build_app():
 
     @app.post("/v1/audio/transcriptions")
     async def transcriptions(file: UploadFile = File(...),
-                             model: str = Form(DEFAULT_WHISPER)):
+                             model: str = Form(whisper_default)):
         if not any(model.startswith(p) for p in WHISPER_PREFIXES):
             raise HTTPException(
                 400, f"model {model!r} is not served here; this server "
