@@ -19,7 +19,8 @@ def _lines(root=REPO) -> list[str]:
 
 
 def _write(root, lines):
-    (root / BACKLOG).write_text("".join(f"{s}\n" for s in lines), encoding="utf-8")
+    # LF like the base copy: Windows text mode writes CRLF, and the scratch repo has no autocrlf. #1889
+    (root / BACKLOG).write_text("".join(f"{s}\n" for s in lines), encoding="utf-8", newline="\n")
 
 
 def _assert_no_row_joins_the_backlog(root):
