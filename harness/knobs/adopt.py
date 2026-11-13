@@ -90,6 +90,13 @@ KNOBS = [
             "Ornith 2-5 of 39 (472-474) (#1110)"),
 ]
 
+NOT_GATING = {
+    "harness/power.py:EXACT_CELLS": "picks how _critical counts, exact bigint tails or a log-space sum that falls back to "
+                                    "them when close; every count equals the exact one (#1590)",
+    "harness/power.py:_LOG_MARGIN": "how near alpha a log-space tail may sit before _critical sums it exactly; every "
+                                    "count equals the exact one (#1590)",
+}
+
 NEVER_CUTS = {
     "harness/commands/measure.py:IDLE_SLICES": "pauses a paired run whose slices land no case; the pause is kept and "
                                                "the next sweep resumes it, so no case is dropped (#1554)",
