@@ -97,9 +97,8 @@ def serve(model: Path, mmproj: Path, device: str = "gpu", log=None):
     """A private llama-server on a free loopback port; yields its base URL and stops it on the way out."""
     from evals.vision import LLAMACPP_START_S
     port = _free_port()
-    proc = _popen(argv_for(model, mmproj, port, device), stdout=log or subprocess.DEVNULL,
-                  stderr=subprocess.STDOUT if log else subprocess.DEVNULL)
-    watcher = tether.tie(proc)
+    proc = tether.spawn(argv_for(model, mmproj, port, device), _popen, stdout=log or subprocess.DEVNULL,
+                        stderr=subprocess.STDOUT if log else subprocess.DEVNULL)
     base = f"http://127.0.0.1:{port}"
     try:
         give_up = time.monotonic() + LLAMACPP_START_S
@@ -125,7 +124,6 @@ def serve(model: Path, mmproj: Path, device: str = "gpu", log=None):
             proc.wait(timeout=30)
         except subprocess.TimeoutExpired:
             proc.kill()
-        tether.untie(watcher)
 
 
 def ask(base: str, image: str, prompt: str, max_tokens: int, timeout: float) -> tuple[str, bool]:

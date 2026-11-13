@@ -662,12 +662,14 @@ def runtime_binary(args) -> str:
     """The runtime binary this argv would execute, or ""."""
     import os
     import shlex
+
+    from harness import tether
     if isinstance(args, (str, bytes)):
         try:
             args = shlex.split(os.fsdecode(args))
         except ValueError:
             args = os.fsdecode(args).split()
-    for word in list(args or [])[:4]:
+    for word in tether.command(args or [])[:4]:
         name = os.path.basename(os.fsdecode(word))
         if name in RUNTIME_BINARIES or name.startswith(RUNTIME_PREFIXES):
             return name

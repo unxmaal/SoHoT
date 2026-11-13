@@ -27,12 +27,14 @@ stop() {
   SERVER=""
 }
 trap stop EXIT
-# The server dies with this script even when a SIGKILL skips the EXIT trap. #1761.
+# `tether cmd... &`: cmd dies with this script even past a SIGKILL; its watcher starts before cmd execs in place. #1761, #1947.
 tether() {
-  local owner=$$ child=$1
-  ( trap '' INT
-    while kill -0 "$owner" 2>/dev/null && kill -0 "$child" 2>/dev/null; do sleep 1; done
-    kill "$child" 2>/dev/null ) </dev/null >/dev/null 2>&1 &
+  local owner=$$ child
+  child=$(exec sh -c 'echo "$PPID"')
+  ( ( trap '' INT
+      while kill -0 "$owner" 2>/dev/null && kill -0 "$child" 2>/dev/null; do sleep 1; done
+      kill "$child" 2>/dev/null ) </dev/null >/dev/null 2>&1 & )
+  exec "$@"
 }
 
 for cfg in $CONFIGS; do
@@ -47,10 +49,9 @@ for cfg in $CONFIGS; do
     if [ "$mode" = unified ]; then echo "kv-unified = true"; else echo "kv-unified = false"; fi
   } >"$ini"
   log="$OUT/server-$slots-$pool-$mode.log"
-  llama-server --jinja --models-dir "$OUT/models" --models-preset "$ini" --models-max 2 \
+  tether llama-server --jinja --models-dir "$OUT/models" --models-preset "$ini" --models-max 2 \
     --sleep-idle-seconds 3600 --n-gpu-layers 999 --host 127.0.0.1 --port "$PORT" >"$log" 2>&1 &
   SERVER=$!
-  tether "$SERVER"
   up=""
   for _ in $(seq 1 120); do
     if curl -sf "http://127.0.0.1:$PORT/health" >/dev/null; then up=1; break; fi
