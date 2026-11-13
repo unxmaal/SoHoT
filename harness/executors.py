@@ -100,10 +100,10 @@ def exit_record(pid_file) -> tuple[int, float] | None:
 
 
 def _write(path, text: str) -> None:
-    import os
+    from harness import atomic_file
     tmp = path.with_name(f"{path.name}.tmp")
     tmp.write_text(text, encoding="utf-8")
-    os.replace(tmp, path)
+    atomic_file.replace(tmp, path)
 
 
 def started_file(pid_file):

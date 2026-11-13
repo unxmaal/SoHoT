@@ -27,7 +27,7 @@ import sys
 import time
 from pathlib import Path
 
-from harness import audio, completion, context, delegate, ds4, env, knobs, paths, reasons, router, run_state
+from harness import atomic_file, audio, completion, context, delegate, ds4, env, knobs, paths, reasons, router, run_state
 from harness.engines import Engine, names as engine_names, parse_options, resolve
 from harness.checks import speech as speech_check
 
@@ -1821,7 +1821,7 @@ def _execute_at(args, overrides: dict, held: contextlib.ExitStack) -> int:
         # Replaced whole, so a kill mid-write leaves the export before it, never a torn one. #1758.
         tmp = outdir / "results.json.tmp"
         tmp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-        os.replace(tmp, outdir / "results.json")
+        atomic_file.replace(tmp, outdir / "results.json")
         run_id = store_run(outdir, payload, now)
         print(f"\nartifacts + results.json in {outdir}; stored as run {run_id}")
         progress.write(state, why, run_id)
