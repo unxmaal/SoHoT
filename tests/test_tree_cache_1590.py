@@ -180,3 +180,23 @@ def test_a_kept_hit_reads_back_as_the_hit_gauntlet_returned(tmp_path, cache):
     kept = tree_cache.frontend_hits(reg)
     assert kept == gauntlet.ratchet.frontend_hits(reg)
     assert all(type(h) is type(next(iter(kept[registry.CR]))) for hits in kept.values() for h in hits)
+
+
+LAYOUT_SRC = ("from pkg import a\nimport pkg.b as bee\n\n\ndef f():\n    from pkg.c import g\n    a.x = 1\n"
+              "    return g(bee.y, z)\n")
+
+
+def test_layout_facts_come_back_from_the_cache_equal_and_move_with_the_text_and_the_module_set(cache, monkeypatch):
+    import layout_scan as ls
+    mods = {"pkg", "pkg.a", "pkg.b", "pkg.c"}
+    monkeypatch.setattr(ls, "_FACTS", {})
+    first = ls.many([("t.m", LAYOUT_SRC, False)], mods)[0]
+    scanned, real = [], ls._facts
+    monkeypatch.setattr(ls, "_facts", lambda *a: scanned.append(a[0]) or real(*a))
+    monkeypatch.setattr(ls, "_FACTS", {})
+    assert ls.many([("t.m", LAYOUT_SRC, False)], mods)[0] == first and scanned == []
+    edited = ls.many([("t.m", LAYOUT_SRC.replace("a.x = 1", "a.w = 1"), False)], mods)[0]
+    assert scanned == ["t.m"] and ("pkg.a", "w", 7) in edited.patches
+    monkeypatch.setattr(ls, "_FACTS", {})
+    ls.many([("t.m", LAYOUT_SRC, False)], mods - {"pkg.c"})
+    assert scanned == ["t.m", "t.m"], "a changed module set scans again"
