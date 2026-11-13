@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from harness import deploy_state as ds
-from harness import deploy_switch, job_state as js, paths, proc_identity
+from harness import deploy_switch, job_claim, job_state as js, paths, proc_identity
 from harness import workqueue as wq
 
 KIND = "deploy"
@@ -633,7 +633,8 @@ def _quiesce(c, job_id, log, sleep=time.sleep) -> str:
     end, said = time.monotonic() + QUIESCE_TIMEOUT_S, False
     while True:
         left = [wq.label(j["id"]) for j in wq.running_here(c)
-                if wq._key(j["id"]) != wq._key(job_id) and wq._pid_of(j["id"]) is not None]
+                if wq._key(j["id"]) != wq._key(job_id)
+                and (wq._pid_of(j["id"]) is not None or job_claim.starting(j["id"]))]
         if not left:
             return ""
         if time.monotonic() >= end:
@@ -954,7 +955,7 @@ def settle(conn=None, now: float | None = None, alive=wq.alive, spawn=None, star
             claimed, cargs = wq._claimed(c)
             for job in c.execute(f"SELECT id FROM jobs WHERE kind = ? AND state = ? AND {claimed} AND id NOT IN "
                                  "(SELECT job_id FROM deploys WHERE job_id IS NOT NULL)", (KIND, wq.RUNNING, *cargs)):
-                if wq._pid_of(job["id"]) is None:
+                if wq._pid_of(job["id"]) is None and not job_claim.starting(job["id"]):
                     _close_job(c, job["id"], wq.FAILED, None, "interrupted before it recorded a deploy", now)
                     settled.append({"job": wq.label(job["id"]), "outcome": INTERRUPTED})
     except RuntimeError as exc:
@@ -1026,7 +1027,8 @@ def _settle_one(c, row: dict, now: float, alive, spawn=None) -> dict | None:
         why = "; ".join(filter(None, (f"the switch stopped at {rec.get('stage')} without an outcome", failed, said(seen))))
         _lift(rec)
     else:
-        if job is not None and job["state"] == wq.RUNNING and wq._pid_of(job["id"]) is not None:
+        if job is not None and job["state"] == wq.RUNNING and (wq._pid_of(job["id"]) is not None
+                                                               or job_claim.starting(job["id"])):
             return None
         if job is not None and job["state"] != wq.RUNNING:
             why = f"job {job['id']} ended {job['state']} rc={job['rc']} before it recorded an outcome"
