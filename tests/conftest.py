@@ -220,8 +220,9 @@ def pytest_runtest_protocol(item, nextitem):
         _running.pop("test", None)
 
 
-#: os.environ keys a test may leave changed: pytest's own, and one mlx_lm sets on its first import. #1868.
-ENV_SETTLED = frozenset({"PYTEST_CURRENT_TEST", "TRANSFORMERS_NO_ADVISORY_WARNINGS"})
+#: os.environ keys a test may leave changed: pytest's own, and those a library sets once per process on import. #1868, #1885.
+ENV_SETTLED = frozenset({"PYTEST_CURRENT_TEST", "TRANSFORMERS_NO_ADVISORY_WARNINGS", "KMP_DUPLICATE_LIB_OK",
+                         "KMP_INIT_AT_FORK", "TORCHINDUCTOR_CACHE_DIR"})
 _env: dict = {}
 
 
