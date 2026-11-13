@@ -195,24 +195,10 @@ def test_an_owner_whose_start_cannot_be_read_is_not_taken_for_gone():
         proc.wait()
 
 
-def test_untie_leaves_the_child_to_its_owner_and_reaps_the_watcher():
-    proc = subprocess.Popen(SLEEPER)
-    rec = proc_identity.identity(proc.pid)
-    try:
-        watcher = tether.tie(proc)
-        assert watcher is not None
-        tether.untie(watcher)
-        assert watcher.returncode is not None and proc.poll() is None
-    finally:
-        proc.kill()
-        proc.wait()
-    assert proc_identity.same(rec) is False
-
-
 def test_a_fake_process_is_not_tied():
     class Fake:
         pid = 0
-    assert tether.tie(Fake()) is None
+    assert tether._tie(Fake()) is None
 
 
 def test_a_stand_in_popen_gets_the_argv_as_given():

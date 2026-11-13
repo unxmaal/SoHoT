@@ -1,10 +1,8 @@
 """A child that dies with its owner: a watcher beside it stops the child once the owner process is gone (#1761)."""
 from __future__ import annotations
 
-import contextlib
 import json
 import os
-import signal
 import subprocess
 import sys
 from pathlib import Path
@@ -48,7 +46,7 @@ def watch_argv(owner: dict, child: dict) -> list[str]:
             json.dumps(owner), json.dumps(child), str(POLL_S), str(GRACE_S)]
 
 
-# The child ties itself before it runs: it double-forks its watcher (no program it becomes inherits it), then execs in place. #1947.
+# The child ties itself before it runs: it double-forks its watcher (own session, so no group kill takes it), then execs. #1947.
 LAUNCH = r"""
 import importlib.util, json, os, subprocess, sys
 watch, argv = json.loads(sys.argv[1]), sys.argv[3:]
@@ -60,7 +58,8 @@ if me["started"]:
     watch[6] = json.dumps(me)
     if os.fork() == 0:
         try:
-            subprocess.Popen(watch, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.Popen(watch, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                             start_new_session=True)
         finally:
             os._exit(0)
     os.wait()
@@ -105,11 +104,11 @@ def spawn(cmd, popen=None, **kw):
     if sys.platform != "win32":
         return popen(tied(cmd, kw), **kw)
     proc = popen(cmd, **kw)
-    tie(proc)
+    _tie(proc)
     return proc
 
 
-def tie(proc) -> subprocess.Popen | None:
+def _tie(proc) -> subprocess.Popen | None:
     """A watcher that stops proc once this process is gone; None when proc is no real child or its start time is unknown."""
     from harness import proc_identity
     pid = getattr(proc, "pid", None)
@@ -120,12 +119,3 @@ def tie(proc) -> subprocess.Popen | None:
         return None
     return _POPEN(watch_argv(owner, child), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                   stderr=subprocess.DEVNULL)
-
-
-def untie(watcher) -> None:
-    """Stop and reap the watcher once its owner has stopped the child itself."""
-    if watcher is None:
-        return
-    with contextlib.suppress(OSError):
-        watcher.kill() if hasattr(signal, "SIGKILL") else watcher.terminate()
-    watcher.wait()
