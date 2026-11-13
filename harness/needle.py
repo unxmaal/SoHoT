@@ -292,10 +292,9 @@ class Server:
 
     def __init__(self, argv_for, port: int | None):
         self.port = free_port() if port is None else port
-        self.proc = subprocess.Popen(
+        self.proc = tether.spawn(
             argv_for(self.port), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             text=True, encoding="utf-8", errors="replace", env=child_env())
-        self.watcher = tether.tie(self.proc)
         atexit.register(self.close)
         lines: queue.Queue = queue.Queue()
         threading.Thread(target=self._drain, args=(lines,), daemon=True).start()
@@ -336,8 +335,6 @@ class Server:
                 self.proc.wait(timeout=10)
             except subprocess.TimeoutExpired:
                 self.proc.kill()
-        tether.untie(self.watcher)
-        self.watcher = None
 
 
 class Chat:

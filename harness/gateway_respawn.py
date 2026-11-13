@@ -18,9 +18,24 @@ def path() -> Path:
     return paths.home() / FILE
 
 
+#: An earlier row settled unclaimed for the same process as row r: r is that respawn's late claim. #1940.
+_LATE = ("FROM gateway_switch_runs u WHERE u.reason = ? AND u.pid = r.pid AND u.started = r.started "
+         "AND u.started <> '' AND u.id < r.id")
+
+
 def newest(conn) -> int:
-    """The newest gateway_switch_runs id, 0 with none: a respawn has claimed once a row is newer than its mark's."""
-    return int(conn.execute("SELECT COALESCE(MAX(id), 0) FROM gateway_switch_runs").fetchone()[0])
+    """The newest gateway_switch_runs id but a late claim's, 0 with none: a respawn has claimed once a row is newer than its mark's."""
+    from harness import gateway_switch_state as st
+    return int(conn.execute(f"SELECT COALESCE(MAX(id), 0) FROM gateway_switch_runs r WHERE NOT EXISTS (SELECT 1 {_LATE})",
+                            (st.UNCLAIMED,)).fetchone()[0])
+
+
+def late(conn, rid: int) -> int | None:
+    """The switch that settled this claim's process unclaimed, so switch rid must not run; None for any other claim. #1940."""
+    from harness import gateway_switch_state as st
+    row = conn.execute(f"SELECT (SELECT MIN(u.id) {_LATE}) FROM gateway_switch_runs r WHERE r.id = ?",
+                       (st.UNCLAIMED, int(rid))).fetchone()
+    return int(row[0]) if row and row[0] is not None else None
 
 
 def mark(requested_at: float, after: int, spawned_at: float, pid: int | None = None) -> None:
@@ -77,7 +92,8 @@ def unclaimed(conn, now: float | None = None, same=None, log=None) -> dict | Non
         return None
     why = "died" if gone else f"had not claimed it {waited:.0f} s after it was started (gateway_respawn_claim)"
     st.move(conn, rid, st.REQUESTED, st.FAILED, st.DIED if gone else st.UNCLAIMED, now=now,
-            detail=f"the switch the worker started again {why} before it claimed its row")
+            detail=f"the switch the worker started again {why} before it claimed its row"
+                   + ("" if gone else "; a claim it makes later is refused"))
     clear()
     if not gone:
         cuts.cut("gateway_respawn_claim",f"switch {rid} settled unclaimed", kept=0, dropped=1, conn=conn)

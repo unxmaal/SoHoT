@@ -1,4 +1,3 @@
-a-child-that-outlives-its-owner harness/vllm.py:served
 a-closed-table-fronting-an-open-set evals/core.py:ASSERTION_KEYS
 a-closed-table-fronting-an-open-set evals/core.py:CHECKERS
 a-closed-table-fronting-an-open-set evals/runners/chain.py:STAGE_SCALE
