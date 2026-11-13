@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 
 from harness import stale_temp
-from harness.atomic_file import replace
+from harness import atomic_file
 
 CLAIM_S = 300.0
 FILE = "gateway-switch.respawn"
@@ -31,7 +31,7 @@ def mark(requested_at: float, after: int, spawned_at: float, pid: int | None = N
     tmp = stale_temp.temp(to, "{name}.{pid}.{thread}")
     tmp.write_text(json.dumps({"requested_at": requested_at, "after": int(after), "spawned_at": spawned_at,
                                **ident}), encoding="utf-8")
-    replace(tmp, to)
+    atomic_file.replace(tmp, to)
 
 
 def read() -> dict | None:

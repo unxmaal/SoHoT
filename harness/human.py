@@ -253,19 +253,40 @@ def _checker_pick(rows: list[dict], a: str, b: str, lane: str) -> str | None:
     return "" if ka == kb else (a if ka > kb else b)
 
 
+def side_bias(rows) -> dict:
+    """Per lane, of the votes with a preference whose shown side was kept, how many went to the side shown first, overall and per voter. #1784."""
+    from harness import paired
+
+    out: dict[str, dict] = {}
+    for ln, winner, first, voter in rows:
+        if not winner or not first:
+            continue
+        lane_side = out.setdefault(ln, {"decided": 0, "first_won": 0, "voters": {}})
+        mine = lane_side["voters"].setdefault(voter or "", {"decided": 0, "first_won": 0})
+        for got in (lane_side, mine):
+            got["decided"] += 1
+            got["first_won"] += winner == first
+    for got in out.values():
+        got["p"] = paired.sign_test(got["first_won"], got["decided"])
+    return dict(sorted(out.items()))
+
+
 def metric_agreement(conn, lane: str = "") -> dict:
-    """Each decided pairing a person voted on beside the order the lane's checker gives the same artifacts. #92."""
+    """Each decided pairing a person voted on beside the order the lane's checker gives the same artifacts, and the side bias of every vote. #92, #1784."""
     from harness import runs
 
-    sql = ("SELECT lane, run, case_id, left_candidate, right_candidate, winner FROM human_votes "
-           "WHERE run != ''")
+    sql = ("SELECT lane, run, case_id, left_candidate, right_candidate, winner, shown_first, voter "
+           "FROM human_votes")
     args: tuple = ()
     if lane:
-        sql += " AND lane = ?"
+        sql += " WHERE lane = ?"
         args = (lanes.canonical(lane),)
+    got_rows = conn.execute(sql, args).fetchall()
+    side = side_bias((r[0], r[5], r[6], r[7]) for r in got_rows)
     votes: dict[tuple, Counter] = {}
-    for ln, run, case, a, b, winner in conn.execute(sql, args).fetchall():
-        votes.setdefault((ln, run, case, a, b), Counter())[winner] += 1
+    for ln, run, case, a, b, winner, _first, _voter in got_rows:
+        if run:
+            votes.setdefault((ln, run, case, a, b), Counter())[winner] += 1
     stored: dict[str, list[dict]] = {}
     pairs, totals = [], {}
     for (ln, run, case, a, b), counts in sorted(votes.items()):
@@ -288,4 +309,4 @@ def metric_agreement(conn, lane: str = "") -> dict:
         pairs.append({"lane": ln, "run": run, "case": case, "a": a, "b": b,
                       "votes": dict(counts), "person": person, "checker": checker, "outcome": outcome})
         totals.setdefault(ln, Counter())[outcome] += 1
-    return {"pairs": pairs, "lanes": {ln: dict(c) for ln, c in sorted(totals.items())}}
+    return {"pairs": pairs, "lanes": {ln: dict(c) for ln, c in sorted(totals.items())}, "side": side}

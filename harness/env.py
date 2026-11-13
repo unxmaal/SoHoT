@@ -63,6 +63,16 @@ def configured() -> str:
             or default_root())
 
 
+def weights_home(environ=None) -> Path:
+    """HF_HOME, else HF_ROOT, else the HF_HOME this machine's install recorded, else huggingface_hub's own default. #1797."""
+    environ = os.environ if environ is None else environ
+    got = environ.get("HF_HOME") or environ.get(ROOT_VAR)
+    if not got:
+        from harness import install_env, paths
+        got = install_env.read(install_env.path(paths.machine_home())).get("HF_HOME", "")
+    return Path(got) if got else Path.home() / ".cache" / "huggingface"
+
+
 def beside() -> Path:
     """Where the things too big for the hub cache go: corpora, and the 134 GiB
     of H3 weights. Beside the weights root, so pointing HF_ROOT at a drive

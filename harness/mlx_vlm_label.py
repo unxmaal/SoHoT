@@ -76,4 +76,6 @@ def main(argv=None, load=load, config=read_config) -> int:
 
 
 if __name__ == "__main__":
+    from harness import env
+    env.guard()
     sys.exit(main())

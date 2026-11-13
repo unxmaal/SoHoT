@@ -72,23 +72,24 @@ def _beat(rc=0, started=NIGHT):
 
 def _store(stops=0, ledger=True):
     conn = ms.connect()
-    conn.execute("INSERT INTO verdicts (proposal_id, outcome, tier, detail, decided_at) VALUES (NULL,'screened','screen','',?)",
-                 (NIGHT + 60,))
-    conn.execute("INSERT INTO verdicts (proposal_id, outcome, tier, detail, decided_at) VALUES (NULL,'broken','screen','',?)",
-                 (NIGHT + 70,))
-    conn.execute("INSERT INTO verdicts (proposal_id, outcome, tier, detail, decided_at) VALUES (NULL,'declined','adopt','',?)",
-                 (NIGHT + 7200,))
-    conn.execute("INSERT INTO verdicts (proposal_id, outcome, tier, detail, decided_at) VALUES (NULL,'screened','screen','',?)",
-                 (SINCE - 3600,))
-    conn.execute("INSERT INTO runs (path, lane, tier, recorded_at) VALUES ('r-code','code','measure',?)", (NIGHT + 3000,))
-    conn.execute("INSERT INTO runs (path, lane, tier, recorded_at) VALUES ('r-old','svg','measure',?)", (SINCE - 60,))
-    conn.execute("INSERT INTO paused_runs (lane, incumbent, challenger, out, done, total, state, paused_at) "
-                 "VALUES ('code','inc','chal','o',114,270,'paused',?)", (NIGHT + 5000,))
-    conn.execute("INSERT INTO watchdog_actions (at, criterion, subject, action, escalated, dry_run, outcome) "
-                 "VALUES (?, 'overrun', 'eval pgid 1', 'file', 0, 0, 'not filed')", (NIGHT + 900,))
+    me = ms.remember_machine(conn)
+    conn.execute("INSERT INTO verdicts (machine_id, proposal_id, outcome, tier, detail, decided_at) VALUES (?, NULL,'screened','screen','',?)",
+                 (me, NIGHT + 60))
+    conn.execute("INSERT INTO verdicts (machine_id, proposal_id, outcome, tier, detail, decided_at) VALUES (?, NULL,'broken','screen','',?)",
+                 (me, NIGHT + 70))
+    conn.execute("INSERT INTO verdicts (machine_id, proposal_id, outcome, tier, detail, decided_at) VALUES (?, NULL,'declined','adopt','',?)",
+                 (me, NIGHT + 7200))
+    conn.execute("INSERT INTO verdicts (machine_id, proposal_id, outcome, tier, detail, decided_at) VALUES (?, NULL,'screened','screen','',?)",
+                 (me, SINCE - 3600))
+    conn.execute("INSERT INTO runs (machine_id, path, lane, tier, recorded_at) VALUES (?, 'r-code','code','measure',?)", (me, NIGHT + 3000))
+    conn.execute("INSERT INTO runs (machine_id, path, lane, tier, recorded_at) VALUES (?, 'r-old','svg','measure',?)", (me, SINCE - 60))
+    conn.execute("INSERT INTO paused_runs (machine_id, lane, incumbent, challenger, out, done, total, state, paused_at) "
+                 "VALUES (?, 'code','inc','chal','o',114,270,'paused',?)", (me, NIGHT + 5000))
+    conn.execute("INSERT INTO watchdog_actions (machine_id, at, criterion, subject, action, escalated, dry_run, outcome) "
+                 "VALUES (?, ?, 'overrun', 'eval pgid 1', 'file', 0, 0, 'not filed')", (me, NIGHT + 900))
     for i in range(stops):
-        conn.execute("INSERT INTO watchdog_actions (at, criterion, subject, action, escalated, dry_run, outcome) "
-                     "VALUES (?, 'overrun', ?, 'stop', 1, 0, 'group term')", (NIGHT + 1500 + i, f"eval pgid {i + 2}"))
+        conn.execute("INSERT INTO watchdog_actions (machine_id, at, criterion, subject, action, escalated, dry_run, outcome) "
+                     "VALUES (?, ?, 'overrun', ?, 'stop', 1, 0, 'group term')", (me, NIGHT + 1500 + i, f"eval pgid {i + 2}"))
     if ledger:
         detail = {"cloud": {"tokens": {"input": 1200, "output": 3400, "cache_read": 5_600_000, "cache_write": 78_000}},
                   "headroom": {"five_hour": 61.0, "seven_day": 40.0}, "displaced": {"lanes": []},
@@ -146,7 +147,7 @@ def test_a_quiet_night_sends_no_notification(deploy_dir):
     assert head["by"] == "deterministic" and head["text"].startswith("Quiet night: 2 screened, 1 measured, 1 settled")
 
 
-def test_a_watchdog_stop_sends_one_notification(deploy_dir):
+def test_a_watchdog_stop_sends_one_notification(deploy_dir, shown_live):
     conn = _store(stops=1)
     r = _report(conn, deploy_dir)
     assert r["needs"] == ["watchdog stop: overrun on eval pgid 2 at 21:25"]
@@ -195,8 +196,8 @@ def test_unavailable_ci_and_deploy_are_reported_not_notified(tmp_path):
 
 def test_a_dry_run_escalation_still_needs_a_person(deploy_dir):
     conn = _store()
-    conn.execute("INSERT INTO watchdog_actions (at, criterion, subject, action, escalated, dry_run, outcome) "
-                 "VALUES (?, 'no_progress', 'job 0042', 'stop', 1, 1, 'dry-run')", (NIGHT + 100,))
+    conn.execute("INSERT INTO watchdog_actions (machine_id, at, criterion, subject, action, escalated, dry_run, outcome) "
+                 "VALUES (?, ?, 'no_progress', 'job 0042', 'stop', 1, 1, 'dry-run')", (ms.machine_row(conn), NIGHT + 100))
     conn.commit()
     r = _report(conn, deploy_dir)
     assert r["needs"] == ["watchdog stop (dry run): no_progress on job 0042 at 21:01"]

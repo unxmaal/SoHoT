@@ -16,13 +16,13 @@ DAY = 86400.0
 def runs(conn, since: float) -> list[dict]:
     """Each fetch run since `since`: its start, budget (None when no verdict of it recorded one), and its rows, in order."""
     rows = conn.execute("""
-        SELECT v.decided_at AS at, v.detail, v.budget_gib, p.name, p.size_bytes,
+        SELECT v.decided_at AS at, v.event, v.budget_gib, p.name, p.size_bytes,
                -- A download's verdict lands when it finishes; the run decided on it when it started.
                COALESCE((SELECT MAX(d.started_at) FROM downloads d WHERE d.proposal_id = p.id
-                           AND d.started_at <= v.decided_at AND v.detail = :downloaded), v.decided_at) AS start
+                           AND d.started_at <= v.decided_at AND v.event = :downloaded), v.decided_at) AS start
           FROM verdicts v JOIN proposals p ON p.id = v.proposal_id
          WHERE v.tier = 'fetch' AND v.decided_at >= :since
-           AND (v.detail = :downloaded OR (v.reason = :limit AND COALESCE(v.until, '') = '' AND v.failure_class = :passed))
+           AND (v.event = :downloaded OR (v.reason = :limit AND COALESCE(v.until, '') = '' AND v.failure_class = :passed))
          ORDER BY v.id""", {"since": since, "downloaded": fetching.DOWNLOADED, "limit": reasons.LIMIT,
                             "passed": reasons.PASSED_OVER}).fetchall()
     out: list[dict] = []
@@ -33,7 +33,7 @@ def runs(conn, since: float) -> list[dict]:
         run["last"] = r["at"]
         if r["name"] not in {x["name"] for x in run["rows"]}:
             run["rows"].append({"name": r["name"], "size": int(r["size_bytes"] or 0)})
-        if r["detail"] == fetching.DOWNLOADED:
+        if r["event"] == fetching.DOWNLOADED:
             run["fetched"].append(r["name"])
         if run["budget"] is None and r["budget_gib"] is not None:
             run["budget"] = float(r["budget_gib"])

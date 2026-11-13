@@ -402,6 +402,7 @@
   "harness.memory_store.transitions:decide:) 'and'->'or'; ] ')'->''; ] ''->')'",
   "harness.memory_store.transitions:decide:) 'and'->'or'; detail ')'->''; and '('->''; None ')'->''; ] ''->')'",
   "harness.memory_store.transitions:decide:, \"'candidate_id'\"->\"'CANDIDATE_ID'\"",
+  "harness.memory_store.transitions:decide:, \"'event'\"->\"'EVENT'\"",
   "harness.memory_store.transitions:decide:, \"'failure_class'\"->\"'FAILURE_CLASS'\"",
   "harness.memory_store.transitions:decide:, \"'judge'\"->\"'JUDGE'\"",
   "harness.memory_store.transitions:decide:, \"'lane'\"->\"'LANE'\"",

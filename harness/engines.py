@@ -316,7 +316,12 @@ H3_MIN_FRAMES = 22
 H3_FPS = 24
 #: Denoising passes when neither the spec nor the case names them; h3.c alone runs 20. #735.
 H3_STEPS = 4
-H3_DEFAULT_BIN = str(Path.home() / "projects/github/antirez/h3.c/h3")
+#: Where h3 is built when H3_BIN does not say, under the home at call time, not at import. #1797.
+H3_DEFAULT_REL = "projects/github/antirez/h3.c/h3"
+
+
+def h3_bin() -> str:
+    return os.environ.get("H3_BIN") or str(Path.home() / H3_DEFAULT_REL)
 
 
 def h3_model_dir() -> str:
@@ -368,7 +373,7 @@ def _h3(spec: str, model: str, options: dict) -> Engine:
 
         # Read at call time, not import time, so a test or a different volume
         # can point this somewhere else without reloading the module.
-        cmd = [os.environ.get("H3_BIN", H3_DEFAULT_BIN),
+        cmd = [h3_bin(),
                "-d", h3_model_dir(),
                "-p", prompt, "-o", str(out)]
         for name in ("width", "height", "frames", "seconds", "steps",
@@ -384,7 +389,7 @@ def _h3(spec: str, model: str, options: dict) -> Engine:
     # so run from beside the binary. Invoked from anywhere else it dies with
     # "cannot compile h3_shaders.metal" after loading the tokenizer and half the
     # text encoder, which reads like a model problem rather than a path one.
-    binary = os.environ.get("H3_BIN", H3_DEFAULT_BIN)
+    binary = h3_bin()
 
     return Engine(name=f"h3/minimax-h3{distinguish(options)}",
                   spec=spec, argv=argv, modality="video",

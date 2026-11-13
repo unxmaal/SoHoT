@@ -70,7 +70,7 @@ def test_an_overrun_stop_with_no_progress_file_is_found_by_its_out_argument(tmp_
         conn.close()
 
 
-def test_a_notification_is_held_by_the_notified_flag_whatever_its_sentence_says(tmp_path, monkeypatch):
+def test_a_notification_is_held_by_the_notified_flag_whatever_its_sentence_says(tmp_path, monkeypatch, shown_live):
     monkeypatch.setattr(wd, "ESCALATE_AFTER", 99)
     monkeypatch.setattr(wd, "NOTIFIED", "put on the desktop")
     monkeypatch.setattr(wd, "HELD", "kept back")

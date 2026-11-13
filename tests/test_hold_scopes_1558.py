@@ -127,8 +127,9 @@ def test_a_finished_yield_is_kept_as_a_span_in_the_runs_progress(monkeypatch):
     assert len(spans) == 1 and spans[0][0] <= spans[0][1]
 
 
-def test_morning_names_both_holds():
+def test_morning_names_both_holds(monkeypatch):
     from harness import morning
+    monkeypatch.setattr(morning, "_gh", lambda argv: "[]")
     conn = ms.connect()
     hold.hold(conn, SAID)
     hold.hold(conn, "owner: a render", scope=hold.GPU)

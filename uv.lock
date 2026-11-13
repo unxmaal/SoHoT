@@ -475,8 +475,8 @@ wheels = [
 
 [[package]]
 name = "gauntlet"
-version = "0.3.6"
-source = { git = "https://github.com/unxmaal/gauntlet?rev=v0.3.6#90a34cbbad506185390cc5564babd5fd7ae3f69e" }
+version = "0.3.7"
+source = { git = "https://github.com/unxmaal/gauntlet?rev=v0.3.7#3be774ebe5bd6077f500e9ace5e55b6eadb1d489" }
 
 [[package]]
 name = "h11"
@@ -953,7 +953,7 @@ requires-dist = [
 cluster = [{ name = "psycopg", extras = ["binary"], specifier = ">=3.2" }]
 dev = [
     { name = "fastapi", specifier = ">=0.110" },
-    { name = "gauntlet", marker = "python_full_version >= '3.12'", git = "https://github.com/unxmaal/gauntlet?rev=v0.3.6" },
+    { name = "gauntlet", marker = "python_full_version >= '3.12'", git = "https://github.com/unxmaal/gauntlet?rev=v0.3.7" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "hypothesis", specifier = ">=6.170.15" },
     { name = "pytest", specifier = ">=8" },

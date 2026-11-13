@@ -256,6 +256,7 @@ def _docker_image() -> str:
 
 
 @pytest.mark.skipif(not _docker_image(), reason=f"needs a docker engine with {et.IMAGE} already pulled")
+@pytest.mark.real_effect
 def test_the_real_container_fetches_mac_wheels_offline_and_they_verify(tmp_path):
     src, wheels = tmp_path / "src", tmp_path / "wheels"
     published = {}

@@ -212,8 +212,8 @@ def store(conn=None):
 
 
 def hf_home() -> Path:
-    return Path(os.environ.get("HF_HOME")
-                or Path.home() / ".cache" / "huggingface")
+    from harness import env
+    return env.weights_home()
 
 
 def hub_root() -> Path:
@@ -626,8 +626,12 @@ def backfill(conn, hub: Path | None = None, ggufs: Path | None = None,
             return
         done.add(key(where))
         # A retried migration finds this path's row, live or removed. #496.
-        if conn.execute("SELECT 1 FROM downloads WHERE path = ?",
-                        (key(where),)).fetchone():
+        had = conn.execute("SELECT id, path, state FROM downloads WHERE path = ? ORDER BY id DESC",
+                           (key(where),)).fetchone()
+        if had:
+            # A run killed after record() and before settle() left it live: the rerun settles it. #1887.
+            if had["state"] in (ds.COMPLETE, ds.INCOMPLETE):
+                settle(had["id"], had["path"], had["state"])
             return
         got = record(conn, repo, kind, where, **kw)
         settle(got["id"], got["path"], got["state"])

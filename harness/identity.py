@@ -9,7 +9,7 @@ import re
 import sys
 from pathlib import Path
 
-from harness.atomic_file import replace
+from harness import atomic_file
 from harness import stale_temp
 
 #: Machine facts that only time a run; recorded beside the identity, never matched.
@@ -44,7 +44,7 @@ def _save_cache(path: Path, got: dict) -> bool:
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = stale_temp.temp(path, "{name}.{pid}.tmp")
         tmp.write_text(json.dumps(got, sort_keys=True), encoding="utf-8")
-        replace(tmp, path)
+        atomic_file.replace(tmp, path)
     except OSError:
         return False
     return True

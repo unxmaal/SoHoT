@@ -504,6 +504,17 @@ def test_decide_records_the_fetch_budget_it_is_given_as_gib(tmp_path, given):
     assert conn.execute("SELECT budget_gib FROM verdicts WHERE id = ?", (bare,)).fetchone()[0] is None
 
 
+def test_decide_records_the_event_its_writer_names_and_none_when_none_is_given(tmp_path):
+    conn = _store(tmp_path)
+    named = ms.decide(conn, "org/thing", "queued", tier=ms.FETCH, detail="landed", event="downloaded")
+    ms.record(conn, ms.Seen(name="org/other", source="feed", url="u"))
+    bare = ms.decide(conn, "org/other", "queued", tier=ms.FETCH, detail="downloaded", event=None)
+    ms.record(conn, ms.Seen(name="org/third", source="feed", url="u"))
+    omitted = ms.decide(conn, "org/third", "queued", tier=ms.FETCH, detail="downloaded")
+    got = dict(conn.execute("SELECT id, event FROM verdicts WHERE id IN (?, ?, ?)", (named, bare, omitted)).fetchall())
+    assert got == {named: "downloaded", bare: "", omitted: ""}
+
+
 def test_decide_records_the_lane_its_writer_names_and_none_when_none_is_given(tmp_path):
     conn = _store(tmp_path)
     plain = ms.decide(conn, "org/thing", "declined", tier=ms.INSPECT, detail="too-big")

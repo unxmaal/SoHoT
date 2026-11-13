@@ -131,7 +131,7 @@ def test_probe_and_smoke_requests_are_not_use(tmp_path):
         assert sorted(used) == [ORNITH, "mlx-community/X-4bit"] and used[ORNITH] == [(DAY - 900, DAY - 900)]
     finally:
         conn.close()
-    assert watchdog_observe.Probes().last_use(None, 0) == {}
+    assert watchdog_observe.Probes().last_use(None, 0) is None
 
 
 def test_the_served_probe_reads_loaded_router_models_their_slots_and_a_non_boot_mlx_model(monkeypatch):

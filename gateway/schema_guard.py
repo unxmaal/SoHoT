@@ -9,9 +9,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from harness import gateway, serving  # noqa: E402
 
 CONFIG = Path(__file__).resolve().parent / "config.yaml"
-# The served config adds sohot-<lane> aliases; prefer it when serve-gateway.sh wrote it. #297.
-if gateway.served_path(CONFIG).exists():
-    CONFIG = gateway.served_path(CONFIG)
 ENFORCED = ("json_schema", "json_object")
 
 try:
@@ -20,15 +17,21 @@ except ImportError:  # the test suite has no litellm
     CustomLogger = object
 
 
+def config() -> Path:
+    """The served config (sohot-<lane> aliases) when serve-gateway.sh has written it, asked per request. #297, #1797."""
+    served = gateway.served_path(CONFIG)
+    return served if served.exists() else CONFIG
+
+
 def _engine(model: str) -> str | None:
     try:
-        return serving.engine_for(model, config=CONFIG)
+        return serving.engine_for(model, config=config())
     except serving.UnknownEngine:
         return None
 
 
 def _enforcing() -> list[str]:
-    return sorted(str(e["model_name"]) for e in gateway.load(CONFIG).get("model_list") or []
+    return sorted(str(e["model_name"]) for e in gateway.load(config()).get("model_list") or []
                   if not e.get("deprecated_for") and not e.get("fallback_for")
                   and _engine(str(e["model_name"])) == serving.LLAMACPP)
 

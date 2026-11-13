@@ -20,11 +20,23 @@ def cmd_usage(a) -> int:
     conn = ms.connect()
     try:
         if a.text:
-            usage.set_text(conn, a.text == "on")
+            gone = usage.set_text(conn, a.text == "on")
             note(f"text samples are {a.text}: the gateway "
                  f"{'keeps' if a.text == 'on' else 'keeps no'} prompt and completion "
-                 f"text (newest {usage.SAMPLE_ROWS}, {usage.SAMPLE_CHARS} chars each)")
-            emit(text=a.text == "on")
+                 f"text (newest {usage.SAMPLE_ROWS}, {usage.SAMPLE_CHARS} chars each)"
+                 + (f"; deleted the {gone} kept sample(s)" if a.text == "off" else ""))
+            emit(text=a.text == "on", deleted=gone)
+            return 0
+        if getattr(a, "samples", 0):
+            got = usage.samples(conn, a.samples, lane=(a.lane or "").strip().lower() or None)
+            if not got:
+                note("no text samples kept" + ("" if usage.text_enabled(conn)
+                                               else " (`soh usage --text on` keeps them)"))
+            for s in got:
+                note(f"#{s['id']} {usage.time.strftime('%Y-%m-%d %H:%M', usage.time.localtime(s['at']))} "
+                     f"{s['alias']} {s['purpose']}{' ' + s['error_class'] if s['error_class'] else ''}\n"
+                     f"  prompt: {s['prompt']}\n  completion: {s['completion']}")
+            emit(samples=got)
             return 0
         try:
             since = usage.parse_since(a.since)

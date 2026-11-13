@@ -179,10 +179,19 @@ def test_the_mcp_unit_can_find_lh(plists):
     assert ".local/bin" in unit["EnvironmentVariables"]["PATH"]
 
 
-def test_probe_is_available_without_installing_anything():
+#: launchctl that runs a bootstrapped plist's program itself, so the probe submits no real launchd job. #1794.
+FAKE_LAUNCHCTL = ('#!{py}\nimport plistlib, subprocess, sys\nif sys.argv[1:2] == ["bootstrap"]:\n'
+                  '    with open(sys.argv[3], "rb") as f:\n        subprocess.Popen(plistlib.load(f)["ProgramArguments"])\n')
+
+
+def test_probe_is_available_without_installing_anything(tmp_path):
     """The TCC verdict is the whole question, and finding it out should not
     require committing to an install first."""
-    proc = subprocess.run([shells.BASH, str(GEN), "probe"],
+    bin_ = tmp_path / "bin"
+    bin_.mkdir()
+    (bin_ / "launchctl").write_text(FAKE_LAUNCHCTL.format(py=sys.executable), encoding="utf-8")
+    (bin_ / "launchctl").chmod(0o755)
+    proc = subprocess.run([shells.BASH, str(GEN), "probe"], env={**os.environ, "PATH": f"{bin_}:{os.environ['PATH']}"},
                           capture_output=True, text=True)
     # Either verdict is fine here; what matters is that it ran and said so.
     assert "ok" in proc.stdout.lower() or "denied" in (proc.stdout + proc.stderr).lower()

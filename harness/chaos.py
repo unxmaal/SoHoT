@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, NamedTuple
 
-from harness import fetching, paths, reasons, screen
+from harness import fetching, paths, reasons, screen, store
 from harness import memory_store as ms
 
 CONFIRM_FLAG = "--yes-break-things"
@@ -87,12 +87,14 @@ def _inside(path: Path, root: Path) -> bool:
 def scratch_home(parent: Path, live: Path):
     """A fresh LOCALHARNESS_HOME (and HF_HOME, models dir) under parent, removed on exit."""
     home = Path(tempfile.mkdtemp(prefix="soh-chaos-", dir=parent)).resolve()
-    saved = {k: os.environ.get(k) for k in SCRATCH_VARS}
+    saved = {k: os.environ.get(k) for k in (*SCRATCH_VARS, store.BACKEND_ENV)}
     try:
         if _inside(home, live):
             raise ChaosRefused(f"scratch home {home} is inside the live home")
         for var, sub in SCRATCH_VARS.items():
             os.environ[var] = str(home / sub) if sub else str(home)
+        # A scratch home's store is its own SQLite file, whatever LOCALHARNESS_STORE named. #1797.
+        os.environ[store.BACKEND_ENV] = store.SQLITE
         yield home
     finally:
         for var, was in saved.items():

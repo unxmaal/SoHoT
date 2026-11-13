@@ -20,7 +20,7 @@ import time
 from pathlib import Path
 
 #: `infovore labels export --jsonl` as #311 ran it (488 labels, 46 held out).
-LABELS = Path.home() / "infovore" / "exports" / "labels-2026-10-04.jsonl"
+LABELS_REL = "infovore/exports/labels-2026-10-04.jsonl"
 #: infovore.triage.embed.FOLD_SEED: the same folds the #311 embedding control used.
 FOLD_SEED = "embed-cv-v1"
 FOLDS = 5
@@ -356,7 +356,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     for name in ("fit", "run"):
         p = sub.add_parser(name)
-        p.add_argument("--labels", default=str(LABELS))
+        p.add_argument("--labels", default=str(Path.home() / LABELS_REL))
         p.add_argument("--model", required=True, help="local Laya checkpoint directory")
         p.add_argument("--embed-model", required=True, help="local bge-small-en-v1.5 snapshot directory")
         p.add_argument("--device", default="mps")

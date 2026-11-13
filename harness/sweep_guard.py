@@ -25,7 +25,6 @@ except ImportError:  # run as a file: python3 -I puts neither the checkout nor t
         spec.loader.exec_module(module)
         return module
     atomic_file, run_state, stale_temp = _beside("atomic_file"), _beside("run_state"), _beside("stale_temp")
-replace = atomic_file.replace
 
 OVERRIDE = "LH_DEPLOY_DURING_SWEEP"
 #: harness/heartbeat.path() and harness/paths.runs(), restated because this imports nothing but run_state.
@@ -152,7 +151,7 @@ def settle_heartbeat(root: Path, stopped: list[dict], alive=alive) -> None:
                 error=f"stopped for a deploy ({OVERRIDE}=1)")
     tmp = stale_temp.temp(path, "{name}.{pid}.tmp")
     tmp.write_text(json.dumps(beat), encoding="utf-8")
-    replace(tmp, path)
+    atomic_file.replace(tmp, path)
 
 
 def check(root: Path, environ=None, err=None, alive=alive, command_of=command_of, stopper=stop) -> int:
