@@ -487,14 +487,12 @@ def _knob_row(k) -> dict:
 
 
 def _knob_sweeps(a) -> int:
-    """What a loop would sweep now, and every decision recorded. #636."""
+    """What a loop would sweep now here, and every decision recorded here. #636, #1771."""
     from harness import sweeps
     from harness.commands.common import lent_store
     with lent_store() as store:
         got = sweeps.check(store, dry_run=True)
-        done = [dict(r) for r in store.execute(
-            "SELECT knob, lane, spec, outcome, chosen, detail, settled_at FROM knob_sweeps "
-            "WHERE outcome != '' ORDER BY id").fetchall()]
+        done = sweeps.decided(store)
     if a.json:
         print(json.dumps({"planned": [{k: v for k, v in p.items() if k != "argv"} for p in got["planned"]],
                           "decided": done}, indent=2, default=str))

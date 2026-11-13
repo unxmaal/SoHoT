@@ -659,9 +659,13 @@ def _resume(conn, sw: dict, value, job: dict, add) -> dict | None:
 def settle(conn, *, now: float, write: bool = True, add=None, resumed: list | None = None) -> list[dict]:
     """Decide every open sweep whose jobs will run nothing more; a paused job is resumed into `resumed`, never judged. #1733."""
     from harness import job_state as js
+    from harness import machine_scope
     from harness import workqueue as wq
     out = []
-    for r in conn.execute("SELECT * FROM knob_sweeps WHERE outcome = ? ORDER BY id", (OPEN,)).fetchall():
+    # Another machine's sweep is its own to judge, and its paused jobs to resume into its queue. #1771.
+    here, mine = machine_scope.here(conn, "knob_sweeps.mine")
+    for r in conn.execute(f"SELECT * FROM knob_sweeps WHERE outcome = ? AND {here} ORDER BY id",
+                          (OPEN, *mine)).fetchall():
         sw = dict(r)
         jobs = json.loads(sw["jobs"])
         states = [_job_state(conn, j) for _, j in jobs]
@@ -683,6 +687,15 @@ def settle(conn, *, now: float, write: bool = True, add=None, resumed: list | No
         out.append({"id": sw["id"], "knob": sw["knob"], "lane": sw["lane"], "spec": sw["spec"],
                     "outcome": outcome, "chosen": chosen, "cost": cost, "detail": detail})
     return out
+
+
+def decided(conn) -> list[dict]:
+    """This machine's settled sweeps, oldest first. #1771."""
+    from harness import machine_scope
+    here, mine = machine_scope.here(conn, "knob_sweeps.mine")
+    return [dict(r) for r in conn.execute(
+        "SELECT knob, lane, spec, outcome, chosen, detail, settled_at FROM knob_sweeps "
+        f"WHERE outcome != ? AND {here} ORDER BY id", (OPEN, *mine)).fetchall()]
 
 
 def check(conn, *, now: float | None = None, dry_run: bool = False, add=None) -> dict:
