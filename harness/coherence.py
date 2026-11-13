@@ -272,10 +272,12 @@ def apply(conn, found: list[dict]) -> list[int]:
         vid = ms.decide(conn, c["name"], outcome, tier=tier, reason=reason, until=until,
                         detail=c["detail"], run_path=c["run_path"] or "", run_id=c["run_id"],
                         candidate_id=c["candidate_id"], failure_class=c.get("failure_class", ""),
-                        lane=c.get("lane", ""))
+                        lane=c.get("lane", ""), commit=False)
         if c.get("evidence"):
             conn.execute("UPDATE verdicts SET power = ?, split_version = ? WHERE id = ?",
                          (c["evidence"]["power"], c["evidence"]["split_version"] or "", vid))
+        # The verdict and its evidence commit together, or neither does. #1887.
+        conn.commit()
         ids.append(vid)
     conn.commit()
     return ids
