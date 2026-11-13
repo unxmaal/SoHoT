@@ -417,7 +417,6 @@ an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/benchmarks.py
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/chaos.py:answers:urlopen
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/ci_history.py:_gh:binary:gh
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/ci_rerun.py:_gh:binary:gh
-an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/claude_news.py:notify:desktop
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/commands/claude_news.py:cmd_claude_news:notify
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/commands/funnel.py:cmd_funnel:gather
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/commands/inventory.py:cmd_time:gather
@@ -439,7 +438,6 @@ an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/github.py:_gh
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/lane_probe.py:_send:urlopen
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/monitor.py:desktop:desktop
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/morning.py:_gh:binary:gh
-an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/morning.py:notify:desktop
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/needle.py:Server.post:urlopen
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/privacy.py:_api:_gh
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/privacy.py:_gh:binary:gh
@@ -454,7 +452,6 @@ an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/router.py:_po
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/runtime_trials.py:_gh:_gh
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/runtime_trials.py:trial:install
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/store_service.py:daily_dump:verify
-an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/watchdog_hands.py:Hands.notify:desktop
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/watchdog_observe.py:Probes._launchctl:binary:launchctl
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy scripts/pool-full-probe.py:ask:urlopen
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy scripts/pool-full-probe.py:main:urlopen

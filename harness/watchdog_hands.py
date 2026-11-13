@@ -44,6 +44,15 @@ def desktop(title: str, message: str, subtitle: str = "", run=subprocess.run, pl
     return wd.Said(f"{wd.NOTIFIED}: {message}", wd.ACTED, notified=True)
 
 
+def notice(title: str, message: str, subtitle: str = "", run=None, platform: str | None = None) -> str:
+    """desktop() from the live home only, monitor.alert's gate; a scratch or test home's notice is not shown. #1794."""
+    from harness import monitor, paths
+    from harness import watchdog as wd
+    if not monitor.live_home():
+        return wd.Said(f"notify not sent: {paths.home()} is not the live home {paths.DEFAULT_HOME}", wd.UNAVAILABLE)
+    return desktop(title, message, subtitle, run=run or subprocess.run, platform=platform)
+
+
 class Hands:
     """The fixed action set. Each returns an outcome string for the store row."""
 
@@ -61,8 +70,8 @@ class Hands:
 
     def notify(self, f: Finding) -> str:
         from harness import watchdog as wd
-        return desktop(wd.NOTIFY_TITLE, f"{f.criterion}: {f.subject.key}", wd.BY_ID[f.criterion].what,
-                       run=self.run, platform=self.platform)
+        return notice(wd.NOTIFY_TITLE, f"{f.criterion}: {f.subject.key}", wd.BY_ID[f.criterion].what,
+                      run=self.run, platform=self.platform)
 
     def file(self, f: Finding) -> str:
         from harness import watchdog as wd
