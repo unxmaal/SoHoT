@@ -2,14 +2,14 @@
  "candidates": [
   {
    "candidate": "diffusers-video:LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
-   "decided_at": "2026-11-05T03:41:35Z",
+   "decided_at": "2026-11-13T02:30:07Z",
    "detail": "it ran and passed nothing: fox-run: exit 1",
    "exam": null,
    "outcome": "broken",
    "proposal": "LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
    "reason": "candidate",
    "receipt_key": "diffusers-video/Minimax-H3-ref2v_Anime_2_Realism",
-   "run_id": 705,
+   "run_id": 930,
    "serves": false,
    "status": "rejected",
    "tier": "screen",
@@ -105,7 +105,7 @@
    "until": ""
   }
  ],
- "cursor": 1794192629179771,
+ "cursor": 1794537007701734,
  "events": [
   {
    "at": "2026-09-19T23:24:35Z",
@@ -211,6 +211,21 @@
    "reason": "limit",
    "run_id": 768,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-13T02:30:07Z",
+   "candidate": "diffusers-video:LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
+   "chosen": null,
+   "detail": "it ran and passed nothing: fox-run: exit 1",
+   "how": "",
+   "id": 1794537007701734,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 930,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -379,7 +394,7 @@
    "runs": 7
   }
  ],
- "generated_at": "2026-11-09T08:03:20Z",
+ "generated_at": "2026-11-13T03:38:05Z",
  "knobs": [],
  "lane": {
   "cases": 1,
