@@ -47,6 +47,32 @@ def test_a_job_row_carries_job_and_make_check_minutes():
     assert ci_history.from_job(queued, RUN) is None, "a job no runner took never ran (#1590)"
 
 
+def test_a_cancel_is_judged_against_the_limit_its_run_ran_under():
+    """#1590: raising check-macos 35 -> 56 turned 15 runs cut at 35 into "superseded" and hid them from the p95."""
+    assert ci_history.limit_at("jobs:\n  check-macos:\n    timeout-minutes: 35\n", "check-macos") == 35.0
+    assert ci_history.limit_at("jobs:\n  check-macos:\n    runs-on: x\n", "check-macos") == 360.0
+    assert ci_history.limit_at("jobs: [", "check-macos") is None and ci_history.limit_at(None, "check-macos") is None
+    assert ci_history.limit_at('{"jobs": []}', "check-macos") is None
+    cut = {"conclusion": "cancelled", "job_min": 35.6, "limit_min": 35.0}
+    assert ci_history.outcome(cut, 56) == "timeout"
+    assert ci_history.outcome({**cut, "job_min": 20.0}, 56) == "superseded"
+    assert ci_history.outcome({**cut, "limit_min": None}, 56) == "superseded"
+
+
+def test_collect_records_each_runs_own_limit(tmp_path):
+    def gh(argv):
+        if argv[0] == "run":
+            return json.dumps([RUN])
+        if argv[-1].endswith("/logs"):
+            return LOG
+        if "contents/.github/workflows/ci.yml?ref=" in argv[-1]:
+            assert argv[-1].endswith(f"?ref={RUN['headSha']}")
+            return "jobs:\n  check-macos:\n    timeout-minutes: 35\n"
+        return json.dumps({"jobs": [_job("00:00:00", "00:35:36", "cancelled")]})
+    (row,) = ci_history.collect(5, tmp_path, gh=gh)
+    assert row["limit_min"] == 35.0 and ci_history.outcome(row, 56) == "timeout"
+
+
 def test_the_rule_reads_a_p95_that_keeps_the_runs_a_timeout_cut():
     """#1590: 15 of 53 push runs were cut at 35 min; a p95 over finished runs alone read 34.1 and said 35 was enough."""
     rows = [{"fast": False, "runner": "M1 3cpu", "conclusion": "success", "job_min": 30.0, "check_min": 29.0}

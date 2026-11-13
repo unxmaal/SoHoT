@@ -16,7 +16,7 @@ KNOBS = [
             "so runner variance cannot block a deploy and a suite that is simply too slow still fails (#1520)"),
     _k("ci_macos_timeout", [f"{B}:MACOS_TIMEOUT_MIN"], [35, 45, 56, 70],
        note="check-macos timeout-minutes: ci_budget.HOST_FACTOR 1.4x the push job p95 on the 3-vCPU M1 class with "
-            "timeouts projected (39.3 min over 53 runs to 2026-11-13, 15 of them cut at 35; python -m harness.ci_history); "
+            "timeouts projected (39.1 min over 54 runs to 2026-11-13, 15 of them cut at 35; python -m harness.ci_history); "
             "a slow M1 host ran 1.4x the run before it (41692522061 vs 41687128099) and 2.0x in #1146 (#1520, #1590)"),
     _k("ci_slower_added", [f"{T}:SLOWER_ADDED_S"], [10.0, 30.0, 60.0],
        note="seconds more than on the last main run a test must take to be named slower; with ci_slower_ratio, "

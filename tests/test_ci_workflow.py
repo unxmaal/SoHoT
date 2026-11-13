@@ -165,8 +165,8 @@ def test_apt_packages_are_cached_on_the_package_list():
     assert "cache-hit" in steps[save]["if"]
 
 
-#: check-macos push job p95 and max on the 3-vCPU M1 class, 53 runs 11-12..11-13, 15 timeouts projected (ci_history, #1590).
-MACOS_3_VCPU_JOB_P95, MACOS_3_VCPU_JOB_MAX = 39.3, 42.2
+#: check-macos push job p95 and max on the 3-vCPU M1 class, 54 runs to 11-13, 15 timeouts projected (ci_history, #1590).
+MACOS_3_VCPU_JOB_P95, MACOS_3_VCPU_JOB_MAX = 39.1, 42.2
 
 
 def test_macos_leaves_room_for_a_slow_host_and_is_still_a_hang_detector():
@@ -179,8 +179,8 @@ def test_macos_leaves_room_for_a_slow_host_and_is_still_a_hang_detector():
 
 
 #: Job p95 minutes with timeouts projected from their last progress % (python -m harness.ci_history --job J, #1590):
-#: check-linux and check-windows over 15 nightlies to 11-13, check-postgres over its 21 PR runs to 11-13.
-JOB_P95_MIN = {"check-linux": 36.1, "check-windows": 85.2, "check-postgres": 54.6}
+#: check-linux and check-windows over 15 nightlies to 11-13, check-postgres over its 18 PR runs to 11-13.
+JOB_P95_MIN = {"check-linux": 35.4, "check-windows": 74.2, "check-postgres": 51.5}
 
 
 @pytest.mark.gauntlet("a-closed-table-fronting-an-open-set", site="harness/ci_budget.py:HOST_FACTOR")

@@ -145,8 +145,8 @@ def test_each_job_is_set_against_its_ci_yml_timeout(home):
         "job": "check-macos", "event": "pull_request", "runs": 2, "passed": 2, "failed": 0, "cancelled": 0,
         "p50": 24.6, "p95": 30.1, "max": 30.7, "timeout": 56.0, "p95_share": 0.54}
     assert (jobs[("check-postgres", "pull_request")]["timeout"], jobs[("check-postgres", "pull_request")]["p95"]) == (
-        77.0, 46.8)
-    assert jobs[("check-windows", "workflow_dispatch")]["timeout"] == 111.0
+        73.0, 46.8)
+    assert jobs[("check-windows", "workflow_dispatch")]["timeout"] == 97.0
     assert not any(t["job"].startswith("mutation (") for t in got["jobs"])
 
 

@@ -85,13 +85,23 @@ def from_job(job: dict, run: dict, name: str = JOB) -> dict | None:
 
 
 def outcome(row: dict, limit_min: float) -> str:
-    """passed, failed, timeout (cancelled at the job limit), or superseded (cancelled earlier, by a newer push)."""
+    """passed, failed, timeout (cancelled at the limit in force for that run), or superseded (cancelled earlier)."""
     c = row.get("conclusion")
     if c == "success":
         return "passed"
     if c == "cancelled":
-        return "timeout" if (row.get("job_min") or 0) >= limit_min else "superseded"
+        return "timeout" if (row.get("job_min") or 0) >= (row.get("limit_min") or limit_min) else "superseded"
     return "failed"
+
+
+def limit_at(text: str | None, name: str) -> float | None:
+    """The job's timeout-minutes in a ci.yml text, the one a run ran under; None when it cannot be read."""
+    import yaml
+    try:
+        jobs = (yaml.safe_load(text or "") or {}).get("jobs") or {}
+        return float(jobs[name].get("timeout-minutes", 360))
+    except (yaml.YAMLError, AttributeError, KeyError, TypeError, ValueError):
+        return None
 
 
 def path(row: dict) -> str:
@@ -198,6 +208,10 @@ def collect(limit: int, cache: Path, gh=None, branch: str = "", name: str = JOB,
             row = from_job(job, run, name)
             if row is None:
                 continue
+            sha = run.get("headSha", "")
+            url = f"repos/{REPO}/contents/.github/workflows/{WORKFLOW}?ref={sha}"
+            row["limit_min"] = limit_at(_cached(cache / f"ci-{sha}.yml", lambda: gh(
+                ["api", "-H", "Accept: application/vnd.github.raw", url])), name) if sha else None
             log = _cached(cache / f"{job['id']}.log", lambda: gh(
                 ["api", "--allow-escape-sequences", f"repos/{REPO}/actions/jobs/{job['id']}/logs"]))
             if log is not None:
