@@ -38,27 +38,27 @@
     "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
     "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
     "cases": 135,
-    "first_s": 0.994,
-    "median_s": 3.037,
+    "first_s": 11.146,
+    "median_s": 30.379,
     "metrics": {
      "co_tenant": 1.0,
-     "code_pass": 0.8333,
-     "completion_tokens": 983.375,
-     "tokens_per_s": 128.725
+     "code_pass": 0.8,
+     "completion_tokens": 3649.0,
+     "tokens_per_s": 141.58
     },
     "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
     "not_run": "",
-    "pass_rate": 0.792,
-    "passed": 19,
+    "pass_rate": 0.8,
+    "passed": 4,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-12T04:30:38Z",
+    "run_at": "2026-11-13T03:37:53Z",
     "served_as": "",
     "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
-    "total": 24,
-    "ttft_median_s": 2.581,
-    "ttft_p95_s": 18.349
+    "total": 5,
+    "ttft_median_s": 29.064,
+    "ttft_p95_s": 45.41
    },
    "outcome": "measured",
    "proposal": "ornith-ai/Ornith-1.5-35B-A3B-GGUF",
@@ -78,27 +78,27 @@
     "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
     "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
     "cases": 135,
-    "first_s": 0.994,
-    "median_s": 3.037,
+    "first_s": 11.146,
+    "median_s": 30.379,
     "metrics": {
      "co_tenant": 1.0,
-     "code_pass": 0.8333,
-     "completion_tokens": 983.375,
-     "tokens_per_s": 128.725
+     "code_pass": 0.8,
+     "completion_tokens": 3649.0,
+     "tokens_per_s": 141.58
     },
     "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
     "not_run": "",
-    "pass_rate": 0.792,
-    "passed": 19,
+    "pass_rate": 0.8,
+    "passed": 4,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-12T04:30:38Z",
+    "run_at": "2026-11-13T03:37:53Z",
     "served_as": "",
     "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
-    "total": 24,
-    "ttft_median_s": 2.581,
-    "ttft_p95_s": 18.349
+    "total": 5,
+    "ttft_median_s": 29.064,
+    "ttft_p95_s": 45.41
    },
    "outcome": "measured",
    "proposal": "ornith-ai/Ornith-1.5-35B-A3B-GGUF",
@@ -118,27 +118,27 @@
     "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
     "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
     "cases": 135,
-    "first_s": 0.994,
-    "median_s": 3.037,
+    "first_s": 11.146,
+    "median_s": 30.379,
     "metrics": {
      "co_tenant": 1.0,
-     "code_pass": 0.8333,
-     "completion_tokens": 983.375,
-     "tokens_per_s": 128.725
+     "code_pass": 0.8,
+     "completion_tokens": 3649.0,
+     "tokens_per_s": 141.58
     },
     "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
     "not_run": "",
-    "pass_rate": 0.792,
-    "passed": 19,
+    "pass_rate": 0.8,
+    "passed": 4,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-12T04:30:38Z",
+    "run_at": "2026-11-13T03:37:53Z",
     "served_as": "",
     "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
-    "total": 24,
-    "ttft_median_s": 2.581,
-    "ttft_p95_s": 18.349
+    "total": 5,
+    "ttft_median_s": 29.064,
+    "ttft_p95_s": 45.41
    },
    "outcome": "measured",
    "proposal": "ornith-ai/Ornith-1.5-35B-A3B-GGUF",
@@ -158,27 +158,27 @@
     "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
     "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
     "cases": 135,
-    "first_s": 0.994,
-    "median_s": 3.037,
+    "first_s": 11.146,
+    "median_s": 30.379,
     "metrics": {
      "co_tenant": 1.0,
-     "code_pass": 0.8333,
-     "completion_tokens": 983.375,
-     "tokens_per_s": 128.725
+     "code_pass": 0.8,
+     "completion_tokens": 3649.0,
+     "tokens_per_s": 141.58
     },
     "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
     "not_run": "",
-    "pass_rate": 0.792,
-    "passed": 19,
+    "pass_rate": 0.8,
+    "passed": 4,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-12T04:30:38Z",
+    "run_at": "2026-11-13T03:37:53Z",
     "served_as": "",
     "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
-    "total": 24,
-    "ttft_median_s": 2.581,
-    "ttft_p95_s": 18.349
+    "total": 5,
+    "ttft_median_s": 29.064,
+    "ttft_p95_s": 45.41
    },
    "outcome": "measured",
    "proposal": "ornith-ai/Ornith-1.5-35B-A3B-GGUF",
@@ -1791,6 +1791,84 @@
    "status": "rejected",
    "tier": "screen",
    "until": "commit_after:2026-11-09T01:06:19Z"
+  },
+  {
+   "candidate": "llamacpp:Qwen3.6-27B-MTP-4.5bpw-pure",
+   "decided_at": "2026-11-13T03:37:54Z",
+   "detail": "code: lane too small, needs 368 holdout cases: 135 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 777 more code cases are needed before a null says anything about llamacpp:Qw",
+   "exam": {
+    "about": "family Qwen/Qwen3.6-27B, 27B params, by huytd189",
+    "candidate": "llamacpp:Qwen3.6-27B-MTP-4.5bpw-pure",
+    "cases": 135,
+    "first_s": 127.188,
+    "median_s": 134.761,
+    "metrics": {
+     "code_pass": 0.98,
+     "completion_tokens": 6840.2,
+     "tokens_per_s": 48.48
+    },
+    "model": "llamacpp:Qwen3.6-27B-MTP-4.5bpw-pure",
+    "not_run": "",
+    "pass_rate": 0.8,
+    "passed": 4,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-13T03:37:53Z",
+    "served_as": "",
+    "source": "https://huggingface.co/huytd189/Qwen3.6-27B-pure-GGUF",
+    "total": 5,
+    "ttft_median_s": 130.444,
+    "ttft_p95_s": 175.904
+   },
+   "outcome": "declined",
+   "proposal": "huytd189/Qwen3.6-27B-pure-GGUF",
+   "reason": "limit",
+   "receipt_key": "llamacpp:Qwen3.6-27B-MTP-4.5bpw-pure",
+   "run_id": 945,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:code>1227"
+  },
+  {
+   "candidate": "llamacpp:Qwen3.6-27B-MTP-4.5bpw-pure,temperature=0",
+   "decided_at": "2026-11-13T03:37:54Z",
+   "detail": "code: lane too small, needs 368 holdout cases: 135 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 777 more code cases are needed before a null says anything about llamacpp:Qw",
+   "exam": {
+    "about": "family Qwen/Qwen3.6-27B, 27B params, by huytd189",
+    "candidate": "llamacpp:Qwen3.6-27B-MTP-4.5bpw-pure",
+    "cases": 135,
+    "first_s": 127.188,
+    "median_s": 134.761,
+    "metrics": {
+     "code_pass": 0.98,
+     "completion_tokens": 6840.2,
+     "tokens_per_s": 48.48
+    },
+    "model": "llamacpp:Qwen3.6-27B-MTP-4.5bpw-pure",
+    "not_run": "",
+    "pass_rate": 0.8,
+    "passed": 4,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-13T03:37:53Z",
+    "served_as": "",
+    "source": "https://huggingface.co/huytd189/Qwen3.6-27B-pure-GGUF",
+    "total": 5,
+    "ttft_median_s": 130.444,
+    "ttft_p95_s": 175.904
+   },
+   "outcome": "declined",
+   "proposal": "huytd189/Qwen3.6-27B-pure-GGUF",
+   "reason": "limit",
+   "receipt_key": "llamacpp:Qwen3.6-27B-MTP-4.5bpw-pure",
+   "run_id": 945,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:code>1227"
   },
   {
    "candidate": "llamacpp:Qwen3.6-35B-A3B-DFlash-Q4_K_M",
@@ -4276,36 +4354,6 @@
    "until": ""
   },
   {
-   "candidate": "llamacpp:Qwen3.6-27B-MTP-4.5bpw-pure",
-   "decided_at": "2026-10-29T04:10:06Z",
-   "detail": "5 case(s) passed a screen",
-   "exam": null,
-   "outcome": "screened",
-   "proposal": "huytd189/Qwen3.6-27B-pure-GGUF",
-   "reason": "candidate",
-   "receipt_key": "llamacpp:Qwen3.6-27B-MTP-4.5bpw-pure",
-   "run_id": 607,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
-   "candidate": "llamacpp:Qwen3.6-27B-MTP-4.5bpw-pure,temperature=0",
-   "decided_at": "2026-10-29T04:10:06Z",
-   "detail": "5 case(s) passed a screen",
-   "exam": null,
-   "outcome": "screened",
-   "proposal": "huytd189/Qwen3.6-27B-pure-GGUF",
-   "reason": "candidate",
-   "receipt_key": "llamacpp:Qwen3.6-27B-MTP-4.5bpw-pure",
-   "run_id": 607,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
    "candidate": "llamacpp:Qwen3.6-27B-Q4_K_M",
    "decided_at": "2026-10-20T01:26:13Z",
    "detail": "4 case(s) passed a screen",
@@ -5360,7 +5408,7 @@
   },
   {
    "candidate": "CohereLabs/North-Micro-Vision-Instruct",
-   "decided_at": "2026-11-12T02:19:09Z",
+   "decided_at": "2026-11-13T02:48:16Z",
    "detail": "the vision lane runs by hand: soh vision run --candidate hf-vlm:CohereLabs/North-Micro-Vision-Instruct",
    "exam": null,
    "outcome": "queued",
@@ -5375,7 +5423,7 @@
   },
   {
    "candidate": "Hcompany/Holo-3.1-0.8B",
-   "decided_at": "2026-11-12T02:08:34Z",
+   "decided_at": "2026-11-13T02:48:13Z",
    "detail": "the vision lane runs by hand: soh vision run --candidate hf-vlm:Hcompany/Holo-3.1-0.8B",
    "exam": null,
    "outcome": "queued",
@@ -5390,7 +5438,7 @@
   },
   {
    "candidate": "Hcompany/Holo-3.1-0.8B,temperature=0",
-   "decided_at": "2026-11-12T02:08:34Z",
+   "decided_at": "2026-11-13T02:48:13Z",
    "detail": "the vision lane runs by hand: soh vision run --candidate hf-vlm:Hcompany/Holo-3.1-0.8B",
    "exam": null,
    "outcome": "queued",
@@ -5405,7 +5453,7 @@
   },
   {
    "candidate": "LiquidAI/LFM2.5-VL-3B",
-   "decided_at": "2026-11-12T02:08:33Z",
+   "decided_at": "2026-11-13T02:48:13Z",
    "detail": "the vision lane runs by hand: soh vision run --candidate hf-vlm:LiquidAI/LFM2.5-VL-3B",
    "exam": null,
    "outcome": "queued",
@@ -5420,7 +5468,7 @@
   },
   {
    "candidate": "LiquidAI/LFM2.5-VL-3B,temperature=0",
-   "decided_at": "2026-11-12T02:08:33Z",
+   "decided_at": "2026-11-13T02:48:13Z",
    "detail": "the vision lane runs by hand: soh vision run --candidate hf-vlm:LiquidAI/LFM2.5-VL-3B",
    "exam": null,
    "outcome": "queued",
@@ -5435,7 +5483,7 @@
   },
   {
    "candidate": "LiquidAI/LFM2.5-VL-450M",
-   "decided_at": "2026-11-12T02:19:09Z",
+   "decided_at": "2026-11-13T02:48:17Z",
    "detail": "the vision lane runs by hand: soh vision run --candidate hf-vlm:LiquidAI/LFM2.5-VL-450M",
    "exam": null,
    "outcome": "queued",
@@ -5450,7 +5498,7 @@
   },
   {
    "candidate": "LiquidAI/LFM2.5-VL-450M,temperature=0",
-   "decided_at": "2026-11-12T02:19:09Z",
+   "decided_at": "2026-11-13T02:48:17Z",
    "detail": "the vision lane runs by hand: soh vision run --candidate hf-vlm:LiquidAI/LFM2.5-VL-450M",
    "exam": null,
    "outcome": "queued",
@@ -5465,37 +5513,37 @@
   },
   {
    "candidate": "NemoStation/Marlin-2B",
-   "decided_at": "2026-11-12T02:04:47Z",
-   "detail": "fits: smallest variant model-00001-of-00002.safetensors (+1): 5.1 GiB of 2 weight files",
+   "decided_at": "2026-11-13T02:48:13Z",
+   "detail": "5.1 GiB would leave under the 50 GiB floor (50 GiB free)",
    "exam": null,
    "outcome": "queued",
    "proposal": "NemoStation/Marlin-2B",
-   "reason": "candidate",
+   "reason": "machine",
    "receipt_key": "NemoStation/Marlin-2B",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
+   "tier": "fetch",
    "until": ""
   },
   {
    "candidate": "NemoStation/Marlin-2B,temperature=0",
-   "decided_at": "2026-11-12T02:04:47Z",
-   "detail": "fits: smallest variant model-00001-of-00002.safetensors (+1): 5.1 GiB of 2 weight files",
+   "decided_at": "2026-11-13T02:48:13Z",
+   "detail": "5.1 GiB would leave under the 50 GiB floor (50 GiB free)",
    "exam": null,
    "outcome": "queued",
    "proposal": "NemoStation/Marlin-2B",
-   "reason": "candidate",
+   "reason": "machine",
    "receipt_key": "NemoStation/Marlin-2B",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
+   "tier": "fetch",
    "until": ""
   },
   {
    "candidate": "Qwen/Qwen-Drive-1.0-4B",
-   "decided_at": "2026-11-12T02:08:33Z",
+   "decided_at": "2026-11-13T02:48:12Z",
    "detail": "the vision lane runs by hand: soh vision run --candidate hf-vlm:Qwen/Qwen-Drive-1.0-4B",
    "exam": null,
    "outcome": "queued",
@@ -5510,7 +5558,7 @@
   },
   {
    "candidate": "Qwen/Qwen-Drive-1.0-4B,temperature=0",
-   "decided_at": "2026-11-12T02:08:33Z",
+   "decided_at": "2026-11-13T02:48:12Z",
    "detail": "the vision lane runs by hand: soh vision run --candidate hf-vlm:Qwen/Qwen-Drive-1.0-4B",
    "exam": null,
    "outcome": "queued",
@@ -5525,7 +5573,7 @@
   },
   {
    "candidate": "Qwen/Qwen-Image-Bench",
-   "decided_at": "2026-11-12T02:51:07Z",
+   "decided_at": "2026-11-13T02:48:20Z",
    "detail": "51.0 GiB would leave under the 50 GiB floor (50 GiB free)",
    "exam": null,
    "outcome": "queued",
@@ -5540,7 +5588,7 @@
   },
   {
    "candidate": "Qwen/Qwen-Image-Bench,temperature=0",
-   "decided_at": "2026-11-12T02:51:07Z",
+   "decided_at": "2026-11-13T02:48:20Z",
    "detail": "51.0 GiB would leave under the 50 GiB floor (50 GiB free)",
    "exam": null,
    "outcome": "queued",
@@ -5570,8 +5618,8 @@
   },
   {
    "candidate": "ibm-granite/granite-4.1-8b",
-   "decided_at": "2026-11-12T02:08:35Z",
-   "detail": "16.4 GiB would leave under the 50 GiB floor (63 GiB free)",
+   "decided_at": "2026-11-13T02:48:15Z",
+   "detail": "16.4 GiB would leave under the 50 GiB floor (50 GiB free)",
    "exam": {
     "about": "family granite, 8B params, by ibm-granite",
     "candidate": "ibm-granite/granite-4.1-8b",
@@ -5609,8 +5657,8 @@
   },
   {
    "candidate": "ibm-granite/granite-4.1-8b,temperature=0",
-   "decided_at": "2026-11-12T02:08:35Z",
-   "detail": "16.4 GiB would leave under the 50 GiB floor (63 GiB free)",
+   "decided_at": "2026-11-13T02:48:15Z",
+   "detail": "16.4 GiB would leave under the 50 GiB floor (50 GiB free)",
    "exam": {
     "about": "family granite, 8B params, by ibm-granite",
     "candidate": "ibm-granite/granite-4.1-8b",
@@ -5648,14 +5696,14 @@
   },
   {
    "candidate": "kishida/Q3-8B-KVA-Projector",
-   "decided_at": "2026-11-12T03:40:07Z",
+   "decided_at": "2026-11-13T03:01:50Z",
    "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: chunk-bytes: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2] No such file or directory: 'config.json'\"}; evaluate-expr: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2] No ",
    "exam": null,
    "outcome": "queued",
    "proposal": "kishida/Q3-8B-KVA-Projector",
    "reason": "harness",
    "receipt_key": "kishida/Q3-8B-KVA-Projector",
-   "run_id": 870,
+   "run_id": 938,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -5663,14 +5711,14 @@
   },
   {
    "candidate": "kishida/Q3-8B-KVA-Projector,temperature=0",
-   "decided_at": "2026-11-12T03:40:07Z",
+   "decided_at": "2026-11-13T03:01:50Z",
    "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: chunk-bytes: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2] No such file or directory: 'config.json'\"}; evaluate-expr: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2] No ",
    "exam": null,
    "outcome": "queued",
    "proposal": "kishida/Q3-8B-KVA-Projector",
    "reason": "harness",
    "receipt_key": "kishida/Q3-8B-KVA-Projector",
-   "run_id": 870,
+   "run_id": 938,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -5693,8 +5741,8 @@
   },
   {
    "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
-   "decided_at": "2026-11-12T02:29:38Z",
-   "detail": "19.5 GiB would leave under the 50 GiB floor (58 GiB free)",
+   "decided_at": "2026-11-13T02:48:18Z",
+   "detail": "19.5 GiB would leave under the 50 GiB floor (50 GiB free)",
    "exam": {
     "about": "family ornith-ai/Ornith-1.5-35B-A3B, 35B (3B active) params, Q4_K_S, by peculiar-ragdoll",
     "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
@@ -5732,8 +5780,8 @@
   },
   {
    "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S,temperature=0",
-   "decided_at": "2026-11-12T02:29:38Z",
-   "detail": "19.5 GiB would leave under the 50 GiB floor (58 GiB free)",
+   "decided_at": "2026-11-13T02:48:18Z",
+   "detail": "19.5 GiB would leave under the 50 GiB floor (50 GiB free)",
    "exam": {
     "about": "family ornith-ai/Ornith-1.5-35B-A3B, 35B (3B active) params, Q4_K_S, by peculiar-ragdoll",
     "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
@@ -5771,7 +5819,7 @@
   },
   {
    "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
-   "decided_at": "2026-11-12T02:51:08Z",
+   "decided_at": "2026-11-13T02:48:23Z",
    "detail": "45.9 GiB would leave under the 50 GiB floor (50 GiB free)",
    "exam": {
     "about": "family CohereLabs/command-a-plus-05-2026-bf16, IQ1_S, by bartowski",
@@ -5810,7 +5858,7 @@
   },
   {
    "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S,temperature=0",
-   "decided_at": "2026-11-12T02:51:08Z",
+   "decided_at": "2026-11-13T02:48:23Z",
    "detail": "45.9 GiB would leave under the 50 GiB floor (50 GiB free)",
    "exam": {
     "about": "family CohereLabs/command-a-plus-05-2026-bf16, IQ1_S, by bartowski",
@@ -5849,8 +5897,8 @@
   },
   {
    "candidate": "llamacpp:ornith15-trained-head",
-   "decided_at": "2026-11-12T02:08:34Z",
-   "detail": "16.2 GiB would leave under the 50 GiB floor (63 GiB free)",
+   "decided_at": "2026-11-13T02:48:14Z",
+   "detail": "16.2 GiB would leave under the 50 GiB floor (50 GiB free)",
    "exam": {
     "about": "family ornith-ai/Ornith-1.5-35B-A3B, 35B (3B active) params, by conFIGur8tor",
     "candidate": "llamacpp:ornith15-trained-head",
@@ -5888,8 +5936,8 @@
   },
   {
    "candidate": "llamacpp:ornith15-trained-head,temperature=0",
-   "decided_at": "2026-11-12T02:08:34Z",
-   "detail": "16.2 GiB would leave under the 50 GiB floor (63 GiB free)",
+   "decided_at": "2026-11-13T02:48:14Z",
+   "detail": "16.2 GiB would leave under the 50 GiB floor (50 GiB free)",
    "exam": {
     "about": "family ornith-ai/Ornith-1.5-35B-A3B, 35B (3B active) params, by conFIGur8tor",
     "candidate": "llamacpp:ornith15-trained-head",
@@ -5957,7 +6005,7 @@
   },
   {
    "candidate": "microsoft/Fara-7B",
-   "decided_at": "2026-11-12T02:08:34Z",
+   "decided_at": "2026-11-13T02:48:13Z",
    "detail": "the vision lane runs by hand: soh vision run --candidate hf-vlm:microsoft/Fara-7B",
    "exam": null,
    "outcome": "queued",
@@ -5972,7 +6020,7 @@
   },
   {
    "candidate": "microsoft/Fara-7B,temperature=0",
-   "decided_at": "2026-11-12T02:08:34Z",
+   "decided_at": "2026-11-13T02:48:13Z",
    "detail": "the vision lane runs by hand: soh vision run --candidate hf-vlm:microsoft/Fara-7B",
    "exam": null,
    "outcome": "queued",
@@ -5987,7 +6035,7 @@
   },
   {
    "candidate": "microsoft/Mage-VL",
-   "decided_at": "2026-11-12T02:19:09Z",
+   "decided_at": "2026-11-13T02:48:16Z",
    "detail": "the vision lane runs by hand: soh vision run --candidate mlx-vlm:microsoft/Mage-VL",
    "exam": null,
    "outcome": "queued",
@@ -6002,7 +6050,7 @@
   },
   {
    "candidate": "microsoft/Mage-VL,temperature=0",
-   "decided_at": "2026-11-12T02:19:09Z",
+   "decided_at": "2026-11-13T02:48:16Z",
    "detail": "the vision lane runs by hand: soh vision run --candidate mlx-vlm:microsoft/Mage-VL",
    "exam": null,
    "outcome": "queued",
@@ -6032,7 +6080,7 @@
   },
   {
    "candidate": "nvidia/LocateAnything-3B",
-   "decided_at": "2026-11-12T02:19:09Z",
+   "decided_at": "2026-11-13T02:48:16Z",
    "detail": "the vision lane runs by hand: soh vision run --candidate mlx-vlm:nvidia/LocateAnything-3B",
    "exam": null,
    "outcome": "queued",
@@ -6047,7 +6095,7 @@
   },
   {
    "candidate": "nvidia/LocateAnything-3B,temperature=0",
-   "decided_at": "2026-11-12T02:19:09Z",
+   "decided_at": "2026-11-13T02:48:16Z",
    "detail": "the vision lane runs by hand: soh vision run --candidate mlx-vlm:nvidia/LocateAnything-3B",
    "exam": null,
    "outcome": "queued",
@@ -6062,7 +6110,7 @@
   },
   {
    "candidate": "openbmb/MiniCPM-V-4.6",
-   "decided_at": "2026-11-12T02:19:09Z",
+   "decided_at": "2026-11-13T02:48:17Z",
    "detail": "the vision lane runs by hand: soh vision run --candidate hf-vlm:openbmb/MiniCPM-V-4.6",
    "exam": null,
    "outcome": "queued",
@@ -6077,7 +6125,7 @@
   },
   {
    "candidate": "openbmb/MiniCPM-V-4.6,temperature=0",
-   "decided_at": "2026-11-12T02:19:09Z",
+   "decided_at": "2026-11-13T02:48:17Z",
    "detail": "the vision lane runs by hand: soh vision run --candidate hf-vlm:openbmb/MiniCPM-V-4.6",
    "exam": null,
    "outcome": "queued",
@@ -6131,8 +6179,8 @@
   },
   {
    "candidate": "zhengmh/OmniVTG-7B",
-   "decided_at": "2026-11-12T02:19:08Z",
-   "detail": "15.4 GiB would leave under the 50 GiB floor (58 GiB free)",
+   "decided_at": "2026-11-13T02:48:15Z",
+   "detail": "15.4 GiB would leave under the 50 GiB floor (50 GiB free)",
    "exam": {
     "about": "family qwen2_5_vl, 7B params, by zhengmh",
     "candidate": "zhengmh/OmniVTG-7B",
@@ -6170,8 +6218,8 @@
   },
   {
    "candidate": "zhengmh/OmniVTG-7B,temperature=0",
-   "decided_at": "2026-11-12T02:19:08Z",
-   "detail": "15.4 GiB would leave under the 50 GiB floor (58 GiB free)",
+   "decided_at": "2026-11-13T02:48:15Z",
+   "detail": "15.4 GiB would leave under the 50 GiB floor (50 GiB free)",
    "exam": {
     "about": "family qwen2_5_vl, 7B params, by zhengmh",
     "candidate": "zhengmh/OmniVTG-7B",
@@ -6208,7 +6256,7 @@
    "until": ""
   }
  ],
- "cursor": 1794457839355767,
+ "cursor": 1794541074028172,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -15764,6 +15812,51 @@
    "reason": "limit",
    "run_id": 880,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-13T02:30:12Z",
+   "candidate": "kishida/Q3-8B-KVA-Projector",
+   "chosen": null,
+   "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: chunk-bytes: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2] No such file or directory: 'config.json'\"}; evaluate-expr: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2] No ",
+   "how": "",
+   "id": 1794537012106832,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "harness",
+   "run_id": 931,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-13T03:01:50Z",
+   "candidate": "kishida/Q3-8B-KVA-Projector",
+   "chosen": null,
+   "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: chunk-bytes: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2] No such file or directory: 'config.json'\"}; evaluate-expr: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2] No ",
+   "how": "",
+   "id": 1794538910531955,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "harness",
+   "run_id": 938,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-13T03:37:54Z",
+   "candidate": "llamacpp:Qwen3.6-27B-MTP-4.5bpw-pure",
+   "chosen": null,
+   "detail": "code: lane too small, needs 368 holdout cases: 135 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 777 more code cases are needed before a null says anything about llamacpp:Qw",
+   "how": "",
+   "id": 1794541074028172,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 945,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -15789,26 +15882,49 @@
     {
      "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
-     "first_s": 0.994,
-     "median_s": 3.037,
+     "first_s": 11.146,
+     "median_s": 30.379,
      "metrics": {
       "co_tenant": 1.0,
-      "code_pass": 0.8333,
-      "completion_tokens": 983.375,
-      "tokens_per_s": 128.725
+      "code_pass": 0.8,
+      "completion_tokens": 3649.0,
+      "tokens_per_s": 141.58
      },
      "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
      "not_run": "",
-     "pass_rate": 0.792,
-     "passed": 19,
+     "pass_rate": 0.8,
+     "passed": 4,
      "peak_gb": 0.0,
      "reference": false,
-     "run_at": "2026-11-12T04:30:38Z",
+     "run_at": "2026-11-13T03:37:53Z",
      "served_as": "",
      "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
-     "total": 24,
-     "ttft_median_s": 2.581,
-     "ttft_p95_s": 18.349
+     "total": 5,
+     "ttft_median_s": 29.064,
+     "ttft_p95_s": 45.41
+    },
+    {
+     "about": "family Qwen/Qwen3.6-27B, 27B params, by huytd189",
+     "candidate": "llamacpp:Qwen3.6-27B-MTP-4.5bpw-pure",
+     "first_s": 127.188,
+     "median_s": 134.761,
+     "metrics": {
+      "code_pass": 0.98,
+      "completion_tokens": 6840.2,
+      "tokens_per_s": 48.48
+     },
+     "model": "llamacpp:Qwen3.6-27B-MTP-4.5bpw-pure",
+     "not_run": "",
+     "pass_rate": 0.8,
+     "passed": 4,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-13T03:37:53Z",
+     "served_as": "",
+     "source": "https://huggingface.co/huytd189/Qwen3.6-27B-pure-GGUF",
+     "total": 5,
+     "ttft_median_s": 130.444,
+     "ttft_p95_s": 175.904
     },
     {
      "about": "family Qwen/Qwen3.6-35B-A3B, 35B (3B active) params, Q4_K_M, by unsloth",
@@ -15834,8 +15950,8 @@
      "ttft_p95_s": 54.667
     }
    ],
-   "run_at": "2026-11-12T04:30:38Z",
-   "runs": 1
+   "run_at": "2026-11-13T03:37:53Z",
+   "runs": 2
   },
   {
    "cases": 135,
@@ -17666,7 +17782,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-12T04:30:49Z",
+ "generated_at": "2026-11-13T03:38:04Z",
  "knobs": [],
  "lane": {
   "cases": 451,
@@ -17685,18 +17801,18 @@
   "adopted_at": "2026-10-06T01:35:47Z",
   "adopted_how": "measured",
   "incumbent": "",
-  "measured_at": "2026-11-12T04:30:38Z",
-  "median_s": 3.037,
+  "measured_at": "2026-11-13T03:37:53Z",
+  "median_s": 30.379,
   "metrics": {
    "co_tenant": 1.0,
-   "code_pass": 0.8333,
-   "completion_tokens": 983.375,
-   "tokens_per_s": 128.725
+   "code_pass": 0.8,
+   "completion_tokens": 3649.0,
+   "tokens_per_s": 141.58
   },
   "not_run": "",
   "parked": "",
   "parked_until": "",
-  "pass_rate": 0.792,
+  "pass_rate": 0.8,
   "serves": "llamacpp:Ornith-1.5-35B-Q4_K_M",
   "serves_model": "llamacpp:Ornith-1.5-35B-Q4_K_M; 35B (3B active) params, Q4_K_M, by ornith-ai",
   "stale": false
