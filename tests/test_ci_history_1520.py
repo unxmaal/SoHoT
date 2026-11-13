@@ -1,6 +1,8 @@
 """check-macos history: wall time by path and runner class from job logs, outcomes, p95, and the slowest tests (#1520)."""
 import json
 
+import pytest
+
 from harness import ci_history
 
 LOG = """2026-11-03T15:54:34.6638520Z   SOHOT_FAST_PATH: 1
@@ -47,6 +49,7 @@ def test_a_job_row_carries_job_and_make_check_minutes():
     assert ci_history.from_job(queued, RUN) is None, "a job no runner took never ran (#1590)"
 
 
+@pytest.mark.gauntlet("nothing-and-failed-return-the-same-value", site="harness/ci_history.py:limit_at:except")
 def test_a_cancel_is_judged_against_the_limit_its_run_ran_under():
     """#1590: raising check-macos 35 -> 56 turned 15 runs cut at 35 into "superseded" and hid them from the p95."""
     assert ci_history.limit_at("jobs:\n  check-macos:\n    timeout-minutes: 35\n", "check-macos") == 35.0
