@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from harness.atomic_file import replace
+from harness import stale_temp
 from harness import knobs
 
 SANDBOX_EXEC = "/usr/bin/sandbox-exec"
@@ -155,7 +156,7 @@ def mirror(source: str, need=()) -> Path:
     try:
         if not path.is_dir():
             path.parent.mkdir(parents=True, exist_ok=True)
-            tmp = path.with_name(f"{path.name}.{uuid.uuid4().hex[:8]}")
+            tmp = stale_temp.temp(path, "{name}.{pid}.{hex}")
             _git(["clone", "--mirror", "--quiet", source, str(tmp)])
             try:
                 tmp.rename(path)
@@ -292,7 +293,7 @@ def prepare(task: Path, extras=()) -> Path:
     venv = cache_root() / "envs" / env_digest(task, extras)
     if (venv / ".built").is_file():
         return venv
-    tmp = venv.with_name(f"{venv.name}.{os.getpid()}-{uuid.uuid4().hex[:6]}")
+    tmp = stale_temp.temp(venv, "{name}.{pid}-{hex}")
     uv = shutil.which("uv") or "uv"
     env = {**os.environ, "UV_PROJECT_ENVIRONMENT": str(tmp)}
     env.pop("VIRTUAL_ENV", None)
@@ -915,7 +916,7 @@ def save_validation(case, got: dict, machine: str, commit: str, now: float) -> d
     except (OSError, ValueError):
         held = {}
     held[machine] = rec
-    tmp = path.with_name(f"{path.name}.{os.getpid()}")
+    tmp = stale_temp.temp(path, "{name}.{pid}")
     tmp.write_text(json.dumps(held, indent=1) + "\n", encoding="utf-8")
     replace(tmp, path)
     return rec

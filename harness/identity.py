@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 from harness.atomic_file import replace
+from harness import stale_temp
 
 #: Machine facts that only time a run; recorded beside the identity, never matched.
 TIMING = ("swap_used_mb", "available_gb", "thermal")
@@ -41,7 +42,7 @@ def _load_cache(path: Path) -> dict:
 def _save_cache(path: Path, got: dict) -> bool:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+        tmp = stale_temp.temp(path, "{name}.{pid}.tmp")
         tmp.write_text(json.dumps(got, sort_keys=True), encoding="utf-8")
         replace(tmp, path)
     except OSError:

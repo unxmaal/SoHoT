@@ -23,6 +23,7 @@ if __name__ == "__main__":
 
 from harness import deploy_state as ds  # noqa: E402 - after the release root joins sys.path
 from harness import proc_identity  # noqa: E402
+from harness import stale_temp  # noqa: E402
 from harness.atomic_file import replace  # noqa: E402
 
 #: How long the new release's `launchd.sh reinstall` may take: the worker quiesce, deferred periodic units, preflight and the audit.
@@ -80,7 +81,7 @@ def env(base=None) -> dict:
 def flip(link: Path, target: Path) -> None:
     """Point the deploy link at target in one rename, so no reader sees it missing."""
     link, target = Path(link), Path(target)
-    tmp = link.with_name(f".{link.name}.{os.getpid()}")
+    tmp = stale_temp.temp(link, ".{name}.{pid}")
     if tmp.is_symlink() or tmp.exists():
         tmp.unlink()
     os.symlink(target, tmp)
