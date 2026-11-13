@@ -220,8 +220,10 @@ def pytest_runtest_protocol(item, nextitem):
         _running.pop("test", None)
 
 
-#: os.environ keys a test may leave changed: pytest's own, and one mlx_lm sets on its first import. #1868.
-ENV_SETTLED = frozenset({"PYTEST_CURRENT_TEST", "TRANSFORMERS_NO_ADVISORY_WARNINGS"})
+#: os.environ keys a test may leave changed: pytest's own, and those a library sets once per process on import. #1868, #1885, #1889.
+ENV_SETTLED = frozenset({"PYTEST_CURRENT_TEST", "TRANSFORMERS_NO_ADVISORY_WARNINGS", "KMP_DUPLICATE_LIB_OK",
+                         "KMP_INIT_AT_FORK", "TORCHINDUCTOR_CACHE_DIR", "LD_LIBRARY_PATH", "QT_QPA_FONTDIR",
+                         "QT_QPA_PLATFORM_PLUGIN_PATH"})
 _env: dict = {}
 
 
@@ -757,8 +759,8 @@ def _no_real_notifier(monkeypatch):
         record.real = real
         return record
     monkeypatch.setattr(monitor, "desktop", recorder(monitor.desktop, "desktop", lambda *a: "notified", "run"))
-    monkeypatch.setattr(watchdog, "desktop", recorder(watchdog.desktop, "desktop",
-                                                      lambda t, m, *a: f"{watchdog.NOTIFIED}: {m}", "run"))
+    shown = lambda t, m, *a: watchdog.Said(f"{watchdog.NOTIFIED}: {m}", notified=True)  # noqa: E731
+    monkeypatch.setattr(watchdog, "desktop", recorder(watchdog.desktop, "desktop", shown, "run"))
     monkeypatch.setattr(monitor, "post", recorder(monitor.post, "webhook", lambda *a: "posted: HTTP 204", "opener"))
     return sent
 

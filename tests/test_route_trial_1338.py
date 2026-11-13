@@ -81,7 +81,10 @@ def test_a_request_carries_the_queued_verdicts_to_the_gateway(monkeypatch):
     class R:
         status_code, text, headers = 200, "", {}
 
-    monkeypatch.setattr(completion.httpx, "post", lambda url, json, timeout, headers: seen.append(headers) or R())
+    class Client:
+        def post(self, url, json, timeout, headers):
+            return seen.append(headers) or R()
+    monkeypatch.setattr(completion, "http", Client)
     routes.report("call-9", routes.FAIL)
     completion._send("http://127.0.0.1:4000", {"model": "sohot-code-adaptive"}, 5)
     completion._send("http://127.0.0.1:4000", {"model": "sohot-code-adaptive"}, 5)

@@ -404,7 +404,7 @@ def test_an_escalation_is_a_cut_and_trips_outside_the_window_are_a_window_cut(tm
 
 class _Notifier(_Hand):
     def notify(self, f):
-        return f"{wd.NOTIFIED}: shown"
+        return wd.Said(f"{wd.NOTIFIED}: shown", notified=True)
 
 
 def test_a_notification_held_inside_the_interval_is_one_cut_per_wake(tmp_path, monkeypatch):

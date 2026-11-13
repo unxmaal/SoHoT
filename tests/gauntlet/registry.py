@@ -1,14 +1,11 @@
 """This repo's gauntlet registry, handed to the pinned gauntlet package's ratchets and CLI (#492, #1785)."""
 
-import json
-import subprocess
 from pathlib import Path
 
-from gauntlet import registry as gauntlet_registry
 from gauntlet.moves import MoveTable, reopens_by
+from gauntlet.registry import Registry
 
 from harness import adoption_state, deploy_state, download_state, exclusive, gateway_switch_state, job_state, paused, repo, sweeps
-from harness import knob_backlog
 from tests.gauntlet import classes
 
 HERE = Path(__file__).resolve().parent
@@ -17,8 +14,6 @@ REPO = HERE.parent.parent
 NOT_PRODUCTION = ("tests/", "evals/cases/")
 # Unbound hits from before the detectors, one "<class id> <site>" per line; no row joins it after the merge base (#1846).
 BACKLOG_REL = "tests/gauntlet/backlog.txt"
-# unguarded_transition's columns; gauntlet v0.3.4 takes no config for it, so tests/test_outcome_cas_1739.py applies them.
-TRANSITION_COLUMNS = ("state", "status", "outcome")
 
 
 # make precheck runs only these; the rest are whole-tree costly and stay in make check (#1832).
@@ -57,6 +52,9 @@ MAINS = ("nodes", "install_env", "engine_smoke", "slot_probe", "router", "intera
 EFFECTS = ("desktop", "monitor.post", "monitor.alert", "_gh", "gh_run", "_ssh", "spawn_switch", "pause_all", "urlopen",
            "ask_model", "install", "gather", "verify", "notify")
 DETECTOR_CONFIG = {
+    "unguarded_transition": {"columns": ("state", "status", "outcome")},
+    # ms.decide commits in memory_store/transitions.py, which gauntlet 0.3.6 does not follow through the package's re-export.
+    "commit_then_link": {"committers": ("decide",)},
     "unscoped_query": {"columns": ("machine_id",), "helpers": ("here", "_here", "all_machines", "machine_row"),
                        "null_helper": "harness/machine_scope.py:where"},
     "prose_match": {"fields": ("note", "detail", "reason", "why", "evidence", "outcome", "said", "summary", "subject"),
@@ -92,48 +90,11 @@ OPEN_ISSUES = {
     1763: (WT, (r"^harness/exclusive\.py:_beating\.keep$",)),
     1775: (CA, (r"^harness/nodes\.py:_record$",)),
     1777: (FT, (r"^harness/repo_gate\.py:(owed|verdict):detail$",)),
-    1778: (FT, (r"^harness/watchdog\.py:(notified_since|overrun_stopped|wake):(outcome|evidence)$",)),
     1788: (VS, (r"^harness/workqueue\.py:stale_schema:one-sided$",)),
     1790: (VS, (r"^harness/(nodes|install_env|engine_smoke|slot_probe|router|interactive)\.py:__main__:both-phases$",)),
 }
 
 MOVE_WAIVERS: dict = {}
-
-def parse_backlog(text: str) -> dict[str, list[str]]:
-    out = {}
-    for line in text.splitlines():
-        cid, _, site = line.partition(" ")
-        out.setdefault(cid, []).append(site)
-    return out
-
-
-def load_backlog(root=REPO) -> dict[str, list[str]]:
-    path = Path(root) / BACKLOG_REL
-    return parse_backlog(path.read_text(encoding="utf-8")) if path.exists() else {}
-
-
-def _rows_at(root, ref: str) -> list[str]:
-    def show(rel):
-        return subprocess.run(["git", "-C", str(root), "show", f"{ref}:{rel}"], capture_output=True, text=True)
-    got = show(BACKLOG_REL)
-    if got.returncode == 0:
-        return got.stdout.splitlines()
-    old = show("tests/gauntlet/backlog.json")  # where the rows lived before #1846
-    return [f"{cid} {s}" for cid, rows in json.loads(old.stdout or "{}").items() for s in rows]
-
-
-def backlog_added(root=REPO, base: str = knob_backlog.BASE) -> list[str] | None:
-    """Backlog rows the working tree holds and its merge base with `base` did not; None when there is no merge base."""
-    fork = knob_backlog.merge_base(root, base)
-    if not fork:
-        return None
-    now = {f"{cid} {s}" for cid, rows in load_backlog(root).items() for s in rows}
-    return sorted(now - set(_rows_at(root, fork)))
-
-
-class Registry(gauntlet_registry.Registry):
-    def backlog(self):
-        return load_backlog(self.root)
 
 
 REGISTRY = Registry(

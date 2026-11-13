@@ -178,17 +178,18 @@ def record(conn, r: dict, notify=None) -> dict:
     before = previous(conn, r["start"])
     send = should_notify(r, before)
     if send:
-        outcome = (notify or watchdog.desktop)(NOTIFY_TITLE, r["line"], f"discover sweep: {r['verdict']}")
+        outcome = watchdog.said((notify or watchdog.desktop)(NOTIFY_TITLE, r["line"], f"discover sweep: {r['verdict']}"),
+                                watchdog.NOTIFY)
     elif r["verdict"] in QUIET:
-        outcome = f"noted: {r['line']}"
+        outcome = watchdog.Said(f"noted: {r['line']}")
     else:
-        outcome = f"notify held: the last check already said {before}; {r['line']}"
+        outcome = watchdog.Said(f"notify held: the last check already said {before}; {r['line']}", watchdog.WITHHELD)
     evidence = {k: r[k] for k in ("verdict", "line", "start", "launchd", "heartbeat")}
     cur = conn.execute(
         "INSERT INTO watchdog_actions (at, machine_id, criterion, subject, action, escalated, dry_run, "
-        "evidence, outcome) VALUES (?,?,?,?,?,?,?,?,?)",
+        "evidence, outcome, result, notified) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
         (r["at"], _machine(conn), CRITERION, SUBJECT, watchdog.NOTIFY if send else watchdog.NOTE, 0, 0,
-         json.dumps(evidence, default=str, sort_keys=True), outcome))
+         json.dumps(evidence, default=str, sort_keys=True), str(outcome), outcome.result, int(outcome.notified)))
     conn.commit()
     return {"row": cur.lastrowid, "notified": send, "outcome": outcome, "previous": before}
 
@@ -196,12 +197,12 @@ def record(conn, r: dict, notify=None) -> dict:
 def rows(conn, since: float) -> list[dict]:
     """Every recorded check since `since`, oldest first, for soh morning."""
     out = []
-    for r in conn.execute("SELECT id, at, action, evidence, outcome FROM watchdog_actions WHERE criterion = ? "
+    for r in conn.execute("SELECT id, at, notified, evidence, outcome FROM watchdog_actions WHERE criterion = ? "
                           "AND at >= ? ORDER BY at, id", (CRITERION, since)):
         try:
             ev = json.loads(r["evidence"] or "{}")
         except ValueError:
             ev = {}
         out.append({"id": r["id"], "at": r["at"], "verdict": ev.get("verdict", ""), "line": ev.get("line", ""),
-                    "notified": r["action"] == "notify", "outcome": r["outcome"]})
+                    "notified": bool(r["notified"]), "outcome": r["outcome"]})
     return out

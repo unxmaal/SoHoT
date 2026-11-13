@@ -15,11 +15,11 @@ from tests.test_runtime_trials_1474 import ROOMY, _channels, _uv, sandbox  # noq
 
 
 @pytest.fixture
-def wide(monkeypatch):
-    """gauntlet v0.3.4's unguarded_transition with registry.TRANSITION_COLUMNS, until it takes them as config."""
-    cols = "|".join(registry.TRANSITION_COLUMNS)
-    monkeypatch.setattr(detectors, "_STATE_SET", re.compile(rf"(?i)(?<![\w.])(?:\w+\.)?({cols})\s*=(?!=)"))
-    return lambda trees: detectors.unguarded_transition(trees, registry.production)
+def wide():
+    """unguarded_transition as the registry configures it for the ratchet."""
+    config = registry.REGISTRY.detector_config["unguarded_transition"]
+    assert "outcome" in config["columns"]
+    return lambda trees: detectors.unguarded_transition(trees, registry.production, **config)
 
 
 def test_an_unguarded_outcome_write_fires_and_a_guarded_one_does_not(wide):

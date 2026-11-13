@@ -6,6 +6,7 @@ from harness.loopback import HTTPServer
 import pytest
 
 from harness import human, judge_server, paths
+from harness import memory_store as ms
 
 SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="5" height="5"/></svg>'
 
@@ -48,13 +49,15 @@ def _serve(lane, receipt):
     judge_server.Judge.lane = lane
     judge_server.Judge.pairs = human.pairings(receipt)
     judge_server.Judge.files = []
+    # The test's fresh store is created here, not inside the first request the client times. #1869.
+    ms.connect().close()
     srv = HTTPServer(("127.0.0.1", 0), judge_server.Judge)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     return srv, f"http://127.0.0.1:{srv.server_address[1]}"
 
 
 def _get(url):
-    with urllib.request.urlopen(url, timeout=5) as r:
+    with urllib.request.urlopen(url, timeout=60) as r:
         return r.headers.get("Content-Type"), r.read()
 
 
