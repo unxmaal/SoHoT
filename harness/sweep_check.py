@@ -174,11 +174,12 @@ def should_notify(r: dict, before: str) -> bool:
 
 def record(conn, r: dict, notify=None) -> dict:
     """Store the check as a watchdog_actions row, notifying through the watchdog path first when it should."""
-    from harness import watchdog
+    from harness import watchdog, watchdog_hands
     before = previous(conn, r["start"])
     send = should_notify(r, before)
     if send:
-        outcome = watchdog.said((notify or watchdog.desktop)(NOTIFY_TITLE, r["line"], f"discover sweep: {r['verdict']}"),
+        outcome = watchdog.said((notify or watchdog_hands.desktop)(NOTIFY_TITLE, r["line"],
+                                                                   f"discover sweep: {r['verdict']}"),
                                 watchdog.NOTIFY)
     elif r["verdict"] in QUIET:
         outcome = watchdog.Said(f"noted: {r['line']}")

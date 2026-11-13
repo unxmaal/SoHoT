@@ -11,7 +11,7 @@ from evals import watch
 from harness import paths, run_state
 from harness import workqueue as wq
 from harness import queue_pause
-from harness.watchdog import ProgressFiles
+from harness.watchdog_observe import ProgressFiles
 from tests.test_pause_813 import ROOT, Ticking, _args, _run, clock, quiet  # noqa: F401
 
 LIVE_WRITER = ("import json, os, pathlib, sys, time\n"

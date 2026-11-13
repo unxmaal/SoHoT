@@ -10,7 +10,7 @@ import time
 import pytest
 
 from harness import mcp_peers, morning
-from harness import watchdog as wd
+from harness import watchdog as wd, watchdog_observe
 from harness.commands import morning as morning_cmd
 
 from tests.test_mcp_orphans_1155 import ARGS, PY, P, Unit, _hold, _port, _start
@@ -41,7 +41,7 @@ def test_each_server_is_mapped_to_the_processes_at_the_other_end_of_its_connecti
 def _stale(tmp_path, connections):
     probes = Unit(tmp_path, PROCS, 95969)
     probes.connections = connections
-    world = wd.observe(probes, None, NIGHT)
+    world = watchdog_observe.observe(probes, None, NIGHT)
     found, _ = wd.judge(world)
     return next(f for f in found if f.criterion == "stale_mcp")
 

@@ -82,7 +82,7 @@ def test_a_job_pid_reused_by_another_group_leader_is_not_the_jobs_process(leader
 @pytest.mark.parametrize("late", [0.0, 0.5], ids=["prompt", "parent-writes-late"])
 def test_a_jobs_pid_file_stays_a_bare_pid_an_older_release_reads_and_its_start_time_sits_beside_it(
         tmp_path, monkeypatch, late):
-    from harness import executors, watchdog
+    from harness import executors, watchdog_observe
     read = proc_identity.started
     monkeypatch.setattr(proc_identity, "started", lambda pid: (time.sleep(late), read(pid))[1])
     job = wq.add(["soh-batch-job"], title="batch")
@@ -100,7 +100,7 @@ def test_a_jobs_pid_file_stays_a_bare_pid_an_older_release_reads_and_its_start_t
     assert pid == str(child.pid) and re.fullmatch(r"\d+(\.\d+)?", started)
     assert not pid_file.exists() and not beside.exists()
     pid_file.write_text(str(child.pid), encoding="utf-8")
-    assert watchdog.Probes().job_pids()[pid_file.stem] == child.pid
+    assert watchdog_observe.Probes().job_pids()[pid_file.stem] == child.pid
 
 
 def test_no_module_reads_a_process_start_time_but_proc_identity():

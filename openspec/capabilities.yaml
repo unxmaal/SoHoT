@@ -38,6 +38,8 @@ capabilities:
       - harness/watchdog.py
       - harness/overrun.py
       - harness/idle_unload.py
+      - harness/watchdog_observe.py
+      - harness/watchdog_hands.py
 
   - name: adopt-confirm
     summary: A measured or by-hand winner becomes a lane's served model, through the paired gate and its confirmation.

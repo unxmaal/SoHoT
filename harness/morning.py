@@ -660,7 +660,7 @@ def notify(r: dict, text: str, run=subprocess.run, platform: str | None = None) 
     """A desktop notification when something needs a person (#818 path); None on a quiet night."""
     if not r["needs"]:
         return None
-    from harness import watchdog as wd
-    return wd.desktop(NOTIFY_TITLE, text, f"{len(r['needs'])} thing(s) need you", run=run,
-                      platform=sys.platform if platform is None else platform)
+    from harness import watchdog_hands
+    return watchdog_hands.desktop(NOTIFY_TITLE, text, f"{len(r['needs'])} thing(s) need you", run=run,
+                                 platform=sys.platform if platform is None else platform)
 

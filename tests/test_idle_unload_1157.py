@@ -7,7 +7,7 @@ import pytest
 
 from harness import idle_unload, knobs, mlx_server, router
 from harness import memory_store as ms
-from harness import watchdog as wd
+from harness import watchdog as wd, watchdog_hands, watchdog_observe
 from tests.test_watchdog import Fake, P
 
 DAY = time.mktime((2026, 10, 12, 12, 0, 0, 0, 0, -1))
@@ -40,11 +40,11 @@ class Served(Fake):
 
 def _seen(tmp_path, at):
     """A wake long before that saw Ornith loaded, so only its last request decides."""
-    wd.observe(Served(tmp_path), None, at)
+    watchdog_observe.observe(Served(tmp_path), None, at)
 
 
 def _found(fake, now):
-    world = wd.observe(fake, None, now)
+    world = watchdog_observe.observe(fake, None, now)
     found, skipped = wd.judge(world)
     return [f for f in found if f.criterion == "idle_unload"], skipped
 
@@ -86,13 +86,13 @@ def test_an_eval_with_no_progress_file_makes_nothing_idle(tmp_path):
 
 def test_another_model_is_given_back_while_an_eval_runs(tmp_path):
     fake = Served(tmp_path, asked=DAY - 10 * wd.IDLE_UNLOAD_DAY_S, specs={"q": "llamacpp:Qwopus3.6-27B"})
-    wd.observe(fake, None, DAY - 10 * wd.IDLE_UNLOAD_DAY_S)
+    watchdog_observe.observe(fake, None, DAY - 10 * wd.IDLE_UNLOAD_DAY_S)
     assert [f.subject.detail["model"] for f in _found(fake, DAY)[0]] == [ORNITH]
 
 
 @pytest.mark.parametrize("in_flight", [True, None])
 def test_a_request_in_flight_or_an_unknown_one_keeps_the_model(tmp_path, in_flight):
-    wd.observe(Served(tmp_path), None, DAY - 10 * wd.IDLE_UNLOAD_DAY_S)
+    watchdog_observe.observe(Served(tmp_path), None, DAY - 10 * wd.IDLE_UNLOAD_DAY_S)
     assert _found(Served(tmp_path, in_flight=in_flight), DAY)[0] == []
 
 
@@ -103,10 +103,10 @@ def test_a_model_first_seen_now_waits_a_whole_limit(tmp_path):
 
 
 def test_a_residency_that_ended_starts_over(tmp_path):
-    wd.observe(Served(tmp_path), None, DAY - 10 * wd.IDLE_UNLOAD_DAY_S)
+    watchdog_observe.observe(Served(tmp_path), None, DAY - 10 * wd.IDLE_UNLOAD_DAY_S)
     gone = Served(tmp_path)
     gone._served = []
-    wd.observe(gone, None, DAY - 1)
+    watchdog_observe.observe(gone, None, DAY - 1)
     assert _found(Served(tmp_path), DAY)[0] == []
 
 
@@ -126,12 +126,12 @@ def test_probe_and_smoke_requests_are_not_use(tmp_path):
                 (DAY - 5000, "openai/Old", "work")]
         conn.executemany("INSERT INTO gateway_requests (at, served, purpose) VALUES (?, ?, ?)", rows)
         conn.commit()
-        assert wd.Probes().last_use(conn, DAY - 3600) == {ORNITH: DAY - 900, "mlx-community/X-4bit": DAY - 30}
+        assert watchdog_observe.Probes().last_use(conn, DAY - 3600) == {ORNITH: DAY - 900, "mlx-community/X-4bit": DAY - 30}
         used = idle_unload.uses(conn, DAY - 3600)
         assert sorted(used) == [ORNITH, "mlx-community/X-4bit"] and used[ORNITH] == [(DAY - 900, DAY - 900)]
     finally:
         conn.close()
-    assert wd.Probes().last_use(None, 0) == {}
+    assert watchdog_observe.Probes().last_use(None, 0) == {}
 
 
 def test_the_served_probe_reads_loaded_router_models_their_slots_and_a_non_boot_mlx_model(monkeypatch):
@@ -142,17 +142,17 @@ def test_the_served_probe_reads_loaded_router_models_their_slots_and_a_non_boot_
     def get(path, base=""):
         return models if path == "/models" else slots[path.split("model=")[1]]
     monkeypatch.setattr(router, "_get", get)
-    monkeypatch.setattr(wd.Probes, "launchd_loaded", lambda self, s: s == "mlx")
+    monkeypatch.setattr(watchdog_observe.Probes, "launchd_loaded", lambda self, s: s == "mlx")
     held = {"model": "mlx-community/Q3-30B", "boot": "mlx-community/Q7B", "in_flight": 0}
     monkeypatch.setattr(mlx_server, "activity", lambda base, timeout: held)
-    assert wd.Probes().served() == [
+    assert watchdog_observe.Probes().served() == [
         {"server": "router", "model": ORNITH, "in_flight": False}, {"server": "router", "model": "Busy", "in_flight": True},
         {"server": "router", "model": "Shy", "in_flight": None},
         {"server": "mlx", "model": "mlx-community/Q3-30B", "in_flight": False}]
     held.update(model="mlx-community/Q7B")
-    assert [m["server"] for m in wd.Probes().served()] == ["router"] * 3
+    assert [m["server"] for m in watchdog_observe.Probes().served()] == ["router"] * 3
     held.update(model="mlx-community/Q3-30B", boot=None, in_flight=None)
-    assert wd.Probes().served()[-1] == {"server": "mlx", "model": "mlx-community/Q3-30B", "in_flight": None}
+    assert watchdog_observe.Probes().served()[-1] == {"server": "mlx", "model": "mlx-community/Q3-30B", "in_flight": None}
 
 
 def test_unload_gives_back_a_lane_s_own_model_past_the_eval_lock(monkeypatch):
@@ -161,9 +161,9 @@ def test_unload_gives_back_a_lane_s_own_model_past_the_eval_lock(monkeypatch):
         ("router", stems, kw["keep"], kw["proven_idle"], why)) or stems)
     monkeypatch.setattr(mlx_server, "release", lambda model, why, **kw: asked.append(("mlx", model, kw["keep"])) or True)
     ev = {"server": "router", "model": ORNITH, "idle_s": 700, "limit_s": 600.0, "day": True}
-    out = wd.Hands().do(wd.UNLOAD, wd.Finding("idle_unload", wd.Subject("model", f"router {ORNITH}", "t"), ev))
+    out = watchdog_hands.Hands().do(wd.UNLOAD, wd.Finding("idle_unload", wd.Subject("model", f"router {ORNITH}", "t"), ev))
     ev2 = {**ev, "server": "mlx", "model": "mlx-community/Q3-30B"}
-    wd.Hands().do(wd.UNLOAD, wd.Finding("idle_unload", wd.Subject("model", "mlx m", "t"), ev2))
+    watchdog_hands.Hands().do(wd.UNLOAD, wd.Finding("idle_unload", wd.Subject("model", "mlx m", "t"), ev2))
     assert asked == [("router", [ORNITH], set(), True, "watchdog: no request for 700s, past 600s"),
                      ("mlx", "mlx-community/Q3-30B", set())]
     assert out == f"unloaded router {ORNITH}"
@@ -173,7 +173,7 @@ def test_a_wake_records_the_unload_and_one_that_does_not_take_is_notified(tmp_pa
     conn = ms.connect()
     done = []
 
-    class Hands(wd.Hands):
+    class Hands(watchdog_hands.Hands):
         def do(self, action, f):
             done.append((f.criterion, action))
             return "ok"
@@ -282,4 +282,4 @@ def test_a_new_request_starts_a_new_spell_that_is_unloaded_afresh(tmp_path):
     [again] = _found(Served(tmp_path, asked=DAY - 3000), DAY + 300)[0]
     [fresh] = _found(Served(tmp_path, asked=DAY + 400), DAY + 400 + wd.IDLE_UNLOAD_DAY_S)[0]
     assert first.subject.key == again.subject.key != fresh.subject.key
-    assert wd.fingerprint(first) == wd.fingerprint(fresh)
+    assert watchdog_hands.fingerprint(first) == watchdog_hands.fingerprint(fresh)
