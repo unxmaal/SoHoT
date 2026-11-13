@@ -497,12 +497,9 @@ def gh_items(run=subprocess.run, limit: int = 5000) -> tuple[list, list]:
 # --- reading the sources, read-only --------------------------------------------------------------------
 
 def _rows(conn, sql: str, args=()) -> list[dict]:
-    try:
-        return [dict(r) for r in conn.execute(sql, args)]
-    except Exception as exc:  # noqa: BLE001
-        if "no such" in str(exc):
-            return []
-        raise
+    """The rows of `sql`; store.Unread (missing_table or failed) when the store does not answer, never []. #1781."""
+    from harness import store
+    return [dict(r) for r in store.query(conn, sql, args)]
 
 
 def _run_span(path: Path, generated: float | None) -> tuple | None:

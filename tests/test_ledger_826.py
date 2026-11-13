@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from harness import cli, ledger, statusline
+from harness import cli, ledger, statusline, store
 from harness import memory_store as ms
 from tests import shells
 
@@ -161,7 +161,8 @@ def test_a_store_before_schema_68_reads_every_row_as_unknown(tmp_path):
     c.close()
     conn = ledger.open_ro(db)
     assert ledger.gateway_rows(conn, 0) == [(at("2026-10-08"), "a", "", "c", "unknown", 5, 6, "")]
-    assert ledger.delegation_rows(conn, 0) == []
+    with pytest.raises(store.Unread, match="missing_table"):
+        ledger.delegation_rows(conn, 0)
     with pytest.raises(sqlite3.OperationalError):
         conn.execute("INSERT INTO gateway_requests (at) VALUES (1)")
 

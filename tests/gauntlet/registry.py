@@ -7,7 +7,7 @@ from pathlib import Path
 from gauntlet import registry as gauntlet_registry
 from gauntlet.moves import MoveTable, reopens_by
 
-from harness import deploy_state, download_state, exclusive, gateway_switch_state, job_state, paused, repo, sweeps
+from harness import adoption_state, deploy_state, download_state, exclusive, gateway_switch_state, job_state, paused, repo, sweeps
 from harness import knob_backlog
 from tests.gauntlet import classes
 
@@ -17,6 +17,8 @@ REPO = HERE.parent.parent
 NOT_PRODUCTION = ("tests/", "evals/cases/")
 # Unbound hits from before the detectors, one "<class id> <site>" per line; no row joins it after the merge base (#1846).
 BACKLOG_REL = "tests/gauntlet/backlog.txt"
+# unguarded_transition's columns; gauntlet v0.3.4 takes no config for it, so tests/test_outcome_cas_1739.py applies them.
+TRANSITION_COLUMNS = ("state", "status", "outcome")
 
 
 # make precheck runs only these; the rest are whole-tree costly and stay in make check (#1832).
@@ -44,6 +46,9 @@ MOVES = (
               terminal=(download_state.REMOVED,), states=download_state.STATES),
     MoveTable("harness/gateway_switch_state.py:MOVES", gateway_switch_state.MOVES, initial=(gateway_switch_state.NONE,),
               terminal=(gateway_switch_state.SERVING, gateway_switch_state.FAILED), states=gateway_switch_state.STATES),
+    # Keyed (state, move) -> state; the check reads (leaves, enters) pairs.
+    MoveTable("harness/adoption_state.py:MOVES", {(frm, to) for (frm, _), to in adoption_state.MOVES.items()},
+              initial=(adoption_state.NONE, adoption_state.CONFIGURED), states=adoption_state.STATES),
     MoveTable("harness/exclusive.py:MOVES", exclusive.MOVES, initial=(exclusive.FREE,),
               states=(exclusive.FREE, exclusive.RESERVED, exclusive.LOADING, exclusive.LAPSED, exclusive.ABANDONED)),
 )
@@ -84,18 +89,12 @@ VS, OR = "a-deploy-runs-two-releases-at-once", "an-order-the-code-needs-but-does
 # Backlog rows an open #1748 high names: {issue: (class, site patterns)}; each pattern must still match a backlog row.
 OPEN_ISSUES = {
     1759: (OW, (r"^harness/vllm\.py:served$",)),
-    1762: (WT, (r"^harness/workqueue\.py:quiesce$",)),
     1763: (WT, (r"^harness/exclusive\.py:_beating\.keep$",)),
     1775: (CA, (r"^harness/nodes\.py:_record$",)),
     1777: (FT, (r"^harness/repo_gate\.py:(owed|verdict):detail$",)),
     1778: (FT, (r"^harness/watchdog\.py:(notified_since|overrun_stopped|wake):(outcome|evidence)$",)),
-    1779: (FT, (r"^harness/rank\.py:passed_over:detail$",)),
-    1781: (EF, (r"^harness/commands/(context|inventory|ledger)\.py:\w+:chooser$", r"^harness/otel\.py:_select:except$",
-              r"^harness/trends\.py:(ledger|delegation)_rows:except$")),
-    1782: (EF, (r"^harness/rank\.py:(incumbent_bases|passed_over):except$",)),
     1788: (VS, (r"^harness/workqueue\.py:stale_schema:one-sided$",)),
     1790: (VS, (r"^harness/(nodes|install_env|engine_smoke|slot_probe|router|interactive)\.py:__main__:both-phases$",)),
-    1796: (OR, (r":default:",)),
 }
 
 MOVE_WAIVERS: dict = {}

@@ -436,8 +436,9 @@ def last_sha() -> str:
     return done[-1]["sha"] if done else ""
 
 
-def stats(gh=gh_run, now: float | None = None) -> dict:
+def stats(gh=None, now: float | None = None) -> dict:
     """Per dimension, the filed issues' outcomes and precision, and whether the dimension is switched off."""
+    gh = gh or gh_run
     now = time.time() if now is None else now
     filed: dict[int, tuple[str, float]] = {}
     for r in receipts():

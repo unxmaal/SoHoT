@@ -84,7 +84,7 @@ def running(root: Path, alive=alive, command_of=command_of) -> list[dict]:
         candidates.append(("discover loop", _pid(beat.get("pid")), beat.get("started"), beat.get("commit", ""), LOOP))
     runs = root / RUNS
     for path in sorted(runs.glob(f"*/{PROGRESS}")) if runs.is_dir() else []:
-        state = run_state.of(path.parent, alive=lambda pid, pgid: alive(_pid(pid)))
+        state = run_state.of(path.parent, alive=lambda pid, pgid, started: alive(_pid(pid)))
         if state.name in run_state.LIVE:
             got = state.progress
             candidates.append((f"eval {path.parent.name}", _pid(got.get("pid")), got.get("started_at"), "", EVAL))
@@ -120,9 +120,10 @@ def _signal(kill, pid: int, sig) -> bool:
     return True
 
 
-def stop(found: list[dict], grace: float = STOP_GRACE_S, alive=alive, kill=os.kill, sleep=time.sleep,
+def stop(found: list[dict], grace: float = STOP_GRACE_S, alive=alive, kill=None, sleep=time.sleep,
          clock=time.monotonic) -> list[int]:
     """TERM each, as the watchdog's stop does, then KILL what outlives `grace`; the pids still alive."""
+    kill = kill or os.kill
     for r in found:
         _signal(kill, r["pid"], signal.SIGTERM)
     deadline = clock() + grace

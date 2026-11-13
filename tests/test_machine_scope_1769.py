@@ -64,6 +64,28 @@ def test_each_meaning_of_an_unstamped_row_selects_what_it_says(monkeypatch, null
     assert {r[0] for r in db.execute(f"SELECT machine_id FROM t WHERE {here}", args)} == seen
 
 
+@pytest.mark.parametrize("null", ["every", "unknown", "nobody"])
+@pytest.mark.parametrize("mid", [1, None, [1, 2], []])
+def test_holds_answers_one_read_row_as_where_selects_it(monkeypatch, null, mid):
+    from harness import machine_scope as scope
+    monkeypatch.setitem(scope.RULES, "t.q", null)
+    db = sqlite3.connect(":memory:")
+    db.execute("CREATE TABLE t (machine_id INTEGER)")
+    db.executemany("INSERT INTO t VALUES (?)", [(1,), (2,), (3,), (None,)])
+    here, args = scope.where("t.q", mid)
+    assert {r[0] for r in db.execute(f"SELECT machine_id FROM t WHERE {here}", args)} == {
+        m for m in (1, 2, 3, None) if scope.holds("t.q", m, mid)}
+
+
+def test_an_unstamped_adoption_serves_every_machine_by_the_declared_rule(monkeypatch):
+    from harness import adoption_state as st
+    from harness import machine_scope as scope
+    row = {"all_machines": 0, "machine_id": None}
+    assert st._applies(row, (7,))
+    monkeypatch.setitem(scope.RULES, "adoptions.served", scope.NOBODY)
+    assert not st._applies(row, (7,))
+
+
 def test_an_undeclared_question_is_refused():
     from harness import machine_scope as scope
     with pytest.raises(KeyError):

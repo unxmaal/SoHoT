@@ -321,9 +321,11 @@ def _install(node, sha, role, previous, was, back_role, base, *, runner, check, 
     return out
 
 
-def follow(conn=None, *, retry: bool = False, runner=_ssh, check=verify, alert=None, load=None,
+def follow(conn=None, *, retry: bool = False, runner=None, check=None, alert=None, load=None,
            now=time.time, busy=None, sleep=time.sleep, clock=time.monotonic) -> dict:
     """Each unparked node due a deploy of the sha this machine last deployed; the record's `nodes` holds every outcome."""
+    runner = runner or _ssh
+    check = check or verify
     why = deploy.blocked()
     t = None if why else target(conn)
     if t is None:

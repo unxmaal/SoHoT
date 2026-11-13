@@ -596,6 +596,12 @@ install_units() {
       # Reloading the worker kills its running job, so let that job finish first. #577.
       echo "waiting for any running queued job to finish before reloading the worker"
       if ! was=$(cd "$DEPLOY" && LH_QUEUE_HOLDER=$$ "$UV" run python -m harness.workqueue quiesce); then
+        if [ "$was" = not-quiesced ]; then
+          # A job outlived queue_quiesce_timeout: a reload would kill it, so the worker stays as it is. #1762.
+          echo "NOT reloading $PREFIX.worker: its running job outlived the quiesce deadline (see above)" >&2
+          failed="$failed worker"
+          continue
+        fi
         echo "could not quiesce the queue; reloading the worker anyway" >&2
         was=""
       fi

@@ -91,7 +91,7 @@ def _verdict_reason(conn) -> list:
 
 
 def _adoptions(conn) -> list:
-    from harness import adopt
+    from harness import adopt, adoption_state as st
     bad = []
     for r in conn.execute(
             "SELECT a.*, c.id AS c, i.id AS i, v.id AS v, x.id AS x "
@@ -105,9 +105,11 @@ def _adoptions(conn) -> list:
             ("no verdict", r["verdict_id"] is not None and r["v"] is None),
             ("no run", r["run_id"] is not None and r["x"] is None),
             ("no lane", not r["lane"]),
-            (f"how {r['how']!r}", r["how"] not in adopt.HOW)) if broken]
+            (f"how {r['how']!r}", r["how"] not in adopt.HOW),
+            (f"move {r['move']!r}", r["move"] not in st.KINDS)) if broken]
         if why:
             bad.append(f"adoption {r['id']}: {', '.join(why)}")
+    bad += [f"adoption {r['id']}: off the {r['lane']} chain (leaves {r['leaves']})" for r in st.off_chain(conn)]
     return bad
 
 

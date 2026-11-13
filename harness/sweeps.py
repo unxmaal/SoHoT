@@ -97,7 +97,8 @@ def _move(conn, sw: dict, frm, to: str, reason: str, commit: bool = True, **cols
         raise IllegalMove(f"a sweep move does not set {', '.join(sorted(unknown))}")
     if frm is not None:
         sets = "".join(f", {k} = ?" for k in cols)
-        cas, was = (" AND jobs = ?", (sw["jobs"],)) if reason == RESUMED else ("", ())
+        # A move out of an open sweep was decided on the jobs it read; a resume since then changed them. #1862.
+        cas, was = (" AND jobs = ?", (sw["jobs"],)) if frm == OPEN else ("", ())
         won = conn.execute(f"UPDATE knob_sweeps SET outcome = ?{sets} WHERE id = ? AND outcome = ?{cas}",
                            (to, *cols.values(), int(sw["id"]), frm, *was)).rowcount == 1
         if commit:

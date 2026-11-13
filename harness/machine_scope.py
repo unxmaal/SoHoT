@@ -32,15 +32,26 @@ def table(rule: str) -> str:
     return rule.split(".")[0]
 
 
+def _ids(mid) -> list[int]:
+    if mid is None:
+        return []
+    if isinstance(mid, (list, tuple, set, frozenset)):
+        return [int(m) for m in mid]
+    return [int(mid)]
+
+
+def holds(rule: str, stamped, mid) -> bool:
+    """where() asked of one row already read: is a row stamped `stamped` machine `mid`'s under `rule`."""
+    ids = _ids(mid)
+    if stamped is None:
+        return RULES[rule] == EVERY or (RULES[rule] == UNKNOWN and not ids)
+    return int(stamped) in ids
+
+
 def where(rule: str, mid, column: str = "machine_id") -> tuple[str, tuple]:
     """The predicate and its args for the rows of machine `mid` (an id, several ids, or None for no row) under `rule`."""
     null = RULES[rule]
-    if mid is None:
-        ids: list[int] = []
-    elif isinstance(mid, (list, tuple, set, frozenset)):
-        ids = [int(m) for m in mid]
-    else:
-        ids = [int(mid)]
+    ids = _ids(mid)
     if not ids:
         return ("1 = 0", ()) if null == NOBODY else (f"{column} IS NULL", ())
     stamped = f"{column} = ?" if len(ids) == 1 else f"{column} IN ({','.join('?' * len(ids))})"

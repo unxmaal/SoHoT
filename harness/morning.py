@@ -81,9 +81,11 @@ def sweep(conn, since: float, beat: dict | None) -> dict:
             "SELECT id, lane, challenger, state, done, total, paused_at FROM paused_runs "
             "WHERE paused_at >= ? OR state = 'paused' ORDER BY paused_at", (since,))]
     if _has(conn, "adoptions"):
-        out["settled"]["adopted"] = [dict(r) for r in conn.execute(
-            "SELECT a.lane, c.spec, a.how, a.adopted_at FROM adoptions a JOIN candidates c "
-            "ON c.id = a.candidate_id WHERE a.adopted_at >= ? ORDER BY a.adopted_at", (since,))]
+        from harness import adoption_state as st
+        moved = [{k: r[k] for k in ("lane", "spec", "how", "adopted_at", "move", "why")}
+                 for r in st.history(conn, since=since)]
+        out["settled"]["adopted"] = [r for r in moved if r["move"] == st.ADOPT]
+        out["settled"]["withdrawn"] = [r for r in moved if r["move"] == st.WITHDRAW]
     out["stopped"] = [w for w in watchdog(conn, since) if w["action"] == "stop"]
     if beat:
         from harness import heartbeat
@@ -213,10 +215,14 @@ def ratio(conn, now: float) -> dict | None:
     """Local over cloud tokens for yesterday and the week to it, from ledger_days' recorded counts. #1688."""
     if not _has(conn, "ledger_days"):
         return None
-    from harness import ledger
+    from harness import ledger, store
     yesterday = ledger.day_of(now - 86400)
     first = ledger.ratio_over({}, yesterday, ledger.RATIO_DAYS)["first_day"]
-    days = {r["day"]: r["ratio"] for r in ledger.recorded(conn, first) if r.get("ratio")}
+    try:
+        got = ledger.recorded(conn, first)
+    except store.Unread:
+        return None
+    days = {r["day"]: r["ratio"] for r in got if r.get("ratio")}
     return ledger.headline(days, yesterday)
 
 
@@ -274,8 +280,9 @@ def _gh(argv: list[str]) -> str:
     return got.stdout
 
 
-def ci(now: float, gh=_gh) -> dict:
+def ci(now: float, gh=None) -> dict:
     """The newest scheduled nightly run and each job's conclusion; unavailable when gh cannot say."""
+    gh = gh or _gh
     try:
         runs = json.loads(gh(["run", "list", "--workflow", NIGHTLY_WORKFLOW, "--event", "schedule", "-L", "1",
                               "--json", "databaseId,status,conclusion,createdAt,headSha,url"]) or "[]")
@@ -389,8 +396,9 @@ def _git(argv: list[str]) -> str:
     return got.stdout.strip()
 
 
-def deploy(where: Path | None, git=_git) -> dict:
+def deploy(where: Path | None, git=None) -> dict:
     """The deploy checkout's commit against origin/main, after a fetch."""
+    git = git or _git
     if where is None or not (Path(where) / ".git").exists():
         return {"available": False, "why": "no deploy checkout on this machine"}
     d = ["-C", str(where)]
