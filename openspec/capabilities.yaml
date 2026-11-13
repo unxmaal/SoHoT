@@ -21,6 +21,7 @@ capabilities:
       - harness/proc_identity.py
       - harness/paused_jobs.py
       - harness/queue_hold.py
+      - harness/quiesce.py
       - harness/job_release.py
 
   - name: watchdog
@@ -43,6 +44,7 @@ capabilities:
       - harness/effects.py
       - harness/paired.py
       - harness/gateway_switch.py
+      - harness/adoption_state.py
       - harness/gateway_switch_state.py
 
   - name: measure

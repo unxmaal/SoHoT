@@ -405,10 +405,11 @@ def crossings(conn) -> dict:
     rows = conn.execute(
         "SELECT p.id, p.name, p.state FROM proposals p WHERE p.kind = ? AND EXISTS (SELECT 1 FROM technique_triage t "
         "WHERE t.method <> '' AND p.name LIKE t.method || ':%')", (methods.CROSSING_KIND,)).fetchall()
+    from harness import adoption_state as st
+    adopted = {r["spec"] for r in st.history(conn) if r["move"] == st.ADOPT}
     for pid, name, state in rows:
         tiers = {r[0] for r in conn.execute("SELECT DISTINCT tier FROM verdicts WHERE proposal_id = ?", (pid,))}
-        won = conn.execute("SELECT 1 FROM adoptions a JOIN candidates c ON c.id = a.candidate_id WHERE c.spec = ?",
-                           (name,)).fetchone()
+        won = name in adopted
         if tiers & {"measure", "adopt"} or won:
             got["measured"] += 1
             if won:

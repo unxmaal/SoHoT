@@ -1,5 +1,6 @@
 """The watchdog: each criterion trips on a fake job built to trip it and stays quiet on one that should not; each action against a fake (#814)."""
 import json
+import os
 import subprocess
 import sys
 import time
@@ -567,7 +568,7 @@ def test_progress_files_are_read_from_run_directories_while_running_or_unreadabl
     for name, state in (("a", "running"), ("b", "done")):
         d = tmp_path / name
         d.mkdir()
-        (d / "progress.json").write_text(json.dumps({"state": state, "pid": 1}), encoding="utf-8")
+        (d / "progress.json").write_text(json.dumps({"state": state, "pid": os.getpid()}), encoding="utf-8")
     (tmp_path / "c").mkdir()
     (tmp_path / "c" / "progress.json").write_text("{torn", encoding="utf-8")
     got = wd.ProgressFiles([tmp_path]).runs()

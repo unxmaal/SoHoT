@@ -66,7 +66,7 @@ MODULES = {
         "tests/test_lane_too_small_1049.py", "tests/test_lane_until_1053.py", "tests/test_reverify_lane_metric_733.py",
         "tests/test_adopt_effect_confirm_725.py", "tests/test_min_effect_1320.py",
         "tests/test_limit_cuts_1087_harness_ac.py", "tests/test_limit_cuts_1087_harness_ps.py",
-        "tests/test_adopt_store_given_1673.py"],
+        "tests/test_adopt_store_given_1673.py", "tests/test_adoption_state_1735.py"],
     "harness/serving.py": [
         "tests/test_harness_serving.py", "tests/test_lane_routes.py", "tests/test_gguf_route.py",
         "tests/test_schema_lanes.py", "tests/test_ds4.py", "tests/test_remote_upstreams.py",
@@ -90,7 +90,7 @@ LEFT_OUT = {
                                             "test_revisit_tier_1060.py", "test_revisitable_after_deploy_1361.py",
                                             "test_revisitable_met_1749.py", "test_site.py", "test_futility_lane_too_small_1452.py"),
     "harness/reasons.py": (
-        "test_owner_decline_1564.py", "test_runtime_trials_1474.py", "test_repo_repair_890.py", "test_agent_cut_call_1547.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_staging_torch_1358.py",
+        "test_passed_over_class_1779.py", "test_owner_decline_1564.py", "test_runtime_trials_1474.py", "test_repo_repair_890.py", "test_agent_cut_call_1547.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_staging_torch_1358.py",
         "test_vision_engines_1282.py",
         "test_shots_check_1208.py", "test_node_drain_1815.py",
         "test_adopt_retest_1001.py", "test_attachment_tags_949.py", "test_canary_919.py",
@@ -111,7 +111,7 @@ LEFT_OUT = {
         "test_engine_trials_1475.py", "test_screen_server_killer_1544.py", "test_mflux_second_repo_1546.py", "test_interactive_1561.py",
         "test_slot_plan_refusal_1651.py", "test_incumbent_silent_1656.py"),
     "harness/screen.py": (
-        "test_measure_gateway_1660.py", "test_attachment_tags_949.py", "test_lane_too_small_1049.py", "test_vision_engines_1282.py",
+        "test_passed_over_class_1779.py", "test_measure_gateway_1660.py", "test_attachment_tags_949.py", "test_lane_too_small_1049.py", "test_vision_engines_1282.py",
         "test_variants_947.py", "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",
         "test_harness_report.py", "test_incumbent_lookup.py", "test_lane_metric_validity.py", "test_loop_backpressure.py",
         "test_canary_919.py", "test_mps_backend_abort.py", "test_new_lane_loop_faults.py", "test_rank_881.py",
@@ -120,7 +120,7 @@ LEFT_OUT = {
         "test_engine_timeout_708.py", "test_engine_timeout_1256.py",
         "test_served_readonly_1247.py", "test_adopt_effect_confirm_725.py",
         "test_confirm_resume_1357.py", "test_store_errors_1432.py", "test_canary_stt_1531.py",
-        "test_mflux_second_repo_1546.py", "test_incumbent_silent_1656.py"),
+        "test_mflux_second_repo_1546.py", "test_incumbent_silent_1656.py", "test_adoption_state_1735.py"),
     "harness/adopt.py": (
         "test_measure_gateway_1660.py", "test_canary_stt_1531.py", "test_technique_triage_993.py", "test_harness_paired.py", "test_reverify_case_sets_1496.py", "test_reverify_power_1504.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
         "test_over_budget_796.py", "test_planted_919.py", "test_projection_696.py", "test_rank_893.py", "test_router_unload.py",
@@ -130,7 +130,8 @@ LEFT_OUT = {
         "test_metric_order_717.py",
         "test_served_readonly_1247.py", "test_saturation_lane_metric_1267.py", "test_gate_direction_1302.py",
         "test_power_table_603.py", "test_store_errors_1432.py", "test_futility_lane_too_small_1452.py",
-        "test_weedout_1439.py", "test_adopt_dry_run_1548.py", "test_residency_sim_1559.py", "test_incumbent_silent_1656.py"),
+        "test_weedout_1439.py", "test_adopt_dry_run_1548.py", "test_residency_sim_1559.py", "test_incumbent_silent_1656.py",
+        "test_lifecycle_stateful_1766.py"),
     "harness/serving.py": (
         "test_store_down_refuse_1648.py", "test_styx_batch_1689.py", "test_engine_build_1607.py", "test_install_env_1518.py", "test_runtime_trials_1474.py", "test_mlx_backlog.py", "test_runner_gap_until_950.py", "test_agent_limits.py", "test_claims_lane.py", "test_decide_lane.py",
         "test_delegate_resident.py", "test_delegations.py", "test_lane_probe_924.py", "test_machine_host.py",

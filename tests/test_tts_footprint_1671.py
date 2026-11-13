@@ -6,7 +6,7 @@ import subprocess
 
 import pytest
 
-from harness import audio_models, morning, tts_server
+from harness import audio_models, morning, paths, tts_server
 from harness import memory_store as ms
 from harness import watchdog as wd
 from harness.commands import morning as morning_cmd
@@ -179,7 +179,7 @@ def test_an_idle_server_past_the_limit_is_restarted_the_way_launchd_does(tmp_pat
     assert [(r["action"], r["outcome"]) for r in rows] == [("restart", "restarted tts")]
     assert json.loads(rows[0]["evidence"])["footprint_gib"] == 43.0
     assert json.loads(rows[0]["evidence"])["loaded"] == [KOKORO, MOSS]
-    assert hands.argv[-1][-2:] == ["restart", "tts"] and hands.argv[-1][1].endswith("scripts/launchd.sh")
+    assert hands.argv[-1][-2:] == ["restart", "tts"] and hands.argv[-1][1] == str(paths.REPO / "scripts" / "launchd.sh")
 
 
 def test_a_request_in_flight_keeps_the_server_up(tmp_path, monkeypatch):

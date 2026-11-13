@@ -24,9 +24,9 @@ def runs(conn, since: float) -> list[dict]:
                            AND d.started_at <= v.decided_at AND v.detail = :downloaded), v.decided_at) AS start
           FROM verdicts v JOIN proposals p ON p.id = v.proposal_id
          WHERE v.tier = 'fetch' AND v.decided_at >= :since
-           AND (v.detail = :downloaded OR (v.reason = :limit AND COALESCE(v.until, '') = '' AND v.detail GLOB :refusal))
+           AND (v.detail = :downloaded OR (v.reason = :limit AND COALESCE(v.until, '') = '' AND v.failure_class = :passed))
          ORDER BY v.id""", {"since": since, "downloaded": fetching.DOWNLOADED, "limit": reasons.LIMIT,
-                            "refusal": f"[0-9]* GiB {fetching.PASSED} *"}).fetchall()
+                            "passed": reasons.PASSED_OVER}).fetchall()
     out: list[dict] = []
     for r in rows:
         if not out or r["start"] - out[-1]["last"] > GAP_S:

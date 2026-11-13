@@ -57,7 +57,7 @@ def _answer(text):
 def log(tmp_path):
     p = tmp_path / "logs" / "check.log"
     p.parent.mkdir()
-    p.write_text(LOG, encoding="utf-8")
+    p.write_text(LOG, encoding="utf-8", newline="\n")
     return p
 
 

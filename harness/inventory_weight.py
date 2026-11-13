@@ -285,12 +285,9 @@ def gauntlet_index(root: Path) -> dict:
 # --- gathering: every read is read-only ----------------------------------------------------------------
 
 def _rows(conn, sql: str, args=()) -> list[dict]:
-    try:
-        return [dict(r) for r in conn.execute(sql, args)]
-    except Exception as exc:  # noqa: BLE001
-        if "no such" in str(exc):
-            return []
-        raise
+    """The rows of `sql`; store.Unread (missing_table or failed) when the store does not answer, never []. #1781."""
+    from harness import store
+    return [dict(r) for r in store.query(conn, sql, args)]
 
 
 def gather_cases(conn, exam_of=None) -> dict:

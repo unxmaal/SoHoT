@@ -165,8 +165,9 @@ def render(tab: list[dict], slow: list, limit_min: float, fast: bool = False, na
     return "\n".join(lines)
 
 
-def collect(limit: int, cache: Path, gh=_gh, branch: str = "", name: str = JOB, event: str = "") -> list[dict]:
+def collect(limit: int, cache: Path, gh=None, branch: str = "", name: str = JOB, event: str = "") -> list[dict]:
     """Every attempt of the job in the newest `limit` runs, with its log parsed; logs cached under `cache`."""
+    gh = gh or _gh
     cache.mkdir(parents=True, exist_ok=True)
     argv = ["run", "list", "-R", REPO, "--workflow", WORKFLOW, "-L", str(limit), "--status", "completed",
             "--json", "databaseId,event,headSha,conclusion"]

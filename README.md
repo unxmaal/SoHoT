@@ -624,6 +624,15 @@ case assumes `rho` 1 until a run measures it. The negative control is pinned: a
 challenger that wins two cases and loses one, the same way on every draw, is
 never adopted at any repeat (the old cell count adopted it from repeat 14).
 
+What a lane serves on a machine is a chain of named moves in `adoptions`
+(schema 100, #1735): each row adopts a model or withdraws the one serving, and
+leaves the lane's previous row, so two writers that read the same head cannot
+both land. `soh adopt --serving` prints every lane on every machine with its
+state: adopted, withdrawn, or configured default, never adopted. A by-hand
+adoption the machine cannot fit is named on that line. `soh adopt --lane L
+--withdraw "why"` withdraws the lane's adoption on this machine
+(`--all-machines` everywhere), and the configured default serves again.
+
 `soh adopt --power` prints, per lane, the repeat that reaches power 0.8 to
 detect `--effect` at alpha 0.05, the holdout size needed when no repeat up to
 16 can (and how many more holdout and lane cases that is), and the projected
@@ -1728,8 +1737,11 @@ space on the system Data volume (alert under `monitor_disk_alert`; at
 `monitor_disk_pause` it pauses the job queue and every running eval, then
 alerts), the weights volume when it is a separate disk (alert when it is
 unmounted or under the fetch floor), memory pressure (alert after
-`monitor_memory_warn` at warn or worse), and the ports of the installed gateway,
+`monitor_memory_warn` at warn or worse; it recovers only after `monitor_memory_calm` at
+normal, so a flapping episode alerts once), and the ports of the installed gateway,
 mlx and tts units (alert after `monitor_service_down`; launchd restarts them).
+A recovery is sent only when its failure was, and says how long it lasted; monit also runs
+its recovery after a failure too short to alert, and that one is recorded but not sent.
 They live in `harness/knobs/monitor.py`, each with its range and evidence.
 
 An alert runs `scripts/monit-alert.sh`: a desktop notification

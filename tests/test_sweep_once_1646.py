@@ -1,13 +1,11 @@
 """A queued sweep runs each step once and ends: a tier never re-enters its step, a step queues its successor once, the last step closes the sweep. #1646."""
 import argparse
 import json
-import os
 import threading
-import types
 
 import pytest
 
-from harness import cli, gguf
+from harness import gguf
 from harness import heartbeat as hb
 from harness import memory_store as ms
 from harness import workqueue as wq
@@ -16,6 +14,7 @@ from harness.commands import loop as loop_cmd
 from harness.commands import loop_steps as steps
 from harness.commands import report as report_cmd
 from harness.commands import screen as screen_cmd
+from tests import inproc
 
 
 def _ns(**kw):
@@ -24,18 +23,7 @@ def _ns(**kw):
     return argparse.Namespace(**{**base, **kw})
 
 
-def _inproc(argv, cwd=None, stdout=None, stderr=None, env=None):
-    words = [str(w) for w in argv]
-    old = os.environ.get(wq.JOB_ENV)
-    os.environ[wq.JOB_ENV] = (env or {}).get(wq.JOB_ENV, "")
-    try:
-        rc = cli.main(words[words.index("harness.cli") + 1:])
-    finally:
-        if old is None:
-            os.environ.pop(wq.JOB_ENV, None)
-        else:
-            os.environ[wq.JOB_ENV] = old
-    return types.SimpleNamespace(returncode=rc)
+_inproc = inproc.popen
 
 
 def _work():

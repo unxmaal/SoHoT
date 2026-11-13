@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 99
+SCHEMA_VERSION = 101
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -516,7 +516,11 @@ CREATE TABLE IF NOT EXISTS adoptions (
     agreement    REAL,
     forced       INTEGER NOT NULL DEFAULT 0,
     -- json median_s/peak_gb against the incumbent's, on machine_id. #485.
-    cost         TEXT NOT NULL DEFAULT '{}'
+    cost         TEXT NOT NULL DEFAULT '{}',
+    -- The named move (adoption_state.KINDS), why it was made, and the lane's adoption it leaves (0: none). #1735.
+    move         TEXT NOT NULL DEFAULT 'adopt',
+    why          TEXT NOT NULL DEFAULT '',
+    leaves       INTEGER NOT NULL DEFAULT 0
 );
 
 -- Each time the gateway's sohot-<lane> alias moved to a new adoption. #483.

@@ -18,7 +18,7 @@ TAG="x-litellm-tags: purpose:smoke"
 KEY="${SOHOT_GATEWAY_KEY:-$(uv run python -m harness.gateway_key show 2>/dev/null || true)}"
 if [ -z "$KEY" ]; then
   echo "FAIL  no gateway key: run \`soh gateway key\` on the gateway's machine and set SOHOT_GATEWAY_KEY"
-  exit 1
+  exec /bin/bash scripts/smoke-verdict.sh 1
 fi
 # Ask by model id, never a nickname (#670): this machine's build of each.
 build(){ uv run python -c "from harness.models import build_here; print(build_here('$1'))" 2>/dev/null || echo "$1"; }
@@ -56,7 +56,7 @@ if [ "$ready" -ne 1 ]; then
   esac
   uv run --quiet python -m harness.cuts scripts/smoke.sh:READY_TIMEOUT "smoke: gateway at $G not serving" \
     >/dev/null 2>&1 || printf 'note  the READY_TIMEOUT cut was not recorded\n' >&2
-  exit 1
+  exec /bin/bash scripts/smoke-verdict.sh 1
 fi
 
 # The engine binds 127.0.0.1 behind the gateway (#482), so only a local run can ask it.
@@ -245,4 +245,6 @@ if [ "$LOCAL" -eq 1 ]; then
   fi
 fi
 
-exit $FAIL
+# Before the switch, a FAIL is judged against the serving release's own smoke of its own services (#1790).
+[ "$FAIL" -eq 0 ] && exit 0
+exec /bin/bash scripts/smoke-verdict.sh "$FAIL"
