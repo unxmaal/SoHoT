@@ -3,10 +3,10 @@ from __future__ import annotations
 
 import json
 import os
-import threading
 import time
 from pathlib import Path
 
+from harness import stale_temp
 from harness.atomic_file import replace
 
 
@@ -20,7 +20,7 @@ def path(job_id) -> Path:
 def mark(job_id, pid: int | None = None) -> None:
     from harness import proc_identity
     to = path(job_id)
-    tmp = to.with_suffix(f".claim.{os.getpid()}.{threading.get_ident()}")
+    tmp = stale_temp.temp(to, "{name}.{pid}.{thread}")
     tmp.write_text(json.dumps(proc_identity.identity(pid or os.getpid())), encoding="utf-8")
     replace(tmp, to)
 

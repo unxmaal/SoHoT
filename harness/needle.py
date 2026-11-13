@@ -15,7 +15,7 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
-from harness import knobs, reasons
+from harness import knobs, reasons, tether
 
 PREFIX = "needle"
 REPO = "Cactus-Compute/needle3"
@@ -295,6 +295,7 @@ class Server:
         self.proc = subprocess.Popen(
             argv_for(self.port), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             text=True, encoding="utf-8", errors="replace", env=child_env())
+        self.watcher = tether.tie(self.proc)
         atexit.register(self.close)
         lines: queue.Queue = queue.Queue()
         threading.Thread(target=self._drain, args=(lines,), daemon=True).start()
@@ -335,6 +336,8 @@ class Server:
                 self.proc.wait(timeout=10)
             except subprocess.TimeoutExpired:
                 self.proc.kill()
+        tether.untie(self.watcher)
+        self.watcher = None
 
 
 class Chat:
