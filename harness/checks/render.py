@@ -28,7 +28,7 @@ import time
 from functools import lru_cache
 from pathlib import Path
 
-from harness import knobs
+from harness import knobs, stale_temp, tether
 from harness.checks.base import CheckResult
 
 RASTERIZER = "rsvg-convert"
@@ -258,7 +258,7 @@ def rasterize_html(html: str, out: str | Path, width: int = 800) -> Path:
     # mkdtemp with an explicit removal, not TemporaryDirectory: its cleanup
     # raises on the first refusal, and on Windows the browser is still letting
     # go of the profile at that moment.
-    d = tempfile.mkdtemp()
+    d = _scratch()
     try:
         src = Path(d) / "page.html"
         src.write_text(html, encoding="utf-8")
@@ -298,6 +298,13 @@ def rasterize_html(html: str, out: str | Path, width: int = 800) -> Path:
         raise RenderError(f"chrome produced no screenshot: "
                           f"{chrome_path()} said {stderr.strip()[-400:]}")
     return out
+
+
+def _scratch() -> str:
+    """A private dir for one render's page and profile, once those a dead render left are swept."""
+    d = str(stale_temp.temp(Path(tempfile.gettempdir()) / "sohot-render", "{name}-{pid}-{hex}"))
+    os.mkdir(d, 0o700)
+    return d
 
 
 def _kill_tree(proc) -> None:
@@ -352,6 +359,7 @@ def _shoot(argv: list[str], out: Path, cwd: str, timeout: float = 60.0,
     # A file, not a pipe: chrome's grandchildren inherit the handle and keep a
     # pipe open long after we terminate it, so reading one would block.
     proc = subprocess.Popen(argv, stdout=subprocess.DEVNULL, stderr=err, cwd=cwd)
+    watcher = tether.tie(proc)
     deadline = time.monotonic() + timeout
     size = -1
     exited = settled = False
@@ -383,6 +391,7 @@ def _shoot(argv: list[str], out: Path, cwd: str, timeout: float = 60.0,
         err.seek(0)
         return err.read().strip()
     finally:
+        tether.untie(watcher)
         err.close()
 
 
