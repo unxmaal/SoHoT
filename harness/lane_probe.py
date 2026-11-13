@@ -281,9 +281,6 @@ def _timed_out(exc) -> bool:
     return isinstance(reason, (TimeoutError, socket.timeout)) or isinstance(exc, (TimeoutError, socket.timeout))
 
 
-_MINE = "(machine_id = ? OR (machine_id IS NULL AND ? IS NULL))"
-
-
 #: Step and horizon of the scan for where tonight ends and the next night begins.
 _SCAN_STEP_S = 300.0
 _SCAN_SPAN_S = 2 * 86400.0
@@ -312,12 +309,14 @@ def due(conn, lane: str, machine_id, now: float, day=None) -> str:
         from harness.watchdog import daytime as day
     if day(now):
         return ""
-    last = conn.execute(f"SELECT outcome, at FROM lane_probes WHERE lane = ? AND {_MINE} AND outcome IN (?, ?) "
-                        "ORDER BY at DESC, id DESC LIMIT 1", (lane, machine_id, machine_id, UP, DOWN)).fetchone()
+    from harness import machine_scope
+    here, mine = machine_scope.where("lane_probes.mine", machine_id)
+    last = conn.execute(f"SELECT outcome, at FROM lane_probes WHERE lane = ? AND {here} AND outcome IN (?, ?) "
+                        "ORDER BY at DESC, id DESC LIMIT 1", (lane, *mine, UP, DOWN)).fetchone()
     if last is None or last["outcome"] != DOWN:
         return ""
-    tried = conn.execute(f"SELECT MAX(at) AS at FROM lane_probes WHERE lane = ? AND {_MINE} AND reason LIKE ?",
-                         (lane, machine_id, machine_id, DELIBERATE + "%")).fetchone()
+    tried = conn.execute(f"SELECT MAX(at) AS at FROM lane_probes WHERE lane = ? AND {here} AND reason LIKE ?",
+                         (lane, *mine, DELIBERATE + "%")).fetchone()
     since = max(last["at"], tried["at"] if tried and tried["at"] is not None else last["at"])
     if now - since < UNPROBED_S and not _lands_by_day(since + UNPROBED_S, now, day):
         return ""

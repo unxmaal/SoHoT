@@ -145,10 +145,11 @@ def _candidates(conn, lane: str, exams: list[dict], held: dict) -> tuple[list[di
 
 def _knobs(conn, mid, lane: str) -> list[dict]:
     from harness import lanes as L
+    from harness import machine_scope
     from harness.publish import _iso
-    rows = conn.execute(
-        "SELECT * FROM knob_sweeps WHERE settled_at IS NOT NULL AND (machine_id IS NULL OR machine_id = ?) "
-        "ORDER BY settled_at, id", (mid,)).fetchall()
+    here, mine = machine_scope.where("knob_sweeps.mine", mid)
+    rows = conn.execute(f"SELECT * FROM knob_sweeps WHERE settled_at IS NOT NULL AND {here} ORDER BY settled_at, id",
+                        mine).fetchall()
     return [{"id": r["id"], "knob": r["knob"], "candidate": r["spec"], "outcome": r["outcome"],
              "chosen": _json(r["chosen"]), "detail": r["detail"], "queued_at": _iso(r["queued_at"]),
              "settled_at": _iso(r["settled_at"]), "_t": r["settled_at"]}

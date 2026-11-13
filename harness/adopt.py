@@ -544,13 +544,14 @@ def queue_confirmation(conn, vid: int, verdict: Verdict, now: float | None = Non
     """Queue the dev run (at `start`, else when the contention gate opens) that confirms or refuses a held holdout win, once per verdict. #725, #1509."""
     import os
 
-    from harness import paths, workqueue
+    from harness import machine_scope, paths, workqueue
     argv = confirm_argv(vid)
     # The job this runs in is not the continuation it queues. #1357.
     mine = os.environ.get(workqueue.JOB_ENV, "").strip()
     mine = int(mine) if mine.isdigit() else None
-    have = conn.execute("SELECT id FROM jobs WHERE argv = ? AND state IN (?, ?) AND id IS NOT ?",
-                        (json.dumps(argv), workqueue.PENDING, workqueue.RUNNING, mine)).fetchone()
+    here, args = machine_scope.here(conn, "jobs.twin")
+    have = conn.execute(f"SELECT id FROM jobs WHERE argv = ? AND state IN (?, ?) AND id IS NOT ? AND {here}",
+                        (json.dumps(argv), workqueue.PENDING, workqueue.RUNNING, mine, *args)).fetchone()
     if have is not None:
         return None
     return workqueue.add(argv, title=(f"confirm {verdict.lane}: {verdict.challenger} over {verdict.incumbent} "
@@ -618,7 +619,7 @@ def record(conn, verdict: Verdict, spec: str = "",
     try:
         # The verdict and its adoption commit together: one that loses the lane, or dies, leaves neither. #1758.
         vid = ms.decide(conn, row["proposal"] or "", outcome, tier=TIER,
-                        detail=detail[:200], candidate_id=cid, run_id=run_id,
+                        detail=detail[:200], candidate_id=cid, run_id=run_id, lane=verdict.lane,
                         reason=reason, until=_spent_until(conn, row["proposal"] or "", verdict, reason),
                         commit=False)
         if verdict.failure_class or verdict.evidence:

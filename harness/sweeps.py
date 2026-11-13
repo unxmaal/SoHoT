@@ -68,10 +68,9 @@ def refused(frm, to: str, reason: str) -> str:
 
 
 def _where(sw: dict) -> tuple[str, tuple]:
-    mid = sw["machine_id"]
-    same = "machine_id IS NULL" if mid is None else "machine_id = ?"
-    return (f"knob = ? AND lane = ? AND spec = ? AND {same}",
-            (sw["knob"], sw["lane"], sw["spec"], *(() if mid is None else (mid,))))
+    from harness import machine_scope
+    here, mine = machine_scope.where("knob_sweeps.mine", sw["machine_id"])
+    return f"knob = ? AND lane = ? AND spec = ? AND {here}", (sw["knob"], sw["lane"], sw["spec"], *mine)
 
 
 def _open(conn, sw: dict) -> dict | None:

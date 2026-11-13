@@ -102,7 +102,8 @@ def _ids(conn, machine) -> tuple:
 
 
 def _applies(row: dict, ids: tuple) -> bool:
-    return bool(row["all_machines"]) or row["machine_id"] is None or row["machine_id"] in ids
+    from harness import machine_scope
+    return bool(row["all_machines"]) or machine_scope.holds("adoptions.served", row["machine_id"], ids)
 
 
 def _resolve(conn, lane: str, rows: list[dict], ids: tuple, default: str) -> Served:

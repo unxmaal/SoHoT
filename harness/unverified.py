@@ -3,10 +3,12 @@ from __future__ import annotations
 
 import json
 import math
-import os
 import re
 import time
 from pathlib import Path
+
+from harness.atomic_file import replace
+from harness import stale_temp
 
 #: Candidate claims one turn sends to the decide model; the rest go unchecked.
 CLAIMS_PER_TURN = 12
@@ -306,9 +308,9 @@ def _remember(session: str, turn: str) -> bool:
         state[session] = turn
         state = dict(list(state.items())[-SESSIONS_KEPT:])
         path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_name(f"{STATE}.{os.getpid()}")
+        tmp = stale_temp.temp(path, "{name}.{pid}")
         tmp.write_text(json.dumps(state), encoding="utf-8")
-        os.replace(tmp, path)
+        replace(tmp, path)
     except OSError:
         return False
     return True

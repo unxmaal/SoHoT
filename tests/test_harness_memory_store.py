@@ -492,6 +492,15 @@ def test_decide_without_a_ceiling_leaves_it_unrecorded(tmp_path):
     assert conn.execute("SELECT ceiling_gb FROM verdicts WHERE id = ?", (vid,)).fetchone()[0] is None
 
 
+def test_decide_records_the_lane_its_writer_names_and_none_when_none_is_given(tmp_path):
+    conn = _store(tmp_path)
+    plain = ms.decide(conn, "org/thing", "declined", tier=ms.INSPECT, detail="too-big")
+    unset = ms.decide(conn, "org/thing", "declined", tier=ms.INSPECT, detail="too-big again", lane=None)
+    named = ms.decide(conn, "org/thing", "declined", tier=ms.INSPECT, detail="repo: too-big", lane="repo")
+    got = dict(conn.execute("SELECT id, lane FROM verdicts WHERE id IN (?, ?, ?)", (plain, unset, named)).fetchall())
+    assert got == {plain: "", unset: "", named: "repo"}
+
+
 def test_decide_records_the_failure_class_and_no_class_when_none_is_given(tmp_path):
     conn = _store(tmp_path)
     plain = ms.decide(conn, "org/thing", "declined", tier=ms.INSPECT, detail="too-big")

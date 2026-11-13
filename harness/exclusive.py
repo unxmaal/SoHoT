@@ -22,6 +22,8 @@ import threading
 import time
 from pathlib import Path
 
+from harness.atomic_file import replace
+from harness import stale_temp
 from harness import paths
 
 #: What holds the lock, for a waiter to report. Best-effort and advisory: the
@@ -245,11 +247,11 @@ def owner() -> bool:
 
 def _mark(path: Path, record: dict, exclusive: bool) -> bool:
     """Write the refusal marker whole; exclusive, False when one already stands. #1793."""
-    tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}")
+    tmp = stale_temp.temp(path, "{name}.{pid}.{thread}")
     tmp.write_text(json.dumps(record), encoding="utf-8")
     try:
         if not exclusive:
-            os.replace(tmp, path)
+            replace(tmp, path)
             return True
         os.link(tmp, path)
         return True
@@ -998,16 +1000,15 @@ def beat(now: float | None = None) -> None:
     """Stamp the GPU lock's holder record with a moment of progress, when this process or an ancestor holds it. #775."""
     if os.environ.get(HELD_ENV) != "1":
         return
-    import threading
     path = holder_path()
     record = _read(path)
     if not record:
         return
     record["beat"] = time.time() if now is None else float(now)
-    tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    tmp = stale_temp.temp(path, "{name}.{pid}.{thread}.tmp")
     with contextlib.suppress(OSError):
         tmp.write_text(json.dumps(record), encoding="utf-8")
-        os.replace(tmp, path)
+        replace(tmp, path)
 
 
 def _hand_down(lease: int | None, held: bool = True) -> None:
