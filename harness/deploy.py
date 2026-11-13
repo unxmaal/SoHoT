@@ -262,37 +262,15 @@ def _jobs_for(conn, sha: str) -> list:
                         (KIND, sha)).fetchall()
 
 
-def _held_alerted() -> Path:
-    return wq.root() / "deploy-held-alerted"
-
-
-def _held(conn, sha: str, job_id, alert=None) -> str:
-    """Why the poll holds a sha its last job rolled back on unchanged audit inputs, alerting once per hold; else ''. #1805."""
-    from harness import deploy_hold
-    h = deploy_hold.held(conn, job_id)
-    if h is None:
-        return ""
-    try:
-        said = _held_alerted().read_text(encoding="utf-8").strip()
-    except OSError:
-        said = ""
-    if said != str(job_id):
-        _held_alerted().write_text(str(job_id), encoding="utf-8")
-        (alert or (lambda m: _alert_script(m, "held")))(
-            f"held: deterministic audit failure, waiting for a newer sha: {sha[:12]} rolled back as deploy "
-            f"{h['deploy']} on {h['checks']} and what they read has not changed (soh deploy now deploys it anyway)")
-    return h["why"]
-
-
-def _retry(seen: list, now: float, conn=None, sha: str = "", alert=None) -> str:
-    """'' when a sha whose last deploy job failed may be queued again now, else why not. #1672."""
-    from harness import cuts
+def _retry(seen: list, now: float, conn=None, sha: str = "") -> str:
+    """'' when a sha whose last deploy job failed may be queued again now, else why not; never one that rolled back. #1672, #1913."""
+    from harness import cuts, deploy_retry
     last = seen[-1]
     if last["state"] != wq.FAILED:
         return f"is already queued as job {wq.label(last['id'])} ({last['state']})"
-    held = _held(conn, sha, last["id"], alert) if conn is not None else ""
-    if held:
-        return held
+    final = deploy_retry.why(conn, sha) if conn is not None else ""
+    if final:
+        return final
     failed = sum(r["state"] == wq.FAILED for r in seen)
     if failed > RETRIES:
         cuts.cut("deploy_retries", "a failed sha not queued again", dropped=1)
@@ -336,11 +314,11 @@ def poll(conn=None, now: float | None = None, *, src=None, sha: str = "", force:
          green=None, environ=None, own=None, alert=None) -> dict:
     """Queue one deploy job for the newest main commit since live (or sha) that passed check-macos; supersede pending older ones."""
     said = confirm(own, alert)
-    return {**_queue(conn, now, src=src, sha=sha, force=force, green=green, environ=environ, alert=alert),
+    return {**_queue(conn, now, src=src, sha=sha, force=force, green=green, environ=environ),
             "confirm": said}
 
 
-def _queue(conn, now, *, src, sha: str, force: bool, green, environ, alert=None) -> dict:
+def _queue(conn, now, *, src, sha: str, force: bool, green, environ) -> dict:
     from harness import deploy_guard
     environ = os.environ if environ is None else environ
     if paused() and not force:
@@ -362,7 +340,7 @@ def _queue(conn, now, *, src, sha: str, force: bool, green, environ, alert=None)
             seen = _jobs_for(c, want)
             live = [r for r in seen if r["state"] in (wq.PENDING, wq.RUNNING)]
             why = (f"is already queued as job {wq.label(live[-1]['id'])} ({live[-1]['state']})" if live
-                   else _retry(seen, time.time() if now is None else now, c, want, alert) if seen and not force
+                   else _retry(seen, time.time() if now is None else now, c, want) if seen and not force
                    else "")
             if why:
                 return {"queued": None, "why": "; ".join([*refused, f"{want[:12]} {why}"]), "superseded": []}
@@ -976,16 +954,6 @@ def _close_job(c, job_id, state: str, rc, note: str, now: float) -> None:
     c.commit()
 
 
-def _hold_inputs(c, rec: dict, path: Path) -> None:
-    """What the failed audit checks read after the rollback, so the poll can tell a retry would read the same. #1805."""
-    from harness import deploy_hold
-    try:
-        rec["held_inputs"] = deploy_hold.inputs(c, rec["audit_failed"])
-        deploy_switch.save(path, rec)
-    except Exception as exc:  # noqa: BLE001 - no fingerprint only means the sha is retried as before
-        print(f"deploy settle: no audit fingerprint for deploy {rec.get('id')}: {exc}", file=sys.stderr)
-
-
 def _settle_one(c, row: dict, now: float, alive, spawn=None) -> dict | None:
     rec = _read(record_path(row["id"]))
     job = wq.get(row["job_id"], conn=c) if row["job_id"] is not None else None
@@ -995,8 +963,6 @@ def _settle_one(c, row: dict, now: float, alive, spawn=None) -> dict | None:
                     finished_at=rec.get("finished_at") or now, rolled_back_from=rec.get("rolled_back_from", ""),
                     **{k: rec[k] for k in ("release", "previous", "backup") if rec.get(k)}):
             return None
-        if got == ROLLED_BACK and rec.get("audit_failed"):
-            _hold_inputs(c, rec, record_path(row["id"]))
         from harness import cuts
         for t in rec.get("timed_out") or []:
             site_knob = t["site"]
