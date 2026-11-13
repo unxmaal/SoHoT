@@ -485,7 +485,6 @@ an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/commands/resi
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/context.py:_get_json:urlopen
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/context_mistakes.py:_post:urlopen
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/delegate.py:_get_json:urlopen
-an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/deploy.py:spawn_switch:binary:launchctl
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/deploy_guard.py:_gh:binary:gh
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/deploy_guard.py:main:_gh
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/engine_trials.py:gh_run:binary:gh
