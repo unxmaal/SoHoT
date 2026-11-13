@@ -582,10 +582,10 @@ def _bound(host: str, port: int):
 
 def stale_report(port: int, pid: int, procs=None, probes=None) -> list[str]:
     """With the port bound here, every other server for it is draining an old client's stream. #1155, #1166."""
-    from harness import mcp_peers, watchdog
+    from harness import mcp_peers, watchdog, watchdog_observe
     if mcp_peers.port_of(f"-m harness.mcp_server --port {port}") is None:
         return []
-    probes = watchdog.Probes() if probes is None else probes
+    probes = watchdog_observe.Probes() if probes is None else probes
     procs = probes.processes() if procs is None else procs
     if procs is None:
         return ["mcp   stale check skipped: the process table cannot be read here"]

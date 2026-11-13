@@ -38,6 +38,10 @@ SWITCH_DEADLINE_S = 3600.0
 REAP_TIMEOUT_S = 30.0
 #: How long the alert script may take.
 ALERT_TIMEOUT_S = 120.0
+
+
+class TimedOut(str):
+    """The why of a step that ran out of time: a runner says so by type, so readers never match its words. #1780."""
 #: Variables a deploy run must not hand to the release's scripts: they would pin the old checkout or its venv.
 DROP_ENV = ("LH_DEPLOY", "LH_REPO", "LH_REEXECED", "LH_GPU_LOCK_HELD", "VIRTUAL_ENV", "LH_JOB_ID", "SMOKE_PHASE")
 DEPLOYED, ROLLED_BACK, FAILED, FAILED_FORWARD = ds.DEPLOYED, ds.ROLLED_BACK, ds.FAILED, ds.FAILED_FORWARD
@@ -124,7 +128,7 @@ def run(argv: list, cwd: str, timeout: float, log, extra=None) -> tuple[int | No
         return child.wait(timeout=timeout), ""
     except subprocess.TimeoutExpired:
         _kill(child)
-        return None, f"timed out after {timeout:.0f} s"
+        return None, TimedOut(f"timed out after {timeout:.0f} s")
     except BaseException:
         _kill(child)
         raise
@@ -164,10 +168,10 @@ def _step(rec: dict, argv: list, cwd: str, timeout: float, log, what: str, *, si
     left = end - time.monotonic()
     if left < timeout:
         timeout, site_knob = max(0.0, left), deadline_knob
-    rc, why = run(argv, cwd, timeout, log) if timeout > 0 else (None, "timed out after 0 s")
+    rc, why = run(argv, cwd, timeout, log) if timeout > 0 else (None, TimedOut("timed out after 0 s"))
     if rc == 0:
         return ""
-    if why.startswith("timed out"):
+    if isinstance(why, TimedOut):
         rec.setdefault("timed_out", []).append({"site": site_knob, "what": what})
         if site_knob == deadline_knob:
             why = f"ran past the switch deadline of {SWITCH_DEADLINE_S:.0f} s"

@@ -17,6 +17,8 @@ KNOBS = [
             "restart is given gguf.READY_TIMEOUT_S 120 s to answer (#1012, #1181)"),
     _k("gateway_probe_timeout", ["harness/gateway_switch.py:PROBE_TIMEOUT_S"], [2.0, 5.0, 15.0], unit="s",
        note="seconds a gateway switch waits on /health/backlog or /model/info before the probe says it gave no answer (#1634)"),
+    _k("gateway_respawn_claim", ["harness/gateway_respawn.py:CLAIM_S"], [60.0, 300.0, 900.0], unit="s",
+       note="seconds a gateway switch the worker started again may take to claim its row while its process is alive or cannot be judged, before it is settled failed (unclaimed); a dead one is settled at once (#1904)"),
     _k("gateway_switch_respawns", ["harness/gateway_switch.py:RESPAWNS"], [1, 0, 2], unit="count",
        note="times the worker starts again a gateway switch whose process died, per adoption request, before it alerts; 0 alerts at the first death, 2 lets a second respawn drain and restart the gateway again (#1899)"),
     _k("gguf_keep_array", ["harness/context.py:_KEEP_ARRAY"], [1024, 4096, 65536],

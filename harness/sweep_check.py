@@ -174,11 +174,12 @@ def should_notify(r: dict, before: str) -> bool:
 
 def record(conn, r: dict, notify=None) -> dict:
     """Store the check as a watchdog_actions row, notifying through the watchdog path first when it should."""
-    from harness import watchdog
+    from harness import watchdog, watchdog_hands
     before = previous(conn, r["start"])
     send = should_notify(r, before)
     if send:
-        outcome = watchdog.said((notify or watchdog.desktop)(NOTIFY_TITLE, r["line"], f"discover sweep: {r['verdict']}"),
+        outcome = watchdog.said((notify or watchdog_hands.desktop)(NOTIFY_TITLE, r["line"],
+                                                                   f"discover sweep: {r['verdict']}"),
                                 watchdog.NOTIFY)
     elif r["verdict"] in QUIET:
         outcome = watchdog.Said(f"noted: {r['line']}")
@@ -195,10 +196,12 @@ def record(conn, r: dict, notify=None) -> dict:
 
 
 def rows(conn, since: float) -> list[dict]:
-    """Every recorded check since `since`, oldest first, for soh morning."""
+    """This machine's recorded checks since `since`, oldest first, for soh morning."""
+    from harness import machine_scope
+    here, mine = machine_scope.where("watchdog_actions.mine", _machine(conn))
     out = []
     for r in conn.execute("SELECT id, at, notified, evidence, outcome FROM watchdog_actions WHERE criterion = ? "
-                          "AND at >= ? ORDER BY at, id", (CRITERION, since)):
+                          f"AND at >= ? AND {here} ORDER BY at, id", (CRITERION, since, *mine)):
         try:
             ev = json.loads(r["evidence"] or "{}")
         except ValueError:

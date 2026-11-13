@@ -492,6 +492,29 @@ def test_decide_without_a_ceiling_leaves_it_unrecorded(tmp_path):
     assert conn.execute("SELECT ceiling_gb FROM verdicts WHERE id = ?", (vid,)).fetchone()[0] is None
 
 
+@pytest.mark.parametrize("given", [40, "12.5"])
+def test_decide_records_the_fetch_budget_it_is_given_as_gib(tmp_path, given):
+    conn = _store(tmp_path)
+    vid = ms.decide(conn, "org/thing", "queued", tier=ms.FETCH, detail="over budget",
+                    budget_gib=given)
+    got = conn.execute("SELECT budget_gib FROM verdicts WHERE id = ?", (vid,)).fetchone()[0]
+    assert got == float(given) and isinstance(got, float)
+    ms.record(conn, ms.Seen(name="org/other", source="feed", url="u"))
+    bare =ms.decide(conn, "org/other", "queued", tier=ms.FETCH, detail="over budget")
+    assert conn.execute("SELECT budget_gib FROM verdicts WHERE id = ?", (bare,)).fetchone()[0] is None
+
+
+def test_decide_records_the_event_its_writer_names_and_none_when_none_is_given(tmp_path):
+    conn = _store(tmp_path)
+    named = ms.decide(conn, "org/thing", "queued", tier=ms.FETCH, detail="landed", event="downloaded")
+    ms.record(conn, ms.Seen(name="org/other", source="feed", url="u"))
+    bare = ms.decide(conn, "org/other", "queued", tier=ms.FETCH, detail="downloaded", event=None)
+    ms.record(conn, ms.Seen(name="org/third", source="feed", url="u"))
+    omitted = ms.decide(conn, "org/third", "queued", tier=ms.FETCH, detail="downloaded")
+    got = dict(conn.execute("SELECT id, event FROM verdicts WHERE id IN (?, ?, ?)", (named, bare, omitted)).fetchall())
+    assert got == {named: "downloaded", bare: "", omitted: ""}
+
+
 def test_decide_records_the_lane_its_writer_names_and_none_when_none_is_given(tmp_path):
     conn = _store(tmp_path)
     plain = ms.decide(conn, "org/thing", "declined", tier=ms.INSPECT, detail="too-big")

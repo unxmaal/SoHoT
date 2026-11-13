@@ -38,6 +38,8 @@ capabilities:
       - harness/watchdog.py
       - harness/overrun.py
       - harness/idle_unload.py
+      - harness/watchdog_observe.py
+      - harness/watchdog_hands.py
 
   - name: adopt-confirm
     summary: A measured or by-hand winner becomes a lane's served model, through the paired gate and its confirmation.
@@ -52,6 +54,7 @@ capabilities:
       - harness/gateway_switch.py
       - harness/adoption_state.py
       - harness/gateway_switch_state.py
+      - harness/gateway_respawn.py
 
   - name: measure
     summary: The measure tier, its pauses, looks and resumes, and the order the measure queue is spent in.

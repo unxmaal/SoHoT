@@ -133,7 +133,8 @@ def test_a_failed_download_after_the_skip_is_the_reason(store):
 
 def test_a_download_is_not_read_back_as_a_skip(store):
     _seed(store, "org/landed", 1)
-    ms.decide(store, "org/landed", "queued", tier="fetch", detail=fetching.DOWNLOADED, reason="candidate")
+    ms.decide(store, "org/landed", "queued", tier="fetch", detail=fetching.DOWNLOADED_DETAIL, reason="candidate",
+              event=fetching.DOWNLOADED)
     assert _row(store, "org/landed")["reason"] != fetching.SKIPPED
 
 

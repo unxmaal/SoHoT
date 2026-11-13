@@ -66,9 +66,13 @@ def _step_of(words) -> str:
 
 
 def _jobs_of(conn, cycle: str) -> list[tuple[int, str, str]]:
-    """(id, step, state) of every queued step job of `cycle`, in id order."""
+    """(id, step, state) of every step job of `cycle` this machine queued or may take, in id order."""
+    from harness import machine_scope
     got = []
-    for r in conn.execute("SELECT id, argv, state FROM jobs WHERE requested_by = ? ORDER BY id", ("discover",)):
+    # A cycle is int(time.time()): another machine's same-second cycle is not this one. #1771.
+    here, mine = machine_scope.here(conn, "jobs.claimable")
+    for r in conn.execute(f"SELECT id, argv, state FROM jobs WHERE requested_by = ? AND {here} ORDER BY id",
+                          ("discover", *mine)):
         words = json.loads(r["argv"] or "[]")
         if _cycle_of(words) == cycle and _step_of(words) in NAMES:
             got.append((int(r["id"]), _step_of(words), r["state"]))
@@ -85,10 +89,14 @@ def _ran(conn, cycle: str, name: str, me: int | None) -> int | None:
 
 
 def live(conn, but: str = "") -> dict[str, str]:
-    """{cycle: job label} for each sweep with a step pending or running, other than `but`."""
+    """{cycle: job label} for each sweep of this machine with a step pending or running, other than `but`."""
+    from harness import machine_scope
     from harness import workqueue as wq
     got: dict[str, str] = {}
-    for r in conn.execute("SELECT id, argv FROM jobs WHERE state IN (?, ?) ORDER BY id", (wq.PENDING, wq.RUNNING)):
+    # Another machine's sweep does not hold this machine's back. #1771.
+    here, mine = machine_scope.here(conn, "jobs.claimable")
+    for r in conn.execute(f"SELECT id, argv FROM jobs WHERE state IN (?, ?) AND {here} ORDER BY id",
+                          (wq.PENDING, wq.RUNNING, *mine)):
         cycle = _cycle_of(json.loads(r["argv"] or "[]"))
         if cycle and cycle != but:
             got.setdefault(cycle, wq.label(r["id"]))

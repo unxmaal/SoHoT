@@ -68,7 +68,7 @@ def priced(entry) -> bool:
 def config_path(config=None):
     """The config the gateway serves: the generated one beside the base when it exists."""
     base = gateway.config_path(config)
-    served = gateway.served_path(base)
+    served = gateway.serving_path(config)
     return served if config is None and served.exists() else base
 
 

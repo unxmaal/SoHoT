@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 103
+SCHEMA_VERSION = 105
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -195,7 +195,11 @@ CREATE TABLE IF NOT EXISTS verdicts (
     -- The memory ceiling, GiB, an inspect verdict was judged against. #880.
     ceiling_gb  REAL,
     -- The lane the verdict was decided in, set by its writer; readers select on it, never on detail. #1777.
-    lane        TEXT NOT NULL DEFAULT ''
+    lane        TEXT NOT NULL DEFAULT '',
+    -- The download budget, GiB, a fetch download or budget refusal was judged against; NULL when none was recorded. #1822.
+    budget_gib  REAL,
+    -- What the verdict records happening, set by its writer (a fetch's download); readers select on it, never on detail. #1878.
+    event       TEXT NOT NULL DEFAULT ''
 );
 
 -- A paired measurement paused at a time limit, resumed first by the next sweep. #813.

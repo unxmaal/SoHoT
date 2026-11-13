@@ -58,28 +58,56 @@ def _has(conn, table: str) -> bool:
     return True
 
 
+def _here(conn, rule: str) -> tuple[str, tuple]:
+    from harness import machine_scope
+    return machine_scope.here(conn, rule)
+
+
 def _counts(conn, tier: str, since: float) -> dict:
+    here, mine = _here(conn, "verdicts.decided_here")
     rows = conn.execute("SELECT outcome, COUNT(*) AS n FROM verdicts WHERE tier = ? AND decided_at >= ? "
-                        "GROUP BY outcome ORDER BY outcome", (tier, since)).fetchall()
+                        f"AND {here} GROUP BY outcome ORDER BY outcome", (tier, since, *mine)).fetchall()
     return {r["outcome"]: r["n"] for r in rows}
+
+
+def _measured(conn, since: float) -> tuple[list[dict], list[dict]]:
+    """Measure runs since `since`: this machine's, and every other machine's named by its machine. #1932."""
+    from harness import machine_scope
+    from harness import memory_store as ms
+    mid = ms.machine_row(conn)
+    rows = [dict(r) for r in conn.execute(
+        "SELECT r.lane, r.path, r.recorded_at, r.machine_id, m.hw_model FROM runs r "
+        "LEFT JOIN machines m ON m.id = r.machine_id WHERE r.tier = 'measure' AND r.recorded_at >= ? "
+        "ORDER BY r.recorded_at, r.id", (since,))]
+    here: list[dict] = []
+    there: list[dict] = []
+    for r in rows:
+        (here if machine_scope.holds("runs.ran_here", r["machine_id"], mid) else there).append(r)
+    return here, there
+
+
+def machine_name(r: dict) -> str:
+    if r.get("machine_id") is None:
+        return "no recorded machine"
+    return f"machine {r['machine_id']}" + (f" ({r['hw_model']})" if r.get("hw_model") else "")
 
 
 def sweep(conn, since: float, beat: dict | None) -> dict:
     """What the sweep screened, measured, paused, stopped and settled since `since`, and how the loop ended."""
-    out = {"screened": {}, "measured": {"runs": [], "verdicts": {}}, "paused": [], "stopped": [],
+    out = {"screened": {}, "measured": {"runs": [], "elsewhere": [], "verdicts": {}}, "paused": [], "stopped": [],
            "settled": {"verdicts": {}, "adopted": []}, "loop": None}
     if _has(conn, "verdicts"):
         out["screened"] = _counts(conn, "screen", since)
         out["measured"]["verdicts"] = _counts(conn, "measure", since)
         out["settled"]["verdicts"] = _counts(conn, "adopt", since)
     if _has(conn, "runs"):
-        out["measured"]["runs"] = [dict(r) for r in conn.execute(
-            "SELECT lane, path, recorded_at FROM runs WHERE tier = 'measure' AND recorded_at >= ? "
-            "ORDER BY recorded_at", (since,))]
+        out["measured"]["runs"], out["measured"]["elsewhere"] = _measured(conn, since)
     if _has(conn, "paused_runs"):
+        from harness import paused
+        here, mine = paused._here(conn)
         out["paused"] = [dict(r) for r in conn.execute(
             "SELECT id, lane, challenger, state, done, total, paused_at FROM paused_runs "
-            "WHERE paused_at >= ? OR state = 'paused' ORDER BY paused_at", (since,))]
+            f"WHERE (paused_at >= ? OR state = 'paused') AND {here} ORDER BY paused_at", (since, *mine))]
     if _has(conn, "adoptions"):
         from harness import adoption_state as st
         moved = [{k: r[k] for k in ("lane", "spec", "how", "adopted_at", "move", "why")}
@@ -105,8 +133,9 @@ def idle_lanes(conn, since: float) -> list[dict]:
     from harness.commands import measure as measure_cmd
     if not _has(conn, "runs"):
         return []
-    ran = {r["lane"] for r in conn.execute("SELECT DISTINCT lane FROM runs WHERE tier = 'measure' AND recorded_at >= ?",
-                                           (since,))}
+    here, mine = _here(conn, "runs.ran_here")
+    ran = {r["lane"] for r in conn.execute("SELECT DISTINCT lane FROM runs WHERE tier = 'measure' AND recorded_at >= ? "
+                                           f"AND {here}", (since, *mine))}
     from harness.commands import loop as loop_cmd
     waiting: dict[str, int] = {}
     if _has(conn, "proposals"):
@@ -117,11 +146,9 @@ def idle_lanes(conn, since: float) -> list[dict]:
     for lane in lanes.WANTED:
         if lane in ran or lanes.parked(lane)[0]:
             continue
-        last = conn.execute("SELECT MAX(recorded_at) AS t FROM runs WHERE lane = ? AND tier = 'measure'",
-                            (lane,)).fetchone()["t"]
-        rv = conn.execute("SELECT job_id, queued_at, outcome FROM reverifications WHERE lane = ? AND queued_at >= ? "
-                          "ORDER BY queued_at DESC, id DESC LIMIT 1", (lane, since)).fetchone() \
-            if _has(conn, "reverifications") else None
+        last = conn.execute(f"SELECT MAX(recorded_at) AS t FROM runs WHERE lane = ? AND tier = 'measure' AND {here}",
+                            (lane, *mine)).fetchone()["t"]
+        rv = _reverify(conn, lane, since) if _has(conn, "reverifications") else None
         n = waiting.get(lane, 0)
         if rv is not None:
             again = (f"reverify job {rv['job_id']} queued {_hm(rv['queued_at'])}, "
@@ -134,6 +161,12 @@ def idle_lanes(conn, since: float) -> list[dict]:
                     "line": f"{lane}: no measure run; "
                             f"{f'{n} challenger(s) waiting' if n else 'no challenger waiting'}; {again}"})
     return out
+
+
+def _reverify(conn, lane: str, since: float):
+    here, mine = _here(conn, "reverifications.mine")
+    return conn.execute("SELECT job_id, queued_at, outcome FROM reverifications WHERE lane = ? AND queued_at >= ? "
+                        f"AND {here} ORDER BY queued_at DESC, id DESC LIMIT 1", (lane, since, *mine)).fetchone()
 
 
 def _hm(t) -> str:
@@ -167,9 +200,10 @@ def watchdog(conn, since: float) -> list[dict]:
     from harness import sweep_check
     if not _has(conn, "watchdog_actions"):
         return []
+    here, mine = _here(conn, "watchdog_actions.mine")
     rows = conn.execute(
         "SELECT id, at, criterion, subject, action, escalated, dry_run, outcome, evidence FROM watchdog_actions "
-        "WHERE at >= ? AND criterion != ? ORDER BY at", (since, sweep_check.CRITERION))
+        f"WHERE at >= ? AND criterion != ? AND {here} ORDER BY at", (since, sweep_check.CRITERION, *mine))
     return [{**{k: r[k] for k in r.keys() if k != "evidence"}, "clients": _clients(r["evidence"])} for r in rows]
 
 
@@ -660,7 +694,7 @@ def notify(r: dict, text: str, run=subprocess.run, platform: str | None = None) 
     """A desktop notification when something needs a person (#818 path); None on a quiet night."""
     if not r["needs"]:
         return None
-    from harness import watchdog as wd
-    return wd.desktop(NOTIFY_TITLE, text, f"{len(r['needs'])} thing(s) need you", run=run,
-                      platform=sys.platform if platform is None else platform)
+    from harness import watchdog_hands
+    return watchdog_hands.desktop(NOTIFY_TITLE, text, f"{len(r['needs'])} thing(s) need you", run=run,
+                                 platform=sys.platform if platform is None else platform)
 

@@ -143,6 +143,17 @@ class Watch:
         self.cuts.append({"candidate": key, "case": case, "why": why})
         print(f"  cut {case} of {key} to serve ({why}); it runs again after the yield", flush=True)
         self._changed()
+        from harness import cuts, serve_lease
+        n = sum(1 for c in self.cuts if c["candidate"] == key and c["case"] == case)
+        if n >= serve_lease.CUT_TRIES:
+            what = f"{case} of {key} was cut {n} times to serve delegations"
+            cuts.cut("serving_cut_tries", what, dropped=self.left_cases())
+            self._serving_pause(what)
+
+    def _serving_pause(self, what: str) -> None:
+        """Pause the run for serving it cannot outwait: its queue job waits again behind the serving gate. #1765."""
+        from harness import serve_lease
+        raise Deferred(f"{what}; {self.left_cases()} case(s) left", serve_lease.SERVING_PAUSE)
 
     def _serve(self) -> bool:
         """Wait out a serving lease between cases, the wait kept out of every case's and the run's time. #1556."""
@@ -158,8 +169,13 @@ class Watch:
         self.yielder.yielding(who)
         print(f"yielding to {who} between cases", flush=True)
         self._changed()
+        over = False
         try:
             while serve_lease.held(node=node) and not self._requested():
+                left = serve_lease.YIELD_WAIT_S - (clock() - start)
+                if left <= 0:
+                    over = True
+                    break
                 sleep(serve_lease.POLL_S)
         finally:
             span = max(0.0, clock() - start)
@@ -172,6 +188,11 @@ class Watch:
             _hidden(mark)
             print(f"resumed after {span:.0f}s yielded to serving", flush=True)
             self._changed()
+        if over:
+            from harness import cuts
+            what = f"yielded {span:.0f}s to {who}, past serve_yield_wait"
+            cuts.cut("serve_yield_wait", what, dropped=self.left_cases())
+            self._serving_pause(what)
         return True
 
     def _changed(self) -> None:

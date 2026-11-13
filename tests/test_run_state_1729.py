@@ -9,7 +9,7 @@ import sys
 import pytest
 
 from evals import watch
-from harness import paths, paused, run_state, sweep_guard, watchdog
+from harness import paths, paused, run_state, sweep_guard, watchdog_observe
 
 EVAL_CMD = "/opt/lh/deploy/.venv/bin/python3 -m evals.run --modality code --out /x/runs/measure-1"
 INC, CH = "llamacpp:inc", "llamacpp:ch"
@@ -119,9 +119,9 @@ def _yielding(root, name="20261111-000000-adopt-code", **kw):
 def test_the_watchdog_has_a_yielding_run_to_pause(tmp_path):
     d = _yielding(tmp_path)
     (d / run_state.PROGRESS).write_text(json.dumps({"state": "yielding", **_live()}), encoding="utf-8")
-    got = watchdog.ProgressFiles([tmp_path]).runs()
+    got = watchdog_observe.ProgressFiles([tmp_path]).runs()
     assert [r["_dir"] for r in got] == [str(d)]
-    assert "pause file written" in watchdog.ProgressFiles([tmp_path]).pause(got[0], "contention")
+    assert "pause file written" in watchdog_observe.ProgressFiles([tmp_path]).pause(got[0], "contention")
 
 
 def test_a_deploy_refuses_while_a_yielding_eval_runs(tmp_path):

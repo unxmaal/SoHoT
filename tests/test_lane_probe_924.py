@@ -13,7 +13,7 @@ import pytest
 from harness import availability, cli, delegate, exclusive, loopback, morning, serving
 from harness import lane_probe as lp
 from harness import memory_store as ms
-from harness import watchdog as wd
+from harness import watchdog as wd, watchdog_observe
 from harness.commands import morning as morning_cmd
 
 MODEL = "mlx-community/Qwen2.5-7B-Instruct-4bit"
@@ -297,7 +297,7 @@ def test_a_probe_through_the_gateway_is_tagged_watchdog_and_left_for_the_gateway
     assert conn.execute("SELECT COUNT(*) FROM gateway_requests").fetchone()[0] == 0
 
 
-class Quiet(wd.Probes):
+class Quiet(watchdog_observe.Probes):
     """Real lane probes; nothing else on the machine to see."""
 
     def __init__(self, tmp_path):
@@ -344,7 +344,7 @@ class Quiet(wd.Probes):
 
 def test_the_watchdog_wake_probes_every_text_lane_and_a_down_lane_is_not_all_clear(tmp_path, lane, monkeypatch):
     f = lane()
-    monkeypatch.setattr(wd.Probes, "lanes", wd.Probes.lanes.real)
+    monkeypatch.setattr(watchdog_observe.Probes, "lanes", watchdog_observe.Probes.lanes.real)
 
     def resolve(name):
         if name != "extract":

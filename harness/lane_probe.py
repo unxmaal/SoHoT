@@ -39,6 +39,8 @@ ERROR_CHARS = 300
 UNPROBED_S = 24 * 3600.0
 #: How a deliberate probe's reason starts; the next one waits UNPROBED_S after it.
 DELIBERATE = "a deliberate night probe"
+#: Every skipped probe of a model not loaded says this; soh inventory time reads it from lane_probes.reason. #1780.
+NOT_RESIDENT = "the model is not resident"
 
 COLUMNS = ("at", "machine_id", "lane", "spec", "base", "upstream", "model", "engine", "outcome", "reason",
            "http_status", "error", "seconds", "prompt_tokens", "completion_tokens")
@@ -301,10 +303,10 @@ def _lands_by_day(deadline: float, now: float, day) -> bool:
     return ends <= deadline <= t
 
 
-def due(conn, lane: str, machine_id, now: float, day=None) -> str:
-    """Why this wake may load `lane`'s model: at night, its open incident unprobed past UNPROBED_S, or past it by tomorrow's day; else ""."""
+def due(conn, lane: str, machine_id, now: float, day=None) -> str | None:
+    """Why this wake may load `lane`'s model: its open incident unprobed past UNPROBED_S (by night); "" if not; None without a store."""
     if conn is None:
-        return ""
+        return None
     if day is None:
         from harness.watchdog import daytime as day
     if day(now):
@@ -372,10 +374,10 @@ def prepare(lane: str, sender: Sender, resolve=None, resident=None, busy=None, h
         from harness.pressure import NORMAL
         got = (level or _level)()
         if got is not None and got > NORMAL:
-            return done(SKIPPED, f"the model is not resident and memory pressure is level {got}; {load} waits")
+            return done(SKIPPED, f"{NOT_RESIDENT} and memory pressure is level {got}; {load} waits")
         row["reason"] = load[:ERROR_CHARS]
     elif loaded is not True:
-        why = "residency unknown" if loaded is None else "the model is not resident"
+        why = "residency unknown" if loaded is None else NOT_RESIDENT
         return done(SKIPPED, f"{why}; a probe would load it" + (f" ({type(exc).__name__}: {exc})" if exc else ""))
     if headers is None:
         from harness import gateway_key, purpose
@@ -451,7 +453,7 @@ def wake(conn, now: float, lanes=None, sender: Sender | None = None, machine_id=
     sender = sender or Sender(paths.home() / "watchdog")
     rows, out, slow = [], [], []
     for lane in lanes or gateway.TEXT_LANES:
-        row, req = prepare(lane, sender, load=due(conn, lane, machine_id, now, day=day), **kw)
+        row, req = prepare(lane, sender, load=due(conn, lane, machine_id, now, day=day) or "", **kw)
         handle = sender.start(lane, req["url"], req["headers"], req["body"], HOLD_S) if req else None
         rows.append((row, req, handle, time.monotonic() + timeout(lane)))
     for row, req, handle, deadline in rows:

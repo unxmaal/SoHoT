@@ -5,12 +5,12 @@ import pytest
 
 from harness import heartbeat, knobs
 from harness import memory_store as ms
-from harness import watchdog as wd
+from harness import watchdog as wd, watchdog_observe
 from tests.test_watchdog import EVAL, NIGHT, NOON, Fake, Hand, P, ids, run
 
 
 def judged(fake, now):
-    return wd.judge(wd.observe(fake, None, now))[0]
+    return wd.judge(watchdog_observe.observe(fake, None, now))[0]
 
 
 def two_jobs(tmp_path, elapsed, lock=None, progress=(), contention=None):

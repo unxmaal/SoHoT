@@ -70,6 +70,8 @@ KNOBS = [
        note="times a screen or measure rejection is asked again, one retest_after apart, before it stands (#431)"),
     _k("retests_at_adopt", ["harness/memory_store/transitions.py:RETESTS_AT_ADOPT"], [0, 1, 2],
        note="retests of a decline at adopt; one checks a lost paired measurement, more re-ask a settled question (#881)"),
+    _k("reverify_pending_expiry", ["harness/reverify.py:PENDING_EXPIRY_S"], [86400.0, 259200.0, 604800.0], unit="s",
+       note="seconds a re-run's queue job may wait pending (contention gate, hold, memory admission) before the reverification settles unrun, the job is cancelled and one alert names what it waited on; settled re-runs here took at most 48 h from queue to settle, reverification 52 waited 85 h behind memory admission (#1765)"),
     _k("sweep_ceiling_h", ["harness/power.py:SWEEP_CEILING_H"], [4.0, 6.0, 8.0],
        note="hours a discover loop runs from its start; a measurement running at it pauses and resumes next sweep (#806, #813)"),
     _k("sweep_unused_s", ["harness/ceiling.py:UNUSED_S"], [1800.0, 3600.0, 7200.0],
