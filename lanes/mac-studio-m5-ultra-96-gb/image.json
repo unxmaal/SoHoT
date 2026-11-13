@@ -9,21 +9,22 @@
     "candidate": "mflux/dev-q8",
     "cases": 584,
     "first_s": 37.099,
-    "median_s": 28.912,
+    "median_s": 24.416,
     "metrics": {
-     "staging": 0.9875
+     "cer": 0.0,
+     "staging": 0.753
     },
     "model": "mflux/dev-q8",
     "not_run": "",
-    "pass_rate": 0.988,
-    "passed": 80,
+    "pass_rate": 0.533,
+    "passed": 311,
     "peak_gb": 20.56,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-12T03:03:34Z",
+    "run_at": "2026-11-12T08:08:08Z",
     "served_as": "",
     "source": "",
-    "total": 81,
+    "total": 584,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -2900,25 +2901,26 @@
      "about": "",
      "candidate": "mflux/dev-q8",
      "first_s": 37.099,
-     "median_s": 28.912,
+     "median_s": 24.416,
      "metrics": {
-      "staging": 0.9875
+      "cer": 0.0,
+      "staging": 0.753
      },
      "model": "mflux/dev-q8",
      "not_run": "",
-     "pass_rate": 0.988,
-     "passed": 80,
+     "pass_rate": 0.533,
+     "passed": 311,
      "peak_gb": 20.56,
      "reference": false,
-     "run_at": "2026-11-12T03:03:34Z",
+     "run_at": "2026-11-12T08:08:08Z",
      "served_as": "",
      "source": "",
-     "total": 81,
+     "total": 584,
      "ttft_median_s": null,
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-11-12T03:03:34Z",
+   "run_at": "2026-11-12T08:08:08Z",
    "runs": 2
   },
   {
@@ -3148,7 +3150,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-12T04:30:49Z",
+ "generated_at": "2026-11-13T03:38:04Z",
  "knobs": [],
  "lane": {
   "cases": 584,
@@ -3177,15 +3179,16 @@
   "adopted_at": "2026-10-06T19:21:16Z",
   "adopted_how": "by-hand",
   "incumbent": "mflux:flux2-klein-4b",
-  "measured_at": "2026-11-12T03:03:34Z",
-  "median_s": 28.912,
+  "measured_at": "2026-11-12T08:08:08Z",
+  "median_s": 24.416,
   "metrics": {
-   "staging": 0.9875
+   "cer": 0.0,
+   "staging": 0.753
   },
   "not_run": "",
   "parked": "",
   "parked_until": "",
-  "pass_rate": 0.988,
+  "pass_rate": 0.533,
   "serves": "mflux:dev",
   "serves_model": "mflux:dev",
   "stale": false
