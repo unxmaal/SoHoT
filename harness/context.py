@@ -113,17 +113,17 @@ def choose_slots(meta: dict, weights: int, budget: int, slots: int, slot_ctx: in
     room = max(budget - weights - swa_bytes(meta, cache_type) * slots, 0)
     if not per or not full or slot_ctx > full:
         return Choice(0, full, per, f"refused: {slots} slots of {slot_ctx} tokens, "
-                      f"trained for {full}, {per} B/token")
+                      f"trained for {full}, {per} B/token", refused=SHAPE)
     if weights >= budget:
-        return Choice(0, full, per, _too_big_why(weights, budget, coresident))
+        return Choice(0, full, per, _too_big_why(weights, budget, coresident), refused=WEIGHTS)
     # The cap bounds what one request's context may cost; the budget bounds the pool. #682.
     if kv_cap is not None and slot_ctx * per > kv_cap:
         return Choice(0, full, per, f"refused: one slot of {slot_ctx} tokens needs "
                       f"{slot_ctx * per / 1024 ** 3:.1f} GiB of KV, over the "
-                      f"{kv_cap / 1024 ** 3:.1f} GiB cap")
+                      f"{kv_cap / 1024 ** 3:.1f} GiB cap", refused=SLOT_CAP)
     if pool * per > room:
         return Choice(0, full, per, f"refused: {slots} slots of {slot_ctx} tokens need "
-                      f"{pool * per / 1024 ** 3:.1f} GiB of KV, {room / 1024 ** 3:.1f} GiB fits")
+                      f"{pool * per / 1024 ** 3:.1f} GiB of KV, {room / 1024 ** 3:.1f} GiB fits", refused=POOL)
     return Choice(pool, full, per, f"slots: {slots} x {slot_ctx} tokens, "
                   f"{pool * per / 1024 ** 3:.1f} GiB of KV (#665)")
 
@@ -145,7 +145,7 @@ def shared_pool(meta: dict, weights: int, budget: int, slots: int, slot_ctx: int
                 cache_type: str = "f16", kv_cap: int | None = None) -> "Choice":
     """slots x slot_ctx when it fits, else one unified pool of the room that still holds one slot_ctx request. #748."""
     got = choose_slots(meta, weights, budget, slots, slot_ctx, cache_type, kv_cap)
-    if got.ctx or not got.kv_per_token or got.why.startswith("refused: one slot"):
+    if got.ctx or not got.kv_per_token or got.refused == SLOT_CAP:
         return got
     per = got.kv_per_token
     pool = min(slots * slot_ctx, _stepped(max(budget - weights, 0) // per))
@@ -164,6 +164,11 @@ class Choice(NamedTuple):
     why: str
     #: What each slot is sized for when all of them are busy. #699.
     slot_ctx: int = 0
+    #: Which limit refused it (SHAPE, WEIGHTS, SLOT_CAP, POOL, FLOOR_CUT, HEADER), "" when it was not refused. #1780.
+    refused: str = ""
+
+
+SHAPE, WEIGHTS, SLOT_CAP, POOL, FLOOR_CUT, HEADER = "shape", "weights", "slot_cap", "pool", "floor", "header"
 
 
 def _arch(meta: dict, key: str, default=None):
@@ -289,9 +294,9 @@ def choose(meta: dict, weights: int, budget: int, slots: int = 1,
     per = kv_bytes_per_token(meta, cache_type)
     if not full or not per:
         return Choice(0, full, per, "refused: the GGUF header gives no trained context "
-                      "or KV shape to size a cache from")
+                      "or KV shape to size a cache from", refused=SHAPE)
     if weights >= budget:
-        return Choice(0, full, per, _too_big_why(weights, budget, coresident))
+        return Choice(0, full, per, _too_big_why(weights, budget, coresident), refused=WEIGHTS)
     room = max(budget - weights, 0)
     room = min(room, kv_cap) if kv_cap is not None else room
     slots = max(slots, 1)
@@ -302,7 +307,7 @@ def choose(meta: dict, weights: int, budget: int, slots: int = 1,
         limit = (f"trained for {full}" if full < floor else
                  f"{room / 1024 ** 3:.1f} GiB of KV room "
                  f"holds {fits} tokens at {per} B/token")
-        return Choice(0, full, per, f"refused: {limit}, under the {floor}-token floor")
+        return Choice(0, full, per, f"refused: {limit}, under the {floor}-token floor", refused=FLOOR_CUT)
     shape = f"{slots} x " if slots > 1 else ""
     if ctx < full:
         return Choice(ctx * slots, full, per, f"memory: {shape}{fits} tokens fit in "
@@ -453,7 +458,7 @@ def _bound(meta: dict, weights: int, alone: int, room: int, fixed, n: int, cache
     if not got.ctx:
         if fixed:
             return "plan" if choose(meta, weights, room, 1, cache_type).ctx else ""
-        return "floor" if got.why.endswith("-token floor") else ""
+        return "floor" if got.refused == FLOOR_CUT else ""
     if fixed and n > 1 and got.ctx < n * fixed[1]:
         return "pool"
     if not fixed and n > 1 and choose(meta, weights, room, 1, cache_type, kv_cap=kv_cap).slot_ctx > got.slot_ctx:
@@ -530,9 +535,9 @@ def plan(conn, budget: int | None = None, slots: int = 1,
                 bound.setdefault(_bound(meta, weights, budget - beside, room, fixed, asked, cache_type, kv_cap, got),
                                  []).append(stem)
         except gguf.Auxiliary as exc:
-            got = Choice(0, 0, 0, f"refused: {exc}, not a model llama-server serves alone ({gguf.REPAIR})")
+            got = Choice(0, 0, 0, f"refused: {exc}, not a model llama-server serves alone ({gguf.REPAIR})", refused=HEADER)
         except (OSError, ValueError, KeyError, struct.error) as exc:
-            got = Choice(0, 0, 0, f"refused: unreadable GGUF header ({exc})")
+            got = Choice(0, 0, 0, f"refused: unreadable GGUF header ({exc})", refused=HEADER)
         if k > 1 and got.ctx:
             got = got._replace(why=f"{got.why}; {k} resident share {budget - beside - heaviest >> 20} MiB of KV")
         out.append({"stem": stem, "path": str(path), "ctx": got.ctx, "slots": n,
@@ -585,7 +590,7 @@ def _get_json(url: str, key: str = "") -> dict:
 def _entry_for(spec: str, config=None) -> dict | None:
     from harness import gateway
     name = (spec or "").partition(",")[0].strip()
-    served = gateway.served_path(config)
+    served = gateway.serving_path(config)
     for entry in gateway.load(served if served.exists() else config).get("model_list") or []:
         if str(entry.get("model_name", "")).lower() == name.lower():
             return entry

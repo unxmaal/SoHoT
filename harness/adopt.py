@@ -544,13 +544,14 @@ def queue_confirmation(conn, vid: int, verdict: Verdict, now: float | None = Non
     """Queue the dev run (at `start`, else when the contention gate opens) that confirms or refuses a held holdout win, once per verdict. #725, #1509."""
     import os
 
-    from harness import paths, workqueue
+    from harness import machine_scope, paths, workqueue
     argv = confirm_argv(vid)
     # The job this runs in is not the continuation it queues. #1357.
     mine = os.environ.get(workqueue.JOB_ENV, "").strip()
     mine = int(mine) if mine.isdigit() else None
-    have = conn.execute("SELECT id FROM jobs WHERE argv = ? AND state IN (?, ?) AND id IS NOT ?",
-                        (json.dumps(argv), workqueue.PENDING, workqueue.RUNNING, mine)).fetchone()
+    here, args = machine_scope.here(conn, "jobs.twin")
+    have = conn.execute(f"SELECT id FROM jobs WHERE argv = ? AND state IN (?, ?) AND id IS NOT ? AND {here}",
+                        (json.dumps(argv), workqueue.PENDING, workqueue.RUNNING, mine, *args)).fetchone()
     if have is not None:
         return None
     return workqueue.add(argv, title=(f"confirm {verdict.lane}: {verdict.challenger} over {verdict.incumbent} "
@@ -611,31 +612,52 @@ def record(conn, verdict: Verdict, spec: str = "",
         ok, why = fit(conn, cid, ms.remember_machine(conn))
         if not ok:
             raise Held(f"refused on this machine: {spec} {why}")
-    vid = ms.decide(conn, row["proposal"] or "", outcome, tier=TIER,
-                    detail=detail[:200], candidate_id=cid, run_id=run_id,
-                    reason=reason, until=_spent_until(conn, row["proposal"] or "", verdict, reason))
-    if verdict.failure_class or verdict.evidence:
-        conn.execute(
-            "UPDATE verdicts SET failure_class = ?, split_version = ?, "
-            "power = ? WHERE id = ?",
-            (verdict.failure_class,
-             (verdict.evidence.get("split") or {}).get("version", ""),
-             json.dumps({**(verdict.evidence.get("power") or {}),
-                         "dev": verdict.evidence.get("dev"),
-                         **({"partial": verdict.evidence["partial"]}
-                            if verdict.evidence.get("partial") else {}),
-                         **({"cost": verdict.evidence["cost"]}
-                            if verdict.evidence.get("cost") else {}),
-                         **({"comparisons": verdict.evidence["comparisons"],
-                             "alpha": verdict.evidence.get("alpha", ALPHA)}
-                            if verdict.evidence.get("comparisons") else {}),
-                         **({"planned_alpha": verdict.evidence["planned_alpha"]}
-                            if "planned_alpha" in verdict.evidence else {}),
-                         **({"confirm": verdict.evidence["confirm"]}
-                            if verdict.evidence.get("confirm") else {}),
-                         **({"min_effect": verdict.evidence["min_effect"]}
-                            if verdict.evidence.get("min_effect") else {})}), vid))
-        conn.commit()
+    # Read before the verdict: naming the incumbent may write and commit its candidates row.
+    inc = _incumbent_id(conn, verdict.lane, verdict.incumbent) if serve else None
+    if serve and verdict.how not in HOW:
+        raise ValueError(f"unknown adoption kind {verdict.how!r}")
+    try:
+        # The verdict and its adoption commit together: one that loses the lane, or dies, leaves neither. #1758.
+        vid = ms.decide(conn, row["proposal"] or "", outcome, tier=TIER,
+                        detail=detail[:200], candidate_id=cid, run_id=run_id, lane=verdict.lane,
+                        reason=reason, until=_spent_until(conn, row["proposal"] or "", verdict, reason),
+                        commit=False)
+        if verdict.failure_class or verdict.evidence:
+            conn.execute(
+                "UPDATE verdicts SET failure_class = ?, split_version = ?, "
+                "power = ? WHERE id = ?",
+                (verdict.failure_class,
+                 (verdict.evidence.get("split") or {}).get("version", ""),
+                 json.dumps({**(verdict.evidence.get("power") or {}),
+                             "dev": verdict.evidence.get("dev"),
+                             **({"partial": verdict.evidence["partial"]}
+                                if verdict.evidence.get("partial") else {}),
+                             **({"cost": verdict.evidence["cost"]}
+                                if verdict.evidence.get("cost") else {}),
+                             **({"comparisons": verdict.evidence["comparisons"],
+                                 "alpha": verdict.evidence.get("alpha", ALPHA)}
+                                if verdict.evidence.get("comparisons") else {}),
+                             **({"planned_alpha": verdict.evidence["planned_alpha"]}
+                                if "planned_alpha" in verdict.evidence else {}),
+                             **({"confirm": verdict.evidence["confirm"]}
+                                if verdict.evidence.get("confirm") else {}),
+                             **({"min_effect": verdict.evidence["min_effect"]}
+                                if verdict.evidence.get("min_effect") else {})}), vid))
+        if serve:
+            from harness import adoption_state
+            mid = conn.execute("SELECT machine_id FROM verdicts WHERE id = ?",
+                               (vid,)).fetchone()
+            mid = mid["machine_id"] if mid else None
+            adoption_state.move(
+                conn, verdict.lane, adoption_state.ADOPT, cid, how=verdict.how, machine_id=mid,
+                why=detail[:200], all_machines=verdict.all_machines, verdict_id=vid, run_id=run_id,
+                incumbent_id=inc, votes=verdict.votes, agreement=verdict.agreement, forced=verdict.forced,
+                cost=cost(conn, cid, inc, mid))
+        else:
+            conn.commit()
+    except BaseException:
+        conn.rollback()
+        raise
     floor = verdict.evidence.get("min_effect")
     if floor:
         from harness import cuts
@@ -653,19 +675,6 @@ def record(conn, verdict: Verdict, spec: str = "",
         cuts.cut("adopt_alpha", f"{verdict.lane}: {spec} better on the metric at p={p:.3f}, over alpha", value=alpha,
                  kept=0, dropped=1, conn=conn)
     if serve:
-        if verdict.how not in HOW:
-            raise ValueError(f"unknown adoption kind {verdict.how!r}")
-        from harness import adoption_state
-        mid = conn.execute("SELECT machine_id FROM verdicts WHERE id = ?",
-                           (vid,)).fetchone()
-        mid = mid["machine_id"] if mid else None
-        inc = _incumbent_id(conn, verdict.lane, verdict.incumbent)
-        conn.commit()
-        adoption_state.move(
-            conn, verdict.lane, adoption_state.ADOPT, cid, how=verdict.how, machine_id=mid,
-            why=detail[:200], all_machines=verdict.all_machines, verdict_id=vid, run_id=run_id,
-            incumbent_id=inc, votes=verdict.votes, agreement=verdict.agreement, forced=verdict.forced,
-            cost=cost(conn, cid, inc, mid))
         from harness import gateway
         if verdict.lane.strip().lower() in gateway.TEXT_LANES:
             try:
@@ -903,11 +912,27 @@ def default_for(lane: str, fallback: str, conn=None, machine=HERE) -> str:
         or fallback
 
 
+def _machine_default(lane: str, fallback: str) -> str:
+    """default_for as the machine's home answers it: from a scratch eval home, its store read-only. #1711."""
+    from harness import memory_store as ms, paths, store
+    if paths.machine_home() == paths.home():
+        return default_for(lane, fallback)
+    ms.this_fingerprint()  # resolved in this home: host_id keeps its file in the home it reads
+    with store.on_machine():
+        conn = store.machine_ro()
+        if conn is None:
+            return fallback
+        try:
+            return default_for(lane, fallback, conn)
+        finally:
+            conn.close()
+
+
 def serving_default(lane: str, fallback: str) -> str:
     """default_for a generation: an unreadable store is said on stderr and the lane serves its constant. #1432."""
     import sys
     try:
-        return default_for(lane, fallback)
+        return _machine_default(lane, fallback)
     except Exception as exc:  # noqa: BLE001 - a generation never fails on the discovery store
         print(f"adopt: the store could not be read ({exc}); {lane} serves its typed default {fallback}", file=sys.stderr)
         return fallback

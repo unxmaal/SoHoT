@@ -23,6 +23,8 @@ if __name__ == "__main__":
 
 from harness import deploy_state as ds  # noqa: E402 - after the release root joins sys.path
 from harness import proc_identity  # noqa: E402
+from harness import stale_temp  # noqa: E402
+from harness.atomic_file import replace  # noqa: E402
 
 #: How long the new release's `launchd.sh reinstall` may take: the worker quiesce, deferred periodic units, preflight and the audit.
 INSTALL_TIMEOUT_S = 3600.0
@@ -36,6 +38,10 @@ SWITCH_DEADLINE_S = 3600.0
 REAP_TIMEOUT_S = 30.0
 #: How long the alert script may take.
 ALERT_TIMEOUT_S = 120.0
+
+
+class TimedOut(str):
+    """The why of a step that ran out of time: a runner says so by type, so readers never match its words. #1780."""
 #: Variables a deploy run must not hand to the release's scripts: they would pin the old checkout or its venv.
 DROP_ENV = ("LH_DEPLOY", "LH_REPO", "LH_REEXECED", "LH_GPU_LOCK_HELD", "VIRTUAL_ENV", "LH_JOB_ID", "SMOKE_PHASE")
 DEPLOYED, ROLLED_BACK, FAILED, FAILED_FORWARD = ds.DEPLOYED, ds.ROLLED_BACK, ds.FAILED, ds.FAILED_FORWARD
@@ -68,7 +74,7 @@ def load(path: Path) -> dict:
 def save(path: Path, rec: dict) -> None:
     tmp = Path(path).with_suffix(".tmp")
     tmp.write_text(json.dumps(rec, indent=1, sort_keys=True), encoding="utf-8")
-    os.replace(tmp, path)
+    replace(tmp, path)
 
 
 def env(base=None) -> dict:
@@ -79,11 +85,11 @@ def env(base=None) -> dict:
 def flip(link: Path, target: Path) -> None:
     """Point the deploy link at target in one rename, so no reader sees it missing."""
     link, target = Path(link), Path(target)
-    tmp = link.with_name(f".{link.name}.{os.getpid()}")
+    tmp = stale_temp.temp(link, ".{name}.{pid}")
     if tmp.is_symlink() or tmp.exists():
         tmp.unlink()
     os.symlink(target, tmp)
-    os.replace(tmp, link)
+    replace(tmp, link)
 
 
 def restore(backup: Path, db: Path) -> int:
@@ -122,7 +128,7 @@ def run(argv: list, cwd: str, timeout: float, log, extra=None) -> tuple[int | No
         return child.wait(timeout=timeout), ""
     except subprocess.TimeoutExpired:
         _kill(child)
-        return None, f"timed out after {timeout:.0f} s"
+        return None, TimedOut(f"timed out after {timeout:.0f} s")
     except BaseException:
         _kill(child)
         raise
@@ -162,10 +168,10 @@ def _step(rec: dict, argv: list, cwd: str, timeout: float, log, what: str, *, si
     left = end - time.monotonic()
     if left < timeout:
         timeout, site_knob = max(0.0, left), deadline_knob
-    rc, why = run(argv, cwd, timeout, log) if timeout > 0 else (None, "timed out after 0 s")
+    rc, why = run(argv, cwd, timeout, log) if timeout > 0 else (None, TimedOut("timed out after 0 s"))
     if rc == 0:
         return ""
-    if why.startswith("timed out"):
+    if isinstance(why, TimedOut):
         rec.setdefault("timed_out", []).append({"site": site_knob, "what": what})
         if site_knob == deadline_knob:
             why = f"ran past the switch deadline of {SWITCH_DEADLINE_S:.0f} s"
@@ -202,7 +208,7 @@ def _size(log) -> int | None:
 
 
 def _audited(rec: dict, log, start: int | None, why: str) -> str:
-    """why; the audit checks the failed step's output names as FAIL go in rec['audit_failed'] for the poll. #1805."""
+    """why; the audit checks the failed step's output names as FAIL go in rec['audit_failed']. #1805."""
     if start is not None:
         try:
             from harness import deploy_hold  # only on a failed step: the switch starts on the stdlib and deploy_state
@@ -361,7 +367,9 @@ def switch(path: Path) -> dict:
                 log.write(traceback.format_exc())
                 rec.update(outcome=FAILED, detail=f"{why}; the rollback itself failed at {rec['stage']}: {named(exc)}")
             head = "this machine is broken, not the release: " if rec.get("environment_broken") else ""
-            alert(rec, f"{head}deploy of {rec['sha'][:12]} {rec['outcome']}: {rec['detail']}", log)
+            # The poll never queues a rolled-back sha again (#1913); keep in step with deploy_retry.command.
+            retry = f"; the poll will not retry it, `soh deploy now {rec['sha']}` does" if rec["outcome"] == ROLLED_BACK else ""
+            alert(rec, f"{head}deploy of {rec['sha'][:12]} {rec['outcome']}: {rec['detail']}{retry}", log)
         if not rec.get("queue_was_paused"):
             Path(rec["queue_flag"]).unlink(missing_ok=True)
         _end(rec)

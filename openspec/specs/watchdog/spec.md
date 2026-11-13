@@ -184,7 +184,27 @@ Test: tests/test_watchdog.py::test_trips_outside_the_window_do_not_escalate
 Test: tests/test_watchdog.py::test_dry_run_trips_never_escalate_a_real_action
 
 ### Requirement: Every finding is recorded
-The watchdog SHALL insert one `watchdog_actions` row per finding with time, machine, criterion, subject, action, escalated, dry_run, outcome and evidence that adds how the subject was identified, pid, pgid, command, owner and a fingerprint stable across pids.
+The watchdog SHALL insert one `watchdog_actions` row per finding with time, machine, criterion, subject, action, escalated, dry_run, outcome and evidence that adds how the subject was identified, pid, pgid, command, owner and a fingerprint stable across pids. Each row SHALL also carry what came of the act as a result code, whether it showed a notification, the subject's queue job id, process group and run directory, and every reader that decides SHALL select on those, never on the outcome sentence or the subject label (#1778).
+
+#### Scenario: A reworded sentence changes no decision
+- **WHEN** the notified and held sentences are reworded
+- **THEN** a repeat notification is still held by the stored flag and counted as held
+Test: tests/test_watchdog_record_1778.py::test_a_notification_is_held_by_the_notified_flag_whatever_its_sentence_says
+
+#### Scenario: An overrun stop is found by its run directory
+- **WHEN** an acted overrun stop is recorded for a run under any sentence
+- **THEN** overrun_stopped is true for that run directory only
+Test: tests/test_watchdog_record_1778.py::test_an_overrun_stop_is_found_by_its_run_dir_whatever_its_sentence_says
+
+#### Scenario: A refused stop is no overrun
+- **WHEN** the hands refuse an overrun stop for want of a process group
+- **THEN** its row's result is refused and overrun_stopped is false
+Test: tests/test_watchdog_record_1778.py::test_a_stop_the_hands_refused_is_no_overrun
+
+#### Scenario: A paused job is found by its id
+- **WHEN** the watchdog paused a queue job for contention under any subject label
+- **THEN** contention and the paused-job cause find it by job id
+Test: tests/test_watchdog_record_1778.py::test_contention_finds_the_paused_job_by_its_id_not_its_label
 
 #### Scenario: Evidence carries identification
 - **WHEN** a finding is recorded

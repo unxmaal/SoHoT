@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 100
+SCHEMA_VERSION = 105
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -193,7 +193,13 @@ CREATE TABLE IF NOT EXISTS verdicts (
     planned_s_per_case  REAL,
     observed_s_per_case REAL,
     -- The memory ceiling, GiB, an inspect verdict was judged against. #880.
-    ceiling_gb  REAL
+    ceiling_gb  REAL,
+    -- The lane the verdict was decided in, set by its writer; readers select on it, never on detail. #1777.
+    lane        TEXT NOT NULL DEFAULT '',
+    -- The download budget, GiB, a fetch download or budget refusal was judged against; NULL when none was recorded. #1822.
+    budget_gib  REAL,
+    -- What the verdict records happening, set by its writer (a fetch's download); readers select on it, never on detail. #1878.
+    event       TEXT NOT NULL DEFAULT ''
 );
 
 -- A paired measurement paused at a time limit, resumed first by the next sweep. #813.
@@ -695,7 +701,16 @@ CREATE TABLE IF NOT EXISTS watchdog_actions (
     dry_run     INTEGER NOT NULL DEFAULT 1,
     -- JSON: the measurements that tripped it, how the subject was identified, the fingerprint.
     evidence    TEXT NOT NULL DEFAULT '{}',
-    outcome     TEXT NOT NULL DEFAULT ''
+    -- The sentence for display; code decides on the columns below. #1778.
+    outcome     TEXT NOT NULL DEFAULT '',
+    -- watchdog.RESULTS: acted, held, refused, failed, unavailable or dry_run.
+    result      TEXT NOT NULL DEFAULT '',
+    -- 1 when this act put a notification on the desktop.
+    notified    INTEGER NOT NULL DEFAULT 0,
+    -- The queue job the subject is; its process group; its eval's run directory (watchdog.canon).
+    job_id      INTEGER,
+    pgid        INTEGER,
+    run_dir     TEXT NOT NULL DEFAULT ''
 );
 
 -- One known-answer completion the watchdog sent a text lane, or why it sent none. #924.

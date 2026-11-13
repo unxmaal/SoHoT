@@ -33,7 +33,6 @@ def _progress(d, **rec):
     return d
 
 
-@POSIX
 def test_a_pid_reused_by_another_group_leader_is_not_the_eval(tmp_path, leader):
     started = proc_identity.started(leader.pid)
     assert started
@@ -64,7 +63,6 @@ def test_the_progress_writer_records_its_own_start_time(tmp_path):
     assert json.loads((tmp_path / run_state.PROGRESS).read_text(encoding="utf-8"))["pid_started"] == got["pid_started"]
 
 
-@POSIX
 def test_the_deploy_guard_run_as_a_file_judges_a_reused_pid_by_its_start_time(tmp_path, leader):
     """launchd.sh runs `python3 -I harness/sweep_guard.py HOME`: run_state finds proc_identity beside it."""
     code = ("import importlib.util, sys; s = importlib.util.spec_from_file_location('run_state', sys.argv[1]); "

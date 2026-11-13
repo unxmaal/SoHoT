@@ -4,10 +4,15 @@ A pull request runs macOS only, so work moves at the speed of one runner.
 Linux and Windows run nightly on main, on demand, or on a PR labelled
 full-ci, and a nightly failure opens an issue so it cannot pass unseen.
 """
+import os
 import re
+import subprocess
 from pathlib import Path
 
+import pytest
 import yaml
+
+from tests import shells
 
 CI = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "ci.yml"
 DEFERRED = ("check-linux", "check-windows")
@@ -21,8 +26,7 @@ def _ci():
 
 
 def test_macos_runs_on_every_pull_request():
-    doc, _ = _ci()
-    assert "if" not in doc["jobs"]["check-macos"]
+    assert "check-macos" in _running("pull_request") and "check-macos" in _running("push")
 
 
 def test_linux_and_windows_skip_an_unlabelled_pull_request():
@@ -341,19 +345,28 @@ def test_a_push_to_main_is_never_cancelled_by_the_next_merge():
     assert _cancels(value, "pull_request")
 
 
-def _expand(text: str, **github) -> str:
-    """Evaluate each ${{ }} in text over a github context; && || == != and literals only."""
-    def one(m):
-        expr = re.sub(r"\bgithub\.(\w+)", lambda g: repr(github[g.group(1)]), m.group(1))
-        expr = expr.replace("&&", " and ").replace("||", " or ")
-        assert re.fullmatch(r"[\s\w'./=!-]*", expr), expr
-        return str(eval(expr, {"__builtins__": {}}, {}))
-    return re.sub(r"\$\{\{(.*?)\}\}", one, str(text))
+def _eval(expr: str, inputs=None, labels=(), **github):
+    """One Actions expression over a github context and dispatch inputs; && || ! == != contains format failure()."""
+    expr = expr.replace("github.event.pull_request.labels.*.name", repr(list(labels)))
+    expr = re.sub(r"\bneeds\.[\w-]+\.outputs\.\w+", "''", expr).replace("failure()", "False")
+    expr = re.sub(r"\bgithub\.(\w+)", lambda g: repr(github[g.group(1)]), expr)
+    expr = re.sub(r"\binputs\.(\w+)", lambda g: repr((inputs or {}).get(g.group(1), "")), expr)
+    expr = re.sub(r"!(?!=)", " not ", expr).replace("&&", " and ").replace("||", " or ")
+    assert re.fullmatch(r"[\s\w'./=!,(){}\[\]:-]*", expr), expr
+    def contains(hay, needle):
+        return needle.lower() in ([h.lower() for h in hay] if isinstance(hay, list) else hay.lower())
+    funcs = {"contains": contains, "format": lambda f, *a: f.format(*a)}
+    return eval(expr, {"__builtins__": {}}, funcs)
 
 
-def _group(event: str, ref: str, sha: str) -> str:
+def _expand(text: str, inputs=None, **github) -> str:
+    """Evaluate each ${{ }} in text."""
+    return re.sub(r"\$\{\{(.*?)\}\}", lambda m: str(_eval(m.group(1), inputs, **github)), str(text))
+
+
+def _group(event: str, ref: str, sha: str, **inputs) -> str:
     doc, _ = _ci()
-    return _expand(doc["concurrency"]["group"], event_name=event, ref=ref, sha=sha)
+    return _expand(doc["concurrency"]["group"], inputs, event_name=event, ref=ref, sha=sha)
 
 
 def test_a_merge_never_waits_for_the_previous_main_run():
@@ -409,3 +422,130 @@ def test_the_nightly_is_not_scheduled_on_the_hour():
     """'0 6 * * *' started 11:54-15:39 UTC on 2026-10-28..11-11, among the day's merges (#1802)."""
     _, on = _ci()
     assert all(c["cron"].split()[0] != "0" for c in on["schedule"])
+
+
+BASH = shells.resolve("bash")
+needs_bash = pytest.mark.skipif(BASH is None, reason="needs bash")
+
+#: What a dispatch can choose (#1906); the dispatch-inputs job refuses any other name.
+SELECTABLE = ("check-macos", "check-postgres", "check-linux", "check-windows", "mutation", "coverage-map")
+
+
+def _running(event: str, labels=(), **inputs) -> set:
+    """The jobs a run of this event starts when nothing fails, decided from if: and needs: as Actions does."""
+    doc, _ = _ci()
+    jobs, ran = doc["jobs"], {}
+
+    def runs(name):
+        if name not in ran:
+            job = jobs[name]
+            needs = job.get("needs", [])
+            needs = [needs] if isinstance(needs, str) else needs
+            cond = " ".join(str(job.get("if", "True")).split())
+            ran[name] = all(runs(n) for n in needs) and bool(_eval(cond, inputs, labels, event_name=event))
+        return ran[name]
+    return {name for name in jobs if runs(name)}
+
+
+def test_a_plain_dispatch_and_the_nightly_run_every_job_they_ran_before_inputs():
+    """#1906's inputs default to the old run: the schedule and a dispatch with no -f start the same jobs."""
+    _, on = _ci()
+    defaults = {k: v["default"] for k, v in on["workflow_dispatch"]["inputs"].items()}
+    assert defaults == {"jobs": "all", "tests": ""}
+    every = set(SELECTABLE) | {"store-touched"}
+    assert _running("schedule") == every
+    assert _running("workflow_dispatch", **defaults) == every | {"dispatch-inputs"}
+    assert _running("push") == {"check-macos", "store-touched"}
+    assert _running("pull_request") == {"check-macos", "store-touched", "mutation-plan"}
+    assert _running("pull_request", labels=[LABEL]) == {"check-macos", "store-touched", "mutation-plan", *DEFERRED}
+
+
+def test_a_dispatch_runs_only_the_jobs_it_names():
+    for name in SELECTABLE:
+        extra = {"store-touched"} if name == "check-postgres" else set()
+        assert _running("workflow_dispatch", jobs=name) == {name, "dispatch-inputs"} | extra, name
+    assert _running("workflow_dispatch", jobs="check-linux, check-windows") == {
+        "check-linux", "check-windows", "dispatch-inputs"}
+
+
+def test_the_dispatch_input_check_knows_every_selectable_job():
+    doc, _ = _ci()
+    step = doc["jobs"]["dispatch-inputs"]["steps"][0]
+    assert tuple(step["env"]["KNOWN"].split()) == SELECTABLE
+    selectable = {n for n, j in doc["jobs"].items() if "inputs.jobs" in str(j.get("if", ""))} - {"store-touched"}
+    assert selectable == set(SELECTABLE)
+
+
+def _dispatch_check(jobs: str):
+    doc, _ = _ci()
+    step = doc["jobs"]["dispatch-inputs"]["steps"][0]
+    env = {**os.environ, **step["env"], "JOBS": jobs, "TESTS": "", "GITHUB_STEP_SUMMARY": os.devnull}
+    return subprocess.run([BASH, "-c", step["run"]], env=env, capture_output=True, text=True)
+
+
+@needs_bash
+def test_a_misspelt_job_fails_the_dispatch_rather_than_skipping_everything():
+    for good in ("all", "check-windows", "check-linux,check-windows", "mutation, coverage-map"):
+        assert _dispatch_check(good).returncode == 0, good
+    for bad in ("check-window", "", " , ", "check-linux,*", "all;true"):
+        r = _dispatch_check(bad)
+        assert r.returncode == 1 and "::error::" in r.stdout, (bad, r.stdout)
+
+
+SUITE_STEPS = {"check-macos": "make check", "check-linux": "make check", "check-windows": "make check",
+               "check-postgres": "make test-postgres-suite"}
+
+
+def _suite(job: str, tests: str, cwd=None) -> list[str]:
+    """The argv the job's suite step runs for this `tests` input, with uv, make and tee stubbed to print it."""
+    doc, _ = _ci()
+    step = next(s for s in doc["jobs"][job]["steps"] if s.get("name") == SUITE_STEPS[job])
+    assert step["env"]["TESTS"] == "${{ inputs.tests }}"
+    stubs = 'uv() { printf "%s\\n" uv "$@"; }; make() { printf "%s\\n" make "$@"; }; tee() { cat; }\n'
+    # /usr/bin/time is an absolute path a function cannot stand in for.
+    script = stubs + step["run"].replace("/usr/bin/time -p ", "")
+    r = subprocess.run([BASH, "-c", script], env={**os.environ, "TESTS": tests}, capture_output=True, text=True,
+                       cwd=cwd)
+    assert r.returncode == 0, r.stderr
+    return r.stdout.splitlines()
+
+
+@needs_bash
+@pytest.mark.parametrize("job", sorted(SUITE_STEPS))
+def test_a_dispatchs_tests_input_reaches_pytest_word_for_word_and_blank_runs_the_suite(job, tmp_path):
+    full = SUITE_STEPS[job].split()
+    assert _suite(job, "") == full and _suite(job, "  ") == full
+    argv = _suite(job, "tests/test_a.py  tests/test_b.py::test_c[x-1]")
+    assert argv[argv.index("pytest") + 1:] == ["tests/test_a.py", "tests/test_b.py::test_c[x-1]", "-q", "-n", "6"]
+    planted = tmp_path / "planted"
+    argv = _suite(job, f"$(touch {planted.as_posix()}) ;touch {planted.as_posix()}")
+    assert not planted.exists() and "$(touch" in argv, argv
+    (tmp_path / "test_x.py").write_text("", encoding="utf-8")
+    assert "*.py" in _suite(job, "*.py", cwd=tmp_path), "an input is never globbed"
+
+
+def test_no_step_pastes_a_dispatch_input_into_its_script():
+    """An input interpolated into run: is a script injection; it reaches the shell through env (#1906)."""
+    doc, _ = _ci()
+    pasted = [(n, s.get("name")) for n, j in doc["jobs"].items() for s in j.get("steps", [])
+              if "inputs." in s.get("run", "")]
+    assert pasted == []
+    with_tests = {n for n, j in doc["jobs"].items() for s in j.get("steps", [])
+                  if "${{ inputs.tests }}" in str(s.get("env", {}))}
+    assert with_tests == set(SUITE_STEPS) | {"dispatch-inputs"}
+
+
+def test_a_narrow_dispatch_on_linux_skips_the_litellm_suite():
+    doc, _ = _ci()
+    step = next(s for s in doc["jobs"]["check-linux"]["steps"] if s.get("run") == "make test-litellm")
+    assert _eval(step["if"].replace("always()", "True"), {"tests": ""}) is True
+    assert _eval(step["if"].replace("always()", "True"), {"tests": "tests/test_a.py"}) is False
+
+
+def test_dispatches_with_different_inputs_do_not_queue_behind_each_other():
+    """cancel-in-progress is false for a dispatch, so a second one in the same group waits for the first."""
+    ref = "refs/heads/x"
+    windows = _group("workflow_dispatch", ref, "a" * 40, jobs="check-windows", tests="tests/test_a.py")
+    assert windows != _group("workflow_dispatch", ref, "a" * 40, jobs="all", tests="")
+    assert windows == _group("workflow_dispatch", ref, "b" * 40, jobs="check-windows", tests="tests/test_a.py")
+    assert _group("schedule", "refs/heads/main", "a" * 40) == "check-schedule-refs/heads/main"

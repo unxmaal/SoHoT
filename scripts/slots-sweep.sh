@@ -27,6 +27,13 @@ stop() {
   SERVER=""
 }
 trap stop EXIT
+# The server dies with this script even when a SIGKILL skips the EXIT trap. #1761.
+tether() {
+  local owner=$$ child=$1
+  ( trap '' INT
+    while kill -0 "$owner" 2>/dev/null && kill -0 "$child" 2>/dev/null; do sleep 1; done
+    kill "$child" 2>/dev/null ) </dev/null >/dev/null 2>&1 &
+}
 
 for cfg in $CONFIGS; do
   IFS=: read -r slots pool mode level <<<"$cfg"
@@ -43,6 +50,7 @@ for cfg in $CONFIGS; do
   llama-server --jinja --models-dir "$OUT/models" --models-preset "$ini" --models-max 2 \
     --sleep-idle-seconds 3600 --n-gpu-layers 999 --host 127.0.0.1 --port "$PORT" >"$log" 2>&1 &
   SERVER=$!
+  tether "$SERVER"
   up=""
   for _ in $(seq 1 120); do
     if curl -sf "http://127.0.0.1:$PORT/health" >/dev/null; then up=1; break; fi

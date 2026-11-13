@@ -73,6 +73,10 @@ PASSED_OVER = 0.5
 PASSED_OVER_MAX = 30.0
 AT_CAP = "at the pass-over cap"
 
+
+class HintUnreadable(RuntimeError):
+    """An order hint (pass-over aging, an incumbent's family bases) the store could not answer. #1782."""
+
 _PARAMS = re.compile(r"(?<![A-Za-z0-9.])(\d+(?:\.\d+)?)([BbMm])(?![A-Za-z])")
 _FAMILY = re.compile(r"[a-z]+")
 
@@ -274,18 +278,27 @@ def incumbents(conn) -> dict[str, str]:
 def incumbent_bases(conn, incumbent: str) -> set[str]:
     """Families the incumbent is built on, from lineage of proposals that name it; never its own."""
     own, size = family(incumbent), params_b(incumbent)
-    if not own or conn is None:
+    if not own:
         return set()
+    if conn is None:
+        raise HintUnreadable("no store connection")
     from harness.memory_store.cards import parents_of
     try:
         names = [r[0] for r in conn.execute(
             "SELECT name FROM proposals WHERE lower(name) LIKE ?", (f"%{own}%",))
             if family(r[0]) == own and params_b(r[0]) == size]
         got = parents_of(conn, names) if names else {}
-    except (AttributeError, sqlite3.Error):
-        # An order hint never fails the ranking; no bases is the answer.
-        return set()
+    except (AttributeError, sqlite3.Error) as exc:
+        raise HintUnreadable(f"{type(exc).__name__}: {exc}") from exc
     return {family(p) for ps in got.values() for p, _ in ps} - {own, ""}
+
+
+def _unreadable(what: str, exc: HintUnreadable) -> str:
+    """Say on stderr that the order runs without a hint and why; the sentence, for the caller's cut. #1782."""
+    import sys
+    said = f"{what} unavailable, ranking without it: {exc}"
+    print(f"rank: {said}", file=sys.stderr, flush=True)
+    return said
 
 
 def quantised_children(rows) -> dict[str, list[str]]:
@@ -325,14 +338,25 @@ def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float | None = Non
     measured = {m.lower() for m in measured_lanes}
     if incumbents_by_lane is None:
         incumbents_by_lane = incumbents(conn)
+    from harness import cuts
     if bases_by_lane is None:
-        bases_by_lane = {lane: incumbent_bases(conn, inc)
-                         for lane, inc in incumbents_by_lane.items()}
+        bases_by_lane = {}
+        for lane, inc in incumbents_by_lane.items():
+            try:
+                bases_by_lane[lane] = incumbent_bases(conn, inc)
+            except HintUnreadable as exc:
+                _unreadable(f"the {lane} incumbent's family bases", exc)
     if standing is None:
         from harness import family
         standing = family.standing(conn)
     if passed is None:
-        passed = passed_over(conn, before=now)
+        try:
+            passed = passed_over(conn, before=now)
+        except HintUnreadable as exc:
+            passed = {}
+            said = _unreadable("pass-over aging", exc)
+            if trace and conn is not None:
+                cuts.cut("fetch_passed_over", said, kept=0, dropped=len(rows), conn=conn)
     rows = [{**r, "passed_over": passed[r["name"]]} if r.get("name") in passed else r for r in rows]
     quants = quantised_children(rows)
     out = []
@@ -360,7 +384,6 @@ def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float | None = Non
         out.append({**row, "value": got, "value_why": "; ".join(why)})
     capped = [r["name"] for r in out if AT_CAP in r["value_why"]]
     if capped and conn is not None and trace:
-        from harness import cuts
         cuts.cut("fetch_passed_over_max", f"{len(capped)} row(s) at the pass-over cap, first {capped[0]}",
                  kept=len(out) - len(capped), dropped=len(capped), conn=conn)
     # THE TIEBREAK IS ABOUT THE CANDIDATE, NEVER ITS NAME. Ten code candidates
@@ -378,26 +401,29 @@ def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float | None = Non
 
 
 def passed_over(conn, before: float | None = None) -> dict[str, int]:
-    """name -> days a fetch budget refused it though it fit the whole budget, since its last later-tier verdict or reopen."""
+    """name -> days a budget refused it (failure_class, never the sentence) though it fit, since its last later-tier verdict or reopen. #1779."""
     if conn is None:
-        return {}
-    from harness import fetching, reasons
+        raise HintUnreadable("no store connection")
+    from harness import reasons
     try:
         rows = conn.execute("""
-            SELECT p.name, COUNT(DISTINCT CAST(v.decided_at / 86400 AS INTEGER)) FROM verdicts v
+            SELECT p.name, v.decided_at FROM verdicts v
               JOIN proposals p ON p.id = v.proposal_id
-             WHERE v.tier = 'fetch' AND v.reason = :limit AND COALESCE(v.until, '') = ''
-               AND v.detail GLOB :refusal AND v.decided_at < :before
+             WHERE v.tier = 'fetch' AND v.reason = :limit AND v.failure_class = :passed
+               AND COALESCE(v.until, '') = '' AND v.decided_at < :before
                AND v.id > COALESCE((SELECT MAX(vx.id) FROM verdicts vx WHERE vx.proposal_id = v.proposal_id
                                       AND vx.decided_at < :before
                                       AND (vx.tier NOT IN ('inspect', 'fetch', 'judge') OR vx.reason = :reopened)), 0)
-             GROUP BY p.id""", {"limit": reasons.LIMIT, "refusal": f"[0-9]* GiB {fetching.PASSED} *",
-                                "before": time.time() if before is None else before,
-                                "reopened": reasons.REOPENED}).fetchall()
-    except (AttributeError, sqlite3.Error):
-        # An order hint never fails the ranking; no pass-overs is the answer.
-        return {}
-    return {r[0]: int(r[1]) for r in rows}
+            """, {"limit": reasons.LIMIT, "passed": reasons.PASSED_OVER,
+                  "before": time.time() if before is None else before,
+                  "reopened": reasons.REOPENED}).fetchall()
+    except (AttributeError, sqlite3.Error) as exc:
+        raise HintUnreadable(f"{type(exc).__name__}: {exc}") from exc
+    # Days are floored here: Postgres rounds a CAST to integer where SQLite truncates.
+    days: dict[str, set[int]] = {}
+    for name, at in rows:
+        days.setdefault(name, set()).add(math.floor(float(at) / 86400))
+    return {name: len(d) for name, d in days.items()}
 
 
 def unrunnable(row: dict, machine=None) -> str:

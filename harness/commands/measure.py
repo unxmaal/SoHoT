@@ -379,7 +379,7 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         # wrote `declined` for the lane's own default. #393.
         print(f"  {name}: already the {lane} lane's default ({spec})")
         if not dry:
-            _settle(name, "measured", f"{lane}: already the lane's default")
+            _settle(name, "measured", f"{lane}: already the lane's default", lane)
         return 0
     unscreened = _screen_refusal(a, lane, spec)
     if unscreened:
@@ -472,8 +472,8 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
             store.close()
         if held is None:
             return rc
-        from harness import workqueue
-        if sweep is None and workqueue.item_s() is not None and workqueue.item_ended():
+        from harness import job_procs
+        if sweep is None and job_procs.item_s() is not None and job_procs.item_ended():
             # Under the queue each look slice is one item; the next resumes this held run on the same models. #1618.
             print(f"  {name}: item ended at a look; the next item resumes it", flush=True)
             loaded.clear()
@@ -818,8 +818,8 @@ def _term_raises():
 
 def _stop_group(proc, grace_s: float) -> None:
     """Stop the eval's group, reaping its leader as it goes; an unreaped leader makes killpg say EPERM on macOS. #673, #677."""
-    from harness import workqueue
-    workqueue.stop_group(proc.pid, grace=grace_s, proc=proc)
+    from harness import job_procs
+    job_procs.stop_group(proc.pid, grace=grace_s, proc=proc)
 
 
 def _screen_refusal(a, lane: str, spec: str) -> str:
@@ -1343,9 +1343,9 @@ def _confirm_reuse(lane, inc_spec, spec, split, repeat, out, resume: bool):
 
 def _confirm_paused(vid: int, lane: str, inc_spec: str, spec: str, out) -> int:
     """A paused or signal-stopped (not overrun) confirmation queues its own continuation; for a deploy, the queue re-pends this job. #1357, #1509, #1675."""
-    from harness import adopt, workqueue
+    from harness import adopt, queue_pause
     from harness import memory_store as ms
-    deploy, store = workqueue.paused_for_deploy(), ms.connect()
+    deploy, store = queue_pause.paused_for_deploy(), ms.connect()
     try:
         job = None if deploy else adopt.queue_confirmation(store, vid, adopt.Verdict(lane, inc_spec, spec, False, ""))
     finally:
@@ -1442,12 +1442,12 @@ def take_incumbents(want: str = "") -> list:
     return out
 
 
-def _settle(name: str, outcome: str, detail: str) -> None:
+def _settle(name: str, outcome: str, detail: str, lane: str = "") -> None:
     from harness import memory_store as ms
     store = ms.connect()
     try:
         ms.decide(store, name, outcome, tier=ms.MEASURE, detail=detail[:200],
-                  reason=reasons.CANDIDATE)
+                  reason=reasons.CANDIDATE, lane=lane)
     except (KeyError, ms.IllegalTransition):
         pass
     finally:

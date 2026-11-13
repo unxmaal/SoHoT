@@ -97,9 +97,18 @@ def batch(job: dict) -> bool:
 
 
 def paused_for(conn, job: dict) -> bool:
-    """Whether the watchdog paused this queued job for contention since it last started."""
-    from harness import workqueue
+    """Whether the watchdog paused this queued job for contention since it last started, or its run paused for serving (#1765)."""
+    from harness import watchdog, workqueue
     started = workqueue._epoch(job.get("started")) or 0.0
-    return conn.execute("SELECT 1 FROM watchdog_actions WHERE criterion = ? AND subject = ? AND action = 'pause' "
-                        "AND dry_run = 0 AND at >= ? LIMIT 1",
-                        (CRITERION, f"job {workqueue.label(job['id'])}", started)).fetchone() is not None
+    if conn.execute("SELECT 1 FROM watchdog_actions WHERE criterion = ? AND job_id = ? AND action = ? "
+                    "AND dry_run = 0 AND at >= ? LIMIT 1",
+                    (CRITERION, int(job["id"]), watchdog.PAUSE, started)).fetchone() is not None:
+        return True
+    return _paused_for_serving(conn, job)
+
+
+def _paused_for_serving(conn, job: dict) -> bool:
+    from evals import watch
+    from harness import runs, serve_lease
+    run = runs.for_job(conn, int(job["id"]))
+    return run is not None and watch.pause_reason(runs.run_dir(run["path"])) == serve_lease.SERVING_PAUSE

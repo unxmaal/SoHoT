@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import ast
+import dataclasses
 import os
 import sys
 import time
@@ -193,8 +194,9 @@ def detector_bindings(root=REPO) -> list[Problem]:
     """tests/test_gauntlet_detectors.py for registry.PRECHECK_DETECTORS: a hit is bound, waived or in the backlog."""
     from gauntlet import detectors, ratchet
 
-    from harness import knob_backlog
     from tests.gauntlet import classes, registry
+    reg = dataclasses.replace(registry.REGISTRY, root=Path(root), backlog_file=Path(root) / registry.BACKLOG_REL,
+                              snapshot_file=Path(root) / registry.REGISTRY.snapshot_file.relative_to(registry.REPO))
     trees = detectors.parse(_trees(root))
     config = ratchet.detector_config(registry.REGISTRY)
     # A registered move table is read only where its module is in the tree checked.
@@ -203,7 +205,7 @@ def detector_bindings(root=REPO) -> list[Problem]:
              if (named := set(detectors.names(e))) and named <= registry.PRECHECK_DETECTORS}
     run = detectors.run(trees, index, registry.production, None, config)
     led = detectors.ledger(run, detectors.bindings(_trees(root, tests=True)), index)
-    backlog = registry.load_backlog(root)
+    backlog = reg.backlog()
     out = [_p("gauntlet", f"{cid}: {s} trips a gauntlet trigger with no bound test",
               f"mark the test that pins it: @pytest.mark.gauntlet({scaffold.q(cid)}, site={scaffold.q(s)})",
               f"or waive it in tests/gauntlet/classes.py INDEX[{scaffold.q(cid)}]['waivers']:",
@@ -213,9 +215,14 @@ def detector_bindings(root=REPO) -> list[Problem]:
             if s not in led.get(cid, {}).get("unbound", [])]
     out += [_p("gauntlet", f"{cid}: {s} is bound, waived or gone",
                f"delete this line from {registry.BACKLOG_REL}:", f"{cid} {s}") for cid, s in gone]
-    out += [_p("gauntlet", f"{row} joined the backlog after the merge base with {knob_backlog.BASE}",
-               f"delete this line from {registry.BACKLOG_REL} and bind or waive the hit instead:", row)
-            for row in registry.backlog_added(root) or []]
+    try:
+        base = reg.base_backlog()
+    except LookupError:  # no merge base here; make check's ratchet says what to fetch
+        base = None
+    if base is not None:
+        out += [_p("gauntlet", f"{cid} {s} joined the backlog after the merge base with {reg.backlog_base}",
+                   f"delete this line from {registry.BACKLOG_REL} and bind or waive the hit instead:", f"{cid} {s}")
+                for cid, rows in sorted(backlog.items()) for s in rows if s not in base.get(cid, [])]
     return out
 
 

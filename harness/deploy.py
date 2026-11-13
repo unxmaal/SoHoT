@@ -15,8 +15,9 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from harness.atomic_file import replace
 from harness import deploy_state as ds
-from harness import deploy_switch, job_state as js, paths, proc_identity
+from harness import deploy_switch, job_claim, job_procs, job_state as js, paths, proc_identity, queue_pause
 from harness import workqueue as wq
 
 KIND = "deploy"
@@ -261,37 +262,15 @@ def _jobs_for(conn, sha: str) -> list:
                         (KIND, sha)).fetchall()
 
 
-def _held_alerted() -> Path:
-    return wq.root() / "deploy-held-alerted"
-
-
-def _held(conn, sha: str, job_id, alert=None) -> str:
-    """Why the poll holds a sha its last job rolled back on unchanged audit inputs, alerting once per hold; else ''. #1805."""
-    from harness import deploy_hold
-    h = deploy_hold.held(conn, job_id)
-    if h is None:
-        return ""
-    try:
-        said = _held_alerted().read_text(encoding="utf-8").strip()
-    except OSError:
-        said = ""
-    if said != str(job_id):
-        _held_alerted().write_text(str(job_id), encoding="utf-8")
-        (alert or (lambda m: _alert_script(m, "held")))(
-            f"held: deterministic audit failure, waiting for a newer sha: {sha[:12]} rolled back as deploy "
-            f"{h['deploy']} on {h['checks']} and what they read has not changed (soh deploy now deploys it anyway)")
-    return h["why"]
-
-
-def _retry(seen: list, now: float, conn=None, sha: str = "", alert=None) -> str:
-    """'' when a sha whose last deploy job failed may be queued again now, else why not. #1672."""
-    from harness import cuts
+def _retry(seen: list, now: float, conn=None, sha: str = "") -> str:
+    """'' when a sha whose last deploy job failed may be queued again now, else why not; never one that rolled back. #1672, #1913."""
+    from harness import cuts, deploy_retry
     last = seen[-1]
     if last["state"] != wq.FAILED:
         return f"is already queued as job {wq.label(last['id'])} ({last['state']})"
-    held = _held(conn, sha, last["id"], alert) if conn is not None else ""
-    if held:
-        return held
+    final = deploy_retry.why(conn, sha) if conn is not None else ""
+    if final:
+        return final
     failed = sum(r["state"] == wq.FAILED for r in seen)
     if failed > RETRIES:
         cuts.cut("deploy_retries", "a failed sha not queued again", dropped=1)
@@ -335,11 +314,11 @@ def poll(conn=None, now: float | None = None, *, src=None, sha: str = "", force:
          green=None, environ=None, own=None, alert=None) -> dict:
     """Queue one deploy job for the newest main commit since live (or sha) that passed check-macos; supersede pending older ones."""
     said = confirm(own, alert)
-    return {**_queue(conn, now, src=src, sha=sha, force=force, green=green, environ=environ, alert=alert),
+    return {**_queue(conn, now, src=src, sha=sha, force=force, green=green, environ=environ),
             "confirm": said}
 
 
-def _queue(conn, now, *, src, sha: str, force: bool, green, environ, alert=None) -> dict:
+def _queue(conn, now, *, src, sha: str, force: bool, green, environ) -> dict:
     from harness import deploy_guard
     environ = os.environ if environ is None else environ
     if paused() and not force:
@@ -361,7 +340,7 @@ def _queue(conn, now, *, src, sha: str, force: bool, green, environ, alert=None)
             seen = _jobs_for(c, want)
             live = [r for r in seen if r["state"] in (wq.PENDING, wq.RUNNING)]
             why = (f"is already queued as job {wq.label(live[-1]['id'])} ({live[-1]['state']})" if live
-                   else _retry(seen, time.time() if now is None else now, c, want, alert) if seen and not force
+                   else _retry(seen, time.time() if now is None else now, c, want) if seen and not force
                    else "")
             if why:
                 return {"queued": None, "why": "; ".join([*refused, f"{want[:12]} {why}"]), "superseded": []}
@@ -441,7 +420,7 @@ def adopt(link: Path) -> Path:
         tmp.unlink()
     os.symlink(dest, tmp)
     os.rename(link, dest)
-    os.replace(tmp, link)
+    replace(tmp, link)
     try:
         _git(dest, "worktree", "repair")
     except DeployError as exc:
@@ -595,6 +574,11 @@ def switch_argv(record: Path) -> list[str]:
 def spawn_switch(record: Path, release_for_log: Path) -> str:
     """Start deploy_switch on the record so it outlives the worker: a launchd one-shot on macOS, else detached."""
     argv = switch_argv(record)
+    return launch(argv, release_for_log, Path(argv[2]).parents[1])
+
+
+def launch(argv: list[str], release_for_log: Path, root: Path) -> str:
+    """Start argv on the switch's launchd one-shot label on macOS, else detached, so it outlives the worker."""
     log = paths.logs() / "deploy.log"
     if sys.platform == "darwin":
         import plistlib
@@ -602,7 +586,7 @@ def spawn_switch(record: Path, release_for_log: Path) -> str:
         plist.parent.mkdir(parents=True, exist_ok=True)
         keep = {k: os.environ[k] for k in ("PATH", "HOME", paths.ENV_VAR) if os.environ.get(k)}
         # A python program would be its own privacy identity, and its first read of /Volumes waits on a dialog. #1516.
-        wrapper = Path(argv[2]).parents[1] / "scripts" / "deploy-switch.sh"
+        wrapper = Path(root) / "scripts" / "deploy-switch.sh"
         if not wrapper.is_file():
             wrapper = Path(deploy_switch.__file__).resolve().parents[1] / "scripts" / "deploy-switch.sh"
         plist.write_bytes(plistlib.dumps({
@@ -618,7 +602,7 @@ def spawn_switch(record: Path, release_for_log: Path) -> str:
             raise DeployError(f"launchctl bootstrap {plist}: {(got.stderr or got.stdout).strip()[:300]}")
         return f"launchd {SWITCH_LABEL}"
     with open(log, "a", encoding="utf-8") as out:
-        child = wq.spawn_group(argv, str(release_for_log), out, _env())
+        child = job_procs.spawn_group(argv, str(release_for_log), out, _env())
     return f"pid {child.pid}"
 
 
@@ -628,7 +612,8 @@ def _quiesce(c, job_id, log, sleep=time.sleep) -> str:
     end, said = time.monotonic() + QUIESCE_TIMEOUT_S, False
     while True:
         left = [wq.label(j["id"]) for j in wq.running_here(c)
-                if wq._key(j["id"]) != wq._key(job_id) and wq._pid_of(j["id"]) is not None]
+                if wq._key(j["id"]) != wq._key(job_id)
+                and (job_procs._pid_of(j["id"]) is not None or job_claim.starting(j["id"]))]
         if not left:
             return ""
         if time.monotonic() >= end:
@@ -673,7 +658,7 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
 
             def stop(why: str) -> int:
                 if held and not held[0]:
-                    wq.resume()
+                    queue_pause.resume()
                 if not finish(c, deploy_id, FAILED, why, now(), leaves=at[0], writer=ds.JOB):
                     log.write(f"--- deploy {deploy_id} left {at[0]} under the job: {stage_of(c, deploy_id)}\n")
                 if rec:
@@ -718,18 +703,18 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
                 return stop(f"smoke before the switch: {why}")
             # Each durable step below is recorded before it is taken, so settle can undo a death at any point. #1752.
             note = f"deploy {deploy_id} of {sha[:12]}"
-            held.append(wq.paused())
+            held.append(queue_pause.paused())
             rec.update({"id": deploy_id, "sha": sha, "job_id": job_id, "link": str(link), "release": str(release),
                         "previous": str(previous), "previous_sha": previous_sha, "db": str(ms.db_path()),
                         "backup": "", "migrated": False, "queue_was_paused": held[0], "pause_note": note,
-                        "queue_flag": str(wq._pause_flag()), "install": steps.install,
+                        "queue_flag": str(queue_pause._pause_flag()), "install": steps.install,
                         "rollback_install": steps.install, "verify": [steps.smoke, steps.coherence],
                         "repair": steps.repair, "alert": steps.alert, "log": str(log_path),
                         "install_env": str(install_env.path()), "stage": at[0], "outcome": "", "run_pid": os.getpid(),
                         "run_identity": proc_identity.identity(os.getpid())})
             taking(PAUSE)
             # Paused before the migration, so no job of this release starts against the new schema. #1795.
-            wq.pause(note)
+            queue_pause.pause(note)
             have, want = _store_schema(c), wq.code_schema(release) or 0
             schema = {"schema_from": have, "schema_to": max(have, want)}
             saved, migrated = "", want > have
@@ -803,7 +788,7 @@ def _running(rec: dict, now: float, alive) -> bool:
 
 def _lift(rec: dict) -> str:
     """Lift the queue pause this deploy set, never one its owner set before or after it; what became of it."""
-    flag = Path(rec.get("queue_flag") or wq._pause_flag())
+    flag = Path(rec.get("queue_flag") or queue_pause._pause_flag())
     if not flag.exists():
         return ""
     if rec.get("queue_was_paused"):
@@ -875,7 +860,7 @@ def _stranded(rec: dict, path: Path, now: float, spawn) -> dict | None:
     return deploy_repair.strand(rec, path, got, why, now)
 
 
-def recover(now: float | None = None, alive=wq.alive, spawn=None) -> list[dict]:
+def recover(now: float | None = None, alive=job_procs.alive, spawn=None) -> list[dict]:
     """Undo each deploy that died before its switch, end one whose dead switch left the store ahead; no store read. #1752."""
     now = time.time() if now is None else now
     out = []
@@ -927,8 +912,9 @@ def _resume(rec: dict, row: dict, now: float, spawn) -> str:
     return ""
 
 
-def settle(conn=None, now: float | None = None, alive=wq.alive, spawn=None) -> list[dict]:
+def settle(conn=None, now: float | None = None, alive=job_procs.alive, spawn=None, start=None) -> list[dict]:
     """Close every unfinished deploy of this machine whose job or switch has ended; a deploy job is never left running."""
+    from harness import deploy_repair
     now = time.time() if now is None else now
     spawn = spawn or respawn
     # Before the store is opened: a deploy that died after migrating leaves it ahead of this code. #1752.
@@ -936,8 +922,8 @@ def settle(conn=None, now: float | None = None, alive=wq.alive, spawn=None) -> l
     settled = []
     try:
         with wq._store(conn) as c:
-            where, args = wq._here(c)
-            for row in c.execute(f"SELECT * FROM deploys WHERE outcome = '' AND {where} ORDER BY id", args).fetchall():
+            here, args = _here(c)
+            for row in c.execute(f"SELECT * FROM deploys WHERE outcome = '' AND {here} ORDER BY id", args).fetchall():
                 try:
                     got = _settle_one(c, dict(row), now, alive, spawn)
                 except ds.IllegalMove as exc:
@@ -948,7 +934,7 @@ def settle(conn=None, now: float | None = None, alive=wq.alive, spawn=None) -> l
             claimed, cargs = wq._claimed(c)
             for job in c.execute(f"SELECT id FROM jobs WHERE kind = ? AND state = ? AND {claimed} AND id NOT IN "
                                  "(SELECT job_id FROM deploys WHERE job_id IS NOT NULL)", (KIND, wq.RUNNING, *cargs)):
-                if wq._pid_of(job["id"]) is None:
+                if job_procs._pid_of(job["id"]) is None and not job_claim.starting(job["id"]):
                     _close_job(c, job["id"], wq.FAILED, None, "interrupted before it recorded a deploy", now)
                     settled.append({"job": wq.label(job["id"]), "outcome": INTERRUPTED})
     except RuntimeError as exc:
@@ -957,24 +943,15 @@ def settle(conn=None, now: float | None = None, alive=wq.alive, spawn=None) -> l
             raise
         # The linked release's worker cannot open a store a deploy left ahead of it: recover() was all it could do.
         print(f"deploy settle: {exc}", file=sys.stderr)
-        return done
-    return settled
+        return done + deploy_repair.auto(now, alive, start)
+    # After the store pass, so a restore never runs under it. #1879.
+    return settled + deploy_repair.auto(now, alive, start)
 
 
 def _close_job(c, job_id, state: str, rc, note: str, now: float) -> None:
     why = js.INTERRUPTED if rc is None else js.DEPLOYED if state == wq.DONE else js.DEPLOY_FAILED
     js.move(c, job_id, wq.RUNNING, state, why, note[:2000], finished_at=now, **({} if rc is None else {"rc": rc}))
     c.commit()
-
-
-def _hold_inputs(c, rec: dict, path: Path) -> None:
-    """What the failed audit checks read after the rollback, so the poll can tell a retry would read the same. #1805."""
-    from harness import deploy_hold
-    try:
-        rec["held_inputs"] = deploy_hold.inputs(c, rec["audit_failed"])
-        deploy_switch.save(path, rec)
-    except Exception as exc:  # noqa: BLE001 - no fingerprint only means the sha is retried as before
-        print(f"deploy settle: no audit fingerprint for deploy {rec.get('id')}: {exc}", file=sys.stderr)
 
 
 def _settle_one(c, row: dict, now: float, alive, spawn=None) -> dict | None:
@@ -986,8 +963,6 @@ def _settle_one(c, row: dict, now: float, alive, spawn=None) -> dict | None:
                     finished_at=rec.get("finished_at") or now, rolled_back_from=rec.get("rolled_back_from", ""),
                     **{k: rec[k] for k in ("release", "previous", "backup") if rec.get(k)}):
             return None
-        if got == ROLLED_BACK and rec.get("audit_failed"):
-            _hold_inputs(c, rec, record_path(row["id"]))
         from harness import cuts
         for t in rec.get("timed_out") or []:
             site_knob = t["site"]
@@ -1019,7 +994,8 @@ def _settle_one(c, row: dict, now: float, alive, spawn=None) -> dict | None:
         why = "; ".join(filter(None, (f"the switch stopped at {rec.get('stage')} without an outcome", failed, said(seen))))
         _lift(rec)
     else:
-        if job is not None and job["state"] == wq.RUNNING and wq._pid_of(job["id"]) is not None:
+        if job is not None and job["state"] == wq.RUNNING and (job_procs._pid_of(job["id"]) is not None
+                                                               or job_claim.starting(job["id"])):
             return None
         if job is not None and job["state"] != wq.RUNNING:
             why = f"job {job['id']} ended {job['state']} rc={job['rc']} before it recorded an outcome"
@@ -1033,6 +1009,11 @@ def _settle_one(c, row: dict, now: float, alive, spawn=None) -> dict | None:
         _close_job(c, job["id"], wq.FAILED, None, f"deploy {row['id']} interrupted: {why}", now)
     _alert_here(f"deploy {row['id']} of {row['sha'][:12]} interrupted: {why}")
     return {"deploy": row["id"], "outcome": INTERRUPTED}
+
+
+def _here(conn) -> tuple[str, tuple]:
+    from harness import machine_scope
+    return machine_scope.here(conn, "deploys.mine")
 
 
 def _alert_here(message: str) -> None:
@@ -1055,10 +1036,8 @@ def since(conn, t: float) -> list[dict]:
 
 def deployed_at(conn) -> float | None:
     """When this machine's newest queue deploy finished serving its commit; None before the first."""
-    from harness import memory_store as ms
-    mid = ms.machine_row(conn)
-    row = conn.execute("SELECT MAX(finished_at) FROM deploys WHERE outcome = ? AND (machine_id = ? OR machine_id "
-                       "IS NULL)", (DEPLOYED, mid)).fetchone()
+    here, args = _here(conn)
+    row = conn.execute(f"SELECT MAX(finished_at) FROM deploys WHERE outcome = ? AND {here}", (DEPLOYED, *args)).fetchone()
     return float(row[0]) if row and row[0] is not None else None
 
 
@@ -1102,8 +1081,8 @@ def line(d: dict) -> str:
 
 def serving(conn, link: Path | None = None) -> dict | None:
     """This machine's newest deploy reconciled against the deploy link; None before its first deploy."""
-    where, args = wq._here(conn)
-    row = conn.execute(f"SELECT * FROM deploys WHERE {where} ORDER BY id DESC", args).fetchone()
+    here, args = _here(conn)
+    row = conn.execute(f"SELECT * FROM deploys WHERE {here} ORDER BY id DESC", args).fetchone()
     return view(dict(row), link=link) if row else None
 
 

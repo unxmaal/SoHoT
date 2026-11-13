@@ -285,8 +285,8 @@ def test_a_terminal_notifier_that_exits_3_falls_back_to_osascript_and_reports_bo
         (bin_ / name).write_text(f'#!/bin/sh\necho {name} >> "{calls}"\nexit {rc}\n', encoding="utf-8")
         (bin_ / name).chmod(0o755)
     monkeypatch.setenv("PATH", f"{bin_}:/usr/bin:/bin")
-    from harness import watchdog
-    monkeypatch.setattr(watchdog, "desktop", watchdog.desktop.real)
+    from harness import watchdog_hands
+    monkeypatch.setattr(watchdog_hands, "desktop", watchdog_hands.desktop.real)
     out = monitor.desktop.real("t", "m", platform="darwin")
     assert calls.read_text(encoding="utf-8").split() == ["terminal-notifier", "osascript"]
     if osa_rc == 0:

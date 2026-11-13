@@ -24,6 +24,8 @@ import time
 
 from harness import cuts
 
+PROBE_TIMEOUT_S = 5.0
+
 IDLE_S = 60.0
 MAX_WAIT_S = 20 * 60.0
 
@@ -43,6 +45,8 @@ RETRIES = 3
 BACKOFF_S = 30.0
 SERVE_WAIT_S = 120.0
 SWITCHED, FAILED = "switched", "failed"
+#: Times the worker starts again a switch whose process died, per adoption request, before it alerts instead. #1899.
+RESPAWNS = 1
 
 
 def headers() -> dict:
@@ -54,14 +58,15 @@ def headers() -> dict:
 def in_flight(base: str) -> int | None:
     """Requests in flight on the gateway besides this probe; None when it will not say."""
     import httpx
+
+    from harness import completion
     try:
-        r = httpx.get(f"{base.rstrip('/')}/health/backlog", headers=headers(),
-                      timeout=5.0)
+        r = completion.http().get(f"{base.rstrip('/')}/health/backlog", headers=headers(), timeout=PROBE_TIMEOUT_S)
     except httpx.ConnectError:
         return 0
     except httpx.HTTPError as exc:
         if cuts.timed_out(exc):
-            cuts.cut("harness/gateway_switch.py:in_flight->httpx.get(timeout)", "/health/backlog gave no answer in time",
+            cuts.cut("gateway_probe_timeout", "/health/backlog gave no answer in time",
                      kept=0, dropped=1)
         return None
     if r.status_code != 200:
@@ -213,11 +218,13 @@ def restart_service() -> bool:
 def not_serving(base: str, want: dict) -> str:
     """'' when the gateway serves every alias in `want` ({alias: model}) as given, else why not."""
     import httpx
+
+    from harness import completion
     try:
-        r = httpx.get(f"{base.rstrip('/')}/model/info", headers=headers(), timeout=5.0)
+        r = completion.http().get(f"{base.rstrip('/')}/model/info", headers=headers(), timeout=PROBE_TIMEOUT_S)
     except httpx.HTTPError as exc:
         if cuts.timed_out(exc):
-            cuts.cut("harness/gateway_switch.py:not_serving->httpx.get(timeout)", "/model/info gave no answer in time",
+            cuts.cut("gateway_probe_timeout", "/model/info gave no answer in time",
                      kept=0, dropped=1)
         return f"the gateway did not answer /model/info: {exc}"
     if r.status_code != 200:
@@ -408,6 +415,103 @@ def reconcile(conn, alive=None, serving=None, log=None) -> dict | None:
     return row
 
 
+def respawn(requested_at: float) -> None:
+    """Start a dead switch's adoption again, marked until it claims its row; only from the live home, since a detached switch restarts this machine's gateway."""
+    from harness import gateway_respawn, monitor, paths
+    from harness import memory_store as ms
+    if not monitor.live_home():
+        raise OSError(f"{paths.home()} is not the live home, so it starts no gateway switch")
+    conn = ms.connect()
+    try:
+        after = gateway_respawn.newest(conn)
+    finally:
+        conn.close()
+    spawned_at = time.time()
+    gateway_respawn.mark(requested_at, after, spawned_at)
+    try:
+        proc = spawn(requested_at=requested_at)
+    except BaseException:
+        gateway_respawn.clear()
+        raise
+    if getattr(proc, "pid", None):
+        gateway_respawn.mark(requested_at, after, spawned_at, proc.pid)
+    else:
+        gateway_respawn.clear()
+
+
+def _alert(message: str) -> None:
+    from harness import gateway_switch_state as st
+    from harness import monitor
+    monitor.alert("service", {"MONIT_SERVICE": "gateway-switch", "MONIT_EVENT": st.GAVE_UP,
+                              "MONIT_DESCRIPTION": message})
+
+
+def _gave_up(row: dict, deaths: int) -> str:
+    when = time.strftime("%Y-%m-%d %H:%M", time.localtime(row["requested_at"])) if row["requested_at"] else "?"
+    return (f"the gateway alias switch for the adoption requested at {when} died {deaths} times (last: switch "
+            f"{row['id']}, while {row['state']}); the worker started it again {deaths - 1} time(s) and stops now. "
+            f"The gateway serves the old aliases until the next adoption, or until `python -m harness.gateway_switch` "
+            f"is run by hand from the deploy checkout")
+
+
+def repair(alive=None, serving=None, start=None, alert=None, config=None, log=None, now=None,
+           same=None) -> dict | None:
+    """The worker's pass: settle a switch whose process is gone, or a respawn that never claimed its row, and start it again, RESPAWNS times per adoption, then alert; None when there is nothing to settle here. #1899, #1904."""
+    from harness import cuts, gateway_respawn, paths
+    from harness import gateway_switch_state as st
+    from harness import memory_store as ms
+    if paths.role() != paths.SCHEDULER:
+        return None
+    conn = ms.connect()
+    try:
+        row = st.live(conn)
+        if row is None:
+            after = gateway_respawn.unclaimed(conn, now=now, same=same, log=log)
+            if after is None:
+                return None
+            row = {**after, "state": "starting"}
+        elif (alive or st.alive)(row) is not False:
+            return None
+        else:
+            settle(conn, row, st.DIED, serving, log)
+            after = st.get(conn, row["id"])
+        deaths = st.deaths(conn, row["requested_at"]) if row["requested_at"] is not None else RESPAWNS + 1
+    finally:
+        conn.close()
+    out = {"switch": row["id"], "state": after["state"], "reason": after["reason"], "respawned": False, "alerted": ""}
+    if after["state"] != st.FAILED or after["reason"] not in (st.DIED, st.UNCLAIMED) or not pending(config):
+        return out
+    if deaths > RESPAWNS:
+        out["alerted"] = _gave_up(row, deaths)
+        cuts.cut("harness/gateway_switch.py:RESPAWNS", f"switch {row['id']} not started again", kept=0, dropped=1)
+        (alert or _alert)(out["alerted"])
+        return out
+    try:
+        (start or respawn)(row["requested_at"])
+    except OSError as exc:
+        out["alerted"] = (f"the gateway alias switch {row['id']} died and could not be started again ({exc}); the "
+                          f"gateway serves the old aliases until the next adoption")
+        (alert or _alert)(out["alerted"])
+        return out
+    out["respawned"] = True
+    return out
+
+
+def turn() -> dict | None:
+    """repair, from the worker's turn: logged rather than raised, so a repair error never stops the worker. #1899."""
+    stamp = time.strftime("%H:%M:%S")
+    try:
+        got = repair()
+    except Exception as exc:  # noqa: BLE001 - on any store
+        print(f"{stamp} gateway switch repair failed: {exc}", flush=True)
+        return None
+    if got is not None:
+        print(f"{stamp} gateway switch {got['switch']} settled {got['state']} ({got['reason']})"
+              + ("; started again" if got["respawned"] else "")
+              + (f"; alerted: {got['alerted']}" if got["alerted"] else ""), flush=True)
+    return got
+
+
 def view(conn, config=None, alive=None) -> dict:
     """How the gateway switch stands, read-only: the live switch's state or orphaned; with none, serving or stale against the adoptions."""
     from harness import adopt, gateway
@@ -438,8 +542,8 @@ def waiter(requested_at: float) -> tuple[list[str], dict]:
              "--requested-at", repr(float(requested_at))], env)
 
 
-def spawn(requested_at: float | None = None, popen=None, alive=None) -> None:
-    """Start the switch detached, after settling a dead one; none when a live switch holds the slot, as it re-reads on settling."""
+def spawn(requested_at: float | None = None, popen=None, alive=None):
+    """Start the switch detached, after settling a dead one, and return its process; none when a live switch holds the slot, as it re-reads on settling."""
     import subprocess
     from harness import gateway, paths
     from harness import gateway_switch_state as st
@@ -447,18 +551,18 @@ def spawn(requested_at: float | None = None, popen=None, alive=None) -> None:
     if not can_restart():
         # Recorded as a failed switch, so report and judge do not read the lane as served. #703.
         switch(requested_at=requested_at)
-        return
+        return None
     conn = ms.connect()
     try:
         row = reconcile(conn, alive=alive)
     finally:
         conn.close()
     if row is not None and row["state"] in st.LIVE:
-        return
+        return None
     argv, env = waiter(time.time() if requested_at is None else requested_at)
     log = open(paths.logs() / "gateway-switch.log", "a", encoding="utf-8")
     try:
-        (popen or subprocess.Popen)(argv, env=env, cwd=str(gateway.REPO),
+        return (popen or subprocess.Popen)(argv, env=env, cwd=str(gateway.REPO),
                                     stdin=subprocess.DEVNULL, stdout=log,
                                     stderr=subprocess.STDOUT, start_new_session=True)
     finally:

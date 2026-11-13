@@ -95,6 +95,8 @@ from harness.commands import local as local_cmd
 from harness.commands import scaffold as scaffold_cmd
 from harness.commands import volume as volume_cmd
 from harness.commands import atomic as atomic_cmd
+from harness.commands import ci_times as ci_times_cmd
+from harness.commands import burndown as burndown_cmd
 
 # What scripts, tests and other modules take from harness.cli, from where it now lives.
 from harness.commands.common import say  # noqa: F401
@@ -622,7 +624,9 @@ def build_parser() -> argparse.ArgumentParser:
     use.add_argument("--lane", default="", help="only sohot-<lane>")
     use.add_argument("--since", default="7d", help="window: 7d, 12h, 30m, 90s")
     use.add_argument("--text", choices=("on", "off"), default="",
-                     help="keep bounded prompt and completion text samples (off by default)")
+                     help="keep bounded prompt and completion text samples (off by default; off deletes them)")
+    use.add_argument("--samples", type=int, default=0, metavar="N",
+                     help="print the newest N kept text samples with their requests")
     use.set_defaults(func=usage_cmd.cmd_usage)
     spend = sub.add_parser("api-spend", help="dollars the metered gateway aliases spent of the API credit, "
                            "what is left of the api_budget knob, and the top callers (#1214)")
@@ -824,6 +828,8 @@ def build_parser() -> argparse.ArgumentParser:
     local_cmd.add_parser(sub)
     scaffold_cmd.add_parser(sub)
     atomic_cmd.add_parser(sub)
+    ci_times_cmd.add_parser(sub)
+    burndown_cmd.add_parser(sub)
     dlg = sub.add_parser("delegated", help="record what became of a local_complete, local_decide or "
                          "`soh local` answer, show a call_id's rows (no outcome), or --report the rates per lane")
     dlg.add_argument("call_id", nargs="?", default="", help="the call_id the delegation returned")

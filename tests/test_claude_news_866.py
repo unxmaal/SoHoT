@@ -40,8 +40,8 @@ SETTINGS = {"hooks": {"PreToolUse": [], "Stop": []}, "statusLine": {"type": "com
 
 @pytest.fixture(autouse=True)
 def _macos(monkeypatch):
-    from harness import watchdog
-    monkeypatch.setattr(watchdog.sys, "platform", "darwin")
+    from harness import watchdog_hands
+    monkeypatch.setattr(watchdog_hands.sys, "platform", "darwin")
 
 class Runner:
     """Fake subprocess.run: `claude --version` answers, osascript is recorded."""

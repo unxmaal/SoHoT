@@ -119,11 +119,13 @@ def requests(conn, since: float, until: float) -> tuple[list[tuple], dict]:
 
 
 def jobs(conn, since: float, until: float, alias: dict) -> list[tuple]:
-    """(start, end, model, 'job') per candidate a queued job named, over the part of the job inside the window."""
+    """(start, end, model, 'job') per candidate a job this machine ran named, over the part of the job inside the window."""
+    from harness import machine_scope
     out = []
+    here, mine = machine_scope.here(conn, "jobs.claimed")
     for argv, start, end in conn.execute(
             "SELECT argv, started_at, finished_at FROM jobs WHERE started_at IS NOT NULL AND started_at <= ? "
-            "AND COALESCE(finished_at, ?) >= ?", (until, until, since)):
+            f"AND COALESCE(finished_at, ?) >= ? AND {here}", (until, until, since, *mine)):
         try:
             args = json.loads(argv or "[]")
         except ValueError:

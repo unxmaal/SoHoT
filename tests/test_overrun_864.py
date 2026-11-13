@@ -9,9 +9,10 @@ import pytest
 
 from evals import watch
 from harness import power
-from harness import watchdog as wd
+from harness import watchdog as wd, watchdog_hands
 from harness.commands import measure as measure_cmd
 from harness.commands.measure import Launched
+from harness.memory_store.migrations import v102
 from tests.test_resume_813 import CH, INC, Eval, _measure, _pauses, _rows, world  # noqa: F401
 from tests.test_watchdog import ids, judged, owned_eval
 
@@ -365,19 +366,19 @@ def test_an_abandoned_directory_the_watchdog_stopped_as_an_overrun_is_left(monke
 
 
 def test_the_watchdog_names_its_criterion_in_the_run_directory_before_it_signals(monkeypatch, tmp_path):
-    from harness import workqueue
+    from harness import job_procs
     from tests.test_watchdog import finding, run
     seen = []
-    monkeypatch.setattr(workqueue, "stop_group", lambda pgid, **kw: seen.append(watch.stop_reason(tmp_path)) or "term")
-    out = wd.Hands().do(wd.STOP, finding("overrun", pgid=12345, progress=run(1, tmp=tmp_path)))
+    monkeypatch.setattr(job_procs, "stop_group", lambda pgid, **kw: seen.append(watch.stop_reason(tmp_path)) or "term")
+    out = watchdog_hands.Hands().do(wd.STOP, finding("overrun", pgid=12345, progress=run(1, tmp=tmp_path)))
     assert out == "group 12345: term" and seen == ["overrun"]
-    assert wd.Hands().do(wd.STOP, finding("no_progress", pgid=12345, progress=run(1, tmp=tmp_path)))
+    assert watchdog_hands.Hands().do(wd.STOP, finding("no_progress", pgid=12345, progress=run(1, tmp=tmp_path)))
     assert seen == ["overrun", "no_progress"]
 
 
 def test_a_stop_refused_for_want_of_a_group_names_no_reason(tmp_path):
     from tests.test_watchdog import finding, run
-    assert wd.Hands().do(wd.STOP, finding("overrun", pgid=None, progress=run(1, tmp=tmp_path))).startswith("refused")
+    assert watchdog_hands.Hands().do(wd.STOP, finding("overrun", pgid=None, progress=run(1, tmp=tmp_path))).startswith("refused")
     assert watch.stop_reason(tmp_path) == ""
 
 
@@ -400,6 +401,7 @@ def test_an_overrun_stop_only_the_store_records_is_not_resumed(monkeypatch, worl
             conn.execute("INSERT INTO watchdog_actions (at, criterion, subject, action, escalated, dry_run, evidence, "
                          "outcome) VALUES (?, ?, 'eval pgid 1', 'stop', 1, ?, ?, ?)",
                          (at, criterion, dry_run, json.dumps({"command": command}), outcome))
+        v102.data(conn)
         conn.commit()
     finally:
         conn.close()
@@ -416,6 +418,7 @@ def test_the_stored_overrun_is_found_for_a_path_json_escapes(world, tmp_path, na
         conn.execute("INSERT INTO watchdog_actions (at, criterion, subject, action, escalated, dry_run, evidence, "
                      "outcome) VALUES (0, 'overrun', 'eval pgid 1', 'stop', 1, 0, ?, 'group 1: term')",
                      (json.dumps({"command": f"uv run python -m evals.run --out {out} --resume"}),))
+        v102.data(conn)
         conn.commit()
         assert wd.overrun_stopped(conn, out) and not wd.overrun_stopped(conn, tmp_path / "other")
     finally:

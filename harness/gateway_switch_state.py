@@ -31,6 +31,8 @@ GAVE_UP = "gave_up"
 RAISED = "raised"
 DIED = "died"
 SUPERSEDED = "superseded"
+#: A switch the worker started again whose process never claimed its row in time; a death for the respawn bound. #1904.
+UNCLAIMED = "unclaimed"
 
 #: (state it leaves, state it enters) -> the reasons that move may carry. Nothing leaves serving or failed.
 MOVES: dict[tuple[str, str], frozenset[str]] = {
@@ -40,7 +42,7 @@ MOVES: dict[tuple[str, str], frozenset[str]] = {
     (WRITING, RESTARTING): frozenset({WRITTEN}),
     (RESTARTING, SERVING): frozenset({SERVED, FINISHED}),
     (REQUESTED, SERVING): frozenset({UNCHANGED}),
-    (REQUESTED, FAILED): frozenset({NO_RESTART, RAISED, DIED}),
+    (REQUESTED, FAILED): frozenset({NO_RESTART, RAISED, DIED, UNCLAIMED}),
     (WRITING, FAILED): frozenset({RAISED, DIED, SUPERSEDED}),
     (RESTARTING, FAILED): frozenset({GAVE_UP, RAISED, DIED, SUPERSEDED}),
 }
@@ -116,6 +118,12 @@ def live(conn) -> dict | None:
     """The switch holding the in-flight slot, or None."""
     row = conn.execute("SELECT * FROM gateway_switch_runs WHERE live = 1").fetchone()
     return dict(row) if row else None
+
+
+def deaths(conn, requested_at) -> int:
+    """How many switches for the adoption requested at `requested_at` died or never claimed their row. #1899, #1904."""
+    return int(conn.execute("SELECT COUNT(*) FROM gateway_switch_runs WHERE requested_at = ? AND state = ? "
+                            "AND reason IN (?, ?)", (requested_at, FAILED, DIED, UNCLAIMED)).fetchone()[0])
 
 
 def get(conn, rid) -> dict | None:

@@ -68,10 +68,9 @@ def refused(frm, to: str, reason: str) -> str:
 
 
 def _where(sw: dict) -> tuple[str, tuple]:
-    mid = sw["machine_id"]
-    same = "machine_id IS NULL" if mid is None else "machine_id = ?"
-    return (f"knob = ? AND lane = ? AND spec = ? AND {same}",
-            (sw["knob"], sw["lane"], sw["spec"], *(() if mid is None else (mid,))))
+    from harness import machine_scope
+    here, mine = machine_scope.where("knob_sweeps.mine", sw["machine_id"])
+    return f"knob = ? AND lane = ? AND spec = ? AND {here}", (sw["knob"], sw["lane"], sw["spec"], *mine)
 
 
 def _open(conn, sw: dict) -> dict | None:
@@ -98,7 +97,8 @@ def _move(conn, sw: dict, frm, to: str, reason: str, commit: bool = True, **cols
         raise IllegalMove(f"a sweep move does not set {', '.join(sorted(unknown))}")
     if frm is not None:
         sets = "".join(f", {k} = ?" for k in cols)
-        cas, was = (" AND jobs = ?", (sw["jobs"],)) if reason == RESUMED else ("", ())
+        # A move out of an open sweep was decided on the jobs it read; a resume since then changed them. #1862.
+        cas, was = (" AND jobs = ?", (sw["jobs"],)) if frm == OPEN else ("", ())
         won = conn.execute(f"UPDATE knob_sweeps SET outcome = ?{sets} WHERE id = ? AND outcome = ?{cas}",
                            (to, *cols.values(), int(sw["id"]), frm, *was)).rowcount == 1
         if commit:
@@ -637,9 +637,9 @@ def _resume(conn, sw: dict, value, job: dict, add) -> dict | None:
     """Queue a paused value's continuation and point the open sweep at it in one transaction; None if another writer moved the sweep. #1733, #1755."""
     from harness import job_state as js
     from harness import paths, runs
-    from harness import workqueue as wq
+    from harness import job_settle
     run = runs.for_job(conn, int(job["id"]))
-    argv = job["argv"] if run is None else wq.resume_argv(job["argv"], runs.run_dir(run["path"]))
+    argv = job["argv"] if run is None else job_settle.resume_argv(job["argv"], runs.run_dir(run["path"]))
     jobs: list = []
 
     def own(rows):
@@ -659,9 +659,13 @@ def _resume(conn, sw: dict, value, job: dict, add) -> dict | None:
 def settle(conn, *, now: float, write: bool = True, add=None, resumed: list | None = None) -> list[dict]:
     """Decide every open sweep whose jobs will run nothing more; a paused job is resumed into `resumed`, never judged. #1733."""
     from harness import job_state as js
+    from harness import machine_scope
     from harness import workqueue as wq
     out = []
-    for r in conn.execute("SELECT * FROM knob_sweeps WHERE outcome = ? ORDER BY id", (OPEN,)).fetchall():
+    # Another machine's sweep is its own to judge, and its paused jobs to resume into its queue. #1771.
+    here, mine = machine_scope.here(conn, "knob_sweeps.mine")
+    for r in conn.execute(f"SELECT * FROM knob_sweeps WHERE outcome = ? AND {here} ORDER BY id",
+                          (OPEN, *mine)).fetchall():
         sw = dict(r)
         jobs = json.loads(sw["jobs"])
         states = [_job_state(conn, j) for _, j in jobs]
@@ -683,6 +687,15 @@ def settle(conn, *, now: float, write: bool = True, add=None, resumed: list | No
         out.append({"id": sw["id"], "knob": sw["knob"], "lane": sw["lane"], "spec": sw["spec"],
                     "outcome": outcome, "chosen": chosen, "cost": cost, "detail": detail})
     return out
+
+
+def decided(conn) -> list[dict]:
+    """This machine's settled sweeps, oldest first. #1771."""
+    from harness import machine_scope
+    here, mine = machine_scope.here(conn, "knob_sweeps.mine")
+    return [dict(r) for r in conn.execute(
+        "SELECT knob, lane, spec, outcome, chosen, detail, settled_at FROM knob_sweeps "
+        f"WHERE outcome != ? AND {here} ORDER BY id", (OPEN, *mine)).fetchall()]
 
 
 def check(conn, *, now: float | None = None, dry_run: bool = False, add=None) -> dict:

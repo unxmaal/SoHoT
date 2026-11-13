@@ -207,9 +207,23 @@ def text_enabled(conn) -> bool:
     return bool(got) and got[0] == "1"
 
 
-def set_text(conn, on: bool) -> None:
+def set_text(conn, on: bool) -> int:
+    """Turn text samples on or off; off also deletes the kept ones and returns how many. #1784."""
     conn.execute("INSERT OR REPLACE INTO meta VALUES (?, ?)", (TEXT_KEY, "1" if on else "0"))
+    gone = 0 if on else conn.execute("DELETE FROM gateway_samples").rowcount or 0
     conn.commit()
+    return gone
+
+
+def samples(conn, n: int, lane: str | None = None) -> list[dict]:
+    """The newest `n` kept text samples with the request each came from, newest first. #1784."""
+    sql = ("SELECT r.id, r.at, r.alias, r.lane, r.purpose, r.error_class, s.prompt, s.completion "
+           "FROM gateway_samples s JOIN gateway_requests r ON r.id = s.request_id")
+    args: tuple = ()
+    if lane:
+        sql += " WHERE r.lane = ?"
+        args = (lane,)
+    return [dict(r) for r in conn.execute(sql + " ORDER BY s.request_id DESC LIMIT ?", (*args, int(n)))]
 
 
 def target():

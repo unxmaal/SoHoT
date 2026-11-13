@@ -14,6 +14,9 @@ from collections import Counter
 
 from harness import lanes as L
 
+#: Seconds a re-run's job may wait pending before the reverification settles unrun and the job is cancelled. #1765.
+PENDING_EXPIRY_S = 259200.0
+
 #: Days without a passing run before a served model is due again; per lane in meta.
 DEFAULT_DAYS = 7.0
 DAYS_KEY = "reverify_days:{}"
@@ -310,7 +313,11 @@ def _harness_moved(conn, last: dict) -> bool:
     """An unrun re-run whose job stored no run, and the code here was committed or deployed after that job started. #1495, #1506."""
     if last["outcome"] != UNRUN or last["run_id"] is not None or last["job_id"] is None:
         return False
-    job = conn.execute("SELECT started_at FROM jobs WHERE id = ?", (last["job_id"],)).fetchone()
+    job = conn.execute("SELECT started_at, reason FROM jobs WHERE id = ?", (last["job_id"],)).fetchone()
+    from harness import job_state as js
+    if job is not None and job["reason"] == js.EXPIRED:
+        # It expired pending (#1765): no code ran, so new code is no reason to queue it again before days_for.
+        return False
     ran = (job["started_at"] if job else None) or last["queued_at"]
     from harness import deploy
     # A queue deploy's finish is when the code changed here; a commit can predate the job and deploy after it. #1506.
@@ -524,9 +531,9 @@ def _resume(conn, rv: dict, job: dict, now: float, add) -> dict | None:
     """Queue a paused re-run's continuation and repoint the reverification in one commit; None if another settle did. #1403, #1755."""
     from harness import job_state as js
     from harness import paths, runs
-    from harness import workqueue as wq
+    from harness import job_settle
     run = runs.for_job(conn, int(job["id"]))
-    argv = job["argv"] if run is None else wq.resume_argv(job["argv"], runs.run_dir(run["path"]))
+    argv = job["argv"] if run is None else job_settle.resume_argv(job["argv"], runs.run_dir(run["path"]))
 
     def own(jobs):
         return conn.execute("UPDATE reverifications SET job_id = ? WHERE id = ? AND job_id = ?",
@@ -548,6 +555,32 @@ def _settle(conn, rv_id: int, outcome: str, **cols) -> bool:
                         (outcome, *cols.values(), rv_id)).rowcount == 1
 
 
+def _expired(conn, rv: dict, job: dict | None, now: float, write: bool) -> dict | None:
+    """A re-run whose job waited pending past PENDING_EXPIRY_S: job cancelled, settled unrun, one alert; None while it may wait. #1765."""
+    from harness import cuts, reasons
+    from harness import job_state as js
+    from harness import workqueue as wq
+    waited = now - float(rv["queued_at"] or now)
+    if job is None or job["state"] != js.PENDING or waited < PENDING_EXPIRY_S:
+        return None
+    name = wq.label(job["id"])
+    detail = (f"job {name} waited {waited / 3600.0:.0f} h pending, past reverify_pending_expiry "
+              f"({PENDING_EXPIRY_S / 3600.0:.0f} h), and was cancelled; it waited on: {job.get('note') or 'the queue'}")
+    if write:
+        if not js.move(conn, job["id"], js.PENDING, js.CANCELLED, js.EXPIRED,
+                       f"cancelled: reverification {rv['id']} waited past reverify_pending_expiry"):
+            return None
+        if not _settle(conn, rv["id"], UNRUN, reason=reasons.HARNESS, failure_class="", detail=detail[:300],
+                       run_id=None, settled_at=now):
+            return None
+        conn.commit()
+        cuts.cut("reverify_pending_expiry", f"reverify {rv['lane']}: job {name} never started", dropped=1, conn=conn)
+        from harness import paused_jobs
+        paused_jobs._alert(f"reverify {rv['lane']} ({rv['spec']}) settled unrun: {detail}")
+    return {"id": rv["id"], "lane": rv["lane"], "spec": rv["spec"], "outcome": UNRUN, "reason": reasons.HARNESS,
+            "failure_class": "", "detail": detail, "run_id": None}
+
+
 def settle(conn, *, now: float, write: bool = True, add=None, resumed: list | None = None) -> list[dict]:
     """Judge every queued re-run whose job finished; a paused one is resumed into `resumed`, never judged. #1403."""
     from harness import workqueue as wq
@@ -555,6 +588,10 @@ def settle(conn, *, now: float, write: bool = True, add=None, resumed: list | No
     for r in conn.execute("SELECT * FROM reverifications WHERE outcome = '' ORDER BY id").fetchall():
         rv = dict(r)
         job = wq.get(rv["job_id"], conn=conn) if rv["job_id"] is not None else None
+        expired = _expired(conn, rv, job, now, write)
+        if expired is not None:
+            out.append(expired)
+            continue
         if job is not None and job["state"] in (wq.PENDING, wq.RUNNING):
             continue
         if job is not None and job["state"] == wq.PAUSED:

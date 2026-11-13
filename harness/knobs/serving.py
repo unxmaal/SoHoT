@@ -15,6 +15,12 @@ KNOBS = [
        note="seconds a warm-up asks again while nothing listens at the gateway before every case is refused_by_gateway; "
             "jobs 0141/0142 met a router restart that bound :8082 within 5 s (0143 warmed at 21:07:32), and a "
             "restart is given gguf.READY_TIMEOUT_S 120 s to answer (#1012, #1181)"),
+    _k("gateway_probe_timeout", ["harness/gateway_switch.py:PROBE_TIMEOUT_S"], [2.0, 5.0, 15.0], unit="s",
+       note="seconds a gateway switch waits on /health/backlog or /model/info before the probe says it gave no answer (#1634)"),
+    _k("gateway_respawn_claim", ["harness/gateway_respawn.py:CLAIM_S"], [60.0, 300.0, 900.0], unit="s",
+       note="seconds a gateway switch the worker started again may take to claim its row while its process is alive or cannot be judged, before it is settled failed (unclaimed); a dead one is settled at once (#1904)"),
+    _k("gateway_switch_respawns", ["harness/gateway_switch.py:RESPAWNS"], [1, 0, 2], unit="count",
+       note="times the worker starts again a gateway switch whose process died, per adoption request, before it alerts; 0 alerts at the first death, 2 lets a second respawn drain and restart the gateway again (#1899)"),
     _k("gguf_keep_array", ["harness/context.py:_KEEP_ARRAY"], [1024, 4096, 65536],
        note="GGUF metadata arrays longer than this are skipped unread: tokenizer vocabularies, never a per-layer array (#498)"),
     _k("gpu_fraction", ["harness/memory.py:GPU_FRACTION"], [0.65, 0.75, 0.85],
