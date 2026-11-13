@@ -448,11 +448,13 @@ def _bound(node) -> set:
     return out
 
 
-def _uses(node) -> tuple[set, list]:
-    """(bare names loaded, attribute chains as name lists) in a statement or expression."""
-    chains, inner, heads = [], set(), set()
+def _uses(node, imports: list | None = None) -> tuple[set, list]:
+    """(bare names loaded, attribute chains as name lists) in a statement or expression; nested imports go to `imports`."""
+    chains, inner, heads, loads = [], set(), set(), []
     for sub in ast.walk(node):
-        if isinstance(sub, ast.Attribute) and id(sub) not in inner:
+        if isinstance(sub, ast.Attribute):
+            if id(sub) in inner:
+                continue
             chain, cur = [], sub
             while isinstance(cur, ast.Attribute):
                 inner.add(id(cur))
@@ -461,9 +463,12 @@ def _uses(node) -> tuple[set, list]:
             if isinstance(cur, ast.Name):
                 heads.add(id(cur))
                 chains.append([cur.id, *chain])
-    names = {sub.id for sub in ast.walk(node)
-             if isinstance(sub, ast.Name) and isinstance(sub.ctx, ast.Load) and id(sub) not in heads}
-    return names, chains
+        elif isinstance(sub, ast.Name):
+            if isinstance(sub.ctx, ast.Load):
+                loads.append(sub)
+        elif imports is not None and isinstance(sub, (ast.Import, ast.ImportFrom)) and sub is not node:
+            imports.append(sub)
+    return {sub.id for sub in loads if id(sub) not in heads}, chains
 
 
 #: (lane, root, packages, registry, also) -> ({probed path: sha256 or None}, digest); reused while every probed byte matches.
@@ -523,11 +528,10 @@ def _grader_digest(lane: str, root: Path, packages, registry, also, probed: dict
 
     def visit(mod, node, key):
         out[f"{mod.name}:{key}"] = _text_sha(mod.source(node))
-        local = {}
-        for sub in ast.walk(node):
-            if isinstance(sub, (ast.Import, ast.ImportFrom)) and sub is not node:
-                local.update(mod.bind_import(sub))
-        names, chains = _uses(node)
+        local, nested = {}, []
+        names, chains = _uses(node, nested)
+        for sub in nested:
+            local.update(mod.bind_import(sub))
         for n in names:
             todo.append((mod.name, n, local.get(n)))
         for chain in chains:
