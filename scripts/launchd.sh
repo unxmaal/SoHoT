@@ -393,7 +393,7 @@ deploy() {
 generate() {
   local dest="${1:-$LH_HOME/launchd}"
   mkdir -p "$dest" "$LH_LOGS"
-  # env.sh once per run, not per unit: each run is about 40 processes, and Git bash pays ~40 ms a fork. #1881.
+  # env.sh once per run, not per unit: each run spawns dozens of processes, and a fork is slow under Git bash. #1881.
   UNIT_HF_ENV="$(_hf_env)"
   for service in $(units); do
     write_plist "$service" "$dest"
