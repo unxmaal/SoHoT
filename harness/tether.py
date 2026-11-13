@@ -4,6 +4,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import signal
 import subprocess
 import sys
 from pathlib import Path
@@ -65,5 +66,5 @@ def untie(watcher) -> None:
     if watcher is None:
         return
     with contextlib.suppress(OSError):
-        watcher.kill()
+        watcher.kill() if hasattr(signal, "SIGKILL") else watcher.terminate()
     watcher.wait()
