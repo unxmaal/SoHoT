@@ -61,7 +61,7 @@ class Hands(wd.Hands):
 
     def notify(self, f):
         self.done.append((f.criterion, wd.NOTIFY))
-        return f"{wd.NOTIFIED}: {f.criterion}"
+        return wd.Said(f"{wd.NOTIFIED}: {f.criterion}", notified=True)
 
     def pause(self, f):
         self.done.append((f.criterion, wd.PAUSE))

@@ -93,7 +93,8 @@ jobs:
         # The same command a person runs locally. CI running something else is
         # how a repo gets a green badge and a broken checkout.
         env:
-          PYTEST_ADDOPTS: --durations=60 --durations-min=0.5 --junitxml=/tmp/junit.xml
+          # The nightly searches the declared lifecycles deeper, randomised (#1766).
+          PYTEST_ADDOPTS: --durations=60 --durations-min=0.5 --junitxml=/tmp/junit.xml ${{ github.event_name == 'schedule' && '--hypothesis-profile=deep' || '' }}
           # Each test's start and end as it happens, so a cancelled run still says where its time went (#1146).
           SOHOT_TEST_LOG: /tmp/test-times.tsv
         # user+sys over real x cores says whether the runner's cores were busy or waiting (#1146).

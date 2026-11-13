@@ -277,20 +277,30 @@ def _unknown(call_id: str) -> UnknownCall:
 
 def outcome(conn, call_id: str, what: str, why: str = "", at: float | None = None) -> dict:
     """Set a delegation's outcome; re-recording overwrites and keeps the old one in `why`."""
-    what = _what(what)
-    row = conn.execute("SELECT outcome, why FROM delegations WHERE call_id = ?",
-                       (call_id,)).fetchone()
-    if row is None:
-        raise _unknown(call_id)
-    prev, prev_why = row["outcome"], row["why"]
-    note_ = ""
-    if prev is not None:
-        why = f"{why} (was {prev}{': ' + prev_why if prev_why else ''})".strip()
-        note_ = f"overwrote {prev}"
-    conn.execute("UPDATE delegations SET outcome = ?, why = ?, outcome_at = ? WHERE call_id = ?",
-                 (what, why, time.time() if at is None else at, call_id))
+    what, said = _what(what), why
+    while True:
+        row = conn.execute("SELECT outcome, why FROM delegations WHERE call_id = ?",
+                           (call_id,)).fetchone()
+        if row is None:
+            raise _unknown(call_id)
+        prev, prev_why = row["outcome"], row["why"]
+        why, note_ = said, ""
+        if prev is not None:
+            why = f"{said} (was {prev}{': ' + prev_why if prev_why else ''})".strip()
+            note_ = f"overwrote {prev}"
+        if _set_outcome(conn, call_id, prev, what, why, time.time() if at is None else at):
+            break
     conn.commit()
     return {"call_id": call_id, "outcome": what, "why": why, "previous": prev, "note": note_}
+
+
+def _set_outcome(conn, call_id: str, frm: str | None, to: str, why: str, at: float) -> bool:
+    """The one writer of a delegation's outcome: compare-and-swap on the outcome it leaves. #1739."""
+    if frm is None:
+        return conn.execute("UPDATE delegations SET outcome = ?, why = ?, outcome_at = ? "
+                            "WHERE call_id = ? AND outcome IS NULL", (to, why, at, call_id)).rowcount == 1
+    return conn.execute("UPDATE delegations SET outcome = ?, why = ?, outcome_at = ? WHERE call_id = ? AND outcome = ?",
+                        (to, why, at, call_id, frm)).rowcount == 1
 
 
 def tell(conn, call_id: str, what: str, why: str = "") -> dict:
@@ -656,9 +666,7 @@ def close(conn, root: Path | None = None, now: float | None = None, expiry_h: fl
         if what is None:
             got[PENDING] += 1
             continue
-        cur = conn.execute("UPDATE delegations SET outcome = ?, why = ?, outcome_at = ? "
-                           "WHERE call_id = ? AND outcome IS NULL", (what, why, now, call_id))
-        got[what] += cur.rowcount
+        got[what] += _set_outcome(conn, call_id, None, what, why, now)
     from harness import cuts
     if expired:
         cuts.cut("delegation_expiry", "delegations closed unknown at expiry", value=expiry_s / 3600,

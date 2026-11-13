@@ -136,6 +136,21 @@ def test_precheck_runs_only_its_cheap_detectors_and_counts_no_skipped_class_row_
     assert set(ran) == registry.PRECHECK_DETECTORS and registry.PRECHECK_DETECTORS < named
 
 
+def test_a_gauntlet_backlog_row_added_after_the_merge_base_is_named(tmp_path):
+    from tests.gauntlet import registry
+    snap = registry.REGISTRY.snapshot_file.relative_to(registry.REPO).as_posix()
+    cid = "identity-by-name-not-by-content"
+    root = tree(tmp_path, {"harness/u.py": "X = 1\n", "tests/gauntlet/backlog.txt": "",
+                           snap: registry.REGISTRY.snapshot_file.read_text(encoding="utf-8")})
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "base")
+    git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
+    assert precheck.detector_bindings(root) == []
+    tree(root, {"tests/gauntlet/backlog.txt": f"{cid} harness/u.py:f\n"})
+    got = text_of(precheck.detector_bindings(root))
+    assert f"{cid} harness/u.py:f joined the backlog after the merge base with origin/main" in got
+
+
 def test_an_unregistered_move_table_is_named_with_its_move_table_line(tmp_path):
     root = tree(tmp_path, {"harness/thing_state.py": 'A, B = "a", "b"\nMOVES = {(A, B), (B, A)}\n'})
     got = text_of(precheck.move_tables(root))
@@ -205,7 +220,7 @@ def test_code_the_scaffold_writes_passes_every_registration_ratchet_unchanged(tm
     assert cli.main(["scaffold", "--root", str(root), "--issue", "1697", "unit", "fixture-1697", "soh fixture-1697",
                      "A unit the scaffold test writes", "--hours", "5", "--table", "jobs", "--time-col", "finished_at"]) == 0
     got = _precheck(root)
-    assert f"{root}/harness" in subprocess.run([sys.executable, "-c", "import harness; print(harness.__file__)"],
+    assert str(root / "harness") in subprocess.run([sys.executable, "-c", "import harness; print(harness.__file__)"],
                                                cwd=root, capture_output=True, text=True).stdout, "the copy's code ran"
     assert got.returncode == 0, got.stdout[-4000:] + got.stderr[-2000:]
     caps = (root / scaffold.CAPABILITIES).read_text(encoding="utf-8")

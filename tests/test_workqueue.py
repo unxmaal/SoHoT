@@ -5,7 +5,7 @@ import sys
 
 import pytest
 
-from harness import cli, exclusive, workqueue as wq
+from harness import cli, exclusive, quiesce, workqueue as wq
 from tests import job_rows
 
 
@@ -418,13 +418,13 @@ def test_quiesce_waits_for_the_running_job_and_reports_it_was_not_paused():
     """#577: install must not boot out the worker under a running job."""
     answers = iter([True, True, False])
     naps = []
-    assert wq.quiesce(sleep=naps.append, is_running=lambda: next(answers)) is False
+    assert quiesce.quiesce(sleep=naps.append, is_running=lambda: next(answers)) is False
     assert len(naps) == 2 and wq.paused()
 
 
 def test_quiesce_keeps_the_owners_pause():
     wq.pause()
-    assert wq.quiesce(sleep=lambda _: None, is_running=lambda: False) is True
+    assert quiesce.quiesce(sleep=lambda _: None, is_running=lambda: False) is True
     assert wq.paused()
 
 

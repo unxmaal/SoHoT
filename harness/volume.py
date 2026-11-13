@@ -40,8 +40,8 @@ class VolumeError(RuntimeError):
 
 
 def _default_quiesce() -> bool:
-    from harness import workqueue
-    return workqueue.quiesce()
+    from harness import quiesce
+    return quiesce.quiesce()
 
 
 def _default_resume() -> None:
@@ -186,7 +186,11 @@ def stop(vol: str, ops: Ops) -> dict:
     """Quiesce the queue, boot out every service that reads the volume, then check lsof. #612."""
     if state_path().exists():
         raise VolumeError(f"{state_path()} already records a stop; run `soh volume start` first")
-    was_paused = ops.quiesce()
+    from harness import quiesce
+    try:
+        was_paused = ops.quiesce()
+    except quiesce.NotQuiesced as exc:
+        raise VolumeError(f"nothing stopped: {exc}") from exc
     units = loaded(ops)
     held, _ = holding_services(vol, ops, units)
     wanted = held | {f"{PREFIX}.{s}" for s in READERS}

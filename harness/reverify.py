@@ -541,6 +541,13 @@ def _resume(conn, rv: dict, job: dict, now: float, add) -> dict | None:
             "out": None if run is None else str(runs.run_dir(run["path"]))}
 
 
+def _settle(conn, rv_id: int, outcome: str, **cols) -> bool:
+    """The one writer of a reverification's outcome: compare-and-swap off unsettled; False if another settled it. #1739."""
+    sets = "".join(f", {k} = ?" for k in cols)
+    return conn.execute(f"UPDATE reverifications SET outcome = ?{sets} WHERE id = ? AND outcome = ''",
+                        (outcome, *cols.values(), rv_id)).rowcount == 1
+
+
 def settle(conn, *, now: float, write: bool = True, add=None, resumed: list | None = None) -> list[dict]:
     """Judge every queued re-run whose job finished; a paused one is resumed into `resumed`, never judged. #1403."""
     from harness import workqueue as wq
@@ -557,10 +564,9 @@ def settle(conn, *, now: float, write: bool = True, add=None, resumed: list | No
                     resumed.append(got)
             continue
         outcome, reason, cls, detail, rid = judge(conn, rv, job)
-        if write:
-            conn.execute("UPDATE reverifications SET outcome = ?, reason = ?, "
-                         "failure_class = ?, detail = ?, run_id = ?, settled_at = ? "
-                         "WHERE id = ?", (outcome, reason, cls, detail[:300], rid, now, rv["id"]))
+        if write and not _settle(conn, rv["id"], outcome, reason=reason, failure_class=cls, detail=detail[:300],
+                                 run_id=rid, settled_at=now):
+            continue
         out.append({"id": rv["id"], "lane": rv["lane"], "spec": rv["spec"],
                     "outcome": outcome, "reason": reason, "failure_class": cls,
                     "detail": detail, "run_id": rid})

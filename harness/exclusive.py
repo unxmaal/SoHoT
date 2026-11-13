@@ -388,12 +388,6 @@ def _gpu_leases(conn) -> list[dict]:
     return [h for h, st in rows if not (st == LAPSED and h["job_id"] in live_jobs)]
 
 
-def _machine_backend(there: Path) -> str:
-    from harness import store
-    got = (os.environ.get(paths.MACHINE_STORE_ENV) or store.marker(there).get("backend") or store.SQLITE).strip().lower()
-    return store.POSTGRES if got == store.POSTGRES else store.SQLITE
-
-
 @contextlib.contextmanager
 def _machine():
     """A connection holding this machine's gpu leases, home() at its home: from a scratch eval home, the live one read-only. #1703."""
@@ -406,9 +400,9 @@ def _machine():
             conn.close()
         return
     from harness import store
-    with paths.seated(there), store.pinned(_machine_backend(there)):
+    with store.on_machine():
         try:
-            conn = None if store.backend() == store.SQLITE and not (there / "discovery.db").exists() else store.open_ro()
+            conn = store.machine_ro()
         except Exception as exc:  # noqa: BLE001 - any failure to open is the machine's store being unreachable
             raise StoreDown(f"the machine's store in {there} is unreachable, so its gpu lease cannot be checked: {exc}") from exc
         try:

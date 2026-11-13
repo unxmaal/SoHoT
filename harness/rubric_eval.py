@@ -162,7 +162,8 @@ def request(rubric: Rubric, text: str, model: str) -> dict:
 
 
 def evaluate(rubric: Rubric, text: str, model: str, gateway: str,
-             post=httpx.post, timeout: float = 300.0) -> Verdict:
+             post=None, timeout: float = 300.0) -> Verdict:
+    post = post or httpx.post
     from harness import cuts
     t0 = time.monotonic()
     raw = ""
@@ -199,7 +200,8 @@ def deadline_s(candidates, items: int) -> float:
     return len(candidates) * items * float(knobs.resolve("harness/rubric_eval.py:evaluate(timeout)"))
 
 
-def run(evalset: EvalSet, candidates, gateway: str, post=httpx.post) -> dict:
+def run(evalset: EvalSet, candidates, gateway: str, post=None) -> dict:
+    post = post or httpx.post
     gold_labels = gold(evalset.root)
     if not gold_labels:
         raise ValueError("no item has a decided label yet; label some first")

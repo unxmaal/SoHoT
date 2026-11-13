@@ -573,14 +573,33 @@ def backup(db: Path, dest: Path) -> Path:
     return dest
 
 
+def switch_root(record: Path) -> Path:
+    """The release the record installs when it ships a switch, so its own orchestration runs; else this one. #1786."""
+    release = str(_read(Path(record)).get("release") or "")
+    if release and (Path(release) / "harness" / "deploy_switch.py").is_file():
+        return Path(release).resolve()
+    return Path(deploy_switch.__file__).resolve().parents[1]
+
+
+def _base_python(root: Path) -> str:
+    venv = root / ".venv" / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
+    return os.path.realpath(venv if venv.exists() else sys.executable)
+
+
 def switch_argv(record: Path) -> list[str]:
-    """This release's deploy_switch as a file under the venv's base interpreter, isolated: no venv, no PYTHONPATH."""
-    return [os.path.realpath(sys.executable), "-I", str(Path(deploy_switch.__file__).resolve()), str(record)]
+    """The installed release's deploy_switch as a file under its venv's base interpreter, isolated: no venv, no PYTHONPATH."""
+    root = switch_root(record)
+    return [_base_python(root), "-I", str(root / "harness" / "deploy_switch.py"), str(record)]
 
 
 def spawn_switch(record: Path, release_for_log: Path) -> str:
     """Start deploy_switch on the record so it outlives the worker: a launchd one-shot on macOS, else detached."""
     argv = switch_argv(record)
+    return launch(argv, release_for_log, Path(argv[2]).parents[1])
+
+
+def launch(argv: list[str], release_for_log: Path, root: Path) -> str:
+    """Start argv on the switch's launchd one-shot label on macOS, else detached, so it outlives the worker."""
     log = paths.logs() / "deploy.log"
     if sys.platform == "darwin":
         import plistlib
@@ -588,7 +607,9 @@ def spawn_switch(record: Path, release_for_log: Path) -> str:
         plist.parent.mkdir(parents=True, exist_ok=True)
         keep = {k: os.environ[k] for k in ("PATH", "HOME", paths.ENV_VAR) if os.environ.get(k)}
         # A python program would be its own privacy identity, and its first read of /Volumes waits on a dialog. #1516.
-        wrapper = Path(deploy_switch.__file__).resolve().parents[1] / "scripts" / "deploy-switch.sh"
+        wrapper = Path(root) / "scripts" / "deploy-switch.sh"
+        if not wrapper.is_file():
+            wrapper = Path(deploy_switch.__file__).resolve().parents[1] / "scripts" / "deploy-switch.sh"
         plist.write_bytes(plistlib.dumps({
             "Label": SWITCH_LABEL, "ProgramArguments": [SWITCH_SHELL, str(wrapper), *argv], "RunAtLoad": True,
             "WorkingDirectory": str(release_for_log), "StandardOutPath": str(log), "StandardErrorPath": str(log),
@@ -626,8 +647,9 @@ def _quiesce(c, job_id, log, sleep=time.sleep) -> str:
 
 
 def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: Steps | None = None,
-        spawn=spawn_switch, now=time.time, sleep=time.sleep) -> int:
+        spawn=None, now=time.time, sleep=time.sleep) -> int:
     """The deploy job: build, smoke, back up and migrate, then hand off the switch; HANDED_OFF, or 1 when it stopped."""
+    spawn = spawn or spawn_switch
     from harness import memory_store as ms
     steps = steps or Steps()
     link = Path(link) if link is not None else paths.deploy_link()
@@ -910,8 +932,9 @@ def _resume(rec: dict, row: dict, now: float, spawn) -> str:
     return ""
 
 
-def settle(conn=None, now: float | None = None, alive=wq.alive, spawn=None) -> list[dict]:
+def settle(conn=None, now: float | None = None, alive=wq.alive, spawn=None, start=None) -> list[dict]:
     """Close every unfinished deploy of this machine whose job or switch has ended; a deploy job is never left running."""
+    from harness import deploy_repair
     now = time.time() if now is None else now
     spawn = spawn or respawn
     # Before the store is opened: a deploy that died after migrating leaves it ahead of this code. #1752.
@@ -940,8 +963,9 @@ def settle(conn=None, now: float | None = None, alive=wq.alive, spawn=None) -> l
             raise
         # The linked release's worker cannot open a store a deploy left ahead of it: recover() was all it could do.
         print(f"deploy settle: {exc}", file=sys.stderr)
-        return done
-    return settled
+        return done + deploy_repair.auto(now, alive, start)
+    # After the store pass, so a restore never runs under it. #1879.
+    return settled + deploy_repair.auto(now, alive, start)
 
 
 def _close_job(c, job_id, state: str, rc, note: str, now: float) -> None:

@@ -194,9 +194,8 @@ def _newest(conn, lane: str, *, claude: bool, digest: str | None = None, candida
 
 
 def _adopted(conn, lane: str):
-    got = conn.execute("SELECT candidate_id FROM adoptions WHERE lane = ? ORDER BY adopted_at DESC, id DESC LIMIT 1",
-                       (lane,)).fetchone()
-    return got[0] if got else None
+    from harness import adoption_state as st
+    return st.serving(conn, lane, typed={}).candidate_id
 
 
 def _load(conn, run_id: int, candidate: str) -> dict:

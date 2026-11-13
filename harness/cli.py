@@ -1134,6 +1134,12 @@ def build_parser() -> argparse.ArgumentParser:
                      help="the smallest per-cell pass-rate gain worth adopting for")
     ado.add_argument("--unscreened", action="store_true",
                      help="repo lane: measure a challenger whose repo screen has not survived, or has not run (#1353)")
+    ado.add_argument("--serving", action="store_true",
+                     help="print what every lane serves on every machine and the named state that says so (#1735)")
+    ado.add_argument("--withdraw", default="", metavar="WHY",
+                     help="with --lane: withdraw the lane's adoption on this machine, saying why; its configured "
+                          "default serves (#1735)")
+    ado.add_argument("--all-machines", action="store_true", help="with --withdraw: withdraw it on every machine")
     ado.set_defaults(func=adopt_cmd.cmd_adopt)
 
     rpl = sub.add_parser(

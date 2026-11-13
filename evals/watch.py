@@ -9,7 +9,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from harness import run_state
+from harness import proc_identity, run_state
 
 #: Exit status of a run paused at --stop-at or on request, rows checkpointed. #813.
 PAUSED = 75
@@ -304,7 +304,8 @@ class Progress:
                "specs": self.specs, "planned_s_per_case": self.eye.planned,
                "observed_s_per_case": {k: self.eye.observed(k) for k in self.eye.walls},
                "started_at": self.started, "last_progress_at": self.at,
-               "pid": os.getpid(), "pgid": pgid, "pause_file": str(self.path.parent / PAUSE_FILE),
+               "pid": os.getpid(), "pgid": pgid, "pid_started": proc_identity.started(os.getpid()),
+               "pause_file": str(self.path.parent / PAUSE_FILE),
                "run_id": run_id}
         tmp = self.path.with_suffix(".tmp")
         tmp.write_text(json.dumps(got, indent=2, default=str), encoding="utf-8")
@@ -325,3 +326,29 @@ def read_progress(outdir) -> dict:
         return json.loads((Path(outdir) / PROGRESS).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
+
+
+def claim(outdir, held: contextlib.ExitStack) -> str:
+    """Make this process the run dir's one writer until `held` closes; why it may not, or "". #1740."""
+    from harness import exclusive, proc_identity
+    out = Path(outdir)
+    fd = os.open(out / run_state.WRITER, os.O_RDWR | os.O_CREAT, 0o644)
+    if not exclusive._take(fd):
+        os.close(fd)
+        return f"another evals.run holds {out / run_state.WRITER}, which names it"
+    held.callback(_let_go, fd)
+    os.ftruncate(fd, 0)
+    os.write(fd, json.dumps(proc_identity.identity(os.getpid())).encode())
+    state = run_state.of(out)
+    pid = state.progress.get("pid")
+    # A writer of an older release takes no lock; its progress file names it. No file names no writer.
+    if (out / PROGRESS).exists() and state.name in run_state.LIVE and str(pid) != str(os.getpid()):
+        return f"{out} is {state.name} under pid {pid}{f' ({state.why})' if state.why else ''}"
+    return ""
+
+
+def _let_go(fd: int) -> None:
+    from harness import exclusive
+    os.lseek(fd, 0, os.SEEK_SET)
+    exclusive._release(fd)
+    os.close(fd)

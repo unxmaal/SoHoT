@@ -36,8 +36,8 @@ def _pauses(job: dict, criterion: str = ""):
         if criterion:
             conn = ms.connect()
             conn.execute("INSERT INTO watchdog_actions (at, criterion, subject, action, escalated, dry_run, evidence, "
-                         "outcome) VALUES (?, ?, ?, 'pause', 0, 0, '{}', 'paused')",
-                         (time.time() + 1, criterion, "job " + job["id"]))
+                         "outcome, result, job_id) VALUES (?, ?, ?, 'pause', 0, 0, '{}', 'paused', 'acted', ?)",
+                         (time.time() + 1, criterion, "job " + job["id"], int(job["id"])))
             conn.commit()
             conn.close()
         return types.SimpleNamespace(returncode=watch.PAUSED)
