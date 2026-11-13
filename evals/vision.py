@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from operator import itemgetter
 from pathlib import Path
 
+from harness.atomic_file import replace
 from harness.checks import shot_scale as ss
 
 CREDIT = "CineScale (Savardi et al.), Mendeley Data, DOI 10.17632/th46h4vdwd.1, CC BY 4.0"
@@ -290,7 +291,7 @@ def import_film(labels_csv, source, film: str, frames: int | None = None, height
         for t, at, p in zip(picks, times, made):
             fid = f"{film}-{t:05d}"
             dest = stage / f"{fid}.png"
-            Path(p).replace(dest)
+            replace(p, dest)
             rows.append({"id": fid, "file": dest.name, "second": t, "at": round(at, 3),
                          "truth": ss.CINESCALE[labels[t]], "sha256": _sha(dest)})
         shutil.rmtree(stage / "raw", ignore_errors=True)
@@ -305,7 +306,7 @@ def import_film(labels_csv, source, film: str, frames: int | None = None, height
         (stage / "change.json").write_text(json.dumps([round(x, 2) for x in ch]), encoding="utf-8")
         final = root / film
         shutil.rmtree(final, ignore_errors=True)
-        stage.replace(final)
+        replace(stage, final)
     finally:
         shutil.rmtree(stage, ignore_errors=True)
     return manifest

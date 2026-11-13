@@ -23,6 +23,7 @@ if __name__ == "__main__":
 
 from harness import deploy_state as ds  # noqa: E402 - after the release root joins sys.path
 from harness import proc_identity  # noqa: E402
+from harness.atomic_file import replace  # noqa: E402
 
 #: How long the new release's `launchd.sh reinstall` may take: the worker quiesce, deferred periodic units, preflight and the audit.
 INSTALL_TIMEOUT_S = 3600.0
@@ -68,7 +69,7 @@ def load(path: Path) -> dict:
 def save(path: Path, rec: dict) -> None:
     tmp = Path(path).with_suffix(".tmp")
     tmp.write_text(json.dumps(rec, indent=1, sort_keys=True), encoding="utf-8")
-    os.replace(tmp, path)
+    replace(tmp, path)
 
 
 def env(base=None) -> dict:
@@ -83,7 +84,7 @@ def flip(link: Path, target: Path) -> None:
     if tmp.is_symlink() or tmp.exists():
         tmp.unlink()
     os.symlink(target, tmp)
-    os.replace(tmp, link)
+    replace(tmp, link)
 
 
 def restore(backup: Path, db: Path) -> int:

@@ -16,7 +16,8 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
-from harness import exclusive, job_state as js, paths, queue_hold, resources
+from harness import exclusive, job_claim, job_state as js, paths, queue_hold, resources
+from harness.job_release import stale_schema
 
 PENDING, RUNNING, DONE, FAILED = js.PENDING, js.RUNNING, js.DONE, js.FAILED
 CANCELLED, PAUSED = js.CANCELLED, js.PAUSED
@@ -206,18 +207,6 @@ def code_schema(cwd) -> int | None:
     return int(m.group(1)) if m else None
 
 
-def stale_schema(cwd, conn) -> str:
-    """Why a job in cwd would refuse this store (its code speaks an older schema), or ''. #1348."""
-    code = code_schema(cwd)
-    row = conn.execute("SELECT value FROM meta WHERE key='schema'").fetchone()
-    store = int(row["value"]) if row else 0
-    if code is None or code >= store:
-        return ""
-    top = _schema_file(cwd).parents[2]
-    return (f"the job's code ({top}) speaks schema {code} but the store is schema {store}, "
-            f"so it would refuse the store when it starts; queue from the deploy or update that checkout")
-
-
 #: Planners that rerun a model the lane already measured (a knob sweep, a reverify), so no repo screen comes first. #1353
 REMEASURES = ("sweep", "reverify")
 
@@ -397,7 +386,9 @@ def cancel(job_id: str, conn=None, grace: float = CANCEL_GRACE_S) -> dict:
                 _not_pending(c, job_id, "cancelled")
             c.commit()
             return get(job_id, conn=c)
-    pid = _pid_of(job["id"])
+    pid = job_claim.await_pid(job["id"], grace)
+    if pid is None and job_claim.starting(job["id"]):
+        raise ValueError(f"job {job['id']} is still starting after {grace:.0f} s; cancel it again")
     if pid is None:
         raise ValueError(f"job {job['id']} is running but no process of it is on this "
                          f"machine; cancel it where it runs")
@@ -795,7 +786,7 @@ def _lease_lost(job: dict, why: str) -> None:
     """Stop a job whose lease is gone or about to lapse, so no second job takes its class under it. #1728, #1732."""
     from harness import executors
     print(f"{time.strftime('%H:%M:%S')} job {job['id']}: lease lost ({why}); stopping it", flush=True)
-    pid = _pid_of(job["id"])
+    pid = job_claim.await_pid(job["id"], CANCEL_GRACE_S)
     if pid is not None:
         executors.for_job(job).stop(pid, CANCEL_GRACE_S)
 
@@ -803,13 +794,18 @@ def _lease_lost(job: dict, why: str) -> None:
 def run_one(job: dict, popen=None) -> dict | None:
     """Run a pending job here under its lease; None when another worker claimed it first or its class is full."""
     log = log_dir() / f"{job['id']}.log"
-    if not _claim(job, log):
-        return None
-    with leased(job) as lease:
-        if lease is None:
-            _unclaim(job, job["refused"])
+    # Down before the claim, so no reader ever sees this job running with neither a pid nor a live claimer. #1895.
+    job_claim.mark(job["id"])
+    try:
+        if not _claim(job, log):
             return None
-        return _run_claimed(job, log, popen)
+        with leased(job) as lease:
+            if lease is None:
+                _unclaim(job, job["refused"])
+                return None
+            return _run_claimed(job, log, popen)
+    finally:
+        job_claim.clear(job["id"])
 
 
 def _bin(venv: Path) -> Path:
@@ -836,7 +832,10 @@ def job_venv(cwd, environ) -> dict:
 
 
 def _run_claimed(job: dict, log: Path, popen=None) -> dict | None:
+    from harness import job_release
     with _store() as c:
+        if job_release.start(c, job, log, stale_schema(job["cwd"] or ".", c)) == job_release.REFUSED:
+            return get(job["id"], conn=c) or job
         stale = stale_schema(job["cwd"] or ".", c)
         if stale:
             log.write_text(f"not started: {stale}\n", encoding="utf-8")
@@ -1024,8 +1023,11 @@ def hold_for_deploy(grace: float = CANCEL_GRACE_S, stop=None, tree=None, stop_re
     else:
         said.append("queue was already paused by its owner and stays paused after the deploy (soh jobs resume)")
     for job in running_here():
-        pid = _pid_of(job["id"])
-        if job["kind"] == DEPLOY or pid is None:
+        if job["kind"] == DEPLOY:
+            continue
+        # A job its worker claimed just before the pause starts in a moment; it is stopped with the rest. #1895.
+        pid = job_claim.await_pid(job["id"], grace)
+        if pid is None:
             continue
         # Snapshot first: a process measure started in its own session is not in the job's group.
         procs = (tree or _tree)(pid)
@@ -1158,7 +1160,7 @@ def _recover() -> list[dict]:
         for job in _select(c, f"WHERE state = ? AND kind != ? AND {where}", (RUNNING, DEPLOY, *args)):
             if _pid_of(job["id"]) is not None:
                 left.append(job)
-            else:
+            elif not job_claim.starting(job["id"]):
                 _settle_gone(c, job)
     return left
 

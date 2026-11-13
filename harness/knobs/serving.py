@@ -15,6 +15,8 @@ KNOBS = [
        note="seconds a warm-up asks again while nothing listens at the gateway before every case is refused_by_gateway; "
             "jobs 0141/0142 met a router restart that bound :8082 within 5 s (0143 warmed at 21:07:32), and a "
             "restart is given gguf.READY_TIMEOUT_S 120 s to answer (#1012, #1181)"),
+    _k("gateway_probe_timeout", ["harness/gateway_switch.py:PROBE_TIMEOUT_S"], [2.0, 5.0, 15.0], unit="s",
+       note="seconds a gateway switch waits on /health/backlog or /model/info before the probe says it gave no answer (#1634)"),
     _k("gguf_keep_array", ["harness/context.py:_KEEP_ARRAY"], [1024, 4096, 65536],
        note="GGUF metadata arrays longer than this are skipped unread: tokenizer vocabularies, never a per-layer array (#498)"),
     _k("gpu_fraction", ["harness/memory.py:GPU_FRACTION"], [0.65, 0.75, 0.85],

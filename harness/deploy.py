@@ -15,8 +15,9 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from harness.atomic_file import replace
 from harness import deploy_state as ds
-from harness import deploy_switch, job_state as js, paths, proc_identity
+from harness import deploy_switch, job_claim, job_state as js, paths, proc_identity
 from harness import workqueue as wq
 
 KIND = "deploy"
@@ -441,7 +442,7 @@ def adopt(link: Path) -> Path:
         tmp.unlink()
     os.symlink(dest, tmp)
     os.rename(link, dest)
-    os.replace(tmp, link)
+    replace(tmp, link)
     try:
         _git(dest, "worktree", "repair")
     except DeployError as exc:
@@ -595,6 +596,11 @@ def switch_argv(record: Path) -> list[str]:
 def spawn_switch(record: Path, release_for_log: Path) -> str:
     """Start deploy_switch on the record so it outlives the worker: a launchd one-shot on macOS, else detached."""
     argv = switch_argv(record)
+    return launch(argv, release_for_log, Path(argv[2]).parents[1])
+
+
+def launch(argv: list[str], release_for_log: Path, root: Path) -> str:
+    """Start argv on the switch's launchd one-shot label on macOS, else detached, so it outlives the worker."""
     log = paths.logs() / "deploy.log"
     if sys.platform == "darwin":
         import plistlib
@@ -602,7 +608,7 @@ def spawn_switch(record: Path, release_for_log: Path) -> str:
         plist.parent.mkdir(parents=True, exist_ok=True)
         keep = {k: os.environ[k] for k in ("PATH", "HOME", paths.ENV_VAR) if os.environ.get(k)}
         # A python program would be its own privacy identity, and its first read of /Volumes waits on a dialog. #1516.
-        wrapper = Path(argv[2]).parents[1] / "scripts" / "deploy-switch.sh"
+        wrapper = Path(root) / "scripts" / "deploy-switch.sh"
         if not wrapper.is_file():
             wrapper = Path(deploy_switch.__file__).resolve().parents[1] / "scripts" / "deploy-switch.sh"
         plist.write_bytes(plistlib.dumps({
@@ -628,7 +634,8 @@ def _quiesce(c, job_id, log, sleep=time.sleep) -> str:
     end, said = time.monotonic() + QUIESCE_TIMEOUT_S, False
     while True:
         left = [wq.label(j["id"]) for j in wq.running_here(c)
-                if wq._key(j["id"]) != wq._key(job_id) and wq._pid_of(j["id"]) is not None]
+                if wq._key(j["id"]) != wq._key(job_id)
+                and (wq._pid_of(j["id"]) is not None or job_claim.starting(j["id"]))]
         if not left:
             return ""
         if time.monotonic() >= end:
@@ -927,8 +934,9 @@ def _resume(rec: dict, row: dict, now: float, spawn) -> str:
     return ""
 
 
-def settle(conn=None, now: float | None = None, alive=wq.alive, spawn=None) -> list[dict]:
+def settle(conn=None, now: float | None = None, alive=wq.alive, spawn=None, start=None) -> list[dict]:
     """Close every unfinished deploy of this machine whose job or switch has ended; a deploy job is never left running."""
+    from harness import deploy_repair
     now = time.time() if now is None else now
     spawn = spawn or respawn
     # Before the store is opened: a deploy that died after migrating leaves it ahead of this code. #1752.
@@ -948,7 +956,7 @@ def settle(conn=None, now: float | None = None, alive=wq.alive, spawn=None) -> l
             claimed, cargs = wq._claimed(c)
             for job in c.execute(f"SELECT id FROM jobs WHERE kind = ? AND state = ? AND {claimed} AND id NOT IN "
                                  "(SELECT job_id FROM deploys WHERE job_id IS NOT NULL)", (KIND, wq.RUNNING, *cargs)):
-                if wq._pid_of(job["id"]) is None:
+                if wq._pid_of(job["id"]) is None and not job_claim.starting(job["id"]):
                     _close_job(c, job["id"], wq.FAILED, None, "interrupted before it recorded a deploy", now)
                     settled.append({"job": wq.label(job["id"]), "outcome": INTERRUPTED})
     except RuntimeError as exc:
@@ -957,8 +965,9 @@ def settle(conn=None, now: float | None = None, alive=wq.alive, spawn=None) -> l
             raise
         # The linked release's worker cannot open a store a deploy left ahead of it: recover() was all it could do.
         print(f"deploy settle: {exc}", file=sys.stderr)
-        return done
-    return settled
+        return done + deploy_repair.auto(now, alive, start)
+    # After the store pass, so a restore never runs under it. #1879.
+    return settled + deploy_repair.auto(now, alive, start)
 
 
 def _close_job(c, job_id, state: str, rc, note: str, now: float) -> None:
@@ -1019,7 +1028,8 @@ def _settle_one(c, row: dict, now: float, alive, spawn=None) -> dict | None:
         why = "; ".join(filter(None, (f"the switch stopped at {rec.get('stage')} without an outcome", failed, said(seen))))
         _lift(rec)
     else:
-        if job is not None and job["state"] == wq.RUNNING and wq._pid_of(job["id"]) is not None:
+        if job is not None and job["state"] == wq.RUNNING and (wq._pid_of(job["id"]) is not None
+                                                               or job_claim.starting(job["id"])):
             return None
         if job is not None and job["state"] != wq.RUNNING:
             why = f"job {job['id']} ended {job['state']} rc={job['rc']} before it recorded an outcome"

@@ -7,6 +7,7 @@ import os
 import sqlite3
 import time
 
+from harness.atomic_file import replace
 from harness import paths
 
 TABLE = "limit_cuts"
@@ -52,7 +53,7 @@ def _spooled() -> list[dict]:
         return []
     taken = path.with_name(f"{SPOOL}.{os.getpid()}.{time.time_ns()}")
     try:
-        os.replace(path, taken)
+        replace(path, taken)
         text = taken.read_text(encoding="utf-8")
     except OSError:
         return []

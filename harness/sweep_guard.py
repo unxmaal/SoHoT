@@ -14,6 +14,8 @@ import sys
 import time
 from pathlib import Path
 
+from harness.atomic_file import replace
+
 try:
     from harness import run_state
 except ImportError:  # run as a file: python3 -I puts neither the checkout nor this directory on sys.path
@@ -148,7 +150,7 @@ def settle_heartbeat(root: Path, stopped: list[dict], alive=alive) -> None:
                 error=f"stopped for a deploy ({OVERRIDE}=1)")
     tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
     tmp.write_text(json.dumps(beat), encoding="utf-8")
-    os.replace(tmp, path)
+    replace(tmp, path)
 
 
 def check(root: Path, environ=None, err=None, alive=alive, command_of=command_of, stopper=stop) -> int:

@@ -104,6 +104,30 @@ def pinned(kind: str):
         _PINNED.backend = was
 
 
+def machine_backend(there) -> str:
+    """The machine home's backend, as it was before a scratch eval home pinned SQLite. #1703."""
+    from harness import paths
+    got = (os.environ.get(paths.MACHINE_STORE_ENV) or marker(there).get("backend") or SQLITE).strip().lower()
+    return POSTGRES if got == POSTGRES else SQLITE
+
+
+@contextmanager
+def on_machine():
+    """home() and the backend are the machine home's meanwhile: from a scratch eval home, the live one. #1703, #1711."""
+    from harness import paths
+    there = paths.machine_home()
+    with paths.seated(there), pinned(machine_backend(there)):
+        yield there
+
+
+def machine_ro():
+    """Inside on_machine(), its store read-only; None when that is SQLite with no file. #1703."""
+    from harness import paths
+    if backend() == SQLITE and not (Path(paths.home()) / "discovery.db").exists():
+        return None
+    return open_ro()
+
+
 def live() -> bool:
     """Postgres chosen by the default home's store.json rather than by a variable: the deployed services' store."""
     from harness import paths
@@ -633,6 +657,14 @@ def guard_flag(live_home, inherited="") -> str:
     entry = {"db": str((Path(live_home) / "discovery.db").resolve()), "postgres": pg}
     got = json.loads(inherited) if inherited else []
     return json.dumps(got if entry in got else got + [entry])
+
+
+def guarded(home) -> bool:
+    """Whether this test run guards `home`'s store, so nothing is written for it there. #1852."""
+    import json
+    raw = os.environ.get(GUARD_ENV)
+    db = (Path(home) / "discovery.db").resolve()
+    return bool(raw) and any(Path(live["db"]) == db for live in json.loads(raw))
 
 
 def _sqlite_file(database) -> Path | None:
