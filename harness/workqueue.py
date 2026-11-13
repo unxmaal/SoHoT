@@ -16,7 +16,8 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
-from harness import exclusive, executors, job_state as js, paths, queue_hold, resources
+from harness import exclusive, job_state as js, paths, queue_hold, resources
+from harness import executors
 
 PENDING, RUNNING, DONE, FAILED = js.PENDING, js.RUNNING, js.DONE, js.FAILED
 CANCELLED, PAUSED = js.CANCELLED, js.PAUSED
@@ -1132,8 +1133,7 @@ def _ask_loop(sig, evals) -> list[str]:
 
 def _settle_gone(c, job: dict) -> None:
     """A running job whose worker and process are gone, as job_state.gone_move chooses: an eval that stored a run, or a confirm, waits again to resume it, else it failed."""
-    exited = executors.exit_record(_pid_file(job["id"]))
-    if exited is not None:  # recorded before its worker died: settled by that exit, not as gone. #1758
+    if (exited := executors.exit_record(_pid_file(job["id"]))) is not None:  # recorded before its worker died. #1758
         _settle_exit({**job, "rc": exited[0], "finished": _iso(exited[1])}, exited[0], conn=c)
         return
     flags = _flags(job["id"])
