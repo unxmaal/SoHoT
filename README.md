@@ -3464,7 +3464,8 @@ request. Linux and Windows run nightly on main (06:17 UTC), from the Actions
 tab on demand, or on a pull request labelled `full-ci`; a failing night opens
 or updates the issue "Nightly CI is failing on main". To prove a fix on one runner, dispatch
 only that job on only those tests: `gh workflow run check --ref <branch> -f jobs=check-windows
--f tests="tests/test_a.py tests/test_b.py::test_c"` (`jobs` takes a comma list or `all`). Each runner reports
+-f tests="tests/test_ci_workflow.py tests/test_ci_retry_1440.py::test_every_uv_sync_in_ci_goes_through_the_retry"`
+(`jobs` takes a comma list or `all`; `tests` takes files or node ids separated by spaces). Each runner reports
 which tests it skipped and why. A
 skipped test otherwise reports green for something it never checked -- and
 that is not hypothetical here: 29 tests skipped on both runners for a week

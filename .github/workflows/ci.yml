@@ -9,7 +9,7 @@ on:
     # 06:17 UTC: Linux and Windows run on main overnight, after the day's merges. "0 6" started 6-9 h late (#1802).
     - cron: "17 6 * * *"
   workflow_dispatch:
-    # gh workflow run check --ref <branch> -f jobs=check-windows -f tests="tests/test_a.py tests/test_b.py::test_c" (#1906).
+    # gh workflow run check --ref <branch> -f jobs=check-windows -f tests="tests/test_ci_workflow.py tests/test_ci_retry_1440.py::test_every_uv_sync_in_ci_goes_through_the_retry" (#1906).
     inputs:
       jobs:
         description: "all, or a comma list of: check-macos, check-postgres, check-linux, check-windows, mutation, coverage-map"
