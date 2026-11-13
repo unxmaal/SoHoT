@@ -183,6 +183,15 @@ def test_macos_leaves_room_for_a_slow_host_and_is_still_a_hang_detector():
 JOB_P95_MIN = {"check-linux": 36.1, "check-windows": 85.2, "check-postgres": 54.6}
 
 
+@pytest.mark.gauntlet("a-closed-table-fronting-an-open-set", site="harness/ci_budget.py:HOST_FACTOR")
+def test_a_job_with_a_timeout_rule_is_in_ci_yml_and_one_without_has_no_rule():
+    from harness import ci_budget
+    doc, _ = _ci()
+    assert set(ci_budget.HOST_FACTOR) <= set(doc["jobs"])
+    assert ci_budget.rule_minutes("coverage-map", 10.0) is None
+    assert ci_budget.rule_minutes("check-linux", 10.0) == 13 and ci_budget.rule_minutes("check-macos", 39.3) == 56
+
+
 def test_each_nightly_suite_has_room_for_its_measured_length_and_is_still_a_hang_detector():
     """#1588: check-linux, check-windows and mutation (adopt) were cut at their limits every night 11-01..11-07."""
     from harness import ci_budget
