@@ -23,7 +23,9 @@ RULES = {
     "leases.mine": UNKNOWN,
     "limit_cuts.shown": EVERY,       # a cut recorded before the machine had a row is shown to every machine
     "paused_runs.mine": NOBODY,
+    "reverifications.mine": UNKNOWN,  # _queue stamps machine_row, None before this machine had a row
     "runs.ran_here": NOBODY,         # as runs.here: a run is this machine's by its stamp alone
+    "verdicts.decided_here": NOBODY, # an unstamped verdict is from before #266 and was decided nowhere known
     "watchdog_actions.mine": UNKNOWN,
 }
 

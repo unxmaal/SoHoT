@@ -267,12 +267,6 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/migration_check.py:_proposal_state:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/migration_check.py:_verdict_reason:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/models.py:_source:downloads
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/morning.py:_counts:verdicts
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/morning.py:idle_lanes:reverifications
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/morning.py:idle_lanes:runs
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/morning.py:sweep:paused_runs
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/morning.py:sweep:runs
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/morning.py:watchdog:watchdog_actions
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/paused.py:dir_state:paused_runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/paused_jobs.py:_owned:knob_sweeps
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/paused_jobs.py:_owned:reverifications
@@ -307,7 +301,6 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/runs.py:split_artifacts:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/runs.py:stamp_claims_strata:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/store_ahead.py:deploy_running:deploys
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/sweep_check.py:rows:watchdog_actions
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/sweeps.py:_found:knob_sweeps
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/sweeps.py:_open:knob_sweeps
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/sweeps.py:_skip:knob_sweeps
