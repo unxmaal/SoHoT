@@ -168,7 +168,8 @@ def test_the_sweep_check_reads_a_held_night_as_quiet_but_still_sees_a_stall():
     assert got["verdict"] == sweep_check.STALLED
 
 
-def test_morning_names_the_hold_instead_of_a_missing_sweep():
+def test_morning_names_the_hold_instead_of_a_missing_sweep(monkeypatch):
+    monkeypatch.setattr(morning, "_gh", lambda argv: "[]")
     rep = {"since": at(7, 8), "sweep": {"loop": None, "screened": {}, "measured": {"runs": [], "verdicts": {}},
                                        "paused": [], "stopped": [], "settled": {"verdicts": {}, "adopted": []}},
            "watchdog": [], "ci": {"available": False, "why": "-"}, "ledger": None, "stale": [],

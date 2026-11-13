@@ -93,7 +93,7 @@ def record(version):
         conn.close()
 
 
-def test_two_new_versions_name_only_their_entries(files, capsys):
+def test_two_new_versions_name_only_their_entries(files, capsys, shown_live):
     record("2.1.300")
     runner = Runner()
     assert run(files, runner) == 0

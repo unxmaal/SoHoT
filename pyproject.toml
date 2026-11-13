@@ -122,6 +122,7 @@ markers = [
     "sqlite_store: the SQLite file itself is the subject (an old store, a copy, WAL); runs on SQLite under either backend (#1579)",
     "litellm: runs a real LiteLLM proxy against a fake upstream; `make test-litellm`",
     "real_runtime: may execute a real runtime binary (llama-server, mlx_lm.server, mflux, needle) (#536)",
+    "real_effect: may run a real launchctl, ssh, gh, docker or kill, which the suite otherwise refuses (#1794)",
     "long: slow and worth it (a real end-to-end loop, real processes); make check runs it, the per-PR CI fast path skips it (#720)",
     "gauntlet(class_id, site): binds a test to a gauntlet class at a detector's site (#492)",
 ]

@@ -147,7 +147,7 @@ def test_a_quiet_night_sends_no_notification(deploy_dir):
     assert head["by"] == "deterministic" and head["text"].startswith("Quiet night: 2 screened, 1 measured, 1 settled")
 
 
-def test_a_watchdog_stop_sends_one_notification(deploy_dir):
+def test_a_watchdog_stop_sends_one_notification(deploy_dir, shown_live):
     conn = _store(stops=1)
     r = _report(conn, deploy_dir)
     assert r["needs"] == ["watchdog stop: overrun on eval pgid 2 at 21:25"]
