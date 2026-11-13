@@ -73,6 +73,8 @@ def from_job(job: dict, run: dict, name: str = JOB) -> dict | None:
     """One row for a completed attempt of the job, or None when it never ran its make step."""
     if not named(job.get("name", ""), name) or job.get("status") != "completed" or job.get("conclusion") == "skipped":
         return None
+    if "steps" in job and not job["steps"]:
+        return None
     step = next((s for s in job.get("steps") or [] if (s.get("name") or "").startswith(STEP)), None)
     start, end = _ts(job.get("started_at")), _ts(job.get("completed_at"))
     s0, s1 = (_ts(step.get("started_at")), _ts(step.get("completed_at"))) if step else (None, None)
@@ -126,12 +128,14 @@ def table(rows: list[dict], limit_min: float) -> list[dict]:
         mins = [r["check_min"] for r in ended if r.get("check_min")]
         jobs = [r["job_min"] for r in ended if r.get("job_min")]
         cut = [x for r in rs if outcome(r, limit_min) == "timeout" and (x := projected(r)) is not None]
+        whole = jobs + [projected(r) or r["job_min"] for r in rs if outcome(r, limit_min) == "timeout" and r.get("job_min")]
         out.append({"path": p, "runner": runner, "runs": len(rs), **{k: kinds.get(k, 0) for k in
                     ("passed", "failed", "timeout", "superseded")},
                     "p50": round(statistics.median(mins), 1) if mins else None,
                     "p95": round(pctl(mins, 0.95), 1) if mins else None, "max": round(max(mins), 1) if mins else None,
                     "job_p95": round(pctl(jobs, 0.95), 1) if jobs else None,
                     "job_max": round(max(jobs), 1) if jobs else None,
+                    "job_p95_cut": round(pctl(whole, 0.95), 1) if whole else None,
                     "cut_projected_max": max(cut) if cut else None})
     return out
 
@@ -148,16 +152,29 @@ def slowest(rows: list[dict], top: int = 30, fast: bool = False) -> list[tuple[s
     return [(t, round(m, 1), round(x, 1), n) for t, m, x, n in ranked[:top]]
 
 
+def rule_line(job: str, row: dict, limit_min: float) -> str:
+    """What the job's timeout rule asks of one table row's p95, and whether ci.yml's limit is below it. #1590."""
+    from harness import ci_budget
+    want = ci_budget.rule_minutes(job, row["job_p95_cut"]) if row.get("job_p95_cut") else None
+    if want is None:
+        return ""
+    verdict = f"below its rule, raise it to {want}" if limit_min < want else "meets its rule"
+    return (f"rule ({row['path']}, {row['runner']}): {ci_budget.HOST_FACTOR[job]:g} x job p95 {row['job_p95_cut']} = "
+            f"{want} min; timeout-minutes {limit_min:g} {verdict}")
+
+
 def render(tab: list[dict], slow: list, limit_min: float, fast: bool = False, name: str = JOB) -> str:
     lines = [f"{name} make step minutes (job limit {limit_min:g} min; p50/p95/max over runs that finished; "
              "a timeout's job minutes projected from its last progress %)", "",
              "| path | runner | runs | passed | failed | timeout | superseded | p50 | p95 | max | job p95 | job max "
-             "| timeout projected |",
-             "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+             "| timeout projected | job p95 with timeouts projected |",
+             "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for t in tab:
         lines.append("| " + " | ".join(str(t[k] if t[k] is not None else "-") for k in
                      ("path", "runner", "runs", "passed", "failed", "timeout", "superseded", "p50", "p95", "max", "job_p95",
-                      "job_max", "cut_projected_max")) + " |")
+                      "job_max", "cut_projected_max", "job_p95_cut")) + " |")
+    rules = [line for t in tab if (line := rule_line(name, t, limit_min))]
+    lines += ["", *rules] if rules else []
     if slow:
         lines += ["", f"slowest tests on {'PR fast-path' if fast else 'full'} runs (call+setup+teardown seconds, median):", "",
                   "| median s | max s | runs | test |", "|---|---|---|---|"]

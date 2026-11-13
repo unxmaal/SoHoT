@@ -43,6 +43,24 @@ def test_a_job_row_carries_job_and_make_check_minutes():
     assert row["job_min"] == 26.97 and row["check_min"] == 25.62 and row["sha"] == "ba38b746"
     assert ci_history.from_job({**_job("00:00:00", "00:01:00"), "name": "check-linux"}, RUN) is None
     assert ci_history.from_job({**_job("00:00:00", "00:01:00"), "conclusion": "skipped"}, RUN) is None
+    queued = {**_job("00:00:00", "01:47:00", "cancelled"), "steps": []}
+    assert ci_history.from_job(queued, RUN) is None, "a job no runner took never ran (#1590)"
+
+
+def test_the_rule_reads_a_p95_that_keeps_the_runs_a_timeout_cut():
+    """#1590: 15 of 53 push runs were cut at 35 min; a p95 over finished runs alone read 34.1 and said 35 was enough."""
+    rows = [{"fast": False, "runner": "M1 3cpu", "conclusion": "success", "job_min": 30.0, "check_min": 29.0}
+            for _ in range(8)]
+    rows += [{"fast": False, "runner": "M1 3cpu", "conclusion": "cancelled", "job_min": 35.5, "check_min": 34.0,
+              "pct": 80}, {"fast": False, "runner": "M1 3cpu", "conclusion": "cancelled", "job_min": 35.4}]
+    (row,) = ci_history.table(rows, 35)
+    assert row["job_p95"] == 30.0 and row["timeout"] == 2
+    assert row["job_p95_cut"] == round(ci_history.pctl([30.0] * 8 + [44.0, 35.4], 0.95), 1) == 40.1
+    assert ci_history.rule_line("check-macos", row, 35).endswith("1.4 x job p95 40.1 = 57 min; timeout-minutes 35 "
+                                                                  "below its rule, raise it to 57")
+    assert ci_history.rule_line("check-macos", row, 57).endswith("meets its rule")
+    assert ci_history.rule_line("coverage-map", row, 35) == ""
+    assert "below its rule" in ci_history.render([row], [], 35, name="check-macos")
 
 
 def test_a_cancel_at_the_limit_is_a_timeout_and_an_earlier_one_superseded():

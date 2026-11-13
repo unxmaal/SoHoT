@@ -14,10 +14,10 @@ KNOBS = [
     _k("ci_macos_reruns", [f"{R}:RERUNS"], [0, 1, 2],
        note="automatic reruns of a push-to-main check run whose check-macos hit its timeout on main's tip; one, "
             "so runner variance cannot block a deploy and a suite that is simply too slow still fails (#1520)"),
-    _k("ci_macos_timeout", [f"{B}:MACOS_TIMEOUT_MIN"], [26, 30, 35, 40],
-       note="check-macos timeout-minutes: 1.4x the job p95 on the 3-vCPU M1 class (23.6 min over 20 full runs "
-            "2026-10-31..11-03, python -m harness.ci_history); a slow M1 host ran 1.4x the run before it "
-            "(41692522061 vs 41687128099) and 2.0x in #1146; the spool fix cut suite CPU 20%, #1513 adds 3% (#1520)"),
+    _k("ci_macos_timeout", [f"{B}:MACOS_TIMEOUT_MIN"], [35, 45, 56, 70],
+       note="check-macos timeout-minutes: ci_budget.HOST_FACTOR 1.4x the push job p95 on the 3-vCPU M1 class with "
+            "timeouts projected (39.3 min over 53 runs to 2026-11-13, 15 of them cut at 35; python -m harness.ci_history); "
+            "a slow M1 host ran 1.4x the run before it (41692522061 vs 41687128099) and 2.0x in #1146 (#1520, #1590)"),
     _k("ci_slower_added", [f"{T}:SLOWER_ADDED_S"], [10.0, 30.0, 60.0],
        note="seconds more than on the last main run a test must take to be named slower; with ci_slower_ratio, "
             "42 ordered pairs of 7 runs named only the two tests #1181 made wait 120 s (#1146)"),
@@ -26,7 +26,10 @@ KNOBS = [
             "that vary by runner (#1146)"),
 ]
 
+_RULE = "what timeout a job's measured p95 asks for, which ci_history reports and a test holds ci.yml to; it gates no run (#1590)"
+
 NOT_GATING = {
+    **{f"{B}:HOST_FACTOR[{j}]": _RULE for j in ("check-linux", "check-macos", "check-postgres", "check-windows")},
     "harness/ci_history.py:_gh->subprocess.run(timeout)": "how long one gh call of a CI history read may take; it "
                                                           "measures past runs and gates nothing (#1520)",
     "harness/ci_rerun.py:_gh->subprocess.run(timeout)": "how long one gh call deciding a rerun may take; a stuck "
