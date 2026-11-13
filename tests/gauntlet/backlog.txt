@@ -385,7 +385,6 @@ a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:s
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:sources.retired:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:technique_triage.triaged_at:no-reader
 a-wait-with-no-deadline-owner-or-end-state evals/run.py:warm
-a-wait-with-no-deadline-owner-or-end-state evals/watch.py:Watch._serve
 a-wait-with-no-deadline-owner-or-end-state gateway/served_model.py:_renew_inflight
 a-wait-with-no-deadline-owner-or-end-state harness/commands/loop.py:_after_deploy
 a-wait-with-no-deadline-owner-or-end-state harness/commands/screen.py:server_back
