@@ -917,8 +917,8 @@ def choose_read() -> Chosen:
     if kind == POSTGRES:
         e, m = os.environ, marker(home)
         role = reader(e, home) or e.get("PGUSER") or m.get("user") or "discovery"
-        where = (f"{e.get('PGHOST') or m.get('host') or 'localhost'}:{e.get('PGPORT') or m.get('port') or 5432}/"
-                 f"{e.get('PGDATABASE') or m.get('dbname') or 'discovery'} as {role}")
+        host, port, db = _where(e, m)
+        where = f"{host}:{port}/{db} as {role}"
     else:
         where = _shown(home / "discovery.db", home)
     wrong = _overrides(home)

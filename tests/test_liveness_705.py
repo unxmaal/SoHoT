@@ -307,6 +307,13 @@ def test_two_worktrees_run_test_postgres_under_distinct_names_and_no_fixed_port(
     assert not re.search(r"-p \d+:5432", _make_n(a))
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="make test-postgres is docker on a unix host")
+def test_test_postgres_removes_its_container_with_the_data_volume(tmp_path):
+    out = _make_n(tmp_path)
+    removes = re.findall(r"docker rm (-\S+) ", out)
+    assert removes and all("v" in flags for flags in removes), out
+
+
 def test_a_loop_waiting_behind_a_real_video_job_reads_running_for_the_engines_timeout(clock, monkeypatch, tmp_path):
     from harness import engines, proc
     from harness.commands import lanes
