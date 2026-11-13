@@ -483,6 +483,7 @@ capabilities:
       - harness/machine.py
       - harness/env.py
       - harness/torch_device.py
+      - harness/machine_scope.py
 
   - name: deploy-guard
     summary: Deploying only a green main commit, never during a sweep or eval, with runner venvs matching their pins; each one a queue job built alongside, switched, verified or rolled back.

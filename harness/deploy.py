@@ -944,8 +944,8 @@ def settle(conn=None, now: float | None = None, alive=wq.alive, spawn=None, star
     settled = []
     try:
         with wq._store(conn) as c:
-            where, args = wq._here(c)
-            for row in c.execute(f"SELECT * FROM deploys WHERE outcome = '' AND {where} ORDER BY id", args).fetchall():
+            here, args = _here(c)
+            for row in c.execute(f"SELECT * FROM deploys WHERE outcome = '' AND {here} ORDER BY id", args).fetchall():
                 try:
                     got = _settle_one(c, dict(row), now, alive, spawn)
                 except ds.IllegalMove as exc:
@@ -1045,6 +1045,11 @@ def _settle_one(c, row: dict, now: float, alive, spawn=None) -> dict | None:
     return {"deploy": row["id"], "outcome": INTERRUPTED}
 
 
+def _here(conn) -> tuple[str, tuple]:
+    from harness import machine_scope
+    return machine_scope.here(conn, "deploys.mine")
+
+
 def _alert_here(message: str) -> None:
     from harness import monitor
     try:
@@ -1065,10 +1070,8 @@ def since(conn, t: float) -> list[dict]:
 
 def deployed_at(conn) -> float | None:
     """When this machine's newest queue deploy finished serving its commit; None before the first."""
-    from harness import memory_store as ms
-    mid = ms.machine_row(conn)
-    row = conn.execute("SELECT MAX(finished_at) FROM deploys WHERE outcome = ? AND (machine_id = ? OR machine_id "
-                       "IS NULL)", (DEPLOYED, mid)).fetchone()
+    here, args = _here(conn)
+    row = conn.execute(f"SELECT MAX(finished_at) FROM deploys WHERE outcome = ? AND {here}", (DEPLOYED, *args)).fetchone()
     return float(row[0]) if row and row[0] is not None else None
 
 
@@ -1112,8 +1115,8 @@ def line(d: dict) -> str:
 
 def serving(conn, link: Path | None = None) -> dict | None:
     """This machine's newest deploy reconciled against the deploy link; None before its first deploy."""
-    where, args = wq._here(conn)
-    row = conn.execute(f"SELECT * FROM deploys WHERE {where} ORDER BY id DESC", args).fetchone()
+    here, args = _here(conn)
+    row = conn.execute(f"SELECT * FROM deploys WHERE {here} ORDER BY id DESC", args).fetchone()
     return view(dict(row), link=link) if row else None
 
 
