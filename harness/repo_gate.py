@@ -52,8 +52,8 @@ def verdict(conn, name: str, before: float | None = None) -> str | None:
     """The outcome of the proposal's latest repo-lane verdict at adopt (decided before `before`), None when it has none."""
     from harness import adopt
     got = conn.execute("SELECT v.outcome FROM verdicts v JOIN proposals p ON p.id = v.proposal_id "
-                       "WHERE p.name = ? AND v.tier = ? AND v.detail LIKE ? AND (? IS NULL OR v.decided_at < ?) "
-                       "ORDER BY v.id DESC LIMIT 1", (name, adopt.TIER, f"{GATE}:%", before, before)).fetchone()
+                       "WHERE p.name = ? AND v.tier = ? AND v.lane = ? AND (? IS NULL OR v.decided_at < ?) "
+                       "ORDER BY v.id DESC LIMIT 1", (name, adopt.TIER, GATE, before, before)).fetchone()
     return got[0] if got else None
 
 
@@ -68,8 +68,8 @@ def owed(conn) -> list[dict]:
     from harness import adopt
     rows = conn.execute("SELECT p.name, p.lane, p.attaches_to FROM proposals p "
                         "JOIN verdicts v ON v.id = p.state_verdict_id "
-                        "WHERE p.state = 'measured' AND v.tier = ? AND v.detail LIKE ? ORDER BY v.id",
-                        (adopt.TIER, f"{GATE}:%")).fetchall()
+                        "WHERE p.state = 'measured' AND v.tier = ? AND v.lane = ? ORDER BY v.id",
+                        (adopt.TIER, GATE)).fetchall()
     return [{**dict(r), "lane": GATED[0]} for r in rows
             if any(lanes.serves(r["lane"], g) for g in GATED)]
 

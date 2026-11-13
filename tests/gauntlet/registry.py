@@ -89,7 +89,6 @@ OPEN_ISSUES = {
     1759: (OW, (r"^harness/vllm\.py:served$",)),
     1763: (WT, (r"^harness/exclusive\.py:_beating\.keep$",)),
     1775: (CA, (r"^harness/nodes\.py:_record$",)),
-    1777: (FT, (r"^harness/repo_gate\.py:(owed|verdict):detail$",)),
     1790: (VS, (r"^harness/(nodes|install_env|engine_smoke|slot_probe|router|interactive)\.py:__main__:both-phases$",)),
 }
 

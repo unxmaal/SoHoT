@@ -379,7 +379,7 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         # wrote `declined` for the lane's own default. #393.
         print(f"  {name}: already the {lane} lane's default ({spec})")
         if not dry:
-            _settle(name, "measured", f"{lane}: already the lane's default")
+            _settle(name, "measured", f"{lane}: already the lane's default", lane)
         return 0
     unscreened = _screen_refusal(a, lane, spec)
     if unscreened:
@@ -1442,12 +1442,12 @@ def take_incumbents(want: str = "") -> list:
     return out
 
 
-def _settle(name: str, outcome: str, detail: str) -> None:
+def _settle(name: str, outcome: str, detail: str, lane: str = "") -> None:
     from harness import memory_store as ms
     store = ms.connect()
     try:
         ms.decide(store, name, outcome, tier=ms.MEASURE, detail=detail[:200],
-                  reason=reasons.CANDIDATE)
+                  reason=reasons.CANDIDATE, lane=lane)
     except (KeyError, ms.IllegalTransition):
         pass
     finally:

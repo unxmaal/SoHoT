@@ -613,7 +613,7 @@ def record(conn, verdict: Verdict, spec: str = "",
         if not ok:
             raise Held(f"refused on this machine: {spec} {why}")
     vid = ms.decide(conn, row["proposal"] or "", outcome, tier=TIER,
-                    detail=detail[:200], candidate_id=cid, run_id=run_id,
+                    detail=detail[:200], candidate_id=cid, run_id=run_id, lane=verdict.lane,
                     reason=reason, until=_spent_until(conn, row["proposal"] or "", verdict, reason))
     if verdict.failure_class or verdict.evidence:
         conn.execute(
