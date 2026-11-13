@@ -303,10 +303,10 @@ def _lands_by_day(deadline: float, now: float, day) -> bool:
     return ends <= deadline <= t
 
 
-def due(conn, lane: str, machine_id, now: float, day=None) -> str:
-    """Why this wake may load `lane`'s model: at night, its open incident unprobed past UNPROBED_S, or past it by tomorrow's day; else ""."""
+def due(conn, lane: str, machine_id, now: float, day=None) -> str | None:
+    """Why this wake may load `lane`'s model: its open incident unprobed past UNPROBED_S (by night); "" if not; None without a store."""
     if conn is None:
-        return ""
+        return None
     if day is None:
         from harness.watchdog import daytime as day
     if day(now):
@@ -453,7 +453,7 @@ def wake(conn, now: float, lanes=None, sender: Sender | None = None, machine_id=
     sender = sender or Sender(paths.home() / "watchdog")
     rows, out, slow = [], [], []
     for lane in lanes or gateway.TEXT_LANES:
-        row, req = prepare(lane, sender, load=due(conn, lane, machine_id, now, day=day), **kw)
+        row, req = prepare(lane, sender, load=due(conn, lane, machine_id, now, day=day) or "", **kw)
         handle = sender.start(lane, req["url"], req["headers"], req["body"], HOLD_S) if req else None
         rows.append((row, req, handle, time.monotonic() + timeout(lane)))
     for row, req, handle, deadline in rows:

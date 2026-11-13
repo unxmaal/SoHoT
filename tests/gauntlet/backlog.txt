@@ -630,7 +630,6 @@ nothing-and-failed-return-the-same-value harness/paths.py:deploy_link:except
 nothing-and-failed-return-the-same-value harness/pressure.py:_sysctl:except
 nothing-and-failed-return-the-same-value harness/pressure.py:_vm_stat:except
 nothing-and-failed-return-the-same-value harness/privacy.py:main_checkout:except
-nothing-and-failed-return-the-same-value harness/queue_pause.py:settle_deploys:except
 nothing-and-failed-return-the-same-value harness/rank.py:serving:except
 nothing-and-failed-return-the-same-value harness/report.py:_load_state:except
 nothing-and-failed-return-the-same-value harness/residency_trace.py:_kv_mlx:except
