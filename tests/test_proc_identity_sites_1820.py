@@ -4,6 +4,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 
 import pytest
 
@@ -79,13 +80,19 @@ def test_a_job_pid_reused_by_another_group_leader_is_not_the_jobs_process(leader
 
 
 @POSIX
-def test_a_jobs_pid_file_stays_a_bare_pid_an_older_release_reads_and_its_start_time_sits_beside_it(tmp_path):
+@pytest.mark.parametrize("late", [0.0, 0.5], ids=["prompt", "parent-writes-late"])
+def test_a_jobs_pid_file_stays_a_bare_pid_an_older_release_reads_and_its_start_time_sits_beside_it(
+        tmp_path, monkeypatch, late):
     from harness import executors, watchdog
+    read = proc_identity.started
+    monkeypatch.setattr(proc_identity, "started", lambda pid: (time.sleep(late), read(pid))[1])
     job = wq.add(["soh-batch-job"], title="batch")
     pid_file = wq._pid_file(job["id"])
     beside = executors.started_file(pid_file)
-    script = (f"import pathlib; print(repr(pathlib.Path({str(pid_file)!r}).read_text())); "
-              f"print(pathlib.Path({str(beside)!r}).read_text())")
+    # Host.run writes both files after Popen, the pid file last: the child waits for it before reading either. #1893.
+    script = (f"import pathlib, time\np = pathlib.Path({str(pid_file)!r})\nend = time.monotonic() + 30\n"
+              "while not (p.exists() and p.read_text().strip()) and time.monotonic() < end:\n    time.sleep(0.01)\n"
+              f"print(repr(p.read_text())); print(pathlib.Path({str(beside)!r}).read_text())")
     with open(tmp_path / "out.log", "w", encoding="utf-8") as out:
         child = executors.Host().run(job, [sys.executable, "-c", script], stdout=out)
     pid_text, started_line = (tmp_path / "out.log").read_text(encoding="utf-8").splitlines()[:2]
