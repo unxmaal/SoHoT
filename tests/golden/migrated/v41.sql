@@ -93,7 +93,7 @@ table memory_limits [('id', 'INTEGER', 0, None, 1), ('machine_id', 'INTEGER', 1,
 table meta [('key', 'TEXT', 0, None, 1), ('value', 'TEXT', 0, None, 0)]
   index sqlite_autoindex_meta_1 unique=1 ['key']
   ('candidate_guesses', '[{"adoption": 2, "from": "the adopt verdict/'s machine; no vote or judged run names one", "lane": "svg", "machine": 2, "proposal": "org-l/svg-thing", "spec": "mlx:org-l/svg-thing"}]')
-  ('schema', '101')
+  ('schema', '102')
 table otel_events [('id', 'INTEGER', 0, None, 1), ('key', 'TEXT', 1, None, 0), ('received_at', 'REAL', 1, None, 0), ('at', 'REAL', 1, None, 0), ('session_id', 'TEXT', 1, "''", 0), ('prompt_id', 'TEXT', 1, "''", 0), ('name', 'TEXT', 1, None, 0), ('tool', 'TEXT', 1, "''", 0), ('model', 'TEXT', 1, "''", 0), ('query_source', 'TEXT', 1, "''", 0), ('success', 'INTEGER', 0, None, 0), ('duration_ms', 'REAL', 0, None, 0), ('input_tokens', 'REAL', 0, None, 0), ('output_tokens', 'REAL', 0, None, 0), ('cache_read_tokens', 'REAL', 0, None, 0), ('cache_creation_tokens', 'REAL', 0, None, 0), ('cache_creation_5m_tokens', 'REAL', 0, None, 0), ('cache_creation_1h_tokens', 'REAL', 0, None, 0), ('cost_usd', 'REAL', 0, None, 0), ('result_bytes', 'REAL', 0, None, 0), ('attrs', 'TEXT', 1, "'{}'", 0)]
   index ix_otel_events_at unique=0 ['at', 'name']
   index ix_otel_events_session unique=0 ['session_id', 'at']
@@ -196,5 +196,5 @@ table verdicts [('id', 'INTEGER', 0, None, 1), ('proposal_id', 'INTEGER', 0, Non
   (19, 8, 'screened', 'screen', 'passed 1/2', 'runs/20260920-100000-0003-tts', 0.5, '', '', 1789791600.0, 2, 0, 0.0, '', 5, None, '', 3, 'candidate', '', '', '{}', None, None, None)
   (20, 8, 'declined', 'measure', 'lost to the incumbent: 0.50 vs 1.00', 'runs/20260920-100000-0003-tts', 0.5, '', '', 1789795200.0, 2, 0, 0.0, '', 5, None, '', 3, 'candidate', '', '', '{}', None, None, None)
   (21, 12, 'measured', 'adopt', 'svg: preferred by hand over local-large', '', None, '', '', 1789824000.0, 2, 0, 0.0, '', 7, None, '', None, 'candidate', '', '', '{}', None, None, None)
-table watchdog_actions [('id', 'INTEGER', 0, None, 1), ('at', 'REAL', 1, None, 0), ('machine_id', 'INTEGER', 0, None, 0), ('criterion', 'TEXT', 1, None, 0), ('subject', 'TEXT', 1, None, 0), ('action', 'TEXT', 1, None, 0), ('escalated', 'INTEGER', 1, '0', 0), ('dry_run', 'INTEGER', 1, '1', 0), ('evidence', 'TEXT', 1, "'{}'", 0), ('outcome', 'TEXT', 1, "''", 0)]
+table watchdog_actions [('id', 'INTEGER', 0, None, 1), ('at', 'REAL', 1, None, 0), ('machine_id', 'INTEGER', 0, None, 0), ('criterion', 'TEXT', 1, None, 0), ('subject', 'TEXT', 1, None, 0), ('action', 'TEXT', 1, None, 0), ('escalated', 'INTEGER', 1, '0', 0), ('dry_run', 'INTEGER', 1, '1', 0), ('evidence', 'TEXT', 1, "'{}'", 0), ('outcome', 'TEXT', 1, "''", 0), ('result', 'TEXT', 1, "''", 0), ('notified', 'INTEGER', 1, '0', 0), ('job_id', 'INTEGER', 0, None, 0), ('pgid', 'INTEGER', 0, None, 0), ('run_dir', 'TEXT', 1, "''", 0)]
   index ix_watchdog_actions_key unique=0 ['criterion', 'subject', 'machine_id', 'at']

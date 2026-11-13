@@ -66,7 +66,8 @@ MODULES = {
         "tests/test_lane_too_small_1049.py", "tests/test_lane_until_1053.py", "tests/test_reverify_lane_metric_733.py",
         "tests/test_adopt_effect_confirm_725.py", "tests/test_min_effect_1320.py",
         "tests/test_limit_cuts_1087_harness_ac.py", "tests/test_limit_cuts_1087_harness_ps.py",
-        "tests/test_adopt_store_given_1673.py", "tests/test_adoption_state_1735.py"],
+        "tests/test_adopt_store_given_1673.py", "tests/test_adoption_state_1735.py",
+        "tests/test_scratch_home_serving_1711.py"],
     "harness/serving.py": [
         "tests/test_harness_serving.py", "tests/test_lane_routes.py", "tests/test_gguf_route.py",
         "tests/test_schema_lanes.py", "tests/test_ds4.py", "tests/test_remote_upstreams.py",
@@ -139,12 +140,13 @@ LEFT_OUT = {
         "test_vllm.py", "test_repo_failures_921.py", "test_presence_960.py", "test_limit_cuts_1087_harness_di.py",
         "test_limit_cuts_1087_harness_ps.py", "test_sustained_warn_1482.py", "test_interactive_1561.py",
         "test_interactive_node_1562.py", "test_lane_probe_node_1653.py", "test_pinned_incumbent_1578.py",
-        "test_node_digest_1683.py"),
+        "test_node_digest_1683.py", "test_scratch_home_serving_1711.py"),
     "harness/router.py": (
         "test_delegate_resident.py", "test_machine_host.py", "test_router_ready_1012.py", "test_sweep_ceiling_806.py",
         "test_watchdog.py", "test_memory_warn_1082.py", "test_idle_unload_1157.py", "test_router_down_1181.py",
         "test_limit_cuts_1087_harness_ac.py", "test_sustained_warn_1482.py", "test_interactive_1561.py",
-        "test_interactive_node_1562.py", "test_pinned_incumbent_1578.py", "test_tts_footprint_1671.py"),
+        "test_interactive_node_1562.py", "test_pinned_incumbent_1578.py", "test_tts_footprint_1671.py",
+        "test_scratch_home_serving_1711.py"),
 }
 
 # Tests that parse harness source, list the repo with git or run a serve script; under mutmut they fail unmutated.

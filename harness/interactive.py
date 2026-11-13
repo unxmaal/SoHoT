@@ -66,7 +66,7 @@ def key(environ=None) -> str:
     named = (environ.get(KEY_ENV) or "").strip()
     if not named:
         try:
-            named = (paths.home() / KEY_ENV).read_text(encoding="utf-8").strip()
+            named = (paths.machine_home() / KEY_ENV).read_text(encoding="utf-8").strip()
         except OSError:
             return ""
     try:
@@ -83,9 +83,21 @@ def _ask(base: str, get=None):
     return get or ((lambda path: router._get(path, base, secret)) if secret else None)
 
 
+class NotOwnPlan(RuntimeError):
+    """A scratch eval home reads the machine's interactive plan; only the machine's own home writes it. #1711."""
+
+
 def plan_path() -> Path:
+    """The plan the machine's interactive server runs: from a scratch eval home, the machine home's. #1711."""
     from harness import paths
-    return paths.home() / PLAN_NAME
+    return paths.machine_home() / PLAN_NAME
+
+
+def _own_plan() -> Path:
+    from harness import paths
+    if paths.machine_home() != paths.home():
+        raise NotOwnPlan(f"the interactive plan is {plan_path()}; a scratch eval home in {paths.home()} only reads it")
+    return plan_path()
 
 
 def _gib(n: float) -> str:
@@ -225,7 +237,7 @@ def read() -> dict:
 
 
 def write(plan: dict) -> Path:
-    path = plan_path()
+    path = _own_plan()
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
     tmp.write_text(json.dumps(plan, indent=1, sort_keys=True), encoding="utf-8")
@@ -234,7 +246,7 @@ def write(plan: dict) -> Path:
 
 
 def clear() -> None:
-    plan_path().unlink(missing_ok=True)
+    _own_plan().unlink(missing_ok=True)
 
 
 def pinned() -> dict:
@@ -386,7 +398,7 @@ def answer(specs=None):
 def preset_path(base: str = "") -> Path:
     """The preset scripts/serve-interactive.sh writes for the server at `base`, this machine's by default."""
     from harness import paths
-    return paths.home() / f"interactive-preset-{serving.bare(base or url()).rsplit(':', 1)[1]}.ini"
+    return paths.machine_home() / f"interactive-preset-{serving.bare(base or url()).rsplit(':', 1)[1]}.ini"
 
 
 def co_tenancy(base: str, stem: str) -> dict:

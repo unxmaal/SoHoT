@@ -14,6 +14,7 @@ import contextlib
 import contextvars
 import json
 import os
+import threading
 import time
 from dataclasses import dataclass, field
 
@@ -25,6 +26,19 @@ from harness.checks.base import extract
 DEFAULT_GATEWAY = "http://127.0.0.1:4000"
 #: The gateway clients reach when none is given: a client machine sets it to the serving machine's. #702.
 GATEWAY_ENV = "SOHOT_GATEWAY_URL"
+
+
+_CLIENT: tuple[int, httpx.Client] | None = None
+_CLIENT_LOCK = threading.Lock()
+
+
+def http() -> httpx.Client:
+    """This process's one client, built once; it keeps no idle connection, so each request opens its own. #1634."""
+    global _CLIENT
+    with _CLIENT_LOCK:
+        if _CLIENT is None or _CLIENT[0] != os.getpid():
+            _CLIENT = (os.getpid(), httpx.Client(limits=httpx.Limits(max_keepalive_connections=0)))
+        return _CLIENT[1]
 
 
 def gateway_url(environ=None) -> str:
@@ -757,12 +771,12 @@ def _send(gateway: str, payload: dict, timeout: float):
     if batch.current():
         headers = {**headers, batch.HEADER: batch.current()}
     if not payload.get("stream"):
-        r = httpx.post(url, json=payload, timeout=timeout, headers=headers)
+        r = http().post(url, json=payload, timeout=timeout, headers=headers)
         _note(gateway, payload.get("model"), r)
         return r
     started = time.perf_counter()
-    with httpx.stream("POST", url, json=payload, timeout=timeout,
-                      headers=headers) as r:
+    with http().stream("POST", url, json=payload, timeout=timeout,
+                       headers=headers) as r:
         if (r.status_code >= 400 or "text/event-stream"
                 not in r.headers.get("content-type", "")):
             r.read()

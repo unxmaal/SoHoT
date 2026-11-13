@@ -279,3 +279,12 @@ def _add_request_purpose(conn) -> None:
     """gateway_requests.purpose on an older store; every earlier row is 'unknown'. #825."""
     if "purpose" not in _columns(conn, "gateway_requests"):
         conn.execute("ALTER TABLE gateway_requests ADD COLUMN purpose TEXT NOT NULL DEFAULT 'unknown'")
+
+
+def _add_watchdog_result(conn) -> None:
+    """watchdog_actions result, notified, job_id, pgid, run_dir on an older store; v102 fills them once. #1778."""
+    have = _columns(conn, "watchdog_actions")
+    for name, kind in (("result", "TEXT NOT NULL DEFAULT ''"), ("notified", "INTEGER NOT NULL DEFAULT 0"),
+                       ("job_id", "INTEGER"), ("pgid", "INTEGER"), ("run_dir", "TEXT NOT NULL DEFAULT ''")):
+        if name not in have:
+            conn.execute(f"ALTER TABLE watchdog_actions ADD COLUMN {name} {kind}")
