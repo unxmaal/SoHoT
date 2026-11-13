@@ -379,11 +379,11 @@ def status(run=subprocess.run, which=shutil.which, expected: str | None = None) 
 
 def desktop(title: str, message: str, run=subprocess.run, which=shutil.which, platform: str | None = None) -> str:
     """terminal-notifier when installed; the watchdog's osascript notice when it is absent or fails."""
-    from harness import watchdog
+    from harness import watchdog, watchdog_hands
     platform = platform or sys.platform
     tn = which("terminal-notifier") if platform == "darwin" else None
     if not tn:
-        return watchdog.desktop(title, message, run=run, platform=platform)
+        return watchdog_hands.desktop(title, message, run=run, platform=platform)
     try:
         got = run([tn, "-title", title, "-message", message[:200], "-group", LABEL], capture_output=True, text=True,
                   timeout=CLI_TIMEOUT_S)
@@ -392,7 +392,7 @@ def desktop(title: str, message: str, run=subprocess.run, which=shutil.which, pl
         first = f"terminal-notifier rc {got.returncode}"
     except (OSError, subprocess.SubprocessError) as exc:
         first = f"terminal-notifier {type(exc).__name__}"
-    second = watchdog.desktop(title, message, run=run, platform=platform)
+    second = watchdog_hands.desktop(title, message, run=run, platform=platform)
     if second.startswith(watchdog.NOTIFIED):
         return f"notified by osascript after {first}"
     return f"notify failed: {first}; {second.removeprefix('notify failed: ')}"
@@ -460,9 +460,9 @@ def du_line(rows: list[dict]) -> str:
 
 def pause_all(reason: str) -> dict:
     """Pause the job queue and every running eval through its pause file, the watchdog's request path."""
-    from harness import queue_pause, watchdog
+    from harness import queue_pause, watchdog_observe
     queue_pause.pause()
-    reader = watchdog.ProgressFiles()
+    reader = watchdog_observe.ProgressFiles()
     return {"queue": "paused", "runs": [reader.pause(r, reason) for r in reader.runs()]}
 
 
