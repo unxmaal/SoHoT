@@ -196,10 +196,12 @@ def record(conn, r: dict, notify=None) -> dict:
 
 
 def rows(conn, since: float) -> list[dict]:
-    """Every recorded check since `since`, oldest first, for soh morning."""
+    """This machine's recorded checks since `since`, oldest first, for soh morning."""
+    from harness import machine_scope
+    here, mine = machine_scope.where("watchdog_actions.mine", _machine(conn))
     out = []
     for r in conn.execute("SELECT id, at, notified, evidence, outcome FROM watchdog_actions WHERE criterion = ? "
-                          "AND at >= ? ORDER BY at, id", (CRITERION, since)):
+                          f"AND at >= ? AND {here} ORDER BY at, id", (CRITERION, since, *mine)):
         try:
             ev = json.loads(r["evidence"] or "{}")
         except ValueError:

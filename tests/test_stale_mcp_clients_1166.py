@@ -3,13 +3,13 @@ import os
 import shutil
 import signal
 import socket
-import sqlite3
 import sys
 import time
 
 import pytest
 
 from harness import mcp_peers, morning
+from harness import memory_store as ms
 from harness import watchdog as wd, watchdog_observe
 from harness.commands import morning as morning_cmd
 
@@ -77,15 +77,14 @@ def test_a_new_server_names_each_stale_server_s_client_at_start():
 
 
 def test_soh_morning_carries_the_clients_into_its_needs_and_its_watchdog_lines():
-    conn = sqlite3.connect(":memory:")
-    conn.row_factory = sqlite3.Row
-    conn.execute("CREATE TABLE watchdog_actions (id INTEGER PRIMARY KEY, at REAL, criterion TEXT, subject TEXT, "
-                 "action TEXT, escalated INTEGER, dry_run INTEGER, evidence TEXT, outcome TEXT)")
-    conn.execute("INSERT INTO watchdog_actions (at, criterion, subject, action, escalated, dry_run, evidence, outcome) "
-                 "VALUES (?, 'stale_mcp', 'mcp pid 13283', 'file', 1, 0, ?, 'not filed')",
-                 (NIGHT, '{"clients": ["pid 54868 (up 22h) claude --resume ghscavenge"]}'))
-    conn.execute("INSERT INTO watchdog_actions (at, criterion, subject, action, escalated, dry_run, evidence, outcome) "
-                 "VALUES (?, 'overrun', 'eval pgid 2', 'stop', 1, 0, 'not json', 'group term')", (NIGHT + 1,))
+    conn = ms.connect()
+    me = ms.remember_machine(conn)
+    conn.execute("INSERT INTO watchdog_actions (machine_id, at, criterion, subject, action, escalated, dry_run, evidence, "
+                 "outcome) VALUES (?, ?, 'stale_mcp', 'mcp pid 13283', 'file', 1, 0, ?, 'not filed')",
+                 (me, NIGHT, '{"clients": ["pid 54868 (up 22h) claude --resume ghscavenge"]}'))
+    conn.execute("INSERT INTO watchdog_actions (machine_id, at, criterion, subject, action, escalated, dry_run, evidence, "
+                 "outcome) VALUES (?, ?, 'overrun', 'eval pgid 2', 'stop', 1, 0, 'not json', 'group term')",
+                 (me, NIGHT + 1))
     rows = morning.watchdog(conn, NIGHT - 1)
     assert [r["clients"] for r in rows] == [["pid 54868 (up 22h) claude --resume ghscavenge"], []]
     needs = morning.needs({"watchdog": rows, "ci": {}, "deploy": {}, "sweep": {}, "ledger": None, "stale": []})
