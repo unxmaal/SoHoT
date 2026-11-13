@@ -229,8 +229,11 @@ def cmd_disk(a) -> int:
                  f"{got['gone']} gone row(s) removed")
         inv = disk.inventory(conn)
         if not a.delete:
+            from harness import quarantine
+            held = quarantine.sizes()
             note(disk.table(inv, now))
-            emit(**disk.as_json(inv, now))
+            note(quarantine.line(held))
+            emit(**disk.as_json(inv, now), quarantine=held)
             return 0
         doomed = disk.plan(inv, now, a.delete)
         size = sum(e.size for e in doomed)
