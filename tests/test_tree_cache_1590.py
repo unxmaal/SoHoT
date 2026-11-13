@@ -198,5 +198,7 @@ def test_layout_facts_come_back_from_the_cache_equal_and_move_with_the_text_and_
     edited = ls.many([("t.m", LAYOUT_SRC.replace("a.x = 1", "a.w = 1"), False)], mods)[0]
     assert scanned == ["t.m"] and ("pkg.a", "w", 7) in edited.patches
     monkeypatch.setattr(ls, "_FACTS", {})
+    ls.many([("t.m", LAYOUT_SRC, False)], mods)
+    monkeypatch.setattr(ls, "_FACTS", {})
     ls.many([("t.m", LAYOUT_SRC, False)], mods - {"pkg.c"})
-    assert scanned == ["t.m", "t.m"], "a changed module set scans again"
+    assert scanned == ["t.m", "t.m", "t.m"], "a changed module set scans again"
