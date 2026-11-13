@@ -10,7 +10,7 @@ from evals.runners.base import RunnerError
 from evals.runners.text import CompletionRunner
 from harness import completion, cuts, memory, mlx_server, reasons, router, serving
 from harness import memory_store as ms
-from harness import watchdog as wd
+from harness import watchdog as wd, watchdog_hands, watchdog_observe
 from harness.commands import loop as loop_cmd
 from harness.commands import measure as measure_cmd
 from tests.test_resume_813 import _sweep
@@ -50,7 +50,7 @@ class Repo(Fake):
         return {}
 
 
-class Hands(wd.Hands):
+class Hands(watchdog_hands.Hands):
     def __init__(self):
         super().__init__(run=None, environ={})
         self.done = []
@@ -129,7 +129,7 @@ def test_a_model_with_a_request_in_flight_or_unknown_is_not_spare(tmp_path):
     fake = Repo(tmp_path, spare=True)
     fake._served += [{"server": "router", "model": "Busy-4B", "in_flight": True},
                      {"server": "router", "model": "Unread-4B", "in_flight": None}]
-    assert wd.spare(wd.observe(fake, None, NIGHT)) == [{"server": "router", "model": SPARE}]
+    assert wd.spare(watchdog_observe.observe(fake, None, NIGHT)) == [{"server": "router", "model": SPARE}]
 
 
 def test_a_sustained_warn_gives_back_a_lane_model_too(monkeypatch):
@@ -138,7 +138,7 @@ def test_a_sustained_warn_gives_back_a_lane_model_too(monkeypatch):
     monkeypatch.setattr(mlx_server, "release", lambda model, why, **kw: asked.append((model, kw.get("keep"))) or True)
     f = wd.Finding("memory_sustained", wd.Subject("discover", "discover pid 236", "t"),
                    {"samples": 3, "spare": [{"server": "router", "model": SPARE}, {"server": "mlx", "model": "m"}]})
-    assert wd.Hands().do(wd.UNLOAD, f) == f"unloaded router {SPARE}; unloaded mlx m"
+    assert watchdog_hands.Hands().do(wd.UNLOAD, f) == f"unloaded router {SPARE}; unloaded mlx m"
     assert asked == [([SPARE], set()), ("m", set())]
 
 

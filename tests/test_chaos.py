@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from harness import chaos, cli, exclusive, fetching, paths, reasons, screen
+from harness import chaos, cli, exclusive, feeds, fetching, paths, reasons, screen
 from harness import memory_store as ms
 from harness.commands import chaos as chaos_cmd
 
@@ -398,7 +398,7 @@ def test_network_drop_leaves_the_candidate_queued_with_a_failed_download(
 def test_network_drop_fails_when_inspect_settles_the_candidate(scratch_parent):
     got = chaos.run_all([chaos.network_drop(net_mechanics(
         [], registry_for=lambda url: lambda u: (_ for _ in ()).throw(
-            Exception("HTTP 404"))))],
+            feeds.FeedError("HTTP 404", status=404))))],
         live=paths.home(), parent=scratch_parent)
     assert not got[0].ok and "Gone" in got[0].detail
 

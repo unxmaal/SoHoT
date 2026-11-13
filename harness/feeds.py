@@ -43,7 +43,11 @@ UNREACHABLE_RETRIES = 1
 
 
 class FeedError(RuntimeError):
-    """A feed could not be fetched or did not parse as a feed."""
+    """A feed could not be fetched or did not parse as a feed; `status` is the HTTP code that ended it, else None."""
+
+    def __init__(self, *args, status: int | None = None):
+        super().__init__(*args)
+        self.status = status
 
 
 class RateLimitedFeed(FeedError):
@@ -405,7 +409,7 @@ def fetch(url: str, timeout: float = 30.0, retries: int = RETRIES,
           timeout_knob: str = "harness/feeds.py:fetch(timeout)") -> str:
     """GET `url` as text, retrying on the rate limit with ratelimit's backoff; an unreachable host is retried once."""
     from harness import ratelimit
-    last = ""
+    last, code = "", None
     unreachable = 0
     for attempt in range(retries + 1):
         retry_after = None
@@ -415,14 +419,14 @@ def fetch(url: str, timeout: float = 30.0, retries: int = RETRIES,
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 return r.read().decode("utf-8", "replace")
         except urllib.error.HTTPError as exc:
-            last = f"HTTP {exc.code}"
+            last, code = f"HTTP {exc.code}", exc.code
             if exc.code not in (429, 500, 502, 503, 504):
-                raise FeedError(f"{url}: {last}") from exc
+                raise FeedError(f"{url}: {last}", status=exc.code) from exc
             retry_after = exc.headers.get("Retry-After") if exc.headers else None
             if exc.code == 429 and on_limit is not None:
                 on_limit(retry_after)
         except (urllib.error.URLError, OSError) as exc:
-            last = str(exc)
+            last, code = str(exc), None
             unreachable += 1
             if cuts.timed_out(exc):
                 cuts.cut(timeout_knob, f"{url}: no answer in time", value=timeout,
@@ -434,13 +438,13 @@ def fetch(url: str, timeout: float = 30.0, retries: int = RETRIES,
             raise FeedError(f"{url}: {exc}") from exc
         if attempt < retries:
             sleep(ratelimit.wait_s(retry_after, attempt, delay))
-    error = RateLimitedFeed if last == "HTTP 429" else FeedError
+    error = RateLimitedFeed if code == 429 else FeedError
     if unreachable <= UNREACHABLE_RETRIES:
         cuts.cut(retries_knob, f"{url}: gave up after {attempt + 1} attempts ({last})",
                  value=retries, kept=0, dropped=1)
     else:
         cuts.cut("feed_unreachable_retries", f"{url}: unreachable, gave up ({last})", kept=0, dropped=1)
-    raise error(f"{url}: gave up after {attempt + 1} attempts ({last})")
+    raise error(f"{url}: gave up after {attempt + 1} attempts ({last})", status=code)
 
 
 def parse(text: str) -> list[Entry]:

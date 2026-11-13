@@ -9,16 +9,13 @@ run that prints and records what it would have done.
 from __future__ import annotations
 
 import contextlib
-import hashlib
 import json
 import os
 import re
-import subprocess
-import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from harness import audio_models, interactive, serve_lease
+from harness import audio_models, interactive, machine_scope, serve_lease, watchdog_hands, watchdog_observe
 from harness.overrun import cells as _cells, paired as _paired, unmeasured as _unmeasured
 
 NOTE, NOTIFY, FILE, PAUSE, STOP, REAP, UNLOAD, RESTART = (
@@ -206,469 +203,6 @@ class Finding:
     evidence: dict
 
 
-# --- the outside world, behind one seam the tests replace ------------------------
-
-def _etime(text: str) -> float:
-    """ps etime [[dd-]hh:]mm:ss in seconds."""
-    days, _, rest = text.strip().rpartition("-")
-    parts = [int(p) for p in rest.split(":")]
-    while len(parts) < 3:
-        parts.insert(0, 0)
-    h, m, s = parts[-3:]
-    return (int(days) if days else 0) * 86400.0 + h * 3600 + m * 60 + s
-
-
-def parse_ps(text: str) -> list[Proc]:
-    out = []
-    for line in text.splitlines():
-        bits = line.split(None, 4)
-        if len(bits) < 5 or not bits[0].isdigit():
-            continue
-        try:
-            out.append(Proc(int(bits[0]), int(bits[1]), int(bits[2]), _etime(bits[3]), bits[4]))
-        except ValueError:
-            continue
-    return out
-
-
-class Probes:
-    """Every read of the machine the watchdog makes. None from a probe means it could not be asked."""
-
-    def processes(self) -> list[Proc] | None:
-        if sys.platform == "win32":
-            return None
-        try:
-            got = subprocess.run(["ps", "-ww", "-axo", "pid=,ppid=,pgid=,etime=,command="], capture_output=True,
-                                 text=True, timeout=PROBE_TIMEOUT_S)
-        except (OSError, subprocess.SubprocessError):
-            return None
-        return parse_ps(got.stdout) if got.returncode == 0 else None
-
-    def _launchctl(self, service: str):
-        if sys.platform != "darwin":
-            return None
-        try:
-            return subprocess.run(["launchctl", "print", f"gui/{os.getuid()}/{LABEL}.{service}"],
-                                  capture_output=True, text=True, timeout=PROBE_TIMEOUT_S)
-        except (OSError, subprocess.SubprocessError):
-            return None
-
-    def launchd_pid(self, service: str) -> int | None:
-        got = self._launchctl(service)
-        m = re.search(r"^\tpid = (\d+)", got.stdout, re.M) if got is not None and got.returncode == 0 else None
-        return int(m.group(1)) if m else None
-
-    def mcp_connections(self, port: int) -> str | None:
-        """`lsof -F pn` of every established TCP connection on `port`; None when lsof cannot be asked."""
-        if sys.platform == "win32":
-            return None
-        try:
-            got = subprocess.run(["lsof", "-nP", f"-iTCP:{port}", "-sTCP:ESTABLISHED", "-Fpn"], capture_output=True,
-                                 text=True, timeout=PROBE_TIMEOUT_S)
-        except (OSError, subprocess.SubprocessError):
-            return None
-        # lsof exits 1 when it matched nothing
-        return got.stdout if got.returncode == 0 or (got.returncode == 1 and not got.stdout) else None
-
-    def launchd_loaded(self, service: str) -> bool | None:
-        got = self._launchctl(service)
-        return None if got is None else got.returncode == 0
-
-    def heartbeat(self) -> dict | None:
-        from harness import heartbeat
-        return heartbeat.read()
-
-    def job_pids(self) -> dict:
-        """Queue job id -> the pid of its group leader, from the files the worker leaves. #628."""
-        from harness import executors, workqueue
-        out = {}
-        for f in sorted(workqueue._pids().glob("*.pid")):
-            with contextlib.suppress(OSError, ValueError):
-                out[f.stem] = executors.pid_record(f)[0]
-        return out
-
-    def job(self, job_id: str) -> dict | None:
-        from harness import workqueue
-        try:
-            return workqueue.get(job_id)
-        except Exception as exc:  # noqa: BLE001 - a store that cannot be read is a gap, not a crash
-            return {"error": str(exc)}
-
-    def worker_running(self) -> bool:
-        from harness import workqueue
-        return workqueue.running()
-
-    def progress(self, evals: list[Proc]) -> list[dict] | None:
-        return ProgressFiles().runs(evals)
-
-    def lock(self) -> dict | None:
-        """The eval lock's holder record when it is held, {} when it is free."""
-        from harness import delegate, exclusive
-        try:
-            return exclusive.holder() or {"kind": "unknown"} if delegate.busy() else {}
-        except (OSError, exclusive.StoreDown):
-            return None
-
-    def cloud(self) -> set:
-        """The process groups (and pids) holding a cloud slot, not the GPU lock. #1135."""
-        from harness import exclusive
-        try:
-            held = exclusive.holders()
-        except (OSError, exclusive.StoreDown):
-            return set()
-        gpu = {h.get(k) for h in held if h["lock"] == "gpu" for k in ("pgid", "pid")}
-        return {h.get(k) for h in held if h["lock"] == "cloud" for k in ("pgid", "pid")} - gpu - {None}
-
-    def resident(self) -> list[str] | None:
-        """Router models nothing serves or adopted; None when the router or the defaults cannot be read."""
-        from harness import router
-        held = router.statuses()
-        if held is None:
-            return None
-        try:
-            keep = router.kept()
-        except Exception:  # noqa: BLE001 - unknown protection means nothing is free to unload
-            return None
-        return sorted(k for k, v in held.items() if v in router.RESIDENT and k not in keep)
-
-    def footprint(self, pid: int) -> float | None:
-        return audio_models.footprint_gib(pid)
-
-    def pressure(self):
-        from harness import pressure
-        return pressure.sample()
-
-    def mlx_held(self) -> str | None:
-        if not self.launchd_loaded("mlx"):
-            return None
-        from harness import mlx_server, serving
-        return mlx_server.held(serving.MLX_URL, timeout=PROBE_TIMEOUT_S)
-
-    def protected(self) -> set | None:
-        from harness import router
-        try:
-            return set(router.protected())
-        except Exception:  # noqa: BLE001 - unknown protection means nothing is free to unload
-            return None
-
-    def gateway_up(self) -> bool | None:
-        if not self.launchd_loaded("gateway"):
-            return None
-        import httpx
-
-        from harness import completion
-        try:
-            r = httpx.get(completion.gateway_url() + "/health/liveliness", timeout=PROBE_TIMEOUT_S)
-        except httpx.HTTPError:
-            return False
-        return r.status_code == 200
-
-    def mlx_generating(self) -> bool | None:
-        """False when the loaded mlx unit answers that its generation thread died (#912); None when it cannot be asked."""
-        if not self.launchd_loaded("mlx"):
-            return None
-        from harness import mlx_server, serving
-        return mlx_server.generating(serving.MLX_URL, timeout=PROBE_TIMEOUT_S)
-
-    def served(self) -> list[dict]:
-        """Router models loaded now and a held mlx model other than its boot one, each with whether a request is in flight."""
-        from harness import router, slot_probe
-        out = []
-        for stem, status in (router.statuses() or {}).items():
-            if status != "loaded":
-                continue
-            try:
-                busy = slot_probe.idle(router._get(f"/slots?model={stem}"))
-            except Exception:  # noqa: BLE001 - unknown slots are an unknown in-flight request
-                busy = None
-            out.append({"server": "router", "model": stem, "in_flight": None if busy is None else not busy})
-        if self.launchd_loaded("mlx"):
-            from harness import mlx_server, serving
-            got = mlx_server.activity(serving.MLX_URL, timeout=PROBE_TIMEOUT_S) or {}
-            n = got.get("in_flight")
-            if got.get("model") and got.get("model") != got.get("boot"):
-                out.append({"server": "mlx", "model": got["model"],
-                            "in_flight": None if not isinstance(n, int) or not got.get("boot") else n > 0})
-        return out
-
-    def last_use(self, conn, since: float) -> dict:
-        """Served model -> its latest request since `since` that the watchdog or a smoke test did not send."""
-        if conn is None:
-            return {}
-        from harness import gateway, purpose
-        out: dict = {}
-        for served, at in conn.execute(
-                "SELECT served, MAX(at) FROM gateway_requests WHERE at >= ? AND purpose NOT IN (?, ?) GROUP BY served",
-                (since, purpose.WATCHDOG, purpose.SMOKE)):
-            model = gateway.strip_provider(str(served or ""))
-            out[model] = max(float(at), out.get(model, 0.0))
-        return out
-
-    def lanes(self, conn, now: float) -> list[dict] | None:
-        """One known-answer completion per resident text lane, each recorded in lane_probes (#924); None without a store."""
-        if conn is None:
-            return None
-        from harness import lane_probe
-        return lane_probe.wake(conn, now, machine_id=_machine(conn))
-
-    def contention(self, conn, now: float) -> dict | None:
-        """The owner's hold and the served lanes' requests in the contention window; None without a store. #1509."""
-        if conn is None:
-            return None
-        from harness import contention
-        return contention.reading(conn, now)
-
-    def fallbacks(self, conn) -> list[dict] | None:
-        from harness import live_audit
-        if conn is None:
-            return None
-        try:
-            return live_audit.node_fallbacks(conn)
-        except Exception:  # noqa: BLE001 - no served config or no nodes file
-            return None
-
-    def state(self) -> Path:
-        from harness import paths
-        d = paths.home() / "watchdog"
-        d.mkdir(parents=True, exist_ok=True)
-        return d
-
-
-class ProgressFiles:
-    """The progress.json files evals.run writes (evals/watch.py, #813): read them, and pause a run through its pause file."""
-
-    from evals.watch import PAUSE_FILE, PROGRESS as NAME
-
-    def __init__(self, roots=None):
-        self.roots = roots
-
-    def _roots(self) -> list[Path]:
-        if self.roots is not None:
-            return [Path(r) for r in self.roots]
-        from harness import paths
-        return [paths.runs()]
-
-    def runs(self, evals: list[Proc] = ()) -> list[dict]:
-        found = {p for root in self._roots() if root.is_dir() for p in root.glob(f"*/{self.NAME}")}
-        for proc in evals:
-            m = re.search(r"--out[= ](\S+)", proc.command)
-            if m and Path(m.group(1)).is_absolute():
-                found.add(Path(m.group(1)) / self.NAME)
-        out = []
-        from harness import run_state
-        for path in sorted(found):
-            state = run_state.of(path.parent)
-            if state.name in run_state.PAUSABLE:
-                out.append({**state.progress, "_dir": str(path.parent)})
-            elif state.name in (run_state.CRASHED, run_state.SIGNALLED):
-                # Its process is gone, so no one acts on its pause; a paused run's pause file still says why. #1740.
-                (path.parent / self.PAUSE_FILE).unlink(missing_ok=True)
-        return out
-
-    def pause(self, run: dict, reason: str = "") -> str:
-        """Write the run's pause file naming why; the run checkpoints and exits between cases."""
-        from evals.watch import ask_pause
-        where = Path(run["_dir"])
-        target = Path(run.get("pause_file") or where / self.PAUSE_FILE)
-        if target.parent.resolve() != where.resolve() or target.name != self.PAUSE_FILE:
-            return Said(f"refused: pause file {target} is outside the run directory {where}", REFUSED)
-        return Said(f"pause file written: {ask_pause(where, reason)}")
-
-    def mark_stop(self, run: dict, reason: str) -> str:
-        """Write the run's stop file naming why, so its measure step can tell an overrun from any other stop. #1409."""
-        from evals.watch import mark_stop
-        try:
-            return f"stop file written: {mark_stop(Path(run['_dir']), reason)}"
-        except (KeyError, OSError) as exc:
-            return f"stop file not written: {exc}"
-
-
-# --- observe ---------------------------------------------------------------------
-
-def _ancestors(pid: int, procs: dict) -> list[int]:
-    out, seen = [], set()
-    while pid in procs and pid not in seen and pid > 1:
-        seen.add(pid)
-        pid = procs[pid].ppid
-        out.append(pid)
-    return out
-
-
-def _ours_only(pgid: int, procs: dict, ours) -> bool:
-    members = [p for p in procs.values() if p.pgid == pgid]
-    return bool(members) and all(ours(p) for p in members)
-
-
-def observe(probes: Probes, conn=None, now: float | None = None) -> World:
-    now = time.time() if now is None else now
-    world = World(now=now)
-    listed = probes.processes()
-    if listed is None:
-        world.gaps["processes"] = "the process table could not be read on this platform"
-        listed = []
-    procs = {p.pid: p for p in listed}
-
-    discover = None
-    dpid = probes.launchd_pid("discover")
-    if dpid in procs and _DISCOVER.search(procs[dpid].command):
-        p = procs[dpid]
-        discover = Subject("discover", f"discover pid {p.pid}", "the launchd discover agent's pid", pid=p.pid,
-                           pgid=p.pid if p.pgid == p.pid else None, elapsed_s=p.elapsed_s, command=p.command)
-        world.top.append(discover)
-    beat = probes.heartbeat() or {}
-    loop_pid = beat.get("pid") if beat.get("state") == "running" else None
-    marks = {pid: "discover" for pid in (dpid, loop_pid) if pid in procs}
-
-    jobs = {}
-    for job_id, pid in probes.job_pids().items():
-        p = procs.get(pid)
-        if p is None or p.pgid != pid:
-            continue
-        row = probes.job(job_id) or {}
-        state = row.get("state", "")
-        orphan = state not in ("running", "") or not probes.worker_running()
-        s = Subject("job", f"job {job_id}", "a work queue pid file names its group leader", pid=pid, pgid=pid,
-                    elapsed_s=p.elapsed_s, command=p.command, orphan=orphan,
-                    job_id=int(job_id) if str(job_id).isdigit() else None,
-                    detail={"title": row.get("title", ""), "state": state,
-                            "requested_by": row.get("requested_by", "")})
-        jobs[pid] = s
-        marks[pid] = f"job {job_id}"
-        world.top.append(s)
-
-    progress = probes.progress([p for p in listed if _EVAL.search(p.command)])
-    if progress is None:
-        world.gaps["progress"] = "no progress reader"
-    by_pid = {int(r["pid"]): r for r in progress or [] if str(r.get("pid", "")).isdigit()}
-
-    groups: dict = {}
-    for p in listed:
-        if _EVAL.search(p.command):
-            groups.setdefault(p.pgid, []).append(p)
-    for pgid, members in sorted(groups.items()):
-        pids = {m.pid for m in members}
-        top = min((m for m in members if m.ppid not in pids), key=lambda m: m.pid, default=members[0])
-        owners = [marks[a] for a in [top.pid, *_ancestors(top.pid, procs), pgid] if a in marks]
-        parent = next((t for o in owners for t in world.top
-                       if t.key == o or (o == "discover" and t.kind == "discover")), None)
-        owner = parent.key if parent is not None else (owners[0] if owners else "")
-        run = next((by_pid[m.pid] for m in members if m.pid in by_pid), None)
-        s = Subject("eval", f"eval pgid {pgid}", "", pid=top.pid,
-                    pgid=pgid if _ours_only(pgid, procs, lambda q: bool(_EVAL.search(q.command))) else None,
-                    elapsed_s=top.elapsed_s, command=top.command, owner=owner, progress=run)
-        if owner:
-            s.why = f"an evals.run under {owner}"
-        elif run is not None:
-            s.why = "an evals.run that writes a progress file"
-        elif top.ppid == 1:
-            s.why, s.orphan = "an evals.run whose parent is gone (reparented to launchd)", True
-        else:
-            world.unowned.append(s)
-            continue
-        if not owner and top.ppid == 1:
-            s.orphan = True
-        world.evals.append(s)
-        if parent is not None:
-            parent.children.append(s)
-        else:
-            world.top.append(s)
-
-    world.mcp_live = probes.launchd_pid("mcp")
-    if world.mcp_live in procs:
-        from harness import mcp_peers
-        world.mcp_live_s = procs[world.mcp_live].elapsed_s
-        for p in mcp_peers.stale(listed, world.mcp_live):
-            world.mcp_stale.append(Subject("mcp", f"mcp pid {p.pid}", "a harness.mcp_server the mcp unit is not",
-                                           pid=p.pid, elapsed_s=p.elapsed_s, command=p.command,
-                                           orphan=p.ppid == 1, detail={"live_pid": world.mcp_live}))
-        if world.mcp_stale:
-            _mcp_clients(probes, world, listed)
-    world.lock = probes.lock()
-    world.gpu = _gpu_holder(world, procs)
-    world.cloud = probes.cloud()
-    world.resident = probes.resident()
-    world.pressure = probes.pressure()
-    world.swap_per_min = _swap_rate(probes, world.pressure, now)
-    world.mlx_held = probes.mlx_held()
-    world.protected = probes.protected() if world.mlx_held else None
-    world.gateway_up = probes.gateway_up()
-    world.mlx_generating = probes.mlx_generating()
-    world.interactive = interactive.watch(probes.launchd_loaded("interactive"))
-    world.fallbacks = probes.fallbacks(conn)
-    try:
-        world.tts = audio_models.watch(probes, listed)
-    except Exception as exc:  # noqa: BLE001 - an unreadable tts server restarts nothing this wake
-        world.gaps["tts"] = f"the tts server could not be read: {type(exc).__name__}: {exc}"[:300]
-    try:
-        world.served = probes.served()
-        world.idle_since = _idle_since(probes, world, probes.last_use(conn, now - unload_after(now)), now)
-    except Exception as exc:  # noqa: BLE001 - an unreadable server or store gives nothing back this wake
-        world.gaps["served"] = f"the served models could not be read: {type(exc).__name__}: {exc}"[:300]
-    try:
-        world.warn_samples = warn_samples(conn, now) if conn is not None else 0
-    except Exception as exc:  # noqa: BLE001 - an unreadable history is a gap: a warn stays a warn
-        world.warn_samples = None
-        world.gaps["warn_samples"] = f"the earlier warn samples could not be read: {type(exc).__name__}: {exc}"[:300]
-    try:
-        world.contention = probes.contention(conn, now)
-    except Exception as exc:  # noqa: BLE001 - unread contention pauses nothing this wake
-        world.gaps["contention"] = f"the served lanes or the hold could not be read: {type(exc).__name__}: {exc}"[:300]
-    try:
-        world.lanes = probes.lanes(conn, now)
-    except Exception as exc:  # noqa: BLE001 - a probe that cannot run is a gap, never a lost wake
-        world.gaps["lanes"] = f"the lane probes failed: {type(exc).__name__}: {exc}"[:300]
-    return world
-
-
-def _gpu_holder(w: World, procs: dict) -> str | None:
-    """The key of the top subject whose process, its evals' or a descendant's, holds the GPU lock. #1370."""
-    held = w.lock
-    if held is None:
-        return None
-    if not held:
-        return ""
-    pids = {p for p in (held.get("pid"), held.get("pgid")) if isinstance(p, int)}
-    if not pids:
-        return None
-    chain = pids | {a for p in pids for a in _ancestors(p, procs)}
-    for s in w.top:
-        if any({x.pid, x.pgid} & chain for x in [s, *s.children]):
-            return s.key
-    return ""
-
-
-def _idle_since(probes: Probes, w: World, asked: dict, now: float) -> dict:
-    """"server:model" -> the latest of its last request, when this residency was first seen, when a run last named it."""
-    path = probes.state() / "idle.json"
-    try:
-        before = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        before = {}
-    used, kept, out = _in_use(w), {}, {}
-    for m in w.served:
-        key, was = f"{m['server']}:{m['model']}", before.get(f"{m['server']}:{m['model']}") or {}
-        named = used is None or m["in_flight"] is True or any(m["model"] in u for u in used)
-        kept[key] = {"seen": was.get("seen", now), "pinned": now if named else was.get("pinned")}
-        out[key] = max(t for t in (kept[key]["seen"], kept[key]["pinned"], asked.get(m["model"])) if t is not None)
-    path.write_text(json.dumps(kept), encoding="utf-8")
-    return out
-
-
-def _swap_rate(probes: Probes, sample, now: float) -> float | None:
-    """Swapouts per minute since the last wake, from a counter kept beside the watchdog's lock."""
-    have = getattr(sample, "swapouts", None)
-    path = probes.state() / "swap.json"
-    try:
-        before = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        before = {}
-    if have is not None:
-        path.write_text(json.dumps({"at": now, "swapouts": have}), encoding="utf-8")
-    if have is None or not before or now <= before.get("at", now) or have < before.get("swapouts", 0):
-        return None
-    return (have - before["swapouts"]) * 60.0 / (now - before["at"])
-
-
 # --- judge -----------------------------------------------------------------------
 
 def daytime(now: float) -> bool:
@@ -804,7 +338,7 @@ def _orphan(w: World) -> list[Finding]:
             for s in w.top if s.orphan and (s.elapsed_s or 0) >= ORPHAN_GRACE_S]
 
 
-def _mcp_clients(probes: Probes, world: World, procs: list) -> None:
+def _mcp_clients(probes: watchdog_observe.Probes, world: World, procs: list) -> None:
     """Name the sessions each stale server holds: they keep its tool list until it stops, then refetch. #1166."""
     from harness import mcp_peers
     port = mcp_peers.port_of(world.mcp_stale[0].command)
@@ -987,11 +521,11 @@ def _every_s() -> float:
 def warn_samples(conn, now: float) -> int:
     """Earlier wakes, back from `now` with no wake between them missing, that recorded memory at warn here. #1482."""
     gap = 1.5 * _every_s()
-    m = _machine(conn)
+    here, mine = _mine(conn)
     rows = conn.execute(
         f"SELECT DISTINCT at FROM watchdog_actions WHERE criterion IN ({','.join('?' * len(WARN_CRITERIA))}) "
-        "AND at < ? AND at >= ? AND (machine_id = ? OR (machine_id IS NULL AND ? IS NULL)) ORDER BY at DESC",
-        (*WARN_CRITERIA, now, now - WARN_SUSTAINED * gap, m, m)).fetchall()
+        f"AND at < ? AND at >= ? AND {here} ORDER BY at DESC",
+        (*WARN_CRITERIA, now, now - WARN_SUSTAINED * gap, *mine)).fetchall()
     n, last = 0, now
     for r in rows:
         if last - float(r["at"]) > gap:
@@ -1145,181 +679,6 @@ def judge(w: World) -> tuple[list[Finding], dict]:
     return found, skipped
 
 
-# --- act -------------------------------------------------------------------------
-
-def fingerprint(f: Finding) -> str:
-    """Stable across wakes and pids: the criterion, the kind, and what was running."""
-    s = f.subject
-    what = json.dumps(sorted((s.progress or {}).get("specs") or {}), sort_keys=True) if s.progress else \
-        re.sub(r"\d+", "N", s.command or s.key)
-    return hashlib.sha256(f"{f.criterion}|{s.kind}|{what}".encode()).hexdigest()[:16]
-
-
-def desktop(title: str, message: str, subtitle: str = "", run=subprocess.run, platform: str | None = None) -> str:
-    """One macOS desktop notification through osascript; the outcome string. #818, #867."""
-    platform = platform or sys.platform
-    if platform != "darwin":
-        return Said(f"notify unavailable: no desktop notifier on {platform} (macOS osascript only); "
-                    "the row and the log line are the notice", UNAVAILABLE)
-    message = message[:200]
-    # argv, not string interpolation, so a command line in the subject cannot break the AppleScript.
-    script = ["osascript", "-e", "on run argv", "-e",
-              "display notification (item 2 of argv) with title (item 1 of argv) subtitle (item 3 of argv)",
-              "-e", "end run", title, message, subtitle[:120]]
-    try:
-        got = run(script, capture_output=True, text=True, timeout=NOTIFY_TIMEOUT_S)
-    except (OSError, subprocess.SubprocessError) as exc:
-        return Said(f"notify failed: {exc}", FAILED)
-    if got.returncode != 0:
-        return Said(f"notify failed: osascript rc {got.returncode}: {(got.stderr or '').strip()[:200]}", FAILED)
-    return Said(f"{NOTIFIED}: {message}", ACTED, notified=True)
-
-
-class Hands:
-    """The fixed action set. Each returns an outcome string for the store row."""
-
-    def __init__(self, reader: ProgressFiles | None = None, run=subprocess.run, environ=None, say=print,
-                 platform: str | None = None):
-        self.reader = reader or ProgressFiles()
-        self.run = run
-        self.environ = os.environ if environ is None else environ
-        self.say = say
-        self.platform = sys.platform if platform is None else platform
-
-    def note(self, f: Finding) -> str:
-        return Said("noted")
-
-    def notify(self, f: Finding) -> str:
-        return desktop(NOTIFY_TITLE, f"{f.criterion}: {f.subject.key}", BY_ID[f.criterion].what,
-                       run=self.run, platform=self.platform)
-
-    def file(self, f: Finding) -> str:
-        if self.environ.get(FILE_ENV, "") != "1":
-            return Said(f"not filed: {FILE_ENV} is not 1", REFUSED)
-        from harness import paths, privacy
-        fp = fingerprint(f)
-        title = f"watchdog: {f.criterion} on {f.subject.kind} ({BY_ID[f.criterion].what})"
-        body = (f"The watchdog (#814) judged `{f.criterion}` on {f.subject.key}.\n\n"
-                f"Identified as: {f.subject.why}\n\nCommand: `{f.subject.command}`\n\n"
-                f"Evidence:\n```json\n{json.dumps(f.evidence, indent=2, default=str)}\n```\n\n"
-                f"{FINGERPRINT} {fp}\n")
-        found = privacy.check_post(f"{title}\n{body}")
-        if found:
-            return Said(f"not filed: privacy: the issue would hold {', '.join(sorted({x.name for x in found}))}",
-                        REFUSED)
-        try:
-            seen = self.run(["gh", "issue", "list", "--state", "open", "--search", f"{fp} in:body",
-                             "--json", "number", "--limit", "1"], capture_output=True, text=True,
-                            timeout=GH_TIMEOUT_S, cwd=paths.REPO)
-            if seen.returncode != 0:
-                return Said(f"not filed: gh issue list failed: {seen.stderr.strip()[:200]}", FAILED)
-            hits = json.loads(seen.stdout or "[]")
-            if hits:
-                return f"already filed: #{hits[0]['number']}"
-            made = self.run(["gh", "issue", "create", "--title", title, "--body", body], capture_output=True,
-                            text=True, timeout=GH_TIMEOUT_S, cwd=paths.REPO)
-        except (OSError, subprocess.SubprocessError, ValueError) as exc:
-            return Said(f"not filed: {exc}", FAILED)
-        if made.returncode != 0:
-            return Said(f"not filed: gh issue create failed: {made.stderr.strip()[:200]}", FAILED)
-        return f"filed: {made.stdout.strip()}"
-
-    def pause(self, f: Finding) -> str:
-        runs = f.subject.runs()
-        if not runs:
-            return Said("pause unavailable: no progress file to pause through", UNAVAILABLE)
-        got = [said(self.reader.pause(r, f.criterion)) for r in runs]
-        return Said("; ".join(got), ACTED if any(g.result == ACTED for g in got) else got[0].result)
-
-    def _group(self, s: Subject) -> str:
-        from harness import workqueue
-        if s.pgid is None:
-            return Said(f"refused: {s.key} has no process group made only of SoHoT processes", REFUSED)
-        return Said(f"group {s.pgid}: {workqueue.stop_group(s.pgid, grace=STOP_GRACE_S)}")
-
-    def stop(self, f: Finding) -> str:
-        if f.subject.pgid is not None:
-            for r in f.subject.runs():
-                self.reader.mark_stop(r, f.criterion)
-        return self._group(f.subject)
-
-    def reap(self, f: Finding) -> str:
-        if not f.subject.orphan:
-            return Said(f"refused: {f.subject.key} is not an orphan", REFUSED)
-        return self._group(f.subject)
-
-    def unload(self, f: Finding) -> str:
-        from harness import router
-        if f.criterion == "memory_warn":
-            return self._unload_idle(f.evidence.get("idle") or [])
-        if f.criterion == "memory_sustained":
-            # A lane's own model goes too: the memory is what keeps the machine up, not its adoption. #1482.
-            return self._unload_idle(f.evidence.get("spare") or [], keep=set(),
-                                     why=f"watchdog: memory at warn for {f.evidence.get('samples')} wakes, "
-                                         "loaded with no request in flight")
-        if f.criterion == "idle_unload":
-            # A lane's own model is given back too: the limit is what keeps it, not its adoption. #1157.
-            return self._unload_idle([f.evidence], keep=set(),
-                                     why=f"watchdog: no request for {f.evidence['idle_s']}s, "
-                                         f"past {f.evidence['limit_s']:.0f}s")
-        stem = f.subject.detail.get("stem", "")
-        gone = router.release([stem], "watchdog: resident with nothing running", say=self.say)
-        return Said(f"unloaded {stem}") if gone else Said(f"kept {stem}: protected, gone, or a run is in flight",
-                                                          REFUSED)
-
-    def _unload_idle(self, idle: list, keep=None,
-                     why: str = "watchdog: memory at warn, resident with no running eval using it") -> str:
-        """Give back each idle model a memory_warn or idle_unload finding named. #1082, #1157."""
-        from harness import mlx_server, router
-        if not idle:
-            return Said("nothing idle to unload: every resident model is in use or served", UNAVAILABLE)
-        out = []
-        for m in idle:
-            if m.get("server") == "mlx":
-                gone = mlx_server.release(m["model"], why, keep=keep, say=self.say)
-            else:
-                gone = bool(router.release([m["model"]], why, keep=keep, say=self.say, proven_idle=True))
-            out.append(f"{'unloaded' if gone else 'kept'} {m['server']} {m['model']}")
-        return Said("; ".join(out), ACTED if any(o.startswith("unloaded") for o in out) else REFUSED)
-
-    def restart(self, f: Finding) -> str:
-        from harness import paths
-        service = f.subject.detail.get("service", "")
-        if service in ("mlx", "interactive"):
-            return self._kickstart(service)
-        if service not in ("gateway", audio_models.SERVICE):
-            return Said(f"refused: {service or f.subject.kind} is not a service the watchdog restarts", REFUSED)
-        try:
-            got = self.run(["/bin/bash", str(paths.REPO / "scripts" / "launchd.sh"), "restart", service],
-                           capture_output=True, text=True, timeout=RESTART_TIMEOUT_S)
-        except subprocess.TimeoutExpired:
-            return Said(f"restart of {service} still waiting on the GPU lock after {RESTART_TIMEOUT_S:.0f}s", FAILED)
-        except OSError as exc:
-            return Said(f"restart of {service} failed: {exc}", FAILED)
-        return Said(f"restarted {service}") if got.returncode == 0 else \
-            Said(f"restart of {service} failed rc {got.returncode}: {got.stderr.strip()[:200]}", FAILED)
-
-    def _kickstart(self, service: str) -> str:
-        """kickstart -k without the GPU lock: a server that cannot generate has no work in flight to protect."""
-        if self.platform != "darwin":
-            return Said(f"refused: restarting {service} needs launchd (macOS); this is {self.platform}", REFUSED)
-        try:
-            got = self.run(["launchctl", "kickstart", "-k", f"gui/{os.getuid()}/{LABEL}.{service}"],
-                           capture_output=True, text=True, timeout=RESTART_TIMEOUT_S)
-        except (AttributeError, OSError, subprocess.SubprocessError) as exc:
-            return Said(f"restart of {service} failed: {exc}", FAILED)
-        return Said(f"restarted {service}") if got.returncode == 0 else \
-            Said(f"restart of {service} failed rc {got.returncode}: {(got.stderr or '').strip()[:200]}", FAILED)
-
-    def do(self, action: str, f: Finding) -> str:
-        if action not in ACTIONS:
-            raise ValueError(f"not a watchdog action: {action}")
-        try:
-            return said(getattr(self, action)(f), action)
-        except Exception as exc:  # noqa: BLE001 - one failed action must not cost the rest of the wake
-            return Said(f"{action} failed: {type(exc).__name__}: {exc}", FAILED)
-
-
 # --- record ----------------------------------------------------------------------
 
 def _machine(conn) -> int | None:
@@ -1328,15 +687,17 @@ def _machine(conn) -> int | None:
     return got[0] if got else None
 
 
+def _mine(conn) -> tuple[str, tuple]:
+    return machine_scope.where("watchdog_actions.mine", _machine(conn))
+
+
 def repeats(conn, f: Finding, now: float, dry_run: bool, windowed: bool = True) -> int:
     """Prior trips of this criterion on this subject inside the escalation window (or ever), this machine."""
-    row = conn.execute(
+    here, mine = _mine(conn)
+    return int(conn.execute(
         "SELECT COUNT(*) AS n FROM watchdog_actions WHERE criterion = ? AND subject = ? AND dry_run = ? "
-        "AND at >= ? AND (machine_id = ? OR (machine_id IS NULL AND ? IS NULL))",
-        (f.criterion, f.subject.key, int(dry_run), now - ESCALATE_WINDOW_S if windowed else 0.0, _machine(conn),
-         _machine(conn))
-    ).fetchone()
-    return int(row["n"])
+        f"AND at >= ? AND {here}",
+        (f.criterion, f.subject.key, int(dry_run), now - ESCALATE_WINDOW_S if windowed else 0.0, *mine)).fetchone()["n"])
 
 
 def overrun_stopped(conn, out) -> bool:
@@ -1352,19 +713,18 @@ def overrun_stopped(conn, out) -> bool:
 
 def notified_since(conn, f: Finding, now: float) -> float | None:
     """When this criterion last put a notification on this subject's desktop inside NOTIFY_EVERY_S, this machine."""
-    row = conn.execute(
+    here, mine = _mine(conn)
+    at = conn.execute(
         "SELECT MAX(at) AS at FROM watchdog_actions WHERE criterion = ? AND subject = ? AND dry_run = 0 "
-        "AND notified = 1 AND at >= ? AND (machine_id = ? OR (machine_id IS NULL AND ? IS NULL))",
-        (f.criterion, f.subject.key, now - NOTIFY_EVERY_S, _machine(conn), _machine(conn))
-    ).fetchone()
-    return None if row["at"] is None else float(row["at"])
+        f"AND notified = 1 AND at >= ? AND {here}", (f.criterion, f.subject.key, now - NOTIFY_EVERY_S, *mine)).fetchone()["at"]
+    return None if at is None else float(at)
 
 
 #: Criteria whose pause is also put on the desktop, once. #1482.
 PUSHED = ("memory_stuck",)
 
 
-def _act(conn, hands: Hands, action: str, f: Finding, now: float) -> Said:
+def _act(conn, hands: watchdog_hands.Hands, action: str, f: Finding, now: float) -> Said:
     if action == NOTIFY:
         last = notified_since(conn, f, now)
         if last is not None:
@@ -1386,7 +746,7 @@ def run_dir(s: Subject) -> str:
 
 def record(conn, f: Finding, action: str, escalated: bool, dry_run: bool, outcome: str, now: float) -> int:
     evidence = {**f.evidence, "identified_by": f.subject.why, "pid": f.subject.pid, "pgid": f.subject.pgid,
-                "command": f.subject.command, "owner": f.subject.owner, "fingerprint": fingerprint(f)}
+                "command": f.subject.command, "owner": f.subject.owner, "fingerprint": watchdog_hands.fingerprint(f)}
     got = Said(outcome, DRY) if dry_run else said(outcome, action)
     cur = conn.execute(
         "INSERT INTO watchdog_actions (at, machine_id, criterion, subject, action, escalated, dry_run, "
@@ -1406,7 +766,7 @@ def acting(environ=None) -> bool:
 
 
 @contextlib.contextmanager
-def _alone(probes: Probes):
+def _alone(probes: watchdog_observe.Probes):
     """One wake at a time on a machine; a second one returns at once."""
     from harness import exclusive
     fd = os.open(probes.state() / "lock", os.O_RDWR | os.O_CREAT, 0o644)
@@ -1421,17 +781,17 @@ def _alone(probes: Probes):
         os.close(fd)
 
 
-def wake(conn, probes: Probes | None = None, hands: Hands | None = None, act: bool = False,
+def wake(conn, probes: watchdog_observe.Probes | None = None, hands: watchdog_hands.Hands | None = None, act: bool = False,
          now: float | None = None, say=print) -> dict:
     """Observe, judge, act (or say what it would), record each act. Returns what happened."""
-    probes = probes or Probes()
-    hands = hands or Hands(say=say)
+    probes = probes or watchdog_observe.Probes()
+    hands = hands or watchdog_hands.Hands(say=say)
     now = time.time() if now is None else now
     with _alone(probes) as alone:
         if not alone:
             say("another watchdog wake holds the lock; nothing done")
             return {"acted": [], "skipped": {}, "unowned": [], "busy": True}
-        world = observe(probes, conn, now)
+        world = watchdog_observe.observe(probes, conn, now)
         findings, skipped = judge(world)
         acted, held = [], {}
         for f in findings:

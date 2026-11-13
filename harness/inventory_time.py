@@ -151,7 +151,8 @@ def _gpu_busy(sample: dict) -> bool:
 def _residency(probes: list[dict]) -> str:
     if any(p["outcome"] in ("up", "slow") for p in probes):
         return LOADED_IDLE
-    if any("not resident" in (p.get("reason") or "") for p in probes):
+    from harness.lane_probe import NOT_RESIDENT
+    if any(NOT_RESIDENT in (p.get("reason") or "") for p in probes):
         return IDLE
     return IDLE_UNRECORDED
 
@@ -533,13 +534,17 @@ def gather(conn, home: Path, now: float, since: float | None = None) -> dict:
     mid = ms.machine_row(conn)
     first = _rows(conn, "SELECT first_seen FROM machines WHERE id = ?", (mid,))
     start = since if since is not None else (first[0]["first_seen"] if first else now - 14 * 86400)
-    mine = "(machine_id = ? OR machine_id IS NULL)"
+    from harness import machine_scope
+
+    def mine(rule):
+        return machine_scope.where(rule, mid)
+    jobs, job_args = mine("jobs.claimed")
     reqs = _rows(conn, "SELECT at, client, lane, purpose, total_s, ttft_s, prompt_tokens, completion_tokens, "
                        "call_id FROM gateway_requests WHERE at >= ?", (start,))
     intervals = [(*usage.span(r["at"], r["total_s"]), request_category(r["purpose"], r["client"]))
                  for r in reqs]
     for j in _rows(conn, f"SELECT kind, argv, requested_by, started_at, finished_at, state FROM jobs "
-                         f"WHERE started_at IS NOT NULL AND {mine}", (mid,)):
+                         f"WHERE started_at IS NOT NULL AND {jobs}", job_args):
         try:
             argv = json.loads(j["argv"])
         except ValueError:
@@ -547,8 +552,9 @@ def gather(conn, home: Path, now: float, since: float | None = None) -> dict:
         stop = j["finished_at"] or (now if j["state"] == "running" else j["started_at"])
         intervals.append((j["started_at"], stop, job_category(j["kind"], argv, j["requested_by"])))
     runs_dir = home / "runs"
-    for r in _rows(conn, f"SELECT path, generated_at FROM runs WHERE {mine} AND "
-                         f"(generated_at IS NULL OR generated_at >= ?)", (mid, start)):
+    ran, ran_args = mine("runs.ran_here")
+    for r in _rows(conn, f"SELECT path, generated_at FROM runs WHERE {ran} AND "
+                         f"(generated_at IS NULL OR generated_at >= ?)", (*ran_args, start)):
         p = Path(r["path"])
         span = _run_span(p if p.is_absolute() else runs_dir / p, r["generated_at"])
         if span:
@@ -562,17 +568,22 @@ def gather(conn, home: Path, now: float, since: float | None = None) -> dict:
     dels = _rows(conn, "SELECT d.call_id, d.at, d.lane, d.id_source, d.seconds, d.outcome, g.client "
                        "FROM delegations d LEFT JOIN gateway_requests g ON g.call_id = d.call_id "
                        "WHERE d.at >= ?", (start,))
+    probed, probed_args = mine("lane_probes.mine")
+    acted, acted_args = mine("watchdog_actions.mine")
+    cleared, cleared_args = mine("day_clearances.mine")
+    held, held_args = mine("paused_runs.mine")
     return {
         "start": start, "end": now, "machine_id": mid, "intervals": intervals, "requests": reqs,
         "sweeps": sum(1 for b, _ in sweep if b >= start),
         "power": [s for s in ledger.read_jsonl(home / "ledger" / "power.jsonl") if s.get("at", 0) >= start],
-        "probes": _rows(conn, f"SELECT at, outcome, reason FROM lane_probes WHERE at >= ? AND {mine}",
-                        (start, mid)),
+        "probes": _rows(conn, f"SELECT at, outcome, reason FROM lane_probes WHERE at >= ? AND {probed}",
+                        (start, *probed_args)),
         "actions": _rows(conn, f"SELECT at, criterion, action, dry_run FROM watchdog_actions "
-                               f"WHERE at >= ? AND {mine}", (start, mid)),
-        "clearances": _rows(conn, f"SELECT cleared_at, until, revoked_at FROM day_clearances WHERE {mine}", (mid,)),
-        "paused": _rows(conn, f"SELECT paused_at, why FROM paused_runs WHERE paused_at >= ? AND {mine}",
-                        (start, mid)),
+                               f"WHERE at >= ? AND {acted}", (start, *acted_args)),
+        "clearances": _rows(conn, f"SELECT cleared_at, until, revoked_at FROM day_clearances WHERE {cleared}",
+                            cleared_args),
+        "paused": _rows(conn, f"SELECT paused_at, why FROM paused_runs WHERE paused_at >= ? AND {held}",
+                        (start, *held_args)),
         "refused": [r for r in refusals(_text(logs / "mcp.log")) if r["at"] >= start],
         "mornings": log_marks(_text(logs / "morning.log"), _MORNING),
         "delegations": dels,

@@ -12,6 +12,10 @@ KNOBS = [
        note="seconds a delegation waits for a running eval to reach a case boundary before its case is cut (#1556)"),
     _k("serve_p95_target", ["harness/serve_lease.py:P95_TARGET_S"], [5.0, 10.0, 30.0],
        note="warm p95 seconds, wait included, the report holds decide and extract delegations to (#1556)"),
+    _k("serve_yield_wait", ["harness/serve_lease.py:YIELD_WAIT_S"], [600.0, 1800.0, 3600.0], unit="s",
+       note="seconds a running eval stays yielded to serving before it pauses, its queue job re-pended behind the serving and contention gates; serving's waits are bounded per delegation by serve_lease_wait, a stream of them is not (#1765)"),
+    _k("serving_cut_tries", ["harness/serve_lease.py:CUT_TRIES"], [2, 3, 5],
+       note="times one case of a running eval is cut for a delegation before the run pauses for serving and its queue job waits behind the gates; steady traffic cut the same case on every try with no cap (#1765)"),
 ]
 
 NEVER_CUTS = {
@@ -27,7 +31,7 @@ NOT_GATING = {
     "harness/item_lease.py:TTL_S": "how long a lease outlives its last beat; a live holder beats every third of it, so "
                                    "it frees only a place nobody keeps (#1558)",
     "harness/serve_lease.py:POLL_S": "how often a delegation or a yielding eval looks at the lease again; "
-                                     "serve_lease_wait bounds the wait (#1556)",
+                                     "serve_lease_wait bounds a delegation's wait, serve_yield_wait an eval's (#1556, #1765)",
     "evals/watch.py:Watch.yield_s": "seconds a run has yielded to serving so far, a running total (#1556)",
     "evals/watch.py:Watch.yield_since_case_s": "seconds yielded since the last finished case, a running total (#1556)",
 }

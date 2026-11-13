@@ -5,7 +5,7 @@ import pytest
 
 from harness import contention, paused_jobs
 from harness import memory_store as ms
-from harness import watchdog as wd
+from harness import watchdog as wd, watchdog_hands, watchdog_observe
 from harness.memory_store.migrations import v102
 from tests.test_limit_cuts_1087_harness_tz import _knobs
 from tests.test_watchdog import NIGHT, Fake, Notifier, P, _fallbacks, _rows, run
@@ -50,7 +50,7 @@ def test_a_stop_the_hands_refused_is_no_overrun(tmp_path):
     try:
         s = _eval(out)
         s.pgid = None
-        got = wd.Hands().do(wd.STOP, wd.Finding("overrun", s, {}))
+        got = watchdog_hands.Hands().do(wd.STOP, wd.Finding("overrun", s, {}))
         _stop(conn, s, got)
         assert got.result == wd.REFUSED and not wd.overrun_stopped(conn, out)
     finally:
@@ -91,7 +91,7 @@ def test_a_failed_notification_does_not_hold_even_when_it_reads_as_shown(tmp_pat
     conn = ms.connect()
     shown = []
 
-    class Hand(wd.Hands):
+    class Hand(watchdog_hands.Hands):
         def notify(self, f):
             shown.append(f.subject.key)
             return wd.Said(f"{wd.NOTIFIED}: it was not", wd.FAILED)
@@ -130,7 +130,7 @@ def test_a_paused_job_names_its_watchdog_cause_by_its_id_not_its_label():
 def test_the_job_subject_carries_its_id_from_the_worker_pid_file(tmp_path):
     fake = Fake(tmp_path, procs=[P(700, 1, 700, 60, "soh-batch-job")], jobs={"0042": 700},
                 rows={"0042": {"state": "running"}})
-    world = wd.observe(fake, None, NIGHT)
+    world = watchdog_observe.observe(fake, None, NIGHT)
     assert [(s.key, s.job_id) for s in world.top if s.kind == "job"] == [("job 0042", 42)]
 
 

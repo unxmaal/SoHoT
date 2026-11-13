@@ -228,7 +228,7 @@ def _seconds(value) -> float | None:
         return None
 
 
-def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
+def record(conn, path, data: dict, *, at: float | None = None, commit: bool = True) -> int | None:
     """Store one receipt (the results.json shape) as a run and its rows.
 
     Idempotent by path: recording the same run again replaces its rows and
@@ -298,7 +298,8 @@ def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
              *(_seconds(r.get(k)) for k in FIRST_TOKEN),
              None if r.get("cold") is None else int(bool(r["cold"])),
              json.dumps(r.get("attempts") or [])))
-    conn.commit()
+    if commit:
+        conn.commit()
     return run_id
 
 

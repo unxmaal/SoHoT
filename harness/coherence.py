@@ -4,8 +4,8 @@ from __future__ import annotations
 from pathlib import Path
 
 HELD = ("SELECT v.id, p.id AS pid, p.name, p.lane, p.state, v.tier, v.reason, v.until, v.detail, v.decided_at, "
-        "v.run_path, v.run_id, v.candidate_id, v.failure_class, v.power, v.split_version, p.next_retest_at "
-        "FROM proposals p "
+        "v.run_path, v.run_id, v.candidate_id, v.failure_class, v.power, v.split_version, p.next_retest_at, "
+        "v.lane AS verdict_lane FROM proposals p "
         "JOIN verdicts v ON v.id = p.state_verdict_id "
         "WHERE p.state IN ('broken', 'declined', 'ignored') ORDER BY v.id")
 
@@ -125,7 +125,7 @@ def changes(conn, logs=None, root=None) -> list[dict]:
         if r["state"] == "broken" and r["reason"] in CONDITIONAL and until:
             found.append({**base, "now": ["declined", r["tier"], r["reason"], until],
                           "run_path": r["run_path"], "run_id": r["run_id"], "candidate_id": r["candidate_id"],
-                          "detail": f"re-decided (#991): {r['why']}; {r['detail']}"[:600]})
+                          "lane": r["verdict_lane"], "detail": f"re-decided (#991): {r['why']}; {r['detail']}"[:600]})
         elif r["reason"] == reasons.HARNESS or (r["state"] != "broken" and r["tier"] in (INSPECT, "fetch")):
             found.append({**base, "now": ["queued", INSPECT, reasons.REOPENED, ""],
                           "detail": f"{r['why']}: inspect asks again with today's code (#991)"})
@@ -148,7 +148,7 @@ def lane_bound(conn) -> list[dict]:
     from harness.memory_store.schema import ADOPT
     out = []
     for r in conn.execute(HELD).fetchall():
-        lane = r["lane"] or (r["detail"] or "").partition(":")[0].strip()
+        lane = r["verdict_lane"] or r["lane"] or (r["detail"] or "").partition(":")[0].strip()
         futile = r["reason"] == reasons.CANDIDATE and not r["failure_class"] and _futility(r["detail"], lane)
         if (r["state"], r["tier"]) != ("declined", ADOPT) or r["until"] \
                 or (r["reason"] != reasons.LIMIT and not futile) or r["failure_class"] == reasons.LANE_TOO_SMALL:
@@ -165,7 +165,7 @@ def lane_bound(conn) -> list[dict]:
         out.append({"verdict_id": r["id"], "name": r["name"], "why": why,
                     "was": [r["state"], r["tier"], r["reason"], r["until"]],
                     "now": ["declined", ADOPT, reasons.LIMIT, until], "run_path": r["run_path"],
-                    "run_id": r["run_id"], "candidate_id": r["candidate_id"],
+                    "run_id": r["run_id"], "candidate_id": r["candidate_id"], "lane": lane,
                     "failure_class": reasons.LANE_TOO_SMALL,
                     "evidence": {"power": r["power"], "split_version": r["split_version"]},
                     "detail": f"{lane}: re-decided ({'#1452' if futile else '#1049'}): {why}; {r['detail']}"[:600]})
@@ -185,7 +185,7 @@ def past_growth(conn) -> list[dict]:
     from harness.memory_store.schema import ADOPT
     out = []
     for r in conn.execute(HELD).fetchall():
-        lane = r["lane"] or (r["detail"] or "").partition(":")[0].strip()
+        lane = r["verdict_lane"] or r["lane"] or (r["detail"] or "").partition(":")[0].strip()
         head, _, n = (r["until"] or "").partition(">")
         if (r["state"], r["tier"], r["reason"]) != ("declined", ADOPT, reasons.LIMIT) \
                 or head != f"cases:{lane}" or not n.isdigit():
@@ -211,7 +211,7 @@ def past_growth(conn) -> list[dict]:
                     f"the {lane} lane can have had when it was decided",
                     "was": [r["state"], r["tier"], r["reason"], r["until"]],
                     "now": ["declined", ADOPT, reasons.LIMIT, until], "run_path": r["run_path"],
-                    "run_id": r["run_id"], "candidate_id": r["candidate_id"],
+                    "run_id": r["run_id"], "candidate_id": r["candidate_id"], "lane": lane,
                     "failure_class": r["failure_class"] or "",
                     "evidence": {"power": r["power"], "split_version": r["split_version"]},
                     "detail": f"{lane}: re-decided (#1053): {r['until']} counted the lane after it grew; "
@@ -229,7 +229,7 @@ def _unreopenable(conn, r, base: dict) -> dict:
     if not retest_spent(conn, r["pid"], r["tier"]):
         return {**base, "now": [r["state"], r["tier"], r["reason"], ""], "pid": r["pid"],
                 "retest_at": float(r["decided_at"]) + RETEST_AFTER_SECONDS}
-    lane = r["lane"] or (r["detail"] or "").partition(":")[0].strip()
+    lane = r["verdict_lane"] or r["lane"] or (r["detail"] or "").partition(":")[0].strip()
     if r["tier"] != ADOPT or r["reason"] != reasons.LIMIT or not lane:
         return {**base, "skipped": "no repair names this kind; a person decides it"}
     try:
@@ -240,7 +240,7 @@ def _unreopenable(conn, r, base: dict) -> dict:
                               adopt.more_cases(plan.get("cases") or 0, plan.get("cases_needed")))
     return {**base, "now": ["declined", ADOPT, r["reason"], until], "run_path": r["run_path"],
             "run_id": r["run_id"], "candidate_id": r["candidate_id"], "failure_class": r["failure_class"] or "",
-            "evidence": {"power": r["power"], "split_version": r["split_version"]},
+            "lane": lane, "evidence": {"power": r["power"], "split_version": r["split_version"]},
             "detail": f"re-decided (#1001): {r['why']}; no retest is left, so it waits on the {lane} "
                       f"lane growing; {r['detail']}"[:600]}
 
@@ -271,7 +271,8 @@ def apply(conn, found: list[dict]) -> list[int]:
             load_log.write(Path(c["run_path"]), c["excerpt"])
         vid = ms.decide(conn, c["name"], outcome, tier=tier, reason=reason, until=until,
                         detail=c["detail"], run_path=c["run_path"] or "", run_id=c["run_id"],
-                        candidate_id=c["candidate_id"], failure_class=c.get("failure_class", ""), commit=False)
+                        candidate_id=c["candidate_id"], failure_class=c.get("failure_class", ""),
+                        lane=c.get("lane", ""), commit=False)
         if c.get("evidence"):
             conn.execute("UPDATE verdicts SET power = ?, split_version = ? WHERE id = ?",
                          (c["evidence"]["power"], c["evidence"]["split_version"] or "", vid))

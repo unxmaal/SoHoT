@@ -14,7 +14,7 @@ from gauntlet import scanners as gscanners
 from harness import heartbeat, morning
 from harness import memory_store as ms
 from harness import sweep_check as sc
-from harness import watchdog as wd
+from harness import watchdog as wd, watchdog_hands
 from harness.commands import morning as morning_cmd
 from tests import shells
 
@@ -224,7 +224,7 @@ def test_the_cli_prints_the_verdict_and_records_only_with_notify(monkeypatch, ca
     monkeypatch.setattr(sc, "launchd", lambda *a, **k: unit("not-running"))
     monkeypatch.setattr(heartbeat, "read", lambda: None)
     sent = []
-    monkeypatch.setattr("harness.watchdog.desktop",
+    monkeypatch.setattr("harness.watchdog_hands.desktop",
                         lambda *a, **k: sent.append(a) or wd.Said("notified: x", notified=True))
     assert cli.main(["sweep-check", "--json"]) == 0
     out = json.loads(capsys.readouterr().out)

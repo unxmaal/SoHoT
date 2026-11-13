@@ -7,7 +7,7 @@ import pytest
 
 from harness import cli, contention, hold, paths, pressure
 from harness import memory_store as ms
-from harness import watchdog as wd
+from harness import watchdog as wd, watchdog_observe
 from harness import workqueue as wq
 from tests.test_watchdog import Fake, Hand, P, run
 
@@ -90,7 +90,7 @@ def _pause_findings(tmp_path, spans, request_at, now):
                                  P(4243, 4242, 4243, 600, "uv run python -m evals.run --modality code")],
                 jobs={"0001": 4242}, lock={"kind": "eval", "pid": 4243, "pgid": 4243}, progress=[progress],
                 rows={"0001": {"state": "running", "title": "adopt", "requested_by": ""}})
-    world = wd.observe(fake, conn, now)
+    world = watchdog_observe.observe(fake, conn, now)
     found, _ = wd.judge(world)
     conn.close()
     return [f for f in found if f.criterion == contention.CRITERION]

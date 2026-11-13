@@ -12,6 +12,7 @@ import pytest
 from harness import item_lease, resources, serve_lease
 from harness import memory_store as ms
 from harness import workqueue as wq
+from harness import job_procs, job_settle
 from tests.racing import race
 
 
@@ -85,7 +86,7 @@ def _running(job, pid=None):
               (wq.RUNNING, time.time() - 60, ms.remember_machine(c), int(job["id"])))
     c.commit()
     if pid is not None:
-        wq._pid_file(job["id"]).write_text(str(pid), encoding="utf-8")
+        job_procs._pid_file(job["id"]).write_text(str(pid), encoding="utf-8")
 
 
 def test_a_gone_workers_eval_that_stored_a_run_waits_again_to_resume_it(tmp_path, monkeypatch):
@@ -96,7 +97,7 @@ def test_a_gone_workers_eval_that_stored_a_run_waits_again_to_resume_it(tmp_path
     _running(job)
     _running(other)
     monkeypatch.setattr(runs, "for_job", lambda c, i: {"path": str(tmp_path / "x")} if i == int(job["id"]) else None)
-    assert wq._recover() == []
+    assert job_settle._recover() == []
     got = wq.get(job["id"])
     assert got["state"] == wq.PENDING and got["argv"] == [*argv, "--out", str(tmp_path / "x"), "--resume"]
     assert wq.get(other["id"])["state"] == wq.FAILED and "interrupted" in wq.get(other["id"])["note"]
@@ -107,9 +108,9 @@ def test_a_job_a_gone_worker_left_running_is_watched_under_a_lease_not_failed():
     job = wq.add(["soh-batch-job"], title="batch")
     _running(job, child.pid)
     try:
-        left = wq._recover()
+        left = job_settle._recover()
         assert [j["id"] for j in left] == [job["id"]] and wq.get(job["id"])["state"] == wq.RUNNING
-        t = threading.Thread(target=wq._watch_left, args=(left[0], 0.05))
+        t = threading.Thread(target=job_settle._watch_left, args=(left[0], 0.05))
         t.start()
         # The watcher's first store open can take seconds on a Windows runner: wait for its lease, never a fixed time.
         for _ in range(200):

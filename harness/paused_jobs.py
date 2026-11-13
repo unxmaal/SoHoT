@@ -40,11 +40,11 @@ def ends(reason: str) -> str:
 
 def cause(conn, job: dict) -> tuple[str, str]:
     """(reason, note) a job that exited paused with nothing re-pending it is recorded paused with."""
-    from harness import workqueue as wq
+    from harness import queue_pause
     said = _said(conn, job)
     if said in MEMORY_CAUSES:
         reason = js.MEMORY_PAUSE
-    elif wq.paused():
+    elif queue_pause.paused():
         reason, said = js.QUEUE_PAUSE, said or "the queue pause"
     else:
         reason = js.CHECKPOINTED
@@ -55,12 +55,12 @@ def cause(conn, job: dict) -> tuple[str, str]:
 def resume_argv(conn, job: dict) -> list[str] | None:
     """The argv that resumes a paused job where it stopped, or None when it has none."""
     from harness import resources
-    from harness import workqueue as wq
+    from harness import job_settle
     argv = [str(a) for a in job.get("argv") or []]
-    if wq.confirms(job):
+    if job_settle.confirms(job):
         return argv
     if "evals.run" in argv:
-        return wq._resumed(conn, job)
+        return job_settle._resumed(conn, job)
     if (resources._verb(argv) == "adopt" and "--challenger" in argv
             and not {"--power", "--from-measurement", "--dry-run"} & set(argv)):
         return argv
@@ -77,22 +77,24 @@ def _owned(conn, job_id: int) -> bool:
 
 
 def _twin(conn, job: dict, argv: list | None) -> int | None:
-    """A later job that carries this paused job's work on: its own argv or its resume argv."""
-    said = {json.dumps([str(a) for a in job.get("argv") or []])} | ({json.dumps(argv)} if argv else set())
+    """A later job that carries this paused job's work on: its resume argv, or its own argv when it has none. #1774."""
+    from harness import machine_scope
+    said = {json.dumps([str(a) for a in (argv or job.get("argv") or [])])}
     marks, states = ",".join("?" * len(said)), ",".join("?" * len(_CARRIES))
-    row = conn.execute(f"SELECT MIN(id) FROM jobs WHERE id > ? AND argv IN ({marks}) AND state IN ({states})",
-                       (int(job["id"]), *sorted(said), *_CARRIES)).fetchone()
+    here, mine = machine_scope.where("jobs.twin", job.get("machine_id"))
+    row = conn.execute(f"SELECT MIN(id) FROM jobs WHERE id > ? AND argv IN ({marks}) AND state IN ({states}) "
+                       f"AND {here}", (int(job["id"]), *sorted(said), *_CARRIES, *mine)).fetchone()
     return None if row is None or row[0] is None else int(row[0])
 
 
 def cleared(reason: str, pressure=None) -> bool:
     """Whether the cause of a pause for `reason` has cleared now."""
-    from harness import workqueue as wq
+    from harness import queue_pause
     if reason == js.MEMORY_PAUSE:
         from harness import pressure as pr
         return not (pressure or pr.sample)().alarming
     if reason == js.QUEUE_PAUSE:
-        return not wq.paused()
+        return not queue_pause.paused()
     return False
 
 

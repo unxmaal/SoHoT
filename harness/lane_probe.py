@@ -39,6 +39,8 @@ ERROR_CHARS = 300
 UNPROBED_S = 24 * 3600.0
 #: How a deliberate probe's reason starts; the next one waits UNPROBED_S after it.
 DELIBERATE = "a deliberate night probe"
+#: Every skipped probe of a model not loaded says this; soh inventory time reads it from lane_probes.reason. #1780.
+NOT_RESIDENT = "the model is not resident"
 
 COLUMNS = ("at", "machine_id", "lane", "spec", "base", "upstream", "model", "engine", "outcome", "reason",
            "http_status", "error", "seconds", "prompt_tokens", "completion_tokens")
@@ -281,9 +283,6 @@ def _timed_out(exc) -> bool:
     return isinstance(reason, (TimeoutError, socket.timeout)) or isinstance(exc, (TimeoutError, socket.timeout))
 
 
-_MINE = "(machine_id = ? OR (machine_id IS NULL AND ? IS NULL))"
-
-
 #: Step and horizon of the scan for where tonight ends and the next night begins.
 _SCAN_STEP_S = 300.0
 _SCAN_SPAN_S = 2 * 86400.0
@@ -312,12 +311,14 @@ def due(conn, lane: str, machine_id, now: float, day=None) -> str:
         from harness.watchdog import daytime as day
     if day(now):
         return ""
-    last = conn.execute(f"SELECT outcome, at FROM lane_probes WHERE lane = ? AND {_MINE} AND outcome IN (?, ?) "
-                        "ORDER BY at DESC, id DESC LIMIT 1", (lane, machine_id, machine_id, UP, DOWN)).fetchone()
+    from harness import machine_scope
+    here, mine = machine_scope.where("lane_probes.mine", machine_id)
+    last = conn.execute(f"SELECT outcome, at FROM lane_probes WHERE lane = ? AND {here} AND outcome IN (?, ?) "
+                        "ORDER BY at DESC, id DESC LIMIT 1", (lane, *mine, UP, DOWN)).fetchone()
     if last is None or last["outcome"] != DOWN:
         return ""
-    tried = conn.execute(f"SELECT MAX(at) AS at FROM lane_probes WHERE lane = ? AND {_MINE} AND reason LIKE ?",
-                         (lane, machine_id, machine_id, DELIBERATE + "%")).fetchone()
+    tried = conn.execute(f"SELECT MAX(at) AS at FROM lane_probes WHERE lane = ? AND {here} AND reason LIKE ?",
+                         (lane, *mine, DELIBERATE + "%")).fetchone()
     since = max(last["at"], tried["at"] if tried and tried["at"] is not None else last["at"])
     if now - since < UNPROBED_S and not _lands_by_day(since + UNPROBED_S, now, day):
         return ""
@@ -373,10 +374,10 @@ def prepare(lane: str, sender: Sender, resolve=None, resident=None, busy=None, h
         from harness.pressure import NORMAL
         got = (level or _level)()
         if got is not None and got > NORMAL:
-            return done(SKIPPED, f"the model is not resident and memory pressure is level {got}; {load} waits")
+            return done(SKIPPED, f"{NOT_RESIDENT} and memory pressure is level {got}; {load} waits")
         row["reason"] = load[:ERROR_CHARS]
     elif loaded is not True:
-        why = "residency unknown" if loaded is None else "the model is not resident"
+        why = "residency unknown" if loaded is None else NOT_RESIDENT
         return done(SKIPPED, f"{why}; a probe would load it" + (f" ({type(exc).__name__}: {exc})" if exc else ""))
     if headers is None:
         from harness import gateway_key, purpose

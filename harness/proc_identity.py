@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import contextlib
+import errno
+import functools
 import os
 import struct
 import sys
@@ -9,6 +11,10 @@ from pathlib import Path
 
 #: struct kinfo_proc on macOS: its size, the offset of p_stat, and p_stat's zombie value. FINDING #773.
 _KINFO_SIZE, _KINFO_P_STAT, _SZOMB = 648, 36, 5
+#: OpenProcess's PROCESS_QUERY_LIMITED_INFORMATION, its ERROR_INVALID_PARAMETER for no such pid, and a running process's exit code.
+_QUERY_LIMITED, _NO_SUCH_PID, _STILL_ACTIVE = 0x1000, 87, 259
+#: FILETIME (100 ns since 1601) at the Unix epoch.
+_FILETIME_EPOCH = 116444736000000000
 
 
 def _darwin(pid: int) -> tuple[str, bool] | None:
@@ -28,6 +34,46 @@ def _linux(pid: int) -> tuple[str, bool] | None:
     return fields[19], fields[0] == "Z"
 
 
+@functools.lru_cache(maxsize=1)
+def _kernel32():
+    import ctypes
+    from ctypes import wintypes
+    k = getattr(ctypes, "WinDLL")("kernel32", use_last_error=True)
+    k.OpenProcess.restype = wintypes.HANDLE
+    k.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    k.GetProcessTimes.argtypes = (wintypes.HANDLE, *[wintypes.LPFILETIME] * 4)
+    k.GetExitCodeProcess.argtypes = (wintypes.HANDLE, wintypes.LPDWORD)
+    k.CloseHandle.argtypes = (wintypes.HANDLE,)
+    return k
+
+
+def _win32_open(pid: int):
+    """A handle to query pid by; ProcessLookupError when no process has it, another OSError when Windows refuses."""
+    import ctypes
+    handle = _kernel32().OpenProcess(_QUERY_LIMITED, False, int(pid))
+    if handle:
+        return handle
+    err = ctypes.get_last_error()  # type: ignore[attr-defined]
+    if err == _NO_SUCH_PID:
+        raise ProcessLookupError(errno.ESRCH, f"no process {int(pid)}")
+    raise getattr(ctypes, "WinError")(err)
+
+
+def _win32(pid: int) -> tuple[str, bool]:
+    """(creation FILETIME, exited): an exited process whose handle is still open is a zombie here."""
+    import ctypes
+    from ctypes import wintypes
+    k, handle = _kernel32(), _win32_open(pid)
+    times, code = [wintypes.FILETIME() for _ in range(4)], wintypes.DWORD()
+    try:
+        if not (k.GetProcessTimes(handle, *map(ctypes.byref, times)) and
+                k.GetExitCodeProcess(handle, ctypes.byref(code))):
+            raise getattr(ctypes, "WinError")(ctypes.get_last_error())  # type: ignore[attr-defined]
+    finally:
+        k.CloseHandle(handle)
+    return str(times[0].dwHighDateTime << 32 | times[0].dwLowDateTime), code.value != _STILL_ACTIVE
+
+
 def _proc(pid: int) -> tuple[str, bool] | None:
     """(start time as the OS keeps it, zombie) for pid; None when it is gone or this OS cannot say."""
     try:
@@ -35,6 +81,8 @@ def _proc(pid: int) -> tuple[str, bool] | None:
             return _darwin(pid)
         if sys.platform.startswith("linux"):
             return _linux(pid)
+        if sys.platform == "win32":
+            return _win32(pid)
     except (OSError, ValueError, IndexError):
         return None
     return None
@@ -60,6 +108,8 @@ def began(pid: int) -> float | None:
         return None
     if sys.platform == "darwin":
         return float(got[0])
+    if sys.platform == "win32":
+        return (int(got[0]) - _FILETIME_EPOCH) / 1e7
     try:
         return _boot_epoch() + int(got[0]) / os.sysconf("SC_CLK_TCK")
     except (OSError, ValueError):
@@ -75,17 +125,25 @@ def identity(pid: int) -> dict:
     return {"pid": int(pid), "pgid": pgid, "started": started(pid)}
 
 
+def _group(pid: int) -> int | None:
+    """pid's process group, None where there are none; ProcessLookupError when no process has pid."""
+    if sys.platform == "win32":
+        _kernel32().CloseHandle(_win32_open(pid))
+        return None
+    return os.getpgid(pid)
+
+
 def same(rec: dict) -> bool | None:
     """Whether the process a record names is still the one recorded (pid, group, start time, not a zombie); None when it cannot say."""
-    if sys.platform == "win32" or not rec.get("pid"):
+    if not rec.get("pid"):
         return None
     try:
-        group = os.getpgid(int(rec["pid"]))
+        group = _group(int(rec["pid"]))
     except ProcessLookupError:
         return False
     except OSError:
         return None
-    if rec.get("pgid") is not None and group != int(rec["pgid"]):
+    if group is not None and rec.get("pgid") is not None and group != int(rec["pgid"]):
         return False
     if not rec.get("started"):
         return None

@@ -137,8 +137,10 @@ def home(tmp_path, monkeypatch):
     _req(conn, T0 + 50, f"openai/{MLX}", "unknown")
     _req(conn, T0 + 60, "openai/Unsized-Model", "work")
     argv = ["uv", "run", "python", "-m", "evals.run", "--candidates", "llamacpp:Stem-Q4,enable_thinking=true,q3-4b,mflux:dev"]
-    conn.execute("INSERT INTO jobs (argv, state, created_at, started_at, finished_at) VALUES (?, 'done', ?, ?, ?)",
-                 (json.dumps(argv), T0 + 100, T0 + 100, T0 + 200))
+    # _claim stamps the machine that ran a job; the trace replays this machine's jobs only. #1771.
+    conn.execute("INSERT INTO jobs (argv, state, created_at, started_at, finished_at, machine_id) "
+                 "VALUES (?, 'done', ?, ?, ?, ?)", (json.dumps(argv), T0 + 100, T0 + 100, T0 + 200,
+                                                     ms.remember_machine(conn)))
     conn.commit()
     conn.close()
     logs = paths.logs()

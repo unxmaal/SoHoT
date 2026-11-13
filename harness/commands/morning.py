@@ -125,6 +125,8 @@ def render(r: dict) -> list[str]:
                + (f"; adopted {', '.join(a['lane'] + ' ' + a['spec'] for a in adopted)}" if adopted else "")
                + "".join(f"; withdrew {w['lane']} {w['spec']}: {w['why']}" for w in s["settled"].get("withdrawn") or []))
     out.extend(f"held      {r[k]}" for k in ("hold", "gpu_hold") if r.get(k))
+    from harness import job_release
+    out.extend(job_release.morning_lines(r.get("releases")))
     out.append(f"watchdog  {len(r['watchdog'])} action(s)")
     for w in r["watchdog"]:
         flags = ("escalated " if w["escalated"] else "") + ("dry-run" if w["dry_run"] else "acted")

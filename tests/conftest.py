@@ -220,8 +220,10 @@ def pytest_runtest_protocol(item, nextitem):
         _running.pop("test", None)
 
 
-#: os.environ keys a test may leave changed: pytest's own, and one mlx_lm sets on its first import. #1868.
-ENV_SETTLED = frozenset({"PYTEST_CURRENT_TEST", "TRANSFORMERS_NO_ADVISORY_WARNINGS"})
+#: os.environ keys a test may leave changed: pytest's own, and those a library sets once per process on import. #1868, #1885, #1889.
+ENV_SETTLED = frozenset({"PYTEST_CURRENT_TEST", "TRANSFORMERS_NO_ADVISORY_WARNINGS", "KMP_DUPLICATE_LIB_OK",
+                         "KMP_INIT_AT_FORK", "TORCHINDUCTOR_CACHE_DIR", "LD_LIBRARY_PATH", "QT_QPA_FONTDIR",
+                         "QT_QPA_PLATFORM_PLUGIN_PATH"})
 _env: dict = {}
 
 
@@ -465,9 +467,9 @@ def _no_real_services(monkeypatch):
 @pytest.fixture(autouse=True)
 def _no_real_launchd_units(monkeypatch):
     """No watchdog probe asks the real launchd, or the live mlx unit's /health, what it holds; only a test's own stub /health is asked. #912."""
-    from harness import watchdog
-    monkeypatch.setattr(watchdog.Probes, "launchd_loaded", lambda self, service: None)
-    monkeypatch.setattr(watchdog.Probes, "launchd_pid", lambda self, service: None)
+    from harness import watchdog_observe
+    monkeypatch.setattr(watchdog_observe.Probes, "launchd_loaded", lambda self, service: None)
+    monkeypatch.setattr(watchdog_observe.Probes, "launchd_pid", lambda self, service: None)
     from harness import mlx_server
     real = mlx_server.generating
     live = {u.rstrip("/") for u in ("http://127.0.0.1:8081", "http://localhost:8081")}
@@ -519,12 +521,12 @@ def _no_real_admission(monkeypatch):
 @pytest.fixture(autouse=True)
 def _no_real_lane_probes(monkeypatch):
     """No watchdog wake sends a real lane a completion; a test that wants the real probe restores Probes.lanes.real. #924."""
-    from harness import watchdog
+    from harness import watchdog_observe
 
     def none(self, conn, now):
         return None
-    none.real = watchdog.Probes.lanes
-    monkeypatch.setattr(watchdog.Probes, "lanes", none)
+    none.real = watchdog_observe.Probes.lanes
+    monkeypatch.setattr(watchdog_observe.Probes, "lanes", none)
 
 
 @pytest.fixture(autouse=True)
@@ -744,7 +746,7 @@ def _no_real_notifier(monkeypatch):
     import inspect
     import subprocess
     import urllib.request
-    from harness import monitor, watchdog
+    from harness import monitor, watchdog, watchdog_hands
     sent = []
 
     def recorder(real, kind, outcome, fake):
@@ -758,7 +760,7 @@ def _no_real_notifier(monkeypatch):
         return record
     monkeypatch.setattr(monitor, "desktop", recorder(monitor.desktop, "desktop", lambda *a: "notified", "run"))
     shown = lambda t, m, *a: watchdog.Said(f"{watchdog.NOTIFIED}: {m}", notified=True)  # noqa: E731
-    monkeypatch.setattr(watchdog, "desktop", recorder(watchdog.desktop, "desktop", shown, "run"))
+    monkeypatch.setattr(watchdog_hands, "desktop", recorder(watchdog_hands.desktop, "desktop", shown, "run"))
     monkeypatch.setattr(monitor, "post", recorder(monitor.post, "webhook", lambda *a: "posted: HTTP 204", "opener"))
     return sent
 

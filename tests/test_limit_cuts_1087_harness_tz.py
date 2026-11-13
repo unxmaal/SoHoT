@@ -13,7 +13,7 @@ import pytest
 
 from harness import cuts
 from harness import memory_store as ms, store
-from harness import watchdog as wd
+from harness import watchdog as wd, watchdog_hands, watchdog_observe
 
 NOON = time.mktime((2026, 10, 12, 12, 0, 0, 0, 0, -1))
 EVENING = time.mktime((2026, 10, 12, 19, 0, 0, 0, 0, -1))
@@ -323,7 +323,7 @@ def test_a_fallback_spike_is_a_cut_and_fewer_requests_are_not():
 
 # --- watchdog wake ----------------------------------------------------------------
 
-class _Probes(wd.Probes):
+class _Probes(watchdog_observe.Probes):
     def __init__(self, tmp_path, procs=(), fallbacks=None):
         self.tmp, self.procs, self._fallbacks = tmp_path, list(procs), fallbacks or []
 
@@ -375,7 +375,7 @@ class _Probes(wd.Probes):
         return d
 
 
-class _Hand(wd.Hands):
+class _Hand(watchdog_hands.Hands):
     def __init__(self):
         super().__init__(run=None, environ={})
 

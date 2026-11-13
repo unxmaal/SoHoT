@@ -465,6 +465,8 @@ def needs(r: dict) -> list[str]:
     if audio_models.over(r.get("tts") or {}):
         out.append(audio_models.over(r["tts"]))
     loop = r["sweep"].get("loop")
+    out.extend(f"job {x['job']} was refused at start ({x['why']}); queue it again from the deploy"
+               for x in (r.get("releases") or {}).get("refused") or [])
     if r.get("gpu_hold"):
         out.append(f"{r['gpu_hold']}; no batch GPU job or deploy starts until soh hold release gpu")
     if r.get("hold"):
@@ -560,8 +562,9 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "deploy_repairs": deploy_repairs(),
          "pulls": pulls(now) if pulls else None, "tts": tts() if tts else None,
          "deploy_wait": waiting(conn, now) if waiting else None}
-    from harness import hold
+    from harness import hold, job_release
     r["hold"], r["gpu_hold"] = hold.held(conn, now), hold.held(conn, now, hold.GPU)
+    r["releases"] = job_release.morning(conn, since, where)
     if r["sweep"]["loop"] is not None:
         from harness import heartbeat
         r["sweep"]["loop"]["code_moved"] = heartbeat.code_moved(beat, r["deploy"].get("head", ""))
@@ -657,7 +660,7 @@ def notify(r: dict, text: str, run=subprocess.run, platform: str | None = None) 
     """A desktop notification when something needs a person (#818 path); None on a quiet night."""
     if not r["needs"]:
         return None
-    from harness import watchdog as wd
-    return wd.desktop(NOTIFY_TITLE, text, f"{len(r['needs'])} thing(s) need you", run=run,
-                      platform=sys.platform if platform is None else platform)
+    from harness import watchdog_hands
+    return watchdog_hands.desktop(NOTIFY_TITLE, text, f"{len(r['needs'])} thing(s) need you", run=run,
+                                 platform=sys.platform if platform is None else platform)
 

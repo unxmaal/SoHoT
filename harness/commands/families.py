@@ -24,8 +24,12 @@ def queue(conn, st, lane: str) -> list[dict]:
     before = [r["name"] for r in rank.rank(rows, standing=family.Standing(), **kw) if rank.lane_of(r) == lane]
     after = [r for r in rank.rank(rows, standing=st, **kw) if rank.lane_of(r) == lane]
     was = {n: i + 1 for i, n in enumerate(before)}
-    return [{"name": r["name"], "at": i + 1, "was": was.get(r["name"]), "value": r["value"],
-             "family": st.key_of(r), "why": r["value_why"]} for i, r in enumerate(after)]
+    out = []
+    for i, r in enumerate(after):
+        term, said = st.demotion(r, lane)
+        out.append({"name": r["name"], "at": i + 1, "was": was.get(r["name"]), "value": r["value"],
+                    "family": st.key_of(r), "why": r["value_why"], "family_term": term, "family_why": said})
+    return out
 
 
 def per_night(conn, now: float, nights: int) -> float:
@@ -57,14 +61,12 @@ def render(r: dict, head: int) -> list[str]:
         out.append(f"  {f['lane']:<7} {f['family'][:40]:<40} lost {f['losses']} of {f['verdicts']} verdict(s)"
                    f"{', won by ' + f['won'] if f['won'] else ''} {flag}".rstrip())
     out.append(f"\n{r['lane']}-lane queue, head {head}: place with the family term (place without it)")
-    termed = [q for q in r["queue"] if "family lost at the paired gate" in q["why"]]
+    termed = [q for q in r["queue"] if q["family_term"]]
     for q in r["queue"][:head]:
         out.append(f"  #{q['at']:<4} ({q['was']}) {q['value']:+6.2f} {q['name'][:56]:<56} [{q['family'][:28]}]")
     out.append(f"  {len(termed)} of {len(r['queue'])} row(s) take the family term")
-    for q in [q for q in r["queue"] if "family" in q["why"] and ("lost at the paired gate" in q["why"]
-                                                               or "exempt" in q["why"])][:head]:
-        out.append(f"  #{q['at']} ({q['was']}) {q['name']}: "
-                   + "; ".join(w for w in q["why"].split("; ") if "family" in w))
+    for q in [q for q in r["queue"] if q["family_why"]][:head]:
+        out.append(f"  #{q['at']} ({q['was']}) {q['name']}: {q['family_why']}")
     t = r["tonight"]
     out.append(f"\ntonight's {r['plan_lane'] or 'all-lane'} measure plan, about {t['n']:g} measurement(s) a night "
                f"(median of the last {r['nights']} nights); a row past that waits for the next sweep")

@@ -7,7 +7,7 @@ import sqlite3
 
 import pytest
 
-from harness import fetching, inspect as ins
+from harness import feeds, fetching, inspect as ins
 from harness import memory_store as ms
 from harness.memory_store import Seen
 
@@ -191,7 +191,7 @@ def test_a_404_and_an_outage_are_different_answers():
     """A 404 settles a candidate. An unreachable registry must settle nothing,
     or one bad afternoon marks a sweep's worth of real models as broken."""
     def gone(url):
-        raise RuntimeError("https://x: HTTP 404")
+        raise feeds.FeedError("https://x: HTTP 404", status=404)
 
     def down(url):
         raise RuntimeError("https://x: timed out")

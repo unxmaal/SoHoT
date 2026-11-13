@@ -8,7 +8,7 @@ import pytest
 
 from harness import audio_models, morning, paths, tts_server
 from harness import memory_store as ms
-from harness import watchdog as wd
+from harness import watchdog as wd, watchdog_hands
 from harness.commands import morning as morning_cmd
 from tests.test_watchdog import NIGHT, Fake, P
 
@@ -152,7 +152,7 @@ class Tts(Fake):
         return self.gib if pid == 101 else None
 
 
-class Hands(wd.Hands):
+class Hands(watchdog_hands.Hands):
     def __init__(self):
         super().__init__(run=self._run, environ={}, platform="darwin")
         self.argv = []

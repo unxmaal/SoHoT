@@ -22,11 +22,12 @@ import argparse
 import contextlib
 import io
 import json
+import os
 import sys
 import time
 from pathlib import Path
 
-from harness import audio, completion, context, delegate, ds4, env, knobs, paths, reasons, router, run_state
+from harness import atomic_file, audio, completion, context, delegate, ds4, env, knobs, paths, reasons, router, run_state
 from harness.engines import Engine, names as engine_names, parse_options, resolve
 from harness.checks import speech as speech_check
 
@@ -1286,8 +1287,8 @@ def _main(args) -> int:
                 node=node_of(args) if kind in exclusive.NODE else ""))
         except exclusive.StoreDown as exc:
             raise SystemExit(f"evals.run: {exc}") from exc
-        from harness import workqueue
-        item = workqueue.item_s() if args.stop_at is None and args.stop_after is None else None
+        from harness import job_procs
+        item = job_procs.item_s() if args.stop_at is None and args.stop_after is None else None
         if item is not None:
             # The worker runs this job in items: stop at the item's end and say so, so it queues the next. #1618.
             args.stop_after, args.queue_item = item, True
@@ -1709,8 +1710,8 @@ def _execute_at(args, overrides: dict, held: contextlib.ExitStack) -> int:
         if isinstance(exc, watch.Deferred) and outdir:
             watch.ask_pause(outdir, exc.reason)
         elif getattr(args, "queue_item", False) and exc.why.startswith(watch.AT_STOP_TIME):
-            from harness import workqueue
-            workqueue.item_ended()
+            from harness import job_procs
+            job_procs.item_ended()
         print(f"\n{exc.why}", file=sys.stderr, flush=True)
     finally:
         if eye.yielder is not None:
@@ -1817,8 +1818,10 @@ def _execute_at(args, overrides: dict, held: contextlib.ExitStack) -> int:
                                    **({"screen_caveat": caveat} if caveat else {})}
                                for k, v in summarize(results).items()},
                    "rows": [export_row(r) for r in results]}
-        (outdir / "results.json").write_text(json.dumps(payload, indent=2),
-                                             encoding="utf-8")
+        # Replaced whole, so a kill mid-write leaves the export before it, never a torn one. #1758.
+        tmp = outdir / "results.json.tmp"
+        tmp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        atomic_file.replace(tmp, outdir / "results.json")
         run_id = store_run(outdir, payload, now)
         print(f"\nartifacts + results.json in {outdir}; stored as run {run_id}")
         progress.write(state, why, run_id)
@@ -2363,8 +2366,10 @@ def store_run(outdir, payload: dict, at: float) -> int | None:
     from harness import runs, workqueue
     conn = ms.connect()
     try:
-        run_id = runs.record(conn, outdir, payload, at=at)
+        # The run and its job in one commit: a death between them must not store a run its job cannot find. #1758.
+        run_id = runs.record(conn, outdir, payload, at=at, commit=False)
         workqueue.link_run(conn, run_id)
+        conn.commit()
         return run_id
     finally:
         conn.close()

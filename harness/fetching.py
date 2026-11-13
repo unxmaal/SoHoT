@@ -146,7 +146,7 @@ def refuse_over_budget(conn, name: str, size: int, budget: int, spent: int, *, a
     # Bigger than the whole budget, no sweep at this budget ever takes it. #704.
     until = f"limit:{knobs.limit('download_budget_gib', budget / GIB, 'GiB')}" if size > budget else ""
     ms.decide_or_skip(conn, name, "queued", tier="fetch", detail=why, reason=reasons.LIMIT, until=until, at=at,
-                      failure_class="" if until else reasons.PASSED_OVER)
+                      failure_class="" if until else reasons.PASSED_OVER, budget_gib=budget / GIB)
     return why
 
 
@@ -850,8 +850,8 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         # WHAT IT NEEDS BESIDE ITSELF, as its config recorded it on landing.
         # A tokenizer in another repo makes a whole download unloadable. #196.
         # Where it landed is a downloads row, not this verdict's run_path. #411.
-        ms.decide_or_skip(conn, row["name"], "queued", tier="fetch",
-                          detail=DOWNLOADED, reason=reasons.CANDIDATE)
+        ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=DOWNLOADED, reason=reasons.CANDIDATE,
+                          budget_gib=None if budget is None else budget / GIB)
         # What it needs beside itself: what its config named on landing (#196) and its runner's base (#632).
         cost = needs_of(name)
         done.append({"repo": name, "ok": True, "bytes": size, "why": where})

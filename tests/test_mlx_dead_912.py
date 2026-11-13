@@ -10,7 +10,7 @@ import pytest
 
 from harness import memory_store as ms
 from harness import loopback, mlx_server, morning, serving
-from harness import watchdog as wd
+from harness import watchdog as wd, watchdog_hands, watchdog_observe
 from harness.commands import morning as morning_cmd
 
 NIGHT = time.mktime((2026, 10, 17, 1, 30, 0, 0, 0, -1))
@@ -60,7 +60,7 @@ def stub():
         s.server_close()
 
 
-class Loaded(wd.Probes):
+class Loaded(watchdog_observe.Probes):
     """Real probes except the process table and launchd, which say only that the mlx unit is loaded."""
 
     def __init__(self, tmp_path):
@@ -123,13 +123,13 @@ def test_generating_reads_mlx_lm_s_own_health(stub):
 def test_a_stub_server_that_says_its_generation_thread_died_is_restarted_by_the_watchdog(tmp_path, monkeypatch, stub):
     monkeypatch.setattr(serving, "MLX_URL", stub(dead=True))
     # Hands(platform="darwin") fakes macOS, so fake the uid macOS has; Windows' os has no getuid.
-    monkeypatch.setattr(wd.os, "getuid", lambda: 501, raising=False)
+    monkeypatch.setattr(watchdog_hands.os, "getuid", lambda: 501, raising=False)
     calls, run = _launchctl()
     conn = ms.connect()
-    got = wd.wake(conn, Loaded(tmp_path), wd.Hands(run=run, platform="darwin"), act=True, now=NIGHT, say=lambda m: None)
+    got = wd.wake(conn, Loaded(tmp_path), watchdog_hands.Hands(run=run, platform="darwin"), act=True, now=NIGHT, say=lambda m: None)
     assert [(a["criterion"], a["action"], a["outcome"]) for a in got["acted"]] == [("mlx_dead", wd.RESTART,
                                                                                     "restarted mlx")]
-    assert calls == [["launchctl", "kickstart", "-k", f"gui/{wd.os.getuid()}/{wd.LABEL}.mlx"]]
+    assert calls == [["launchctl", "kickstart", "-k", f"gui/{watchdog_hands.os.getuid()}/{wd.LABEL}.mlx"]]
     row = conn.execute("SELECT criterion, subject, action, dry_run, outcome FROM watchdog_actions").fetchall()
     assert [tuple(r) for r in row] == [("mlx_dead", "mlx", wd.RESTART, 0, "restarted mlx")]
 
@@ -138,10 +138,10 @@ def test_a_healthy_or_unloaded_mlx_unit_is_left_alone(tmp_path, monkeypatch, stu
     monkeypatch.setattr(serving, "MLX_URL", stub(dead=False))
     calls, run = _launchctl()
     conn = ms.connect()
-    assert wd.wake(conn, Loaded(tmp_path), wd.Hands(run=run), act=True, now=NIGHT, say=lambda m: None)["acted"] == []
+    assert wd.wake(conn, Loaded(tmp_path), watchdog_hands.Hands(run=run), act=True, now=NIGHT, say=lambda m: None)["acted"] == []
     monkeypatch.setattr(serving, "MLX_URL", stub(dead=True))
     monkeypatch.setattr(Loaded, "launchd_loaded", lambda self, s: False)
-    got = wd.wake(conn, Loaded(tmp_path), wd.Hands(run=run), act=True, now=NIGHT, say=lambda m: None)
+    got = wd.wake(conn, Loaded(tmp_path), watchdog_hands.Hands(run=run), act=True, now=NIGHT, say=lambda m: None)
     assert got["acted"] == [] and "mlx_dead" in got["skipped"] and calls == []
 
 
@@ -149,7 +149,7 @@ def test_a_server_that_does_not_answer_is_not_restarted(tmp_path, monkeypatch):
     """A refused connection is a unit mid-start; restarting it then would loop."""
     monkeypatch.setattr(serving, "MLX_URL", "http://127.0.0.1:9")
     calls, run = _launchctl()
-    got = wd.wake(ms.connect(), Loaded(tmp_path), wd.Hands(run=run), act=True, now=NIGHT, say=lambda m: None)
+    got = wd.wake(ms.connect(), Loaded(tmp_path), watchdog_hands.Hands(run=run), act=True, now=NIGHT, say=lambda m: None)
     assert got["acted"] == [] and "mlx_dead" in got["skipped"] and calls == []
 
 
@@ -157,7 +157,7 @@ def test_a_restart_that_did_not_fix_it_escalates_to_a_person(tmp_path, monkeypat
     monkeypatch.setattr(serving, "MLX_URL", stub(dead=True))
     calls, run = _launchctl()
     conn = ms.connect()
-    hands = wd.Hands(run=run, platform="darwin")
+    hands = watchdog_hands.Hands(run=run, platform="darwin")
     actions = [wd.wake(conn, Loaded(tmp_path), hands, act=True, now=NIGHT + 300 * i, say=lambda m: None)["acted"][0]
                for i in range(wd.ESCALATE_AFTER + 1)]
     assert [a["action"] for a in actions] == [wd.RESTART] * wd.ESCALATE_AFTER + [wd.NOTIFY]
@@ -167,7 +167,7 @@ def test_a_restart_that_did_not_fix_it_escalates_to_a_person(tmp_path, monkeypat
 def test_restarting_mlx_off_macos_is_refused():
     calls, run = _launchctl()
     f = wd.Finding("mlx_dead", wd.Subject("server", "mlx", "t", detail={"service": "mlx"}), {})
-    assert wd.Hands(run=run, platform="linux").do(wd.RESTART, f).startswith("refused") and calls == []
+    assert watchdog_hands.Hands(run=run, platform="linux").do(wd.RESTART, f).startswith("refused") and calls == []
 
 
 def test_the_prompt_cache_is_capped_unless_the_caller_set_a_cap():

@@ -6,9 +6,11 @@ import json
 import os
 import plistlib
 import re
-import threading
 import time
 from pathlib import Path
+
+from harness.atomic_file import replace
+from harness import stale_temp
 
 RUNNING = "running"
 FINISHED = "finished"
@@ -57,9 +59,9 @@ def alive(pid: int) -> bool:
 def _write(data: dict) -> None:
     p = path()
     p.parent.mkdir(parents=True, exist_ok=True)
-    tmp = p.with_name(f"{p.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    tmp = stale_temp.temp(p, "{name}.{pid}.{thread}.tmp")
     tmp.write_text(json.dumps(data), encoding="utf-8")
-    os.replace(tmp, p)
+    replace(tmp, p)
 
 
 def read() -> dict | None:
@@ -70,9 +72,30 @@ def read() -> dict | None:
     return got if isinstance(got, dict) else None
 
 
+#: When the heartbeat's writer started, as proc_identity.started reads it; a file without it is judged by pid alone. #1774.
+PID_STARTED = "pid_started"
+
+
+def _me() -> dict:
+    from harness import proc_identity
+    return {"pid": os.getpid(), PID_STARTED: proc_identity.started(os.getpid())}
+
+
 def _mine() -> dict | None:
     got = read()
-    return got if got and got.get("pid") == os.getpid() else None
+    if not got or got.get("pid") != os.getpid():
+        return None
+    return got if not got.get(PID_STARTED) or got[PID_STARTED] == _me()[PID_STARTED] else None
+
+
+def live(data: dict | None, check=None) -> bool:
+    """Whether the process a heartbeat names runs and is the one that wrote it, not one given its pid since. #1774."""
+    from harness import proc_identity
+    data = data or {}
+    pid = int(data.get("pid") or 0)
+    if not (check or alive)(pid):
+        return False
+    return not data.get(PID_STARTED) or proc_identity.same({"pid": pid, "started": data[PID_STARTED]}) is not False
 
 
 #: When a loop last handed stale too-big refusals back to inspect; kept across loops. #904.
@@ -124,7 +147,7 @@ def code_moved(data: dict | None, head: str = "", alive=alive) -> str:
         return ""
     if data.get("state") == FINISHED:
         end, how = data.get("finished_commit") or "", "finished on"
-    elif alive(data.get("pid") or 0):
+    elif live(data, alive):
         end, how = head, "is still running under"
     else:
         return ""
@@ -137,7 +160,7 @@ def code_moved(data: dict | None, head: str = "", alive=alive) -> str:
 def start(lane: str = "", total: int = 0, cycle: str = "") -> dict:
     now = clock()
     kept = {k: v for k, v in (read() or {}).items() if k in KEPT}
-    data = {**kept, "state": RUNNING, "pid": os.getpid(), "lane": lane, "tier": "",
+    data = {**kept, "state": RUNNING, **_me(), "lane": lane, "tier": "",
             "candidate": "", "step": 0, "total": int(total), "item": 0, "items": 0,
             "started": now, "updated": now, "finished": None, "rc": None, "error": "",
             "commit": code_commit()}
@@ -157,7 +180,7 @@ def attach(cycle: str) -> dict | None:
     data = read()
     if not cycle or not data or data.get(CYCLE) != cycle or data.get("state") != RUNNING:
         return None
-    data.update(pid=os.getpid(), updated=clock(), waiting="")
+    data.update(_me(), updated=clock(), waiting="")
     data.pop(NEXT_JOB, None)
     _write(data)
     return data
@@ -316,7 +339,7 @@ def status(data: dict | None, alive=alive, queued=None) -> str:
     if data.get(NEXT_JOB) and (queued or _queued)(data[NEXT_JOB]):
         # Between step jobs no process runs; the sweep lives while its next step waits in the queue. #1508.
         return "running"
-    if not alive(data.get("pid") or 0):
+    if not live(data, alive):
         return "stalled"
     if clock() - progress_at(data) > stall_after(data):
         return "stalled"
@@ -358,7 +381,7 @@ def summary(alive=alive, queued=None) -> dict | None:
         how = f"rc {rc}" if rc is not None else f"error: {d.get('error', '')}"
         line = f"last discovery loop{lane} finished {ago(age)} ago, {how}"
     elif st == "stalled":
-        gone = "" if alive(d.get("pid") or 0) else f", process {d.get('pid')} is gone"
+        gone = "" if live(d, alive) else f", process {d.get('pid')} is gone"
         line = (f"discovery loop stalled{lane}: no progress for {ago(age)}{gone}; "
                 f"last at {_where(d)}")
     else:

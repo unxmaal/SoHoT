@@ -15,13 +15,17 @@ import time
 from pathlib import Path
 
 try:
-    from harness import run_state
+    from harness import atomic_file, run_state, stale_temp
 except ImportError:  # run as a file: python3 -I puts neither the checkout nor this directory on sys.path
     import importlib.util
-    _spec = importlib.util.spec_from_file_location("run_state", Path(__file__).with_name("run_state.py"))
-    run_state = importlib.util.module_from_spec(_spec)
-    sys.modules["run_state"] = run_state
-    _spec.loader.exec_module(run_state)
+
+    def _beside(name: str):
+        spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(f"{name}.py"))
+        module = sys.modules[name] = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+    atomic_file, run_state, stale_temp = _beside("atomic_file"), _beside("run_state"), _beside("stale_temp")
+replace = atomic_file.replace
 
 OVERRIDE = "LH_DEPLOY_DURING_SWEEP"
 #: harness/heartbeat.path() and harness/paths.runs(), restated because this imports nothing but run_state.
@@ -146,9 +150,9 @@ def settle_heartbeat(root: Path, stopped: list[dict], alive=alive) -> None:
     now = time.time()
     beat.update(state="finished", rc=None, finished=now, updated=now, finished_commit=beat.get("commit", ""),
                 error=f"stopped for a deploy ({OVERRIDE}=1)")
-    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    tmp = stale_temp.temp(path, "{name}.{pid}.tmp")
     tmp.write_text(json.dumps(beat), encoding="utf-8")
-    os.replace(tmp, path)
+    replace(tmp, path)
 
 
 def check(root: Path, environ=None, err=None, alive=alive, command_of=command_of, stopper=stop) -> int:

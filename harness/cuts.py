@@ -7,6 +7,7 @@ import os
 import sqlite3
 import time
 
+from harness.atomic_file import replace
 from harness import paths
 
 TABLE = "limit_cuts"
@@ -52,7 +53,7 @@ def _spooled() -> list[dict]:
         return []
     taken = path.with_name(f"{SPOOL}.{os.getpid()}.{time.time_ns()}")
     try:
-        os.replace(path, taken)
+        replace(path, taken)
         text = taken.read_text(encoding="utf-8")
     except OSError:
         return []
@@ -209,8 +210,10 @@ def _grouped(conn, what: str, since: float, machines) -> dict:
     sql = f"SELECT knob, {what} FROM {TABLE} WHERE at >= ?"
     params: list = [since]
     if machines is not None:
-        sql += f" AND (machine_id IS NULL OR machine_id IN ({', '.join('?' for _ in machines) or 'NULL'}))"
-        params.extend(machines)
+        from harness import machine_scope
+        here, mine = machine_scope.where("limit_cuts.shown", list(machines))
+        sql += f" AND {here}"
+        params.extend(mine)
     try:
         return {r[0]: r[1] for r in conn.execute(sql + " GROUP BY knob", params)}
     except Exception:  # noqa: BLE001 - a store older than the table has no cuts
