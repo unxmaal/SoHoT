@@ -151,7 +151,8 @@ def _gpu_busy(sample: dict) -> bool:
 def _residency(probes: list[dict]) -> str:
     if any(p["outcome"] in ("up", "slow") for p in probes):
         return LOADED_IDLE
-    if any("not resident" in (p.get("reason") or "") for p in probes):
+    from harness.lane_probe import NOT_RESIDENT
+    if any(NOT_RESIDENT in (p.get("reason") or "") for p in probes):
         return IDLE
     return IDLE_UNRECORDED
 

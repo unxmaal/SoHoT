@@ -728,7 +728,7 @@ def hf_model(model_id: str, fetch=None) -> dict:
         raise Deferred(f"{model_id}: rate-limited (HTTP 429)") from exc
     except Exception as exc:  # noqa: BLE001 - classified, then re-raised
         detail = str(exc)
-        if "HTTP 404" in detail:
+        if getattr(exc, "status", None) == 404:
             raise Gone(f"{model_id}: the registry has no model by that name")
         # 401 is a GATED model, which exists. Settling it as missing would
         # throw away exactly the candidates that need a licence click.
