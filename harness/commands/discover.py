@@ -780,10 +780,11 @@ def _report_sources(a) -> int:
     from harness import feeds
 
     rows = feeds.staleness()
+    gone = feeds.retired()
     proposed = discovery.feed_sources()
     reachable = discovery.lane_reach()
     if a.json:
-        print(json.dumps({"sources": rows, "reach": reachable,
+        print(json.dumps({"sources": rows, "retired": gone, "reach": reachable,
                           "proposed": [vars(c) for c in proposed]}, indent=2))
         return 0
     print(f"\ndiscovery sources (interval {feeds.interval_days()} days, "
@@ -796,6 +797,8 @@ def _report_sources(a) -> int:
                  if r.get("failures") else "")
         print(f"  {mark} {r['name']:24} {age}{fails}")
         print(f"        {r['url']}")
+    for r in gone:
+        print(f"  retired {r['name']:22} {r['why']}")
     # WHICH LANES CAN BE REACHED AT ALL. Three lanes had no source and nobody
     # could see it, because nothing anywhere asked the question (#240). Read
     # through lanes.serves(), so the four text-served lanes correctly inherit

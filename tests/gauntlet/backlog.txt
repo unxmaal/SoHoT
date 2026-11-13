@@ -340,10 +340,6 @@ a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:e
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:engine_trials.classified_by:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:extractions.at:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:extractions.name:no-reader
-a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:gateway_samples.completion:no-reader
-a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:gateway_samples.prompt:no-reader
-a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:human_votes.shown_first:no-reader
-a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:human_votes.voter:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:jobs.night_gate:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:jobs.night_gate:no-writer
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:machine_merges.from_fingerprint:no-reader
@@ -367,7 +363,6 @@ a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:o
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:runtime_trials.channel:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:serve_waits.holder:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:serve_waits.in_flight:no-reader
-a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:sources.retired:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:technique_triage.triaged_at:no-reader
 a-wait-with-no-deadline-owner-or-end-state evals/run.py:warm
 a-wait-with-no-deadline-owner-or-end-state gateway/served_model.py:_renew_inflight
