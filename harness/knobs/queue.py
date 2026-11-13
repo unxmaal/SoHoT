@@ -13,6 +13,8 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    "harness/job_claim.py:await_pid(poll)": "seconds between looks for the pid of a job its worker is starting; the "
+                                            "caller's wait bounds the wait, this only paces it (#1895)",
     "harness/quiesce.py:quiesce(wait)": "seconds between looks for a running job while the queue is paused; "
                                         "queue_quiesce_timeout bounds the wait, this only paces it (#577, #1762)",
 }

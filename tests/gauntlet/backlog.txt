@@ -594,7 +594,6 @@ nothing-and-failed-return-the-same-value harness/cuts.py:_machine_id:except
 nothing-and-failed-return-the-same-value harness/cuts.py:_own_store:chooser
 nothing-and-failed-return-the-same-value harness/cuts.py:_spooled:except
 nothing-and-failed-return-the-same-value harness/day_fetch.py:_release:except
-nothing-and-failed-return-the-same-value harness/delegations.py:_live_as_is:chooser
 nothing-and-failed-return-the-same-value harness/deploy.py:_read:except
 nothing-and-failed-return-the-same-value harness/deploy.py:backup:chooser
 nothing-and-failed-return-the-same-value harness/deploy.py:confirm:except
@@ -711,7 +710,6 @@ nothing-and-failed-return-the-same-value harness/workqueue.py:_git:except
 nothing-and-failed-return-the-same-value harness/workqueue.py:_not_pending:none-message
 nothing-and-failed-return-the-same-value harness/workqueue.py:_pid_of:except
 nothing-and-failed-return-the-same-value harness/workqueue.py:_tree:except
-nothing-and-failed-return-the-same-value harness/workqueue.py:cancel:none-message
 nothing-and-failed-return-the-same-value harness/workqueue.py:import_json:chooser
 nothing-and-failed-return-the-same-value harness/workqueue.py:settle_deploys:except
 one-default-tuned-for-one-member-applied-to-all evals/runners/agent.py:__init__(step_timeout)
