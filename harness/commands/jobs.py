@@ -30,15 +30,21 @@ def held_locks(jobs: list[dict], holders=None) -> list[dict]:
     return loose
 
 
-def _let(job: dict) -> None:
+def _add(argv: list[str], despite: bool, **kw) -> dict:
+    """Queue a job; with despite, it and its pass through the hold commit together. #1950."""
     from harness import hold
     from harness import memory_store as ms
+    from harness import workqueue as wq
+    if not despite:
+        return wq.add(argv, **kw)
     conn = ms.connect()
     try:
+        job = wq.add(argv, conn=conn, commit=False, **kw)
         hold.let(conn, job["id"])
     finally:
         conn.close()
     job["despite_hold"] = True
+    return job
 
 
 def _held(got: list[dict]) -> tuple[str, set]:
@@ -108,10 +114,8 @@ def cmd_jobs(a) -> int:
             where = wq.queue_cwd(os.getcwd(), wq.deployed(), explicit=cwd)
             if night:
                 note("--night is ignored since #1509: a GPU job starts when the contention gate opens (soh gate)")
-            job = wq.add(rest, title=a.title, cwd=where, priority=priority,
-                         requested_by="cli", not_before=wq.start_at(start), resource=resource)
-            if despite:
-                _let(job)
+            job = _add(rest, despite, title=a.title, cwd=where, priority=priority,
+                       requested_by="cli", not_before=wq.start_at(start), resource=resource)
             after = f" (not before {job['not_before']})" if job["not_before"] else ""
             note(f"queued {job['id']}{after}: {job['title']}")
             emit(job=job)

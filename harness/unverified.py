@@ -7,7 +7,7 @@ import re
 import time
 from pathlib import Path
 
-from harness.atomic_file import replace
+from harness import atomic_file
 from harness import stale_temp
 
 #: Candidate claims one turn sends to the decide model; the rest go unchecked.
@@ -310,7 +310,7 @@ def _remember(session: str, turn: str) -> bool:
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = stale_temp.temp(path, "{name}.{pid}")
         tmp.write_text(json.dumps(state), encoding="utf-8")
-        replace(tmp, path)
+        atomic_file.replace(tmp, path)
     except OSError:
         return False
     return True

@@ -24,7 +24,7 @@ def _proposal_id(conn, name: str):
 
 
 def ensure(conn, spec: str, *, proposal: str = "", lane: str = "",
-           key: str = "") -> int | None:
+           key: str = "", commit: bool = True) -> int | None:
     """The candidate row for `spec`, created or completed. None if it cannot run.
 
     `key` is what a receipt recorded and wins over the computed one; a
@@ -62,7 +62,8 @@ def ensure(conn, spec: str, *, proposal: str = "", lane: str = "",
             "UPDATE results SET candidate_id = (SELECT id FROM candidates "
             "WHERE spec = ?) WHERE candidate_id IS NULL AND candidate = ?",
             (spec, key))
-    conn.commit()
+    if commit:
+        conn.commit()
     return conn.execute("SELECT id FROM candidates WHERE spec = ?",
                         (spec,)).fetchone()["id"]
 

@@ -56,7 +56,10 @@ def test_each_open_issue_binding_names_a_backlog_row_of_its_class():
 def test_the_two_detector_classes_report_both_halves():
     """#1830: each class the corpus gives two detectors runs both, and the wait half still gets the move tables."""
     trees = detectors.parse({"harness/q.py": PAIRED})
-    hits = detectors.run(trees, REGISTRY.index, REGISTRY.production, None, gauntlet.ratchet.detector_config(REGISTRY))
+    config = gauntlet.ratchet.detector_config(REGISTRY)
+    # A qualified committer must name a definition in the tree it scans; this one-file tree has no memory_store.
+    config.pop("commit_then_link")
+    hits = detectors.run(trees, REGISTRY.index, REGISTRY.production, None, config)
     assert {h.site for h in hits[registry.CR]} == {"harness/q.py:link", "harness/q.py:append"}
     assert {"harness/q.py:wait", "harness/job_state.py:MOVES:done"} <= {h.site for h in hits[registry.WT]}
 

@@ -8,7 +8,7 @@ import sys
 import time
 from pathlib import Path
 
-from harness.atomic_file import replace
+from harness import atomic_file
 from harness import stale_temp
 from harness import paths
 
@@ -68,7 +68,7 @@ def _lives(rec: dict) -> bool:
 def _write(path: Path, record: dict) -> None:
     tmp = stale_temp.temp(path, ".{name}.{pid}.{hex}")
     tmp.write_text(json.dumps(record, sort_keys=True), encoding="utf-8")
-    replace(tmp, path)
+    atomic_file.replace(tmp, path)
 
 
 def _read(path: Path) -> dict:

@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 
 from harness import stale_temp
-from harness.atomic_file import replace
+from harness import atomic_file
 
 
 def path(job_id) -> Path:
@@ -22,7 +22,7 @@ def mark(job_id, pid: int | None = None) -> None:
     to = path(job_id)
     tmp = stale_temp.temp(to, "{name}.{pid}.{thread}")
     tmp.write_text(json.dumps(proc_identity.identity(pid or os.getpid())), encoding="utf-8")
-    replace(tmp, to)
+    atomic_file.replace(tmp, to)
 
 
 def clear(job_id) -> None:
