@@ -6,10 +6,18 @@ import os
 import statistics
 import sys
 import time
-import uuid
 from pathlib import Path
 
+from harness.atomic_file import replace
+from harness import stale_temp
 from harness import paths
+
+#: Seconds a running eval stays yielded to serving before it pauses for serving. #1765.
+YIELD_WAIT_S = 1800.0
+#: Times one case is cut for a delegation before its run pauses for serving. #1765.
+CUT_TRIES = 3
+#: The pause-file reason of a run that paused for serving; its queue job waits again behind the gates. #1765.
+SERVING_PAUSE = "serving"
 
 #: Seconds a lease outlives a delegation's answer, so a follow-up call skips the model swap back. #1556.
 GRACE_S = 120.0
@@ -40,17 +48,27 @@ def _dir(name: str) -> Path:
 
 
 def _alive(pid) -> bool:
-    from harness import workqueue
+    from harness import job_procs
     try:
-        return workqueue.alive(int(pid))
+        return job_procs.alive(int(pid))
     except (TypeError, ValueError):
         return False
 
 
+def _lives(rec: dict) -> bool:
+    """Whether the process a yielder record or lease row names is still the one recorded; a pid alone where it cannot say. #1774."""
+    from harness import proc_identity
+    try:
+        same = proc_identity.same(rec)
+    except (TypeError, ValueError):
+        return False
+    return same if same is not None else _alive(rec.get("pid"))
+
+
 def _write(path: Path, record: dict) -> None:
-    tmp = path.with_name(f".{path.name}.{uuid.uuid4().hex[:6]}")
+    tmp = stale_temp.temp(path, ".{name}.{pid}.{hex}")
     tmp.write_text(json.dumps(record, sort_keys=True), encoding="utf-8")
-    os.replace(tmp, path)
+    replace(tmp, path)
 
 
 def _read(path: Path) -> dict:
@@ -133,7 +151,7 @@ def holders(now: float | None = None, node: str = "") -> list[dict]:
     def read(c):
         out = []
         for r in item_lease.live(c, resource(node), now):
-            if r["state"] in (WAITING, SERVING) and not _alive(r["pid"]):
+            if r["state"] in (WAITING, SERVING) and not _lives(r):
                 item_lease.release(c, r["id"], now)
                 continue
             out.append({"holder": r["detail"], "lane": r["item"].split(" ", 1)[-1], "pid": r["pid"],
@@ -159,8 +177,14 @@ class Yielder:
     def __init__(self, out, clock=time.time, node: str = ""):
         self.clock = clock
         self.node = node
-        self.path = _dir("yielders") / f"{os.getpid()}.json"
-        self.record = {"pid": os.getpid(), "out": str(out or ""), "state": BETWEEN, "at": clock(), "node": node}
+        from harness import proc_identity
+        me = proc_identity.identity(os.getpid())
+        self.path = _dir("yielders") / f"{me['pid']}.json"
+        # A cut or beside line left under this pid is a dead process's, never this eval's. #1774.
+        for left in (_cut_path(me["pid"]), _beside_path(me["pid"])):
+            _drop(left)
+        self.record = {"pid": me["pid"], "pgid": me["pgid"], "started": me["started"], "out": str(out or ""),
+                       "state": BETWEEN, "at": clock(), "node": node}
         _write(self.path, self.record)
 
     def _set(self, **fields) -> None:
@@ -253,7 +277,7 @@ def yielders(node: str = "") -> list[dict]:
     out = []
     for f in sorted(_dir("yielders").glob("*.json")):
         r = _read(f)
-        if r and _alive(r.get("pid")):
+        if r and _lives(r):
             if (r.get("node") or "") == node:
                 out.append(r)
         else:

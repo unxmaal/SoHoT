@@ -14,6 +14,7 @@ import pytest
 from harness import memory_store as ms
 from harness import owned, proc_identity, vllm
 from harness import watchdog as wd
+from harness import watchdog_hands, watchdog_observe
 
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="process groups and start times are POSIX")
 
@@ -46,6 +47,24 @@ TERM_IN_POPEN = textwrap.dedent("""
 """)
 
 
+# The server leads its own session and has a worker in it, as vllm does.
+LEADER = textwrap.dedent("""
+    import subprocess, sys, time
+    worker = subprocess.Popen(["sleep", "300"])
+    open(sys.argv[1], "w").write(str(worker.pid))
+    time.sleep(300)
+""")
+
+OWNER_OF_LEADER = textwrap.dedent("""
+    import sys, time
+    from harness import owned
+    out = sys.argv[1]
+    p = owned.start([sys.executable, "-c", sys.argv[2], out + "/worker.pid"])
+    open(out + "/child.pid", "w").write(str(p.pid))
+    time.sleep(300)
+""")
+
+
 def _wait(pred, timeout=15.0):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -65,11 +84,11 @@ def strays():
             os.killpg(pid, signal.SIGKILL)
 
 
-def _owner(tmp_path, script):
+def _owner(tmp_path, script, *args):
     path = tmp_path / "owner.py"
     path.write_text(script, encoding="utf-8")
     env = {**os.environ, "PYTHONPATH": str(ROOT)}
-    proc = subprocess.Popen([sys.executable, str(path), str(tmp_path)], cwd=ROOT, env=env,
+    proc = subprocess.Popen([sys.executable, str(path), str(tmp_path), *args], cwd=ROOT, env=env,
                             stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, start_new_session=True)
     pidfile = tmp_path / "child.pid"
     assert _wait(lambda: pidfile.exists() and pidfile.read_text(encoding="utf-8").strip()), proc.stderr.read().decode()
@@ -83,35 +102,49 @@ def _records():
 def test_sigterm_to_the_owner_stops_the_server_it_started(tmp_path, strays):
     proc, child = _owner(tmp_path, OWNER)
     strays.append(child)
-    rec = owned.identity(child)
-    assert owned.same(rec) is True
+    rec = proc_identity.identity(child)
+    assert proc_identity.same(rec) is True
     assert _wait(lambda: len(_records()) == 1)
     proc.send_signal(signal.SIGTERM)
     assert proc.wait(timeout=30) == -signal.SIGTERM
-    assert _wait(lambda: owned.same(rec) is False), "the server outlived its TERMed owner"
+    assert _wait(lambda: proc_identity.same(rec) is False), "the server outlived its TERMed owner"
     assert _records() == []
 
 
 def test_a_term_inside_popen_still_stops_the_child(tmp_path, strays):
     proc, child = _owner(tmp_path, TERM_IN_POPEN)
     strays.append(child)
-    rec = owned.identity(child)
+    rec = proc_identity.identity(child)
     assert proc.wait(timeout=30) == -signal.SIGTERM
-    assert _wait(lambda: owned.same(rec) is False), "a TERM during Popen orphaned the child"
+    assert _wait(lambda: proc_identity.same(rec) is False), "a TERM during Popen orphaned the child"
 
 
-def test_a_sigkilled_owner_s_server_is_reaped_by_the_next_owner(tmp_path, strays):
-    proc, child = _owner(tmp_path, OWNER)
+def test_a_sigkilled_owner_s_server_and_its_workers_are_stopped_by_its_tether(tmp_path, strays):
+    proc, child = _owner(tmp_path, OWNER_OF_LEADER, LEADER)
     strays.append(child)
-    rec = owned.identity(child)
-    assert _wait(lambda: len(_records()) == 1)
+    wpid = tmp_path / "worker.pid"
+    assert _wait(lambda: wpid.exists() and wpid.read_text(encoding="utf-8"))
+    worker = proc_identity.identity(int(wpid.read_text(encoding="utf-8")))
+    rec = proc_identity.identity(child)
+    assert proc_identity.same(worker) is True and worker["pgid"] == child
     proc.kill()
     proc.wait(timeout=10)
-    time.sleep(0.3)
-    assert owned.same(rec) is True, "SIGKILL left nothing to reap"
+    assert _wait(lambda: proc_identity.same(rec) is False, timeout=20), "the server outlived its SIGKILLed owner"
+    assert _wait(lambda: proc_identity.same(worker) is False, timeout=20), "the server's worker outlived its owner"
+
+
+def test_a_server_whose_owner_s_whole_group_was_killed_is_reaped_by_the_next_owner(tmp_path, strays):
+    proc, child = _owner(tmp_path, OWNER)
+    strays.append(child)
+    rec = proc_identity.identity(child)
+    assert _wait(lambda: len(_records()) == 1)
+    os.killpg(proc.pid, signal.SIGKILL)
+    proc.wait(timeout=10)
+    time.sleep(1.0)
+    assert proc_identity.same(rec) is True, "a group SIGKILL took the tether and left nothing to reap"
     lines = owned.reap()
     assert any(f"pid {child}" in line and "stopped" in line for line in lines), lines
-    assert _wait(lambda: owned.same(rec) is False)
+    assert _wait(lambda: proc_identity.same(rec) is False)
     assert _records() == []
 
 
@@ -131,7 +164,7 @@ def _plant(children):
 def test_a_recorded_pid_now_naming_another_process_is_not_killed(strays):
     stranger = subprocess.Popen(["sleep", "300"], start_new_session=True)
     strays.append(stranger.pid)
-    real = owned.identity(stranger.pid)
+    real = proc_identity.identity(stranger.pid)
     _plant([{**real, "started": "2.000000", "cmd": "vllm serve"},
             {**real, "pgid": real["pgid"] + 1, "cmd": "vllm serve"}])
     lines = owned.reap(grace=1)
@@ -141,13 +174,29 @@ def test_a_recorded_pid_now_naming_another_process_is_not_killed(strays):
     assert _records() == []
 
 
+def test_reap_removes_a_dead_owner_s_temp_and_keeps_a_live_one_s():
+    owned.root().mkdir(parents=True, exist_ok=True)
+    dead, me = _dead_owner(), proc_identity.identity(os.getpid())
+    gone = owned.root() / f"{dead['pid']}-unknown.tmp"
+    mine = owned.root() / f"{me['pid']}-{me['started']}.tmp"
+    unsure = owned.root() / f"{me['pid']}-unknown.tmp"
+    for t in (gone, mine, unsure):
+        t.write_text("{}", encoding="utf-8")
+    owned.reap(act=False)
+    assert gone.exists(), "a dry run removed a file"
+    owned.reap()
+    assert not gone.exists(), "a dead owner's temp was left behind"
+    assert mine.exists(), "a live owner's temp was removed"
+    assert unsure.exists(), "a temp whose owner cannot be judged was removed"
+
+
 def test_a_live_owner_whose_start_time_cannot_be_read_is_not_taken_for_gone(monkeypatch, strays):
     child = subprocess.Popen(["sleep", "300"], start_new_session=True)
     strays.append(child.pid)
     owned.root().mkdir(parents=True, exist_ok=True)
-    owner = owned.identity(os.getpid())
+    owner = proc_identity.identity(os.getpid())
     record = owned.root() / f"{owner['pid']}-live.json"
-    record.write_text(json.dumps({"owner": owner, "children": [{**owned.identity(child.pid), "cmd": "sleep 300"}]}),
+    record.write_text(json.dumps({"owner": owner, "children": [{**proc_identity.identity(child.pid), "cmd": "sleep 300"}]}),
                       encoding="utf-8")
     monkeypatch.setattr(proc_identity, "_proc", lambda pid: None)
     assert owned.reap(grace=1) == []
@@ -158,11 +207,11 @@ def test_a_live_owner_whose_start_time_cannot_be_read_is_not_taken_for_gone(monk
 def test_the_watchdog_wake_reaps_a_dead_owner_s_server(tmp_path, strays):
     child = subprocess.Popen(["sleep", "300"], start_new_session=True)
     strays.append(child.pid)
-    _plant([{**owned.identity(child.pid), "cmd": "sleep 300"}])
+    _plant([{**proc_identity.identity(child.pid), "cmd": "sleep 300"}])
     said = []
-    wd.wake(ms.connect(), Quiet(tmp_path), wd.Hands(), act=False, say=said.append)
+    wd.wake(ms.connect(), Quiet(tmp_path), watchdog_hands.Hands(), act=False, say=said.append)
     assert any("would stop" in s for s in said) and child.poll() is None
-    wd.wake(ms.connect(), Quiet(tmp_path), wd.Hands(), act=True, say=said.append)
+    wd.wake(ms.connect(), Quiet(tmp_path), watchdog_hands.Hands(), act=True, say=said.append)
     assert child.wait(timeout=15) == -signal.SIGTERM
     assert _records() == []
 
@@ -175,12 +224,15 @@ def test_served_records_its_child_and_forgets_it_and_its_handlers_on_exit(tmp_pa
         assert [c["pid"] for c in got["children"]] == [srv.proc.pid]
         assert got["owner"]["pid"] == os.getpid()
         assert signal.getsignal(signal.SIGTERM) is owned._on_signal
+        watcher = owned._children[srv.proc.pid][2]
+        assert watcher is not None and watcher.poll() is None
     assert srv.proc.poll() is not None
+    assert watcher.poll() is not None, "the tether outlived the server it watched"
     assert _records() == []
     assert signal.getsignal(signal.SIGTERM) is before
 
 
-class Quiet(wd.Probes):
+class Quiet(watchdog_observe.Probes):
     """A machine with nothing running, so a wake judges nothing and only reaps."""
 
     def __init__(self, tmp_path):

@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from harness import completion, context, delegate, exclusive, gateway, interactive, memory, paths, router, serving
-from harness import watchdog as wd
+from harness import watchdog as wd, watchdog_hands, watchdog_observe
 from harness.commands import interactive as interactive_cmd
 from tests.test_context import LLAMA, write_gguf
 
@@ -318,7 +318,7 @@ def test_warm_loads_every_missing_pinned_model_and_repoints_a_stale_gateway(pinn
 
 
 def test_the_watchdog_restarts_a_down_missing_or_drifted_interactive_server(pinned, monkeypatch):
-    hands = wd.Hands.__new__(wd.Hands)
+    hands = watchdog_hands.Hands.__new__(watchdog_hands.Hands)
     kicks = []
     hands._kickstart = lambda service: kicks.append(service) or f"restarted {service}"
     for state in ({"up": True, "missing": [EXTRACT], "drift": {}},
@@ -392,4 +392,4 @@ def test_memory_warn_gives_back_eval_router_models_never_the_pinned_ones(pinned,
         asked.append(base)
         return {DECIDE: "loaded"} if serving.bare(base) == URL else {"Ornith-1.5-35B-Q4_K_M": "loaded"}
     monkeypatch.setattr(router, "statuses", statuses)
-    assert [m["model"] for m in wd.Probes().served()] == ["Ornith-1.5-35B-Q4_K_M"] and asked == [""]
+    assert [m["model"] for m in watchdog_observe.Probes().served()] == ["Ornith-1.5-35B-Q4_K_M"] and asked == [""]

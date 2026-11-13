@@ -8,6 +8,7 @@ import pytest
 
 import shells
 from harness import paths, pressure, proc_identity, queue_hold, workqueue as wq
+from harness import queue_pause
 
 REPO = Path(__file__).resolve().parents[1]
 posix = pytest.mark.skipif(sys.platform == "win32" or shells.BASH is None, reason="POSIX pids and bash")
@@ -40,7 +41,7 @@ def _gate():
 
 
 def _flags() -> set[str]:
-    return {p.name for p in (wq._pause_flag(), wq._held_flag()) if p.exists()}
+    return {p.name for p in (queue_pause._pause_flag(), queue_pause._held_flag()) if p.exists()}
 
 
 @posix
@@ -83,7 +84,7 @@ def test_an_owner_pause_is_never_lifted():
                          timeout=120)
     assert got.stdout.strip() == "was-paused", got.stderr[-800:]
     assert _gate() == (False, "paused (soh jobs resume)"), "quiesce never turns an owner's pause into its own"
-    assert queue_hold.holder_of(wq._pause_flag().read_text(encoding="utf-8")) is None
+    assert queue_hold.holder_of(queue_pause._pause_flag().read_text(encoding="utf-8")) is None
 
 
 @posix
@@ -95,9 +96,9 @@ def test_a_holder_that_cannot_be_read_keeps_its_pause(monkeypatch):
 
 
 def test_a_marker_alone_whose_holder_died_is_lifted_and_the_next_hold_takes_the_queue():
-    wq._held_flag().write_text(queue_hold.text("held for a deploy", os.getpid()), encoding="utf-8")
-    rec = queue_hold.holder_of(wq._held_flag().read_text(encoding="utf-8"))
-    wq._held_flag().write_text(wq._held_flag().read_text(encoding="utf-8").replace(rec["started"], "1.000000"),
+    queue_pause._held_flag().write_text(queue_hold.text("held for a deploy", os.getpid()), encoding="utf-8")
+    rec = queue_hold.holder_of(queue_pause._held_flag().read_text(encoding="utf-8"))
+    queue_pause._held_flag().write_text(queue_pause._held_flag().read_text(encoding="utf-8").replace(rec["started"], "1.000000"),
                                encoding="utf-8")
     said = wq.hold_for_deploy(holder=os.getpid())
     assert said[0].startswith("paused.deploy lifted: its holder pid")

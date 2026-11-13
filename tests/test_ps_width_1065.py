@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from gauntlet import scanners as gscanners
 
-from harness import sweep_guard, watchdog
+from harness import sweep_guard, watchdog_observe
 
 REPO = Path(__file__).resolve().parents[1]
 SOURCES = ("harness", "evals", "scripts", "gateway", "tools", "voice", "deploy")
@@ -31,7 +31,7 @@ def _ps_calls():
 
 def test_every_ps_that_reads_a_command_line_asks_for_unlimited_width():
     reading = {where: call for where, call in _ps_calls() if COMMAND_FIELD.search(call)}
-    assert {w.split(":")[0] for w in reading} >= {"harness/sweep_guard.py", "harness/watchdog.py"}
+    assert {w.split(":")[0] for w in reading} >= {"harness/sweep_guard.py", "harness/watchdog_observe.py"}
     assert [f"{w}: {c}" for w, c in reading.items() if "-ww" not in c] == []
 
 
@@ -62,5 +62,5 @@ def test_command_of_keeps_the_tail_of_a_long_argv_at_80_columns(long_argv, monke
 def test_the_watchdog_listing_keeps_the_tail_of_a_long_argv_at_80_columns(long_argv, monkeypatch):
     pid, tail = long_argv
     monkeypatch.setenv("COLUMNS", "80")
-    got = {p.pid: p.command for p in watchdog.Probes().processes() or []}
+    got = {p.pid: p.command for p in watchdog_observe.Probes().processes() or []}
     assert got.get(pid, "").endswith(tail), got.get(pid)

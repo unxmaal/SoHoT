@@ -8,10 +8,19 @@ from pathlib import Path
 from typing import NamedTuple
 
 # Stdlib only: harness/sweep_guard.py loads this as a file when launchd.sh runs it with python3 -I.
+try:
+    from harness import proc_identity
+except ImportError:  # loaded as a file: proc_identity is the stdlib-only module beside it
+    import importlib.util
+    _spec = importlib.util.spec_from_file_location("proc_identity", Path(__file__).with_name("proc_identity.py"))
+    proc_identity = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(proc_identity)
 PROGRESS = "progress.json"
 CHECKPOINT = "checkpoint.jsonl"
 PAUSE_FILE = "pause"
 STOP_FILE = "stopped"
+#: Locked by the one evals.run writing the directory, holding its proc_identity. #1740.
+WRITER = "writer.lock"
 
 #: What evals.run writes in progress.json's `state`; Progress.write refuses anything else.
 W_RUNNING, W_YIELDING, W_PAUSED, W_STOPPED, W_DONE = "running", "yielding", "paused", "stopped", "done"
@@ -47,8 +56,8 @@ class State(NamedTuple):
     why: str
 
 
-def alive(pid, pgid) -> bool | None:
-    """Whether the run's process lives in the group it recorded; None when this platform or record cannot say."""
+def alive(pid, pgid, started="") -> bool | None:
+    """Whether the run's process is the one recorded (pid, group, start time); None when this platform or record cannot say."""
     try:
         pid = int(pid)
         group = int(pgid) if pgid is not None else None
@@ -56,10 +65,14 @@ def alive(pid, pgid) -> bool | None:
         return None
     if pid <= 0:
         return None
+    if started:
+        same = proc_identity.same({"pid": pid, "pgid": group, "started": started})
+        if same is not None:
+            return same
     if sys.platform == "win32":
         return _win_alive(pid)
     try:
-        # With no group recorded a reused pid cannot be told apart, so it counts as alive.
+        # A progress file written before #1843 has no start time. With no group recorded a reused pid cannot be told apart, so it counts as alive.
         return os.getpgid(pid) == group or group is None
     except ProcessLookupError:
         return False
@@ -93,7 +106,7 @@ def _reason(path: Path) -> str:
 
 
 def of(outdir, alive=alive) -> State:
-    """The one state of the run in `outdir`; `alive(pid, pgid)` is True, False or None (cannot say)."""
+    """The one state of the run in `outdir`; `alive(pid, pgid, started)` is True, False or None (cannot say)."""
     out = Path(outdir)
     try:
         raw = (out / PROGRESS).read_text(encoding="utf-8")
@@ -113,7 +126,7 @@ def of(outdir, alive=alive) -> State:
     written = written if isinstance(written, str) else ""
     if written not in WRITTEN:
         return State(UNKNOWN, written, got, f"progress state {written!r} is none evals.run writes")
-    live = alive(got.get("pid"), got.get("pgid"))
+    live = alive(got.get("pid"), got.get("pgid"), str(got.get("pid_started") or ""))
     if written in IN_FLIGHT:
         if live is None:
             return State(UNKNOWN, written, got, "its process cannot be told alive or gone")

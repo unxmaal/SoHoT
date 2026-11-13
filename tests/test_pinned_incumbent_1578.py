@@ -1,6 +1,7 @@
 """A paired eval's incumbent pinned on the interactive server is answered there; only the challenger loads. #1578."""
 import argparse
 import json
+from pathlib import Path
 
 import pytest
 
@@ -135,7 +136,7 @@ def _plan_rows(tmp_path, monkeypatch, weights: dict, models_max=1):
         rows.append({"path": str(path), "id": i})
     monkeypatch.setattr(context, "router_rows", lambda conn: rows)
     monkeypatch.setattr(context, "coresident_bytes", lambda conn: 16 * GIB)
-    monkeypatch.setattr(context, "_weights", lambda p: weights[str(p).rsplit("/", 1)[-1][:-len(".gguf")]])
+    monkeypatch.setattr(context, "_weights", lambda p: weights[Path(p).stem])
     return {p["stem"]: p for p in context.plan(None, budget=int(59.8 * GIB), kv_cap=64 * GIB,
                                                models_max=models_max, record=False)}
 

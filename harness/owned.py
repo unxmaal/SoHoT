@@ -11,13 +11,13 @@ import threading
 import time
 from pathlib import Path
 
-from harness.proc_identity import identity, same, started
+from harness import proc_identity, tether
 
 TERM_GRACE_S = 10.0
 
 _SIGNALS = ("SIGTERM", "SIGINT")
 
-_children: dict[int, tuple[subprocess.Popen, dict]] = {}
+_children: dict[int, tuple[subprocess.Popen, dict, subprocess.Popen | None]] = {}
 _previous: dict[int, object] = {}
 _pending: list[int] = []
 _starting = False
@@ -34,7 +34,8 @@ def _file(owner: dict) -> Path:
 
 
 def _write() -> None:
-    owner = identity(os.getpid())
+    from harness import atomic_file
+    owner = proc_identity.identity(os.getpid())
     path = _file(owner)
     if not _children:
         path.unlink(missing_ok=True)
@@ -42,8 +43,8 @@ def _write() -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
     tmp.write_text(json.dumps({"owner": owner, "argv": sys.argv[:4],
-                               "children": [rec for _, rec in _children.values()]}), encoding="utf-8")
-    os.replace(tmp, path)
+                               "children": [rec for _, rec, _ in _children.values()]}), encoding="utf-8")
+    atomic_file.replace(tmp, path)
 
 
 def _guard() -> None:
@@ -113,9 +114,12 @@ def start(cmd: list[str], **popen) -> subprocess.Popen:
         try:
             proc = subprocess.Popen(cmd, **popen)
             pgid = None if sys.platform == "win32" else proc.pid
-            _children[proc.pid] = (proc, {"pid": proc.pid, "pgid": pgid, "started": started(proc.pid),
-                                          "cmd": " ".join(str(c) for c in cmd)[:300]})
+            rec = {"pid": proc.pid, "pgid": pgid, "started": proc_identity.started(proc.pid),
+                   "cmd": " ".join(str(c) for c in cmd)[:300]}
+            _children[proc.pid] = (proc, rec, None)
             _write()
+            with contextlib.suppress(OSError):  # without a watcher a lone SIGKILL waits for reap()
+                _children[proc.pid] = (proc, rec, tether.tie(proc))
         finally:
             _starting = False
             held, _pending[:] = list(_pending), []
@@ -126,7 +130,8 @@ def start(cmd: list[str], **popen) -> subprocess.Popen:
 
 def _forget(pid: int) -> None:
     with _lock:
-        _children.pop(pid, None)
+        _, _, watcher = _children.pop(pid, (None, None, None))
+        tether.untie(watcher)
         _write()
         if not _children:
             _unguard()
@@ -149,7 +154,7 @@ def stop(proc: subprocess.Popen, grace: float = TERM_GRACE_S) -> None:
 def stop_all(grace: float = TERM_GRACE_S) -> None:
     """Stop every child this process started, all within one grace."""
     with _lock:
-        procs = [p for p, _ in _children.values()]
+        procs = [p for p, _, _ in _children.values()]
         for p in procs:
             if p.poll() is None:
                 _signal(p, hard=False)
@@ -172,7 +177,7 @@ def _stop_group(rec: dict, grace: float, sleep=time.sleep) -> str:
         os.killpg(int(rec["pgid"]), signal.SIGTERM)
     deadline = time.monotonic() + grace
     while time.monotonic() < deadline:
-        if same(rec) is not True:
+        if proc_identity.same(rec) is not True:
             return "term"
         sleep(0.1)
     with contextlib.suppress(ProcessLookupError, PermissionError):
@@ -191,12 +196,12 @@ def reap(act: bool = True, grace: float = TERM_GRACE_S) -> list[str]:
         except (OSError, ValueError):
             continue
         owner = got.get("owner") or {}
-        if same(owner) is not False:
+        if proc_identity.same(owner) is not False:
             continue
         unsure = False
         for c in got.get("children") or []:
             who = f"pid {c.get('pid')} ({str(c.get('cmd', ''))[:80]}), owner pid {owner.get('pid')} gone"
-            alive = same(c)
+            alive = proc_identity.same(c)
             if alive is None:
                 unsure = True
                 lines.append(f"cannot tell whether {who} still runs; left alone")
@@ -206,4 +211,16 @@ def reap(act: bool = True, grace: float = TERM_GRACE_S) -> list[str]:
                 lines.append(f"would stop {who}")
         if act and not unsure:
             f.unlink(missing_ok=True)
+    if act:
+        _sweep_temps()
     return lines
+
+
+def _sweep_temps() -> None:
+    """Remove the .tmp an owner left when it died between write and replace."""
+    with contextlib.suppress(OSError):
+        for t in root().glob("*.tmp"):
+            pid, _, began = t.stem.partition("-")
+            rec = {"pid": int(pid), "started": None if began == "unknown" else began} if pid.isdigit() else {}
+            if proc_identity.same(rec) is False:
+                t.unlink(missing_ok=True)

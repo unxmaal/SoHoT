@@ -302,7 +302,7 @@ def _run_loop(a) -> int:
 
     from harness import lease
     from harness import memory_store as ms
-    from harness import workqueue as wq
+    from harness import job_procs
 
     if not getattr(a, "run", False):
         # A dry run spends nothing, so it needs no lease and never refuses.
@@ -310,7 +310,7 @@ def _run_loop(a) -> int:
     conn = ms.connect()
     try:
         who = lease.owner(conn)
-        held = lease.take(conn, LEASE, who, LEASE_S, alive=wq.alive)
+        held = lease.take(conn, LEASE, who, LEASE_S, alive=job_procs.alive)
     finally:
         conn.close()
     if held:

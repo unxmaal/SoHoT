@@ -9,10 +9,21 @@ on:
     # 06:17 UTC: Linux and Windows run on main overnight, after the day's merges. "0 6" started 6-9 h late (#1802).
     - cron: "17 6 * * *"
   workflow_dispatch:
+    # gh workflow run check --ref <branch> -f jobs=check-windows -f tests="tests/test_ci_workflow.py tests/test_ci_retry_1440.py::test_every_uv_sync_in_ci_goes_through_the_retry" (#1906).
+    inputs:
+      jobs:
+        description: "all, or a comma list of: check-macos, check-postgres, check-linux, check-windows, mutation, coverage-map"
+        type: string
+        default: all
+      tests:
+        description: "Space-separated pytest files or node ids, run in place of the whole suite; blank runs it all"
+        type: string
+        default: ""
 
 concurrency:
   # A push gets its own group: in a shared one the next merge's run waited for this whole run, check-postgres too (#1802).
-  group: check-${{ github.event_name }}-${{ github.event_name == 'push' && github.sha || github.ref }}
+  # A dispatch's inputs are in its group, so a narrow dispatch neither waits for nor queues behind another (#1906).
+  group: check-${{ github.event_name }}-${{ github.event_name == 'push' && github.sha || github.ref }}${{ github.event_name == 'workflow_dispatch' && format('-{0}-{1}', inputs.jobs, inputs.tests) || '' }}
   # A main run always finishes, or merges faster than check-macos would leave no main sha green (#1702).
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
@@ -21,7 +32,30 @@ env:
   UV_HTTP_RETRIES: "8"
 
 jobs:
+  dispatch-inputs:
+    # A misspelt job name would otherwise skip every job and report green (#1906).
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - env:
+          JOBS: ${{ inputs.jobs }}
+          TESTS: ${{ inputs.tests }}
+          KNOWN: check-macos check-postgres check-linux check-windows mutation coverage-map
+        run: |
+          set -f
+          names="${JOBS//,/ }"
+          [ -n "${names// /}" ] || { echo "::error::jobs is blank; 'all' runs every job"; exit 1; }
+          for name in $names; do
+            case " all $KNOWN " in
+              *" $name "*) ;;
+              *) echo "::error::unknown job '$name'; one of: all $KNOWN"; exit 1 ;;
+            esac
+          done
+          echo "jobs: $JOBS; tests: ${TESTS:-the whole suite}" | tee -a "$GITHUB_STEP_SUMMARY"
+
   check-macos:
+    if: github.event_name != 'workflow_dispatch' || (inputs.jobs == 'all' || contains(inputs.jobs, 'check-macos'))
     # Apple Silicon, and standard runners are free for public repos. Larger
     # runners are NOT free, so this label must stay standard.
     runs-on: macos-latest
@@ -93,11 +127,18 @@ jobs:
         # The same command a person runs locally. CI running something else is
         # how a repo gets a green badge and a broken checkout.
         env:
-          PYTEST_ADDOPTS: --durations=60 --durations-min=0.5 --junitxml=/tmp/junit.xml
+          # The nightly searches the declared lifecycles deeper, randomised (#1766).
+          PYTEST_ADDOPTS: --durations=60 --durations-min=0.5 --junitxml=/tmp/junit.xml ${{ github.event_name == 'schedule' && '--hypothesis-profile=deep' || '' }}
           # Each test's start and end as it happens, so a cancelled run still says where its time went (#1146).
           SOHOT_TEST_LOG: /tmp/test-times.tsv
+          # A dispatch's `tests` input runs those alone, through env and never pasted into the script (#1906).
+          TESTS: ${{ inputs.tests }}
         # user+sys over real x cores says whether the runner's cores were busy or waiting (#1146).
-        run: set -o pipefail && /usr/bin/time -p make check 2>&1 | tee /tmp/check.log
+        run: |
+          set -o pipefail
+          read -ra tests <<< "$TESTS"
+          if [ "${#tests[@]}" -gt 0 ]; then suite=(uv run --group mcp pytest "${tests[@]}" -q -n 6); else suite=(make check); fi
+          SOHOT_CATCHES=1 /usr/bin/time -p "${suite[@]}" 2>&1 | tee /tmp/check.log
 
       - name: Where the time went
         if: always()
@@ -146,6 +187,7 @@ jobs:
 
   store-touched:
     # Whether a change reaches the store seam, so check-postgres runs only then, and nightly (#1507).
+    if: github.event_name != 'workflow_dispatch' || (inputs.jobs == 'all' || contains(inputs.jobs, 'check-postgres'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -173,7 +215,7 @@ jobs:
     needs: store-touched
     if: >-
       github.event_name == 'schedule' ||
-      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_dispatch' && (inputs.jobs == 'all' || contains(inputs.jobs, 'check-postgres'))) ||
       needs.store-touched.outputs.touched == '1'
     runs-on: macos-latest
     # 1.4x (a slow M1 host, #1520) the whole suite's 36.5 min projected from push run 42412868007's cut at 99% (#1584).
@@ -234,7 +276,13 @@ jobs:
           if [ -s "$listing" ]; then echo "SOHOT_SELECTED=$listing" >> "$GITHUB_ENV"; fi
 
       - name: make test-postgres-suite
-        run: set -o pipefail && make test-postgres-suite 2>&1 | tee /tmp/check.log
+        env:
+          TESTS: ${{ inputs.tests }}
+        run: |
+          set -o pipefail
+          read -ra tests <<< "$TESTS"
+          if [ "${#tests[@]}" -gt 0 ]; then suite=(uv run --group cluster --group mcp pytest "${tests[@]}" -q -n 6); else suite=(make test-postgres-suite); fi
+          LOCALHARNESS_STORE=postgres "${suite[@]}" 2>&1 | tee /tmp/check.log
 
       - name: What did not run
         if: always()
@@ -251,7 +299,7 @@ jobs:
     # Deferred to the nightly run; a PR labelled full-ci runs it now.
     if: >-
       github.event_name == 'schedule' ||
-      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_dispatch' && (inputs.jobs == 'all' || contains(inputs.jobs, 'check-linux'))) ||
       (github.event_name == 'pull_request' &&
        contains(github.event.pull_request.labels.*.name, 'full-ci'))
     # Pinned to 24.04, the release the Linux machines here run, so a failure
@@ -387,11 +435,16 @@ jobs:
         # Coverage rides on this one pass; a second full run went over the timeout (#623).
         env:
           PYTEST_ADDOPTS: --durations=30 --cov=harness --cov=evals --cov-report=term --cov-report=json
-        run: set -o pipefail && make check 2>&1 | tee /tmp/check.log
+          TESTS: ${{ inputs.tests }}
+        run: |
+          set -o pipefail
+          read -ra tests <<< "$TESTS"
+          if [ "${#tests[@]}" -gt 0 ]; then suite=(uv run --group mcp pytest "${tests[@]}" -q -n 6); else suite=(make check); fi
+          SOHOT_CATCHES=1 "${suite[@]}" 2>&1 | tee /tmp/check.log
 
       - name: make test-litellm
         # The whole suite collected under the LiteLLM overlay and its mcp 1; no other job runs it (#1221).
-        if: always()
+        if: always() && inputs.tests == ''
         timeout-minutes: 8
         run: make test-litellm
 
@@ -436,7 +489,7 @@ jobs:
     # Deferred to the nightly run; a PR labelled full-ci runs it now.
     if: >-
       github.event_name == 'schedule' ||
-      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_dispatch' && (inputs.jobs == 'all' || contains(inputs.jobs, 'check-windows'))) ||
       (github.event_name == 'pull_request' &&
        contains(github.event.pull_request.labels.*.name, 'full-ci'))
     # The second measurement machine. Nothing here is Apple Silicon, so the MLX
@@ -500,7 +553,12 @@ jobs:
         # locally.
         env:
           PYTEST_ADDOPTS: --durations=30
-        run: set -o pipefail && make check 2>&1 | tee /tmp/check.log
+          TESTS: ${{ inputs.tests }}
+        run: |
+          set -o pipefail
+          read -ra tests <<< "$TESTS"
+          if [ "${#tests[@]}" -gt 0 ]; then suite=(uv run --group mcp pytest "${tests[@]}" -q -n 6); else suite=(make check); fi
+          SOHOT_CATCHES=1 "${suite[@]}" 2>&1 | tee /tmp/check.log
 
       - name: What did not run
         if: always()
@@ -515,7 +573,7 @@ jobs:
 
   mutation:
     # Nightly or on demand, never on a pull request, labelled or not (#492 F3).
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.jobs == 'all' || contains(inputs.jobs, 'mutation')))
     name: mutation (${{ matrix.module }}${{ matrix.shard && format(' {0}', matrix.shard) || '' }})
     runs-on: macos-latest
     # One job per module, and adopt.py in two shards: it outgrew 120 minutes and a cancelled job reports nothing (#840, #1588).
@@ -628,7 +686,7 @@ jobs:
 
   coverage-map:
     # Which test files execute each function, for choosing a pull request's tests; the PR job downloads it (#1571).
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.jobs == 'all' || contains(inputs.jobs, 'coverage-map')))
     runs-on: macos-latest
     timeout-minutes: 90
     permissions:

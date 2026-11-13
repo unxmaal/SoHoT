@@ -506,21 +506,23 @@ def pin_bump_body(rt: Runtime, pin: str, version: str, trial: Trial, cells: dict
     return "\n".join(lines) + "\n"
 
 
-def record(conn, rt: Runtime, version: str, v: Verdict, now: float | None = None) -> None:
+def record(conn, rt: Runtime, version: str, v: Verdict, now: float | None = None) -> bool:
+    """Decide a proposed trial by compare-and-swap on proposed; False if it was already decided. #1739."""
     evidence = {**v.evidence, **({"body": v.body} if v.body else {})}
-    conn.execute("UPDATE runtime_trials SET outcome = ?, detail = ?, lane = ?, dir = ?, evidence = ?, decided_at = ? "
-                 "WHERE runtime = ? AND version = ?",
-                 (v.outcome, v.detail, v.lane, evidence.get("dir", ""), json.dumps(evidence, sort_keys=True),
-                  time.time() if now is None else now, rt.name, version))
+    won = conn.execute("UPDATE runtime_trials SET outcome = ?, detail = ?, lane = ?, dir = ?, evidence = ?, "
+                       "decided_at = ? WHERE runtime = ? AND version = ? AND outcome = ?",
+                       (v.outcome, v.detail, v.lane, evidence.get("dir", ""), json.dumps(evidence, sort_keys=True),
+                        time.time() if now is None else now, rt.name, version, PROPOSED)).rowcount == 1
     conn.commit()
+    return won
 
 
 def push(rt: Runtime, version: str, v: Verdict, notify=None) -> str:
     """A desktop notification for a blocked install or a regression (RULE #716); "" for any other verdict."""
     if v.outcome not in PUSHED:
         return ""
-    from harness import watchdog
-    return (notify or watchdog.desktop)(NOTIFY_TITLE, v.detail, f"{rt.name} {version} {v.outcome}")
+    from harness import watchdog_hands
+    return (notify or watchdog_hands.desktop)(NOTIFY_TITLE, v.detail, f"{rt.name} {version} {v.outcome}")
 
 
 def prune(rt: Runtime, keep: Path, home: Path | None = None) -> list[str]:
@@ -568,10 +570,11 @@ def trial(conn, *, run=None, gh=None, measure=None, notify=None, home: Path | No
         paired = measure(rt, r["version"], t, served) if (measure and t.installed and served) else None
         v = decide(rt, r["version"], r["pinned"], t, rescreened, served, paired)
         v.evidence["notified"] = push(rt, r["version"], v, notify)
-        record(conn, rt, r["version"], v, now)
+        won = record(conn, rt, r["version"], v, now)
         if t.installed:
             prune(rt, t.dir, home)
-        out.append({**r, "outcome": v.outcome, "detail": v.detail, "lane": v.lane, "body": v.body})
+        if won:
+            out.append({**r, "outcome": v.outcome, "detail": v.detail, "lane": v.lane, "body": v.body})
     return out
 
 

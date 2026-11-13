@@ -10,8 +10,24 @@ import socket
 from pathlib import Path
 
 import pytest
+from hypothesis import settings as hypothesis_settings
 
 from harness import paths
+
+# Bounded and reproducible in make check; the nightly passes --hypothesis-profile=deep. #1766
+hypothesis_settings.register_profile("check", max_examples=60, stateful_step_count=25, derandomize=True,
+                                     database=None, deadline=None, print_blob=True)
+hypothesis_settings.register_profile("deep", max_examples=200, stateful_step_count=40, database=None,
+                                     deadline=None, print_blob=True)
+hypothesis_settings.load_profile("check")
+
+
+def unset(monkeypatch, *keys):
+    """Each key absent in the test and as it was after, though the code under test writes os.environ itself. #1868."""
+    for k in keys:
+        # setenv first: monkeypatch.delenv of an absent key records nothing to put back.
+        monkeypatch.setenv(k, "")
+        monkeypatch.delenv(k)
 
 
 @pytest.fixture(autouse=True)
@@ -25,9 +41,11 @@ def _home(tmp_path_factory, monkeypatch):
     monkeypatch.setenv(paths.ENV_VAR, str(home))
     # Nor holds or reads this machine's real gpu lock from an eval's scratch home. #1703.
     monkeypatch.setenv(paths.MACHINE_ENV, str(home))
-    monkeypatch.delenv(paths.MACHINE_FOR_ENV, raising=False)
+    unset(monkeypatch, paths.MACHINE_FOR_ENV, paths.MACHINE_STORE_ENV)
     # Nor reads this machine's weights: what is on disk is a downloads row. #411.
     monkeypatch.setenv("HF_HOME", str(tmp_path_factory.mktemp("hf-home")))
+    # Offline as env.guard() leaves every cli and eval process, and put back after one ran here. #1868.
+    monkeypatch.setenv("HF_HUB_OFFLINE", "1")
     monkeypatch.delenv("LLAMACPP_MODELS_DIR", raising=False)
     # Nor this machine's Claude Code transcripts, which the ledger and the trends read. #827.
     monkeypatch.setenv("SOH_CLAUDE_PROJECTS", str(tmp_path_factory.mktemp("claude-projects")))
@@ -200,6 +218,52 @@ def pytest_runtest_protocol(item, nextitem):
         yield
     finally:
         _running.pop("test", None)
+
+
+#: os.environ keys a test may leave changed: pytest's own, and those a library sets once per process on import. #1868, #1885, #1889.
+ENV_SETTLED = frozenset({"PYTEST_CURRENT_TEST", "TRANSFORMERS_NO_ADVISORY_WARNINGS", "KMP_DUPLICATE_LIB_OK",
+                         "KMP_INIT_AT_FORK", "TORCHINDUCTOR_CACHE_DIR", "LD_LIBRARY_PATH", "QT_QPA_FONTDIR",
+                         "QT_QPA_PLATFORM_PLUGIN_PATH"})
+_env: dict = {}
+
+
+def env_left(before: dict, after) -> list[str]:
+    """Each os.environ key a test left different, as `KEY: before -> after`."""
+    keys = (set(before) | set(after)) - ENV_SETTLED
+    return sorted(f"{k}: {before.get(k)!r} -> {after.get(k)!r}" for k in keys if before.get(k) != after.get(k))
+
+
+def _env_restore(before: dict) -> list[str]:
+    import os
+    left = env_left(before, os.environ)
+    for k in set(os.environ) - set(before) - ENV_SETTLED:
+        del os.environ[k]
+    os.environ.update({k: v for k, v in before.items() if k not in ENV_SETTLED and os.environ.get(k) != v})
+    return left
+
+
+@pytest.hookimpl(wrapper=True, tryfirst=True)
+def pytest_runtest_setup(item):
+    import os
+    _env["before"] = dict(os.environ)
+    return (yield)
+
+
+@pytest.hookimpl(wrapper=True, tryfirst=True)
+def pytest_runtest_teardown(item, nextitem):
+    """A test that leaves os.environ changed fails, and the next test starts from the environment it found. #1868."""
+    before = _env.pop("before", None)
+    try:
+        result = yield
+    except BaseException:
+        if before is not None:
+            _env_restore(before)
+        raise
+    left = _env_restore(before) if before is not None else []
+    if left:
+        pytest.fail(f"left os.environ changed (use monkeypatch.setenv, or pass env= to the child): {left}",
+                    pytrace=False)
+    return result
 
 
 def pytest_configure(config):
@@ -403,9 +467,9 @@ def _no_real_services(monkeypatch):
 @pytest.fixture(autouse=True)
 def _no_real_launchd_units(monkeypatch):
     """No watchdog probe asks the real launchd, or the live mlx unit's /health, what it holds; only a test's own stub /health is asked. #912."""
-    from harness import watchdog
-    monkeypatch.setattr(watchdog.Probes, "launchd_loaded", lambda self, service: None)
-    monkeypatch.setattr(watchdog.Probes, "launchd_pid", lambda self, service: None)
+    from harness import watchdog_observe
+    monkeypatch.setattr(watchdog_observe.Probes, "launchd_loaded", lambda self, service: None)
+    monkeypatch.setattr(watchdog_observe.Probes, "launchd_pid", lambda self, service: None)
     from harness import mlx_server
     real = mlx_server.generating
     live = {u.rstrip("/") for u in ("http://127.0.0.1:8081", "http://localhost:8081")}
@@ -457,12 +521,12 @@ def _no_real_admission(monkeypatch):
 @pytest.fixture(autouse=True)
 def _no_real_lane_probes(monkeypatch):
     """No watchdog wake sends a real lane a completion; a test that wants the real probe restores Probes.lanes.real. #924."""
-    from harness import watchdog
+    from harness import watchdog_observe
 
     def none(self, conn, now):
         return None
-    none.real = watchdog.Probes.lanes
-    monkeypatch.setattr(watchdog.Probes, "lanes", none)
+    none.real = watchdog_observe.Probes.lanes
+    monkeypatch.setattr(watchdog_observe.Probes, "lanes", none)
 
 
 @pytest.fixture(autouse=True)
@@ -682,7 +746,7 @@ def _no_real_notifier(monkeypatch):
     import inspect
     import subprocess
     import urllib.request
-    from harness import monitor, watchdog
+    from harness import monitor, watchdog, watchdog_hands
     sent = []
 
     def recorder(real, kind, outcome, fake):
@@ -695,8 +759,8 @@ def _no_real_notifier(monkeypatch):
         record.real = real
         return record
     monkeypatch.setattr(monitor, "desktop", recorder(monitor.desktop, "desktop", lambda *a: "notified", "run"))
-    monkeypatch.setattr(watchdog, "desktop", recorder(watchdog.desktop, "desktop",
-                                                      lambda t, m, *a: f"{watchdog.NOTIFIED}: {m}", "run"))
+    shown = lambda t, m, *a: watchdog.Said(f"{watchdog.NOTIFIED}: {m}", notified=True)  # noqa: E731
+    monkeypatch.setattr(watchdog_hands, "desktop", recorder(watchdog_hands.desktop, "desktop", shown, "run"))
     monkeypatch.setattr(monitor, "post", recorder(monitor.post, "webhook", lambda *a: "posted: HTTP 204", "opener"))
     return sent
 
@@ -958,16 +1022,10 @@ def machine_has(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def _no_inherited_purpose():
+def _no_inherited_purpose(monkeypatch):
     """purpose.set_process writes os.environ; a cli or mcp test must not tag the next test's requests. #825."""
-    import os
     from harness import purpose
-    saved = {k: os.environ.pop(k, None) for k in (purpose.ENV, paths.EVAL_ENV)}
-    yield
-    for k, was in saved.items():
-        os.environ.pop(k, None)
-        if was is not None:
-            os.environ[k] = was
+    unset(monkeypatch, purpose.ENV, paths.EVAL_ENV)
 
 
 @pytest.fixture

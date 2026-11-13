@@ -7,6 +7,7 @@ import types
 import pytest
 
 from harness import cli, contention, deploy, morning, paths, pressure, workqueue as wq
+from harness import job_procs, queue_pause
 from harness import memory_store as ms
 from harness.commands import morning as morning_cmd
 from tests.test_deploy_1506 import _commit, _green, posix, world  # noqa: F401 - world is a fixture
@@ -18,7 +19,7 @@ NORMAL = pressure.Pressure(level=pressure.NORMAL)
 @pytest.fixture(autouse=True)
 def _leads(monkeypatch):
     """This process stands in for a job's process, which as a real job's would lead its own group. #1728."""
-    monkeypatch.setattr(wq, "_leads", lambda pid, started="": True)
+    monkeypatch.setattr(job_procs, "_leads", lambda pid, started="": True)
 
 
 @pytest.fixture
@@ -237,7 +238,7 @@ def _measuring(title: str = "measure") -> dict:
 
 def _running(job: dict) -> dict:
     assert wq._claim(job, wq.log_dir() / f"{job['id']}.log")
-    wq._pid_file(job["id"]).write_text(str(os.getpid()), encoding="utf-8")
+    job_procs._pid_file(job["id"]).write_text(str(os.getpid()), encoding="utf-8")
     return job
 
 
@@ -275,15 +276,15 @@ def test_an_eval_that_cannot_be_signalled_is_said_and_asked_again(monkeypatch):
     _deploy(time.time())
     said = wq.preempt_for_deploy(evals=lambda pid: [111], signal_=10)
     assert said == [f"job {job['id']}: eval 111 not asked to pause: not ours"]
-    assert not wq._deploy_flag(job["id"]).exists(), "nothing asked, so its pause is not the deploy's"
+    assert not job_procs._deploy_flag(job["id"]).exists(), "nothing asked, so its pause is not the deploy's"
 
 
 def test_a_failing_preempt_never_stops_the_worker_turn(monkeypatch, capsys):
     def boom(now=None):
         raise RuntimeError("store gone")
     watched = []
-    monkeypatch.setattr(wq, "preempt_for_deploy", boom)
-    monkeypatch.setattr(wq, "watch_deploys", lambda now=None: watched.append(now))
+    monkeypatch.setattr(queue_pause, "preempt_for_deploy", boom)
+    monkeypatch.setattr(queue_pause, "watch_deploys", lambda now=None: watched.append(now))
     wq.deploy_turn(7.0)
     assert "preempting for the deploy failed: store gone" in capsys.readouterr().out and watched == [7.0]
 
@@ -305,19 +306,19 @@ def test_a_job_paused_for_the_deploy_waits_again_to_resume(monkeypatch):
     _deploy(time.time())
 
     def popen(argv, cwd=None, stdout=None, stderr=None, env=None):
-        wq._pid_file(job["id"]).write_text(str(os.getpid()), encoding="utf-8")
+        job_procs._pid_file(job["id"]).write_text(str(os.getpid()), encoding="utf-8")
         wq.preempt_for_deploy(evals=lambda pid: [4242], signal_=10)
         return types.SimpleNamespace(returncode=75)
     wq.run_one(job, popen=popen)
     got = wq.get(job["id"])
     assert killed == [(4242, 10)]
     assert got["state"] == wq.PENDING and got["note"].startswith("paused for a deploy at ")
-    assert not wq._deploy_flag(job["id"]).exists()
+    assert not job_procs._deploy_flag(job["id"]).exists()
 
 
 def test_a_job_that_pauses_on_its_own_is_not_repended_as_the_deploy_s():
     job = _measuring()
-    wq._deploy_flag(job["id"]).write_text("4242", encoding="utf-8")
+    job_procs._deploy_flag(job["id"]).write_text("4242", encoding="utf-8")
     wq.run_one(job, popen=lambda argv, **kw: types.SimpleNamespace(returncode=75))
     assert wq.get(job["id"])["state"] == wq.PAUSED, "an ask left from an earlier start is not this one's"
 
@@ -342,15 +343,15 @@ def test_evals_under_a_job_are_read_from_ps_in_any_session(monkeypatch):
            "  102  101 uv run python -m evals.run --out runs/x\n  103  102 python -m evals.run --out runs/x\n"
            "  104    1 python -m evals.run --out runs/y\n  105  101 llama-server -m x.gguf\n")
     monkeypatch.setattr(wq.subprocess, "run", lambda *a, **k: types.SimpleNamespace(stdout=out, returncode=0))
-    assert wq._evals_in(100) == [102, 103]
-    assert wq._evals_in(4242) == [], "a job whose process is gone has none"
+    assert job_procs._evals_in(100) == [102, 103]
+    assert job_procs._evals_in(4242) == [], "a job whose process is gone has none"
     monkeypatch.setattr(sys, "platform", "win32")
-    assert wq._evals_in(100) == []
+    assert job_procs._evals_in(100) == []
 
 
 def test_each_worker_turn_preempts_for_the_deploy(monkeypatch, capsys):
     seen = []
-    monkeypatch.setattr(wq, "preempt_for_deploy", lambda now=None: seen.append(now) or ["job 0001: asked"])
+    monkeypatch.setattr(queue_pause, "preempt_for_deploy", lambda now=None: seen.append(now) or ["job 0001: asked"])
     wq.add(["true"], title="t", cwd=str(paths.home()))
     wq.run_pending(popen=lambda argv, **kw: types.SimpleNamespace(returncode=0), clock=lambda: 5.0)
     assert seen and set(seen) == {5.0} and "job 0001: asked" in capsys.readouterr().out

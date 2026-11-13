@@ -145,10 +145,11 @@ def _candidates(conn, lane: str, exams: list[dict], held: dict) -> tuple[list[di
 
 def _knobs(conn, mid, lane: str) -> list[dict]:
     from harness import lanes as L
+    from harness import machine_scope
     from harness.publish import _iso
-    rows = conn.execute(
-        "SELECT * FROM knob_sweeps WHERE settled_at IS NOT NULL AND (machine_id IS NULL OR machine_id = ?) "
-        "ORDER BY settled_at, id", (mid,)).fetchall()
+    here, mine = machine_scope.where("knob_sweeps.mine", mid)
+    rows = conn.execute(f"SELECT * FROM knob_sweeps WHERE settled_at IS NOT NULL AND {here} ORDER BY settled_at, id",
+                        mine).fetchall()
     return [{"id": r["id"], "knob": r["knob"], "candidate": r["spec"], "outcome": r["outcome"],
              "chosen": _json(r["chosen"]), "detail": r["detail"], "queued_at": _iso(r["queued_at"]),
              "settled_at": _iso(r["settled_at"]), "_t": r["settled_at"]}
@@ -156,14 +157,18 @@ def _knobs(conn, mid, lane: str) -> list[dict]:
 
 
 def _adoptions(conn, mid, lane: str) -> list[dict]:
-    from harness import lanes as L
-    rows = conn.execute(
-        "SELECT a.id, a.lane, a.adopted_at, a.how, a.verdict_id, a.run_id, c.spec, i.spec AS incumbent, "
-        "v.reason, v.detail, v.outcome, v.tier FROM adoptions a JOIN candidates c ON c.id = a.candidate_id "
-        "LEFT JOIN candidates i ON i.id = a.incumbent_id LEFT JOIN verdicts v ON v.id = a.verdict_id "
-        "WHERE a.machine_id = ? OR a.all_machines = 1 OR a.machine_id IS NULL ORDER BY a.adopted_at, a.id",
-        (mid,)).fetchall()
-    return [dict(r) for r in rows if L.canonical(r["lane"]) == lane]
+    from harness import adoption_state as st, lanes as L
+    out = []
+    for r in st.history(conn, mid if mid is not None else ()):
+        if L.canonical(r["lane"]) != lane:
+            continue
+        v = conn.execute("SELECT reason, detail, outcome, tier FROM verdicts WHERE id = ?",
+                         (r["verdict_id"],)).fetchone() if r["verdict_id"] is not None else None
+        got = dict(v) if v else {"reason": None, "detail": None, "outcome": None, "tier": None}
+        if r["move"] == st.WITHDRAW:
+            got = {"reason": st.WITHDRAW, "detail": r["why"], "outcome": st.WITHDRAWN, "tier": "adopt"}
+        out.append({**r, **got})
+    return out
 
 
 def _events(conn, lane: str, cids: list[int], pids: list[int], adoptions: list[dict],

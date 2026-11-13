@@ -8,7 +8,7 @@ import pytest
 
 from harness import cli, contention, pressure, runs, workqueue as wq
 from harness import memory_store as ms
-from harness import watchdog as wd
+from harness import watchdog as wd, watchdog_observe
 from tests.test_watchdog import Fake, Hand, P, run
 
 
@@ -160,8 +160,8 @@ def test_a_job_paused_for_anything_else_stays_paused(gate, tmp_path):
     def first():
         conn = ms.connect()
         conn.execute("INSERT INTO watchdog_actions (at, criterion, subject, action, escalated, dry_run, evidence, "
-                     "outcome) VALUES (?, 'long_run', ?, 'pause', 1, 0, '{}', 'paused')",
-                     (time.time() + 1, "job " + job["id"]))
+                     "outcome, result, job_id) VALUES (?, 'long_run', ?, 'pause', 1, 0, '{}', 'paused', 'acted', ?)",
+                     (time.time() + 1, "job " + job["id"], int(job["id"])))
         conn.commit()
         return 75
 
@@ -206,7 +206,7 @@ def test_an_unreadable_contention_reading_skips_the_criterion_and_the_wake_goes_
 
     fake = Broken(tmp_path, procs=[P(500, 1, 500, 60, "uv run soh adopt --lane code")], jobs={"0007": 500},
                   lock={"kind": "eval", "pid": 500, "pgid": 500})
-    world = wd.observe(fake, None, time.time())
+    world = watchdog_observe.observe(fake, None, time.time())
     found, skipped = wd.judge(world)
     assert "hold file unreadable" in skipped[contention.CRITERION] and world.contention is None
     assert not [f for f in found if f.criterion == contention.CRITERION]
@@ -218,10 +218,10 @@ def test_the_watchdog_never_pauses_a_job_a_client_waits_on(tmp_path):
                 lock={"kind": "image", "pid": 500, "pgid": 500},
                 rows={"0007": {"state": "running", "title": "image", "requested_by": "mcp"}},
                 contention={"hold": {"said": "owner"}, "requests": [("sohot-decide", now - 5)]})
-    found, _ = wd.judge(wd.observe(fake, None, now))
+    found, _ = wd.judge(watchdog_observe.observe(fake, None, now))
     assert [f for f in found if f.criterion == contention.CRITERION] == []
     fake.rows["0007"]["requested_by"] = "cli"
-    found, _ = wd.judge(wd.observe(fake, None, now))
+    found, _ = wd.judge(watchdog_observe.observe(fake, None, now))
     got = [f for f in found if f.criterion == contention.CRITERION]
     assert [f.subject.key for f in got] == ["job 0007"]
     assert got[0].evidence["hold"] == "owner" and got[0].evidence["served"] == 1

@@ -246,7 +246,8 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
            candidate_id: int | None = None, reopen: str = "",
            reopen_why: str = "", reason: str = "",
            run_id: int | None = None, ceiling_gb: float | None = None,
-           failure_class: str = "") -> int:
+           failure_class: str = "", lane: str = "", budget_gib: float | None = None, event: str = "",
+           commit: bool = True) -> int:
     """Record what happened to a proposal, and move its state.
 
     The single write path for a verdict and for proposals.state. A move
@@ -259,6 +260,7 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
     `until` is what would make this verdict worth asking again, as a
     PREDICATE rather than a sentence, written by the caller. See until_met().
     `reason` is why, from reasons.REASONS; a named reopen is `reopened`. #408.
+    commit=False leaves the verdict in the caller's transaction, refused or not. #1887.
     """
     from harness import reasons
     if outcome not in VERDICTS:
@@ -304,9 +306,11 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
               "size_bytes": int(size_bytes or 0),
               "upstream_idle_days": float(upstream_idle_days or 0.0),
               "candidate_id": candidate_id, "run_id": run_id,
-              "reason": reason, "failure_class": failure_class}
+              "reason": reason, "failure_class": failure_class, "lane": lane or "", "event": event or ""}
     if ceiling_gb is not None:
         fields["ceiling_gb"] = round(float(ceiling_gb), 1)
+    if budget_gib is not None:
+        fields["budget_gib"] = float(budget_gib)
     if pid is None:
         cols = {**fields, "proposal_id": None}
         vid = conn.execute(
@@ -318,7 +322,9 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
             vid = _write(conn, pid, name, fields, reopen=reopen, why=reopen_why)
         except IllegalTransition:
             # remember_machine's write opened a transaction; left open it holds the store's write lock. #1146.
-            conn.commit()
+            if commit:
+                conn.commit()
             raise
-    conn.commit()
+    if commit:
+        conn.commit()
     return vid

@@ -484,8 +484,9 @@ def cloned(dest: Path) -> bool:
         p.name != ".git" for p in dest.iterdir())
 
 
-def clone(repo: str, dest: Path, run=_run) -> Path:
+def clone(repo: str, dest: Path, run=None) -> Path:
     """Shallow, single branch, no tags, no history. Source only."""
+    run = run or _run
     dest = Path(dest)
     if dest.exists():
         # A HALF-CLONE READS AS ZERO FILES, and zero files is a verdict of no
@@ -727,7 +728,7 @@ def hf_model(model_id: str, fetch=None) -> dict:
         raise Deferred(f"{model_id}: rate-limited (HTTP 429)") from exc
     except Exception as exc:  # noqa: BLE001 - classified, then re-raised
         detail = str(exc)
-        if "HTTP 404" in detail:
+        if getattr(exc, "status", None) == 404:
             raise Gone(f"{model_id}: the registry has no model by that name")
         # 401 is a GATED model, which exists. Settling it as missing would
         # throw away exactly the candidates that need a licence click.
@@ -1285,12 +1286,13 @@ def _takes_cache(fn, name: str = "cache") -> bool:
 
 
 def inspect(repo: str, workdir: Path, *, meta: dict | None = None,
-            sizer=None, facts=hf_facts, run=_run,
+            sizer=None, facts=hf_facts, run=None,
             ceiling: int | None = None,
             dead_days: int = UPSTREAM_DEAD_DAYS,
             machine=None,
             kb_cap: int = CLONE_KB_CAP) -> Fit:
     """Clone a candidate's source, read it, and say whether it can run here."""
+    run = run or _run
     if sizer is not None:      # older callers and tests pass a size-only stub
         def facts(model_id, cache=None):
             n = (sizer(model_id, cache=cache) if _takes_cache(sizer)

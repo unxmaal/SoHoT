@@ -1,8 +1,6 @@
 """A sweep as queue jobs: each discovery step its own job with its own class, queuing the next; a paused measure resumes. #1508."""
 import argparse
-import os
 import threading
-import types
 
 import pytest
 
@@ -14,6 +12,7 @@ from harness import workqueue as wq
 from harness.commands import loop as loop_cmd
 from harness.commands import loop_steps as steps
 from harness.commands import measure as measure_cmd
+from tests import inproc
 
 
 def _ns(**kw):
@@ -22,19 +21,7 @@ def _ns(**kw):
     return argparse.Namespace(**{**base, **kw})
 
 
-def _inproc(argv, cwd=None, stdout=None, stderr=None, env=None):
-    """Run a queued `harness.cli` command in this process, with the job id the worker set."""
-    words = [str(w) for w in argv]
-    old = os.environ.get(wq.JOB_ENV)
-    os.environ[wq.JOB_ENV] = (env or {}).get(wq.JOB_ENV, "")
-    try:
-        rc = cli.main(words[words.index("harness.cli") + 1:])
-    finally:
-        if old is None:
-            os.environ.pop(wq.JOB_ENV, None)
-        else:
-            os.environ[wq.JOB_ENV] = old
-    return types.SimpleNamespace(returncode=rc)
+_inproc = inproc.popen
 
 
 def _one(job) -> dict:

@@ -186,7 +186,7 @@ def test_a_dead_pid_reused_by_another_process_is_not_mistaken_for_the_switch():
 
 
 def test_this_process_is_alive_by_its_own_identity():
-    assert st.alive(st.me()) is (None if sys.platform == "win32" else True)
+    assert st.alive(st.me()) is True
 
 
 def test_spawn_settles_a_dead_switch_and_starts_one_but_not_beside_a_live_one(monkeypatch):

@@ -1,6 +1,8 @@
 """A gpu lease names its holder by pid, group and start time, so a reused pid holds nothing; held()'s wait is bounded. #1772, #1763."""
+import contextlib
 import json
 import os
+import signal
 import subprocess
 import sys
 import textwrap
@@ -15,8 +17,6 @@ from harness import workqueue as wq
 
 REPO = Path(__file__).resolve().parents[1]
 
-pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="process groups and ps start times are POSIX")
-
 
 @pytest.fixture(autouse=True)
 def _clean(monkeypatch):
@@ -28,16 +28,19 @@ def _clean(monkeypatch):
 
 def _holder(kind="image", seconds=120):
     code = textwrap.dedent(f"""
-        import sys, time
+        import os, sys, time
         sys.path.insert(0, {str(REPO)!r})
         from harness import exclusive
         with exclusive.held({kind!r}):
-            print('held', flush=True)
+            print('held', os.getpid(), flush=True)
             time.sleep({seconds})
     """)
     p = subprocess.Popen([sys.executable, "-c", code], stdout=subprocess.PIPE, text=True,
                          env={**os.environ, exclusive.HELD_ENV: ""})
-    assert p.stdout.readline().strip() == "held"
+    said, _, pid = p.stdout.readline().partition(" ")
+    assert said == "held"
+    # A Windows venv's python.exe is a launcher: the lease is held by its child.
+    p.holder = int(pid)
     return p
 
 
@@ -61,6 +64,9 @@ def _set(lease_id, **fields):
 
 
 def _kill(p):
+    if getattr(p, "holder", p.pid) != p.pid:
+        with contextlib.suppress(OSError):
+            os.kill(p.holder, signal.SIGTERM)
     p.kill()
     p.wait()
 
@@ -79,8 +85,9 @@ def _stranger(not_started: str, new_session: bool):
 def test_a_lease_records_its_holders_group_and_start_time():
     p = _holder()
     try:
-        h = _row_of(p.pid)
-        assert h["pgid"] == os.getpgid(p.pid) and h["started"] == proc_identity.started(p.pid) != ""
+        h = _row_of(p.holder)
+        assert h["pgid"] == (os.getpgid(p.holder) if sys.platform != "win32" else None)
+        assert h["started"] == proc_identity.started(p.holder) != ""
         assert exclusive.state_of(h) == exclusive.LOADING
     finally:
         _kill(p)
@@ -89,7 +96,7 @@ def test_a_lease_records_its_holders_group_and_start_time():
 @pytest.mark.parametrize("new_session", [False, True], ids=["same-group", "other-group"])
 def test_a_reused_pid_does_not_keep_a_lapsed_lease_alive(new_session):
     p = _holder()
-    h = _row_of(p.pid)
+    h = _row_of(p.holder)
     _kill(p)
     q = _stranger(h["started"], new_session)
     try:
@@ -115,7 +122,7 @@ def test_a_reused_pid_does_not_keep_a_lapsed_lease_alive(new_session):
 
 def test_a_lapsed_lease_whose_holder_died_frees_the_gpu():
     p = _holder()
-    h = _row_of(p.pid)
+    h = _row_of(p.holder)
     _kill(p)
     h = _set(h["id"], expires_at=time.time() - 1)
     assert exclusive.state_of(h) == exclusive.ABANDONED
@@ -145,9 +152,9 @@ def test_the_wait_for_the_gpu_ends_at_its_bound_with_one_alert():
                              env={**os.environ, exclusive.HELD_ENV: ""})
         assert got.returncode == 0, got.stderr
         assert got.stdout.startswith("expired: video gave up waiting for the GPU after 1s (gpu_wait)"), got.stdout
-        assert f"pid {p.pid}" in got.stdout, "the outcome names what it waited behind"
+        assert f"pid {p.holder}" in got.stdout, "the outcome names what it waited behind"
         lines = [json.loads(x) for x in monitor.alerts_path().read_text(encoding="utf-8").splitlines()]
         assert [x["kind"] for x in lines] == ["gpu-refused"] and "gave up waiting" in json.dumps(lines[0])
-        assert p.poll() is None and exclusive.state_of(_row_of(p.pid)) == exclusive.LOADING
+        assert p.poll() is None and exclusive.state_of(_row_of(p.holder)) == exclusive.LOADING
     finally:
         _kill(p)

@@ -115,9 +115,11 @@ BACKPRESSURE, BUDGET, FORMAT, NO_LANE, UNINSPECTED = "backpressure", "budget", "
 OVER_BUDGET, FAILED = "over budget", "last download failed"
 #: The fetch's own recorded refusal (a runner gap, a budget, a base it waits on), read back by the funnel. #1084.
 SKIPPED = "fetch skipped"
-#: The detail of the fetch verdict that records a download, the one fetch verdict that is not a skip.
+#: The event of the fetch verdict that records a download, the one fetch verdict that is not a skip. #1878.
 DOWNLOADED = "downloaded"
-#: The words of a refusal by what the run already fetched; rank.passed_over counts them. #1288.
+#: That verdict's detail, display only; an older release still reads it. #1878.
+DOWNLOADED_DETAIL = "downloaded"
+#: The words of a refusal by what the run already fetched; rank reads reasons.PASSED_OVER, never these. #1288, #1779.
 PASSED = "would take this run past its"
 SILENT = (BACKPRESSURE, BUDGET, FORMAT, NO_LANE, UNINSPECTED)
 
@@ -133,6 +135,21 @@ def held(backlog: int, top: int) -> tuple[str, str] | None:
 def over_budget(size: int, budget: int | None, spent: int = 0) -> bool:
     """A measured size that would take this run past its budget. #215."""
     return budget is not None and size > 0 and spent + size > budget
+
+
+def budget_refusal(size: int, budget: int, spent: int) -> str:
+    """The sentence a budget refusal says; nothing reads it back. #1779."""
+    return f"{size / GIB:.1f} GiB {PASSED} {budget / GIB:.0f} GiB budget ({spent / GIB:.1f} GiB already fetched)"
+
+
+def refuse_over_budget(conn, name: str, size: int, budget: int, spent: int, *, at: float | None = None) -> str:
+    """Re-queue a row this run's budget refuses; one that fit the whole budget is classed PASSED_OVER for rank. #1288, #1779."""
+    why = budget_refusal(size, budget, spent)
+    # Bigger than the whole budget, no sweep at this budget ever takes it. #704.
+    until = f"limit:{knobs.limit('download_budget_gib', budget / GIB, 'GiB')}" if size > budget else ""
+    ms.decide_or_skip(conn, name, "queued", tier="fetch", detail=why, reason=reasons.LIMIT, until=until, at=at,
+                      failure_class="" if until else reasons.PASSED_OVER, budget_gib=budget / GIB)
+    return why
 
 
 def why_not(row: dict, *, budget: int | None = None, backlog: int = 0,
@@ -676,7 +693,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         if waiting:
             reason, why = waiting
             ms.decide_or_skip(conn, name, "queued", tier="fetch", detail=f"waiting on {why}",
-                              reason=reason)
+                              reason=reason, budget_gib=None if budget is None else budget / GIB)
         return None if any(d.get("deferred") for d in got) else cost
 
     # A candidate already on disk can still be missing the base its runner loads. #632.
@@ -781,13 +798,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         # first `limit` rows left the rest at 0 for 22 sweeps. #292.
         size = (sizes or {}).get(name) or int(row.get("size_bytes") or 0)
         if over_budget(size, budget, spent):
-            why = (f"{size / GIB:.1f} GiB {PASSED} "
-                   f"{budget / GIB:.0f} GiB budget ({spent / GIB:.1f} GiB "
-                   f"already fetched)")
-            # Bigger than the whole budget, no sweep at this budget ever takes it. #704.
-            until = f"limit:{knobs.limit('download_budget_gib', budget / GIB, 'GiB')}" if size > budget else ""
-            ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=why,
-                              reason=reasons.LIMIT, until=until)
+            why = refuse_over_budget(conn, row["name"], size, budget, spent)
             cuts.cut(budget_knob, f"{name}: {why}", value=budget / GIB, kept=fetched, dropped=1, conn=conn)
             done.append({"repo": name, "ok": False, "why": why})
             continue
@@ -841,8 +852,8 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         # WHAT IT NEEDS BESIDE ITSELF, as its config recorded it on landing.
         # A tokenizer in another repo makes a whole download unloadable. #196.
         # Where it landed is a downloads row, not this verdict's run_path. #411.
-        ms.decide_or_skip(conn, row["name"], "queued", tier="fetch",
-                          detail=DOWNLOADED, reason=reasons.CANDIDATE)
+        ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=DOWNLOADED_DETAIL, reason=reasons.CANDIDATE,
+                          budget_gib=None if budget is None else budget / GIB, event=DOWNLOADED)
         # What it needs beside itself: what its config named on landing (#196) and its runner's base (#632).
         cost = needs_of(name)
         done.append({"repo": name, "ok": True, "bytes": size, "why": where})

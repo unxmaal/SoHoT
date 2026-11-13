@@ -1,14 +1,11 @@
 """This repo's gauntlet registry, handed to the pinned gauntlet package's ratchets and CLI (#492, #1785)."""
 
-import json
-import subprocess
 from pathlib import Path
 
-from gauntlet import registry as gauntlet_registry
 from gauntlet.moves import MoveTable, reopens_by
+from gauntlet.registry import Registry
 
-from harness import deploy_state, download_state, exclusive, gateway_switch_state, job_state, paused, repo, sweeps
-from harness import knob_backlog
+from harness import adoption_state, deploy_state, download_state, exclusive, gateway_switch_state, job_state, paused, repo, sweeps
 from tests.gauntlet import classes
 
 HERE = Path(__file__).resolve().parent
@@ -44,6 +41,9 @@ MOVES = (
               terminal=(download_state.REMOVED,), states=download_state.STATES),
     MoveTable("harness/gateway_switch_state.py:MOVES", gateway_switch_state.MOVES, initial=(gateway_switch_state.NONE,),
               terminal=(gateway_switch_state.SERVING, gateway_switch_state.FAILED), states=gateway_switch_state.STATES),
+    # Keyed (state, move) -> state; the check reads (leaves, enters) pairs.
+    MoveTable("harness/adoption_state.py:MOVES", {(frm, to) for (frm, _), to in adoption_state.MOVES.items()},
+              initial=(adoption_state.NONE, adoption_state.CONFIGURED), states=adoption_state.STATES),
     MoveTable("harness/exclusive.py:MOVES", exclusive.MOVES, initial=(exclusive.FREE,),
               states=(exclusive.FREE, exclusive.RESERVED, exclusive.LOADING, exclusive.LAPSED, exclusive.ABANDONED)),
 )
@@ -52,7 +52,11 @@ MAINS = ("nodes", "install_env", "engine_smoke", "slot_probe", "router", "intera
 EFFECTS = ("desktop", "monitor.post", "monitor.alert", "_gh", "gh_run", "_ssh", "spawn_switch", "pause_all", "urlopen",
            "ask_model", "install", "gather", "verify", "notify")
 DETECTOR_CONFIG = {
-    "unscoped_query": {"columns": ("machine_id",), "helpers": ("here", "_here", "all_machines", "machine_row")},
+    "unguarded_transition": {"columns": ("state", "status", "outcome")},
+    # ms.decide commits in memory_store/transitions.py, which gauntlet 0.3.6 does not follow through the package's re-export.
+    "commit_then_link": {"committers": ("decide",)},
+    "unscoped_query": {"columns": ("machine_id",), "helpers": ("here", "_here", "all_machines", "machine_row"),
+                       "null_helper": "harness/machine_scope.py:where"},
     "prose_match": {"fields": ("note", "detail", "reason", "why", "evidence", "outcome", "said", "summary", "subject"),
                     "migrations": ("harness/memory_store/migrations/",)},
     "empty_on_failure": {"choosers": ("backend",)},
@@ -82,62 +86,40 @@ FT, EF = "a-decision-read-back-out-of-a-sentence-the-code-wrote", "nothing-and-f
 VS, OR = "a-deploy-runs-two-releases-at-once", "an-order-the-code-needs-but-does-not-check"
 # Backlog rows an open #1748 high names: {issue: (class, site patterns)}; each pattern must still match a backlog row.
 OPEN_ISSUES = {
-    1762: (WT, (r"^harness/workqueue\.py:quiesce$",)),
     1763: (WT, (r"^harness/exclusive\.py:_beating\.keep$",)),
-    1769: (SC, (r":null-scope$",)),
-    1770: (SC, (r"^harness/adopt\.py:queue_confirmation:jobs$", r"^harness/workqueue\.py:_repend:jobs$")),
     1775: (CA, (r"^harness/nodes\.py:_record$",)),
-    1777: (FT, (r"^harness/repo_gate\.py:(owed|verdict):detail$",)),
-    1778: (FT, (r"^harness/watchdog\.py:(notified_since|overrun_stopped|wake):(outcome|evidence)$",)),
-    1779: (FT, (r"^harness/rank\.py:passed_over:detail$",)),
-    1781: (EF, (r"^harness/commands/(context|inventory|ledger)\.py:\w+:chooser$", r"^harness/otel\.py:_select:except$",
-              r"^harness/trends\.py:(ledger|delegation)_rows:except$")),
-    1782: (EF, (r"^harness/rank\.py:(incumbent_bases|passed_over):except$",)),
-    1788: (VS, (r"^harness/workqueue\.py:stale_schema:one-sided$",)),
     1790: (VS, (r"^harness/(nodes|install_env|engine_smoke|slot_probe|router|interactive)\.py:__main__:both-phases$",)),
-    1796: (OR, (r":default:",)),
 }
 
 MOVE_WAIVERS: dict = {}
 
-def parse_backlog(text: str) -> dict[str, list[str]]:
+
+def _symbol(site: str) -> str:
+    return site.split(":", 1)[-1]
+
+
+def moved(base: dict, now: dict) -> dict:
+    """base, each row that left for one row of its class naming the same symbol in another file read at that site. #1902"""
     out = {}
-    for line in text.splitlines():
-        cid, _, site = line.partition(" ")
-        out.setdefault(cid, []).append(site)
+    for cid, sites in base.items():
+        new = [s for s in now.get(cid, []) if s not in sites]
+        gone = [s for s in sites if s not in now.get(cid, [])]
+        to = {}
+        for s in gone:
+            match = [n for n in new if _symbol(n) == _symbol(s) and n.split(":", 1)[0] != s.split(":", 1)[0]]
+            if len(match) == 1 and match[0] not in to.values():
+                to[s] = match[0]
+        out[cid] = [to.get(s, s) for s in sites]
     return out
 
 
-def load_backlog(root=REPO) -> dict[str, list[str]]:
-    path = Path(root) / BACKLOG_REL
-    return parse_backlog(path.read_text(encoding="utf-8")) if path.exists() else {}
+class SohotRegistry(Registry):
+    def base_backlog(self):
+        base = super().base_backlog()
+        return base if base is None else moved(base, self.backlog())
 
 
-def _rows_at(root, ref: str) -> list[str]:
-    def show(rel):
-        return subprocess.run(["git", "-C", str(root), "show", f"{ref}:{rel}"], capture_output=True, text=True)
-    got = show(BACKLOG_REL)
-    if got.returncode == 0:
-        return got.stdout.splitlines()
-    old = show("tests/gauntlet/backlog.json")  # where the rows lived before #1846
-    return [f"{cid} {s}" for cid, rows in json.loads(old.stdout or "{}").items() for s in rows]
-
-
-def backlog_added(root=REPO, base: str = knob_backlog.BASE) -> list[str] | None:
-    """Backlog rows the working tree holds and its merge base with `base` did not; None when there is no merge base."""
-    fork = knob_backlog.merge_base(root, base)
-    if not fork:
-        return None
-    now = {f"{cid} {s}" for cid, rows in load_backlog(root).items() for s in rows}
-    return sorted(now - set(_rows_at(root, fork)))
-
-
-class Registry(gauntlet_registry.Registry):
-    def backlog(self):
-        return load_backlog(self.root)
-
-
-REGISTRY = Registry(
+REGISTRY = SohotRegistry(
     root=REPO,
     index=classes.INDEX, pending=classes.PENDING, unclassified=classes.UNCLASSIFIED,
     snapshot_file=HERE / "skill_classes.json", defects_file=HERE / "defects.json",

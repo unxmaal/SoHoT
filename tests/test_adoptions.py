@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from harness import adopt, candidates, disk, winners
+from harness import adopt, adoption_state as st, candidates, disk, winners
 from harness import memory_store as ms
 from tests import conftest
 
@@ -72,6 +72,29 @@ def test_a_loss_writes_no_adoption(conn):
     assert adopt.adopted(conn) == {}
 
 
+def test_a_won_verdict_whose_adoption_loses_the_lane_is_not_in_the_store(conn, monkeypatch):
+    def lost(*_a, **_k):
+        raise st.Lost("another writer moved the lane")
+    monkeypatch.setattr(st, "move", lost)
+    with pytest.raises(st.Lost):
+        _adopt(conn, "tts", "org/new")
+    conn.commit()
+    other = ms.connect()
+    try:
+        got = other.execute("SELECT COUNT(*) FROM verdicts v JOIN candidates c ON c.id = v.candidate_id "
+                            "WHERE c.spec = ?", ("org/new",)).fetchone()[0]
+    finally:
+        other.close()
+    assert got == 0, "#1758: the verdict commits with its adoption or not at all"
+
+
+def test_a_loss_names_no_incumbent_and_takes_any_adoption_kind(conn):
+    adopt.record(conn, adopt.Verdict("tts", "org/never-served", "org/new", False, "lost", "no-such-kind"))
+    assert conn.execute("SELECT spec FROM candidates WHERE spec LIKE '%never-served%'").fetchall() == []
+    assert conn.execute("SELECT COUNT(*) FROM verdicts").fetchone()[0] == 1
+    assert conn.execute("SELECT COUNT(*) FROM adoptions").fetchone()[0] == 0
+
+
 def test_a_newer_adoption_replaces_the_older_for_the_lane(conn):
     _adopt(conn, "tts", "org/first")
     _adopt(conn, "tts", "org/second")
@@ -93,8 +116,10 @@ def test_a_reference_model_is_never_a_lane_default(conn, spec):
     _adopt(conn, "code", spec)
     assert adopt.adopted(conn) == {"code": "org/local"}
     cid = candidates.ensure(conn, spec, lane="code")
-    conn.execute("INSERT INTO adoptions (lane, candidate_id, how, adopted_at) "
-                 "VALUES ('code', ?, 'measured', 9e12)", (cid,))
+    with pytest.raises(st.IllegalMove, match="reference model"):
+        st.move(conn, "code", st.ADOPT, cid, how="measured", machine_id=None)
+    conn.execute("INSERT INTO adoptions (lane, candidate_id, how, adopted_at, leaves) VALUES ('code', ?, 'measured', "
+                 "9e12, (SELECT MAX(id) FROM adoptions WHERE lane = 'code'))", (cid,))
     assert adopt.adopted(conn) == {"code": "org/local"}
 
 

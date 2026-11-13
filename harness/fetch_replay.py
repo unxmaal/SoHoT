@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import random
-import re
 import statistics
 import time
 
@@ -12,35 +11,33 @@ from harness import memory_store as ms
 #: Seconds with no fetch decision that end one run; a night's passes are about 2 h apart, day runs 3 h.
 GAP_S = 9000.0
 DAY = 86400.0
-_BUDGET = re.compile(r"past its (\d+(?:\.\d+)?) GiB budget")
 
 
 def runs(conn, since: float) -> list[dict]:
-    """Each fetch run since `since`: its start, budget, and the rows it fetched or refused for the remainder, in order."""
+    """Each fetch run since `since`: its start, budget (None when no verdict of it recorded one), and its rows, in order."""
     rows = conn.execute("""
-        SELECT v.decided_at AS at, v.detail, p.name, p.size_bytes,
+        SELECT v.decided_at AS at, v.event, v.budget_gib, p.name, p.size_bytes,
                -- A download's verdict lands when it finishes; the run decided on it when it started.
                COALESCE((SELECT MAX(d.started_at) FROM downloads d WHERE d.proposal_id = p.id
-                           AND d.started_at <= v.decided_at AND v.detail = :downloaded), v.decided_at) AS start
+                           AND d.started_at <= v.decided_at AND v.event = :downloaded), v.decided_at) AS start
           FROM verdicts v JOIN proposals p ON p.id = v.proposal_id
          WHERE v.tier = 'fetch' AND v.decided_at >= :since
-           AND (v.detail = :downloaded OR (v.reason = :limit AND COALESCE(v.until, '') = '' AND v.detail GLOB :refusal))
+           AND (v.event = :downloaded OR (v.reason = :limit AND COALESCE(v.until, '') = '' AND v.failure_class = :passed))
          ORDER BY v.id""", {"since": since, "downloaded": fetching.DOWNLOADED, "limit": reasons.LIMIT,
-                            "refusal": f"[0-9]* GiB {fetching.PASSED} *"}).fetchall()
+                            "passed": reasons.PASSED_OVER}).fetchall()
     out: list[dict] = []
     for r in rows:
         if not out or r["start"] - out[-1]["last"] > GAP_S:
-            out.append({"at": r["start"], "last": r["at"], "budget": 0.0, "rows": [], "fetched": []})
+            out.append({"at": r["start"], "last": r["at"], "budget": None, "rows": [], "fetched": []})
         run = out[-1]
         run["last"] = r["at"]
         if r["name"] not in {x["name"] for x in run["rows"]}:
             run["rows"].append({"name": r["name"], "size": int(r["size_bytes"] or 0)})
-        if r["detail"] == fetching.DOWNLOADED:
+        if r["event"] == fetching.DOWNLOADED:
             run["fetched"].append(r["name"])
-        elif not run["budget"]:
-            m = _BUDGET.search(r["detail"] or "")
-            run["budget"] = float(m.group(1)) if m else 0.0
-    return [r for r in out if r["budget"]]
+        if run["budget"] is None and r["budget_gib"] is not None:
+            run["budget"] = float(r["budget_gib"])
+    return out
 
 
 def _night(ranked: list[dict], sizes: dict, budget: float, conn) -> list[str]:
@@ -58,6 +55,9 @@ def replay(conn, since: float, **rank_kw) -> list[dict]:
     out = []
     for run in runs(conn, since):
         names = [r["name"] for r in run["rows"]]
+        if run["budget"] is None:
+            out.append({"at": run["at"], "budget": None, "considered": len(names), "fetched": run["fetched"]})
+            continue
         sizes = {r["name"]: r["size"] for r in run["rows"]}
         rows = ms.judgeable(conn, names=names)
         passed = rank.passed_over(conn, before=run["at"])
@@ -109,6 +109,11 @@ def report(conn, days: float, *, now: float | None = None, **rank_kw) -> list[st
              f"ranked as of today with pass-over {rank.PASSED_OVER:g}/day up to {rank.PASSED_OVER_MAX:g}"]
     for run in replay(conn, now - days * DAY, **rank_kw):
         when = time.strftime("%Y-%m-%d %H:%M", time.localtime(run["at"]))
+        if run["budget"] is None:
+            lines.append(f"\n{when}  budget not recorded on any of its verdicts, {run['considered']} considered; "
+                         f"not replayed")
+            lines.append(f"  fetched:   {', '.join(run['fetched']) or '-'}")
+            continue
         lines.append(f"\n{when}  budget {run['budget']:g} GiB, {run['considered']} considered")
         lines.append(f"  fetched:   {', '.join(run['fetched']) or '-'}")
         lines.append(f"  replayed:  {', '.join(run['without']) or '-'}")

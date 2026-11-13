@@ -106,6 +106,7 @@ def test_only_the_deploy_ends_a_standing_refusal(tmp_path, monkeypatch, _no_real
     _live(tmp_path, monkeypatch, deploy=False)
     exclusive.refused_path().write_text(json.dumps({"who": "eval", "writer": "/deploy", "cause": DOWN}),
                                         encoding="utf-8")
+    monitor.record({"at": 1.0, "kind": "gpu-refused", "service": "gpu", "description": "eval refused"})
     assert exclusive.gpu_leases() == 0
     assert exclusive.refused_path().exists() and _no_real_notifier == []
     monkeypatch.setattr(paths, "runs_elsewhere", lambda: None)

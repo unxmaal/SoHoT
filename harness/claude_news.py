@@ -65,7 +65,8 @@ def newer(entries: list[Entry], since: str | None) -> list[Entry]:
     return [e for e in entries if vkey(e.version) > floor]
 
 
-def fetch(url: str = CHANGELOG_URL, opener=urllib.request.urlopen) -> str:
+def fetch(url: str = CHANGELOG_URL, opener=None) -> str:
+    opener = opener or urllib.request.urlopen
     with opener(url, timeout=FETCH_TIMEOUT_S) as resp:
         return resp.read().decode("utf-8")
 
@@ -189,7 +190,7 @@ def notify(d: dict, run=subprocess.run) -> str | None:
     """A desktop notification only when something relevant arrived; None when nothing was sent."""
     if not d["relevant"]:
         return None
-    from harness import watchdog
+    from harness import watchdog_hands
     n = len(d["relevant"])
-    return watchdog.desktop(NOTIFY_TITLE, f"{n} Claude Code change(s) relevant to this setup, "
-                            f"up to {d['latest']}", d["relevant"][0]["text"], run)
+    return watchdog_hands.desktop(NOTIFY_TITLE, f"{n} Claude Code change(s) relevant to this setup, "
+                                  f"up to {d['latest']}", d["relevant"][0]["text"], run)

@@ -62,6 +62,11 @@ def _host(monkeypatch, plat, machine, libc=("glibc", "2.39")):
     monkeypatch.setattr(platform, "libc_ver", lambda *a, **k: libc)
 
 
+def _resolved(tmp_path, printed):
+    """What uv printed, resolved against the checkout: a POSIX root keeps its spelling, Windows prefixes the checkout's drive."""
+    return str(tmp_path / "task" / printed)
+
+
 def _build(tmp_path, monkeypatch, installed, pin="3.14"):
     uv = _Uv(installed)
     monkeypatch.setattr(repo, "cache_root", lambda: tmp_path / "cache")
@@ -76,7 +81,7 @@ def test_an_arm64_mac_never_builds_with_the_newer_x86_64_install(tmp_path, monke
     uv = _build(tmp_path, monkeypatch, [
         _entry("3.14.10", "macos", "x86_64", f"{MANAGED}/cpython-3.14-macos-x86_64-none/bin/python3.14"),
         _entry("3.14.8", "macos", "aarch64", f"{MANAGED}/cpython-3.14-macos-aarch64-none/bin/python3.14")])
-    assert uv.synced_with() == f"{MANAGED}/cpython-3.14-macos-aarch64-none/bin/python3.14"
+    assert uv.synced_with() == _resolved(tmp_path, f"{MANAGED}/cpython-3.14-macos-aarch64-none/bin/python3.14")
     assert uv.calls[0][1:4] == ["python", "list", "3.14"]
 
 
@@ -86,7 +91,7 @@ def test_linux_takes_its_own_arch_and_libc(tmp_path, monkeypatch):
         _entry("3.14.10", "linux", "aarch64", f"{MANAGED}/a/bin/python3.14", "gnu"),
         _entry("3.14.9", "linux", "x86_64", f"{MANAGED}/m/bin/python3.14", "musl"),
         _entry("3.14.8", "linux", "x86_64", f"{MANAGED}/g/bin/python3.14", "gnu")])
-    assert uv.synced_with() == f"{MANAGED}/g/bin/python3.14"
+    assert uv.synced_with() == _resolved(tmp_path, f"{MANAGED}/g/bin/python3.14")
 
 
 def test_windows_amd64_takes_the_x86_64_build(tmp_path, monkeypatch):
@@ -94,7 +99,7 @@ def test_windows_amd64_takes_the_x86_64_build(tmp_path, monkeypatch):
     uv = _build(tmp_path, monkeypatch, [
         _entry("3.14.10", "windows", "aarch64", "/c/uv/arm/python.exe"),
         _entry("3.14.8", "windows", "x86_64", "/c/uv/x64/python.exe")])
-    assert uv.synced_with() == "/c/uv/x64/python.exe"
+    assert uv.synced_with() == _resolved(tmp_path, "/c/uv/x64/python.exe")
 
 
 def test_a_managed_install_comes_before_a_newer_system_one(tmp_path, monkeypatch):
@@ -103,7 +108,7 @@ def test_a_managed_install_comes_before_a_newer_system_one(tmp_path, monkeypatch
         _entry("3.14.10", "macos", "aarch64", "/opt/homebrew/bin/python3.14"),
         _entry("3.14.8", "macos", "aarch64", f"{MANAGED}/cpython-3.14-macos-aarch64-none/bin/python3.14"),
         _entry("3.14.7", "macos", "aarch64", f"{MANAGED}/cpython-3.14.7-macos-aarch64-none/bin/python3.14")])
-    assert uv.synced_with() == f"{MANAGED}/cpython-3.14-macos-aarch64-none/bin/python3.14"
+    assert uv.synced_with() == _resolved(tmp_path, f"{MANAGED}/cpython-3.14-macos-aarch64-none/bin/python3.14")
 
 
 def test_a_path_uv_prints_relative_to_the_checkout_reaches_sync_absolute(tmp_path, monkeypatch):
@@ -173,4 +178,4 @@ def test_an_unmapped_host_matches_uv_by_its_own_name_or_fails_naming_it(tmp_path
     _host(monkeypatch, "linux", "riscv64")
     (tmp_path / "again").mkdir()
     uv = _build(tmp_path / "again", monkeypatch, [_entry("3.14.8", "linux", "riscv64", "/r/bin/python3.14", "gnu")])
-    assert uv.synced_with() == "/r/bin/python3.14"
+    assert uv.synced_with() == _resolved(tmp_path / "again", "/r/bin/python3.14")

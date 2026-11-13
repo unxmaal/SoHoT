@@ -13,26 +13,18 @@ def _k(n: int) -> str:
 
 
 def otel_rows(since, until: float) -> list[dict]:
-    """The OTel tool_result rows in the shape `scan` gives: tool, tokens (bytes // 4), at, day."""
-    from harness import ledger, otel
-    conn = _read_conn()
-    if conn is None:
-        return []
+    """The OTel tool_result rows in the shape `scan` gives: tool, tokens (bytes // 4), at, day; store.Unread when unread."""
+    from harness import ledger, otel, store
+    chosen = store.choose_read()
+    note(f"store: {chosen.line()}")
+    if chosen.conn is None:
+        raise store.Unread(chosen.outcome, chosen.why)
     try:
-        ev = otel.events(conn, since or 0.0, until, name="tool_result")
+        ev = otel.events(chosen.conn, since or 0.0, until, name="tool_result")
     finally:
-        conn.close()
+        chosen.close()
     return [{"tool": e["tool"] or "?", "tokens": int(e["result_bytes"] or 0) // 4, "at": e["at"],
              "day": ledger.day_of(e["at"], ledger._dt.timezone.utc)} for e in ev]
-
-
-def _read_conn():
-    """The live store read-only, or None when there is none."""
-    from harness import ledger, memory_store as ms, store
-    if store.backend() == store.POSTGRES:
-        return ms.connect()
-    path = ms.db_path()
-    return ledger.open_ro(path) if path.exists() else None
 
 
 def _carried(a, root: Path, source: str, since, until) -> int:
@@ -236,7 +228,14 @@ def cmd_context(a) -> int:
         emit(False, error=why)
         return 2
     if source == "otel":
-        raw = otel_rows(since, until if until is not None else now)
+        from harness import store
+        try:
+            raw = otel_rows(since, until if until is not None else now)
+        except store.Unread as u:
+            why = f"otel_events UNREAD {u.outcome}: {u.why}"
+            note(why)
+            emit(False, error=why, outcome=u.outcome)
+            return 1
     else:
         raw = cr.scan(cr.transcripts(root, main_only=a.main_only, newer_than=since), since=since, until=until)
     if a.by == "category":

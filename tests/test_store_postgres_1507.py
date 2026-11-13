@@ -532,7 +532,7 @@ def test_a_deploy_on_postgres_backs_up_with_pg_dump(tmp_path, monkeypatch):
 # ---- SQLite-only code outside the seam is an inventory that only shrinks ----------
 
 #: Counted 2026-11-07 (#1507). origin/main had sqlite3_connect 18, uri_mode 11; the rest are SQLite branches.
-SQLITE_ONLY_PIN = {"backup": 4, "except_sqlite3": 27, "pragma": 9, "sqlite3_connect": 12,
+SQLITE_ONLY_PIN = {"backup": 4, "except_sqlite3": 23, "pragma": 9, "sqlite3_connect": 12,
                    "sqlite_master": 2, "uri_mode": 5}
 
 

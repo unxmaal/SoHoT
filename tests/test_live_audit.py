@@ -122,8 +122,8 @@ def test_a_reference_model_adopted_for_a_lane_fails(live):
     raw.execute("INSERT INTO candidates (spec, receipt_key, lane, created_at) VALUES "
                 "('claude-code:opus', 'claude-code:opus', 'code', 1)")
     cid = raw.execute("SELECT id FROM candidates WHERE spec = 'claude-code:opus'").fetchone()[0]
-    raw.execute("INSERT INTO adoptions (lane, candidate_id, how, adopted_at) VALUES ('code', ?, 'by-hand', ?)",
-                (cid, time.time()))
+    raw.execute("INSERT INTO adoptions (lane, candidate_id, how, adopted_at, leaves) VALUES ('code', ?, 'by-hand', ?, "
+                "(SELECT COALESCE(MAX(id), 0) FROM adoptions WHERE lane = 'code'))", (cid, time.time()))
     raw.commit()
     raw.close()
     check = _checks(live_audit.audit(live))["no_reference_served"]

@@ -169,12 +169,10 @@ def _rows(cand, codes, seconds=5.0, tokens=None):
 
 def _adopt(conn, lane, run_id, at=1):
     cid = conn.execute("SELECT candidate_id FROM results WHERE run_id = ? LIMIT 1", (run_id,)).fetchone()[0]
-    conn.execute("INSERT INTO adoptions (lane, candidate_id, run_id, how, adopted_at) VALUES (?, ?, ?, 'by-hand', ?)",
-                 (lane, cid, run_id, at))
-    conn.commit()
+    from harness import adoption_state as st
+    st.move(conn, lane, st.ADOPT, cid, how="by-hand", machine_id=None, run_id=run_id)
 
 
-@pytest.mark.gauntlet("state-is-whichever-row-came-last", site="evals/workload_baseline.py:_adopted")
 @pytest.mark.gauntlet("state-is-whichever-row-came-last", site="evals/workload_baseline.py:_newest")
 def test_the_local_run_is_taken_on_the_claude_runs_exam(store_run, tmp_path):
     from harness import memory_store as ms

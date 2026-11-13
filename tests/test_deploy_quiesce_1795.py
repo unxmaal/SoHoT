@@ -15,6 +15,7 @@ from test_deploy_1506 import (_claim, _deploys, _Done, _git, _inline, _queue, _s
 from harness import deploy, deploy_switch, paths
 from harness import memory_store as ms
 from harness import workqueue as wq
+from harness import job_procs, queue_pause
 
 MIGRATE = """import os, sqlite3, sys
 with open(os.environ["DEPLOY_LOG"], "a") as log:
@@ -29,7 +30,7 @@ NEXT = {"harness/memory_store/schema.py": f"SCHEMA_VERSION = {ms.SCHEMA_VERSION 
 
 def _steps(world):
     return dataclasses.replace(world["steps"], migrate=[sys.executable, "-c", MIGRATE, str(ms.db_path()),
-                                                        str(ms.SCHEMA_VERSION + 1), str(wq._pause_flag())])
+                                                        str(ms.SCHEMA_VERSION + 1), str(queue_pause._pause_flag())])
 
 
 def _old_job():
@@ -37,7 +38,7 @@ def _old_job():
     job = wq.add([sys.executable, "-c", "pass"], title="old release job", cwd=str(paths.home()))
     assert wq._claim(job, wq.log_dir() / f"{job['id']}.log")
     proc = wq.spawn_group([sys.executable, "-c", "import time; time.sleep(120)"], None, subprocess.DEVNULL, None)
-    wq._pid_file(job["id"]).write_text(str(proc.pid), encoding="utf-8")
+    job_procs._pid_file(job["id"]).write_text(str(proc.pid), encoding="utf-8")
     return job, proc
 
 
@@ -125,7 +126,7 @@ def test_the_runner_reads_no_store_while_a_deploy_runs_in_it(monkeypatch):
     live = threading.Event()
     calls = []
     real = wq._startable
-    monkeypatch.setattr(wq, "deploy_turn", lambda now: calls.append(("turn", live.is_set())))
+    monkeypatch.setattr(queue_pause, "deploy_turn", lambda now: calls.append(("turn", live.is_set())))
     monkeypatch.setattr(wq, "_startable", lambda *a: calls.append(("start", live.is_set())) or real(*a))
 
     def popen(argv, **kw):

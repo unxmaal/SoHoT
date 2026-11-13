@@ -9,7 +9,7 @@ import sys
 import pytest
 
 from evals import watch
-from harness import paths, paused, run_state, sweep_guard, watchdog
+from harness import paths, paused, run_state, sweep_guard, watchdog_observe
 
 EVAL_CMD = "/opt/lh/deploy/.venv/bin/python3 -m evals.run --modality code --out /x/runs/measure-1"
 INC, CH = "llamacpp:inc", "llamacpp:ch"
@@ -73,7 +73,7 @@ COMBOS = [
 def test_each_combination_of_the_inputs_maps_to_one_named_state(tmp_path, written, live, pause, stop, raw,
                                                                  checkpoint, want):
     d = _dir(tmp_path, "r", written, pause=pause, stop=stop, raw=raw, checkpoint=checkpoint)
-    got = run_state.of(d, alive=lambda pid, pgid: live)
+    got = run_state.of(d, alive=lambda pid, pgid, started: live)
     assert got.name == want and got.name in run_state.STATES
 
 
@@ -86,9 +86,9 @@ def test_a_contradiction_is_never_read_as_not_running():
 
 def test_the_reasons_come_from_the_stop_and_pause_files(tmp_path):
     d = _dir(tmp_path, "r", "yielding", stop="no_progress")
-    assert run_state.of(d, alive=lambda pid, pgid: False).why == "no_progress"
+    assert run_state.of(d, alive=lambda pid, pgid, started: False).why == "no_progress"
     d = _dir(tmp_path, "s", "running", pause=True)
-    assert run_state.of(d, alive=lambda pid, pgid: True).why == "memory_stuck"
+    assert run_state.of(d, alive=lambda pid, pgid, started: True).why == "memory_stuck"
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="a process group is how a live run is told on POSIX")
@@ -119,9 +119,9 @@ def _yielding(root, name="20261111-000000-adopt-code", **kw):
 def test_the_watchdog_has_a_yielding_run_to_pause(tmp_path):
     d = _yielding(tmp_path)
     (d / run_state.PROGRESS).write_text(json.dumps({"state": "yielding", **_live()}), encoding="utf-8")
-    got = watchdog.ProgressFiles([tmp_path]).runs()
+    got = watchdog_observe.ProgressFiles([tmp_path]).runs()
     assert [r["_dir"] for r in got] == [str(d)]
-    assert "pause file written" in watchdog.ProgressFiles([tmp_path]).pause(got[0], "contention")
+    assert "pause file written" in watchdog_observe.ProgressFiles([tmp_path]).pause(got[0], "contention")
 
 
 def test_a_deploy_refuses_while_a_yielding_eval_runs(tmp_path):
@@ -172,5 +172,5 @@ def test_a_dead_run_whose_state_is_unknown_is_not_resumed(tmp_path):
 def test_a_deploy_guard_run_as_a_file_finds_the_state_module_beside_it(tmp_path):
     """launchd.sh runs `python3 -I harness/sweep_guard.py HOME`, where no package is importable."""
     (tmp_path / sweep_guard.RUNS).mkdir()
-    got = subprocess.run([sys.executable, "-I", sweep_guard.__file__, str(tmp_path)], capture_output=True, text=True)
+    got = subprocess.run([sys.executable, "-I", "-S", sweep_guard.__file__, str(tmp_path)], capture_output=True, text=True)
     assert got.returncode == 0, got.stderr

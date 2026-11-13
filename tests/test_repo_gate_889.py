@@ -29,7 +29,7 @@ def _screened(conn, name, lane="code"):
 
 
 def _adopt_verdict(conn, name, lane, won):
-    ms.decide(conn, name, "measured" if won else "declined", tier=ms.ADOPT, detail=f"{lane}: x")
+    ms.decide(conn, name, "measured" if won else "declined", tier=ms.ADOPT, detail=f"{lane}: x", lane=lane)
 
 
 def test_every_code_row_gets_a_repo_comparison_just_ahead_of_it(store, held):

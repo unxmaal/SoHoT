@@ -207,8 +207,6 @@ INDEX = {
         "waivers": {
             "harness/adopt.py:fit":
                 "ORDER BY peak_kb DESC is the largest measured peak, not the newest row (#533)",
-            "harness/commands/judge.py:_say_adopted":
-                "prints the adoption this command just wrote; display only (#533)",
             "harness/memory_store/transitions.py:decide":
                 "dedupes an exact repeat for a candidate no proposal names; state lives in proposals.state (#409)",
             "harness/memory_store/migrations/columns.py:drop_dead_columns":
@@ -287,7 +285,8 @@ INDEX = {
         "instances": _i(rules=(1510, 1530)), "scanners": []},
     "an-order-the-code-needs-but-does-not-check": {
         "detector": "unchecked_order", "waivers": {},
-        "instances": _i(rules=(1332, 1428, 1441)), "scanners": []},
+        "instances": _i(rules=(1332, 1428, 1441)),
+        "scanners": ["tests/test_stub_binding_1796.py::test_no_production_code_binds_a_conftest_stub_before_it_is_installed"]},
 }
 
 # Proposed classes with no skill entry yet; add the entry to SKILL.md, regenerate the snapshot, move here into INDEX.

@@ -9,7 +9,8 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from harness import run_state
+from harness.atomic_file import replace
+from harness import proc_identity, run_state
 
 #: Exit status of a run paused at --stop-at or on request, rows checkpointed. #813.
 PAUSED = 75
@@ -142,6 +143,17 @@ class Watch:
         self.cuts.append({"candidate": key, "case": case, "why": why})
         print(f"  cut {case} of {key} to serve ({why}); it runs again after the yield", flush=True)
         self._changed()
+        from harness import cuts, serve_lease
+        n = sum(1 for c in self.cuts if c["candidate"] == key and c["case"] == case)
+        if n >= serve_lease.CUT_TRIES:
+            what = f"{case} of {key} was cut {n} times to serve delegations"
+            cuts.cut("serving_cut_tries", what, dropped=self.left_cases())
+            self._serving_pause(what)
+
+    def _serving_pause(self, what: str) -> None:
+        """Pause the run for serving it cannot outwait: its queue job waits again behind the serving gate. #1765."""
+        from harness import serve_lease
+        raise Deferred(f"{what}; {self.left_cases()} case(s) left", serve_lease.SERVING_PAUSE)
 
     def _serve(self) -> bool:
         """Wait out a serving lease between cases, the wait kept out of every case's and the run's time. #1556."""
@@ -157,8 +169,13 @@ class Watch:
         self.yielder.yielding(who)
         print(f"yielding to {who} between cases", flush=True)
         self._changed()
+        over = False
         try:
             while serve_lease.held(node=node) and not self._requested():
+                left = serve_lease.YIELD_WAIT_S - (clock() - start)
+                if left <= 0:
+                    over = True
+                    break
                 sleep(serve_lease.POLL_S)
         finally:
             span = max(0.0, clock() - start)
@@ -171,6 +188,11 @@ class Watch:
             _hidden(mark)
             print(f"resumed after {span:.0f}s yielded to serving", flush=True)
             self._changed()
+        if over:
+            from harness import cuts
+            what = f"yielded {span:.0f}s to {who}, past serve_yield_wait"
+            cuts.cut("serve_yield_wait", what, dropped=self.left_cases())
+            self._serving_pause(what)
         return True
 
     def _changed(self) -> None:
@@ -275,7 +297,7 @@ class Checkpoint:
         if data and not data.endswith(b"\n"):
             tmp = self.path.with_suffix(".cut")
             tmp.write_bytes(data[:data.rfind(b"\n") + 1])
-            os.replace(tmp, self.path)
+            replace(tmp, self.path)
 
     def add(self, row: dict, wall_s: float) -> None:
         with self.path.open("a", encoding="utf-8") as f:
@@ -304,11 +326,12 @@ class Progress:
                "specs": self.specs, "planned_s_per_case": self.eye.planned,
                "observed_s_per_case": {k: self.eye.observed(k) for k in self.eye.walls},
                "started_at": self.started, "last_progress_at": self.at,
-               "pid": os.getpid(), "pgid": pgid, "pause_file": str(self.path.parent / PAUSE_FILE),
+               "pid": os.getpid(), "pgid": pgid, "pid_started": proc_identity.started(os.getpid()),
+               "pause_file": str(self.path.parent / PAUSE_FILE),
                "run_id": run_id}
         tmp = self.path.with_suffix(".tmp")
         tmp.write_text(json.dumps(got, indent=2, default=str), encoding="utf-8")
-        os.replace(tmp, self.path)
+        replace(tmp, self.path)
         return got
 
     def case_done(self) -> None:
@@ -325,3 +348,29 @@ def read_progress(outdir) -> dict:
         return json.loads((Path(outdir) / PROGRESS).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
+
+
+def claim(outdir, held: contextlib.ExitStack) -> str:
+    """Make this process the run dir's one writer until `held` closes; why it may not, or "". #1740."""
+    from harness import exclusive, proc_identity
+    out = Path(outdir)
+    fd = os.open(out / run_state.WRITER, os.O_RDWR | os.O_CREAT, 0o644)
+    if not exclusive._take(fd):
+        os.close(fd)
+        return f"another evals.run holds {out / run_state.WRITER}, which names it"
+    held.callback(_let_go, fd)
+    os.ftruncate(fd, 0)
+    os.write(fd, json.dumps(proc_identity.identity(os.getpid())).encode())
+    state = run_state.of(out)
+    pid = state.progress.get("pid")
+    # A writer of an older release takes no lock; its progress file names it. No file names no writer.
+    if (out / PROGRESS).exists() and state.name in run_state.LIVE and str(pid) != str(os.getpid()):
+        return f"{out} is {state.name} under pid {pid}{f' ({state.why})' if state.why else ''}"
+    return ""
+
+
+def _let_go(fd: int) -> None:
+    from harness import exclusive
+    os.lseek(fd, 0, os.SEEK_SET)
+    exclusive._release(fd)
+    os.close(fd)

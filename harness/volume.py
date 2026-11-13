@@ -40,13 +40,18 @@ class VolumeError(RuntimeError):
 
 
 def _default_quiesce() -> bool:
-    from harness import workqueue
-    return workqueue.quiesce()
+    from harness import quiesce
+    return quiesce.quiesce()
 
 
 def _default_resume() -> None:
+    from harness import queue_pause
+    queue_pause.resume()
+
+
+def _default_paused() -> bool:
     from harness import workqueue
-    workqueue.resume()
+    return workqueue.paused()
 
 
 @dataclass
@@ -55,6 +60,7 @@ class Ops:
         argv, capture_output=True, text=True, **kw))
     quiesce: Callable = _default_quiesce
     resume: Callable = _default_resume
+    paused: Callable = _default_paused
     ismount: Callable = os.path.ismount
     sleep: Callable = time.sleep
 
@@ -186,7 +192,14 @@ def stop(vol: str, ops: Ops) -> dict:
     """Quiesce the queue, boot out every service that reads the volume, then check lsof. #612."""
     if state_path().exists():
         raise VolumeError(f"{state_path()} already records a stop; run `soh volume start` first")
-    was_paused = ops.quiesce()
+    from harness import quiesce
+    # Recorded before the pause, so a stop killed while it waits leaves `soh volume start` its queue to resume. #1758.
+    _save(vol, [], ops.paused())
+    try:
+        was_paused = ops.quiesce()
+    except quiesce.NotQuiesced as exc:
+        state_path().unlink(missing_ok=True)
+        raise VolumeError(f"nothing stopped: {exc}") from exc
     units = loaded(ops)
     held, _ = holding_services(vol, ops, units)
     wanted = held | {f"{PREFIX}.{s}" for s in READERS}

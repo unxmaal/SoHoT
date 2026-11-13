@@ -3,16 +3,20 @@ from __future__ import annotations
 
 import contextlib
 import os
+import subprocess
+import sys
 import time
 import traceback
 from pathlib import Path
 
-from harness import deploy, deploy_switch, paths
+from harness import deploy, deploy_switch, job_procs, paths, proc_identity
 from harness import deploy_state as ds
 from harness import workqueue as wq
 
 #: Put the pre-migrate copy back under the previous release; link the release that speaks the store; or neither verified.
 RESTORE, FORWARD, OWNER = "restore", "forward", "owner"
+#: A record's one automatic restore (its auto_repair state): due at the strand, started once, then repaired or failed. #1879.
+DUE, STARTED, REPAIRED, FAILED = "due", "started", "repaired", "failed"
 
 
 def schemas(rec: dict) -> dict | None:
@@ -89,6 +93,9 @@ def strand(rec: dict, path: Path, got: dict, why: str, now: float) -> dict:
     """End the record STORE_AHEAD with its planned repair, said in words and alerted; the queue pause stays."""
     how, words = plan(rec, got)
     act = f"repair: {words}: soh deploy repair {rec.get('id', path.stem)}" if how != OWNER else f"repair: {words}"
+    if how == RESTORE:
+        act = f"{act} if it fails; it runs by itself once now"
+        rec["auto_repair"] = {"state": DUE}
     text = (f"STORE AHEAD: {why}; the store is at schema {got['store']} and the previous release speaks "
             f"{got['previous']}; {act}; the queue stays paused until then")
     rec.update(repair=how, repair_plan=words, stage=ds.STORE_AHEAD, outcome=ds.STORE_AHEAD, detail=text[:2000],
@@ -107,13 +114,20 @@ def pending() -> list[dict]:
     for p in sorted(d.glob("*.json"), key=lambda p: (len(p.stem), p.stem)):
         rec = deploy._read(p)
         if ds.outcome_of(rec) == ds.STORE_AHEAD and not rec.get("repaired"):
+            a = rec.get("auto_repair") or {}
             out.append({"deploy": rec.get("id", p.stem), "sha": str(rec.get("sha", "")), "repair": rec.get("repair", ""),
-                        "detail": rec.get("detail", "")})
+                        "detail": rec.get("detail", ""), "auto": a.get("state", ""), "auto_why": a.get("why", "")})
     return out
 
 
+def _auto_said(w: dict) -> str:
+    if w.get("auto") == FAILED:
+        return f"; its automatic repair failed: {w.get('auto_why', '')}"
+    return "; its automatic repair is running" if w.get("auto") == STARTED else ""
+
+
 def lines(waiting: list[dict]) -> list[str]:
-    return [f"deploy {w['deploy']} of {w['sha'][:12]} needs a repair: {w['detail']}" for w in waiting]
+    return [f"deploy {w['deploy']} of {w['sha'][:12]} needs a repair: {w['detail']}{_auto_said(w)}" for w in waiting]
 
 
 @contextlib.contextmanager
@@ -167,7 +181,7 @@ def _forward(rec: dict, log, end: float) -> str:
     return ""
 
 
-def repair(deploy_id) -> dict:
+def repair(deploy_id, only: str = "") -> dict:
     """Do the planned repair of a STORE_AHEAD deploy, planned again on what verifies now; {'ok', 'how', 'detail'}."""
     path = deploy.record_path(deploy_id)
     rec = deploy._read(path)
@@ -182,6 +196,11 @@ def repair(deploy_id) -> dict:
                                                       "and reinstall that release")
     if how == OWNER:
         return {"ok": False, "how": how, "detail": words}
+    if only and how != only:
+        return {"ok": False, "how": how, "detail": f"the repair is now {how}, which only the owner runs: {words}"}
+    a = rec.get("auto_repair") or {}
+    if not only and a.get("state") == STARTED and _attempting(a, time.time(), job_procs.alive):
+        return {"ok": False, "how": how, "detail": f"its automatic repair is running (pid {a.get('pid') or 'starting'})"}
     with open(rec.get("log") or paths.logs() / "deploy.log", "a", encoding="utf-8") as log, _install_env(rec):
         log.write(f"=== repair of deploy {deploy_id} {time.strftime('%Y-%m-%dT%H:%M:%S')}: {how}: {words}\n")
         end = time.monotonic() + deploy_switch.SWITCH_DEADLINE_S
@@ -201,3 +220,87 @@ def repair(deploy_id) -> dict:
         deploy_switch.save(path, rec)
         log.write(f"--- repaired: {said}\n")
     return {"ok": True, "how": how, "detail": said}
+
+
+def _attempting(a: dict, now: float, alive) -> bool:
+    """Whether a started automatic repair may still be at work: its process, or its start within the handoff grace."""
+    if a.get("pid"):
+        return deploy._is(a["pid"], a.get("identity"), None, alive)
+    return now - float(a.get("at") or 0) < deploy.HANDOFF_GRACE_S
+
+
+def _ended(path: Path, rec: dict, state: str, why: str, now: float) -> dict:
+    """Record how the automatic repair ended and alert it: repaired itself, or why not and the owner's command."""
+    n = rec.get("id", path.stem)
+    rec["auto_repair"] = {**(rec.get("auto_repair") or {}), "state": state, "ended_at": now, "why": why}
+    deploy_switch.save(path, rec)
+    head = f"deploy {n} of {str(rec.get('sha', ''))[:12]}"
+    deploy._alert_here(f"{head} repaired itself: {why}" if state == REPAIRED else
+                       f"{head} did not repair itself: {why}; the queue stays paused: soh deploy repair {n}")
+    return {"deploy": n, "outcome": ds.STORE_AHEAD, "auto_repair": state, "detail": why}
+
+
+def start(deploy_id) -> str:
+    """Run the automatic repair in its own process, as the switch runs, so the reinstall it does outlives the worker."""
+    if Path(paths.home()).resolve() != Path(paths.DEFAULT_HOME).resolve():
+        raise deploy.DeployError(f"{paths.home()} is not the live home, so it starts no deploy repair")
+    root = Path(__file__).resolve().parents[1]
+    venv = root / ".venv" / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
+    argv = [str(venv if venv.exists() else sys.executable), "-m", "harness.deploy_repair", "--auto", str(deploy_id)]
+    return deploy.launch(argv, root, root)
+
+
+def _take(path: Path, rec: dict, now: float, start_fn) -> dict:
+    got = schemas(rec)
+    how, words = plan(rec, got) if got else ("", "the store is no longer ahead of the previous release")
+    if how != RESTORE:
+        return _ended(path, rec, FAILED, f"not attempted, since {words}", now)
+    rec["auto_repair"] = {"state": STARTED, "at": now}
+    deploy_switch.save(path, rec)
+    try:
+        by = start_fn(rec.get("id", path.stem))
+    except (deploy.DeployError, OSError, subprocess.SubprocessError) as exc:
+        return _ended(path, deploy._read(path), FAILED, f"starting it failed: {exc}", now)
+    print(f"deploy {rec.get('id', path.stem)}: its restore repair started by {by}", file=sys.stderr)
+    return {"deploy": rec.get("id", path.stem), "outcome": ds.STORE_AHEAD, "auto_repair": STARTED, "detail": words}
+
+
+def auto(now: float, alive=job_procs.alive, start_fn=None) -> list[dict]:
+    """Each STORE_AHEAD record's one automatic restore: started when due and still verified, failed once its process is gone."""
+    d = paths.home() / "deploys"
+    if not d.is_dir():
+        return []
+    out = []
+    for p in sorted(d.glob("*.json"), key=lambda p: (len(p.stem), p.stem)):
+        rec = deploy._read(p)
+        if ds.outcome_of(rec) != ds.STORE_AHEAD or rec.get("repaired"):
+            continue
+        a = rec.get("auto_repair") or {}
+        if a.get("state") == DUE:
+            out.append(_take(p, rec, now, start_fn or start))
+        elif a.get("state") == STARTED and not _attempting(a, now, alive):
+            out.append(_ended(p, rec, FAILED, "its process ended before it recorded how the repair went", now))
+    return out
+
+
+def run_auto(deploy_id) -> int:
+    """The started automatic repair: claims its record once by pid, runs the restore and records how it ended."""
+    path = deploy.record_path(deploy_id)
+    rec = deploy._read(path)
+    a = rec.get("auto_repair") or {}
+    if ds.outcome_of(rec) != ds.STORE_AHEAD or a.get("state") != STARTED or a.get("pid"):
+        print(f"deploy {deploy_id} has no automatic repair waiting to run", file=sys.stderr)
+        return 2
+    rec["auto_repair"] = {**a, "pid": os.getpid(), "identity": proc_identity.identity(os.getpid())}
+    deploy_switch.save(path, rec)
+    got = repair(deploy_id, only=RESTORE)
+    why = got["detail"].removesuffix("; the queue stays paused")
+    _ended(path, deploy._read(path), REPAIRED if got["ok"] else FAILED, why, time.time())
+    return 0 if got["ok"] else 1
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3 or sys.argv[1] != "--auto" or not sys.argv[2].isdigit():
+        print("usage: python -m harness.deploy_repair --auto DEPLOY", file=sys.stderr)
+        sys.exit(2)
+    sys.exit(run_auto(int(sys.argv[2])))

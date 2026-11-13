@@ -1,5 +1,6 @@
 """The watchdog: each criterion trips on a fake job built to trip it and stays quiet on one that should not; each action against a fake (#814)."""
 import json
+import os
 import subprocess
 import sys
 import time
@@ -8,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from harness import memory_store as ms
-from harness import watchdog as wd
+from harness import watchdog as wd, watchdog_hands, watchdog_observe
 
 #: A fixed local noon and midnight, so day hours never depend on when the suite runs.
 NOON = time.mktime((2026, 10, 12, 12, 0, 0, 0, 0, -1))
@@ -16,7 +17,7 @@ NIGHT = time.mktime((2026, 10, 12, 23, 30, 0, 0, 0, -1))
 EVAL = "/usr/bin/python3 -m evals.run --modality code --candidates a"
 
 
-class Fake(wd.Probes):
+class Fake(watchdog_observe.Probes):
     def __init__(self, tmp_path, procs=(), discover=None, beat=None, jobs=None, rows=None, worker=True,
                  progress=(), lock=None, resident=None, pressure=None, gateway=None, fallbacks=None, mlx=None,
                  contention=None):
@@ -96,7 +97,7 @@ def run(pid, done=10, planned=10.0, observed=10.0, last=None, now=NIGHT, tmp=Non
 
 
 def judged(fake, now=NIGHT):
-    world = wd.observe(fake, None, now)
+    world = watchdog_observe.observe(fake, None, now)
     found, skipped = wd.judge(world)
     return world, found, skipped
 
@@ -293,7 +294,7 @@ def finding(criterion="overrun", **kw):
 
 
 def test_note_records_without_touching_anything():
-    assert wd.Hands(run=None).do(wd.NOTE, finding()) == "noted"
+    assert watchdog_hands.Hands(run=None).do(wd.NOTE, finding()) == "noted"
 
 
 def _osascript(rc=0, stderr=""):
@@ -307,7 +308,7 @@ def _osascript(rc=0, stderr=""):
 
 def test_notify_posts_a_desktop_notification_naming_the_criterion_and_target():
     calls, fake = _osascript()
-    out = wd.Hands(run=fake, platform="darwin").do(wd.NOTIFY, finding("long_run"))
+    out = watchdog_hands.Hands(run=fake, platform="darwin").do(wd.NOTIFY, finding("long_run"))
     assert out == "notified: long_run: eval pgid 1"
     cmd = calls[0]
     assert cmd[0] == "osascript" and "display notification" in " ".join(cmd)
@@ -317,46 +318,46 @@ def test_notify_posts_a_desktop_notification_naming_the_criterion_and_target():
 def test_notify_passes_the_subject_as_argv_so_quotes_cannot_break_the_script():
     calls, fake = _osascript()
     f = wd.Finding("long_run", wd.Subject("eval", 'eval "x" & do shell script "rm"', "t"), {})
-    wd.Hands(run=fake, platform="darwin").do(wd.NOTIFY, f)
+    watchdog_hands.Hands(run=fake, platform="darwin").do(wd.NOTIFY, f)
     assert all("rm" not in part for part in calls[0][:-3])
 
 
 def test_notify_says_why_when_osascript_fails_or_hangs():
     _, fake = _osascript(rc=1, stderr="execution error")
-    assert wd.Hands(run=fake, platform="darwin").do(wd.NOTIFY, finding()).startswith("notify failed: osascript rc 1")
+    assert watchdog_hands.Hands(run=fake, platform="darwin").do(wd.NOTIFY, finding()).startswith("notify failed: osascript rc 1")
 
     def slow(cmd, **kw):
         raise subprocess.TimeoutExpired(cmd, kw.get("timeout"))
-    assert wd.Hands(run=slow, platform="darwin").do(wd.NOTIFY, finding()).startswith("notify failed")
+    assert watchdog_hands.Hands(run=slow, platform="darwin").do(wd.NOTIFY, finding()).startswith("notify failed")
 
 
 @pytest.mark.parametrize("plat", ["win32", "linux"])
 def test_notify_is_unavailable_off_macos_and_says_why(plat):
     calls, fake = _osascript()
-    out = wd.Hands(run=fake, platform=plat).do(wd.NOTIFY, finding())
+    out = watchdog_hands.Hands(run=fake, platform=plat).do(wd.NOTIFY, finding())
     assert out.startswith("notify unavailable") and plat in out and calls == []
 
 
 def test_pause_writes_the_pause_file_in_the_run_directory(tmp_path):
     f = finding(progress=run(1, tmp=tmp_path))
-    out = wd.Hands().do(wd.PAUSE, f)
+    out = watchdog_hands.Hands().do(wd.PAUSE, f)
     assert (tmp_path / "pause").is_file() and "pause file written" in out
 
 
 def test_pause_refuses_a_pause_file_outside_the_run_directory(tmp_path):
     bad = {**run(1, tmp=tmp_path), "pause_file": str(tmp_path.parent / "elsewhere")}
-    assert wd.Hands().do(wd.PAUSE, finding(progress=bad)).startswith("refused")
+    assert watchdog_hands.Hands().do(wd.PAUSE, finding(progress=bad)).startswith("refused")
     assert not (tmp_path.parent / "elsewhere").exists()
 
 
 def test_pause_without_a_progress_file_says_it_is_unavailable():
-    assert "unavailable" in wd.Hands().do(wd.PAUSE, finding())
+    assert "unavailable" in watchdog_hands.Hands().do(wd.PAUSE, finding())
 
 
 def test_pause_of_a_job_pauses_each_eval_under_it(tmp_path):
     child = wd.Subject("eval", "eval pgid 2", "t", progress=run(2, tmp=tmp_path))
     job = wd.Subject("job", "job 0007", "t", children=[child])
-    wd.Hands().do(wd.PAUSE, wd.Finding("long_run", job, {}))
+    watchdog_hands.Hands().do(wd.PAUSE, wd.Finding("long_run", job, {}))
     assert (tmp_path / "pause").is_file()
 
 
@@ -372,23 +373,23 @@ def _group(tmp_path):
 def test_stop_terminates_a_fake_process_group(tmp_path):
     proc = _group(tmp_path)
     try:
-        out = wd.Hands().do(wd.STOP, finding(pgid=proc.pid))
+        out = watchdog_hands.Hands().do(wd.STOP, finding(pgid=proc.pid))
         assert proc.wait(timeout=30) is not None and out == f"group {proc.pid}: term"
     finally:
         proc.kill()
 
 
 def test_stop_refuses_a_subject_with_no_group_of_ours():
-    assert wd.Hands().do(wd.STOP, finding(pgid=None)).startswith("refused")
+    assert watchdog_hands.Hands().do(wd.STOP, finding(pgid=None)).startswith("refused")
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="a POSIX process group")
 def test_reap_kills_an_orphan_group_and_refuses_one_that_is_not(tmp_path):
     proc = _group(tmp_path)
     try:
-        assert wd.Hands().do(wd.REAP, finding(pgid=proc.pid)).startswith("refused")
+        assert watchdog_hands.Hands().do(wd.REAP, finding(pgid=proc.pid)).startswith("refused")
         assert proc.poll() is None
-        assert wd.Hands().do(wd.REAP, finding(pgid=proc.pid, orphan=True)) == f"group {proc.pid}: term"
+        assert watchdog_hands.Hands().do(wd.REAP, finding(pgid=proc.pid, orphan=True)) == f"group {proc.pid}: term"
         proc.wait(timeout=30)
     finally:
         proc.kill()
@@ -399,9 +400,9 @@ def test_unload_goes_through_the_router_s_own_protection(monkeypatch):
     asked = []
     monkeypatch.setattr(router, "release", lambda stems, why, say=print: asked.append(stems) or stems)
     f = wd.Finding("idle_model", wd.Subject("model", "model junk", "t", detail={"stem": "junk"}), {})
-    assert wd.Hands().do(wd.UNLOAD, f) == "unloaded junk" and asked == [["junk"]]
+    assert watchdog_hands.Hands().do(wd.UNLOAD, f) == "unloaded junk" and asked == [["junk"]]
     monkeypatch.setattr(router, "release", lambda stems, why, say=print: [])
-    assert wd.Hands().do(wd.UNLOAD, f).startswith("kept")
+    assert watchdog_hands.Hands().do(wd.UNLOAD, f).startswith("kept")
 
 
 def test_restart_runs_launchd_restart_for_the_gateway_and_refuses_an_unlisted_service():
@@ -411,17 +412,17 @@ def test_restart_runs_launchd_restart_for_the_gateway_and_refuses_an_unlisted_se
         calls.append(argv)
         return subprocess.CompletedProcess(argv, 0, "", "")
     g = wd.Finding("gateway_down", wd.Subject("gateway", "gateway", "t", detail={"service": "gateway"}), {})
-    assert wd.Hands(run=fake).do(wd.RESTART, g) == "restarted gateway"
+    assert watchdog_hands.Hands(run=fake).do(wd.RESTART, g) == "restarted gateway"
     assert calls[0][-2:] == ["restart", "gateway"] and Path(calls[0][1]).as_posix().endswith("scripts/launchd.sh")
     other = wd.Finding("x", wd.Subject("model", "m", "t", detail={"service": "audit"}), {})
-    assert wd.Hands(run=fake).do(wd.RESTART, other).startswith("refused") and len(calls) == 1
+    assert watchdog_hands.Hands(run=fake).do(wd.RESTART, other).startswith("refused") and len(calls) == 1
 
 
 def test_restart_that_waits_on_the_gpu_lock_says_so():
     def slow(argv, **kw):
         raise subprocess.TimeoutExpired(argv, kw.get("timeout"))
     g = wd.Finding("gateway_down", wd.Subject("gateway", "gateway", "t", detail={"service": "gateway"}), {})
-    assert "still waiting" in wd.Hands(run=slow).do(wd.RESTART, g)
+    assert "still waiting" in watchdog_hands.Hands(run=slow).do(wd.RESTART, g)
 
 
 def _gh(open_issues):
@@ -437,16 +438,16 @@ def _gh(open_issues):
 
 def test_file_is_off_until_its_own_switch_is_set():
     calls, fake = _gh([])
-    assert wd.Hands(run=fake, environ={}).do(wd.FILE, finding()).startswith("not filed")
+    assert watchdog_hands.Hands(run=fake, environ={}).do(wd.FILE, finding()).startswith("not filed")
     assert calls == []
 
 
 def test_file_creates_an_issue_carrying_its_fingerprint():
     calls, fake = _gh([])
     f = finding(command=EVAL)
-    out = wd.Hands(run=fake, environ={wd.FILE_ENV: "1"}).do(wd.FILE, f)
+    out = watchdog_hands.Hands(run=fake, environ={wd.FILE_ENV: "1"}).do(wd.FILE, f)
     assert out.startswith("filed") and calls[1][:3] == ["gh", "issue", "create"]
-    assert f"{wd.FINGERPRINT} {wd.fingerprint(f)}" in calls[1][calls[1].index("--body") + 1]
+    assert f"{wd.FINGERPRINT} {watchdog_hands.fingerprint(f)}" in calls[1][calls[1].index("--body") + 1]
 
 
 def test_the_watchdog_refuses_to_file_a_body_with_a_registered_name(monkeypatch):
@@ -454,32 +455,32 @@ def test_the_watchdog_refuses_to_file_a_body_with_a_registered_name(monkeypatch)
     monkeypatch.delenv("LH_PRIVATE_NAMES", raising=False)
     privacy.register(["Zorblax Quentaro"])
     calls, fake = _gh([])
-    out = wd.Hands(run=fake, environ={wd.FILE_ENV: "1"}).do(wd.FILE, finding(command=EVAL + " # for zorblax quentaro"))
+    out = watchdog_hands.Hands(run=fake, environ={wd.FILE_ENV: "1"}).do(wd.FILE, finding(command=EVAL + " # for zorblax quentaro"))
     assert out.startswith("not filed: privacy") and "person-name" in out
     assert calls == []
 
 
 def test_file_is_deduped_against_an_open_issue_with_the_fingerprint():
     calls, fake = _gh([{"number": 812}])
-    assert wd.Hands(run=fake, environ={wd.FILE_ENV: "1"}).do(wd.FILE, finding()) == "already filed: #812"
-    assert len(calls) == 1 and wd.fingerprint(finding()) in calls[0][calls[0].index("--search") + 1]
+    assert watchdog_hands.Hands(run=fake, environ={wd.FILE_ENV: "1"}).do(wd.FILE, finding()) == "already filed: #812"
+    assert len(calls) == 1 and watchdog_hands.fingerprint(finding()) in calls[0][calls[0].index("--search") + 1]
 
 
 def test_the_fingerprint_survives_a_new_pid_and_changes_with_the_criterion():
     a = wd.Finding("overrun", wd.Subject("eval", "eval pgid 1", "t", command="python -m evals.run --x 1 pid 11"), {})
     b = wd.Finding("overrun", wd.Subject("eval", "eval pgid 2", "t", command="python -m evals.run --x 2 pid 22"), {})
     c = wd.Finding("no_progress", a.subject, {})
-    assert wd.fingerprint(a) == wd.fingerprint(b) != wd.fingerprint(c)
+    assert watchdog_hands.fingerprint(a) == watchdog_hands.fingerprint(b) != watchdog_hands.fingerprint(c)
 
 
 def test_an_action_outside_the_fixed_set_is_refused():
     with pytest.raises(ValueError):
-        wd.Hands().do("format_disk", finding())
+        watchdog_hands.Hands().do("format_disk", finding())
 
 
 # --- a wake: dry run by default, records every act, escalates on repeat -------
 
-class Hand(wd.Hands):
+class Hand(watchdog_hands.Hands):
     def __init__(self):
         super().__init__(run=None, environ={})
         self.done = []
@@ -559,7 +560,7 @@ def test_acting_needs_the_env_switch_or_the_flag():
 
 
 def test_ps_output_parses_elapsed_times_in_every_form():
-    got = wd.parse_ps(" 12   1  12 01:02 python -m evals.run\n 13 12 12 1-02:03:04 sleep 1\nbad line\n")
+    got = watchdog_observe.parse_ps(" 12   1  12 01:02 python -m evals.run\n 13 12 12 1-02:03:04 sleep 1\nbad line\n")
     assert [(p.pid, p.elapsed_s) for p in got] == [(12, 62.0), (13, 86400 + 7384.0)]
 
 
@@ -567,12 +568,12 @@ def test_progress_files_are_read_from_run_directories_while_running_or_unreadabl
     for name, state in (("a", "running"), ("b", "done")):
         d = tmp_path / name
         d.mkdir()
-        (d / "progress.json").write_text(json.dumps({"state": state, "pid": 1}), encoding="utf-8")
+        (d / "progress.json").write_text(json.dumps({"state": state, "pid": os.getpid()}), encoding="utf-8")
     (tmp_path / "c").mkdir()
     (tmp_path / "c" / "progress.json").write_text("{torn", encoding="utf-8")
-    got = wd.ProgressFiles([tmp_path]).runs()
+    got = watchdog_observe.ProgressFiles([tmp_path]).runs()
     assert [r["_dir"] for r in got] == [str(tmp_path / "a"), str(tmp_path / "c")]
-    assert wd.ProgressFiles([tmp_path / "missing"]).runs() == []
+    assert watchdog_observe.ProgressFiles([tmp_path / "missing"]).runs() == []
 
 
 def test_a_real_evals_run_progress_file_is_read_and_paused_through_its_own_hook(tmp_path):
@@ -582,15 +583,15 @@ def test_a_real_evals_run_progress_file_is_read_and_paused_through_its_own_hook(
     (tmp_path / "run").mkdir()
     prog = watch.Progress(tmp_path / "run", eye, {"a": "llamacpp:a"}, total=5, done=0)
     prog.write()
-    got = wd.ProgressFiles([tmp_path]).runs()
+    got = watchdog_observe.ProgressFiles([tmp_path]).runs()
     assert len(got) == 1 and got[0]["total"] == 5 and got[0]["planned_s_per_case"] == {"a": 10.0}
-    out = wd.Hands().do(wd.PAUSE, finding(progress=got[0]))
+    out = watchdog_hands.Hands().do(wd.PAUSE, finding(progress=got[0]))
     assert "pause file written" in out
     with pytest.raises(watch.Stop):
         eye.before("a")
 
 
-class Notifier(wd.Hands):
+class Notifier(watchdog_hands.Hands):
     def __init__(self):
         self.calls, fake = _osascript()
         super().__init__(run=fake, environ={}, platform="darwin")

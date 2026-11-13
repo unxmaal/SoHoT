@@ -76,14 +76,17 @@ def _scan(sha: str, argv: list[str], gh, what: str) -> tuple[str, str]:
     return state, f"{JOB} did not pass for {sha[:12]}: " + "; ".join(w for _, w in failed)
 
 
-def own(sha: str, gh=_gh) -> tuple[str, str]:
+def own(sha: str, gh=None) -> tuple[str, str]:
     """(state, why) of `sha`'s own push run on main; raises GhError, or ValueError on an unreadable answer."""
+    gh = gh or _gh
     return _scan(sha, ["run", "list", "--workflow", WORKFLOW, "--branch", "main", "--event", "push",
                        "--commit", sha, "--json", "databaseId,conclusion,headSha,status,url"], gh, "push")
 
 
-def twin(sha: str, gh=_gh, repo=None, git=_git) -> tuple[bool, str]:
+def twin(sha: str, gh=None, repo=None, git=None) -> tuple[bool, str]:
     """(ok, why): the PR sha's subject names has a head with sha's tree, holding sha's parent, whose PR run passed."""
+    gh = gh or _gh
+    git = git or _git
     def out(*argv: str) -> str:
         got = git(list(argv), repo)
         if got.returncode != 0:
@@ -108,7 +111,7 @@ def twin(sha: str, gh=_gh, repo=None, git=_git) -> tuple[bool, str]:
     return True, f"PR #{pr} head {head[:12]} has the same tree as {sha[:12]} and {why}"
 
 
-def judge(sha: str, gh=_gh, repo=None, git=_git) -> tuple[bool, str, str]:
+def judge(sha: str, gh=None, repo=None, git=None) -> tuple[bool, str, str]:
     """(deployable, why, BY_MAIN or BY_PR or '') for `sha`; main's own concluded run outranks any PR run."""
     try:
         state, why = own(sha, gh)
@@ -127,13 +130,13 @@ def judge(sha: str, gh=_gh, repo=None, git=_git) -> tuple[bool, str, str]:
     return (True, f"{said}; main's own run is {state}", BY_PR) if ok else (False, f"{why}; and {said}", "")
 
 
-def verdict(sha: str, gh=_gh, repo=None, git=_git) -> tuple[bool, str]:
+def verdict(sha: str, gh=None, repo=None, git=None) -> tuple[bool, str]:
     """(deployable, why) for `sha`."""
     ok, why, _ = judge(sha, gh, repo, git)
     return ok, why
 
 
-def check(sha: str, environ=None, gh=_gh, err=None, repo=None, git=_git) -> int:
+def check(sha: str, environ=None, gh=None, err=None, repo=None, git=None) -> int:
     """Print the verdict on stderr and return the exit status; OVERRIDE=1 deploys anyway, loudly."""
     environ = os.environ if environ is None else environ
     err = sys.stderr if err is None else err
