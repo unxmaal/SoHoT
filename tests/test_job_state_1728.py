@@ -12,6 +12,7 @@ from evals import watch
 from harness import contention, deploy, executors, job_state as js
 from harness import memory_store as ms
 from harness import workqueue as wq
+from harness import job_procs, job_settle
 
 BATCH = ["soh-batch-job"]
 
@@ -26,7 +27,7 @@ def _exits(rc: int, *flags: str):
     """A worker's child that sets `flags` beside its pid file and exits rc."""
     def popen(argv, cwd=None, stdout=None, stderr=None, env=None):
         key = env[wq.JOB_ENV]
-        for name, f in wq._flag_files(key).items():
+        for name, f in job_procs._flag_files(key).items():
             if name in flags:
                 f.write_text(json.dumps({"at": "now"}), encoding="utf-8")
         return types.SimpleNamespace(returncode=rc)
@@ -124,14 +125,14 @@ def test_cancel_and_stop_both_set_record_the_job_cancelled_and_leave_no_flag():
     wq.run_one(wq.get(job["id"]), popen=_exits(0, js.CANCEL_FLAG, js.STOP_FLAG))
     got = wq.get(job["id"])
     assert (got["state"], got["reason"]) == (js.CANCELLED, js.CANCEL)
-    assert wq._flags(job["id"]) == frozenset()
+    assert job_procs._flags(job["id"]) == frozenset()
 
 
 def test_a_deploy_flag_on_a_job_that_finished_is_cleared_at_its_exit_not_its_next_start():
     job = wq.add(BATCH, title="batch")
     wq.run_one(wq.get(job["id"]), popen=_exits(0, js.DEPLOY_FLAG, js.ITEM_FLAG))
     got = wq.get(job["id"])
-    assert (got["state"], got["reason"]) == (js.DONE, js.EXITED) and wq._flags(job["id"]) == frozenset()
+    assert (got["state"], got["reason"]) == (js.DONE, js.EXITED) and job_procs._flags(job["id"]) == frozenset()
 
 
 def test_a_paused_exit_nothing_repends_is_paused_checkpointed(monkeypatch):
@@ -174,16 +175,16 @@ def leader():
 
 def test_a_cancel_racing_a_natural_exit_cannot_turn_done_into_cancelled(monkeypatch, leader):
     job = _claimed()
-    wq._pid_file(job["id"]).write_text(str(leader.pid), encoding="utf-8")
+    job_procs._pid_file(job["id"]).write_text(str(leader.pid), encoding="utf-8")
 
-    found = wq._pid_of
+    found = job_procs._pid_of
 
     def pid_of(job_id):
         # Cancel found the process; it then finished on its own and the worker recorded that before the cancel flag.
         pid = found(job_id)
-        assert not wq._settle_exit({**job, "finished": time.strftime(wq._STAMP)}, 0)
+        assert not job_settle._settle_exit({**job, "finished": time.strftime(wq._STAMP)}, 0)
         return pid
-    monkeypatch.setattr(wq, "_pid_of", pid_of)
+    monkeypatch.setattr(job_procs, "_pid_of", pid_of)
     monkeypatch.setattr(executors, "for_job", lambda j: types.SimpleNamespace(stop=lambda pid, grace=None: "gone"))
     got = wq.cancel(job["id"])
     assert (got["state"], got["reason"], got["rc"]) == (js.DONE, js.EXITED, 0)
@@ -192,11 +193,11 @@ def test_a_cancel_racing_a_natural_exit_cannot_turn_done_into_cancelled(monkeypa
 
 def test_a_worker_exit_after_a_recorded_cancel_leaves_it_cancelled(monkeypatch, leader):
     job = _claimed()
-    wq._pid_file(job["id"]).write_text(str(leader.pid), encoding="utf-8")
+    job_procs._pid_file(job["id"]).write_text(str(leader.pid), encoding="utf-8")
     monkeypatch.setattr(executors, "for_job", lambda j: types.SimpleNamespace(stop=lambda pid, grace=None: "term"))
     assert wq.cancel(job["id"])["state"] == js.CANCELLED
     said = wq.get(job["id"])["note"]
-    assert not wq._settle_exit({**job, "finished": time.strftime(wq._STAMP)}, 0)
+    assert not job_settle._settle_exit({**job, "finished": time.strftime(wq._STAMP)}, 0)
     got = wq.get(job["id"])
     assert (got["state"], got["note"]) == (js.CANCELLED, said)
 
@@ -207,10 +208,10 @@ def test_a_live_pid_that_leads_no_group_is_not_the_jobs_process(leader):
     job = _claimed()
     stranger = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
     try:
-        wq._pid_file(job["id"]).write_text(str(stranger.pid), encoding="utf-8")
-        assert wq._pid_of(job["id"]) is None
-        wq._pid_file(job["id"]).write_text(str(leader.pid), encoding="utf-8")
-        assert wq._pid_of(job["id"]) == leader.pid
+        job_procs._pid_file(job["id"]).write_text(str(stranger.pid), encoding="utf-8")
+        assert job_procs._pid_of(job["id"]) is None
+        job_procs._pid_file(job["id"]).write_text(str(leader.pid), encoding="utf-8")
+        assert job_procs._pid_of(job["id"]) == leader.pid
     finally:
         stranger.kill()
         stranger.wait()
@@ -249,7 +250,7 @@ def _lease_watch(monkeypatch, beat):
     monkeypatch.setattr(item_lease, "TTL_S", 0.6)
     monkeypatch.setattr(item_lease, "beat", beat)
     stopped = threading.Event()
-    monkeypatch.setattr(wq, "_pid_of", lambda job_id: 4242)
+    monkeypatch.setattr(job_procs, "_pid_of", lambda job_id: 4242)
     monkeypatch.setattr(executors, "for_job", lambda j: types.SimpleNamespace(
         stop=lambda pid, grace=None: stopped.set() or "term"))
     return wq.add(BATCH, title="batch"), stopped

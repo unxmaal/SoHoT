@@ -15,6 +15,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from harness.atomic_file import replace
 from harness import paths
 
 #: Free GiB on the system Data volume below which monit alerts.
@@ -232,7 +233,7 @@ def write_rc(text: str, home: Path | None = None) -> Path:
     tmp = rc.with_suffix(".new")
     tmp.write_text(text, encoding="utf-8")
     tmp.chmod(0o600)
-    tmp.replace(rc)
+    replace(tmp, rc)
     return rc
 
 
@@ -459,8 +460,8 @@ def du_line(rows: list[dict]) -> str:
 
 def pause_all(reason: str) -> dict:
     """Pause the job queue and every running eval through its pause file, the watchdog's request path."""
-    from harness import watchdog, workqueue
-    workqueue.pause()
+    from harness import queue_pause, watchdog
+    queue_pause.pause()
     reader = watchdog.ProgressFiles()
     return {"queue": "paused", "runs": [reader.pause(r, reason) for r in reader.runs()]}
 

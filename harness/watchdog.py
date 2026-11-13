@@ -18,7 +18,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from harness import audio_models, interactive, serve_lease
+from harness import audio_models, interactive, machine_scope, serve_lease
 from harness.overrun import cells as _cells, paired as _paired, unmeasured as _unmeasured
 
 NOTE, NOTIFY, FILE, PAUSE, STOP, REAP, UNLOAD, RESTART = (
@@ -280,9 +280,9 @@ class Probes:
 
     def job_pids(self) -> dict:
         """Queue job id -> the pid of its group leader, from the files the worker leaves. #628."""
-        from harness import executors, workqueue
+        from harness import executors, job_procs
         out = {}
-        for f in sorted(workqueue._pids().glob("*.pid")):
+        for f in sorted(job_procs._pids().glob("*.pid")):
             with contextlib.suppress(OSError, ValueError):
                 out[f.stem] = executors.pid_record(f)[0]
         return out
@@ -987,11 +987,11 @@ def _every_s() -> float:
 def warn_samples(conn, now: float) -> int:
     """Earlier wakes, back from `now` with no wake between them missing, that recorded memory at warn here. #1482."""
     gap = 1.5 * _every_s()
-    m = _machine(conn)
+    here, mine = _mine(conn)
     rows = conn.execute(
         f"SELECT DISTINCT at FROM watchdog_actions WHERE criterion IN ({','.join('?' * len(WARN_CRITERIA))}) "
-        "AND at < ? AND at >= ? AND (machine_id = ? OR (machine_id IS NULL AND ? IS NULL)) ORDER BY at DESC",
-        (*WARN_CRITERIA, now, now - WARN_SUSTAINED * gap, m, m)).fetchall()
+        f"AND at < ? AND at >= ? AND {here} ORDER BY at DESC",
+        (*WARN_CRITERIA, now, now - WARN_SUSTAINED * gap, *mine)).fetchall()
     n, last = 0, now
     for r in rows:
         if last - float(r["at"]) > gap:
@@ -1232,10 +1232,10 @@ class Hands:
         return Said("; ".join(got), ACTED if any(g.result == ACTED for g in got) else got[0].result)
 
     def _group(self, s: Subject) -> str:
-        from harness import workqueue
+        from harness import job_procs
         if s.pgid is None:
             return Said(f"refused: {s.key} has no process group made only of SoHoT processes", REFUSED)
-        return Said(f"group {s.pgid}: {workqueue.stop_group(s.pgid, grace=STOP_GRACE_S)}")
+        return Said(f"group {s.pgid}: {job_procs.stop_group(s.pgid, grace=STOP_GRACE_S)}")
 
     def stop(self, f: Finding) -> str:
         if f.subject.pgid is not None:
@@ -1328,15 +1328,17 @@ def _machine(conn) -> int | None:
     return got[0] if got else None
 
 
+def _mine(conn) -> tuple[str, tuple]:
+    return machine_scope.where("watchdog_actions.mine", _machine(conn))
+
+
 def repeats(conn, f: Finding, now: float, dry_run: bool, windowed: bool = True) -> int:
     """Prior trips of this criterion on this subject inside the escalation window (or ever), this machine."""
-    row = conn.execute(
+    here, mine = _mine(conn)
+    return int(conn.execute(
         "SELECT COUNT(*) AS n FROM watchdog_actions WHERE criterion = ? AND subject = ? AND dry_run = ? "
-        "AND at >= ? AND (machine_id = ? OR (machine_id IS NULL AND ? IS NULL))",
-        (f.criterion, f.subject.key, int(dry_run), now - ESCALATE_WINDOW_S if windowed else 0.0, _machine(conn),
-         _machine(conn))
-    ).fetchone()
-    return int(row["n"])
+        f"AND at >= ? AND {here}",
+        (f.criterion, f.subject.key, int(dry_run), now - ESCALATE_WINDOW_S if windowed else 0.0, *mine)).fetchone()["n"])
 
 
 def overrun_stopped(conn, out) -> bool:
@@ -1352,12 +1354,11 @@ def overrun_stopped(conn, out) -> bool:
 
 def notified_since(conn, f: Finding, now: float) -> float | None:
     """When this criterion last put a notification on this subject's desktop inside NOTIFY_EVERY_S, this machine."""
-    row = conn.execute(
+    here, mine = _mine(conn)
+    at = conn.execute(
         "SELECT MAX(at) AS at FROM watchdog_actions WHERE criterion = ? AND subject = ? AND dry_run = 0 "
-        "AND notified = 1 AND at >= ? AND (machine_id = ? OR (machine_id IS NULL AND ? IS NULL))",
-        (f.criterion, f.subject.key, now - NOTIFY_EVERY_S, _machine(conn), _machine(conn))
-    ).fetchone()
-    return None if row["at"] is None else float(row["at"])
+        f"AND notified = 1 AND at >= ? AND {here}", (f.criterion, f.subject.key, now - NOTIFY_EVERY_S, *mine)).fetchone()["at"]
+    return None if at is None else float(at)
 
 
 #: Criteria whose pause is also put on the desktop, once. #1482.

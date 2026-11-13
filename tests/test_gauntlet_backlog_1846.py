@@ -77,6 +77,23 @@ def test_two_branches_dropping_neighbouring_rows_never_resurrect_either(repo, ho
     assert not clean or not {a, b} & set(_lines(repo)), f"a clean {how} brought back a dropped row"
 
 
+def _problems(root):
+    reg = dataclasses.replace(registry.REGISTRY, root=root, backlog_file=root / BACKLOG, snapshot_file=root / SNAPSHOT)
+    return ratchet.backlog_problems(reg, {cid: {"unbound": rows} for cid, rows in reg.backlog().items()})
+
+
+def test_a_row_whose_function_moved_files_moves_with_it_but_a_new_row_still_joins(repo):
+    row = next(s for s in _lines(repo) if s.split(" ")[1].startswith("harness/") and s.count(":") == 1)
+    cid, site = row.split(" ")
+    there = f"{cid} harness/moved_1902.py:{site.split(':', 1)[1]}"
+    git(repo, "checkout", "-q", "-b", "moved", "main")
+    _write(repo, sorted({*_lines(repo)} - {row} | {there}))
+    assert _problems(repo) == []
+    _write(repo, sorted({*_lines(repo)} | {f"{cid} harness/moved_1902.py:never_backlogged_1902"}))
+    assert [p for p in _problems(repo) if "joined the backlog" in p] == [
+        f"{cid}: harness/moved_1902.py:never_backlogged_1902 joined the backlog since origin/main: bind it or waive it instead"]
+
+
 def test_every_ci_job_that_runs_make_check_checks_out_the_whole_history():
     jobs = yaml.safe_load((REPO / ".github/workflows/ci.yml").read_text(encoding="utf-8"))["jobs"]
     checking = {name: job for name, job in jobs.items()

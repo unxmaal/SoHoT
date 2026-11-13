@@ -6,9 +6,10 @@ import os
 import statistics
 import sys
 import time
-import uuid
 from pathlib import Path
 
+from harness.atomic_file import replace
+from harness import stale_temp
 from harness import paths
 
 #: Seconds a lease outlives a delegation's answer, so a follow-up call skips the model swap back. #1556.
@@ -40,17 +41,17 @@ def _dir(name: str) -> Path:
 
 
 def _alive(pid) -> bool:
-    from harness import workqueue
+    from harness import job_procs
     try:
-        return workqueue.alive(int(pid))
+        return job_procs.alive(int(pid))
     except (TypeError, ValueError):
         return False
 
 
 def _write(path: Path, record: dict) -> None:
-    tmp = path.with_name(f".{path.name}.{uuid.uuid4().hex[:6]}")
+    tmp = stale_temp.temp(path, ".{name}.{pid}.{hex}")
     tmp.write_text(json.dumps(record, sort_keys=True), encoding="utf-8")
-    os.replace(tmp, path)
+    replace(tmp, path)
 
 
 def _read(path: Path) -> dict:

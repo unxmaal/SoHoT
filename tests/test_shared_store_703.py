@@ -15,6 +15,7 @@ from harness import adopt, completion, exclusive, gateway, gateway_switch as gs
 from harness import memory_store as ms
 from harness import reasons
 from harness import workqueue as wq
+from harness import job_settle
 from tests import conftest
 from tests import job_rows
 
@@ -113,7 +114,7 @@ def test_a_machine_with_no_machines_row_recovers_nothing(monkeypatch):
     finally:
         conn.close()
     conftest.stand_in_machine(monkeypatch, {**OTHER, "host": "new-host"})
-    wq._recover()
+    job_settle._recover()
     assert wq.current() is None
     assert wq.get(job["id"])["state"] == wq.RUNNING
 

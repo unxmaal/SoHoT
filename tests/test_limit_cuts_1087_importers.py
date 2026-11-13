@@ -109,7 +109,8 @@ def _check_row(*checks: str) -> dict:
 
 
 def test_leetcode_checks_past_either_limit_are_one_cut_per_import(monkeypatch):
-    few = _check_row(*(f"assert candidate({i}) == {i}" for i in range(3)))
+    monkeypatch.setattr(leetcode, "_CUT", type(leetcode._CUT)())  # an earlier test in this worker may leave a tally
+    few =_check_row(*(f"assert candidate({i}) == {i}" for i in range(3)))
     assert len(leetcode.checks_of(few)) == 3
     leetcode.converted()
     assert _spooled() == []

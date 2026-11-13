@@ -22,7 +22,13 @@ capabilities:
       - harness/paused_jobs.py
       - harness/queue_hold.py
       - harness/quiesce.py
+      - harness/job_release.py
       - harness/job_claim.py
+      - harness/job_procs.py
+      - harness/job_settle.py
+      - harness/queue_pause.py
+      - harness/atomic_file.py
+      - harness/stale_temp.py
 
   - name: watchdog
     summary: The periodic judge of running jobs and served models, acting from a fixed set and recording each act.
@@ -481,6 +487,7 @@ capabilities:
       - harness/machine.py
       - harness/env.py
       - harness/torch_device.py
+      - harness/machine_scope.py
 
   - name: deploy-guard
     summary: Deploying only a green main commit, never during a sweep or eval, with runner venvs matching their pins; each one a queue job built alongside, switched, verified or rolled back.
@@ -503,6 +510,7 @@ capabilities:
       - harness/deploy_hold.py
       - harness/store_ahead.py
       - harness/deploy_repair.py
+      - harness/deploy_retry.py
 
   - name: repo-hygiene
     summary: What a public reader gets, personal setup kept out of it, stated claims, coverage, specs and the gauntlet.

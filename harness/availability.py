@@ -11,13 +11,14 @@ TARGET = 0.99
 
 def rows(conn, lane: str, machine_id, since: float, until: float) -> list[dict]:
     """The lane's rows from the last up before `since` (or its first row) to `until`, oldest first."""
-    mine = "(machine_id = ? OR (machine_id IS NULL AND ? IS NULL))"
-    got = conn.execute(f"SELECT MAX(at) AS at FROM lane_probes WHERE lane = ? AND {mine} AND outcome = ? AND at < ?",
-                       (lane, machine_id, machine_id, UP, since)).fetchone()
+    from harness import machine_scope
+    here, mine = machine_scope.where("lane_probes.mine", machine_id)
+    got = conn.execute(f"SELECT MAX(at) AS at FROM lane_probes WHERE lane = ? AND {here} AND outcome = ? AND at < ?",
+                       (lane, *mine, UP, since)).fetchone()
     start = got["at"] if got and got["at"] is not None else float("-inf")
     return [dict(r) for r in conn.execute(
-        f"SELECT * FROM lane_probes WHERE lane = ? AND {mine} AND at >= ? AND at <= ? ORDER BY at, id",
-        (lane, machine_id, machine_id, start, until))]
+        f"SELECT * FROM lane_probes WHERE lane = ? AND {here} AND at >= ? AND at <= ? ORDER BY at, id",
+        (lane, *mine, start, until))]
 
 
 def incidents(probes: list[dict]) -> list[dict]:
@@ -68,9 +69,10 @@ def still_down(i: dict) -> bool:
 
 
 def lanes_seen(conn, machine_id, since: float) -> list[str]:
+    from harness import machine_scope
+    here, mine = machine_scope.where("lane_probes.mine", machine_id)
     return [r["lane"] for r in conn.execute(
-        "SELECT DISTINCT lane FROM lane_probes WHERE at >= ? AND (machine_id = ? OR (machine_id IS NULL AND ? IS NULL)) "
-        "ORDER BY lane", (since, machine_id, machine_id))]
+        f"SELECT DISTINCT lane FROM lane_probes WHERE at >= ? AND {here} ORDER BY lane", (since, *mine))]
 
 
 def report(conn, since: float, now: float, machine_id=None, lanes=None) -> dict:

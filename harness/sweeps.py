@@ -68,10 +68,9 @@ def refused(frm, to: str, reason: str) -> str:
 
 
 def _where(sw: dict) -> tuple[str, tuple]:
-    mid = sw["machine_id"]
-    same = "machine_id IS NULL" if mid is None else "machine_id = ?"
-    return (f"knob = ? AND lane = ? AND spec = ? AND {same}",
-            (sw["knob"], sw["lane"], sw["spec"], *(() if mid is None else (mid,))))
+    from harness import machine_scope
+    here, mine = machine_scope.where("knob_sweeps.mine", sw["machine_id"])
+    return f"knob = ? AND lane = ? AND spec = ? AND {here}", (sw["knob"], sw["lane"], sw["spec"], *mine)
 
 
 def _open(conn, sw: dict) -> dict | None:
@@ -638,9 +637,9 @@ def _resume(conn, sw: dict, value, job: dict, add) -> dict | None:
     """Queue a paused value's continuation and point the open sweep at it in one transaction; None if another writer moved the sweep. #1733, #1755."""
     from harness import job_state as js
     from harness import paths, runs
-    from harness import workqueue as wq
+    from harness import job_settle
     run = runs.for_job(conn, int(job["id"]))
-    argv = job["argv"] if run is None else wq.resume_argv(job["argv"], runs.run_dir(run["path"]))
+    argv = job["argv"] if run is None else job_settle.resume_argv(job["argv"], runs.run_dir(run["path"]))
     jobs: list = []
 
     def own(rows):
