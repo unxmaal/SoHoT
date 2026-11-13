@@ -1,6 +1,7 @@
 """An eval records the router evicting its model mid-run, and comparable() refuses that run (#649)."""
 import argparse
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -181,6 +182,8 @@ class Evicted(BaseRunner):
 
 
 def _run(tmp_path, monkeypatch, runner, model):
+    # The checkpoint's per-case fsync is not under test here and costs 6 s of 661 cases on Windows (#1634).
+    monkeypatch.setattr(os, "fsync", lambda fd: None)
     monkeypatch.setattr(R, "build_runner", lambda *a, **k: runner)
     monkeypatch.setattr(router, "upstream_for", lambda *a, **k: (router.url() if model else "", model))
     args = argparse.Namespace(
