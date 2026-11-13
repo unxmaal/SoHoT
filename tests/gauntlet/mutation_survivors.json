@@ -257,8 +257,6 @@
   "harness.adopt:lane_cell:lane \", ''\"->''",
   "harness.adopt:paired_p:= \"''\"->\"'XXXX'\"",
   "harness.adopt:paired_p:deff '<='->'<'",
-  "harness.adopt:queue_confirmation:( \"'SELECT id FROM jobs WHERE argv = ? AND state IN (?, ?) AND id IS NOT ?'\"->\"'SELECT ID FROM JOBS WHERE ARGV = ? AND STATE IN (?, ?) AND ID IS NOT ?'\"",
-  "harness.adopt:queue_confirmation:( \"'SELECT id FROM jobs WHERE argv = ? AND state IN (?, ?) AND id IS NOT ?'\"->\"'select id from jobs where argv = ? and state in (?, ?) and id is not ?'\"",
   "harness.adopt:queue_confirmation:, \"''\"->\"'XXXX'\"",
   "harness.adopt:record:' ', verdict . how'->''",
   "harness.adopt:record:'alpha' ', ALPHA'->''",

@@ -31,16 +31,16 @@ def identity(lane: str, inc_spec: str, settings, knobs: dict, split_version: str
     return json.loads(json.dumps(got, sort_keys=True))   # the shape it is stored in, so equal compares equal
 
 
-def _here(conn) -> int | None:
-    from harness import memory_store as ms
-    return ms.machine_row(conn)
+def _here(conn) -> tuple[str, tuple]:
+    from harness import machine_scope
+    return machine_scope.here(conn, "paused_runs.mine")
 
 
 def find(conn, lane: str, spec: str) -> dict | None:
     """This machine's live pause of the pairing in this lane, whatever incumbent it ran against."""
-    row = conn.execute("SELECT * FROM paused_runs WHERE lane = ? AND challenger = ? AND state = ? "
-                       "AND machine_id = ? ORDER BY id DESC LIMIT 1",
-                       ((lane or "").strip().lower(), spec, PAUSED, _here(conn))).fetchone()
+    here, args = _here(conn)
+    row = conn.execute(f"SELECT * FROM paused_runs WHERE lane = ? AND challenger = ? AND state = ? AND {here} "
+                       "ORDER BY id DESC LIMIT 1", ((lane or "").strip().lower(), spec, PAUSED, *args)).fetchone()
     return _row(row) if row else None
 
 
@@ -81,8 +81,9 @@ def abandoned(conn, root, lane: str, inc_spec: str, spec: str) -> dict | None:
 
 def waiting(conn) -> list[dict]:
     """This machine's live pauses, oldest first: the next sweep resumes these before starting anything new."""
-    return [_row(r) for r in conn.execute("SELECT * FROM paused_runs WHERE state = ? AND machine_id = ? ORDER BY id",
-                                          (PAUSED, _here(conn)))]
+    here, args = _here(conn)
+    return [_row(r) for r in conn.execute(f"SELECT * FROM paused_runs WHERE state = ? AND {here} ORDER BY id",
+                                          (PAUSED, *args))]
 
 
 def _row(r) -> dict:

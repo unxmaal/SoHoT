@@ -22,9 +22,8 @@ RELEASE = "soh hold release"
 
 
 def _here(conn) -> tuple[str, tuple]:
-    from harness import memory_store as ms
-    mid = ms.machine_row(conn)
-    return ("machine_id IS NULL", ()) if mid is None else ("machine_id = ?", (mid,))
+    from harness import machine_scope
+    return machine_scope.here(conn, "holds.mine")
 
 
 def _has(conn) -> bool:

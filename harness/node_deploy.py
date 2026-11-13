@@ -169,8 +169,8 @@ def _tail(said: str, n: int = 300) -> str:
 def target(conn=None) -> dict | None:
     """This machine's newest deploy that ended deployed, None while a deploy runs or before the first: what nodes follow."""
     with wq._store(conn) as c:
-        where, args = wq._here(c)
-        rows = c.execute(f"SELECT id, sha, outcome FROM deploys WHERE {where} ORDER BY id DESC", args).fetchall()
+        here, args = deploy._here(c)
+        rows = c.execute(f"SELECT id, sha, outcome FROM deploys WHERE {here} ORDER BY id DESC", args).fetchall()
     if not rows or not rows[0]["outcome"]:
         return None
     hit = next((r for r in rows if r["outcome"] == deploy.DEPLOYED), None)
