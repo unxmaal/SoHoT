@@ -69,14 +69,14 @@ def test_no_exit_record_reads_none_a_recorded_0_reads_0_and_an_unreadable_one_ra
 _WORKER = textwrap.dedent("""
     import os, sys
     from harness import executors
-    from harness import workqueue as wq
+    from harness import job_procs
     mark, child_at = sys.argv[1], sys.argv[2]
-    real = wq.spawn_group
+    real = job_procs.spawn_group
     def spawn(argv, cwd, stdout, env):
         child = real(argv, cwd, stdout, env)
         open(child_at, "w").write(str(child.pid))
         return child
-    wq.spawn_group = spawn
+    job_procs.spawn_group = spawn
     def died(_pid_file):
         os._exit(9)
     executors.started_file = died
