@@ -280,7 +280,6 @@ class Died(BaseException):
 
 @pytest.mark.sqlite_store
 @posix
-@pytest.mark.gauntlet("two-durable-writes-with-no-repair-for-the-gap", site="harness/deploy_repair.py:repair")
 def test_a_repair_killed_after_the_restore_is_finished_by_running_it_again(world, alerts):
     job, path = _stranded(world)
     _old_worker_settles()
