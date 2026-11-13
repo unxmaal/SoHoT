@@ -22,6 +22,7 @@ import threading
 import time
 from pathlib import Path
 
+from harness.atomic_file import replace
 from harness import paths
 
 #: What holds the lock, for a waiter to report. Best-effort and advisory: the
@@ -249,7 +250,7 @@ def _mark(path: Path, record: dict, exclusive: bool) -> bool:
     tmp.write_text(json.dumps(record), encoding="utf-8")
     try:
         if not exclusive:
-            os.replace(tmp, path)
+            replace(tmp, path)
             return True
         os.link(tmp, path)
         return True
@@ -1007,7 +1008,7 @@ def beat(now: float | None = None) -> None:
     tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
     with contextlib.suppress(OSError):
         tmp.write_text(json.dumps(record), encoding="utf-8")
-        os.replace(tmp, path)
+        replace(tmp, path)
 
 
 def _hand_down(lease: int | None, held: bool = True) -> None:

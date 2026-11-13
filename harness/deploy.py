@@ -15,8 +15,9 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from harness.atomic_file import replace
 from harness import deploy_state as ds
-from harness import deploy_switch, job_state as js, paths, proc_identity
+from harness import deploy_switch, job_claim, job_state as js, paths, proc_identity
 from harness import workqueue as wq
 
 KIND = "deploy"
@@ -441,7 +442,7 @@ def adopt(link: Path) -> Path:
         tmp.unlink()
     os.symlink(dest, tmp)
     os.rename(link, dest)
-    os.replace(tmp, link)
+    replace(tmp, link)
     try:
         _git(dest, "worktree", "repair")
     except DeployError as exc:
@@ -633,7 +634,8 @@ def _quiesce(c, job_id, log, sleep=time.sleep) -> str:
     end, said = time.monotonic() + QUIESCE_TIMEOUT_S, False
     while True:
         left = [wq.label(j["id"]) for j in wq.running_here(c)
-                if wq._key(j["id"]) != wq._key(job_id) and wq._pid_of(j["id"]) is not None]
+                if wq._key(j["id"]) != wq._key(job_id)
+                and (wq._pid_of(j["id"]) is not None or job_claim.starting(j["id"]))]
         if not left:
             return ""
         if time.monotonic() >= end:
@@ -942,8 +944,8 @@ def settle(conn=None, now: float | None = None, alive=wq.alive, spawn=None, star
     settled = []
     try:
         with wq._store(conn) as c:
-            where, args = wq._here(c)
-            for row in c.execute(f"SELECT * FROM deploys WHERE outcome = '' AND {where} ORDER BY id", args).fetchall():
+            here, args = _here(c)
+            for row in c.execute(f"SELECT * FROM deploys WHERE outcome = '' AND {here} ORDER BY id", args).fetchall():
                 try:
                     got = _settle_one(c, dict(row), now, alive, spawn)
                 except ds.IllegalMove as exc:
@@ -954,7 +956,7 @@ def settle(conn=None, now: float | None = None, alive=wq.alive, spawn=None, star
             claimed, cargs = wq._claimed(c)
             for job in c.execute(f"SELECT id FROM jobs WHERE kind = ? AND state = ? AND {claimed} AND id NOT IN "
                                  "(SELECT job_id FROM deploys WHERE job_id IS NOT NULL)", (KIND, wq.RUNNING, *cargs)):
-                if wq._pid_of(job["id"]) is None:
+                if wq._pid_of(job["id"]) is None and not job_claim.starting(job["id"]):
                     _close_job(c, job["id"], wq.FAILED, None, "interrupted before it recorded a deploy", now)
                     settled.append({"job": wq.label(job["id"]), "outcome": INTERRUPTED})
     except RuntimeError as exc:
@@ -1026,7 +1028,8 @@ def _settle_one(c, row: dict, now: float, alive, spawn=None) -> dict | None:
         why = "; ".join(filter(None, (f"the switch stopped at {rec.get('stage')} without an outcome", failed, said(seen))))
         _lift(rec)
     else:
-        if job is not None and job["state"] == wq.RUNNING and wq._pid_of(job["id"]) is not None:
+        if job is not None and job["state"] == wq.RUNNING and (wq._pid_of(job["id"]) is not None
+                                                               or job_claim.starting(job["id"])):
             return None
         if job is not None and job["state"] != wq.RUNNING:
             why = f"job {job['id']} ended {job['state']} rc={job['rc']} before it recorded an outcome"
@@ -1040,6 +1043,11 @@ def _settle_one(c, row: dict, now: float, alive, spawn=None) -> dict | None:
         _close_job(c, job["id"], wq.FAILED, None, f"deploy {row['id']} interrupted: {why}", now)
     _alert_here(f"deploy {row['id']} of {row['sha'][:12]} interrupted: {why}")
     return {"deploy": row["id"], "outcome": INTERRUPTED}
+
+
+def _here(conn) -> tuple[str, tuple]:
+    from harness import machine_scope
+    return machine_scope.here(conn, "deploys.mine")
 
 
 def _alert_here(message: str) -> None:
@@ -1062,10 +1070,8 @@ def since(conn, t: float) -> list[dict]:
 
 def deployed_at(conn) -> float | None:
     """When this machine's newest queue deploy finished serving its commit; None before the first."""
-    from harness import memory_store as ms
-    mid = ms.machine_row(conn)
-    row = conn.execute("SELECT MAX(finished_at) FROM deploys WHERE outcome = ? AND (machine_id = ? OR machine_id "
-                       "IS NULL)", (DEPLOYED, mid)).fetchone()
+    here, args = _here(conn)
+    row = conn.execute(f"SELECT MAX(finished_at) FROM deploys WHERE outcome = ? AND {here}", (DEPLOYED, *args)).fetchone()
     return float(row[0]) if row and row[0] is not None else None
 
 
@@ -1109,8 +1115,8 @@ def line(d: dict) -> str:
 
 def serving(conn, link: Path | None = None) -> dict | None:
     """This machine's newest deploy reconciled against the deploy link; None before its first deploy."""
-    where, args = wq._here(conn)
-    row = conn.execute(f"SELECT * FROM deploys WHERE {where} ORDER BY id DESC", args).fetchone()
+    here, args = _here(conn)
+    row = conn.execute(f"SELECT * FROM deploys WHERE {here} ORDER BY id DESC", args).fetchone()
     return view(dict(row), link=link) if row else None
 
 

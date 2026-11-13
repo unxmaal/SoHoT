@@ -8,6 +8,8 @@ import re
 import time
 from pathlib import Path
 
+from harness.atomic_file import replace
+
 #: Candidate claims one turn sends to the decide model; the rest go unchecked.
 CLAIMS_PER_TURN = 12
 #: Seconds the whole check may take before the stop is allowed unchecked.
@@ -308,7 +310,7 @@ def _remember(session: str, turn: str) -> bool:
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_name(f"{STATE}.{os.getpid()}")
         tmp.write_text(json.dumps(state), encoding="utf-8")
-        os.replace(tmp, path)
+        replace(tmp, path)
     except OSError:
         return False
     return True

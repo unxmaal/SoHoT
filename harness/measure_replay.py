@@ -71,8 +71,8 @@ def owed_at(conn, at: float) -> list[dict]:
     rows = conn.execute(
         "SELECT p.name, p.lane, p.attaches_to FROM proposals p JOIN verdicts v ON v.id = "
         "(SELECT MAX(w.id) FROM verdicts w WHERE w.proposal_id = p.id AND w.decided_at < ?) "
-        "WHERE v.outcome = 'measured' AND v.tier = ? AND v.detail LIKE ? ORDER BY v.id",
-        (at, adopt.TIER, f"{repo_gate.GATE}:%")).fetchall()
+        "WHERE v.outcome = 'measured' AND v.tier = ? AND v.lane = ? ORDER BY v.id",
+        (at, adopt.TIER, repo_gate.GATE)).fetchall()
     return [{"name": r["name"], "lane": repo_gate.GATED[0], "attaches_to": r["attaches_to"]} for r in rows
             if any(lanes.serves(r["lane"], g) for g in repo_gate.GATED)]
 
