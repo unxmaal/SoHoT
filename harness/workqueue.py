@@ -16,8 +16,7 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
-from harness import exclusive, job_state as js, paths, queue_hold, resources
-from harness import executors
+from harness import exclusive, executors, job_state as js, paths, queue_hold, resources
 
 PENDING, RUNNING, DONE, FAILED = js.PENDING, js.RUNNING, js.DONE, js.FAILED
 CANCELLED, PAUSED = js.CANCELLED, js.PAUSED
