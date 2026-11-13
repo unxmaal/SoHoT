@@ -15,11 +15,12 @@ _CARRIES = (js.PENDING, js.RUNNING, js.DONE, js.PAUSED)
 
 def _said(conn, job: dict) -> str:
     """What paused a job that exited paused: a memory criterion the watchdog paused it for, else any it did, else its run's pause file."""
+    from harness import watchdog
     from harness import workqueue as wq
     started = wq._epoch(job.get("started")) or 0.0
     criteria = sorted({r[0] for r in conn.execute(
-        "SELECT criterion FROM watchdog_actions WHERE subject = ? AND action = 'pause' AND dry_run = 0 AND at >= ?",
-        (f"job {wq.label(job['id'])}", started))})
+        "SELECT criterion FROM watchdog_actions WHERE job_id = ? AND action = ? AND dry_run = 0 AND at >= ?",
+        (int(job["id"]), watchdog.PAUSE, started))})
     if criteria:
         return next((c for c in criteria if c in MEMORY_CAUSES), criteria[0])
     from evals import watch

@@ -98,8 +98,8 @@ def batch(job: dict) -> bool:
 
 def paused_for(conn, job: dict) -> bool:
     """Whether the watchdog paused this queued job for contention since it last started."""
-    from harness import workqueue
+    from harness import watchdog, workqueue
     started = workqueue._epoch(job.get("started")) or 0.0
-    return conn.execute("SELECT 1 FROM watchdog_actions WHERE criterion = ? AND subject = ? AND action = 'pause' "
+    return conn.execute("SELECT 1 FROM watchdog_actions WHERE criterion = ? AND job_id = ? AND action = ? "
                         "AND dry_run = 0 AND at >= ? LIMIT 1",
-                        (CRITERION, f"job {workqueue.label(job['id'])}", started)).fetchone() is not None
+                        (CRITERION, int(job["id"]), watchdog.PAUSE, started)).fetchone() is not None

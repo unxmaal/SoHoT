@@ -14,6 +14,7 @@ from gauntlet import scanners as gscanners
 from harness import heartbeat, morning
 from harness import memory_store as ms
 from harness import sweep_check as sc
+from harness import watchdog as wd
 from harness.commands import morning as morning_cmd
 from tests import shells
 
@@ -123,7 +124,7 @@ def test_tonight_is_the_latest_scheduled_start_before_now():
 
 def _run(conn, u, b, now, sent):
     r = sc.check(now=now, unit=u, beat=b, hours=[21], alive=lambda pid: True)
-    return sc.record(conn, r, notify=lambda *a: sent.append(a) or f"notified: {a[1]}")
+    return sc.record(conn, r, notify=lambda *a: sent.append(a) or wd.Said(f"notified: {a[1]}", notified=True))
 
 
 def test_a_quiet_healthy_night_sends_nothing_and_records_every_check():
@@ -223,7 +224,8 @@ def test_the_cli_prints_the_verdict_and_records_only_with_notify(monkeypatch, ca
     monkeypatch.setattr(sc, "launchd", lambda *a, **k: unit("not-running"))
     monkeypatch.setattr(heartbeat, "read", lambda: None)
     sent = []
-    monkeypatch.setattr("harness.watchdog.desktop", lambda *a, **k: sent.append(a) or "notified: x")
+    monkeypatch.setattr("harness.watchdog.desktop",
+                        lambda *a, **k: sent.append(a) or wd.Said("notified: x", notified=True))
     assert cli.main(["sweep-check", "--json"]) == 0
     out = json.loads(capsys.readouterr().out)
     assert out["verdict"] == sc.NEVER and "recorded" not in out and sent == []

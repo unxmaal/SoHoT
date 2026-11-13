@@ -12,6 +12,7 @@ from harness import power
 from harness import watchdog as wd
 from harness.commands import measure as measure_cmd
 from harness.commands.measure import Launched
+from harness.memory_store.migrations import v102
 from tests.test_resume_813 import CH, INC, Eval, _measure, _pauses, _rows, world  # noqa: F401
 from tests.test_watchdog import ids, judged, owned_eval
 
@@ -400,6 +401,7 @@ def test_an_overrun_stop_only_the_store_records_is_not_resumed(monkeypatch, worl
             conn.execute("INSERT INTO watchdog_actions (at, criterion, subject, action, escalated, dry_run, evidence, "
                          "outcome) VALUES (?, ?, 'eval pgid 1', 'stop', 1, ?, ?, ?)",
                          (at, criterion, dry_run, json.dumps({"command": command}), outcome))
+        v102.data(conn)
         conn.commit()
     finally:
         conn.close()
@@ -416,6 +418,7 @@ def test_the_stored_overrun_is_found_for_a_path_json_escapes(world, tmp_path, na
         conn.execute("INSERT INTO watchdog_actions (at, criterion, subject, action, escalated, dry_run, evidence, "
                      "outcome) VALUES (0, 'overrun', 'eval pgid 1', 'stop', 1, 0, ?, 'group 1: term')",
                      (json.dumps({"command": f"uv run python -m evals.run --out {out} --resume"}),))
+        v102.data(conn)
         conn.commit()
         assert wd.overrun_stopped(conn, out) and not wd.overrun_stopped(conn, tmp_path / "other")
     finally:
