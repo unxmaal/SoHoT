@@ -38,7 +38,7 @@ def test_a_sibling_whose_name_starts_with_the_release_or_a_path_elsewhere_is_lef
 
 
 def test_off_windows_a_backslash_or_another_case_is_part_of_a_file_name(posix):
-    old, new = "/home/u/lh/releases/19-aaaaaaaaaaaa", "/home/u/lh/releases/20-bbbbbbbbbbbb"
+    old, new = "/srv/lh/releases/19-aaaaaaaaaaaa", "/srv/lh/releases/20-bbbbbbbbbbbb"
     words = [f"{old}\\x", old.upper() + "/x", f"{old}x/y"]
     assert job_release.moved(words, old, new) == words
     assert job_release.moved([f"{old}/a/b", old], old, new) == [f"{new}/a/b", new]
