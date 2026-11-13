@@ -414,13 +414,8 @@ def lock_holders(lock: Path, run=subprocess.run) -> str:
 
 
 def seed_home(live: Path, scratch: Path) -> list:
-    """The machine's interactive plan copied into a scratch home, so a pinned lane is answered where the live one is."""
-    from harness import interactive
+    """The machine's built case environments linked into a scratch home; its interactive plan is read where it is (#1711)."""
     out = []
-    src, dst = Path(live) / interactive.PLAN_NAME, Path(scratch) / interactive.PLAN_NAME
-    if src.is_file() and src.resolve() != dst.resolve():
-        dst.write_bytes(src.read_bytes())
-        out.append(dst.name)
     # Built case environments are reused, not rebuilt: grading runs them sandboxed, writing nothing outside the task.
     envs = Path(live) / "repo-cache" / "envs"
     for env in sorted(envs.iterdir()) if envs.is_dir() and Path(live).resolve() != Path(scratch).resolve() else ():

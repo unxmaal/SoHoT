@@ -32,7 +32,6 @@ a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/heartbe
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/hf_task.py:vision_probe
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/identity.py:_save_cache
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/inspect.py:_write_size_cache
-a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/interactive.py:write
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/inventory_weight.py:ci_failures.one
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/machine.py:versions
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/nodes.py:_record
@@ -612,7 +611,6 @@ nothing-and-failed-return-the-same-value harness/engine_trials.py:_pypi_json:exc
 nothing-and-failed-return-the-same-value harness/engines.py:_mflux_repos:except
 nothing-and-failed-return-the-same-value harness/engines.py:_repo_constants:except
 nothing-and-failed-return-the-same-value harness/env.py:free_gb:except
-nothing-and-failed-return-the-same-value harness/exclusive.py:_machine:chooser
 nothing-and-failed-return-the-same-value harness/exclusive.py:_read:except
 nothing-and-failed-return-the-same-value harness/exclusive.py:store_python:chooser
 nothing-and-failed-return-the-same-value harness/gateway.py:load:except

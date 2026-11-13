@@ -305,10 +305,10 @@ def test_the_live_lock_is_read_with_lsof_and_the_scratch_home_gets_the_interacti
     built.mkdir(parents=True)
     half.mkdir()
     (built / ".built").write_text("abc", encoding="utf-8")
-    assert atomic.seed_home(live, scratch) == ["interactive.json", "envs/abc"]
+    assert atomic.seed_home(live, scratch) == ["envs/abc"]
     assert (scratch / "repo-cache" / "envs" / "abc").resolve() == built.resolve()
     assert not (scratch / "repo-cache" / "envs" / "def").exists(), "a half-built environment is not reused"
-    assert (scratch / "interactive.json").read_text(encoding="utf-8") == '{"lanes": {"code": {}}}'
+    assert not (scratch / "interactive.json").exists(), "the plan is read in the machine's home, never copied (#1711)"
 
 
 @dataclasses.dataclass
