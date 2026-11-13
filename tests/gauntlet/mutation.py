@@ -121,7 +121,8 @@ LEFT_OUT = {
         "test_engine_timeout_708.py", "test_engine_timeout_1256.py",
         "test_served_readonly_1247.py", "test_adopt_effect_confirm_725.py",
         "test_confirm_resume_1357.py", "test_store_errors_1432.py", "test_canary_stt_1531.py",
-        "test_mflux_second_repo_1546.py", "test_incumbent_silent_1656.py", "test_adoption_state_1735.py"),
+        "test_mflux_second_repo_1546.py", "test_incumbent_silent_1656.py", "test_adoption_state_1735.py",
+        "test_ca_inventory_1776.py"),
     "harness/adopt.py": (
         "test_measure_gateway_1660.py", "test_canary_stt_1531.py", "test_technique_triage_993.py", "test_harness_paired.py", "test_reverify_case_sets_1496.py", "test_reverify_power_1504.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
         "test_over_budget_796.py", "test_planted_919.py", "test_projection_696.py", "test_rank_893.py", "test_router_unload.py",
@@ -140,7 +141,7 @@ LEFT_OUT = {
         "test_vllm.py", "test_repo_failures_921.py", "test_presence_960.py", "test_limit_cuts_1087_harness_di.py",
         "test_limit_cuts_1087_harness_ps.py", "test_sustained_warn_1482.py", "test_interactive_1561.py",
         "test_interactive_node_1562.py", "test_lane_probe_node_1653.py", "test_pinned_incumbent_1578.py",
-        "test_node_digest_1683.py", "test_scratch_home_serving_1711.py"),
+        "test_node_digest_1683.py", "test_scratch_home_serving_1711.py", "test_ca_inventory_1776.py"),
     "harness/router.py": (
         "test_delegate_resident.py", "test_machine_host.py", "test_router_ready_1012.py", "test_sweep_ceiling_806.py",
         "test_watchdog.py", "test_memory_warn_1082.py", "test_idle_unload_1157.py", "test_router_down_1181.py",

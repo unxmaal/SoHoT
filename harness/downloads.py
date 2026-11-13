@@ -273,9 +273,13 @@ def offline_gap(kind: str, path, revision: str = "main") -> str:
     snap = p / "snapshots" / commit
     if not snap.is_dir():
         return f"{p.name} refs/{revision} names snapshot {commit}, which is not on disk"
-    if not any((f.name in LOADABLE or f.name.endswith(WEIGHT_SUFFIXES)) and f.exists()
-               for f in snap.rglob("*")):
+    found = list(snap.rglob("*"))
+    if not any((f.name in LOADABLE or f.name.endswith(WEIGHT_SUFFIXES)) and f.exists() for f in found):
         return f"{p.name} snapshot {commit} holds no config or weights"
+    # A snapshot file links to its blob; a link whose blob is gone is a partial copy, not a download. #1776.
+    lost = sorted(f.name for f in found if f.is_symlink() and not f.exists())
+    if lost:
+        return f"{p.name} snapshot {commit} links {', '.join(lost[:3])} to a blob that is not on disk"
     return ""
 
 

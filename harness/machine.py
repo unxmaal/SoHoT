@@ -368,9 +368,12 @@ def _vllm_venvs() -> list[Path]:
     return [vllm.venv_for(e) for e in vllm.ENGINES]
 
 
+UV_WITH_FILE = Path(__file__).resolve().parent.parent / "scripts" / "versions.sh"
+
+
 def _uv_with_pins(path: Path | None = None) -> dict[str, str]:
     import re
-    path = path or Path(__file__).resolve().parent.parent / "scripts" / "versions.sh"
+    path = path or UV_WITH_FILE
     try:
         text = Path(path).read_text(encoding="utf-8")
     except OSError:
@@ -394,13 +397,37 @@ def _mflux_cli() -> str:
     return parts[-1] if parts else ""
 
 
-@lru_cache(maxsize=1)
 def versions() -> dict[str, str]:
     """Installed runtime versions on this machine: the one probe. #415.
 
     remember_machine records it in machines.versions; until_met and the
-    receipt's environment read that rather than probing again.
+    receipt's environment read that rather than probing again. Probed again
+    when anything it reads changes on disk, so an upgrade under a running
+    process is not written back as the old version. #1776.
     """
+    return _versions(installed_stamp())
+
+
+def installed_stamp() -> tuple:
+    """(path, mtime_ns) of each site-packages, binary and file versions() reads, plus needle's answer. #1776."""
+    import os
+    from harness import ds4, needle, serving, stages
+    roots = [Path(p) for p in sys.path if p.endswith("site-packages")]
+    for venv in [stages.MFLUX_TOOL_ROOT, *_other_venvs(), *_keyed_venvs().values(), *_vllm_venvs()]:
+        roots += [*sorted(Path(venv).glob("lib/python*/site-packages")), Path(venv) / "Lib" / "site-packages"]
+    bins = [b for b in (serving.llamacpp_binary(), shutil.which("mflux-generate")) if b]
+    git = ds4.checkout() / ".git"
+    out = []
+    for f in [*roots, *(Path(os.path.realpath(b)) for b in bins), UV_WITH_FILE, git / "HEAD", git / "logs" / "HEAD"]:
+        try:
+            out.append((str(f), os.stat(f).st_mtime_ns))
+        except OSError:
+            out.append((str(f), None))
+    return (*out, needle.installed_version())
+
+
+@lru_cache(maxsize=1)
+def _versions(stamp: tuple) -> dict[str, str]:
     import platform
     from harness import serving, stages
     got: dict[str, str] = {"python": platform.python_version()}

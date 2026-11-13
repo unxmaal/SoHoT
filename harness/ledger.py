@@ -807,6 +807,16 @@ def record(conn, ledger: dict, now: float) -> int:
     return n
 
 
+def unsettled(history: list[dict]) -> list[str]:
+    """Recorded days last rewritten before the day after them ended, so rows that landed late are not yet counted. #1776."""
+    out = []
+    for h in history:
+        after = (_dt.date.fromisoformat(h["day"]) + _dt.timedelta(days=2)).isoformat()
+        if float(h.get("recorded_at") or 0) < day_start(after):
+            out.append(h["day"])
+    return out
+
+
 def recorded(conn, first_day: str) -> list[dict]:
     """Each recorded day with its Claude tokens, read from the detail; store.Unread when unread."""
     from harness import store

@@ -315,7 +315,6 @@ def test_a_broken_stage_carries_its_reason_and_is_not_a_gap():
     blocked. That is the guard behaving correctly, not a failure.
     """
     from harness.stages import tool_versions
-    tool_versions.cache_clear()
     if not tool_versions().get("mflux"):
         pytest.skip("mflux is not installed here")
     ms = {c.name: c for c in discover.methods()}

@@ -14,6 +14,8 @@ from harness import memory_store as ms
 _THIS_MACHINE: dict | None = None
 #: (monotonic time, answer) for an incomplete identity, reused until machine.RETRY_S passes. #747.
 _PROVISIONAL: tuple[float, dict] | None = None
+#: (the answer this_machine resolved, machine.installed_stamp() when it did). #1776.
+_RESOLVED_AT: tuple[dict, tuple] | None = None
 
 
 def _now() -> float:
@@ -34,12 +36,19 @@ def this_machine() -> dict:
     machine (#415). The 4070 under Linux and under Windows are different rigs
     by comparable()'s own definition and keep different fingerprints.
     """
-    global _THIS_MACHINE, _PROVISIONAL
-    if _THIS_MACHINE is not None:
-        return _THIS_MACHINE
+    global _THIS_MACHINE, _PROVISIONAL, _RESOLVED_AT
     from harness import machine as _machine
+    if _THIS_MACHINE is not None:
+        if _RESOLVED_AT is None or _RESOLVED_AT[0] is not _THIS_MACHINE:
+            return _THIS_MACHINE
+        stamp = _machine.installed_stamp()
+        if stamp == _RESOLVED_AT[1]:
+            return _THIS_MACHINE
+        # Installed software changed under this process: its versions are not this machine's any more. #1776.
+        _THIS_MACHINE = None
     if _PROVISIONAL is not None and _now() - _PROVISIONAL[0] < _machine.RETRY_S:
         return _PROVISIONAL[1]
+    stamp = _machine.installed_stamp()
     from harness import inspect as _ins
     # Identity comes from the one seam this_fingerprint reads too, never from capture's copy. #1435.
     me = _identity()
@@ -68,7 +77,7 @@ def this_machine() -> dict:
     got = {"hw_model": "", "os": "", "arch": "", "host": "",
            "fingerprint": _machine.fingerprint("", "", "", ""), **me, **got}
     if complete:
-        _THIS_MACHINE, _PROVISIONAL = got, None
+        _THIS_MACHINE, _PROVISIONAL, _RESOLVED_AT = got, None, (got, stamp)
     else:
         _PROVISIONAL = (_now(), got)
     return got

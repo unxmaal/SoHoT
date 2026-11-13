@@ -160,11 +160,11 @@ def test_a_vllm_venv_names_only_vllm_not_the_mlx_it_carries(tmp_path, monkeypatc
     monkeypatch.setenv(vllm.VENV_VAR, str(tmp_path / "vllm-mlx"))
     monkeypatch.setattr(machine, "_imported_versions", lambda: {})
     monkeypatch.setattr(machine, "_uv_with_pins", lambda: {})
-    machine.versions.cache_clear()
+    machine._versions.cache_clear()
     try:
         got = machine.versions()
     finally:
-        machine.versions.cache_clear()
+        machine._versions.cache_clear()
     assert got["vllm-mlx"] == "0.5.0"
     assert got.get("mlx-audio") != "9.9.9" and got.get("mlx-vlm") != "9.9.9"
 

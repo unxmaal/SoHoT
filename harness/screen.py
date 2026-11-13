@@ -355,8 +355,14 @@ def no_runner(spec: str) -> str:
 CASES = Path(__file__).resolve().parent.parent / "evals" / "cases"
 
 
-@functools.lru_cache(maxsize=4)
 def _cases(root: str) -> tuple:
+    from evals.core import files
+    return _loaded(root, tuple(files(root)))
+
+
+@functools.lru_cache(maxsize=4)
+def _loaded(root: str, stamp: tuple) -> tuple:
+    # Keyed on every file's mtime and size, so a case added while the process runs is seen. #1776.
     from evals.core import load_cases
     return tuple(load_cases(root))
 
