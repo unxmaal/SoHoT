@@ -203,7 +203,6 @@ def claimed(job):
     return {**job, "state": wq.RUNNING}
 
 
-@pytest.mark.gauntlet("two-durable-writes-with-no-repair-for-the-gap", site="harness/job_release.py:start")
 @pytest.mark.parametrize("verb", ["jobs", "no-such-verb-1788"])
 def test_a_log_write_that_dies_after_the_row_leaves_the_row_saying_it_all(two, tmp_path, verb):
     old, new = two
