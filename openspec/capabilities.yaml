@@ -24,6 +24,9 @@ capabilities:
       - harness/quiesce.py
       - harness/job_release.py
       - harness/job_claim.py
+      - harness/job_procs.py
+      - harness/job_settle.py
+      - harness/queue_pause.py
       - harness/atomic_file.py
       - harness/stale_temp.py
 

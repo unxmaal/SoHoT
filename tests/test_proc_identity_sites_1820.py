@@ -11,6 +11,7 @@ import pytest
 from harness import gateway_switch_state as st
 from harness import paths, proc_identity, repo
 from harness import workqueue as wq
+from harness import job_procs
 
 POSIX = pytest.mark.skipif(sys.platform == "win32", reason="process groups and start times are POSIX here")
 #: Where a module reads a process's start time itself instead of asking proc_identity.
@@ -68,14 +69,14 @@ def test_a_job_pid_reused_by_another_group_leader_is_not_the_jobs_process(leader
     from harness import executors
     job = wq.add(["soh-batch-job"], title="batch")
     started = proc_identity.started(leader.pid)
-    pid_file = wq._pid_file(job["id"])
+    pid_file = job_procs._pid_file(job["id"])
     pid_file.write_text(str(leader.pid), encoding="utf-8")
     executors.started_file(pid_file).write_text(f"{leader.pid} {started}", encoding="utf-8")
-    assert wq._pid_of(job["id"]) == leader.pid
+    assert job_procs._pid_of(job["id"]) == leader.pid
     executors.started_file(pid_file).write_text(f"{leader.pid} {_earlier(started)}", encoding="utf-8")
-    assert wq._pid_of(job["id"]) is None
+    assert job_procs._pid_of(job["id"]) is None
     executors.started_file(pid_file).write_text(f"{leader.pid + 1} {_earlier(started)}", encoding="utf-8")
-    assert wq._pid_of(job["id"]) == leader.pid, "a start time left for another pid is not this one's"
+    assert job_procs._pid_of(job["id"]) == leader.pid, "a start time left for another pid is not this one's"
 
 
 @pytest.mark.parametrize("late", [0.0, 0.5], ids=["prompt", "parent-writes-late"])
@@ -85,7 +86,7 @@ def test_a_jobs_pid_file_stays_a_bare_pid_an_older_release_reads_and_its_start_t
     read = proc_identity.started
     monkeypatch.setattr(proc_identity, "started", lambda pid: (time.sleep(late), read(pid))[1])
     job = wq.add(["soh-batch-job"], title="batch")
-    pid_file = wq._pid_file(job["id"])
+    pid_file = job_procs._pid_file(job["id"])
     beside = executors.started_file(pid_file)
     # Host.run writes both files after Popen, the pid file last: the child waits for it before reading either. #1893.
     script = (f"import pathlib, time\np = pathlib.Path({str(pid_file)!r})\nend = time.monotonic() + 30\n"

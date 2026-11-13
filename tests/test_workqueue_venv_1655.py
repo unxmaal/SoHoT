@@ -6,6 +6,7 @@ import sys
 import pytest
 
 from harness import exclusive, workqueue as wq
+from harness import job_procs
 
 
 @pytest.fixture(autouse=True)
@@ -18,7 +19,7 @@ def _release(tmp_path, name, venv=True):
     rel.mkdir(parents=True)
     (rel / "pyproject.toml").write_text("[project]\nname = 'x'\n", encoding="utf-8")
     if venv:
-        wq._bin(rel / ".venv").mkdir(parents=True)
+        job_procs._bin(rel / ".venv").mkdir(parents=True)
     return rel
 
 
@@ -30,7 +31,7 @@ def _dump(out):
 
 def _worker_in(monkeypatch, rel):
     monkeypatch.setenv("VIRTUAL_ENV", str(rel / ".venv"))
-    monkeypatch.setenv("PATH", os.pathsep.join([str(wq._bin(rel / ".venv")), os.path.dirname(sys.executable)]))
+    monkeypatch.setenv("PATH", os.pathsep.join([str(job_procs._bin(rel / ".venv")), os.path.dirname(sys.executable)]))
 
 
 def test_a_step_queued_before_a_deploy_runs_with_its_own_releases_venv(tmp_path, monkeypatch):
@@ -44,22 +45,22 @@ def test_a_step_queued_before_a_deploy_runs_with_its_own_releases_venv(tmp_path,
     seen = json.loads(out.read_text(encoding="utf-8"))
     assert seen["venv"] == str((old / ".venv").resolve())
     parts = seen["path"].split(os.pathsep)
-    assert parts[0] == str(wq._bin((old / ".venv").resolve()))
-    assert str(wq._bin(new / ".venv")) not in parts
+    assert parts[0] == str(job_procs._bin((old / ".venv").resolve()))
+    assert str(job_procs._bin(new / ".venv")) not in parts
 
 
 def test_a_job_in_a_subdirectory_finds_its_checkouts_venv(tmp_path):
     rel, other = _release(tmp_path, "19-aaaa"), _release(tmp_path, "20-bbbb")
     (rel / "evals").mkdir()
-    env = wq.job_venv(rel / "evals", {"VIRTUAL_ENV": str(other / ".venv"), "PATH": str(wq._bin(other / ".venv"))})
+    env = wq.job_venv(rel / "evals", {"VIRTUAL_ENV": str(other / ".venv"), "PATH": str(job_procs._bin(other / ".venv"))})
     assert env["VIRTUAL_ENV"] == str((rel / ".venv").resolve())
-    assert env["PATH"] == str(wq._bin((rel / ".venv").resolve()))
+    assert env["PATH"] == str(job_procs._bin((rel / ".venv").resolve()))
 
 
 def test_a_checkout_with_no_venv_gets_none_and_loses_the_workers_bin(tmp_path):
     rel, other = _release(tmp_path, "19-aaaa", venv=False), _release(tmp_path, "20-bbbb")
     env = wq.job_venv(rel, {"VIRTUAL_ENV": str(other / ".venv"),
-                            "PATH": os.pathsep.join([str(wq._bin(other / ".venv")), "/usr/bin"])})
+                            "PATH": os.pathsep.join([str(job_procs._bin(other / ".venv")), "/usr/bin"])})
     assert "VIRTUAL_ENV" not in env
     assert env["PATH"] == "/usr/bin"
 
@@ -78,6 +79,6 @@ def test_a_worker_with_no_venv_adds_none(tmp_path):
 
 def test_the_venv_bin_directory_is_read_at_call_time(tmp_path, monkeypatch):
     monkeypatch.setattr(sys, "platform", "win32")
-    assert wq._bin(tmp_path).name == "Scripts"
+    assert job_procs._bin(tmp_path).name == "Scripts"
     monkeypatch.setattr(sys, "platform", "darwin")
-    assert wq._bin(tmp_path).name == "bin"
+    assert job_procs._bin(tmp_path).name == "bin"

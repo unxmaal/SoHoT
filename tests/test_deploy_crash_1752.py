@@ -7,7 +7,7 @@ import pytest
 from test_deploy_1506 import _claim, _deploys, _queue, _schema, _tables, alerts, posix, world  # noqa: F401 - fixtures
 from test_deploy_quiesce_1795 import NEXT, _steps
 
-from harness import deploy, deploy_switch
+from harness import deploy, deploy_switch, queue_pause
 from harness import memory_store as ms
 from harness import workqueue as wq
 
@@ -39,7 +39,7 @@ def _inject(point, monkeypatch, steps):
     if point == "record_pause":
         _after(monkeypatch, deploy_switch, "save", _taking(deploy.PAUSE))
     elif point == "pause":
-        _after(monkeypatch, wq, "pause", lambda *a: True)
+        _after(monkeypatch, queue_pause, "pause", lambda *a: True)
     elif point == "backup":
         _after(monkeypatch, deploy, "backup", lambda *a: True)
     elif point == "migrate":

@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import contextlib
 import io
+import ntpath
 import os
+import sys
 import time
 from pathlib import Path
 
@@ -46,12 +48,22 @@ def moved(argv, old: Path, new: Path) -> list[str]:
     """argv with every word naming a path inside release `old` named at the same place in `new`."""
     out = []
     for word in map(str, argv):
-        for prefix in {str(old), os.path.realpath(old)}:
-            if word == prefix or word.startswith(prefix + os.sep):
-                word = str(new) + word[len(prefix):]
+        for prefix in (str(old), os.path.realpath(old)):
+            rest = _within(word, prefix)
+            if rest is not None:
+                word = str(new) + rest
                 break
         out.append(word)
     return out
+
+
+def _within(word: str, top: str) -> str | None:
+    """What follows directory `top` in `word` ('' for `top` itself), or None outside it; on Windows either separator and any case."""
+    win = sys.platform == "win32"
+    seps = "\\/" if win else "/"
+    head, rest = word[:len(top)], word[len(top):]
+    same = ntpath.normcase(head) == ntpath.normcase(top) if win else head == top
+    return rest if same and (not rest or rest[0] in seps) else None
 
 
 def _after(words: list[str], module: str, names=()) -> list[str] | None:
@@ -78,7 +90,7 @@ def refusal(argv, new: Path) -> str:
     """Why release `new` would refuse argv, read with this code (so only meaningful when this code is `new`), or ''."""
     words = [str(a) for a in argv]
     for w in words:
-        if w.startswith(str(new) + os.sep) and not Path(w).exists():
+        if _within(w, str(new)) and not Path(w).exists():
             return f"{w} is not in release {new.name}"
     rest = _after(words, "harness.cli", ("soh", "lh"))
     if rest is not None:

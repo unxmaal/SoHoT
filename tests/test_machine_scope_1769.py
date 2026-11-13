@@ -10,6 +10,7 @@ from harness import adopt, deploy, node_deploy, paused_jobs, reasons
 from harness import job_state as js
 from harness import memory_store as ms
 from harness import workqueue as wq
+from harness import job_settle
 
 OTHER = {"hw_model": "Other1,1", "os": "Linux", "arch": "x86_64", "host": "b-host"}
 REPO = Path(__file__).resolve().parent.parent
@@ -168,7 +169,7 @@ def test_a_paused_job_is_not_continued_by_another_machines_job_with_its_argv(con
     job = _running(conn, argv)
     twin = wq.add(argv, conn=conn)
     _stamp(conn, twin["id"], _other(conn))
-    assert wq._repend(conn, job, js.CONTENTION_PAUSE)
+    assert job_settle._repend(conn, job, js.CONTENTION_PAUSE)
     got = wq.get(job["id"], conn=conn)
     assert got["state"] == wq.PENDING, f"machine B's job {twin['id']} was taken to carry it on: {got['note']}"
 
@@ -177,7 +178,7 @@ def test_a_paused_job_is_continued_by_this_machines_job_with_its_argv(conn):
     argv = [sys.executable, "-c", "pass"]
     job = _running(conn, argv)
     twin = wq.add(argv, conn=conn)
-    assert wq._repend(conn, job, js.CONTENTION_PAUSE)
+    assert job_settle._repend(conn, job, js.CONTENTION_PAUSE)
     got = wq.get(job["id"], conn=conn)
     assert got["state"] == wq.PAUSED and wq.label(twin["id"]) in got["note"]
 

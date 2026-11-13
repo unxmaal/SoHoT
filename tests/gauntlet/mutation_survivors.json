@@ -287,6 +287,7 @@
   "harness.adopt:record:, 'verdict . incumbent'->'None'",
   "harness.adopt:record:, 'verdict . lane'->'None'",
   "harness.adopt:record:: '200'->'201'",
+  "harness.adopt:record:= 'False'->'None'",
   "harness.adopt:record:= 'verdict . lane'->'None'",
   "harness.adopt:record:False \", f' reference model; never a lane default ( { verdict . why } ) '\"->''",
   "harness.adopt:record:[ \"'machine_id'\"->\"'MACHINE_ID'\"",

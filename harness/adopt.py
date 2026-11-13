@@ -612,31 +612,52 @@ def record(conn, verdict: Verdict, spec: str = "",
         ok, why = fit(conn, cid, ms.remember_machine(conn))
         if not ok:
             raise Held(f"refused on this machine: {spec} {why}")
-    vid = ms.decide(conn, row["proposal"] or "", outcome, tier=TIER,
-                    detail=detail[:200], candidate_id=cid, run_id=run_id, lane=verdict.lane,
-                    reason=reason, until=_spent_until(conn, row["proposal"] or "", verdict, reason))
-    if verdict.failure_class or verdict.evidence:
-        conn.execute(
-            "UPDATE verdicts SET failure_class = ?, split_version = ?, "
-            "power = ? WHERE id = ?",
-            (verdict.failure_class,
-             (verdict.evidence.get("split") or {}).get("version", ""),
-             json.dumps({**(verdict.evidence.get("power") or {}),
-                         "dev": verdict.evidence.get("dev"),
-                         **({"partial": verdict.evidence["partial"]}
-                            if verdict.evidence.get("partial") else {}),
-                         **({"cost": verdict.evidence["cost"]}
-                            if verdict.evidence.get("cost") else {}),
-                         **({"comparisons": verdict.evidence["comparisons"],
-                             "alpha": verdict.evidence.get("alpha", ALPHA)}
-                            if verdict.evidence.get("comparisons") else {}),
-                         **({"planned_alpha": verdict.evidence["planned_alpha"]}
-                            if "planned_alpha" in verdict.evidence else {}),
-                         **({"confirm": verdict.evidence["confirm"]}
-                            if verdict.evidence.get("confirm") else {}),
-                         **({"min_effect": verdict.evidence["min_effect"]}
-                            if verdict.evidence.get("min_effect") else {})}), vid))
-        conn.commit()
+    # Read before the verdict: naming the incumbent may write and commit its candidates row.
+    inc = _incumbent_id(conn, verdict.lane, verdict.incumbent) if serve else None
+    if serve and verdict.how not in HOW:
+        raise ValueError(f"unknown adoption kind {verdict.how!r}")
+    try:
+        # The verdict and its adoption commit together: one that loses the lane, or dies, leaves neither. #1758.
+        vid = ms.decide(conn, row["proposal"] or "", outcome, tier=TIER,
+                        detail=detail[:200], candidate_id=cid, run_id=run_id, lane=verdict.lane,
+                        reason=reason, until=_spent_until(conn, row["proposal"] or "", verdict, reason),
+                        commit=False)
+        if verdict.failure_class or verdict.evidence:
+            conn.execute(
+                "UPDATE verdicts SET failure_class = ?, split_version = ?, "
+                "power = ? WHERE id = ?",
+                (verdict.failure_class,
+                 (verdict.evidence.get("split") or {}).get("version", ""),
+                 json.dumps({**(verdict.evidence.get("power") or {}),
+                             "dev": verdict.evidence.get("dev"),
+                             **({"partial": verdict.evidence["partial"]}
+                                if verdict.evidence.get("partial") else {}),
+                             **({"cost": verdict.evidence["cost"]}
+                                if verdict.evidence.get("cost") else {}),
+                             **({"comparisons": verdict.evidence["comparisons"],
+                                 "alpha": verdict.evidence.get("alpha", ALPHA)}
+                                if verdict.evidence.get("comparisons") else {}),
+                             **({"planned_alpha": verdict.evidence["planned_alpha"]}
+                                if "planned_alpha" in verdict.evidence else {}),
+                             **({"confirm": verdict.evidence["confirm"]}
+                                if verdict.evidence.get("confirm") else {}),
+                             **({"min_effect": verdict.evidence["min_effect"]}
+                                if verdict.evidence.get("min_effect") else {})}), vid))
+        if serve:
+            from harness import adoption_state
+            mid = conn.execute("SELECT machine_id FROM verdicts WHERE id = ?",
+                               (vid,)).fetchone()
+            mid = mid["machine_id"] if mid else None
+            adoption_state.move(
+                conn, verdict.lane, adoption_state.ADOPT, cid, how=verdict.how, machine_id=mid,
+                why=detail[:200], all_machines=verdict.all_machines, verdict_id=vid, run_id=run_id,
+                incumbent_id=inc, votes=verdict.votes, agreement=verdict.agreement, forced=verdict.forced,
+                cost=cost(conn, cid, inc, mid))
+        else:
+            conn.commit()
+    except BaseException:
+        conn.rollback()
+        raise
     floor = verdict.evidence.get("min_effect")
     if floor:
         from harness import cuts
@@ -654,19 +675,6 @@ def record(conn, verdict: Verdict, spec: str = "",
         cuts.cut("adopt_alpha", f"{verdict.lane}: {spec} better on the metric at p={p:.3f}, over alpha", value=alpha,
                  kept=0, dropped=1, conn=conn)
     if serve:
-        if verdict.how not in HOW:
-            raise ValueError(f"unknown adoption kind {verdict.how!r}")
-        from harness import adoption_state
-        mid = conn.execute("SELECT machine_id FROM verdicts WHERE id = ?",
-                           (vid,)).fetchone()
-        mid = mid["machine_id"] if mid else None
-        inc = _incumbent_id(conn, verdict.lane, verdict.incumbent)
-        conn.commit()
-        adoption_state.move(
-            conn, verdict.lane, adoption_state.ADOPT, cid, how=verdict.how, machine_id=mid,
-            why=detail[:200], all_machines=verdict.all_machines, verdict_id=vid, run_id=run_id,
-            incumbent_id=inc, votes=verdict.votes, agreement=verdict.agreement, forced=verdict.forced,
-            cost=cost(conn, cid, inc, mid))
         from harness import gateway
         if verdict.lane.strip().lower() in gateway.TEXT_LANES:
             try:

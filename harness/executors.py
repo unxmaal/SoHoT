@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import subprocess
+import time
 from typing import Protocol
 
 HOST = "host"
@@ -24,13 +25,22 @@ class Host:
 
     def run(self, job: dict, argv, cwd=None, stdout=None, env=None) -> subprocess.Popen:
         from harness import proc_identity
-        from harness import workqueue as wq
-        child = wq.spawn_group(argv, cwd, stdout, env)
-        pid_file = wq._pid_file(job["id"])
-        started_file(pid_file).write_text(f"{child.pid} {proc_identity.started(child.pid)}", encoding="utf-8")
-        pid_file.write_text(str(child.pid), encoding="utf-8")
+        from harness import job_procs
+        pid_file = job_procs._pid_file(job["id"])
+        exit_file(pid_file).unlink(missing_ok=True)
+        child = job_procs.spawn_group(gated(argv, pid_file), cwd, stdout, env)
         try:
+            started_file(pid_file).write_text(f"{child.pid} {proc_identity.started(child.pid)}", encoding="utf-8")
+            pid_file.write_text(str(child.pid), encoding="utf-8")
+        except BaseException:
+            # The gate would wait on a live worker for a pid that is never written.
+            child.kill()
             child.wait()
+            raise
+        try:
+            rc = child.wait()
+            # Before the pid file goes, so a worker that dies before settling leaves the exit to settle by. #1758.
+            _write(exit_file(pid_file), f"{rc} {time.time()}")
             left = self.stop(child.pid)
             if left != "gone" and stdout is not None:
                 stdout.write(f"stopped processes the job left running: {left}\n")
@@ -40,8 +50,60 @@ class Host:
         return child
 
     def stop(self, pid: int, grace: float | None = None) -> str:
-        from harness import workqueue as wq
-        return wq.stop_group(pid) if grace is None else wq.stop_group(pid, grace=grace)
+        from harness import job_procs
+        return job_procs.stop_group(pid) if grace is None else job_procs.stop_group(pid, grace=grace)
+
+
+#: The job's command waits for its own pid in the pid file, so a worker that dies before writing it leaves no job running. #1758.
+GATE = """import os, sys, time
+pid_file, parent, argv = sys.argv[1], int(sys.argv[2]), sys.argv[3:]
+me = str(os.getpid())
+while True:
+    try:
+        with open(pid_file, encoding="utf-8") as f:
+            if f.read().strip() == me:
+                break
+    except OSError:
+        pass
+    if os.getppid() != parent:
+        sys.exit("not started: its worker died before recording its pid")
+    time.sleep(0.01)
+try:
+    os.execvp(argv[0], argv)
+except OSError as exc:
+    print(f"could not start: {exc}", flush=True)
+    sys.exit(127)
+"""
+
+
+def gated(argv, pid_file) -> list[str]:
+    """argv behind GATE where exec keeps the pid; Windows has no exec, so its job starts at once."""
+    import os
+    import sys
+    if sys.platform == "win32":
+        return list(argv)
+    return [sys.executable, "-I", "-c", GATE, str(pid_file), str(os.getpid()), *map(str, argv)]
+
+
+def exit_file(pid_file):
+    """Beside a job's pid file, "<rc> <epoch>" of its command's exit, written before the pid file is removed. #1758."""
+    return pid_file.with_suffix(".exit")
+
+
+def exit_record(pid_file) -> tuple[int, float] | None:
+    """(rc, when it exited) recorded for a job, None when none was; a garbled record raises."""
+    try:
+        rc, at = exit_file(pid_file).read_text(encoding="utf-8").split()
+    except FileNotFoundError:
+        return None
+    return int(rc), float(at)
+
+
+def _write(path, text: str) -> None:
+    from harness import atomic_file
+    tmp = path.with_name(f"{path.name}.tmp")
+    tmp.write_text(text, encoding="utf-8")
+    atomic_file.replace(tmp, path)
 
 
 def started_file(pid_file):

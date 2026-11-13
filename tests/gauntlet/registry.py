@@ -95,7 +95,32 @@ OPEN_ISSUES = {
 MOVE_WAIVERS: dict = {}
 
 
-REGISTRY = Registry(
+def _symbol(site: str) -> str:
+    return site.split(":", 1)[-1]
+
+
+def moved(base: dict, now: dict) -> dict:
+    """base, each row that left for one row of its class naming the same symbol in another file read at that site. #1902"""
+    out = {}
+    for cid, sites in base.items():
+        new = [s for s in now.get(cid, []) if s not in sites]
+        gone = [s for s in sites if s not in now.get(cid, [])]
+        to = {}
+        for s in gone:
+            match = [n for n in new if _symbol(n) == _symbol(s) and n.split(":", 1)[0] != s.split(":", 1)[0]]
+            if len(match) == 1 and match[0] not in to.values():
+                to[s] = match[0]
+        out[cid] = [to.get(s, s) for s in sites]
+    return out
+
+
+class SohotRegistry(Registry):
+    def base_backlog(self):
+        base = super().base_backlog()
+        return base if base is None else moved(base, self.backlog())
+
+
+REGISTRY = SohotRegistry(
     root=REPO,
     index=classes.INDEX, pending=classes.PENDING, unclassified=classes.UNCLASSIFIED,
     snapshot_file=HERE / "skill_classes.json", defects_file=HERE / "defects.json",
