@@ -115,8 +115,10 @@ BACKPRESSURE, BUDGET, FORMAT, NO_LANE, UNINSPECTED = "backpressure", "budget", "
 OVER_BUDGET, FAILED = "over budget", "last download failed"
 #: The fetch's own recorded refusal (a runner gap, a budget, a base it waits on), read back by the funnel. #1084.
 SKIPPED = "fetch skipped"
-#: The detail of the fetch verdict that records a download, the one fetch verdict that is not a skip.
+#: The event of the fetch verdict that records a download, the one fetch verdict that is not a skip. #1878.
 DOWNLOADED = "downloaded"
+#: That verdict's detail, display only; an older release still reads it. #1878.
+DOWNLOADED_DETAIL = "downloaded"
 #: The words of a refusal by what the run already fetched; rank reads reasons.PASSED_OVER, never these. #1288, #1779.
 PASSED = "would take this run past its"
 SILENT = (BACKPRESSURE, BUDGET, FORMAT, NO_LANE, UNINSPECTED)
@@ -691,7 +693,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         if waiting:
             reason, why = waiting
             ms.decide_or_skip(conn, name, "queued", tier="fetch", detail=f"waiting on {why}",
-                              reason=reason)
+                              reason=reason, budget_gib=None if budget is None else budget / GIB)
         return None if any(d.get("deferred") for d in got) else cost
 
     # A candidate already on disk can still be missing the base its runner loads. #632.
@@ -850,8 +852,8 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         # WHAT IT NEEDS BESIDE ITSELF, as its config recorded it on landing.
         # A tokenizer in another repo makes a whole download unloadable. #196.
         # Where it landed is a downloads row, not this verdict's run_path. #411.
-        ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=DOWNLOADED, reason=reasons.CANDIDATE,
-                          budget_gib=None if budget is None else budget / GIB)
+        ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=DOWNLOADED_DETAIL, reason=reasons.CANDIDATE,
+                          budget_gib=None if budget is None else budget / GIB, event=DOWNLOADED)
         # What it needs beside itself: what its config named on landing (#196) and its runner's base (#632).
         cost = needs_of(name)
         done.append({"repo": name, "ok": True, "bytes": size, "why": where})
