@@ -65,8 +65,6 @@ harness/gateway_switch.py:BACKOFF_S
 harness/gateway_switch.py:POLL_S
 harness/gateway_switch.py:RETRIES
 harness/gateway_switch.py:SERVE_WAIT_S
-harness/gateway_switch.py:in_flight->httpx.get(timeout)
-harness/gateway_switch.py:not_serving->httpx.get(timeout)
 harness/github.py:Client.budget
 harness/github.py:_gh->subprocess.run(timeout)
 harness/heartbeat.py:STALL_S
