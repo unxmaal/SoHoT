@@ -99,6 +99,18 @@ def served_path(config=None) -> Path:
     return base.with_name(f"{base.stem}.served{base.suffix}")
 
 
+def serving_path(config=None) -> Path:
+    """The served config the running gateway reads: a checkout on the live home without its own reads the deploy's. #1792."""
+    own = served_path(config)
+    if config is not None or os.environ.get(ENV_VAR) or own.exists():
+        return own
+    from harness import paths
+    if not paths.is_live(paths.home() / "discovery.db"):
+        return own
+    deploy = paths.runs_elsewhere()
+    return served_path(deploy / "gateway" / "config.yaml") if deploy is not None else own
+
+
 def served(config=None, defaults=None, nodes=None) -> dict:
     """The base config plus a sohot-<lane> alias per text lane's adopted model, and an
     alias by name for an adopted model the base config does not list (#297); a serving
