@@ -51,6 +51,7 @@ def _die_loading(job: dict) -> None:
     assert subprocess.run([sys.executable, "-c", code], env=env, timeout=60).returncode == 9
 
 
+@pytest.mark.gauntlet("two-durable-writes-with-no-repair-for-the-gap", site="harness/exclusive.py:_lease")
 def test_a_job_process_killed_between_its_two_moves_has_its_lease_mended_by_the_job_s_next_take(monkeypatch):
     job, lease = _job()
     _die_loading(job)
@@ -64,12 +65,50 @@ def test_a_job_process_killed_between_its_two_moves_has_its_lease_mended_by_the_
     item_lease.release(ms.connect(), lease["id"])
 
 
+def _marks() -> set[int]:
+    conn = ms.connect()
+    try:
+        return exclusive._locked(conn)
+    finally:
+        conn.close()
+
+
 def test_a_waiter_outside_the_job_mends_a_lease_its_killed_loader_left_loading():
     job, lease = _job()
     _die_loading(job)
+    assert _marks() == {lease["id"]}
     with exclusive.try_held("image") as got:
         assert got is False, "the job still reserves the GPU"
-    assert exclusive.state_of(_row(lease["id"])) == exclusive.RESERVED
+    assert exclusive.state_of(_row(lease["id"])) == exclusive.RESERVED and _marks() == set()
+    item_lease.release(ms.connect(), lease["id"])
+
+
+def test_a_mark_whose_lease_was_released_is_dropped_by_the_next_take():
+    job, lease = _job()
+    _die_loading(job)
+    item_lease.release(ms.connect(), lease["id"])
+    assert _marks() == {lease["id"]}
+    _, other = _job()
+    with exclusive.try_held("image") as got:
+        assert got is False
+    assert _marks() == set(), "a released lease's mark does not outlive it"
+    item_lease.release(ms.connect(), other["id"])
+
+
+def test_a_lease_an_older_release_left_loading_unmarked_is_not_mended(monkeypatch):
+    job, lease = _job()
+    conn = ms.connect()
+    try:
+        assert item_lease.beat(conn, lease["id"], expect="", state="eval"), "an older release's own move, no mark"
+    finally:
+        conn.close()
+    assert exclusive.gpu_holder()["kind"] == "eval", "its loader may not have reached generation.lock yet"
+    with exclusive.try_held("image") as got:
+        assert got is False
+    monkeypatch.setenv(wq.JOB_ENV, str(job["id"]))
+    with exclusive.try_held("image") as got:
+        assert got is False
+    assert _row(lease["id"])["state"] == "eval", "only a lease this release marked inside the lock is mended"
     item_lease.release(ms.connect(), lease["id"])
 
 
@@ -107,4 +146,5 @@ def test_the_job_s_lease_is_loading_only_while_its_loader_holds_generation_lock(
     with exclusive.held("eval"):
         assert exclusive.gpu_holder()["kind"] == "eval"
     assert seen == [(exclusive.LOADING, True), (exclusive.RESERVED, True)]
+    assert _marks() == set(), "the move back drops the mark with the state"
     item_lease.release(ms.connect(), lease["id"])

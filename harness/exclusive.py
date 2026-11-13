@@ -89,6 +89,8 @@ MOVES = {
     (LOADING, ABANDONED): {"death"},
     (LAPSED, ABANDONED): {"death"},
 }
+#: The meta key prefix marking a job's gpu lease an own move set loading inside generation.lock; only a marked one is mended. #1952.
+LOCKED = "gpu-lease-locked:"
 
 #: How often a waiter re-reads the holder to refresh what it reports.
 POLL_SECONDS = 0.5
@@ -367,9 +369,27 @@ def _move(conn, h: dict | None, to: str, writer: str, kind: str = "", now: float
         item_lease.release(conn, h["id"], now=now)
         return item_lease.row(conn, h["id"])
     state = kind if to == LOADING else ""
-    if not item_lease.beat(conn, h["id"], now=now, expect=h.get("state") or "", state=state):
+    marks = writer in ("own", "mend")
+    if not item_lease.beat(conn, h["id"], now=now, expect=h.get("state") or "", state=state, commit=not marks):
+        if marks:
+            conn.rollback()
         return None
+    if marks:
+        key = f"{LOCKED}{int(h['id'])}"
+        if to == LOADING:
+            conn.execute("INSERT OR IGNORE INTO meta (key, value) VALUES (?, '1')", (key,))
+        else:
+            conn.execute("DELETE FROM meta WHERE key = ?", (key,))
+        conn.commit()
     return item_lease.row(conn, h["id"])
+
+
+def _locked(conn) -> set[int]:
+    """The gpu leases this release moved to loading inside generation.lock and has not moved back. #1952."""
+    if conn is None:
+        return set()
+    rows = conn.execute("SELECT key FROM meta WHERE key LIKE ?", (LOCKED + "%",)).fetchall()
+    return {int(r["key"][len(LOCKED):]) for r in rows}
 
 
 def _lapsed(conn, now: float) -> list[dict]:
@@ -434,24 +454,31 @@ def _reap(conn) -> None:
     for h in item_lease.unreleased(conn, resources.GPU):
         if state_of(h) == ABANDONED:
             _move(conn, h, FREE, "reap")
-    if _stale_loading(conn):
+    if _locked(conn):
         with _flock(None, POLL_SECONDS, wait=False) as (locked, _):
             if locked:
                 _mend(conn)
 
 
 def _stale_loading(conn) -> list[dict]:
-    """The job gpu leases left loading; whoever holds generation.lock knows their loader is gone. #1952."""
+    """The job gpu leases marked loading inside generation.lock; whoever holds the lock knows their loader is gone. #1952."""
     from harness import item_lease, resources
+    marked = _locked(conn)
     return [h for h in item_lease.unreleased(conn, resources.GPU)
-            if h.get("job_id") is not None and state_of(h) == LOADING]
+            if h["id"] in marked and h.get("job_id") is not None and state_of(h) == LOADING]
 
 
 def _mend(conn) -> None:
-    """Holding generation.lock, put each job gpu lease still loading back to reserved: its loader died between its two moves. #1952."""
+    """Holding generation.lock, put each marked job gpu lease still loading back to reserved, and drop marks of released ones. #1952."""
+    from harness import item_lease
     for h in _stale_loading(conn):
         with contextlib.suppress(IllegalMove):
             _move(conn, h, RESERVED, "mend")
+    for lease_id in _locked(conn):
+        h = item_lease.row(conn, lease_id)
+        if h is None or h["released_at"] is not None:
+            conn.execute("DELETE FROM meta WHERE key = ?", (f"{LOCKED}{lease_id}",))
+    conn.commit()
 
 
 def _own(conn) -> dict | None:
@@ -478,7 +505,7 @@ def _outside(leases: list[dict]) -> bool:
 def gpu_holder(as_is: bool = False) -> dict:
     """The holder record of the model-loading process on this machine's gpu lease, {} when none holds it; as_is from another checkout reads the live store unmigrated. #1619, #1719."""
     with (_as_is() if as_is and _elsewhere() else _machine()) as conn:
-        return _holder(_gpu_leases(conn))
+        return _holder(_gpu_leases(conn), _locked(conn))
 
 
 class Unread(RuntimeError):
@@ -506,13 +533,13 @@ def _as_is():
         conn.close()
 
 
-def _holder(leases: list[dict]) -> dict:
+def _holder(leases: list[dict], locked: set[int] = frozenset()) -> dict:
     """Who holds the GPU, from the lease row; the holder record adds to it only when it names that lease. #1732."""
     from harness import job_procs
     for h in leases:
         if not h.get("state"):
             continue
-        if h.get("job_id") is not None and not _taken(paths.machine_home() / "queue" / LOCK):
+        if h["id"] in locked and h.get("job_id") is not None and not _taken(paths.machine_home() / "queue" / LOCK):
             continue  # left loading by a loader that died, so only reserved until the next take mends it. #1952.
         rec = holder()
         lapsed = {"lapsed": True} if state_of(h) == LAPSED else {}
@@ -629,7 +656,7 @@ def _lease(kind: str, announce, poll: float, wait: bool = True, bound: _Wait | N
     try:
         own = _own(conn)
         if own:
-            # The job's lease is loading only inside generation.lock, so a holder of the lock that finds it loading mends it. #1952.
+            # The job's lease is loading only inside generation.lock, marked, so a holder of the lock that finds it so mends it. #1952.
             with _flock(announce, poll, wait, bound) as (locked, waited):
                 if not locked:
                     yield False, waited, None, False
