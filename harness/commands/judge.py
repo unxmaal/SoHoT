@@ -35,6 +35,11 @@ def votes_text(got: dict) -> str:
         if p["outcome"] in (human.AGREE, human.DISAGREE, human.CANNOT_TELL):
             lines.append(f"  {p['lane']} {p['case']}: person {p['person']}, checker "
                          f"{p['checker'] or 'tie'} ({p['outcome']}; {p['a']} vs {p['b']})")
+    for lane, s in got.get("side", {}).items():
+        lines.append(f"{lane}: the side shown first won {s['first_won']} of {s['decided']} vote(s) with a "
+                     f"preference (two-sided sign test p={s['p']:.3f}); "
+                     + ", ".join(f"{v or 'unnamed voter'} {n['first_won']} of {n['decided']}"
+                                 for v, n in sorted(s["voters"].items())))
     return "\n".join(lines) or "no human votes name a stored run"
 
 

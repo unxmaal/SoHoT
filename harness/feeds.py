@@ -403,6 +403,13 @@ def staleness(sources: list[Source] | None = None, now: float | None = None,
     return out
 
 
+def retired(store=None) -> list[dict]:
+    """Store source rows retired with a reason, which no tier reads until a read of that name succeeds. #625, #1784."""
+    with _Store(store) as conn:
+        rows = conn.execute("SELECT name, enabled, retired FROM sources WHERE retired != '' ORDER BY name").fetchall()
+    return [{"name": r["name"], "enabled": bool(r["enabled"]), "why": r["retired"]} for r in rows]
+
+
 def fetch(url: str, timeout: float = 30.0, retries: int = RETRIES,
           delay: float = RETRY_DELAY, sleep=time.sleep, headers: dict | None = None,
           on_limit=None, retries_knob: str = "harness/feeds.py:RETRIES",

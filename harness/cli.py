@@ -624,7 +624,9 @@ def build_parser() -> argparse.ArgumentParser:
     use.add_argument("--lane", default="", help="only sohot-<lane>")
     use.add_argument("--since", default="7d", help="window: 7d, 12h, 30m, 90s")
     use.add_argument("--text", choices=("on", "off"), default="",
-                     help="keep bounded prompt and completion text samples (off by default)")
+                     help="keep bounded prompt and completion text samples (off by default; off deletes them)")
+    use.add_argument("--samples", type=int, default=0, metavar="N",
+                     help="print the newest N kept text samples with their requests")
     use.set_defaults(func=usage_cmd.cmd_usage)
     spend = sub.add_parser("api-spend", help="dollars the metered gateway aliases spent of the API credit, "
                            "what is left of the api_budget knob, and the top callers (#1214)")
