@@ -205,9 +205,16 @@ def _copy(dst: Path) -> Path:
     return dst
 
 
-def _precheck(root: Path) -> subprocess.CompletedProcess:
-    return subprocess.run([sys.executable, "-m", "tests.gauntlet.precheck"], cwd=root, capture_output=True,
-                          text=True, encoding="utf-8")
+def _precheck(root: Path, *only: str) -> subprocess.CompletedProcess:
+    return subprocess.run([sys.executable, "-m", "tests.gauntlet.precheck", *(f"--only={o}" for o in only)], cwd=root,
+                          capture_output=True, text=True, encoding="utf-8")
+
+
+def test_precheck_only_runs_the_ratchets_it_names(capsys):
+    assert precheck.main(["--only", "module_layout", "--only", "mode_flags"]) == 0
+    assert "in 2 registration ratchets" in capsys.readouterr().out
+    with pytest.raises(SystemExit):
+        precheck.main(["--only", "no_such_ratchet"])
 
 
 def test_code_the_scaffold_writes_passes_every_registration_ratchet_unchanged(tmp_path):
@@ -225,7 +232,7 @@ def test_code_the_scaffold_writes_passes_every_registration_ratchet_unchanged(tm
     assert got.returncode == 0, got.stdout[-4000:] + got.stderr[-2000:]
     caps = (root / scaffold.CAPABILITIES).read_text(encoding="utf-8")
     (root / scaffold.CAPABILITIES).write_text(caps.replace("      - harness/fixture_1697.py\n", ""), encoding="utf-8")
-    red = _precheck(root)
+    red = _precheck(root, "module_layout")
     assert red.returncode == 1 and "          - harness/fixture_1697.py" in red.stdout, red.stdout[-4000:]
 
 

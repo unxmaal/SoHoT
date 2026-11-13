@@ -202,6 +202,7 @@ LIST_ANNOTATED = [c for c in SHIPPED_CASES if "List[" in leetcode.RESPONDERS["re
 
 
 @pytest.mark.long
+@pytest.mark.nightly(fast="test_a_shipped_slice_passes_its_reference_and_fails_a_constant")
 def test_the_whole_shipped_import_passes_its_reference_and_no_constant_657():
     assert len(SHIPPED_CASES) == 401 and len(LIST_ANNOTATED) >= 200
     for c in SHIPPED_CASES:
