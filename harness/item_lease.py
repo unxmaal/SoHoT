@@ -85,15 +85,16 @@ def take(conn, resource: str, item: str, *, job_id=None, pid: int | None = None,
 
 
 def beat(conn, lease_id: int, ttl_s: float = TTL_S, now: float | None = None, expect: str | None = None,
-         **fields) -> bool:
-    """Extend a lease ttl_s from now, setting any of state, detail, mem_gb; False once it lapsed, was released or its state is not `expect`."""
+         commit: bool = True, **fields) -> bool:
+    """Extend a lease ttl_s from now, setting any of state, detail, mem_gb; False once it lapsed, was released or its state is not `expect`; commit=False leaves the transaction to the caller."""
     now = time.time() if now is None else now
     sets = "".join(f", {k} = ?" for k in fields)
     cas, was = (" AND state = ?", (expect,)) if expect is not None else ("", ())
     got = conn.execute(f"UPDATE leases SET beat_at = ?, expires_at = ?{sets} WHERE id = ? AND released_at IS NULL "
                        f"AND expires_at > ?{cas}", (now, now + ttl_s, *fields.values(), int(lease_id), now, *was)
                        ).rowcount == 1
-    conn.commit()
+    if commit:
+        conn.commit()
     return got
 
 
