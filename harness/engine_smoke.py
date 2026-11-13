@@ -50,7 +50,7 @@ def smoke(gateway_url: str, key: str, data: dict, timeout: float, ask=None) -> l
 def load() -> dict:
     """The config the gateway serves: its generated copy when there is one, else the base."""
     from harness import gateway
-    served = gateway.served_path()
+    served = gateway.serving_path()
     return gateway.load(served if served.is_file() else None)
 
 
