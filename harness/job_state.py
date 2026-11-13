@@ -45,7 +45,7 @@ MOVES: dict[tuple[str, str], frozenset[str]] = {
     (PAUSED, CANCELLED): frozenset({CANCEL, SUPERSEDED}),
 }
 
-#: The flag files beside a running job's pid file (workqueue._pids), read only to choose its exit move.
+#: The flag files beside a running job's pid file (job_procs._pids), read only to choose its exit move.
 CANCEL_FLAG, STOP_FLAG, ITEM_FLAG, DEPLOY_FLAG = "cancel", "stopped", "item", "deploy"
 FLAGS = (CANCEL_FLAG, STOP_FLAG, ITEM_FLAG, DEPLOY_FLAG)
 

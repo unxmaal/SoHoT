@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from harness import deploy_state as ds
-from harness import deploy_switch, job_claim, job_state as js, paths, proc_identity
+from harness import deploy_switch, job_claim, job_procs, job_state as js, paths, proc_identity, queue_pause
 from harness import workqueue as wq
 
 KIND = "deploy"
@@ -623,7 +623,7 @@ def launch(argv: list[str], release_for_log: Path, root: Path) -> str:
             raise DeployError(f"launchctl bootstrap {plist}: {(got.stderr or got.stdout).strip()[:300]}")
         return f"launchd {SWITCH_LABEL}"
     with open(log, "a", encoding="utf-8") as out:
-        child = wq.spawn_group(argv, str(release_for_log), out, _env())
+        child = job_procs.spawn_group(argv, str(release_for_log), out, _env())
     return f"pid {child.pid}"
 
 
@@ -634,7 +634,7 @@ def _quiesce(c, job_id, log, sleep=time.sleep) -> str:
     while True:
         left = [wq.label(j["id"]) for j in wq.running_here(c)
                 if wq._key(j["id"]) != wq._key(job_id)
-                and (wq._pid_of(j["id"]) is not None or job_claim.starting(j["id"]))]
+                and (job_procs._pid_of(j["id"]) is not None or job_claim.starting(j["id"]))]
         if not left:
             return ""
         if time.monotonic() >= end:
@@ -679,7 +679,7 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
 
             def stop(why: str) -> int:
                 if held and not held[0]:
-                    wq.resume()
+                    queue_pause.resume()
                 if not finish(c, deploy_id, FAILED, why, now(), leaves=at[0], writer=ds.JOB):
                     log.write(f"--- deploy {deploy_id} left {at[0]} under the job: {stage_of(c, deploy_id)}\n")
                 if rec:
@@ -724,18 +724,18 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
                 return stop(f"smoke before the switch: {why}")
             # Each durable step below is recorded before it is taken, so settle can undo a death at any point. #1752.
             note = f"deploy {deploy_id} of {sha[:12]}"
-            held.append(wq.paused())
+            held.append(queue_pause.paused())
             rec.update({"id": deploy_id, "sha": sha, "job_id": job_id, "link": str(link), "release": str(release),
                         "previous": str(previous), "previous_sha": previous_sha, "db": str(ms.db_path()),
                         "backup": "", "migrated": False, "queue_was_paused": held[0], "pause_note": note,
-                        "queue_flag": str(wq._pause_flag()), "install": steps.install,
+                        "queue_flag": str(queue_pause._pause_flag()), "install": steps.install,
                         "rollback_install": steps.install, "verify": [steps.smoke, steps.coherence],
                         "repair": steps.repair, "alert": steps.alert, "log": str(log_path),
                         "install_env": str(install_env.path()), "stage": at[0], "outcome": "", "run_pid": os.getpid(),
                         "run_identity": proc_identity.identity(os.getpid())})
             taking(PAUSE)
             # Paused before the migration, so no job of this release starts against the new schema. #1795.
-            wq.pause(note)
+            queue_pause.pause(note)
             have, want = _store_schema(c), wq.code_schema(release) or 0
             schema = {"schema_from": have, "schema_to": max(have, want)}
             saved, migrated = "", want > have
@@ -809,7 +809,7 @@ def _running(rec: dict, now: float, alive) -> bool:
 
 def _lift(rec: dict) -> str:
     """Lift the queue pause this deploy set, never one its owner set before or after it; what became of it."""
-    flag = Path(rec.get("queue_flag") or wq._pause_flag())
+    flag = Path(rec.get("queue_flag") or queue_pause._pause_flag())
     if not flag.exists():
         return ""
     if rec.get("queue_was_paused"):
@@ -881,7 +881,7 @@ def _stranded(rec: dict, path: Path, now: float, spawn) -> dict | None:
     return deploy_repair.strand(rec, path, got, why, now)
 
 
-def recover(now: float | None = None, alive=wq.alive, spawn=None) -> list[dict]:
+def recover(now: float | None = None, alive=job_procs.alive, spawn=None) -> list[dict]:
     """Undo each deploy that died before its switch, end one whose dead switch left the store ahead; no store read. #1752."""
     now = time.time() if now is None else now
     out = []
@@ -933,7 +933,7 @@ def _resume(rec: dict, row: dict, now: float, spawn) -> str:
     return ""
 
 
-def settle(conn=None, now: float | None = None, alive=wq.alive, spawn=None, start=None) -> list[dict]:
+def settle(conn=None, now: float | None = None, alive=job_procs.alive, spawn=None, start=None) -> list[dict]:
     """Close every unfinished deploy of this machine whose job or switch has ended; a deploy job is never left running."""
     from harness import deploy_repair
     now = time.time() if now is None else now
@@ -955,7 +955,7 @@ def settle(conn=None, now: float | None = None, alive=wq.alive, spawn=None, star
             claimed, cargs = wq._claimed(c)
             for job in c.execute(f"SELECT id FROM jobs WHERE kind = ? AND state = ? AND {claimed} AND id NOT IN "
                                  "(SELECT job_id FROM deploys WHERE job_id IS NOT NULL)", (KIND, wq.RUNNING, *cargs)):
-                if wq._pid_of(job["id"]) is None and not job_claim.starting(job["id"]):
+                if job_procs._pid_of(job["id"]) is None and not job_claim.starting(job["id"]):
                     _close_job(c, job["id"], wq.FAILED, None, "interrupted before it recorded a deploy", now)
                     settled.append({"job": wq.label(job["id"]), "outcome": INTERRUPTED})
     except RuntimeError as exc:
@@ -1027,7 +1027,7 @@ def _settle_one(c, row: dict, now: float, alive, spawn=None) -> dict | None:
         why = "; ".join(filter(None, (f"the switch stopped at {rec.get('stage')} without an outcome", failed, said(seen))))
         _lift(rec)
     else:
-        if job is not None and job["state"] == wq.RUNNING and (wq._pid_of(job["id"]) is not None
+        if job is not None and job["state"] == wq.RUNNING and (job_procs._pid_of(job["id"]) is not None
                                                                or job_claim.starting(job["id"])):
             return None
         if job is not None and job["state"] != wq.RUNNING:

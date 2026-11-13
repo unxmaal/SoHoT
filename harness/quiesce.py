@@ -5,7 +5,7 @@ import sys
 import time
 from pathlib import Path
 
-from harness import queue_hold, workqueue as wq
+from harness import queue_hold, queue_pause, workqueue as wq
 
 #: How long a quiesce waits, the queue paused, for the running job to end. #1762.
 QUIESCE_TIMEOUT_S = 1800.0
@@ -35,8 +35,8 @@ def _running_names() -> str:
 def _expired(limit: float, mine: str | None) -> NotQuiesced:
     """Lift the pause this quiesce took (not one set since), record the cut, alert once, name the end state."""
     from harness import cuts, monitor
-    if mine is not None and _read(wq._pause_flag()) == mine:
-        wq.resume()
+    if mine is not None and _read(queue_pause._pause_flag()) == mine:
+        queue_pause.resume()
     msg = (f"{NOT_QUIESCED}: {_running_names()} still running after {limit:.0f} s (queue_quiesce_timeout); nothing "
            f"was reloaded or stopped under it and the queue is left as it was found. Re-run `scripts/launchd.sh "
            f"install` (or the volume stop) once it ends, or end it now with `soh jobs cancel ID`")
@@ -51,11 +51,11 @@ def _expired(limit: float, mine: str | None) -> NotQuiesced:
 def quiesce(wait=0.5, sleep=time.sleep, is_running=None, holder: int | None = None, timeout: float | None = None,
             clock=time.monotonic) -> bool:
     """Pause the queue and wait until no job runs; the prior paused state, or NotQuiesced past the deadline."""
-    was_paused = wq.paused()
+    was_paused = queue_pause.paused()
     mine = None
     if not was_paused:
-        wq.pause(holder=holder)  # an owner's pause is never turned into a holder's. #1760
-        mine = _read(wq._pause_flag())
+        queue_pause.pause(holder=holder)  # an owner's pause is never turned into a holder's. #1760
+        mine = _read(queue_pause._pause_flag())
     is_running = is_running or wq.running
     limit = QUIESCE_TIMEOUT_S if timeout is None else timeout
     end, said = clock() + limit, False

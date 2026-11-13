@@ -13,6 +13,7 @@ import pytest
 import shells
 from evals import watch
 from harness import deploy, exclusive, heartbeat, paths, workqueue as wq
+from harness import job_procs, job_settle, queue_pause
 from harness.commands import loop as loop_cmd
 from harness.commands import measure as measure_cmd
 from tests.test_confirm_resume_1357 import CELLS, _fake_eval, _held, _in_process, conn  # noqa: F401 - conn is a fixture
@@ -58,7 +59,7 @@ def test_the_override_stops_a_relaunching_job_with_its_child_and_nothing_starts_
     assert wq._claim(job, wq.log_dir() / f"{job['id']}.log")
     pids = tmp_path / "kids"
     leader = wq.spawn_group([sys.executable, "-c", RELAUNCHER, str(pids)], None, subprocess.DEVNULL, None)
-    wq._pid_file(job["id"]).write_text(str(leader.pid), encoding="utf-8")
+    job_procs._pid_file(job["id"]).write_text(str(leader.pid), encoding="utf-8")
     try:
         [child] = _children(pids)
         os.kill(child, signal.SIGTERM)
@@ -75,7 +76,7 @@ def test_the_override_stops_a_relaunching_job_with_its_child_and_nothing_starts_
         assert got["state"] == wq.PENDING and got["note"].startswith("stopped for a deploy at ")
         assert wq.gate() == (False, "paused (soh jobs resume)"), "no job starts until the install ends"
         assert wq.release_for_deploy() == "queue released after the deploy"
-        assert not wq.paused() and not wq._held_flag().exists()
+        assert not wq.paused() and not queue_pause._held_flag().exists()
     finally:
         for p in _children(pids, 1):
             if _alive(p):
@@ -100,9 +101,9 @@ def test_a_second_hold_keeps_the_first_and_one_release_lifts_it():
 
 def test_a_pause_set_while_the_deploy_held_the_queue_stays():
     wq.hold_for_deploy()
-    wq._pause_flag().write_text("2026-11-09T19:05:00 the owner", encoding="utf-8")
+    queue_pause._pause_flag().write_text("2026-11-09T19:05:00 the owner", encoding="utf-8")
     assert wq.release_for_deploy() == "queue left as it is: it was paused again during the deploy (soh jobs resume)"
-    assert wq.paused() and not wq._held_flag().exists()
+    assert wq.paused() and not queue_pause._held_flag().exists()
 
 
 def test_a_deploy_job_and_a_job_with_no_process_here_are_not_stopped():
@@ -117,7 +118,7 @@ def test_a_deploy_job_and_a_job_with_no_process_here_are_not_stopped():
 
 def test_a_stopped_bare_eval_resumes_from_the_run_its_process_was_writing(monkeypatch):
     job = _running(_measuring())
-    monkeypatch.setattr(wq, "alive", lambda pid: pid in (os.getpid(), 4343))
+    monkeypatch.setattr(job_procs, "alive", lambda pid: pid in (os.getpid(), 4343))
     out = paths.runs() / "20261109-184554-code"
     out.mkdir(parents=True)
     (out / watch.PROGRESS).write_text(json.dumps({"state": "running", "pid": 4343}), encoding="utf-8")
@@ -136,7 +137,7 @@ def test_the_worker_re_pends_a_job_the_deploy_stopped_rather_than_failing_it():
     job = _measuring()
 
     def popen(argv, cwd=None, stdout=None, stderr=None, env=None):
-        wq._stop_flag(job["id"]).write_text(json.dumps({"at": "x", "argv": ["resumed"]}), encoding="utf-8")
+        job_procs._stop_flag(job["id"]).write_text(json.dumps({"at": "x", "argv": ["resumed"]}), encoding="utf-8")
         return types.SimpleNamespace(returncode=-15)
     got = wq.run_one(job, popen=popen)
     assert got["state"] == wq.PENDING and got["argv"] == ["resumed"], got
@@ -146,8 +147,8 @@ def test_the_worker_re_pends_a_job_the_deploy_stopped_rather_than_failing_it():
 def test_a_job_the_deploy_stopped_whose_worker_went_away_waits_again():
     job = _measuring()
     assert wq._claim(job, wq.log_dir() / "x.log")
-    wq._stop_flag(job["id"]).write_text("{}", encoding="utf-8")
-    assert wq._recover() == []
+    job_procs._stop_flag(job["id"]).write_text("{}", encoding="utf-8")
+    assert job_settle._recover() == []
     assert wq.get(job["id"])["state"] == wq.PENDING
 
 
@@ -218,7 +219,7 @@ def test_an_install_waiting_on_a_queued_job_names_how_to_stop_it():
 @pytest.fixture(autouse=True)
 def _leads(monkeypatch):
     """This process stands in for a job's process, which as a real job's would lead its own group. #1728."""
-    monkeypatch.setattr(wq, "_leads", lambda pid, started="": True)
+    monkeypatch.setattr(job_procs, "_leads", lambda pid, started="": True)
 
 
 # --- the scheduled sweep yields to a due deploy -----------------------------------------------------------------
@@ -367,7 +368,7 @@ def test_a_confirmation_paused_for_a_deploy_is_the_same_job_and_resumes_its_run(
     [job] = wq.pending(conn)
     seen = {}
     _fake_eval(monkeypatch, seen, pause_after=8)
-    got = wq.run_one(job, popen=_with_flag(monkeypatch, wq._deploy_flag))
+    got = wq.run_one(job, popen=_with_flag(monkeypatch, job_procs._deploy_flag))
     assert got["state"] == wq.PENDING and got["note"].startswith("paused for a deploy at "), got
     assert [j["id"] for j in wq.pending(conn)] == [job["id"]], "no second job: the queue re-pends this one"
     assert got["argv"][-2:] == ["--confirm", str(vid)]
@@ -411,7 +412,7 @@ def test_an_overrun_stop_still_ends_a_confirmation(conn, tmp_path, monkeypatch):
 def test_a_confirmation_whose_worker_went_away_waits_to_resume_its_run():
     job = wq.add(["uv", "run", "soh", "adopt", "--confirm", "20271"], title="confirm", cwd=str(paths.home()))
     assert wq._claim(job, wq.log_dir() / "x.log")
-    wq._recover()
+    job_settle._recover()
     got = wq.get(job["id"])
     assert got["state"] == wq.PENDING and got["argv"] == job["argv"]
     assert got["note"] == "its worker went away; resumes from its stored run"

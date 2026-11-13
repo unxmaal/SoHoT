@@ -45,8 +45,8 @@ def _default_quiesce() -> bool:
 
 
 def _default_resume() -> None:
-    from harness import workqueue
-    workqueue.resume()
+    from harness import queue_pause
+    queue_pause.resume()
 
 
 @dataclass

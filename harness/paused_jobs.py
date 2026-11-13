@@ -40,11 +40,11 @@ def ends(reason: str) -> str:
 
 def cause(conn, job: dict) -> tuple[str, str]:
     """(reason, note) a job that exited paused with nothing re-pending it is recorded paused with."""
-    from harness import workqueue as wq
+    from harness import queue_pause
     said = _said(conn, job)
     if said in MEMORY_CAUSES:
         reason = js.MEMORY_PAUSE
-    elif wq.paused():
+    elif queue_pause.paused():
         reason, said = js.QUEUE_PAUSE, said or "the queue pause"
     else:
         reason = js.CHECKPOINTED
@@ -55,12 +55,12 @@ def cause(conn, job: dict) -> tuple[str, str]:
 def resume_argv(conn, job: dict) -> list[str] | None:
     """The argv that resumes a paused job where it stopped, or None when it has none."""
     from harness import resources
-    from harness import workqueue as wq
+    from harness import job_settle
     argv = [str(a) for a in job.get("argv") or []]
-    if wq.confirms(job):
+    if job_settle.confirms(job):
         return argv
     if "evals.run" in argv:
-        return wq._resumed(conn, job)
+        return job_settle._resumed(conn, job)
     if (resources._verb(argv) == "adopt" and "--challenger" in argv
             and not {"--power", "--from-measurement", "--dry-run"} & set(argv)):
         return argv
@@ -87,12 +87,12 @@ def _twin(conn, job: dict, argv: list | None) -> int | None:
 
 def cleared(reason: str, pressure=None) -> bool:
     """Whether the cause of a pause for `reason` has cleared now."""
-    from harness import workqueue as wq
+    from harness import queue_pause
     if reason == js.MEMORY_PAUSE:
         from harness import pressure as pr
         return not (pressure or pr.sample)().alarming
     if reason == js.QUEUE_PAUSE:
-        return not wq.paused()
+        return not queue_pause.paused()
     return False
 
 

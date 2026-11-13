@@ -459,8 +459,8 @@ def du_line(rows: list[dict]) -> str:
 
 def pause_all(reason: str) -> dict:
     """Pause the job queue and every running eval through its pause file, the watchdog's request path."""
-    from harness import watchdog, workqueue
-    workqueue.pause()
+    from harness import queue_pause, watchdog
+    queue_pause.pause()
     reader = watchdog.ProgressFiles()
     return {"queue": "paused", "runs": [reader.pause(r, reason) for r in reader.runs()]}
 

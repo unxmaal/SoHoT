@@ -59,6 +59,7 @@ def _held(got: list[dict]) -> tuple[str, set]:
 def cmd_jobs(a) -> int:
     """The work queue every caller shares. #353."""
     from harness import workqueue as wq
+    from harness import queue_pause
 
     rest, title = list(a.rest), a.title
     # REMAINDER swallows options written after the action.
@@ -135,10 +136,10 @@ def cmd_jobs(a) -> int:
     except ValueError as exc:
         return err(str(exc))
     if a.action in ("pause", "resume"):
-        (wq.pause if a.action == "pause" else wq.resume)()
+        (queue_pause.pause if a.action == "pause" else queue_pause.resume)()
         ok, why = wq.gate()
         note(f"{a.action}d; next job {'may start' if ok else 'waits'}: {why}")
-        emit(paused=wq.paused(), gate_open=ok, why=why)
+        emit(paused=queue_pause.paused(), gate_open=ok, why=why)
         return 0
     from harness import contention, deploy, exclusive, heartbeat
     from harness import memory_store as ms

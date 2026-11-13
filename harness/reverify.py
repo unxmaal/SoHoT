@@ -524,9 +524,9 @@ def _resume(conn, rv: dict, job: dict, now: float, add) -> dict | None:
     """Queue a paused re-run's continuation and repoint the reverification in one commit; None if another settle did. #1403, #1755."""
     from harness import job_state as js
     from harness import paths, runs
-    from harness import workqueue as wq
+    from harness import job_settle
     run = runs.for_job(conn, int(job["id"]))
-    argv = job["argv"] if run is None else wq.resume_argv(job["argv"], runs.run_dir(run["path"]))
+    argv = job["argv"] if run is None else job_settle.resume_argv(job["argv"], runs.run_dir(run["path"]))
 
     def own(jobs):
         return conn.execute("UPDATE reverifications SET job_id = ? WHERE id = ? AND job_id = ?",

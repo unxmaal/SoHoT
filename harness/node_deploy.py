@@ -8,7 +8,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from harness import cuts, deploy, deploy_switch, gateway_switch, node_reach, paths
+from harness import cuts, deploy, deploy_switch, gateway_switch, job_procs, node_reach, paths
 from harness import nodes as nodes_mod
 from harness import workqueue as wq
 
@@ -182,7 +182,7 @@ def _due(prior: dict, retry: bool) -> bool:
     if not prior or got in RETRY:
         return True
     if got == INSTALLING:
-        return not wq.alive(int(prior.get("pid") or 0))
+        return not job_procs.alive(int(prior.get("pid") or 0))
     return retry and got in (ROLLED_BACK, FAILED, REFUSED)
 
 
