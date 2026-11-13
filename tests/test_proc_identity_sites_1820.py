@@ -33,14 +33,14 @@ def leader():
     p.wait()
 
 
-@POSIX
 def test_a_switch_row_carries_proc_identity_and_a_reused_pid_is_not_the_switch(leader):
     real = proc_identity.identity(leader.pid)
     assert real["started"] and st.started(leader.pid) == real["started"]
     assert st.me() == proc_identity.identity(os.getpid())
     assert st.alive(real) is True
     assert st.alive({**real, "started": _earlier(real["started"])}) is False
-    assert st.alive({**real, "pgid": real["pgid"] + 1}) is False
+    if sys.platform != "win32":
+        assert st.alive({**real, "pgid": real["pgid"] + 1}) is False
 
 
 @POSIX
@@ -64,7 +64,6 @@ def test_a_ps_that_cannot_answer_leaves_an_old_switch_row_unjudged_not_dead(monk
     assert st.alive(row) is None
 
 
-@POSIX
 def test_a_job_pid_reused_by_another_group_leader_is_not_the_jobs_process(leader):
     from harness import executors
     job = wq.add(["soh-batch-job"], title="batch")
@@ -79,7 +78,6 @@ def test_a_job_pid_reused_by_another_group_leader_is_not_the_jobs_process(leader
     assert wq._pid_of(job["id"]) == leader.pid, "a start time left for another pid is not this one's"
 
 
-@POSIX
 @pytest.mark.parametrize("late", [0.0, 0.5], ids=["prompt", "parent-writes-late"])
 def test_a_jobs_pid_file_stays_a_bare_pid_an_older_release_reads_and_its_start_time_sits_beside_it(
         tmp_path, monkeypatch, late):
