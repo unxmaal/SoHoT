@@ -52,7 +52,26 @@ def route(lane: str, chosen: str | None = None, via: str = "") -> tuple[str, ser
                       f"rather than answering in text; run `soh svg` for it")
     # A lane the interactive server holds is answered there, never on the eval router. #1561.
     pinned = None if chosen or via or methods.is_method(spec) else interactive.route(lane)
-    return pinned or (spec, serving.route(methods.base_of(spec) or spec, via))
+    if pinned:
+        return pinned
+    where = serving.route(methods.base_of(spec) or spec, via)
+    if not (chosen or via):
+        _unbound_note(lane, spec, where)
+    return spec, where
+
+
+_NOTED: set = set()
+
+
+def _unbound_note(lane: str, spec: str, where: serving.Route) -> None:
+    """One stderr line per process when a hand-set scratch home sends a lane to its default. #1867"""
+    from harness import paths
+    if _NOTED or not paths.unbound_scratch():
+        return
+    _NOTED.add(lane)
+    print(f"delegate: {paths.ENV_VAR}={paths.home()} binds no machine home, so the {lane} lane fell back to "
+          f"{spec} at {where.base}; run `soh --scratch-home DIR` to reach this machine's interactive server "
+          f"and adopted models (#1867)", file=sys.stderr)
 
 
 def generate(spec: str, where: serving.Route, lane: str, prompt: str,
