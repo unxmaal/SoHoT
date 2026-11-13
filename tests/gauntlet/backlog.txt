@@ -76,7 +76,6 @@ a-decision-read-back-out-of-a-sentence-the-code-wrote harness/inventory_time.py:
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/inventory_weight.py:origin:subject
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/kb_filter.py:named:said
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/lane_probe.py:due:reason
-a-decision-read-back-out-of-a-sentence-the-code-wrote harness/measure_replay.py:owed_at:detail
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/memory_store/revisit.py:gguf_sized_off_lane:detail
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/memory_store/revisit.py:incomplete_copies:detail
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/memory_store/revisit.py:sized_by_repo_total:detail
@@ -85,18 +84,12 @@ a-decision-read-back-out-of-a-sentence-the-code-wrote harness/memory_store/trans
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/memory_store/transitions.py:state_audit:detail
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/node_deploy.py:_install:said
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/quants.py:unrunnable:detail
-a-decision-read-back-out-of-a-sentence-the-code-wrote harness/repo_gate.py:owed:detail
-a-decision-read-back-out-of-a-sentence-the-code-wrote harness/repo_gate.py:verdict:detail
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/reuse.py:replay:why
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/runner_gaps.py:format_name:evidence
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/runner_gaps.py:model_type:evidence
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/runs.py:class_cut_calls:detail
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/spans.py:redos:said
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/store_service.py:_inspect:said
-a-decision-read-back-out-of-a-sentence-the-code-wrote harness/watchdog.py:notified_since:outcome
-a-decision-read-back-out-of-a-sentence-the-code-wrote harness/watchdog.py:overrun_stopped:evidence
-a-decision-read-back-out-of-a-sentence-the-code-wrote harness/watchdog.py:overrun_stopped:outcome
-a-decision-read-back-out-of-a-sentence-the-code-wrote harness/watchdog.py:wake:outcome
 a-deploy-runs-two-releases-at-once harness/deploy.py:_undo:one-sided
 a-deploy-runs-two-releases-at-once harness/deploy.py:run:one-sided
 a-deploy-runs-two-releases-at-once harness/engine_smoke.py:__main__:both-phases

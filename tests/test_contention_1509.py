@@ -160,8 +160,8 @@ def test_a_job_paused_for_anything_else_stays_paused(gate, tmp_path):
     def first():
         conn = ms.connect()
         conn.execute("INSERT INTO watchdog_actions (at, criterion, subject, action, escalated, dry_run, evidence, "
-                     "outcome) VALUES (?, 'long_run', ?, 'pause', 1, 0, '{}', 'paused')",
-                     (time.time() + 1, "job " + job["id"]))
+                     "outcome, result, job_id) VALUES (?, 'long_run', ?, 'pause', 1, 0, '{}', 'paused', 'acted', ?)",
+                     (time.time() + 1, "job " + job["id"], int(job["id"])))
         conn.commit()
         return 75
 
