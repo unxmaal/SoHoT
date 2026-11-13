@@ -293,8 +293,12 @@ def state_path(port_: int) -> Path:
 
 
 def write_state(spec: str, port_: int, pid: int) -> dict:
+    from harness import proc_identity
     got = {"spec": spec, "key": key(spec), "launch": launch(spec), "pid": pid,
            "port": port_}
+    if pid and int(pid) > 0:
+        me = proc_identity.identity(int(pid))
+        got.update(pgid=me["pgid"], started=me["started"])
     path = state_path(port_)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(got), encoding="utf-8")
@@ -321,7 +325,17 @@ def alive(pid) -> bool:
     return True
 
 
-_DIRECT = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+def _runs(got: dict) -> bool:
+    """Whether the server a state file names still runs: by pid, group and start time where recorded, else by pid. #1774."""
+    from harness import proc_identity
+    try:
+        same = proc_identity.same(got) if got.get("started") else None
+    except (TypeError, ValueError):
+        return False
+    return same if same is not None else alive(got.get("pid"))
+
+
+_DIRECT =urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
 def _models(base: str) -> dict | None:
@@ -344,7 +358,7 @@ def live(port_: int | None = None) -> dict | None:
         got = json.loads(state_path(port_).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {"models": listing}
-    if not alive(got.get("pid")):
+    if not isinstance(got, dict) or not _runs(got):
         return {"models": listing}
     return {**got, "models": listing}
 
@@ -430,7 +444,7 @@ def serving(spec: str, port_: int | None = None, timeout: float | None = None):
     finally:
         with contextlib.suppress(OSError):
             got = json.loads(state_path(port_).read_text(encoding="utf-8"))
-            if not alive(got.get("pid")):
+            if not _runs(got):
                 state_path(port_).unlink()
 
 
