@@ -44,6 +44,67 @@ def watch_argv(owner: dict, child: dict) -> list[str]:
             json.dumps(owner), json.dumps(child), str(POLL_S), str(GRACE_S)]
 
 
+# The child ties itself before it runs: it double-forks its watcher (no program it becomes inherits it), then execs in place. #1947.
+LAUNCH = r"""
+import importlib.util, json, os, subprocess, sys
+watch, argv = json.loads(sys.argv[1]), sys.argv[3:]
+spec = importlib.util.spec_from_file_location("proc_identity", watch[4])
+pi = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(pi)
+me = pi.identity(os.getpid())
+if me["started"]:
+    watch[6] = json.dumps(me)
+    if os.fork() == 0:
+        try:
+            subprocess.Popen(watch, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        finally:
+            os._exit(0)
+    os.wait()
+try:
+    os.execvp(argv[0], argv)
+except OSError as exc:
+    print(f"could not start {argv[0]}: {exc}", file=sys.stderr, flush=True)
+    sys.exit(127)
+"""
+
+
+def command(args) -> list:
+    """The program a tethered argv runs; any other argv as it is."""
+    args = [args] if isinstance(args, (str, bytes)) else list(args)
+    if args[:4] == [sys.executable, "-I", "-c", LAUNCH] and args[5:6] == ["--"]:
+        return args[6:]
+    return args
+
+
+def _runnable(cmd: list[str], kw: dict) -> bool:
+    import shutil
+    if os.sep in cmd[0]:
+        return os.access(os.path.join(kw.get("cwd") or "", cmd[0]), os.X_OK)
+    return shutil.which(cmd[0], path=(kw.get("env") or os.environ).get("PATH")) is not None
+
+
+def tied(cmd, kw: dict | None = None) -> list[str]:
+    """cmd behind LAUNCH, its watcher up before it runs; as it is where exec moves the pid, or Popen would raise anyway."""
+    from harness import proc_identity
+    cmd = [os.fspath(a) for a in cmd]
+    owner = proc_identity.identity(os.getpid())
+    if sys.platform == "win32" or not cmd or not owner["started"] or not _runnable(cmd, kw or {}):
+        return cmd
+    return [sys.executable, "-I", "-c", LAUNCH, json.dumps(watch_argv(owner, {})), "--", *cmd]
+
+
+def spawn(cmd, popen=None, **kw):
+    """popen(cmd, **kw) with the child tied from before it runs; a stand-in popen gets cmd as it is."""
+    popen = popen or subprocess.Popen
+    if not (isinstance(popen, type) and issubclass(popen, _POPEN)):
+        return popen(cmd, **kw)
+    if sys.platform != "win32":
+        return popen(tied(cmd, kw), **kw)
+    proc = popen(cmd, **kw)
+    tie(proc)
+    return proc
+
+
 def tie(proc) -> subprocess.Popen | None:
     """A watcher that stops proc once this process is gone; None when proc is no real child or its start time is unknown."""
     from harness import proc_identity
