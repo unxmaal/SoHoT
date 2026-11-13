@@ -18,7 +18,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from harness import audio_models, interactive, serve_lease
+from harness import audio_models, interactive, machine_scope, serve_lease
 from harness.overrun import cells as _cells, paired as _paired, unmeasured as _unmeasured
 
 NOTE, NOTIFY, FILE, PAUSE, STOP, REAP, UNLOAD, RESTART = (
@@ -1329,19 +1329,16 @@ def _machine(conn) -> int | None:
 
 
 def _mine(conn) -> tuple[str, tuple]:
-    from harness import machine_scope
     return machine_scope.where("watchdog_actions.mine", _machine(conn))
 
 
 def repeats(conn, f: Finding, now: float, dry_run: bool, windowed: bool = True) -> int:
     """Prior trips of this criterion on this subject inside the escalation window (or ever), this machine."""
     here, mine = _mine(conn)
-    row = conn.execute(
+    return int(conn.execute(
         "SELECT COUNT(*) AS n FROM watchdog_actions WHERE criterion = ? AND subject = ? AND dry_run = ? "
         f"AND at >= ? AND {here}",
-        (f.criterion, f.subject.key, int(dry_run), now - ESCALATE_WINDOW_S if windowed else 0.0, *mine)
-    ).fetchone()
-    return int(row["n"])
+        (f.criterion, f.subject.key, int(dry_run), now - ESCALATE_WINDOW_S if windowed else 0.0, *mine)).fetchone()["n"])
 
 
 def overrun_stopped(conn, out) -> bool:
@@ -1358,12 +1355,10 @@ def overrun_stopped(conn, out) -> bool:
 def notified_since(conn, f: Finding, now: float) -> float | None:
     """When this criterion last put a notification on this subject's desktop inside NOTIFY_EVERY_S, this machine."""
     here, mine = _mine(conn)
-    row = conn.execute(
+    at = conn.execute(
         "SELECT MAX(at) AS at FROM watchdog_actions WHERE criterion = ? AND subject = ? AND dry_run = 0 "
-        f"AND notified = 1 AND at >= ? AND {here}",
-        (f.criterion, f.subject.key, now - NOTIFY_EVERY_S, *mine)
-    ).fetchone()
-    return None if row["at"] is None else float(row["at"])
+        f"AND notified = 1 AND at >= ? AND {here}", (f.criterion, f.subject.key, now - NOTIFY_EVERY_S, *mine)).fetchone()["at"]
+    return None if at is None else float(at)
 
 
 #: Criteria whose pause is also put on the desktop, once. #1482.
