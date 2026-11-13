@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import deploy_state as ds
 
 #: Outcomes after which the switch ran and could not keep the sha: the poll never queues that sha again on its own.
-FINAL = (ds.ROLLED_BACK, ds.FAILED_FORWARD)
+FINAL = ds.NO_RETRY
 
 
 def command(sha: str) -> str:
