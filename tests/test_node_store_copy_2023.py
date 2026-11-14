@@ -203,8 +203,9 @@ def test_the_node_script_carries_the_whole_copy_module():
 
 def test_the_copy_runs_as_a_file_with_no_package_importable(tmp_path):
     _store(tmp_path / "discovery.db", 105)
+    env = {k: v for k, v in os.environ.items() if k != store.BACKEND_ENV}
     got = subprocess.run([sys.executable, "-I", "-c", Path(node_store_copy.__file__).read_text(encoding="utf-8"),
-                          "backup", str(tmp_path)], capture_output=True, text=True, timeout=60, cwd=tmp_path)
+                          "backup", str(tmp_path)], capture_output=True, text=True, timeout=60, cwd=tmp_path, env=env)
     assert got.returncode == 0 and got.stdout.splitlines()[-1] == "backup_schema 105", got.stderr
     bad = subprocess.run([sys.executable, "-I", node_store_copy.__file__, "nonsense"], capture_output=True, text=True,
                          timeout=60, cwd=tmp_path)
