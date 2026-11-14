@@ -255,8 +255,8 @@ def test_the_backfill_links_a_typed_default_by_the_key_its_rows_name(conn, monke
                                                                       here):
     """The Mac's stt default ran with no specs map; the migrating platform's default is not used. #516."""
     from harness import audio
-    for lane, name in (("tts", "DEFAULT_TTS_MODEL"), ("stt", "DEFAULT_STT_MODEL")):
-        monkeypatch.setattr(audio, name, audio.SPEECH_DEFAULTS[lane][here])
+    monkeypatch.setattr(audio, "speech_platform", lambda: here)
+    monkeypatch.delenv("WHISPER_MODEL", raising=False)
     d = paths.runs() / "20261001-000000-000-0000-stt"
     d.mkdir(parents=True)
     (d / "results.json").write_text(json.dumps({

@@ -16,6 +16,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from harness import download_state as ds
+from harness import machine_scope
 
 try:
     import fcntl
@@ -273,9 +274,13 @@ def offline_gap(kind: str, path, revision: str = "main") -> str:
     snap = p / "snapshots" / commit
     if not snap.is_dir():
         return f"{p.name} refs/{revision} names snapshot {commit}, which is not on disk"
-    if not any((f.name in LOADABLE or f.name.endswith(WEIGHT_SUFFIXES)) and f.exists()
-               for f in snap.rglob("*")):
+    found = list(snap.rglob("*"))
+    if not any((f.name in LOADABLE or f.name.endswith(WEIGHT_SUFFIXES)) and f.exists() for f in found):
         return f"{p.name} snapshot {commit} holds no config or weights"
+    # A snapshot file links to its blob; a link whose blob is gone is a partial copy, not a download. #1776.
+    lost = sorted(f.name for f in found if f.is_symlink() and not f.exists())
+    if lost:
+        return f"{p.name} snapshot {commit} links {', '.join(lost[:3])} to a blob that is not on disk"
     return ""
 
 
@@ -323,19 +328,6 @@ def this_machine(conn) -> int:
     return ms.remember_machine(conn)
 
 
-def mine(conn) -> tuple:
-    """This machine's id, without writing a row; one row per machine. #415."""
-    from harness import runs
-    return tuple(runs.here(conn))
-
-
-def _in(ids) -> tuple[str, tuple]:
-    ids = tuple(ids)
-    if not ids:
-        return "1 = 0", ()
-    return f"machine_id IN ({','.join('?' * len(ids))})", ids
-
-
 def _proposal(conn, name: str):
     if not name:
         return None
@@ -349,8 +341,8 @@ def _proposal(conn, name: str):
 
 def live(conn, *, repo: str = "", kind: str = "", path: str = "") -> list[dict]:
     """This machine's rows not yet removed, newest first."""
-    where, args = _in(mine(conn))
-    sql = f"SELECT * FROM downloads WHERE state <> '{ds.REMOVED}' AND {where}"
+    here, args = machine_scope.here(conn, "downloads.mine")
+    sql = f"SELECT * FROM downloads WHERE state <> '{ds.REMOVED}' AND {here}"
     if repo:
         sql += " AND lower(repo) = ?"
         args += (repo.lower(),)
@@ -450,6 +442,15 @@ def removed(conn, path, *, by: str, verdict_id=None, repo: str = "",
                   machine_id=this_machine(conn), removed_at=at, removed_by=by, removal_verdict_id=verdict_id)
     conn.commit()
     return rid
+
+
+def removed_file(conn, repo: str, kind: str, file: str) -> bool:
+    """Whether this machine recorded `file` from `repo` and then removed it. #1989."""
+    from harness import machine_scope
+    here, args = machine_scope.here(conn, "downloads.mine")
+    return conn.execute(f"SELECT 1 FROM downloads WHERE state = '{ds.REMOVED}' AND {here} "
+                        "AND kind = ? AND lower(repo) = ? AND file = ?",
+                        args + (kind, repo.lower(), file)).fetchone() is not None
 
 
 def _complete(conn, repo: str, kind: str = "", stat: bool = True) -> list[dict]:
@@ -625,9 +626,10 @@ def backfill(conn, hub: Path | None = None, ggufs: Path | None = None,
         if key(where) in done:
             return
         done.add(key(where))
-        # A retried migration finds this path's row, live or removed. #496.
-        had = conn.execute("SELECT id, path, state FROM downloads WHERE path = ? ORDER BY id DESC",
-                           (key(where),)).fetchone()
+        # A retried migration finds this machine's row for the path, live or removed; another machine's copy is its own. #496, #1931.
+        here, args = machine_scope.here(conn, "downloads.mine")
+        had = conn.execute(f"SELECT id, path, state FROM downloads WHERE path = ? AND {here} ORDER BY id DESC",
+                           (key(where), *args)).fetchone()
         if had:
             # A run killed after record() and before settle() left it live: the rerun settles it. #1887.
             if had["state"] in (ds.COMPLETE, ds.INCOMPLETE):
@@ -670,9 +672,10 @@ def backfill(conn, hub: Path | None = None, ggufs: Path | None = None,
         partial = r["grp"] == "incomplete"
         repo = r["repo"] or ""
         if partial:
+            here, args = machine_scope.here(conn, "downloads.mine")
             owner = conn.execute(
-                "SELECT repo FROM downloads WHERE path = ? ORDER BY id DESC",
-                (key(Path(r["path"]).parent.parent),)).fetchone()
+                f"SELECT repo FROM downloads WHERE path = ? AND {here} ORDER BY id DESC",
+                (key(Path(r["path"]).parent.parent), *args)).fetchone()
             repo = owner["repo"] if owner else ""
         ds.born(conn, ds.REMOVED, ds.HISTORY, proposal_id=_proposal(conn, repo), repo=repo,
                 kind=GGUF if r["path"].lower().endswith(".gguf") else HUB,
@@ -691,12 +694,3 @@ def backfill(conn, hub: Path | None = None, ggufs: Path | None = None,
 def _has_table(conn, table: str) -> bool:
     from harness import memory_store as ms
     return bool(ms._columns(conn, table))
-
-
-def summary(conn) -> dict:
-    """Rows by kind and state."""
-    out = {}
-    for r in conn.execute("SELECT kind, state, COUNT(*) AS n, COALESCE(SUM(bytes), 0) AS b FROM downloads "
-                          "GROUP BY kind, state"):
-        out.setdefault(r["kind"], {})[r["state"]] = {"count": r["n"], "bytes": r["b"]}
-    return out

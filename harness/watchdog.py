@@ -705,9 +705,10 @@ def overrun_stopped(conn, out) -> bool:
     from evals import watch
     if watch.stop_reason(out) == watch.OVERRUN:
         return True
+    here, mine = _mine(conn)
     row = conn.execute(
         "SELECT 1 FROM watchdog_actions WHERE criterion = ? AND action = ? AND dry_run = 0 AND result = ? "
-        "AND run_dir = ? LIMIT 1", (watch.OVERRUN, STOP, ACTED, canon(out))).fetchone()
+        f"AND run_dir = ? AND {here} LIMIT 1", (watch.OVERRUN, STOP, ACTED, canon(out), *mine)).fetchone()
     return row is not None
 
 

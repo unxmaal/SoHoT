@@ -20,7 +20,6 @@ a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates evals/run.py:_e
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/checks/render.py:_sandbox_is_unusable
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/checks/staging.py:check
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/commands/loop.py:_after_deploy
-a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/commands/repo_screen.py:cmd_repo_screen
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/ds4.py:default_ctx
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/ds4.py:write_state
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/exclusive.py:_mark
@@ -32,7 +31,6 @@ a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/hf_task
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/identity.py:_save_cache
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/inspect.py:_write_size_cache
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/inventory_weight.py:ci_failures.one
-a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/machine.py:versions
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/nodes.py:_record
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/publish.py:set_enabled
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/queue_pause.py:hold_for_deploy
@@ -40,7 +38,6 @@ a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/review.
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/runner_gaps.py:diffusers_pipelines
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/runner_gaps.py:mlx_lm_types
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/runner_gaps.py:mlx_vlm_types
-a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/runtime_trials.py:watch
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/serve_lease.py:_write
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/unverified.py:_remember
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/volume.py:_save
@@ -135,11 +132,7 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/deploy.py:waiting_since:jobs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/disk.py:_stored:downloads
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/disk.py:latest_verdicts:verdicts
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/downloads.py:backfill.once:downloads
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/downloads.py:backfill:downloads
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/downloads.py:backfill:verdicts
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/downloads.py:live:downloads
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/downloads.py:summary:downloads
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/effects.py:replay:adoptions
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/effects.py:replay:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/family.py:standing:verdicts
@@ -280,10 +273,8 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/reuse.py:replay:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/reuse.py:replay:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/reverify.py:_flagged_runs:reverifications
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/reverify.py:_latest:reverifications
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/reverify.py:_measured:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/reverify.py:judge:runs
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/reverify.py:settle:reverifications
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/routes.py:latest_run:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/runs.py:at:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/runs.py:backfill:verdicts
@@ -308,7 +299,6 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/sweeps.py:refile:knob_sweeps
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/technique_triage.py:crossings:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/technique_triage.py:stored_loss:runs
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/watchdog.py:overrun_stopped:watchdog_actions
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/weedout_replay.py:lane_rows:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/weedout_replay.py:paired:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/workqueue.py:_row:runs
@@ -448,11 +438,7 @@ an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/watchdog_obse
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy scripts/pool-full-probe.py:ask:urlopen
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy scripts/pool-full-probe.py:main:urlopen
 an-order-the-code-needs-but-does-not-check evals/importers/history.py:<module>:import:read_text
-an-order-the-code-needs-but-does-not-check harness/audio.py:<module>:import:WHISPER_MODEL
 an-order-the-code-needs-but-does-not-check harness/checks/speech.py:<module>:import:read_text
-an-order-the-code-needs-but-does-not-check harness/context.py:__main__:no-guard
-an-order-the-code-needs-but-does-not-check harness/interactive.py:__main__:no-guard
-an-order-the-code-needs-but-does-not-check harness/nodes.py:__main__:no-guard
 an-order-the-code-needs-but-does-not-check harness/paths.py:<module>:import:home()
 an-order-the-code-needs-but-does-not-check harness/stages.py:<module>:import:home()
 each-half-verified-against-its-own-spec-the-seam-against-nothing env:ACESTEP_ROOT

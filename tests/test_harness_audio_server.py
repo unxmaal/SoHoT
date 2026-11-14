@@ -22,10 +22,10 @@ def client():
 
 
 def test_it_answers_for_the_model_lh_say_actually_sends():
-    """`lh say` sends DEFAULT_TTS_MODEL. A server that refused it would leave
+    """`lh say` sends default_tts_model(). A server that refused it would leave
     the speech lane working only when a caller overrode the default."""
-    assert audio.DEFAULT_TTS_MODEL in audio_server.KOKORO_IDS or \
-        audio.DEFAULT_TTS_MODEL.startswith("mlx-community/"), \
+    assert audio.default_tts_model() in audio_server.KOKORO_IDS or \
+        audio.default_tts_model().startswith("mlx-community/"), \
         "the Windows default should be one this server serves"
 
 
@@ -33,7 +33,7 @@ def test_it_answers_for_the_model_lh_hear_actually_sends():
     import sys
     if sys.platform != "win32":
         pytest.skip("the Windows default is what this server has to accept")
-    assert any(audio.DEFAULT_STT_MODEL.startswith(p)
+    assert any(audio.default_stt_model().startswith(p)
                for p in audio_server.WHISPER_PREFIXES)
 
 

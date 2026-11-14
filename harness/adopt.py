@@ -899,7 +899,7 @@ def lane_defaults(conn=None, machine=HERE, typed=None) -> dict[str, str]:
 def default_for(lane: str, fallback: str, conn=None, machine=HERE) -> str:
     """What this lane serves right now: the adopted winner, else the constant.
 
-    RESOLVED AT CALL TIME. `DEFAULT_TTS_MODEL` reaches its callers as a default
+    RESOLVED AT CALL TIME. `default_tts_model()` reaches its callers as a default
     ARGUMENT, captured when the function is defined, so rebinding the constant
     changes nothing -- the same trap that made SpeechRunner's declared voice
     unreachable (#195). An adoption that cannot take effect without a restart

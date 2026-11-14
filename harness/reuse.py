@@ -11,8 +11,8 @@ MIN_DRAWS = 1
 REUSE_FILE = "reuse.json"
 
 
-def _runs_with(conn, lane: str, digest: str, exclude=(), parts=None) -> dict[int, tuple[str, float, dict]]:
-    """run id -> (the receipt key whose recorded identity is `digest`, when it ran, its per-case digests).
+def _runs_with(conn, lane: str, digest: str, exclude=(), parts=None) -> dict[int, tuple[str, float, dict, str]]:
+    """run id -> (the receipt key whose recorded identity is `digest`, when it ran, its per-case digests, its own digest).
 
     With `parts`, a run recorded before a knob was is matched when that knob's unrecorded value gives `digest`. #1353.
     """
@@ -34,19 +34,19 @@ def _runs_with(conn, lane: str, digest: str, exclude=(), parts=None) -> dict[int
             if ident.get("digest") == digest or (
                     parts is not None and isinstance(ident.get("parts"), dict)
                     and identity.as_now(ident["parts"], parts) == digest):
-                out[r["id"]] = (key, float(r["at"] or 0.0), ident.get("cases") or {})
+                out[r["id"]] = (key, float(r["at"] or 0.0), ident.get("cases") or {}, str(ident.get("digest") or ""))
     return out
 
 
 def draws(conn, lane: str, digest: str, exclude=(), cases=None, parts=None) -> dict[tuple[str, int], list[tuple]]:
-    """(base case, repeat index) -> [(when, run id, stored case id, candidate, seconds, reply tokens, case digest)] newest first.
+    """(base case, repeat index) -> [(when, run id, stored case id, candidate, seconds, reply tokens, case digest, run digest)] newest first.
 
     A draw counts only where its run recorded the same per-case digest as `cases` gives now; harness refusals are left out.
     """
     from harness import reasons
     found = _runs_with(conn, lane, digest, exclude, parts) if digest else {}
     out: dict = {}
-    for run_id, (key, at, theirs) in found.items():
+    for run_id, (key, at, theirs, recorded) in found.items():
         for r in conn.execute("SELECT case_id, candidate, failure_class, seconds, metrics FROM results "
                               "WHERE run_id = ? AND candidate = ?", (run_id, key)):
             if (r["failure_class"] or "") in reasons.NEVER_RAN:
@@ -59,7 +59,8 @@ def draws(conn, lane: str, digest: str, exclude=(), cases=None, parts=None) -> d
             except ValueError:
                 tokens = None
             out.setdefault((base, int(n) if n.isdigit() else 1), []).append(
-                (at, run_id, r["case_id"], r["candidate"], float(r["seconds"] or 0.0), tokens, theirs.get(base, "")))
+                (at, run_id, r["case_id"], r["candidate"], float(r["seconds"] or 0.0), tokens, theirs.get(base, ""),
+                 recorded))
     return {k: sorted(v, key=lambda d: (d[0], d[1]), reverse=True) for k, v in out.items()}
 
 
@@ -70,11 +71,14 @@ def plan(conn, lane: str, digest: str, cells, *, cases=None, min_draws: int | No
     need = max(1, int(MIN_DRAWS if min_draws is None else min_draws))
     stored = draws(conn, lane, digest, exclude, cases, parts)
     taken: dict = {}
+    recorded: dict[str, str] = {}
     short = 0
     for cell in cells:
         got = stored.get((holdout.base_id(cell), paired.repeat_index(cell))) or []
         if len(got) >= need:
-            taken[cell] = list(got[0][1:])
+            taken[cell] = list(got[0][1:7])
+            if len(got[0]) > 7:
+                recorded[str(got[0][1])] = got[0][7]
         elif got:
             short += 1
     if short:
@@ -84,7 +88,8 @@ def plan(conn, lane: str, digest: str, cells, *, cases=None, min_draws: int | No
     by: dict[str, int] = {}
     for run_id, *_ in taken.values():
         by[str(run_id)] = by.get(str(run_id), 0) + 1
-    return {"digest": digest, "min_draws": need, "cells": taken, "runs": by,
+    # "stored": each source run's own digest when planned, so a resume after a re-store does not trust the old plan. #1776.
+    return {"digest": digest, "min_draws": need, "cells": taken, "runs": by, "stored": recorded,
             "reused": len(taken), "fresh": len(list(cells)) - len(taken)}
 
 
@@ -117,19 +122,39 @@ def rows(conn, applied: dict | None, inc_key: str) -> tuple[list[dict], list[str
     """(the stored rows for the applied cells, relabelled as this run's incumbent cells; cells whose row is gone)."""
     from harness import runs
     cells = (applied or {}).get("cells") or {}
+    planned = (applied or {}).get("stored") or {}
     by_run: dict[int, list] = {}
-    for cell, (run_id, case_id, candidate, *_) in cells.items():
-        by_run.setdefault(int(run_id), []).append((cell, case_id, candidate))
+    for cell, ref in cells.items():
+        by_run.setdefault(int(ref[0]), []).append((cell, ref))
     out, gone = [], []
     for run_id, wanted in sorted(by_run.items()):
         held = {(r["case_id"], r["candidate"]): r for r in runs.rows(conn, run_id)}
-        for cell, case_id, candidate in wanted:
+        now = _identities(conn, run_id) if str(run_id) in planned else None
+        for cell, ref in wanted:
+            case_id, candidate = ref[1], ref[2]
             r = held.get((case_id, candidate))
-            if r is None:
+            if r is None or (now is not None and not _still(now.get(candidate), planned[str(run_id)], ref)):
                 gone.append(cell)
                 continue
             out.append({**r, "candidate": inc_key, "case_id": cell, "reused_from": run_id})
     return out, sorted(gone)
+
+
+def _identities(conn, run_id: int) -> dict:
+    row = conn.execute("SELECT environment FROM runs WHERE id = ?", (run_id,)).fetchone()
+    try:
+        got = json.loads((row["environment"] if row else None) or "{}").get("identities")
+    except (ValueError, AttributeError):
+        return {}
+    return got if isinstance(got, dict) else {}
+
+
+def _still(ident, digest: str, ref) -> bool:
+    """The stored run still records the identity and case digest the plan took this cell under. #1776."""
+    if not isinstance(ident, dict) or str(ident.get("digest") or "") != digest:
+        return False
+    base = str(ref[1]).partition("#")[0]
+    return len(ref) < 6 or (ident.get("cases") or {}).get(base) == ref[5]
 
 
 def summary(rows_: list[dict], key: str) -> dict | None:

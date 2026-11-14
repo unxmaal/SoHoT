@@ -24,18 +24,21 @@ def cmd_fetch(a) -> int:
         import signal
         from harness import day_fetch
         # launchd ends a job with SIGTERM: raise, so the child is continued and ended, never left stopped.
-        signal.signal(signal.SIGTERM, day_fetch.terminated)
-        cleared = day_fetch.clear()
-        for line in cleared:
-            note(f"day fetch: cleared {line}, left by a controller that died")
-        got = day_fetch.run(a)
-        note(f"day fetch: {'ran' if got['started'] else 'nothing started'}: {got['why']}")
-        if got.get("started"):
-            rate = got.get("capped_rate_mb_s")
-            note(f"  {got['bytes'] / 1e9:.2f} GB in {got['seconds'] / 60:.0f} min, rc {got['rc']}"
-                 + (f"; {rate:.2f} MB/s over {got['capped_s'] / 60:.0f} capped min" if rate else ""))
-        emit(**got, cleared=cleared)
-        return 0
+        before = signal.signal(signal.SIGTERM, day_fetch.terminated)
+        try:
+            cleared = day_fetch.clear()
+            for line in cleared:
+                note(f"day fetch: cleared {line}, left by a controller that died")
+            got = day_fetch.run(a)
+            note(f"day fetch: {'ran' if got['started'] else 'nothing started'}: {got['why']}")
+            if got.get("started"):
+                rate = got.get("capped_rate_mb_s")
+                note(f"  {got['bytes'] / 1e9:.2f} GB in {got['seconds'] / 60:.0f} min, rc {got['rc']}"
+                     + (f"; {rate:.2f} MB/s over {got['capped_s'] / 60:.0f} capped min" if rate else ""))
+            emit(**got, cleared=cleared)
+            return 0
+        finally:
+            signal.signal(signal.SIGTERM, before)
     if getattr(a, "replay", None):
         return _replay(a)
     want = (getattr(a, "lane", "") or "").strip().lower()

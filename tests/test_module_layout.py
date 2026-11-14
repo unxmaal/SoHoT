@@ -104,8 +104,8 @@ def test_the_budget_sees_a_long_module(tmp_path):
 
 MIGRATED = ls.REPO / "tests" / "golden" / "migrated"
 #: The speech defaults winners.typed() reads per platform, pinned to the Mac's the recording used.
-MAC_SPEECH = {"DEFAULT_TTS_MODEL": "mlx-community/Kokoro-82M-bf16",
-              "DEFAULT_STT_MODEL": "mlx-community/parakeet-tdt-0.6b-v2"}
+MAC_SPEECH = {"default_tts_model": "mlx-community/Kokoro-82M-bf16",
+              "default_stt_model": "mlx-community/parakeet-tdt-0.6b-v2"}
 _DRIVE = re.compile(r"(?<![A-Za-z0-9_])[A-Za-z]:/")
 
 
@@ -134,7 +134,7 @@ def migrated_dump(version: int, tmp_path: Path, monkeypatch, speech=MAC_SPEECH) 
     db, home = tg.open_golden(version, tmp_path, monkeypatch)
     from harness import audio
     for name, value in speech.items():
-        monkeypatch.setattr(audio, name, value)
+        monkeypatch.setattr(audio, name, lambda v=value: v)
     started = time.time() - 1
     from harness import memory_store as ms
     zone = os.environ.get("TZ")
@@ -176,8 +176,8 @@ def test_each_golden_migrates_to_the_recorded_content(version, tmp_path, monkeyp
     assert got + "\n" == want.read_text(encoding="utf-8")
 
 
-WINDOWS_SPEECH = {"DEFAULT_TTS_MODEL": "kokoro-onnx/Kokoro-82M",
-                  "DEFAULT_STT_MODEL": "Systran/faster-whisper-base.en"}
+WINDOWS_SPEECH = {"default_tts_model": "kokoro-onnx/Kokoro-82M",
+                  "default_stt_model": "Systran/faster-whisper-base.en"}
 
 
 @pytest.mark.sqlite_store
@@ -194,7 +194,7 @@ def test_the_speech_pin_reaches_the_typed_defaults(monkeypatch):
     """Negative control: the Windows pin is what winners.typed() reads, so the test above is not a no-op."""
     from harness import audio, winners
     for name, value in WINDOWS_SPEECH.items():
-        monkeypatch.setattr(audio, name, value)
+        monkeypatch.setattr(audio, name, lambda v=value: v)
     assert winners.typed()["stt"] == "Systran/faster-whisper-base.en"
     assert winners.typed()["tts"] == "kokoro-onnx/Kokoro-82M"
 

@@ -227,10 +227,13 @@ def _same(cid) -> tuple[str, tuple]:
 
 
 def _latest(conn, lane: str, cid, settled: bool = False) -> dict | None:
+    from harness import machine_scope
     same, args = _same(cid)
     done = " AND outcome != ''" if settled else ""
-    row = conn.execute(f"SELECT * FROM reverifications WHERE lane = ? AND {same}{done} "
-                       "ORDER BY id DESC LIMIT 1", (lane, *args)).fetchone()
+    # Another machine's re-run neither holds nor flags this machine's lane. #1929.
+    here, mine = machine_scope.here(conn, "reverifications.mine")
+    row = conn.execute(f"SELECT * FROM reverifications WHERE lane = ? AND {same}{done} AND {here} "
+                       "ORDER BY id DESC LIMIT 1", (lane, *args, *mine)).fetchone()
     return dict(row) if row else None
 
 
@@ -315,8 +318,8 @@ def _harness_moved(conn, last: dict) -> bool:
         return False
     job = conn.execute("SELECT started_at, reason FROM jobs WHERE id = ?", (last["job_id"],)).fetchone()
     from harness import job_state as js
-    if job is not None and job["reason"] == js.EXPIRED:
-        # It expired pending (#1765): no code ran, so new code is no reason to queue it again before days_for.
+    if job is not None and job["reason"] in (js.EXPIRED, js.NEVER_FITS):
+        # It expired pending (#1765) or never fit (#1926): no code ran, so new code is no reason to queue it again before days_for.
         return False
     ran = (job["started_at"] if job else None) or last["queued_at"]
     from harness import deploy
@@ -481,8 +484,10 @@ def judge(conn, rv: dict, job: dict | None) -> tuple[str, str, str, str, int | N
     if run is None and job["state"] == CANCELLED:
         return CANCELLED, reasons.HARNESS, "", f"job {job['id']} was cancelled and stored no run", None
     if run is None:
+        from harness import job_state as js
+        said = f": {job['note']}" if job.get("reason") == js.NEVER_FITS and job.get("note") else ""
         return (UNRUN, reasons.HARNESS, "",
-                f"job {job['id']} {job['state']} rc={job['rc']} and stored no run", None)
+                f"job {job['id']} {job['state']} rc={job['rc']} and stored no run{said}", None)
     rid = run["id"]
     mine = runs.rows(conn, rid, rv["candidate_id"])
     if not mine:
@@ -583,9 +588,12 @@ def _expired(conn, rv: dict, job: dict | None, now: float, write: bool) -> dict 
 
 def settle(conn, *, now: float, write: bool = True, add=None, resumed: list | None = None) -> list[dict]:
     """Judge every queued re-run whose job finished; a paused one is resumed into `resumed`, never judged. #1403."""
+    from harness import machine_scope
     from harness import workqueue as wq
     out = []
-    for r in conn.execute("SELECT * FROM reverifications WHERE outcome = '' ORDER BY id").fetchall():
+    # Another machine's re-run is its own to judge, and its paused job to resume into its queue. #1929.
+    here, mine = machine_scope.here(conn, "reverifications.mine")
+    for r in conn.execute(f"SELECT * FROM reverifications WHERE outcome = '' AND {here} ORDER BY id", mine).fetchall():
         rv = dict(r)
         job = wq.get(rv["job_id"], conn=conn) if rv["job_id"] is not None else None
         expired = _expired(conn, rv, job, now, write)

@@ -745,12 +745,28 @@ def _admitted(job: dict) -> bool:
     """Whether memory admits a gpu job now; a refused one waits, its note naming the numbers once. #1558."""
     from harness import admission, item_lease
     with _store() as c:
-        ok, why = admission.admit(admission.need(job), item_lease.live(c))
+        n = admission.need(job)
+        ok, why = admission.admit(n, item_lease.live(c))
+        refused = "" if ok else admission.never(n)
+        if refused:
+            _never_fits(c, job, refused)
+            return False
         if not ok and job.get("note") != f"waits for memory: {why}":
             c.execute("UPDATE jobs SET note = ? WHERE id = ? AND state = ?",
                       (f"waits for memory: {why}", int(job["id"]), PENDING))
             c.commit()
     return ok
+
+
+def _never_fits(c, job: dict, why: str) -> None:
+    """Fail a pending job whose models can never be admitted here, naming why and how to run it, with one alert. #1926."""
+    from harness import paused_jobs
+    if not js.move(c, job["id"], PENDING, FAILED, js.NEVER_FITS, f"refused: {why}", finished_at=time.time()):
+        return
+    c.commit()
+    line = f"job {label(job['id'])} ({job.get('title') or 'untitled'}) refused, never started: {why}"
+    print(f"{time.strftime('%H:%M:%S')} {line}", flush=True)
+    paused_jobs._alert(line)
 
 
 def _on_node(job: dict, cls: str) -> bool:

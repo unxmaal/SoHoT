@@ -130,7 +130,7 @@ def test_versions_record_the_hf_task_venv_under_its_own_name(tmp_path, monkeypat
     monkeypatch.setattr(machine, "_uv_with_pins", lambda: {})
     monkeypatch.setattr(machine, "_mflux_cli", lambda: "")
     monkeypatch.setattr(serving, "llamacpp_build", lambda: "")
-    got = machine.versions.__wrapped__()
+    got = machine._versions.__wrapped__(())
     assert got["transformers"] == "5.16.1", "the checkout's own copy stays under its bare name"
     assert got["hf-task/transformers"] == "5.17.0"
     assert got["hf-task/sentence-transformers"] == "6.1.0"

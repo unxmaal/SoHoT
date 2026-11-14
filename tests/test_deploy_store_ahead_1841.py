@@ -307,7 +307,7 @@ def test_a_store_already_back_at_the_previous_schema_is_not_store_ahead(world, a
     deploy_switch.restore(Path(rec["backup"]), Path(rec["db"]))
     assert deploy_repair.schemas(rec) is None
     deploy.settle(now=time.time() + LATER, alive=lambda pid: False)
-    assert _deploys()[0]["outcome"] == ds.INTERRUPTED
+    assert _deploys()[0]["outcome"] == ds.ABANDONED
 
 
 @pytest.mark.gauntlet("nothing-and-failed-return-the-same-value",

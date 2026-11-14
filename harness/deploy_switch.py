@@ -297,7 +297,7 @@ def rollback(rec: dict, why: str, log, end: float, path=None) -> str:
 
 
 def alert(rec: dict, message: str, log) -> None:
-    extra = {"MONIT_SERVICE": "deploy", "MONIT_EVENT": rec.get("outcome", ""), "MONIT_DESCRIPTION": message}
+    extra = {"MONIT_SERVICE": "deploy", "MONIT_EVENT": ds.outcome_of(rec), "MONIT_DESCRIPTION": message}
     log.write(f"--- alert: {message}\n")
     try:
         subprocess.run([str(a) for a in rec["alert"]], cwd=rec["previous"], stdout=log, stderr=subprocess.STDOUT,
@@ -365,11 +365,13 @@ def switch(path: Path) -> dict:
                                detail=f"{why}; rolled back to {rec.get('previous_sha', '')[:12]}: {done}")
             except Exception as exc:  # noqa: BLE001 - a rollback that raises still ends in a recorded outcome
                 log.write(traceback.format_exc())
-                rec.update(outcome=FAILED, detail=f"{why}; the rollback itself failed at {rec['stage']}: {named(exc)}")
+                rec.update(outcome=FAILED, rollback_raised=named(exc),
+                           detail=f"{why}; the rollback itself failed at {rec['stage']}: {named(exc)}")
             head = "this machine is broken, not the release: " if rec.get("environment_broken") else ""
-            # The poll never queues a rolled-back sha again (#1913); keep in step with deploy_retry.command.
-            retry = f"; the poll will not retry it, `soh deploy now {rec['sha']}` does" if rec["outcome"] == ROLLED_BACK else ""
-            alert(rec, f"{head}deploy of {rec['sha'][:12]} {rec['outcome']}: {rec['detail']}{retry}", log)
+            got = ds.outcome_of(rec)
+            # The poll never queues a NO_RETRY sha again (#1913, #1916); keep in step with deploy_retry.command.
+            retry = f"; the poll will not retry it, `soh deploy now {rec['sha']}` does" if got in ds.NO_RETRY else ""
+            alert(rec, f"{head}deploy of {rec['sha'][:12]} {got}: {rec['detail']}{retry}", log)
         if not rec.get("queue_was_paused"):
             Path(rec["queue_flag"]).unlink(missing_ok=True)
         _end(rec)

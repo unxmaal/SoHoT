@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import re
-from functools import lru_cache
 from pathlib import Path
 
 # mflux is a `uv tool`, so its version is not in this project's environment.
@@ -21,9 +20,8 @@ def dist_versions(site) -> dict[str, str]:
     return found
 
 
-@lru_cache(maxsize=1)
 def tool_versions(root: Path | None = None) -> dict[str, str]:
-    """Installed mflux/mlx versions, read from the uv tool venv. {} if absent."""
+    """Installed mflux/mlx versions, read from the uv tool venv now, never a copy from process start (#1776). {} if absent."""
     root = Path(root) if root is not None else MFLUX_TOOL_ROOT
     found: dict[str, str] = {}
     for site in sorted(root.glob("lib/python*/site-packages")):

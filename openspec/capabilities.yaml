@@ -215,6 +215,7 @@ capabilities:
       - harness/owned.py
       - harness/node_reach.py
       - harness/tether.py
+      - harness/reaping.py
 
   - name: local-delegation
     summary: local_complete and local_decide over MCP or `soh local`, handed to a lane's adopted local model, and what became of each answer.

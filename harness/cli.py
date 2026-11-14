@@ -325,7 +325,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("-m", "--model", default=None,
                    help="tts model, overriding the voice's (a kokoro voice uses "
                         "the lane's adopted model, else "
-                        f"{audio.DEFAULT_TTS_MODEL})")
+                        f"{audio.default_tts_model()})")
     s.add_argument("--base-url", default=audio.DEFAULT_BASE_URL)
     s.add_argument("--no-play", dest="play", action="store_false", default=True)
     s.set_defaults(func=lanes_cmd.cmd_say)
@@ -1222,7 +1222,7 @@ def build_parser() -> argparse.ArgumentParser:
     h.add_argument("--seconds", type=float, default=5.0)
     h.add_argument("-m", "--model", default=None,
                    help="stt model (default: the lane's adopted model, else "
-                        f"{audio.DEFAULT_STT_MODEL})")
+                        f"{audio.default_stt_model()})")
     h.add_argument("--base-url", default=audio.DEFAULT_BASE_URL)
     h.add_argument("--worst", choices=("stt", "tts"), default="",
                    help="list the stored clips with the highest WER, to listen to (#94)")
