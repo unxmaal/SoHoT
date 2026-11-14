@@ -13,12 +13,16 @@ DEPLOYED, ROLLED_BACK, FAILED, INTERRUPTED = "deployed", "rolled_back", "failed"
 FAILED_FORWARD = "failed_forward"
 #: A switch that died with no restart left while the store is past the previous release's schema: it waits on a repair. #1841.
 STORE_AHEAD = "store_ahead"
+#: A switch whose rollback raised: link, store and units may be split, so nothing retries it on its own. #1916.
+ROLLBACK_RAISED = "rollback_raised"
 
 #: The job's stages (deploys row), then the switch's (its record), then the outcomes; stage equals outcome once settled.
 JOB_STAGES = (BUILDING, SMOKING, MIGRATING, HANDED_OFF)
 SWITCH_STAGES = (SWITCHING, FLIPPED, INSTALLED, VERIFIED, ROLLING_BACK, FLIPPED_BACK, RESTORED, RESTORE_FAILED,
                  ROLLBACK_INSTALLED, ROLLBACK_VERIFIED)
-OUTCOMES = (DEPLOYED, ROLLED_BACK, FAILED, FAILED_FORWARD, INTERRUPTED, STORE_AHEAD)
+OUTCOMES = (DEPLOYED, ROLLED_BACK, FAILED, FAILED_FORWARD, INTERRUPTED, STORE_AHEAD, ROLLBACK_RAISED)
+#: Outcomes after which the switch ran and could not keep the sha: the poll never queues it again on its own (#1913, #1916).
+NO_RETRY = (ROLLED_BACK, FAILED_FORWARD, ROLLBACK_RAISED)
 STAGES = (*JOB_STAGES, *SWITCH_STAGES, *OUTCOMES)
 RUNNING = frozenset(JOB_STAGES + SWITCH_STAGES)
 
@@ -84,6 +88,9 @@ def outcome_of(rec: dict) -> str:
     got = rec.get("outcome") or ""
     if got == FAILED and rec.get("stage") in (FAILED, RESTORE_FAILED) and rec.get("restore_failed"):
         return FAILED_FORWARD
+    # The record says failed so an older release's settle can still close it (its MOVES lack the new value). #1916.
+    if got == FAILED and rec.get("rollback_raised"):
+        return ROLLBACK_RAISED
     return got
 
 
