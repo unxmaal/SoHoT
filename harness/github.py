@@ -49,11 +49,13 @@ TTL_BY_ENDPOINT_HOURS = {
 def ttl_for(api_path: str, default: float = DEFAULT_TTL_HOURS) -> float:
     """Hours this answer is worth reusing. Longest match wins, so
     `repos/x/y/contributors` gets the contributors TTL, not the repos one."""
+    from harness import feeds
     best, hours = "", default
     for marker, value in TTL_BY_ENDPOINT_HOURS.items():
         if marker in api_path and len(marker) > len(best):
             best, hours = marker, value
-    return hours
+    # The table is sized for the default interval; a shorter one shrinks every TTL with it. #1776.
+    return min(hours, hours * feeds.interval_days() / feeds.DEFAULT_INTERVAL_DAYS)
 PER_PAGE = 100
 #: repos/<r>/stargazers and /subscribers return 404 to this token and 401 to no
 #: token at all, for every repo, so who starred a repo cannot be listed. The

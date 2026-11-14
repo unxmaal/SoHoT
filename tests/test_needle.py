@@ -251,11 +251,11 @@ def test_the_runtime_version_is_the_engine_version_at_the_pinned_revision(tmp_pa
 def test_machine_versions_records_needle_when_it_is_installed(monkeypatch):
     from harness import machine
     monkeypatch.setattr(needle, "installed_version", lambda *a, **k: "3.1.0@abcdef0")
-    machine.versions.cache_clear()
+    machine._versions.cache_clear()
     try:
         assert machine.versions()["needle"] == "3.1.0@abcdef0"
     finally:
-        machine.versions.cache_clear()
+        machine._versions.cache_clear()
 
 
 def test_the_platform_folder_is_the_cards_and_unknown_platforms_are_refused():

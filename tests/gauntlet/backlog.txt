@@ -20,7 +20,6 @@ a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates evals/run.py:_e
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/checks/render.py:_sandbox_is_unusable
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/checks/staging.py:check
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/commands/loop.py:_after_deploy
-a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/commands/repo_screen.py:cmd_repo_screen
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/ds4.py:default_ctx
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/ds4.py:write_state
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/exclusive.py:_mark
@@ -32,7 +31,6 @@ a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/hf_task
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/identity.py:_save_cache
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/inspect.py:_write_size_cache
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/inventory_weight.py:ci_failures.one
-a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/machine.py:versions
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/nodes.py:_record
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/publish.py:set_enabled
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/queue_pause.py:hold_for_deploy
@@ -40,7 +38,6 @@ a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/review.
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/runner_gaps.py:diffusers_pipelines
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/runner_gaps.py:mlx_lm_types
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/runner_gaps.py:mlx_vlm_types
-a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/runtime_trials.py:watch
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/serve_lease.py:_write
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/unverified.py:_remember
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/volume.py:_save

@@ -265,7 +265,7 @@ def test_the_versions_probe_reads_every_venv_a_lane_runs_through(tmp_path,
     monkeypatch.setattr(machine, "_uv_with_pins", lambda: {"mlx-audio": "0.5.3"})
     monkeypatch.setattr(machine, "_mflux_cli", lambda: pytest.fail("not needed"))
     monkeypatch.setattr(serving, "llamacpp_build", lambda: "10869")
-    got = machine.versions.__wrapped__()
+    got = machine._versions.__wrapped__(())
     assert got["mlx"] == "0.32.2", "mflux's own venv wins for what it carries"
     assert got["mlx-lm"] == "0.32.0"
     assert got["diffusers"] == "0.41.0" and got["torch"] == "2.8.0"

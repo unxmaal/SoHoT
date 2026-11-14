@@ -49,22 +49,14 @@ def test_tool_versions_reads_the_uv_tool_venv(tmp_path):
     for name in ("mflux-0.19.1.dist-info", "mlx-0.32.2.dist-info",
                  "mlx_metal-0.32.2.dist-info", "mflux", "notadistinfo"):
         (site / name).mkdir()
-    tool_versions.cache_clear()
-    try:
-        got = tool_versions(tmp_path)
-    finally:
-        tool_versions.cache_clear()
+    got = tool_versions(tmp_path)
     assert got["mflux"] == "0.19.1"
     assert got["mlx"] == "0.32.2"
     assert got["mlx-metal"] == "0.32.2"
 
 
 def test_tool_versions_on_a_missing_root_is_empty_not_an_error():
-    tool_versions.cache_clear()
-    try:
-        assert tool_versions(Path("/nonexistent/uv/tools/mflux")) == {}
-    finally:
-        tool_versions.cache_clear()
+    assert tool_versions(Path("/nonexistent/uv/tools/mflux")) == {}
 
 
 def test_the_pin_matches_what_is_actually_installed_here():
@@ -74,7 +66,6 @@ def test_the_pin_matches_what_is_actually_installed_here():
     says so -- which is the moment to re-run the stage rather than to edit the
     pin.
     """
-    tool_versions.cache_clear()
     have = tool_versions()
     if not have.get("mflux"):
         pytest.skip("mflux is not installed here")

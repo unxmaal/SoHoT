@@ -30,15 +30,21 @@ def gather(a, now: float) -> dict:
 
     since = cr.parse_when(a.since, now)
     first_day = ledger.days_between(since, now)[0]
-    start = ledger.day_start(first_day)
     week = ledger.days_between(now - ledger.RATIO_DAYS * 86400, now)[0]
     chosen = store.choose_read()
     try:
-        reads, got = read_all(chosen, {
+        reads, got = read_all(chosen, {"ledger_days": lambda c: ledger.recorded(c, min(first_day, week))})
+        if getattr(a, "record", False):
+            # A day a missed night or a DST shift left unrewritten is recorded again, not left short. #1776.
+            first_day = min([first_day, *ledger.unsettled(got["ledger_days"])])
+        start = ledger.day_start(first_day)
+        more, rest = read_all(chosen, {
             "gateway_requests": lambda c: ledger.gateway_rows(c, start),
             "delegations": lambda c: ledger.delegation_rows(c, start),
-            "ledger_days": lambda c: ledger.recorded(c, min(first_day, week)),
             "otel_events": lambda c: otel.events(c, start, now + 1)})
+        order = ("gateway_requests", "delegations", "ledger_days", "otel_events")
+        reads = {k: {**reads, **more}[k] for k in order}
+        got = {**got, **rest}
     finally:
         chosen.close()
     rows, dels, history, ev = (got[k] for k in ("gateway_requests", "delegations", "ledger_days", "otel_events"))
