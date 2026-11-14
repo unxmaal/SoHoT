@@ -13,6 +13,7 @@ import pytest
 
 import shells
 from harness import deploy, deploy_switch, paths
+from harness import deploy_state as ds
 from harness import memory_store as ms
 from harness import workqueue as wq
 from harness import job_settle, queue_pause
@@ -376,9 +377,9 @@ def test_the_runner_restarting_mid_deploy_leaves_no_job_running(world, ending, a
     if ending == "deployed":
         assert (state, d["outcome"]) == (wq.DONE, deploy.DEPLOYED)
     elif ending == "switch died":
-        assert (state, d["outcome"]) == (wq.FAILED, deploy.INTERRUPTED)
+        assert (state, d["outcome"]) == (wq.FAILED, ds.ABANDONED)
         assert "without an outcome" in d["detail"] and not wq.paused()
-        assert len(alerts) == 1 and "interrupted" in alerts[0]
+        assert len(alerts) == 1 and ds.ABANDONED in alerts[0]
     else:
         assert (state, d["outcome"]) == (wq.RUNNING, "")
         rec.update(outcome=deploy.DEPLOYED, detail="serving", finished_at=time.time())

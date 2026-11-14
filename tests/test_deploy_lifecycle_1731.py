@@ -131,7 +131,7 @@ def test_two_settles_racing_one_deploy_close_it_and_its_job_once(alerts):
     with wq._store() as a, wq._store() as b:
         first = deploy._settle_one(a, dict(row), time.time(), lambda pid: False)
         second = deploy._settle_one(b, dict(row), time.time(), lambda pid: False)
-    assert first == {"deploy": did, "outcome": ds.INTERRUPTED} and second is None
+    assert first == {"deploy": did, "outcome": ds.ABANDONED} and second is None
     assert len(alerts) == 1
     assert wq.get(job["id"])["state"] == wq.FAILED
 
