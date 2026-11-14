@@ -51,32 +51,20 @@ def add_parser(sub) -> None:
     p.set_defaults(func=cmd_scaffold)
 
 
-def _floats(text: str) -> list[float]:
-    return [float(v) for v in text.split(",") if v.strip()]
-
-
-def _values(text: str) -> list:
-    return [int(v) if v.strip().lstrip("-").isdigit() else float(v) for v in text.split(",") if v.strip()]
-
-
 def cmd_scaffold(a) -> int:
     from harness import knobs, scaffold
     root = Path(a.root) if a.root else knobs.REPO
-    kind, tag = a.scaffold_kind, scaffold._issue(a.issue)
+    kind = a.scaffold_kind
     try:
         if kind == "module":
             done = scaffold.module(root, a.path, a.summary, capability=a.capability, issue=a.issue, command=a.command)
         elif kind == "knob":
-            done = []
-            scaffold.add_knob(root, a.area or scaffold.area_of(a.site), a.name, a.site, _values(a.values),
-                              f"{a.note.rstrip('.')} ({tag})", a.unit, tag, done)
+            done = scaffold.scaffold_knob(root, a.name, a.site, a.values, a.note, unit=a.unit, area=a.area, issue=a.issue)
         elif kind == "not-gating":
-            done = []
-            scaffold.add_why(root, a.area or scaffold.area_of(a.site), "NOT_GATING", a.site, f"{a.why.rstrip('.')} ({tag})",
-                             tag, done)
+            done = scaffold.scaffold_not_gating(root, a.site, a.why, area=a.area, issue=a.issue)
         elif kind == "timeout":
             done = scaffold.timeout(root, a.path, a.name, a.seconds, area=a.area, why=a.why, knob=a.knob,
-                                    values=_floats(a.values), note=a.note, issue=a.issue)
+                                    values=a.values, note=a.note, issue=a.issue)
             if a.knob:
                 note(f"record its cut where it binds: with cuts.timeout({scaffold.q(a.knob)}, what): ...")
         elif kind == "unit":
