@@ -105,6 +105,22 @@ def budget_gb(held: list[dict]) -> tuple[float, str]:
                                f"{ledger:.1f} GiB left by the ledger after {leased:.1f} GiB leased")
 
 
+def never(n: Need) -> str:
+    """Why a need can never be admitted here, even with no lease held: over the ceiling less the reserve and held set; '' when it may fit later. #1926."""
+    from harness import memory
+    if not n.gb:
+        return ""
+    ceiling = memory.ceiling_gb()
+    reserve, held = memory.measured_reserve_gb(), memory.held_gb()
+    most = ceiling - reserve - held
+    if ceiling <= 0 or n.gb <= most + 1e-9:
+        return ""
+    return (f"needs {n.gb:.1f} GiB ({', '.join(f'{s} {g}' for s, g in n.priced)}) but at most {most:.1f} GiB is ever "
+            f"admissible here: a {ceiling:.1f} GiB ceiling less a {reserve:.1f} GiB reserve and {held:.1f} GiB held by "
+            f"pinned models and the Docker VM. Run it on another node, or with a smaller quant, or after stopping what "
+            f"holds the {held:.1f} GiB; a harness limit, never the model's")
+
+
 def admit(n: Need, held: list[dict], sample=None) -> tuple[bool, str]:
     """(admitted, why): normal pressure, and a need that is unknown, resident or inside the budget."""
     from harness import pressure
