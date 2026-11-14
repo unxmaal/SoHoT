@@ -142,7 +142,8 @@ def propose(conn, base: str, fit: ins.Fit) -> str:
         ms.link(conn, base, fit.repo, RELATION)
     try:
         ms.decide(conn, fit.repo, "queued", tier=ms.INSPECT, size_bytes=fit.largest,
-                  reason=reasons.CANDIDATE, detail=f"fits: quantized from {base}: {fit.why}"[:200])
+                  reason=reasons.CANDIDATE, event=fit.verdict, sized_by=ins.sized_by(fit),
+                  detail=f"fits: quantized from {base}: {fit.why}"[:200])
     except ms.IllegalTransition as exc:
         return f"    {base}: {fit.repo} kept its state: {exc}"
     return f"    {base}: proposed {fit.repo} ({fit.largest / ins.GIB:.1f} GiB)"
@@ -216,9 +217,9 @@ def unrunnable(conn) -> list[str]:
     rows = conn.execute(
         "SELECT p.id, p.name FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
         "WHERE p.registry = ? AND p.state = 'declined' AND ("
-        "(v.tier = ? AND (v.detail LIKE 'too-big%' OR v.detail LIKE 'needs-%')) "
+        "(v.tier = ? AND (v.event = ? OR substr(v.event, 1, ?) = ?)) "
         "OR (v.tier = ? AND v.reason = ?)) ORDER BY p.id",
-        (ms.HUGGINGFACE, ms.INSPECT, ms.SCREEN, reasons.RUNTIME)).fetchall()
+        (ms.HUGGINGFACE, ms.INSPECT, ins.TOO_BIG, len(ins.NEEDS), ins.NEEDS, ms.SCREEN, reasons.RUNTIME)).fetchall()
     out = []
     for r in rows:
         parent = conn.execute("SELECT parent FROM lineage WHERE proposal_id = ? AND kind = ? "
@@ -300,6 +301,7 @@ def _follow_seed(conn, base, get, ceiling, machine) -> str:
         ms.decide_or_skip(conn, base, outcome, tier=ms.INSPECT,
                           size_bytes=fit.largest if outcome == "queued" else 0,
                           reason=ins.reason_of(fit), until=ins.until_of(fit),
+                          event=fit.verdict, sized_by=ins.sized_by(fit),
                           detail=f"{fit.verdict}: {fit.why}"[:200])
     if fit.verdict == "fits":
         return f"    {base}: proposed as it is ({fit.largest / ins.GIB:.1f} GiB)"

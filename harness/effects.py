@@ -98,12 +98,12 @@ def _stored(row, plan: dict) -> str:
 
 def _replayed(row, plan: dict, stored: str, effect: float, how: str) -> tuple[str, str]:
     """(class, why) the verdict would have under `effect` and the #725 confirmation."""
-    from harness import reasons
-    detail = row["detail"] or ""
+    from harness import adopt, baseline, reasons
+    event = row["event"] or ""
     old = float(plan.get("effect") or effect)
     if stored == "adopted":
         dev = plan.get("dev") or {}
-        if how == "by-hand" or "taken from measurement" in detail:
+        if how == "by-hand" or event == baseline.EVENT:
             return stored, "not decided by the paired gate"
         if dev.get("p") is not None and int(dev.get("gained") or 0) > int(dev.get("lost") or 0) \
                 and float(dev["p"]) <= _alpha():
@@ -114,10 +114,10 @@ def _replayed(row, plan: dict, stored: str, effect: float, how: str) -> tuple[st
     if stored == reasons.LANE_TOO_SMALL:
         return (stored, "a smaller effect needs more cases") if effect <= old + 1e-9 else (
             stored, f"may change: +{effect:.2f} needs fewer cases than +{old:.2f}")
-    if "futility" in detail:
+    if event == adopt.FUTILITY:
         return (stored, "conditional power only falls at a smaller effect") if effect <= old + 1e-9 else (
             stored, f"may change: conditional power rises at +{effect:.2f}")
-    if "significantly worse" in detail:
+    if event == adopt.WORSE:
         return stored, "a significant loss does not depend on the effect"
     if plan.get("unmeasured"):
         return reasons.UNDERPOWERED, "the plan rests on assumed rates"
@@ -165,7 +165,7 @@ def replay(conn, effects: dict) -> list[dict]:
     """Every stored adopt verdict's class as stored, under `effects` (lane -> noise effect) alone and floored by power.used, with the confirmation step."""
     from harness import power
     rows = conn.execute(
-        "SELECT v.id, v.outcome, v.failure_class, v.detail, v.power, c.lane AS cand_lane, a.how "
+        "SELECT v.id, v.outcome, v.failure_class, v.detail, v.event, v.power, c.lane AS cand_lane, a.how "
         "FROM verdicts v LEFT JOIN candidates c ON c.id = v.candidate_id "
         "LEFT JOIN adoptions a ON a.verdict_id = v.id WHERE v.tier = 'adopt' ORDER BY v.id").fetchall()
     out = []

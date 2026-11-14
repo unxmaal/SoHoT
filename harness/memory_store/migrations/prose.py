@@ -8,9 +8,38 @@ import time
 
 from harness.memory_store.cards import set_card
 from harness.memory_store.machines import remember_machine
-from harness.memory_store.revisit import _UNTIL_FROM_DETAIL, until_for
 from harness.memory_store.schema import GIB, HUGGINGFACE, INSPECT, SCREEN, TERMINAL, _columns
 from harness.memory_store.transitions import _migration_retraction, _write
+
+
+_NONE_OF = re.compile(r"none of ([\w, ]+)$")
+
+
+_TOO_BIG = re.compile(r"^too-big:.*?([\d.]+)\s*GiB")
+
+
+def until_for(detail: str) -> str:
+    """The predicate a refusal's own sentence implies, or '' if none."""
+    detail = detail or ""
+    m = _TOO_BIG.match(detail)
+    if m:
+        return f"ceiling_gb:>{float(m.group(1)):.1f}"
+    for phrase, until in _UNTIL_FROM_DETAIL:
+        if detail.lower().startswith(phrase):
+            many = _NONE_OF.search(detail)
+            if many:
+                return "runtime:" + "|".join(
+                    rt.strip() for rt in many.group(1).split(","))
+            return until
+    return ""
+
+
+#: What a pre-#266 refusal was waiting for, derived from the phrase the tier
+#: wrote. Keyed on the runtime name because machine.refuses() builds these,
+#: so the two stay in step without a second list to maintain.
+_UNTIL_FROM_DETAIL = tuple(
+    (f"needs-{rt}", f"runtime:{rt}")
+    for rt in ("cuda", "rocm", "vllm", "mlx", "llamacpp"))
 
 
 def _backfill_until(conn: sqlite3.Connection) -> None:

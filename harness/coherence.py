@@ -5,7 +5,7 @@ from pathlib import Path
 
 HELD = ("SELECT v.id, p.id AS pid, p.name, p.lane, p.state, v.tier, v.reason, v.until, v.detail, v.decided_at, "
         "v.run_path, v.run_id, v.candidate_id, v.failure_class, v.power, v.split_version, p.next_retest_at, "
-        "v.lane AS verdict_lane FROM proposals p "
+        "v.lane AS verdict_lane, v.event FROM proposals p "
         "JOIN verdicts v ON v.id = p.state_verdict_id "
         "WHERE p.state IN ('broken', 'declined', 'ignored') ORDER BY v.id")
 
@@ -149,7 +149,7 @@ def lane_bound(conn) -> list[dict]:
     out = []
     for r in conn.execute(HELD).fetchall():
         lane = r["verdict_lane"] or r["lane"] or (r["detail"] or "").partition(":")[0].strip()
-        futile = r["reason"] == reasons.CANDIDATE and not r["failure_class"] and _futility(r["detail"], lane)
+        futile = r["reason"] == reasons.CANDIDATE and not r["failure_class"] and r["event"] == adopt.FUTILITY
         if (r["state"], r["tier"]) != ("declined", ADOPT) or r["until"] \
                 or (r["reason"] != reasons.LIMIT and not futile) or r["failure_class"] == reasons.LANE_TOO_SMALL:
             continue
@@ -170,10 +170,6 @@ def lane_bound(conn) -> list[dict]:
                     "evidence": {"power": r["power"], "split_version": r["split_version"]},
                     "detail": f"{lane}: re-decided ({'#1452' if futile else '#1049'}): {why}; {r['detail']}"[:600]})
     return out
-
-
-def _futility(detail: str, lane: str) -> bool:
-    return (detail or "").removeprefix(f"{lane}:").lstrip().startswith("futility:")
 
 
 def past_growth(conn) -> list[dict]:

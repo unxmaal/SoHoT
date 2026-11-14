@@ -41,7 +41,7 @@ from harness.memory_store.revisit import (ATTACHMENT_DECLINE, _version_tuple, ca
     requeue_revisitable, requeue_stale_too_big,
     requeue_unranked, requeue_upstream_committed, resolved_run_paths, revisitable,
     rewrite_runner_gap_untils, runner_gap_rewrites, runner_waits, runtime_by_library, sized_by_repo_total,
-    stale_too_big, unranked_terminal, until_for, until_met, upstream_committed,
+    stale_too_big, unranked_terminal, until_met, upstream_committed,
     waiting_on_upstream)  # noqa: F401
 from harness.memory_store.proposals import (REJECTIONS, UNRANKED, Seen, by_registry, by_source,
     export, extraction, judgeable, judgeable_total, latest, link, parents, pending,

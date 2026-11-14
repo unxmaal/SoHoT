@@ -409,7 +409,7 @@ def _answer_method(store, spec: str) -> str:
     while methods.is_method(base) and methods.base_of(base):
         base = methods.base_of(base)
     got = store.execute(
-        "SELECT v.outcome, v.reason, v.until, v.detail, v.size_bytes, "
+        "SELECT v.outcome, v.reason, v.until, v.detail, v.size_bytes, v.sized_by, "
         "v.upstream_idle_days, p.size_bytes AS base_size FROM verdicts v "
         "JOIN proposals p ON v.id = p.state_verdict_id WHERE p.name = ? AND v.tier = ?",
         (base, ms.INSPECT)).fetchone()
@@ -419,7 +419,7 @@ def _answer_method(store, spec: str) -> str:
     try:
         ms.decide(store, spec, got["outcome"], tier=ms.INSPECT,
                   size_bytes=got["size_bytes"], reason=got["reason"],
-                  until=got["until"], upstream_idle_days=got["upstream_idle_days"],
+                  until=got["until"], upstream_idle_days=got["upstream_idle_days"], sized_by=got["sized_by"],
                   detail=f"from its base {base}: {got['detail']}"[:200])
     except KeyError:
         return f"    {spec}: {got['outcome']} as its base {base}, and not a proposal to record"
@@ -584,6 +584,7 @@ def _report_inspect(a) -> int:
                               upstream_idle_days=fit.upstream_idle_days,
                               reason=ins.reason_of(fit), until=ins.until_of(fit),
                               ceiling_gb=fit.ceiling / ins.GIB if fit.ceiling else None,
+                              event=fit.verdict, sized_by=ins.sized_by(fit),
                               detail=f"{fit.verdict}: {fit.why}"[:200])
                 except ms.IllegalTransition as exc:
                     print(f"    kept its state: {exc}")

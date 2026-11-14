@@ -515,6 +515,17 @@ def test_decide_records_the_event_its_writer_names_and_none_when_none_is_given(t
     assert got == {named: "downloaded", bare: "", omitted: ""}
 
 
+def test_decide_records_what_sized_an_inspect_and_nothing_when_none_is_given(tmp_path):
+    conn = _store(tmp_path)
+    named = ms.decide(conn, "org/thing", "queued", tier=ms.INSPECT, detail="fits", sized_by="gguf")
+    ms.record(conn, ms.Seen(name="org/other", source="feed", url="u"))
+    bare = ms.decide(conn, "org/other", "queued", tier=ms.INSPECT, detail="fits", sized_by=None)
+    ms.record(conn, ms.Seen(name="org/third", source="feed", url="u"))
+    omitted = ms.decide(conn, "org/third", "queued", tier=ms.INSPECT, detail="fits")
+    got = dict(conn.execute("SELECT id, sized_by FROM verdicts WHERE id IN (?, ?, ?)", (named, bare, omitted)).fetchall())
+    assert got == {named: "gguf", bare: "", omitted: ""}
+
+
 def test_decide_records_the_lane_its_writer_names_and_none_when_none_is_given(tmp_path):
     conn = _store(tmp_path)
     plain = ms.decide(conn, "org/thing", "declined", tier=ms.INSPECT, detail="too-big")

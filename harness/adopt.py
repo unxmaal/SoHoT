@@ -46,6 +46,9 @@ class Held(Exception):
 #: exact McNemar test on discordant cells; see harness/paired.py.
 ALPHA = 0.05
 
+#: verdicts.event for an adopt stop the replays tell apart: a futility look, a significant loss. #1942.
+FUTILITY, WORSE = "futility", "worse"
+
 
 def alpha_for(tested: int) -> float:
     """The level the next challenger on a holdout faces after `tested` earlier ones: ALPHA over the comparison count. #698."""
@@ -82,6 +85,8 @@ class Verdict:
     until: str = ""
     #: (p, alpha) when a challenger better on the metric was refused only by the paired gate's alpha. #1087.
     alpha_cut: tuple = ()
+    #: verdicts.event: FUTILITY, WORSE or baseline.EVENT, which readers select on rather than why. #1942.
+    event: str = ""
 
 
 def better(incumbent: dict, challenger: dict, lane: str = "") -> bool:
@@ -197,7 +202,7 @@ def decide(lane: str, incumbent: dict, challenger: dict,
     alpha_cut = got.alpha_cut
     worse = _worse(rows, name_i, name_c, lane, alpha) if rows and not got.adopt else ""
     if worse:
-        got = Verdict(lane, name_i, name_c, False, f"{got.why}; {worse}")
+        got = Verdict(lane, name_i, name_c, False, f"{got.why}; {worse}", event=WORSE)
     elif not got.adopt and plan is not None and rows:
         got = _lane_too_small(lane, name_i, name_c, got, plan, split) or _null(lane, name_i, name_c, got, plan)
         evidence.update({k: got.evidence[k] for k in ("min_effect", "lane_effect") if got.evidence.get(k)})
@@ -208,7 +213,7 @@ def decide(lane: str, incumbent: dict, challenger: dict,
         evidence["cost"] = methods.cost(incumbent, challenger, spec)
     why = "; ".join([got.why, *notes, *([cost] if cost else [])])
     return Verdict(lane, name_i, name_c, got.adopt, why, got.how,
-                   got.failure_class, evidence, until=got.until, alpha_cut=alpha_cut)
+                   got.failure_class, evidence, until=got.until, alpha_cut=alpha_cut, event=got.event)
 
 
 def _lane_too_small(lane, name_i, name_c, got: Verdict, plan, split) -> Verdict | None:
@@ -523,7 +528,7 @@ def confirm(verdict: Verdict, rows, split, screened=frozenset(), *, fresh: bool 
         return replace(verdict, why=f"{verdict.why}; confirmed on {head}", evidence=evidence)
     worse = _worse(cells, name_i, name_c, lane)
     if worse:
-        return replace(verdict, adopt=False, failure_class="", evidence=evidence,
+        return replace(verdict, adopt=False, failure_class="", evidence=evidence, event=WORSE,
                        why=f"won the holdout, but on {cases} dev case(s) it is {worse} ({verdict.why})")
     # A null the cells could see is a loss; only one they could not is underpowered, as decide() rules. #725, #1375.
     plan = _confirm_plan(cells, name_i, lane)
@@ -619,7 +624,7 @@ def record(conn, verdict: Verdict, spec: str = "",
     try:
         # The verdict and its adoption commit together: one that loses the lane, or dies, leaves neither. #1758.
         vid = ms.decide(conn, row["proposal"] or "", outcome, tier=TIER,
-                        detail=detail[:200], candidate_id=cid, run_id=run_id, lane=verdict.lane,
+                        detail=detail[:200], candidate_id=cid, run_id=run_id, lane=verdict.lane, event=verdict.event,
                         reason=reason, until=_spent_until(conn, row["proposal"] or "", verdict, reason),
                         commit=False)
         if verdict.failure_class or verdict.evidence:

@@ -162,10 +162,10 @@ def test_a_derivative_that_failed_to_load_is_followed_through_its_quantized_pare
                   detail="the installed runtime could not load it")
         ms.record(conn, ms.Seen(name="org/Huge", source="t", registry=ms.HUGGINGFACE, lane="code"))
         ms.decide(conn, "org/Huge", "declined", tier=ms.INSPECT, reason=reasons.MACHINE,
-                  detail="too-big: smallest weight it names is 67.0 GiB", until="ceiling_gb:>67.0")
+                  detail="too-big: smallest weight it names is 67.0 GiB", until="ceiling_gb:>67.0", event=ins.TOO_BIG)
         ms.record(conn, ms.Seen(name="org/Dead", source="t", registry=ms.HUGGINGFACE, lane="code"))
         ms.decide(conn, "org/Dead", "declined", tier=ms.INSPECT, reason=reasons.UPSTREAM,
-                  detail="dead: last commit 3 years ago", until="commit_after:2023-01-01T00:00:00Z")
+                  detail="dead: last commit 3 years ago", until="commit_after:2023-01-01T00:00:00Z", event="dead")
         assert quants.unrunnable(conn) == [BASE, "org/Huge"]
     finally:
         conn.close()
@@ -229,7 +229,7 @@ def test_a_rate_limited_listing_defers_the_sweep():
     conn = ms.connect()
     try:
         ms.record(conn, ms.Seen(name=BASE, source="t", registry=ms.HUGGINGFACE, lane="code"))
-        ms.decide(conn, BASE, "declined", tier=ms.INSPECT, detail="too-big: 67 GiB")
+        ms.decide(conn, BASE, "declined", tier=ms.INSPECT, detail="too-big: 67 GiB", event=ins.TOO_BIG)
         get = _registry(extra={quants.LISTING.format(base=BASE): feeds.RateLimitedFeed("429")})
         lines = quants.sweep(conn, get=get, ceiling=22 * GIB, machine=_machine("llamacpp"))
         assert "rate-limited" in lines[-1]

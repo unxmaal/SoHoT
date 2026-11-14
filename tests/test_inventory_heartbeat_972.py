@@ -17,7 +17,7 @@ def _hf(conn, name):
 def _summed(conn):
     _hf(conn, "org/summed")
     ms.decide(conn, "org/summed", "declined", tier=ms.INSPECT, reason="machine", until="ceiling_gb:>223.2",
-              detail=SUMMED, ceiling_gb=66.0)
+              detail=SUMMED, ceiling_gb=66.0, event="too-big", sized_by="listing")
     return "org/summed"
 
 

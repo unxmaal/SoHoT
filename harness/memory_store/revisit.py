@@ -419,15 +419,15 @@ def requeue_unranked(conn) -> list[str]:
 
 
 def sized_by_repo_total(conn) -> list[dict]:
-    """State-holding too-big HF inspect refusals whose detail names no variant: sized by the listing's sum. #947."""
-    from harness import reasons, variants
+    """State-holding too-big HF inspect refusals sized by the listing's sum, not a variant. #947, #1942."""
+    from harness import inspect as ins, reasons, variants
     rows = conn.execute("""
         SELECT p.name, v.decided_at, v.detail
           FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id
          WHERE p.state = 'declined' AND v.tier = ? AND v.reason = ? AND p.registry = ?
-           AND v.detail LIKE 'too-big:%' AND v.detail NOT LIKE ? AND v.detail NOT LIKE '%GiB resident%'
+           AND v.event = ? AND v.sized_by = ?
          ORDER BY p.name
-    """, (INSPECT, reasons.MACHINE, ms.HUGGINGFACE, f"too-big: {variants.MARK}%")).fetchall()
+    """, (INSPECT, reasons.MACHINE, ms.HUGGINGFACE, ins.TOO_BIG, variants.SIZED_LISTING)).fetchall()
     return [dict(r) for r in rows]
 
 
@@ -439,12 +439,12 @@ def runtime_by_library(conn) -> list[dict]:
           FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id
          WHERE p.state = 'declined' AND v.tier = 'fetch' AND v.reason = ? AND p.registry = ?
            AND v.until = 'runtime:vllm'
-           AND COALESCE((SELECT vi.detail FROM verdicts vi
+           AND COALESCE((SELECT vi.sized_by FROM verdicts vi
                           WHERE vi.proposal_id = p.id AND vi.tier = ? AND vi.reason != ?
-                          ORDER BY vi.id DESC LIMIT 1), '') NOT LIKE ?
+                          ORDER BY vi.id DESC LIMIT 1), '') NOT IN (?, ?)
          ORDER BY p.name
     """, (reasons.MACHINE, ms.HUGGINGFACE, INSPECT, reasons.REOPENED,
-          f"%{variants.MARK}%")).fetchall()
+          variants.SIZED_GGUF, variants.SIZED_VARIANT)).fetchall()
     return [dict(r) for r in rows]
 
 
@@ -454,9 +454,9 @@ def gguf_sized_off_lane(conn) -> list[dict]:
     rows = conn.execute("""
         SELECT p.name, p.lane, v.detail
           FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id
-         WHERE p.state IN ('queued', 'declined') AND v.tier = ? AND v.detail LIKE ?
+         WHERE p.state IN ('queued', 'declined') AND v.tier = ? AND v.sized_by = ?
          ORDER BY p.name
-    """, (INSPECT, f"%{variants.MARK}%.gguf%")).fetchall()
+    """, (INSPECT, variants.SIZED_GGUF)).fetchall()
     return [dict(r) for r in rows
             if r["lane"] and lanes.canonical(r["lane"]) not in lanes.GGUF_SERVED]
 
@@ -495,11 +495,10 @@ def requeue_missing_in_snapshot(conn) -> list[str]:
 def incomplete_copies(conn) -> list[dict]:
     """Screen verdicts holding state whose runner found our snapshot missing files, classed before #1040."""
     from harness import reasons
-    rows = conn.execute(
+    return [dict(r) for r in conn.execute(
         "SELECT p.name, v.id, v.detail FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
-        "WHERE p.state IN ('declined', 'broken') AND v.tier = ? AND v.detail LIKE '%is incomplete:%' "
-        "ORDER BY p.name", (SCREEN,)).fetchall()
-    return [dict(r) for r in rows if reasons.classify(r["detail"]) == reasons.INCOMPLETE_COPY]
+        "WHERE p.state IN ('declined', 'broken') AND v.tier = ? AND v.failure_class = ? "
+        "ORDER BY p.name", (SCREEN, reasons.INCOMPLETE_COPY)).fetchall()]
 
 
 def requeue_incomplete_copies(conn) -> list[str]:
@@ -621,35 +620,6 @@ def relane_to_vision(conn) -> list[dict]:
         moved.append({"name": r["name"], "source": source, "state": r["state"]})
     return moved
 
-
-_NONE_OF = re.compile(r"none of ([\w, ]+)$")
-
-
-_TOO_BIG = re.compile(r"^too-big:.*?([\d.]+)\s*GiB")
-
-
-def until_for(detail: str) -> str:
-    """The predicate a refusal's own sentence implies, or '' if none."""
-    detail = detail or ""
-    m = _TOO_BIG.match(detail)
-    if m:
-        return f"ceiling_gb:>{float(m.group(1)):.1f}"
-    for phrase, until in _UNTIL_FROM_DETAIL:
-        if detail.lower().startswith(phrase):
-            many = _NONE_OF.search(detail)
-            if many:
-                return "runtime:" + "|".join(
-                    rt.strip() for rt in many.group(1).split(","))
-            return until
-    return ""
-
-
-#: What a pre-#266 refusal was waiting for, derived from the phrase the tier
-#: wrote. Keyed on the runtime name because machine.refuses() builds these,
-#: so the two stay in step without a second list to maintain.
-_UNTIL_FROM_DETAIL = tuple(
-    (f"needs-{rt}", f"runtime:{rt}")
-    for rt in ("cuda", "rocm", "vllm", "mlx", "llamacpp"))
 
 
 #: A date this can order by comparing strings. Anything else is not met.

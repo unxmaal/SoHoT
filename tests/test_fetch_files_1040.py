@@ -173,7 +173,7 @@ def test_the_loop_refetches_a_screen_that_blamed_the_runtime_for_our_snapshot(mo
         for name in (NEMOTRON, "org/real-runtime-gap"):
             ms.record(conn, ms.Seen(name=name, source="t", lane="stt"))
         ms.decide(conn, NEMOTRON, "declined", tier=ms.SCREEN, reason=reasons.RUNTIME,
-                  until="version:mlx-audio>0.5.3", failure_class=reasons.LOAD_FAILED_RUNTIME,
+                  until="version:mlx-audio>0.5.3", failure_class=reasons.INCOMPLETE_COPY,
                   detail=LIVE_12828)
         ms.decide(conn, "org/real-runtime-gap", "declined", tier=ms.SCREEN, reason=reasons.RUNTIME,
                   detail="the installed runtime could not load it: Model type x not supported")
@@ -210,7 +210,7 @@ def test_the_loop_reinspects_a_non_text_lane_sized_by_a_gguf(tmp_path):
         for name, lane in (("nvidia/magpie_tts_multilingual_357m", "tts"), ("org/text-gguf", "code")):
             ms.record(conn, ms.Seen(name=name, source="t", lane=lane))
             ms.decide(conn, name, "queued", tier=ms.INSPECT, reason=reasons.CANDIDATE,
-                      detail=f"fits: {variants.MARK}m.f16.gguf: 0.5 GiB of 1 weight file")
+                      detail=f"fits: {variants.MARK}m.f16.gguf: 0.5 GiB of 1 weight file", sized_by=variants.SIZED_GGUF)
         conn.commit()
         assert [r["name"] for r in ms.gguf_sized_off_lane(conn)] == ["nvidia/magpie_tts_multilingual_357m"]
         assert "nvidia/magpie_tts_multilingual_357m" in ms.requeue_old_sizing(conn)

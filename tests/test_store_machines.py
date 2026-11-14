@@ -362,7 +362,8 @@ def test_any_of_several_runtimes_meets_the_condition():
     ("fits: weights from 5.5 to 8.9 GiB", ""),
 ])
 def test_the_condition_is_read_from_the_refusal(detail, until):
-    assert ms.until_for(detail) == until
+    from harness.memory_store.migrations import prose
+    assert prose.until_for(detail) == until
 
 
 def test_the_inspect_tier_writes_the_condition_its_refusal_names():

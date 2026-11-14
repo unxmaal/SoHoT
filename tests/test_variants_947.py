@@ -205,15 +205,15 @@ def _see(conn, name, registry=ms.HUGGINGFACE):
                             registry=registry, lane="code"))
 
 
-def _too_big(conn, name, detail, registry=ms.HUGGINGFACE):
+def _too_big(conn, name, detail, registry=ms.HUGGINGFACE, sized_by=variants.SIZED_LISTING):
     _see(conn, name, registry)
     ms.decide(conn, name, "declined", tier=ms.INSPECT, reason="machine", until="ceiling_gb:>223.2",
-              detail=detail, ceiling_gb=66.0)
+              detail=detail, ceiling_gb=66.0, event=ins.TOO_BIG, sized_by=sized_by)
 
 
-def _needs_vllm(conn, name, inspected):
+def _needs_vllm(conn, name, inspected, sized_by=variants.SIZED_LISTING):
     _see(conn, name)
-    ms.decide(conn, name, "queued", tier=ms.INSPECT, reason="candidate", detail=inspected)
+    ms.decide(conn, name, "queued", tier=ms.INSPECT, reason="candidate", detail=inspected, event="fits", sized_by=sized_by)
     ms.decide(conn, name, "declined", tier="fetch", reason="machine", until="runtime:vllm",
               detail="needs-vllm: this machine has no runtime that can load these weights")
 
@@ -226,18 +226,20 @@ NEW = "too-big: smallest variant m-00001-of-00009.safetensors (+8): 407.5 GiB of
                       site="harness/memory_store/revisit.py:runtime_by_library")
 def test_refusals_sized_the_old_way_are_reinspected_once(store):
     _too_big(store, "org/summed", OLD)
-    _too_big(store, "org/variant", NEW)
-    _too_big(store, "org/ds4", "too-big: x.gguf: 70.0 GiB resident, over the 66 GiB ceiling")
+    _too_big(store, "org/variant", NEW, sized_by=variants.SIZED_VARIANT)
+    _too_big(store, "org/ds4", "too-big: x.gguf: 70.0 GiB resident, over the 66 GiB ceiling", sized_by=variants.SIZED_RESIDENT)
     _too_big(store, "org/source", OLD, registry=ms.GITHUB)
     _needs_vllm(store, "org/tagged", "fits: weights from 27.0 to 27.0 GiB")
-    _needs_vllm(store, "org/read", "fits: smallest variant consolidated.safetensors: 13.5 GiB of 1 weight file")
+    _needs_vllm(store, "org/read", "fits: smallest variant consolidated.safetensors: 13.5 GiB of 1 weight file",
+                sized_by=variants.SIZED_VARIANT)
     assert sorted(ms.requeue_old_sizing(store)) == ["org/summed", "org/tagged"]
     states = dict(store.execute("SELECT name, state FROM proposals").fetchall())
     assert states["org/summed"] == states["org/tagged"] == "queued"
     assert "org/summed" in ms.pending(store, screened=False)
     assert ms.requeue_old_sizing(store) == []
     ms.decide(store, "org/tagged", "queued", tier=ms.INSPECT, reason="candidate",
-              detail="fits: smallest variant consolidated.safetensors: 13.5 GiB of 1 weight file")
+              detail="fits: smallest variant consolidated.safetensors: 13.5 GiB of 1 weight file",
+              sized_by=variants.SIZED_VARIANT)
     ms.decide(store, "org/tagged", "declined", tier="fetch", reason="machine", until="runtime:vllm",
               detail="needs-vllm: this machine has no runtime that can load these weights")
     assert ms.requeue_old_sizing(store) == []
@@ -246,7 +248,7 @@ def test_refusals_sized_the_old_way_are_reinspected_once(store):
 def test_the_audit_counts_too_big_verdicts_that_name_no_variant(store):
     assert live_audit._too_big_names_variant(store, None) == ([], [])
     _too_big(store, "org/summed", OLD)
-    _too_big(store, "org/variant", NEW)
+    _too_big(store, "org/variant", NEW, sized_by=variants.SIZED_VARIANT)
     failed, warned = live_audit._too_big_names_variant(store, None)
     assert failed == [] and len(warned) == 1 and "1 too-big" in warned[0] and "org/summed" in warned[0]
     failed, _ = live_audit._too_big_names_variant(store, time.time() + 1)
