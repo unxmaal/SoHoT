@@ -90,7 +90,8 @@ def _on_signal(signum, frame) -> None:
 
 def _signal(proc: subprocess.Popen, hard: bool) -> None:
     """The child's whole session where the OS has process groups, the child alone where it does not."""
-    with contextlib.suppress(ProcessLookupError):
+    # macOS killpg answers EPERM for a group whose members are all zombies or mid-exit (KB FINDING #773).
+    with contextlib.suppress(ProcessLookupError, PermissionError):
         if hasattr(os, "killpg") and hasattr(signal, "SIGKILL"):
             os.killpg(proc.pid, signal.SIGKILL if hard else signal.SIGTERM)
         elif hard:
@@ -111,6 +112,7 @@ def start(cmd: list[str], **popen) -> subprocess.Popen:
         popen["start_new_session"] = True
     with _lock:
         _starting = threading.current_thread() is threading.main_thread()
+        proc = None
         try:
             proc = tether.spawn(cmd, subprocess.Popen, **popen)
             pgid = None if sys.platform == "win32" else proc.pid
@@ -118,11 +120,18 @@ def start(cmd: list[str], **popen) -> subprocess.Popen:
                    "cmd": " ".join(str(c) for c in cmd)[:300]}
             _children[proc.pid] = (proc, rec)
             _write()
+        except BaseException:
+            if proc is not None:
+                with contextlib.suppress(OSError):
+                    stop(proc)
+            raise
         finally:
             _starting = False
             held, _pending[:] = list(_pending), []
             for sig in held:
                 _on_signal(sig, None)
+            if not _children:
+                _unguard()
     return proc
 
 

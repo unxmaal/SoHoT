@@ -829,6 +829,32 @@ def _no_real_signal(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _signal_handlers_kept():
+    """A test that leaves a TERM or INT handler, or an owned child, fails on its own teardown, and the next test starts clean. #1994."""
+    import signal
+    import sys
+    sigs = [s for s in (getattr(signal, "SIGTERM", None), signal.SIGINT) if s is not None]
+    before = {s: signal.getsignal(s) for s in sigs}
+    yield
+    left = []
+    owned = sys.modules.get("harness.owned")
+    if owned is not None and owned._children:
+        left.append(f"owned children {sorted(owned._children)} still running")
+        with contextlib.suppress(OSError):
+            owned.stop_all(grace=1.0)
+        owned._children.clear()
+    for s in sigs:
+        if signal.getsignal(s) is not before[s]:
+            left.append(f"{signal.Signals(s).name} handler {signal.getsignal(s)!r}, was {before[s]!r}")
+            if before[s] is not None:
+                signal.signal(s, before[s])
+    if owned is not None:
+        owned._previous.clear()
+    if left:
+        pytest.fail(f"a test left signal state behind: {left}", pytrace=False)
+
+
+@pytest.fixture(autouse=True)
 def _no_real_notifier(monkeypatch):
     """Desktop notices and webhook posts land in this list; a call bringing its own fake run or opener reaches the real one. #1720."""
     import inspect
