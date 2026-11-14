@@ -222,7 +222,7 @@ def mflux_binary(model: str) -> str:
 def mflux_repos(binary: str, root: Path | None = None) -> tuple[str, ...]:
     """Repos the installed mflux family behind `binary` loads beside the candidate: its module-level *_REPO strings. #1546."""
     from harness import stages
-    root = Path(root if root is not None else stages.MFLUX_TOOL_ROOT)
+    root = Path(root if root is not None else stages.mflux_tool_root())
     for eps in sorted(root.glob("lib/python*/site-packages/mflux-*.dist-info/entry_points.txt")):
         try:
             return _mflux_repos(binary, str(eps), eps.stat().st_mtime_ns)

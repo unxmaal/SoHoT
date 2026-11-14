@@ -225,6 +225,25 @@ def legacy(receipt: dict, env: dict, key: str) -> dict:
 _LOOK = re.compile(r"look (\d+) at (\d+)/(\d+)")
 
 
+def _cells(look: dict) -> int | None:
+    """The holdout cells a stored look saw; for one an older release stored without them, the number its text names."""
+    if "cells" in look:
+        return int(look["cells"])
+    m = _LOOK.search(look.get("text", ""))
+    return int(m.group(2)) if m else None
+
+
+def _final(pause, taken: list) -> int | None:
+    """The cells of a stopping look kept only in the pause's why, as an older release settled it; None when looks hold it. #1943."""
+    from evals import watch
+    from harness import paused
+    last = taken[-1] if taken else {}
+    if watch.PAUSE_KIND in last and (pause["state"] != paused.DONE or last.get("decision") != "continue"):
+        return None
+    m = _LOOK.search(pause["why"] or "")
+    return int(m.group(2)) if m else None
+
+
 def replay(conn, run_id: int) -> dict:
     """Replay a paused paired run's looks with the incumbent's draws taken from earlier runs matching it, where they exist."""
     from harness import adopt, holdout, looks, runs
@@ -243,10 +262,10 @@ def replay(conn, run_id: int) -> dict:
     ch_key = key_of.get(pause["challenger"], pause["challenger"])
     plan_ = json.loads(pause["plan"] or "{}")
     taken = json.loads(pause["looks"] or "[]")
-    points = [int(m.group(2)) for m in (_LOOK.search(t.get("text", "")) for t in taken) if m]
-    final = _LOOK.search(pause["why"] or "")
-    if final and (not points or int(final.group(2)) != points[-1]):
-        points.append(int(final.group(2)))
+    points = [c for c in (_cells(t) for t in taken) if c is not None]
+    final = _final(pause, taken)
+    if final is not None and (not points or final != points[-1]):
+        points.append(final)
     stored = conn.execute("SELECT outcome, detail FROM verdicts WHERE run_id = ? AND tier = ? "
                           "ORDER BY id DESC LIMIT 1", (run_id, adopt.TIER)).fetchone()
     want = legacy(receipt, env, inc_key)
@@ -308,7 +327,7 @@ def replay(conn, run_id: int) -> dict:
     for src, _ in reused.values():
         by[str(src)] = by.get(str(src), 0) + 1
     return {"run_id": run_id, "lane": lane, "incumbent": inc_key, "challenger": ch_key,
-            "stored_looks": [t.get("text", "") for t in taken] + ([pause["why"]] if final else []),
+            "stored_looks": [t.get("text", "") for t in taken] + ([pause["why"]] if final is not None else []),
             "stored_verdict": dict(stored) if stored else None,
             "matching_runs": sorted(sources), "reused": len(reused), "fresh": len(challenger) - len(reused),
             "runs": by, "control": control, "replay": replayed}

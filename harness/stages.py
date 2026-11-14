@@ -4,8 +4,11 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-# mflux is a `uv tool`, so its version is not in this project's environment.
-MFLUX_TOOL_ROOT = Path.home() / ".local/share/uv/tools/mflux"
+
+def mflux_tool_root() -> Path:
+    """The mflux `uv tool` venv under the home of the moment (#1984)."""
+    return Path.home() / ".local/share/uv/tools/mflux"
+
 
 _DIST_INFO = re.compile(r"^([A-Za-z0-9_.-]+?)-(\d[^-]*)\.dist-info$")
 
@@ -22,7 +25,7 @@ def dist_versions(site) -> dict[str, str]:
 
 def tool_versions(root: Path | None = None) -> dict[str, str]:
     """Installed mflux/mlx versions, read from the uv tool venv now, never a copy from process start (#1776). {} if absent."""
-    root = Path(root) if root is not None else MFLUX_TOOL_ROOT
+    root = Path(root) if root is not None else mflux_tool_root()
     found: dict[str, str] = {}
     for site in sorted(root.glob("lib/python*/site-packages")):
         for k, v in dist_versions(site).items():

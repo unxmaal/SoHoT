@@ -61,6 +61,8 @@ class Look:
     cp: float
     decision: str
     text: str
+    #: Holdout cells this look saw, which reuse.replay reads instead of the number in `text`. #1943.
+    cells: int = 0
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -94,7 +96,7 @@ def look(rows, *, lane: str, inc_key: str, ch_key: str, split, plan: dict, alpha
                          spec=spec, tested=tested, alpha=nominal)
         if v.adopt:
             return Look(n, t, cell.gained, cell.lost, nominal, used, cp, "success",
-                        f"{head}; stopped for success"), v
+                        f"{head}; stopped for success", done), v
     if done and cp < FUTILITY_CP and cell.gained <= cell.lost:
         v = adopt.Verdict(lane, inc_key, ch_key, False,
                           f"futility: {head}; under the plan's +{plan.get('effect', 0):.2f} the "
@@ -102,8 +104,8 @@ def look(rows, *, lane: str, inc_key: str, ch_key: str, split, plan: dict, alpha
         # A stop on a holdout no repeat could power waits on the lane's cases, as the full gate's null does. #1452.
         v = adopt._lane_too_small(lane, inc_key, ch_key, v, plan, split) or v
         return Look(n, t, cell.gained, cell.lost, nominal, used, cp, "futility",
-                    f"{head}; stopped for futility"), v
-    return Look(n, t, cell.gained, cell.lost, nominal, used, cp, "continue", f"{head}; continues"), None
+                    f"{head}; stopped for futility", done), v
+    return Look(n, t, cell.gained, cell.lost, nominal, used, cp, "continue", f"{head}; continues", done), None
 
 
 def stopped(look: Look, lane: str, done: int, total: int) -> None:

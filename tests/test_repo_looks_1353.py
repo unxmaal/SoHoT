@@ -138,7 +138,8 @@ def test_a_decided_look_mid_run_stops_it_and_records_the_verdict(monkeypatch, wo
         (p,) = _pauses(conn)
     finally:
         conn.close()
-    assert [x["decision"] for x in json.loads(p["looks"])] == ["continue"]
+    # The deciding look is kept with the rest, so soh reuse-replay never reads it out of the why. #1943.
+    assert [(x["decision"], x["cells"]) for x in json.loads(p["looks"])] == [("continue", 6), ("success", n)]
     assert p["state"] == "done" and p["sweeps"] == 1 and p["why"].endswith("stopped for success")
 
 

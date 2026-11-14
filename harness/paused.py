@@ -141,8 +141,8 @@ def save(conn, *, lane: str, inc_spec: str, spec: str, proposal: str, out: str, 
     return int(cur.lastrowid)
 
 
-def settle(conn, pause_id: int, state: str, why: str = "") -> bool:
+def settle(conn, pause_id: int, state: str, why: str = "", looks: list | None = None) -> bool:
     """End a live pause as stale, done or defect; False when it was no longer paused (another writer settled it). #1730."""
     if state == PAUSED:
         raise IllegalMove(f"pause {pause_id}: a settle names where the pause ends, not {PAUSED}")
-    return _move(conn, pause_id, PAUSED, state, why=why)
+    return _move(conn, pause_id, PAUSED, state, why=why, **({} if looks is None else {"looks": json.dumps(looks)}))
