@@ -257,6 +257,18 @@ def _spans(reasons: dict, start: float, stop: float, why: str) -> None:
             reasons[h].add(why)
 
 
+def _stop_time(pause: dict) -> bool:
+    """Whether a paused_runs row paused at its stop time: its last look's kind, else (an older release's row) its why. #1943."""
+    from evals import watch
+    try:
+        last = (json.loads(pause.get("looks") or "[]") or [{}])[-1]
+    except (TypeError, ValueError):
+        last = {}
+    if isinstance(last, dict) and watch.PAUSE_KIND in last:
+        return last[watch.PAUSE_KIND] == watch.STOP_TIME
+    return "stop time" in (pause.get("why") or "")
+
+
 def blocked(hours: list[dict], actions=(), clearances=(), paused=(), refused=(), tz=None, holds=()) -> dict:
     """Which hours something stood between the owner and the machine, by reason and source, the owner's holds apart."""
     reasons: dict = {h["hour"]: set() for h in hours}
@@ -278,7 +290,7 @@ def blocked(hours: list[dict], actions=(), clearances=(), paused=(), refused=(),
         if a["criterion"] == "contention":
             mark(a["at"], "contention")
     for p in paused:
-        if "stop time" in (p.get("why") or ""):
+        if p["paused_at"] < (SOURCES["day_limit"][2] or float("inf")) and _stop_time(p):
             mark(p["paused_at"], "day_limit")
     for c in clearances:
         ends = (c["until"], c.get("revoked_at"), SOURCES["day_clearance"][2])
@@ -633,7 +645,7 @@ def gather(conn, home: Path, now: float, since: float | None = None) -> dict:
                                f"WHERE at >= ? AND {acted}", (start, *acted_args)),
         "clearances": _rows(conn, f"SELECT cleared_at, until, revoked_at FROM day_clearances WHERE {cleared}",
                             cleared_args),
-        "paused": _rows(conn, f"SELECT paused_at, why FROM paused_runs WHERE paused_at >= ? AND {held}",
+        "paused": _rows(conn, f"SELECT paused_at, why, looks FROM paused_runs WHERE paused_at >= ? AND {held}",
                         (start, *held_args)),
         "holds": _rows(conn, f"SELECT kind, held_at, until, released_at FROM holds WHERE held_at < ? "
                              f"AND (released_at IS NULL OR released_at > ?) AND (until IS NULL OR until > ?) "

@@ -1709,7 +1709,7 @@ def _execute_at(args, overrides: dict, held: contextlib.ExitStack) -> int:
         stopped = exc
         if isinstance(exc, watch.Deferred) and outdir:
             watch.ask_pause(outdir, exc.reason)
-        elif getattr(args, "queue_item", False) and exc.why.startswith(watch.AT_STOP_TIME):
+        elif getattr(args, "queue_item", False) and exc.kind == watch.STOP_TIME:
             from harness import job_procs
             job_procs.item_ended()
         print(f"\n{exc.why}", file=sys.stderr, flush=True)
@@ -1722,14 +1722,15 @@ def _execute_at(args, overrides: dict, held: contextlib.ExitStack) -> int:
                  kept=len(results) - fresh, dropped=eye.left_cases())
         if outdir:
             watch.mark_stop(outdir, watch.INCUMBENT_SILENT)
-        progress.write(run_state.W_STOPPED, stopped.why)
+        progress.write(run_state.W_STOPPED, stopped.why, kind=stopped.kind)
         return watch.SILENT
     state, why = (run_state.W_PAUSED, stopped.why) if stopped else (run_state.W_DONE, "")
+    kind = stopped.kind if stopped else ""
     code = watch.PAUSED if stopped else 0
 
     if not results:
         if stopped:
-            progress.write(state, why)
+            progress.write(state, why, kind=kind)
             return code
         raise SystemExit("nothing ran: no candidate matched any case")
 
@@ -1824,7 +1825,7 @@ def _execute_at(args, overrides: dict, held: contextlib.ExitStack) -> int:
         atomic_file.replace(tmp, outdir / "results.json")
         run_id = store_run(outdir, payload, now)
         print(f"\nartifacts + results.json in {outdir}; stored as run {run_id}")
-        progress.write(state, why, run_id)
+        progress.write(state, why, run_id, kind=kind)
     return code
 
 

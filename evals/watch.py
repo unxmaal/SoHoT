@@ -27,6 +27,10 @@ PROGRESS = run_state.PROGRESS
 PAUSE_FILE = run_state.PAUSE_FILE
 #: How a run that paused at its stop time says so. #1618.
 AT_STOP_TIME = "paused at its stop time"
+#: Why a run paused, which readers decide on; its `why` sentence is for people. #1943.
+STOP_TIME, REQUESTED, DEFERRED, SILENT_KIND = "stop_time", "requested", "deferred", "silent"
+#: The progress.json field beside "why" that names the pause's kind; also kept on the pause's stored look. #1943.
+PAUSE_KIND = "pause_kind"
 #: The watchdog writes this, naming its criterion, before it signals a run to stop. #1409.
 STOP_FILE = run_state.STOP_FILE
 #: The one stop that ends a run as a suspected harness defect rather than pausing it. #1409.
@@ -75,16 +79,33 @@ def _reason(outdir, name: str) -> str:
     return text.partition(" ")[2].strip()
 
 
-class Stop(Exception):
-    """The run pauses between cases."""
+def pause_kind(record: dict) -> str:
+    """The kind a progress.json names; for one an older release wrote with no kind, the one its `why` implies. #1943."""
+    if PAUSE_KIND in record:
+        return str(record[PAUSE_KIND] or "")
+    why = str(record.get("why") or "")
+    if why.startswith(AT_STOP_TIME):
+        return STOP_TIME
+    if why.startswith("paused on request ("):
+        return DEFERRED
+    return REQUESTED if why.startswith("paused on request") else ""
 
-    def __init__(self, why: str):
+
+class Stop(Exception):
+    """The run pauses between cases; `kind` says why to the code, `why` to people."""
+
+    kind = REQUESTED
+
+    def __init__(self, why: str, kind: str = ""):
         super().__init__(why)
         self.why = why
+        self.kind = kind or type(self).kind
 
 
 class Deferred(Stop):
     """The run pauses before a case that does not fit now; `reason` goes in its pause file. #1482."""
+
+    kind = DEFERRED
 
     def __init__(self, why: str, reason: str):
         super().__init__(f"paused on request ({reason}): {why}")
@@ -93,6 +114,8 @@ class Deferred(Stop):
 
 class Silent(Stop):
     """The run ends: its incumbent answered nothing, so there is no comparison to resume. #1656."""
+
+    kind = SILENT_KIND
 
 
 @dataclass
@@ -127,7 +150,7 @@ class Watch:
             raise Stop(f"paused on request, {self.left_cases()} case(s) left")
         # The slice is the run's own time: seconds yielded to serving move its stop time on. #1556.
         if self.stop_at is not None and clock() >= self.stop_at + self.yield_s:
-            raise Stop(f"{AT_STOP_TIME}, {self.left_cases()} case(s) left")
+            raise Stop(f"{AT_STOP_TIME}, {self.left_cases()} case(s) left", STOP_TIME)
         self.restart(key, case)
         return served
 
@@ -316,12 +339,12 @@ class Progress:
         self.at = self.started
         eye.changed = self.write
 
-    def write(self, state: str = "", why: str = "", run_id=None) -> dict:
+    def write(self, state: str = "", why: str = "", run_id=None, kind: str = "") -> dict:
         pgid = os.getpgid(0) if hasattr(os, "getpgid") else None
         state = state or (run_state.W_YIELDING if self.eye.yielding_since is not None else run_state.W_RUNNING)
         if state not in run_state.WRITTEN:
             raise ValueError(f"progress state {state!r} is none of {run_state.WRITTEN}")
-        got = {"state": state, "why": why, "done": self.done, "total": self.total,
+        got = {"state": state, "why": why, PAUSE_KIND: kind, "done": self.done, "total": self.total,
                "serving_yields": self.eye.served(),
                "specs": self.specs, "planned_s_per_case": self.eye.planned,
                "observed_s_per_case": {k: self.eye.observed(k) for k in self.eye.walls},
