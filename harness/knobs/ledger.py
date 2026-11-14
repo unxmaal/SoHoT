@@ -32,7 +32,7 @@ NOT_GATING = {
     "harness/commands/ledger.py:gather_compare->_dt.timedelta(days)": "one calendar day, the compared window (#868)",
     "harness/ledger.py:RATIO_DAYS": "days the local:cloud headline sums; a reporting window, every day is counted (#1688)",
     "harness/ledger.py:TARGET_RATIO": "the owner's local:cloud target, printed beside the ratio; it decides nothing (#1688)",
-    "harness/ledger.py:unsettled->_dt.timedelta(days)": "two calendar days: a day is settled once a run wrote it after the day following it ended; it only widens what --record rewrites, it drops nothing (#1776)",
+    "harness/ledger.py:settled_at->_dt.timedelta(days)": "two calendar days: a day is settled once a run wrote it after the day following it ended; it widens what --record rewrites and which --day is still open, it drops nothing (#1776, #1941)",
 }
 
 NEVER_CUTS = {

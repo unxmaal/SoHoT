@@ -729,6 +729,8 @@ def build_parser() -> argparse.ArgumentParser:
     led.add_argument("--tariff", type=float, default=None,
                      help="USD per kWh (default: knob ledger_tariff)")
     led.add_argument("--record", action="store_true", help="upsert each day into ledger_days")
+    led.add_argument("--day", action="append", default=[], metavar="DAY[..DAY]",
+                     help="recount these days (repeatable, or a range); with --record rewrite the short ones (#1941)")
     led.add_argument("--compare", default="", metavar="DAY",
                      help="one day side by side: OTel events, OTel metrics, ccusage, transcripts (#868)")
     led.add_argument("--sample-power", action="store_true",
