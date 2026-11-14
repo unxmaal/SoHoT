@@ -978,14 +978,14 @@ def _dry_argv(lane: str, name: str, incumbent: str, plan, held, inc_spec: str, s
     return 0
 
 
-def _settle_pause(pause_id: int, state: str, why: str) -> None:
+def _settle_pause(pause_id: int, state: str, why: str, looks: list | None = None) -> None:
     from harness import paused
     from harness import memory_store as ms
     if ms.lent() is not None:
         return
     store = ms.connect()
     try:
-        paused.settle(store, pause_id, state, why)
+        paused.settle(store, pause_id, state, why, looks)
     finally:
         store.close()
 
@@ -1060,7 +1060,7 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
         print(f"    {'ADOPTED' if verdict.adopt else 'kept the incumbent'}: {verdict.why}", flush=True)
         _record(verdict, spec, progress.get("run_id"), out)
         if held and held.get("id") is not None:
-            _settle_pause(held["id"], "done", look.text)
+            _settle_pause(held["id"], "done", look.text, taken)
         if sweep is not None:
             sweep.lines.append(f"{name}: {look.text}")
         return 0

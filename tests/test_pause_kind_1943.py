@@ -123,6 +123,48 @@ def test_the_stored_pause_keeps_its_kind_on_its_look(monkeypatch, world):
     assert it._stop_time(p) is False
 
 
+# --- soh reuse-replay: each look's cells from the stored look ------------------------
+
+def _replayed(tmp_path, looks_, why, state="done"):
+    from harness import holdout, reuse
+    from tests.test_incumbent_reuse_1094 import CH, INC, _stored, row
+    held = list(holdout.for_lane("code").holdout)[:10]
+    conn = ms.connect()
+    try:
+        _stored(conn, tmp_path / "src", [row(INC, c, True) for c in held], 1_000.0)
+        target = _stored(conn, tmp_path / "target",
+                         [r for c in held for r in (row(INC, c, False), row(CH, c, True))], 2_000.0,
+                         specs={INC: INC, CH: CH})
+        plan = {"repeat": 1, "alpha": 0.05, "odds": [0.2, 0.05], "cells": len(held), "cases": len(held)}
+        conn.execute("INSERT INTO paused_runs (lane, incumbent, challenger, out, plan, looks, state, why, run_id, "
+                     "paused_at) VALUES ('code', ?, ?, ?, ?, ?, ?, ?, ?, 0)",
+                     (INC, CH, str(tmp_path / "target"), json.dumps(plan), json.dumps(looks_), state, why, target))
+        conn.commit()
+        return [t.split("/")[0] for t in reuse.replay(conn, target)["control"]["looks"]]
+    finally:
+        conn.close()
+
+
+def _look(cells, decision="continue"):
+    return {"text": REWORDED, "cells": cells, "decision": decision, watch.PAUSE_KIND: watch.STOP_TIME}
+
+
+def test_the_replay_reads_each_look_s_cells_and_never_a_why_this_release_wrote(tmp_path):
+    got = _replayed(tmp_path, [_look(4), _look(8, "futility")], "look 3 at 9/10 holdout cells; stopped for futility")
+    assert got == ["look 1 at 4", "look 2 at 8"]
+
+
+@pytest.mark.gauntlet(FT, site="harness/reuse.py:_final:why")
+def test_the_replay_reads_a_stopping_look_an_older_release_left_only_in_the_why(tmp_path):
+    old = _replayed(tmp_path / "old", [{"text": "look 1 at 4/10 holdout cells: continues"}], "look 2 at 8/10 holdout cells")
+    assert old == ["look 1 at 4", "look 2 at 8"]
+    # Paused under this release, then settled done by an older one that kept the deciding look only in its why.
+    rolled = _replayed(tmp_path / "rolled", [_look(4)], "look 2 at 8/10 holdout cells; stopped for futility")
+    assert rolled == ["look 1 at 4", "look 2 at 8"]
+    finished = _replayed(tmp_path / "finished", [_look(4)], "finished after 1 pause(s)")
+    assert finished == ["look 1 at 4"]
+
+
 # --- the time account: a stop-time pause before #1509 is a day limit ----------------
 
 def _plant_pause(conn, at, why, looks):
