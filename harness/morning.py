@@ -501,6 +501,7 @@ def needs(r: dict) -> list[str]:
     loop = r["sweep"].get("loop")
     out.extend(f"job {x['job']} was refused at start ({x['why']}); queue it again from the deploy"
                for x in (r.get("releases") or {}).get("refused") or [])
+    out.extend(w["line"] for w in r.get("memory_waits") or [])
     if r.get("gpu_hold"):
         out.append(f"{r['gpu_hold']}; no batch GPU job or deploy starts until soh hold release gpu")
     if r.get("hold"):
@@ -599,11 +600,21 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
     from harness import hold, job_release
     r["hold"], r["gpu_hold"] = hold.held(conn, now), hold.held(conn, now, hold.GPU)
     r["releases"] = job_release.morning(conn, since, where)
+    r["memory_waits"] = memory_waits(conn, now)
     if r["sweep"]["loop"] is not None:
         from harness import heartbeat
         r["sweep"]["loop"]["code_moved"] = heartbeat.code_moved(beat, r["deploy"].get("head", ""))
     r["needs"] = needs(r)
     return r
+
+
+def memory_waits(conn, now: float) -> list[dict]:
+    """This machine's pending gpu jobs that waited on memory past memory_wait_named, each with its line. #1993."""
+    from harness import memory_wait
+    try:
+        return memory_wait.waiting(conn, now, record=True)
+    except Exception as exc:  # noqa: BLE001 - the report says it could not tell rather than failing
+        return [{"id": "?", "line": f"jobs waiting on memory not read: {type(exc).__name__}: {exc}"[:300]}]
 
 
 def _idle(conn, since: float) -> list[dict]:

@@ -29,6 +29,7 @@ capabilities:
       - harness/queue_pause.py
       - harness/atomic_file.py
       - harness/stale_temp.py
+      - harness/memory_wait.py
 
   - name: watchdog
     summary: The periodic judge of running jobs and served models, acting from a fixed set and recording each act.
