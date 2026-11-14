@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 import shells
+from tests import conftest
 
 from harness import exclusive
 
@@ -36,11 +37,15 @@ def _restart(tmp_path, service="gateway"):
     bin_.mkdir()
     (bin_ / "launchctl").write_text(FAKE_LAUNCHCTL, encoding="utf-8")
     (bin_ / "launchctl").chmod(0o755)
-    env = {k: v for k, v in os.environ.items() if k != exclusive.HELD_ENV}
+    # The restart passes the live-home gate, so the store-down refusal's notice reaches these. #2008.
+    for name in ("osascript", "terminal-notifier"):
+        (bin_ / name).write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        (bin_ / name).chmod(0o755)
+    env ={k: v for k, v in os.environ.items() if k != exclusive.HELD_ENV}
     env.update({"LOCALHARNESS_HOME": str(home), "LOCALHARNESS_STORE": "sqlite", "FAKE_STATE": str(state),
                 "FAKE_PY": sys.executable, "WITH_GPU_LOCK": str(HELPER),
                 "PATH": f"{bin_}{os.pathsep}{env['PATH']}"})
-    got = subprocess.run([shells.BASH, str(LAUNCHD), "restart", service], env=env,
+    got = subprocess.run([shells.BASH, str(LAUNCHD), "restart", service], env=conftest.live_child(env, tmp_path / "user"),
                          capture_output=True, text=True, timeout=120)
     return got, state
 

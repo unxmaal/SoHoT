@@ -204,8 +204,8 @@ def test_with_gpu_lock_is_found_as_a_system_python_entry_point_that_reaches_the_
     assert reaches_store("scripts/with-gpu-lock")
 
 
-#: Imports the store's code but never opens it: registry cards over HTTP, run as `uv run python`.
-NEVER_OPENS = {"scripts/record_fixtures.py"}
+#: Imports the store's code but never opens it: registry cards over HTTP; the live-home gate reads only paths (#2008).
+NEVER_OPENS = {"scripts/record_fixtures.py", "harness/live_gate.py"}
 
 
 def test_every_system_python_entry_point_that_reaches_the_store_reruns_under_a_venv():

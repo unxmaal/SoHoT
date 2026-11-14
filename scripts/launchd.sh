@@ -354,6 +354,11 @@ sweep_guard() {
   python3 -I "$REPO/harness/sweep_guard.py" "$LH_HOME" || exit 1
 }
 
+# An act on the machine's own units, refused from a home monitor.live_home() says is not the live one. #2008.
+live_gate() {
+  python3 -I "$REPO/harness/live_gate.py" "$LH_HOME" "$@" || exit 1
+}
+
 # The queue's side of LH_DEPLOY_DURING_SWEEP=1: hold-for-deploy or release-for-deploy. #1675.
 _queue_for_deploy() {
   local uv
@@ -760,9 +765,15 @@ case "${1:-}" in
       if launchctl print "gui/$UID/$PREFIX.$service" >/dev/null 2>&1; then echo "loaded $service"
       elif _disabled "$PREFIX.$service"; then echo "disabled $service"; fi
     done ;;
-  generate)  shift; generate "${1:-}" ;;
+  generate)
+    shift
+    if [ -n "${1:-}" ] && [ -d "$1" ] && [ -d "$AGENTS" ] && [ "$(cd "$1" && pwd -P)" = "$(cd "$AGENTS" && pwd -P)" ]; then
+      live_gate "launchd.sh generate into $AGENTS (launchd loads those plists at login)"
+    fi
+    generate "${1:-}" ;;
   probe)     preflight && echo "ok: a launchd agent can read $(_hf_root)" ;;
   install)
+    live_gate "launchd.sh install (bootout and bootstrap of $PREFIX.* in gui/$UID)"
     # Restarting a model server mid-run killed 32 requests on 2026-10-04, so
     # wait for any model-loading run to finish first. #314.
     if [ "${LH_GPU_LOCK_HELD:-}" != 1 ]; then
@@ -771,6 +782,7 @@ case "${1:-}" in
     fi
     install_units ;;
   reinstall)
+    live_gate "launchd.sh reinstall (bootout and bootstrap of $PREFIX.* in gui/$UID)"
     if [ "${LH_GPU_LOCK_HELD:-}" != 1 ]; then
       _locked_install reinstall
       exit
@@ -781,9 +793,10 @@ case "${1:-}" in
     # service is not loaded (another machine, or not installed). #319.
     # --repair: recovering a serving unit must not wait on the store. #1667.
     label="$PREFIX.${2:?usage: $0 restart SERVICE}"
+    live_gate "launchd.sh restart (launchctl kickstart of $label)" --serving
     launchctl print "gui/$UID/$label" >/dev/null 2>&1 || exit 0
     "$REPO/scripts/with-gpu-lock" --repair launchctl kickstart -k "gui/$UID/$label" ;;
-  uninstall) uninstall_units ;;
+  uninstall) live_gate "launchd.sh uninstall (bootout of $PREFIX.* in gui/$UID)"; uninstall_units ;;
   status)    status ;;
   *)         usage ;;
 esac

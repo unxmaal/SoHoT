@@ -886,6 +886,17 @@ def shown_live(monkeypatch):
     monkeypatch.setattr(monitor, "live_home", lambda home=None: True)
 
 
+def live_child(env: dict, user: Path | None = None) -> dict:
+    """`env` whose HOME (or `user`) holds a localharness link to its LOCALHARNESS_HOME, as the live home is. #2008."""
+    home = Path(env["LOCALHARNESS_HOME"])
+    user = Path(user or env["HOME"])
+    home.mkdir(parents=True, exist_ok=True)
+    user.mkdir(parents=True, exist_ok=True)
+    if not (user / "localharness").exists():
+        (user / "localharness").symlink_to(home, target_is_directory=True)
+    return {**env, "HOME": str(user)}
+
+
 def _typed_keys() -> dict[str, str]:
     from harness import candidates, models, screen, winners
     out = {}

@@ -20,6 +20,7 @@ from pathlib import Path
 import pytest
 
 import shells
+from tests import conftest
 
 REPO = Path(__file__).resolve().parents[1]
 GEN = REPO / "scripts" / "launchd.sh"
@@ -859,7 +860,7 @@ def test_install_reruns_as_the_deployed_script(repos):
            "LH_REPO": str(work), "LH_DEPLOY": str(deploy), "FAKE_GH_CHECK": "success",
            "LH_GPU_LOCK_HELD": "1", "LH_ROLE": "scheduler"}
     env.pop("LH_REEXECED", None)
-    proc = subprocess.run([shells.BASH, str(GEN), "install"], env=env,
+    proc = subprocess.run([shells.BASH, str(GEN), "install"], env=conftest.live_child(env),
                           capture_output=True, text=True, timeout=60)
     assert proc.returncode == 0, proc.stderr
     assert "deployed copy ran: install reexec=1" in proc.stdout

@@ -525,6 +525,7 @@ capabilities:
       - harness/ci_times.py
       - harness/commands/ci_times.py
       - harness/release_procs.py
+      - harness/live_gate.py
 
   - name: repo-hygiene
     summary: What a public reader gets, personal setup kept out of it, stated claims, coverage, specs and the gauntlet.
