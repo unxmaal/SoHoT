@@ -48,6 +48,8 @@ ALPHA = 0.05
 
 #: verdicts.event for an adopt stop the replays tell apart: a futility look, a significant loss. #1942.
 FUTILITY, WORSE = "futility", "worse"
+#: verdicts.event of a verdict soh coherence re-decided from an earlier one: no new comparison on the holdout. #1998.
+REDECIDED = "re-decided"
 
 
 def alpha_for(tested: int) -> float:
@@ -56,12 +58,11 @@ def alpha_for(tested: int) -> float:
 
 
 def comparisons(conn, lane: str, version: str) -> int:
-    """Adopt verdicts already recorded in this lane on this holdout version. #698."""
-    head = f"{(lane or '').strip()}: "
+    """Adopt verdicts already recorded in this lane on this holdout version, re-decisions not counted again. #698, #1998."""
     return conn.execute(
         "SELECT COUNT(*) FROM verdicts WHERE tier = ? AND split_version = ? "
-        "AND failure_class NOT IN ('inconclusive', 'lane_too_small') AND substr(detail, 1, ?) = ?",
-        (TIER, version, len(head), head)).fetchone()[0]
+        "AND failure_class NOT IN ('inconclusive', 'lane_too_small') AND lane = ? AND event != ?",
+        (TIER, version, (lane or "").strip(), REDECIDED)).fetchone()[0]
 
 
 @dataclass(frozen=True)

@@ -5,7 +5,7 @@ from harness import heartbeat, holdout, live_audit, methods, reasons
 from harness import memory_store as ms
 from harness.commands import loop as loop_cmd
 from harness.commands import measure as measure_cmd
-from harness.memory_store import transitions
+from harness.memory_store import revisit, transitions
 
 T = 1791000000.0
 SVG = "cases:svg>3"
@@ -81,7 +81,7 @@ def test_a_machine_fact_decline_still_reopens_to_inspect(grown):
 
 
 def _reopened_by_old_code(conn, name, until):
-    transitions.retract(conn, name, f"{until} is met here")
+    transitions.retract(conn, name, f"{until} is met here", event=revisit.UNTIL_MET)
 
 
 def test_the_loop_moves_an_old_inspect_reopen_on_to_the_measure_queue_once(grown, capsys):

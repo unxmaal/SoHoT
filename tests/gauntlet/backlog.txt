@@ -58,7 +58,6 @@ a-decision-read-back-out-of-a-sentence-the-code-wrote harness/github.py:_gh:deta
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/inventory_weight.py:origin:subject
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/kb_filter.py:named:said
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/lane_probe.py:due:reason
-a-decision-read-back-out-of-a-sentence-the-code-wrote harness/memory_store/transitions.py:retract:why
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/runner_gaps.py:format_name:evidence
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/runner_gaps.py:model_type:evidence
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/runs.py:class_cut_calls:detail

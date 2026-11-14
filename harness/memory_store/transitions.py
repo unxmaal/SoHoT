@@ -196,11 +196,10 @@ def _migration_retraction(conn, pid: int, name: str, outcome: str, tier: str,
 
 
 def retract(conn, name: str, why: str, *, outcome: str = "queued",
-            tier: str = INSPECT, until: str = "") -> int:
-    """Reopen or reclassify a decided name, saying why. #409."""
-    detail = why if why.startswith("retracted:") else f"retracted: {why}"
-    return ms.decide(conn, name, outcome, tier=tier, until=until, detail=detail,
-                     reopen=RETRACTION, reopen_why=why)
+            tier: str = INSPECT, until: str = "", event: str = "") -> int:
+    """Reopen or reclassify a decided name, saying why; `event` is what readers select it by. #409, #1998."""
+    return ms.decide(conn, name, outcome, tier=tier, until=until, detail=f"retracted: {why}",
+                     reopen=RETRACTION, reopen_why=why, event=event)
 
 
 def decide_or_skip(conn, name: str, outcome: str, **kw) -> int | None:

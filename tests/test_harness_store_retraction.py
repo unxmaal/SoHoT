@@ -162,3 +162,21 @@ def test_a_short_name_cannot_match_every_key_that_spells_it(home):
         assert _latest(conn, "pic")["outcome"] == "declined"
     finally:
         conn.close()
+
+
+def test_a_retraction_always_says_retracted_and_carries_its_until_and_event():
+    """#1998: the prefix is the writer's, never decided by the words of the why it was handed."""
+    conn = ms.connect()
+    try:
+        _seed(conn, "org/r", "declined", "code: lost")
+        ms.retract(conn, "org/r", "once")
+        _seed(conn, "org/r", "declined", "code: lost again")
+        ms.retract(conn, "org/r", "retracted: twice", outcome="screened", tier=ms.SCREEN,
+                   until="cases:code>9", event="until_met")
+        got = [tuple(r) for r in conn.execute(
+            "SELECT outcome, tier, until, event, reopen_kind, detail FROM verdicts v JOIN proposals p "
+            "ON p.id = v.proposal_id WHERE p.name = 'org/r' AND v.reopen_kind != '' ORDER BY v.id")]
+    finally:
+        conn.close()
+    assert got == [("queued", ms.INSPECT, "", "", "retraction", "retracted: once"),
+                   ("screened", ms.SCREEN, "cases:code>9", "until_met", "retraction", "retracted: retracted: twice")]

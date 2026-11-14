@@ -138,7 +138,7 @@ def test_decide_carries_the_floor_evidence_from_its_null(monkeypatch):
 
 def _verdict(c, lane, outcome, detail, plan, name):
     ms.record(c, ms.Seen(name=name, source="test", lane=lane))
-    vid = ms.decide(c, name, outcome, tier=ms.ADOPT, detail=detail, reason=reasons.CANDIDATE)
+    vid = ms.decide(c, name, outcome, tier=ms.ADOPT, detail=detail, reason=reasons.CANDIDATE, lane=lane)
     c.execute("UPDATE verdicts SET power = ? WHERE id = ?", (json.dumps(plan), vid))
     c.commit()
     return vid

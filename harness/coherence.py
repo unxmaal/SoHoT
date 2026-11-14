@@ -148,7 +148,7 @@ def lane_bound(conn) -> list[dict]:
     from harness.memory_store.schema import ADOPT
     out = []
     for r in conn.execute(HELD).fetchall():
-        lane = r["verdict_lane"] or r["lane"] or (r["detail"] or "").partition(":")[0].strip()
+        lane = r["verdict_lane"] or r["lane"]
         futile = r["reason"] == reasons.CANDIDATE and not r["failure_class"] and r["event"] == adopt.FUTILITY
         if (r["state"], r["tier"]) != ("declined", ADOPT) or r["until"] \
                 or (r["reason"] != reasons.LIMIT and not futile) or r["failure_class"] == reasons.LANE_TOO_SMALL:
@@ -181,7 +181,7 @@ def past_growth(conn) -> list[dict]:
     from harness.memory_store.schema import ADOPT
     out = []
     for r in conn.execute(HELD).fetchall():
-        lane = r["verdict_lane"] or r["lane"] or (r["detail"] or "").partition(":")[0].strip()
+        lane = r["verdict_lane"] or r["lane"]
         head, _, n = (r["until"] or "").partition(">")
         if (r["state"], r["tier"], r["reason"]) != ("declined", ADOPT, reasons.LIMIT) \
                 or head != f"cases:{lane}" or not n.isdigit():
@@ -225,7 +225,7 @@ def _unreopenable(conn, r, base: dict) -> dict:
     if not retest_spent(conn, r["pid"], r["tier"]):
         return {**base, "now": [r["state"], r["tier"], r["reason"], ""], "pid": r["pid"],
                 "retest_at": float(r["decided_at"]) + RETEST_AFTER_SECONDS}
-    lane = r["verdict_lane"] or r["lane"] or (r["detail"] or "").partition(":")[0].strip()
+    lane = r["verdict_lane"] or r["lane"]
     if r["tier"] != ADOPT or r["reason"] != reasons.LIMIT or not lane:
         return {**base, "skipped": "no repair names this kind; a person decides it"}
     try:
@@ -243,7 +243,7 @@ def _unreopenable(conn, r, base: dict) -> dict:
 
 def apply(conn, found: list[dict]) -> list[int]:
     """Write each change through the one state writer."""
-    from harness import memory_store as ms
+    from harness import adopt, memory_store as ms
     ids = []
     from harness.memory_store.transitions import _schedule_retest
     for c in found:
@@ -268,7 +268,7 @@ def apply(conn, found: list[dict]) -> list[int]:
         vid = ms.decide(conn, c["name"], outcome, tier=tier, reason=reason, until=until,
                         detail=c["detail"], run_path=c["run_path"] or "", run_id=c["run_id"],
                         candidate_id=c["candidate_id"], failure_class=c.get("failure_class", ""),
-                        lane=c.get("lane", ""), commit=False)
+                        lane=c.get("lane", ""), event=adopt.REDECIDED, commit=False)
         if c.get("evidence"):
             conn.execute("UPDATE verdicts SET power = ?, split_version = ? WHERE id = ?",
                          (c["evidence"]["power"], c["evidence"]["split_version"] or "", vid))

@@ -85,11 +85,6 @@ def exempt(name: str, lane: str) -> str:
     return next((w for w in LANE_TRAINING.get(lanes.canonical(lane), ()) if w in words), "")
 
 
-def _lane(detail: str, fallback: str) -> str:
-    head = (detail or "").split(":", 1)[0].strip().lower()
-    return head if lanes.known(head) else lanes.canonical(fallback)
-
-
 @dataclass
 class Family:
     lane: str
@@ -158,7 +153,7 @@ def standing(conn, losses_to_demote: int | None = None) -> Standing:
     try:
         parents_of = graph(conn)
         rows = conn.execute(
-            "SELECT v.decided_at, v.outcome, v.detail, p.name, p.lane FROM verdicts v "
+            "SELECT v.decided_at, v.outcome, v.lane, p.name, p.lane AS proposal_lane FROM verdicts v "
             "JOIN proposals p ON p.id = v.proposal_id WHERE v.tier = ? AND v.reason = ? "
             "AND v.outcome IN ('measured', 'declined') ORDER BY v.decided_at, v.id",
             (adopt.TIER, reasons.CANDIDATE)).fetchall()
@@ -167,10 +162,10 @@ def standing(conn, losses_to_demote: int | None = None) -> Standing:
         return Standing(losses_to_demote=need)
     out = Standing(parents_of=parents_of, losses_to_demote=need)
     stops: set = set()
-    for at, outcome, detail, name, lane in rows:
+    for at, outcome, lane, name, proposal_lane in rows:
         if _method(name):
             continue
-        lane = _lane(detail, lane)
+        lane = lane or lanes.canonical(proposal_lane)
         k = key(root(name, parents_of, stops=stops))
         fam = out.families.setdefault((lane, k), Family(lane, k, root(name, parents_of)))
         fam.verdicts += 1
