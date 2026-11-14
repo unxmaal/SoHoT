@@ -10,6 +10,10 @@ KNOBS = [
        note="most cases a screen draws per lane and language; a zero-pass screen it capped waits on it (#691)"),
     _k("screen_confidence", ["harness/screen.py:SCREEN_CONFIDENCE"], [0.8, 0.9, 0.95, 0.99], limit="screen_confidence", unit="share",
        note="chance a model as good as the incumbent passes one screen case; sets how many it draws (#691)"),
+    _k("screen_harness_errors", ["harness/commands/screen.py:HARNESS_ERRORS"], [2, 3, 5],
+       limit="screen_harness_errors", unit="screens",
+       note="screens of one candidate in a row ending harness_error before it is declined at this limit and the "
+            "owner paged; on 2026-11-14 Q3-8B-KVA-Projector had 10 in a row and MOSS-TTS-v1.5 2 (#2012)"),
     _k("screen_memory_deferrals", ["harness/commands/screen.py:MEMORY_DEFERRALS"], [1, 3, 5],
        note="consecutive same-need memory deferrals after which a screen stops recording another (#910)"),
     _k("screen_outside_votes", ["evals/repo_screen.py:OUTSIDE_VOTES"], [2, 3, 4],

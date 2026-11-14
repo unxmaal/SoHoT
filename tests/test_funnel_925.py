@@ -123,16 +123,16 @@ def _skip_store(conn, tmp_path):
     downloads.finish(conn, rid, failed=True)
 
 
-SKIPS = {"org/budget": fetching.BUDGET, "org/format": fetching.FORMAT, "org/nolane": fetching.NO_LANE,
+SKIPS = {"org/budget": None, "org/format": fetching.FORMAT, "org/nolane": fetching.NO_LANE,
          "org/reopened": fetching.UNINSPECTED, "org/failed": fetching.FAILED, "org/fine": None}
 
 
 def test_why_not_names_each_skip_path(store, tmp_path):
     _skip_store(store, tmp_path)
     rows = {r["name"]: r for r in fetching.queued(store)}
-    got = {n: (fetching.why_not(r, budget=10 * GIB) or (None,))[0] for n, r in rows.items()}
+    got = {n: (fetching.why_not(r) or (None,))[0] for n, r in rows.items()}
+    # A wait on a download budget an older release wrote holds nothing now. #2020.
     assert got == SKIPS
-    assert fetching.why_not(rows["org/fine"], budget=4 * GIB)[0] == fetching.OVER_BUDGET
 
 
 def _attempt(conn, name, path, failed):

@@ -515,18 +515,28 @@ Test: tests/test_rank_881.py::test_a_full_precision_base_ranks_below_its_queued_
 - **THEN** the one seen first ranks first
 Test: tests/test_rank_881.py::test_the_longer_wait_ranks_first_on_otherwise_equal_rows
 
-### Requirement: A row a fetch budget passes over gains rank
-`rank.value` SHALL add `PASSED_OVER` for each distinct day a fetch budget refused the row while it fit the whole budget, counted since its last verdict from a later tier or a reopen, and SHALL stop at `PASSED_OVER_MAX`; `rank.rank` MUST record one `fetch_passed_over_max` cut per call when a row passes the cap.
+### Requirement: A row the screen passes over gains rank
+When the screen's count or its share of the sweep ceiling ends the step, `passed_over` SHALL write one dated `fetch` verdict of class `passed_over` for each row left that the screen would fetch, and none for a ready row or one fetch skips silently. `rank.value` SHALL add `PASSED_OVER` for each distinct day such a verdict was written, counted since the row's last screen or other fetch verdict or a reopen, and SHALL stop at `PASSED_OVER_MAX`; `rank.rank` MUST record one `fetch_passed_over_max` cut per call when a row passes the cap.
+
+#### Scenario: The rows a screen count leaves are passed over
+- **WHEN** a screen of count one meets three fetchable rows and a laneless one
+- **THEN** the second and third get a pass-over verdict and the laneless one none
+Test: tests/test_screen_passed_over_2020.py::test_the_rows_a_screen_count_leaves_are_passed_over_and_rise_in_rank
+
+#### Scenario: The rows the ceiling leaves are passed over
+- **WHEN** the screen's share of the ceiling is spent before its first row
+- **THEN** every fetchable row gets a pass-over verdict and a ready row none
+Test: tests/test_screen_passed_over_2020.py::test_the_rows_the_ceiling_leaves_are_passed_over_and_a_ready_row_is_not
 
 #### Scenario: A starved row rises above fresher rows
-- **WHEN** a row of lower base value is refused by the budget on enough days
+- **WHEN** a row of lower base value is passed over on enough days
 - **THEN** it ranks above the fresher row and its reason counts the days
-Test: tests/test_fetch_passed_over_1288.py::test_a_row_the_budget_keeps_passing_over_rises_above_fresh_rows_of_higher_base_value
+Test: tests/test_fetch_passed_over_1288.py::test_a_row_the_screen_keeps_passing_over_rises_above_fresh_rows_of_higher_base_value
 
-#### Scenario: Only refusals of a row that fit count
-- **WHEN** a row has a remainder refusal, an over-whole-budget refusal with an `until`, a waiting-on-a-base refusal, and a second remainder refusal the same day
-- **THEN** `rank.passed_over` counts one day
-Test: tests/test_fetch_passed_over_1288.py::test_the_pass_over_term_counts_only_refusals_of_rows_that_fit_the_whole_budget
+#### Scenario: Only pass-over days since the last other fetch verdict count
+- **WHEN** a row is passed over, refused by the fetch, then passed over twice on one day and once on the next
+- **THEN** `rank.passed_over` counts two days
+Test: tests/test_fetch_passed_over_1288.py::test_the_pass_over_term_counts_pass_over_days_since_the_last_other_fetch_verdict
 
 #### Scenario: A screen verdict restarts the count
 - **WHEN** a row has refusals on several days and then a screen verdict
@@ -1072,11 +1082,6 @@ Test: untested
 - **WHEN** the registry answers every listing with a rate limit
 - **THEN** the tier stops after its attempts and returns zero
 Test: tests/test_fetch_ratelimit.py::test_a_rate_limited_listing_defers_the_rest_of_the_tier_and_exits_0
-
-#### Scenario: A replay leaves the rank unchanged
-- **WHEN** `soh fetch --replay` runs with pass-over overrides
-- **THEN** the rank's pass-over step and cap are restored afterwards
-Test: untested
 
 ### Requirement: The judge scores inspected fits from source facts
 `_judge_fits` SHALL describe each fit to the judge with its name, what inspect read from its source and its runtime, SHALL record the score as a judge-tier `queued` verdict, and SHALL go on to the next fit when one score fails.

@@ -270,19 +270,11 @@ def fetch_queue(conn, sizes=None, *, limit=1, lane="", **kw):
     return out
 
 
-def budget_refusal(size, budget, spent):
-    """The words the pre-#2015 fetch budget refused with."""
-    gib = 1024 ** 3
-    return f"{size / gib:.1f} GiB would take this run past its {budget / gib:.0f} GiB budget ({spent / gib:.1f} GiB already fetched)"
-
-
-def refuse_over_budget(conn, name, size, budget, spent, *, at=None):
-    """The verdict the pre-#2015 fetch budget wrote; live stores hold them, and rank and the replay still read them."""
-    from harness import knobs, reasons
+def passed_over(conn, name, *, at=None, detail=""):
+    """A pass-over verdict as the screen writes one, dated, and as the pre-#2015 fetch budget did."""
+    import time
+    from harness import reasons
     from harness import memory_store as ms
-    gib = 1024 ** 3
-    why = budget_refusal(size, budget, spent)
-    until = f"limit:{knobs.limit('download_budget_gib', budget / gib, 'GiB')}" if size > budget else ""
-    ms.decide_or_skip(conn, name, "queued", tier="fetch", detail=why, reason=reasons.LIMIT, until=until, at=at,
-                      failure_class="" if until else reasons.PASSED_OVER, budget_gib=budget / gib)
-    return why
+    day = time.strftime("%Y-%m-%d", time.gmtime(time.time() if at is None else at))
+    ms.decide_or_skip(conn, name, "queued", tier="fetch", reason=reasons.LIMIT, at=at, failure_class=reasons.PASSED_OVER,
+                      detail=detail or f"not fetched {day}: the screen share of the sweep ceiling is spent")

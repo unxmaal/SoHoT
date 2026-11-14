@@ -1,4 +1,4 @@
-"""A candidate's needs are fetched under the budget and disk floor, and a full GGUF does not need its base. #1091."""
+"""A candidate's needs are fetched under the disk floor, and a full GGUF does not need its base. #1091."""
 from __future__ import annotations
 
 import json
@@ -12,20 +12,12 @@ QWOPUS = "Jackrong/Qwopus3.6-27B-v2-MTP-GGUF"
 BASE = "Qwen/Qwen3.6-27B"
 
 
-def _needs(dep_gib, *, budget_gib=None, spent_gib=0, free_gib=900, floor_gib=0):
+def _needs(dep_gib, *, free_gib=900, floor_gib=0):
     fetched = []
     done, cost, waiting = fetching._fetch_needs(
-        "org/M", ["org/tokenizer"], bases=[], sizes={"org/tokenizer": int(dep_gib * GIB)}, sizer=lambda r: -1,
-        budget=None if budget_gib is None else int(budget_gib * GIB), spent=int(spent_gib * GIB),
+        "org/M", ["org/tokenizer"], bases=[], sizer=lambda r: int(dep_gib * GIB),
         free=int(free_gib * GIB), floor=int(floor_gib * GIB), fetch=fetched.append)
     return fetched, done, cost, waiting
-
-
-def test_a_need_over_the_remaining_budget_is_skipped_for_the_budget():
-    fetched, (row,), cost, waiting = _needs(52, budget_gib=40, spent_gib=16)
-    assert fetched == [] and cost == 0
-    assert not row["ok"] and "budget" in row["why"] and "16.0 GiB already fetched" in row["why"]
-    assert waiting[0] == reasons.LIMIT
 
 
 def test_a_need_that_would_leave_the_disk_under_its_floor_is_refused():
@@ -35,8 +27,8 @@ def test_a_need_that_would_leave_the_disk_under_its_floor_is_refused():
     assert waiting[0] == reasons.MACHINE
 
 
-def test_a_fetched_need_counts_against_the_budget():
-    fetched, (row,), cost, _ = _needs(2, budget_gib=40, spent_gib=16)
+def test_a_fetched_need_is_counted_in_the_bytes_fetched():
+    fetched, (row,), cost, _ = _needs(2)
     assert fetched == ["org/tokenizer"] and row["ok"] and cost == 2 * GIB == row["bytes"]
 
 

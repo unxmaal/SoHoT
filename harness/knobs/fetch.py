@@ -7,10 +7,9 @@ KNOBS = [
     _k("discover_top", ["scripts/serve-discover.sh:DISCOVER_TOP"], [0, 1, 3, 10],
        note="a count that overrides the sweep ceiling sizing the night's screen and measure; 0 is none (#1084)"),
     _k("fetch_passed_over", ["harness/rank.py:PASSED_OVER"], [0.0, 0.25, 0.5, 1.0], unit="points",
-       note="rank.value per day a fetch budget refused a row that fit the whole budget, since its last screen; "
-            "2026-10-26 store copy, 159 queued rows refused up to 13 days, 45 projected 40 GiB nights with 6 "
-            "arrivals a night: today's rows unfetched 55 off, 24 at 0.25, 19 at 0.5; top-20-by-value mean wait "
-            "8.3, 9.4, 10.7 nights; `soh fetch --replay 7 --project 45 --arrivals 6` reruns it (#1288)"),
+       note="rank.value per day a screen's share of the sweep ceiling passed a fetchable row over, since its "
+            "last screen; 2026-10-26 projection of the same shape under the fetch budget: rows never reached "
+            "55 off, 24 at 0.25, 19 at 0.5 (#1288, #2020)"),
     _k("fetch_passed_over_max", ["harness/rank.py:PASSED_OVER_MAX"], [6.0, 15.0, 30.0], unit="points",
        note="most the pass-over term adds; a cap reached before the queue's value spread stops the aging: same "
             "projection at 0.5/day leaves 51-58 unfetched capped at 6 or 9, 41 at 15, 19 at 30 or none (#1288)"),
@@ -24,10 +23,6 @@ KNOBS = [
     _k("screen_fraction", [f"{C}:SCREEN_FRACTION"], [0.25, 0.5, 0.75],
        note="share of the sweep ceiling the screen may take; the measure step has the rest (#1084)"),
 ]
-
-NOT_GATING = {
-    "harness/fetch_replay.py:GAP_S": "seconds of no fetch verdict that split a replay into runs; it reads history and decides nothing",
-}
 
 NEVER_CUTS = {
     "harness/downloads.py:PROGRESS_POLL_S": "seconds between looks at a download's bytes; it paces heartbeat beats and stops nothing",

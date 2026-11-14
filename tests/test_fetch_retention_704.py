@@ -32,16 +32,9 @@ def _latest_fetch(conn, name):
 def test_a_candidate_over_only_what_is_left_of_the_budget_waits_for_the_next_sweep(store):
     _seed(store, "org/a-first", 30)
     _seed(store, "org/b-second", 20)
-    fakes.fetch_queue(store, _sizes(store), limit=5, free=500 * GIB, budget=int(40 * GIB))
+    fakes.fetch_queue(store, _sizes(store), limit=5, free=500 * GIB)
     row = _latest_fetch(store, "org/b-second")
     assert row["outcome"] == "queued" and not row["until"]
-
-
-def test_the_download_budget_is_a_registered_knob_with_a_limit():
-    k = knobs.KNOBS["download_budget"]
-    assert k.limit == "download_budget_gib"
-    assert "scripts/serve-discover.sh:DISCOVER_BUDGET_GIB" in k.sites
-    assert knobs.limits()["download_budget_gib"] == 80
 
 
 def test_a_429_on_the_small_variants_only_is_unknown_not_too_big(tmp_path):
@@ -245,10 +238,9 @@ def test_inspect_queues_a_fourth_headline_weight_that_fits_rather_than_retiring_
         conn.close()
 
 
-def test_the_budget_registry_reads_the_environment_the_sweep_runs_with(monkeypatch):
-    monkeypatch.setenv("DISCOVER_BUDGET_GIB", "30")
-    assert knobs.limits()["download_budget_gib"] == 30
-    assert knobs.KNOBS["download_budget"].default() == 30
+def test_a_shell_knob_reads_the_environment_the_sweep_runs_with(monkeypatch):
+    monkeypatch.setenv("DISCOVER_TOP", "3")
+    assert knobs.KNOBS["discover_top"].default() == 3
 
 
 def test_retry_after_as_an_http_date_is_honoured():

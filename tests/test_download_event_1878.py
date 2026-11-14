@@ -1,7 +1,7 @@
 """#1878: a download verdict is told apart by verdicts.event, set by its writer, never by its detail sentence."""
 import pytest
 
-from harness import fetch_replay, fetching, funnel, rank, reasons, screen
+from harness import fetching, funnel, rank, reasons, screen
 from harness import memory_store as ms
 from tests import fakes
 
@@ -38,21 +38,7 @@ def seed(conn, name, gib=16.0, at=NOW - 9 * DAY):
 
 def landed(conn, name, detail=REWORDED, at=NOW - DAY):
     return ms.decide(conn, name, "queued", tier="fetch", reason=reasons.CANDIDATE, at=at, detail=detail,
-                     budget_gib=40.0, event=fetching.DOWNLOADED)
-
-
-def test_the_replay_counts_a_download_whose_sentence_was_reworded(conn):
-    seed(conn, "org/a")
-    landed(conn, "org/a")
-    got = fetch_replay.runs(conn, NOW - 2 * DAY)
-    assert [(r["budget"], [x["name"] for x in r["rows"]], r["fetched"]) for r in got] == [(40.0, ["org/a"], ["org/a"])]
-
-
-def test_a_fetch_verdict_that_only_says_downloaded_is_not_a_download(conn):
-    seed(conn, "org/a")
-    ms.decide(conn, "org/a", "queued", tier="fetch", reason=reasons.CANDIDATE, at=NOW - DAY,
-              detail=fetching.DOWNLOADED_DETAIL, budget_gib=40.0)
-    assert fetch_replay.runs(conn, NOW - 2 * DAY) == []
+                     event=fetching.DOWNLOADED)
 
 
 def test_the_funnel_does_not_read_a_reworded_download_back_as_a_skip(conn):
@@ -73,7 +59,7 @@ def test_a_fetch_run_marks_what_it_downloaded_by_event_whatever_it_says(conn, mo
     monkeypatch.setattr(fetching, "DOWNLOADED_DETAIL", REWORDED)
     for i in range(2):
         seed(conn, f"org/code-{i}")
-    got = fakes.fetch_queue(conn, limit=2, free=1000 * GIB, budget=40 * GIB)
+    got = fakes.fetch_queue(conn, limit=2, free=1000 * GIB)
     assert [g["ok"] for g in got] == [True, True]
     said = conn.execute("SELECT detail, event FROM verdicts WHERE tier = 'fetch' ORDER BY id").fetchall()
     assert [tuple(r) for r in said] == [(REWORDED, fetching.DOWNLOADED)] * 2

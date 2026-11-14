@@ -1,8 +1,4 @@
-"""--budget-gib is the ceiling on one invocation, and it was never enforced.
-
-`lh discover --loop --run --budget-gib 12` printed the budget in the fetch
-header and downloaded 24.6 GiB, because _loop_spend never passed it to
-fetching.run. Issue #215.
+"""What the screen's fetch refuses before a byte is downloaded, and what it never refuses. #215, #2020.
 
 A REAL STORE, NOT A FAKE CONNECTION. These first used a stub whose execute()
 answered one query shape, which broke the moment queued() asked the store a
@@ -17,11 +13,7 @@ from tests import fakes
 GIB = fetching.GIB
 
 
-#: `code` because the budget is arithmetic and has nothing to do with a lane.
-#: These were seeded into `image` with invented names, which the screen tier
-#: now correctly calls no-runner -- mflux is an enumerated table of families
-#: and `org/a-small` is not one of them. A budget test refused before it could
-#: measure the budget was five green tests measuring nothing.
+#: `code`: an invented image name is one mflux has no runner for, refused before what these measure.
 def _seed(conn, name, gib, lane="code"):
     ms.record(conn, ms.Seen(name=name, source="test", url="", why="",
                             relevance=0, kind="candidate",
@@ -48,22 +40,19 @@ def _sizes(conn):
             for r in fetching.queued(conn)}
 
 
-def test_no_budget_means_no_ceiling(store):
-    """The negative control: absent the flag, nothing new refuses anything."""
+def test_every_sized_row_is_fetched_with_no_download_budget(store):
+    """The negative control: nothing but the disk floor and the cap bounds what one run fetches."""
     _seed(store, "org/a-small", 5.5)
     _seed(store, "org/b-big", 19.1)
-    got = fakes.fetch_queue(store, _sizes(store), limit=5, free=500 * GIB,
-                       budget=None)
+    got = fakes.fetch_queue(store, _sizes(store), limit=5, free=500 * GIB)
     assert sorted(g["repo"] for g in got if g["ok"]) == ["org/a-small",
                                                          "org/b-big"]
 
 
-def test_an_unsized_row_is_not_charged_to_the_budget(store):
-    """A size of 0 means unknown, and plan() refuses it for that reason. It
-    must not silently pass a budget check by counting as free."""
+def test_an_unsized_row_is_refused_rather_than_fetched_to_learn_its_size(store):
+    """A size of 0 means unknown, and plan() refuses it for that reason."""
     _seed(store, "org/unsized", 0)
-    got = fakes.fetch_queue(store, {"org/unsized": 0}, limit=5, free=500 * GIB,
-                       budget=int(12 * GIB))
+    got = fakes.fetch_queue(store, {"org/unsized": 0}, limit=5, free=500 * GIB)
     assert not got[0]["ok"]
     assert "no measured size" in got[0]["why"]
 

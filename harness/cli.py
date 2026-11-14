@@ -343,9 +343,8 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--external", action="store_true",
                    help="ask the registries what exists that this machine has "
                         "never measured (needs --lane)")
-    d.add_argument("--budget-gib", type=float, default=None, dest="budget_gib",
-                   help="with --loop --run, the ceiling on what this "
-                        "invocation will download; default: the download_budget knob")
+    # A step job queued by an older release still carries it; nothing reads it. #2020.
+    d.add_argument("--budget-gib", type=float, default=None, dest="budget_gib", help=argparse.SUPPRESS)
     d.add_argument("--repeat", type=int, default=None,
                    help="with --loop --run, repetitions per case when "
                         "measuring a challenger against the incumbent; "
@@ -485,20 +484,6 @@ def build_parser() -> argparse.ArgumentParser:
     f = sub.add_parser("fetch",
                        help="list what the screen fetches as it starts each candidate; nothing is downloaded (#2015)")
     f.add_argument("--lane", default="", help="only this lane's candidates")
-    f.add_argument("--budget-gib", type=float, default=None, dest="budget_gib",
-                   help="with --project, the GiB one projected night downloads; default: the download_budget knob")
-    f.add_argument("--replay", type=float, default=None, metavar="DAYS",
-                   help="replay the last DAYS of fetch runs from their verdicts, with and without the pass-over term (#1288)")
-    f.add_argument("--passed-over", type=float, default=None, dest="passed_over",
-                   help="with --replay, the pass-over term per day instead of the fetch_passed_over knob")
-    f.add_argument("--passed-over-max", type=float, default=None, dest="passed_over_max",
-                   help="with --replay, its ceiling instead of the fetch_passed_over_max knob")
-    f.add_argument("--project", type=int, default=None, metavar="NIGHTS",
-                   help="with --replay, also run today's queue forward NIGHTS one-run nights at --budget-gib")
-    f.add_argument("--arrivals", type=int, default=0,
-                   help="with --project, fresh clones of queue rows that arrive each night")
-    f.add_argument("--watch", action="append", default=[],
-                   help="with --project, a row whose fetch night to print; default the five longest passed over")
     f.set_defaults(func=screen_cmd.cmd_fetch)
 
     rep = sub.add_parser(

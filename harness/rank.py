@@ -68,7 +68,7 @@ DECLINED = -1.5
 HEAVY = -1.0
 #: A quantised child of this row is queued, which is the form a screen should take.
 QUANT_QUEUED = -2.0
-#: Per day a fetch budget refused a row that fit the whole budget, and the most that adds: priority aging (#1288).
+#: Per day a screen's share of the sweep ceiling passed a fetchable row over, and the most that adds: aging (#1288, #2020).
 PASSED_OVER = 0.5
 PASSED_OVER_MAX = 30.0
 AT_CAP = "at the pass-over cap"
@@ -209,11 +209,11 @@ def value(row: dict, *, serving: set[str] = frozenset(),
 
     passed = int(row.get("passed_over") or 0)
     if passed:
-        # A row each run's budget passes over gains for it, or a fitting row can wait forever. #1288.
+        # A row each screen passes over gains for it, or a fetchable row can wait forever. #1288, #2020.
         gain = PASSED_OVER * passed
         capped = gain > PASSED_OVER_MAX
         score += PASSED_OVER_MAX if capped else gain
-        why.append(f"passed over by a fetch budget on {passed} day{'s' if passed > 1 else ''}"
+        why.append(f"passed over by the screen on {passed} day{'s' if passed > 1 else ''}"
                    + (f", {AT_CAP}" if capped else ""))
 
     first = float(row.get("first_seen") or 0.0)
@@ -401,7 +401,7 @@ def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float | None = Non
 
 
 def passed_over(conn, before: float | None = None) -> dict[str, int]:
-    """name -> days a budget refused it (failure_class, never the sentence) though it fit, since its last later-tier verdict or reopen. #1779."""
+    """name -> days a run passed it over (failure_class, never the sentence) since its last screen, other fetch verdict or reopen. #1779, #2020."""
     if conn is None:
         raise HintUnreadable("no store connection")
     from harness import reasons
@@ -413,7 +413,8 @@ def passed_over(conn, before: float | None = None) -> dict[str, int]:
                AND COALESCE(v.until, '') = '' AND v.decided_at < :before
                AND v.id > COALESCE((SELECT MAX(vx.id) FROM verdicts vx WHERE vx.proposal_id = v.proposal_id
                                       AND vx.decided_at < :before
-                                      AND (vx.tier NOT IN ('inspect', 'fetch', 'judge') OR vx.reason = :reopened)), 0)
+                                      AND (vx.tier NOT IN ('inspect', 'fetch', 'judge') OR vx.reason = :reopened
+                                           OR (vx.tier = 'fetch' AND COALESCE(vx.failure_class, '') <> :passed))), 0)
             """, {"limit": reasons.LIMIT, "passed": reasons.PASSED_OVER,
                   "before": time.time() if before is None else before,
                   "reopened": reasons.REOPENED}).fetchall()

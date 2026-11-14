@@ -104,7 +104,6 @@ def test_a_rate_limited_dependency_stops_the_remaining_ones(bases):
         tried.append(dep)
         raise fetching.FetchDeferred("listing rate-limited")
     done, spent, _ = fetching._fetch_needs(
-        "org/M", ["org/base-a", "org/base-b"], bases=bases, sizes={"org/base-a": 1, "org/base-b": 1},
-        sizer=lambda r: 1, budget=None, spent=0, free=900 * GIB, floor=0, fetch=fetch)
+        "org/M", ["org/base-a", "org/base-b"], bases=bases, sizer=lambda r: 1, free=900 * GIB, floor=0, fetch=fetch)
     assert tried == ["org/base-a"]
     assert [d.get("deferred") for d in done] == [True]

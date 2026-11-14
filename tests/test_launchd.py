@@ -828,18 +828,6 @@ def test_the_rerun_cannot_loop():
     assert 'LH_REEXECED:-}" = 1 ] && return 0' in body
 
 
-def test_the_sweep_downloads_up_to_80_gib_by_default_and_the_knob_agrees(monkeypatch):
-    # The old default bound most nights (#1288); this is the next registered rung. #678, #1526.
-    from harness import fetching, knobs
-    monkeypatch.delenv("DISCOVER_BUDGET_GIB", raising=False)
-    text = (REPO / "scripts" / "serve-discover.sh").read_text(encoding="utf-8")
-    script = float(re.search(r'BUDGET="\$\{DISCOVER_BUDGET_GIB:-(\d+)\}"', text).group(1))
-    knob = knobs.KNOBS["download_budget"]
-    assert (script, float(knob.default()), knobs.limits()["download_budget_gib"], fetching.budget_gib(None)) \
-        == (80, 80, 80, 80)
-    assert 80 in knob.values
-
-
 def test_a_live_periodic_run_lets_the_deploy_chain_run_smoke(tmp_path):
     # `install && smoke.sh && soh coherence` skipped both checks on every daytime install. #1521.
     got, calls = _install(tmp_path, running=("audit",), defer_wait=1, then="echo smoke-ran")

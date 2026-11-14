@@ -1,7 +1,7 @@
-"""#1288: a row a fetch budget keeps passing over rises in the shared rank; an unmeasured family base is not demoted."""
+"""#1288, #2020: a row the screen keeps passing over rises in the shared rank; an unmeasured family base is not demoted."""
 import pytest
 
-from harness import family, fetch_replay, fetching, knobs, rank
+from harness import family, knobs, rank
 from tests import fakes
 from harness import memory_store as ms
 
@@ -41,11 +41,11 @@ def seen(conn, name, gib=15.0, lane="code"):
     conn.commit()
 
 
-def refused(conn, name, at, *, gib=15.0, budget=40):
-    fakes.refuse_over_budget(conn, name, int(gib * GIB), budget * GIB, int(at % 37 * GIB), at=at)
+def refused(conn, name, at):
+    fakes.passed_over(conn, name, at=at)
 
 
-def test_a_row_the_budget_keeps_passing_over_rises_above_fresh_rows_of_higher_base_value(conn):
+def test_a_row_the_screen_keeps_passing_over_rises_above_fresh_rows_of_higher_base_value(conn):
     big, fresh = row("old/Peer-27B-GGUF"), row("new/Peer-27B-GGUF", times=6)
     assert order([big, fresh])[0] == [fresh["name"], big["name"]]
     seen(conn, big["name"])
@@ -54,17 +54,18 @@ def test_a_row_the_budget_keeps_passing_over_rises_above_fresh_rows_of_higher_ba
         refused(conn, big["name"], NOW - (days - d) * DAY)
     names, got = order([big, fresh], conn=conn)
     assert names == [big["name"], fresh["name"]]
-    assert f"passed over by a fetch budget on {days} days" in got[big["name"]]["value_why"]
+    assert f"passed over by the screen on {days} days" in got[big["name"]]["value_why"]
 
 
-def test_the_pass_over_term_counts_only_refusals_of_rows_that_fit_the_whole_budget(conn):
+def test_the_pass_over_term_counts_pass_over_days_since_the_last_other_fetch_verdict(conn):
     seen(conn, "a/Peer-27B-GGUF")
-    refused(conn, "a/Peer-27B-GGUF", NOW - 3 * DAY)
-    refused(conn, "a/Peer-27B-GGUF", NOW - 2 * DAY, gib=65.0)
-    ms.decide(conn, "a/Peer-27B-GGUF", "queued", tier="fetch", reason="limit", at=NOW - DAY,
-              detail=f"waiting on b/base, the base its runner needs, is 30.0 GiB and would take this run past its 40 GiB budget")
-    refused(conn, "a/Peer-27B-GGUF", NOW - 3 * DAY + 3600)
-    assert rank.passed_over(conn, before=NOW) == {"a/Peer-27B-GGUF": 1}
+    refused(conn, "a/Peer-27B-GGUF", NOW - 4 * DAY)
+    ms.decide(conn, "a/Peer-27B-GGUF", "queued", tier="fetch", reason="harness", at=NOW - 3 * DAY,
+              detail="needs its own runner: no runner in the code lane can load it")
+    refused(conn, "a/Peer-27B-GGUF", NOW - 2 * DAY)
+    refused(conn, "a/Peer-27B-GGUF", NOW - 2 * DAY + 3600)
+    refused(conn, "a/Peer-27B-GGUF", NOW - DAY)
+    assert rank.passed_over(conn, before=NOW) == {"a/Peer-27B-GGUF": 2}
 
 
 def test_the_pass_over_term_restarts_after_a_screen_verdict(conn):
@@ -130,57 +131,3 @@ def test_a_familys_base_forms_are_demoted_once_a_base_form_lost(conn):
     paired(conn, "mlx-community/Qwen3.8-27B-4bit", "declined", NOW - 2 * DAY)
     st = family.standing(conn)
     assert st.demotion(BASE, "code")[0] == family.DEMOTION
-
-
-def fetched(conn, name, at):
-    ms.decide(conn, name, "queued", tier="fetch", reason="candidate", at=at, detail=fetching.DOWNLOADED_DETAIL,
-              event=fetching.DOWNLOADED)
-
-
-def test_the_replay_shows_what_each_past_fetch_run_would_have_fetched(conn, monkeypatch):
-    monkeypatch.setattr(rank, "PASSED_OVER", 2.0)
-    monkeypatch.setattr(rank, "PASSED_OVER_MAX", 8.0)
-    seen(conn, "big/Peer-27B-GGUF")
-    for source in "abcd":
-        ms.record(conn, ms.Seen(name="hot/Peer-27B-GGUF", source=source, lane="code"))
-    conn.execute("UPDATE proposals SET size_bytes = ? WHERE name = 'hot/Peer-27B-GGUF'", (30 * GIB,))
-    conn.commit()
-    for d in (5, 4, 3, 2):
-        refused(conn, "big/Peer-27B-GGUF", NOW - d * DAY + 60)
-    fetched(conn, "hot/Peer-27B-GGUF", NOW - 2 * DAY)
-    runs = fetch_replay.replay(conn, since=NOW - 6 * DAY, serving=(), measured_lanes={"code"},
-                               ceiling_gib=66.0, incumbents_by_lane=INC, bases_by_lane={})
-    assert [round(r["budget"]) for r in runs] == [40, 40, 40, 40]
-    last = runs[-1]
-    assert last["fetched"] == ["hot/Peer-27B-GGUF"]
-    assert last["without"] == ["hot/Peer-27B-GGUF"]
-    assert last["with"] == ["big/Peer-27B-GGUF"]
-    assert last["passed"] == {"big/Peer-27B-GGUF": 3}
-
-
-def test_a_long_download_stays_in_the_run_that_started_it(conn):
-    seen(conn, "a/Peer-27B-GGUF")
-    seen(conn, "b/Peer-27B-GGUF")
-    refused(conn, "a/Peer-27B-GGUF", NOW - DAY)
-    pid = conn.execute("SELECT id FROM proposals WHERE name = 'b/Peer-27B-GGUF'").fetchone()[0]
-    conn.execute("INSERT INTO downloads (proposal_id, repo, kind, path, origin, started_at, finished_at, complete) "
-                 "VALUES (?, 'b/Peer-27B-GGUF', 'hub', '/x', 'fetch', ?, ?, 1)",
-                 (pid, NOW - DAY + 60, NOW - DAY + 4 * fetch_replay.GAP_S))
-    conn.commit()
-    fetched(conn, "b/Peer-27B-GGUF", NOW - DAY + 4 * fetch_replay.GAP_S)
-    got = fetch_replay.runs(conn, NOW - 2 * DAY)
-    assert len(got) == 1 and got[0]["fetched"] == ["b/Peer-27B-GGUF"]
-
-
-def test_the_projection_fetches_a_starved_row_only_with_the_term(conn, monkeypatch):
-    for name, gib, times in (("big/Peer-27B-GGUF", 30.0, 1), *((f"hot{i}/Peer-27B-GGUF", 12.0, 4) for i in range(3))):
-        for source in "abcd"[:times]:
-            ms.record(conn, ms.Seen(name=name, source=source, lane="code"))
-        conn.execute("UPDATE proposals SET size_bytes = ?, kind = 'weights' WHERE name = ?", (int(gib * GIB), name))
-        ms.decide(conn, name, "queued", tier="inspect", reason="candidate", at=NOW - 9 * DAY, detail="fits")
-    conn.commit()
-    monkeypatch.setattr(fetching, "have", lambda name, conn=None: False)
-    kw = dict(budget_gib=40, arrivals=3, now=NOW, serving=(), measured_lanes={"code"}, ceiling_gib=66.0,
-              incumbents_by_lane=INC, bases_by_lane={})
-    assert fetch_replay.project(conn, 12, term=False, **kw)["big/Peer-27B-GGUF"] == 0
-    assert fetch_replay.project(conn, 12, term=True, **kw)["big/Peer-27B-GGUF"] > 0

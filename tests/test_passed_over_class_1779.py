@@ -3,7 +3,7 @@ import sqlite3
 
 import pytest
 
-from harness import family, fetch_replay, fetching, rank, reasons, screen, store
+from harness import family, fetching, rank, reasons, store
 from harness import memory_store as ms
 from tests import fakes
 
@@ -38,10 +38,9 @@ def ranked(rows, conn, **kw):
                      standing=family.Standing(), now=NOW, conn=conn, **kw)
 
 
-def test_a_reworded_refusal_ages_the_row_it_refused(conn, monkeypatch):
-    monkeypatch.setattr(fakes, "budget_refusal", lambda size, budget, spent: "no room tonight; try tomorrow")
+def test_a_reworded_pass_over_ages_the_row_it_passed_over(conn):
     seed(conn, "org/code-0")
-    assert fakes.refuse_over_budget(conn, "org/code-0", 16 * GIB, 40 * GIB, 32 * GIB) == "no room tonight; try tomorrow"
+    fakes.passed_over(conn, "org/code-0", detail="no room tonight; try tomorrow")
     assert rank.passed_over(conn) == {"org/code-0": 1}
 
 
@@ -51,20 +50,11 @@ def test_the_old_sentence_without_its_class_does_not_age(conn):
     assert rank.passed_over(conn, before=NOW) == {}
 
 
-def test_the_replay_finds_a_reworded_refusal_by_its_class(conn, monkeypatch):
-    monkeypatch.setattr(fakes, "budget_refusal",
-                        lambda size, budget, spent: f"the run holds {spent / GIB:.1f}; this would go past its 40 GiB budget")
-    seed(conn, "org/a")
-    fakes.refuse_over_budget(conn, "org/a", 16 * GIB, 40 * GIB, 32 * GIB, at=NOW - DAY)
-    got = fetch_replay.runs(conn, NOW - 2 * DAY)
-    assert [(r["budget"], [x["name"] for x in r["rows"]]) for r in got] == [(40.0, ["org/a"])]
-
-
 def test_two_runs_on_one_utc_day_are_one_day_on_either_store(conn):
     seed(conn, "org/a")
     day = (NOW // DAY - 2) * DAY
-    for frac, spent in ((0.3, 32), (0.7, 30)):
-        fakes.refuse_over_budget(conn, "org/a", 16 * GIB, 40 * GIB, spent * GIB, at=day + frac * DAY)
+    for frac in (0.3, 0.7):
+        fakes.passed_over(conn, "org/a", at=day + frac * DAY, detail=f"16.0 GiB would take this run past its budget ({frac})")
     assert conn.execute("SELECT COUNT(*) FROM verdicts WHERE failure_class = ?", (reasons.PASSED_OVER,)).fetchone()[0] == 2
     assert rank.passed_over(conn, before=NOW) == {"org/a": 1}
 
@@ -116,8 +106,7 @@ class Recording:
 def test_the_aging_reads_need_no_sqlite_only_construct_on_postgres(conn):
     rec = Recording(conn)
     rank.passed_over(rec, before=NOW)
-    fetch_replay.runs(rec, 0.0)
-    assert len(rec.sql) == 2
+    assert len(rec.sql) == 1
     for sql in rec.sql:
         pg = store.translate(sql)
         assert "GLOB" not in sql.upper() and "sqlite_glob" not in pg, "GLOB rides on a compat function; select on the class"
@@ -144,3 +133,25 @@ def test_the_backfill_classes_exactly_the_rows_the_sentence_reader_counted(conn)
                        "ON p.id = v.proposal_id WHERE v.failure_class <> '' ORDER BY v.id").fetchall()
     assert [tuple(r) for r in got] == [("org/a", "fetch", reasons.PASSED_OVER)] * 2
     assert rank.passed_over(conn, before=NOW) == {"org/a": 2}
+
+
+@pytest.mark.gauntlet("a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null",
+                      site="harness/memory_store/migrations/v104.py:data:verdicts")
+def test_the_backfill_lifts_each_older_refusals_budget_once_and_leaves_the_rest_unknown(conn):
+    """Schema 104 still lifts a store an older release wrote, though nothing reads the budget since #2020."""
+    from harness.memory_store.migrations import v104
+    for name in ("org/a", "org/b", "org/c"):
+        seed(conn, name)
+    ids = [ms.decide(conn, "org/a", "queued", tier="fetch", reason=reasons.LIMIT, at=NOW - DAY, detail=OLD,
+                     failure_class=reasons.PASSED_OVER),
+           ms.decide(conn, "org/b", "queued", tier="fetch", reason=reasons.LIMIT, at=NOW - DAY,
+                     detail=OLD.replace("40 GiB", "12.5 GiB"), until="limit:download_budget_gib>12.5"),
+           ms.decide(conn, "org/c", "queued", tier="fetch", reason=reasons.LIMIT, at=NOW - DAY,
+                     detail="no room tonight", failure_class=reasons.PASSED_OVER),
+           ms.decide(conn, "org/c", "queued", tier="fetch", reason=reasons.LIMIT, at=NOW - DAY, detail=OLD,
+                     failure_class=reasons.PASSED_OVER)]
+    conn.execute("UPDATE verdicts SET budget_gib = 24.0 WHERE id = ?", (ids[-1],))
+    v104.data(conn)
+    v104.data(conn)
+    got = {r[0]: r[1] for r in conn.execute("SELECT id, budget_gib FROM verdicts WHERE tier = 'fetch'")}
+    assert [got[i] for i in ids] == [40.0, 12.5, None, 24.0]

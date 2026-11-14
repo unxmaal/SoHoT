@@ -278,7 +278,12 @@ INDEX = {
         "detector": "empty_on_failure", "waivers": {},
         "instances": _i(rules=(1262,)), "scanners": []},
     "a-stored-value-with-no-live-writer-or-no-reader": {
-        "detector": "unpaired_column", "waivers": {},
+        "detector": "unpaired_column", "waivers": {
+            "harness/memory_store/schema.py:verdicts.budget_gib:no-reader":
+                "the retired fetch budget's column (#2020); kept because a rollback release still writes it",
+            "harness/memory_store/schema.py:verdicts.budget_gib:no-writer":
+                "the retired fetch budget's column (#2020); only a rollback release writes it, and nothing reads it",
+        },
         "instances": _i(rules=(1513,)), "scanners": []},
     "a-deploy-runs-two-releases-at-once": {
         "detector": "one_sided_schema_check", "waivers": {},

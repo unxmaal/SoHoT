@@ -16,7 +16,7 @@ from tests import inproc
 
 
 def _ns(**kw):
-    base = {"lane": "", "top": None, "budget_gib": None, "repeat": None, "ceiling_h": 11.0,
+    base = {"lane": "", "top": None, "repeat": None, "ceiling_h": 11.0,
             "effect": None, "power_budget_min": 30.0, "run": True, "loop": True, "jobs": True}
     return argparse.Namespace(**{**base, **kw})
 
@@ -190,10 +190,16 @@ def test_a_step_whose_weights_volume_went_away_pauses_the_sweep(ran, monkeypatch
 
 
 def test_a_step_carries_the_loop_options_and_reads_as_a_discover_loop():
-    words = steps.argv("fetch", "1700000000", _ns(lane="code", top=3, budget_gib=40.0))
+    words = steps.argv("screen", "1700000000", _ns(lane="code", top=3, budget_gib=40.0))
     assert words[words.index("--lane") + 1] == "code" and words[words.index("--top") + 1] == "3"
-    assert words[words.index("--budget-gib") + 1] == "40.0" and "--repeat" not in words
+    assert "--budget-gib" not in words and "--repeat" not in words
     assert sweep_guard.LOOP.search(" ".join(words))
+
+
+def test_a_step_queued_by_a_release_that_carried_the_download_budget_still_parses():
+    """An in-flight sweep's next step was queued with --budget-gib before the deploy that retired it. #2020."""
+    a = cli.build_parser().parse_args(["discover", "--loop", "--run", "--step", "screen", "--budget-gib", "80"])
+    assert a.step == "screen"
 
 
 def test_jobs_without_run_queues_nothing(capsys):
