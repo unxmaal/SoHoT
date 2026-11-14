@@ -41,6 +41,18 @@ def unread(u) -> int:
     return 1
 
 
+def _written(r: dict, hours: int) -> str:
+    """The source a reason is read from and the part of the window it had a writer in. #1956."""
+    era = (f"from {_day(r['from'])} ({r['bound_by']})" if r["from"] is not None else
+           f"until {_day(r['to'])} ({r['bound_by']})" if r["to"] is not None else "")
+    if not r["covers"]:
+        if not era:
+            return f"[{r['source']}: the window has no hour]"
+        return f"[{r['source']}: no writer in this window, written only {era}]"
+    part = "" if r["covers"] == hours else f", covers {r['covers']} of {hours} h"
+    return f"[{r['source']}" + (f", written {era}" if era else "") + f"{part}]"
+
+
 def show(L: dict) -> None:
     w = L["window"]
     note(f"time account {_day(w['start'])} .. {_day(w['end'])}: {w['hours']} hours, {L['sweeps']} sweep(s)")
@@ -50,8 +62,11 @@ def show(L: dict) -> None:
              f"{r['busy_hours']:>7.1f} {r['gpu_busy_hours']:>6.1f}")
     b = L["blocked"]
     note(f"blocked: {b['any']} hour(s) with a reason; daytime {b['daytime_any']} of {b['daytime_hours']}")
-    for why, n in b["by_reason"].items():
-        note(f"  {why:<17} {n:>6}")
+    for r in b["reasons"]:
+        note(f"  {r['reason']:<17} {'--' if r['hours'] is None else r['hours']:>6}  {_written(r, w['hours'])}")
+    o = b["owner_held"]
+    note(f"owner took the machine back (not blocked): {'--' if not o['covers'] else o['hours']} hour(s), daytime "
+         f"{o['daytime']}" + "".join(f"; {k} {n}" for k, n in o["by_kind"].items()) + f"  {_written(o, w['hours'])}")
     note(f"  daytime hours the GPU or RAM was taken by non-work: {b['daytime_taken']} of {b['daytime_hours']}"
          + "".join(f"; {c} {n}" for c, n in b["daytime_taken_by"].items()))
     note(f"  delegations refused for a held machine: {b['refused']} of {b['failed']} failed")
