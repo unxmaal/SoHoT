@@ -255,6 +255,21 @@
    "until": "policy:trust_remote_code@rumik_oss"
   },
   {
+   "candidate": "tts:rumik-ai/rumik-oss-1-mlx-8bit",
+   "decided_at": "2026-11-14T05:11:13Z",
+   "detail": "needs its own runner: the stock loader could not assemble it: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'rumik-ai/rumik-oss-1-mlx-8bit': Could not determine model type for rumik-ai/rumik-oss-1-mlx-8bit\"}; numbers-and-units: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'rumik-ai/rumik-oss-1-mlx-8bit': Could not determine model ",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "rumik-ai/rumik-oss-1-mlx-8bit",
+   "reason": "runtime",
+   "receipt_key": "rumik-oss-1-mlx-8bit",
+   "run_id": 972,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "runner:tts/rumik_oss"
+  },
+  {
    "candidate": "tts:mlx-community/Kokoro-82M-bf16",
    "decided_at": "2026-10-06T15:29:33Z",
    "detail": "tts: already the lane's default",
@@ -397,14 +412,14 @@
   },
   {
    "candidate": "tts:OpenMOSS-Team/MOSS-TTS-v1.5",
-   "decided_at": "2026-11-13T03:12:25Z",
+   "decided_at": "2026-11-14T05:11:06Z",
    "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local dis",
    "exam": null,
    "outcome": "queued",
    "proposal": "OpenMOSS-Team/MOSS-TTS-v1.5",
    "reason": "harness",
    "receipt_key": "MOSS-TTS-v1.5",
-   "run_id": 941,
+   "run_id": 970,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -441,7 +456,7 @@
    "until": "format:.pt"
   }
  ],
- "cursor": 1794539545376433,
+ "cursor": 1794633073169208,
  "events": [
   {
    "at": "2026-09-19T21:17:40Z",
@@ -1087,6 +1102,36 @@
    "reason": "harness",
    "run_id": 941,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-14T05:11:06Z",
+   "candidate": "tts:OpenMOSS-Team/MOSS-TTS-v1.5",
+   "chosen": null,
+   "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local dis",
+   "how": "",
+   "id": 1794633066449208,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "harness",
+   "run_id": 970,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-14T05:11:13Z",
+   "candidate": "tts:rumik-ai/rumik-oss-1-mlx-8bit",
+   "chosen": null,
+   "detail": "needs its own runner: the stock loader could not assemble it: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'rumik-ai/rumik-oss-1-mlx-8bit': Could not determine model type for rumik-ai/rumik-oss-1-mlx-8bit\"}; numbers-and-units: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'rumik-ai/rumik-oss-1-mlx-8bit': Could not determine model ",
+   "how": "",
+   "id": 1794633073169208,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "runtime",
+   "run_id": 972,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -1257,7 +1302,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-13T03:38:07Z",
+ "generated_at": "2026-11-14T08:00:43Z",
  "knobs": [],
  "lane": {
   "cases": 470,
