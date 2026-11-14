@@ -62,6 +62,19 @@ def _held(got: list[dict]) -> tuple[str, set]:
         conn.close()
 
 
+def _memory_waits() -> list[dict]:
+    """Pending gpu jobs that waited on memory past memory_wait_named, each with its line. #1993."""
+    import time
+
+    from harness import memory_store as ms
+    from harness import memory_wait
+    conn = ms.connect()
+    try:
+        return memory_wait.waiting(conn, time.time())
+    finally:
+        conn.close()
+
+
 def cmd_jobs(a) -> int:
     """The work queue every caller shares. #353."""
     from harness import workqueue as wq
@@ -195,6 +208,9 @@ def cmd_jobs(a) -> int:
         conn.close()
     for h in leases:
         note(f"  {item_lease.line(h)}")
+    long = _memory_waits()
+    for w in long:
+        note(f"  {w['line']}")
     emit(running=wq.running(), gate_open=ok, why=why, jobs=got, loop=loop, contention=gpu, deploy_wait=waits, locks=locks,
-         hold=held, held=sorted(waiting), leases=leases, releases=releases)
+         hold=held, held=sorted(waiting), leases=leases, releases=releases, memory_waits=long)
     return 0
