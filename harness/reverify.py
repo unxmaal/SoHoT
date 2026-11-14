@@ -227,10 +227,13 @@ def _same(cid) -> tuple[str, tuple]:
 
 
 def _latest(conn, lane: str, cid, settled: bool = False) -> dict | None:
+    from harness import machine_scope
     same, args = _same(cid)
     done = " AND outcome != ''" if settled else ""
-    row = conn.execute(f"SELECT * FROM reverifications WHERE lane = ? AND {same}{done} "
-                       "ORDER BY id DESC LIMIT 1", (lane, *args)).fetchone()
+    # Another machine's re-run neither holds nor flags this machine's lane. #1929.
+    here, mine = machine_scope.here(conn, "reverifications.mine")
+    row = conn.execute(f"SELECT * FROM reverifications WHERE lane = ? AND {same}{done} AND {here} "
+                       "ORDER BY id DESC LIMIT 1", (lane, *args, *mine)).fetchone()
     return dict(row) if row else None
 
 
@@ -583,9 +586,12 @@ def _expired(conn, rv: dict, job: dict | None, now: float, write: bool) -> dict 
 
 def settle(conn, *, now: float, write: bool = True, add=None, resumed: list | None = None) -> list[dict]:
     """Judge every queued re-run whose job finished; a paused one is resumed into `resumed`, never judged. #1403."""
+    from harness import machine_scope
     from harness import workqueue as wq
     out = []
-    for r in conn.execute("SELECT * FROM reverifications WHERE outcome = '' ORDER BY id").fetchall():
+    # Another machine's re-run is its own to judge, and its paused job to resume into its queue. #1929.
+    here, mine = machine_scope.here(conn, "reverifications.mine")
+    for r in conn.execute(f"SELECT * FROM reverifications WHERE outcome = '' AND {here} ORDER BY id", mine).fetchall():
         rv = dict(r)
         job = wq.get(rv["job_id"], conn=conn) if rv["job_id"] is not None else None
         expired = _expired(conn, rv, job, now, write)
