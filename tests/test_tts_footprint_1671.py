@@ -2,6 +2,7 @@
 import asyncio
 import io
 import json
+import os
 import subprocess
 
 import pytest
@@ -18,6 +19,8 @@ SPEECH = "/usr/bin/python3 -m evals.run --modality tts --candidates tts:OpenMOSS
 BASE = "http://127.0.0.1:18890/v1"
 MOSS = "OpenMOSS-Team/MOSS-TTS-v1.5"
 KOKORO = "mlx-community/Kokoro-82M-bf16"
+#: A live group no test may signal (conftest refuses it), so a stop that reaches a real killpg fails on every host.
+GROUP = getattr(os, "getpgrp", os.getpid)()
 
 
 # --- the server wrapper ----------------------------------------------------------
@@ -155,7 +158,11 @@ class Tts(Fake):
 class Hands(watchdog_hands.Hands):
     def __init__(self):
         super().__init__(run=self._run, environ={}, platform="darwin")
-        self.argv = []
+        self.argv, self.stopped = [], []
+
+    def _group(self, s):
+        self.stopped.append(s.pgid)
+        return wd.Said(f"group {s.pgid}: term")
 
     def _run(self, argv, **kw):
         self.argv.append(argv)
@@ -188,11 +195,12 @@ def test_a_request_in_flight_keeps_the_server_up(tmp_path, monkeypatch):
 
 
 def test_an_eval_on_an_audio_lane_keeps_the_server_up(tmp_path, monkeypatch):
-    probes = Tts(tmp_path, procs=[P(300, 1, 300, 600, SPEECH)])
-    probes.runs = [{"state": "running", "pid": 300, "done": 1, "total": 9, "specs": {"m": f"tts:{MOSS}"},
+    probes = Tts(tmp_path, procs=[P(GROUP, 1, GROUP, 600, SPEECH)])
+    probes.runs = [{"state": "running", "pid": GROUP, "done": 1, "total": 9, "specs": {"m": f"tts:{MOSS}"},
                     "started_at": NIGHT - 600, "last_progress_at": NIGHT - 30}]
     rows, hands = _wake(probes, monkeypatch)
     assert rows == [] and hands.argv == []
+    assert hands.stopped == [GROUP]
 
 
 @pytest.mark.parametrize("gib", [audio_models.FOOTPRINT_MAX_GB, 1.0, None])
