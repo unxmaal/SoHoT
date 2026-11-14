@@ -510,7 +510,7 @@ def _download(repo, snapshot, listing, hf_download, text, conn, require_weights,
             listing = lambda _repo, s=siblings: s  # noqa: E731
             chosen = _chosen(siblings, model_type, lane, patterns)
             allow = variants.download_files(siblings, chosen, patterns) if chosen else None
-        single = _gguf_pick(repo, listing, snapshot, model_type) if text else None
+        single = _gguf_pick(repo, listing, snapshot, model_type, conn) if text else None
         if single == ():
             raise FetchError("no single GGUF file fits the ceiling")
         if single:
@@ -575,21 +575,39 @@ def _chosen(siblings, model_type: str = "", lane: str = "", patterns=()):
                          has=lambda rt: not here.refuses(rt))
 
 
-def _gguf_pick(repo: str, listing, snapshot, model_type: str = ""):
+def _gguf_pick(repo: str, listing, snapshot, model_type: str = "", conn=None):
     """(file, bytes) for a GGUF-only repo or one whose chosen variant is a GGUF, () if none fits, None otherwise."""
     from harness import gguf
-    from harness import inspect as ins
     if listing is None:
         if snapshot is not None:
             return None
         listing = _listing
     siblings = _siblings(repo, listing)
     if gguf.only(siblings):
-        return gguf.choose(siblings, ins.ceiling_bytes()) or ()
+        return _choose_unheld(repo, siblings, conn)
     chosen = _chosen(siblings, model_type)
     if chosen and chosen.format == variants.GGUF:
-        return gguf.choose(siblings, ins.ceiling_bytes()) or ()
+        return _choose_unheld(repo, siblings, conn)
     return None
+
+
+def _choose_unheld(repo: str, siblings, conn):
+    """gguf.choose over the files this machine has not already set aside; Unloadable when only set-aside ones fit. #1989."""
+    import sys
+    from harness import gguf
+    from harness import inspect as ins
+    held = []
+    while pick := gguf.choose(siblings, ins.ceiling_bytes()):
+        copy = gguf.held_aside(repo, pick[0], pick[1], conn)
+        if copy is None:
+            return pick
+        print(f"  gguf: {repo}: not fetching {pick[0]}: already set aside at {copy}; "
+              f"scripts/fetch-gguf.sh {repo} {pick[0]} fetches it by hand", file=sys.stderr)
+        held.append(f"{pick[0]} (set aside at {copy})")
+        siblings = [f for f in siblings if f.get("rfilename") != pick[0]]
+    if held:
+        raise Unloadable(f"every GGUF that fits is already set aside, not fetched again: {', '.join(held)}")
+    return ()
 
 
 def _reason(exc: Exception) -> str:
