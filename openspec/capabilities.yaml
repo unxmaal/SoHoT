@@ -111,6 +111,8 @@ capabilities:
       - harness/download_state.py
       - harness/quarantine.py
       - harness/commands/quarantine.py
+      - harness/relist.py
+      - harness/commands/relist.py
 
   - name: discovery-sources
     summary: Feeds, registries, papers, posts and neighbours that propose candidates, techniques and benchmarks.

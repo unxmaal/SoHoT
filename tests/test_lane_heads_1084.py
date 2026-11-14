@@ -289,8 +289,10 @@ def test_with_no_byte_counter_the_capped_hours_start_nothing(monkeypatch):
 
 # --- 6. a day download leaves the router alone; the night restarts it once ----
 
-def test_a_held_router_is_not_restarted_and_the_night_restarts_it_once(store, monkeypatch, _no_real_services):
+def test_a_held_router_is_not_restarted_and_the_night_restarts_it_once(store, monkeypatch, _no_real_services, tmp_path):
     _seed(store, "org/coder-GGUF", 4)
+    monkeypatch.setenv("LLAMACPP_MODELS_DIR", str(tmp_path))
+    (tmp_path / "coder-Q4_K_M.gguf").write_bytes(b"weights")
     monkeypatch.setattr(fetching.lanes, "GGUF_SERVED", tuple(fetching.lanes.GGUF_SERVED) + ("code",))
     # A GGUF needs llama.cpp, which a CI runner lacks: this machine's runtimes are not the question here.
     monkeypatch.setattr(rank, "unrunnable", lambda row, machine=None: "")

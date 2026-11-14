@@ -2433,6 +2433,9 @@ download, since their runners load the repo:
   in the dir no section. `soh gguf-aux` lists them and `--apply` moves them
   aside and restarts the router. Nothing is deleted. A queue deploy runs it
   before every smoke, the rollback's included.
+- **A file removed by hand** stays listed until the router restarts.
+  `soh router relist` restarts it once when every listed id with no file has
+  no file of its name in the models dir, and smoke runs it before failing.
 - **Screen and measure** spell it `llamacpp:<file stem>`, and the run sends it
   straight to the eval server at `127.0.0.1:8082` (`scripts/serve-eval.sh`).
   LiteLLM would refuse a name it has no alias for. A measure pits it against
