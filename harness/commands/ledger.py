@@ -297,10 +297,85 @@ def show_compare(C: dict) -> None:
         note(f"{k}: {v}")
 
 
+def asked_days(specs: list[str]) -> list[str]:
+    """Each --day as one day or a FIRST..LAST range, sorted and once each; ValueError on a bad one."""
+    import datetime as _dt
+    out: set[str] = set()
+    for spec in specs:
+        first, _, last = spec.partition("..")
+        a, b = _dt.date.fromisoformat(first), _dt.date.fromisoformat(last or first)
+        if b < a:
+            raise ValueError(f"--day {spec}: the range ends before it starts")
+        out.update((a + _dt.timedelta(days=i)).isoformat() for i in range((b - a).days + 1))
+    return sorted(out)
+
+
+def _counts(r: dict | None) -> str:
+    if not r:
+        return "no count"
+    loc, cloud = ("not counted" if r.get(k) is None else _tok(r[k]) for k in ("local", "cloud"))
+    return f"local {loc} cloud {cloud}"
+
+
+def _when(at) -> str:
+    return "never" if at is None else time.strftime("%Y-%m-%d %H:%M", time.localtime(float(at)))
+
+
+def cmd_days(a, now: float) -> int:
+    """`--day`: rewrite each named short day, leave complete ones alone, refuse one still open; dry without --record. #1941."""
+    import argparse
+    from harness import ledger
+    try:
+        days = asked_days(a.day)
+    except ValueError as exc:
+        note(str(exc))
+        emit(False, error=str(exc))
+        return 2
+    still = [d for d in days if ledger.settled_at(d) > now]
+    if still:
+        why = "; ".join(f"{d} is still open until {_when(ledger.settled_at(d))}" for d in still)
+        note(f"--day refused, nothing read or written: {why}; the nightly --record rewrites it")
+        emit(False, error="day still open", open=still)
+        return 2
+    import datetime as _dt
+    since = _dt.datetime.fromtimestamp(ledger.day_start(days[0])).astimezone().isoformat()
+    L = gather(argparse.Namespace(**{**vars(a), "since": since, "record": False}), now)
+    plan = ledger.rewrite_plan(days, L["recorded"], L["days"])
+    from harness import store
+    note(f"store     {store.describe(L['store'])}")
+    for p in plan:
+        note(f"{p['day']} {p['state']:<10} last written {_when(p['recorded_at'])}: "
+             f"before {_counts(p['before'])}; recount {_counts(p['after'])}")
+    short = [p["day"] for p in plan if p["state"] == ledger.SHORT]
+    out = {"rewrite": plan, "store": L["store"], "reads": L["reads"]}
+    refused = unread(L)
+    if refused:
+        note("UNREAD: " + "; ".join(refused))
+    if not a.record:
+        note(f"dry run: {len(short)} short day(s) would be rewritten; --record writes them")
+        emit(**out)
+        return 0
+    if refused:
+        note("--record refused, nothing written to ledger_days")
+        emit(False, error="record refused", refused=refused, **out)
+        return 1
+    from harness import memory_store as ms
+    conn = ms.connect()
+    try:
+        n = ledger.record(conn, {"days": [d for d in L["days"] if d["day"] in short]}, now)
+    finally:
+        conn.close()
+    note(f"rewrote {n} short day(s) in ledger_days: {', '.join(short) or 'none'}")
+    emit(recorded=short, **out)
+    return 0
+
+
 def cmd_ledger(a) -> int:
     from harness import ledger
 
     now = time.time()
+    if getattr(a, "day", None):
+        return cmd_days(a, now)
     if getattr(a, "compare", ""):
         try:
             C = gather_compare(a.compare)

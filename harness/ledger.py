@@ -807,13 +807,50 @@ def record(conn, ledger: dict, now: float) -> int:
     return n
 
 
+def settled_at(day: str, tz=None) -> float:
+    """When a day's late rows have all landed: the end of the day after it. #1776."""
+    return day_start((_dt.date.fromisoformat(day) + _dt.timedelta(days=2)).isoformat(), tz)
+
+
 def unsettled(history: list[dict]) -> list[str]:
     """Recorded days last rewritten before the day after them ended, so rows that landed late are not yet counted. #1776."""
+    return [h["day"] for h in history if float(h.get("recorded_at") or 0) < settled_at(h["day"])]
+
+
+SHORT, COMPLETE, UNRECORDED, LOWER = "short", "complete", "unrecorded", "lower"
+
+
+def _lower(before: dict | None, after: dict | None) -> bool:
+    """A recount below what is stored: a source has lost rows since, so the stored count is kept."""
+    return any(before.get(k) is not None and ((after or {}).get(k) is None or after[k] < before[k])
+               for k in ("local", "cloud")) if before else False
+
+
+def stored_counts(h: dict | None) -> dict | None:
+    """A recorded day's local and cloud counts; a row written before #1688 has no local count, its cloud is summed."""
+    if not h:
+        return None
+    if h.get("ratio"):
+        return h["ratio"]
+    ct = h.get("cloud_tokens")
+    return {"local": None, "cloud": None if ct is None else sum(int(ct.get(k) or 0) for k in CLOUD_COUNTED)}
+
+
+def rewrite_plan(asked: list[str], history: list[dict], computed: list[dict], tz=None) -> list[dict]:
+    """Each asked day's state (short, complete, unrecorded, lower) with its stored and recounted ratio counts. #1941."""
+    rec, new = {h["day"]: h for h in history}, {d["day"]: d for d in computed}
     out = []
-    for h in history:
-        after = (_dt.date.fromisoformat(h["day"]) + _dt.timedelta(days=2)).isoformat()
-        if float(h.get("recorded_at") or 0) < day_start(after):
-            out.append(h["day"])
+    for day in asked:
+        h = rec.get(day)
+        before, after = stored_counts(h), (new.get(day) or {}).get("ratio")
+        if h is None:
+            state = UNRECORDED
+        elif float(h.get("recorded_at") or 0) >= settled_at(day, tz):
+            state = COMPLETE
+        else:
+            state = LOWER if _lower(before, after) else SHORT
+        out.append({"day": day, "state": state, "recorded_at": (h or {}).get("recorded_at"),
+                    "before": before, "after": after})
     return out
 
 
