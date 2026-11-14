@@ -314,8 +314,41 @@ def poll(conn=None, now: float | None = None, *, src=None, sha: str = "", force:
          green=None, environ=None, own=None, alert=None) -> dict:
     """Queue one deploy job for the newest main commit since live (or sha) that passed check-macos; supersede pending older ones."""
     said = confirm(own, alert)
+    held = refused(environ, alert)
+    if held:
+        return {"queued": None, "why": held["why"], "superseded": [], "confirm": said, "refused": held}
     return {**_queue(conn, now, src=src, sha=sha, force=force, green=green, environ=environ),
             "confirm": said}
+
+
+def _refused_mark() -> Path:
+    return wq.root() / "deploy-refused"
+
+
+def refused(environ=None, alert=None, say=print) -> dict | None:
+    """A weights root env.sh refuses holds deploys: one alert per cause, one log line per change, None when clear. #2011."""
+    import json
+
+    from harness import env
+    environ = os.environ if environ is None else environ
+    kind, why = env.refusal(str(env.weights_home(environ)), env.min_free_gb(environ), record=False)
+    mark = _refused_mark()
+    try:
+        was = str(json.loads(mark.read_text(encoding="utf-8")).get("kind") or "")
+    except (OSError, ValueError, AttributeError):
+        was = ""
+    if not kind:
+        if was:
+            mark.unlink(missing_ok=True)
+            say(f"deploys no longer refused: the weights root is usable again (was {was})")
+        return None
+    line = f"deploys refused: {why}"
+    new = kind != was
+    if new:
+        mark.write_text(json.dumps({"kind": kind, "since": time.time(), "why": why}), encoding="utf-8")
+        say(line)
+        (alert or (lambda m: _alert_script(m, "refused")))(f"{line}; nothing deploys until it clears")
+    return {"kind": kind, "why": line, "new": new}
 
 
 def _queue(conn, now, *, src, sha: str, force: bool, green, environ) -> dict:

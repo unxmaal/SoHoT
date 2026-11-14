@@ -277,7 +277,7 @@ UNCOVERED = {
                     "posts, not per-thread comments",
     "mention_comments": "same",
     "DEFAULT_INTERVAL_DAYS": "decides WHEN a sweep runs, not what it returns",
-    "DISK_FLOOR / MAX_DOWNLOAD": "needs a populated fetch queue",
+    "FLOOR_MARGIN / MAX_DOWNLOAD": "needs a populated fetch queue",
     "H3_MIN_FRAMES / H3_FPS": "a product decision, and one generation is "
                               "40 minutes of GPU",
     "NOT_WEIGHTS / SKIP_DIRS / READ_SUFFIXES": "sets, not ordinals: a band "

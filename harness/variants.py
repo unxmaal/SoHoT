@@ -233,6 +233,13 @@ def listing_bytes(siblings) -> int:
     return sum(int(s.get("size") or 0) for s in siblings or [])
 
 
+def files_bytes(siblings, names=None) -> int:
+    """Bytes of the files a download with this allow list takes; None takes every file. #2011."""
+    wanted = None if names is None else set(names)
+    return sum(int(s.get("size") or 0) for s in siblings or []
+               if wanted is None or str(s.get("rfilename", "")) in wanted)
+
+
 def layout(siblings) -> str:
     """The folders and suffixes of weights no variant takes, for an until a reader can act on."""
     where = sorted({(n.split("/", 1)[0] + "/" if "/" in n else "") + "*." + n.rsplit(".", 1)[-1].lower()

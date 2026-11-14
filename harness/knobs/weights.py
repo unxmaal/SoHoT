@@ -8,8 +8,8 @@ KNOBS = [
        probe="clone_kb_cap", note="KB of weight files in a shallow clone above which a repo is weights in git (#991)"),
     _k("dead_days", ["harness/inspect.py:UPSTREAM_DEAD_DAYS"], [180, 365, 730, 1095, 3650], probe="dead_days",
        note="when a repo counts as abandoned"),
-    _k("disk_floor", ["harness/fetching.py:DISK_FLOOR"], [10 * GIB, 25 * GIB, 50 * GIB, 100 * GIB],
-       note="room a download must leave free on the volume; one that would go under it waits (#1085)"),
+    _k("disk_floor", ["harness/fetching.py:FLOOR_MARGIN"], [0, 10 * GIB, 30 * GIB, 80 * GIB],
+       note="room a download must leave above the deploy floor HF_MIN_FREE_GB; one that would go under it waits (#1085, #2011)"),
     _k("download_budget", ["scripts/serve-discover.sh:DISCOVER_BUDGET_GIB"], [20, 40, 80, 160],
        limit="download_budget_gib", unit="GiB",
        note="GiB one scheduled sweep may download in all; 40 bound most nights with fitting candidates refused "
@@ -24,6 +24,8 @@ KNOBS = [
        note="the largest weight this machine can hold; measured on 32 GB and scaled by RAM (#96)"),
     _k("quants_tries", ["harness/quants.py:TRIES"], [2, 4, 8],
        note="quantized descendants inspected per too-big or unloadable base before giving up; each is one registry call (#882)"),
+    _k("screen_backlog", ["harness/fetching.py:SCREEN_BACKLOG"], [100 * GIB, 200 * GIB, 400 * GIB, 800 * GIB],
+       note="bytes of fetched weights waiting for a screen above which fetch takes nothing; about 2-3 days of screens at the 2026-11 rate of ~80 GiB a day (#2011)"),
     _k("size_limit", ["harness/inspect.py:SIZE_LIMIT"], [2, 4, 12, 24, 64], probe="size_limit",
        note="how many named weights get sized per repo"),
 ]

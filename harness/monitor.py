@@ -163,7 +163,7 @@ def spec_here(run=subprocess.run) -> dict:
     home = paths.home()
     data = mount_point(str(home), run=run)
     return {"home": str(home), "scripts": str(scripts_dir()), "path": job_path(), "data": data,
-            "models": models_volume(data, run=run), "models_floor_gib": fetching.DISK_FLOOR // (1024 ** 3),
+            "models": models_volume(data, run=run), "models_floor_gib": fetching.disk_floor() // (1024 ** 3),
             "services": watched_services(), "store": store_service.hosted_here(home)}
 
 

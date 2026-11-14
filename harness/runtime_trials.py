@@ -550,13 +550,13 @@ def trial(conn, *, run=None, gh=None, measure=None, notify=None, home: Path | No
         return [{**r, "outcome": PROPOSED, "detail": "not tried: a trial install needs sandbox-exec (macOS)"}
                 for r in proposed(conn)]
     free = fetching.free_bytes(trial_dir(RUNTIMES["mlx-lm"], "x", home).parent) if free is None else free
-    if free < fetching.DISK_FLOOR:
+    if free < fetching.disk_floor():
         waiting_rows = proposed(conn)
         if waiting_rows:
             cuts.cut("disk_floor", "runtime trial installs refused at the disk floor", kept=0,
                      dropped=len(waiting_rows), conn=conn)
         return [{**r, "outcome": PROPOSED, "detail": f"not tried: {free / fetching.GIB:.1f} GiB free is under the "
-                 f"{fetching.DISK_FLOOR / fetching.GIB:.0f} GiB disk floor"} for r in waiting_rows]
+                 f"{fetching.disk_floor() / fetching.GIB:.0f} GiB disk floor"} for r in waiting_rows]
     rows = cuts.take(proposed(conn), TRIALS_PER_LOOP if limit is None else limit, "runtime_trials_per_loop",
                      "runtime releases left for the next loop", conn=conn)
     out = []

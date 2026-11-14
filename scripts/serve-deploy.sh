@@ -3,6 +3,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 echo "=== deploy poll $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
-# After the header, so a refusal is logged under it. #1481.
-source scripts/env.sh
+# A weights root env.sh refuses holds deploys; the poll says so once per cause and alerts, not a FATAL a minute. #1481, #2011.
+if (source scripts/env.sh) >/dev/null 2>&1; then
+  source scripts/env.sh
+fi
 exec uv run soh deploy poll

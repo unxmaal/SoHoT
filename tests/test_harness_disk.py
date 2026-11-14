@@ -103,14 +103,14 @@ def test_rejected_past_24_hours_is_deleted_and_recorded(world):
     assert row["removal_verdict_id"] == entry(i, "org/bad").verdict_id
 
 
-def test_rejected_inside_24_hours_is_kept(world):
+def test_rejected_weights_go_at_once_after_their_verdict(world):
     d = make_repo(world.hub, "org/bad")
     verdict(world.conn, "org/bad", "declined", tier="adopt",
-            at=NOW - 23 * 3600)
+            at=NOW - 60)
     i = inv(world)
     assert entry(i, "org/bad").group == disk.REJECTED
-    assert disk.delete(i, NOW, disk.REJECTED, world.conn) == []
-    assert d.exists()
+    assert [r["repo"] for r in disk.delete(i, NOW, disk.REJECTED, world.conn)] == ["org/bad"]
+    assert not d.exists()
 
 
 def test_a_rejected_repo_an_alias_names_is_kept(world):
@@ -374,7 +374,8 @@ def test_partial_blobs_of_a_finished_download_go_and_are_recorded(world):
     d = make_repo(world.hub, "org/done")
     old = _blob(d, "old.incomplete")
     os.utime(old, (time.time(), time.time()))
-    got = disk.clean(inv(world), NOW, world.conn)
+    # Now, not NOW: a download with no owner six years on goes whole, partial blobs and all. #2011.
+    got = disk.clean(inv(world), time.time(), world.conn)
     assert not old.exists()
     assert [r["path"] for r in got["incomplete"]] == [str(old)]
     row = world.conn.execute(
@@ -447,5 +448,5 @@ def test_the_loop_cleans_before_it_fetches(monkeypatch):
     monkeypatch.setattr(discover_cmd, "cmd_discover", lambda a: 0)
     monkeypatch.setattr(measure_cmd, "measurable", lambda *a, **k: [])
     cli._loop_spend(argparse.Namespace(top=1, budget_gib=1.0, lane=""), 0)
-    # Retests first, so a reopened candidate's weights are queued, not swept. #431.
-    assert order == ["retest", "sweep", "fetch"]
+    # Retests first, so a reopened candidate's weights are queued, not swept (#431); again after the screen's verdicts (#2011).
+    assert order == ["retest", "sweep", "fetch", "sweep"]

@@ -108,7 +108,7 @@ def test_every_periodic_wrapper_with_a_header_is_covered():
     assert {"watchdog", "morning", "discover", "audit"} <= set(HEADED)
 
 
-@pytest.mark.parametrize("name", HEADED)
+@pytest.mark.parametrize("name", [n for n in HEADED if n != "deploy"])
 def test_a_run_that_fails_its_preflight_logs_a_timestamped_header_first(tmp_path, name):
     before = time.time()
     got = _wrapper(tmp_path, name)
@@ -118,6 +118,13 @@ def test_a_run_that_fails_its_preflight_logs_a_timestamped_header_first(tmp_path
     stamp = datetime.strptime(header.group(1), "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc).timestamp()
     assert before - 2 <= stamp <= time.time() + 2, log
     assert "uv ran" not in log and got.returncode != 0, log
+
+
+def test_a_deploy_poll_whose_weights_root_is_refused_still_polls_and_says_so_itself(tmp_path):
+    """The poll alerts once per cause (deploy.refused); env.sh's FATAL a minute is not the log. #2011."""
+    got = _wrapper(tmp_path, "deploy")
+    assert re.search(r"^=== deploy poll ", got.stdout, re.M), got.stdout
+    assert "uv ran: run soh deploy poll" in got.stdout and "FATAL" not in got.stdout, got.stdout
 
 
 # --- the sweep and the queue pause, saying why -----------------------------------------

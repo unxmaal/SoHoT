@@ -80,8 +80,14 @@ def cmd_fetch(a) -> int:
                  orphans=[r["resolved"] or r["name"] for r in orphans])
             return 0
         budget = int(fetching.budget_gib(getattr(a, "budget_gib", None)) * fetching.GIB)
+        room, held = fetching.backlog_room(store)
+        if held:
+            note(f"skipped: {held}")
+            emit(fetched=[], skipped=held)
+            return 0
         fetched = []
-        for got in fetching.run(store, limit=a.limit, lane=want, budget=budget,
+        from harness import memory
+        for got in fetching.run(store, limit=a.limit, lane=want, budget=budget, room=room, held=memory.held_back,
                                 refresh=not getattr(a, "hold_router", False), stop_at=getattr(a, "until", None),
                                 limit_knob=getattr(a, "limit_knob", None) or "harness/fetching.py:run(limit)",
                                 budget_knob=getattr(a, "budget_knob", None) or "download_budget"):

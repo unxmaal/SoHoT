@@ -177,15 +177,15 @@ def test_a_live_fetch_older_than_a_day_keeps_its_partial_blobs(world):
         downloads.release(rid)
 
 
-def test_a_retest_seven_days_on_still_finds_the_weights(world):
+def test_a_pending_retest_does_not_hold_the_weights_the_retest_fetches_them_again(world):
     d = make_repo(world.hub, "org/retest")
     verdict(world.conn, "org/retest", "broken", at=NOW - 2 * DAY)
     world.conn.execute("UPDATE proposals SET next_retest_at = ? WHERE name = 'org/retest'",
                        (NOW + 5 * DAY,))
     world.conn.commit()
     i = inv(world)
-    assert disk.delete(i, NOW, disk.REJECTED, world.conn) == []
-    assert d.exists()
+    assert [r["repo"] for r in disk.delete(i, NOW, disk.REJECTED, world.conn)] == ["org/retest"]
+    assert not d.exists()
 
 
 def test_weights_with_no_retest_pending_still_go_after_the_grace(world):

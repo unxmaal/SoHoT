@@ -579,7 +579,9 @@ def _screen(a, sweep, plan: dict, failed: list) -> int:
     sub = _ap.Namespace(**{**vars(a), "loop": False, "screen": True, "run": True, "json": False,
                            "limit": top or EVERY, "limit_knob": "discover_top",
                            "screen_until": until, "screen_s": plan["per_s"]})
-    return _step("screen", discover_cmd.cmd_discover(sub), failed)
+    rc = _step("screen", discover_cmd.cmd_discover(sub), failed)
+    _after_verdicts("screen")
+    return rc
 
 
 def _measure(a, sweep, failed: list, rc: int = 0) -> int:
@@ -606,7 +608,16 @@ def _measure(a, sweep, failed: list, rc: int = 0) -> int:
         return rc
     if sweep is not None:
         sweep.stopped = ""
-    return _measure_all(a, fresh, sweep, failed, rc)
+    rc = _measure_all(a, fresh, sweep, failed, rc)
+    _after_verdicts("measure")
+    return rc
+
+
+def _after_verdicts(step: str) -> None:
+    """The weights this step's declines and breaks leave go now, not at the next sweep's disk step. #2011."""
+    from harness import disk
+    print(f"\n=== disk after {step} ===")
+    disk.sweep()
 
 
 #: No count cap: the ceiling stops the screen and measure steps. #1084.
