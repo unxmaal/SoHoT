@@ -137,6 +137,8 @@ def _cold_caches():
 
 #: Set by CI on an unlabelled pull request; push to main, nightly and full-ci run everything. #720.
 FAST_PATH_ENV = "SOHOT_FAST_PATH"
+#: Set by CI on push and pull request runs: `nightly` tests, each with a fast twin that runs everywhere, wait for the nightly. #1590.
+NIGHTLY_ENV = "SOHOT_SKIP_NIGHTLY"
 
 
 #: Set by CI on a pull request: a file listing the only test files the change can reach. #1567.
@@ -274,6 +276,10 @@ def pytest_configure(config):
     # Not a monkeypatch, so no test's monkeypatch.undo() drops it; a pytest a test starts inherits it. #1826.
     os.environ[store.GUARD_ENV] = store.guard_flag(paths.DEFAULT_HOME, os.environ.get(store.GUARD_ENV, ""))
     _guard_sqlite()
+    # Whole-tree scan results keyed by the text they read, for every worker and a precheck a test starts. #1590.
+    from tests import tree_cache
+    if getattr(config, "cache", None) is not None and not os.environ.get(tree_cache.ENV):
+        os.environ[tree_cache.ENV] = str(config.cache.mkdir(tree_cache.CACHE_NAME))
     # faulthandler's timed dump of a running thread can spin forever in CPython 3.12 and wedge the worker (#1351).
     if not _running:
         _hang_watch()
@@ -411,6 +417,12 @@ def pytest_collection_modifyitems(config, items):
             # Not strict: several cut tests pass or fail on Postgres by xdist placement, which would flap CI.
             if item.nodeid in known or item.nodeid.split("[")[0] in named:
                 item.add_marker(pytest.mark.xfail(strict=False, reason="known red on Postgres (#1507)"))
+    if os.environ.get(NIGHTLY_ENV) == "1":
+        later = [i for i in items if i.get_closest_marker("nightly")]
+        if later:
+            config.hook.pytest_deselected(items=later)
+            items[:] = [i for i in items if not i.get_closest_marker("nightly")]
+            print(f"\n{NIGHTLY_ENV}=1: deselected {len(later)} `nightly` tests; the nightly and make check run them")
     if os.environ.get(FAST_PATH_ENV) != "1":
         return
     skipped = [i for i in items if i.get_closest_marker("long")]
@@ -662,12 +674,14 @@ def runtime_binary(args) -> str:
     """The runtime binary this argv would execute, or ""."""
     import os
     import shlex
+
+    from harness import tether
     if isinstance(args, (str, bytes)):
         try:
             args = shlex.split(os.fsdecode(args))
         except ValueError:
             args = os.fsdecode(args).split()
-    for word in list(args or [])[:4]:
+    for word in tether.command(args or [])[:4]:
         name = os.path.basename(os.fsdecode(word))
         if name in RUNTIME_BINARIES or name.startswith(RUNTIME_PREFIXES):
             return name
@@ -695,19 +709,21 @@ def _no_real_runtime_bytes(monkeypatch):
 
 #: Programs that put a notice on the owner's desktop. #1720.
 NOTIFIERS = ("osascript", "terminal-notifier")
+#: Programs that reach launchd, another machine, GitHub, Docker or a pid, refused like a notifier. #1794.
+EFFECT_BINARIES = NOTIFIERS + ("launchctl", "ssh", "gh", "docker", "kill")
 
 
 def real_notifier(args, env, fakes: Path) -> str:
-    """The desktop notifier this argv would execute, unless it is a test's own fake under `fakes`; else ""."""
+    """The effect binary this argv would execute, unless it is a test's own fake under `fakes`; else ""."""
     import os
     import shutil
     if isinstance(args, (str, bytes)) or not args:
         return ""
     first = os.fsdecode(args[0])
-    if os.path.basename(first) not in NOTIFIERS:
+    if os.path.basename(first) not in EFFECT_BINARIES:
         return ""
     found = first if os.sep in first else shutil.which(first, path=(env or os.environ).get("PATH"))
-    if found and Path(found).resolve().is_relative_to(fakes.resolve()):
+    if not found or Path(found).resolve().is_relative_to(fakes.resolve()):
         return ""
     return os.path.basename(first)
 
@@ -727,17 +743,89 @@ def _no_real_runtime(request, monkeypatch, tmp_path_factory):
                 calls.append(list(args) if not isinstance(args, (str, bytes)) else [args])
                 raise FileNotFoundError(2, "runtime binary refused under test", name)
             name = real_notifier(args, k.get("env"), fakes)
-            if name:
+            if name and (name in NOTIFIERS or not request.node.get_closest_marker("real_effect")):
                 notices.append(list(args)[:4])
-                raise FileNotFoundError(2, "desktop notifier refused under test", name)
+                raise FileNotFoundError(2, "effect binary refused under test", name)
             super().__init__(args, *a, **k)
 
+    Guarded.refused = notices
     monkeypatch.setattr(subprocess, "Popen", Guarded)
     yield calls
     if calls and request.node.get_closest_marker("real_runtime") is None:
         pytest.fail(f"executed a real runtime binary: {calls}", pytrace=False)
     if notices:
-        pytest.fail(f"reached a real desktop notifier (stub it or use _no_real_notifier): {notices}", pytrace=False)
+        pytest.fail(f"reached a real effect binary (stub it, or plant a fake under tmp_path): {notices}", pytrace=False)
+
+
+#: Stands in for an effect binary on a child's PATH: logs its argv for the test to fail on, exits 127. #1794.
+REFUSER = ('#!/bin/sh\nprintf \'%s %s\\n\' "${0##*/}" "$*" >> "${SOHOT_EFFECT_LOG:-/dev/null}"\n'
+           'echo "${0##*/} refused under test (#1794)" >&2\nexit 127\n')
+EFFECT_LOG_ENV = "SOHOT_EFFECT_LOG"
+
+
+def effect_fakes(base: Path) -> Path:
+    """One dir of refusing effect binaries per worker, under the guard's own fakes root."""
+    import os
+    where = base / "effect-fakes"
+    if not where.is_dir():
+        where.mkdir(exist_ok=True)
+        for name in EFFECT_BINARIES:
+            fake = where / name
+            fake.write_text(REFUSER, encoding="utf-8")
+            os.chmod(fake, 0o755)
+    return where
+
+
+@pytest.fixture(autouse=True)
+def _no_real_effect_in_children(request, _home, monkeypatch, tmp_path_factory):
+    """A script a test runs finds refusing fakes first on PATH, so its grandchildren reach no real effect binary. #1794."""
+    import os
+    fakes = effect_fakes(tmp_path_factory.getbasetemp())
+    log = _home.parent / f"{_home.name}.effects"
+    if request.node.get_closest_marker("real_effect"):
+        yield log
+        return
+    monkeypatch.setenv("PATH", f"{fakes}{os.pathsep}{os.environ.get('PATH', '')}")
+    monkeypatch.setenv(EFFECT_LOG_ENV, str(log))
+    yield log
+    if log.exists() and log.read_text(encoding="utf-8").strip():
+        pytest.fail(f"a child reached an effect binary (plant the test's own fake first on PATH): "
+                    f"{log.read_text(encoding='utf-8').strip()}", pytrace=False)
+
+
+@pytest.fixture(autouse=True)
+def _no_real_signal(monkeypatch):
+    """No test signals a process older than itself (a service, a peer, pytest): refused, and the test fails. #1794."""
+    import errno
+    import os
+    import time
+
+    from harness import proc_identity
+    # Linux start times are whole-second btime plus clock ticks, so a test's own child may read up to ~1 s early.
+    began, since, me, refused = proc_identity.began, time.time() - 2.0, os.getpid(), []
+
+    def foreign(pid) -> bool:
+        pid = int(pid)
+        if pid == me:
+            return False
+        if pid <= 0:
+            return True
+        at = began(pid)
+        return at is not None and at < since
+
+    def guarded(real, name):
+        def send(pid, sig):
+            if sig and (foreign(pid) or (name == "killpg" and int(pid) == os.getpgrp())):
+                refused.append((name, int(pid), int(sig)))
+                raise PermissionError(errno.EPERM, "signal to a process the test did not start refused", str(pid))
+            return real(pid, sig)
+        return send
+    monkeypatch.setattr(os, "kill", guarded(os.kill, "kill"))
+    if hasattr(os, "killpg"):
+        monkeypatch.setattr(os, "killpg", guarded(os.killpg, "killpg"))
+    yield refused
+    if refused:
+        pytest.fail(f"signalled a process the test did not start: {refused}", pytrace=False)
 
 
 @pytest.fixture(autouse=True)
@@ -763,6 +851,13 @@ def _no_real_notifier(monkeypatch):
     monkeypatch.setattr(watchdog_hands, "desktop", recorder(watchdog_hands.desktop, "desktop", shown, "run"))
     monkeypatch.setattr(monitor, "post", recorder(monitor.post, "webhook", lambda *a: "posted: HTTP 204", "opener"))
     return sent
+
+
+@pytest.fixture
+def shown_live(monkeypatch):
+    """This test's home passes the live-home gate on desktop notices. #1794."""
+    from harness import monitor
+    monkeypatch.setattr(monitor, "live_home", lambda home=None: True)
 
 
 def _typed_keys() -> dict[str, str]:

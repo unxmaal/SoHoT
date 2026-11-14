@@ -824,6 +824,10 @@ For a long log or tool-output file, pass its path, `local_complete(paths=[...], 
 rather than its contents. For test or CI output, run `soh digest LOG` (or
 `soh digest --run -- make check`) and read the digest, not the log; Read the raw file only at
 the lines the digest's `raw:` pointer and check name.
+From a branch that must write nothing live, run it as `soh --scratch-home tmp/<n>/home digest
+--run -- make check` (any verb takes `--scratch-home DIR`): the scratch home keeps its own SQLite
+store but reaches this machine's interactive server, adopted models and gpu lock. A bare
+`LOCALHARNESS_HOME=DIR` reaches none of them, so its delegations go to the typed defaults (#1867).
 Do it yourself when it needs judgment, touches security-sensitive code (auth,
 crypto, input handling, secrets), or needs repo-wide context you cannot pass in
 the prompt. Review what comes back before using it; the local model sees only

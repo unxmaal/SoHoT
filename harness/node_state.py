@@ -6,7 +6,7 @@ import sys
 import time
 from pathlib import Path
 
-from harness.atomic_file import replace
+from harness import atomic_file
 from harness import paths
 
 GIB = 1024 ** 3
@@ -97,7 +97,7 @@ def read(node, runner=None, now=None, fresh_s: float = FRESH_S) -> dict:
     _path(node.name).parent.mkdir(parents=True, exist_ok=True)
     tmp = _path(node.name).with_suffix(".tmp")
     tmp.write_text(json.dumps(got, sort_keys=True), encoding="utf-8")
-    replace(tmp, _path(node.name))
+    atomic_file.replace(tmp, _path(node.name))
     return got
 
 
@@ -128,6 +128,9 @@ def node(name: str, load=None):
         return None
 
 
+ADMIT_KEYS = ("alarming", "lock")
+
+
 def admits(name: str, models=(), load=None, read_fn=None, held_fn=None) -> tuple[bool, str]:
     """(admitted, why) for batch work on a node: its report reads, pressure normal, no lock or interactive load, models held."""
     from harness import serve_lease
@@ -140,6 +143,10 @@ def admits(name: str, models=(), load=None, read_fn=None, held_fn=None) -> tuple
     got = (read_fn or read)(found)
     if got.get("error"):
         return False, got["error"]
+    # A key this judges by that the report lacks vouches for nothing. #1960.
+    lacks = [k for k in ADMIT_KEYS if k not in got]
+    if lacks:
+        return False, f"node {name}'s report does not say {', '.join(lacks)}, which admission judges by"
     if got.get("alarming"):
         return False, f"node {name} memory pressure level {got.get('level')}, not normal"
     if got.get("lock"):

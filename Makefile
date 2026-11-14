@@ -69,7 +69,7 @@ metrics:                  ## the four DORA numbers, from git and gh
 	uv run python -m harness.dora
 
 test-postgres:            ## the whole suite on a REAL Postgres, in docker (#1507)
-	@docker rm -f $(PG_TEST) >/dev/null 2>&1 || true
+	@docker rm -fv $(PG_TEST) >/dev/null 2>&1 || true
 	@docker run -d --name $(PG_TEST) -e POSTGRES_PASSWORD=test \
 	  -e POSTGRES_USER=discovery -e POSTGRES_DB=discovery -e POSTGRES_INITDB_ARGS="--locale=C --encoding=UTF8" \
 	  -p 127.0.0.1::5432 $(PG_IMAGE) -c max_connections=500 -c fsync=off >/dev/null
@@ -79,7 +79,7 @@ test-postgres:            ## the whole suite on a REAL Postgres, in docker (#150
 	port=$$(docker port $(PG_TEST) 5432/tcp | head -1 | sed 's/.*://'); \
 	  PGHOST=127.0.0.1 PGPORT=$$port PGUSER=discovery PGPASSWORD=test PGDATABASE=discovery \
 	  $(PG_SUITE); \
-	  status=$$?; docker rm -f $(PG_TEST) >/dev/null 2>&1; exit $$status
+	  status=$$?; docker rm -fv $(PG_TEST) >/dev/null 2>&1; exit $$status
 
 test-postgres-suite:      ## the whole suite on the Postgres the PG* variables name (CI's)
 	$(PG_SUITE)

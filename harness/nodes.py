@@ -12,7 +12,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from harness.atomic_file import replace
+from harness import atomic_file
 
 FILE = "nodes.yaml"
 #: Overrides where the node list is read from.
@@ -618,7 +618,7 @@ def _record(node: Node, reported: dict) -> None:
     where.parent.mkdir(parents=True, exist_ok=True)
     tmp = where.with_name(where.name + ".tmp")
     tmp.write_text(json.dumps(got, indent=1, sort_keys=True) + "\n", encoding="utf-8")
-    replace(tmp, where)
+    atomic_file.replace(tmp, where)
 
 
 def _reported(tags) -> str:
@@ -745,4 +745,6 @@ def main(argv=None) -> int:
 
 
 if __name__ == "__main__":
+    from harness import env
+    env.guard()
     raise SystemExit(main())

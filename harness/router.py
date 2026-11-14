@@ -278,4 +278,6 @@ def settle(why: str, **kw) -> list[str]:
 
 
 if __name__ == "__main__":
+    from harness import env
+    env.guard()
     raise SystemExit(main())

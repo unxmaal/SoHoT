@@ -213,9 +213,8 @@ class Plan:
 
 
 def free_bytes(path: str | Path | None = None) -> int:
-    import os
-    target = Path(path) if path else Path(
-        os.environ.get("HF_HOME") or Path.home() / ".cache" / "huggingface")
+    from harness import env
+    target = Path(path) if path else env.weights_home()
     while not target.exists() and target != target.parent:
         target = target.parent
     return shutil.disk_usage(target).free

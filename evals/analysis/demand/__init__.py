@@ -727,12 +727,12 @@ def public_repo(repo: str) -> bool:
     return got.returncode == 0 and got.stdout.strip() == "false"
 
 
-def masked(frame: dict, rows: list[dict], public=public_repo) -> tuple[dict, list[dict]]:
+def masked(frame: dict, rows: list[dict], public=None) -> tuple[dict, list[dict]]:
     """`frame` and manifest `rows` with each project whose repo is not public renamed private-N and its rows' gist and
     reason left out."""
     names, k = {}, 0
     for name, repo in frame.get("repos", {}).items():
-        if not public(repo):
+        if not (public or public_repo)(repo):
             k += 1
             names[name] = f"private-{k}"
 
@@ -747,7 +747,7 @@ def masked(frame: dict, rows: list[dict], public=public_repo) -> tuple[dict, lis
                  for r in rows]
 
 
-def write(dest: Path, frame: dict, got: dict, rows: list[dict], known: redact.Known, public=public_repo) -> list[Path]:
+def write(dest: Path, frame: dict, got: dict, rows: list[dict], known: redact.Known, public=None) -> list[Path]:
     """manifest.jsonl, strata.json and census.txt under `dest`, private projects masked; refused when any of them
     holds a redact finding."""
     frame, rows = masked(frame, rows, public)

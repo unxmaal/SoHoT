@@ -9,7 +9,7 @@ import sys
 import time
 from pathlib import Path
 
-from harness.atomic_file import replace
+from harness import atomic_file
 from harness import serving
 
 #: Lanes whose model the interactive server pins, in the order its budget is spent.
@@ -242,7 +242,7 @@ def write(plan: dict) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
     tmp.write_text(json.dumps(plan, indent=1, sort_keys=True), encoding="utf-8")
-    replace(tmp, path)
+    atomic_file.replace(tmp, path)
     return path
 
 
@@ -286,7 +286,7 @@ def holds(lane: str, get=None) -> dict | None:
 def _served(config=None) -> dict:
     """The gateway's served config by name; {} when it was never written here."""
     from harness import gateway
-    path = gateway.served_path(config)
+    path = gateway.serving_path(config)
     return {str(e.get("model_name", "")): e for e in (gateway.load(path) if path.exists() else {})
             .get("model_list") or []}
 
@@ -560,7 +560,7 @@ def stale_gateway(plan: dict, config=None) -> bool:
     import yaml
 
     from harness import gateway
-    path = gateway.served_path(config)
+    path = gateway.serving_path(config)
     try:
         served = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     except (OSError, ValueError, yaml.YAMLError):
@@ -643,4 +643,6 @@ def main(argv=None) -> int:
 
 
 if __name__ == "__main__":
+    from harness import env
+    env.guard()
     raise SystemExit(main())

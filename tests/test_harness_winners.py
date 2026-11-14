@@ -183,8 +183,8 @@ def test_a_speech_default_is_whichever_this_platform_would_actually_use():
     would be the accelerator mistake in another costume."""
     import sys
     from harness import audio
-    assert winners.typed()["stt"] == audio.DEFAULT_STT_MODEL
-    assert winners.typed()["tts"] == audio.DEFAULT_TTS_MODEL
+    assert winners.typed()["stt"] == audio.default_stt_model()
+    assert winners.typed()["tts"] == audio.default_tts_model()
     if sys.platform != "win32":
         assert "parakeet" in winners.typed()["stt"]
 

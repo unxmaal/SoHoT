@@ -222,8 +222,43 @@ def _daytime(h: int, tz) -> bool:
     return watchdog.DAY_START_HOUR <= _dt.datetime.fromtimestamp(h, tz).hour < watchdog.DAY_END_HOUR
 
 
-def blocked(hours: list[dict], actions=(), clearances=(), paused=(), refused=(), tz=None) -> dict:
-    """Which hours something stood between the owner and the machine, by reason, and the daytime hours taken by non-work."""
+#: When #1509 merged (PR #1575, 92295623, 2026-11-07T18:39:55Z): day clearances and day limits have no writer after it.
+CUTOVER_1509 = 1794076795.0
+#: When #1564 merged (PR #1566, 2026-11-07T15:15:42Z): the holds table has a writer from then on.
+HOLDS_FROM = 1794064542.0
+HELD = "owner_held"
+#: Each reason an hour counts as blocked: (source read, written from, written until, the issue that bounds it).
+SOURCES = {
+    "contention": ("watchdog_actions criterion contention", CUTOVER_1509, None, "#1509"),
+    "memory": ("watchdog_actions criterion memory, memory_warn", None, None, ""),
+    "watchdog": ("watchdog_actions action pause, stop", None, None, ""),
+    "refused": ("logs/mcp.log local_* refused for a held machine", None, None, ""),
+    "idle_models": ("lane_probes up or slow in an hour with nothing busy", None, None, ""),
+    "day_clearance": ("day_clearances table", None, CUTOVER_1509, "#1509"),
+    "day_limit": ("watchdog_actions criterion daytime_gpu, paused_runs why 'stop time'", None, CUTOVER_1509, "#1509"),
+}
+#: The owner taking the machine back, counted beside the blocked reasons and never as one.
+HELD_SOURCE = ("holds table", HOLDS_FROM, None, "#1564")
+
+
+def _covers(keys, written: tuple) -> int:
+    lo, hi = written[1], written[2]
+    return sum(1 for h in keys if (lo is None or h + HOUR > lo) and (hi is None or h < hi))
+
+
+def _source(written: tuple, keys) -> dict:
+    return {"source": written[0], "from": written[1], "to": written[2], "bound_by": written[3],
+            "covers": _covers(keys, written)}
+
+
+def _spans(reasons: dict, start: float, stop: float, why: str) -> None:
+    for h in reasons:
+        if h < stop and h + HOUR > start:
+            reasons[h].add(why)
+
+
+def blocked(hours: list[dict], actions=(), clearances=(), paused=(), refused=(), tz=None, holds=()) -> dict:
+    """Which hours something stood between the owner and the machine, by reason and source, the owner's holds apart."""
     reasons: dict = {h["hour"]: set() for h in hours}
 
     def mark(at: float, why: str):
@@ -240,34 +275,49 @@ def blocked(hours: list[dict], actions=(), clearances=(), paused=(), refused=(),
             mark(a["at"], "watchdog")
         if a["criterion"] == "daytime_gpu":
             mark(a["at"], "day_limit")
+        if a["criterion"] == "contention":
+            mark(a["at"], "contention")
     for p in paused:
         if "stop time" in (p.get("why") or ""):
             mark(p["paused_at"], "day_limit")
     for c in clearances:
-        stop = min(x for x in (c["until"], c.get("revoked_at")) if x is not None)
-        for h in reasons:
-            if h < stop and h + HOUR > c["cleared_at"]:
-                reasons[h].add("day_clearance")
+        ends = (c["until"], c.get("revoked_at"), SOURCES["day_clearance"][2])
+        _spans(reasons, c["cleared_at"], min(x for x in ends if x is not None), "day_clearance")
     for r in refused:
         if r.get("refused"):
             mark(r["at"], "refused")
     for h in hours:
         if h["category"] == LOADED_IDLE:
             reasons[h["hour"]].add("idle_models")
+    held: dict = {h: set() for h in reasons}
+    for x in holds:
+        ends = [v for v in (x.get("until"), x.get("released_at")) if v is not None]
+        _spans(held, x["held_at"], min(ends) if ends else float("inf"), x["kind"])
     by_reason = {}
     for whys in reasons.values():
         for w in whys:
             by_reason[w] = by_reason.get(w, 0) + 1
+    keys = list(reasons)
+    named = []
+    for why, written in SOURCES.items():
+        got = _source(written, keys)
+        named.append({"reason": why, "hours": by_reason.get(why, 0) if got["covers"] else None, **got})
+    by_kind: dict = {}
+    for kinds in held.values():
+        for k in kinds:
+            by_kind[k] = by_kind.get(k, 0) + 1
     day = [h for h in hours if _daytime(h["hour"], tz)]
     taken = [h for h in day if h["category"] in TAKEN or reasons[h["hour"]] & {"memory", "watchdog"}]
     by_cat: dict = {}
     for h in taken:
         by_cat[h["category"]] = by_cat.get(h["category"], 0) + 1
-    return {"by_reason": dict(sorted(by_reason.items(), key=lambda kv: -kv[1])),
+    return {"by_reason": dict(sorted(by_reason.items(), key=lambda kv: -kv[1])), "reasons": named,
             "any": sum(1 for w in reasons.values() if w),
             "daytime_hours": len(day), "daytime_any": sum(1 for h in day if reasons[h["hour"]]),
             "daytime_taken": len(taken), "daytime_taken_by": dict(sorted(by_cat.items(), key=lambda kv: -kv[1])),
-            "refused": sum(1 for r in refused if r.get("refused")), "failed": len(list(refused))}
+            "refused": sum(1 for r in refused if r.get("refused")), "failed": len(list(refused)),
+            HELD: {"hours": sum(1 for k in held.values() if k), "daytime": sum(1 for h in day if held[h["hour"]]),
+                   "by_kind": dict(sorted(by_kind.items(), key=lambda kv: -kv[1])), **_source(HELD_SOURCE, keys)}}
 
 
 # --- local work done -----------------------------------------------------------------------------------
@@ -572,6 +622,7 @@ def gather(conn, home: Path, now: float, since: float | None = None) -> dict:
     acted, acted_args = mine("watchdog_actions.mine")
     cleared, cleared_args = mine("day_clearances.mine")
     held, held_args = mine("paused_runs.mine")
+    owned, owned_args = mine("holds.mine")
     return {
         "start": start, "end": now, "machine_id": mid, "intervals": intervals, "requests": reqs,
         "sweeps": sum(1 for b, _ in sweep if b >= start),
@@ -584,6 +635,9 @@ def gather(conn, home: Path, now: float, since: float | None = None) -> dict:
                             cleared_args),
         "paused": _rows(conn, f"SELECT paused_at, why FROM paused_runs WHERE paused_at >= ? AND {held}",
                         (start, *held_args)),
+        "holds": _rows(conn, f"SELECT kind, held_at, until, released_at FROM holds WHERE held_at < ? "
+                             f"AND (released_at IS NULL OR released_at > ?) AND (until IS NULL OR until > ?) "
+                             f"AND {owned}", (now, start, start, *owned_args)),
         "refused": [r for r in refusals(_text(logs / "mcp.log")) if r["at"] >= start],
         "mornings": log_marks(_text(logs / "morning.log"), _MORNING),
         "delegations": dels,
@@ -594,7 +648,8 @@ def build(src: dict, tz=None, prs=None, issues=None, sample=None) -> dict:
     hours = account(src["intervals"], src["start"], src["end"], src["power"], src["probes"])
     out = {"window": {"start": src["start"], "end": src["end"], "hours": len(hours)},
            "pareto": pareto(hours),
-           "blocked": blocked(hours, src["actions"], src["clearances"], src["paused"], src["refused"], tz),
+           "blocked": blocked(hours, src["actions"], src["clearances"], src["paused"], src["refused"], tz,
+                              src.get("holds", ())),
            "local": local_work(src["requests"], src["delegations"], src["mornings"]),
            "sweeps": src.get("sweeps", 0), "hours": hours}
     if prs is not None:

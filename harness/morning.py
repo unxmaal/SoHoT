@@ -695,6 +695,6 @@ def notify(r: dict, text: str, run=subprocess.run, platform: str | None = None) 
     if not r["needs"]:
         return None
     from harness import watchdog_hands
-    return watchdog_hands.desktop(NOTIFY_TITLE, text, f"{len(r['needs'])} thing(s) need you", run=run,
+    return watchdog_hands.notice(NOTIFY_TITLE, text, f"{len(r['needs'])} thing(s) need you", run=run,
                                  platform=sys.platform if platform is None else platform)
 

@@ -162,7 +162,7 @@ def test_any_internal_error_allows_the_stop_and_logs_why(exc, why):
     got = uv.hook(_event(), Fake(fail=exc))
     assert (got["decision"], got["why"]) == (uv.ALLOW, why)
     assert _log()[-1]["why"] == why
-    assert "1287" not in json.dumps(_log())
+    assert "model said" not in json.dumps(_log())
     missing = uv.hook(_event(path=Path("nowhere.jsonl")), Fake())
     assert (missing["decision"], missing["why"]) == (uv.ALLOW, "error: FileNotFoundError")
     assert uv.hook({}, Fake())["decision"] == uv.ALLOW

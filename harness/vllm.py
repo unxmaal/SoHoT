@@ -4,7 +4,6 @@ from __future__ import annotations
 import contextlib
 import json
 import os
-import signal
 import subprocess
 import time
 import urllib.request
@@ -93,28 +92,6 @@ def _tail(log: Path, n: int = 2000) -> str:
         return ""
 
 
-def _signal(proc: subprocess.Popen, hard: bool) -> None:
-    """The child's whole session where the OS has process groups, the child alone where it does not."""
-    with contextlib.suppress(ProcessLookupError):
-        if hasattr(os, "killpg") and hasattr(signal, "SIGKILL"):
-            os.killpg(proc.pid, signal.SIGKILL if hard else signal.SIGTERM)
-        elif hard:
-            proc.kill()
-        else:
-            proc.terminate()
-
-
-def _stop(proc: subprocess.Popen, grace: float) -> None:
-    if proc.poll() is not None:
-        return
-    _signal(proc, hard=False)
-    try:
-        proc.wait(timeout=grace)
-    except subprocess.TimeoutExpired:
-        _signal(proc, hard=True)
-        proc.wait()
-
-
 @contextlib.contextmanager
 def served(cmd: list[str], port: int, log, env=None, timeout: float = 600.0,
            grace: float = 30.0, poll: float = 0.5, timeout_knob: str = "harness/vllm.py:served(timeout)"):
@@ -124,9 +101,9 @@ def served(cmd: list[str], port: int, log, env=None, timeout: float = 600.0,
     log.parent.mkdir(parents=True, exist_ok=True)
     env = dict(os.environ if env is None else env)
     env.setdefault("PYTHONIOENCODING", "utf-8")
+    from harness import owned
     with open(log, "w", encoding="utf-8") as out:
-        proc = subprocess.Popen(cmd, stdout=out, stderr=subprocess.STDOUT, env=env,
-                                start_new_session=True)
+        proc = owned.start(cmd, stdout=out, stderr=subprocess.STDOUT, env=env)
     try:
         deadline = time.monotonic() + timeout
         while why := _probe(base):
@@ -146,7 +123,7 @@ def served(cmd: list[str], port: int, log, env=None, timeout: float = 600.0,
             time.sleep(poll)
         yield Served(base, proc)
     finally:
-        _stop(proc, grace)
+        owned.stop(proc, grace)
 
 
 class Unservable(RuntimeError):

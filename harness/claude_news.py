@@ -192,5 +192,5 @@ def notify(d: dict, run=subprocess.run) -> str | None:
         return None
     from harness import watchdog_hands
     n = len(d["relevant"])
-    return watchdog_hands.desktop(NOTIFY_TITLE, f"{n} Claude Code change(s) relevant to this setup, "
-                                  f"up to {d['latest']}", d["relevant"][0]["text"], run)
+    return watchdog_hands.notice(NOTIFY_TITLE, f"{n} Claude Code change(s) relevant to this setup, "
+                                 f"up to {d['latest']}", d["relevant"][0]["text"], run)

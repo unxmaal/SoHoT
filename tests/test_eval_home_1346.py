@@ -10,7 +10,7 @@ from gauntlet import scanners as gscanners
 
 from harness import cuts, paths, purpose
 from harness import memory_store as ms
-from tests import conftest
+from tests import conftest, tree_cache
 from tests.gauntlet import scanners
 
 SITE = "harness/cuts.py:WRITE_WAIT_S"
@@ -133,13 +133,12 @@ def _calls_eval_home(rel):
 
 
 def test_every_eval_or_probe_entry_runs_from_a_scratch_home_or_says_why_not():
-    unhomed = gscanners.scan_tree(REPO, scanners.unhomed_evals, gscanners.is_python)
+    unhomed = tree_cache.scan_tree(REPO, scanners.unhomed_evals, gscanners.is_python)
     keys = [u.split("'")[1] for u in unhomed]
     assert not unhomed, ("an eval or probe on the default home writes rows that pass for real work:\n" + "\n".join(unhomed)
                          + "\nor waive one in tests/gauntlet/scanners.py EVAL_WAIVED:\n" + "\n".join(
                              f'    "{k}": "<why its rows never pass for real work>",' for k in keys))
-    found = set(gscanners.scan_tree(REPO, lambda t, r: [k for _, k in scanners.eval_entry_points(t, r)],
-                                   gscanners.is_python))
+    found = set(tree_cache.scan_tree(REPO, scanners.eval_entry_keys, gscanners.is_python))
     registered = set(scanners.EVAL_HOMED) | set(scanners.EVAL_WAIVED)
     assert registered <= found, f"registered eval entries no longer in the tree: {sorted(registered - found)}"
     assert not set(scanners.EVAL_HOMED) & set(scanners.EVAL_WAIVED)

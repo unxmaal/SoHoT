@@ -15,7 +15,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from harness.atomic_file import replace
+from harness import atomic_file
 from harness import deploy_state as ds
 from harness import deploy_switch, job_claim, job_procs, job_state as js, paths, proc_identity, queue_pause
 from harness import workqueue as wq
@@ -420,7 +420,7 @@ def adopt(link: Path) -> Path:
         tmp.unlink()
     os.symlink(dest, tmp)
     os.rename(link, dest)
-    replace(tmp, link)
+    atomic_file.replace(tmp, link)
     try:
         _git(dest, "worktree", "repair")
     except DeployError as exc:

@@ -35,14 +35,23 @@ SPEECH_DEFAULTS = {
     "tts": {"win32": "kokoro-onnx/Kokoro-82M", "other": "mlx-community/Kokoro-82M-bf16"},
     "stt": {"win32": "Systran/faster-whisper-base.en",
             "other": "mlx-community/parakeet-tdt-0.6b-v2"}}
-_HERE = "win32" if sys.platform == "win32" else "other"
-DEFAULT_TTS_MODEL = SPEECH_DEFAULTS["tts"][_HERE]
-# A HuggingFace repo id, never "whisper-1": mlx_audio rejects the OpenAI model
-# name outright. This is why port 8890 matters to voicemode's provider probe.
-if sys.platform == "win32":
-    DEFAULT_STT_MODEL = os.environ.get("WHISPER_MODEL", SPEECH_DEFAULTS["stt"]["win32"])
-else:
-    DEFAULT_STT_MODEL = SPEECH_DEFAULTS["stt"]["other"]
+
+
+def speech_platform() -> str:
+    return "win32" if sys.platform == "win32" else "other"
+
+
+def default_tts_model() -> str:
+    return SPEECH_DEFAULTS["tts"][speech_platform()]
+
+
+def default_stt_model() -> str:
+    """A HuggingFace repo id, never "whisper-1": mlx_audio rejects the OpenAI name. Read per call (#1964)."""
+    if speech_platform() == "win32":
+        return os.environ.get("WHISPER_MODEL", SPEECH_DEFAULTS["stt"]["win32"])
+    return SPEECH_DEFAULTS["stt"]["other"]
+
+
 # Parakeet is English-only and there is no way around that: it hears French as
 # English words that rhyme. Whisper is the multilingual ear, and it has to be
 # called in-process because mlx_audio's server cannot load it -- the mlx repos
@@ -121,7 +130,7 @@ def resolve_voice(name: str) -> Voice:
                      lang_code=preset["lang_code"])
     if name in KNOWN_VOICES:
         from harness import adopt
-        return Voice(model=adopt.serving_default("tts", DEFAULT_TTS_MODEL), voice=name)
+        return Voice(model=adopt.serving_default("tts", default_tts_model()), voice=name)
     raise ValueError(
         f"unknown voice {name!r}; cloned: {', '.join(sorted(VOICE_PRESETS))}; "
         f"kokoro: {', '.join(KNOWN_VOICES)}")
@@ -269,7 +278,7 @@ def speak(text: str, out: str | Path, voice: str = DEFAULT_KOKORO_VOICE,
     # A default argument is bound when the function is defined, so an adoption
     # written after import could never reach a caller. Issue #201.
     from harness import adopt
-    model = model or adopt.serving_default("tts", DEFAULT_TTS_MODEL)
+    model = model or adopt.serving_default("tts", default_tts_model())
     payload = {"model": model, "input": text,
                "speed": speed, "response_format": "wav"}
     # Cloning path only: Kokoro takes neither field. Issue #6.
@@ -348,7 +357,7 @@ def transcribe(path: str | Path, model: str = "",
     """Transcribe an audio file. Returns the text, stripped."""
     from harness import adopt
     timeout = TIMEOUT_S if timeout is None else timeout
-    model = model or adopt.serving_default("stt", DEFAULT_STT_MODEL)
+    model = model or adopt.serving_default("stt", default_stt_model())
     path = Path(path)
     if not path.exists():
         raise AudioError(f"no audio file at {path}")
@@ -659,7 +668,7 @@ def transcriber(backend: str = "server", model: str = "", language: str = "",
         def _run(path):
             return transcribe_whisper(path, model=model, language=language)
     else:
-        model = model or DEFAULT_STT_MODEL
+        model = model or default_stt_model()
 
         def _run(path):
             return transcribe(path, model=model, base_url=base_url,

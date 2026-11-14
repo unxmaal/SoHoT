@@ -306,7 +306,7 @@ def _osascript(rc=0, stderr=""):
     return calls, fake
 
 
-def test_notify_posts_a_desktop_notification_naming_the_criterion_and_target():
+def test_notify_posts_a_desktop_notification_naming_the_criterion_and_target(shown_live):
     calls, fake = _osascript()
     out = watchdog_hands.Hands(run=fake, platform="darwin").do(wd.NOTIFY, finding("long_run"))
     assert out == "notified: long_run: eval pgid 1"
@@ -315,14 +315,14 @@ def test_notify_posts_a_desktop_notification_naming_the_criterion_and_target():
     assert cmd[-3:] == [wd.NOTIFY_TITLE, "long_run: eval pgid 1", wd.BY_ID["long_run"].what]
 
 
-def test_notify_passes_the_subject_as_argv_so_quotes_cannot_break_the_script():
+def test_notify_passes_the_subject_as_argv_so_quotes_cannot_break_the_script(shown_live):
     calls, fake = _osascript()
     f = wd.Finding("long_run", wd.Subject("eval", 'eval "x" & do shell script "rm"', "t"), {})
     watchdog_hands.Hands(run=fake, platform="darwin").do(wd.NOTIFY, f)
     assert all("rm" not in part for part in calls[0][:-3])
 
 
-def test_notify_says_why_when_osascript_fails_or_hangs():
+def test_notify_says_why_when_osascript_fails_or_hangs(shown_live):
     _, fake = _osascript(rc=1, stderr="execution error")
     assert watchdog_hands.Hands(run=fake, platform="darwin").do(wd.NOTIFY, finding()).startswith("notify failed: osascript rc 1")
 
@@ -332,7 +332,7 @@ def test_notify_says_why_when_osascript_fails_or_hangs():
 
 
 @pytest.mark.parametrize("plat", ["win32", "linux"])
-def test_notify_is_unavailable_off_macos_and_says_why(plat):
+def test_notify_is_unavailable_off_macos_and_says_why(plat, shown_live):
     calls, fake = _osascript()
     out = watchdog_hands.Hands(run=fake, platform=plat).do(wd.NOTIFY, finding())
     assert out.startswith("notify unavailable") and plat in out and calls == []
@@ -602,7 +602,7 @@ def _fallbacks(*nodes):
 
 
 def test_a_repeating_notify_is_shown_once_per_criterion_and_target_then_again_after_the_interval(tmp_path,
-                                                                                               monkeypatch):
+                                                                                               monkeypatch, shown_live):
     monkeypatch.setattr(wd, "ESCALATE_AFTER", 99)
     conn = ms.connect()
     hand = Notifier()
@@ -617,7 +617,7 @@ def test_a_repeating_notify_is_shown_once_per_criterion_and_target_then_again_af
     assert len(hand.calls) == 4
 
 
-def test_a_failed_notify_does_not_hold_the_next_one(tmp_path, monkeypatch):
+def test_a_failed_notify_does_not_hold_the_next_one(tmp_path, monkeypatch, shown_live):
     monkeypatch.setattr(wd, "ESCALATE_AFTER", 99)
     conn = ms.connect()
     hand = Notifier()

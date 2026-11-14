@@ -14,7 +14,7 @@ import uuid
 from contextlib import contextmanager
 from pathlib import Path
 
-from harness.atomic_file import replace
+from harness import atomic_file
 
 #: What a caller reports with `delegated`.
 OUTCOMES = ("used", "edited", "discarded")
@@ -355,7 +355,7 @@ def spool(kind: str, into: Path | None = None, **body) -> str:
         fh.write(json.dumps(rec, sort_keys=True) + "\n")
         fh.flush()
         os.fsync(fh.fileno())
-    replace(part, d / name)
+    atomic_file.replace(part, d / name)
     with contextlib.suppress(OSError):
         fd = os.open(d, os.O_RDONLY)
         try:

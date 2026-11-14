@@ -1,4 +1,3 @@
-a-child-that-outlives-its-owner harness/vllm.py:served
 a-closed-table-fronting-an-open-set evals/core.py:ASSERTION_KEYS
 a-closed-table-fronting-an-open-set evals/core.py:CHECKERS
 a-closed-table-fronting-an-open-set evals/runners/chain.py:STAGE_SCALE
@@ -35,7 +34,6 @@ a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/invento
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/nodes.py:_record
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/publish.py:set_enabled
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/queue_pause.py:hold_for_deploy
-a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/remote_code.py:native_types
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/review.py:write
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/runner_gaps.py:diffusers_pipelines
 a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates harness/runner_gaps.py:mlx_lm_types
@@ -134,11 +132,7 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/deploy.py:waiting_since:jobs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/disk.py:_stored:downloads
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/disk.py:latest_verdicts:verdicts
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/downloads.py:backfill.once:downloads
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/downloads.py:backfill:downloads
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/downloads.py:backfill:verdicts
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/downloads.py:live:downloads
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/downloads.py:summary:downloads
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/effects.py:replay:adoptions
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/effects.py:replay:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/family.py:standing:verdicts
@@ -264,7 +258,6 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/migration_check.py:_proposal_state:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/migration_check.py:_verdict_reason:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/models.py:_source:downloads
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/paused.py:dir_state:paused_runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/paused_jobs.py:_owned:knob_sweeps
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/paused_jobs.py:_owned:reverifications
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/paused_jobs.py:_said:watchdog_actions
@@ -409,7 +402,6 @@ an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/benchmarks.py
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/chaos.py:answers:urlopen
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/ci_history.py:_gh:binary:gh
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/ci_rerun.py:_gh:binary:gh
-an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/claude_news.py:notify:desktop
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/commands/claude_news.py:cmd_claude_news:notify
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/commands/funnel.py:cmd_funnel:gather
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/commands/inventory.py:cmd_time:gather
@@ -431,7 +423,6 @@ an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/github.py:_gh
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/lane_probe.py:_send:urlopen
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/monitor.py:desktop:desktop
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/morning.py:_gh:binary:gh
-an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/morning.py:notify:desktop
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/needle.py:Server.post:urlopen
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/privacy.py:_api:_gh
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/privacy.py:_gh:binary:gh
@@ -446,31 +437,12 @@ an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/router.py:_po
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/runtime_trials.py:_gh:_gh
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/runtime_trials.py:trial:install
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/store_service.py:daily_dump:verify
-an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/watchdog_hands.py:Hands.notify:desktop
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/watchdog_observe.py:Probes._launchctl:binary:launchctl
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy scripts/pool-full-probe.py:ask:urlopen
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy scripts/pool-full-probe.py:main:urlopen
-an-order-the-code-needs-but-does-not-check evals/analysis/laya_finetune.py:<module>:import:home()
 an-order-the-code-needs-but-does-not-check evals/importers/history.py:<module>:import:read_text
-an-order-the-code-needs-but-does-not-check evals/runners/chain.py:<module>:import:home()
-an-order-the-code-needs-but-does-not-check evals/swebench.py:__main__:no-guard
-an-order-the-code-needs-but-does-not-check gateway/schema_guard.py:<module>:import:exists
-an-order-the-code-needs-but-does-not-check harness/audio.py:<module>:import:WHISPER_MODEL
-an-order-the-code-needs-but-does-not-check harness/audio_server.py:<module>:import:WHISPER_MODEL
-an-order-the-code-needs-but-does-not-check harness/chaos.py:scratch_home:ENV_VAR:no-backend
 an-order-the-code-needs-but-does-not-check harness/checks/speech.py:<module>:import:read_text
-an-order-the-code-needs-but-does-not-check harness/context.py:__main__:no-guard
-an-order-the-code-needs-but-does-not-check harness/decider_score.py:__main__:no-guard
-an-order-the-code-needs-but-does-not-check harness/ds4.py:__main__:no-guard
-an-order-the-code-needs-but-does-not-check harness/engines.py:<module>:import:home()
-an-order-the-code-needs-but-does-not-check harness/gguf.py:__main__:no-guard
-an-order-the-code-needs-but-does-not-check harness/install_env.py:__main__:no-guard
-an-order-the-code-needs-but-does-not-check harness/interactive.py:__main__:no-guard
-an-order-the-code-needs-but-does-not-check harness/mlx_vlm_label.py:__main__:no-guard
-an-order-the-code-needs-but-does-not-check harness/nimble_score.py:__main__:no-guard
-an-order-the-code-needs-but-does-not-check harness/nodes.py:__main__:no-guard
 an-order-the-code-needs-but-does-not-check harness/paths.py:<module>:import:home()
-an-order-the-code-needs-but-does-not-check harness/router.py:__main__:no-guard
 an-order-the-code-needs-but-does-not-check harness/stages.py:<module>:import:home()
 each-half-verified-against-its-own-spec-the-seam-against-nothing env:ACESTEP_ROOT
 each-half-verified-against-its-own-spec-the-seam-against-nothing env:DECIDER_BIN
@@ -675,9 +647,7 @@ state-is-whichever-row-came-last harness/commands/discover.py:_judge_neighbors
 state-is-whichever-row-came-last harness/memory_store/proposals.py:judgeable
 state-is-whichever-row-came-last harness/publish.py:_accelerator_name
 two-durable-writes-with-no-repair-for-the-gap harness/batch.py:claim
-two-durable-writes-with-no-repair-for-the-gap harness/commands/measure.py:_measure
 two-durable-writes-with-no-repair-for-the-gap harness/commands/measure.py:_record
-two-durable-writes-with-no-repair-for-the-gap harness/commands/sweep_check.py:cmd_sweep_check
 two-durable-writes-with-no-repair-for-the-gap harness/cuts.py:flush
 two-durable-writes-with-no-repair-for-the-gap harness/downloads.py:record
 two-durable-writes-with-no-repair-for-the-gap harness/ds4.py:fetch
@@ -686,6 +656,5 @@ two-durable-writes-with-no-repair-for-the-gap harness/fetching.py:_download
 two-durable-writes-with-no-repair-for-the-gap harness/gguf.py:download
 two-durable-writes-with-no-repair-for-the-gap harness/lane_probe.py:wake
 two-durable-writes-with-no-repair-for-the-gap harness/memory_store/migrations/identity.py:backfill_candidates
-two-durable-writes-with-no-repair-for-the-gap harness/runtime_trials.py:trial
 two-durable-writes-with-no-repair-for-the-gap harness/store_copy.py:to_sqlite_report
 two-durable-writes-with-no-repair-for-the-gap harness/workqueue.py:leased

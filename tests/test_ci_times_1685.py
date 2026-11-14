@@ -128,15 +128,25 @@ def test_a_matrix_leg_is_its_job():
     assert ci_times.job_table(rows)[0]["timeout"] == 120.0
 
 
+def test_a_job_no_runner_took_is_not_a_run():
+    """#1590: a check-postgres cancelled in the queue (steps [], no runner) read as a 107 min run."""
+    queued = {"name": "check-postgres", "status": "completed", "conclusion": "cancelled", "steps": [],
+              "started_at": "2026-11-13T01:00:09Z", "completed_at": "2026-11-13T02:47:15Z"}
+    ran = {**queued, "conclusion": "success", "steps": [{"name": "Set up job"}],
+           "started_at": "2026-11-13T03:00:00Z", "completed_at": "2026-11-13T03:40:00Z"}
+    rows = ci_times.job_rows([{"databaseId": 1, "event": "pull_request"}], {1: [queued, ran]})
+    assert [(r["conclusion"], r["min"]) for r in rows] == [("success", 40.0)]
+
+
 def test_each_job_is_set_against_its_ci_yml_timeout(home):
     got, _ = _rows(home)
     jobs = {(t["job"], t["event"]): t for t in got["jobs"]}
     assert jobs[("check-macos", "pull_request")] == {
         "job": "check-macos", "event": "pull_request", "runs": 2, "passed": 2, "failed": 0, "cancelled": 0,
-        "p50": 24.6, "p95": 30.1, "max": 30.7, "timeout": 35.0, "p95_share": 0.86}
+        "p50": 24.6, "p95": 30.1, "max": 30.7, "timeout": 56.0, "p95_share": 0.54}
     assert (jobs[("check-postgres", "pull_request")]["timeout"], jobs[("check-postgres", "pull_request")]["p95"]) == (
-        52.0, 46.8)
-    assert jobs[("check-windows", "workflow_dispatch")]["timeout"] == 80.0
+        73.0, 46.8)
+    assert jobs[("check-windows", "workflow_dispatch")]["timeout"] == 97.0
     assert not any(t["job"].startswith("mutation (") for t in got["jobs"])
 
 
@@ -185,7 +195,7 @@ def test_both_verbs_print_a_table_and_give_the_rows_under_json(home, monkeypatch
     assert cli.main(["ci-times", "--last", "4", "--runs", "4"]) == 0
     out = capsys.readouterr().out
     assert "| #1875 | 61.1 | 10.8 | 60.4 | 1 (0) | 421.1 | 61 | 322.3 |" in out
-    assert "| check-macos | pull_request | 2 | 2 | 0 | 0 | 24.6 | 30.1 | 30.7 | 35.0 | 86% |" in out
+    assert "| check-macos | pull_request | 2 | 2 | 0 | 0 | 24.6 | 30.1 | 30.7 | 56.0 | 54% |" in out
     assert ["pr", "list", "-R", ci_times.REPO, "--state", "merged", "-L", "4", "--json", ci_times.PR_FIELDS] in calls
     assert cli.main(["ci-times", "--json"]) == 0
     got = json.loads(capsys.readouterr().out)

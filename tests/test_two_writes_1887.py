@@ -71,6 +71,7 @@ def test_a_re_decided_verdict_never_lands_without_its_power_and_split(grown):
         conn.close()
 
 
+@pytest.mark.gauntlet("two-durable-writes-with-no-repair-for-the-gap", site="harness/downloads.py:backfill.once")
 def test_a_backfill_killed_before_it_settles_a_gone_path_settles_it_on_the_rerun(tmp_path, monkeypatch):
     manifest = paths.home() / "gguf-sources.json"
     manifest.write_text(json.dumps({"org/gone": "gone-Q4_K_M.gguf"}), encoding="utf-8")
@@ -83,16 +84,19 @@ def test_a_backfill_killed_before_it_settles_a_gone_path_settles_it_on_the_rerun
         return move(conn, rid, frm, to, *a, **kw)
 
     conn = ms.connect()
-    conn.execute("CREATE TABLE disk_removals (id INTEGER PRIMARY KEY, path TEXT NOT NULL, "
-                 "repo TEXT NOT NULL DEFAULT '', grp TEXT NOT NULL, bytes INTEGER NOT NULL DEFAULT 0, "
-                 "verdict_id INTEGER, source TEXT NOT NULL DEFAULT '', removed_at REAL NOT NULL)")
-    conn.execute("INSERT INTO disk_removals (path, repo, grp, bytes, source, removed_at) VALUES (?,?,?,?,?,?)",
-                 (str(ggufs / "gone-Q4_K_M.gguf"), "org/gone", "rejected", 5, "discover", T))
-    conn.commit()
-    monkeypatch.setattr(ds, "move", killed)
-    with pytest.raises(Died):
-        downloads.backfill(conn, hub, ggufs, manifest)
-    conn.close()
+    try:
+        conn.executescript("CREATE TABLE disk_removals (id INTEGER PRIMARY KEY, path TEXT NOT NULL, "
+                     "repo TEXT NOT NULL DEFAULT '', grp TEXT NOT NULL, bytes INTEGER NOT NULL DEFAULT 0, "
+                     "verdict_id INTEGER, source TEXT NOT NULL DEFAULT '', removed_at REAL NOT NULL)")
+        conn.execute("INSERT INTO disk_removals (id, path, repo, grp, bytes, source, removed_at) "
+                     "VALUES (1,?,?,?,?,?,?)",
+                     (str(ggufs / "gone-Q4_K_M.gguf"), "org/gone", "rejected", 5, "discover", T))
+        conn.commit()
+        monkeypatch.setattr(ds, "move", killed)
+        with pytest.raises(Died):
+            downloads.backfill(conn, hub, ggufs, manifest)
+    finally:
+        conn.close()
     monkeypatch.setattr(ds, "move", move)
     conn = ms.connect()
     try:

@@ -162,19 +162,36 @@ def eval_home(scratch: Path | None = None, *, live: bool = False, reads_live: bo
             raise LiveHomeRefused(f"{ENV_VAR} names the live home {home()}; an eval or probe writes only a "
                                   f"scratch home unless told to write the live one (--live-home)")
         return home()
-    where = Path(scratch).expanduser() if scratch else Path(tempfile.mkdtemp(prefix="soh-eval-"))
-    where = where.resolve()
+    return scratch_home(Path(scratch) if scratch else Path(tempfile.mkdtemp(prefix="soh-eval-")))
+
+
+class NoMachineHome(RuntimeError):
+    """A scratch home was asked for that is the machine home itself, so nothing would be read from the machine. #1867"""
+
+
+def scratch_home(where: Path) -> Path:
+    """Make `where` this process's home, reading the machine's lock, lease, plan and adoptions from the home it replaces. #1867"""
+    where = Path(where).expanduser().resolve()
     if is_live(where / "discovery.db"):
         raise LiveHomeRefused(f"{where} is the live home, not a scratch one")
+    machine = Path(os.environ.get(MACHINE_ENV) or home()).expanduser().resolve()
+    if machine == where:
+        raise NoMachineHome(f"{where} is the machine home ({ENV_VAR} or {MACHINE_ENV}), not a scratch one; "
+                            f"name a scratch home other than the home whose services it should reach")
     where.mkdir(parents=True, exist_ok=True)
     from harness import store
-    os.environ[MACHINE_ENV] = os.environ.get(MACHINE_ENV) or str(home())
+    os.environ[MACHINE_ENV] = str(machine)
     os.environ[MACHINE_FOR_ENV] = str(where)
     os.environ[MACHINE_STORE_ENV] = os.environ.get(store.BACKEND_ENV, "")
     os.environ[ENV_VAR] = str(where)
     # A scratch home's store is its own SQLite file, even where LOCALHARNESS_STORE names a shared Postgres. #1579.
     os.environ[store.BACKEND_ENV] = store.SQLITE
     return where
+
+
+def unbound_scratch() -> bool:
+    """LOCALHARNESS_HOME was set by hand to a home that is not live, with no machine home bound to it. #1867"""
+    return bool(os.environ.get(ENV_VAR)) and not os.environ.get(MACHINE_ENV) and not is_live(home() / "discovery.db")
 
 
 def _sub(name: str) -> Path:
