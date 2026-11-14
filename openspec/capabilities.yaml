@@ -109,6 +109,8 @@ capabilities:
       - harness/gguf.py
       - harness/commands/gguf_aux.py
       - harness/download_state.py
+      - harness/quarantine.py
+      - harness/commands/quarantine.py
 
   - name: discovery-sources
     summary: Feeds, registries, papers, posts and neighbours that propose candidates, techniques and benchmarks.

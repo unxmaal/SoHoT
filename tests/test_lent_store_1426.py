@@ -95,6 +95,8 @@ NOT_RUN = {
     "scaffold module --command": "writes a command module and edits harness/cli.py in the checkout, never the store (#1697)",
     "scaffold unit --every-machine": "writes a launchd unit into the checkout's scripts, never the store (#1697)",
     "gguf-aux --apply": "moves GGUFs aside and restarts the router",
+    "quarantine --dedupe": "hashes files in the quarantine dirs, never the store (#1921)",
+    "quarantine --apply": "deletes exact copies in the quarantine dirs, never the store (#1921)",
     "discover --sources": "probes each feed over the network",
     "adopt --from-measurement": "adopts the measured incumbent; its --dry-run is held in RUNS",
     "discover --external": "asks the registries", "discover --loop": "the discovery loop",
