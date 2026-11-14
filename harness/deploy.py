@@ -15,7 +15,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from harness import atomic_file
+from harness import atomic_file, store_home
 from harness import deploy_state as ds
 from harness import deploy_switch, job_claim, job_procs, job_state as js, paths, proc_identity, queue_pause
 from harness import workqueue as wq
@@ -955,6 +955,8 @@ def settle(conn=None, now: float | None = None, alive=job_procs.alive, spawn=Non
     settled = []
     try:
         with wq._store(conn) as c:
+            if store_home.refused(c):
+                return done
             here, args = _here(c)
             for row in c.execute(f"SELECT * FROM deploys WHERE outcome = '' AND {here} ORDER BY id", args).fetchall():
                 try:
