@@ -448,11 +448,7 @@ an-effect-reachable-from-a-run-that-is-not-the-live-deploy harness/watchdog_obse
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy scripts/pool-full-probe.py:ask:urlopen
 an-effect-reachable-from-a-run-that-is-not-the-live-deploy scripts/pool-full-probe.py:main:urlopen
 an-order-the-code-needs-but-does-not-check evals/importers/history.py:<module>:import:read_text
-an-order-the-code-needs-but-does-not-check harness/audio.py:<module>:import:WHISPER_MODEL
 an-order-the-code-needs-but-does-not-check harness/checks/speech.py:<module>:import:read_text
-an-order-the-code-needs-but-does-not-check harness/context.py:__main__:no-guard
-an-order-the-code-needs-but-does-not-check harness/interactive.py:__main__:no-guard
-an-order-the-code-needs-but-does-not-check harness/nodes.py:__main__:no-guard
 an-order-the-code-needs-but-does-not-check harness/paths.py:<module>:import:home()
 an-order-the-code-needs-but-does-not-check harness/stages.py:<module>:import:home()
 each-half-verified-against-its-own-spec-the-seam-against-nothing env:ACESTEP_ROOT

@@ -23,10 +23,11 @@ from evals.runners.base import BaseRunner, RunnerError
 
 
 class TranscriptionRunner(BaseRunner):
-    def __init__(self, model: str = audio.DEFAULT_STT_MODEL,
+    def __init__(self, model: str = "",
                  base_url: str = audio.DEFAULT_BASE_URL,
                  timeout: float | None = None,
                  backend: str = "server", language: str = ""):
+        model = model or audio.default_stt_model()
         self.model = model
         self.base_url = base_url
         self.timeout = audio.TIMEOUT_S if timeout is None else timeout

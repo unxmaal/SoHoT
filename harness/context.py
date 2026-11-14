@@ -825,4 +825,6 @@ def main(argv=None) -> int:
 
 
 if __name__ == "__main__":
+    from harness import env
+    env.guard()
     raise SystemExit(main())

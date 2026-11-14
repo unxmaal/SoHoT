@@ -278,7 +278,7 @@ def typed() -> dict[str, str]:
             "ocr": cli.DEFAULT_OCR_ENGINE,
             "retrieval": cli.DEFAULT_RETRIEVAL_ENGINE,
             "pii": cli.DEFAULT_PII_ENGINE,
-            "tts": audio.DEFAULT_TTS_MODEL, "stt": audio.DEFAULT_STT_MODEL}
+            "tts": audio.default_tts_model(), "stt": audio.default_stt_model()}
 
 
 def typed_anywhere() -> dict[str, tuple[str, ...]]:
