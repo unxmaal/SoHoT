@@ -78,9 +78,10 @@ def test_a_first_adopt_decline_still_gets_its_retest_and_no_until(store, lane_ca
 
 def test_a_candidate_loss_after_its_retest_is_settled_with_no_until(store, lane_cases):
     _retested_once(store)
-    adopt.record(store, adopt.Verdict("code", "inc", "org/m", False, "significantly worse"), spec="org/m")
+    vid = adopt.record(store, adopt.Verdict("code", "inc", "org/m", False, "lost", event=adopt.WORSE), spec="org/m")
     got = _held(store, "org/m")
     assert (got["reason"], got["until"], got["next_retest_at"]) == (reasons.CANDIDATE, "", None)
+    assert store.execute("SELECT event FROM verdicts WHERE id = ?", (vid,)).fetchone()[0] == adopt.WORSE
     assert live_audit._terminal_reason_coherent(store) == ([], [])
 
 

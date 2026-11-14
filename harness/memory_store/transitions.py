@@ -218,13 +218,10 @@ def state_audit(conn) -> dict:
     events: dict = {}
     once_terminal = set()
     for r in conn.execute(
-            "SELECT proposal_id, outcome, tier, reopen_kind, detail "
+            "SELECT proposal_id, outcome, tier, reopen_kind "
             "FROM verdicts WHERE proposal_id IS NOT NULL ORDER BY id"):
-        # Before #409 a retraction was only its prose.
-        kind = r["reopen_kind"] or (
-            RETRACTION if str(r["detail"] or "").startswith("retracted:") else "")
         events.setdefault(r["proposal_id"], []).append(
-            (r["outcome"], r["tier"] or "", kind))
+            (r["outcome"], r["tier"] or "", r["reopen_kind"] or ""))
         if r["outcome"] in TERMINAL:
             once_terminal.add(r["proposal_id"])
     differs, reopened = [], []
@@ -247,7 +244,7 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
            reopen_why: str = "", reason: str = "",
            run_id: int | None = None, ceiling_gb: float | None = None,
            failure_class: str = "", lane: str = "", budget_gib: float | None = None, event: str = "",
-           commit: bool = True) -> int:
+           sized_by: str = "", commit: bool = True) -> int:
     """Record what happened to a proposal, and move its state.
 
     The single write path for a verdict and for proposals.state. A move
@@ -306,7 +303,8 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
               "size_bytes": int(size_bytes or 0),
               "upstream_idle_days": float(upstream_idle_days or 0.0),
               "candidate_id": candidate_id, "run_id": run_id,
-              "reason": reason, "failure_class": failure_class, "lane": lane or "", "event": event or ""}
+              "reason": reason, "failure_class": failure_class, "lane": lane or "", "event": event or "",
+              "sized_by": sized_by or ""}
     if ceiling_gb is not None:
         fields["ceiling_gb"] = round(float(ceiling_gb), 1)
     if budget_gib is not None:

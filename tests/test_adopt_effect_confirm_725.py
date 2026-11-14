@@ -123,9 +123,10 @@ def test_a_lane_the_effect_table_does_not_name_plans_at_the_default():
     assert power.noise_for(" Code ") == power.EFFECT["code"]
 
 
-def _verdict(c, lane, outcome, detail, failure_class="", plan=None, name="org/x"):
+def _verdict(c, lane, outcome, detail, failure_class="", plan=None, name="org/x", event=""):
     ms.record(c, ms.Seen(name=name, source="test", lane=lane))
-    vid = ms.decide(c, name, outcome, tier=ms.ADOPT, detail=detail, reason=reasons.LIMIT if failure_class else reasons.CANDIDATE)
+    vid = ms.decide(c, name, outcome, tier=ms.ADOPT, detail=detail, reason=reasons.LIMIT if failure_class else reasons.CANDIDATE,
+                    event=event)
     c.execute("UPDATE verdicts SET failure_class = ?, power = ? WHERE id = ?",
               (failure_class, json.dumps(plan or {}), vid))
     c.commit()
@@ -136,7 +137,7 @@ def test_replay_names_a_powered_null_that_a_smaller_effect_makes_underpowered(co
     null = _verdict(conn, "code", "declined", "code: better on the metric, but 3 lost against 5 gained is p=0.73",
                     plan={"effect": 0.2, "mde": 0.15, "enough": True, "target": 0.8, "power": 0.9}, name="org/a")
     worse = _verdict(conn, "code", "declined", "code: does not beat the incumbent; significantly worse: 9 lost",
-                     plan={"effect": 0.2, "mde": 0.15, "enough": True, "target": 0.8}, name="org/b")
+                     plan={"effect": 0.2, "mde": 0.15, "enough": True, "target": 0.8}, name="org/b", event=adopt.WORSE)
     won = _verdict(conn, "svg", "measured", "svg: beats local-large on the lane's metric, 8 gained against 0 lost",
                    name="org/c")
     same = {r["id"]: r for r in effects.replay(conn, {"code": 0.2})}
@@ -214,7 +215,7 @@ def test_a_holdout_win_that_dev_cells_powered_to_see_it_do_not_confirm_is_a_loss
     assert got.evidence["confirm"]["mde"] == pytest.approx(0.081)
     worse = _rows({f"d{i}": (True, False) for i in range(10)})
     got = adopt.confirm(_won(), worse, SPLIT)
-    assert not got.adopt and got.failure_class == ""
+    assert not got.adopt and (got.failure_class, got.event) == ("", adopt.WORSE)
     assert "significantly worse" in got.why
     assert adopt.outcome_of(got) == ("declined", reasons.CANDIDATE)
 

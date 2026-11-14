@@ -309,4 +309,4 @@ def test_a_metric_win_that_lost_significantly_says_it_is_worse(monkeypatch):
     rows = head_to_head_rows([True] * 20, [False] * 20)
     got = adopt.decide("code", adopt._summary(rows, "inc"), adopt._summary(rows, "ch"), rows)
     assert not got.adopt and "significantly worse: 20 lost against 0 gained" in got.why, got.why
-    assert (got.lane, got.incumbent, got.challenger) == ("code", "inc", "ch"), got
+    assert (got.lane, got.incumbent, got.challenger, got.event) == ("code", "inc", "ch", adopt.WORSE), got

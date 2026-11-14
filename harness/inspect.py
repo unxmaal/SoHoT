@@ -90,6 +90,8 @@ SIZE_DELAY = 2.0
 #: needs-mlx and needs-rocm, and a stale list of this kind reads as
 #: authoritative.
 WEIGHTS_IN_GIT = "weights-in-git"
+#: The verdict words, also its verdicts.event, that refuse a model on this machine's size or runtimes. #1942.
+TOO_BIG, NEEDS = "too-big", "needs-"
 
 
 def verdicts() -> tuple[str, ...]:
@@ -447,6 +449,8 @@ class Fit:
     offered: list[str] = field(default_factory=list)
     #: The listing variant it was sized by, as variants.Variant.describe() says it. #947.
     variant: str = ""
+    #: That variant's format (variants.GGUF, variants.HF, ...). #1942.
+    variant_format: str = ""
     #: Where its weights sit when no variant groups them; its sum is then no size it runs at. #947.
     layout: str = ""
     #: Weight formats in the listing that no runner of its lane loads, when it has no other. #1040.
@@ -1079,6 +1083,7 @@ def size_listing(fit: Fit, model_id: str, data: dict, *, ceiling: int | None = N
     chosen = variants.pick(found, has=lambda rt: not machine.refuses(rt))
     if chosen:
         fit.variant = chosen.describe()
+        fit.variant_format = chosen.format
         return chosen.bytes
     fit.formats = fetching.foreign_formats(siblings, lane, patterns)
     fit.layout = variants.layout(siblings)
@@ -1256,6 +1261,16 @@ def reason_of(fit: Fit) -> str:
     if fit.verdict == "unknown" and (fit.layout or fit.formats):
         return reasons.HARNESS
     return reasons.CANDIDATE
+
+
+def sized_by(fit: Fit) -> str:
+    """verdicts.sized_by for this Fit: what its size was read from, or "" when nothing was sized. #1942."""
+    from harness import variants
+    if fit.ds4:
+        return variants.SIZED_RESIDENT if fit.ds4_file else ""
+    if fit.variant:
+        return variants.SIZED_GGUF if fit.variant_format == variants.GGUF else variants.SIZED_VARIANT
+    return variants.SIZED_LISTING if fit.largest > 0 else ""
 
 
 def until_of(fit: Fit) -> str:

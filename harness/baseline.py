@@ -7,6 +7,8 @@ import json
 MIN_CASES = 30
 
 SOURCE = "taken from measurement"
+#: verdicts.event for an adoption taken from stored measurements, which effects.replay selects on. #1942.
+EVENT = "baseline"
 
 
 def _lane(lane: str) -> str:
@@ -131,7 +133,7 @@ def take(conn, lane: str, incumbent: str, zero: dict, machines=None, exam_of=Non
     evidence = {**v.evidence, "source": SOURCE, "runs": best["runs"], "cases_digest": digest,
                 "zero_pass": zero, "candidates": [m["spec"] for m in got]}
     return adopt.Verdict(lane, incumbent, best["spec"], v.adopt, why, adopt.MEASURED,
-                         v.failure_class, evidence, until=v.until)
+                         v.failure_class, evidence, until=v.until, event=v.event or EVENT)
 
 
 def screened(lane: str, incumbent: str, challenger: str, ch_row: dict, zero: dict):

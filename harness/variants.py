@@ -12,6 +12,8 @@ GGUF, HF, MISTRAL, DIFFUSERS, COMFYUI, CHECKPOINT = (
     "gguf", "hf", "mistral", "diffusers", "comfyui", "checkpoint")
 #: The words every detail written from a variant starts with; the sizing requeue keys on them.
 MARK = "smallest variant "
+#: verdicts.sized_by: what sized an inspect, which the sizing requeues select on. #1942.
+SIZED_GGUF, SIZED_VARIANT, SIZED_RESIDENT, SIZED_LISTING = "gguf", "variant", "resident", "listing"
 #: model_type -> the engine that reads Mistral's consolidated layout for it (mlx-audio 0.5.3 sanitize()).
 MISTRAL_READERS = {"voxtral_realtime": "mlx-audio"}
 #: ComfyUI folders: the model, its encoders, its vae, an all-in-one checkpoint, and add-ons never required.

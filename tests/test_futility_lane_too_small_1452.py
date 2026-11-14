@@ -66,7 +66,7 @@ def _stored(conn, name, plan):
     vid = transitions._write(conn, pid, name, {
         "outcome": "declined", "tier": ms.ADOPT, "reason": reasons.CANDIDATE, "until": "", "decided_at": T,
         "detail": "code: futility: look 2 at 35/40 holdout cells: 0 gained, 20 lost, conditional power 0.00",
-        "failure_class": ""})
+        "failure_class": "", "event": adopt.FUTILITY})
     conn.execute("UPDATE verdicts SET power = ?, split_version = '1' WHERE id = ?", (json.dumps(plan), vid))
     conn.commit()
 

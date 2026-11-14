@@ -98,7 +98,7 @@ def look(rows, *, lane: str, inc_key: str, ch_key: str, split, plan: dict, alpha
     if done and cp < FUTILITY_CP and cell.gained <= cell.lost:
         v = adopt.Verdict(lane, inc_key, ch_key, False,
                           f"futility: {head}; under the plan's +{plan.get('effect', 0):.2f} the "
-                          f"challenger reaches the gate with probability {cp:.2f} < {FUTILITY_CP}")
+                          f"challenger reaches the gate with probability {cp:.2f} < {FUTILITY_CP}", event=adopt.FUTILITY)
         # A stop on a holdout no repeat could power waits on the lane's cases, as the full gate's null does. #1452.
         v = adopt._lane_too_small(lane, inc_key, ch_key, v, plan, split) or v
         return Look(n, t, cell.gained, cell.lost, nominal, used, cp, "futility",
