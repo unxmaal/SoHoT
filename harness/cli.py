@@ -112,7 +112,7 @@ from harness.commands.measure import (NO_ROWS_FOR_CANDIDATE, _all_refused, _meas
     _measure_and_adopt, _receipt_at, _summary_row, cmd_throughput, measurable)  # noqa: F401
 from harness.commands.report import (_report_queue, retest_line)  # noqa: F401
 from harness.commands.screen import (_judge_fits, _report_screen, _screen_plan,
-    cmd_fetch, screenable_backlog)  # noqa: F401
+    cmd_fetch)  # noqa: F401
 from harness.commands.store import cmd_memory  # noqa: F401
 
 
@@ -483,25 +483,10 @@ def build_parser() -> argparse.ArgumentParser:
     d.set_defaults(func=discover_cmd.cmd_discover)
 
     f = sub.add_parser("fetch",
-                       help="download weights the inspect tier queued")
-    f.add_argument("--run", action="store_true",
-                   help="actually download; without it, only says what would")
-    f.add_argument("--limit", type=int, default=1,
-                   help="how many to fetch. One at a time by default: this "
-                        "machine holds one working set")
+                       help="list what the screen fetches as it starts each candidate; nothing is downloaded (#2015)")
+    f.add_argument("--lane", default="", help="only this lane's candidates")
     f.add_argument("--budget-gib", type=float, default=None, dest="budget_gib",
-                   help="GiB this fetch may download in all; default: the download_budget knob")
-    f.add_argument("--limit-knob", default="harness/fetching.py:run(limit)", dest="limit_knob",
-                   help="the knob or site a cut at --limit is recorded under (#1087)")
-    f.add_argument("--budget-knob", default="download_budget", dest="budget_knob",
-                   help="the knob a cut at --budget-gib is recorded under (#1087)")
-    f.add_argument("--hold-router", action="store_true",
-                   help="leave the llama-server router as it is; the next sweep restarts it once (#1084)")
-    f.add_argument("--until", type=float, default=None,
-                   help="epoch seconds after which no new download starts (#1084)")
-    f.add_argument("--day", action="store_true",
-                   help="the daytime job: as many downloads as the next night can screen, beside no sweep, "
-                        "rate-capped in the capped hours; off unless LH_DAY_FETCH=1 (#1084)")
+                   help="with --project, the GiB one projected night downloads; default: the download_budget knob")
     f.add_argument("--replay", type=float, default=None, metavar="DAYS",
                    help="replay the last DAYS of fetch runs from their verdicts, with and without the pass-over term (#1288)")
     f.add_argument("--passed-over", type=float, default=None, dest="passed_over",
@@ -798,7 +783,6 @@ def build_parser() -> argparse.ArgumentParser:
     fun.add_argument("--lane", default="", help="only this lane")
     fun.add_argument("--top", type=int, default=None,
                      help="what a sweep fetches and screens, as `--top` (default: what the sweep ceiling fits)")
-    fun.add_argument("--budget-gib", type=float, default=None, help="a sweep's download budget (default: knob)")
     fun.add_argument("--head", type=int, default=10, help="how much of each lane's ranked head to list")
     fun.set_defaults(func=funnel_cmd.cmd_funnel)
     fam = sub.add_parser("families", help="each lineage root's paired record per lane, the lane's queue with and "

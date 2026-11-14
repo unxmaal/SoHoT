@@ -21,7 +21,7 @@ LH_LOGS="$LH_HOME/logs"
 PREFIX="com.unxmaal.localharness"
 # What a manual install read from the owner's shell, so a launchd reinstall renders the same units. #1518.
 INSTALL_ENV="$LH_HOME/install.env"
-RECORDED="HF_HOME HF_MIN_FREE_GB PATH LH_WATCHDOG_ACT LH_WATCHDOG_FILE LH_DAY_FETCH LH_REVIEW_FILE DISCOVER_HOURS AUDIT_HOURS WATCHDOG_EVERY_MIN ENERGY_EVERY_MIN DELEGATIONS_EVERY_MIN DEPLOY_EVERY_MIN LEDGER_HOURS MORNING_HOURS MORNING_MINUTE CLAUDE_NEWS_WEEKDAY CLAUDE_NEWS_HOUR CANARY_WEEKDAY CANARY_HOUR REVIEW_WEEKDAY REVIEW_HOUR SWEEP_CHECK_HOURS FETCH_HOURS"
+RECORDED="HF_HOME HF_MIN_FREE_GB PATH LH_WATCHDOG_ACT LH_WATCHDOG_FILE LH_REVIEW_FILE DISCOVER_HOURS AUDIT_HOURS WATCHDOG_EVERY_MIN ENERGY_EVERY_MIN DELEGATIONS_EVERY_MIN DEPLOY_EVERY_MIN LEDGER_HOURS MORNING_HOURS MORNING_MINUTE CLAUDE_NEWS_WEEKDAY CLAUDE_NEWS_HOUR CANARY_WEEKDAY CANARY_HOUR REVIEW_WEEKDAY REVIEW_HOUR SWEEP_CHECK_HOURS"
 
 # One variable's recorded value; rc 1 when the record does not hold it.
 _recorded() {
@@ -98,12 +98,14 @@ SRC="${LH_REPO:-$REPO}"
 DEPLOY="${LH_DEPLOY:-$LH_HOME/deploy}"
 # `discover` is not a server. It is the scheduled sweep, and it is in this
 # list because the thing that must survive a reboot is the SCHEDULE. #261.
-SERVICES="interactive gateway mlx eval tts mcp discover worker audit ds4 watchdog energy ledger morning claude-news otel canary sweep-check fetch delegations review deploy"
+SERVICES="interactive gateway mlx eval tts mcp discover worker audit ds4 watchdog energy ledger morning claude-news otel canary sweep-check delegations review deploy"
 
 #: Services that RUN AND EXIT rather than serve, at fixed local hours. KeepAlive
 #: would rerun a finished sweep at once; StartInterval counts from load, so a day
 #: of installs never lets it fire (#625). harness/heartbeat reads the installed hours (#705).
-declare -a PERIODIC=(discover audit watchdog energy ledger morning claude-news canary sweep-check fetch delegations review deploy)
+declare -a PERIODIC=(discover audit watchdog energy ledger morning claude-news canary sweep-check delegations review deploy)
+# Units an older install loaded that no release runs any more; install boots each out. The day fetch: a test fetches what it runs (#2015).
+declare -a RETIRED=(fetch)
 DISCOVER_HOURS="${DISCOVER_HOURS:-21}"
 AUDIT_HOURS="${AUDIT_HOURS:-3}"                   # nightly, #492
 # The watchdog watches this machine's own jobs, so every role runs it. #814.
@@ -132,10 +134,8 @@ REVIEW_WEEKDAY="${REVIEW_WEEKDAY:-0}"
 REVIEW_HOUR="${REVIEW_HOUR:-4}"
 # Tonight's sweep checked from launchd state and its heartbeat, an hour after it starts and hourly to 06:00. #1062.
 SWEEP_CHECK_HOURS="${SWEEP_CHECK_HOURS:-22 23 0 1 2 3 4 5 6}"
-# Downloads for the next night's screen, by day; it starts nothing 20:00-08:00 or beside a sweep, and is off until LH_DAY_FETCH=1. #1084.
-FETCH_HOURS="${FETCH_HOURS:-8 11 14 17}"
 # Periodic jobs that read or write the shared store: only the scheduler runs them. #703.
-declare -a SCHEDULER_ONLY=(discover audit ledger morning claude-news canary sweep-check fetch delegations review)
+declare -a SCHEDULER_ONLY=(discover audit ledger morning claude-news canary sweep-check delegations review)
 # Machines sharing one store run the periodic jobs on one of them: scheduler, or node for the rest. #703.
 # An interactive node runs only the interactive server, for lanes the scheduler's gateway sends it first. #1562.
 # A role given once is kept in $LH_HOME/role, so a later plain `make install` keeps it.
@@ -232,14 +232,13 @@ _hf_root() {
   _hf_var HF_HOME
 }
 
-# The watchdog acts and files issues, the day fetch runs and the review files, only once the owner sets these; a value given once is kept. #814, #1084, #1149.
+# The watchdog acts and files issues and the review files only once the owner sets these; a value given once is kept. #814, #1149.
 # An interactive node's server listens on the LAN with a key and pins only its lanes. #1562.
 _watchdog_env() {
   local var val vars
   case "$1" in
     watchdog) vars="LH_WATCHDOG_ACT LH_WATCHDOG_FILE" ;;
     interactive) vars="LLAMACPP_HOST LLAMACPP_API_KEY_FILE INTERACTIVE_LANES LLAMACPP_BIN" ;;
-    fetch) vars="LH_DAY_FETCH" ;;
     review) vars="LH_REVIEW_FILE" ;;
     *) return 0 ;;
   esac
@@ -299,7 +298,6 @@ _schedule() {
       [ "$service" = ledger ] && hours="$LEDGER_HOURS"
       [ "$service" = morning ] && hours="$MORNING_HOURS" && minute="$MORNING_MINUTE"
       [ "$service" = sweep-check ] && hours="$SWEEP_CHECK_HOURS"
-      [ "$service" = fetch ] && hours="$FETCH_HOURS"
       printf '  <key>StartCalendarInterval</key>\n  <array>\n'
       for h in $hours; do
         printf '    <dict><key>Hour</key><integer>%s</integer><key>Minute</key><integer>%s</integer></dict>\n' "$h" "$minute"
@@ -545,6 +543,21 @@ _live_pid() {
   awk '/^\tpid = /{print $3; exit}' <<<"$out"
 }
 
+# Units no release runs any more go, whatever the role. #2015.
+drop_retired() {
+  local p
+  for p in "${RETIRED[@]}"; do
+    if launchctl print "gui/$UID/$PREFIX.$p" >/dev/null 2>&1; then
+      launchctl bootout "gui/$UID/$PREFIX.$p"
+    fi
+    if [ -f "$AGENTS/$PREFIX.$p.plist" ]; then
+      rm -f "$AGENTS/$PREFIX.$p.plist"
+      echo "removed $PREFIX.$p (retired)"
+    fi
+  done
+  return 0
+}
+
 # A node unloads the units an earlier install of a wider role left behind.
 drop_periodic() {
   local p dropped="${SCHEDULER_ONLY[*]}"
@@ -642,6 +655,7 @@ install_units() {
       sleep 1
     done
   fi
+  drop_retired
   [ "$LH_ROLE" = scheduler ] || drop_periodic
   # A deferral is not a failure: the unit runs the deploy path, so its next run starts the deployed code. #1521.
   if [ -n "$deferred" ]; then

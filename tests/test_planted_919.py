@@ -26,7 +26,7 @@ GGUF_TOP = ("QwenGram-0.8B-BF16.gguf", "QwenGram-0.8B-Q4_K_M.gguf", "QwenGram-0.
             "tokenizer_config.json", "README.md")
 #: The loop steps a plant must reach for real; none of them may be replaced in this module or its world.
 STEPS = ("_loop_spend", "_spend_and_settle", "_reopen_retests", "_reverify", "_sweeps",
-         "screenable_backlog", "cmd_fetch", "cmd_discover", "_report_screen", "measurable",
+         "cmd_discover", "_report_screen", "measurable",
          "resume_first", "_measure_and_adopt", "decide", "record", "run", "plan")
 
 

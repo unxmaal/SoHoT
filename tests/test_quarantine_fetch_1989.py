@@ -6,6 +6,7 @@ import pytest
 from harness import downloads, fetching, gguf
 from harness import memory_store as ms
 from tests.test_gguf_aux_1674 import AUX, HEAD, QWEN, blk, write
+from tests import fakes
 
 GIB = 1024 ** 3
 DRAFTER = "dspark-X-Q8_0.gguf"
@@ -58,7 +59,7 @@ def test_the_fetch_plans_nothing_for_a_file_already_set_aside(models, tmp_path, 
     db = ms.connect()
     _queue(db, "org/X-GGUF")
     got: list = []
-    done = fetching.run(db, snapshot=lambda **kw: None, free=900 * GIB, hf_download=_hub(tmp_path, got),
+    done = fakes.fetch_queue(db, snapshot=lambda **kw: None, free=900 * GIB, hf_download=_hub(tmp_path, got),
                         listing=lambda repo: [{"rfilename": DRAFTER, "size": len(data)}])
     assert got == []
     assert not done[0]["ok"] and "already set aside" in done[0]["why"] and str(copy) in done[0]["why"]
@@ -75,7 +76,7 @@ def test_the_same_name_from_another_repo_is_still_fetched(models, tmp_path):
     db = ms.connect()
     _queue(db, "other/Y-GGUF")
     got: list = []
-    done = fetching.run(db, snapshot=lambda **kw: None, free=900 * GIB, hf_download=_hub(tmp_path, got),
+    done = fakes.fetch_queue(db, snapshot=lambda **kw: None, free=900 * GIB, hf_download=_hub(tmp_path, got),
                         listing=lambda repo: [{"rfilename": DRAFTER, "size": len(data)}])
     db.close()
     assert got == [("other/Y-GGUF", DRAFTER)]
@@ -88,7 +89,7 @@ def test_a_hub_file_of_another_size_is_fetched(models, tmp_path):
     db = ms.connect()
     _queue(db, "org/X-GGUF")
     got: list = []
-    fetching.run(db, snapshot=lambda **kw: None, free=900 * GIB, hf_download=_hub(tmp_path, got),
+    fakes.fetch_queue(db, snapshot=lambda **kw: None, free=900 * GIB, hf_download=_hub(tmp_path, got),
                  listing=lambda repo: [{"rfilename": DRAFTER, "size": len(data) + 1}])
     db.close()
     assert got == [("org/X-GGUF", DRAFTER)]
@@ -101,7 +102,7 @@ def test_the_repo_s_model_is_fetched_in_place_of_its_set_aside_drafter(models, t
     _queue(db, "org/X-GGUF")
     got: list = []
     sibs = [{"rfilename": DRAFTER, "size": len(data)}, {"rfilename": "X-IQ2_M.gguf", "size": len(data) - 1}]
-    done = fetching.run(db, snapshot=lambda **kw: None, free=900 * GIB, hf_download=_hub(tmp_path, got),
+    done = fakes.fetch_queue(db, snapshot=lambda **kw: None, free=900 * GIB, hf_download=_hub(tmp_path, got),
                         listing=lambda repo: sibs)
     db.close()
     assert got == [("org/X-GGUF", "X-IQ2_M.gguf")] and done[0]["ok"]

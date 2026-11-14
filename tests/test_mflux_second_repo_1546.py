@@ -9,6 +9,7 @@ import pytest
 
 from harness import downloads, engines, fetching, reasons, screen, stages
 from harness import memory_store as ms
+from tests import fakes
 
 GIB = fetching.GIB
 FREE = 900 * GIB
@@ -127,21 +128,10 @@ def test_a_text_lane_name_that_reads_like_lens_needs_nothing_more(db):
 def test_fetch_brings_the_second_repos_of_a_candidate_on_disk(db):
     queued_lens(db)
     snap = Snapshot()
-    done = fetching.run(db, {ENCODER: 12 * GIB, VAE: 1 * GIB}, snapshot=snap, free=FREE)
+    sizes = {ENCODER: 12 * GIB, VAE: 1 * GIB}
+    assert fetching.ensure(db, LENS, snapshot=snap, free=FREE, sizer=sizes.get) == ""
     assert sorted(snap.asked) == [ENCODER, VAE]
     assert fetching.missing(LENS, db) == []
-    assert all(d["ok"] for d in done if d["repo"] in (ENCODER, VAE))
-
-
-def test_the_second_repos_count_against_the_download_budget(db):
-    queued_lens(db)
-    snap = Snapshot()
-    done = fetching.run(db, {ENCODER: 12 * GIB, VAE: 2 * GIB}, snapshot=snap, free=FREE, budget=13 * GIB)
-    assert snap.asked == [ENCODER]
-    (vae,) = [d for d in done if d["repo"] == VAE]
-    assert not vae["ok"] and "budget" in vae["why"]
-    got = state_of(db, LENS)
-    assert got["outcome"] == "queued" and got["reason"] == reasons.LIMIT and VAE in got["detail"]
 
 
 def test_the_screen_waits_naming_the_missing_encoder(db):

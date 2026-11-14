@@ -41,60 +41,6 @@ def conn():
     c.close()
 
 
-# ---- day_fetch ------------------------------------------------------------------------------------
-
-def _at(hour, minute=30):
-    return datetime.now().replace(hour=hour, minute=minute, second=0, microsecond=0).timestamp()
-
-
-class _Proc:
-    pid, returncode = 4242, 0
-
-    def poll(self):
-        return 0
-
-    def wait(self, timeout=None):
-        return 0
-
-
-def _day(monkeypatch, hour, *, counter=True, stopped_s=0.0):
-    from harness import day_fetch, throttle
-    monkeypatch.setattr(day_fetch, "room", lambda conn, b: (3, "sized"))
-    monkeypatch.setattr(throttle, "available", lambda: counter)
-    return day_fetch.run(argparse.Namespace(budget_gib=None), clock=lambda: _at(hour), store=SimpleNamespace(
-        close=lambda: None), backlog=0, environ={day_fetch.ENABLE: "1"}, running=lambda root: [],
-        popen=lambda argv: _Proc(), counter=(lambda pid: SimpleNamespace(poll=lambda w: 0)) if counter else None,
-        hold=lambda proc, cap, read, **k: {"stopped_s": stopped_s})
-
-
-@pytest.mark.parametrize("hour,knob", [(21, "day_fetch_night_start"), (6, "day_fetch_night_end")])
-def test_the_night_refuses_a_day_fetch_and_says_which_edge_held_it(monkeypatch, hour, knob):
-    assert not _day(monkeypatch, hour)["started"]
-    assert _knobs() == [knob]
-
-
-def test_a_day_fetch_that_runs_unthrottled_records_nothing(monkeypatch):
-    assert _day(monkeypatch, 10)["started"]
-    assert _cuts() == []
-
-
-def test_a_day_fetch_paused_to_hold_its_rate_records_the_cap(monkeypatch):
-    assert _day(monkeypatch, 10, stopped_s=3.0)["started"]
-    assert _knobs() == ["day_fetch_cap"]
-
-
-def test_without_a_byte_counter_the_capped_hours_refuse_and_the_morning_window_ends_at_them(monkeypatch):
-    assert not _day(monkeypatch, 10, counter=False)["started"]
-    assert _knobs() == ["day_fetch_cap_end"]
-    assert _day(monkeypatch, 8, counter=False)["started"]
-    assert _knobs() == ["day_fetch_cap_end", "day_fetch_cap_start"]
-
-
-def test_without_a_byte_counter_an_evening_window_ends_at_night_and_records_nothing(monkeypatch):
-    assert _day(monkeypatch, 17, counter=False)["started"]
-    assert _cuts() == []
-
-
 # ---- degenerate -----------------------------------------------------------------------------------
 
 def test_a_short_budget_cut_reply_is_a_cut_of_the_measure_floor():
@@ -240,25 +186,6 @@ def test_a_pending_answer_seen_below_the_share_is_a_cut_of_the_share(conn, tmp_p
 
 
 # ---- disk and downloads ---------------------------------------------------------------------------
-
-def test_weights_evicted_past_the_screen_deadline_are_one_cut_per_cleanup(conn, tmp_path):
-    from harness import disk
-    now = 2_000_000_000.0
-    hub, gguf = tmp_path / "hub", tmp_path / "gguf"
-    gguf.mkdir()
-
-    def entry(name, fetched_at):
-        (hub / name).mkdir(parents=True)
-        ms.record(conn, ms.Seen(name=name, source="t"))
-        ms.decide(conn, name, "queued", tier="screen", at=now - 60)
-        return disk.Entry(path=str(hub / name), name=name, kind="hub", repo=name, size=1, mtime=now,
-                          group=disk.QUEUED, why="queued at screen", fetched_at=fetched_at, waits=[(name, "queued")])
-    late = [entry("a", now - disk.QUEUED_DEADLINE_S - 60), entry("b", now - disk.QUEUED_DEADLINE_S - 120)]
-    assert len(disk.evict(disk.Inventory(str(hub), str(gguf), late, [], []), now, conn)) == 2
-    assert _cuts() == [("queued_deadline", None, 2)]
-    fresh = [entry("c", now - 60)]
-    assert disk.evict(disk.Inventory(str(hub), str(gguf), fresh, [], []), now, conn) == []
-    assert len(_cuts()) == 1
 
 
 def test_a_fetching_row_nobody_holds_is_cleared_by_no_clock_and_no_cut(conn, tmp_path, monkeypatch):

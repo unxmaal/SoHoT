@@ -3,6 +3,7 @@ import pytest
 
 from harness import fetch_replay, fetching, funnel, rank, reasons, screen
 from harness import memory_store as ms
+from tests import fakes
 
 GIB = fetching.GIB
 DAY = 86400.0
@@ -57,14 +58,14 @@ def test_a_fetch_verdict_that_only_says_downloaded_is_not_a_download(conn):
 def test_the_funnel_does_not_read_a_reworded_download_back_as_a_skip(conn):
     seed(conn, "org/landed", 1, at=None)
     landed(conn, "org/landed", at=None)
-    got = next(r for r in funnel.proposals(conn, top=3, budget=40 * GIB) if r["name"] == "org/landed")
+    got = next(r for r in funnel.proposals(conn, top=3) if r["name"] == "org/landed")
     assert got["reason"] != fetching.SKIPPED
 
 
 def test_the_funnel_reads_a_skip_that_happens_to_say_downloaded_as_a_skip(conn):
     seed(conn, "org/said", 1, at=None)
     ms.decide(conn, "org/said", "queued", tier="fetch", reason=reasons.LIMIT, detail=fetching.DOWNLOADED_DETAIL)
-    got = next(r for r in funnel.proposals(conn, top=3, budget=40 * GIB) if r["name"] == "org/said")
+    got = next(r for r in funnel.proposals(conn, top=3) if r["name"] == "org/said")
     assert got["reason"] == fetching.SKIPPED
 
 
@@ -72,21 +73,10 @@ def test_a_fetch_run_marks_what_it_downloaded_by_event_whatever_it_says(conn, mo
     monkeypatch.setattr(fetching, "DOWNLOADED_DETAIL", REWORDED)
     for i in range(2):
         seed(conn, f"org/code-{i}")
-    got = fetching.run(conn, limit=2, free=1000 * GIB, budget=40 * GIB)
+    got = fakes.fetch_queue(conn, limit=2, free=1000 * GIB, budget=40 * GIB)
     assert [g["ok"] for g in got] == [True, True]
     said = conn.execute("SELECT detail, event FROM verdicts WHERE tier = 'fetch' ORDER BY id").fetchall()
     assert [tuple(r) for r in said] == [(REWORDED, fetching.DOWNLOADED)] * 2
-
-
-def test_a_dependency_wait_records_the_runs_budget_and_is_not_a_replayed_row(conn, monkeypatch):
-    monkeypatch.setattr(fetching, "requires", lambda name, conn=None: ["org/base"] if name == "org/top" else [])
-    seed(conn, "org/top")
-    fetching.run(conn, {"org/base": int(30 * GIB)}, limit=1, free=1000 * GIB, budget=40 * GIB)
-    said = conn.execute("SELECT detail, reason, budget_gib, event FROM verdicts WHERE tier = 'fetch' ORDER BY id").fetchall()
-    assert [(r["detail"].startswith("waiting on org/base"), r["reason"], r["budget_gib"], r["event"]) for r in said] == [
-        (False, reasons.CANDIDATE, 40.0, fetching.DOWNLOADED), (True, reasons.LIMIT, 40.0, "")]
-    runs = fetch_replay.runs(conn, 0)
-    assert [([x["name"] for x in r["rows"]], r["fetched"]) for r in runs] == [(["org/top"], ["org/top"])]
 
 
 @pytest.mark.gauntlet("a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null",

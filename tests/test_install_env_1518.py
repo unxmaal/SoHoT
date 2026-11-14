@@ -72,7 +72,7 @@ def test_reinstall_with_an_empty_environment_renders_the_recorded_weights_and_fl
     weights = tmp_path / "weights"
     weights.mkdir()
     _record(tmp_path, HF_HOME=weights, HF_MIN_FREE_GB=0, PATH=f"{fakes}:{marked}:/usr/bin:/bin",
-            LH_DAY_FETCH=1, LH_WATCHDOG_ACT=1, FETCH_HOURS=9)
+            LH_WATCHDOG_ACT=1, SWEEP_CHECK_HOURS=9)
     got, units = _run(tmp_path, "reinstall", {})
     assert got.returncode == 0, got.stdout + got.stderr
     assert units and set(units) == set(install_env.services())
@@ -80,8 +80,7 @@ def test_reinstall_with_an_empty_environment_renders_the_recorded_weights_and_fl
         env = unit["EnvironmentVariables"]
         assert (env.get("HF_HOME"), env.get("HF_ROOT")) == (str(weights), str(weights)), name
         assert env.get("LH_UNIT") == name, "launchd reruns each unit, which a newer store waits on (#1959)"
-    assert units["fetch"]["EnvironmentVariables"]["LH_DAY_FETCH"] == "1"
-    assert [d["Hour"] for d in units["fetch"]["StartCalendarInterval"]] == [9]
+    assert [d["Hour"] for d in units["sweep-check"]["StartCalendarInterval"]] == [9]
     assert units["watchdog"]["EnvironmentVariables"]["LH_WATCHDOG_ACT"] == "1"
     assert (tmp_path / "uv-ran").exists(), "uv is found only on the recorded PATH"
 
@@ -93,10 +92,10 @@ def test_reinstall_ignores_what_its_caller_says(tmp_path):
     for d in (weights, wrong):
         d.mkdir(parents=True)
     _record(tmp_path, HF_HOME=weights, HF_MIN_FREE_GB=0, PATH=f"{fakes}:{marked}:/usr/bin:/bin")
-    got, units = _run(tmp_path, "reinstall", {"HF_HOME": str(wrong), "HF_ROOT": str(wrong), "LH_DAY_FETCH": "1"})
+    got, units = _run(tmp_path, "reinstall", {"HF_HOME": str(wrong), "HF_ROOT": str(wrong), "LH_WATCHDOG_ACT": "1"})
     assert got.returncode == 0, got.stdout + got.stderr
     assert {u["EnvironmentVariables"]["HF_HOME"] for u in units.values()} == {str(weights)}
-    assert "LH_DAY_FETCH" not in units["fetch"]["EnvironmentVariables"]
+    assert "LH_WATCHDOG_ACT" not in units["watchdog"]["EnvironmentVariables"]
 
 
 @darwin
@@ -122,11 +121,11 @@ def test_a_manual_install_records_what_it_read_and_a_later_one_keeps_it(tmp_path
     weights = tmp_path / "weights"
     weights.mkdir()
     path = f"{fakes}:{marked}:/usr/bin:/bin"
-    got, _ = _run(tmp_path, "install", {"HF_HOME": str(weights), "HF_MIN_FREE_GB": "0", "LH_DAY_FETCH": "1",
+    got, _ = _run(tmp_path, "install", {"HF_HOME": str(weights), "HF_MIN_FREE_GB": "0", "LH_REVIEW_FILE": "1",
                                         "PATH": path})
     assert got.returncode == 0, got.stdout + got.stderr
     rec = install_env.read(tmp_path / "lh" / deploy_switch.INSTALL_ENV)
-    assert rec == {"HF_HOME": str(weights), "HF_MIN_FREE_GB": "0", "PATH": path, "LH_DAY_FETCH": "1"}
+    assert rec == {"HF_HOME": str(weights), "HF_MIN_FREE_GB": "0", "PATH": path, "LH_REVIEW_FILE": "1"}
     got, units = _run(tmp_path, "install", {"PATH": path})
     assert got.returncode == 0, got.stdout + got.stderr
     assert install_env.read(tmp_path / "lh" / deploy_switch.INSTALL_ENV) == rec

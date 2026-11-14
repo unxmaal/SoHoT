@@ -13,6 +13,7 @@ from evals.runners.text import CompletionRunner
 from harness import downloads, fetching, gguf, router
 from harness import memory_store as ms
 from harness.loopback import ThreadingHTTPServer
+from tests import fakes
 
 #: The real one: conftest swaps the module attribute for a stub in every test.
 REFRESH = gguf.refresh_router
@@ -217,7 +218,7 @@ def test_a_whole_gguf_repo_fetched_by_the_loop_restarts_the_router_before_the_sc
         fakes.hub_ref(snap)
         return snap
 
-    done = fetching.run(db, snapshot=snapshot, free=900 * GIB)
+    done = fakes.fetch_queue(db, snapshot=snapshot, free=900 * GIB)
     assert done[0]["ok"], done
     assert gguf.fetched("org/Nemo-4B", db) == STEM
     assert _no_real_services == [(STEM,)]

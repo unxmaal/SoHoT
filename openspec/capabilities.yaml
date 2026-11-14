@@ -94,15 +94,13 @@ capabilities:
       - harness/inspect.py
 
   - name: fetch-weights
-    summary: Downloading queued weights durably, what the cache holds, and what may be obtained or fit.
+    summary: Fetching the weights a test is about to run, removing what no test is about to run, and what may be obtained or fit.
     spec: pending
     modules:
       - harness/fetching.py
-      - harness/day_fetch.py
       - harness/fetch_replay.py
       - harness/downloads.py
       - harness/disk.py
-      - harness/throttle.py
       - harness/obtainable.py
       - harness/quants.py
       - harness/variants.py
@@ -113,6 +111,7 @@ capabilities:
       - harness/commands/quarantine.py
       - harness/relist.py
       - harness/commands/relist.py
+      - harness/test_weights.py
 
   - name: discovery-sources
     summary: Feeds, registries, papers, posts and neighbours that propose candidates, techniques and benchmarks.

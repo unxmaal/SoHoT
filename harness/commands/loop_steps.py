@@ -29,10 +29,11 @@ STEPS = (Step("sweep", "sweep", resources.NETWORK),
          Step("reverify", "reverify", resources.CPU),
          Step("knob-sweeps", "knob sweeps", resources.CPU),
          Step("disk", "disk", resources.DISK),
-         Step("fetch", "fetch", resources.NETWORK),
          Step("screen", "screen", resources.GPU),
          Step("measure", "measure", resources.GPU))
 NAMES = tuple(s.name for s in STEPS)
+#: A step the sweep no longer has -> the one that does its work now; a job queued before a deploy runs that. #2015.
+RETIRED = {"fetch": "screen"}
 #: The loop options a step carries to the next: (attribute, flag).
 CARRIED = (("lane", "--lane"), ("top", "--top"), ("budget_gib", "--budget-gib"), ("repeat", "--repeat"),
            ("ceiling_h", "--ceiling-h"), ("effect", "--effect"), ("power_budget_min", "--power-budget-min"))
@@ -198,8 +199,6 @@ def _body(name: str, a, sweep, failed: list) -> int:
     if name == "queue":
         rc = lc._tier(a, "queue", "queue", failed)
         return lc._report(a, failed) or rc
-    if name == "fetch":
-        return lc._fetch(a, lc._sized(int(getattr(a, "top", 0) or 0), sweep), failed)
     if name == "screen":
         return lc._screen(a, sweep, lc._sized(int(getattr(a, "top", 0) or 0), sweep), failed)
     if name == "measure":
@@ -259,7 +258,7 @@ def _already(name: str, cycle: str) -> str:
 def run_step(a) -> int:
     """One step of a queued sweep: under the sweep's lease and heartbeat, then its successor queued whatever it returned."""
     from harness import ceiling, heartbeat, power
-    name, cycle = a.step, str(a.cycle or "")
+    name, cycle = RETIRED.get(a.step, a.step), str(a.cycle or "")
     if not cycle:
         print("--step needs --cycle: the sweep it belongs to", file=sys.stderr)
         return 2

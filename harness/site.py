@@ -406,15 +406,13 @@ def intro_lanes() -> str:
 
 def loop_steps() -> tuple[tuple[str, str], ...]:
     from harness import adopt
-    budget = shell_default("scripts/serve-discover.sh", "DISCOVER_BUDGET_GIB")
     return (
         ("sweep", "Reads the model registries, the places practitioners talk, and what the "
                   "people who build your tools star on GitHub."),
         ("inspect", "Reads each candidate's source or model card, without downloading weights "
                     "or running anything, and drops what cannot run on this machine."),
-        ("fetch", "Downloads what inspect queued, inside its own disk budget: "
-                  f"{budget} GiB a night unless you set another."),
-        ("screen", "One minimal run that answers one question: did it run and emit anything."),
+        ("screen", "Downloads one candidate right before one minimal run that answers one question: did it run "
+                   "and emit anything. Weights no test is about to use are removed."),
         ("measure", "The lane's cases, paired against the model it would replace. When dev and "
                     "held-out cases will not both fit the time budget, it runs the held-out ones."),
         ("adopt", "Replaces the incumbent on a significant paired win on held-out cases, or by "

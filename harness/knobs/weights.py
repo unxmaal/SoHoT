@@ -24,8 +24,6 @@ KNOBS = [
        note="the largest weight this machine can hold; measured on 32 GB and scaled by RAM (#96)"),
     _k("quants_tries", ["harness/quants.py:TRIES"], [2, 4, 8],
        note="quantized descendants inspected per too-big or unloadable base before giving up; each is one registry call (#882)"),
-    _k("screen_backlog", ["harness/fetching.py:SCREEN_BACKLOG"], [100 * GIB, 200 * GIB, 400 * GIB, 800 * GIB],
-       note="bytes of fetched weights waiting for a screen above which fetch takes nothing; about 2-3 days of screens at the 2026-11 rate of ~80 GiB a day (#2011)"),
     _k("size_limit", ["harness/inspect.py:SIZE_LIMIT"], [2, 4, 12, 24, 64], probe="size_limit",
        note="how many named weights get sized per repo"),
 ]

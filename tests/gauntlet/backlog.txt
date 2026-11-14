@@ -370,7 +370,6 @@ a-wait-with-no-deadline-owner-or-end-state harness/sweeps.py:MOVES:not_binding
 a-wait-with-no-deadline-owner-or-end-state harness/sweeps.py:MOVES:not_binding_lane
 a-wait-with-no-deadline-owner-or-end-state harness/sweeps.py:MOVES:uninformative
 a-wait-with-no-deadline-owner-or-end-state harness/sweeps.py:MOVES:unrun
-a-wait-with-no-deadline-owner-or-end-state harness/throttle.py:_hold
 a-wait-with-no-deadline-owner-or-end-state harness/throughput.py:_Peak._run
 a-wait-with-no-deadline-owner-or-end-state harness/workqueue.py:leased.keep
 a-wait-with-no-deadline-owner-or-end-state harness/workqueue.py:run_pending
@@ -470,7 +469,6 @@ nothing-and-failed-return-the-same-value harness/cuts.py:_grouped:except
 nothing-and-failed-return-the-same-value harness/cuts.py:_machine_id:except
 nothing-and-failed-return-the-same-value harness/cuts.py:_own_store:chooser
 nothing-and-failed-return-the-same-value harness/cuts.py:_spooled:except
-nothing-and-failed-return-the-same-value harness/day_fetch.py:_release:except
 nothing-and-failed-return-the-same-value harness/deploy.py:_read:except
 nothing-and-failed-return-the-same-value harness/deploy.py:backup:chooser
 nothing-and-failed-return-the-same-value harness/deploy.py:confirm:except

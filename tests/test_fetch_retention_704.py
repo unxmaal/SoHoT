@@ -17,6 +17,7 @@ from tests.test_harness_disk import NOW, DAY, _blob, inv, make_repo, verdict, wo
 from tests.test_harness_fetching_budget import _seed, _sizes, store  # noqa: F401
 from tests.test_harness_inspect import tree
 from tests.test_harness_registry import _no_model
+from tests import fakes
 
 GIB = fetching.GIB
 REPO = Path(__file__).resolve().parents[1]
@@ -28,18 +29,10 @@ def _latest_fetch(conn, name):
         "WHERE p.name = ? AND v.tier = 'fetch' ORDER BY v.id DESC LIMIT 1", (name,)).fetchone()
 
 
-def test_a_candidate_bigger_than_the_whole_budget_says_what_would_end_the_wait(store):
-    _seed(store, "org/huge", 45)
-    fetching.run(store, _sizes(store), limit=5, free=500 * GIB, budget=int(40 * GIB))
-    row = _latest_fetch(store, "org/huge")
-    assert row["outcome"] == "queued"
-    assert row["until"] == "limit:download_budget_gib>40"
-
-
 def test_a_candidate_over_only_what_is_left_of_the_budget_waits_for_the_next_sweep(store):
     _seed(store, "org/a-first", 30)
     _seed(store, "org/b-second", 20)
-    fetching.run(store, _sizes(store), limit=5, free=500 * GIB, budget=int(40 * GIB))
+    fakes.fetch_queue(store, _sizes(store), limit=5, free=500 * GIB, budget=int(40 * GIB))
     row = _latest_fetch(store, "org/b-second")
     assert row["outcome"] == "queued" and not row["until"]
 
@@ -258,36 +251,6 @@ def test_the_budget_registry_reads_the_environment_the_sweep_runs_with(monkeypat
     assert knobs.KNOBS["download_budget"].default() == 30
 
 
-def test_a_manual_run_with_no_budget_uses_the_registered_budget(tmp_path, monkeypatch):
-    from harness import cli
-    from harness.commands import screen as screen_cmd
-    monkeypatch.delenv("DISCOVER_BUDGET_GIB", raising=False)
-    a = cli.build_parser().parse_args(["discover"])
-    assert a.budget_gib is None or a.budget_gib == 80
-    seen = {}
-
-    def run(conn, *args, budget=None, **kw):
-        seen["budget"] = budget
-        return []
-    monkeypatch.setattr(fetching, "run", run)
-    monkeypatch.setattr(fetching, "queued", lambda *a, **k: [{"name": "org/x", "lane": "code"}])
-    screen_cmd.cmd_fetch(type("A", (), {"run": True, "limit": 1, "lane": "", "budget_gib": a.budget_gib,
-                                        "json": False})())
-    assert seen["budget"] == 80 * GIB
-
-
-def test_a_candidate_waiting_on_a_bigger_budget_is_not_retried_at_the_same_budget(store):
-    _seed(store, "org/huge", 45)
-    sizes = _sizes(store)
-    fetching.run(store, sizes, limit=5, free=500 * GIB, budget=int(40 * GIB))
-    before = store.execute("SELECT COUNT(*) FROM verdicts").fetchone()[0]
-    got = fetching.run(store, sizes, limit=5, free=500 * GIB, budget=int(40 * GIB))
-    assert got == []
-    assert store.execute("SELECT COUNT(*) FROM verdicts").fetchone()[0] == before
-    got = fetching.run(store, sizes, limit=5, free=500 * GIB, budget=int(80 * GIB))
-    assert [g["repo"] for g in got if g["ok"]] == ["org/huge"]
-
-
 def test_retry_after_as_an_http_date_is_honoured():
     from email.utils import formatdate
     when = formatdate(time.time() + 60, usegmt=True)
@@ -296,24 +259,3 @@ def test_retry_after_as_an_http_date_is_honoured():
     assert ratelimit.wait_s("not a date", 2) == 4.0
 
 
-def test_a_loop_run_with_no_budget_fetches_with_the_registered_budget(monkeypatch, capsys):
-    import argparse
-    from harness.commands import discover as discover_cmd, loop as loop_cmd
-    from harness.commands import measure as measure_cmd, screen as screen_cmd
-    monkeypatch.delenv("DISCOVER_BUDGET_GIB", raising=False)
-    seen = {}
-
-    def run(conn, *args, budget=None, **kw):
-        seen["budget"] = budget
-        return []
-    monkeypatch.setattr(fetching, "run", run)
-    monkeypatch.setattr(fetching, "queued", lambda *a, **k: [{"name": "org/x", "lane": "code"}])
-    monkeypatch.setattr(disk, "sweep", lambda *a, **k: {})
-    for name in ("_reopen_retests", "_reverify", "_sweeps"):
-        monkeypatch.setattr(loop_cmd, name, lambda *a, **k: {})
-    monkeypatch.setattr(screen_cmd, "screenable_backlog", lambda want="": [])
-    monkeypatch.setattr(discover_cmd, "cmd_discover", lambda a: 0)
-    monkeypatch.setattr(measure_cmd, "measurable", lambda store, top, want="": [])
-    loop_cmd._loop_spend(argparse.Namespace(top=1, budget_gib=None, lane=""), 0)
-    assert seen["budget"] == 80 * GIB
-    assert "budget 80 GiB" in capsys.readouterr().out

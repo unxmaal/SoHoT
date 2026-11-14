@@ -291,8 +291,7 @@ def test_the_numbers_in_the_prose_are_the_module_constants():
     assert f"up to {transitions.RETESTS} times" in front
     assert f"after {gateway_switch.MAX_WAIT_S / 60:.0f} minutes" in front
     assert f"idle for {gateway_switch.IDLE_S:.0f} seconds" in front
-    assert re.search(r'DISCOVER_BUDGET_GIB:-(\d+)', (ROOT / "scripts" / "serve-discover.sh")
-                     .read_text(encoding="utf-8")).group(1) + " GiB" in front
+    assert "right before one minimal run" in front and "budget" not in front.split("screen", 1)[0]
 
 
 def test_a_changed_constant_changes_the_page(monkeypatch):
@@ -300,11 +299,10 @@ def test_a_changed_constant_changes_the_page(monkeypatch):
     monkeypatch.setattr(adopt, "MIN_VOTES", 77)
     read, default = site.constant, site.shell_default
     monkeypatch.setattr(site, "constant", lambda rel, name: 3000.0 if name == "MAX_WAIT_S" else read(rel, name))
-    monkeypatch.setattr(site, "shell_default", lambda rel, var: "99" if var == "DISCOVER_BUDGET_GIB"
-                        else "4123" if var == "GATEWAY_PORT" else default(rel, var))
+    monkeypatch.setattr(site, "shell_default", lambda rel, var: "4123" if var == "GATEWAY_PORT" else default(rel, var))
     front = _text(site.render(_machines(), now=NOW)["index.html"])
     assert "at least 77 votes" in front
-    assert "after 50 minutes" in front and "99 GiB" in front and "<host>:4123" in front
+    assert "after 50 minutes" in front and "<host>:4123" in front
 
 
 def test_constants_read_from_source_match_the_imported_modules():

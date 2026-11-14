@@ -374,8 +374,6 @@ WALL_BOUND_WAIVERS = {
         "Clock patched onto agent and craft_runner time: the wall is fake time",
     "tests/test_busy_wait_timing_776.py:test_a_repo_repair_case_deadline_and_wall_leave_out_a_busy_wait":
         "Clock patched onto agent and repo_repair time: the seconds are fake time",
-    "tests/test_throttle_1084.py:test_outside_the_capped_hours_it_runs_at_line_rate":
-        "clock=lambda: w.t, a simulated line: the seconds are the simulation's",
     "tests/test_over_budget_796.py:test_a_receipt_at_a_smaller_reply_budget_bounds_the_incumbent":
         "incumbent_s is an estimate from stored rows, compared with another estimate; nothing is timed",
 }
@@ -725,3 +723,52 @@ def stub_bindings(text, rel, stubs=None):
                 found.add((d.lineno, f"binds {ast.unparse(d)} as a default"))
     return out + [f"{rel}:{line}: {why}, so conftest's stub of it never reaches this module"
                   for line, why in sorted(found)]
+
+
+#: The only modules that may download from the hub, and why each may; a candidate's weights only through fetching. #2015.
+DOWNLOAD_SITES = {
+    "harness/fetching.py": "the test's own fetch: a screen, measurement or confirmation fetches what it runs",
+    "harness/gguf.py": "a GGUF for the router, for a test or an adopted model on a machine lacking it",
+    "harness/ds4.py": "a ds4 GGUF a person fetches, or an adopted one served on a machine lacking it",
+    "harness/checks/adherence.py": "the pinned HPSv2 scorer the image checks run",
+    "harness/checks/staging.py": "the pinned OWLv2 detector the staging check runs",
+    "harness/decider_score.py": "the pinned decider scorer",
+    "harness/nimble_score.py": "the pinned nimble scorer",
+    "harness/needle.py": "the pinned needle runner",
+    "harness/llama_vlm.py": "the vision labeller a by-hand vision run loads, by revision",
+    "harness/mlx_vlm_label.py": "config.json only, metadata",
+    "harness/chaos.py": "fault scenarios in a scratch home",
+    "evals/swebench.py": "a dataset, not weights",
+    "scripts/fetch-h3-weights.sh": "a by-hand engine install",
+    "scripts/setup-omnisvg.sh": "a by-hand engine install",
+}
+_DOWNLOADERS = {"snapshot_download", "hf_hub_download"}
+_DOWNLOAD_CLI = re.compile(r"\b(?:hf|huggingface-cli)\s+download\b")
+
+
+def hf_downloads(text, rel):
+    """A hub download outside DOWNLOAD_SITES: a call, an import of one, or the hf download CLI in a string (#2015)."""
+    if rel in DOWNLOAD_SITES:
+        return []
+    tree, out = _parse(text, rel)
+    if tree is None:
+        return out
+    lines = set()
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Call) and _call_name(n) in _DOWNLOADERS:
+            lines.add(n.lineno)
+        elif isinstance(n, ast.ImportFrom) and any(a.name in _DOWNLOADERS for a in n.names):
+            lines.add(n.lineno)
+        elif isinstance(n, ast.Constant) and isinstance(n.value, str) and _DOWNLOAD_CLI.search(n.value):
+            lines.add(n.lineno)
+    return out + [f"{rel}:{line}: downloads from the hub outside the allowed sites; a candidate's weights come "
+                  "only through harness.fetching, as its test starts" for line in sorted(lines)]
+
+
+def hf_downloads_shell(text, rel):
+    """The same, in a shell script: a python download call or the hf download CLI outside DOWNLOAD_SITES (#2015)."""
+    if rel in DOWNLOAD_SITES:
+        return []
+    return [f"{rel}:{i}: downloads from the hub outside the allowed sites" for i, line in enumerate(text.splitlines(), 1)
+            if not line.lstrip().startswith("#")
+            and (_DOWNLOAD_CLI.search(line) or any(f"{d}(" in line or f"import {d}" in line for d in _DOWNLOADERS))]

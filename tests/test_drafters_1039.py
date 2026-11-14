@@ -11,6 +11,7 @@ from harness import inspect as ins
 from harness import memory_store as ms
 from harness.commands import measure as measure_cmd
 from harness.commands import screen as screen_cmd
+from tests import fakes
 
 CARDS = Path(__file__).parent / "fixtures" / "registry" / "drafters_1039"
 #: eval.log lines 1092571-1092613: the Alittlehammmer drafter on llama.cpp 0.5.0, port 49215, verdict 12827.
@@ -92,7 +93,7 @@ def test_inspect_then_fetch_declines_a_drafter_without_downloading_it(tmp_path, 
         ms.set_size(conn, repo, 4 * GIB)
         assert ms.set_card(conn, repo, ins.card_facts(_card(repo)))
         ms.decide(conn, repo, "queued", tier="inspect", detail="fits")
-        got = fetching.run(conn, {repo: 4 * GIB}, limit=1,
+        got = fakes.fetch_queue(conn, {repo: 4 * GIB}, limit=1,
                            snapshot=lambda *a, **k: pytest.fail("a drafter must never be downloaded"))
         assert got and not got[0]["ok"] and "attaches to a model" in got[0]["why"]
         v = conn.execute("SELECT v.outcome, v.tier, v.reason, v.until FROM verdicts v JOIN proposals p "

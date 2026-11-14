@@ -1,12 +1,11 @@
 """A registry 429 on the fetch tier's listing: the id printed once, the rest of the tier deferred. #675."""
-import types
 
 import httpx
 import pytest
 
 from harness import feeds, fetching, ratelimit
 from harness import memory_store as ms
-from harness.commands import screen as screen_cmd
+from tests import fakes
 
 GIB = 1024 ** 3
 REPOS = ["org/First-4B-GGUF", "org/Second-4B-GGUF", "org/Third-4B-GGUF"]
@@ -41,8 +40,12 @@ def queue(tmp_path, monkeypatch):
 
 
 def _fetch(capsys):
-    rc = screen_cmd.cmd_fetch(types.SimpleNamespace(run=True, limit=5, lane="", budget_gib=None))
-    return rc, capsys.readouterr().out
+    db = ms.connect()
+    try:
+        got = fakes.fetch_queue(db, limit=5)
+    finally:
+        db.close()
+    return 0, "\n".join(f"skip {g['repo']}: {g['why']}" for g in got if not g["ok"])
 
 
 def test_a_429_listing_prints_the_repo_id_once(queue, capsys):
@@ -71,7 +74,7 @@ def test_a_rate_limited_listing_defers_the_rest_of_the_tier_and_exits_0(queue, c
 def test_a_rate_limited_listing_is_marked_deferred_in_the_tier_result(queue):
     db = ms.connect()
     try:
-        done = fetching.run(db, limit=5)
+        done = fakes.fetch_queue(db, limit=5)
     finally:
         db.close()
     assert len(done) == 1 and done[0]["repo"] in REPOS
@@ -85,7 +88,7 @@ def test_a_listing_failure_other_than_429_names_the_repo_once_and_moves_on(queue
     monkeypatch.setattr(httpx, "get", get)
     db = ms.connect()
     try:
-        done = fetching.run(db, limit=5)
+        done = fakes.fetch_queue(db, limit=5)
     finally:
         db.close()
     assert sorted(d["repo"] for d in done) == REPOS

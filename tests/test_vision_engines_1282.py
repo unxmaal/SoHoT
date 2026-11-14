@@ -14,6 +14,7 @@ from harness import memory_store as ms
 from harness.checks import shot_scale as ss
 from harness.commands import vision as cmd
 from harness.memory_store import revisit
+from tests import fakes
 
 ROOT = Path(__file__).resolve().parents[1]
 SHIPPED = ROOT / "evals" / "cases" / "vision"
@@ -141,7 +142,7 @@ def test_fetch_does_not_download_a_vision_candidate_and_names_the_command_that_r
               "queued", ms.INSPECT, "fits", reason=reasons.CANDIDATE, lane="vision")
         ms.set_size(conn, name, fetching.GIB)
         asked = []
-        done = fetching.run(conn, limit=5, free=900 * fetching.GIB,
+        done = fakes.fetch_queue(conn, limit=5, free=900 * fetching.GIB,
                             snapshot=lambda *a, **k: asked.append(a) or "",
                             listing=lambda repo: [{"rfilename": "model.safetensors", "size": 100}])
         assert asked == [] and not done[0]["ok"]

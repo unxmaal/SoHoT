@@ -13,10 +13,10 @@ That is the right question because it is how things have actually failed here
 null content behind a passing rate. Almost nothing has failed by running and
 scoring slightly worse.
 
-IT NEVER DOWNLOADS. Fetching is its own explicit step (`lh fetch --run`) with
-its own disk budget, and a tier that quietly pulls gigabytes because something
-ranked well is how a laptop fills up overnight. A candidate whose weights are
-absent is reported as waiting on a fetch, not screened and not failed.
+THE SCREEN FETCHES WHAT IT RUNS, right before it runs it, and nothing else
+does: a queue of weights downloaded ahead of the test that uses them filled
+the models volume (#2015). A candidate whose weights are absent is planned as
+waiting, and the screen run fetches it when its turn comes.
 """
 from __future__ import annotations
 
@@ -466,15 +466,15 @@ def plan(rows, *, missing=None) -> list[dict]:
                 else "no lane, so no case and no metric")
         elif absent == [target] and target != name:
             state, why = WAITING, (f"its base's weights, {target}, are not on disk; "
-                                   f"soh fetch --run")
+                                   f"the screen fetches them as it starts")
         elif absent == [name]:
-            state, why = WAITING, "weights are not on disk; soh fetch --run"
+            state, why = WAITING, "weights are not on disk; the screen fetches them as it starts"
         elif absent:
             # NAME WHAT IS MISSING. "not ready" without the id sends whoever
             # reads it back to the server log to find out what to fetch.
             state, why = WAITING, (
                 f"needs {', '.join(absent)}, which its config or its runner names and "
-                f"nothing has fetched; soh fetch --run")
+                f"nothing has fetched; the screen fetches them as it starts")
         else:
             state, why = READY, f"evals.run --modality {lane} --screen"
         out.append({**row, "state": state, "why_not": why, "candidate": spec,

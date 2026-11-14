@@ -246,3 +246,27 @@ def test_a_confirmation_does_not_record_a_finished_run_from_before_the_hold(conn
     monkeypatch.setattr(measure_cmd, "_receipt_at", lambda at: data if at == old else fresh(at))
     assert measure_cmd.confirm_job(vid) == 0
     assert [c["out"] == old for c in seen["calls"]] == [False]
+
+
+def test_a_confirmation_whose_weights_cannot_be_fetched_runs_nothing_and_waits_for_its_continuation(
+        conn, tmp_path, monkeypatch, capsys):
+    from harness import test_weights
+    vid = _held(conn, tmp_path, monkeypatch)
+    conn.execute("DELETE FROM jobs")
+    conn.commit()
+    monkeypatch.setattr(test_weights, "fetched", lambda name: "network down")
+    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: pytest.fail("ran without its weights"))
+    assert measure_cmd.confirm_job(vid) == watch.PAUSED
+    assert "not started: its weights could not be fetched: network down" in capsys.readouterr().out
+    assert [j["argv"][-2:] for j in workqueue.pending(conn)] == [["--confirm", str(vid)]]
+
+
+def test_a_confirmation_that_ends_removes_its_weights_and_a_paused_one_keeps_them(conn, tmp_path, monkeypatch):
+    from harness import test_weights
+    released = []
+    monkeypatch.setattr(test_weights, "release_verdict", released.append)
+    for rc, want in ((0, [7]), (1, [7]), (watch.PAUSED, [])):
+        released.clear()
+        monkeypatch.setattr(measure_cmd, "_confirm_job", lambda vid, rc=rc: rc)
+        assert measure_cmd.confirm_job(7) == rc
+        assert released == want, rc

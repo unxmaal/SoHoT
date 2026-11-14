@@ -502,13 +502,6 @@ def _no_real_launchd_units(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def _no_real_strays(monkeypatch):
-    """No test lists, and so none reaps, this machine's real stopped downloads or nettops. #1092."""
-    from harness import throttle
-    monkeypatch.setattr(throttle, "_ps", lambda: "")
-
-
-@pytest.fixture(autouse=True)
 def _no_real_contention(monkeypatch):
     """No queue test waits on this machine's memory pressure; a test of the gate restores workqueue._contended.real. #1509."""
     from harness import workqueue
@@ -657,6 +650,13 @@ def _no_real_hub_download(request, monkeypatch):
         raise RuntimeError(f"a test asked the real Hugging Face Hub for {a or k}")
     monkeypatch.setattr(huggingface_hub, "hf_hub_download", refuse)
     monkeypatch.setattr(huggingface_hub, "snapshot_download", refuse)
+
+
+@pytest.fixture(autouse=True)
+def _no_real_test_fetch(monkeypatch):
+    """No measurement or confirmation fetches its weights from the hub as it starts; a test names its own. #2015."""
+    from harness import test_weights
+    monkeypatch.setattr(test_weights, "fetched", lambda name: "")
 
 
 @pytest.fixture(autouse=True)

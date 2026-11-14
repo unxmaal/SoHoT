@@ -10,6 +10,7 @@ from evals import core, run
 from evals.core import Case, load_cases, score, summarize
 from harness import completion, engines, lanes, screen
 from harness.checks import decide
+from tests import fakes
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = load_cases(ROOT / "evals" / "cases" / "decide")
@@ -773,7 +774,7 @@ def test_the_fetch_tier_queues_an_adapter_no_engine_is_known_to_load(tmp_path):
         fakes.carded(conn, "org/qwen-lora", {
             "library_name": "peft", "tags": ["lora", "base_model:adapter:Qwen/Qwen3.5-9B"]})
         ms.decide(conn, "org/qwen-lora", "queued", tier="inspect", detail="fits")
-        got = fetching.run(conn, {"org/qwen-lora": 100 * 1024 ** 2}, limit=1,
+        got = fakes.fetch_queue(conn, {"org/qwen-lora": 100 * 1024 ** 2}, limit=1,
                            snapshot=lambda *a, **k: pytest.fail("no engine loads it"))
         assert got and not got[0]["ok"]
         assert "no decide engine is known to load" in got[0]["why"]

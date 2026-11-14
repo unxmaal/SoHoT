@@ -3,6 +3,7 @@ import pytest
 
 from harness import fetching as f
 from harness import memory_store as ms
+from tests import fakes
 
 
 @pytest.fixture
@@ -79,7 +80,7 @@ def test_one_at_a_time_by_default(db):
     for name in ["org/a", "org/b"]:
         seen(db, name)
         ms.decide(db, name, "queued", tier="inspect")
-    f.run(db, {"org/a": 2 * f.GIB, "org/b": 2 * f.GIB},
+    fakes.fetch_queue(db, {"org/a": 2 * f.GIB, "org/b": 2 * f.GIB},
           snapshot=lambda repo_id: calls.append(repo_id) or "/tmp/x",
           free=900 * f.GIB)
     assert len(calls) == 1
@@ -89,7 +90,7 @@ def test_something_too_big_is_declined_permanently(db):
     """Terminal, so the same oversized model is not re-queued every sweep."""
     seen(db, "org/huge")
     ms.decide(db, "org/huge", "queued", tier="inspect")
-    f.run(db, {"org/huge": 500 * f.GIB}, snapshot=lambda **kw: "/x",
+    fakes.fetch_queue(db, {"org/huge": 500 * f.GIB}, snapshot=lambda **kw: "/x",
           free=900 * f.GIB)
     assert "org/huge" in ms.settled(db)
 
@@ -102,7 +103,7 @@ def test_a_failed_download_does_not_condemn_the_candidate(db):
     def boom(repo_id):
         raise RuntimeError("connection reset")
 
-    got = f.run(db, {"org/a": 2 * f.GIB}, snapshot=boom, free=900 * f.GIB)
+    got = fakes.fetch_queue(db, {"org/a": 2 * f.GIB}, snapshot=boom, free=900 * f.GIB)
     assert got[0]["ok"] is False
     assert "org/a" not in ms.settled(db)
 
@@ -120,7 +121,7 @@ def test_a_finished_download_records_where_it_landed(db):
         import fakes
         fakes.hub_ref(snap)
         return str(snap)
-    f.run(db, {"org/a": 2 * f.GIB}, snapshot=fetch, free=900 * f.GIB)
+    fakes.fetch_queue(db, {"org/a": 2 * f.GIB}, snapshot=fetch, free=900 * f.GIB)
     row = db.execute("SELECT run_path FROM verdicts WHERE tier='fetch'").fetchone()
     assert row["run_path"] == ""
     got = db.execute("SELECT * FROM downloads").fetchone()
@@ -186,7 +187,7 @@ def test_a_refusal_does_not_consume_the_download_budget(db):
         if name != "org/unsized":
             ms.set_size(db, name, 2000000000)
         ms.decide(db, name, "queued", tier="inspect", score=score)
-    f.run(db, {"org/real": 2 * f.GIB}, limit=1,
+    fakes.fetch_queue(db, {"org/real": 2 * f.GIB}, limit=1,
           snapshot=lambda repo_id: calls.append(repo_id) or "/tmp/x",
           free=900 * f.GIB)
     assert calls == ["org/real"]
@@ -203,7 +204,7 @@ def test_a_weight_with_no_lane_is_not_downloaded(db):
     seen(db, "org/orphan", lane="")
     for n in ("org/measurable", "org/orphan"):
         ms.decide(db, n, "queued", tier="inspect")
-    f.run(db, {"org/measurable": 2 * f.GIB, "org/orphan": 2 * f.GIB}, limit=5,
+    fakes.fetch_queue(db, {"org/measurable": 2 * f.GIB, "org/orphan": 2 * f.GIB}, limit=5,
           snapshot=lambda repo_id: calls.append(repo_id) or "/tmp/x",
           free=900 * f.GIB)
     assert calls == ["org/measurable"]
@@ -221,7 +222,7 @@ def test_a_laneless_weight_is_not_declined(db):
     """Terminal would mean answered, and it is not: it is waiting on a lane."""
     seen(db, "org/orphan", lane="")
     ms.decide(db, "org/orphan", "queued", tier="inspect")
-    f.run(db, {"org/orphan": 2 * f.GIB}, snapshot=lambda **kw: "/x",
+    fakes.fetch_queue(db, {"org/orphan": 2 * f.GIB}, snapshot=lambda **kw: "/x",
           free=900 * f.GIB)
     assert "org/orphan" not in ms.settled(db)
 
@@ -309,7 +310,7 @@ def test_fetching_a_model_also_fetches_what_its_config_names(db, tmp_path, monke
     monkeypatch.setattr(f, "plan",
                         lambda name, *a, **k: f.Plan(name, 1, True, "ok"))
 
-    f.run(db, {"org/model-8bit": 1}, limit=1)
+    fakes.fetch_queue(db, {"org/model-8bit": 1}, limit=1)
     assert got == ["org/model-8bit", "org/base"]
 
 
@@ -330,5 +331,5 @@ def test_a_dependency_already_present_is_not_refetched(db, monkeypatch):
     monkeypatch.setattr(f, "plan",
                         lambda name, *a, **k: f.Plan(name, 1, True, "ok"))
 
-    f.run(db, {"org/model-8bit": 1}, limit=1)
+    fakes.fetch_queue(db, {"org/model-8bit": 1}, limit=1)
     assert got == ["org/model-8bit"], "the cached dependency was refetched"

@@ -20,12 +20,12 @@ from harness.memory_store.schema import WAYPOINTS
 KEEP, QUEUED, REJECTED, UNKNOWN = "keep", "queued", "rejected", "unknown"
 GROUPS = (KEEP, QUEUED, REJECTED, UNKNOWN)
 
-#: Weights waiting this long for a screen, or with no owner, go; fetch takes queued ones again later. #2011.
-QUEUED_DEADLINE_S = 7 * 24 * 3600
-#: The removed_by of an eviction past QUEUED_DEADLINE_S.
-EVICTED = "discover: queued past deadline"
-#: The removed_by of weights with no owner, verdict or dependent past QUEUED_DEADLINE_S.
+#: Recorded weights with no owner, verdict or dependent go this long after their download. #2011.
+UNOWNED_DEADLINE_S = 7 * 24 * 3600
+#: The removed_by of weights with no owner, verdict or dependent past UNOWNED_DEADLINE_S.
 UNOWNED = "discover: no owner past deadline"
+#: The removed_by of a candidate's weights once no test is about to run them; the next test fetches them again. #2015.
+TESTED = "test: no test is about to run them"
 
 REJECTIONS = ("broken", "declined")
 #: Tiers that run after weights are fetched; an inspect refusal never downloaded anything.
@@ -110,6 +110,8 @@ class Entry:
     waits: list = field(default_factory=list)
     #: Repos its download's config named, which it needs beside itself. #2011.
     needs: list = field(default_factory=list)
+    #: The entries that need this one beside themselves, by repo or name. #2015.
+    needed_by: list = field(default_factory=list)
 
 
 @dataclass
@@ -129,8 +131,6 @@ class Inventory:
     incomplete: list
     problems: list
     gone: list = field(default_factory=list)
-    #: waiting_bytes() when the inventory was taken. #2011.
-    waiting: int = 0
 
     @property
     def complete(self) -> bool:
@@ -269,7 +269,15 @@ def keepers(conn=None, gateway_files=None, typed=None, adopted=None) -> Keepers:
             add(spec, f"{lane} adopted winner", lane)
     for repo, why in {**TOOLING, **owned()}.items():
         k.repos.setdefault(repo.lower(), f"tooling: {why}")
+    for lane, entry in _pinned().items():
+        if entry.get("stem"):
+            k.stems.setdefault(_stem(str(entry["stem"])), f"pinned by the interactive server for {lane}")
     return k
+
+
+def _pinned() -> dict:
+    from harness import interactive
+    return interactive.pinned()
 
 
 def owned() -> dict:
@@ -459,7 +467,7 @@ def inventory(conn=None, hub: Path | None = None, ggufs: Path | None = None,
         _classify(e, keep, verdicts, conn)
     _needed(entries, conn)
     gone = downloads.drift(conn, hub, ggufs)["gone"] if conn is not None else []
-    return Inventory(str(hub), str(ggufs), entries, incomplete, problems, gone, waiting_bytes(conn))
+    return Inventory(str(hub), str(ggufs), entries, incomplete, problems, gone)
 
 
 def _needed(entries: list, conn=None) -> None:
@@ -480,6 +488,7 @@ def _needed(entries: list, conn=None) -> None:
         if by:
             e.group, e.why = by[0].group, f"needed by {by[0].repo or by[0].name}: {by[0].why}"
             e.verdict_id = e.verdict_id or by[0].verdict_id
+            e.needed_by = sorted({n for u in by for n in (u.repo or u.name, *(w for w, _ in u.waits)) if n})
 
 
 def _inside(path: Path, root: Path) -> bool:
@@ -615,78 +624,85 @@ def clear_incomplete(inv: Inventory, conn=None, source: str = "discover",
     return removed
 
 
-def waiting_bytes(conn) -> int:
-    """Bytes of this machine's live downloads whose proposal still waits for a screen; fetch's backlog. #2011."""
-    if conn is None:
-        return 0
-    rows = {}
-    for r in downloads.live(conn):
-        rows.setdefault(r["path"], r)
-    pids = sorted({r["proposal_id"] for r in rows.values() if r.get("proposal_id")})
-    if not pids:
-        return 0
-    queued = {r["id"] for r in conn.execute(
-        f"SELECT id FROM proposals WHERE state = 'queued' AND id IN ({', '.join('?' * len(pids))})", pids)}
-    return sum(int(r["bytes"] or 0) for r in rows.values() if r.get("proposal_id") in queued)
+def _names(e: Entry) -> set[str]:
+    """The names an entry answers to, lowercased: its repo, its proposals, its GGUF stems and what needs it. #2015."""
+    return {n.lower() for n in (e.repo, *(w for w, _ in e.waits), *e.needed_by, *_stems(e)) if n}
 
 
-def overdue(inv: Inventory, now: float, deadline: float | None = None) -> list[tuple[Entry, str, bool]]:
-    """(entry, why, past the deadline): weights waiting for a screen that will not come, or unknown past the deadline. #2011."""
-    from harness import memory
-    deadline = QUEUED_DEADLINE_S if deadline is None else deadline
+def busy(conn) -> list[str]:
+    """What this machine's running jobs name, lowercased: each argv, and the candidate a confirm job runs. #2015."""
+    from harness import workqueue
     out = []
-    for e in inv.entries:
-        if e.group == UNKNOWN and not e.unrecorded and e.fetched_at and now - e.fetched_at > deadline:
-            out.append((e, f"weights removed after {(now - e.fetched_at) / 86400:.0f} d with no owner, verdict "
-                           f"or candidate that needs them", True))
-            continue
-        if e.group != QUEUED or e.unrecorded or not e.fetched_at or not e.waits \
-                or not all(state == "queued" for _, state in e.waits):
-            continue
-        beside = memory.held_back(e.size / 1024 ** 3)
-        if beside:
-            out.append((e, f"weights removed, the screen can never load them: {beside}", False))
-        elif now - e.fetched_at > deadline:
-            out.append((e, f"weights removed after {(now - e.fetched_at) / 86400:.0f} d waiting for a screen; "
-                           f"fetch takes them again when the screen backlog has room", True))
+    for job in workqueue.running_here(conn):
+        words = job.get("argv") or []
+        words = [str(w) for w in (json.loads(words) if isinstance(words, str) else words)]
+        out.append(" ".join(words).lower())
+        if "--confirm" in words[:-1]:
+            got = conn.execute("SELECT p.name, p.resolved FROM verdicts v JOIN proposals p ON p.id = v.proposal_id "
+                               "WHERE v.id = ?", (int(words[words.index("--confirm") + 1]),)).fetchone()
+            out += [str(n).lower() for n in (got or ()) if n]
     return out
 
 
-def evict(inv: Inventory, now: float, conn=None, deadline: float | None = None) -> list[dict]:
-    """Remove overdue weights, stamped EVICTED (queued, sent back to fetch) or UNOWNED. #2011."""
+def due(inv: Inventory, now: float, *, names=None, keep_states=(), keep=(), words=()) -> list[tuple[Entry, str, str]]:
+    """(entry, why, removed_by) of weights no test is about to run, and of unowned ones past the deadline. #2011, #2015.
+
+    A CANDIDATE'S WEIGHTS ARE KEPT ONLY FOR A TEST ABOUT TO RUN THEM: one a
+    running job names, a state in `keep_states` (screened, while the measure
+    step of the same sweep follows) or a name in `keep`. `names` limits the
+    candidates considered to those, so one test's end removes only its own.
+    """
+    names = None if names is None else {n.lower() for n in names}
+    keep = {n.lower() for n in keep}
+    out = []
+    for e in inv.entries:
+        if e.unrecorded or not e.fetched_at:
+            continue
+        if e.group == UNKNOWN and names is None and now - e.fetched_at > UNOWNED_DEADLINE_S:
+            out.append((e, f"weights removed after {(now - e.fetched_at) / 86400:.0f} d with no owner, verdict "
+                           f"or candidate that needs them", UNOWNED))
+            continue
+        if e.group != QUEUED:
+            continue
+        mine = _names(e)
+        if (names is not None and not mine & names) or mine & keep \
+                or any(state in keep_states for _, state in e.waits) or any(n in w for n in mine for w in words):
+            continue
+        out.append((e, "weights removed: no test is about to run them, and the next one fetches them again", TESTED))
+    return out
+
+
+def release(inv: Inventory, now: float, conn=None, **which) -> list[dict]:
+    """Remove what due() names, each stamped with its removed_by, the router told of any GGUF. #780, #2015."""
     if conn is None or not inv.complete:
         return []
-    from harness import cuts, reasons
-    from harness import memory_store as ms
+    from harness import cuts
     hub, ggufs = Path(inv.hub), Path(inv.gguf)
     out = []
-    for e, why, late in overdue(inv, now, deadline):
+    for e, why, by in due(inv, now, words=busy(conn), **which):
+        hub_gguf = e.kind == "hub" and bool(e.repo) and any(Path(e.path).rglob("*.gguf"))
         try:
             links = _remove(e, hub, ggufs)
         except OSError as exc:
             out.append({"path": e.path, "error": str(exc)})
             continue
         out.append({"path": e.path, "repo": e.repo, "group": e.group, "bytes": e.size, "verdict_id": e.verdict_id,
-                    "links": links, "at": time.time(), "names": [n for n, _ in e.waits],
-                    "days": (now - e.fetched_at) / 86400, "why": why, "late": late})
+                    "links": links, "at": time.time(), "why": why, "by": by, "hub_gguf": hub_gguf})
     gone = [r for r in out if "error" not in r]
-    record(conn, [r for r in gone if r["group"] == QUEUED], EVICTED)
-    record(conn, [r for r in gone if r["group"] == UNKNOWN], UNOWNED)
-    for r in gone:
-        for name in r["names"] if r["group"] == QUEUED else ():
-            ms.decide_or_skip(conn, name, "queued", tier="fetch", reason=reasons.LIMIT, detail=r["why"][:600])
-    late = sum(1 for r in gone if r["late"])
+    for by in (TESTED, UNOWNED):
+        record(conn, [r for r in gone if r["by"] == by], by)
+    late = sum(1 for r in gone if r["by"] == UNOWNED)
     if late:
-        cuts.cut("queued_deadline", "fetched or unowned weights removed past the deadline",
-                 value=(QUEUED_DEADLINE_S if deadline is None else deadline), dropped=late, conn=conn)
+        cuts.cut("unowned_deadline", "unowned weights removed past the deadline", value=UNOWNED_DEADLINE_S,
+                 dropped=late, conn=conn)
     _tell_router(gone, ggufs)
     return out
 
 
-def clean(inv: Inventory, run_start: float, conn=None) -> dict:
-    """Discovery's own cleanup: rejected weights, weights queued past the deadline, and orphaned partial downloads."""
+def clean(inv: Inventory, run_start: float, conn=None, **which) -> dict:
+    """Discovery's own cleanup: rejected weights, weights no test is about to run, unowned ones and partial downloads."""
     gone = delete(inv, run_start, REJECTED, conn, source="discover")
-    late = evict(inv, run_start, conn)
+    late = release(inv, run_start, conn, **which)
     partial = clear_incomplete(inv, conn, now=run_start)
     ok = [r for r in gone if "error" not in r]
     evicted = [r for r in late if "error" not in r]
@@ -695,24 +711,26 @@ def clean(inv: Inventory, run_start: float, conn=None) -> dict:
             "bytes": sum(r["bytes"] for r in ok + evicted + partial)}
 
 
-def sweep(run_start: float | None = None, say=print) -> dict:
-    """What `lh discover --loop --run` calls first. Never raises."""
+def sweep(run_start: float | None = None, say=print, conn=None, **which) -> dict:
+    """The disk step and the end of every test: clean() with due()'s `names`, `keep_states` and `keep`. Never raises."""
     from harness import memory_store as ms
     run_start = time.time() if run_start is None else run_start
+    mine = conn is None
     try:
-        conn = ms.connect()
+        conn = ms.connect() if mine else conn
     except Exception as exc:  # noqa: BLE001
         say(f"  disk cleanup skipped: {exc}")
         return {}
     try:
-        got = clean(inventory(conn), run_start, conn)
+        got = clean(inventory(conn), run_start, conn, **which)
     except Exception as exc:  # noqa: BLE001
         say(f"  disk cleanup skipped: {exc}")
         return {}
     finally:
-        conn.close()
-    say(f"  freed {gib(got['bytes'])} GiB: {len(got['rejected'])} rejected, {len(got['evicted'])} queued past "
-        f"the deadline or with no owner, {len(got['incomplete'])} partial download(s)")
+        if mine:
+            conn.close()
+    say(f"  freed {gib(got['bytes'])} GiB: {len(got['rejected'])} rejected, {len(got['evicted'])} no test is about "
+        f"to run or with no owner, {len(got['incomplete'])} partial download(s)")
     for r in got["rejected"]:
         say(f"    {gib(r['bytes']):>7} GiB  {r['repo'] or r['path']}")
     for r in got["evicted"]:
@@ -738,22 +756,22 @@ def summary(inv: Inventory, now: float) -> dict:
     for e in inv.entries:
         groups[e.group]["count"] += 1
         groups[e.group]["bytes"] += e.size
-    due = plan(inv, now, REJECTED)
+    rejected = plan(inv, now, REJECTED)
+    later = {}
+    for e, _, by in due(inv, now):
+        later.setdefault(by, {"count": 0, "bytes": 0})
+        later[by]["count"] += 1
+        later[by]["bytes"] += e.size
     d = drift(inv)
     return {"hub": inv.hub, "gguf": inv.gguf, "groups": groups,
-            "rejected_due": {"count": len(due),
-                             "bytes": sum(e.size for e in due)},
-            "waiting_screen": {"bytes": inv.waiting, "cap": _cap()},
+            "rejected_due": {"count": len(rejected),
+                             "bytes": sum(e.size for e in rejected)},
+            "next_sweep": later,
             "incomplete": {"count": len(inv.incomplete),
                            "bytes": sum(b["size"] for b in inv.incomplete)},
             "drift": {"gone": len(d["gone"]),
                       "unrecorded": len(d["unrecorded"])},
             "problems": inv.problems}
-
-
-def _cap() -> int:
-    from harness import fetching
-    return fetching.SCREEN_BACKLOG
 
 
 def as_json(inv: Inventory, now: float) -> dict:
@@ -779,7 +797,8 @@ def table(inv: Inventory, now: float) -> str:
     s = summary(inv, now)
     lines.append(f"\nrejected due: {s['rejected_due']['count']}, "
                  f"{gib(s['rejected_due']['bytes'])} GiB")
-    lines.append(f"waiting for a screen: {gib(inv.waiting)} GiB of the {gib(_cap())} GiB fetch backlog cap")
+    for by, n in sorted(s["next_sweep"].items()):
+        lines.append(f"the next sweep removes {n['count']} more, {gib(n['bytes'])} GiB: {by}")
     lines.append(f"partial downloads: {s['incomplete']['count']}, "
                  f"{gib(s['incomplete']['bytes'])} GiB")
     d = drift(inv)

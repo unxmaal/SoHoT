@@ -15,6 +15,8 @@ CODE_ROOTS = ("harness", "evals", "gateway")
 SCAN_ROOTS = CODE_ROOTS + ("scripts", "tests", "tools")
 TEXT_SUFFIXES = {".md", ".yaml", ".yml", ".sh", ".toml", ".plist", ".tpl", ".txt", ".json"}
 SKIP_DIRS = {".venv", ".git", "__pycache__", "node_modules", "golden"}
+#: Repo-lane cases and their importer records quote SoHoT as it was at a past commit; a name there may be gone. #2015.
+FROZEN = ("evals/cases/repo/", "evals/importers/")
 
 
 def module_name(path: Path, root: Path = REPO) -> str:
@@ -329,7 +331,8 @@ def references(watched=("harness.cli", "harness.memory_store")) -> set:
                 got.add((m, n))
     for p in REPO.rglob("*"):
         if p.suffix in TEXT_SUFFIXES and p.is_file() \
-                and not SKIP_DIRS.intersection(p.relative_to(REPO).parts):
+                and not SKIP_DIRS.intersection(p.relative_to(REPO).parts) \
+                and not p.relative_to(REPO).as_posix().startswith(FROZEN):
             for m, n in _TEXT_REF.findall(p.read_text(encoding="utf-8", errors="ignore")):
                 if n != "py" and m in watched:
                     got.add((m, n))

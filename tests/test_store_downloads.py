@@ -8,6 +8,7 @@ import pytest
 
 from harness import cli, disk, downloads, fetching, gguf
 from harness import memory_store as ms
+from tests import fakes
 
 NOW = 2_000_000_000.0
 DAY = 24 * 3600
@@ -150,7 +151,7 @@ def test_a_failed_download_is_recorded_incomplete(w):
     def boom(repo_id):
         downloads.hub_dir(repo_id).mkdir(parents=True)
         raise RuntimeError("connection reset")
-    fetching.run(w.conn, {"org/a": 2 * fetching.GIB}, snapshot=boom,
+    fakes.fetch_queue(w.conn, {"org/a": 2 * fetching.GIB}, snapshot=boom,
                  free=900 * fetching.GIB)
     row = w.conn.execute("SELECT * FROM downloads").fetchone()
     assert row["complete"] == 0 and row["finished_at"] is not None

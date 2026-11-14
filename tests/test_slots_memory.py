@@ -224,12 +224,12 @@ def test_the_unified_ceiling_is_metal_s_recommended_working_set_without_a_wired_
 
 def test_a_screen_prices_one_request_of_kv_beside_the_weights(tmp_path, monkeypatch):
     from harness import screen
-    from harness.commands import screen as screen_cmd
     _mlx(tmp_path, monkeypatch, weights_gib=60)
     row = {"name": "mlx-community/Big-4bit", "candidate": "mlx-community/Big-4bit",
            "state": screen.READY, "modality": "code"}
     assert memory.check_model(row["name"], spec=row["candidate"], reserve_gb=6.0)[0]
-    assert screen_cmd.screenable_backlog(plan=[row]) == []
+    # The screen's own check: one request's KV beside the weights does not fit. #699.
+    assert not memory.check_model(row["name"], spec=row["candidate"], parallel=1)[0]
 
 
 def test_mlx_parallel_leaves_the_router_s_planned_models_their_room(conn, models, tmp_path, monkeypatch):

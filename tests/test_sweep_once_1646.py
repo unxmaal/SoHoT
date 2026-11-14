@@ -74,7 +74,6 @@ def leaves(monkeypatch):
     monkeypatch.setattr(loop_cmd, "_report", lambda a, failed: 0)
     monkeypatch.setattr(loop_cmd, "_upkeep", lambda tier: got.append(steps.NAMES[[s.tier for s in steps.STEPS].index(tier)]))
     monkeypatch.setattr(loop_cmd, "_sized", lambda top, sweep: {"screens": 1, "per_s": 60.0, "why": ""})
-    monkeypatch.setattr(loop_cmd, "_fetch", lambda a, plan, failed: leaf("fetch")())
     monkeypatch.setattr(gguf, "pending", lambda: False)
     monkeypatch.setattr(screen_cmd, "_report_screen", leaf("screen"))
     monkeypatch.setattr(loop_cmd, "_measure", lambda a, sweep, failed, rc=0: leaf("measure")())

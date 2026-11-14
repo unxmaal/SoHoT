@@ -10,14 +10,15 @@ from pathlib import Path
 import httpx
 import pytest
 
-from harness import binding, cuts, day_fetch, feeds, fetching, gateway_switch, knob_backlog, knobs, limit_trace, memory
+from harness import binding, cuts, feeds, fetching, gateway_switch, knob_backlog, knobs, limit_trace, memory
 from harness import memory_store as ms
 from tests.test_harness_fetching_budget import _seed, _sizes, store  # noqa: F401
 from tests.test_repo_lane import upstream  # noqa: F401
+from tests import fakes
 
 REPO = Path(__file__).resolve().parents[1]
 GIB = fetching.GIB
-SITE = "harness/fetching.py:run(limit)"
+SITE = "harness/adopt.py:MIN_VOTES"
 
 
 def _rows(conn, knob=None):
@@ -156,38 +157,6 @@ def test_fewer_cuts_than_the_minimum_are_counted_but_not_binding(conn):
     assert (row["hits"], row["binding"]) == (1, False)
 
 
-def test_the_fetch_records_the_count_under_the_knob_that_fed_it(store):
-    # Equal sizes: fetch order follows this machine's ceiling, and an order-dependent budget skip is a real cut. #1087.
-    for name in ("org/a", "org/b", "org/c", "org/d"):
-        _seed(store, name, 1)
-    fetching.run(store, _sizes(store), limit=2, free=500 * GIB, budget=int(12 * GIB),
-                 limit_knob="discover_top", budget_knob="day_fetch_budget")
-    assert [(r["knob"], r["value"], r["kept"], r["dropped"]) for r in _rows(store)] == [("discover_top", 2.0, 2, 2)]
-
-
-def test_a_download_the_budget_refuses_is_a_cut_of_the_budget_knob(store):
-    _seed(store, "org/a", 5)
-    _seed(store, "org/b", 9)
-    fetching.run(store, _sizes(store), limit=5, free=500 * GIB, budget=int(12 * GIB), budget_knob="day_fetch_budget")
-    assert [(r["knob"], r["value"], r["kept"], r["dropped"]) for r in _rows(store)] == [("day_fetch_budget", 12.0, 1, 1)]
-
-
-def test_a_fetch_that_names_no_knob_records_under_its_own_backlog_site(store):
-    for name in ("org/a", "org/b"):
-        _seed(store, name, 1)
-    fetching.run(store, _sizes(store), limit=1, free=500 * GIB, budget=int(12 * GIB))
-    assert [(r["knob"], r["kept"], r["dropped"]) for r in _rows(store)] == [(SITE, 1, 1)]
-
-
-def test_the_day_fetch_and_the_loop_carry_the_knob_that_sets_each_argv_limit():
-    from harness import cli
-    argv = day_fetch.child_argv(3, 40.0, 0.0)
-    a = cli.build_parser().parse_args(argv[3:])
-    assert (a.limit_knob, a.budget_knob) == ("screen_fraction", "day_fetch_budget")
-    a = cli.build_parser().parse_args(["fetch", "--run"])
-    assert (a.limit_knob, a.budget_knob) == (SITE, "download_budget")
-
-
 def test_the_reserve_is_recorded_only_when_it_decided_the_refusal(monkeypatch):
     monkeypatch.setattr(memory, "need_gb", lambda *a, **k: 20.0)
     monkeypatch.setattr(memory, "available_gb", lambda: 24.0)
@@ -219,22 +188,6 @@ def test_a_gateway_that_never_serves_the_new_alias_records_the_serve_wait(monkey
     assert gateway_switch._await_serving("http://gw", {}, lambda: next(clock), lambda s: None, 0.1) == "code serves old"
     spooled = [json.loads(line) for line in cuts._spool_path().read_text(encoding="utf-8").splitlines()]
     assert [r["knob"] for r in spooled] == ["harness/gateway_switch.py:SERVE_WAIT_S"]
-
-
-def test_the_scanner_reads_every_way_code_names_the_knob_a_cut_records():
-    src = ("from harness import cuts\n"
-           "def f(items, limit_knob='discover_top', *, budget_knob='download_budget'):\n"
-           "    cuts.take(items, 3, 'a.py:LIMIT', 'x')\n"
-           "    cuts.cut(limit_knob, 'x')\n"
-           "    reserve_knob = 'a.py:R1' if items else 'a.py:R2'\n"
-           "    g(spill_knob='a.py:S' if items else 'a.py:T', other='a.py:NOT')\n"
-           "    p.add_argument('--top-knob', default='a.py:TOP')\n"
-           "    return ['--limit-knob', 'screen_fraction', '--limit', '3']\n")
-    got = sorted(n for n, _ in limit_trace.names_in(src, "a.py"))
-    assert got == ["a.py:LIMIT", "a.py:R1", "a.py:R2", "a.py:S", "a.py:T", "a.py:TOP", "discover_top",
-                   "download_budget", "screen_fraction"]
-    bad = "from harness import cuts\ndef f(name, limit_knob):\n    cuts.cut(name, 'x')\n    cuts.cut(limit_knob, 'x')\n"
-    assert limit_trace.unnamed_in(bad, "a.py") == ["a.py:3"]
 
 
 def test_a_limit_is_traced_by_a_recorded_limit_a_knob_name_or_its_site():
@@ -404,3 +357,19 @@ def test_every_cuts_call_that_records_a_knob_is_one_the_scanner_reads():
     assert recorders - {"value_of"} == set(limit_trace.CALLS)
     for name, at in limit_trace.CALLS.items():
         assert list(inspect.signature(getattr(cuts, name)).parameters)[at] == "knob", name
+
+
+def test_the_scanner_reads_every_way_code_names_the_knob_a_cut_records():
+    src = ("from harness import cuts\n"
+           "def f(items, limit_knob='discover_top', *, budget_knob='download_budget'):\n"
+           "    cuts.take(items, 3, 'a.py:LIMIT', 'x')\n"
+           "    cuts.cut(limit_knob, 'x')\n"
+           "    reserve_knob = 'a.py:R1' if items else 'a.py:R2'\n"
+           "    g(spill_knob='a.py:S' if items else 'a.py:T', other='a.py:NOT')\n"
+           "    p.add_argument('--top-knob', default='a.py:TOP')\n"
+           "    return ['--limit-knob', 'screen_fraction', '--limit', '3']\n")
+    got = sorted(n for n, _ in limit_trace.names_in(src, "a.py"))
+    assert got == ["a.py:LIMIT", "a.py:R1", "a.py:R2", "a.py:S", "a.py:T", "a.py:TOP", "discover_top",
+                   "download_budget", "screen_fraction"]
+    bad = "from harness import cuts\ndef f(name, limit_knob):\n    cuts.cut(name, 'x')\n    cuts.cut(limit_knob, 'x')\n"
+    assert limit_trace.unnamed_in(bad, "a.py") == ["a.py:3"]

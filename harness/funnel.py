@@ -63,10 +63,10 @@ def _skipped(history: list[dict], since: float) -> dict | None:
     return said[-1]
 
 
-def _reason(row: dict, *, budget, backlog, top, position: int | None,
+def _reason(row: dict, *, top, position: int | None,
             skipped: dict | None = None) -> tuple[str, str]:
     """Why a queued, undownloaded proposal waits: a gate fetch applies now, else the fetch's own recorded skip, else its place in fetch order."""
-    got = fetching.why_not(row, budget=budget, backlog=backlog, top=top)
+    got = fetching.why_not(row)
     if got and got[0] in fetching.SILENT:
         return got
     if skipped and (not row.get("failed_at") or skipped["decided_at"] >= row["failed_at"]):
@@ -87,7 +87,7 @@ def _unfetchable(p) -> tuple[str, str]:
     if p["registry"] == ms.GITHUB:
         return "repo", "a repo is installed and screened, never fetched"
     if p["tier"] not in fetching.FETCHABLE_TIERS:
-        return "not fetchable", f"queued at {p['tier'] or 'no tier'}; only inspect or fetch queues a download"
+        return "not fetchable", f"queued at {p['tier'] or 'no tier'}; only inspect, fetch or a screen queues a download"
     return "not fetchable", "fetch's queue does not hold it"
 
 
@@ -100,13 +100,12 @@ def _said(history: list[dict], since: float) -> str:
 
 
 def proposals(conn, *, lane: str = "", since: float | None = None, now: float | None = None,
-              budget: int | None = None, backlog: int = 0, top: int | None = None) -> list[dict]:
+              top: int | None = None) -> list[dict]:
     """One row per proposal: stage, entry into its state, age since first sighting, and why it waits."""
     from harness import ceiling, downloads, rank, report
     now = time.time() if now is None else now
     # What a sweep screens: an explicit count, else what the ceiling has room for. #1084.
     top = top or ceiling.screen_capacity(conn, now=now)
-    budget = int(fetching.budget_gib() * fetching.GIB) if budget is None else budget
     histories, dls = _histories(conn), _downloads(conn)
     per_lane: dict[str, list[str]] = {}
     for r in report.ranked(conn):
@@ -115,7 +114,7 @@ def proposals(conn, *, lane: str = "", since: float | None = None, now: float | 
     order = fetching.queued(conn)
     fetchable, position, tried = {r["name"]: r for r in order}, {}, 0
     for r in order:
-        got = fetching.why_not(r, budget=budget, backlog=backlog, top=top)
+        got = fetching.why_not(r)
         if not got or got[0] == fetching.FAILED:
             position[r["name"]], tried = tried, tried + 1
     out = []
@@ -145,7 +144,7 @@ def proposals(conn, *, lane: str = "", since: float | None = None, now: float | 
                "raw_lane": p["lane"] or "", "reason": "", "why": "", "fetch_said": _said(history, start)}
         if state == "queued" and not downloaded:
             got = fetchable.get(p["name"])
-            row["reason"], row["why"] = _reason(got, budget=budget, backlog=backlog, top=top,
+            row["reason"], row["why"] = _reason(got, top=top,
                                                 position=position.get(p["name"]),
                                                 skipped=_skipped(history, start)) if got else _unfetchable(p)
         out.append(row)

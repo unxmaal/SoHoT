@@ -65,7 +65,6 @@ UNIT_OUTPUTS = {
     "otel": ("otel_events", "received_at", "", ("otel_events",)),
     "canary": ("", "", "", ("canary",)),
     "sweep-check": ("watchdog_actions", "at", "criterion = 'sweep_check'", ("sweep_check", "sweep-check.log")),
-    "fetch": ("downloads", "started_at", "origin = 'fetch'", ("downloads",)),
     "delegations": ("delegations", "outcome_at", "", ("delegations",)),
     "review": ("", "", "", ("review",)),
     "deploy": ("deploys", "started_at", "", ("deploys", "deploy.log")),

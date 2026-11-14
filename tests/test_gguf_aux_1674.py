@@ -10,6 +10,7 @@ from harness import context, downloads, fetching, gguf, router
 from harness import memory_store as ms
 from harness.commands import gguf_aux
 from tests.test_context import QWEN3_4B, _s, _value
+from tests import fakes
 
 GIB = 1024 ** 3
 REPO = Path(__file__).resolve().parents[1]
@@ -162,7 +163,7 @@ def test_a_fetched_mtp_head_is_set_aside_and_the_candidate_declined(models, monk
     def hf_download(repo, filename, local_dir):
         return str(write(Path(local_dir) / filename, QWEN, HEAD + blk([3], NEXTN)))
 
-    done = fetching.run(db, snapshot=lambda **kw: None, free=900 * GIB,
+    done = fakes.fetch_queue(db, snapshot=lambda **kw: None, free=900 * GIB,
                         listing=lambda repo: sibs, hf_download=hf_download)
     assert not done[0]["ok"] and "mtp-Big-Q8_0.gguf is an MTP head (block 3 of 4)" in done[0]["why"]
     assert not (models / "mtp-Big-Q8_0.gguf").exists()

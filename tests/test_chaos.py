@@ -11,6 +11,7 @@ import pytest
 from harness import chaos, cli, exclusive, feeds, fetching, paths, reasons, screen
 from harness import memory_store as ms
 from harness.commands import chaos as chaos_cmd
+from tests import fakes
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -321,7 +322,7 @@ def test_disk_fill_refuses_the_fetch_with_a_non_candidate_reason_and_cleans_up(
 def test_disk_fill_fails_when_the_fetch_ignores_the_floor(scratch_parent):
     calls = []
     got = chaos.run_all([chaos.disk_fill(disk_mechanics(
-        calls, fetch=lambda conn, **kw: fetching.run(conn, **{**kw, "floor": 0})))],
+        calls, fetch=lambda conn, **kw: fakes.fetch_queue(conn, **{**kw, "floor": 0})))],
                         live=paths.home(), parent=scratch_parent)
     assert not got[0].ok and calls
 
@@ -353,7 +354,7 @@ def test_fetching_run_honours_a_floor_it_is_given(tmp_path, monkeypatch):
     conn = ms.connect()
     try:
         chaos.seed(conn, "org/tiny", 1000)
-        got = fetching.run(conn, free=5000, floor=4500,
+        got = fakes.fetch_queue(conn, free=5000, floor=4500,
                            snapshot=lambda repo_id: pytest.fail("downloaded"))
     finally:
         conn.close()

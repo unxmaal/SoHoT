@@ -210,7 +210,6 @@ def test_the_loop_reopens_due_retests_from_the_store(monkeypatch, capsys):
 def test_the_loop_spend_calls_the_retest_step(monkeypatch):
     called = []
     monkeypatch.setattr(loop_cmd, "_reopen_retests", lambda *a, **k: called.append(1) or [])
-    monkeypatch.setattr(screen_cmd, "screenable_backlog", lambda want="": ["a"])
     monkeypatch.setattr(discover_cmd, "cmd_discover", lambda a: 0)
     monkeypatch.setattr(measure_cmd, "measurable", lambda *a, **k: [])
     cli._loop_spend(argparse.Namespace(top=1, budget_gib=1.0, lane=""), 0)

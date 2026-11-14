@@ -2,6 +2,7 @@
 import pytest
 
 from harness import family, fetch_replay, fetching, knobs, rank
+from tests import fakes
 from harness import memory_store as ms
 
 DAY = 86400.0
@@ -41,7 +42,7 @@ def seen(conn, name, gib=15.0, lane="code"):
 
 
 def refused(conn, name, at, *, gib=15.0, budget=40):
-    fetching.refuse_over_budget(conn, name, int(gib * GIB), budget * GIB, int(at % 37 * GIB), at=at)
+    fakes.refuse_over_budget(conn, name, int(gib * GIB), budget * GIB, int(at % 37 * GIB), at=at)
 
 
 def test_a_row_the_budget_keeps_passing_over_rises_above_fresh_rows_of_higher_base_value(conn):

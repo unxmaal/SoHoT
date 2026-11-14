@@ -331,6 +331,12 @@ def _refuse_download(repo_id: str):
     raise ChaosError(f"a download of {repo_id} was attempted below the floor")
 
 
+def fetch_first(conn, **kw) -> list[dict]:
+    """What the screen's fetch does with the head of the fetch queue, as a list; [] when it is empty. #2015."""
+    rows = fetching.queued(conn)
+    return [fetching.for_test(conn, rows[0], **kw)] if rows else []
+
+
 @dataclass
 class DiskFill:
     free: Callable = field(default=lambda p: shutil.disk_usage(p).free)
@@ -338,7 +344,7 @@ class DiskFill:
     fill_bytes: int = 64 * MIB
     size: int = MIB
     snapshot: Callable = field(default=_refuse_download)
-    fetch: Callable = field(default=fetching.run)
+    fetch: Callable = field(default=fetch_first)
 
 
 def _disk_fill(ctx: Context, m: DiskFill) -> tuple[bool, str]:
@@ -356,8 +362,7 @@ def _disk_fill(ctx: Context, m: DiskFill) -> tuple[bool, str]:
             have = m.free(scratch)
             if have - m.size >= floor:
                 return False, "the fill did not take the scratch disk below the floor"
-            got = m.fetch(conn, free=have, floor=floor, snapshot=m.snapshot, limit=1,
-                          limit_knob="harness/chaos.py:_disk_fill->m.fetch(limit)")
+            got = m.fetch(conn, free=have, floor=floor, snapshot=m.snapshot)
         finally:
             if filler is not None:
                 filler.unlink(missing_ok=True)
@@ -456,8 +461,7 @@ def _network_drop(ctx: Context, m: NetworkDrop) -> tuple[bool, str]:
                 return False, f"inspect settled it as Gone: {exc}"
             except ins.InspectError as exc:
                 inspected = str(exc)
-            got = fetching.run(conn, free=1 << 60, snapshot=m.snapshot_for(url),
-                               limit=1, limit_knob="harness/chaos.py:_network_drop->fetching.run(limit)")
+            got = fetch_first(conn, free=1 << 60, snapshot=m.snapshot_for(url))
         state = _state(conn, CANDIDATE)
         still = any(r["name"] == CANDIDATE for r in fetching.queued(conn))
         failed = conn.execute(

@@ -6,6 +6,7 @@ import pytest
 from harness import fetching, reasons
 from harness import memory_store as ms
 from tests.test_runner_base_weights import Snapshot, db  # noqa: F401
+from tests import fakes
 
 GIB = fetching.GIB
 FREE = 900 * GIB
@@ -47,7 +48,7 @@ def test_a_reopened_candidate_whose_inspect_has_not_answered_is_not_fetched(db):
     _queue(db, name)
     _reopen_for_retest(db, name)
     snap = Snapshot()
-    done = fetching.run(db, limit=5, free=FREE, snapshot=snap,
+    done = fakes.fetch_queue(db, limit=5, free=FREE, snapshot=snap,
                         listing=_listing(["config.json", "model.safetensors"]))
     assert snap.asked == []
     assert not done[0]["ok"] and "inspect" in done[0]["why"]
@@ -61,7 +62,7 @@ def test_the_reopened_candidate_is_fetched_once_inspect_answers_again(db):
     ms.decide(db, name, "queued", tier="inspect", detail="fits", size_bytes=GIB // 2,
               reason=reasons.CANDIDATE)
     snap = Snapshot()
-    fetching.run(db, limit=5, free=FREE, snapshot=snap,
+    fakes.fetch_queue(db, limit=5, free=FREE, snapshot=snap,
                  listing=_listing(["config.json", "model.safetensors"]))
     assert snap.asked == [name]
 
@@ -72,7 +73,7 @@ def test_an_inspect_deferred_by_the_harness_is_not_an_answer(db):
     _reopen_for_retest(db, name)
     ms.decide(db, name, "queued", tier="inspect", detail="rate-limited", reason=reasons.HARNESS)
     snap = Snapshot()
-    fetching.run(db, limit=5, free=FREE, snapshot=snap,
+    fakes.fetch_queue(db, limit=5, free=FREE, snapshot=snap,
                  listing=_listing(["config.json", "model.safetensors"]))
     assert snap.asked == []
 
@@ -85,7 +86,7 @@ def test_weights_only_in_a_format_no_runner_loads_wait_queued_for_a_runner(db):
     name = "QLNI/SHADOW-250M"
     _queue(db, name)
     snap = Snapshot()
-    done = fetching.run(db, limit=5, free=FREE, snapshot=snap, listing=_listing(SHADOW))
+    done = fakes.fetch_queue(db, limit=5, free=FREE, snapshot=snap, listing=_listing(SHADOW))
     assert snap.asked == []
     row = db.execute("SELECT v.outcome, v.tier, v.reason, v.detail, v.until FROM verdicts v "
                      "JOIN proposals p ON p.state_verdict_id = v.id WHERE p.name = ?",
@@ -104,12 +105,12 @@ def test_a_format_wait_is_not_listed_again_until_a_runner_loads_the_format(db, m
     def listing(repo):
         asked.append(repo)
         return [{"rfilename": f, "size": 1} for f in SHADOW]
-    fetching.run(db, limit=5, free=FREE, snapshot=Snapshot(), listing=listing)
-    fetching.run(db, limit=5, free=FREE, snapshot=Snapshot(), listing=listing)
+    fakes.fetch_queue(db, limit=5, free=FREE, snapshot=Snapshot(), listing=listing)
+    fakes.fetch_queue(db, limit=5, free=FREE, snapshot=Snapshot(), listing=listing)
     assert asked == [name]
     monkeypatch.setattr(fetching, "RUNNER_FORMATS", (*fetching.RUNNER_FORMATS, ".pt"))
     snap = Snapshot()
-    fetching.run(db, limit=5, free=FREE, snapshot=snap, listing=listing)
+    fakes.fetch_queue(db, limit=5, free=FREE, snapshot=snap, listing=listing)
     assert snap.asked == [name]
 
 
@@ -118,7 +119,7 @@ def test_a_format_wait_is_in_the_runners_wanted_report(db):
     _queue(db, "peculiar-ragdoll/Qwen-Sharp-Chat-Templates")
     files = {"QLNI/SHADOW-250M": SHADOW,
              "peculiar-ragdoll/Qwen-Sharp-Chat-Templates": ["README.md", "chat_template.jinja"]}
-    fetching.run(db, limit=5, free=FREE, snapshot=Snapshot(),
+    fakes.fetch_queue(db, limit=5, free=FREE, snapshot=Snapshot(),
                  listing=lambda repo: [{"rfilename": f, "size": 1} for f in files[repo]])
     got = fetching.format_wanted(db)
     assert [r["name"] for r in got] == ["QLNI/SHADOW-250M"]
@@ -130,7 +131,7 @@ def test_a_repo_with_no_weights_at_all_is_refused_before_fetch(db):
     name = "peculiar-ragdoll/Qwen-Sharp-Chat-Templates"
     _queue(db, name, size=3854335)
     snap = Snapshot()
-    fetching.run(db, limit=5, free=FREE, snapshot=snap, listing=_listing(
+    fakes.fetch_queue(db, limit=5, free=FREE, snapshot=snap, listing=_listing(
         ["README.md", "chat_template.jinja", "chat_template_oneline.txt", "scripts/apply.py"]))
     assert snap.asked == []
     row = _latest(db, name)
@@ -143,7 +144,7 @@ def test_only_the_repo_with_loadable_weights_is_downloaded(db):
     _queue(db, "org/b-model")
     files = {"org/a-templates": ["README.md"], "org/b-model": ["config.json", "model.safetensors"]}
     snap = Snapshot()
-    fetching.run(db, limit=2, free=FREE, snapshot=snap,
+    fakes.fetch_queue(db, limit=2, free=FREE, snapshot=snap,
                  listing=lambda repo: [{"rfilename": f, "size": 1} for f in files[repo]])
     assert snap.asked == ["org/b-model"]
 
@@ -163,14 +164,14 @@ def test_a_dependency_is_not_held_to_the_weights_rule(db):
 
 
 @pytest.mark.gauntlet("a-fact-about-the-harness-recorded-as-a-verdict-on-the-subject",
-                      site="harness/fetching.py:run")
+                      site="harness/fetching.py:for_test")
 def test_a_failed_listing_is_not_recorded_as_a_refusal_of_the_candidate(db):
     name = "org/Unlisted-1B"
     _queue(db, name)
 
     def broken(repo):
         raise OSError("connection reset")
-    done = fetching.run(db, limit=5, free=FREE, snapshot=Snapshot(), listing=broken)
+    done = fakes.fetch_queue(db, limit=5, free=FREE, snapshot=Snapshot(), listing=broken)
     assert not done[0]["ok"] and "listing failed" in done[0]["why"]
     row = _latest(db, name)
     assert (row["outcome"], row["tier"]) == ("queued", "inspect")

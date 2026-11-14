@@ -251,7 +251,7 @@ INDEX = {
             "harness/reverify.py:_queue":
                 "#1825 put the job and its reverification in one transaction; the first write left is candidates.ensure, "
                 "an INSERT OR IGNORE get-or-create the next queue returns",
-            "harness/commands/screen.py:_report_screen":
+            "harness/commands/screen.py:_screen_one":
                 "the first write is candidates.ensure, an INSERT OR IGNORE get-or-create; a death before the verdict "
                 "leaves the proposal unscreened, and the next screen returns the same row (#1914)",
         },

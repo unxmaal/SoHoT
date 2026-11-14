@@ -450,7 +450,6 @@ def test_logprobs_survive_a_streaming_transport_into_the_stored_score(world):
         fakes.seeded_store(conn, [(CHALLENGER, "decide", 2.0, 2)])
     finally:
         conn.close()
-    assert cli.main(["fetch", "--run", "--limit", "1"]) == 0
     assert cli.main(["discover", "--screen", "--run", "--lane", "decide", "--top", "1"]) == 0
     assert latest(CHALLENGER)["outcome"] == "screened"
     conn = ms.connect()

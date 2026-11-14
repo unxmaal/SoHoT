@@ -9,7 +9,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from evals import watch
-from harness import lanes, methods, paths, reasons, runs
+from harness import lanes, methods, paths, reasons, runs, test_weights
 from harness.commands.common import emit, err, note
 from harness.commands import jobs as jobs_cmd
 
@@ -325,18 +325,22 @@ def lane_for(row: dict, want: str = "") -> str:
 
 
 def _measure_and_adopt(a, row: dict, sweep=None) -> int:
-    """_measure, then unload the challenger it loaded. #444."""
+    """_measure, then unload the challenger it loaded and remove its weights unless the run goes on. #444, #2015."""
     from harness import audio_models, interactive, mlx_server, router
     loaded: list[str] = []
+    got = None
     try:
         # An arm whose GGUF the interactive server pins is answered there, never loaded twice. #1578.
         with interactive.answer():
-            return _measure(a, row, loaded, sweep)
+            got = _measure(a, row, loaded, sweep)
+            return got
     finally:
         for spec in loaded:
             router.release_spec(spec, f"measured {row['name']}")
             mlx_server.release_spec(spec, f"measured {row['name']}")
             audio_models.release_spec(spec, f"measured {row['name']}")
+        if got != watch.PAUSED and not getattr(a, "dry_run", False):
+            test_weights.release(row["name"])
 
 
 def _measure(a, row: dict, loaded: list, sweep=None) -> int:
@@ -388,11 +392,7 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         print(f"  {name}: not measured: {unscreened}", flush=True)
         sweep.lines.append(f"{name}: not measured: {unscreened}")
         return 0
-    # THE PAIR MUST REACH THE SAME SERVER. One --gateway serves the whole run,
-    # so when the challenger's repo id sends it to mlx_lm.server the incumbent
-    # cannot travel as a LiteLLM alias: :8081 has never heard of `q3-4b`, the
-    # control scored 0 of 27, and the run had nothing to compare against. The
-    # config maps every alias to the upstream behind it. #223.
+    # The pair must reach the same server: one --gateway serves the whole run. #223.
     route = screen.routed_gateway(spec)
     if route:
         upstream = screen.upstream_of(incumbent)
@@ -417,6 +417,10 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         return 0
     if dry:
         return _dry_argv(lane, name, incumbent, plan, held, inc_spec, spec)
+    # The test fetches what it runs, right before it runs it; a later sweep tries again. #2015.
+    unfetched = test_weights.refused(name, sweep)
+    if unfetched is not None:
+        return unfetched
     started, spans, idle = time.time(), 1, 0
     while True:
         part, last = _slice(plan, time.time() - started)
@@ -513,38 +517,20 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         store.close()
     inc_row = _summary_row(summary, inc_key)
     ch_row = _summary_row(summary, ch_key)
-    # ASSERT THE RUN IS THE ONE THAT WAS ASKED FOR. Naming the directory stops
-    # the loop reading a stranger's receipt; this stops it reading a receipt
-    # that is its own and yet describes a different exam, which a crashed or
-    # partially-skipped candidate produces. #222.
+    # The receipt must describe the run that was asked for, not another exam in this directory. #222.
     if len(summary) and not (inc_row or ch_row):
         return err(f"{name}: the receipt at {out} names {sorted(summary)!r} "
                    f"and neither candidate this run asked for, so it does not "
                    f"describe the run that was just made")
     if not inc_row:
-        # THE INCUMBENT IS THE CONTROL. A candidate measured beside a control
-        # that did not run says nothing about the candidate, which is the
-        # lesson the tts lane already paid for (#194/#195). Name it as the
-        # control rather than as a missing summary key: a 15-minute run that
-        # ends in "the summary names [...]" makes the reader go looking in the
-        # receipt for a spelling problem. Issue #214.
+        # The incumbent is the control, named as such rather than as a missing summary key. #194, #214.
         return err(f"{name}: the incumbent {incumbent} contributed no rows, so "
                    f"this run has no control and nothing can be concluded from "
                    f"it. The summary names {sorted(summary)!r}")
     if not ch_row:
         return err(f"{name}: the challenger contributed no rows. The summary "
                    f"names {sorted(summary)!r}")
-    # A CANDIDATE THAT NEVER RAN IS NOT A CANDIDATE THAT LOST. Every row a
-    # harness refusal means the request never reached a model, and handing
-    # that to adopt.decide dresses a routing failure as a quality result.
-    # The rows carry the runner's failure class. #223, #408.
-    # THE CONTROL MUST HAVE RUN. This is the general form of the refusal check
-    # below, and it catches every variant of "the request never reached a
-    # model" without anyone having to classify it first: a 404 from a
-    # doubled /v1 got past the phrase list, both candidates scored 0/27, and
-    # the loop reported "does not beat the incumbent on the lane's metric".
-    # A candidate measured beside a control that passed nothing says nothing
-    # about the candidate. #223, and the lesson the tts lane paid for in #194.
+    # A candidate that never ran did not lose, and a control that passed nothing makes no comparison. #194, #223, #408.
     if not int(inc_row.get("passed") or 0) and not zero:
         return err(f"{name}: the incumbent {incumbent} passed "
                    f"0 of {inc_row.get('total') or '?'}, so this run has no "
@@ -1138,8 +1124,14 @@ def _confirmed(verdict, rows, split, screened, served: str, inc_spec: str, spec:
 def confirm_job(vid: int) -> int:
     """`soh adopt --confirm VID`: the night dev run that confirms or refuses a held holdout win. #725."""
     from harness import interactive
-    with interactive.answer():
-        return _confirm_job(vid)
+    got = None
+    try:
+        with interactive.answer():
+            got = _confirm_job(vid)
+            return got
+    finally:
+        if got != watch.PAUSED:
+            test_weights.release_verdict(vid)
 
 
 def _confirm_job(vid: int) -> int:
@@ -1176,6 +1168,9 @@ def _confirm_job(vid: int) -> int:
     if data:
         print(f"    {out} finished without a verdict; recording it from its receipt (verdict {vid})", flush=True)
     else:
+        missing = test_weights.fetched(name)
+        if missing:
+            return _confirm_paused(vid, lane, inc_spec, spec, None, why=f"its weights could not be fetched: {missing}")
         plan = _confirm_order(lane, inc_spec, split, repeat, frozenset(held.get("screened") or ()))
         before = len((watch.read(out) or ({}, []))[1]) if out is not None else 0
         proc, ran = _confirm_run(lane, inc_spec, spec, name, repeat, split, out, vid, plan)
@@ -1341,7 +1336,7 @@ def _confirm_reuse(lane, inc_spec, spec, split, repeat, out, resume: bool):
     return reuse.write(out, inc_spec, got) if got.get("reused") else None
 
 
-def _confirm_paused(vid: int, lane: str, inc_spec: str, spec: str, out) -> int:
+def _confirm_paused(vid: int, lane: str, inc_spec: str, spec: str, out, why: str = "") -> int:
     """A paused or signal-stopped (not overrun) confirmation queues its own continuation; for a deploy, the queue re-pends this job. #1357, #1509, #1675."""
     from harness import adopt, queue_pause
     from harness import memory_store as ms
@@ -1351,7 +1346,8 @@ def _confirm_paused(vid: int, lane: str, inc_spec: str, spec: str, out) -> int:
     finally:
         store.close()
     then = "; this job resumes it after the deploy" if deploy else f"; it resumes as job {job['id']}" if job else ""
-    print(f"    paused at {out}: {watch.pause_reason(out) or 'on request'}{then}", flush=True)
+    said = f"not started: {why}" if why else f"paused at {out}: {watch.pause_reason(out) or 'on request'}"
+    print(f"    {said}{then}", flush=True)
     return watch.PAUSED
 
 
