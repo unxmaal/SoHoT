@@ -54,7 +54,7 @@ def fake_mflux(root: Path) -> Path:
 @pytest.fixture
 def tool(tmp_path, monkeypatch):
     root = fake_mflux(tmp_path / "uv-tools" / "mflux")
-    monkeypatch.setattr(stages, "MFLUX_TOOL_ROOT", root)
+    monkeypatch.setattr(stages, "mflux_tool_root", lambda: root)
     return root
 
 
@@ -104,7 +104,7 @@ def test_the_repos_come_from_the_installed_family_module_constants(tool):
     assert engines.mflux_needs("Qwen/Qwen3-4B") == ()
 
 
-@pytest.mark.skipif(not list(stages.MFLUX_TOOL_ROOT.glob("lib/python*/site-packages/mflux-*.dist-info")),
+@pytest.mark.skipif(not list(stages.mflux_tool_root().glob("lib/python*/site-packages/mflux-*.dist-info")),
                     reason="mflux is not installed as a uv tool")
 def test_the_installed_mflux_lens_loads_its_text_encoder_from_gpt_oss():
     got = engines.mflux_repos("mflux-generate-lens")

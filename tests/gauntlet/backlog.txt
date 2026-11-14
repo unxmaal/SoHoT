@@ -436,7 +436,6 @@ an-effect-reachable-from-a-run-that-is-not-the-live-deploy scripts/pool-full-pro
 an-order-the-code-needs-but-does-not-check evals/importers/history.py:<module>:import:read_text
 an-order-the-code-needs-but-does-not-check harness/checks/speech.py:<module>:import:read_text
 an-order-the-code-needs-but-does-not-check harness/paths.py:<module>:import:home()
-an-order-the-code-needs-but-does-not-check harness/stages.py:<module>:import:home()
 each-half-verified-against-its-own-spec-the-seam-against-nothing env:ACESTEP_ROOT
 each-half-verified-against-its-own-spec-the-seam-against-nothing env:DECIDER_BIN
 each-half-verified-against-its-own-spec-the-seam-against-nothing env:DIFFUSERS_VENV
