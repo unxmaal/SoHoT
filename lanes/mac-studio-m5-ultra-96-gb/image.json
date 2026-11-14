@@ -271,6 +271,21 @@
    "until": "runner:mflux/no-safetensors"
   },
   {
+   "candidate": "mflux:mlx-community/Boogu-Image-0.1-Base-4bit",
+   "decided_at": "2026-11-14T04:57:46Z",
+   "detail": "needs its own runner: the stock loader could not assemble it: fox-snow: exit 1: FileNotFoundError: No safetensors files found in mllm; geneval-000-single-object: exit 1: FileNotFoundError: No safetensors files found in h",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "mlx-community/Boogu-Image-0.1-Base-4bit",
+   "reason": "runtime",
+   "receipt_key": "mflux/mlx-community/Boogu-Image-0.1-Base-4bit-q8",
+   "run_id": 964,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "runner:mflux/mlx"
+  },
+  {
    "candidate": "mflux:mlx-community/Boogu-Image-0.1-Base-bf16",
    "decided_at": "2026-11-09T01:55:36Z",
    "detail": "needs its own runner: the stock loader could not assemble it: fox-snow: exit 1: FileNotFoundError: No safetensors files found in mllm; geneval-000-single-object: exit 1: FileNotFoundError: No safetensors files found in h",
@@ -472,7 +487,7 @@
    "until": "room_gb:>23.6"
   }
  ],
- "cursor": 1794283119741313,
+ "cursor": 1794632266718420,
  "events": [
   {
    "at": "2026-09-18T22:18:09Z",
@@ -2888,6 +2903,21 @@
    "reason": "memory",
    "run_id": null,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-14T04:57:46Z",
+   "candidate": "mflux:mlx-community/Boogu-Image-0.1-Base-4bit",
+   "chosen": null,
+   "detail": "needs its own runner: the stock loader could not assemble it: fox-snow: exit 1: FileNotFoundError: No safetensors files found in mllm; geneval-000-single-object: exit 1: FileNotFoundError: No safetensors files found in h",
+   "how": "",
+   "id": 1794632266718420,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "runtime",
+   "run_id": 964,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -3150,7 +3180,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-13T03:38:04Z",
+ "generated_at": "2026-11-14T08:00:39Z",
  "knobs": [],
  "lane": {
   "cases": 584,
