@@ -83,16 +83,23 @@ def test_a_child_that_exits_is_reaped_and_nothing_is_cut(seen):
 @pytest.mark.parametrize("how", ["stop", "stop_all"])
 def test_owned_stop_returns_at_the_bound_naming_a_child_its_kill_did_not_end(how, seen, monkeypatch, capsys):
     monkeypatch.setattr(owned, "_signal", lambda proc, hard: None)
-    proc = owned.start(SLEEPER)
+    box = {}
+
+    def start_then_stop():
+        # Started and stopped on one thread, as vllm.served does: a TERM guard set on main is undone only from main.
+        box["proc"] = owned.start(SLEEPER)
+        return owned.stop(box["proc"], grace=0.1) if how == "stop" else owned.stop_all(grace=0.1)
     try:
-        _returns_within(lambda: owned.stop(proc, grace=0.1) if how == "stop" else owned.stop_all(grace=0.1))
+        _returns_within(start_then_stop)
+        proc = box["proc"]
         assert f"owned.{how}: pid {proc.pid} did not exit" in capsys.readouterr().err
         assert seen == [("reap_after_kill", f"owned.{how}: pid {proc.pid} not reaped")]
         assert proc.pid not in owned._children and not list(owned.root().glob("*.json"))
     finally:
-        with contextlib.suppress(OSError):
-            os.killpg(proc.pid, signal.SIGKILL)
-        proc.wait()
+        if "proc" in box:
+            with contextlib.suppress(OSError):
+                os.killpg(box["proc"].pid, signal.SIGKILL)
+            box["proc"].wait()
 
 
 class _Download(Stuck):

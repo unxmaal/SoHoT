@@ -284,6 +284,40 @@ def test_served_records_its_child_and_forgets_it_and_its_handlers_on_exit(tmp_pa
     assert signal.getsignal(signal.SIGTERM) is before
 
 
+def _no_room(*a, **kw):
+    raise OSError(28, "No space left on device")
+
+
+@pytest.mark.parametrize("fails", ["spawn", "record"])
+def test_a_server_that_fails_to_start_leaves_the_owner_s_handlers_and_no_child(fails, monkeypatch, strays):
+    before = {s: signal.getsignal(s) for s in (signal.SIGTERM, signal.SIGINT)}
+    spawned = []
+    if fails == "spawn":
+        monkeypatch.setattr(owned.tether, "spawn", _no_room)
+    else:
+        real = owned.tether.spawn
+        monkeypatch.setattr(owned.tether, "spawn", lambda *a, **kw: spawned.append(real(*a, **kw)) or spawned[-1])
+        monkeypatch.setattr(owned, "_write", _no_room)
+    with pytest.raises(OSError, match="No space"):
+        owned.start(["sleep", "300"])
+    strays.extend(p.pid for p in spawned)
+    assert {s: signal.getsignal(s) for s in before} == before
+    assert owned._children == {} and owned._previous == {}
+    assert all(p.poll() is not None for p in spawned), "a child the caller never got a handle on still runs"
+
+
+def test_stopping_a_server_already_on_its_way_out_returns_and_forgets_it(monkeypatch, strays):
+    proc = owned.start(["sleep", "300"])
+    strays.append(proc.pid)
+
+    def exiting(pid, sig):
+        proc.kill()
+        raise PermissionError(1, "Operation not permitted")
+    monkeypatch.setattr(os, "killpg", exiting)
+    owned.stop(proc, grace=5)
+    assert proc.poll() is not None and owned._children == {}
+
+
 class Quiet(watchdog_observe.Probes):
     """A machine with nothing running, so a wake judges nothing and only reaps."""
 
