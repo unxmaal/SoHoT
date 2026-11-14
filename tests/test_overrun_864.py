@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from evals import watch
-from harness import power
+from harness import memory_store as ms, power
 from harness import watchdog as wd, watchdog_hands
 from harness.commands import measure as measure_cmd
 from harness.commands.measure import Launched
@@ -398,9 +398,9 @@ def test_an_overrun_stop_only_the_store_records_is_not_resumed(monkeypatch, worl
     conn = world()
     try:
         for at, (criterion, dry_run, outcome) in enumerate(stops):
-            conn.execute("INSERT INTO watchdog_actions (at, criterion, subject, action, escalated, dry_run, evidence, "
-                         "outcome) VALUES (?, ?, 'eval pgid 1', 'stop', 1, ?, ?, ?)",
-                         (at, criterion, dry_run, json.dumps({"command": command}), outcome))
+            conn.execute("INSERT INTO watchdog_actions (at, machine_id, criterion, subject, action, escalated, dry_run, "
+                         "evidence, outcome) VALUES (?, ?, ?, 'eval pgid 1', 'stop', 1, ?, ?, ?)",
+                         (at, ms.machine_row(conn), criterion, dry_run, json.dumps({"command": command}), outcome))
         v102.data(conn)
         conn.commit()
     finally:
