@@ -494,11 +494,13 @@ def _local_tools(schema, monkeypatch):
     monkeypatch.setattr(svc, "in_container", local)
 
 
-def test_a_postgres_restore_puts_the_backup_back_and_drops_what_a_migration_added(tmp_path, monkeypatch, _pg_schema):
+def test_a_postgres_restore_puts_the_backup_back_and_drops_what_a_migration_added(shown_live, tmp_path, monkeypatch,
+                                                                                   _pg_schema):
     """#1610: deploy 15's backup is a pg_dump; the rollback must leave the store exactly as it was dumped."""
     from harness import deploy_switch
     _pg_ready()
     _local_tools(_pg_schema, monkeypatch)
+    assert svc.in_container(["psql"])[0] != "docker"
     ms.connect().close()
     saved = svc.dump(tmp_path / "discovery-15-pre92.db")
     conn = store.postgres_connect()
