@@ -119,7 +119,7 @@ def test_the_install_does_not_reload_the_worker_under_a_job_that_outlived_the_qu
         "the worker is reported not loaded, and skipped rather than reloaded under its job")
 
 
-def test_a_volume_stop_under_a_job_that_outlived_the_quiesce_stops_nothing(tmp_path, monkeypatch):
+def test_a_volume_stop_under_a_job_that_outlived_the_quiesce_stops_nothing(shown_live, tmp_path, monkeypatch):
     from harness import volume
     monkeypatch.setattr(volume, "state_path", lambda: tmp_path / "volume.json")
     ran = []

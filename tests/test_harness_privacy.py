@@ -206,7 +206,7 @@ def test_comments_are_read_past_the_first_page(tmp_path, monkeypatch):
     assert ("api", "repos/{owner}/{repo}/issues/comments?per_page=2&page=3") in fake.calls
 
 
-def test_posting_a_registered_name_is_refused_before_any_network_call(tmp_path, monkeypatch, capsys):
+def test_posting_a_registered_name_is_refused_before_any_network_call(shown_live, tmp_path, monkeypatch, capsys):
     _names(monkeypatch, tmp_path)
     ran = []
     monkeypatch.setattr(privacy.subprocess, "run", lambda *a, **kw: ran.append(a))
@@ -218,7 +218,7 @@ def test_posting_a_registered_name_is_refused_before_any_network_call(tmp_path, 
     assert ran == [] and "person-name" in capsys.readouterr().err
 
 
-def test_a_clean_post_reaches_gh(tmp_path, monkeypatch):
+def test_a_clean_post_reaches_gh(shown_live, tmp_path, monkeypatch):
     import io
     _names(monkeypatch, tmp_path)
     ran = []

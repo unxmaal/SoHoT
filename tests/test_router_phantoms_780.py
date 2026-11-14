@@ -120,7 +120,7 @@ def test_a_failed_restart_keeps_the_removed_stems(monkeypatch):
     assert gguf.removed() == ["Gone"]
 
 
-def test_any_restart_that_answers_clears_the_removed_stems_and_one_that_does_not_keeps_them():
+def test_any_restart_that_answers_clears_the_removed_stems_and_one_that_does_not_keeps_them(shown_live):
     gguf.note_removed(["Gone"])
     assert REFRESH(run=lambda *a, **k: None, wait=lambda expect: "did not answer") == "did not answer"
     assert gguf.removed() == ["Gone"]

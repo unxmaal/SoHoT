@@ -384,6 +384,11 @@ def post_texts(args, stdin=None) -> tuple[list[str], str | None]:
 
 def post(args) -> int:
     """Run `gh <args>` only when the text it would publish passes the scan. #1296."""
+    from harness import github, monitor
+    if github.writes(args) and not monitor.live_home():
+        print(monitor.off_live(f"gh {' '.join(args[:2])}") + f"; and the scan here reads {_home_file()}, "
+              "not the owner's names; nothing was sent to GitHub", file=sys.stderr)
+        return 1
     texts, fed = post_texts(args)
     found = [f for t in texts for f in check_post(t)]
     for f in found:

@@ -190,6 +190,9 @@ def _await_unload(label: str, ops: Ops, tries: int = 50) -> bool:
 
 def stop(vol: str, ops: Ops) -> dict:
     """Quiesce the queue, boot out every service that reads the volume, then check lsof. #612."""
+    from harness import monitor
+    if not monitor.live_home():
+        raise VolumeError(monitor.off_live("soh volume stop (launchctl bootout of the machine's services)"))
     if state_path().exists():
         raise VolumeError(f"{state_path()} already records a stop; run `soh volume start` first")
     from harness import quiesce
@@ -223,6 +226,9 @@ def _save(vol: str, stopped: list, was_paused: bool) -> None:
 
 def start(ops: Ops) -> dict:
     """Bring back exactly what stop stopped; resume the queue only if it was running. #612."""
+    from harness import monitor
+    if not monitor.live_home():
+        raise VolumeError(monitor.off_live("soh volume start (launchctl bootstrap of the machine's services)"))
     if not state_path().exists():
         raise VolumeError(f"nothing to start: no {state_path().name} from `soh volume stop`")
     saved = json.loads(state_path().read_text(encoding="utf-8"))

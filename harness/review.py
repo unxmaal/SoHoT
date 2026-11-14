@@ -194,6 +194,9 @@ def claude_ask(prompt: str, cwd: Path, role: str, *, execute=subprocess.run, env
 
 
 def gh_run(argv: list[str]) -> subprocess.CompletedProcess:
+    from harness import github, monitor
+    if github.writes(argv) and not monitor.live_home():
+        return subprocess.CompletedProcess(["gh", *argv], 1, "", monitor.off_live(f"gh {' '.join(argv[:2])}"))
     try:
         return subprocess.run(["gh", *argv, "-R", GH_REPO], capture_output=True, text=True, encoding="utf-8",
                               timeout=GH_TIMEOUT_S)

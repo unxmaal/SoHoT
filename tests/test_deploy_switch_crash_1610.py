@@ -105,7 +105,11 @@ def test_the_switch_run_as_the_unit_restores_a_postgres_store_through_its_contai
     path = _record(tmp_path, backup=backup)
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
-    rec = _as_the_unit(path, elsewhere, _unit_env({"PATH": f"{bin_}{os.pathsep}{os.environ['PATH']}"}))
+    # The unit runs on the live home, $HOME/localharness, so the store restore passes its live-home gate. #1963.
+    (tmp_path / "user").mkdir()
+    (tmp_path / "user" / "localharness").symlink_to(paths.home(), target_is_directory=True)
+    rec = _as_the_unit(path, elsewhere, _unit_env({"PATH": f"{bin_}{os.pathsep}{os.environ['PATH']}",
+                                                   "HOME": str(tmp_path / "user")}))
     assert rec["outcome"] == deploy_switch.ROLLED_BACK, rec
     assert f"store restored from {backup} (schema 91)" in rec["detail"]
     said = calls.read_text(encoding="utf-8").splitlines()

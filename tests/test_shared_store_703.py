@@ -391,7 +391,7 @@ def test_restart_service_on_linux_does_not_claim_success(monkeypatch):
         gs.restart_service()
 
 
-def test_an_adoption_on_linux_records_a_failed_switch_with_the_reason(config, monkeypatch):
+def test_an_adoption_on_linux_records_a_failed_switch_with_the_reason(shown_live, config, monkeypatch):
     monkeypatch.setattr(gs.sys, "platform", "linux")
     spawned = []
     gs.spawn(requested_at=7.0, popen=lambda *a, **k: spawned.append(a))

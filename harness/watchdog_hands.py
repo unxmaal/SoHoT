@@ -53,6 +53,10 @@ def notice(title: str, message: str, subtitle: str = "", run=None, platform: str
     return desktop(title, message, subtitle, run=run or subprocess.run, platform=platform)
 
 
+#: Acts on what the machine-wide ps scan found (pgids, run dirs, the router, launchd units, GitHub); live home only. #1963.
+MACHINE_ACTS = frozenset({"file", "pause", "stop", "reap", "unload", "restart"})
+
+
 class Hands:
     """The fixed action set. Each returns an outcome string for the store row."""
 
@@ -203,6 +207,9 @@ class Hands:
         from harness import watchdog as wd
         if action not in wd.ACTIONS:
             raise ValueError(f"not a watchdog action: {action}")
+        from harness import monitor
+        if action in MACHINE_ACTS and not monitor.live_home():
+            return wd.Said(monitor.off_live(f"the watchdog's {action}"), wd.REFUSED)
         try:
             return wd.said(getattr(self, action)(f), action)
         except Exception as exc:  # noqa: BLE001 - one failed action must not cost the rest of the wake

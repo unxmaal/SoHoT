@@ -67,7 +67,7 @@ class Fake:
 
 
 @pytest.fixture
-def deployed():
+def deployed(shown_live):
     """This machine's deploy of NEW finished deployed, its record written as the switch leaves it."""
     c = ms.connect()
     did = deploy._insert(c, NEW, None, Path("/releases/1-old"), OLD, time.time())
@@ -120,7 +120,7 @@ def test_no_node_follows_a_deploy_that_is_running_or_did_not_pass(tmp_path):
         c.close()
 
 
-def test_a_paused_deploy_queue_deploys_no_node(deployed, tmp_path):
+def test_a_paused_deploy_queue_deploys_no_node(shown_live, deployed, tmp_path):
     f = _yaml(tmp_path, _node("styx", deploy={"ssh": "styx"}))
     ssh = Fake()
     deploy.pause()
@@ -130,7 +130,7 @@ def test_a_paused_deploy_queue_deploys_no_node(deployed, tmp_path):
         deploy.resume()
 
 
-def test_a_node_already_at_the_sha_is_left_alone(deployed, tmp_path):
+def test_a_node_already_at_the_sha_is_left_alone(shown_live, deployed, tmp_path):
     f = _yaml(tmp_path, _node("styx", deploy={"ssh": "styx"}))
     ssh = Fake(head=(0, f"warning: something\n{NEW}\n"))
     assert _follow(deployed, f, ssh)["nodes"]["styx"]["outcome"] == node_deploy.CURRENT
@@ -157,7 +157,7 @@ def test_a_failing_node_install_rolls_the_node_back_and_alerts_and_leaves_the_st
     assert _follow(deployed, f, Fake(), retry=True)["nodes"]["styx"]["outcome"] == node_deploy.DEPLOYED
 
 
-def test_a_rollback_that_fails_too_says_so(deployed, tmp_path):
+def test_a_rollback_that_fails_too_says_so(shown_live, deployed, tmp_path):
     f = _yaml(tmp_path, _node("styx", deploy={"ssh": "styx"}))
     ssh = Fake(install={NEW: (1, "bad"), OLD: (1, "worse")})
     alerts = []
@@ -165,7 +165,7 @@ def test_a_rollback_that_fails_too_says_so(deployed, tmp_path):
     assert r["outcome"] == node_deploy.FAILED and "worse" in r["detail"] and len(alerts) == 1
 
 
-def test_a_down_node_is_skipped_and_retried_at_the_next_poll(deployed, tmp_path):
+def test_a_down_node_is_skipped_and_retried_at_the_next_poll(shown_live, deployed, tmp_path):
     f = _yaml(tmp_path, _node("styx", deploy={"ssh": "styx"}))
     alerts = []
     down = Fake(head=(255, "ssh: connect to host styx port 22: Operation timed out"))
@@ -190,7 +190,7 @@ def test_an_install_cut_off_by_the_network_reinstalls_next_poll_and_keeps_the_tr
     assert r["outcome"] == node_deploy.ROLLED_BACK
 
 
-def test_an_install_whose_poll_died_is_taken_up_again(deployed, tmp_path):
+def test_an_install_whose_poll_died_is_taken_up_again(shown_live, deployed, tmp_path):
     f = _yaml(tmp_path, _node("styx", deploy={"ssh": "styx"}))
     rec = _record(deployed)
     rec["nodes"] = {"styx": {"outcome": node_deploy.INSTALLING, "pid": 2 ** 22 + 12345, "started": True,

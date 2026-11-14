@@ -276,14 +276,14 @@ def _verbs(fake):
     return [c[1] for c in fake.calls if c[0] == "launchctl"]
 
 
-def test_monitor_install_bootstraps_again_when_the_first_bootstrap_fails(monkeypatch, tmp_path):
+def test_monitor_install_bootstraps_again_when_the_first_bootstrap_fails(shown_live, monkeypatch, tmp_path):
     fake = FakeLaunchd(fail=1)
     got = _install(monkeypatch, fake, tmp_path)
     assert fake.state == "up" and got["pid"] == 4242 and got["attempts"] == 2, fake.calls
     assert _verbs(fake).count("bootstrap") == 2
 
 
-def test_monitor_install_never_bootstraps_into_an_unfinished_teardown(monkeypatch, tmp_path):
+def test_monitor_install_never_bootstraps_into_an_unfinished_teardown(shown_live, monkeypatch, tmp_path):
     # 2026-11-03 12:31:45: bootstrap 5 ms after bootout, then launchd removed the label for good. #1521.
     fake = FakeLaunchd(teardown=4)
     got = _install(monkeypatch, fake, tmp_path)
@@ -292,7 +292,7 @@ def test_monitor_install_never_bootstraps_into_an_unfinished_teardown(monkeypatc
     assert verbs.index("bootout") < verbs.index("print") < verbs.index("bootstrap")
 
 
-def test_monitor_install_fails_loudly_when_the_old_monit_never_unloads(monkeypatch, tmp_path):
+def test_monitor_install_fails_loudly_when_the_old_monit_never_unloads(shown_live, monkeypatch, tmp_path):
     fake = FakeLaunchd(teardown=None)
     with pytest.raises(monitor.InstallError, match="monit is NOT loaded.*still listed"):
         _install(monkeypatch, fake, tmp_path)
@@ -300,19 +300,19 @@ def test_monitor_install_fails_loudly_when_the_old_monit_never_unloads(monkeypat
     assert not [c for c in fake.calls if c[-1] == "reload"], "a dying monit is not reloaded"
 
 
-def test_monitor_install_fails_loudly_when_every_bootstrap_fails(monkeypatch, tmp_path):
+def test_monitor_install_fails_loudly_when_every_bootstrap_fails(shown_live, monkeypatch, tmp_path):
     fake = FakeLaunchd(fail=monitor.BOOTSTRAP_TRIES)
     with pytest.raises(monitor.InstallError, match="monit is NOT loaded.*Input/output error"):
         _install(monkeypatch, fake, tmp_path)
 
 
-def test_monitor_install_fails_loudly_when_launchd_never_starts_it(monkeypatch, tmp_path):
+def test_monitor_install_fails_loudly_when_launchd_never_starts_it(shown_live, monkeypatch, tmp_path):
     fake = FakeLaunchd(starts=False)
     with pytest.raises(monitor.InstallError, match="no running monit"):
         _install(monkeypatch, fake, tmp_path)
 
 
-def test_monitor_install_leaves_a_monit_already_on_this_config_running(monkeypatch, tmp_path):
+def test_monitor_install_leaves_a_monit_already_on_this_config_running(shown_live, monkeypatch, tmp_path):
     first = FakeLaunchd()
     _install(monkeypatch, first, tmp_path)
     again = FakeLaunchd()

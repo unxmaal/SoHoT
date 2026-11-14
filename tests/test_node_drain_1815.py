@@ -105,7 +105,7 @@ def _send(model=MODEL, smoke=False):
     return asyncio.run(served.proxy_handler_instance.async_pre_call_hook(None, None, data, "acompletion"))["model"]
 
 
-def test_a_request_in_flight_when_the_node_deploy_starts_completes_and_new_ones_go_to_this_machine(
+def test_a_request_in_flight_when_the_node_deploy_starts_completes_and_new_ones_go_to_this_machine(shown_live, 
         deployed, gw, tmp_path, monkeypatch):  # noqa: F811
     monkeypatch.setattr(node_deploy, "DRAIN_POLL_S", 0.02)
     styx, sent = Styx(), []
@@ -176,7 +176,7 @@ def test_a_drain_that_empties_ends_drained_without_waiting_for_the_deadline():
     assert len(slept) == 2
 
 
-def test_a_deploy_held_at_the_deadline_still_installs_and_records_it(deployed, tmp_path):  # noqa: F811
+def test_a_deploy_held_at_the_deadline_still_installs_and_records_it(shown_live, deployed, tmp_path):  # noqa: F811
     ssh, clock = Fake(), [0.0]
     ssh.busy = [1] * 10_000
 
@@ -191,7 +191,7 @@ def test_a_deploy_held_at_the_deadline_still_installs_and_records_it(deployed, t
     assert not gateway_switch.draining(node="styx")
 
 
-def test_a_failed_deploy_keeps_the_node_out_of_routing_through_its_rollback_then_puts_it_back(deployed, tmp_path):  # noqa: F811
+def test_a_failed_deploy_keeps_the_node_out_of_routing_through_its_rollback_then_puts_it_back(shown_live, deployed, tmp_path):  # noqa: F811
     seen = []
     ssh = Fake(install={NEW: (1, "boom")})
     real = ssh.__call__

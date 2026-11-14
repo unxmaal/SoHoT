@@ -247,6 +247,8 @@ def install(run=subprocess.run, which=shutil.which, platform: str | None = None,
     """Render this machine's config, check it, and load monit under launchd. The webhook is never written."""
     if (platform or sys.platform) != "darwin":
         raise InstallError("soh monitor install is macOS-only: it loads a launchd agent")
+    if not live_home():
+        raise InstallError(off_live(f"soh monitor install (launchctl bootout and bootstrap of {LABEL})"))
     monit = which("monit")
     if not monit:
         raise InstallError("monit is not installed: brew install monit")
@@ -480,6 +482,12 @@ def _scrub(text: str, secret: str) -> str:
 def live_home(home: Path | None = None) -> bool:
     """Is `home` the machine's live home, the one whose alerts reach the owner. #1720."""
     return Path(home or paths.home()).resolve() == Path(paths.DEFAULT_HOME).resolve()
+
+
+def off_live(what: str, home: Path | None = None) -> str:
+    """Why `what`, an act on the whole machine, is refused from a home live_home() says is not the live one. #1963."""
+    return (f"refused: {Path(home or paths.home())} is not the live home {paths.DEFAULT_HOME}, and {what} acts on "
+            "the whole machine; run it from the live home")
 
 
 def alert(kind: str, environ=None, *, notify=None, send=None, pause=None, measure=None, clock=time.time,

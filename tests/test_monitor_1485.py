@@ -330,7 +330,7 @@ def test_the_morning_brief_says_when_monit_is_absent(tmp_path):
     assert r["monitor"] is None and not any("monit" in ln for ln in morning_cmd.render(r))
 
 
-def test_install_is_macos_only_and_needs_monit(monkeypatch):
+def test_install_is_macos_only_and_needs_monit(shown_live, monkeypatch):
     with pytest.raises(monitor.InstallError, match="macOS-only"):
         monitor.install(platform="linux")
     with pytest.raises(monitor.InstallError, match="brew install monit"):

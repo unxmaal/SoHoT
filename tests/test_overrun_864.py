@@ -365,7 +365,7 @@ def test_an_abandoned_directory_the_watchdog_stopped_as_an_overrun_is_left(monke
     assert "--resume" not in argv and argv[argv.index("--out") + 1] != str(out)
 
 
-def test_the_watchdog_names_its_criterion_in_the_run_directory_before_it_signals(monkeypatch, tmp_path):
+def test_the_watchdog_names_its_criterion_in_the_run_directory_before_it_signals(shown_live, monkeypatch, tmp_path):
     from harness import job_procs
     from tests.test_watchdog import finding, run
     seen = []

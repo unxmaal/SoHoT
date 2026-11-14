@@ -181,7 +181,7 @@ def _wake(probes, monkeypatch):
     return rows, hands
 
 
-def test_an_idle_server_past_the_limit_is_restarted_the_way_launchd_does(tmp_path, monkeypatch):
+def test_an_idle_server_past_the_limit_is_restarted_the_way_launchd_does(shown_live, tmp_path, monkeypatch):
     rows, hands = _wake(Tts(tmp_path), monkeypatch)
     assert [(r["action"], r["outcome"]) for r in rows] == [("restart", "restarted tts")]
     assert json.loads(rows[0]["evidence"])["footprint_gib"] == 43.0
@@ -194,7 +194,7 @@ def test_a_request_in_flight_keeps_the_server_up(tmp_path, monkeypatch):
     assert rows == [] and hands.argv == []
 
 
-def test_an_eval_on_an_audio_lane_keeps_the_server_up(tmp_path, monkeypatch):
+def test_an_eval_on_an_audio_lane_keeps_the_server_up(shown_live, tmp_path, monkeypatch):
     probes = Tts(tmp_path, procs=[P(GROUP, 1, GROUP, 600, SPEECH)])
     probes.runs = [{"state": "running", "pid": GROUP, "done": 1, "total": 9, "specs": {"m": f"tts:{MOSS}"},
                     "started_at": NIGHT - 600, "last_progress_at": NIGHT - 30}]

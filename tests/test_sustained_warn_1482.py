@@ -85,7 +85,7 @@ def _acts(rows):
     return [(r["criterion"], r["action"]) for r in rows]
 
 
-def test_three_warn_samples_with_a_served_model_nothing_uses_give_it_back(tmp_path):
+def test_three_warn_samples_with_a_served_model_nothing_uses_give_it_back(shown_live, tmp_path):
     done, rows = _wakes(tmp_path, [WARN] * 3, spare=True)
     assert _acts(rows) == [("memory_warn", wd.NOTIFY)] * 2 + [("memory_sustained", wd.UNLOAD)]
     assert done[-1] == ("memory_sustained", wd.UNLOAD)
@@ -94,7 +94,7 @@ def test_three_warn_samples_with_a_served_model_nothing_uses_give_it_back(tmp_pa
     assert ev["samples"] == 3 and ev["limit_samples"] == wd.WARN_SUSTAINED
 
 
-def test_with_nothing_to_give_back_the_sweep_pauses_with_its_reason_and_one_push(tmp_path):
+def test_with_nothing_to_give_back_the_sweep_pauses_with_its_reason_and_one_push(shown_live, tmp_path):
     done, rows = _wakes(tmp_path, [WARN] * 5)
     assert _acts(rows) == [("memory_warn", wd.NOTIFY)] * 2 + [("memory_stuck", wd.PAUSE)] * 2 + [
         ("memory_stuck", wd.NOTIFY)]
@@ -132,7 +132,7 @@ def test_a_model_with_a_request_in_flight_or_unknown_is_not_spare(tmp_path):
     assert wd.spare(watchdog_observe.observe(fake, None, NIGHT)) == [{"server": "router", "model": SPARE}]
 
 
-def test_a_sustained_warn_gives_back_a_lane_model_too(monkeypatch):
+def test_a_sustained_warn_gives_back_a_lane_model_too(shown_live, monkeypatch):
     asked = []
     monkeypatch.setattr(router, "release", lambda stems, why, **kw: asked.append((stems, kw.get("keep"))) or stems)
     monkeypatch.setattr(mlx_server, "release", lambda model, why, **kw: asked.append((model, kw.get("keep"))) or True)

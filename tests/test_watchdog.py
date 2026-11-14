@@ -338,7 +338,7 @@ def test_notify_is_unavailable_off_macos_and_says_why(plat, shown_live):
     assert out.startswith("notify unavailable") and plat in out and calls == []
 
 
-def test_pause_writes_the_pause_file_in_the_run_directory(tmp_path):
+def test_pause_writes_the_pause_file_in_the_run_directory(shown_live, tmp_path):
     f = finding(progress=run(1, tmp=tmp_path))
     out = watchdog_hands.Hands().do(wd.PAUSE, f)
     assert (tmp_path / "pause").is_file() and "pause file written" in out
@@ -350,11 +350,11 @@ def test_pause_refuses_a_pause_file_outside_the_run_directory(tmp_path):
     assert not (tmp_path.parent / "elsewhere").exists()
 
 
-def test_pause_without_a_progress_file_says_it_is_unavailable():
+def test_pause_without_a_progress_file_says_it_is_unavailable(shown_live):
     assert "unavailable" in watchdog_hands.Hands().do(wd.PAUSE, finding())
 
 
-def test_pause_of_a_job_pauses_each_eval_under_it(tmp_path):
+def test_pause_of_a_job_pauses_each_eval_under_it(shown_live, tmp_path):
     child = wd.Subject("eval", "eval pgid 2", "t", progress=run(2, tmp=tmp_path))
     job = wd.Subject("job", "job 0007", "t", children=[child])
     watchdog_hands.Hands().do(wd.PAUSE, wd.Finding("long_run", job, {}))
@@ -370,7 +370,7 @@ def _group(tmp_path):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="a POSIX process group")
-def test_stop_terminates_a_fake_process_group(tmp_path):
+def test_stop_terminates_a_fake_process_group(shown_live, tmp_path):
     proc = _group(tmp_path)
     try:
         out = watchdog_hands.Hands().do(wd.STOP, finding(pgid=proc.pid))
@@ -384,7 +384,7 @@ def test_stop_refuses_a_subject_with_no_group_of_ours():
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="a POSIX process group")
-def test_reap_kills_an_orphan_group_and_refuses_one_that_is_not(tmp_path):
+def test_reap_kills_an_orphan_group_and_refuses_one_that_is_not(shown_live, tmp_path):
     proc = _group(tmp_path)
     try:
         assert watchdog_hands.Hands().do(wd.REAP, finding(pgid=proc.pid)).startswith("refused")
@@ -395,7 +395,7 @@ def test_reap_kills_an_orphan_group_and_refuses_one_that_is_not(tmp_path):
         proc.kill()
 
 
-def test_unload_goes_through_the_router_s_own_protection(monkeypatch):
+def test_unload_goes_through_the_router_s_own_protection(shown_live, monkeypatch):
     from harness import router
     asked = []
     monkeypatch.setattr(router, "release", lambda stems, why, say=print: asked.append(stems) or stems)
@@ -405,7 +405,7 @@ def test_unload_goes_through_the_router_s_own_protection(monkeypatch):
     assert watchdog_hands.Hands().do(wd.UNLOAD, f).startswith("kept")
 
 
-def test_restart_runs_launchd_restart_for_the_gateway_and_refuses_an_unlisted_service():
+def test_restart_runs_launchd_restart_for_the_gateway_and_refuses_an_unlisted_service(shown_live):
     calls = []
 
     def fake(argv, **kw):
@@ -418,7 +418,7 @@ def test_restart_runs_launchd_restart_for_the_gateway_and_refuses_an_unlisted_se
     assert watchdog_hands.Hands(run=fake).do(wd.RESTART, other).startswith("refused") and len(calls) == 1
 
 
-def test_restart_that_waits_on_the_gpu_lock_says_so():
+def test_restart_that_waits_on_the_gpu_lock_says_so(shown_live):
     def slow(argv, **kw):
         raise subprocess.TimeoutExpired(argv, kw.get("timeout"))
     g = wd.Finding("gateway_down", wd.Subject("gateway", "gateway", "t", detail={"service": "gateway"}), {})
@@ -436,13 +436,13 @@ def _gh(open_issues):
     return calls, fake
 
 
-def test_file_is_off_until_its_own_switch_is_set():
+def test_file_is_off_until_its_own_switch_is_set(shown_live):
     calls, fake = _gh([])
     assert watchdog_hands.Hands(run=fake, environ={}).do(wd.FILE, finding()).startswith("not filed")
     assert calls == []
 
 
-def test_file_creates_an_issue_carrying_its_fingerprint():
+def test_file_creates_an_issue_carrying_its_fingerprint(shown_live):
     calls, fake = _gh([])
     f = finding(command=EVAL)
     out = watchdog_hands.Hands(run=fake, environ={wd.FILE_ENV: "1"}).do(wd.FILE, f)
@@ -450,7 +450,7 @@ def test_file_creates_an_issue_carrying_its_fingerprint():
     assert f"{wd.FINGERPRINT} {watchdog_hands.fingerprint(f)}" in calls[1][calls[1].index("--body") + 1]
 
 
-def test_the_watchdog_refuses_to_file_a_body_with_a_registered_name(monkeypatch):
+def test_the_watchdog_refuses_to_file_a_body_with_a_registered_name(shown_live, monkeypatch):
     from harness import privacy
     monkeypatch.delenv("LH_PRIVATE_NAMES", raising=False)
     privacy.register(["Zorblax Quentaro"])
@@ -460,7 +460,7 @@ def test_the_watchdog_refuses_to_file_a_body_with_a_registered_name(monkeypatch)
     assert calls == []
 
 
-def test_file_is_deduped_against_an_open_issue_with_the_fingerprint():
+def test_file_is_deduped_against_an_open_issue_with_the_fingerprint(shown_live):
     calls, fake = _gh([{"number": 812}])
     assert watchdog_hands.Hands(run=fake, environ={wd.FILE_ENV: "1"}).do(wd.FILE, finding()) == "already filed: #812"
     assert len(calls) == 1 and watchdog_hands.fingerprint(finding()) in calls[0][calls[0].index("--search") + 1]
@@ -576,7 +576,7 @@ def test_progress_files_are_read_from_run_directories_while_running_or_unreadabl
     assert watchdog_observe.ProgressFiles([tmp_path / "missing"]).runs() == []
 
 
-def test_a_real_evals_run_progress_file_is_read_and_paused_through_its_own_hook(tmp_path):
+def test_a_real_evals_run_progress_file_is_read_and_paused_through_its_own_hook(shown_live, tmp_path):
     """The reader and the pause action against evals/watch.py itself, not a copy of its format."""
     from evals import watch
     eye = watch.Watch(planned={"a": 10.0}, outdir=tmp_path / "run")

@@ -590,6 +590,8 @@ def _monit_set_up(tmp_path):
     (tmp_path / "home" / "Library" / "LaunchAgents" / f"{MONIT}.plist").write_text("old", encoding="utf-8")
     (tmp_path / "state" / MONIT).touch()
     (tmp_path / "state" / f"{MONIT}.running").write_text("", encoding="utf-8")
+    # The live home is $HOME/localharness, as on the machine, so soh monitor install passes its live-home gate. #1963.
+    (tmp_path / "home" / "localharness").symlink_to(tmp_path / "lh", target_is_directory=True)
 
 
 @pytest.mark.skipif(sys.platform != "darwin", reason="soh monitor install loads a launchd agent")

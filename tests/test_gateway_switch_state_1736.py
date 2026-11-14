@@ -189,7 +189,7 @@ def test_this_process_is_alive_by_its_own_identity():
     assert st.alive(st.me()) is True
 
 
-def test_spawn_settles_a_dead_switch_and_starts_one_but_not_beside_a_live_one(monkeypatch):
+def test_spawn_settles_a_dead_switch_and_starts_one_but_not_beside_a_live_one(shown_live, monkeypatch):
     spawned = []
     monkeypatch.setattr(gs.sys, "platform", "darwin")
     rid = _claim()

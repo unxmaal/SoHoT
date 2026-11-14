@@ -155,7 +155,7 @@ def test_the_served_probe_reads_loaded_router_models_their_slots_and_a_non_boot_
     assert watchdog_observe.Probes().served()[-1] == {"server": "mlx", "model": "mlx-community/Q3-30B", "in_flight": None}
 
 
-def test_unload_gives_back_a_lane_s_own_model_past_the_eval_lock(monkeypatch):
+def test_unload_gives_back_a_lane_s_own_model_past_the_eval_lock(shown_live, monkeypatch):
     asked = []
     monkeypatch.setattr(router, "release", lambda stems, why, **kw: asked.append(
         ("router", stems, kw["keep"], kw["proven_idle"], why)) or stems)

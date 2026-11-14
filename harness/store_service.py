@@ -58,6 +58,10 @@ def password(account: str, *, ensure: bool = False, secret=None) -> str:
 
 def compose(action: list[str], *, run=subprocess.run, environ=None, secret=None) -> subprocess.CompletedProcess:
     """`docker compose` on the store's compose file, the owner password passed in the environment only."""
+    from harness import monitor
+    if action[:1] != ["ps"] and not monitor.live_home():
+        return subprocess.CompletedProcess(["docker", "compose", *action], 1, "",
+                                           monitor.off_live(f"docker compose {' '.join(action)} on {CONTAINER}"))
     env = dict(os.environ if environ is None else environ)
     env["SOHOT_PG_PASSWORD"] = password(OWNER, ensure=True, secret=secret)
     env.setdefault("SOHOT_PG_PORT", str(PORT))
@@ -132,7 +136,9 @@ def dump(dest: Path, *, run=subprocess.run) -> Path:
 
 def restore(src: Path, *, run=subprocess.run) -> None:
     """Replace the store with a pg_dump -Fc file in one transaction, tables it lacks dropped; a failure changes nothing."""
-    from harness import cuts
+    from harness import cuts, monitor
+    if not monitor.live_home():
+        raise RuntimeError(monitor.off_live(f"pg_restore into {CONTAINER}"))
     src = Path(src)
     sql = src.with_name(src.name + ".restore.sql")
     try:
@@ -212,6 +218,9 @@ def labelled(vol: dict | None) -> bool:
 
 def ensure_volume(run=subprocess.run, home: Path | None = None) -> str:
     """The store's volume before compose starts on it: created with the keep label when absent, never on a switched home."""
+    from harness import monitor
+    if not monitor.live_home(home):
+        raise RuntimeError(monitor.off_live(f"docker volume create {VOLUME}", home))
     if _inspect(["volume"], VOLUME, run) is not None:
         return "exists"
     if hosted_here(home):

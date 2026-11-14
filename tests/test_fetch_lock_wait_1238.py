@@ -40,7 +40,7 @@ def _restart():
     return REFRESH(run=lambda *a, **k: None, wait=lambda expect: "")
 
 
-def test_a_loop_waiting_on_the_router_restarts_lock_reads_running_past_an_hour(monkeypatch):
+def test_a_loop_waiting_on_the_router_restarts_lock_reads_running_past_an_hour(shown_live, monkeypatch):
     clock, seen = {"t": START + 5}, []
     monkeypatch.setattr(hb, "clock", lambda: clock["t"])
     hb.start(lane="", total=10)
@@ -54,7 +54,7 @@ def test_a_loop_waiting_on_the_router_restarts_lock_reads_running_past_an_hour(m
     assert got["verdict"] == sc.RUNNING, got
 
 
-def test_the_router_restart_declares_how_long_it_holds_the_machine(monkeypatch):
+def test_the_router_restart_declares_how_long_it_holds_the_machine(shown_live, monkeypatch):
     seen = []
     _waits_then_holds(monkeypatch, {"t": START}, seen)
     _restart()

@@ -18,7 +18,7 @@ REPO = Path(__file__).resolve().parent.parent
 
 
 @pytest.fixture
-def world():
+def world(shown_live):
     c = ms.connect()
     did = deploy._insert(c, NEW, None, Path("/releases/1-old"), OLD, time.time())
     deploy.finish(c, did, deploy.DEPLOYED, f"{NEW[:12]} serving")
@@ -73,7 +73,7 @@ def test_an_install_cut_off_after_it_wrote_the_role_still_rolls_back_to_the_role
     assert r["outcome"] == node_deploy.ROLLED_BACK and again.role == "node"
 
 
-def test_extra_loaded_units_after_the_install_fail_it_and_roll_it_back(world, tmp_path):
+def test_extra_loaded_units_after_the_install_fail_it_and_roll_it_back(shown_live, world, tmp_path):
     f = _yaml(tmp_path, _plain("styx", deploy={"ssh": "styx"}))
     ssh, alerts = Fake(role="interactive", extra=["worker", "gateway"]), []
     checked = []
@@ -103,7 +103,7 @@ def test_units_match_names_what_differs(tmp_path, said, why):
     assert rc == 0 and (why in got if why else got == "")
 
 
-def test_a_node_at_the_sha_whose_role_the_owner_changed_is_reinstalled(world, tmp_path):
+def test_a_node_at_the_sha_whose_role_the_owner_changed_is_reinstalled(shown_live, world, tmp_path):
     f = _yaml(tmp_path, _plain("styx", deploy={"ssh": "styx", "role": "interactive"}))
     ssh = Fake(head=(0, NEW), role="node")
     r = _follow(world, f, ssh)["nodes"]["styx"]

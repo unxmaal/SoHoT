@@ -103,7 +103,7 @@ def test_an_eval_with_no_progress_file_makes_nothing_idle(tmp_path):
     assert wd.idle(watchdog_observe.observe(fake, None, NIGHT)) == []
 
 
-def test_unload_on_warn_releases_each_idle_model_past_the_eval_lock(monkeypatch):
+def test_unload_on_warn_releases_each_idle_model_past_the_eval_lock(shown_live, monkeypatch):
     asked = []
     monkeypatch.setattr(mlx_server, "release", lambda model, why, **kw: asked.append(("mlx", model)) or True)
     monkeypatch.setattr(router, "release",
@@ -160,7 +160,7 @@ def test_release_spec_matches_the_spec_s_model_through_a_method_and_options():
                                    opener=stub, say=lambda *_: None)
 
 
-def test_a_watchdog_pause_names_its_criterion_in_the_pause_file(tmp_path):
+def test_a_watchdog_pause_names_its_criterion_in_the_pause_file(shown_live, tmp_path):
     run = {"_dir": str(tmp_path), "pause_file": str(tmp_path / watch.PAUSE_FILE)}
     f = wd.Finding("memory", wd.Subject("eval", "eval pgid 1", "t", progress=run), {})
     assert "pause file written" in watchdog_hands.Hands().do(wd.PAUSE, f)

@@ -52,7 +52,7 @@ def test_the_compose_file_takes_the_volume_as_external_so_compose_never_recreate
     assert "labels:" not in vols, "a label here changes compose's config hash and it offers to recreate the volume"
 
 
-def test_pg_up_creates_a_missing_volume_with_the_keep_label(tmp_path):
+def test_pg_up_creates_a_missing_volume_with_the_keep_label(shown_live, tmp_path):
     run = _Docker()
     assert svc.ensure_volume(run=run, home=tmp_path) == "created"
     argv = run.calls[-1][0]
@@ -60,13 +60,13 @@ def test_pg_up_creates_a_missing_volume_with_the_keep_label(tmp_path):
     assert argv[argv.index("--label") + 1] == svc.KEEP_LABEL == "com.unxmaal.sohot.keep=true"
 
 
-def test_pg_up_leaves_an_existing_volume_alone(tmp_path):
+def test_pg_up_leaves_an_existing_volume_alone(shown_live, tmp_path):
     run = _Docker({svc.VOLUME: {"Name": svc.VOLUME, "Labels": {}}})
     assert svc.ensure_volume(run=run, home=tmp_path) == "exists"
     assert [c[0][1:3] for c in run.calls] == [["volume", "inspect"]]
 
 
-def test_pg_up_on_a_switched_home_refuses_to_make_an_empty_store_where_the_lost_one_was(tmp_path):
+def test_pg_up_on_a_switched_home_refuses_to_make_an_empty_store_where_the_lost_one_was(shown_live, tmp_path):
     _switched(tmp_path)
     run = _Docker()
     with pytest.raises(RuntimeError, match="gone and this home is switched to Postgres") as got:
@@ -75,7 +75,7 @@ def test_pg_up_on_a_switched_home_refuses_to_make_an_empty_store_where_the_lost_
     assert all(c[0][1:3] != ["volume", "create"] for c in run.calls)
 
 
-def test_compose_never_gets_a_terminal_to_ask_on(tmp_path):
+def test_compose_never_gets_a_terminal_to_ask_on(shown_live, tmp_path):
     from harness import gateway_key
     run = _Docker()
     svc.compose(["up", "-d", "--wait"], run=run, environ={}, secret=gateway_key.FileStore(tmp_path / "pw"))

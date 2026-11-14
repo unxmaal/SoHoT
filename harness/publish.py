@@ -553,9 +553,12 @@ def write_export(out=None, conn=None) -> Path:
 
 def _gh(args: list[str], body: dict | None = None) -> dict:
     import subprocess
+    from harness import github, monitor
     cmd = ["gh", "api", *args]
     if body is not None:
         cmd += ["--input", "-"]
+    if github.writes(cmd[1:]) and not monitor.live_home():
+        raise GhError(monitor.off_live(f"gh api {args[0] if args else ''} (a write to GitHub)"))
     r = subprocess.run(cmd, input=json.dumps(body) if body is not None else None,
                        capture_output=True, text=True)
     if r.returncode != 0:

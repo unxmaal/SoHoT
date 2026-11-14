@@ -15,7 +15,7 @@ MODELS = ["imajev-4b-Q8_0", "Qwen2.5-7B-Instruct-Q4_K_M"]
 
 
 @pytest.fixture
-def world():
+def world(shown_live):
     c = ms.connect()
     did = deploy._insert(c, NEW, None, Path("/releases/1-old"), OLD, time.time())
     deploy.finish(c, did, deploy.DEPLOYED, f"{NEW[:12]} serving")
@@ -105,7 +105,7 @@ class Elsewhere(Fake):
         return rc, said.replace(f"machine {FP}", f"machine {STUDIO}")
 
 
-def test_a_real_fingerprint_mismatch_fails_naming_both_fingerprints(world, tmp_path):
+def test_a_real_fingerprint_mismatch_fails_naming_both_fingerprints(shown_live, world, tmp_path):
     ssh, alerts = Elsewhere(), []
     r = _follow(world, _styx(tmp_path), ssh, check=_check(_gateway(ON_NODE)), alerts=alerts)["nodes"]["styx"]
     assert r["outcome"] == node_deploy.FAILED, r
