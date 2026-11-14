@@ -16,6 +16,46 @@
    "until": "version:mlx-lm>0.32.0"
   },
   {
+   "candidate": "decider:StrandsAgents/strands-decider-2B-hobson-v21",
+   "decided_at": "2026-11-14T05:03:02Z",
+   "detail": "it ran and passed nothing: check-squad2-56dddf4066d3e219004dad5f: exit 1:        checkout; this machine sets HF_ROOT=hf.; guard-browsesafe-1130: exit 1:        checkout; this machine sets HF_ROOT=hf.; policy-civil-comments-10156: exit 1:        checkout; this machine sets HF_ROOT=hf.;",
+   "exam": {
+    "about": "2B params",
+    "candidate": "decider/strands-decider-2B-hobson-v21",
+    "cases": 36,
+    "first_s": 14.977,
+    "median_s": 2.534,
+    "metrics": {
+     "calibrated": 1.0,
+     "decide_accuracy": 0.7143,
+     "decide_brier": 0.3911,
+     "decide_ece": 0.0872
+    },
+    "model": "decider/strands-decider-2B-hobson-v21",
+    "not_run": "",
+    "pass_rate": 0.25,
+    "passed": 9,
+    "peak_gb": 5.78,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-10-07T14:28:10Z",
+    "served_as": "",
+    "source": "",
+    "total": 36,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "broken",
+   "proposal": "StrandsAgents/strands-decider-2B-hobson-v21",
+   "reason": "candidate",
+   "receipt_key": "decider/strands-decider-2B-hobson-v21",
+   "run_id": 968,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "ggml-org/Laya-GGUF",
    "decided_at": "2026-11-11T03:09:20Z",
    "detail": "it ran and passed nothing: check-squad2-56dddf4066d3e219004dad5f: warm-up: gateway returned HTTP 501: {\"error\":{\"code\":501,\"message\":\"This model is a decision model without text generation, use systemone\",\"type\":\"not_supported_error\"}}; guard-browsesafe-1130: warm-up: gateway returned HTTP 501: {\"error\":{\"code\":501,\"messa",
@@ -47,8 +87,8 @@
   },
   {
    "candidate": "nimble:bespokelabs/Bespoke-Nimble-9B-v2",
-   "decided_at": "2026-10-22T01:40:59Z",
-   "detail": "2 case(s) passed a screen",
+   "decided_at": "2026-11-14T07:21:03Z",
+   "detail": "decide: does not beat the incumbent on the lane's metric; significantly worse: 132 lost against 0 gained, p=0.00; comparison 2 on this holdout, so alpha 0.05/2 = 0.0250; dev: 0 gained, 529 lost, p=0.0",
    "exam": {
     "about": "9B params",
     "candidate": "nimble/Bespoke-Nimble-9B-v2",
@@ -75,14 +115,14 @@
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
-   "outcome": "screened",
+   "outcome": "declined",
    "proposal": "bespokelabs/Bespoke-Nimble-9B-v2",
    "reason": "candidate",
    "receipt_key": "nimble/Bespoke-Nimble-9B-v2",
-   "run_id": 534,
+   "run_id": 981,
    "serves": false,
-   "status": "screened",
-   "tier": "screen",
+   "status": "rejected",
+   "tier": "adopt",
    "until": ""
   },
   {
@@ -206,8 +246,8 @@
   },
   {
    "candidate": "akhilaaa3/Jev-Omni",
-   "decided_at": "2026-11-13T03:01:51Z",
-   "detail": "not screened: needs 34.3 GB but only 23.2 GB is safely available (46.5 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "decided_at": "2026-11-14T04:59:57Z",
+   "detail": "not screened: needs 34.3 GB but only 14.3 GB is safely available (32.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
@@ -221,8 +261,8 @@
   },
   {
    "candidate": "akhilaaa3/Jev-Omni,temperature=0",
-   "decided_at": "2026-11-13T03:01:51Z",
-   "detail": "not screened: needs 34.3 GB but only 23.2 GB is safely available (46.5 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "decided_at": "2026-11-14T04:59:57Z",
+   "detail": "not screened: needs 34.3 GB but only 14.3 GB is safely available (32.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
@@ -271,7 +311,7 @@
   },
   {
    "candidate": "bespokelabs/Bespoke-Nimble-9B",
-   "decided_at": "2026-11-13T03:23:02Z",
+   "decided_at": "2026-11-14T05:22:29Z",
    "detail": "not measured: harness_error",
    "exam": {
     "about": "family Qwen/Qwen3.5-9B, 9B params, by bespokelabs",
@@ -287,7 +327,7 @@
     "peak_gb": null,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-13T03:23:00Z",
+    "run_at": "2026-11-14T05:22:27Z",
     "served_as": "",
     "source": "https://huggingface.co/bespokelabs/Bespoke-Nimble-9B",
     "total": 661,
@@ -298,7 +338,7 @@
    "proposal": "bespokelabs/Bespoke-Nimble-9B",
    "reason": "harness",
    "receipt_key": "bespokelabs/Bespoke-Nimble-9B",
-   "run_id": 944,
+   "run_id": 976,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -337,46 +377,6 @@
    "serves": false,
    "status": "pending",
    "tier": "",
-   "until": ""
-  },
-  {
-   "candidate": "decider:StrandsAgents/strands-decider-2B-hobson-v21",
-   "decided_at": "2026-11-13T03:12:00Z",
-   "detail": "not screened: our snapshot lacks files its runner opens; refetch: check-squad2-56dddf4066d3e219004dad5f: exit 1: needs StrandsAgents/strands-decider-2B-hobson-v21, which is not in the hub cache; soh fetch --run: huggingface_hub.errors.IncompleteSnapshotError: The cached snapshot for 'StrandsAgents/strands-decider-2B-hobson-v21' (revision 'main', commit 2b52a6235c1",
-   "exam": {
-    "about": "2B params",
-    "candidate": "decider/strands-decider-2B-hobson-v21",
-    "cases": 36,
-    "first_s": 14.977,
-    "median_s": 2.534,
-    "metrics": {
-     "calibrated": 1.0,
-     "decide_accuracy": 0.7143,
-     "decide_brier": 0.3911,
-     "decide_ece": 0.0872
-    },
-    "model": "decider/strands-decider-2B-hobson-v21",
-    "not_run": "",
-    "pass_rate": 0.25,
-    "passed": 9,
-    "peak_gb": 5.78,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-10-07T14:28:10Z",
-    "served_as": "",
-    "source": "",
-    "total": 36,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "queued",
-   "proposal": "StrandsAgents/strands-decider-2B-hobson-v21",
-   "reason": "harness",
-   "receipt_key": "decider/strands-decider-2B-hobson-v21",
-   "run_id": 940,
-   "serves": false,
-   "status": "pending",
-   "tier": "fetch",
    "until": ""
   },
   {
@@ -704,7 +704,7 @@
   },
   {
    "candidate": "nimble:bespokelabs/Bespoke-Nimble-9B",
-   "decided_at": "2026-11-13T03:23:02Z",
+   "decided_at": "2026-11-14T05:22:29Z",
    "detail": "not measured: harness_error",
    "exam": {
     "about": "9B params",
@@ -736,7 +736,7 @@
    "proposal": "bespokelabs/Bespoke-Nimble-9B",
    "reason": "harness",
    "receipt_key": "nimble/Bespoke-Nimble-9B",
-   "run_id": 944,
+   "run_id": 976,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -778,7 +778,7 @@
    "until": ""
   }
  ],
- "cursor": 1794540182049887,
+ "cursor": 1794640863480214,
  "events": [
   {
    "at": "2026-09-22T13:14:31Z",
@@ -1229,6 +1229,81 @@
    "reason": "harness",
    "run_id": 944,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-14T04:57:36Z",
+   "candidate": "bespokelabs/Bespoke-Nimble-9B",
+   "chosen": null,
+   "detail": "not screened: needs 20.2 GB but only 13.9 GB is safely available (31.9 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794632256098968,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-14T04:59:57Z",
+   "candidate": "akhilaaa3/Jev-Omni",
+   "chosen": null,
+   "detail": "not screened: needs 34.3 GB but only 14.3 GB is safely available (32.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794632397598428,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-14T05:03:02Z",
+   "candidate": "decider:StrandsAgents/strands-decider-2B-hobson-v21",
+   "chosen": null,
+   "detail": "it ran and passed nothing: check-squad2-56dddf4066d3e219004dad5f: exit 1:        checkout; this machine sets HF_ROOT=hf.; guard-browsesafe-1130: exit 1:        checkout; this machine sets HF_ROOT=hf.; policy-civil-comments-10156: exit 1:        checkout; this machine sets HF_ROOT=hf.;",
+   "how": "",
+   "id": 1794632582447869,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 968,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-14T05:22:29Z",
+   "candidate": "bespokelabs/Bespoke-Nimble-9B",
+   "chosen": null,
+   "detail": "not measured: harness_error",
+   "how": "",
+   "id": 1794633749170661,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "harness",
+   "run_id": 976,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-14T07:21:03Z",
+   "candidate": "nimble:bespokelabs/Bespoke-Nimble-9B-v2",
+   "chosen": null,
+   "detail": "decide: does not beat the incumbent on the lane's metric; significantly worse: 132 lost against 0 gained, p=0.00; comparison 2 on this holdout, so alpha 0.05/2 = 0.0250; dev: 0 gained, 529 lost, p=0.0",
+   "how": "",
+   "id": 1794640863480214,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": 981,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -1327,7 +1402,7 @@
      "passed": null,
      "peak_gb": null,
      "reference": false,
-     "run_at": "2026-11-13T03:23:00Z",
+     "run_at": "2026-11-14T05:22:27Z",
      "served_as": "",
      "source": "https://huggingface.co/bespokelabs/Bespoke-Nimble-9B",
      "total": 661,
@@ -1354,8 +1429,8 @@
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-11-13T03:23:00Z",
-   "runs": 5
+   "run_at": "2026-11-14T05:22:27Z",
+   "runs": 6
   },
   {
    "cases": 132,
@@ -1924,7 +1999,7 @@
    "runs": 4
   }
  ],
- "generated_at": "2026-11-13T03:38:05Z",
+ "generated_at": "2026-11-14T08:00:41Z",
  "knobs": [],
  "lane": {
   "cases": 661,
