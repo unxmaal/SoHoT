@@ -25,7 +25,7 @@ class Host:
 
     def run(self, job: dict, argv, cwd=None, stdout=None, env=None) -> subprocess.Popen:
         from harness import proc_identity
-        from harness import job_procs
+        from harness import job_procs, reaping
         pid_file = job_procs._pid_file(job["id"])
         exit_file(pid_file).unlink(missing_ok=True)
         child = job_procs.spawn_group(gated(argv, pid_file), cwd, stdout, env)
@@ -35,7 +35,7 @@ class Host:
         except BaseException:
             # The gate would wait on a live worker for a pid that is never written.
             child.kill()
-            child.wait()
+            reaping.wait(child, f"job {job['id']} whose pid file was not written")
             raise
         try:
             rc = child.wait()

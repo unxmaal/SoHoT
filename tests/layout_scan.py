@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 import ast
+import dataclasses
 import functools
+import json
 import re
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -104,14 +107,50 @@ def _collect(tree):
 
 
 _FACTS: dict = {}
+#: The tree cache's kind for facts, one row per module, kept while its text, the module set and this scan hold. #1590.
+KIND = "tests.layout_scan:facts"
 
 
 def facts(mod: str, src: str, modules: set, is_pkg: bool = False) -> Facts:
     """What `src` binds, reads and patches; the tests of a worker share one scan of each file. #1146."""
-    key = (mod, src, is_pkg, frozenset(modules))
-    if key not in _FACTS:
-        _FACTS[key] = _facts(mod, src, modules, is_pkg)
-    return _FACTS[key]
+    return many([(mod, src, is_pkg)], modules)[0]
+
+
+def many(entries, modules: set) -> list[Facts]:
+    """facts() of each (module, source, is_pkg), read from the tree cache for every file whose text is unchanged. #1590."""
+    from tests import tree_cache
+    where, fixed = tree_cache.directory(), frozenset(modules)
+    version = tree_cache._sha(sys.version, Path(__file__).read_bytes(), *sorted(fixed)) if where else ""
+    known = None
+    out, fresh = [], []
+    for mod, src, is_pkg in entries:
+        key = (mod, src, is_pkg, fixed)
+        if key not in _FACTS:
+            rel, digest = f"{mod}:{int(is_pkg)}", tree_cache._sha(src)
+            if where is not None and known is None:
+                known = tree_cache._read(where, KIND)
+            held = (known or {}).get(rel)
+            if held is not None and held[0] == version and held[1] == digest:
+                _FACTS[key] = _load(held[2])
+            else:
+                _FACTS[key] = _facts(mod, src, modules, is_pkg)
+                fresh.append((rel, version, digest, _dump(_FACTS[key])))
+        out.append(_FACTS[key])
+    if where is not None:
+        tree_cache._write(where, KIND, fresh)
+    return out
+
+
+def _dump(f: Facts) -> str:
+    return json.dumps({**dataclasses.asdict(f), "bare": sorted(f.bare)})
+
+
+def _load(text: str) -> Facts:
+    got = json.loads(text)
+    return Facts(aliases=got["aliases"], top_from={k: tuple(v) for k, v in got["top_from"].items()},
+                 local_from=[tuple(x) for x in got["local_from"]], bare=set(got["bare"]),
+                 attrs=[tuple(x) for x in got["attrs"]], patches=[tuple(x) for x in got["patches"]],
+                 imported=[tuple(x) for x in got["imported"]])
 
 
 def _facts(mod: str, src: str, modules: set, is_pkg: bool) -> Facts:
@@ -195,7 +234,7 @@ class Graph:
     def __init__(self, sources: dict[str, str], pkgs: set | None = None):
         self.modules = set(sources)
         pkgs = pkgs if pkgs is not None else {m for m in sources if _is_pkg(m)}
-        self.facts = {m: facts(m, s, self.modules, m in pkgs) for m, s in sources.items()}
+        self.facts = dict(zip(sources, many([(m, s, m in pkgs) for m, s in sources.items()], self.modules)))
         self.edges: dict = {}
         for m, f in self.facts.items():
             for local, origin in f.top_from.items():
@@ -240,9 +279,9 @@ class Graph:
 def patches(paths) -> list:
     """(test file, line, module, name) for every monkeypatch.setattr / module.attr = x."""
     modules = set(code_modules())
+    paths = list(paths)
     out = []
-    for p in paths:
-        f = facts(module_name(p), p.read_text(encoding="utf-8"), modules)
+    for p, f in zip(paths, many([(module_name(p), p.read_text(encoding="utf-8"), False) for p in paths], modules)):
         out.extend((p.name, line, m, n) for m, n, line in f.patches)
     return out
 
@@ -277,8 +316,8 @@ def references(watched=("harness.cli", "harness.memory_store")) -> set:
     """(module, name) every file in the repo takes from the watched modules."""
     modules = set(code_modules())
     got = set()
-    for p in py_files(SCAN_ROOTS):
-        f = facts(module_name(p), p.read_text(encoding="utf-8"), modules, _is_pkg(module_name(p)))
+    entries = [(module_name(p), p.read_text(encoding="utf-8"), _is_pkg(module_name(p))) for p in py_files(SCAN_ROOTS)]
+    for f in many(entries, modules):
         for m, n, _ in f.imported:
             if m in watched:
                 got.add((m, n))

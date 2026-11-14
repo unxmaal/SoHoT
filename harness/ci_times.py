@@ -121,7 +121,7 @@ def job_rows(runs: list[dict], jobs_of: dict) -> list[dict]:
     out = []
     for run in runs:
         for j in jobs_of.get(run["databaseId"]) or []:
-            if j.get("status") != "completed" or j.get("conclusion") == "skipped":
+            if j.get("status") != "completed" or j.get("conclusion") == "skipped" or ("steps" in j and not j["steps"]):
                 continue
             m = _min(_ts(j.get("started_at")), _ts(j.get("completed_at")))
             if m is None:

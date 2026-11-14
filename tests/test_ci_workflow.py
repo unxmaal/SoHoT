@@ -165,10 +165,8 @@ def test_apt_packages_are_cached_on_the_package_list():
     assert "cache-hit" in steps[save]["if"]
 
 
-#: check-macos job p95 and max on the 3-vCPU M1 class, 20 full runs 2026-10-31..11-03 (harness.ci_history, #1520).
-MACOS_3_VCPU_JOB_P95, MACOS_3_VCPU_JOB_MAX = 23.6, 25.3
-#: A slow M1 host ran 1.4x the run before it (41692522061 vs 41687128099, #1520); 2.0x on 40020366592 (#1146).
-MACOS_SLOW_HOST = 1.4
+#: check-macos push job p95 and max on the 3-vCPU M1 class, 54 runs to 11-13, 15 timeouts projected (ci_history, #1590).
+MACOS_3_VCPU_JOB_P95, MACOS_3_VCPU_JOB_MAX = 39.1, 42.2
 
 
 def test_macos_leaves_room_for_a_slow_host_and_is_still_a_hang_detector():
@@ -177,22 +175,30 @@ def test_macos_leaves_room_for_a_slow_host_and_is_still_a_hang_detector():
     doc, _ = _ci()
     limit = doc["jobs"]["check-macos"]["timeout-minutes"]
     assert limit == ci_budget.MACOS_TIMEOUT_MIN
-    assert MACOS_SLOW_HOST * MACOS_3_VCPU_JOB_P95 <= limit < 2 * MACOS_3_VCPU_JOB_MAX
+    assert ci_budget.rule_minutes("check-macos", MACOS_3_VCPU_JOB_P95) <= limit < 2 * MACOS_3_VCPU_JOB_MAX
 
 
-#: Job minutes projected from the nightly cuts' last progress % (python -m harness.ci_history --job J, #1588), and the
-#: whole Postgres suite's from push run 42412868007, cut at 99% after 36.2 min (#1584).
-PROJECTED_JOB_MIN = {"check-linux": 34.4, "check-windows": 61.0, "check-postgres": 36.5}
-#: Linux and Windows hosts vary less than the M1 class; check-postgres is on macos-latest, so MACOS_SLOW_HOST.
-HOST_FACTOR = {"check-linux": 1.3, "check-windows": 1.3, "check-postgres": MACOS_SLOW_HOST}
+#: Job p95 minutes with timeouts projected from their last progress % (python -m harness.ci_history --job J, #1590):
+#: check-linux and check-windows over 15 nightlies to 11-13, check-postgres over its 18 PR runs to 11-13.
+JOB_P95_MIN = {"check-linux": 35.4, "check-windows": 74.2, "check-postgres": 51.5}
+
+
+@pytest.mark.gauntlet("a-closed-table-fronting-an-open-set", site="harness/ci_budget.py:HOST_FACTOR")
+def test_a_job_with_a_timeout_rule_is_in_ci_yml_and_one_without_has_no_rule():
+    from harness import ci_budget
+    doc, _ = _ci()
+    assert set(ci_budget.HOST_FACTOR) <= set(doc["jobs"])
+    assert ci_budget.rule_minutes("coverage-map", 10.0) is None
+    assert ci_budget.rule_minutes("check-linux", 10.0) == 13 and ci_budget.rule_minutes("check-macos", 39.3) == 56
 
 
 def test_each_nightly_suite_has_room_for_its_measured_length_and_is_still_a_hang_detector():
     """#1588: check-linux, check-windows and mutation (adopt) were cut at their limits every night 11-01..11-07."""
+    from harness import ci_budget
     doc, _ = _ci()
-    for job, minutes in PROJECTED_JOB_MIN.items():
+    for job, minutes in JOB_P95_MIN.items():
         limit = doc["jobs"][job]["timeout-minutes"]
-        assert HOST_FACTOR[job] * minutes <= limit < 2 * minutes, (job, limit)
+        assert ci_budget.rule_minutes(job, minutes) <= limit < 2 * minutes, (job, limit)
 
 
 PG = "check-postgres"
