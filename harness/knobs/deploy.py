@@ -96,6 +96,9 @@ NOT_GATING = {
     f"{X}:ALERT_TIMEOUT_S":"how long the deploy alert script may take; the outcome is already recorded (#1506)",
     f"{X}:restore->sqlite3.connect(timeout)": "how long the restore waits for the store's lock; a timeout leaves "
                                               "the rollback saying the restore FAILED and alerts (#1506)",
+    "harness/node_store_copy.py:_copy->sqlite3.connect(timeout)": "how long a node's store copy or restore waits for "
+                                                                  "the store's lock; a timeout fails the install "
+                                                                  "before anything reinstalls (#2023)",
     f"{Q}:recent(days)": "how far back soh deploy lists deploys; a listing, it gates nothing (#1506)",
     "scripts/launchd.sh:LH_DEFER_WAIT_S": "how long install waits for a live periodic run to end before reloading "
                                           "it; at the deadline the unit stays deferred and install fails (#1058)",

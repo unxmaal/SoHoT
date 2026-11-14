@@ -527,6 +527,7 @@ capabilities:
       - harness/commands/ci_times.py
       - harness/release_procs.py
       - harness/live_gate.py
+      - harness/node_store_copy.py
 
   - name: repo-hygiene
     summary: What a public reader gets, personal setup kept out of it, stated claims, coverage, specs and the gauntlet.

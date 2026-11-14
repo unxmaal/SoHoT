@@ -45,7 +45,10 @@ def _plant(target: Path, form: str, pid: int, kind: str = "file", age: float = O
     else:
         p.write_text("half", encoding="utf-8")
     then = time.time() - age
-    os.utime(p, (then, then), follow_symlinks=False)
+    if os.utime in os.supports_follow_symlinks:
+        os.utime(p, (then, then), follow_symlinks=False)
+    else:
+        os.utime(p, (then, then))
     return p
 
 

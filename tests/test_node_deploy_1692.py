@@ -32,14 +32,16 @@ def _node(name: str, **extra) -> dict:
 
 
 #: The units each role's install leaves loaded on the fake node.
+COPY = "/n/localharness/backups/node-install.db"
 UNITS = {"interactive": ["interactive"], "node": ["interactive", "gateway", "mlx", "worker", "watchdog"]}
 
 
 class Fake:
     """ssh as a table: (mode, sha) -> (rc, output), over a node whose role file and loaded units each install sets."""
 
-    def __init__(self, head=(0, OLD), install=None, role="interactive", extra=(), schemas=None):
+    def __init__(self, head=(0, OLD), install=None, role="interactive", extra=(), schemas=None, copy=None):
         self.head, self.install, self.calls, self.polled, self.busy = head, dict(install or {}), [], [], []
+        self.copy = copy or (0, f"backup {COPY}\nbackup_schema 105")
         self.schemas = schemas
         self.role, self.loaded, self.extra = role, list(UNITS.get(role, [])), list(extra)
 
@@ -53,6 +55,8 @@ class Fake:
         if args[0] == "head":
             rc, said = self.head
             return rc, f"{said}\nrole {self.role}" if rc == 0 else said
+        if args[0] == "backup":
+            return self.copy
         if args[0] == "schema":
             return (0, "code \nstore ") if self.schemas is None else (0, "code {}\nstore {}".format(*self.schemas))
         if args[0] == "units":
@@ -65,8 +69,8 @@ class Fake:
         return rc, said
 
     def sent(self) -> list[tuple]:
-        """Every call but the post-install unit listings and the rollback's schema read."""
-        return [c[1:] for c in self.calls if c[1] not in ("units", "schema")]
+        """Every call but the post-install unit listings, the store copy and the rollback's schema read."""
+        return [c[1:] for c in self.calls if c[1] not in ("units", "schema", "backup")]
 
 
 @pytest.fixture
@@ -95,13 +99,14 @@ def test_a_node_install_runs_after_a_passing_deploy_records_its_outcome_and_skip
               _node("khryll", parked=True, deploy={"ssh": "ops@khryll.invalid"}))
     ssh = Fake()
     got = _follow(deployed, f, ssh)
-    assert ssh.calls == [("ops@styx.invalid", "head", ""), ("ops@styx.invalid", "install", "", NEW, "interactive"),
+    assert ssh.calls == [("ops@styx.invalid", "head", ""), ("ops@styx.invalid", "backup", ""),
+                         ("ops@styx.invalid", "install", "", NEW, "interactive"),
                          ("ops@styx.invalid", "units", "")]
     rec = _record(deployed)
     assert rec["outcome"] == deploy.DEPLOYED and set(rec["nodes"]) == {"styx"}
     assert rec["nodes"]["styx"]["outcome"] == node_deploy.DEPLOYED == got["nodes"]["styx"]["outcome"]
     assert rec["nodes"]["styx"]["previous_sha"] == OLD
-    assert _follow(deployed, f, ssh)["nodes"] == {} and len(ssh.calls) == 3
+    assert _follow(deployed, f, ssh)["nodes"] == {} and len(ssh.calls) == 4
 
 
 def test_no_node_follows_a_deploy_that_is_running_or_did_not_pass(tmp_path):
@@ -179,7 +184,7 @@ def test_a_down_node_is_skipped_and_retried_at_the_next_poll(shown_live, deploye
     up = Fake()
     r = _follow(deployed, f, up, alerts=alerts)["nodes"]["styx"]
     assert r["outcome"] == node_deploy.DEPLOYED and r["tries"] == 2 and alerts == []
-    assert [c[1] for c in up.calls] == ["head", "install", "units"]
+    assert [c[1] for c in up.calls] == ["head", "backup", "install", "units"]
 
 
 def test_an_install_cut_off_by_the_network_reinstalls_next_poll_and_keeps_the_true_previous(deployed, tmp_path):

@@ -1,6 +1,7 @@
 """#1776: each copy follows the input its key used to leave out, and a stale copy is never served."""
 import json
 import os
+import sys
 import time
 
 import pytest
@@ -20,7 +21,7 @@ def _later(path) -> None:
 # ---- CA-2: machines.versions follows an upgrade under a running process ----
 
 def test_an_upgrade_under_a_running_process_is_written_back_as_the_new_version(tmp_path, monkeypatch):
-    exe = tmp_path / "bin" / "llama-server"
+    exe = tmp_path / "bin" / ("llama-server.exe" if sys.platform == "win32" else "llama-server")
     exe.parent.mkdir()
     exe.write_text("#!/bin/sh\n", encoding="utf-8")
     exe.chmod(0o755)

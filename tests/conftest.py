@@ -152,13 +152,17 @@ _test_log: dict = {}
 _catches: dict = {}
 
 
-def _without_junitxml(addopts: str) -> str:
+#: Options a pytest a test starts must not inherit: CI's own report, and a hypothesis profile only this conftest registers.
+CHILD_DROPS = ("--junitxml", "--junit-xml", "--hypothesis-profile")
+
+
+def _for_children(addopts: str) -> str:
     import shlex
     out, words = [], iter(shlex.split(addopts))
     for w in words:
-        if w == "--junitxml" or w == "--junit-xml":
+        if w in CHILD_DROPS:
             next(words, None)
-        elif not w.startswith(("--junitxml=", "--junit-xml=")):
+        elif not w.startswith(tuple(f"{d}=" for d in CHILD_DROPS)):
             out.append(w)
     return shlex.join(out)
 
@@ -287,9 +291,9 @@ def pytest_configure(config):
     # Popped so a pytest a test starts collects its own files; xdist workers get it through workerinput.
     listed = os.environ.pop(SELECTED_ENV, "")
     _selected["file"] = getattr(config, "workerinput", {}).get(SELECTED_ENV, listed)
-    # A pytest a test starts inherits PYTEST_ADDOPTS and overwrote CI's JUnit XML with its own 2 tests (#1146).
-    if "--junit" in os.environ.get("PYTEST_ADDOPTS", ""):
-        os.environ["PYTEST_ADDOPTS"] = _without_junitxml(os.environ["PYTEST_ADDOPTS"])
+    # A pytest a test starts inherits PYTEST_ADDOPTS: it overwrote CI's JUnit XML (#1146) and met an unregistered profile (#1633).
+    if any(d in os.environ.get("PYTEST_ADDOPTS", "") for d in CHILD_DROPS):
+        os.environ["PYTEST_ADDOPTS"] = _for_children(os.environ["PYTEST_ADDOPTS"])
     if path and not hasattr(config, "workerinput"):
         _test_log["file"] = open(path, "a", encoding="utf-8", buffering=1)
         _test_log["spent"] = {}

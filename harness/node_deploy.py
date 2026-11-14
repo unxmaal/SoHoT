@@ -32,18 +32,23 @@ DRAIN_POLL_S = 2.0
 DRAINED, DRAIN_DEADLINE = "drained", "deadline"
 LOG = "deploy-nodes.log"
 _SHA = re.compile(r"^[0-9a-f]{40}$")
-_SAID = re.compile(r"^(role|want|loaded|disabled|code|store)(?: (\S*))?$")
+_SAID = re.compile(r"^(role|want|loaded|disabled|code|store|backup|backup_schema|restored|restored_schema)(?: (\S*))?$")
 _SHAS = re.compile(r"\b[0-9a-f]{7,40}\b")
 _DIGITS = re.compile(r"\d+")
 
-#: Sent on stdin to `bash -s -- head|units|state DIR`, `schema DIR SHA` or `install DIR SHA ROLE`, DIR "" for the node's own; a non-login PATH lacks uv.
-SCRIPT = r"""set -euo pipefail
+#: Sent on stdin to `bash -s -- head|units|state|backup DIR`, `schema DIR SHA` or `install DIR SHA ROLE [COPY]`, DIR "" for the node's own; a non-login PATH lacks uv.
+_SCRIPT = r"""set -euo pipefail
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 home="${LOCALHARNESS_HOME:-$HOME/localharness}"
 dir="${2:-$home/deploy}"
 case "$dir" in "~") dir="$HOME" ;; "~/"*) dir="$HOME/${dir#\~/}" ;; esac
 role() { printf 'role %s\n' "$(if [ -f "$home/role" ]; then tr -d '[:space:]' < "$home/role"; fi)"; }
+IFS= read -r -d '' copy_py <<'SOHOT_NODE_STORE_COPY' || [ -n "$copy_py" ]
+@NODE_STORE_COPY@
+SOHOT_NODE_STORE_COPY
+copy() { uv run --no-sync python -I -c "$copy_py" "$@"; }
 cd "$dir"
+if [ "$1" = backup ]; then copy backup "$home"; exit 0; fi
 if [ "$1" = head ]; then git rev-parse HEAD; role; exit 0; fi
 if [ "$1" = units ]; then
   role; LH_ROLE= bash scripts/launchd.sh units 2>&1 || true
@@ -59,9 +64,13 @@ fi
 git cat-file -e "$3^{commit}" 2>/dev/null || git fetch -q origin main
 git checkout -q --detach "$3"
 test "$(git rev-parse HEAD)" = "$3"
+if [ -n "${5:-}" ]; then copy restore "$home" "$5"; fi
 uv sync --frozen
 LH_ROLE="$4" LH_DEPLOY="$dir" bash scripts/launchd.sh reinstall
 """
+SCRIPT = _SCRIPT.replace("@NODE_STORE_COPY@", (Path(__file__).with_name("node_store_copy.py")).read_text(encoding="utf-8"))
+#: What a node entry says of the copy of its store taken before an install. #2023.
+COPY_KEYS = ("store_backup", "store_backup_schema")
 
 
 def ssh_argv(node: nodes_mod.Node, *args: str) -> list[str]:
@@ -75,7 +84,7 @@ def ssh_argv(node: nodes_mod.Node, *args: str) -> list[str]:
 def _ssh(argv: list[str], script: str, timeout: float) -> tuple[int | None, str]:
     """(rc, stdout and stderr), or (None, why) when ssh could not run or ran out of time."""
     from harness import monitor
-    if shlex.split(argv[-1])[3:4] == ["install"] and not monitor.live_home():
+    if shlex.split(argv[-1])[3:4] in (["install"], ["backup"]) and not monitor.live_home():
         return None, monitor.off_live("a node install over ssh")
     try:
         got = subprocess.run(argv, input=script, capture_output=True, text=True, timeout=timeout)
@@ -259,7 +268,7 @@ def same_machine(node: nodes_mod.Node, said: str, *, strict: bool = True) -> str
 
 def _one(node: nodes_mod.Node, sha: str, prior: dict, *, runner, check, alert, log, mark, now, busy=None,
          sleep=time.sleep, clock=time.monotonic) -> dict:
-    base = {"sha": sha, "at": now(), "tries": int(prior.get("tries") or 0) + 1}
+    base = {"sha": sha, "at": now(), "tries": int(prior.get("tries") or 0) + 1, **carried(prior)}
     if not node.ssh:
         return {**base, "outcome": UNCONFIGURED, "detail": f"no deploy: ssh in {nodes_mod.path()}, so no deploy reaches it"}
     rc, said = runner(ssh_argv(node, "head", node.deploy_dir), SCRIPT, HEAD_TIMEOUT_S)
@@ -283,9 +292,18 @@ def _one(node: nodes_mod.Node, sha: str, prior: dict, *, runner, check, alert, l
         return out
     if head == sha and role == persisted and not started:
         recovered(node.name)
-        return {**base, "outcome": CURRENT, "previous_sha": head, "role": role, "detail": f"already at {sha[:12]} as {role}"}
+        return {**{k: v for k, v in base.items() if k not in COPY_KEYS}, "outcome": CURRENT, "previous_sha": head,
+                "role": role, "detail": f"already at {sha[:12]} as {role}"}
     # Rollback puts back the role file the node had; a node that had none keeps the role it was given. #1707.
     back_role = was or role
+    if "store_backup" not in base:
+        took = copy_store(node, runner, log)
+        if "outcome" in took:
+            out = {**base, **took, "previous_sha": previous, "previous_role": was, "started": started}
+            if took["outcome"] == FAILED:
+                out["detail"] += alert_once(node.name, sha, FAILED, out["detail"], alert)
+            return out
+        base.update(took)
     mark({**base, "outcome": INSTALLING, "pid": os.getpid(), "previous_sha": previous, "previous_role": was, "role": role,
           "started": True})
     base["drain"] = drain(node, f"the deploy of {sha[:12]}", busy=busy or (lambda n: in_flight(n, runner)),
@@ -320,35 +338,81 @@ def _install(node, sha, role, previous, was, back_role, base, *, runner, check, 
             alert(f"node {node.name} deployed {sha[:12]}, but {why}")
         return {**base, "outcome": DEPLOYED, "previous_sha": previous, "previous_role": was, "role": role,
                 "detail": f"serving {sha[:12]} as {role}" + (f"; {why}" if why else "")}
-    stale = newer_store(node, previous, runner, log)
-    if stale:
+    code, have = schemas(node, previous, runner, log)
+    stale = _outgrown(previous, code, have)
+    restore = restorable(base, code) if stale else ""
+    if stale and not restore:
+        no_copy = (f"its copy from before the install is at schema {base.get('store_backup_schema')}"
+                   if base.get("store_backup") else "no copy of it was taken before the install")
         out = {**base, "outcome": FAILED, "previous_sha": previous, "role": role, "rollback": "skipped",
-               "detail": f"{why}; rollback to {previous[:12]} skipped: {stale}"}
+               "detail": f"{why}; rollback to {previous[:12]} skipped: {stale}, and {no_copy}; the node waits for a release that installs"}
         out["detail"] += alert_once(node.name, sha, FAILED, out["detail"], alert)
         return out
-    rc, said = runner(ssh_argv(node, "install", node.deploy_dir, previous, back_role), SCRIPT, INSTALL_TIMEOUT_S)
+    rc, said = runner(ssh_argv(node, "install", node.deploy_dir, previous, back_role, *([restore] if restore else [])),
+                      SCRIPT, INSTALL_TIMEOUT_S)
     log.write(f"--- node {node.name} rollback to {previous[:12]} as {back_role} rc {rc}\n{said}\n")
+    put = f", its store put back from {restore} (schema {base.get('store_backup_schema')})" if restore else ""
     if rc != 0:
         back = f"rollback install exited rc {rc}: {_tail(said)}"
     else:
         back = units_match(node, back_role, runner, log, strict=False)[1] or check(node)
         back = "" if isinstance(back, StudioSide) else back
     out = {**base, "outcome": FAILED if back else ROLLED_BACK, "previous_sha": previous, "role": back_role,
-           "detail": f"{why}; rolled back to {previous[:12]} as {back_role}" + (f", which fails too: {back}" if back else "")}
+           **({"rollback": "restored"} if restore and rc == 0 else {}),
+           "detail": f"{why}; rolled back to {previous[:12]} as {back_role}" + (put if rc == 0 else "")
+           + (f", which fails too: {back}" if back else "")}
     out["detail"] += alert_once(node.name, sha, out["outcome"], out["detail"], alert)
     return out
 
 
-def newer_store(node: nodes_mod.Node, previous: str, runner, log) -> str:
-    """Why PREVIOUS cannot be rolled back to: the node's store is at a newer schema than it speaks; '' otherwise. #2022."""
+def schemas(node: nodes_mod.Node, previous: str, runner, log) -> tuple[int | None, int | None]:
+    """(the schema PREVIOUS speaks, the schema the node's store is at), None for either the node will not say. #2022."""
     rc, said = runner(ssh_argv(node, "schema", node.deploy_dir, previous), SCRIPT, HEAD_TIMEOUT_S)
     log.write(f"--- node {node.name} schema of {previous[:12]} rc {rc}\n{said}\n")
     got = _said(said)
     code, have = ((got.get(k) or [""])[-1] for k in ("code", "store"))
-    if rc != 0 or not code.isdigit() or not have.isdigit() or int(have) <= int(code):
+    if rc != 0:
+        return None, None
+    return (int(code) if code.isdigit() else None), (int(have) if have.isdigit() else None)
+
+
+def _outgrown(previous: str, code: int | None, have: int | None) -> str:
+    if code is None or have is None or have <= code:
         return ""
     return (f"its store is at schema {have} and {previous[:12]} speaks {code}, so that release would refuse the store "
-            f"(NewerStore); the node waits for a release that installs")
+            f"(NewerStore)")
+
+
+def carried(prior: dict) -> dict:
+    """The copy of the store an earlier install took, kept until the node serves a release again. #2023."""
+    if prior.get("outcome") in (DEPLOYED, CURRENT, ROLLED_BACK):
+        return {}
+    return {k: prior[k] for k in COPY_KEYS if k in prior}
+
+
+def copy_store(node: nodes_mod.Node, runner, log) -> dict:
+    """The node copies its store before anything in a new release can open it: COPY_KEYS, or an outcome. #2023."""
+    rc, said = runner(ssh_argv(node, "backup", node.deploy_dir), SCRIPT, INSTALL_TIMEOUT_S)
+    log.write(f"--- node {node.name} backup rc {rc}\n{said}\n")
+    if rc is None and isinstance(said, deploy_switch.TimedOut):
+        cuts.cut("harness/node_deploy.py:INSTALL_TIMEOUT_S", f"node {node.name} store copy", dropped=1)
+    if rc in (SSH_DOWN, None):
+        return {"outcome": DOWN, "detail": f"ssh {node.ssh} before the install: {_tail(said)}; tried again at the next deploy poll"}
+    got = _said(said)
+    path, at = (got.get("backup") or [""])[-1], (got.get("backup_schema") or [""])[-1]
+    if rc != 0 or (path and not at.isdigit()):
+        return {"outcome": FAILED, "detail": f"not installed: its store could not be copied first (rc {rc}): {_tail(said)}"}
+    if not path:
+        return {"store_backup": "", "store_backup_none": _tail(said)}
+    return {"store_backup": path, "store_backup_schema": int(at)}
+
+
+def restorable(entry: dict, code: int | None) -> str:
+    """The node's copy of its store when PREVIOUS (speaking CODE) can open it; '' when there is none it can. #2023."""
+    at = entry.get("store_backup_schema")
+    if not entry.get("store_backup") or code is None or not isinstance(at, int) or at > code:
+        return ""
+    return str(entry["store_backup"])
 
 
 def _failing(name: str) -> Path:

@@ -60,7 +60,7 @@ def test_a_gateway_still_naming_the_old_identity_does_not_roll_back_a_healthy_no
     stale = {"x-sohot-node": "styx", "x-sohot-machine": "node:styx"}
     r = _follow(world, _styx(tmp_path), ssh, check=_check(_gateway(stale)), alerts=alerts)["nodes"]["styx"]
     assert r["outcome"] == node_deploy.DEPLOYED, r
-    assert [c[1] for c in ssh.calls] == ["head", "install", "units"], "no rollback install"
+    assert [c[1] for c in ssh.calls] == ["head", "backup", "install", "units"], "no rollback install"
     assert len(alerts) == 1 and "restart the Studio gateway" in alerts[0]
     assert "node:styx" in alerts[0] and FP in alerts[0]
 

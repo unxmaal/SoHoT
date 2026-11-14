@@ -193,10 +193,12 @@ JOB_PATH="$HOME/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/
 # Resolved HERE rather than written into the plist by hand, so the value is
 # this machine's own answer and a second machine gets its own.
 _hf_env() {
-  local pair
+  local pair out=""
   while IFS= read -r pair; do
-    printf '    <key>%s</key><string>%s</string>\n' "${pair%%=*}" "${pair#*=}"
+    out+="    <key>${pair%%=*}</key><string>${pair#*=}</string>"$'\n'
   done < <(_hf_pairs)
+  # One write by cat: bash 3.2's printf fails EINTR when a SIGCHLD lands mid-write; cat leaves SIGCHLD at its default. #2014.
+  if [ -n "$out" ]; then cat <<<"${out%$'\n'}"; fi
 }
 
 # HF_ROOT and HF_HOME as the units get them, one NAME=value a line, from one env.sh run; the fit check runs under the same. #1616, #1881.

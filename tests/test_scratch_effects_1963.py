@@ -68,7 +68,8 @@ def test_the_watchdog_only_notes_from_a_scratch_home(scratch):
     assert watchdog_hands.Hands().do("note", _finding()) == "noted"
 
 
-def test_the_live_home_s_watchdog_still_restarts(shown_live):
+def test_the_live_home_s_watchdog_still_restarts(shown_live, monkeypatch):
+    monkeypatch.setattr(os, "getuid", lambda: 501, raising=False)
     seen = []
     got = watchdog_hands.Hands(run=lambda argv, **kw: seen.append(argv) or subprocess.CompletedProcess(argv, 0),
                                platform="darwin").do("restart", _finding("mlx"))

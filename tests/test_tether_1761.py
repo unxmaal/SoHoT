@@ -14,6 +14,8 @@ from tests import shells
 
 ROOT = Path(__file__).resolve().parents[1]
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="POSIX signals end the owner")
+#: Read at import, where the skip has not run yet; Windows has no SIGKILL. #1633.
+ENDS = [s for s in (getattr(signal, "SIGKILL", None), signal.SIGTERM) if s is not None]
 
 SLEEPER = [sys.executable, "-c", "import time; time.sleep(300)"]
 
@@ -97,7 +99,7 @@ def _kill(rec):
 
 
 @pytest.mark.parametrize("kind", sorted(OWNERS))
-@pytest.mark.parametrize("sig", [signal.SIGKILL, signal.SIGTERM])
+@pytest.mark.parametrize("sig", ENDS)
 def test_a_child_dies_with_its_owner_however_the_owner_dies(kind, sig, tmp_path):
     owner, child = _owner(kind, tmp_path)
     try:
@@ -124,7 +126,7 @@ time.sleep(300)
 """
 
 
-@pytest.mark.parametrize("sig", [signal.SIGKILL, signal.SIGTERM])
+@pytest.mark.parametrize("sig", ENDS)
 def test_an_owner_killed_the_moment_its_child_exists_still_takes_the_child_with_it(sig, tmp_path):
     owner = subprocess.Popen([sys.executable, "-c", DIES_IN_POPEN, str(int(sig)), json.dumps(SLEEPER)], cwd=tmp_path,
                              env={**os.environ, "PYTHONPATH": str(ROOT)}, stdout=subprocess.PIPE, text=True,
