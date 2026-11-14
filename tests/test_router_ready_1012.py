@@ -94,7 +94,7 @@ def _restart_that_comes_up_late(free, servers, after_s=0.6, loading=2):
     return run, argv
 
 
-def test_the_screen_warm_up_after_a_router_restart_is_not_refused(port):
+def test_the_screen_warm_up_after_a_router_restart_is_not_refused(shown_live, port):
     free, servers = port
     run, argv = _restart_that_comes_up_late(free, servers)
     why = REFRESH(expect=(STEM,), run=run)
@@ -102,7 +102,7 @@ def test_the_screen_warm_up_after_a_router_restart_is_not_refused(port):
     assert why == "" and argv and servers[0].health > servers[0].loading
 
 
-def test_a_router_that_never_answers_is_named_when_the_wait_gives_up(port, monkeypatch, capsys):
+def test_a_router_that_never_answers_is_named_when_the_wait_gives_up(shown_live, port, monkeypatch, capsys):
     monkeypatch.setattr(gguf, "READY_TIMEOUT_S", 0.3)
     monkeypatch.setattr(gguf, "READY_POLL_S", 0.05)
     why = REFRESH(expect=(STEM,), run=lambda cmd, check=False: None)
@@ -156,7 +156,7 @@ def test_a_router_still_loading_is_not_ready():
 
 
 @pytest.mark.parametrize("platform", ["darwin", "linux", "win32"])
-def test_every_platform_waits_after_its_restart(platform, monkeypatch):
+def test_every_platform_waits_after_its_restart(shown_live, platform, monkeypatch):
     """Read at call time: services.sh restart backgrounds the server as kickstart -k does."""
     import contextlib
 

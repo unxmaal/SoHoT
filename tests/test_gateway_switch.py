@@ -247,7 +247,7 @@ def test_the_waiter_takes_the_machine_lock_itself(monkeypatch):
     assert argv[-4:] == ["-m", "harness.gateway_switch", "--requested-at", "12.5"]
 
 
-def test_an_adoption_spawns_the_waiter_detached_with_its_own_log(monkeypatch):
+def test_an_adoption_spawns_the_waiter_detached_with_its_own_log(shown_live, monkeypatch):
     spawned = []
 
     def popen(argv, **kw):
@@ -336,7 +336,7 @@ def test_a_transient_failure_is_retried_after_a_backoff(gw, config):
     assert gs.BACKOFF_S in slept
 
 
-def test_the_restart_service_reports_its_exit_status(monkeypatch):
+def test_the_restart_service_reports_its_exit_status(shown_live, monkeypatch):
     monkeypatch.setattr(gs.sys, "platform", "darwin")
     monkeypatch.setattr(gs.subprocess, "call", lambda argv: 5)
     assert gs.restart_service() is False

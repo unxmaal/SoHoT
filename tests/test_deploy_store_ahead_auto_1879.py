@@ -208,8 +208,6 @@ def test_the_repair_starts_as_the_switch_unit_from_this_release(tmp_path, monkey
     assert Path(plist["WorkingDirectory"]) == REPO
 
 
-@pytest.mark.gauntlet("an-effect-reachable-from-a-run-that-is-not-the-live-deploy",
-                      site="harness/deploy.py:launch:binary:launchctl")
 def test_outside_the_live_home_neither_the_repair_nor_the_switch_reaches_launchctl(tmp_path, monkeypatch):
     bin_, called = tmp_path / "bin", tmp_path / "launchctl-called"
     bin_.mkdir()

@@ -111,7 +111,7 @@ def test_parsers_read_lsof_and_ps_fields():
     assert volume.owner(7, {7: 7}, {}) is None
 
 
-def test_stop_stops_holders_model_servers_and_discover_and_records_it(tmp_path):
+def test_stop_stops_holders_model_servers_and_discover_and_records_it(shown_live, tmp_path):
     m, q = live(), Queue()
     got = volume.stop(VOL, ops(m, q))
     assert set(got["stopped"]) == {f"{P}.mlx", f"{P}.eval", f"{P}.tts", f"{P}.mcp"}
@@ -121,14 +121,14 @@ def test_stop_stops_holders_model_servers_and_discover_and_records_it(tmp_path):
     assert saved["volume"] == VOL and set(saved["stopped"]) == set(got["stopped"])
 
 
-def test_stop_also_stops_a_loaded_discover_agent_between_runs():
+def test_stop_also_stops_a_loaded_discover_agent_between_runs(shown_live):
     m, q = live(), Queue()
     m.services[f"{P}.discover"] = None
     got = volume.stop(VOL, ops(m, q))
     assert f"{P}.discover" in got["stopped"]
 
 
-def test_stop_refuses_success_while_lsof_still_shows_open_files():
+def test_stop_refuses_success_while_lsof_still_shows_open_files(shown_live):
     m, q = live(), Queue()
     m.files[99] = ("Finder", f"{VOL}/notes.txt")
     m.parents[99] = 1
@@ -137,7 +137,7 @@ def test_stop_refuses_success_while_lsof_still_shows_open_files():
     assert volume.state_path().exists()
 
 
-def test_stop_cli_exits_nonzero_and_names_the_remaining_process(capsys, monkeypatch):
+def test_stop_cli_exits_nonzero_and_names_the_remaining_process(shown_live, capsys, monkeypatch):
     m = live()
     m.sticky.add(f"{P}.mlx")
     q = Queue()
@@ -148,14 +148,14 @@ def test_stop_cli_exits_nonzero_and_names_the_remaining_process(capsys, monkeypa
     assert "21" in text.err and "model.safetensors" in text.err
 
 
-def test_stop_keeps_the_owners_pause_and_start_does_not_resume_it():
+def test_stop_keeps_the_owners_pause_and_start_does_not_resume_it(shown_live):
     m, q = live(), Queue(paused=True)
     volume.stop(VOL, ops(m, q))
     volume.start(ops(m, q))
     assert q.resumed == 0 and q.paused is True
 
 
-def test_start_restores_only_what_stop_stopped_and_resumes_a_running_queue():
+def test_start_restores_only_what_stop_stopped_and_resumes_a_running_queue(shown_live):
     m, q = live(), Queue()
     stopped = set(volume.stop(VOL, ops(m, q))["stopped"])
     m.calls.clear()
@@ -168,7 +168,7 @@ def test_start_restores_only_what_stop_stopped_and_resumes_a_running_queue():
     assert not volume.state_path().exists()
 
 
-def test_start_refuses_when_the_volume_is_not_mounted():
+def test_start_refuses_when_the_volume_is_not_mounted(shown_live):
     m, q = live(), Queue()
     volume.stop(VOL, ops(m, q))
     m.calls.clear()
@@ -178,7 +178,7 @@ def test_start_refuses_when_the_volume_is_not_mounted():
     assert volume.state_path().exists() and q.resumed == 0
 
 
-def test_start_without_a_stop_does_nothing():
+def test_start_without_a_stop_does_nothing(shown_live):
     with pytest.raises(volume.VolumeError, match="nothing to start"):
         volume.start(ops(live(), Queue()))
 

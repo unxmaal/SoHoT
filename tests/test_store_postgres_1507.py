@@ -212,7 +212,7 @@ def test_a_password_is_generated_once_and_kept(tmp_path):
         assert oct((tmp_path / "pg.secret").stat().st_mode & 0o777) == "0o600"
 
 
-def test_compose_gets_the_password_in_its_environment_never_its_argv(tmp_path):
+def test_compose_gets_the_password_in_its_environment_never_its_argv(shown_live, tmp_path):
     from harness import gateway_key
     secret = gateway_key.FileStore(tmp_path / "pg.secret")
     calls = []
@@ -469,7 +469,7 @@ def test_a_dump_lands_whole_or_not_at_all(tmp_path):
     assert not (tmp_path / "y.dump").exists() and not (tmp_path / "y.dump.tmp").exists()
 
 
-def test_a_restore_is_one_transaction(tmp_path):
+def test_a_restore_is_one_transaction(shown_live, tmp_path):
     (tmp_path / "x.dump").write_bytes(b"DUMP")
     ran = _Ran(out=b"-- script")
     svc.restore(tmp_path / "x.dump", run=ran)

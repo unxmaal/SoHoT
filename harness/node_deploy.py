@@ -67,6 +67,9 @@ def ssh_argv(node: nodes_mod.Node, *args: str) -> list[str]:
 
 def _ssh(argv: list[str], script: str, timeout: float) -> tuple[int | None, str]:
     """(rc, stdout and stderr), or (None, why) when ssh could not run or ran out of time."""
+    from harness import monitor
+    if shlex.split(argv[-1])[3:4] == ["install"] and not monitor.live_home():
+        return None, monitor.off_live("a node install over ssh")
     try:
         got = subprocess.run(argv, input=script, capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:
@@ -324,9 +327,10 @@ def _install(node, sha, role, previous, was, back_role, base, *, runner, check, 
 def follow(conn=None, *, retry: bool = False, runner=None, check=None, alert=None, load=None,
            now=time.time, busy=None, sleep=time.sleep, clock=time.monotonic) -> dict:
     """Each unparked node due a deploy of the sha this machine last deployed; the record's `nodes` holds every outcome."""
+    from harness import monitor
     runner = runner or _ssh
     check = check or verify
-    why = deploy.blocked()
+    why = ("" if monitor.live_home() else monitor.off_live("a node deploy")) or deploy.blocked()
     t = None if why else target(conn)
     if t is None:
         return {"deploy": None, "sha": "", "why": why or "no finished deploy of this machine to follow", "nodes": {}}

@@ -181,7 +181,7 @@ def test_unreachable_is_a_refused_connection_anywhere_in_the_chain():
     assert not completion.unreachable(loop)
 
 
-def test_a_router_restart_holds_the_machine_lock_until_the_router_answers():
+def test_a_router_restart_holds_the_machine_lock_until_the_router_answers(shown_live):
     """The 2026-10-23 sweep: with-gpu-lock let go when kickstart returned, and job 0141 took the lock."""
     seen = []
     REFRESH(expect=(STEM,),
@@ -191,7 +191,7 @@ def test_a_router_restart_holds_the_machine_lock_until_the_router_answers():
     assert not bool(exclusive.gpu_leases())
 
 
-def test_the_restart_s_own_with_gpu_lock_does_not_wait_on_its_parent():
+def test_the_restart_s_own_with_gpu_lock_does_not_wait_on_its_parent(shown_live):
     got = []
 
     def nested(cmd, check=False):

@@ -63,6 +63,34 @@ PER_PAGE = 100
 NO_REPO_TO_PEOPLE = ("stargazers", "subscribers")
 
 
+#: `gh GROUP VERB` verbs that change GitHub; list, view, status, diff, checks and the rest only read. #1963.
+WRITE_VERBS = frozenset({"create", "edit", "comment", "close", "reopen", "delete", "merge", "review", "ready", "lock",
+                         "unlock", "transfer", "pin", "unpin", "develop", "rerun", "cancel", "run", "enable", "disable",
+                         "add", "remove", "set", "rename", "archive", "unarchive", "upload", "fork", "sync"})
+_FIELDS = ("-f", "-F", "--field", "--raw-field", "--input")
+
+
+def writes(argv) -> bool:
+    """Would `gh ARGV` change GitHub: a write verb, a graphql mutation, or an api method other than GET. #1963."""
+    args = [str(a) for a in argv]
+    if args[:1] != ["api"]:
+        return len(args) > 1 and args[1] in WRITE_VERBS
+    if "graphql" in args[1:2]:
+        return any("mutation" in a for a in args)
+    method = ""
+    for i, a in enumerate(args):
+        if a in ("-X", "--method") and i + 1 < len(args):
+            method = args[i + 1].upper()
+        elif a.startswith("--method="):
+            method = a.partition("=")[2].upper()
+        elif a.startswith("-X") and len(a) > 2:
+            method = a[2:].upper()
+    if method:
+        return method not in ("GET", "HEAD")
+    # gh api sends a POST once a field or an input body is given.
+    return any(a in _FIELDS or a.startswith(tuple(f"{f}=" for f in _FIELDS if f.startswith("--"))) for a in args)
+
+
 class GitHubError(RuntimeError):
     """The API could not be reached and no cached copy existed."""
 

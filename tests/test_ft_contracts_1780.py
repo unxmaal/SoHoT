@@ -80,7 +80,7 @@ def test_the_node_ssh_runner_returns_a_timeout_by_type(monkeypatch):
     assert rc is None and isinstance(said, deploy_switch.TimedOut)
 
 
-def test_a_node_install_that_ran_out_of_time_is_cut_whatever_its_runner_says(deployed, tmp_path, monkeypatch):  # noqa: F811
+def test_a_node_install_that_ran_out_of_time_is_cut_whatever_its_runner_says(shown_live, deployed, tmp_path, monkeypatch):  # noqa: F811
     got = []
     monkeypatch.setattr(cuts, "cut", lambda knob, *a, **kw: got.append(knob))
     f = _yaml(tmp_path, _node("styx", deploy={"ssh": "ops@styx.invalid"}))

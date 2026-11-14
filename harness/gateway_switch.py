@@ -212,6 +212,9 @@ def restart_service() -> bool:
     """Restart the gateway service; the caller already holds the machine lock."""
     if not can_restart():
         raise RuntimeError(f"no restart method on {sys.platform}")
+    from harness import monitor
+    if not monitor.live_home():
+        raise RuntimeError(monitor.off_live("restarting the gateway"))
     return RESTARTERS[sys.platform]()
 
 
@@ -554,6 +557,10 @@ def spawn(requested_at: float | None = None, popen=None, alive=None):
     from harness import gateway, paths
     from harness import gateway_switch_state as st
     from harness import memory_store as ms
+    from harness import monitor
+    if not monitor.live_home():
+        print(f"gateway switch not started: {monitor.off_live('restarting the gateway')}", file=sys.stderr)
+        return None
     if not can_restart():
         # Recorded as a failed switch, so report and judge do not read the lane as served. #703.
         switch(requested_at=requested_at)

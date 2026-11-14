@@ -187,7 +187,7 @@ def test_a_run_killed_after_its_store_and_before_its_last_progress_is_finished_b
         conn.close()
 
 
-def test_a_volume_stop_killed_while_it_waits_leaves_a_record_that_start_resumes_from(monkeypatch):
+def test_a_volume_stop_killed_while_it_waits_leaves_a_record_that_start_resumes_from(shown_live, monkeypatch):
     m, q = live(), Queue()
 
     def quiesce():
@@ -203,7 +203,7 @@ def test_a_volume_stop_killed_while_it_waits_leaves_a_record_that_start_resumes_
     assert not q.paused and not volume.state_path().exists()
 
 
-def test_a_volume_stop_that_cannot_quiesce_leaves_no_record(monkeypatch):
+def test_a_volume_stop_that_cannot_quiesce_leaves_no_record(shown_live, monkeypatch):
     from harness import quiesce as qmod
     m, q = live(), Queue()
 
