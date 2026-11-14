@@ -1,5 +1,7 @@
 """A cancelled check-macos run still says where its time went and what was running; a much slower test is named (#1146)."""
 import os
+import subprocess
+import sys
 import time
 from types import SimpleNamespace
 
@@ -54,6 +56,18 @@ def test_a_pytest_a_test_starts_does_not_inherit_the_junit_path(monkeypatch):
     monkeypatch.setenv("PYTEST_ADDOPTS", "--durations=60 --junitxml=/tmp/junit.xml --junit-xml /tmp/b.xml -x")
     conftest.pytest_configure(SimpleNamespace())
     assert os.environ["PYTEST_ADDOPTS"] == "--durations=60 -x"
+
+
+def test_a_pytest_a_test_starts_on_another_tree_does_not_meet_the_nightly_hypothesis_profile(monkeypatch, tmp_path):
+    """The nightly passes --hypothesis-profile=deep, which only this conftest registers. #1633."""
+    monkeypatch.setattr(conftest, "_test_log", {})
+    monkeypatch.setenv("PYTEST_ADDOPTS", "--durations=60 --hypothesis-profile=deep --hypothesis-profile deep -x")
+    conftest.pytest_configure(SimpleNamespace())
+    assert os.environ["PYTEST_ADDOPTS"] == "--durations=60 -x"
+    (tmp_path / "test_other.py").write_text("def test_x():\n    pass\n", encoding="utf-8")
+    got = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", f"--junitxml={tmp_path / 'r.xml'}",
+                          "test_other.py"], cwd=tmp_path, capture_output=True, text=True, timeout=120)
+    assert got.returncode == 0 and (tmp_path / "r.xml").is_file(), got.stdout + got.stderr
 
 
 def test_a_run_with_no_junit_reports_from_the_log_and_names_what_was_running(tmp_path, capsys):

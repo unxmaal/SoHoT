@@ -17,6 +17,8 @@ from test_gpu_lock_store_python_1586 import POSIX, _fake_repo, _interpreter, _ru
 from test_node_deploy_1692 import NEW, OLD, Fake, _follow, _git, _node, _record, _yaml, deployed  # noqa: F401 - fixture
 
 HTTPX = "ModuleNotFoundError: No module named 'httpx'"
+#: A node whose store is not copied before its install (Postgres, or the release that predates #2023).
+NO_COPY = (0, "backup none: the store is Postgres")
 
 
 @pytest.fixture
@@ -109,12 +111,13 @@ def _styx(tmp_path):
 
 
 def test_a_rollback_to_a_release_older_than_the_node_store_is_skipped_and_says_why(shown_live, deployed, tmp_path):
-    ssh, alerts = Fake(install={NEW: (1, HTTPX)}, schemas=(105, 107)), []
+    ssh, alerts = Fake(install={NEW: (1, HTTPX)}, schemas=(105, 107), copy=NO_COPY), []
     r = _follow(deployed, _styx(tmp_path), ssh, alerts=alerts)["nodes"]["styx"]
     assert ssh.sent() == [("head", ""), ("install", "", NEW, "interactive")], "no rollback install is tried"
     assert ("schema", "", OLD) in [c[1:] for c in ssh.calls]
     assert r["outcome"] == node_deploy.FAILED and r["rollback"] == "skipped"
     assert HTTPX in r["detail"] and "skipped" in r["detail"] and "schema 107" in r["detail"] and "105" in r["detail"]
+    assert "no copy of it was taken" in r["detail"]
     assert len(alerts) == 1 and "NewerStore" in alerts[0]
 
 
@@ -145,12 +148,12 @@ def test_consecutive_deploys_failing_the_same_way_alert_once_with_the_cause(show
         assert r["outcome"] == node_deploy.ROLLED_BACK and len(alerts) == 1, alerts
         assert f"failure {i} in a row" in r["detail"] and NEW[:12] in r["detail"]
     _next_deploy(deployed, "e" * 40)
-    _follow(deployed, f, Fake(install={"e" * 40: (1, HTTPX)}, schemas=(105, 107)), alerts=alerts)
+    _follow(deployed, f, Fake(install={"e" * 40: (1, HTTPX)}, schemas=(105, 107), copy=NO_COPY), alerts=alerts)
     assert len(alerts) == 2 and "skipped" in alerts[1], "a rollback that now cannot run is a new cause"
     _next_deploy(deployed, "f" * 40)
     assert _follow(deployed, f, Fake(), alerts=alerts)["nodes"]["styx"]["outcome"] == node_deploy.DEPLOYED
     _next_deploy(deployed, "9" * 40)
-    _follow(deployed, f, Fake(install={"9" * 40: (1, HTTPX)}, schemas=(105, 107)), alerts=alerts)
+    _follow(deployed, f, Fake(install={"9" * 40: (1, HTTPX)}, schemas=(105, 107), copy=NO_COPY), alerts=alerts)
     assert len(alerts) == 3 and "skipped" in alerts[2], "after a deploy that serves, the same cause alerts again"
 
 

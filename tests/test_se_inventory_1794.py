@@ -107,6 +107,8 @@ def test_the_suite_refuses_each_effect_binary_a_test_runs_itself(name, monkeypat
 
 def test_a_hook_bound_at_import_still_meets_the_refusal(monkeypatch, tmp_path_factory):
     _real_path(monkeypatch, tmp_path_factory)
+    if not shutil.which("launchctl"):
+        pytest.skip("no launchctl here, so nothing real could run")
     got = sweep_check.launchd(platform="darwin", uid=501)
     assert got["loaded"] is None and "refused under test" in got["why"]
     assert subprocess.Popen.refused[0][:2] == ["launchctl", "print"]

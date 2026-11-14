@@ -10,7 +10,7 @@ from harness import paths
 
 #: The seam itself, which speaks both dialects on purpose.
 SEAM = {"harness/store.py", "harness/store_copy.py", "harness/store_audit.py",
-        "harness/memory_store/connection.py"}
+        "harness/memory_store/connection.py", "harness/node_store_copy.py"}
 
 #: SQL text only SQLite runs (store.COMPAT gives Postgres instr, json_extract and group_concat).
 SQL_ONLY = {

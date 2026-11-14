@@ -15,7 +15,7 @@ from harness import memory_store as ms
 from harness import owned, proc_identity, vllm
 from harness import watchdog as wd
 from harness import watchdog_hands, watchdog_observe
-from tests.test_tether_1761 import _watchers_of
+from tests.test_tether_1761 import ENDS, _watchers_of
 
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="process groups and start times are POSIX")
 
@@ -191,7 +191,7 @@ def test_a_server_deaf_to_term_is_killed_by_its_tether_once_the_owner_is_gone(tm
     assert _wait(lambda: proc_identity.same(rec) is False, timeout=20), "the tether died of its own TERM and never sent KILL"
 
 
-@pytest.mark.parametrize("sig", [signal.SIGKILL, signal.SIGTERM])
+@pytest.mark.parametrize("sig", ENDS)
 def test_an_owner_killed_the_moment_its_child_exists_still_takes_the_child_with_it(sig, tmp_path, strays):
     proc, child = _owner(tmp_path, DIES_IN_POPEN, str(int(sig)), json.dumps(SLEEPER))
     strays.append(child)

@@ -71,6 +71,8 @@ def test_the_gate_runs_as_a_file_with_no_package_importable(python, tmp_path):
     user = tmp_path / "user"
     (user / "localharness").mkdir(parents=True)
     env = {"HOME": str(user), "PATH": "/usr/bin:/bin"}
+    if sys.platform == "win32":
+        env.update(USERPROFILE=str(user), SYSTEMROOT=os.environ.get("SYSTEMROOT", r"C:\Windows"))
     off = _run([python, *flags, str(GATE), str(tmp_path / "scratch"), "launchd.sh restart"], env, cwd=tmp_path)
     assert off.returncode == live_gate.OFF, off.stderr
     assert "is not the live home" in off.stderr and "launchd.sh restart" in off.stderr
