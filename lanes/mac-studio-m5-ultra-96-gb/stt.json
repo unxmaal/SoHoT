@@ -16,6 +16,21 @@
    "until": "policy:trust_remote_code@audio8_asr_infinite"
   },
   {
+   "candidate": "stt:appautomaton/audio8-asr-infinite-int8-mlx",
+   "decided_at": "2026-11-14T05:11:09Z",
+   "detail": "needs its own runner: the stock loader could not assemble it: 1089-134686-0001: stt failed: HTTP 500: {\"detail\":\"Failed to load model 'appautomaton/audio8-asr-infinite-int8-mlx': Could not determine model type for appautomaton/audio8-asr-infinite-int8-mlx\"}; 1188-133604-0000: stt failed: HTTP 500: {\"detail\":\"Failed to load model 'appautomaton/audio8-asr-infini",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "appautomaton/audio8-asr-infinite-int8-mlx",
+   "reason": "runtime",
+   "receipt_key": "audio8-asr-infinite-int8-mlx",
+   "run_id": 971,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "runner:stt/audio8_asr_infinite"
+  },
+  {
    "candidate": "stt:cavi-ai/Audio8-ASR-Infinite-MLX-4bit",
    "decided_at": "2026-11-01T01:52:08Z",
    "detail": "needs its own runner: the stock loader could not assemble it: 1089-134686-0001: stt failed: HTTP 500: {\"detail\":\"Failed to load model 'cavi-ai/Audio8-ASR-Infinite-MLX-4bit': Could not determine model type for cavi-ai/Audio8-ASR-Infinite-MLX-4bit\"}; 1188-133604-0000: stt failed: HTTP 500: {\"detail\":\"Failed to load model 'cavi-ai/Audio8-ASR-Infinite-MLX-4bit': C",
@@ -59,6 +74,58 @@
    "status": "rejected",
    "tier": "screen",
    "until": "limit:screen_cases>6"
+  },
+  {
+   "candidate": "stt:mistralai/Voxtral-Mini-4B-Realtime-2602",
+   "decided_at": "2026-11-14T07:51:11Z",
+   "detail": "stt: lane too small, needs 1407 holdout cases: 134 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 4244 more stt cases are needed before a null says anything about Voxtral-Min",
+   "exam": {
+    "about": "4B params",
+    "candidate": "Voxtral-Mini-4B-Realtime-2602",
+    "cases": 480,
+    "first_s": 9.527,
+    "median_s": 3.436,
+    "metrics": {
+     "wer": 0.017
+    },
+    "model": "Voxtral-Mini-4B-Realtime-2602",
+    "not_run": "",
+    "pass_rate": 0.978,
+    "passed": 452,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-14T07:51:09Z",
+    "served_as": "",
+    "source": "",
+    "total": 462,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "declined",
+   "proposal": "mistralai/Voxtral-Mini-4B-Realtime-2602",
+   "reason": "limit",
+   "receipt_key": "Voxtral-Mini-4B-Realtime-2602",
+   "run_id": 982,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:stt>4723"
+  },
+  {
+   "candidate": "stt:mlx-community/Phonon-2",
+   "decided_at": "2026-11-14T05:11:15Z",
+   "detail": "the installed runtime could not load it: 1089-134686-0001: stt failed: HTTP 500: {\"detail\":\"Failed to load model 'mlx-community/Phonon-2': [Errno 2] No such file or directory: 'packed_manifest.json'\"}; 1188-133604-0000: stt failed: HTT",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "mlx-community/Phonon-2",
+   "reason": "runtime",
+   "receipt_key": "Phonon-2",
+   "run_id": 973,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "version:mlx-audio>0.5.3"
   },
   {
    "candidate": "stt:mlx-community/Qwen3-ASR-0.6B-8bit",
@@ -336,22 +403,22 @@
     "about": "0.6B params",
     "candidate": "parakeet-tdt-0.6b-v2",
     "cases": 480,
-    "first_s": 0.445,
-    "median_s": 0.086,
+    "first_s": 0.505,
+    "median_s": 0.137,
     "metrics": {
-     "wer": 0.0145
+     "wer": 0.015
     },
     "model": "parakeet-tdt-0.6b-v2",
     "not_run": "",
     "pass_rate": 0.985,
-    "passed": 473,
+    "passed": 455,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-09T02:54:48Z",
+    "run_at": "2026-11-14T07:51:09Z",
     "served_as": "",
     "source": "",
-    "total": 480,
+    "total": 462,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -522,7 +589,7 @@
    "until": ""
   }
  ],
- "cursor": 1794366601930195,
+ "cursor": 1794642671058801,
  "events": [
   {
    "at": "2026-09-08T02:00:21Z",
@@ -1258,6 +1325,66 @@
    "reason": "candidate",
    "run_id": 832,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-14T05:11:09Z",
+   "candidate": "stt:appautomaton/audio8-asr-infinite-int8-mlx",
+   "chosen": null,
+   "detail": "needs its own runner: the stock loader could not assemble it: 1089-134686-0001: stt failed: HTTP 500: {\"detail\":\"Failed to load model 'appautomaton/audio8-asr-infinite-int8-mlx': Could not determine model type for appautomaton/audio8-asr-infinite-int8-mlx\"}; 1188-133604-0000: stt failed: HTTP 500: {\"detail\":\"Failed to load model 'appautomaton/audio8-asr-infini",
+   "how": "",
+   "id": 1794633069693944,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "runtime",
+   "run_id": 971,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-14T05:11:15Z",
+   "candidate": "stt:mlx-community/Phonon-2",
+   "chosen": null,
+   "detail": "the installed runtime could not load it: 1089-134686-0001: stt failed: HTTP 500: {\"detail\":\"Failed to load model 'mlx-community/Phonon-2': [Errno 2] No such file or directory: 'packed_manifest.json'\"}; 1188-133604-0000: stt failed: HTT",
+   "how": "",
+   "id": 1794633075182007,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "runtime",
+   "run_id": 973,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-14T05:11:38Z",
+   "candidate": "stt:mistralai/Voxtral-Mini-4B-Realtime-2602",
+   "chosen": null,
+   "detail": "2 case(s) passed a screen",
+   "how": "",
+   "id": 1794633098948354,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 974,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-14T07:51:11Z",
+   "candidate": "stt:mistralai/Voxtral-Mini-4B-Realtime-2602",
+   "chosen": null,
+   "detail": "stt: lane too small, needs 1407 holdout cases: 134 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 4244 more stt cases are needed before a null says anything about Voxtral-Min",
+   "how": "",
+   "id": 1794642671058801,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 982,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -1296,21 +1423,42 @@
     {
      "about": "0.6B params",
      "candidate": "parakeet-tdt-0.6b-v2",
-     "first_s": 0.445,
-     "median_s": 0.086,
+     "first_s": 0.505,
+     "median_s": 0.137,
      "metrics": {
-      "wer": 0.0145
+      "wer": 0.015
      },
      "model": "parakeet-tdt-0.6b-v2",
      "not_run": "",
      "pass_rate": 0.985,
-     "passed": 473,
+     "passed": 455,
      "peak_gb": 0.0,
      "reference": false,
-     "run_at": "2026-11-09T02:54:48Z",
+     "run_at": "2026-11-14T07:51:09Z",
      "served_as": "",
      "source": "",
-     "total": 480,
+     "total": 462,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "about": "4B params",
+     "candidate": "Voxtral-Mini-4B-Realtime-2602",
+     "first_s": 9.527,
+     "median_s": 3.436,
+     "metrics": {
+      "wer": 0.017
+     },
+     "model": "Voxtral-Mini-4B-Realtime-2602",
+     "not_run": "",
+     "pass_rate": 0.978,
+     "passed": 452,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-14T07:51:09Z",
+     "served_as": "",
+     "source": "",
+     "total": 462,
      "ttft_median_s": null,
      "ttft_p95_s": null
     },
@@ -1357,8 +1505,8 @@
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-11-09T02:54:48Z",
-   "runs": 3
+   "run_at": "2026-11-14T07:51:09Z",
+   "runs": 4
   },
   {
    "cases": 480,
@@ -1522,7 +1670,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-11T06:06:36Z",
+ "generated_at": "2026-11-14T08:00:43Z",
  "knobs": [],
  "lane": {
   "cases": 480,
@@ -1541,10 +1689,10 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-11-09T02:54:48Z",
-  "median_s": 0.086,
+  "measured_at": "2026-11-14T07:51:09Z",
+  "median_s": 0.137,
   "metrics": {
-   "wer": 0.0145
+   "wer": 0.015
   },
   "not_run": "",
   "parked": "",
