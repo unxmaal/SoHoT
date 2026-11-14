@@ -110,14 +110,13 @@ def test_soh_families_counts_the_family_term_from_the_standing_not_the_words_of_
     assert f"org/fam-ft: {q[0]['family_why']}" in text
 
 
-def test_soh_disk_marks_an_entry_inside_its_grace_whatever_the_grace_says(tmp_path, monkeypatch):
+def test_soh_disk_marks_a_rejected_entry_that_stays_with_what_holds_it(tmp_path):
     now = time.time()
-    monkeypatch.setattr(disk, "_graced", lambda e, at: "held a day after its rejection" if disk._young(e, at) else "")
     e = disk.Entry(kind="hub", path=str(tmp_path / "x"), name="org/x", size=1, group=disk.REJECTED,
-                   decided_at=now - 3600)
+                   decided_at=now - 3600, unrecorded=True)
     inv = disk.Inventory(hub=str(tmp_path), gguf=str(tmp_path), entries=[e], incomplete=[], problems=[])
     line = next(ln for ln in disk.table(inv, now).splitlines() if "org/x" in ln)
-    assert line.endswith("(<24 h)")
+    assert line.endswith(f"(refused: {disk.UNRECORDED})")
 
 
 def test_an_hour_with_a_probe_of_a_model_not_loaded_reads_idle_however_the_probe_words_it(monkeypatch):

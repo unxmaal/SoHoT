@@ -241,19 +241,23 @@ def test_a_pending_answer_seen_below_the_share_is_a_cut_of_the_share(conn, tmp_p
 
 # ---- disk and downloads ---------------------------------------------------------------------------
 
-def test_rejected_weights_inside_their_grace_are_one_cut_per_cleanup(conn, tmp_path):
+def test_weights_evicted_past_the_screen_deadline_are_one_cut_per_cleanup(conn, tmp_path):
     from harness import disk
     now = 2_000_000_000.0
+    hub, gguf = tmp_path / "hub", tmp_path / "gguf"
+    gguf.mkdir()
 
-    def entry(name, decided_at):
-        return disk.Entry(path=str(tmp_path / name), name=name, kind="hub", repo=name, size=1,
-                          mtime=now, group=disk.REJECTED, why="broken", decided_at=decided_at)
-    young = [entry("a", now - 3600), entry("b", now - 7200)]
-    inv = disk.Inventory(str(tmp_path / "hub"), str(tmp_path / "gguf"), young, [], [])
-    assert disk.delete(inv, now, disk.REJECTED, conn) == []
-    assert _cuts() == [("harness/disk.py:GRACE_SECONDS", None, 2)]
-    inv = disk.Inventory(str(tmp_path / "hub"), str(tmp_path / "gguf"), [], [], [])
-    disk.delete(inv, now, disk.REJECTED, conn)
+    def entry(name, fetched_at):
+        (hub / name).mkdir(parents=True)
+        ms.record(conn, ms.Seen(name=name, source="t"))
+        ms.decide(conn, name, "queued", tier="screen", at=now - 60)
+        return disk.Entry(path=str(hub / name), name=name, kind="hub", repo=name, size=1, mtime=now,
+                          group=disk.QUEUED, why="queued at screen", fetched_at=fetched_at, waits=[(name, "queued")])
+    late = [entry("a", now - disk.QUEUED_DEADLINE_S - 60), entry("b", now - disk.QUEUED_DEADLINE_S - 120)]
+    assert len(disk.evict(disk.Inventory(str(hub), str(gguf), late, [], []), now, conn)) == 2
+    assert _cuts() == [("queued_deadline", None, 2)]
+    fresh = [entry("c", now - 60)]
+    assert disk.evict(disk.Inventory(str(hub), str(gguf), fresh, [], []), now, conn) == []
     assert len(_cuts()) == 1
 
 
@@ -466,9 +470,9 @@ def test_benchmark_reads_skipped_inside_the_interval_are_one_cut(conn):
 def test_a_download_that_would_go_under_the_disk_floor_is_a_cut():
     from harness import fetching
     gib = fetching.GIB
-    assert fetching.plan("org/x", gib, free=fetching.DISK_FLOOR + 2 * gib).ok
+    assert fetching.plan("org/x", gib, free=fetching.disk_floor() + 2 * gib).ok
     assert _cuts() == []
-    assert not fetching.plan("org/x", gib, free=fetching.DISK_FLOOR).ok
+    assert not fetching.plan("org/x", gib, free=fetching.disk_floor()).ok
     assert _knobs() == ["disk_floor"]
 
 

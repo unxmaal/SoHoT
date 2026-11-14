@@ -584,6 +584,9 @@ def _free_disk_is_pinned(monkeypatch):
     monkeypatch.setenv("HF_MIN_FREE_GB", "0")
     from harness import env
     monkeypatch.setattr(env, "free_gb", lambda path: 900)
+    # Nor the runner's memory and the repo's pinned set: inspect, fetch and screen ask memory.standing_gb. #2011.
+    from harness import memory
+    monkeypatch.setattr(memory, "standing_gb", lambda: 900.0)
 
 
 @pytest.fixture(autouse=True)

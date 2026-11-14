@@ -16,7 +16,8 @@ DOWNLOAD_BUDGET = "scripts/serve-discover.sh:DISCOVER_BUDGET_GIB"
 CARRIES = {
     "harness/funnel.py": {"p": "", "position": "", "said": "", "skipped": "", "top": DISCOVER_TOP, "when": ""},
     "harness/fetching.py": {
-        "attachment": "", "backlog": "", "budget": DOWNLOAD_BUDGET, "copy": "", "dep": "", "exc": "", "gap": "",
+        "attachment": "", "backlog": "", "budget": DOWNLOAD_BUDGET, "floor": "harness/fetching.py:FLOOR_MARGIN",
+        "room": "harness/fetching.py:SCREEN_BACKLOG", "waiting": "", "copy": "", "dep": "", "exc": "", "gap": "",
         "have": "", "held": "", "lane": "", "name": "", "names": "", "needs": "", "other": "", "p.why": "", "pick": "",
         "repo": "", "row": "", "size": "",
         "spent": "", "spent_now": "", "status": "", "top": DISCOVER_TOP, "until": "", "what": "", "when": "", "whose": "", "why": ""},

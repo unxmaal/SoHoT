@@ -528,6 +528,9 @@ def check_model(repo: str, resident_gb: float = 0.0,
         return True, f"size of {repo} is unknown (not cached); proceeding unchecked"
     if isinstance(need, str):
         return True, need
+    held = held_back(need) if reserve_gb is None else ""
+    if held:
+        return False, held
     if reserve_gb is None:
         reserve_gb = measured_reserve_gb()
     free, whole = available_gb(), ceiling_gb()
@@ -587,6 +590,22 @@ def held_gb() -> float:
     """What stays held beside any load: the interactive server's pinned models and the Docker VM. #1561, #1510."""
     from harness import containers
     return pinned_gb() + containers.vm_gb()
+
+
+def standing_gb() -> float:
+    """The most any one load can ever get here while the standing holds stay: the ceiling less the reserve, pins and Docker VM. #2011."""
+    return ceiling_gb() - measured_reserve_gb() - held_gb()
+
+
+def held_back(need_gb: float | None) -> str:
+    """The one sizing question inspect, fetch and screen ask: why `need_gb` can never load beside what stays held, '' when it can. #2011."""
+    if not need_gb:
+        return ""
+    most = standing_gb()
+    if need_gb <= most + 1e-9:
+        return ""
+    return (f"needs {need_gb:.1f} GiB but at most {max(most, 0.0):.1f} GiB is ever free for a load here beside the "
+            f"system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released")
 
 
 def room_gb() -> float:

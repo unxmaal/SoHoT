@@ -27,7 +27,7 @@ def test_an_unknown_size_is_refused_rather_than_attempted():
 
 
 def test_a_download_that_would_fill_the_volume_is_refused():
-    got = f.plan("a/b", 20 * f.GIB, free=60 * f.GIB)
+    got = f.plan("a/b", 20 * f.GIB, free=f.disk_floor() + 10 * f.GIB)
     assert not got.ok and "floor" in got.why
 
 

@@ -48,9 +48,10 @@ def budget_allows(until, budget: int | None) -> bool:
         return True
     from harness.memory_store import revisit
     return revisit.until_met(until, {"limits": {"download_budget_gib": budget / GIB}})
-#: Never fill the volume. A download that leaves no room is a download that
-#: breaks the next eval rather than enabling it.
-DISK_FLOOR = 50 * GIB
+#: Room a download leaves above the deploy's own floor (env.HF_MIN_FREE_GB), so discovery never blocks a deploy. #2011.
+FLOOR_MARGIN = 30 * GIB
+#: GiB of fetched weights still waiting for a screen above which fetch takes nothing more. #2011.
+SCREEN_BACKLOG = 200 * GIB
 #: Refuse anything larger in one go, whatever the disk says.
 MAX_DOWNLOAD = 60 * GIB
 
@@ -61,6 +62,10 @@ class FetchError(RuntimeError):
 
 class FetchDeferred(FetchError):
     """The registry rate-limited us: the rest of this tier waits for the next sweep. #675."""
+
+
+class NoRoom(FetchError):
+    """What the download would really take leaves the volume under the floor; a fact about this disk. #2011."""
 
 
 class Unloadable(FetchError):
@@ -135,6 +140,33 @@ def held(backlog: int, top: int) -> tuple[str, str] | None:
 def over_budget(size: int, budget: int | None, spent: int = 0) -> bool:
     """A measured size that would take this run past its budget. #215."""
     return budget is not None and size > 0 and spent + size > budget
+
+
+def backlog_room(conn) -> tuple[int, str]:
+    """(bytes fetch may add, why it may add none): fetched weights waiting for a screen against SCREEN_BACKLOG. #2011."""
+    from harness import disk
+    waiting = disk.waiting_bytes(conn)
+    room = SCREEN_BACKLOG - waiting
+    if room > 0:
+        return room, ""
+    why = (f"{waiting / GIB:.1f} GiB of fetched weights already wait for a screen, at or over the "
+           f"{SCREEN_BACKLOG / GIB:.0f} GiB backlog cap")
+    cuts.cut("screen_backlog", why, value=SCREEN_BACKLOG / GIB, kept=0, dropped=1, conn=conn)
+    return 0, why
+
+
+def _tighter(budget: int | None, room: int | None) -> int | None:
+    return room if budget is None else budget if room is None else min(budget, room)
+
+
+def over_backlog(size: int, room: int | None, spent: int = 0) -> bool:
+    """A download that would take the weights waiting for a screen past SCREEN_BACKLOG. #2011."""
+    return room is not None and spent + max(size, 0) > room
+
+
+def backlog_refusal(size: int, room: int, spent: int) -> str:
+    return (f"{size / GIB:.1f} GiB would take the weights waiting for a screen past the "
+            f"{SCREEN_BACKLOG / GIB:.0f} GiB backlog cap ({max(room - spent, 0) / GIB:.1f} GiB of room left)")
 
 
 def budget_refusal(size: int, budget: int, spent: int) -> str:
@@ -220,8 +252,25 @@ def free_bytes(path: str | Path | None = None) -> int:
     return shutil.disk_usage(target).free
 
 
+def disk_floor(environ=None) -> int:
+    """Bytes a download must leave free: the deploy's HF_MIN_FREE_GB plus FLOOR_MARGIN, read now. #2011."""
+    from harness import env
+    return env.min_free_gb(environ) * GIB + FLOOR_MARGIN
+
+
+def no_room(what: str, size: int, *, free: int | None = None, floor: int | None = None) -> str:
+    """Why `size` more bytes would take the weights volume under the floor, or ''; a refusal is a cut. #2011."""
+    floor = disk_floor() if floor is None else floor
+    have = free_bytes() if free is None else free
+    if have - size >= floor:
+        return ""
+    cuts.cut("disk_floor", f"{what}: download refused at the disk floor", value=floor, kept=0, dropped=1)
+    return (f"{size / GIB:.1f} GiB would leave under the {floor / GIB:.0f} GiB floor "
+            f"({have / GIB:.0f} GiB free)")
+
+
 def plan(repo: str, size: int, *, free: int | None = None,
-         floor: int = DISK_FLOOR, cap: int = MAX_DOWNLOAD) -> Plan:
+         floor: int | None = None, cap: int = MAX_DOWNLOAD) -> Plan:
     """Whether this download may start, and why not when it may not.
 
     A SIZE IS REQUIRED. The inspect tier produces it, and an unknown size is
@@ -236,12 +285,9 @@ def plan(repo: str, size: int, *, free: int | None = None,
                     f"{size / GIB:.1f} GiB is over the {cap / GIB:.0f} GiB cap",
                     reasons.LIMIT, f"limit:{knobs.limit('download_gib', cap / GIB, 'GiB')}")
     have = free_bytes() if free is None else free
-    if have - size < floor:
-        cuts.cut("disk_floor", f"{repo}: download refused at the disk floor", value=floor, kept=0, dropped=1)
-        return Plan(repo, size, False,
-                    f"{size / GIB:.1f} GiB would leave under the "
-                    f"{floor / GIB:.0f} GiB floor ({have / GIB:.0f} GiB free)",
-                    reasons.MACHINE)
+    why = no_room(repo, size, free=have, floor=floor)
+    if why:
+        return Plan(repo, size, False, why, reasons.MACHINE)
     return Plan(repo, size, True, f"{size / GIB:.1f} GiB, {have / GIB:.0f} GiB free")
 
 
@@ -482,7 +528,8 @@ def in_rank_order(rows: list[dict], conn=None) -> list[dict]:
 
 def download(repo: str, snapshot=None, listing=None, hf_download=None,
              text: bool = True, conn=None, require_weights: bool = False,
-             model_type: str = "", lane: str = "", card=None, refresh: bool = True) -> str:
+             model_type: str = "", lane: str = "", card=None, refresh: bool = True,
+             free: int | None = None, floor: int | None = None) -> str:
     """Weights into the shared cache. Returns the path.
 
     HF_HUB_OFFLINE is 1 everywhere else in this project on purpose: an eval
@@ -493,13 +540,24 @@ def download(repo: str, snapshot=None, listing=None, hf_download=None,
     from harness import env
     with env.online():
         return _download(repo, snapshot, listing, hf_download, text, conn, require_weights,
-                         model_type, lane, card, refresh)
+                         model_type, lane, card, refresh, free, floor)
+
+
+def _taken(siblings, allow) -> int:
+    """Bytes a snapshot with this allow list takes from this listing. #2011."""
+    return variants.files_bytes(siblings, allow)
+
+
+def _room_for(repo: str, size: int, free, floor) -> None:
+    why = no_room(repo, size, free=free, floor=floor)
+    if why:
+        raise NoRoom(f"its download would take {why}")
 
 
 def _download(repo, snapshot, listing, hf_download, text, conn, require_weights,
-              model_type="", lane="", card=None, refresh=True) -> str:
+              model_type="", lane="", card=None, refresh=True, free=None, floor=None) -> str:
     try:
-        allow = None
+        allow, taken = None, None
         if require_weights and (listing is not None or snapshot is None):
             siblings = _siblings(repo, listing or _listing)
             # The files the lane's runner opens, not a variant some other runner loads. #1040.
@@ -510,10 +568,15 @@ def _download(repo, snapshot, listing, hf_download, text, conn, require_weights,
             listing = lambda _repo, s=siblings: s  # noqa: E731
             chosen = _chosen(siblings, model_type, lane, patterns)
             allow = variants.download_files(siblings, chosen, patterns) if chosen else None
+            taken = _taken(siblings, allow)
         single = _gguf_pick(repo, listing, snapshot, model_type, conn) if text else None
         if single == ():
             raise FetchError("no single GGUF file fits the ceiling")
+        # The bytes the download really takes, not the variant inspect sized. #2011.
+        if not single and taken is not None:
+            _room_for(repo, taken, free, floor)
         if single:
+            _room_for(repo, int(single[1] or 0), free, floor)
             from harness import gguf
             try:
                 # A day fetch leaves the router alone; the night's screen restarts it. #1084.
@@ -670,16 +733,17 @@ def _on_disk_waiting(conn, lane: str = "") -> list[str]:
 def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=None,
         free: int | None = None, lane: str = "",
         budget: int | None = None, listing=None,
-        hf_download=None, floor: int = DISK_FLOOR, sizer=None,
+        hf_download=None, floor: int | None = None, sizer=None,
         refresh: bool = True, stop_at: float | None = None, clock=time.time,
-        limit_knob: str = "harness/fetching.py:run(limit)", budget_knob: str = "download_budget") -> list[dict]:
+        limit_knob: str = "harness/fetching.py:run(limit)", budget_knob: str = "download_budget",
+        room: int | None = None, held=None) -> list[dict]:
     """Fetch up to `limit` queued candidates, recording what happened; a limit or budget that stops one is a cut (#1087).
 
     `budget` caps what ONE INVOCATION downloads in total, which is the job
     --budget-gib was documented as doing and never did: it was printed in the
     header and never passed here, so a 12 GiB budget fetched 24.6 GiB. It is a
     fact about this invocation, so exceeding it re-queues rather than settling
-    anything. MAX_DOWNLOAD and DISK_FLOOR are absolute and stay in plan().
+    anything. MAX_DOWNLOAD and disk_floor() are absolute and stay in plan().
     Issue #215.
 
     A refused plan is recorded as `declined`, terminal, so the same oversized
@@ -693,6 +757,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
     done = []
     fetched = 0
     spent = 0
+    floor = disk_floor() if floor is None else floor
     from harness import gguf
     gguf.adopt_pending(conn, refresh=refresh)
     if sizer is None:
@@ -703,7 +768,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         """Bytes spent on what `name` needs, None when the registry deferred the tier."""
         got, cost, waiting = _fetch_needs(
             name, [m for m in requires(name, conn) if not have(m, conn)],
-            bases=runner_bases(name, conn), sizes=sizes or {}, sizer=sizer, budget=budget,
+            bases=runner_bases(name, conn), sizes=sizes or {}, sizer=sizer, budget=_tighter(budget, room),
             spent=spent, free=free, floor=floor, budget_knob=budget_knob, conn=conn,
             fetch=lambda dep: download(dep, snapshot=snapshot, conn=conn, refresh=refresh))
         done.extend(got)
@@ -819,6 +884,18 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             cuts.cut(budget_knob, f"{name}: {why}", value=budget / GIB, kept=fetched, dropped=1, conn=conn)
             done.append({"repo": name, "ok": False, "why": why})
             continue
+        # The screen's own question: a load that can never fit beside what stays held is not fetched. #2011.
+        beside = held(size / GIB) if held is not None and size > 0 else ""
+        if beside:
+            ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=f"not fetched: {beside}"[:600],
+                              reason=reasons.LIMIT)
+            done.append({"repo": name, "ok": False, "why": beside})
+            continue
+        if over_backlog(size, room, spent):
+            why = backlog_refusal(size, room, spent)
+            cuts.cut("screen_backlog", f"{name}: {why}", value=SCREEN_BACKLOG / GIB, kept=fetched, dropped=1, conn=conn)
+            done.append({"repo": name, "ok": False, "why": why})
+            continue
         p = plan(name, size, free=free, floor=floor)
         if not p.ok:
             # Our own gap, or a disk that will be freed, is not an answer about the candidate. #211, #408, #528.
@@ -833,11 +910,11 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
                 where = download(name, snapshot=snapshot, listing=listing,
                                  hf_download=hf_download, text=text, conn=conn,
                                  require_weights=True, model_type=row.get("model_type") or "",
-                                 lane=row.get("lane") or "", card=row, refresh=refresh)
+                                 lane=row.get("lane") or "", card=row, refresh=refresh, free=free, floor=floor)
             else:
                 where = download(name, snapshot=snapshot, conn=conn, require_weights=True,
                                  model_type=row.get("model_type") or "",
-                                 lane=row.get("lane") or "", card=row, refresh=refresh)
+                                 lane=row.get("lane") or "", card=row, refresh=refresh, free=free, floor=floor)
         except FetchDeferred as exc:
             done.append({"repo": name, "ok": False, "why": str(exc), "deferred": True})
             break
@@ -850,6 +927,10 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             else:
                 ms.decide_or_skip(conn, row["name"], "declined", tier="fetch", detail=str(exc),
                                   reason=reasons.CANDIDATE)
+            done.append({"repo": name, "ok": False, "why": str(exc)})
+            continue
+        except NoRoom as exc:
+            ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=str(exc), reason=reasons.MACHINE)
             done.append({"repo": name, "ok": False, "why": str(exc)})
             continue
         except FetchError as exc:

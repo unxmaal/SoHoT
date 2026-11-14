@@ -337,7 +337,7 @@ def test_a_disk_under_the_floor_installs_nothing_and_leaves_the_proposal(tmp_pat
     get_json, gh, _ = _channels({"mlx-lm": "0.33.0"})
     rtt.watch(conn, {"mlx-lm": "0.32.0"}, get_json=get_json, gh=gh, now=NOW)
     run = _uv()
-    got = rtt.trial(conn, run=run, home=tmp_path, platform="darwin", free=fetching.DISK_FLOOR - 1)
+    got = rtt.trial(conn, run=run, home=tmp_path, platform="darwin", free=fetching.disk_floor() - 1)
     assert [g["outcome"] for g in got] == [rtt.PROPOSED] and "disk floor" in got[0]["detail"] and run.calls == []
     assert [r["runtime"] for r in rtt.proposed(conn)] == ["mlx-lm"]
 

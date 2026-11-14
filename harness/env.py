@@ -38,6 +38,15 @@ from pathlib import Path
 #: actually known. A global floor cannot know what is about to be fetched.
 HF_MIN_FREE_GB = 20
 
+
+def min_free_gb(environ=None) -> int:
+    """The floor env.sh reads: HF_MIN_FREE_GB from the environment, else the constant. #2011."""
+    environ = os.environ if environ is None else environ
+    try:
+        return int(environ.get("HF_MIN_FREE_GB") or HF_MIN_FREE_GB)
+    except ValueError:
+        return HF_MIN_FREE_GB
+
 #: Where weights land when nobody says otherwise. Inside the checkout, so it
 #: exists on every machine, needs no drive letter and no mount, and is the same
 #: answer on every machine, needing no drive letter and no mount. Gitignored.
@@ -142,23 +151,32 @@ def unmounted(path: str) -> str:
     return str(p)
 
 
+#: refusal() kinds: what a cause is, without the numbers that change every minute. #2011.
+UNMOUNTED, UNREADABLE, UNWRITABLE, LOW_SPACE = "not mounted", "unreadable", "not writable", "low space"
+
+
 def problem(path: str, min_free_gb: int, record: bool = True) -> str:
     """Why weights may not be written here, in env.sh's words, '' when they may; a missing parent is a volume not mounted."""
+    return refusal(path, min_free_gb, record)[1]
+
+
+def refusal(path: str, min_free_gb: int, record: bool = True) -> tuple[str, str]:
+    """(kind, problem()'s words), ('', '') when weights may be written here. #2011."""
     vol = unmounted(path)
     if vol:
-        return f"{vol} {NOT_MOUNTED}"
+        return UNMOUNTED, f"{vol} {NOT_MOUNTED}"
     anchor = _anchor(path)
     if anchor is None:
-        return f"{path} cannot be read"
+        return UNREADABLE, f"{path} cannot be read"
     if not _writable(anchor):
-        return f"{path} is not writable"
+        return UNWRITABLE, f"{path} is not writable"
     free = free_gb(path)
     if free < min_free_gb:
         if record:
             from harness import cuts
             cuts.cut("harness/env.py:HF_MIN_FREE_GB", "weights location refused: too little free space",
                      value=min_free_gb, kept=0, dropped=1)
-        return f"{path} has {free}GB free, under the {min_free_gb}GB it needs"
+        return LOW_SPACE, f"{path} has {free}GB free, under the {min_free_gb}GB it needs"
     # READABILITY, which none of the above implies. Under macOS TCC a volume
     # stats fine, reports free space and appears in /Volumes while listing it
     # raises -- and mlx_lm then hangs forever inside os.listdir with no log and
@@ -166,8 +184,8 @@ def problem(path: str, min_free_gb: int, record: bool = True) -> str:
     try:
         next(os.scandir(anchor), None)
     except OSError:
-        return f"{path} cannot be read"
-    return ""
+        return UNREADABLE, f"{path} cannot be read"
+    return "", ""
 
 
 def usable(path: str, min_free_gb: int = HF_MIN_FREE_GB) -> bool:

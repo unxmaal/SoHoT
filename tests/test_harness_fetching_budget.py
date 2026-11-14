@@ -160,7 +160,7 @@ def test_an_ordinary_model_is_not_refused_as_an_attachment(tmp_path):
 def test_a_disk_below_the_floor_requeues_rather_than_settling(store):
     """A full disk is a fact about this machine today, not about the candidate. #528."""
     _seed(store, "org/fine", 5.0)
-    got = fetching.run(store, _sizes(store), limit=5, free=fetching.DISK_FLOOR + 1 * GIB)
+    got = fetching.run(store, _sizes(store), limit=5, free=fetching.disk_floor() + 1 * GIB)
     assert [g["repo"] for g in got if not g["ok"]] == ["org/fine"]
     row = store.execute(
         "SELECT v.outcome, v.reason, p.state FROM verdicts v JOIN proposals p "

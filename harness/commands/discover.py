@@ -575,6 +575,10 @@ def _report_inspect(a) -> int:
             # A layout no variant groups is our gap: queued for inspect, never too-big on the sum. #947.
             outcome = {"fits": "queued", "unknown": "queued" if fit.layout else ""}.get(
                 fit.verdict, "declined")
+            # Fits the ceiling, and the screen's own question too: can it ever load beside what stays held. #2011.
+            from harness import memory
+            beside = memory.held_back(fit.largest / ins.GIB) \
+                if fit.verdict == "fits" and registry == ms.HUGGINGFACE and fit.largest else ""
             if outcome:
                 # The tier that read the repo writes why and what would end
                 # the wait; nothing re-reads its sentence. #270, #333, #408.
@@ -582,10 +586,11 @@ def _report_inspect(a) -> int:
                     ms.decide(store, repo, outcome, tier=ms.INSPECT,
                               size_bytes=fit.largest if fit.verdict == "fits" else 0,
                               upstream_idle_days=fit.upstream_idle_days,
-                              reason=ins.reason_of(fit), until=ins.until_of(fit),
+                              reason=reasons.LIMIT if beside else ins.reason_of(fit), until=ins.until_of(fit),
                               ceiling_gb=fit.ceiling / ins.GIB if fit.ceiling else None,
                               event=fit.verdict, sized_by=ins.sized_by(fit),
-                              detail=f"{fit.verdict}: {fit.why}"[:200])
+                              detail=(f"fits the ceiling, not what stays held: {beside}" if beside
+                                      else f"{fit.verdict}: {fit.why}")[:200])
                 except ms.IllegalTransition as exc:
                     print(f"    kept its state: {exc}")
             if registry == ms.HUGGINGFACE and (

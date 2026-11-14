@@ -26,6 +26,8 @@ def _poll(force: bool, sha: str, nodes: bool = False) -> int:
     if job:
         note(f"queued {job['id']}: {job['title']}; it starts when the queue gate opens and "
              f"{deploy.blocked() or 'nothing blocks it now'}")
+    elif got.get("refused"):
+        pass  # deploy.refused said it once, when the cause changed. #2011
     else:
         note(f"nothing queued: {got['why']}")
     # A node down at the deploy, or added since, follows at the next poll. #1692.

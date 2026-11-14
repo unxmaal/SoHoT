@@ -45,7 +45,6 @@ harness/delegate.py:complete(max_tokens)
 harness/discover.py:_hf_models->httpx.get(timeout)
 harness/discover.py:external(limit)
 harness/discover.py:from_feeds(limit)
-harness/disk.py:GRACE_SECONDS
 harness/dora.py:DEFAULT_DAYS
 harness/ds4.py:START_FLOOR_S
 harness/ds4.py:START_S_PER_GIB
