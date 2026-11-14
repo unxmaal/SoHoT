@@ -315,8 +315,8 @@ def _harness_moved(conn, last: dict) -> bool:
         return False
     job = conn.execute("SELECT started_at, reason FROM jobs WHERE id = ?", (last["job_id"],)).fetchone()
     from harness import job_state as js
-    if job is not None and job["reason"] == js.EXPIRED:
-        # It expired pending (#1765): no code ran, so new code is no reason to queue it again before days_for.
+    if job is not None and job["reason"] in (js.EXPIRED, js.NEVER_FITS):
+        # It expired pending (#1765) or never fit (#1926): no code ran, so new code is no reason to queue it again before days_for.
         return False
     ran = (job["started_at"] if job else None) or last["queued_at"]
     from harness import deploy
@@ -481,8 +481,10 @@ def judge(conn, rv: dict, job: dict | None) -> tuple[str, str, str, str, int | N
     if run is None and job["state"] == CANCELLED:
         return CANCELLED, reasons.HARNESS, "", f"job {job['id']} was cancelled and stored no run", None
     if run is None:
+        from harness import job_state as js
+        said = f": {job['note']}" if job.get("reason") == js.NEVER_FITS and job.get("note") else ""
         return (UNRUN, reasons.HARNESS, "",
-                f"job {job['id']} {job['state']} rc={job['rc']} and stored no run", None)
+                f"job {job['id']} {job['state']} rc={job['rc']} and stored no run{said}", None)
     rid = run["id"]
     mine = runs.rows(conn, rid, rv["candidate_id"])
     if not mine:

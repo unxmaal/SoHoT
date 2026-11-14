@@ -32,11 +32,14 @@ EXPIRED = "expired"
 NEEDS_OWNER = "needs_owner"
 #: Built by a release that can no longer run it, and the linked release refuses its command. #1788.
 RELEASE_REFUSED = "release_refused"
+#: Its models need more than this machine ever admits beside its reserve and held set; refused, never started. #1926.
+NEVER_FITS = "never_fits"
 
 #: (state it leaves, state it enters) -> the reasons that move may carry. Nothing leaves done, failed or cancelled; paused leaves only by paused_jobs.settle or a cancel (#1764).
 MOVES: dict[tuple[str, str], frozenset[str]] = {
     (PENDING, RUNNING): frozenset({CLAIMED}),
     (PENDING, CANCELLED): frozenset({CANCEL, SUPERSEDED, EXPIRED}),
+    (PENDING, FAILED): frozenset({NEVER_FITS}),
     (RUNNING, PENDING): frozenset({UNCLAIMED, NEXT_ITEM, DEPLOY_PAUSE, CONTENTION_PAUSE, DEPLOY_STOP, WORKER_GONE}),
     (RUNNING, DONE): frozenset({EXITED, DEPLOYED}),
     (RUNNING, FAILED): frozenset({EXITED, NOT_STARTED, INTERRUPTED, DEPLOY_FAILED, RELEASE_REFUSED}),
