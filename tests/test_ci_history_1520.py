@@ -1,6 +1,8 @@
 """check-macos history: wall time by path and runner class from job logs, outcomes, p95, and the slowest tests (#1520)."""
 import json
 
+import pytest
+
 from harness import ci_history
 
 LOG = """2026-11-03T15:54:34.6638520Z   SOHOT_FAST_PATH: 1
@@ -43,6 +45,51 @@ def test_a_job_row_carries_job_and_make_check_minutes():
     assert row["job_min"] == 26.97 and row["check_min"] == 25.62 and row["sha"] == "ba38b746"
     assert ci_history.from_job({**_job("00:00:00", "00:01:00"), "name": "check-linux"}, RUN) is None
     assert ci_history.from_job({**_job("00:00:00", "00:01:00"), "conclusion": "skipped"}, RUN) is None
+    queued = {**_job("00:00:00", "01:47:00", "cancelled"), "steps": []}
+    assert ci_history.from_job(queued, RUN) is None, "a job no runner took never ran (#1590)"
+
+
+@pytest.mark.gauntlet("nothing-and-failed-return-the-same-value", site="harness/ci_history.py:limit_at:except")
+def test_a_cancel_is_judged_against_the_limit_its_run_ran_under():
+    """#1590: raising check-macos 35 -> 56 turned 15 runs cut at 35 into "superseded" and hid them from the p95."""
+    assert ci_history.limit_at("jobs:\n  check-macos:\n    timeout-minutes: 35\n", "check-macos") == 35.0
+    assert ci_history.limit_at("jobs:\n  check-macos:\n    runs-on: x\n", "check-macos") == 360.0
+    assert ci_history.limit_at("jobs: [", "check-macos") is None and ci_history.limit_at(None, "check-macos") is None
+    assert ci_history.limit_at('{"jobs": []}', "check-macos") is None
+    cut = {"conclusion": "cancelled", "job_min": 35.6, "limit_min": 35.0}
+    assert ci_history.outcome(cut, 56) == "timeout"
+    assert ci_history.outcome({**cut, "job_min": 20.0}, 56) == "superseded"
+    assert ci_history.outcome({**cut, "limit_min": None}, 56) == "superseded"
+
+
+def test_collect_records_each_runs_own_limit(tmp_path):
+    def gh(argv):
+        if argv[0] == "run":
+            return json.dumps([RUN])
+        if argv[-1].endswith("/logs"):
+            return LOG
+        if "contents/.github/workflows/ci.yml?ref=" in argv[-1]:
+            assert argv[-1].endswith(f"?ref={RUN['headSha']}")
+            return "jobs:\n  check-macos:\n    timeout-minutes: 35\n"
+        return json.dumps({"jobs": [_job("00:00:00", "00:35:36", "cancelled")]})
+    (row,) = ci_history.collect(5, tmp_path, gh=gh)
+    assert row["limit_min"] == 35.0 and ci_history.outcome(row, 56) == "timeout"
+
+
+def test_the_rule_reads_a_p95_that_keeps_the_runs_a_timeout_cut():
+    """#1590: 15 of 53 push runs were cut at 35 min; a p95 over finished runs alone read 34.1 and said 35 was enough."""
+    rows = [{"fast": False, "runner": "M1 3cpu", "conclusion": "success", "job_min": 30.0, "check_min": 29.0}
+            for _ in range(8)]
+    rows += [{"fast": False, "runner": "M1 3cpu", "conclusion": "cancelled", "job_min": 35.5, "check_min": 34.0,
+              "pct": 80}, {"fast": False, "runner": "M1 3cpu", "conclusion": "cancelled", "job_min": 35.4}]
+    (row,) = ci_history.table(rows, 35)
+    assert row["job_p95"] == 30.0 and row["timeout"] == 2
+    assert row["job_p95_cut"] == round(ci_history.pctl([30.0] * 8 + [44.0, 35.4], 0.95), 1) == 40.1
+    assert ci_history.rule_line("check-macos", row, 35).endswith("1.4 x job p95 40.1 = 57 min; timeout-minutes 35 "
+                                                                  "below its rule, raise it to 57")
+    assert ci_history.rule_line("check-macos", row, 57).endswith("meets its rule")
+    assert ci_history.rule_line("coverage-map", row, 35) == ""
+    assert "below its rule" in ci_history.render([row], [], 35, name="check-macos")
 
 
 def test_a_cancel_at_the_limit_is_a_timeout_and_an_earlier_one_superseded():

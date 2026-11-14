@@ -11,13 +11,13 @@ import threading
 import time
 from pathlib import Path
 
-from harness import proc_identity, tether
+from harness import proc_identity, reaping, tether
 
 TERM_GRACE_S = 10.0
 
 _SIGNALS = ("SIGTERM", "SIGINT")
 
-_children: dict[int, tuple[subprocess.Popen, dict, subprocess.Popen | None]] = {}
+_children: dict[int, tuple[subprocess.Popen, dict]] = {}
 _previous: dict[int, object] = {}
 _pending: list[int] = []
 _starting = False
@@ -43,7 +43,7 @@ def _write() -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
     tmp.write_text(json.dumps({"owner": owner, "argv": sys.argv[:4],
-                               "children": [rec for _, rec, _ in _children.values()]}), encoding="utf-8")
+                               "children": [rec for _, rec in _children.values()]}), encoding="utf-8")
     atomic_file.replace(tmp, path)
 
 
@@ -100,7 +100,7 @@ def _signal(proc: subprocess.Popen, hard: bool) -> None:
 
 
 def start(cmd: list[str], **popen) -> subprocess.Popen:
-    """Start cmd in its own session as this process's child: recorded, stopped on this process's TERM or INT."""
+    """Start cmd in its own session as this process's child, tied before it runs: recorded, stopped on TERM or INT."""
     global _starting
     for line in reap():
         print(line, file=sys.stderr, flush=True)
@@ -112,14 +112,12 @@ def start(cmd: list[str], **popen) -> subprocess.Popen:
     with _lock:
         _starting = threading.current_thread() is threading.main_thread()
         try:
-            proc = subprocess.Popen(cmd, **popen)
+            proc = tether.spawn(cmd, subprocess.Popen, **popen)
             pgid = None if sys.platform == "win32" else proc.pid
             rec = {"pid": proc.pid, "pgid": pgid, "started": proc_identity.started(proc.pid),
                    "cmd": " ".join(str(c) for c in cmd)[:300]}
-            _children[proc.pid] = (proc, rec, None)
+            _children[proc.pid] = (proc, rec)
             _write()
-            with contextlib.suppress(OSError):  # without a watcher a lone SIGKILL waits for reap()
-                _children[proc.pid] = (proc, rec, tether.tie(proc))
         finally:
             _starting = False
             held, _pending[:] = list(_pending), []
@@ -130,8 +128,7 @@ def start(cmd: list[str], **popen) -> subprocess.Popen:
 
 def _forget(pid: int) -> None:
     with _lock:
-        _, _, watcher = _children.pop(pid, (None, None, None))
-        tether.untie(watcher)
+        _children.pop(pid, None)
         _write()
         if not _children:
             _unguard()
@@ -146,7 +143,7 @@ def stop(proc: subprocess.Popen, grace: float = TERM_GRACE_S) -> None:
                 proc.wait(timeout=grace)
             except subprocess.TimeoutExpired:
                 _signal(proc, hard=True)
-                proc.wait()
+                reaping.wait(proc, "owned.stop")
     finally:
         _forget(proc.pid)
 
@@ -154,7 +151,7 @@ def stop(proc: subprocess.Popen, grace: float = TERM_GRACE_S) -> None:
 def stop_all(grace: float = TERM_GRACE_S) -> None:
     """Stop every child this process started, all within one grace."""
     with _lock:
-        procs = [p for p, _, _ in _children.values()]
+        procs = [p for p, _ in _children.values()]
         for p in procs:
             if p.poll() is None:
                 _signal(p, hard=False)
@@ -164,7 +161,7 @@ def stop_all(grace: float = TERM_GRACE_S) -> None:
                 p.wait(timeout=max(0.0, deadline - time.monotonic()))
             except subprocess.TimeoutExpired:
                 _signal(p, hard=True)
-                p.wait()
+                reaping.wait(p, "owned.stop_all")
         for p in procs:
             _forget(p.pid)
 

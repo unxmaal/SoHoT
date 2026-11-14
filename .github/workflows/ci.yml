@@ -59,8 +59,8 @@ jobs:
     # Apple Silicon, and standard runners are free for public repos. Larger
     # runners are NOT free, so this label must stay standard.
     runs-on: macos-latest
-    # harness/ci_budget.MACOS_TIMEOUT_MIN, knob ci_macos_timeout: 1.4x the measured M1 job p95, a slow host's factor (#1520).
-    timeout-minutes: 35
+    # harness/ci_budget.MACOS_TIMEOUT_MIN, knob ci_macos_timeout: 1.4x the push job p95 (39.1 M1, 40.0 one unnamed), timeouts projected (#1590).
+    timeout-minutes: 56
     permissions:
       contents: read
       # Where the time went downloads the last main run's per-test times (#1146).
@@ -68,6 +68,8 @@ jobs:
     env:
       # An unlabelled pull request skips `long` tests and runs only what its change reaches; main, nightly, full-ci run all (#720, #1567).
       SOHOT_FAST_PATH: ${{ (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'full-ci')) && '1' || '0' }}
+      # Push and PR runs leave `nightly` tests, each with a fast twin that runs here, to the nightly and dispatch (#1590).
+      SOHOT_SKIP_NIGHTLY: ${{ (github.event_name == 'push' || github.event_name == 'pull_request') && '1' || '0' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -234,8 +236,8 @@ jobs:
       (github.event_name == 'workflow_dispatch' && (inputs.jobs == 'all' || contains(inputs.jobs, 'check-postgres'))) ||
       needs.store-touched.outputs.touched == '1'
     runs-on: macos-latest
-    # 1.4x (a slow M1 host, #1520) the whole suite's 36.5 min projected from push run 42412868007's cut at 99% (#1584).
-    timeout-minutes: 52
+    # 1.4x (a slow M1 host, #1520) the PR job p95 51.5 min, timeouts projected (harness.ci_history --job check-postgres, #1590).
+    timeout-minutes: 73
     permissions:
       contents: read
       # The selection reads the nightly coverage map, an artifact (#1571).
@@ -323,8 +325,8 @@ jobs:
     # `ubuntu-latest` moves to 26 on 2026-10-19 (#339); the step below checks
     # the pin is honored. Keep it in step with EXPECT_UBUNTU.
     runs-on: ubuntu-24.04
-    # 1.3x the job's 34.4 min projected from its nightly cuts (harness.ci_history --job check-linux, #1588); apt has its own 6 (#647).
-    timeout-minutes: 45
+    # 1.3x the nightly job p95 35.4 min, timeouts projected (harness.ci_history --job check-linux, #1590); apt has its own 6 (#647).
+    timeout-minutes: 47
 
     env:
       EXPECT_UBUNTU: "24.04"
@@ -511,8 +513,8 @@ jobs:
     # The second measurement machine. Nothing here is Apple Silicon, so the MLX
     # lanes skip and the "What did not run" step below prints which ones.
     runs-on: windows-latest
-    # 1.3x the job's 61.0 min projected from its nightly cuts at 74% (harness.ci_history --job check-windows, #1588).
-    timeout-minutes: 80
+    # 1.3x the nightly job p95 74.2 min, timeouts projected (harness.ci_history --job check-windows, #1588, #1590).
+    timeout-minutes: 97
     defaults:
       run:
         # Git Bash. scripts/env.sh is sourced by the tests, and the Makefile

@@ -15,6 +15,7 @@ from harness import memory_store as ms
 from harness import owned, proc_identity, vllm
 from harness import watchdog as wd
 from harness import watchdog_hands, watchdog_observe
+from tests.test_tether_1761 import _watchers_of
 
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="process groups and start times are POSIX")
 
@@ -34,14 +35,13 @@ OWNER = textwrap.dedent("""
 TERM_IN_POPEN = textwrap.dedent("""
     import os, signal, subprocess, sys, time
     from harness import owned
-    real = subprocess.Popen
-    def popen(*a, **k):
-        p = real(*a, **k)
-        open(sys.argv[1] + "/child.pid", "w").write(str(p.pid))
-        os.kill(os.getpid(), signal.SIGTERM)
-        time.sleep(0.5)
-        return p
-    owned.subprocess.Popen = popen
+    class Popen(subprocess.Popen):
+        def __init__(self, *a, **k):
+            super().__init__(*a, **k)
+            open(sys.argv[1] + "/child.pid", "w").write(str(self.pid))
+            os.kill(os.getpid(), signal.SIGTERM)
+            time.sleep(0.5)
+    owned.subprocess.Popen = Popen
     owned.start(["sleep", "300"])
     time.sleep(300)
 """)
@@ -61,6 +61,40 @@ OWNER_OF_LEADER = textwrap.dedent("""
     out = sys.argv[1]
     p = owned.start([sys.executable, "-c", sys.argv[2], out + "/worker.pid"])
     open(out + "/child.pid", "w").write(str(p.pid))
+    time.sleep(300)
+""")
+
+
+# The owner dies the moment its child exists, before owned records it: only the child's own tether can stop it. #1967.
+DIES_IN_POPEN = textwrap.dedent("""
+    import json, os, subprocess, sys, time
+    from harness import owned, proc_identity, tether
+    SLEEPER = json.loads(sys.argv[3])
+    class Dies(subprocess.Popen):
+        def __init__(self, *a, **k):
+            super().__init__(*a, **k)
+            if tether.command(self.args) == SLEEPER:
+                open(sys.argv[1] + "/child.pid", "w").write(str(self.pid))
+                os.kill(os.getpid(), int(sys.argv[2]))
+                time.sleep(5)
+    owned.subprocess.Popen = Dies
+    owned.start(SLEEPER)
+    time.sleep(300)
+""")
+
+SLEEPER = [sys.executable, "-c", "import time; time.sleep(300)"]
+
+# A server that ignores TERM: its tether must outlive its own TERM to the server's group and send KILL.
+TERM_DEAF = textwrap.dedent("""
+    import os, sys, time
+    from harness import owned, tether
+    tether.GRACE_S = 1.0
+    ready = sys.argv[1] + "/ready"
+    code = "import signal, sys, time; signal.signal(signal.SIGTERM, signal.SIG_IGN); open(sys.argv[1], 'w').close(); time.sleep(300)"
+    p = owned.start([sys.executable, "-c", code, ready])
+    while not os.path.exists(ready):
+        time.sleep(0.05)
+    open(sys.argv[1] + "/child.pid", "w").write(str(p.pid))
     time.sleep(300)
 """)
 
@@ -133,19 +167,37 @@ def test_a_sigkilled_owner_s_server_and_its_workers_are_stopped_by_its_tether(tm
     assert _wait(lambda: proc_identity.same(worker) is False, timeout=20), "the server's worker outlived its owner"
 
 
-def test_a_server_whose_owner_s_whole_group_was_killed_is_reaped_by_the_next_owner(tmp_path, strays):
+def test_a_server_whose_owner_s_whole_group_was_killed_is_stopped_by_its_tether_and_its_record_cleared(tmp_path, strays):
     proc, child = _owner(tmp_path, OWNER)
     strays.append(child)
     rec = proc_identity.identity(child)
     assert _wait(lambda: len(_records()) == 1)
+    assert _wait(lambda: len(_watchers_of(child)) == 1)
+    watcher = _watchers_of(child)[0][0]
+    assert os.getpgid(watcher) not in (proc.pid, child), "the tether sits in a group a kill meant for another takes"
     os.killpg(proc.pid, signal.SIGKILL)
     proc.wait(timeout=10)
-    time.sleep(1.0)
-    assert proc_identity.same(rec) is True, "a group SIGKILL took the tether and left nothing to reap"
-    lines = owned.reap()
-    assert any(f"pid {child}" in line and "stopped" in line for line in lines), lines
-    assert _wait(lambda: proc_identity.same(rec) is False)
+    assert _wait(lambda: proc_identity.same(rec) is False, timeout=20), "a group SIGKILL of the owner left its server running"
+    assert not any("stopped" in line for line in owned.reap())
     assert _records() == []
+
+
+def test_a_server_deaf_to_term_is_killed_by_its_tether_once_the_owner_is_gone(tmp_path, strays):
+    proc, child = _owner(tmp_path, TERM_DEAF)
+    strays.append(child)
+    rec = proc_identity.identity(child)
+    proc.kill()
+    proc.wait(timeout=10)
+    assert _wait(lambda: proc_identity.same(rec) is False, timeout=20), "the tether died of its own TERM and never sent KILL"
+
+
+@pytest.mark.parametrize("sig", [signal.SIGKILL, signal.SIGTERM])
+def test_an_owner_killed_the_moment_its_child_exists_still_takes_the_child_with_it(sig, tmp_path, strays):
+    proc, child = _owner(tmp_path, DIES_IN_POPEN, str(int(sig)), json.dumps(SLEEPER))
+    strays.append(child)
+    rec = proc_identity.identity(child)
+    assert proc.wait(timeout=30) == -sig
+    assert _wait(lambda: proc_identity.same(rec) is False, timeout=20), f"the child outlived an owner ended by {sig.name} in Popen"
 
 
 def _dead_owner() -> dict:
@@ -224,10 +276,10 @@ def test_served_records_its_child_and_forgets_it_and_its_handlers_on_exit(tmp_pa
         assert [c["pid"] for c in got["children"]] == [srv.proc.pid]
         assert got["owner"]["pid"] == os.getpid()
         assert signal.getsignal(signal.SIGTERM) is owned._on_signal
-        watcher = owned._children[srv.proc.pid][2]
-        assert watcher is not None and watcher.poll() is None
+        assert len(owned._children[srv.proc.pid]) == 2, "owned keeps a handle on the child's own watcher"
+        assert _wait(lambda: len(_watchers_of(srv.proc.pid)) == 1), "the server runs with no watcher"
     assert srv.proc.poll() is not None
-    assert watcher.poll() is not None, "the tether outlived the server it watched"
+    assert _wait(lambda: _watchers_of(srv.proc.pid) == []), "the tether outlived the server it watched"
     assert _records() == []
     assert signal.getsignal(signal.SIGTERM) is before
 

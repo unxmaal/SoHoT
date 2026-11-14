@@ -40,7 +40,8 @@ class Guard:
             self._proc.kill()
         os.close(self._w)
         self._w = None
-        self._proc.wait()
+        from harness import reaping
+        reaping.wait(self._proc, "throttle guard")
 
 
 class Received:
@@ -182,7 +183,10 @@ def _hold(proc, cap_bps, read, send, capped, stop, clock, sleep, tick) -> dict:
         if why:
             go(True)
             send(signal.SIGTERM)
-            proc.wait()
+            from harness import reaping
+            if not reaping.wait(proc, f"throttled download stopped ({why})"):
+                proc.kill()
+                reaping.wait(proc, "throttled download killed")
             break
         before = got
         got = read(tick if full else max(0.0, tick - on))
