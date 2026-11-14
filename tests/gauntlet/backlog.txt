@@ -261,7 +261,6 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/migration_check.py:_proposal_state:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/migration_check.py:_verdict_reason:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/models.py:_source:downloads
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/paused.py:dir_state:paused_runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/paused_jobs.py:_owned:knob_sweeps
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/paused_jobs.py:_owned:reverifications
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/paused_jobs.py:_said:watchdog_actions

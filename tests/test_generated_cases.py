@@ -381,6 +381,8 @@ def test_the_hard_table_kinds_need_the_rows_computed(committed):
 
 
 @pytest.mark.long
+@pytest.mark.nightly(fast=("test_the_registered_negative_control_separates_reference_from_responders",
+                           "tests/test_harness_checks_render.py::test_check_html_passes_a_real_page"))
 def test_every_web_reference_renders_in_a_browser(committed):
     """Positive control through score(): a sample of reference pages parse, meet their structure and paint."""
     from harness.checks import render

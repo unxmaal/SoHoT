@@ -302,8 +302,14 @@ def render(problems: list[Problem]) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    import argparse
     started = time.monotonic()
-    names, batches = [c.__name__ for c in CHECKS], groups()
+    names = [c.__name__ for c in CHECKS]
+    ap = argparse.ArgumentParser(prog="python -m tests.gauntlet.precheck", description=__doc__)
+    ap.add_argument("--only", action="append", choices=names, help="run this ratchet alone (repeatable)")
+    only = ap.parse_args(argv).only
+    names = [n for n in names if not only or n in only]
+    batches = [kept for g in groups() if (kept := tuple(n for n in g if n in names))]
     workers = max(1, min(len(batches), os.cpu_count() or 1))
     with ProcessPoolExecutor(max_workers=workers) as pool:
         problems = [p for got in pool.map(_run, batches) for p in got]

@@ -139,9 +139,9 @@ def test_a_cloud_slot_held_outside_the_queue_keeps_a_cloud_job_waiting(monkeypat
     cloud = wq.add(OPUS, title="opus")
     worker = _worker(fake)
     try:
-        time.sleep(0.2)
-        assert _state(cloud["id"]) == wq.PENDING
+        worker.join(10)
         assert worker.is_alive() is False
+        assert _state(cloud["id"]) == wq.PENDING
     finally:
         exclusive._release(fd)
         os.close(fd)
