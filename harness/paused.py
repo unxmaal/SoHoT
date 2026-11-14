@@ -51,7 +51,8 @@ def dir_state(conn, out, lane: str, inc_spec: str, spec: str) -> str:
     got = watch.read(out)
     if not got or not got[1]:
         return EMPTY
-    if conn.execute("SELECT 1 FROM paused_runs WHERE out = ? LIMIT 1", (str(out),)).fetchone():
+    here, args = _here(conn)
+    if conn.execute(f"SELECT 1 FROM paused_runs WHERE out = ? AND {here} LIMIT 1", (str(out), *args)).fetchone():
         return RECORDED
     state = run_state.of(out).name
     if state not in run_state.RESUMABLE:

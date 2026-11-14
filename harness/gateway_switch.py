@@ -366,12 +366,15 @@ def settle(conn, row: dict, why: str, serving=None, log=None) -> str:
 
     import yaml
 
-    from harness import gateway
+    from harness import gateway, gateway_respawn
     from harness import gateway_switch_state as st
     stop_drain()
     frm, rid = row["state"], row["id"]
     if frm == st.REQUESTED:
-        st.move(conn, rid, frm, st.FAILED, why, detail=f"the switch process {why} before it wrote anything")
+        settled = gateway_respawn.late(conn, rid) if why == st.DIED else None
+        st.move(conn, rid, frm, st.FAILED, why if settled is None else st.LATE,
+                detail=f"the switch process {why} before it wrote anything"
+                       + ("" if settled is None else f", a late claim after switch {settled} settled it unclaimed"))
         return st.FAILED
     path = Path(row["config"])
     current = path.read_text(encoding="utf-8") if path.exists() else None
@@ -447,11 +450,14 @@ def _alert(message: str) -> None:
 
 
 def _gave_up(row: dict, deaths: int) -> str:
+    from harness import gateway_switch_state as st
     when = time.strftime("%Y-%m-%d %H:%M", time.localtime(row["requested_at"])) if row["requested_at"] else "?"
     return (f"the gateway alias switch for the adoption requested at {when} died {deaths} times (last: switch "
             f"{row['id']}, while {row['state']}); the worker started it again {deaths - 1} time(s) and stops now. "
             f"The gateway serves the old aliases until the next adoption, or until `python -m harness.gateway_switch` "
-            f"is run by hand from the deploy checkout")
+            f"is run by hand from the deploy checkout"
+            + ("; its process was still running, and a claim it makes later is refused"
+               if row.get("reason") == st.UNCLAIMED else ""))
 
 
 def repair(alive=None, serving=None, start=None, alert=None, config=None, log=None, now=None,
@@ -622,7 +628,7 @@ def _advance(rid):
 def run(requested_at, idle_s, max_wait_s, log, held=None, alive=None, ident=None, switch_fn=None,
         base=None) -> str:
     """Claim the one in-flight slot, switch under the machine lock, and return the state the switch ended in ('' when it lost the claim)."""
-    from harness import exclusive, gateway
+    from harness import exclusive, gateway, gateway_respawn
     from harness import gateway_switch_state as st
     from harness import memory_store as ms
     from harness.completion import DEFAULT_GATEWAY
@@ -638,6 +644,13 @@ def run(requested_at, idle_s, max_wait_s, log, held=None, alive=None, ident=None
         except st.Lost as exc:
             log(f"{exc}; it re-reads the adoptions once it settles")
             return ""
+        settled = gateway_respawn.late(conn, rid)
+        if settled is not None:
+            why = (f"switch {settled} already settled this respawn unclaimed (gateway_respawn_claim), so its late "
+                   f"claim is refused")
+            st.move(conn, rid, st.REQUESTED, st.FAILED, st.LATE, detail=why)
+            log(f"switch {rid}: {why}")
+            return st.FAILED
     finally:
         conn.close()
     try:

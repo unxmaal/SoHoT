@@ -358,8 +358,7 @@ def _shoot(argv: list[str], out: Path, cwd: str, timeout: float = 60.0,
     err = tempfile.TemporaryFile("w+", encoding="utf-8", errors="replace")
     # A file, not a pipe: chrome's grandchildren inherit the handle and keep a
     # pipe open long after we terminate it, so reading one would block.
-    proc = subprocess.Popen(argv, stdout=subprocess.DEVNULL, stderr=err, cwd=cwd)
-    watcher = tether.tie(proc)
+    proc = tether.spawn(argv, subprocess.Popen, stdout=subprocess.DEVNULL, stderr=err, cwd=cwd)
     deadline = time.monotonic() + timeout
     size = -1
     exited = settled = False
@@ -391,7 +390,6 @@ def _shoot(argv: list[str], out: Path, cwd: str, timeout: float = 60.0,
         err.seek(0)
         return err.read().strip()
     finally:
-        tether.untie(watcher)
         err.close()
 
 

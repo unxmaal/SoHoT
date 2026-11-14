@@ -341,7 +341,7 @@ def node_fallbacks(conn, config=None, now=None) -> list[dict]:
 
     from harness import gateway, nodes
     now = time.time() if now is None else now
-    path = gateway.served_path(config)
+    path = gateway.serving_path(config)
     entries = {str(e.get("model_name", "")): e for e in (gateway.load(path) if path.exists() else {})
                .get("model_list") or []}
     by: dict = {}
@@ -374,7 +374,7 @@ def serving(conn, config=None) -> tuple[dict | None, dict]:
     """(what the served config's sohot-<lane> aliases name, None when it does not exist; what the adoptions say)."""
     from harness import adopt, gateway
     from harness.gateway_switch import _aliases
-    path = gateway.served_path(config)
+    path = gateway.serving_path(config)
     served = _aliases(gateway.load(path)) if path.exists() else None
     wanted = _aliases(gateway.served(config, adopt.lane_defaults(conn)))
     return served, wanted
@@ -397,7 +397,7 @@ def audit(path=None, config=None, cases=None) -> dict:
         checks = mc.invariants(conn) + [
             mc._check("adoptions_pass_here", _adoptions_pass_here(conn)),
             mc._check("no_reference_served", _no_reference_served(conn, served or {})),
-            mc._check("served_matches_adoption", _served_matches(served, wanted, gateway.served_path(config))),
+            mc._check("served_matches_adoption", _served_matches(served, wanted, gateway.serving_path(config))),
             mc._check("gateway_errors", errors),
             mc._check("sweep_on_schedule", late),
             mc._check("sweep_on_deployed_code", []),
@@ -449,7 +449,7 @@ def audit(path=None, config=None, cases=None) -> dict:
         fell = node_fallbacks(conn, config)
     finally:
         conn.close()
-    return {"source": str(path), "served_config": str(gateway.served_path(config)), "schema": have, "ok": all(c.ok for c in checks),
+    return {"source": str(path), "served_config": str(gateway.serving_path(config)), "schema": have, "ok": all(c.ok for c in checks),
             "checks": [{"name": c.name, "ok": c.ok, "detail": c.detail or warnings.get(c.name, notes.get(c.name, "")),
                         "warn": c.name in warnings} for c in checks],
             "binding": bound, "fallbacks": fell}

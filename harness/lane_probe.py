@@ -260,7 +260,7 @@ def _node(where) -> dict | None:
     return {"name": name, "engine": str(entry.get(serving.ENGINE_KEY) or ""),
             "key": context._key(where.model) or (nodes.secret(found) if found else ""),
             "twin": serving.bare(str(twin.get("api_base") or "")), "alias": where.model + nodes.LOCAL_SUFFIX,
-            "config": gateway.served_path()}
+            "config": gateway.serving_path()}
 
 
 def _node_resident(node):
