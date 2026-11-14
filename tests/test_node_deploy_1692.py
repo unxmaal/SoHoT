@@ -38,8 +38,9 @@ UNITS = {"interactive": ["interactive"], "node": ["interactive", "gateway", "mlx
 class Fake:
     """ssh as a table: (mode, sha) -> (rc, output), over a node whose role file and loaded units each install sets."""
 
-    def __init__(self, head=(0, OLD), install=None, role="interactive", extra=()):
+    def __init__(self, head=(0, OLD), install=None, role="interactive", extra=(), schemas=None):
         self.head, self.install, self.calls, self.polled, self.busy = head, dict(install or {}), [], [], []
+        self.schemas = schemas
         self.role, self.loaded, self.extra = role, list(UNITS.get(role, [])), list(extra)
 
     def __call__(self, argv, script, timeout):
@@ -52,6 +53,8 @@ class Fake:
         if args[0] == "head":
             rc, said = self.head
             return rc, f"{said}\nrole {self.role}" if rc == 0 else said
+        if args[0] == "schema":
+            return (0, "code \nstore ") if self.schemas is None else (0, "code {}\nstore {}".format(*self.schemas))
         if args[0] == "units":
             return 0, "\n".join([f"role {self.role}", *(f"want {u}" for u in UNITS.get(self.role, [])),
                                  *(f"loaded {u}" for u in self.loaded), f"machine {FP}"])
@@ -62,8 +65,8 @@ class Fake:
         return rc, said
 
     def sent(self) -> list[tuple]:
-        """Every call but the post-install unit listings."""
-        return [c[1:] for c in self.calls if c[1] != "units"]
+        """Every call but the post-install unit listings and the rollback's schema read."""
+        return [c[1:] for c in self.calls if c[1] not in ("units", "schema")]
 
 
 @pytest.fixture

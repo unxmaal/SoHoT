@@ -32,9 +32,11 @@ DRAIN_POLL_S = 2.0
 DRAINED, DRAIN_DEADLINE = "drained", "deadline"
 LOG = "deploy-nodes.log"
 _SHA = re.compile(r"^[0-9a-f]{40}$")
-_SAID = re.compile(r"^(role|want|loaded|disabled)(?: (\S*))?$")
+_SAID = re.compile(r"^(role|want|loaded|disabled|code|store)(?: (\S*))?$")
+_SHAS = re.compile(r"\b[0-9a-f]{7,40}\b")
+_DIGITS = re.compile(r"\d+")
 
-#: Sent on stdin to `bash -s -- head|units|state DIR` or `install DIR SHA ROLE`, DIR "" for the node's own; a non-login PATH lacks uv.
+#: Sent on stdin to `bash -s -- head|units|state DIR`, `schema DIR SHA` or `install DIR SHA ROLE`, DIR "" for the node's own; a non-login PATH lacks uv.
 SCRIPT = r"""set -euo pipefail
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 home="${LOCALHARNESS_HOME:-$HOME/localharness}"
@@ -49,6 +51,11 @@ if [ "$1" = units ]; then
   exit 0
 fi
 if [ "$1" = state ]; then exec uv run --no-sync python -m harness.node_state; fi
+if [ "$1" = schema ]; then
+  printf 'code %s\n' "$({ git show "$3:harness/memory_store/schema.py" 2>/dev/null || true; } | sed -n 's/^SCHEMA_VERSION *= *\([0-9][0-9]*\).*/\1/p')"
+  printf 'store %s\n' "$({ uv run --no-sync python -m harness.node_state schema 2>/dev/null || true; } | tail -n 1)"
+  exit 0
+fi
 git cat-file -e "$3^{commit}" 2>/dev/null || git fetch -q origin main
 git checkout -q --detach "$3"
 test "$(git rev-parse HEAD)" = "$3"
@@ -272,9 +279,10 @@ def _one(node: nodes_mod.Node, sha: str, prior: dict, *, runner, check, alert, l
     role, why = choose_role(node, was)
     if why:
         out = {**base, "outcome": REFUSED, "previous_sha": previous, "detail": f"not installed: {why}"}
-        alert(f"node {node.name} deploy of {sha[:12]} refused: {why}")
+        out["detail"] += alert_once(node.name, sha, REFUSED, out["detail"], alert)
         return out
     if head == sha and role == persisted and not started:
+        recovered(node.name)
         return {**base, "outcome": CURRENT, "previous_sha": head, "role": role, "detail": f"already at {sha[:12]} as {role}"}
     # Rollback puts back the role file the node had; a node that had none keeps the role it was given. #1707.
     back_role = was or role
@@ -307,10 +315,17 @@ def _install(node, sha, role, previous, was, back_role, base, *, runner, check, 
         return {**base, "outcome": DOWN, "previous_sha": previous, "previous_role": was, "started": True,
                 "detail": f"ssh {node.ssh} dropped during the install: {_tail(said)}; tried again at the next deploy poll"}
     if not why or isinstance(why, StudioSide):
+        recovered(node.name)
         if why:
             alert(f"node {node.name} deployed {sha[:12]}, but {why}")
         return {**base, "outcome": DEPLOYED, "previous_sha": previous, "previous_role": was, "role": role,
                 "detail": f"serving {sha[:12]} as {role}" + (f"; {why}" if why else "")}
+    stale = newer_store(node, previous, runner, log)
+    if stale:
+        out = {**base, "outcome": FAILED, "previous_sha": previous, "role": role, "rollback": "skipped",
+               "detail": f"{why}; rollback to {previous[:12]} skipped: {stale}"}
+        out["detail"] += alert_once(node.name, sha, FAILED, out["detail"], alert)
+        return out
     rc, said = runner(ssh_argv(node, "install", node.deploy_dir, previous, back_role), SCRIPT, INSTALL_TIMEOUT_S)
     log.write(f"--- node {node.name} rollback to {previous[:12]} as {back_role} rc {rc}\n{said}\n")
     if rc != 0:
@@ -320,8 +335,51 @@ def _install(node, sha, role, previous, was, back_role, base, *, runner, check, 
         back = "" if isinstance(back, StudioSide) else back
     out = {**base, "outcome": FAILED if back else ROLLED_BACK, "previous_sha": previous, "role": back_role,
            "detail": f"{why}; rolled back to {previous[:12]} as {back_role}" + (f", which fails too: {back}" if back else "")}
-    alert(f"node {node.name} deploy of {sha[:12]} {out['outcome']}: {out['detail']}")
+    out["detail"] += alert_once(node.name, sha, out["outcome"], out["detail"], alert)
     return out
+
+
+def newer_store(node: nodes_mod.Node, previous: str, runner, log) -> str:
+    """Why PREVIOUS cannot be rolled back to: the node's store is at a newer schema than it speaks; '' otherwise. #2022."""
+    rc, said = runner(ssh_argv(node, "schema", node.deploy_dir, previous), SCRIPT, HEAD_TIMEOUT_S)
+    log.write(f"--- node {node.name} schema of {previous[:12]} rc {rc}\n{said}\n")
+    got = _said(said)
+    code, have = ((got.get(k) or [""])[-1] for k in ("code", "store"))
+    if rc != 0 or not code.isdigit() or not have.isdigit() or int(have) <= int(code):
+        return ""
+    return (f"its store is at schema {have} and {previous[:12]} speaks {code}, so that release would refuse the store "
+            f"(NewerStore); the node waits for a release that installs")
+
+
+def _failing(name: str) -> Path:
+    return paths.home() / "nodes" / f"{name}.failing.json"
+
+
+def cause(outcome: str, detail: str) -> str:
+    """A failure with its shas and numbers left out, so the same failure at the next sha is the same cause. #2022."""
+    return f"{outcome}: {_DIGITS.sub('N', _SHAS.sub('<sha>', detail))}"
+
+
+def alert_once(name: str, sha: str, outcome: str, detail: str, alert) -> str:
+    """Alert a node's failure unless its last failed deploy alerted the same cause; the note for the detail. #2022."""
+    f, key = _failing(name), cause(outcome, detail)
+    try:
+        last = deploy_switch.load(f)
+    except (OSError, ValueError):
+        last = {}
+    if last.get("cause") == key:
+        n = int(last.get("count") or 1) + 1
+        deploy_switch.save(f, {**last, "count": n, "last_sha": sha})
+        return f" (failure {n} in a row with this cause, alerted at {str(last.get('sha', ''))[:12]})"
+    f.parent.mkdir(parents=True, exist_ok=True)
+    deploy_switch.save(f, {"cause": key, "sha": sha, "count": 1})
+    alert(f"node {name} deploy of {sha[:12]} {outcome}: {detail}; a later deploy failing the same way does not alert again")
+    return ""
+
+
+def recovered(name: str) -> None:
+    """The node serves the sha it was sent, so its next failure alerts whatever its cause. #2022."""
+    _failing(name).unlink(missing_ok=True)
 
 
 def follow(conn=None, *, retry: bool = False, runner=None, check=None, alert=None, load=None,

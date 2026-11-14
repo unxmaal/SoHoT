@@ -168,6 +168,20 @@ def cap(name: str, model: str) -> int | None:
     return ((cached(name).get("models") or {}).get(model) or {}).get("slots") or None
 
 
+def store_schema() -> int:
+    """The schema this home's store is at, read without migrating it; the node deploy's rollback asks it. #2022."""
+    from harness import store
+    conn = store.open_ro()
+    try:
+        row = conn.execute("SELECT value FROM meta WHERE key='schema'").fetchone()
+        return int(row[0]) if row else 0
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
+    if sys.argv[1:] == ["schema"]:
+        print(store_schema())
+        raise SystemExit(0)
     json.dump(report(), sys.stdout, sort_keys=True)
     sys.stdout.write("\n")
