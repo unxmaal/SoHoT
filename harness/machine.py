@@ -413,7 +413,7 @@ def installed_stamp() -> tuple:
     import os
     from harness import ds4, needle, serving, stages
     roots = [Path(p) for p in sys.path if p.endswith("site-packages")]
-    for venv in [stages.MFLUX_TOOL_ROOT, *_other_venvs(), *_keyed_venvs().values(), *_vllm_venvs()]:
+    for venv in [stages.mflux_tool_root(), *_other_venvs(), *_keyed_venvs().values(), *_vllm_venvs()]:
         roots += [*sorted(Path(venv).glob("lib/python*/site-packages")), Path(venv) / "Lib" / "site-packages"]
     bins = [b for b in (serving.llamacpp_binary(), shutil.which("mflux-generate")) if b]
     git = ds4.checkout() / ".git"
