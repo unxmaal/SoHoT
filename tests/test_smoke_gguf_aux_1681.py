@@ -74,19 +74,25 @@ def router(tmp_path, monkeypatch):
     srv.shutdown()
 
 
-def _smoke(router, tmp_path, repair=True):
-    """The router lines of smoke.sh; the repair is the real verb with only its launchd restart pointed at the fake."""
-    shim = tmp_path / "repair.py"
+def _shim(router, tmp_path, *argv) -> str:
+    """The real `soh *argv` with only the router's launchd restart pointed at the fake's /restart."""
+    shim = tmp_path / f"{argv[-1].lstrip('-')}.py"
     shim.write_text(
         "import sys, urllib.request\n"
         "from harness import cli, gguf\n"
         f"gguf.refresh_router = lambda *a, **k: urllib.request.urlopen('http://127.0.0.1:{router.port}/restart')"
         ".read() and ''\n"
-        "sys.exit(cli.main(['gguf-aux', '--apply']))\n", encoding="utf-8")
+        f"sys.exit(cli.main({list(argv)!r}))\n", encoding="utf-8")
+    return f"{shlex.quote(sys.executable)} {shlex.quote(str(shim))}"
+
+
+def _smoke(router, tmp_path, repair=True, relist=True):
+    """The router lines of smoke.sh; the repair and the relist are the real verbs, restarting the fake."""
     script = "FAIL=0\nok(){ printf 'PASS  %s\\n' \"$1\"; }\nno(){ printf 'FAIL  %s\\n' \"$1\"; FAIL=1; }\n" \
              + _router_lines() + "\nexit $FAIL\n"
     env = {**os.environ, "PYTHONPATH": str(REPO),
-           "SMOKE_REPAIR": f"{shlex.quote(sys.executable)} {shlex.quote(str(shim))}" if repair else "true"}
+           "SMOKE_REPAIR": _shim(router, tmp_path, "gguf-aux", "--apply") if repair else "true",
+           "SMOKE_RELIST": _shim(router, tmp_path, "router", "relist") if relist else "false"}
     return subprocess.run([BASH, "-c", script], cwd=REPO, env=env, capture_output=True, text=True,
                           encoding="utf-8", timeout=120)
 
@@ -127,7 +133,7 @@ def test_a_phantom_that_is_no_auxiliary_file_still_fails(router, tmp_path):
     got = _smoke(router, tmp_path)
     assert got.returncode == 1, got.stdout
     assert "FAIL  router advertises models with no file" in got.stdout and "Gone-Q4_K_M" in got.stdout
-    assert router.state["restarts"] == 0 and "note" not in got.stdout
+    assert router.state["restarts"] == 1 and "note  relisted: the router restarted for 1 removed" in got.stdout
 
 
 def test_smoke_runs_the_repair_verb_before_its_phantom_check_whoever_calls_it():

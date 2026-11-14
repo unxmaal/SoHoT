@@ -70,9 +70,16 @@ if [ "$LOCAL" -eq 1 ]; then
   case "$REPAIRED" in ""|"moved 0 "*) ;; *) printf '%s\n' "$REPAIRED" | sed 's/^/note  /' ;; esac
   # The router lists its startup snapshot; an id with no file hangs whoever asks for it (#780).
   PHANTOMS="$(uv run python -m harness.router phantoms 2>&1)"
-  case $? in
+  RC=$?
+  # A file removed by hand stays listed; this release relists once when every phantom's file is gone (#2018).
+  RELIST="${SMOKE_RELIST:-uv run --quiet python -m harness.cli router relist}"
+  if [ "$RC" -eq 1 ]; then
+    RELISTED="$($RELIST 2>&1)" && { PHANTOMS="$(uv run python -m harness.router phantoms 2>&1)"; RC=$?; }
+    printf '%s\n' "$RELISTED" | sed 's/^/note  /'
+  fi
+  case $RC in
     0) ok "router advertises only models with a file" ;;
-    1) no "router advertises models with no file (restart the router; \`soh gguf-aux\` lists drafters, MTP heads and shards in its dir, --apply sets them aside):"
+    1) no "router advertises models with no file (\`soh router relist\` restarts it once their files are gone; \`soh gguf-aux --apply\` sets drafters, MTP heads and shards aside):"
        printf '%s\n' "$PHANTOMS" ;;
     *) printf 'SKIP  router phantoms: %s\n' "$PHANTOMS" ;;
   esac

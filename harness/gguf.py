@@ -312,13 +312,20 @@ def _unlisted_path() -> Path:
     return paths.home() / UNLISTED
 
 
+def listable(stems, where=None) -> list[str]:
+    """The stems whose GGUF is in the router's dir and is a model, which a restarted router lists. #2018."""
+    where = Path(where) if where else models_dir()
+    return [s for s in stems if s and (where / f"{s}.gguf").is_file() and not auxiliary(where / f"{s}.gguf")]
+
+
 def unlisted() -> list[str]:
+    """Stems a day fetch linked that the router does not list yet; a deleted or auxiliary one is pruned. #1084, #2018."""
     import json
     try:
         got = json.loads(_unlisted_path().read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return []
-    return [str(s) for s in got] if isinstance(got, list) else []
+    return listable([str(s) for s in got]) if isinstance(got, list) else []
 
 
 def note_unlisted(stems) -> None:
@@ -365,6 +372,7 @@ def pending() -> list[str]:
 def relist() -> str:
     """Restart the router once for what day fetches left unlisted or deletes removed; '' when there was nothing or it answered. #1084, #780."""
     if not pending():
+        _unlisted_path().unlink(missing_ok=True)
         return ""
     why = refresh_router(expect=tuple(unlisted()))
     if not why:
