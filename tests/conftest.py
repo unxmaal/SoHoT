@@ -137,6 +137,8 @@ def _cold_caches():
 
 #: Set by CI on an unlabelled pull request; push to main, nightly and full-ci run everything. #720.
 FAST_PATH_ENV = "SOHOT_FAST_PATH"
+#: Set by CI on push and pull request runs: `nightly` tests, each with a fast twin that runs everywhere, wait for the nightly. #1590.
+NIGHTLY_ENV = "SOHOT_SKIP_NIGHTLY"
 
 
 #: Set by CI on a pull request: a file listing the only test files the change can reach. #1567.
@@ -415,6 +417,12 @@ def pytest_collection_modifyitems(config, items):
             # Not strict: several cut tests pass or fail on Postgres by xdist placement, which would flap CI.
             if item.nodeid in known or item.nodeid.split("[")[0] in named:
                 item.add_marker(pytest.mark.xfail(strict=False, reason="known red on Postgres (#1507)"))
+    if os.environ.get(NIGHTLY_ENV) == "1":
+        later = [i for i in items if i.get_closest_marker("nightly")]
+        if later:
+            config.hook.pytest_deselected(items=later)
+            items[:] = [i for i in items if not i.get_closest_marker("nightly")]
+            print(f"\n{NIGHTLY_ENV}=1: deselected {len(later)} `nightly` tests; the nightly and make check run them")
     if os.environ.get(FAST_PATH_ENV) != "1":
         return
     skipped = [i for i in items if i.get_closest_marker("long")]
@@ -666,12 +674,14 @@ def runtime_binary(args) -> str:
     """The runtime binary this argv would execute, or ""."""
     import os
     import shlex
+
+    from harness import tether
     if isinstance(args, (str, bytes)):
         try:
             args = shlex.split(os.fsdecode(args))
         except ValueError:
             args = os.fsdecode(args).split()
-    for word in list(args or [])[:4]:
+    for word in tether.command(args or [])[:4]:
         name = os.path.basename(os.fsdecode(word))
         if name in RUNTIME_BINARIES or name.startswith(RUNTIME_PREFIXES):
             return name

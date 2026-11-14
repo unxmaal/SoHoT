@@ -38,10 +38,9 @@ def main() -> int:
     given = [int(a) for a in sys.argv[2:6]]
     pool, slots, prompt, max_tokens = given + [8192, 3, 2500, 3000][len(given):]
     log = open(f"/tmp/pool-full-probe-{PORT}.log", "w")
-    server = subprocess.Popen(["llama-server", "-m", model, "--port", str(PORT), "-c", str(pool),
-                               "--parallel", str(slots), "--kv-unified", "--jinja"],
-                              stdout=log, stderr=subprocess.STDOUT)
-    watcher = tether.tie(server)
+    server = tether.spawn(["llama-server", "-m", model, "--port", str(PORT), "-c", str(pool),
+                           "--parallel", str(slots), "--kv-unified", "--jinja"],
+                          stdout=log, stderr=subprocess.STDOUT)
     try:
         for _ in range(240):
             try:
@@ -56,7 +55,6 @@ def main() -> int:
     finally:
         server.terminate()
         server.wait(30)
-        tether.untie(watcher)
         log.close()
     with open(f"/tmp/pool-full-probe-{PORT}.log") as fh:
         print("".join(l for l in fh if any(w in l.lower() for w in ("kv", "slot context", "decode", "error", "n_ctx_slot", "full")))[-4000:])

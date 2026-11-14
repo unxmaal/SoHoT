@@ -68,9 +68,34 @@ def _alpha() -> float:
     return adopt.ALPHA
 
 
+#: Below this many cells _critical sums the exact tail; above, a log-space sum decides unless it is too close to call.
+EXACT_CELLS = 200
+#: How far the log-space tail must sit from log(alpha / 2) for the float sum to decide.
+_LOG_MARGIN = 1e-6
+
+
 @functools.lru_cache(maxsize=None)
 def _critical(d: int, alpha: float) -> int:
     """Fewest gains of d discordant cells that the two-sided test rejects on."""
+    if d <= EXACT_CELLS or not 0 < alpha < 1:
+        return _critical_exact(d, alpha)
+    want = math.log(alpha / 2)
+    k = max(1, int(d / 2 - 10 * math.sqrt(d)))
+    term = math.lgamma(d + 1) - math.lgamma(k + 1) - math.lgamma(d - k + 1) - d * math.log(2)
+    cdf = term
+    if cdf > want - _LOG_MARGIN:
+        return _critical_exact(d, alpha)
+    for k in range(k + 1, d // 2 + 1):
+        term += math.log(d - k + 1) - math.log(k)
+        cdf = max(cdf, term) + math.log1p(math.exp(-abs(cdf - term)))
+        if cdf > want + _LOG_MARGIN:
+            return d - k + 1
+        if cdf > want - _LOG_MARGIN:
+            break
+    return _critical_exact(d, alpha)
+
+
+def _critical_exact(d: int, alpha: float) -> int:
     total = 2 ** d
     level = Fraction(alpha).limit_denominator(10 ** 9)
     tail = 0

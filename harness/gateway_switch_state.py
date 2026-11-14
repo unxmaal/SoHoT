@@ -33,6 +33,8 @@ DIED = "died"
 SUPERSEDED = "superseded"
 #: A switch the worker started again whose process never claimed its row in time; a death for the respawn bound. #1904.
 UNCLAIMED = "unclaimed"
+#: A respawn's own claim made after it was settled unclaimed: refused before it switches, and no death. #1940.
+LATE = "late"
 
 #: (state it leaves, state it enters) -> the reasons that move may carry. Nothing leaves serving or failed.
 MOVES: dict[tuple[str, str], frozenset[str]] = {
@@ -42,7 +44,7 @@ MOVES: dict[tuple[str, str], frozenset[str]] = {
     (WRITING, RESTARTING): frozenset({WRITTEN}),
     (RESTARTING, SERVING): frozenset({SERVED, FINISHED}),
     (REQUESTED, SERVING): frozenset({UNCHANGED}),
-    (REQUESTED, FAILED): frozenset({NO_RESTART, RAISED, DIED, UNCLAIMED}),
+    (REQUESTED, FAILED): frozenset({NO_RESTART, RAISED, DIED, UNCLAIMED, LATE}),
     (WRITING, FAILED): frozenset({RAISED, DIED, SUPERSEDED}),
     (RESTARTING, FAILED): frozenset({GAVE_UP, RAISED, DIED, SUPERSEDED}),
 }

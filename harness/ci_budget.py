@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 import os
 import sys
 import time
@@ -13,7 +14,15 @@ WORKFLOW = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "ci.y
 #: Share of its timeout a job may use before it warns. #1146.
 WARN_SHARE = 0.8
 #: check-macos's timeout-minutes in ci.yml, which a test holds equal to this. #1146.
-MACOS_TIMEOUT_MIN = 35
+MACOS_TIMEOUT_MIN = 56
+#: A job's timeout is at least this times its measured job p95, timeouts projected: a slow host's factor. #1520, #1588.
+HOST_FACTOR = {"check-macos": 1.4, "check-postgres": 1.4, "check-linux": 1.3, "check-windows": 1.3}
+
+
+def rule_minutes(job: str, p95_min: float) -> int | None:
+    """The timeout-minutes a job's rule asks for at this p95, or None when the job has no rule."""
+    factor = HOST_FACTOR.get(job)
+    return math.ceil(round(factor * p95_min, 6)) if factor else None
 
 
 def limit_minutes(job: str, workflow: Path = WORKFLOW) -> float:
