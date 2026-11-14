@@ -277,13 +277,16 @@ def _met_here(until: str, lane: str | None, facts: dict) -> bool:
     return until_met(until, facts)
 
 
+#: verdicts.event of a retraction that reopened a verdict because its until is met. #1998.
+UNTIL_MET = "until_met"
+
+
 def _spent(conn, row: dict) -> bool:
     """Whether this proposal was already reopened because this very until was met, and declined under it again. #1055."""
-    said = f"retracted: {row['until']} is met"
     return conn.execute(
         "SELECT 1 FROM verdicts r JOIN verdicts o ON o.id = r.reopens "
-        "WHERE r.proposal_id = ? AND r.id < ? AND o.until = ? AND substr(r.detail, 1, ?) = ? LIMIT 1",
-        (row["proposal_id"], row["verdict_id"], row["until"], len(said), said)).fetchone() is not None
+        "WHERE r.proposal_id = ? AND r.id < ? AND o.until = ? AND r.event = ? LIMIT 1",
+        (row["proposal_id"], row["verdict_id"], row["until"], UNTIL_MET)).fetchone() is not None
 
 
 #: Until keys a lane or a harness limit meets, not the machine: a decline past its screen waits only on them. #1060.
@@ -302,7 +305,7 @@ def requeue_revisitable(conn, facts: dict | None = None, rows: list | None = Non
     names = []
     for r in revisitable(conn, facts) if rows is None else rows:
         outcome, tier = reopens_to(r["until"], r["tier"])
-        retract(conn, r["name"], f"{r['until']} is met here", outcome=outcome, tier=tier)
+        retract(conn, r["name"], f"{r['until']} is met here", outcome=outcome, tier=tier, event=UNTIL_MET)
         names.append(r["name"])
     conn.commit()
     return names
@@ -313,9 +316,8 @@ def reopened_too_far(conn) -> list[dict]:
     rows = conn.execute(
         "SELECT p.name, v.id AS verdict_id, v.decided_at, o.until, o.tier FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
         "JOIN verdicts o ON o.id = v.reopens WHERE p.state = 'queued' AND v.tier = ? "
-        "AND v.reopen_kind = 'retraction' AND o.until != '' "
-        "AND substr(v.detail, 1, 11 + length(o.until) + 7) = 'retracted: ' || o.until || ' is met' "
-        "ORDER BY p.name", (INSPECT,)).fetchall()
+        "AND v.reopen_kind = 'retraction' AND o.until != '' AND v.event = ? "
+        "ORDER BY p.name", (INSPECT, UNTIL_MET)).fetchall()
     return [dict(r) for r in rows if reopens_to(r["until"], r["tier"]) != ("queued", INSPECT)]
 
 
@@ -325,7 +327,7 @@ def requeue_reopened_too_far(conn) -> list[str]:
     for r in reopened_too_far(conn):
         outcome, tier = reopens_to(r["until"], r["tier"])
         retract(conn, r["name"], f"{r['until']} is met and its screen passed: reopened to {outcome} at {tier}",
-                outcome=outcome, tier=tier)
+                outcome=outcome, tier=tier, event=UNTIL_MET)
         names.append(r["name"])
     conn.commit()
     return names
@@ -363,7 +365,8 @@ def requeue_upstream_committed(conn, last_commit) -> dict:
     """Retract to inspect each commit_after refusal whose upstream has committed since. #961."""
     got = upstream_committed(conn, last_commit)
     for r in got["committed"]:
-        retract(conn, r["name"], f"{r['until']} is met: the upstream last committed {r['last_commit']}")
+        retract(conn, r["name"], f"{r['until']} is met: the upstream last committed {r['last_commit']}",
+                event=UNTIL_MET)
     conn.commit()
     return got
 

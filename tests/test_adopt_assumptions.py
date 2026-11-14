@@ -175,6 +175,31 @@ def test_comparisons_count_the_lanes_verdicts_on_one_holdout_version(tmp_path):
     assert got["comparisons"] == 4
 
 
+def test_comparisons_select_the_verdicts_lane_whatever_their_detail_says(tmp_path):
+    """#1998: a reworded or unprefixed detail never changes the alpha a later challenger faces."""
+    conn = ms.connect()
+    ev = {"split": _split(3).as_dict(), "power": {}}
+    for i in range(3):
+        adopt.record(conn, adopt.Verdict("code", "inc", f"org/c{i}", False, "x", evidence=ev), spec=f"org/c{i}")
+    conn.execute("UPDATE verdicts SET detail = 'svg: reworded by a later release' WHERE tier = 'adopt'")
+    assert adopt.comparisons(conn, "code", holdout.VERSION) == 3
+    assert adopt.comparisons(conn, " code ", holdout.VERSION) == 3
+    assert adopt.comparisons(conn, "svg", holdout.VERSION) == 0
+    conn.execute("UPDATE verdicts SET lane = '' WHERE id = (SELECT MIN(id) FROM verdicts WHERE tier = 'adopt')")
+    assert adopt.comparisons(conn, None, holdout.VERSION) == 1
+
+
+def test_a_re_decision_is_not_another_comparison_on_the_holdout(tmp_path):
+    conn = ms.connect()
+    ev = {"split": _split(3).as_dict(), "power": {}}
+    for i in range(2):
+        adopt.record(conn, adopt.Verdict("code", "inc", f"org/c{i}", False, "x", evidence=ev), spec=f"org/c{i}")
+    conn.execute("UPDATE verdicts SET event = ? WHERE id = (SELECT MAX(id) FROM verdicts WHERE tier = 'adopt')",
+                 (adopt.REDECIDED,))
+    assert adopt.comparisons(conn, "code", holdout.VERSION) == 1
+    assert adopt.REDECIDED == "re-decided"
+
+
 def test_one_win_and_three_ties_does_not_carry_the_lane(store):
     rows = [{"case_id": f"c{i}#1", "candidate": who, "passed": True,
              "artifact_path": f"/runs/{who}-{i}.png"}

@@ -126,7 +126,7 @@ def test_a_lane_the_effect_table_does_not_name_plans_at_the_default():
 def _verdict(c, lane, outcome, detail, failure_class="", plan=None, name="org/x", event=""):
     ms.record(c, ms.Seen(name=name, source="test", lane=lane))
     vid = ms.decide(c, name, outcome, tier=ms.ADOPT, detail=detail, reason=reasons.LIMIT if failure_class else reasons.CANDIDATE,
-                    event=event)
+                    event=event, lane=lane)
     c.execute("UPDATE verdicts SET failure_class = ?, power = ? WHERE id = ?",
               (failure_class, json.dumps(plan or {}), vid))
     c.commit()

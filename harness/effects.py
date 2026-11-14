@@ -75,12 +75,6 @@ def derive(conn, record: bool = True) -> dict[str, dict]:
     return out
 
 
-def _lane(detail: str, fallback: str) -> str:
-    from harness import lanes
-    head = (detail or "").split(":", 1)[0].strip().lower()
-    return head if head in lanes.ALL else (fallback or "")
-
-
 def _plan(raw: str) -> dict:
     try:
         got = json.loads(raw or "{}")
@@ -165,12 +159,12 @@ def replay(conn, effects: dict) -> list[dict]:
     """Every stored adopt verdict's class as stored, under `effects` (lane -> noise effect) alone and floored by power.used, with the confirmation step."""
     from harness import power
     rows = conn.execute(
-        "SELECT v.id, v.outcome, v.failure_class, v.detail, v.event, v.power, c.lane AS cand_lane, a.how "
+        "SELECT v.id, v.outcome, v.failure_class, v.detail, v.event, v.lane, v.power, c.lane AS cand_lane, a.how "
         "FROM verdicts v LEFT JOIN candidates c ON c.id = v.candidate_id "
         "LEFT JOIN adoptions a ON a.verdict_id = v.id WHERE v.tier = 'adopt' ORDER BY v.id").fetchall()
     out = []
     for r in rows:
-        lane = _lane(r["detail"], r["cand_lane"])
+        lane = r["lane"] or r["cand_lane"] or ""
         plan = _plan(r["power"])
         stored = _stored(r, plan)
         noise = float(effects.get(lane, power.DEFAULT_EFFECT))

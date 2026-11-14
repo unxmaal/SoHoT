@@ -1148,7 +1148,7 @@ def _confirm_job(vid: int) -> int:
     from harness import memory_store as ms
     store = ms.connect()
     try:
-        row = store.execute("SELECT v.failure_class, v.power, v.detail, v.decided_at, p.name, p.state_verdict_id "
+        row = store.execute("SELECT v.failure_class, v.power, v.lane, v.decided_at, p.name, p.state_verdict_id "
                             "FROM verdicts v "
                             "LEFT JOIN proposals p ON p.id = v.proposal_id WHERE v.id = ?", (vid,)).fetchone()
     finally:
@@ -1159,7 +1159,7 @@ def _confirm_job(vid: int) -> int:
         print(f"  verdict {vid} is not a held holdout win any more, so there is nothing to confirm", flush=True)
         return 0
     held = (json.loads(row["power"] or "{}") or {}).get("confirm") or {}
-    lane = (row["detail"] or "").split(":", 1)[0].strip()
+    lane = row["lane"]
     inc_spec, spec, name = held.get("incumbent", ""), held.get("challenger", ""), row["name"] or held.get("challenger", "")
     was = held.get("served") or inc_spec
     now = _served(lane)

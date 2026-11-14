@@ -90,7 +90,7 @@ LEFT_OUT = {
                                             "test_lane_until_1053.py", "test_loop_revisit_1055.py",
                                             "test_revisit_tier_1060.py", "test_revisitable_after_deploy_1361.py",
                                             "test_revisitable_met_1749.py", "test_site.py", "test_futility_lane_too_small_1452.py", "test_verdict_lane_1777.py",
-                                            "test_two_writes_1887.py", "test_verdict_event_1942.py"),
+                                            "test_two_writes_1887.py", "test_verdict_event_1942.py", "test_detail_prefix_1998.py"),
     "harness/reasons.py": (
         "test_replay_budget_1822.py", "test_passed_over_class_1779.py", "test_owner_decline_1564.py", "test_verdict_lane_1777.py", "test_runtime_trials_1474.py", "test_repo_repair_890.py", "test_agent_cut_call_1547.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_staging_torch_1358.py",
         "test_vision_engines_1282.py", "test_two_writes_1887.py",
@@ -112,7 +112,7 @@ LEFT_OUT = {
         "test_futility_lane_too_small_1452.py", "test_sustained_warn_1482.py", "test_technique_kinds_1476.py",
         "test_engine_trials_1475.py", "test_screen_server_killer_1544.py", "test_mflux_second_repo_1546.py", "test_interactive_1561.py",
         "test_slot_plan_refusal_1651.py", "test_incumbent_silent_1656.py", "test_machine_scope_1769.py",
-        "test_download_event_1878.py", "test_verdict_event_1942.py"),
+        "test_download_event_1878.py", "test_verdict_event_1942.py", "test_detail_prefix_1998.py"),
     "harness/screen.py": (
         "test_replay_budget_1822.py", "test_passed_over_class_1779.py", "test_measure_gateway_1660.py", "test_attachment_tags_949.py", "test_lane_too_small_1049.py", "test_vision_engines_1282.py",
         "test_variants_947.py", "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",
@@ -124,9 +124,9 @@ LEFT_OUT = {
         "test_served_readonly_1247.py", "test_adopt_effect_confirm_725.py",
         "test_confirm_resume_1357.py", "test_store_errors_1432.py", "test_canary_stt_1531.py",
         "test_mflux_second_repo_1546.py", "test_incumbent_silent_1656.py", "test_adoption_state_1735.py",
-        "test_ca_inventory_1776.py", "test_download_event_1878.py"),
+        "test_ca_inventory_1776.py", "test_download_event_1878.py", "test_detail_prefix_1998.py"),
     "harness/adopt.py": (
-        "test_measure_gateway_1660.py", "test_canary_stt_1531.py", "test_technique_triage_993.py", "test_harness_paired.py", "test_reverify_case_sets_1496.py", "test_reverify_power_1504.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
+        "test_detail_prefix_1998.py", "test_measure_gateway_1660.py","test_canary_stt_1531.py", "test_technique_triage_993.py", "test_harness_paired.py", "test_reverify_case_sets_1496.py", "test_reverify_power_1504.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
         "test_over_budget_796.py", "test_planted_919.py", "test_projection_696.py", "test_rank_893.py", "test_router_unload.py",
         "test_store_state.py", "test_stt_screen_power_1007.py", "test_sweep_ceiling_806.py", "test_loop_revisit_1055.py",
         "test_incumbent_from_measurement_1110.py", "test_verdict_lane_1777.py", "test_env_error_coverage_1116.py", "test_site.py",
