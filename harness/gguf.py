@@ -133,6 +133,31 @@ def set_aside(path, where=None) -> Path:
     return dest
 
 
+def set_aside_copies(name: str, size: int = 0) -> list[Path]:
+    """Files under `name`, or set_aside's renamed `stem.N.gguf`, in any quarantine dir; only `size` bytes when given. #1989."""
+    stem, suffix = Path(name).stem, Path(name).suffix
+    renamed = re.compile(rf"{re.escape(stem)}\.\d+{re.escape(suffix)}")
+    out = []
+    for d in sorted(models_dir().parent.glob(QUARANTINE.format(day="*"))):
+        if d.is_symlink() or not d.is_dir():
+            continue
+        for f in sorted(d.iterdir()):
+            if (f.name == name or renamed.fullmatch(f.name)) and f.is_file() \
+                    and (not size or f.stat().st_size == size):
+                out.append(f)
+    return out
+
+
+def held_aside(repo: str, name: str, size: int = 0, conn=None) -> Path | None:
+    """The copy of `repo`'s `name` this machine fetched and set aside, still in quarantine, else None. #1989."""
+    copies = set_aside_copies(name, size)
+    if not copies:
+        return None
+    from harness import downloads
+    with downloads.store(conn) as c:
+        return copies[0] if downloads.removed_file(c, repo, downloads.GGUF, name) else None
+
+
 def _servable(f: dict) -> bool:
     name = str(f.get("rfilename", ""))
     return (name.lower().endswith(".gguf") and "/" not in name

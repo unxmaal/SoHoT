@@ -440,6 +440,15 @@ def removed(conn, path, *, by: str, verdict_id=None, repo: str = "",
     return rid
 
 
+def removed_file(conn, repo: str, kind: str, file: str) -> bool:
+    """Whether this machine recorded `file` from `repo` and then removed it. #1989."""
+    from harness import machine_scope
+    here, args = machine_scope.here(conn, "downloads.mine")
+    return conn.execute(f"SELECT 1 FROM downloads WHERE state = '{ds.REMOVED}' AND {here} "
+                        "AND kind = ? AND lower(repo) = ? AND file = ?",
+                        args + (kind, repo.lower(), file)).fetchone() is not None
+
+
 def _complete(conn, repo: str, kind: str = "", stat: bool = True) -> list[dict]:
     rows = [r for r in live(conn, repo=repo, kind=kind) if r["state"] == ds.COMPLETE]
     return [r for r in rows if not stat or Path(r["path"]).exists()]
