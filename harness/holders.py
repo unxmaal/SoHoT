@@ -117,25 +117,31 @@ def _under(path: str, roots: list[str]) -> str:
     return ""
 
 
-def holding(dirs) -> dict[Path, list[str]] | None:
-    """Each of dirs that a live process runs from -> 'pid N name (how path)' for each; None where nobody can tell."""
+def walkers():
+    """(live pids, pid -> its (how, path) places, pid -> its name) on this platform; None where nobody can tell."""
     platform = sys.platform
-    roots: dict[str, list[Path]] = {}
-    for d in dirs:
-        roots.setdefault(os.path.realpath(d), []).append(Path(d))
-    if not roots:
-        return {}
     if platform == "darwin":
         try:
             lib = _libproc()
         except OSError:
             return None
-        pids, paths, name = _darwin_pids(lib), functools.partial(_darwin_paths, lib), functools.partial(_darwin_name, lib)
-    elif platform.startswith("linux"):
-        pids = [int(p) for p in os.listdir("/proc") if p.isdigit()]
-        paths, name = _linux_paths, _linux_name
-    else:
+        return _darwin_pids(lib), functools.partial(_darwin_paths, lib), functools.partial(_darwin_name, lib)
+    if platform.startswith("linux"):
+        return [int(p) for p in os.listdir("/proc") if p.isdigit()], _linux_paths, _linux_name
+    return None
+
+
+def holding(dirs) -> dict[Path, list[str]] | None:
+    """Each of dirs that a live process runs from -> 'pid N name (how path)' for each; None where nobody can tell."""
+    roots: dict[str, list[Path]] = {}
+    for d in dirs:
+        roots.setdefault(os.path.realpath(d), []).append(Path(d))
+    if not roots:
+        return {}
+    walk = walkers()
+    if walk is None:
         return None
+    pids, paths, name = walk
     found: dict[Path, list[str]] = {}
     want = sorted(roots)
     for pid in pids:

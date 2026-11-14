@@ -340,6 +340,8 @@ $(_schedule "$service")
     <key>HOME</key><string>$HOME</string>
     <!-- stdout is a file here, so an unbuffered log is the only progress. -->
     <key>PYTHONUNBUFFERED</key><string>1</string>
+    <!-- launchd reruns this unit on the linked release, so a store a deploy moved ahead is skipped quietly. #1959 -->
+    <key>LH_UNIT</key><string>$service</string>
 ${UNIT_HF_ENV-$(_hf_env)}$(_watchdog_env "$service")  </dict>
   <key>ProcessType</key><string>Interactive</string>
 </dict>

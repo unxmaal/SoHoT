@@ -79,6 +79,7 @@ def test_reinstall_with_an_empty_environment_renders_the_recorded_weights_and_fl
     for name, unit in units.items():
         env = unit["EnvironmentVariables"]
         assert (env.get("HF_HOME"), env.get("HF_ROOT")) == (str(weights), str(weights)), name
+        assert env.get("LH_UNIT") == name, "launchd reruns each unit, which a newer store waits on (#1959)"
     assert units["fetch"]["EnvironmentVariables"]["LH_DAY_FETCH"] == "1"
     assert [d["Hour"] for d in units["fetch"]["StartCalendarInterval"]] == [9]
     assert units["watchdog"]["EnvironmentVariables"]["LH_WATCHDOG_ACT"] == "1"

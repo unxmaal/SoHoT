@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from harness.commands.common import emit, err, note
 
@@ -110,5 +111,9 @@ def cmd_deploy(a) -> int:
         note(f"  {deploy.line(d)}")
     for name, r in got["nodes"].items():
         note(f"  {node_deploy.line(name, r)}")
+    from harness import release_procs
+    got["old_release"] = release_procs.report(serving=Path(got["serving"]) if got["serving"] else None)
+    for x in release_procs.lines(got["old_release"]):
+        note(f"  old code: {x}")
     emit(**got)
     return 0

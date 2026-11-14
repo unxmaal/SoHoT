@@ -545,6 +545,10 @@ def needs(r: dict) -> list[str]:
     w = r.get("deploy_wait")
     if w and w["why"] and w["waited"] >= contention.DEPLOY_ALERT_S:
         out.append(deploys.wait_line(w))
+    from harness import release_procs
+    old = r.get("old_release")
+    if old and old["procs"]:
+        out.extend(f"old code: {x}" for x in release_procs.lines(old, code_only=True) if not x.startswith("  "))
     if r["stale"]:
         out.append(f"stale lanes: {', '.join(s['lane'] for s in r['stale'])}")
     if r.get("stalled"):
@@ -581,7 +585,7 @@ def parked_nodes() -> list[str]:
 
 def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, where=None, lanes=None,
            health=None, stalls=None, canary=None, parked=None, incumbent=None, monitor=None, pulls=None,
-           tts=None, waiting=None, reach=None) -> dict:
+           tts=None, waiting=None, reach=None, old=None) -> dict:
     """`health` probes the headline's lane (lane_health), `canary` reads its receipts (canary.morning_line); None skips either."""
     r = {"lane": health(MODEL_LANE) if health else {"lane": MODEL_LANE, "generating": None, "why": "not probed"},
          "generated": now, "since": since, "sweep": sweep(conn, since, beat), "watchdog": watchdog(conn, since),
@@ -596,7 +600,7 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "monitor": monitor(since) if monitor else None, "deploys": deploys_since(conn, since),
          "deploy_repairs": deploy_repairs(),
          "pulls": pulls(now) if pulls else None, "tts": tts() if tts else None,
-         "deploy_wait": waiting(conn, now) if waiting else None}
+         "deploy_wait": waiting(conn, now) if waiting else None, "old_release": old() if old else None}
     from harness import hold, job_release
     r["hold"], r["gpu_hold"] = hold.held(conn, now), hold.held(conn, now, hold.GPU)
     r["releases"] = job_release.morning(conn, since, where)
