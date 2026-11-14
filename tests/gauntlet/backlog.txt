@@ -302,7 +302,6 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/sweeps.py:refile:knob_sweeps
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/technique_triage.py:crossings:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/technique_triage.py:stored_loss:runs
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/watchdog.py:overrun_stopped:watchdog_actions
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/weedout_replay.py:lane_rows:runs
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/weedout_replay.py:paired:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/workqueue.py:_row:runs
