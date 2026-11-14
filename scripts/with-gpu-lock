@@ -27,7 +27,7 @@ except RuntimeError as exc:
     print(f"with-gpu-lock: {exc}; repairing under the local lock", file=sys.stderr, flush=True)
     python = None
 if python:
-    # System python3 has no psycopg, so on a Postgres store re-run under a venv that does. #1586.
+    # System python3 lacks the project's dependencies (psycopg on Postgres), so re-run under a venv that has them. #1586, #2022.
     os.execv(python, [python, "-I", str(HERE), *sys.argv[1:]])
 try:
     with exclusive.held("install" if repair else "external",

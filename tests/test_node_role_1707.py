@@ -79,7 +79,7 @@ def test_extra_loaded_units_after_the_install_fail_it_and_roll_it_back(shown_liv
     checked = []
     r = _follow(world, f, ssh, check=lambda n: checked.append(n.name) or "", alerts=alerts)["nodes"]["styx"]
     assert [c[1:] for c in ssh.calls] == [("head", ""), ("install", "", NEW, "interactive"), ("units", ""),
-                                          ("install", "", OLD, "interactive"), ("units", "")]
+                                          ("schema", "", OLD), ("install", "", OLD, "interactive"), ("units", "")]
     assert r["outcome"] == node_deploy.ROLLED_BACK and "extra gateway, worker" in r["detail"]
     assert checked == ["styx"], "the smoke runs once, after the rollback; the bad install never reaches it"
     assert ssh.loaded == ["interactive"] and len(alerts) == 1

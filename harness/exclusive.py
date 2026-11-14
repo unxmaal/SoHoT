@@ -102,18 +102,24 @@ def _venv_python(root: Path) -> Path:
     return root / ".venv" / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
 
 
-def _imports_psycopg(python: Path) -> bool:
+#: A main dependency system python3 lacks: an interpreter without it is not the project's env. #2022.
+PROJECT_MODULE = "httpx"
+
+
+def _imports(python: Path, module: str) -> bool:
     import subprocess
-    return subprocess.run([str(python), "-I", "-c", "import psycopg"], capture_output=True).returncode == 0
+    return subprocess.run([str(python), "-I", "-c", f"import {module}"], capture_output=True).returncode == 0
 
 
-def store_python(repo: Path, can_import=_imports_psycopg) -> str | None:
-    """A venv interpreter that can open this home's Postgres store when this one cannot; None when this one can. #1586."""
+def store_python(repo: Path, can_import=None) -> str | None:
+    """A venv interpreter with the project's dependencies (psycopg on a Postgres store) when this one lacks them. #1586, #2022."""
     import importlib.util
 
     from harness import store
-    if os.environ.get(HELD_ENV) == "1" or store.backend() != store.POSTGRES or importlib.util.find_spec("psycopg"):
+    need = "psycopg" if store.backend() == store.POSTGRES else PROJECT_MODULE
+    if os.environ.get(HELD_ENV) == "1" or importlib.util.find_spec(need):
         return None
+    can_import = can_import or (lambda python: _imports(python, need))
     tried = [sys.executable]
     try:
         deploy = paths.deploy_checkout()
@@ -126,6 +132,9 @@ def store_python(repo: Path, can_import=_imports_psycopg) -> str | None:
         tried.append(str(python))
         if can_import(python):
             return str(python)
+    if need != "psycopg":
+        raise RuntimeError(f"no interpreter tried has the project's dependencies (none can import {need}: "
+                           f"{', '.join(tried)}); uv sync")
     raise RuntimeError(f"the store is Postgres and no interpreter tried can import psycopg ({', '.join(tried)}); "
                        "uv sync --group cluster")
 
