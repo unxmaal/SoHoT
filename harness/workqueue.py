@@ -16,7 +16,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from harness import (exclusive, job_claim, job_procs, job_settle, job_state as js, paths, queue_hold, queue_pause,
-                     resources)
+                     resources, store_home)
 from harness.job_release import stale_schema
 
 from harness.job_procs import alive, item_ended, item_s, job_venv, spawn_group, stop_group  # noqa: F401 - #1902
@@ -835,6 +835,13 @@ def run_pending(popen=None, gate=lambda: (True, ""), clock=time.time, watch: flo
     """Work the queue while the gate stays open: one GPU job, and cloud evals beside it in free cloud slots. #1153."""
     fd = _runner_lock()
     if fd is None:
+        return []
+    with _store() as c:
+        refused = store_home.refused(c)
+    if refused:
+        print(f"{time.strftime('%H:%M:%S')} {refused}", flush=True)
+        exclusive._release(fd)
+        os.close(fd)
         return []
     done, errors, live = [], [], {}
     finished, handed = threading.Event(), threading.Event()
