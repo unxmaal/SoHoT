@@ -44,7 +44,9 @@ def test_a_hand_set_scratch_home_with_the_switch_reaches_the_machine_s_interacti
     assert (seen["base"], seen["model"]) == (URL, ORNITH), "answered by the machine's interactive server"
     assert os.environ[paths.MACHINE_FOR_ENV] == str(scratch), "a child the verb spawns stays bound"
     assert os.environ[store.BACKEND_ENV] == store.SQLITE
-    assert store_state(machine / "discovery.db") == before and _files(machine) == files, "nothing written there"
+    with store.on_machine():
+        after = store_state(machine / "discovery.db")
+    assert after == before and _files(machine) == files, "nothing written there"
 
 
 def test_a_hand_set_scratch_home_without_the_switch_misses_the_interactive_server(machine, tmp_path, monkeypatch):

@@ -95,13 +95,27 @@ def test_a_live_call_closed_from_a_scratch_home_lands_in_the_ledger(deployed, tm
 
 
 def test_a_refusal_names_the_store_it_looked_in(deployed, tmp_path, monkeypatch, capsys):
+    live = f"Postgres {store.pg_target(home=paths.DEFAULT_HOME)}"
     assert cli.main(["delegated", "local-nope", "used"]) == 1
     said = _said(capsys)
-    assert "no delegation has call id 'local-nope'" in said and "Postgres local:5432/discovery" in said, said
+    assert "no delegation has call id 'local-nope'" in said and live in said, said
     scratch = _scratch(tmp_path, monkeypatch)
     assert cli.main(["delegated", "local-nope", "used"]) == 1
     said = _said(capsys)
-    assert str(scratch) in said and "Postgres local:5432/discovery" in said, said
+    assert str(scratch) in said and live in said, said
+
+
+@pytest.mark.parametrize("via", ["PGPORT", "store.json"])
+def test_a_refusal_names_the_port_the_store_is_configured_on(deployed, monkeypatch, capsys, via):
+    monkeypatch.setenv("PGHOST", "127.0.0.1")
+    if via == "PGPORT":
+        monkeypatch.setenv("PGPORT", "49775")
+    else:
+        monkeypatch.delenv("PGPORT", raising=False)
+        (paths.DEFAULT_HOME / store.MARKER).write_text(json.dumps({"backend": store.POSTGRES, "port": 49775}),
+                                                      encoding="utf-8")
+    assert cli.main(["delegated", "local-nope", "used"]) == 1
+    assert ":49775/" in _said(capsys)
     _live_env(monkeypatch)
     assert delegations.spooled() == []
 
