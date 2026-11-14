@@ -1,5 +1,6 @@
 """A periodic unit or the OTLP receiver meeting a store a deploy has moved ahead: one named line, no traceback. #1799."""
 import json
+import os
 import sqlite3
 import threading
 import time
@@ -88,15 +89,51 @@ def test_a_stale_link_is_said_loudly_in_one_line(opened, monkeypatch, capsys, _q
     assert "Traceback" not in out.err and out.err.count("\n") == 1
 
 
-@pytest.mark.parametrize("linked,opened", [("8-new", None), ("7-old", -60)], ids=["superseded", "reload"])
-def test_a_run_started_by_hand_on_an_old_release_does_not_exit_0(linked, opened, monkeypatch, capsys, _quiet_units,
-                                                                 _no_real_notifier):
+def _started_by(monkeypatch, top: str, cwd: str = "", tty: bool = False):
+    """This process's ancestry: it, its parent, and `top`, the process launchd (pid 1) started; no LH_UNIT."""
+    from harness.watchdog import Proc
+    me = os.getpid()
+    chain = [Proc(me, me + 1, me, 1.0, f"{paths.home()}/releases/7-old/.venv/bin/soh watchdog"),
+             Proc(me + 1, me + 2, me, 1.0, "uv run soh watchdog"), Proc(me + 2, 1, me + 2, 1.0, top)]
     monkeypatch.delenv(store_ahead.UNIT_ENV)
+    monkeypatch.setattr(store_ahead, "_processes", lambda: chain)
+    monkeypatch.setattr(store_ahead, "_cwd", lambda pid: cwd if pid == me + 2 else "")
+    monkeypatch.setattr(store_ahead, "_tty", lambda: tty)
+
+
+@pytest.mark.parametrize("linked,opened", [("8-new", None), ("7-old", -60)], ids=["superseded", "reload"])
+@pytest.mark.parametrize("top,tty", [("tmux", False), ("/bin/bash {home}/deploy/scripts/serve-watchdog.sh", True)],
+                         ids=["agent-under-tmux", "a-terminal"])
+def test_a_run_started_by_hand_on_an_old_release_does_not_exit_0(linked, opened, top, tty, monkeypatch, capsys,
+                                                                 _quiet_units, _no_real_notifier):
+    _started_by(monkeypatch, top.format(home=paths.home()), tty=tty)
     _ahead(open_deploy_at=None if opened is None else time.time() + opened)
     _release(monkeypatch, linked)
     assert cli.main(["watchdog"]) == 1, "no reload reruns a by-hand run, so it must not read as done (#1959)"
     err = capsys.readouterr().err
     assert "not started by a launchd unit" in err and "Traceback" not in err and err.count("\n") == 1
+
+
+@pytest.mark.parametrize("top,cwd", [("/bin/bash {home}/deploy/scripts/serve-watchdog.sh", ""),
+                                     ("uv run python -m harness.mlx_server", "{home}/releases/7-old"),
+                                     ("{home}/releases/7-old/.venv/bin/python -m harness.workqueue", "")],
+                         ids=["serve-script", "exec-uv-in-release-cwd", "worker-job"])
+def test_a_unit_on_a_plist_without_lh_unit_still_waits_quietly(top, cwd, monkeypatch, capsys, _quiet_units,
+                                                              _no_real_notifier):
+    _started_by(monkeypatch, top.format(home=paths.home()), cwd=cwd.format(home=paths.home()))
+    _ahead()
+    _release(monkeypatch, "8-new")
+    assert cli.main(["watchdog"]) == 0, "the deploy that ships LH_UNIT runs units on older plists (#1959)"
+    out = capsys.readouterr()
+    assert "store ahead, waiting for reload" in out.out and out.err == "" and _no_real_notifier == []
+
+
+def test_a_process_table_that_cannot_be_read_stays_quiet(monkeypatch, capsys, _quiet_units, _no_real_notifier):
+    _started_by(monkeypatch, "tmux")
+    monkeypatch.setattr(store_ahead, "_processes", lambda: None)
+    _ahead()
+    _release(monkeypatch, "8-new")
+    assert cli.main(["watchdog"]) == 0 and capsys.readouterr().err == ""
 
 
 def test_a_checkout_behind_the_store_names_both_schemas(monkeypatch, capsys, _quiet_units):
