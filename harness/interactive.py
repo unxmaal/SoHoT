@@ -286,7 +286,7 @@ def holds(lane: str, get=None) -> dict | None:
 def _served(config=None) -> dict:
     """The gateway's served config by name; {} when it was never written here."""
     from harness import gateway
-    path = gateway.served_path(config)
+    path = gateway.serving_path(config)
     return {str(e.get("model_name", "")): e for e in (gateway.load(path) if path.exists() else {})
             .get("model_list") or []}
 
@@ -560,7 +560,7 @@ def stale_gateway(plan: dict, config=None) -> bool:
     import yaml
 
     from harness import gateway
-    path = gateway.served_path(config)
+    path = gateway.serving_path(config)
     try:
         served = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     except (OSError, ValueError, yaml.YAMLError):
