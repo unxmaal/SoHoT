@@ -14,23 +14,6 @@ from harness import rank
 from harness import lanes, reasons, screen, variants
 
 GIB = 1024 ** 3
-_BUDGET_WAIT = "limit:download_budget_gib>"
-
-
-def budget_gib(gib=None) -> float:
-    """The run's budget in GiB: what it names, else the registered download_budget. #704."""
-    if gib:
-        return float(gib)
-    from harness import knobs
-    return float(knobs.KNOBS["download_budget"].default())
-
-
-def budget_allows(until, budget: int | None) -> bool:
-    """False when a row waits for a bigger download budget than `budget` bytes. #704."""
-    if budget is None or not (until or "").startswith(_BUDGET_WAIT):
-        return True
-    from harness.memory_store import revisit
-    return revisit.until_met(until, {"limits": {"download_budget_gib": budget / GIB}})
 #: Room a download leaves above the deploy's own floor (env.HF_MIN_FREE_GB), so discovery never blocks a deploy. #2011.
 FLOOR_MARGIN = 30 * GIB
 #: Refuse anything larger in one go, whatever the disk says.
@@ -97,36 +80,25 @@ def format_waits(until, lane: str = "", runtimes=None) -> bool:
 
 
 #: why_not reasons, and the ones fetch skips on without trying or writing anything. #925.
-BUDGET, FORMAT, NO_LANE, UNINSPECTED = "budget", "format", "no lane", "uninspected"
-OVER_BUDGET, FAILED = "over budget", "last download failed"
-#: The fetch's own recorded refusal (a runner gap, a budget, a base it waits on), read back by the funnel. #1084.
+FORMAT, NO_LANE, UNINSPECTED, FAILED = "format", "no lane", "uninspected", "last download failed"
+#: The fetch's own recorded refusal (a runner gap, a base it waits on), read back by the funnel. #1084.
 SKIPPED = "fetch skipped"
 #: The event of the fetch verdict that records a download, the one fetch verdict that is not a skip. #1878.
 DOWNLOADED = "downloaded"
 #: That verdict's detail, display only; an older release still reads it. #1878.
 DOWNLOADED_DETAIL = "downloaded"
-SILENT = (BUDGET, FORMAT, NO_LANE, UNINSPECTED)
+SILENT = (FORMAT, NO_LANE, UNINSPECTED)
 
 
-def over_budget(size: int, budget: int | None, spent: int = 0) -> bool:
-    """A measured size that would take this run past its budget. #215."""
-    return budget is not None and size > 0 and spent + size > budget
-
-
-def why_not(row: dict, *, budget: int | None = None) -> tuple[str, str] | None:
+def why_not(row: dict) -> tuple[str, str] | None:
     """Why fetch would not download this queued row now, as (reason, detail), or None. #925."""
     until = row.get("until") or ""
-    if not budget_allows(until, budget):
-        return BUDGET, f"waits for a download budget over {until.removeprefix(_BUDGET_WAIT)} GiB"
     if format_waits(until, row.get("lane") or ""):
         return FORMAT, f"waits for a runner that loads {until.removeprefix(FORMAT_WAIT).replace('|', ', ')}"
     if not row.get("lane"):
         return NO_LANE, "nothing here could measure it, so nothing fetches it"
     if not row.get("inspected"):
         return UNINSPECTED, "inspect has not answered since it was queued or reopened"
-    size = int(row.get("size_bytes") or 0)
-    if over_budget(size, budget):
-        return OVER_BUDGET, f"{size / GIB:.1f} GiB is over the {budget / GIB:.0f} GiB budget of a whole run"
     if row.get("failed_at"):
         when = time.strftime("%Y-%m-%d %H:%M", time.localtime(row["failed_at"]))
         return FAILED, f"its last download, at {when}, failed and left nothing; fetch tries again"
@@ -250,21 +222,25 @@ def runner_bases(model_id: str, conn=None) -> list[str]:
     from evals.runners.omnisvg import MODELS
     from harness import engines
     got = [base for base, repo in MODELS.values() if repo == model_id]
-    if _image_or_unfiled(model_id, conn):
+    lane, model_type = _filed(model_id, conn)
+    if not lane or lanes.serves(lane, "image"):
         got += [r for r in engines.mflux_needs(model_id) if r not in got]
+    # mlx-audio loads a model's codec or tokenizer from a repo of its own (MOSS-TTS). #2012.
+    if lane and lanes.serves(lane, "tts"):
+        got += [r for r in engines.audio_needs(model_id, model_type) if r not in got]
     return got
 
 
-def _image_or_unfiled(model_id: str, conn) -> bool:
-    """The image lane's runner, mflux, runs it: its stored lane serves image, or the store holds no lane for it."""
+def _filed(model_id: str, conn) -> tuple[str, str]:
+    """(lane, model_type) the store holds for it, ("", "") when it holds none."""
     if conn is None:
-        return True
+        return "", ""
     try:
-        row = conn.execute("SELECT lane FROM proposals WHERE name = ? OR resolved = ? ORDER BY id LIMIT 1",
+        row = conn.execute("SELECT lane, model_type FROM proposals WHERE name = ? OR resolved = ? ORDER BY id LIMIT 1",
                            (model_id, model_id)).fetchone()
     except Exception:  # noqa: BLE001
-        return True
-    return not (row and row["lane"]) or lanes.serves(row["lane"], "image")
+        return "", ""
+    return ((row["lane"] or ""), (row["model_type"] or "")) if row else ("", "")
 
 
 def requires(model_id: str, conn=None) -> list[str]:
@@ -611,23 +587,14 @@ def _reason(exc: Exception) -> str:
     return f"HTTP {status}" if status else str(exc)[:200]
 
 
-def _fetch_needs(name: str, needs: list[str], *, bases: list[str], sizes: dict, sizer,
-                 budget: int | None, spent: int, free: int | None, floor: int, fetch,
-                 budget_knob: str = "download_budget", conn=None):
-    """Download what `name` needs beside itself, each under the budget and floor: (done, bytes spent, first wait). #1091."""
+def _fetch_needs(name: str, needs: list[str], *, bases: list[str], sizer, free: int | None, floor: int, fetch):
+    """Download what `name` needs beside itself, each under the floor: (done, bytes spent, first wait). #1091."""
     done: list[dict] = []
     spent_now = 0
     waiting: tuple[str, str] | None = None
     for dep in needs:
         what = f"{dep}, the base its runner needs" if dep in bases else f"{dep}, needed by {name}"
-        size = (sizes or {}).get(dep) or sizer(dep) or -1
-        if budget is not None and size > 0 and spent + spent_now + size > budget:
-            why = (f"{what}, is {size / GIB:.1f} GiB and would take this run past its "
-                   f"{budget / GIB:.0f} GiB budget ({(spent + spent_now) / GIB:.1f} GiB already fetched)")
-            done.append({"repo": dep, "ok": False, "why": why})
-            waiting = waiting or (reasons.LIMIT, why)
-            cuts.cut(budget_knob, why, value=budget / GIB, kept=len(done) - 1, dropped=1, conn=conn)
-            continue
+        size = sizer(dep) or -1
         p = plan(dep, size, free=free, floor=floor)
         if not p.ok:
             why = f"{what}: {p.why}"
@@ -714,8 +681,7 @@ def _needs(conn, name: str, *, free, floor, snapshot=None, refresh: bool = True,
         from harness import inspect as ins
         sizer = ins.hf_size
     return _fetch_needs(name, [m for m in requires(name, conn) if not have(m, conn)],
-                        bases=runner_bases(name, conn), sizes={}, sizer=sizer, budget=None, spent=0,
-                        free=free, floor=floor, conn=conn,
+                        bases=runner_bases(name, conn), sizer=sizer, free=free, floor=floor,
                         fetch=lambda dep: download(dep, snapshot=snapshot, conn=conn, refresh=refresh))
 
 

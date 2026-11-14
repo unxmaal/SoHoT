@@ -503,9 +503,8 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
 
     Serial by construction, not by accident. An eval sweeping aliases took this
     machine down by loading a 16 GiB model while a 7.8 GiB one was still
-    resident (RULE #193). The budget is a ceiling on what this invocation will
-    download, and `--top` a ceiling on how many candidates it will carry the
-    whole way.
+    resident (RULE #193). `--top` is a ceiling on how many candidates it will
+    carry the whole way.
     """
     failed = failed if failed is not None else []
     for tier in UPKEEP:

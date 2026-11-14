@@ -25,7 +25,6 @@ RUNS = {
     "coherence": ([["coherence", "--db", S]], 0),
     "degenerate": ([["degenerate", "redecide", "--db", S]], 0),
     "discover-why": ([["discover-why", "x/Model-9B", "--budget", "0", "--db", S]], 0),
-    "fetch": ([["fetch", "--replay", "3"]], 0),
     "floors": ([["floors", "--store", S]], 0),
     "hear": ([["hear", "--rates", "--store", S]], 0),
     "knobs": ([["knobs", k, "--store", S] for k in ("effects", "engine-timeouts", "reply-caps")], 0),

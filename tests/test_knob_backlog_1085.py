@@ -11,16 +11,15 @@ from tests.test_knob_merge import git
 REPO = knobs.REPO
 FILES = ("harness/funnel.py", "harness/fetching.py")
 DISCOVER_TOP = "scripts/serve-discover.sh:DISCOVER_TOP"
-DOWNLOAD_BUDGET = "scripts/serve-discover.sh:DISCOVER_BUDGET_GIB"
 #: Per file, each name a reason's hole reads that resolves to no site: the limit it carries, or "" for a measured value.
 CARRIES = {
     "harness/funnel.py": {"p": "", "position": "", "said": "", "skipped": "", "top": DISCOVER_TOP, "when": ""},
     "harness/fetching.py": {
-        "attachment": "", "budget": DOWNLOAD_BUDGET, "floor": "harness/fetching.py:FLOOR_MARGIN",
+        "attachment": "", "floor": "harness/fetching.py:FLOOR_MARGIN",
         "copy": "", "dep": "", "exc": "", "gap": "",
         "have": "", "held": "", "lane": "", "name": "", "names": "", "needs": "", "other": "", "p.why": "", "pick": "",
         "repo": "", "row": "", "size": "",
-        "spent": "", "spent_now": "", "status": "", "target": "", "until": "", "what": "", "when": "", "whose": "", "why": ""},
+        "status": "", "target": "", "until": "", "what": "", "when": "", "whose": "", "why": ""},
 }
 
 

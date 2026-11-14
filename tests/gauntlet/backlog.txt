@@ -123,8 +123,6 @@ a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/effects.py:replay:adoptions
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/effects.py:replay:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/family.py:standing:verdicts
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/fetch_replay.py:runs:downloads
-a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/fetch_replay.py:runs:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/fetching.py:format_wanted:verdicts
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/fetching.py:queued:downloads
 a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null harness/fetching.py:queued:verdicts

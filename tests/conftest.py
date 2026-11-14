@@ -660,6 +660,20 @@ def _no_real_test_fetch(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_audio_install(monkeypatch):
+    """No test reads the mlx-audio this machine's uv cache holds; a test lays out its own. #2012."""
+    from harness import engines
+    monkeypatch.setattr(engines, "audio_root", lambda: None)
+
+
+@pytest.fixture(autouse=True)
+def _fresh_size_refreshes(monkeypatch):
+    """Each test starts with no stale HF size asked again in this process. #1936."""
+    from harness import inspect as ins
+    monkeypatch.setattr(ins, "_REFRESHED", [])
+
+
+@pytest.fixture(autouse=True)
 def _no_real_disk_sweep(monkeypatch):
     """No test deletes from the real weights cache. #373."""
     from harness import disk

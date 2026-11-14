@@ -278,11 +278,10 @@ def test_a_periodic_job_is_scheduled_not_kept_alive():
 
 
 def test_the_scheduled_sweep_bounds_what_it_spends():
-    """A scheduled job that downloads without a ceiling fills the disk
-    overnight and is found the next morning."""
+    """The sweep ceiling or a count bounds the night; each test fetches what it runs under the disk floor. #2020."""
     body = (Path(__file__).resolve().parents[1] / "scripts"
             / "serve-discover.sh").read_text(encoding="utf-8")
-    assert "--budget-gib" in body and "--top" in body, body
+    assert "--top" in body and "--budget-gib" not in body, body
     assert "--run" in body, "a sweep that never spends discovers nothing"
 
 

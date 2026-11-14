@@ -1,4 +1,5 @@
 """Knobs of how big a weight, download or repo may be (#751)."""
+from harness.knobs.base import _k
 from harness.knobs.base import GIB, MACHINE, _k
 
 KNOBS = [
@@ -10,11 +11,6 @@ KNOBS = [
        note="when a repo counts as abandoned"),
     _k("disk_floor", ["harness/fetching.py:FLOOR_MARGIN"], [0, 10 * GIB, 30 * GIB, 80 * GIB],
        note="room a download must leave above the deploy floor HF_MIN_FREE_GB; one that would go under it waits (#1085, #2011)"),
-    _k("download_budget", ["scripts/serve-discover.sh:DISCOVER_BUDGET_GIB"], [20, 40, 80, 160],
-       limit="download_budget_gib", unit="GiB",
-       note="GiB one scheduled sweep may download in all; 40 bound most nights with fitting candidates refused "
-            "for days, so 80 from 2026-11-03 with the models volume at 429 of 1862 GiB free, disk_floor "
-            "still stopping a download under the floor (#704, #1288, #1526)"),
     _k("download_cap", ["harness/fetching.py:MAX_DOWNLOAD"],
        [20 * GIB, 40 * GIB, 60 * GIB, 120 * GIB], limit="download_gib", unit="GiB", scale=GIB,
        note="the largest download one fetch may take"),
@@ -26,6 +22,12 @@ KNOBS = [
        note="quantized descendants inspected per too-big or unloadable base before giving up; each is one registry call (#882)"),
     _k("size_limit", ["harness/inspect.py:SIZE_LIMIT"], [2, 4, 12, 24, 64], probe="size_limit",
        note="how many named weights get sized per repo"),
+    _k("size_refreshes", ["harness/inspect.py:SIZE_REFRESHES"], [5, 10, 30],
+       note="stale cached HF sizes one process asks for again, so an expiry never asks the rate-limited "
+            "registry for every entry in one sweep (#1936)"),
+    _k("size_ttl", ["harness/inspect.py:SIZE_TTL_DAYS"], [7, 30, 90], unit="days",
+       note="days a cached HF size stands before inspect asks the registry again; hf-sizes.json held 129 "
+            "entries with no time on 2026-11-14 (#1936)"),
 ]
 
 NOT_GATING = {
@@ -37,4 +39,6 @@ NOT_GATING = {
 
 NEVER_CUTS = {
     "harness/inspect.py:Fit.upstream_idle_days": "a measured age recorded on the verdict; 0 means unmeasured (#1087)",
+    "harness/inspect.py:SIZE_TTL_DAYS": "how old a cached size may grow before it is asked again; it drops nothing, "
+                                        "and the asking it starts is capped and cut as size_refreshes (#1936)",
 }

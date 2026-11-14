@@ -15,8 +15,6 @@ def cmd_fetch(a) -> int:
     from harness import fetching
     from harness import memory_store as ms
 
-    if getattr(a, "replay", None):
-        return _replay(a)
     want = (getattr(a, "lane", "") or "").strip().lower()
     store = ms.connect()
     try:
@@ -40,35 +38,6 @@ def cmd_fetch(a) -> int:
          queued=[{"repo": r["resolved"] or r["name"], "lane": r["lane"], "score": r["score"],
                   "size": int(r.get("size_bytes") or 0)} for r in testable],
          orphans=[r["resolved"] or r["name"] for r in orphans])
-    return 0
-
-
-def _replay(a) -> int:
-    """`soh fetch --replay DAYS`: what past runs fetched and what the pass-over term would have. #1288."""
-    from harness import fetch_replay, rank
-    from harness import memory_store as ms, store
-    step, cap = rank.PASSED_OVER, rank.PASSED_OVER_MAX
-    if a.passed_over is not None:
-        rank.PASSED_OVER = a.passed_over
-    if a.passed_over_max is not None:
-        rank.PASSED_OVER_MAX = a.passed_over_max
-    from harness import fetching, ledger
-    # A replay reads; every reader takes this read-only connection, so nothing migrates or writes. #1426.
-    if not store.exists(ms.db_path()):
-        return err(f"fetch --replay: no store at {ms.db_path()}")
-    store = ledger.open_ro(ms.db_path())
-    try:
-        with ms.lend(store):
-            kw = {"serving": rank.serving(), "measured_lanes": rank.lanes_with_receipts(store)}
-            lines = fetch_replay.report(store, a.replay, **kw)
-            if getattr(a, "project", None):
-                lines += fetch_replay.projection(store, a.project, budget_gib=fetching.budget_gib(a.budget_gib),
-                                                 arrivals=a.arrivals, watch=a.watch or (), **kw)
-        for line in lines:
-            note(line)
-    finally:
-        rank.PASSED_OVER, rank.PASSED_OVER_MAX = step, cap
-        store.close()
     return 0
 
 
@@ -213,6 +182,37 @@ def known_killer(conn, name: str, candidate: str):
     return _killer(conn, name, runtime, version, server_kills(conn, name, runtime, version))
 
 
+#: Screens of one candidate in a row ending harness_error before it is declined at this limit and the owner paged. #2012.
+HARNESS_ERRORS = 3
+
+
+def harness_errors(conn, name: str) -> int:
+    """How many of a name's newest screen verdicts in a row are harness_error. #2012."""
+    from harness import memory_store as ms
+    streak = 0
+    # This machine's screens: another's harness is not the one that failed here.
+    for v in conn.execute("SELECT v.failure_class FROM verdicts v JOIN proposals p ON p.id = v.proposal_id "
+                          "WHERE p.name = ? AND v.tier = ? AND v.machine_id IS ? ORDER BY v.id DESC",
+                          (name, ms.SCREEN, ms.machine_row(conn))):
+        if v["failure_class"] != reasons.HARNESS_ERROR:
+            break
+        streak += 1
+    return streak
+
+
+def harness_stuck(conn, name: str, verdict):
+    """A harness_error that is the screen_harness_errors-th in a row: declined at that limit and paged, else as given. #2012."""
+    from harness import knobs, monitor, screen
+    if verdict.failure_class != reasons.HARNESS_ERROR or harness_errors(conn, name) + 1 < HARNESS_ERRORS:
+        return verdict
+    why = (f"{HARNESS_ERRORS} screens in a row could not be delivered (harness_error); the harness needs a fix, "
+           f"and a retest or a higher screen_harness_errors reopens it: {verdict.detail}")
+    cuts.cut("screen_harness_errors", f"{name}: {why}", conn=conn)
+    monitor.alert("service", {"MONIT_SERVICE": "screen", "MONIT_DESCRIPTION": why[:400]})
+    return screen.Verdict("declined", why, reasons.LIMIT,
+                          f"limit:{knobs.limit('screen_harness_errors', HARNESS_ERRORS, 'screens')}", reasons.HARNESS_ERROR)
+
+
 def server_back(base: str, conn=None) -> bool:
     """Whether the mlx server at `base` can generate again within SERVER_BACK_WAIT_S, as the watchdog restarts it. #1544."""
     from harness import mlx_server, watchdog
@@ -335,6 +335,20 @@ def _release(store, r: dict) -> None:
     disk.sweep(conn=store, names=names, say=lambda line: print(f"   {line.strip()}"))
 
 
+def passed_over(store, left: list[dict], why: str) -> None:
+    """Each fetchable row a screen's bound left gets a pass-over verdict, the days rank ages it by. #1288, #2020."""
+    from harness import fetching
+    from harness import memory_store as ms
+    # The day in the detail: a verdict restating its state is not written again (#184), and rank counts days.
+    day = time.strftime("%Y-%m-%d", time.gmtime())
+    for r in left:
+        row = r.get("fetch")
+        if row and (fetching.why_not(row) or ("",))[0] not in fetching.SILENT:
+            ms.decide_or_skip(store, row["name"], "queued", tier=ms.FETCH, detail=f"not fetched {day}: {why}"[:600],
+                              reason=reasons.LIMIT, failure_class=reasons.PASSED_OVER, commit=False)
+    store.commit()
+
+
 def _report_screen(a) -> int:
     """Run the cheapest real thing, and record whether it ran at all. #53.
 
@@ -380,6 +394,7 @@ def _report_screen(a) -> int:
                 cuts.cut(getattr(a, "limit_knob", None) or "discover_top",
                          f"the screen count is reached; {r['name']} and the rest of the ready rows wait",
                          value=limit, kept=taken, dropped=len(todo) - todo.index(r), conn=store)
+                passed_over(store, todo[todo.index(r):], "the screen count is reached")
                 break
             # The sweep ceiling's screen share, not a count, ends the step. #1084.
             if out_of_time(until, per, time.time()):
@@ -389,6 +404,7 @@ def _report_screen(a) -> int:
                 cuts.cut("screen_fraction",
                          f"the screen share of the sweep ceiling is spent; {r['name']} and the rest wait",
                          kept=taken, dropped=left, conn=store)
+                passed_over(store, todo[todo.index(r):], "the screen share of the sweep ceiling is spent")
                 break
             print(f"\n── {r['name']}", flush=True)
             got = None
@@ -474,6 +490,8 @@ def _screen_one(a, store, r: dict) -> tuple[bool, str | None, int | None]:
     if verdict.failure_class in reasons.SERVER_DIED:
         # One that kills the server on every screen is no harness fault to requeue nightly. #1544.
         verdict = repeat_kill(store, r["name"], r["candidate"], verdict, (stored or {}).get("environment"))
+    # A harness fault that never clears is paged once, not requeued every night. #2012.
+    verdict = harness_stuck(store, r["name"], verdict)
     tier = ms.SCREEN
     if verdict.failure_class in reasons.REFETCH:
         from harness import download_state, downloads

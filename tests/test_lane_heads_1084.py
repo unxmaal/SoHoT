@@ -49,7 +49,7 @@ def test_a_code_flood_does_not_keep_the_retrieval_head_out_of_the_first_fetch(st
     _seed(store, "tencent/EVIE-Preview-4.5B", 9, lane="retrieval")
     ranked = [r["name"] for r in fetching.in_rank_order(fetching.queued(store), store)]
     assert ranked[-1] == "tencent/EVIE-Preview-4.5B", "the fixture must rank the retrieval head last"
-    got = fakes.fetch_queue(store, limit=3, free=1000 * GIB, budget=40 * GIB)
+    got = fakes.fetch_queue(store, limit=3, free=1000 * GIB)
     assert "tencent/EVIE-Preview-4.5B" in [g["repo"] for g in got if g["ok"]]
 
 
@@ -80,7 +80,7 @@ def test_the_funnel_names_the_runner_gap_the_fetch_recorded(store, monkeypatch):
     """soh morning said Mica was 'nothing holds it: 1 of the rows a sweep tries'; the fetch said it needs its own runner."""
     _seed(store, MICA, 8, lane="decide")
     monkeypatch.setattr(screen, "runner_gap", lambda lane, name, *a, **k: GAP if name == MICA else "")
-    fakes.fetch_queue(store, limit=3, free=1000 * GIB, budget=40 * GIB)
+    fakes.fetch_queue(store, limit=3, free=1000 * GIB)
     # The next sweep's inspect rewrites the queued waypoint over the fetch's verdict.
     ms.decide(store, MICA, "queued", tier="inspect", detail="fits")
     got = _row(store, MICA)
@@ -214,7 +214,7 @@ def test_a_held_router_is_not_restarted_and_the_night_restarts_it_once(store, mo
     # A GGUF needs llama.cpp, which a CI runner lacks: this machine's runtimes are not the question here.
     monkeypatch.setattr(rank, "unrunnable", lambda row, machine=None: "")
     monkeypatch.setattr(gguf, "adopt", lambda conn, name: "/models/coder-Q4_K_M.gguf")
-    got = fakes.fetch_queue(store, limit=1, free=1000 * GIB, budget=40 * GIB, refresh=False)
+    got = fakes.fetch_queue(store, limit=1, free=1000 * GIB, refresh=False)
     assert [g["repo"] for g in got if g["ok"]] == ["org/coder-GGUF"], got
     assert _no_real_services == [] and gguf.unlisted() == ["coder-Q4_K_M"]
     gguf.relist()

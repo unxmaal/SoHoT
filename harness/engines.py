@@ -247,6 +247,49 @@ def _mflux_repos(binary: str, entry_points: str, _mtime_ns: int) -> tuple[str, .
     return tuple(sorted({repo for path in sorted(family.rglob("*.py")) for repo in _repo_constants(path)}))
 
 
+def audio_root() -> Path | None:
+    """The site-packages of the mlx-audio pin the tts server runs, in uv's cache; None when none is unpacked. #2012."""
+    import os
+    from harness import machine
+    pin = machine._uv_with_pins().get("mlx-audio")
+    cache = Path(os.environ.get("UV_CACHE_DIR") or Path.home() / ".cache" / "uv")
+    for info in sorted(cache.glob(f"archive-v0/*/lib/python*/site-packages/mlx_audio-{pin}.dist-info")) if pin else ():
+        return info.parent
+    return None
+
+
+def audio_needs(model: str, model_type: str, root: Path | None = None) -> tuple[str, ...]:
+    """Repos the mlx-audio family loading `model_type` fetches beside the model: its module-level *_REPO strings. #2012."""
+    root = root if root is not None else audio_root()
+    if root is None or not model_type:
+        return ()
+    utils = Path(root) / "mlx_audio" / "tts" / "utils.py"
+    try:
+        stamp = utils.stat().st_mtime_ns
+    except OSError:
+        stamp = 0
+    # An unreadable remap names the family by the model type itself, as mlx-audio does for an unmapped one.
+    family = _audio_remap(str(utils), stamp).get(model_type, model_type)
+    pkg = Path(root) / "mlx_audio" / "tts" / "models" / family
+    return tuple(sorted({r for path in sorted(pkg.glob("*.py")) if path.name != "convert.py"
+                         for r in _repo_constants(path) if r != model}))
+
+
+@lru_cache(maxsize=None)
+def _audio_remap(utils: str, _mtime_ns: int) -> dict:
+    try:
+        tree = ast.parse(Path(utils).read_text(encoding="utf-8"))
+    except (OSError, SyntaxError, ValueError):
+        return {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "MODEL_REMAPPING" for t in node.targets):
+            try:
+                return {str(k): str(v) for k, v in ast.literal_eval(node.value).items()}
+            except ValueError:
+                return {}
+    return {}
+
+
 def _repo_constants(path: Path) -> list[str]:
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"))

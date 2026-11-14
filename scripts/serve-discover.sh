@@ -21,11 +21,10 @@ mkdir -p "$LH_LOGS"
 # the place that sets the schedule.
 # 0: the sweep ceiling sizes the fetch, screen and measure; a count overrides it. #1084.
 TOP="${DISCOVER_TOP:-0}"
-BUDGET="${DISCOVER_BUDGET_GIB:-80}"
 # Unset, the loop's power plan picks the repeat per lane within its time budget (#479, #591, #696).
 REPEAT="${DISCOVER_REPEAT:-}"
 
-echo "=== sweep $(date -u +%Y-%m-%dT%H:%M:%SZ) top=${TOP/#0/ceiling} budget=${BUDGET}GiB ==="
+echo "=== sweep $(date -u +%Y-%m-%dT%H:%M:%SZ) top=${TOP/#0/ceiling} ==="
 # After the header, so a refusal is logged under it. #1481.
 source scripts/env.sh
 # Not exec: a sweep killed by a bootout or ^C must leave a line in discover.log. #794.
@@ -43,7 +42,7 @@ trap '_killed HUP 129' HUP
 set -m
 [ "$TOP" = 0 ] && TOP=""
 uv run soh discover --loop --run \
-  ${TOP:+--top "$TOP"} --budget-gib "$BUDGET" ${REPEAT:+--repeat "$REPEAT"} &
+  ${TOP:+--top "$TOP"} ${REPEAT:+--repeat "$REPEAT"} &
 child=$!
 rc=0
 wait "$child" || rc=$?

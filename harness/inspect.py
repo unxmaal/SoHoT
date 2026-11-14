@@ -84,6 +84,11 @@ SIZE_LIMIT = 12
 #: then record the size as unknown and move on.
 SIZE_RETRIES = 1
 SIZE_DELAY = 2.0
+#: Days a cached size stands before it is asked again, and the most stale entries one process asks for. #1936.
+SIZE_TTL_DAYS = 30
+SIZE_REFRESHES = 10
+#: Stale entries this process has asked the registry for again.
+_REFRESHED: list[str] = []
 
 #: Every verdict decide() can return. The needs-* half is DERIVED, because a
 #: hand-written list said "needs-cuda" long after decide() had learned to say
@@ -631,27 +636,33 @@ def hf_facts(model_id: str, fetch=None, cache: dict | None = None, *,
     """
     from harness import feeds
     ceiling = ceiling if ceiling is not None else ceiling_bytes()
+    cached = None
     if cache is not None and model_id in cache:
         got = cache[model_id]
         # The cache holds the registry's answer; the lane is derived on read.
         # An entry without the card fields predates that and is refetched. #416.
         # One sized against another ceiling, or as the listing's sum before #964, is too.
         if isinstance(got, dict) and "pipeline_tag" in got and got.get("ceiling") == ceiling:
-            return {"size": int(got.get("size") or -1),
-                    "lane": lane_for(got)}
+            cached = {"size": int(got.get("size") or -1), "lane": lane_for(got)}
+            # A later upload changes the size; a stale entry is asked again, a few per process. #1936.
+            if not _stale(got) or len(_REFRESHED) >= SIZE_REFRESHES:
+                if _stale(got):
+                    cuts.cut("size_refreshes", f"{model_id}: a stale cached size kept for a later sweep")
+                return cached
+            _REFRESHED.append(model_id)
     if fetch is None:
         fetch = hf_get
     url = f"https://huggingface.co/api/models/{model_id}?blobs=true"
     try:
         data = json.loads(fetch(url))
     except feeds.RateLimitedFeed:
-        return {"size": -1, "lane": "", "deferred": True}
+        return cached or {"size": -1, "lane": "", "deferred": True}
     except feeds.FeedError as exc:
         if "HTTP" in str(exc) and "HTTP 5" not in str(exc):
             return {"size": -1, "lane": ""}
-        return {"size": -1, "lane": "", "deferred": True}
+        return cached or {"size": -1, "lane": "", "deferred": True}
     except Exception:  # noqa: BLE001 - unreachable is unknown, never zero
-        return {"size": -1, "lane": ""}
+        return cached or {"size": -1, "lane": ""}
     size = size_listing(Fit(repo=model_id), model_id, data, ceiling=ceiling, machine=machine)
     out = {"size": size if size > 0 else -1, "lane": lane_for(data)}
     # Only a real answer is worth keeping. Caching a failure would freeze a
@@ -665,8 +676,15 @@ def hf_facts(model_id: str, fetch=None, cache: dict | None = None, *,
 CACHED_CARD = ("pipeline_tag", "tags")
 
 
+def _stale(entry: dict, now: float | None = None) -> bool:
+    """Asked longer ago than SIZE_TTL_DAYS; an entry written before #1936 has no `at` and is stale."""
+    import time
+    return (time.time() if now is None else now) - float(entry.get("at") or 0) > SIZE_TTL_DAYS * 86400
+
+
 def cache_entry(data: dict, size: int, ceiling: int) -> dict:
-    entry = {"size": int(size), "ceiling": int(ceiling)}
+    import time
+    entry = {"size": int(size), "ceiling": int(ceiling), "at": time.time()}
     for k in CACHED_CARD:
         entry[k] = data.get(k) or ([] if k == "tags" else "")
     return entry
@@ -1335,7 +1353,7 @@ def inspect(repo: str, workdir: Path, *, meta: dict | None = None,
     fit.cuda, fit.entry_points = found["cuda"], found["entry_points"]
     fit.cuda_mentioned = found["cuda_mentioned"]
     cache = _size_cache()
-    before = len(cache)
+    before = json.dumps(cache, sort_keys=True)
     fit.headline = headline(repo, found["hf_ids"], found.get("counts") or {},
                             found.get("in_readme") or [])
     # HALF the budget to the smallest ids and half to the headline ones. The
@@ -1363,7 +1381,7 @@ def inspect(repo: str, workdir: Path, *, meta: dict | None = None,
     if unpicked:
         cuts.cut("size_limit", f"{repo}: named weights left unsized", kept=len(picked), dropped=len(unpicked))
     fit.unsized += unpicked
-    if len(cache) > before:
+    if json.dumps(cache, sort_keys=True) != before:
         try:
             _write_size_cache(cache)
         except OSError:

@@ -35,7 +35,7 @@ NAMES = tuple(s.name for s in STEPS)
 #: A step the sweep no longer has -> the one that does its work now; a job queued before a deploy runs that. #2015.
 RETIRED = {"fetch": "screen"}
 #: The loop options a step carries to the next: (attribute, flag).
-CARRIED = (("lane", "--lane"), ("top", "--top"), ("budget_gib", "--budget-gib"), ("repeat", "--repeat"),
+CARRIED = (("lane", "--lane"), ("top", "--top"), ("repeat", "--repeat"),
            ("ceiling_h", "--ceiling-h"), ("effect", "--effect"), ("power_budget_min", "--power-budget-min"))
 FAILED = "failed_steps"
 
