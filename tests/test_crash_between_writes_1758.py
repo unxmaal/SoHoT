@@ -167,10 +167,10 @@ def test_a_run_killed_after_its_store_and_before_its_last_progress_is_finished_b
     first = Ticking(clock)
     real = watch.Progress.write
 
-    def killed(self, state=run_state.W_RUNNING, why="", run_id=None):
+    def killed(self, state=run_state.W_RUNNING, why="", run_id=None, **kw):
         if run_id is not None:
             raise Died()
-        return real(self, state, why, run_id)
+        return real(self, state, why, run_id, **kw)
     with monkeypatch.context() as m:
         m.setattr(watch.Progress, "write", killed)
         with pytest.raises(Died):

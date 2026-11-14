@@ -851,7 +851,7 @@ def _between_looks(proc, out, last: bool, before: int, idle: int) -> bool:
     if last or getattr(proc, "timed_out", False) or proc.returncode != watch.PAUSED:
         return False
     progress = watch.read_progress(out)
-    if not str(progress.get("why") or "").startswith(watch.AT_STOP_TIME):
+    if watch.pause_kind(progress) != watch.STOP_TIME:
         return False
     return _rows_in(out) > before or idle + 1 < IDLE_SLICES
 
@@ -1048,7 +1048,7 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
                                spec=spec, tested=tested)
     if verdict is not None:
         verdict = _confirmed(verdict, rows, split, screened, _served(lane), inc_spec, spec, plan)
-    taken.append(look.as_dict())
+    taken.append({**look.as_dict(), watch.PAUSE_KIND: watch.pause_kind(progress)})
     print(f"    {look.text}", flush=True)
     done = len(rows) - (taken_from or {}).get("reused", 0)
     total = int(progress.get("total") or (plan.cases_run or 0) * plan.repeat * 2 or done)
@@ -1082,7 +1082,7 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
     print(f"  {name}: {why}", flush=True)
     if sweep is not None:
         sweep.lines.append(f"{name}: {why}")
-        if str(progress.get("why") or "").startswith("paused on request"):
+        if watch.pause_kind(progress) in (watch.REQUESTED, watch.DEFERRED):
             # A memory pause frees this run's model for smaller ones; any other request stops the sweep. #1082.
             if watch.pause_reason(out) in MEMORY_PAUSES:
                 sweep.squeezed = why
