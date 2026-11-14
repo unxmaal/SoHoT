@@ -214,7 +214,7 @@ def test_every_production_verdict_says_why(path):
 def test_the_writer_guard_sees_the_writers():
     """Red-proof: the guard is not vacuous."""
     assert sum(len(list(store_writes(p))) for p in CLI) >= 10
-    assert len(list(store_writes("harness/fetching.py"))) >= 5
+    assert len(list(store_writes("harness/fetching.py"))) >= 3
 
 
 def test_decide_refuses_a_reason_outside_the_vocabulary(tmp_path):

@@ -11,6 +11,7 @@ from harness import downloads, fetching, gguf, screen, serving
 from harness import inspect as ins
 from harness import memory as mem
 from harness import memory_store as ms
+from tests import fakes
 
 REPO = Path(__file__).resolve().parents[1]
 GIB = 1024 ** 3
@@ -117,7 +118,7 @@ def test_fetch_downloads_one_gguf_file_and_records_it(home, monkeypatch):
     def snapshot(**kw):
         raise AssertionError("a whole snapshot was downloaded")
 
-    done = fetching.run(db, snapshot=snapshot, free=900 * GIB,
+    done = fakes.fetch_queue(db, snapshot=snapshot, free=900 * GIB,
                         listing=lambda repo: SIBLINGS, hf_download=hf_download)
     assert done[0]["ok"], done
     assert got == [("org/Model-4B-GGUF", "Model-4B-Q4_K_M.gguf")]

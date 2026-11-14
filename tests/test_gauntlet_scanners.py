@@ -138,7 +138,7 @@ def test_no_code_adds_up_a_listing_outside_variants():
 
 # Inventories: reported, never grown. Lower a pin when a fix lands.
 SWALLOWED_PIN = 59
-CONFIG_LESS_PIN = 148
+CONFIG_LESS_PIN = 147
 
 
 def test_swallowed_errors_are_an_inventory_that_only_shrinks():
@@ -275,3 +275,39 @@ def test_no_test_replaces_this_machine():
     _fail_with(tree_cache.scan_tree(REPO, scanners.machine_stand_ins, gscanners.is_python, _tests_only),
                "a replaced this_machine reaches some callers and not this_fingerprint or the gateway; "
                "use conftest machine_is / machine_has (#1437)")
+
+
+def test_a_hub_download_outside_the_allowed_sites_is_found():
+    src = ("import huggingface_hub\nfrom huggingface_hub import snapshot_download as grab\n"
+           "def a(repo):\n    return huggingface_hub.hf_hub_download(repo, \"x.gguf\")\n"
+           "def b(repo):\n    return grab(repo)\n"
+           "ARGV = [\"uv\", \"run\", \"hf download org/model\"]\n")
+    got = scanners.hf_downloads(src, "harness/x.py")
+    assert [f.split(":")[1] for f in got] == ["2", "4", "7"]
+
+
+def test_a_hub_download_inside_the_allowed_sites_or_only_named_is_left_alone():
+    innocent = ('"""Never calls snapshot_download; the screen fetches through harness.fetching."""\n'
+                "from huggingface_hub import HfApi\n# hf download org/x by hand\n"
+                "def size(repo):\n    return HfApi().model_info(repo)\n")
+    bad = "def c(repo):\n    from huggingface_hub import snapshot_download\n    return snapshot_download(repo)\n"
+    _quiet_then_fires(scanners.hf_downloads, innocent, bad, "harness/x.py")
+    assert scanners.hf_downloads(bad, "harness/fetching.py") == []
+    assert scanners.hf_downloads_shell("# hf download org/x\necho ok\n", "scripts/x.sh") == []
+    assert scanners.hf_downloads_shell("uv run hf download org/x\n", "scripts/x.sh") != []
+    assert scanners.hf_downloads_shell("uv run hf download org/x\n", "scripts/setup-omnisvg.sh") == []
+
+
+def test_only_the_allowed_sites_download_from_the_hub():
+    _fail_with(tree_cache.scan_tree(REPO, scanners.hf_downloads, gscanners.is_python,
+                                   lambda rel: not rel.startswith(("tests/", "evals/cases/")))
+               + tree_cache.scan_tree(REPO, scanners.hf_downloads_shell, gscanners.is_shell),
+               "never download what cannot be tested near-immediately: a test fetches what it runs through "
+               "harness.fetching, and anything else is a pinned tool named in DOWNLOAD_SITES (#2015)")
+
+
+def test_every_allowed_download_site_still_downloads():
+    stale = [rel for rel in scanners.DOWNLOAD_SITES
+             if not any(d in (REPO / rel).read_text(encoding="utf-8")
+                        for d in ("snapshot_download", "hf_hub_download", "hf download"))]
+    assert not stale, f"an allowed site that no longer downloads leaves a hole for the next one: {stale}"

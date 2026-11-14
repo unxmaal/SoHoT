@@ -12,6 +12,7 @@ import pytest
 
 from harness import fetching
 from harness import memory_store as ms
+from tests import fakes
 
 GIB = fetching.GIB
 
@@ -47,35 +48,11 @@ def _sizes(conn):
             for r in fetching.queued(conn)}
 
 
-def test_the_budget_stops_the_second_download(store):
-    _seed(store, "org/a-small", 5.5)
-    _seed(store, "org/b-big", 19.1)
-    got = fetching.run(store, _sizes(store), limit=5, free=500 * GIB,
-                       budget=int(12 * GIB))
-    assert [g["repo"] for g in got if g["ok"]] == ["org/a-small"]
-    refused = [g for g in got if not g["ok"]]
-    assert refused and "budget" in refused[0]["why"]
-
-
-def test_exceeding_the_budget_re_queues_rather_than_settling(store):
-    """A budget is a fact about THIS INVOCATION, not about the candidate.
-    Recording it as declined would suppress a real model forever (#211)."""
-    _seed(store, "org/big", 19.1)
-    fetching.run(store, _sizes(store), limit=5, free=500 * GIB,
-                 budget=int(12 * GIB))
-    rows = store.execute(
-        "SELECT v.outcome, v.detail FROM verdicts v JOIN proposals p "
-        "ON p.id = v.proposal_id WHERE p.name = 'org/big' AND v.tier = 'fetch' "
-        "ORDER BY v.id DESC LIMIT 1").fetchall()
-    assert rows and rows[0][0] == "queued"
-    assert "budget" in rows[0][1]
-
-
 def test_no_budget_means_no_ceiling(store):
     """The negative control: absent the flag, nothing new refuses anything."""
     _seed(store, "org/a-small", 5.5)
     _seed(store, "org/b-big", 19.1)
-    got = fetching.run(store, _sizes(store), limit=5, free=500 * GIB,
+    got = fakes.fetch_queue(store, _sizes(store), limit=5, free=500 * GIB,
                        budget=None)
     assert sorted(g["repo"] for g in got if g["ok"]) == ["org/a-small",
                                                          "org/b-big"]
@@ -85,7 +62,7 @@ def test_an_unsized_row_is_not_charged_to_the_budget(store):
     """A size of 0 means unknown, and plan() refuses it for that reason. It
     must not silently pass a budget check by counting as free."""
     _seed(store, "org/unsized", 0)
-    got = fetching.run(store, {"org/unsized": 0}, limit=5, free=500 * GIB,
+    got = fakes.fetch_queue(store, {"org/unsized": 0}, limit=5, free=500 * GIB,
                        budget=int(12 * GIB))
     assert not got[0]["ok"]
     assert "no measured size" in got[0]["why"]
@@ -116,7 +93,7 @@ def test_an_adapter_is_declined_rather_than_downloaded(tmp_path):
             "tags": ["lora", "anime", "base_model:adapter:org/base"]})
         ms.decide(conn, "org/style-lora", "queued", tier="inspect",
                   detail="fits")
-        got = fetching.run(conn, {"org/style-lora": 200 * 1024 ** 2}, limit=1,
+        got = fakes.fetch_queue(conn, {"org/style-lora": 200 * 1024 ** 2}, limit=1,
                            snapshot=lambda *a, **k: pytest.fail(
                                "an adapter must never be downloaded"))
         assert got and not got[0]["ok"]
@@ -148,7 +125,7 @@ def test_an_ordinary_model_is_not_refused_as_an_attachment(tmp_path):
         ms.set_size(conn, "org/z-image-turbo-4bit", 4294967296)
         ms.decide(conn, "org/z-image-turbo-4bit", "queued", tier="inspect",
                   detail="fits")
-        got = fetching.run(conn, {"org/z-image-turbo-4bit": 4 * 1024 ** 3}, limit=1,
+        got = fakes.fetch_queue(conn, {"org/z-image-turbo-4bit": 4 * 1024 ** 3}, limit=1,
                            snapshot=lambda *a, **k: (seen.append(1),
                                                      str(tmp_path))[1])
         assert seen, f"an ordinary model was not fetched: {got}"
@@ -160,7 +137,7 @@ def test_an_ordinary_model_is_not_refused_as_an_attachment(tmp_path):
 def test_a_disk_below_the_floor_requeues_rather_than_settling(store):
     """A full disk is a fact about this machine today, not about the candidate. #528."""
     _seed(store, "org/fine", 5.0)
-    got = fetching.run(store, _sizes(store), limit=5, free=fetching.disk_floor() + 1 * GIB)
+    got = fakes.fetch_queue(store, _sizes(store), limit=5, free=fetching.disk_floor() + 1 * GIB)
     assert [g["repo"] for g in got if not g["ok"]] == ["org/fine"]
     row = store.execute(
         "SELECT v.outcome, v.reason, p.state FROM verdicts v JOIN proposals p "

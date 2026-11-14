@@ -1,21 +1,4 @@
-"""Download queued weights in the background, durably. Issue #62.
-
-WHY NOT the MCP server's old in-memory queue: its jobs lived in memory and died
-with the process, and it existed only inside that server. A
-download queue that exists only while a server happens to be running is not
-automatic, which was the requirement.
-
-The durable queue already existed and was unused for this. `memory_store` has a
-non-terminal `queued` verdict; marking a candidate queued is a fact that
-survives a restart, and it is already the vocabulary the loop speaks. This
-module is the worker for that queue, nothing more.
-
-ONE AT A TIME, for the same reason generation is: this machine holds one
-working set, and a download competing with an eval distorts the measurement it
-was queued to make possible.
-
-NOTHING IS EXECUTED. Fetching weights is not running them.
-"""
+"""Weights for the test about to run them, fetched as it starts and removed when it ends. #62, #2015."""
 from __future__ import annotations
 
 import json
@@ -50,8 +33,6 @@ def budget_allows(until, budget: int | None) -> bool:
     return revisit.until_met(until, {"limits": {"download_budget_gib": budget / GIB}})
 #: Room a download leaves above the deploy's own floor (env.HF_MIN_FREE_GB), so discovery never blocks a deploy. #2011.
 FLOOR_MARGIN = 30 * GIB
-#: GiB of fetched weights still waiting for a screen above which fetch takes nothing more. #2011.
-SCREEN_BACKLOG = 200 * GIB
 #: Refuse anything larger in one go, whatever the disk says.
 MAX_DOWNLOAD = 60 * GIB
 
@@ -116,7 +97,7 @@ def format_waits(until, lane: str = "", runtimes=None) -> bool:
 
 
 #: why_not reasons, and the ones fetch skips on without trying or writing anything. #925.
-BACKPRESSURE, BUDGET, FORMAT, NO_LANE, UNINSPECTED = "backpressure", "budget", "format", "no lane", "uninspected"
+BUDGET, FORMAT, NO_LANE, UNINSPECTED = "budget", "format", "no lane", "uninspected"
 OVER_BUDGET, FAILED = "over budget", "last download failed"
 #: The fetch's own recorded refusal (a runner gap, a budget, a base it waits on), read back by the funnel. #1084.
 SKIPPED = "fetch skipped"
@@ -124,17 +105,7 @@ SKIPPED = "fetch skipped"
 DOWNLOADED = "downloaded"
 #: That verdict's detail, display only; an older release still reads it. #1878.
 DOWNLOADED_DETAIL = "downloaded"
-#: The words of a refusal by what the run already fetched; rank reads reasons.PASSED_OVER, never these. #1288, #1779.
-PASSED = "would take this run past its"
-SILENT = (BACKPRESSURE, BUDGET, FORMAT, NO_LANE, UNINSPECTED)
-
-
-def held(backlog: int, top: int) -> tuple[str, str] | None:
-    """The loop's backpressure: enough already on disk waits for a screen, so nothing is fetched. #396."""
-    if top and backlog >= top:
-        return BACKPRESSURE, (f"{backlog} candidate(s) already on disk wait for a screen, "
-                              f"and this run screens {top}")
-    return None
+SILENT = (BUDGET, FORMAT, NO_LANE, UNINSPECTED)
 
 
 def over_budget(size: int, budget: int | None, spent: int = 0) -> bool:
@@ -142,54 +113,8 @@ def over_budget(size: int, budget: int | None, spent: int = 0) -> bool:
     return budget is not None and size > 0 and spent + size > budget
 
 
-def backlog_room(conn) -> tuple[int, str]:
-    """(bytes fetch may add, why it may add none): fetched weights waiting for a screen against SCREEN_BACKLOG. #2011."""
-    from harness import disk
-    waiting = disk.waiting_bytes(conn)
-    room = SCREEN_BACKLOG - waiting
-    if room > 0:
-        return room, ""
-    why = (f"{waiting / GIB:.1f} GiB of fetched weights already wait for a screen, at or over the "
-           f"{SCREEN_BACKLOG / GIB:.0f} GiB backlog cap")
-    cuts.cut("screen_backlog", why, value=SCREEN_BACKLOG / GIB, kept=0, dropped=1, conn=conn)
-    return 0, why
-
-
-def _tighter(budget: int | None, room: int | None) -> int | None:
-    return room if budget is None else budget if room is None else min(budget, room)
-
-
-def over_backlog(size: int, room: int | None, spent: int = 0) -> bool:
-    """A download that would take the weights waiting for a screen past SCREEN_BACKLOG. #2011."""
-    return room is not None and spent + max(size, 0) > room
-
-
-def backlog_refusal(size: int, room: int, spent: int) -> str:
-    return (f"{size / GIB:.1f} GiB would take the weights waiting for a screen past the "
-            f"{SCREEN_BACKLOG / GIB:.0f} GiB backlog cap ({max(room - spent, 0) / GIB:.1f} GiB of room left)")
-
-
-def budget_refusal(size: int, budget: int, spent: int) -> str:
-    """The sentence a budget refusal says; nothing reads it back. #1779."""
-    return f"{size / GIB:.1f} GiB {PASSED} {budget / GIB:.0f} GiB budget ({spent / GIB:.1f} GiB already fetched)"
-
-
-def refuse_over_budget(conn, name: str, size: int, budget: int, spent: int, *, at: float | None = None) -> str:
-    """Re-queue a row this run's budget refuses; one that fit the whole budget is classed PASSED_OVER for rank. #1288, #1779."""
-    why = budget_refusal(size, budget, spent)
-    # Bigger than the whole budget, no sweep at this budget ever takes it. #704.
-    until = f"limit:{knobs.limit('download_budget_gib', budget / GIB, 'GiB')}" if size > budget else ""
-    ms.decide_or_skip(conn, name, "queued", tier="fetch", detail=why, reason=reasons.LIMIT, until=until, at=at,
-                      failure_class="" if until else reasons.PASSED_OVER, budget_gib=budget / GIB)
-    return why
-
-
-def why_not(row: dict, *, budget: int | None = None, backlog: int = 0,
-            top: int = 0) -> tuple[str, str] | None:
+def why_not(row: dict, *, budget: int | None = None) -> tuple[str, str] | None:
     """Why fetch would not download this queued row now, as (reason, detail), or None. #925."""
-    got = held(backlog, top)
-    if got:
-        return got
     until = row.get("until") or ""
     if not budget_allows(until, budget):
         return BUDGET, f"waits for a download budget over {until.removeprefix(_BUDGET_WAIT)} GiB"
@@ -291,10 +216,10 @@ def plan(repo: str, size: int, *, free: int | None = None,
     return Plan(repo, size, True, f"{size / GIB:.1f} GiB, {have / GIB:.0f} GiB free")
 
 
-#: Only these tiers may put something in the download queue. The JUDGE tier
+#: Only these tiers may put something in the download queue; a screen's own requeue is one. The JUDGE tier
 #: also writes `queued`, and it judges a description: it queued a 122B model on
 #: a 32 GB machine. Nothing is downloaded on the strength of prose.
-FETCHABLE_TIERS = ("inspect", "fetch")
+FETCHABLE_TIERS = ("inspect", "fetch", "screen")
 #: And only WEIGHTS are downloadable. The inspect tier queued the GitHub repos
 #: it read, and this worker calls snapshot_download, which wants a HuggingFace
 #: model id: every queued name 401'd. A repo is something to install and screen,
@@ -392,8 +317,8 @@ def missing(model_id: str, conn=None) -> list[str]:
 
 
 def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
-           needs_lane: bool = True, lane: str = "") -> list[dict]:
-    """Weights the inspect tier queued, best score first.
+           needs_lane: bool = True, lane: str = "", name: str = "") -> list[dict]:
+    """Weights queued and not on disk, in the order the screen fetches them; `name` alone, unranked. #81, #2015.
 
     A weight NO LANE CAN TEST is returned but never counted as fetchable:
     downloading is only justified by a measurement that follows it, and an
@@ -436,8 +361,8 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
                             AND v2.score IS NOT NULL
                           ORDER BY v2.id DESC LIMIT 1), 0) AS score
         FROM proposals p LEFT JOIN verdicts st ON st.id = p.state_verdict_id
-        WHERE p.state = 'queued'""",
-                        {"reopened": reasons.REOPENED, "harness": reasons.HARNESS}).fetchall()
+        WHERE p.state = 'queued'""" + (" AND (p.name = :name OR p.resolved = :name)" if name else ""),
+                        {"reopened": reasons.REOPENED, "harness": reasons.HARNESS, "name": name}).fetchall()
     def downloadable(r) -> bool:
         """snapshot_download wants a HuggingFace id. The registry says so
         outright; `kind` only has to answer for rows older than that column."""
@@ -450,6 +375,8 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
            if r["outcome"] == "queued" and r["tier"] in tiers
            and downloadable(r)
            and not have(r["resolved"] or r["name"], conn)]
+    if name:
+        return out
     if lane:
         # A LANE-SCOPED LOOP MUST SCOPE THE STEP THAT SPENDS THE DISK. The loop
         # printed "(spending only on the image lane)" and then considered
@@ -458,6 +385,11 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
         from harness import lanes
         out = [r for r in out if lanes.serves(r.get("lane"), lane)]
     return by_lane_turns(in_rank_order(out, conn), conn)
+
+
+def row(conn, name: str) -> dict | None:
+    """The fetch queue's row for `name` when a screen may fetch it now, else None. #2015."""
+    return next(iter(queued(conn, name=name)), None)
 
 
 def by_lane_turns(rows: list[dict], conn=None) -> list[dict]:
@@ -579,7 +511,7 @@ def _download(repo, snapshot, listing, hf_download, text, conn, require_weights,
             _room_for(repo, int(single[1] or 0), free, floor)
             from harness import gguf
             try:
-                # A day fetch leaves the router alone; the night's screen restarts it. #1084.
+                # A fetch told to hold the router leaves it alone; the next screen restarts it once. #1084.
                 return gguf.download(repo, single[0], hf_download=hf_download, conn=conn,
                                      refresh=None if refresh else (lambda: gguf.note_unlisted((Path(single[0]).stem,))))
             except gguf.Auxiliary as exc:
@@ -718,244 +650,146 @@ def _fetch_needs(name: str, needs: list[str], *, bases: list[str], sizes: dict, 
     return done, spent_now, waiting
 
 
-def _on_disk_waiting(conn, lane: str = "") -> list[str]:
-    """Queued candidates already downloaded whose base or other need is still missing. #632, #1091."""
-    out = []
-    for r in conn.execute("SELECT name, resolved, lane FROM proposals WHERE state = 'queued'"):
-        name = r["resolved"] or r["name"]
-        if lane and not lanes.serves(r["lane"], lane):
-            continue
-        if have(name, conn) and missing(name, conn):
-            out.append(name)
-    return out
+def _refused(conn, row: dict, outcome: str, why: str, *, reason: str, until: str = "") -> dict:
+    ms.decide_or_skip(conn, row["name"], outcome, tier="fetch", detail=why[:600], reason=reason, until=until)
+    return {"repo": row["resolved"] or row["name"], "ok": False, "why": why}
 
 
-def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=None,
-        free: int | None = None, lane: str = "",
-        budget: int | None = None, listing=None,
-        hf_download=None, floor: int | None = None, sizer=None,
-        refresh: bool = True, stop_at: float | None = None, clock=time.time,
-        limit_knob: str = "harness/fetching.py:run(limit)", budget_knob: str = "download_budget",
-        room: int | None = None, held=None) -> list[dict]:
-    """Fetch up to `limit` queued candidates, recording what happened; a limit or budget that stops one is a cut (#1087).
+def _refusal(conn, row: dict) -> dict | None:
+    """The refusal a candidate gets before any byte is fetched, recorded, or None when it may be fetched. #81, #254, #2015."""
+    name = row["resolved"] or row["name"]
+    why = why_not(row)
+    if why and why[0] in SILENT:
+        return {"repo": name, "ok": False, "why": why[1]}
+    # AN ADAPTER IS NOT A CANDIDATE, and this tier is where that costs gigabytes. #414.
+    attachment = row.get("attaches_to") or ""
+    # An attachment is one on every machine, so it is decided before this machine's runtimes. #1039.
+    if attachment and not screen.takes_attachment(row.get("lane") or "", attachment):
+        return _refused(conn, row, "declined", f"{attachment} in its own card: this attaches to a model rather than "
+                        f"being one, and no lane can run it alone", reason=reasons.CANDIDATE)
+    # A lane discovery never screens loads its own weights when a person runs it. #1282.
+    if lanes.canonical(row.get("lane") or "") in lanes.BY_HAND:
+        return _refused(conn, row, "queued", screen.by_hand(row["lane"], row["name"], card=row), reason=reasons.HARNESS)
+    # A runtime this machine lacks is an answer about this machine, with what would end the wait. #254, #266, #415.
+    needs = rank.unrunnable(row, None)
+    if needs:
+        return _refused(conn, row, "declined", f"{needs}: this machine has no runtime that can load these weights",
+                        reason=reasons.MACHINE, until=f"runtime:{needs.removeprefix('needs-')}")
+    # A lane having a runner is not a runner taking this model; an engine entry would make it runnable. #213.
+    gap = screen.runner_gap(row.get("lane") or "", row["name"], attachment, conn=conn)
+    if gap:
+        return _refused(conn, row, "queued", f"{gap}: no runner in the {row['lane']} lane can load it",
+                        reason=reasons.HARNESS)
+    from harness import ds4
+    if ds4.recognised(row["name"]):
+        # A ds4 file is one very large download; a person starts it. #611.
+        spec = screen.candidate_for(row.get("lane") or "", row["name"], conn=conn)
+        stem = spec.partition(",")[0].removeprefix(ds4.PREFIX)
+        return _refused(conn, row, "queued", f"a ds4 model is fetched by hand: uv run python -m harness.ds4 fetch "
+                        f"{row['name']} {stem}.gguf", reason=reasons.LIMIT)
+    return None
 
-    `budget` caps what ONE INVOCATION downloads in total, which is the job
-    --budget-gib was documented as doing and never did: it was printed in the
-    header and never passed here, so a 12 GiB budget fetched 24.6 GiB. It is a
-    fact about this invocation, so exceeding it re-queues rather than settling
-    anything. MAX_DOWNLOAD and disk_floor() are absolute and stay in plan().
-    Issue #215.
 
-    A refused plan is recorded as `declined`, terminal, so the same oversized
-    model is not re-queued every sweep. A failed download is NOT: a network
-    error says nothing about the candidate. NEITHER IS A REFUSAL THAT IS ABOUT
-    THIS HARNESS: "no measured size" says the store could not answer a question
-    about itself, and writing that down as declined settled 16 real candidates
-    permanently, including the only upgrade the image lane had. Issue #211,
-    the same class as #206 a day earlier. Nor is a disk below the floor. #528.
-    """
-    done = []
-    fetched = 0
-    spent = 0
-    floor = disk_floor() if floor is None else floor
-    from harness import gguf
-    gguf.adopt_pending(conn, refresh=refresh)
+def _land(conn, name: str, card: dict, *, snapshot=None, listing=None, hf_download=None, free=None, floor=None,
+          refresh: bool = True) -> str:
+    """Download `name` the way its lane's runner loads it and tell the router of a new GGUF; the path. #2015."""
+    text = lanes.canonical(card.get("lane") or "") in lanes.GGUF_SERVED
+    where = download(name, snapshot=snapshot, listing=listing, hf_download=hf_download, text=text, conn=conn,
+                     require_weights=True, model_type=card.get("model_type") or "", lane=card.get("lane") or "",
+                     card=card, refresh=refresh, free=free, floor=floor)
+    if text:
+        # A whole GGUF-only repo is served through the router, which lists a new file only after a restart. #301, #1012.
+        from harness import gguf
+        linked = gguf.adopt(conn, name)
+        if linked and not refresh:
+            gguf.note_unlisted((Path(linked).stem,))
+        elif linked:
+            gguf.refresh_router(expect=(Path(linked).stem,))
+    return where
+
+
+def _needs(conn, name: str, *, free, floor, snapshot=None, refresh: bool = True, sizer=None):
+    """Fetch what `name` loads beside itself: (done, bytes, first wait). #196, #632, #1091."""
     if sizer is None:
         from harness import inspect as ins
         sizer = ins.hf_size
+    return _fetch_needs(name, [m for m in requires(name, conn) if not have(m, conn)],
+                        bases=runner_bases(name, conn), sizes={}, sizer=sizer, budget=None, spent=0,
+                        free=free, floor=floor, conn=conn,
+                        fetch=lambda dep: download(dep, snapshot=snapshot, conn=conn, refresh=refresh))
 
-    def needs_of(name):
-        """Bytes spent on what `name` needs, None when the registry deferred the tier."""
-        got, cost, waiting = _fetch_needs(
-            name, [m for m in requires(name, conn) if not have(m, conn)],
-            bases=runner_bases(name, conn), sizes=sizes or {}, sizer=sizer, budget=_tighter(budget, room),
-            spent=spent, free=free, floor=floor, budget_knob=budget_knob, conn=conn,
-            fetch=lambda dep: download(dep, snapshot=snapshot, conn=conn, refresh=refresh))
-        done.extend(got)
-        if waiting:
-            reason, why = waiting
-            ms.decide_or_skip(conn, name, "queued", tier="fetch", detail=f"waiting on {why}",
-                              reason=reason, budget_gib=None if budget is None else budget / GIB)
-        return None if any(d.get("deferred") for d in got) else cost
 
-    # A candidate already on disk can still be missing the base its runner loads. #632.
-    for name in _on_disk_waiting(conn, lane):
-        cost = needs_of(name)
-        if cost is None:
-            return done
-        spent += cost
-    rows = queued(conn, lane=lane)
-    for at, row in enumerate(rows):
-        # Budget (#704), format (#798), no lane, and a reopen inspect has not answered (#798).
-        why = why_not(row, budget=budget)
-        if why and why[0] in SILENT:
-            if why[0] == UNINSPECTED:
-                done.append({"repo": row["resolved"] or row["name"], "ok": False, "why": why[1]})
-            continue
-        # AN ADAPTER IS NOT A CANDIDATE, and this tier is where that costs
-        # gigabytes. rank drops attachments so they never reach the top of the
-        # queue, but rank is an ORDERING and this is a SPEND: a LoRA that is
-        # merely sized would be downloaded and handed to a runner that cannot
-        # load it. `declined` rather than `queued`, because unlike "no measured
-        # size" this is a fact about the candidate and not about us.
-        attachment = row.get("attaches_to") or ""
-        # An attachment is one on every machine, so it is decided before this machine's runtimes. #1039.
-        if attachment and not screen.takes_attachment(row.get("lane") or "", attachment):
-            why = (f"{attachment} in its own card: this attaches to a model "
-                   f"rather than being one, and no lane can run it alone")
-            ms.decide_or_skip(conn, row["name"], "declined", tier="fetch", detail=why,
-                              reason=reasons.CANDIDATE)
-            done.append({"repo": row["name"], "ok": False, "why": why})
-            continue
-        # A lane discovery never screens loads its own weights when a person runs it. #1282.
-        if lanes.canonical(row.get("lane") or "") in lanes.BY_HAND:
-            why = screen.by_hand(row["lane"], row["name"], card=row)
-            ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=why, reason=reasons.HARNESS)
-            done.append({"repo": row["name"], "ok": False, "why": why})
-            continue
-        # A RUNTIME THIS MACHINE DOES NOT HAVE IS AN ANSWER, not a gap to
-        # come back to. rank.unrunnable already drops these from the ordering,
-        # so they never reach a fetch and never receive a verdict: the queue
-        # carries them forever and every sweep re-ranks them. #254.
-        #
-        # Recorded WITH THE MACHINE THAT REFUSED, because the store is shared
-        # and the same weights are ordinary on the box with the card. A reader
-        # elsewhere sees a fact about this machine rather than about the model.
-        needs = rank.unrunnable(row, None)
-        if needs:
-            # verdicts.machine_id says where; the detail no longer does. #415.
-            why = (f"{needs}: this machine has no runtime "
-                   f"that can load these weights")
-            # AND WHAT WOULD END THE WAIT, as a predicate. `needs-cuda` is
-            # `unrunnable`'s own spelling, so the condition derives from it
-            # rather than being a second list to keep in step. Without this
-            # the row is a dead end: 34 rows in the real store were declined
-            # here and runnable on the box with the card, and nothing could
-            # find them. Issue #266.
-            ms.decide_or_skip(conn, row["name"], "declined", tier="fetch", detail=why,
-                              reason=reasons.MACHINE,
-                              until=f"runtime:{needs.removeprefix('needs-')}")
-            done.append({"repo": row["name"], "ok": False, "why": why})
-            continue
-        # A LANE HAVING A RUNNER IS NOT A RUNNER TAKING THIS MODEL, and this
-        # tier is where the difference costs gigabytes. Both image candidates
-        # in the first scheduled sweep were downloaded, handed to evals.run,
-        # refused for "no cases of a modality it can run", and re-queued --
-        # correctly, since that refusal is about the harness. So they came
-        # back on the next sweep and would have forever. `queued`, not
-        # `declined`: the candidate did nothing wrong and an engine entry
-        # would make it runnable, so it is reported to a person instead.
-        gap = screen.runner_gap(row.get("lane") or "", row["name"], attachment,
-                                conn=conn)
-        if gap:
-            why = f"{gap}: no runner in the {row['lane']} lane can load it"
-            ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=why,
-                              reason=reasons.HARNESS)
-            done.append({"repo": row["name"], "ok": False, "why": why})
-            continue
-        from harness import ds4
-        if ds4.recognised(row["name"]):
-            # A ds4 file is one very large download; a person starts it. #611.
-            spec = screen.candidate_for(row.get("lane") or "", row["name"], conn=conn)
-            stem = spec.partition(",")[0].removeprefix(ds4.PREFIX)
-            why = (f"a ds4 model is fetched by hand: uv run python -m harness.ds4 fetch "
-                   f"{row['name']} {stem}.gguf")
-            ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=why,
-                              reason=reasons.LIMIT)
-            done.append({"repo": row["name"], "ok": False, "why": why})
-            continue
-        # `limit` bounds DOWNLOADS, not decisions. Counting refusals against it
-        # let one unsized entry at the head of the queue consume the whole
-        # budget, so nothing was ever fetched.
-        if fetched >= limit:
-            cuts.cut(limit_knob, f"the download count is reached; {row['resolved'] or row['name']} "
-                     f"and the rest of the fetch order wait", value=limit, kept=fetched, dropped=len(rows) - at, conn=conn)
-            break
-        if stop_at is not None and clock() >= stop_at:
-            done.append({"repo": row["resolved"] or row["name"], "ok": False,
-                         "why": "this fetch's window has closed; the next one takes it"})
-            break
-        name = row["resolved"] or row["name"]
-        # Each row's own measured size; an override map covering only the
-        # first `limit` rows left the rest at 0 for 22 sweeps. #292.
-        size = (sizes or {}).get(name) or int(row.get("size_bytes") or 0)
-        if over_budget(size, budget, spent):
-            why = refuse_over_budget(conn, row["name"], size, budget, spent)
-            cuts.cut(budget_knob, f"{name}: {why}", value=budget / GIB, kept=fetched, dropped=1, conn=conn)
-            done.append({"repo": name, "ok": False, "why": why})
-            continue
-        # The screen's own question: a load that can never fit beside what stays held is not fetched. #2011.
-        beside = held(size / GIB) if held is not None and size > 0 else ""
-        if beside:
-            ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=f"not fetched: {beside}"[:600],
-                              reason=reasons.LIMIT)
-            done.append({"repo": name, "ok": False, "why": beside})
-            continue
-        if over_backlog(size, room, spent):
-            why = backlog_refusal(size, room, spent)
-            cuts.cut("screen_backlog", f"{name}: {why}", value=SCREEN_BACKLOG / GIB, kept=fetched, dropped=1, conn=conn)
-            done.append({"repo": name, "ok": False, "why": why})
-            continue
-        p = plan(name, size, free=free, floor=floor)
+def for_test(conn, row: dict, *, snapshot=None, listing=None, hf_download=None, free: int | None = None,
+             floor: int | None = None, sizer=None, refresh: bool = True) -> dict:
+    """Fetch one candidate the screen is about to run, a refusal recorded at the fetch tier; what happened. #2015.
+
+    THE TEST FETCHES WHAT IT RUNS. Nothing downloads a candidate ahead of the
+    screen that runs it, and the screen removes it again when it is done
+    unless the measure step that follows in the same sweep takes it.
+    """
+    refused = _refusal(conn, row)
+    if refused:
+        return refused
+    name = row["resolved"] or row["name"]
+    floor = disk_floor() if floor is None else floor
+    size = int(row.get("size_bytes") or 0)
+    p = plan(name, size, free=free, floor=floor)
+    if not p.ok:
+        # Our own gap, or a disk that will be freed, is not an answer about the candidate. #211, #408, #528.
+        outcome = "queued" if p.reason in (reasons.HARNESS, reasons.MACHINE) else "declined"
+        return _refused(conn, row, outcome, p.why, reason=p.reason, until=p.until)
+    try:
+        where = _land(conn, name, row, snapshot=snapshot, listing=listing, hf_download=hf_download,
+                      free=free, floor=floor, refresh=refresh)
+    except FetchDeferred as exc:
+        return {"repo": name, "ok": False, "why": str(exc), "deferred": True}
+    except Unloadable as exc:
+        # Foreign formats wait on an engine entry, a person's call (runners wanted); no weights is final.
+        if exc.formats:
+            return _refused(conn, row, "queued", str(exc), reason=reasons.HARNESS,
+                            until=FORMAT_WAIT + "|".join(exc.formats))
+        return _refused(conn, row, "declined", str(exc), reason=reasons.CANDIDATE)
+    except NoRoom as exc:
+        return _refused(conn, row, "queued", str(exc), reason=reasons.MACHINE)
+    except FetchError as exc:
+        return {"repo": name, "ok": False, "why": str(exc)}
+    # Where it landed is a downloads row, not this verdict's run_path. #411.
+    ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=DOWNLOADED_DETAIL, reason=reasons.CANDIDATE,
+                      event=DOWNLOADED)
+    done, cost, waiting = _needs(conn, name, free=free, floor=floor, snapshot=snapshot, refresh=refresh, sizer=sizer)
+    if waiting:
+        reason, why = waiting
+        ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=f"waiting on {why}"[:600], reason=reason)
+        return {"repo": name, "ok": False, "why": f"waiting on {why}", "needs": done,
+                **({"deferred": True} if any(d.get("deferred") for d in done) else {})}
+    return {"repo": name, "ok": True, "bytes": size + cost, "why": where, "needs": done}
+
+
+def card(conn, name: str) -> dict:
+    """The proposal's card facts a download picks its files by, {} when the store has none. #2015."""
+    got = conn.execute("SELECT name, resolved, lane, model_type, attaches_to, runtime_needed, library, card_tags, "
+                       "size_bytes FROM proposals WHERE name = ? OR resolved = ? ORDER BY id LIMIT 1",
+                       (name, name)).fetchone()
+    return dict(got) if got else {}
+
+
+def ensure(conn, name: str, *, snapshot=None, listing=None, hf_download=None, free: int | None = None,
+           floor: int | None = None, sizer=None, refresh: bool = True) -> str:
+    """Fetch what a measurement of `name` loads and is not on disk, under the floor: why it could not, or "". #2015."""
+    from harness import methods
+    target = methods.weights_of(name) if methods.is_method(name) else name
+    if not target or not missing(target, conn):
+        return ""
+    floor = disk_floor() if floor is None else floor
+    if not have(target, conn):
+        facts = card(conn, target)
+        p = plan(target, int(facts.get("size_bytes") or 0), free=free, floor=floor)
         if not p.ok:
-            # Our own gap, or a disk that will be freed, is not an answer about the candidate. #211, #408, #528.
-            outcome = "queued" if p.reason in (reasons.HARNESS, reasons.MACHINE) else "declined"
-            ms.decide_or_skip(conn, row["name"], outcome, tier="fetch", detail=p.why,
-                              reason=p.reason, until=p.until)
-            done.append({"repo": name, "ok": False, "why": p.why})
-            continue
+            return f"{target}: {p.why}"
         try:
-            text = lanes.canonical(row.get("lane") or "") in lanes.GGUF_SERVED
-            if listing is not None or hf_download is not None or not text:
-                where = download(name, snapshot=snapshot, listing=listing,
-                                 hf_download=hf_download, text=text, conn=conn,
-                                 require_weights=True, model_type=row.get("model_type") or "",
-                                 lane=row.get("lane") or "", card=row, refresh=refresh, free=free, floor=floor)
-            else:
-                where = download(name, snapshot=snapshot, conn=conn, require_weights=True,
-                                 model_type=row.get("model_type") or "",
-                                 lane=row.get("lane") or "", card=row, refresh=refresh, free=free, floor=floor)
-        except FetchDeferred as exc:
-            done.append({"repo": name, "ok": False, "why": str(exc), "deferred": True})
-            break
-        except Unloadable as exc:
-            # Foreign formats wait on an engine entry, a person's call (runners wanted); no weights is final.
-            if exc.formats:
-                ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=str(exc),
-                                  reason=reasons.HARNESS,
-                                  until=FORMAT_WAIT + "|".join(exc.formats))
-            else:
-                ms.decide_or_skip(conn, row["name"], "declined", tier="fetch", detail=str(exc),
-                                  reason=reasons.CANDIDATE)
-            done.append({"repo": name, "ok": False, "why": str(exc)})
-            continue
-        except NoRoom as exc:
-            ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=str(exc), reason=reasons.MACHINE)
-            done.append({"repo": name, "ok": False, "why": str(exc)})
-            continue
+            _land(conn, target, facts, snapshot=snapshot, listing=listing, hf_download=hf_download,
+                  free=free, floor=floor, refresh=refresh)
         except FetchError as exc:
-            done.append({"repo": name, "ok": False, "why": str(exc)})
-            continue
-        fetched += 1
-        spent += size
-        if text:
-            # A whole GGUF-only repo is served through the router. #301, #303.
-            from harness import gguf
-            linked = gguf.adopt(conn, name)
-            if linked and not refresh:
-                gguf.note_unlisted((Path(linked).stem,))
-            elif linked:
-                # The router lists a new file only after a restart, and the screen tier comes next. #1012.
-                gguf.refresh_router(expect=(Path(linked).stem,))
-        # WHAT IT NEEDS BESIDE ITSELF, as its config recorded it on landing.
-        # A tokenizer in another repo makes a whole download unloadable. #196.
-        # Where it landed is a downloads row, not this verdict's run_path. #411.
-        ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=DOWNLOADED_DETAIL, reason=reasons.CANDIDATE,
-                          budget_gib=None if budget is None else budget / GIB, event=DOWNLOADED)
-        # What it needs beside itself: what its config named on landing (#196) and its runner's base (#632).
-        cost = needs_of(name)
-        done.append({"repo": name, "ok": True, "bytes": size, "why": where})
-        if cost is None:
-            break
-        spent += cost
-    return done
+            return f"{target}: {exc}"
+    _, _, waiting = _needs(conn, target, free=free, floor=floor, snapshot=snapshot, refresh=refresh, sizer=sizer)
+    return waiting[1] if waiting else ""

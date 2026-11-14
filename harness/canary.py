@@ -172,8 +172,7 @@ def steps(plant: Plant) -> list[list[str]]:
     """The `soh` commands the plant's isolated home runs, in order: the real inspect, then the spend."""
     out = [["discover", "--inspect", "--from-store", "--run", "--lane", plant.lane, "--top", "1"]]
     if plant.through == "screen":
-        return out + [["fetch", "--run", "--limit", "1"],
-                      ["discover", "--screen", "--run", "--lane", plant.lane, "--top", "1"]]
+        return out + [["discover", "--screen", "--run", "--lane", plant.lane, "--top", "1"]]
     return out + [["canary", "spend", "--lane", plant.lane, "--top", "1"]]
 
 

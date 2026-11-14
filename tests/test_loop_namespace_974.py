@@ -73,27 +73,6 @@ def test_a_repair_that_raises_is_a_failed_step_and_inspect_still_runs(monkeypatc
     assert "inspect (_reopen_unranked)" in err.getvalue()
 
 
-def test_the_loop_fetch_gets_the_fetch_parsers_namespace_with_the_loops_lane_and_budget(monkeypatch):
-    from harness import disk
-    from harness.commands import measure as measure_cmd
-    got = []
-    monkeypatch.setattr(disk, "sweep", lambda *a, **k: {})
-    for name in ("_reopen_retests", "_reopen_missing_in_snapshot", "_reverify", "_sweeps"):
-        monkeypatch.setattr(loop_cmd, name, lambda *a, **k: {})
-    monkeypatch.setattr(screen_cmd, "screenable_backlog", lambda want="": [])
-    monkeypatch.setattr(screen_cmd, "cmd_fetch", lambda a: got.append(a) or 0)
-    monkeypatch.setattr(discover_cmd, "cmd_discover", lambda a: 0)
-    monkeypatch.setattr(measure_cmd, "measurable", lambda store, top, want="": [])
-    monkeypatch.setattr(measure_cmd, "resume_first", lambda store, fresh, want="": fresh)
-    monkeypatch.setattr(ms, "connect", lambda *a, **k: type("S", (), {"close": lambda s: None})())
-    a = common.parsed("discover", "--loop", "--run", "--lane", "image", "--budget-gib", "7", "--top", "2")
-    with contextlib.redirect_stdout(io.StringIO()):
-        loop_cmd._loop_spend(a, 0)
-    fetch = vars(got[0])
-    assert fetch["command"] == "fetch" and set(vars(common.parsed("fetch"))) <= set(fetch)
-    assert (fetch["run"], fetch["limit"], fetch["lane"], fetch["budget_gib"]) == (True, 2, "image", 7.0)
-
-
 def test_common_parsed_holds_every_field_of_the_verbs_parser_with_overrides_on_top():
     a = common.parsed("discover", "--inspect", repos=["org/x"], top=1)
     assert a.inspect and a.repos == ["org/x"] and a.top == 1 and a.json is False and a.from_store is False

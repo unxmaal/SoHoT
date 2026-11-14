@@ -5,6 +5,7 @@ import pytest
 
 from harness import downloads, fetching, reasons, screen
 from harness import memory_store as ms
+from tests import fakes
 
 GIB = fetching.GIB
 OMNI = "OmniSVG/OmniSVG1.1_4B"
@@ -59,7 +60,7 @@ def test_the_runner_base_is_a_requirement_of_each_omnisvg_size():
 def test_a_candidate_fetched_this_run_brings_its_base(db):
     queued_omnisvg(db)
     snap = Snapshot()
-    done = fetching.run(db, {OMNI: 9 * GIB, BASE: 7 * GIB}, snapshot=snap, free=FREE)
+    done = fakes.fetch_queue(db, {OMNI: 9 * GIB, BASE: 7 * GIB}, snapshot=snap, free=FREE)
     assert snap.asked == [OMNI, BASE]
     assert fetching.missing(OMNI, db) == []
     assert any(d["repo"] == BASE and d["ok"] for d in done)
@@ -69,34 +70,28 @@ def test_a_candidate_already_on_disk_gets_its_missing_base(db):
     queued_omnisvg(db, tier="screen")
     on_disk(db, OMNI)
     snap = Snapshot()
-    fetching.run(db, {BASE: 7 * GIB}, snapshot=snap, free=FREE)
+    assert fetching.ensure(db, OMNI, snapshot=snap, free=FREE, sizer=lambda repo: 7 * GIB) == ""
     assert snap.asked == [BASE]
     assert fetching.missing(OMNI, db) == []
 
 
-def test_a_base_past_the_budget_is_not_fetched_and_the_candidate_waits_on_it(db):
+def test_a_base_that_would_go_under_the_floor_is_not_fetched_and_says_why(db):
     queued_omnisvg(db, tier="screen")
     on_disk(db, OMNI)
     snap = Snapshot()
-    done = fetching.run(db, {BASE: 7 * GIB}, snapshot=snap, free=FREE, budget=4 * GIB)
-    assert snap.asked == []
-    (row,) = [d for d in done if d["repo"] == BASE]
-    assert not row["ok"] and "budget" in row["why"]
-    verdict = db.execute("SELECT v.outcome, v.reason, v.detail FROM proposals p "
-                         "JOIN verdicts v ON v.id = p.state_verdict_id WHERE p.name = ?",
-                         (OMNI,)).fetchone()
-    assert verdict["outcome"] == "queued" and verdict["reason"] == reasons.LIMIT
-    assert BASE in verdict["detail"]
+    why = fetching.ensure(db, OMNI, snapshot=snap, free=FREE, floor=FREE, sizer=lambda repo: 7 * GIB)
+    assert snap.asked == [] and BASE in why and "floor" in why
+    verdict = db.execute("SELECT v.outcome, v.detail FROM proposals p "
+                         "JOIN verdicts v ON v.id = p.state_verdict_id WHERE p.name = ?", (OMNI,)).fetchone()
+    assert verdict["outcome"] == "queued"
 
 
 def test_a_base_of_unknown_size_is_not_fetched(db):
     queued_omnisvg(db, tier="screen")
     on_disk(db, OMNI)
     snap = Snapshot()
-    done = fetching.run(db, snapshot=snap, free=FREE, sizer=lambda repo: -1)
-    assert snap.asked == []
-    (row,) = [d for d in done if d["repo"] == BASE]
-    assert not row["ok"] and "size" in row["why"]
+    why = fetching.ensure(db, OMNI, snapshot=snap, free=FREE, sizer=lambda repo: -1)
+    assert snap.asked == [] and BASE in why and "size" in why
 
 
 def test_a_candidate_waiting_on_its_base_is_not_screened(db):

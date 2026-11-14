@@ -9,6 +9,7 @@ import pytest
 from harness import fetching, inspect as ins, live_audit, reasons, screen
 from harness import memory_store as ms
 from tests.test_runner_base_weights import Snapshot, db  # noqa: F401
+from tests import fakes
 
 CARDS = Path(__file__).parent / "fixtures" / "registry" / "attachments_949"
 GIB = fetching.GIB
@@ -115,7 +116,7 @@ def test_a_full_model_no_lane_runs_is_queued_as_a_runner_gap(db, monkeypatch):
     ms.set_size(db, repo, 18 * GIB)
     ms.decide(db, repo, "queued", tier="inspect", detail="fits", size_bytes=18 * GIB, reason=reasons.CANDIDATE)
     snap = Snapshot()
-    done = fetching.run(db, limit=5, free=900 * GIB, snapshot=snap,
+    done = fakes.fetch_queue(db, limit=5, free=900 * GIB, snapshot=snap,
                         listing=lambda r: _card(repo)["siblings"])
     last = db.execute("SELECT v.outcome, v.reason FROM verdicts v JOIN proposals p ON p.id = v.proposal_id "
                       "WHERE p.name = ? ORDER BY v.id DESC LIMIT 1", (repo,)).fetchone()

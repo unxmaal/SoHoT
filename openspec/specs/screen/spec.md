@@ -955,18 +955,18 @@ Test: tests/test_load_log_953.py::test_the_screen_sends_a_short_copy_back_to_fet
 - **THEN** the next ready row is still screened
 Test: untested
 
-### Requirement: Memory deferrals do not spend the screen or hold the fetch
-A ready row that does not fit in memory now SHALL be recorded `queued` at the screen tier with reason memory and an until from `memory.wait_for`, SHALL NOT count against the screen limit, and SHALL leave the fetch backlog. Once `memory_deferrals` counts `MEMORY_DEFERRALS` newest verdicts in a row deferred for one need, a further deferral for that need SHALL record a cut instead of another verdict.
+### Requirement: Memory deferrals do not spend the screen or fetch anything
+A row that does not fit in memory now, sized from its listing when its weights are not on disk, SHALL be recorded `queued` at the screen tier with reason memory and an until from `memory.wait_for`, SHALL NOT count against the screen limit, and SHALL download nothing. Once `memory_deferrals` counts `MEMORY_DEFERRALS` newest verdicts in a row deferred for one need, a further deferral for that need SHALL record a cut instead of another verdict.
 
 #### Scenario: A deferral waits for room
 - **WHEN** a candidate needs more than is safely available
 - **THEN** it is queued for memory, nothing runs, and its until is met only once enough room opens
 Test: tests/test_until_keys_928.py::test_a_memory_deferral_waits_for_the_room_its_candidate_needs
 
-#### Scenario: A deferred leftover does not hold the ranked ones back
-- **WHEN** an on-disk leftover is deferred for memory beside ranked rows
-- **THEN** the ranked rows are fetched and screened up to the limit
-Test: tests/test_loop_backpressure.py::test_a_memory_deferred_leftover_lets_the_ranked_ones_fetch_and_screen
+#### Scenario: A deferral downloads nothing
+- **WHEN** a candidate not on disk needs more memory than is safely available now
+- **THEN** it is queued for memory with why, and nothing is fetched or run
+Test: tests/test_test_weights_2015.py::test_a_candidate_that_does_not_fit_memory_now_downloads_nothing_and_says_why
 
 #### Scenario: The streak counts one need
 - **WHEN** older deferrals name one need and the newest several name another
@@ -978,23 +978,23 @@ Test: tests/test_loop_backpressure.py::test_the_streak_counts_one_need_only
 - **THEN** only the first writes no new verdict
 Test: tests/test_loop_backpressure.py::test_a_long_same_need_deferral_stops_writing_a_verdict_each_night
 
-### Requirement: The fetch backlog counts only what a screen could take now
-`screenable_backlog` SHALL filter the plan before anything counts it, keeping a name only when the row is ready, is not a method crossing, fits in memory now with one request's cache, and its newest verdict is not a screen memory deferral.
+### Requirement: The screen fetches what it runs and keeps nothing no test is about to run
+The screen SHALL fetch a candidate whose weights are not on disk right before its run, after the memory check, through `fetching.for_test`; a refused fetch SHALL run nothing. After its verdict the screen SHALL remove the candidate's weights through `disk.sweep` unless it was screened, which the measure step of the same sweep takes.
 
-#### Scenario: Only ready rows that fit
-- **WHEN** the plan holds a ready row, a ready row too big for memory, and a waiting row
-- **THEN** only the first is backlog
-Test: tests/test_loop_backpressure.py::test_the_backlog_counts_only_what_the_screen_could_take_now
+#### Scenario: A declined screen leaves no weights behind
+- **WHEN** a candidate is fetched, screened and declined
+- **THEN** its weights are removed
+Test: tests/test_test_weights_2015.py::test_a_declined_screen_fetched_its_candidate_first_and_leaves_no_weights_behind
 
-#### Scenario: A memory-deferred row is not backlog
-- **WHEN** a ready row's newest verdict is a screen memory deferral
-- **THEN** it is left out of the backlog
-Test: tests/test_loop_backpressure.py::test_a_memory_deferred_candidate_is_not_backlog
+#### Scenario: A screened candidate keeps its weights for the measure step
+- **WHEN** a candidate is screened
+- **THEN** its weights stay for the measure step of the same sweep
+Test: tests/test_test_weights_2015.py::test_a_screened_candidate_keeps_its_weights_for_the_measure_step
 
-#### Scenario: A method crossing is not backlog
-- **WHEN** a ready method crossing sits beside a fetched model
-- **THEN** only the model is backlog
-Test: tests/test_methods.py::test_a_crossing_waiting_for_a_screen_never_holds_back_a_download
+#### Scenario: No screen slot, no download
+- **WHEN** the screen limit leaves no slot
+- **THEN** nothing is fetched
+Test: tests/test_test_weights_2015.py::test_with_no_screen_slot_free_nothing_is_downloaded
 
 ### Requirement: One screen at a time under the eval lock, bounded and cleaned up
 Each started screen SHALL hold the eval lock with the deadline `deadline_s` gives its candidate, SHALL be counted against the screen limit, SHALL NOT start when `out_of_time` says it would end past the sweep's screen share, SHALL record the verdict's failure class, and SHALL release its model from the router and the mlx server afterwards. A verdict whose class is in `reasons.STOPS` SHALL end the step with status one.
@@ -1065,13 +1065,8 @@ Test: tests/test_screen_fair.py::test_the_unseen_rate_knob_sets_both_an_unmeasur
 - **THEN** stderr says so and the measure is `power.UNSEEN`, unmeasured
 Test: untested
 
-### Requirement: Fetch downloads what was queued within a budget
-`cmd_fetch` SHALL emit an empty queue when nothing is queued, SHALL only list without `--run`, SHALL take its budget from the download budget knob when none is given, and SHALL return zero when a rate-limited listing defers the rest of the tier.
-
-#### Scenario: The registered budget
-- **WHEN** a manual run is given no budget
-- **THEN** the fetch runs with the registered download budget
-Test: tests/test_fetch_retention_704.py::test_a_manual_run_with_no_budget_uses_the_registered_budget
+### Requirement: Fetch lists what the screen fetches and a rate limit defers the rest
+`cmd_fetch` SHALL list the queued candidates in the order the screen fetches them and download nothing, and a rate-limited listing SHALL defer the rest of the screen's fetches.
 
 #### Scenario: A rate-limited listing
 - **WHEN** the registry answers every listing with a rate limit

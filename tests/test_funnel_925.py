@@ -11,6 +11,7 @@ from harness.commands import loop as loop_cmd
 from harness.commands import measure as measure_cmd
 from harness.commands import screen as screen_cmd
 from harness import cli, disk
+from tests import fakes
 
 GIB = fetching.GIB
 DAY = 86400.0
@@ -68,7 +69,7 @@ def test_entry_times_and_stage_counts_come_from_the_fixture_not_the_newest_row(s
     monkeypatch.setattr(report, "ranked", lambda conn, rows=None: [
         {"name": "org/waypoints", "lane": "code"}, {"name": "org/reopened", "lane": "code"}])
     now = T0 + 10 * DAY
-    got = funnel.gather(store, now=now, budget=40 * GIB)
+    got = funnel.gather(store, now=now)
     by = {p["name"]: p for p in got["proposals"]}
     assert by["org/waypoints"]["entered"] == T0
     assert by["org/waypoints"]["in_state_days"] == 10.0
@@ -131,8 +132,6 @@ def test_why_not_names_each_skip_path(store, tmp_path):
     rows = {r["name"]: r for r in fetching.queued(store)}
     got = {n: (fetching.why_not(r, budget=10 * GIB) or (None,))[0] for n, r in rows.items()}
     assert got == SKIPS
-    held = fetching.why_not(rows["org/fine"], budget=10 * GIB, backlog=3, top=3)
-    assert held[0] == fetching.BACKPRESSURE and "already on disk wait for a screen" in held[1]
     assert fetching.why_not(rows["org/fine"], budget=4 * GIB)[0] == fetching.OVER_BUDGET
 
 
@@ -167,39 +166,19 @@ def test_fetch_skips_exactly_the_rows_why_not_names(store, tmp_path, monkeypatch
     monkeypatch.setattr(fetching, "download", lambda name, **k: tried.append(name) or f"/x/{name}")
     monkeypatch.setattr(fetching, "have", lambda *a, **k: False)
     rows = fetching.queued(store)
-    named = {r["name"] for r in rows
-             if (fetching.why_not(r, budget=10 * GIB) or ("",))[0] in fetching.SILENT}
-    fetching.run(store, limit=10, free=500 * GIB, budget=10 * GIB, sizer=lambda n: 0)
-    assert set(tried) == {r["name"] for r in rows} - named == {"org/failed", "org/fine"}
+    named = {r["name"] for r in rows if (fetching.why_not(r) or ("",))[0] in fetching.SILENT}
+    fakes.fetch_queue(store, limit=10, free=500 * GIB, sizer=lambda n: 0)
+    # The screen's fetch has no download budget, so a row waiting on a bigger one is fetched. #2015.
+    assert set(tried) == {r["name"] for r in rows} - named == {"org/budget", "org/failed", "org/fine"}
 
 
 def test_the_funnel_gives_each_queued_row_the_reason_fetch_would(store, tmp_path, monkeypatch):
     _skip_store(store, tmp_path)
     monkeypatch.setattr(fetching, "have", lambda *a, **k: False)
-    rows = {p["name"]: p for p in funnel.gather(store, budget=10 * GIB, top=3)["proposals"]}
-    for name, reason in SKIPS.items():
+    rows = {p["name"]: p for p in funnel.gather(store, top=3)["proposals"]}
+    for name, reason in {**SKIPS, "org/budget": fetching.SKIPPED}.items():
         assert rows[name]["reason"] == (reason or "next"), name
         assert rows[name]["why"]
-
-
-def test_the_loop_skips_the_fetch_on_what_fetching_held_says(monkeypatch, capsys):
-    fetched = []
-    monkeypatch.setattr(disk, "sweep", lambda *a, **k: {})
-    monkeypatch.setattr(loop_cmd, "_reopen_retests", lambda *a, **k: [])
-    monkeypatch.setattr(loop_cmd, "_reopen_missing_in_snapshot", lambda *a, **k: [])
-    monkeypatch.setattr(loop_cmd, "_reverify", lambda *a, **k: {})
-    monkeypatch.setattr(loop_cmd, "_sweeps", lambda *a, **k: {})
-    monkeypatch.setattr(screen_cmd, "screenable_backlog", lambda want="", **k: [])
-    monkeypatch.setattr(screen_cmd, "cmd_fetch", lambda a: fetched.append(a) or 0)
-    monkeypatch.setattr(discover_cmd, "cmd_discover", lambda a: 0)
-    monkeypatch.setattr(measure_cmd, "measurable", lambda store, top, want="": [])
-    monkeypatch.setattr(measure_cmd, "resume_first", lambda store, fresh, want="": fresh)
-    monkeypatch.setattr("harness.memory_store.connect",
-                        lambda *a, **k: type("S", (), {"close": lambda s: None})())
-    monkeypatch.setattr(fetching, "held", lambda backlog, top: ("backpressure", "held by the shared predicate"))
-    cli._loop_spend(argparse.Namespace(top=3, budget_gib=40, lane=""), 0)
-    assert fetched == []
-    assert "held by the shared predicate" in capsys.readouterr().out
 
 
 # --- the morning line -------------------------------------------------------

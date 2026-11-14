@@ -415,19 +415,6 @@ def test_install_lets_a_running_job_finish_before_reloading_the_worker():
         "the queue is resumed after the reload only if the owner had not paused it")
 
 
-def test_the_sweep_downloads_up_to_80_gib_by_default_and_the_knob_agrees(monkeypatch):
-    # The old default bound most nights (#1288); this is the next registered rung. #678, #1526.
-    from harness import fetching, knobs
-    for var in ("DISCOVER_BUDGET_GIB", "DAY_FETCH_GIB"):
-        monkeypatch.delenv(var, raising=False)
-    text = (REPO / "scripts" / "serve-discover.sh").read_text(encoding="utf-8")
-    script = float(re.search(r'BUDGET="\$\{DISCOVER_BUDGET_GIB:-(\d+)\}"', text).group(1))
-    knob = knobs.KNOBS["download_budget"]
-    assert (script, float(knob.default()), knobs.limits()["download_budget_gib"], fetching.budget_gib(None)) \
-        == (80, 80, 80, 80)
-    assert 80 in knob.values and knobs.KNOBS["day_fetch_budget"].default() == 40
-
-
 # --- install leaves a live periodic run alone. #794 ---------------------------
 
 FAKE_LAUNCHCTL_794 = r"""#!/usr/bin/env bash
@@ -530,51 +517,21 @@ def test_install_defers_a_unit_still_live_at_the_deadline(tmp_path):
     assert not [c for c in calls if c.startswith("bootout") and c.endswith(".energy")], calls
 
 
-def test_a_live_day_fetch_lets_the_deploy_chain_run_smoke(tmp_path):
-    # `install && smoke.sh && soh coherence` skipped both checks on every daytime install. #1521.
-    got, calls = _install(tmp_path, running=("fetch",), defer_wait=1, then="echo smoke-ran")
-    assert "deferred: fetch" in got.stderr, got.stderr
-    assert got.returncode == 0 and "smoke-ran" in got.stdout, (got.returncode, got.stderr[-800:])
-    assert not [c for c in calls if c.startswith("bootout") and c.endswith(".fetch")], calls
-
-
-@pytest.mark.skipif(sys.platform == "win32", reason="the switch runs its steps in their own POSIX session")
-def test_a_queue_deploy_during_a_day_fetch_deploys_and_does_not_roll_back(tmp_path):
-    from harness import deploy_switch
-    argv, env = _install(tmp_path / "w", running=("fetch",), defer_wait=1, mode="reinstall", run=False)
-    # The switch drops LH_DEPLOY and friends from its own environment, so the step names them itself.
-    keys = ("PATH", "HOME", "LOCALHARNESS_HOME", "LH_DEPLOY", "LH_ROLE", "FAKE_STATE", "LH_DEFER_WAIT_S")
-    step = "env " + " ".join(shlex.quote(f"{k}={env[k]}") for k in keys) + " " + shlex.join(argv)
-    for d in ("release", "previous"):
-        (tmp_path / d).mkdir()
-    rec = {"link": str(tmp_path / "deploy"), "release": str(tmp_path / "release"), "sha": "a" * 40,
-           "previous": str(tmp_path / "previous"), "previous_sha": "b" * 40,
-           "install": [shells.BASH, "-c", step], "verify": [[shells.BASH, "-c", "echo smoke-ran"]],
-           "rollback_install": [shells.BASH, "-c", "echo ROLLED-BACK"], "alert": [shells.BASH, "-c", "echo ALERT"],
-           "log": str(tmp_path / "deploy.log"), "queue_flag": str(tmp_path / "flag")}
-    deploy_switch.save(tmp_path / "1.json", rec)
-    got = deploy_switch.switch(tmp_path / "1.json")
-    log = (tmp_path / "deploy.log").read_text(encoding="utf-8")
-    assert "deferred: fetch" in log, log[-1500:]
-    assert got["outcome"] == deploy_switch.DEPLOYED, got.get("detail")
-    assert "smoke-ran" in log and "ROLLED-BACK" not in log and "ALERT" not in log
-
-
 def test_a_deferred_unit_whose_definition_did_not_change_needs_no_rerun(tmp_path):
     first, _ = _install(tmp_path)
     assert first.returncode == 0, first.stderr
-    got, _ = _install(tmp_path, running=("fetch",), defer_wait=1)
+    got, _ = _install(tmp_path, running=("sweep-check",), defer_wait=1)
     assert got.returncode == 0, got.stderr
-    assert "deferred: fetch -- mid-run; its unit is unchanged" in got.stderr, got.stderr
+    assert "deferred: sweep-check -- mid-run; its unit is unchanged" in got.stderr, got.stderr
     assert "Re-run install" not in got.stderr, got.stderr
 
 
 def test_a_deferred_unit_whose_definition_changed_says_to_rerun(tmp_path):
     first, _ = _install(tmp_path)
     assert first.returncode == 0, first.stderr
-    got, _ = _install(tmp_path, running=("fetch",), defer_wait=1, extra_env={"FETCH_HOURS": "5"})
+    got, _ = _install(tmp_path, running=("sweep-check",), defer_wait=1, extra_env={"SWEEP_CHECK_HOURS": "5"})
     assert got.returncode == 0, got.stderr
-    assert "deferred: fetch -- mid-run, and its unit changed" in got.stderr, got.stderr
+    assert "deferred: sweep-check -- mid-run, and its unit changed" in got.stderr, got.stderr
     assert "Re-run install after it finishes" in got.stderr
 
 
@@ -869,3 +826,61 @@ def test_install_reruns_as_the_deployed_script(repos):
 def test_the_rerun_cannot_loop():
     body = GEN.read_text(encoding="utf-8")
     assert 'LH_REEXECED:-}" = 1 ] && return 0' in body
+
+
+def test_the_sweep_downloads_up_to_80_gib_by_default_and_the_knob_agrees(monkeypatch):
+    # The old default bound most nights (#1288); this is the next registered rung. #678, #1526.
+    from harness import fetching, knobs
+    monkeypatch.delenv("DISCOVER_BUDGET_GIB", raising=False)
+    text = (REPO / "scripts" / "serve-discover.sh").read_text(encoding="utf-8")
+    script = float(re.search(r'BUDGET="\$\{DISCOVER_BUDGET_GIB:-(\d+)\}"', text).group(1))
+    knob = knobs.KNOBS["download_budget"]
+    assert (script, float(knob.default()), knobs.limits()["download_budget_gib"], fetching.budget_gib(None)) \
+        == (80, 80, 80, 80)
+    assert 80 in knob.values
+
+
+def test_a_live_periodic_run_lets_the_deploy_chain_run_smoke(tmp_path):
+    # `install && smoke.sh && soh coherence` skipped both checks on every daytime install. #1521.
+    got, calls = _install(tmp_path, running=("audit",), defer_wait=1, then="echo smoke-ran")
+    assert "deferred: audit" in got.stderr, got.stderr
+    assert got.returncode == 0 and "smoke-ran" in got.stdout, (got.returncode, got.stderr[-800:])
+    assert not [c for c in calls if c.startswith("bootout") and c.endswith(".audit")], calls
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the switch runs its steps in their own POSIX session")
+def test_a_queue_deploy_during_a_periodic_run_deploys_and_does_not_roll_back(tmp_path):
+    from harness import deploy_switch
+    argv, env = _install(tmp_path / "w", running=("audit",), defer_wait=1, mode="reinstall", run=False)
+    # The switch drops LH_DEPLOY and friends from its own environment, so the step names them itself.
+    keys = ("PATH", "HOME", "LOCALHARNESS_HOME", "LH_DEPLOY", "LH_ROLE", "FAKE_STATE", "LH_DEFER_WAIT_S")
+    step = "env " + " ".join(shlex.quote(f"{k}={env[k]}") for k in keys) + " " + shlex.join(argv)
+    for d in ("release", "previous"):
+        (tmp_path / d).mkdir()
+    rec = {"link": str(tmp_path / "deploy"), "release": str(tmp_path / "release"), "sha": "a" * 40,
+           "previous": str(tmp_path / "previous"), "previous_sha": "b" * 40,
+           "install": [shells.BASH, "-c", step], "verify": [[shells.BASH, "-c", "echo smoke-ran"]],
+           "rollback_install": [shells.BASH, "-c", "echo ROLLED-BACK"], "alert": [shells.BASH, "-c", "echo ALERT"],
+           "log": str(tmp_path / "deploy.log"), "queue_flag": str(tmp_path / "flag")}
+    deploy_switch.save(tmp_path / "1.json", rec)
+    got = deploy_switch.switch(tmp_path / "1.json")
+    log = (tmp_path / "deploy.log").read_text(encoding="utf-8")
+    assert "deferred: audit" in log, log[-1500:]
+    assert got["outcome"] == deploy_switch.DEPLOYED, got.get("detail")
+    assert "smoke-ran" in log and "ROLLED-BACK" not in log and "ALERT" not in log
+
+
+def test_install_boots_out_the_retired_day_fetch_and_removes_its_plist(tmp_path):
+    # Nothing pre-fetches for a queue: the test fetches what it runs, so the day fetch unit goes. #2015.
+    argv, env = _install(tmp_path, run=False)
+    (tmp_path / "state" / "com.unxmaal.localharness.fetch").touch()
+    agents = tmp_path / "home" / "Library" / "LaunchAgents"
+    agents.mkdir(parents=True, exist_ok=True)
+    (agents / "com.unxmaal.localharness.fetch.plist").write_text("<plist/>", encoding="utf-8")
+    got = subprocess.run(argv, env=env, capture_output=True, text=True, timeout=120)
+    calls = (tmp_path / "state" / "log").read_text(encoding="utf-8").splitlines()
+    assert got.returncode == 0, got.stderr
+    assert any(c.startswith("bootout") and c.endswith(".fetch") for c in calls), calls
+    assert not (agents / "com.unxmaal.localharness.fetch.plist").exists()
+    assert "removed com.unxmaal.localharness.fetch (retired)" in got.stdout
+    assert "fetch" not in GEN.read_text(encoding="utf-8").split("SERVICES=", 1)[1].split("\n", 1)[0]

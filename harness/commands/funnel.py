@@ -33,8 +33,7 @@ def render(r: dict, head: int) -> list[str]:
 
 
 def cmd_funnel(a) -> int:
-    from harness import context_report as cr, fetching, funnel, morning
-    from harness.commands import screen as screen_cmd
+    from harness import context_report as cr, funnel, morning
 
     now = time.time()
     want = (getattr(a, "lane", "") or "").strip().lower()
@@ -45,18 +44,12 @@ def cmd_funnel(a) -> int:
         emit(False, error=str(exc))
         return 2
     top = int(a.top or 0)
-    budget = int(fetching.budget_gib(a.budget_gib) * fetching.GIB)
-    try:
-        backlog = len(screen_cmd.screenable_backlog(""))
-    except Exception as exc:  # noqa: BLE001
-        note(f"(backpressure not computed: {exc})")
-        backlog = 0
     conn = morning.snapshot()
     try:
-        r = funnel.gather(conn, lane=want, since=since, now=now, budget=budget, backlog=backlog, top=top)
+        r = funnel.gather(conn, lane=want, since=since, now=now, top=top)
     finally:
         conn.close()
-    r.update(generated=now, lane=want, since=since, top=top, budget_gib=budget / fetching.GIB, backlog=backlog)
+    r.update(generated=now, lane=want, since=since, top=top)
     for ln in render(r, a.head):
         note(ln)
     emit(**r)

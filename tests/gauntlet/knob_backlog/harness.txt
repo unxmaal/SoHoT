@@ -7,8 +7,6 @@ harness/benchmarks.py:HF_LIMIT
 harness/benchmarks.py:MIN_DOWNLOADS
 harness/benchmarks.py:MIN_LIKES
 harness/chaos.py:ServerKill.recover_seconds
-harness/chaos.py:_disk_fill->m.fetch(limit)
-harness/chaos.py:_network_drop->fetching.run(limit)
 harness/chaos.py:_registry_for.fetch->feeds.fetch(delay)
 harness/chaos.py:_registry_for.fetch->feeds.fetch(retries)
 harness/chaos.py:_registry_for.fetch->feeds.fetch(timeout)
@@ -59,7 +57,6 @@ harness/feeds.py:RETRY_DELAY
 harness/feeds.py:fetch(timeout)
 harness/feeds.py:find_feed->probe(retries)
 harness/fetching.py:in_rank_order->_ms.judgeable(limit)
-harness/fetching.py:run(limit)
 harness/gateway_switch.py:BACKOFF_S
 harness/gateway_switch.py:POLL_S
 harness/gateway_switch.py:RETRIES

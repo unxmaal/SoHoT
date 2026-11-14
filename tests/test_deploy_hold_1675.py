@@ -240,7 +240,7 @@ def loop_beat(monkeypatch):
 @pytest.mark.skipif(not hasattr(signal, "SIGUSR1"), reason="SIGUSR1 is POSIX")
 def test_a_due_deploy_asks_the_sweep_and_its_evals_and_the_sweep_yields_at_its_checkpoint(loop_beat):
     assert heartbeat.read()[heartbeat.YIELDS] is True
-    loop_cmd._beat("fetch")
+    loop_cmd._beat("screen")
     _deploy(time.time())
     asked = []
     said = wq.preempt_for_deploy(evals=lambda pid: asked.append(pid) or [], signal_=signal.SIGUSR1)

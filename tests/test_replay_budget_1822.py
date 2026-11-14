@@ -3,6 +3,7 @@ import pytest
 
 from harness import fetch_replay, fetching, rank, reasons, screen
 from harness import memory_store as ms
+from tests import fakes
 
 GIB = fetching.GIB
 DAY = 86400.0
@@ -32,28 +33,12 @@ def seed(conn, name, gib=16.0):
 
 
 def test_a_wholly_reworded_refusal_still_replays_with_its_budget(conn, monkeypatch):
-    monkeypatch.setattr(fetching, "budget_refusal", lambda size, budget, spent: "no room tonight; try tomorrow")
+    monkeypatch.setattr(fakes, "budget_refusal", lambda size, budget, spent: "no room tonight; try tomorrow")
     seed(conn, "org/a")
-    fetching.refuse_over_budget(conn, "org/a", 16 * GIB, 40 * GIB, 32 * GIB, at=NOW - DAY)
+    fakes.refuse_over_budget(conn, "org/a", 16 * GIB, 40 * GIB, 32 * GIB, at=NOW - DAY)
     got = fetch_replay.runs(conn, NOW - 2 * DAY)
     assert [(r["budget"], [x["name"] for x in r["rows"]]) for r in got] == [(40.0, ["org/a"])]
     assert [r["budget"] for r in fetch_replay.replay(conn, NOW - 2 * DAY, **KW)] == [40.0]
-
-
-def test_a_fetch_run_records_its_budget_on_what_it_fetched_and_what_it_refused(conn, monkeypatch):
-    monkeypatch.setattr(fetching, "have", lambda *a, **k: False)
-    monkeypatch.setattr(fetching, "download", lambda name, snapshot=None, **k: f"/x/{name}")
-    monkeypatch.setattr(fetching, "requires", lambda name, conn=None: [])
-    monkeypatch.setattr(screen, "runner_gap", lambda *a, **k: "")
-    monkeypatch.setattr(rank, "serving", lambda *a, **k: set())
-    monkeypatch.setattr(rank, "lanes_with_receipts", lambda *a, **k: set())
-    for i in range(3):
-        seed(conn, f"org/code-{i}")
-    got = fetching.run(conn, limit=3, free=1000 * GIB, budget=40 * GIB)
-    assert [g["ok"] for g in got] == [True, True, False]
-    said = conn.execute("SELECT event = ? AS fetched, budget_gib FROM verdicts WHERE tier = 'fetch' ORDER BY id",
-                        (fetching.DOWNLOADED,)).fetchall()
-    assert [(bool(r[0]), r[1]) for r in said] == [(True, 40.0), (True, 40.0), (False, 40.0)]
 
 
 def test_a_run_whose_budget_is_not_recorded_is_reported_not_dropped(conn):

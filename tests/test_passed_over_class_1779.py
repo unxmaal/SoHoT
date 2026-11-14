@@ -5,6 +5,7 @@ import pytest
 
 from harness import family, fetch_replay, fetching, rank, reasons, screen, store
 from harness import memory_store as ms
+from tests import fakes
 
 GIB = fetching.GIB
 DAY = 86400.0
@@ -38,19 +39,10 @@ def ranked(rows, conn, **kw):
 
 
 def test_a_reworded_refusal_ages_the_row_it_refused(conn, monkeypatch):
-    monkeypatch.setattr(fetching, "have", lambda *a, **k: False)
-    monkeypatch.setattr(fetching, "download", lambda name, snapshot=None, **k: f"/x/{name}")
-    monkeypatch.setattr(fetching, "requires", lambda name, conn=None: [])
-    monkeypatch.setattr(screen, "runner_gap", lambda *a, **k: "")
-    monkeypatch.setattr(rank, "serving", lambda *a, **k: set())
-    monkeypatch.setattr(rank, "lanes_with_receipts", lambda *a, **k: set())
-    monkeypatch.setattr(fetching, "budget_refusal", lambda size, budget, spent: "no room tonight; try tomorrow")
-    for i in range(3):
-        seed(conn, f"org/code-{i}")
-    got = fetching.run(conn, limit=3, free=1000 * GIB, budget=40 * GIB)
-    left = [g["repo"] for g in got if not g["ok"]]
-    assert len(left) == 1 and got[-1]["why"] == "no room tonight; try tomorrow"
-    assert rank.passed_over(conn) == {left[0]: 1}
+    monkeypatch.setattr(fakes, "budget_refusal", lambda size, budget, spent: "no room tonight; try tomorrow")
+    seed(conn, "org/code-0")
+    assert fakes.refuse_over_budget(conn, "org/code-0", 16 * GIB, 40 * GIB, 32 * GIB) == "no room tonight; try tomorrow"
+    assert rank.passed_over(conn) == {"org/code-0": 1}
 
 
 def test_the_old_sentence_without_its_class_does_not_age(conn):
@@ -60,10 +52,10 @@ def test_the_old_sentence_without_its_class_does_not_age(conn):
 
 
 def test_the_replay_finds_a_reworded_refusal_by_its_class(conn, monkeypatch):
-    monkeypatch.setattr(fetching, "budget_refusal",
+    monkeypatch.setattr(fakes, "budget_refusal",
                         lambda size, budget, spent: f"the run holds {spent / GIB:.1f}; this would go past its 40 GiB budget")
     seed(conn, "org/a")
-    fetching.refuse_over_budget(conn, "org/a", 16 * GIB, 40 * GIB, 32 * GIB, at=NOW - DAY)
+    fakes.refuse_over_budget(conn, "org/a", 16 * GIB, 40 * GIB, 32 * GIB, at=NOW - DAY)
     got = fetch_replay.runs(conn, NOW - 2 * DAY)
     assert [(r["budget"], [x["name"] for x in r["rows"]]) for r in got] == [(40.0, ["org/a"])]
 
@@ -72,7 +64,7 @@ def test_two_runs_on_one_utc_day_are_one_day_on_either_store(conn):
     seed(conn, "org/a")
     day = (NOW // DAY - 2) * DAY
     for frac, spent in ((0.3, 32), (0.7, 30)):
-        fetching.refuse_over_budget(conn, "org/a", 16 * GIB, 40 * GIB, spent * GIB, at=day + frac * DAY)
+        fakes.refuse_over_budget(conn, "org/a", 16 * GIB, 40 * GIB, spent * GIB, at=day + frac * DAY)
     assert conn.execute("SELECT COUNT(*) FROM verdicts WHERE failure_class = ?", (reasons.PASSED_OVER,)).fetchone()[0] == 2
     assert rank.passed_over(conn, before=NOW) == {"org/a": 1}
 

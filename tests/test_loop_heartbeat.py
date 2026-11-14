@@ -146,14 +146,11 @@ def test_a_loop_that_raises_is_not_left_running(monkeypatch, clock):
 def test_the_spend_beats_each_candidate_it_measures(monkeypatch, clock):
     from harness import disk
     from harness.commands import discover as discover_cmd
-    from harness.commands import loop, measure as measure_cmd, screen as screen_cmd
+    from harness.commands import loop, measure as measure_cmd
     seen = []
     monkeypatch.setattr(loop, "_reopen_retests", lambda now=None: [])
     monkeypatch.setattr(loop, "_reverify", lambda: {})
     monkeypatch.setattr(disk, "sweep", lambda *a, **k: None)
-    monkeypatch.setattr(screen_cmd, "screenable_backlog", lambda want: [])
-    monkeypatch.setattr(screen_cmd, "cmd_fetch",
-                        lambda a: seen.append(dict(hb.read())) or 0)
     monkeypatch.setattr(discover_cmd, "cmd_discover",
                         lambda a: seen.append(dict(hb.read())) or 0)
     monkeypatch.setattr(measure_cmd, "measurable",
@@ -163,7 +160,7 @@ def test_the_spend_beats_each_candidate_it_measures(monkeypatch, clock):
     hb.start(lane="code", total=loop.LOOP_TOTAL)
     _quiet(loop._loop_spend, argparse.Namespace(top=2, budget_gib=12.0, lane="code"), 0, [])
     tiers = [(s["tier"], s["candidate"], s["item"], s["items"]) for s in seen]
-    assert tiers == [("fetch", "", 0, 0), ("screen", "", 0, 0),
+    assert tiers == [("screen", "", 0, 0),
                      ("measure", "a/one", 1, 2), ("measure", "b/two", 2, 2)]
     assert seen[-1]["step"] == seen[-1]["total"] == loop.LOOP_TOTAL
 

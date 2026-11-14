@@ -11,6 +11,7 @@ import pytest
 from harness.commands import discover as discover_cmd
 from harness import fetching, rank
 from harness import memory_store as ms
+from tests import fakes
 
 GIB = 1024 ** 3
 
@@ -77,20 +78,10 @@ def test_fetch_reads_the_column_not_the_verdict_prose(store):
     _see(store, "org/prose-only")
     ms.decide(store, "org/prose-only", "queued", tier=ms.INSPECT,
               detail="bytes=1073741824 fits: weights from 1.0 to 1.0 GiB")
-    got = fetching.run(store, {}, limit=1, free=900 * GIB,
+    got = fakes.fetch_queue(store, {}, limit=1, free=900 * GIB,
                        snapshot=lambda **k: pytest.fail("fetched an unsized row"))
     assert got and not got[0]["ok"]
     assert "no measured size" in got[0]["why"]
-
-
-def test_fetch_budgets_on_the_column(store):
-    _see(store, "org/big")
-    ms.set_size(store, "org/big", 19 * GIB)
-    ms.decide(store, "org/big", "queued", tier=ms.INSPECT, detail="fits")
-    got = fetching.run(store, {}, limit=1, free=900 * GIB,
-                       budget=12 * GIB,
-                       snapshot=lambda **k: pytest.fail("over budget"))
-    assert "19.0 GiB would take this run past" in got[0]["why"]
 
 
 def test_rank_reads_the_column_not_the_card_description(store):

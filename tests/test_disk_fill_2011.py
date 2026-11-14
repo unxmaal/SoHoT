@@ -11,6 +11,7 @@ from harness.commands import screen as screen_cmd
 from tests.test_env_sh import run_env
 from tests.test_harness_disk import DAY, NOW, inv, make_repo, verdict, world  # noqa: F401
 from tests.test_harness_fetching_budget import _seed, _sizes, store  # noqa: F401
+from tests import fakes
 
 GIB = fetching.GIB
 
@@ -28,103 +29,6 @@ def _queued_for_screen(conn, name, lane="code"):
 
 
 # ---- 1. the screen backlog cap and the deadline -----------------------------------------------------
-
-def test_fetch_is_skipped_with_its_reason_while_the_screen_backlog_is_over_the_cap(store, tmp_path, monkeypatch):
-    monkeypatch.setattr(fetching, "SCREEN_BACKLOG", 100 * GIB)
-    _queued_for_screen(store, "org/waiting")
-    _fetched(store, "org/waiting", tmp_path / "models--org--waiting", gib=120)
-    _seed(store, "org/next", 5.0)
-    room, why = fetching.backlog_room(store)
-    assert room == 0 and "120.0 GiB" in why and "100 GiB backlog cap" in why
-    called = []
-    monkeypatch.setattr(fetching, "run", lambda *a, **k: called.append(k) or [])
-    a = argparse.Namespace(replay=None, lane="", run=True, limit=5, budget_gib=80, hold_router=True, until=None,
-                           limit_knob=None, budget_knob=None, json=False)
-    assert screen_cmd.cmd_fetch(a) == 0
-    assert called == []
-
-
-def test_a_backlog_under_the_cap_fetches_only_what_fits_the_room_left(store, tmp_path, monkeypatch):
-    monkeypatch.setattr(fetching, "SCREEN_BACKLOG", 100 * GIB)
-    _queued_for_screen(store, "org/waiting")
-    _fetched(store, "org/waiting", tmp_path / "models--org--waiting", gib=90)
-    _seed(store, "org/big", 15.0)
-    _seed(store, "org/small", 5.0)
-    room, why = fetching.backlog_room(store)
-    assert (room, why) == (10 * GIB, "")
-    got = fetching.run(store, _sizes(store), limit=5, free=900 * GIB, room=room)
-    assert [g["repo"] for g in got if g["ok"]] == ["org/small"]
-    assert any(not g["ok"] and "backlog cap" in g["why"] for g in got if g["repo"] == "org/big")
-
-
-def test_screened_or_declined_weights_are_not_the_screen_backlog(store, tmp_path, monkeypatch):
-    _seed(store, "org/screened", 1.0)
-    ms.decide(store, "org/screened", "screened", tier="screen")
-    _fetched(store, "org/screened", tmp_path / "models--org--screened", gib=50)
-    _queued_for_screen(store, "org/waits")
-    _fetched(store, "org/waits", tmp_path / "models--org--waits", gib=7)
-    assert disk.waiting_bytes(store) == 7 * GIB
-
-
-def test_weights_queued_for_a_screen_past_the_deadline_go_and_the_fetch_takes_them_again(world):
-    d = make_repo(world.hub, "org/stale")
-    _queued_for_screen(world.conn, "org/stale")
-    world.conn.execute("UPDATE downloads SET finished_at = ? WHERE repo = 'org/stale'",
-                       (NOW - disk.QUEUED_DEADLINE_S - 3600,))
-    world.conn.commit()
-    got = disk.clean(inv(world), NOW, world.conn)
-    assert [r["repo"] for r in got["evicted"]] == ["org/stale"]
-    assert not d.exists()
-    row = world.conn.execute("SELECT state, removed_by FROM downloads WHERE repo = 'org/stale'").fetchone()
-    assert (row["state"], row["removed_by"]) == ("removed", disk.EVICTED)
-    st = world.conn.execute("SELECT p.state, v.tier FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
-                            "WHERE p.name = 'org/stale'").fetchone()
-    assert (st["state"], st["tier"]) == ("queued", "fetch")
-    assert "org/stale" in [r["name"] for r in fetching.queued(world.conn)]
-
-
-def test_fetched_weights_the_screen_can_never_load_beside_the_holds_go_now(world, monkeypatch):
-    d = make_repo(world.hub, "org/27b", size=4096)
-    _queued_for_screen(world.conn, "org/27b")
-    world.conn.execute("UPDATE downloads SET finished_at = ? WHERE repo = 'org/27b'", (NOW - 3600,))
-    world.conn.commit()
-    monkeypatch.setattr(memory, "standing_gb", lambda: 2048 / GIB)
-    got = disk.clean(inv(world), NOW, world.conn)
-    assert [r["repo"] for r in got["evicted"]] == ["org/27b"] and not d.exists()
-    detail = world.conn.execute("SELECT v.detail FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
-                                "WHERE p.name = 'org/27b'").fetchone()["detail"]
-    assert memory.held_back(4096 / GIB) in detail
-
-
-def test_weights_queued_inside_the_deadline_or_screened_stay(world):
-    young = make_repo(world.hub, "org/young")
-    _queued_for_screen(world.conn, "org/young")
-    world.conn.execute("UPDATE downloads SET finished_at = ? WHERE repo = 'org/young'",
-                       (NOW - disk.QUEUED_DEADLINE_S + 3600,))
-    world.conn.commit()
-    screened = make_repo(world.hub, "org/screened")
-    _seed(world.conn, "org/screened", 1.0)
-    ms.decide(world.conn, "org/screened", "screened", tier="screen")
-    world.conn.execute("UPDATE downloads SET finished_at = ? WHERE repo = 'org/screened'", (NOW - 30 * DAY,))
-    world.conn.commit()
-    got = disk.clean(inv(world), NOW, world.conn)
-    assert got["evicted"] == []
-    assert young.exists() and screened.exists()
-
-
-def test_inspect_fetch_and_screen_ask_one_sizing_question_beside_what_stays_held(store, monkeypatch):
-    monkeypatch.setattr(memory, "standing_gb", lambda: 14.2)
-    _seed(store, "org/27b", 51.7)
-    _seed(store, "org/4b", 4.0)
-    got = fetching.run(store, _sizes(store), limit=5, free=900 * GIB, held=memory.held_back)
-    assert [g["repo"] for g in got if g["ok"]] == ["org/4b"]
-    said = memory.held_back(51.7)
-    assert "at most 14.2 GiB" in said and memory.held_back(14.0) == ""
-    row = store.execute("SELECT p.state, v.tier, v.reason, v.detail FROM proposals p JOIN verdicts v "
-                        "ON v.id = p.state_verdict_id WHERE p.name = 'org/27b'").fetchone()
-    assert (row["state"], row["tier"], row["reason"]) == ("queued", "fetch", "limit") and said in row["detail"]
-    monkeypatch.setattr(memory, "need_gb", lambda *a, **k: 51.7)
-    assert memory.check_model("org/27b") == (False, said)
 
 
 # ---- 2. the fetch leaves the deploy's floor ---------------------------------------------------------
@@ -165,7 +69,7 @@ def test_a_download_refused_for_room_stays_queued_as_a_fact_about_this_disk(stor
     def no_room(*a, **k):
         raise fetching.NoRoom("its download would take 50.5 GiB would leave under the 50 GiB floor")
     monkeypatch.setattr(fetching, "download", no_room)
-    got = fetching.run(store, _sizes(store), limit=5, free=900 * GIB)
+    got = fakes.fetch_queue(store, _sizes(store), limit=5, free=900 * GIB)
     assert [g["ok"] for g in got] == [False]
     row = store.execute("SELECT p.state, v.tier, v.reason FROM proposals p JOIN verdicts v "
                         "ON v.id = p.state_verdict_id WHERE p.name = 'org/whole'").fetchone()
@@ -223,15 +127,18 @@ def test_weights_a_candidate_needs_beside_itself_follow_that_candidate(world):
     by = {e.path: e for e in i.entries}
     assert by[str(base)].group == disk.REJECTED and "needed by OmniSVG/OmniSVG1.1_4B" in by[str(base)].why
     assert by[str(tok)].group == disk.QUEUED and "needed by Marvis-AI/marvis-tts-250m-v0.2-MLX-8bit" in by[str(tok)].why
-    got = disk.clean(i, NOW, world.conn)
+    eight = "Marvis-AI/marvis-tts-250m-v0.2-MLX-8bit"
+    got = disk.clean(i, NOW, world.conn, keep=[eight])
     assert "Qwen/Qwen2.5-VL-3B-Instruct" in [r["repo"] for r in got["rejected"]] and not base.exists()
-    assert tok.exists()
+    assert tok.exists(), "a test about to run the 8-bit keeps the tokenizer it loads"
+    disk.clean(inv(world), NOW, world.conn)
+    assert not tok.exists(), "with no test about to run it, what it needs goes with it (#2015)"
 
 
 def test_weights_with_no_owner_go_past_the_deadline_stamped_and_young_ones_stay(world):
     old = make_repo(world.hub, "org/by-hand-old")
     young = make_repo(world.hub, "org/by-hand-young")
-    _aged(world.conn, "org/by-hand-old", disk.QUEUED_DEADLINE_S / DAY + 1)
+    _aged(world.conn, "org/by-hand-old", disk.UNOWNED_DEADLINE_S / DAY + 1)
     _aged(world.conn, "org/by-hand-young", 1)
     i = inv(world)
     assert {e.group for e in i.entries} == {disk.UNKNOWN}
@@ -278,3 +185,12 @@ def test_env_sh_and_the_deploy_poll_read_the_same_hf_min_free_gb(tmp_path):
         rc, _home, _err = run_env(hf_root=str(root), min_free_gb=str(min_gb))
         kind, _why = env.refusal(str(root), env.min_free_gb({"HF_MIN_FREE_GB": str(min_gb)}), record=False)
         assert (rc != 0, bool(kind)) == (refused, refused)
+
+
+def test_the_screen_asks_the_one_sizing_question_from_the_listing_before_anything_is_fetched(store, monkeypatch):
+    monkeypatch.setattr(memory, "standing_gb", lambda: 14.2)
+    _seed(store, "org/27b", 51.7)
+    said = memory.held_back(51.7)
+    assert "at most 14.2 GiB" in said and memory.held_back(14.0) == ""
+    # Not on disk: the listing inspect sized answers, so nothing is downloaded to learn it cannot load. #2015.
+    assert memory.check_model("org/27b") == (False, said)

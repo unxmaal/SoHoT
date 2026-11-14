@@ -21,6 +21,7 @@ from harness import (context, downloads, ds4, fetching, gateway, gguf, machine,
 from harness import inspect as ins
 from harness import memory as mem
 from harness import memory_store as ms
+from tests import fakes
 
 REPO = Path(__file__).resolve().parents[1]
 FAKE = Path(__file__).resolve().parent / "fake_ds4_server.py"
@@ -472,7 +473,7 @@ def test_the_fetch_tier_never_downloads_a_ds4_model_on_its_own(tmp_path, monkeyp
 
     def refuse(*a, **k):
         raise AssertionError("a ds4 model was downloaded by the loop")
-    done = fetching.run(db, snapshot=refuse, free=900 * GIB,
+    done = fakes.fetch_queue(db, snapshot=refuse, free=900 * GIB,
                         listing=lambda repo: QWEN_CARD["siblings"], hf_download=refuse)
     assert done and not done[0]["ok"]
     assert "python -m harness.ds4 fetch" in done[0]["why"]

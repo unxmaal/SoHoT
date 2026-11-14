@@ -443,10 +443,8 @@ def test_the_loop_cleans_before_it_fetches(monkeypatch):
                         lambda *a, **k: order.append("retest") or [])
     monkeypatch.setattr(disk, "sweep",
                         lambda *a, **k: order.append("sweep") or {})
-    monkeypatch.setattr(screen_cmd, "cmd_fetch",
-                        lambda a: order.append("fetch") or 0)
-    monkeypatch.setattr(discover_cmd, "cmd_discover", lambda a: 0)
+    monkeypatch.setattr(discover_cmd, "cmd_discover", lambda a: order.append("screen") or 0)
     monkeypatch.setattr(measure_cmd, "measurable", lambda *a, **k: [])
     cli._loop_spend(argparse.Namespace(top=1, budget_gib=1.0, lane=""), 0)
-    # Retests first, so a reopened candidate's weights are queued, not swept (#431); again after the screen's verdicts (#2011).
-    assert order == ["retest", "sweep", "fetch", "sweep"]
+    # Retests first (#431); no fetch step, the screen fetches (#2015); again after the screen's verdicts (#2011).
+    assert order == ["retest", "sweep", "screen", "sweep"]

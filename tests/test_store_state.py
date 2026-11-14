@@ -11,6 +11,7 @@ from harness.commands import screen as screen_cmd
 from harness import disk, fetching
 from harness import memory_store as ms
 from harness import store as store_backend
+from tests import fakes
 
 MAC = {"fingerprint": "mac", "runtimes": "cpu,mlx", "memory_gb": 32.0,
        "ceiling_gb": 22.0, "hw_model": "m", "os": "o", "arch": "a",
@@ -375,7 +376,7 @@ def test_a_refused_fetch_write_does_not_stop_the_next(store, monkeypatch, capsys
         ms.set_size(store, name, fetching.GIB)
         ms.decide(store, name, "queued", tier=ms.INSPECT, detail="fits")
     fired = _race(monkeypatch, "org/a")
-    got = fetching.run(store, {"org/a": fetching.GIB, "org/b": fetching.GIB},
+    got = fakes.fetch_queue(store, {"org/a": fetching.GIB, "org/b": fetching.GIB},
                        limit=5, free=500 * fetching.GIB)
     assert fired and {g["repo"] for g in got} == {"org/a", "org/b"}
     assert _state(store, "org/a") == ("measured", ms.ADOPT)

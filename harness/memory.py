@@ -448,6 +448,16 @@ def cache_path(repo: str) -> str | None:
     return str(found) if found else None
 
 
+def listed_gb(repo: str) -> float | None:
+    """The weights inspect sized from the registry listing, for a candidate the test has not fetched yet; None unknown. #2015."""
+    from harness import runs
+    with runs.store() as c:
+        got = c.execute("SELECT size_bytes FROM proposals WHERE name = ? OR resolved = ? ORDER BY id LIMIT 1",
+                        (repo, repo)).fetchone()
+    size = int((got["size_bytes"] if got else 0) or 0)
+    return size / 1024 ** 3 if size > 0 else None
+
+
 def size_gb(path: str) -> float | None:
     """Weight size on disk: the best estimate of load cost, and free to get.
 
@@ -556,7 +566,7 @@ def need_gb(repo: str, quantize: int | None = None, spec: str = "",
             parallel: int = 0) -> float | str | None:
     """What loading `repo` costs in GB, None when unknown, or why it cannot be priced."""
     path = cache_path(repo)
-    need = size_gb(path) if path else None
+    need = size_gb(path) if path else listed_gb(repo)
     if need is not None and quantize:
         need = need * quantize / _BASE_BITS
     from harness import ds4

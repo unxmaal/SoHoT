@@ -9,6 +9,7 @@ from harness import cli, fetching, hold, reasons
 from harness import memory_store as ms
 from harness.commands import decline as decline_cmd
 from tests.test_runner_base_weights import BASE, FREE, GIB, OMNI, Snapshot, db, on_disk, queued_omnisvg  # noqa: F401
+from tests import fakes
 
 SAID = "owner: not wanted"
 
@@ -23,7 +24,7 @@ def test_a_declined_candidate_and_its_runner_base_are_never_fetched(db):
     on_disk(db, OMNI)
     decline_cmd.decline(db, OMNI, SAID)
     snap = Snapshot()
-    done = fetching.run(db, {OMNI: 9 * GIB, BASE: 7 * GIB}, snapshot=snap, free=FREE)
+    done = fakes.fetch_queue(db, {OMNI: 9 * GIB, BASE: 7 * GIB}, snapshot=snap, free=FREE)
     assert snap.asked == [] and done == []
     assert fetching.queued(db, needs_lane=False) == []
 
@@ -56,15 +57,3 @@ def test_the_cli_declines(db, capsys):
     assert cli.main(["decline", OMNI]) != 0
 
 
-def test_the_fetch_unit_downloads_nothing_while_benchmarks_are_held(db, monkeypatch, capsys):
-    from harness import day_fetch
-    started = []
-    monkeypatch.setattr(day_fetch, "run", lambda a: started.append(a) or {"started": False, "why": "-"})
-    monkeypatch.setattr(fetching, "queued", lambda *a, **k: started.append("queued") or [])
-    hold.hold(db, "owner: evals paused")
-    assert cli.main(["fetch", "--day"]) == 0
-    assert cli.main(["fetch", "--run"]) == 0
-    out = capsys.readouterr().out
-    assert started == [] and out.count("no fetch: benchmarks held since") == 2
-    hold.release(db)
-    assert cli.main(["fetch", "--day"]) == 0 and len(started) == 1

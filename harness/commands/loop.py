@@ -50,7 +50,7 @@ LOOP_STEPS = (("sweep", "sweep", False),
 LOOP_INSPECT = 50
 
 #: The spend's steps, after LOOP_STEPS, for the heartbeat's step N of M. #251.
-SPEND_STEPS = ("retests", "reverify", "knob sweeps", "disk", "fetch", "screen", "measure")
+SPEND_STEPS = ("retests", "reverify", "knob sweeps", "disk", "screen", "measure")
 LOOP_TOTAL = len(LOOP_STEPS) + len(SPEND_STEPS)
 
 
@@ -499,7 +499,7 @@ def _publish_if_enabled() -> str:
 
 
 def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
-    """Fetch, screen, measure and adopt, ONE CANDIDATE AT A TIME.
+    """Screen, measure and adopt, ONE CANDIDATE AT A TIME, each test fetching what it runs (#2015).
 
     Serial by construction, not by accident. An eval sweeping aliases took this
     machine down by loading a 16 GiB model while a 7.8 GiB one was still
@@ -508,17 +508,15 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
     whole way.
     """
     failed = failed if failed is not None else []
-    # The disk step after the retests, so a reopened candidate's weights are queued, not swept.
     for tier in UPKEEP:
         _upkeep(tier)
-    # `--top` is an override; unset, the sweep ceiling sizes the fetch, screen and measure. #1084.
+    # `--top` is an override; unset, the sweep ceiling sizes the screen and measure. #1084.
     plan = _sized(int(getattr(a, "top", 0) or 0), sweep)
-    rc = _fetch(a, plan, failed) or rc
     rc = _screen(a, sweep, plan, failed) or rc
     return _measure(a, sweep, failed, rc)
 
 
-#: The spend's store upkeep, before the fetch.
+#: The spend's store upkeep, before the screen.
 UPKEEP = SPEND_STEPS[:4]
 
 
@@ -538,31 +536,6 @@ def _upkeep(tier: str) -> None:
         disk.sweep()
 
 
-def _fetch(a, plan: dict, failed: list) -> int:
-    """The fetch step: downloads for the screens the plan sizes, within the budget; held while the backlog fills them."""
-    from harness import fetching
-    top = int(getattr(a, "top", 0) or 0)
-    budget = fetching.budget_gib(getattr(a, "budget_gib", None))
-    rc = 0
-    want = (getattr(a, "lane", "") or "").strip().lower()
-    if want:
-        print(f"\n(spending only on the {want} lane)")
-    print(f"\n=== fetch (up to {plan['screens']}, budget {budget:g} GiB) ===")
-    print(f"  {plan['why']}")
-    _beat("fetch")
-    backlog = len(screen_cmd.screenable_backlog(want))
-    held = fetching.held(backlog, plan["screens"])
-    if held:
-        print(f"  skipped: {held[1]}")
-    else:
-        from harness.commands import common
-        sub = common.parsed("fetch", "--run", limit=plan["screens"] - backlog, lane=getattr(a, "lane", ""),
-                            budget_gib=getattr(a, "budget_gib", None),
-                            limit_knob="discover_top" if top else "screen_fraction")
-        rc = _step("fetch", screen_cmd.cmd_fetch(sub), failed) or rc
-    return rc
-
-
 def _screen(a, sweep, plan: dict, failed: list) -> int:
     """The screen step, its share of the sweep ceiling, after one router restart for GGUF files that changed."""
     import argparse as _ap
@@ -573,14 +546,15 @@ def _screen(a, sweep, plan: dict, failed: list) -> int:
     print(f"\n=== screen ===")
     _beat("screen")
     if gguf.pending():
-        print("  restarting the router once for the GGUF files day fetches downloaded or the disk sweep removed")
+        print("  restarting the router once for the GGUF files the disk sweep removed")
         gguf.relist()
     until = None if top or sweep is None else time.time() + sweep.remaining() * ceiling.SCREEN_FRACTION
     sub = _ap.Namespace(**{**vars(a), "loop": False, "screen": True, "run": True, "json": False,
                            "limit": top or EVERY, "limit_knob": "discover_top",
                            "screen_until": until, "screen_s": plan["per_s"]})
     rc = _step("screen", discover_cmd.cmd_discover(sub), failed)
-    _after_verdicts("screen")
+    # The measure step of this sweep takes what passed, so its weights stay until that step ends. #2015.
+    _after_verdicts("screen", keep_states=("screened",))
     return rc
 
 
@@ -608,16 +582,18 @@ def _measure(a, sweep, failed: list, rc: int = 0) -> int:
         return rc
     if sweep is not None:
         sweep.stopped = ""
-    rc = _measure_all(a, fresh, sweep, failed, rc)
-    _after_verdicts("measure")
+    paused: list[str] = []
+    rc = _measure_all(a, fresh, sweep, failed, rc, paused=paused)
+    # A run paused at an item boundary goes on in this sweep's next item, on the same weights. #1618, #2015.
+    _after_verdicts("measure", keep=paused)
     return rc
 
 
-def _after_verdicts(step: str) -> None:
-    """The weights this step's declines and breaks leave go now, not at the next sweep's disk step. #2011."""
+def _after_verdicts(step: str, **which) -> None:
+    """The weights no test of this sweep is about to run go now, not at the next sweep's disk step. #2011, #2015."""
     from harness import disk
     print(f"\n=== disk after {step} ===")
-    disk.sweep()
+    disk.sweep(**which)
 
 
 #: No count cap: the ceiling stops the screen and measure steps. #1084.
@@ -669,7 +645,7 @@ def _by_family(store, rows: list[dict], sweep, room=None, slots=None, say=print)
 
 
 def _sized(top: int, sweep) -> dict:
-    """How many screens this sweep fetches for, and the seconds one screen is taken to need. #1084."""
+    """How many screens this sweep has room for, and the seconds one screen is taken to need. #1084."""
     from harness import ceiling, power
     from harness import memory_store as ms
     if top:
@@ -702,7 +678,7 @@ def _servable_lanes(rows: list[dict], want: str, sweep, refusal=None) -> list[di
 
 
 def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=None, headroom=None,
-                 refusal=None) -> int:
+                 refusal=None, paused: list | None = None) -> int:
     """Each measurement in turn, none while memory is short; after a memory pause, only those that fit now, smallest first. #813, #1082, #1482."""
     room = room or measure_cmd.room_for
     headroom = headroom or measure_cmd.headroom_gb
@@ -746,6 +722,8 @@ def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=No
             continue
         _beat("measure", candidate=row.get("name", ""), item=i, items=total)
         got = measure_cmd._measure_and_adopt(repo_gate.args_for(a, row), row, sweep)
+        if got == watch.PAUSED and paused is not None:
+            paused.append(row.get("name", ""))
         # A paused pair resumes next sweep; it is not a failed step. #1374.
         rc = _step(f"measure {row.get('name', '')}".strip(), 0 if got == watch.PAUSED else got, failed) or rc
         if sweep is not None and sweep.squeezed:

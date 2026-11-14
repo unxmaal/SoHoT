@@ -16,6 +16,7 @@ from evals.core import load_cases  # noqa: E402
 from harness import benchmarks as bm  # noqa: E402
 from harness import engines, fetching, reasons, screen  # noqa: E402
 from harness import memory_store as ms  # noqa: E402
+from tests import fakes
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = load_cases(ROOT / "evals" / "cases" / "ocr")
@@ -217,7 +218,7 @@ def test_the_fetch_tier_refuses_an_mlx_ocr_conversion_before_download(tmp_path, 
         ms.set_size(conn, repo, 6 * fetching.GIB)
         fakes.carded(conn, repo, fakes.card(repo))
         ms.decide(conn, repo, "queued", tier="inspect", detail="fits")
-        got = fetching.run(conn, {repo: 6 * fetching.GIB}, limit=1, free=500 * fetching.GIB,
+        got = fakes.fetch_queue(conn, {repo: 6 * fetching.GIB}, limit=1, free=500 * fetching.GIB,
                            snapshot=lambda *a, **k: pytest.fail("downloaded an MLX conversion"))
         assert got and not got[0]["ok"], got
         assert screen.runner_gap("ocr", repo, conn=conn)

@@ -478,15 +478,6 @@ def test_the_loop_report_prints_the_crossings(monkeypatch):
     assert "best-of:3:q3-4b" in text and "queued" in text
 
 
-def test_a_crossing_waiting_for_a_screen_never_holds_back_a_download():
-    """The fetch tier waits behind weights already on disk. A method over a served
-    incumbent has no weights of its own, so it is not that backlog."""
-    from harness.commands import screen as screen_cmd
-    plan = [{"name": "best-of:3:q3-4b", "candidate": "best-of:3:q3-4b", "state": screen.READY},
-            {"name": "org/fetched", "candidate": "org/fetched", "state": screen.READY}]
-    assert screen_cmd.screenable_backlog(plan=plan, room=lambda r: True) == ["org/fetched"]
-
-
 def test_discover_lists_every_registered_method():
     from harness import discover
     names = {(c.name, c.lane) for c in discover.methods()}

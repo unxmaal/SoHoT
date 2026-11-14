@@ -9,7 +9,7 @@ import time
 
 import pytest
 
-from harness import cuts, executors, job_procs, owned, reaping, throttle
+from harness import cuts, executors, job_procs, owned, reaping
 
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="SIGSTOP and process groups are POSIX")
 
@@ -100,44 +100,6 @@ def test_owned_stop_returns_at_the_bound_naming_a_child_its_kill_did_not_end(how
             with contextlib.suppress(OSError):
                 os.killpg(box["proc"].pid, signal.SIGKILL)
             box["proc"].wait()
-
-
-class _Download(Stuck):
-    """A throttled download whose TERM never lands; with `dies_to_kill` its kill ends it."""
-
-    def __init__(self, dies_to_kill):
-        super().__init__()
-        self.signals, self.dies_to_kill = [], dies_to_kill
-
-    def send(self, sig):
-        self.signals.append(sig)
-
-    def wait(self, timeout=None):
-        if self.dies_to_kill and self.killed:
-            self.returncode = -9
-            return -9
-        return super().wait(timeout)
-
-
-@pytest.mark.parametrize("dies_to_kill", [True, False])
-def test_a_stopped_download_that_ignores_its_term_is_killed_and_the_hold_returns(dies_to_kill, seen):
-    d = _Download(dies_to_kill)
-    got = _returns_within(lambda: throttle.hold(d, throttle.MB, lambda w: 0, stop=lambda: "the night begins",
-                                                clock=time.monotonic, sleep=lambda s: None, signal_to=d.send))
-    assert got["stopped"] == "the night begins"
-    assert d.signals[-1:] == [signal.SIGTERM] and d.killed == 1
-    assert len(seen) == (1 if dies_to_kill else 2)
-
-
-def test_a_guard_that_never_exits_is_left_at_the_bound(seen):
-    guard = throttle.Guard.__new__(throttle.Guard)
-    r, guard._w = os.pipe()
-    guard._proc = Stuck()
-    try:
-        _returns_within(guard.release)
-    finally:
-        os.close(r)
-    assert seen and seen[0][0] == "reap_after_kill"
 
 
 def test_a_job_whose_pid_file_failed_is_killed_and_the_error_raised_at_the_bound(seen, monkeypatch):

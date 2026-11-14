@@ -13,6 +13,7 @@ from harness import inspect as ins  # noqa: E402
 from harness import memory_store as ms  # noqa: E402
 from harness import remote_code  # noqa: E402
 from harness.remote_code import code_evidence, remote_code_gap  # noqa: E402
+from tests import fakes
 
 ROOT = Path(__file__).resolve().parents[1]
 NATIVE = frozenset({"paddleocr_vl", "trocr"})
@@ -121,7 +122,7 @@ def test_the_fetch_tier_queues_it_before_any_download(tmp_path, monkeypatch):
         ms.set_size(conn, repo, 7 * fetching.GIB)
         fakes.carded(conn, repo, fakes.card(repo))
         ms.decide(conn, repo, "queued", tier="inspect", detail="fits")
-        got = fetching.run(conn, {repo: 7 * fetching.GIB}, limit=1, free=500 * fetching.GIB,
+        got = fakes.fetch_queue(conn, {repo: 7 * fetching.GIB}, limit=1, free=500 * fetching.GIB,
                            snapshot=lambda *a, **k: pytest.fail("downloaded remote code"))
         assert got and not got[0]["ok"]
         assert "ships its own modelling code" in got[0]["why"]

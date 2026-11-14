@@ -24,6 +24,7 @@ import fakes  # noqa: E402
 
 from harness import adopt, fetching, lanes, rank, screen  # noqa: E402
 from harness import memory_store as ms  # noqa: E402
+from tests import fakes
 
 
 @pytest.fixture
@@ -137,7 +138,7 @@ def test_a_candidate_travels_from_sweep_to_the_screen(store, tmp_path):
     assert ranked, "the candidate did not survive ranking"
 
     downloads = fakes.Downloads(tmp_path / "hub")
-    got = fetching.run(store, {"org/real-model": 2 * 1024 ** 3}, limit=1,
+    got = fakes.fetch_queue(store, {"org/real-model": 2 * 1024 ** 3}, limit=1,
                        snapshot=downloads)
     assert downloads.asked == ["org/real-model"], got
 
@@ -185,7 +186,7 @@ def test_a_candidate_this_machine_cannot_run_is_answered(store, tmp_path):
     fakes.carded(store, name, fakes.card(name))
 
     downloads = fakes.Downloads(tmp_path / "hub")
-    got = fetching.run(store, {name: int(3.8 * 1024 ** 3)}, limit=1,
+    got = fakes.fetch_queue(store, {name: int(3.8 * 1024 ** 3)}, limit=1,
                        snapshot=downloads)
     assert downloads.asked == [], "weights were fetched for an unrunnable model"
     assert got and "no runtime" in got[0]["why"], got
@@ -208,7 +209,7 @@ def test_a_runnable_candidate_is_still_fetched(store, tmp_path):
                   ("task text-generation; served by mlx; tagged qwen3; "
                    "2.0 GiB of weights", "org/ordinary"))
     downloads = fakes.Downloads(tmp_path / "hub")
-    fetching.run(store, {"org/ordinary": 2 * 1024 ** 3}, limit=1,
+    fakes.fetch_queue(store, {"org/ordinary": 2 * 1024 ** 3}, limit=1,
                  snapshot=downloads)
     assert downloads.asked == ["org/ordinary"]
 
@@ -315,7 +316,7 @@ def test_a_model_no_runner_can_load_never_reaches_a_download(
     name = "org/supra-a2a-nano-exp-notreal"
     fakes.seeded_store(store, [(name, "image", 1.2, 2)])
     downloads = fakes.Downloads(tmp_path / "hub")
-    got = fetching.run(store, {name: int(1.2 * 1024 ** 3)}, limit=1,
+    got = fakes.fetch_queue(store, {name: int(1.2 * 1024 ** 3)}, limit=1,
                        snapshot=downloads)
     assert downloads.asked == [], "weights nothing can load were downloaded"
     assert got and "no runner" in got[0]["why"], got
@@ -345,7 +346,7 @@ def test_a_model_a_runner_can_load_is_still_fetched(store, tmp_path):
     name = "org/z-image-turbo-4bit-notreal"
     fakes.seeded_store(store, [(name, "image", 5.5, 2)])
     downloads = fakes.Downloads(tmp_path / "hub")
-    fetching.run(store, {name: int(5.5 * 1024 ** 3)}, limit=1,
+    fakes.fetch_queue(store, {name: int(5.5 * 1024 ** 3)}, limit=1,
                  snapshot=downloads)
     assert downloads.asked == [name], downloads.asked
 

@@ -303,7 +303,7 @@ def adopt_pending(conn, refresh: bool = True) -> list[str]:
     return out
 
 
-#: GGUF stems a day fetch linked without restarting the router, under the soh home. #1084.
+#: GGUF stems a fetch linked without restarting the router, under the soh home. #1084.
 UNLISTED = "router-unlisted.json"
 
 
@@ -370,7 +370,7 @@ def pending() -> list[str]:
 
 
 def relist() -> str:
-    """Restart the router once for what day fetches left unlisted or deletes removed; '' when there was nothing or it answered. #1084, #780."""
+    """Restart the router once for what fetches left unlisted or deletes removed; '' when there was nothing or it answered. #1084, #780."""
     if not pending():
         _unlisted_path().unlink(missing_ok=True)
         return ""

@@ -26,6 +26,7 @@ from harness import fetching, inspect as ins, lanes, rank, screen  # noqa: E402
 from harness import machine as _machine  # noqa: E402
 from harness import memory_store as ms  # noqa: E402
 from harness.memory import Accelerator  # noqa: E402
+from tests import fakes
 
 @pytest.fixture
 def video_parked(monkeypatch):
@@ -129,7 +130,7 @@ def test_an_adapter_never_reaches_a_download(store, tmp_path):
     fakes.seeded_store(store, [(name, "music", 0.7, 2)])
     fakes.carded(store, name, fakes.card(name))
     downloads = fakes.Downloads(tmp_path / "hub")
-    got = fetching.run(store, {name: int(0.7 * 1024 ** 3)}, limit=1,
+    got = fakes.fetch_queue(store, {name: int(0.7 * 1024 ** 3)}, limit=1,
                        snapshot=downloads)
     assert downloads.asked == [], "an adapter was downloaded"
     assert got and "attaches to a model" in got[0]["why"]
@@ -182,7 +183,7 @@ def test_a_candidate_past_the_limit_keeps_its_measured_size(store, tmp_path):
     fakes.seeded_store(store, [("org/first", "code", 0.1, 3),
                                ("org/second", "code", 0.2, 2)])
     downloads = fakes.Downloads(tmp_path / "hub")
-    got = fetching.run(store, {"org/first": int(0.1 * 1024 ** 3)}, limit=1,
+    got = fakes.fetch_queue(store, {"org/first": int(0.1 * 1024 ** 3)}, limit=1,
                        snapshot=downloads, budget=1)
     why = {g["repo"]: g["why"] for g in got}
     assert "no measured size" not in why.get("org/second", ""), why
@@ -200,7 +201,7 @@ def test_the_size_column_alone_is_enough_to_fetch(store, tmp_path):
               detail="fits: weights from 0.1 to 0.1 GiB",
               size_bytes=int(0.1 * 1024 ** 3))
     downloads = fakes.Downloads(tmp_path / "hub")
-    got = fetching.run(store, {}, limit=1, snapshot=downloads)
+    got = fakes.fetch_queue(store, {}, limit=1, snapshot=downloads)
     assert got and "no measured size" not in got[0]["why"], got
 
 
