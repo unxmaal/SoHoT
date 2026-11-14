@@ -329,8 +329,16 @@ node_export() {
   printf 'export %s=%q\n' "$2" "$3" >> "$1"
 }
 
+# The scheduled task is the machine's, not this home's: refused from a home that is not the live one. #2008.
+live_gate() {
+  local py
+  py="$(command -v python3 || command -v python)" || { echo "refused: no python to check the live home for $1" >&2; return 1; }
+  "$py" -I harness/live_gate.py "$LH_HOME" "$1"
+}
+
 install_node() {
   is_windows || { echo "install-node is Windows only; use launchd.sh elsewhere" >&2; return 1; }
+  live_gate "services.sh install-node (Register-ScheduledTask $NODE_TASK)" || return 1
 
   local key_file="${LLAMACPP_API_KEY_FILE:-}"
   if [ -z "$key_file" ]; then
@@ -495,6 +503,7 @@ check_node() {
 
 uninstall_node() {
   is_windows || { echo "uninstall-node is Windows only" >&2; return 1; }
+  live_gate "services.sh uninstall-node (Unregister-ScheduledTask $NODE_TASK)" || return 1
   # SAY WHICH OF THE TWO HAPPENED. The usual reason this fails is that there
   # was no task to remove, which is not an error and is not the same as having
   # removed one either.

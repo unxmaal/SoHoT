@@ -416,11 +416,10 @@ def refresh_router(expect=(), run=None, wait=None) -> str:
     """Restart the eval server so its router sees a new file, then wait until it answers. #319, #1012."""
     import subprocess
     import sys
-    from harness import heartbeat, load_log, monitor
+    from harness import heartbeat, live_gate, load_log, paths
     # The canary's isolated home screens through the live router and names it in LH_SERVING_HOME. #1006.
-    serving = os.environ.get(load_log.SERVING_ENV)
-    if not (monitor.live_home() or (serving and monitor.live_home(Path(serving).expanduser()))):
-        why = monitor.off_live("restarting the eval router")
+    why = live_gate.refusal(paths.home(), "restarting the eval router", os.environ.get(load_log.SERVING_ENV, ""))
+    if why:
         print(f"  router restart: {why}", file=sys.stderr)
         return why
     # The restart's own with-gpu-lock lets go when kickstart returns; held to here, no queued eval meets it down. #1181.

@@ -15,6 +15,7 @@ import pytest
 from evals import watch
 from harness import heartbeat, live_audit, morning, paths, sweep_guard, watchdog
 from tests import shells
+from tests import conftest
 from tests.test_morning_867 import NOW, SINCE, _beat, _gh, _git, _store, deploy_dir  # noqa: F401
 
 REPO = Path(__file__).resolve().parents[1]
@@ -275,7 +276,8 @@ def _install(work, bin_, home, deploy, **extra):
            "LH_GPU_LOCK_HELD": "1", "LH_ROLE": "scheduler", **extra}
     for k in ("LH_REEXECED", "LH_DEPLOY_UNCHECKED", *(() if sweep_guard.OVERRIDE in extra else (sweep_guard.OVERRIDE,))):
         env.pop(k, None)
-    return subprocess.run([shells.BASH, str(GEN), "install"], env=env, capture_output=True, text=True, timeout=90)
+    return subprocess.run([shells.BASH, str(GEN), "install"], env=conftest.live_child(env), capture_output=True,
+                          text=True, timeout=90)
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="launchd.sh and ps are POSIX")
