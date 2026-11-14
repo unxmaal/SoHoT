@@ -51,6 +51,7 @@ def _release(monkeypatch, linked: str):
 def _quiet_units(monkeypatch):
     from harness import sweep_check
     monkeypatch.setenv("SOHOT_PURPOSE", "watchdog")
+    monkeypatch.setenv(store_ahead.UNIT_ENV, "watchdog")
     monkeypatch.setattr(sweep_check, "check", lambda held=None: {"verdict": sweep_check.RUNNING, "line": "running"})
 
 
@@ -87,6 +88,17 @@ def test_a_stale_link_is_said_loudly_in_one_line(opened, monkeypatch, capsys, _q
     assert "Traceback" not in out.err and out.err.count("\n") == 1
 
 
+@pytest.mark.parametrize("linked,opened", [("8-new", None), ("7-old", -60)], ids=["superseded", "reload"])
+def test_a_run_started_by_hand_on_an_old_release_does_not_exit_0(linked, opened, monkeypatch, capsys, _quiet_units,
+                                                                 _no_real_notifier):
+    monkeypatch.delenv(store_ahead.UNIT_ENV)
+    _ahead(open_deploy_at=None if opened is None else time.time() + opened)
+    _release(monkeypatch, linked)
+    assert cli.main(["watchdog"]) == 1, "no reload reruns a by-hand run, so it must not read as done (#1959)"
+    err = capsys.readouterr().err
+    assert "not started by a launchd unit" in err and "Traceback" not in err and err.count("\n") == 1
+
+
 def test_a_checkout_behind_the_store_names_both_schemas(monkeypatch, capsys, _quiet_units):
     _ahead()
     monkeypatch.setattr(paths, "deploy_link", lambda: pytest.fail("a checkout never asks the deploy link"))
@@ -97,6 +109,7 @@ def test_a_checkout_behind_the_store_names_both_schemas(monkeypatch, capsys, _qu
 
 def test_a_schema_refusal_wrapped_as_a_gpu_refusal_is_the_same_outcome(monkeypatch, capsys):
     from harness import exclusive
+    monkeypatch.setenv(store_ahead.UNIT_ENV, "watchdog")
     _ahead()
     _release(monkeypatch, "8-new")
 

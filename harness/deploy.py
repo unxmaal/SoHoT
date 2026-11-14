@@ -972,6 +972,8 @@ def _settle_one(c, row: dict, now: float, alive, spawn=None) -> dict | None:
             ok = got == DEPLOYED
             _close_job(c, job["id"], wq.DONE if ok else wq.FAILED, 0 if ok else None if got == INTERRUPTED else 1,
                        f"deploy {row['id']} {got}: {rec.get('detail', '')}", now)
+        if got == DEPLOYED:
+            _old_code(rec)
         return {"deploy": row["id"], "outcome": got}
     out = INTERRUPTED
     if rec:
@@ -1015,6 +1017,19 @@ def _settle_one(c, row: dict, now: float, alive, spawn=None) -> dict | None:
         _close_job(c, job["id"], wq.FAILED, None, f"deploy {row['id']} {out}: {why}", now)
     _alert_here(f"deploy {row['id']} of {row['sha'][:12]} {out}: {why}")
     return {"deploy": row["id"], "outcome": out}
+
+
+def _old_code(rec: dict) -> None:
+    """Alert once, at settle, on the processes a migrating deploy left running another release (#1959)."""
+    from harness import release_procs
+    try:
+        said = release_procs.after_deploy(rec)
+    except Exception as exc:  # noqa: BLE001 - a process scan that fails never stops a settle
+        print(f"deploy {rec.get('id', '')}: old-release process scan failed: {deploy_switch.named(exc)}",
+              file=sys.stderr)
+        return
+    if said:
+        _alert_here(said)
 
 
 def _close_record(path: Path, rec: dict, outcome: str, why: str, now: float) -> None:

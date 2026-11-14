@@ -527,7 +527,6 @@ nothing-and-failed-return-the-same-value harness/heartbeat.py:_installed_hours:e
 nothing-and-failed-return-the-same-value harness/heartbeat.py:code_commit:except
 nothing-and-failed-return-the-same-value harness/heartbeat.py:read:except
 nothing-and-failed-return-the-same-value harness/holders.py:_linux_paths:except
-nothing-and-failed-return-the-same-value harness/holders.py:holding:except
 nothing-and-failed-return-the-same-value harness/identity.py:_load_cache:except
 nothing-and-failed-return-the-same-value harness/identity.py:preset_section:except
 nothing-and-failed-return-the-same-value harness/identity.py:snapshot_files:except

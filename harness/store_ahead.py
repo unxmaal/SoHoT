@@ -1,6 +1,7 @@
 """A store at a schema newer than this code: a deploy's reload pending, or a stale release link. #1799."""
 from __future__ import annotations
 
+import os
 import re
 import sys
 import time
@@ -21,8 +22,10 @@ STALE = "stale"
 BEHIND = "behind"
 #: A deploy ended with the store ahead of the code and waits on its repair (soh deploy repair). #1841.
 REPAIR = "repair"
-#: Waiting on a reload that is coming: skipped quietly, exit 0, no alert.
+#: Waiting on a reload that is coming: skipped quietly, exit 0, no alert, but only in a launchd unit.
 QUIET = frozenset({SUPERSEDED, RELOAD})
+#: Set in each launchd unit's environment (scripts/launchd.sh): launchd, not a person, starts it again. #1959.
+UNIT_ENV = "LH_UNIT"
 
 _SCHEMAS = re.compile(r"schema (\d+), this code speaks (\d+)")
 
@@ -101,12 +104,14 @@ def answer(exc: BaseException, told: set) -> tuple[str, str]:
 
 
 def said(verb: str, exc: BaseException) -> int:
-    """One line for a command that met a newer store, never a traceback: exit 0 while a reload is coming, else 1."""
+    """One line for a command that met a newer store, never a traceback: exit 0 in a unit a reload reruns, else 1."""
     from harness.commands import common
     kind = verdict()
     text = f"{verb or 'soh'}: {line(kind, exc)}"
-    if kind in QUIET:
+    if kind in QUIET and os.environ.get(UNIT_ENV):
         common.note(text)
         common.emit(True, store_ahead=kind, detail=text)
         return 0
+    if kind in QUIET:
+        text += "; this process was not started by a launchd unit, so no reload reruns it: run it again from the deploy"
     return common.err(text)
