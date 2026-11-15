@@ -237,6 +237,12 @@ INDEX = {
                 "a contamination probe's reply budget, the same question to every model by design (#531)",
             "evals/atomic.py:ask_claude(timeout)":
                 "one planning model per run, its timeout the atomic_plan_timeout_s knob (#1690)",
+            "harness/fix.py:ask_plan(timeout)":
+                "one planning model per run, its timeout the fix_plan_timeout_s knob (#2035)",
+            "harness/fix.py:headless_executor(timeout)":
+                "one local alias per run, its timeout the fix_exec_timeout_s knob (#2035)",
+            "harness/fix.py:run_cmd(timeout)":
+                "every gate command must end inside the cache lifetime, one bound for all by design (#2034, #2035)",
         },
         "instances": _i(355, 401, 498), "scanners": []},
     "a-constant-chosen-before-the-thing-it-constrains-existed": {

@@ -25,6 +25,8 @@ KINDS = (ACCEPTED, REJECTED, UNKNOWN, PENDING)
 _KIND = {"used": ACCEPTED, "edited": ACCEPTED, ACCEPTED: ACCEPTED,
          "discarded": REJECTED, REJECTED: REJECTED, UNKNOWN: UNKNOWN}
 GATEWAY, LOCAL = "gateway", "local"
+#: A cloud call recorded beside the local work it planned (soh fix), never counted as local tokens. #2035.
+CLOUD = "cloud"
 
 #: Hours after a call with no evidence before its outcome becomes unknown.
 EXPIRY_H = 24.0

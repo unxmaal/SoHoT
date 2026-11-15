@@ -391,6 +391,8 @@ capabilities:
       - evals/headless.py
       - harness/arms.py
       - evals/arms_report.py
+      - harness/fix.py
+      - harness/commands/fix.py
 
   - name: human-judgement
     summary: Verdicts a program cannot reach, from a person's votes and labels, and model judges scored against them.

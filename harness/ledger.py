@@ -328,11 +328,11 @@ def gateway_rows(conn, since: float) -> list[tuple]:
 
 def delegation_rows(conn, since: float) -> list[tuple]:
     """(call_id, at, lane, outcome, prompt_tokens, completion_tokens) of each delegation since `since`; store.Unread when unread."""
-    from harness import store
+    from harness import delegations, store
     return [tuple(r) for r in store.read(
         conn, "delegations",
-        "SELECT call_id, at, lane, outcome, prompt_tokens, completion_tokens FROM delegations WHERE at >= ?",
-        (since,))]
+        "SELECT call_id, at, lane, outcome, prompt_tokens, completion_tokens FROM delegations "
+        "WHERE at >= ? AND id_source != ?", (since, delegations.CLOUD))]
 
 
 def mapped(alias: str, day: str, mapping=None) -> tuple[str, str] | None:
