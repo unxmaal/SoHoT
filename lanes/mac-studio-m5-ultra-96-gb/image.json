@@ -316,6 +316,21 @@
    "until": ""
   },
   {
+   "candidate": "mflux:realrebelai/Krea-2-Turbo-BBOX_GGUFs",
+   "decided_at": "2026-11-15T02:27:21Z",
+   "detail": "needs its own runner: the stock loader could not assemble it: fox-snow: exit 1: FileNotFoundError: No safetensors files found in vae; geneval-000-single-object: exit 1: FileNotFoundError: No safetensors files found in mo",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "realrebelai/Krea-2-Turbo-BBOX_GGUFs",
+   "reason": "runtime",
+   "receipt_key": "mflux/realrebelai/Krea-2-Turbo-BBOX_GGUFs-q8",
+   "run_id": 996,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "runner:mflux/no-safetensors"
+  },
+  {
    "candidate": "mflux:szwagros/Lens-Turbo",
    "decided_at": "2026-11-07T15:55:49Z",
    "detail": "declined by the owner: owner: declined 2026-11-07, not worth evaluating (15 downloads, no use case)",
@@ -451,8 +466,8 @@
   },
   {
    "candidate": "mflux:Tongyi-MAI/Z-Image",
-   "decided_at": "2026-11-10T03:58:39Z",
-   "detail": "not screened: needs 23.6 GB but only 20.8 GB is safely available (38.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 33.0 GB held by the interactive server's pinned models)",
+   "decided_at": "2026-11-15T02:27:35Z",
+   "detail": "not screened: needs 19.1 GB but only 9.9 GB is safely available (27.9 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "exam": {
     "about": "by Tongyi-MAI",
     "candidate": "mflux/Tongyi-MAI/Z-Image-q8",
@@ -484,10 +499,10 @@
    "serves": false,
    "status": "pending",
    "tier": "screen",
-   "until": "room_gb:>23.6"
+   "until": "room_gb:>19.1"
   }
  ],
- "cursor": 1794632266718420,
+ "cursor": 1794709655511459,
  "events": [
   {
    "at": "2026-09-18T22:18:09Z",
@@ -2918,6 +2933,36 @@
    "reason": "runtime",
    "run_id": 964,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-15T02:27:21Z",
+   "candidate": "mflux:realrebelai/Krea-2-Turbo-BBOX_GGUFs",
+   "chosen": null,
+   "detail": "needs its own runner: the stock loader could not assemble it: fox-snow: exit 1: FileNotFoundError: No safetensors files found in vae; geneval-000-single-object: exit 1: FileNotFoundError: No safetensors files found in mo",
+   "how": "",
+   "id": 1794709641094008,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "runtime",
+   "run_id": 996,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-15T02:27:35Z",
+   "candidate": "Tongyi-MAI/Z-Image",
+   "chosen": null,
+   "detail": "not screened: needs 19.1 GB but only 9.9 GB is safely available (27.9 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794709655511459,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -3180,7 +3225,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-14T08:00:39Z",
+ "generated_at": "2026-11-15T08:00:28Z",
  "knobs": [],
  "lane": {
   "cases": 584,
