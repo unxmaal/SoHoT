@@ -38,7 +38,8 @@ def test_the_screen_refuses_without_settling_the_candidate():
     """A candidate declined for what the machine was doing must be asked again.
     `broken` is terminal; a transient memory condition must not use it."""
     src = reads("harness/commands/screen.py")
-    block = src[src.index("room, why_not = memory.check_model"):][:900]
+    start = src.index("room, why_not = memory.check_model")
+    block = src[start:src.index('return False, "queued", None', start)]
     assert '"queued"' in block, block
     assert "until=" in block, "a non-terminal refusal needs its revisit condition"
 

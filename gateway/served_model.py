@@ -356,6 +356,16 @@ async def hold_for_batch(data: dict) -> None:
     _track(str(data.get("litellm_call_id") or ""), deployment, batch_id)
 
 
+def _windowed(model: str) -> bool:
+    """Whether `model` is served by this machine's interactive server while a screen window has its pinned set released."""
+    from harness import interactive
+    if not interactive.windowed():
+        return False
+    params = _entry(model).get("litellm_params") or {}
+    here = serving.bare(str(interactive.read().get("url") or ""))
+    return bool(here) and serving.bare(str(params.get("api_base") or "")) == here
+
+
 class ServedModel(CustomLogger):
     async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
         """A node that takes no connection in a few seconds is skipped for this machine's copy. #684."""
@@ -379,6 +389,12 @@ class ServedModel(CustomLogger):
         elif entry.get(nodes.NODE_KEY) and _entry(model + nodes.LOCAL_SUFFIX) \
                 and _name_down(str(entry[nodes.NODE_KEY]), model, _cooldown(entry)):
             data["model"] = model + nodes.LOCAL_SUFFIX
+        if _windowed(str(data.get("model") or "")):
+            # A screen window has released the pinned model this name is served by: the cloud alias answers it. #2045.
+            if not _entry(routes.CLOUD):
+                _refuse(f"{gateway_switch.DRAINING} the interactive server for a screen window and "
+                        f"{routes.CLOUD} is not served; retry once the window closes")
+            data["model"] = routes.CLOUD
         await hold_for_batch(data)
         return data
 

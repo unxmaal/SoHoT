@@ -69,6 +69,8 @@ KNOBS = [
        note="context each Ornith-1.5-35B-Q4_K_M slot is sized for; never under context.MIN_LONG_SLOT_CTX (#682)"),
     _k("ornith_slots", ["harness/context.py:ORNITH_SLOTS"], [1, 2, 4, 8],
        note="llama-server slots Ornith-1.5-35B-Q4_K_M batches across; sets code and agent lane throughput, not a grade (#682)"),
+    _k("screen_window_drain", ["harness/screen_window.py:DRAIN_S"], [60.0, 120.0, 300.0], unit="s",
+       note="it bounds how long a screen window waits for interactive requests in flight before it releases the pinned set; past it the window is refused and the screen stays queued (#2045)"),
     _k("serve_idle_unload_day_s", ["harness/watchdog.py:IDLE_UNLOAD_DAY_S"], [300.0, 600.0, 900.0, 1800.0],
        note="seconds a Mac's watchdog leaves a loaded model with no request in the day hours before it gives it back; "
             "14 days of gateway requests: 600 s costs Ornith 0.8 cold loads a day (median 8.9 s, p90 80 s each) "

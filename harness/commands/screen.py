@@ -1,6 +1,7 @@
 """`soh fetch` and the screen tier: what to fetch, what fits, and the screen of what arrived."""
 from __future__ import annotations
 
+import contextlib
 import re
 import time
 
@@ -425,12 +426,15 @@ def _screen_one(a, store, r: dict) -> tuple[bool, str | None, int | None]:
     """Fetch, check and screen one candidate: (a screen started, its outcome or None, the step's exit when it stops). #2015."""
     import subprocess
 
-    from harness import audio_models, candidates, heartbeat, mlx_server, router, screen
+    from harness import audio_models, candidates, heartbeat, mlx_server, router, screen, screen_window
     from harness import memory_store as ms
 
     # Headroom, including what is already resident, sized from the listing before anything is fetched. #284, #2015.
     room, why_not = memory.check_model(r["name"], spec=r["candidate"], parallel=1)
-    if not room:
+    windowed = not room and screen_window.wanted(memory.need_gb(r["name"], None, r["candidate"], 1))
+    if windowed:
+        print(f"   WINDOW: {why_not}; the pinned set is released for this screen")
+    if not room and not windowed:
         # A memory deferral screens nothing, so it does not spend a slot. #910.
         print(f"   QUEUED: {why_not}")
         streak, need = memory_deferrals(store, r["name"])
@@ -463,10 +467,25 @@ def _screen_one(a, store, r: dict) -> tuple[bool, str | None, int | None]:
         return False, "queued", None
     # Its own receipt directory, not the newest for the modality. #282.
     outdir = paths.unused_run(f"screen-{int(time.time())}", f"-{r['modality']}")
+    proc, unrestored = None, ""
     try:
         # The lock is taken here so its wait reaches the heartbeat; the child inherits it. #705.
         with heartbeat.held("eval", screen.deadline_s(r["candidate"]), say=lambda m: print(f"   {m}", flush=True)):
-            proc = subprocess.run(screen.argv(r, outdir=outdir), capture_output=True, text=True)
+            with (screen_window.opened(screen.deadline_s(r["candidate"]), f"a screen window for {r['name']}")
+                  if windowed else contextlib.nullcontext()):
+                if windowed:
+                    room, why_not = memory.check_model(r["name"], spec=r["candidate"], parallel=1)
+                    if not room:
+                        raise screen_window.Refused(f"still short with the pinned set released: {why_not}")
+                proc = subprocess.run(screen.argv(r, outdir=outdir), capture_output=True, text=True)
+    except screen_window.Refused as exc:
+        if proc is None:
+            print(f"   QUEUED: no screen window: {exc}")
+            ms.decide_or_skip(store, r["name"], "queued", tier=ms.SCREEN, reason=reasons.MEMORY,
+                              detail=f"not screened: {why_not}; no screen window: {exc}"[:600],
+                              until=memory.wait_for(r["name"], spec=r["candidate"], parallel=1))
+            return False, "queued", None
+        unrestored = str(exc)
     except OSError as exc:
         print(f"   QUEUED: the screen could not start: {exc}")
         ms.decide_or_skip(store, r["name"], "queued", tier=ms.SCREEN,
@@ -511,6 +530,9 @@ def _screen_one(a, store, r: dict) -> tuple[bool, str | None, int | None]:
     router.release_spec(r["candidate"], f"screened {r['name']}")
     mlx_server.release_spec(r["candidate"], f"screened {r['name']}")
     audio_models.release_spec(r["candidate"], f"screened {r['name']}")
+    if unrestored:
+        print(f"   the pinned set is not back after the window: {unrestored}; stopping the screen (#2045)")
+        return True, got, 1
     if verdict.failure_class not in reasons.STOPS:
         return True, got, None
     print(f"   {verdict.failure_class}: the model server or GPU is suspect; stopping the screen so the rest "
