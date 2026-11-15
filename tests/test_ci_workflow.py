@@ -38,11 +38,12 @@ def test_linux_and_windows_skip_an_unlabelled_pull_request():
 
 def test_linux_and_windows_skip_a_push_to_main():
     """Every merge would otherwise queue them again, which is the wait this
-    removes. The nightly run covers main."""
+    removes. The nightly run covers main on Linux; parked Windows runs on demand only (#2034)."""
     doc, _ = _ci()
     for job in DEFERRED:
         assert "push" not in doc["jobs"][job].get("if", "push"), job
-        assert "schedule" in doc["jobs"][job]["if"], job
+    assert "schedule" in doc["jobs"]["check-linux"]["if"]
+    assert "schedule" not in doc["jobs"]["check-windows"]["if"]
 
 
 def test_adding_the_label_starts_the_deferred_jobs():
@@ -235,6 +236,8 @@ def test_a_cancelled_main_run_reruns_once_from_a_workflow_that_runs_after_it():
     for part in ("github.event.workflow_run.event == 'push'", "github.event.workflow_run.head_branch == 'main'",
                  "github.event.workflow_run.conclusion == 'cancelled'", "github.event.workflow_run.run_attempt <= 1"):
         assert part in cond, part
+    pr = cond[cond.index("'pull_request'"):]
+    assert "'cancelled'" not in pr, "a cancelled pull request run was superseded by a newer push; nothing to rerun"
     assert job["permissions"] == {"contents": "read", "actions": "write", "pull-requests": "read"}
     run = "\n".join(s.get("run", "") for s in job["steps"])
     assert "harness/ci_rerun.py" in run and "github.event.workflow_run.id" in run
@@ -375,11 +378,13 @@ def _group(event: str, ref: str, sha: str, **inputs) -> str:
     return _expand(doc["concurrency"]["group"], inputs, event_name=event, ref=ref, sha=sha)
 
 
-def test_a_merge_never_waits_for_the_previous_main_run():
-    """One push group held each merge's run until the last one's check-postgres finished, and a newer pending run
-    cancelled the older before it started; c200928b had no job 40 min after its merge (#1802)."""
+def test_main_runs_the_full_suite_once_per_merged_batch():
+    """Each merge's own full run burned a runner per merge; one push group lets the running run finish and the newest
+    pending run test every merge queued behind it (#2034, reversing #1802)."""
+    doc, _ = _ci()
     main = "refs/heads/main"
-    assert _group("push", main, "a" * 40) != _group("push", main, "b" * 40)
+    assert _group("push", main, "a" * 40) == _group("push", main, "b" * 40)
+    assert not _cancels(doc["concurrency"]["cancel-in-progress"], "push")
     assert _group("push", main, "a" * 40) not in {_group(e, main, "a" * 40) for e in ("schedule", "workflow_dispatch")}
     assert _group("schedule", main, "a" * 40) == _group("schedule", main, "b" * 40)
 
@@ -459,7 +464,7 @@ def test_a_plain_dispatch_and_the_nightly_run_every_job_they_ran_before_inputs()
     defaults = {k: v["default"] for k, v in on["workflow_dispatch"]["inputs"].items()}
     assert defaults == {"jobs": "all", "tests": ""}
     every = set(SELECTABLE) | {"store-touched"}
-    assert _running("schedule") == every
+    assert _running("schedule") == every - {"check-windows"}
     assert _running("workflow_dispatch", **defaults) == every | {"dispatch-inputs"}
     assert _running("push") == {"check-macos", "store-touched"}
     assert _running("pull_request") == {"check-macos", "store-touched", "mutation-plan"}

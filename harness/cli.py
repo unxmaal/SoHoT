@@ -704,6 +704,10 @@ def build_parser() -> argparse.ArgumentParser:
                      help="recount these days (repeatable, or a range); with --record rewrite the short ones (#1941)")
     led.add_argument("--compare", default="", metavar="DAY",
                      help="one day side by side: OTel events, OTel metrics, ccusage, transcripts (#868)")
+    led.add_argument("--by", action="store_true",
+                     help="counted cloud tokens by main or subagent, agent type and cache write cause, from the "
+                          "transcripts (#2031)")
+    led.add_argument("--top", type=int, default=10, metavar="N", help="with --by: the N largest streams (default 10)")
     led.add_argument("--sample-power", action="store_true",
                      help="append one macmon reading to the power log and exit (the energy unit)")
     led.set_defaults(func=ledger_cmd.cmd_ledger)

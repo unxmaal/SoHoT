@@ -1228,6 +1228,20 @@ soh ledger --compare 2026-10-14        # OTel events, OTel metrics, ccusage, tra
 soh context --source otel --by category
 ```
 
+`soh ledger --by` says where the counted cloud tokens (input, output, cache
+write) went (#2031): main session against subagents, by agent type, and each
+cache write by cause. A cache write is a cold start (a stream's first
+request), a rewrite after expiry (the request read less than it wrote and
+came later than its cache lifetime after the one before, short or long),
+a rewrite with no idle gap (compaction or a changed prefix), or growth. Each
+expiry rewrite is named by the tool call of the request before it. It reads
+the transcripts only, so output is a lower bound. `soh morning` prints the
+week's three largest terms under the ratio.
+
+```bash
+soh ledger --by --since 7d             # add --top N for more streams, --json for the account
+```
+
 `soh unverified` is a Claude Code Stop hook, off until a project turns it on
 (#1380). At the end of each turn it asks the decide lane's local model, for
 each factual sentence of the final message, whether a tool result in the same

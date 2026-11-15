@@ -80,8 +80,9 @@ def render(r: dict) -> list[str]:
     """The deterministic report, one line per fact."""
     s = r["sweep"]
     from harness import ledger
+    from harness import token_flow
     out = [ledger.ratio_line(r["ratio"]) if r.get("ratio") else "local:cloud no ledger_days table",
-           f"since {_hm(r['since'])}"]
+           *filter(None, [token_flow.terms_line(r.get("flow"))]), f"since {_hm(r['since'])}"]
     h = r.get("lane") or {}
     from harness import morning
     from harness.availability import incident_line
@@ -130,7 +131,7 @@ def render(r: dict) -> list[str]:
     out.extend(f"held      {r[k]}" for k in ("hold", "gpu_hold") if r.get(k))
     from harness import job_release
     out.extend(job_release.morning_lines(r.get("releases")))
-    from harness import release_procs
+    from harness import release_procs, token_flow
     out.extend(release_procs.morning_lines(r.get("old_release")))
     out.append(f"watchdog  {len(r['watchdog'])} action(s)")
     for w in r["watchdog"]:
@@ -203,7 +204,7 @@ def render(r: dict) -> list[str]:
 
 def cmd_morning(a) -> int:
     from harness import audio_models, canary, context_report as cr, heartbeat, monitor, morning, node_reach, paths
-    from harness import release_procs
+    from harness import release_procs, token_flow
 
     now = time.time()
     try:
@@ -218,7 +219,7 @@ def cmd_morning(a) -> int:
                            health=morning.lane_health, canary=canary.morning_line, parked=morning.parked_nodes,
                            incumbent=morning.repo_incumbent, monitor=monitor.morning, pulls=morning.stuck_prs,
                            tts=audio_models.morning, waiting=morning.deploy_wait,
-                           reach=node_reach.summary, old=release_procs.report)
+                           reach=node_reach.summary, old=release_procs.report, flow=token_flow.morning)
     finally:
         conn.close()
     lines = render(r)
