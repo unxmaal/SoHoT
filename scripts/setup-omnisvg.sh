@@ -52,7 +52,7 @@ if [ "$AVAIL_GB" -lt 40 ]; then
   exit 1
 fi
 
-HF_HUB_OFFLINE=0 uv run --no-project --with huggingface_hub python - <<'PY'
+HF_HUB_OFFLINE=0 uv run --no-project --python 3.12 --with-requirements scripts/locks/hub.txt python - <<'PY'
 from huggingface_hub import hf_hub_download, snapshot_download
 
 for size, qwen, omni in (("4B", "Qwen/Qwen2.5-VL-3B-Instruct", "OmniSVG/OmniSVG1.1_4B"),):

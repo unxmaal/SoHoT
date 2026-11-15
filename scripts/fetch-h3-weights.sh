@@ -35,7 +35,7 @@ trap 'rm -f "$PIDFILE"' EXIT
 
 # env.sh exported HF_HUB_OFFLINE=1; the fresh interpreter reads it at import (#1457, RULE #813).
 HF_HUB_OFFLINE=0 HF_XET_HIGH_PERFORMANCE=1 \
-  uv run --no-project --with huggingface_hub python - "$DEST" <<'PY'
+  uv run --no-project --python 3.12 --with-requirements scripts/locks/hub.txt python - "$DEST" <<'PY'
 import sys, time
 from huggingface_hub import snapshot_download
 

@@ -65,6 +65,6 @@ fi
 NODE_EXPORTS="$(uv run python -m harness.nodes exports)" || NODE_EXPORTS=""
 eval "$NODE_EXPORTS"
 
-exec uv run --python 3.12 --with "$LITELLM_PIN" \
+exec uv run --python 3.12 --with "$LITELLM_PIN" --with-requirements scripts/locks/litellm.txt \
   litellm --config "$SERVED" \
   --host "${GATEWAY_HOST:-0.0.0.0}" --port "${GATEWAY_PORT:-4000}"
