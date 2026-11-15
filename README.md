@@ -1196,6 +1196,8 @@ call_id and the path of the whole output under the worktree's `tmp/tool-route`;
 each routed call is a delegation in the ledger. `SOH_RAW=1` in a command, a
 Read with offset/limit, or `SOH_ROUTE=off` in the session's environment leaves
 results whole, as does any failure of the lane or the hook.
+Running `--install` again replaces an older tool-route entry rather than
+adding a second, and it is refused from a home that is not the live one.
 `soh tool-route --settings` prints the block instead.
 
 `soh ledger` joins cloud and local per day (#826). Cloud is Claude Code's

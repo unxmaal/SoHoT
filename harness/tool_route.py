@@ -17,6 +17,7 @@ OFF_ENV = "SOH_ROUTE"
 #: A Bash command carrying this gets its output whole.
 RAW_MARK = "SOH_RAW=1"
 TOOLS = ("Bash", "Read")
+SCRIPT = "tool-route-hook.py"
 DIR = ("tmp", "tool-route")
 _SAFE = re.compile(r"[^A-Za-z0-9_.-]+")
 
@@ -183,19 +184,32 @@ def settings(command: str, timeout: int) -> dict:
                                        "hooks": [{"type": "command", "command": command, "timeout": timeout}]}]}}
 
 
-def install(settings_path: Path, block: dict) -> bool:
-    """Merge the block into a settings file; False when an entry with the same command is already there."""
+def install(settings_path: Path, block: dict) -> str:
+    """Merge the block into a settings file under a lock: "added", "replaced" (an older tool-route entry), or "present"."""
+    import hashlib
     import json
+
+    from harness import atomic_file, exclusive
     p = Path(settings_path).expanduser()
-    data = json.loads(p.read_text(encoding="utf-8")) if p.exists() and p.read_text(encoding="utf-8").strip() else {}
-    new = block["hooks"]["PostToolUse"][0]
-    have = data.setdefault("hooks", {}).setdefault("PostToolUse", [])
-    command = new["hooks"][0]["command"]
-    if any(h.get("command") == command for e in have for h in e.get("hooks") or []):
-        return False
-    have.append(new)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    tmp = p.with_name(p.name + ".tool-route.tmp")
-    tmp.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-    os.replace(tmp, p)
-    return True
+    lock = "tool-route-" + hashlib.sha256(str(p.resolve()).encode("utf-8")).hexdigest()[:16] + ".lock"
+    with exclusive.alone(lock, 0) as took:
+        if not took:
+            raise RuntimeError(f"another soh tool-route --install is writing {p}")
+        text = p.read_text(encoding="utf-8") if p.exists() else ""
+        data = json.loads(text) if text.strip() else {}
+        new = block["hooks"]["PostToolUse"][0]
+        have = data.setdefault("hooks", {}).setdefault("PostToolUse", [])
+        ours = [h for e in have for h in e.get("hooks") or [] if SCRIPT in str(h.get("command") or "")]
+        if new in have and len(ours) == 1:
+            return "present"
+        kept = []
+        for e in have:
+            rest = [h for h in e.get("hooks") or [] if h not in ours]
+            if rest or not e.get("hooks"):
+                kept.append({**e, "hooks": rest} if rest != e.get("hooks") else e)
+        data["hooks"]["PostToolUse"] = kept + [new]
+        p.parent.mkdir(parents=True, exist_ok=True)
+        tmp = p.with_name(p.name + ".tool-route.tmp")
+        tmp.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+        atomic_file.replace(tmp, p)
+    return "replaced" if ours else "added"

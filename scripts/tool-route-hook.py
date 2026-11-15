@@ -23,8 +23,8 @@ def main(argv: list[str]) -> int:
         if got.returncode == 0 and got.stdout.strip():
             json.loads(got.stdout)
             sys.stdout.write(got.stdout)
-    except Exception:  # noqa: BLE001 - a hook that fails shows the result whole
-        pass
+    except Exception as e:  # noqa: BLE001 - a hook that fails shows the result whole
+        sys.stderr.write(f"soh tool-route hook: {type(e).__name__}: {e}\n")
     return 0
 
 

@@ -149,9 +149,45 @@ def test_the_hook_script_passes_small_and_broken_events_at_once(wt):
 
 def test_install_merges_the_block_once_and_keeps_the_rest(tmp_path):
     settings = tmp_path / "settings.json"
-    settings.write_text(json.dumps({"model": "x", "hooks": {"PostToolUse": [{"matcher": "Edit", "hooks": []}]}}))
+    settings.write_text(json.dumps({"model": "x", "hooks": {"PostToolUse": [{"matcher": "Edit", "hooks": []}]}}),
+                        encoding="utf-8")
     block = tr.settings(cmd.command(tr.CHARS, tr.TIMEOUT_S - 10), tr.TIMEOUT_S)
-    assert tr.install(settings, block) and not tr.install(settings, block)
-    data = json.loads(settings.read_text())
+    assert tr.install(settings, block) == "added" and tr.install(settings, block) == "present"
+    data = json.loads(settings.read_text(encoding="utf-8"))
     assert data["model"] == "x" and [e["matcher"] for e in data["hooks"]["PostToolUse"]] == ["Edit", "Bash|Read"]
     assert data["hooks"]["PostToolUse"][1]["hooks"][0]["command"].endswith(f"tool-route-hook.py {tr.CHARS} 110")
+
+
+def test_a_second_install_with_new_settings_replaces_the_old_hook_not_beside_it(tmp_path):
+    settings = tmp_path / "settings.json"
+    other = {"type": "command", "command": "mcm-engine hook"}
+    old = tr.settings(cmd.command(4000, 50), 60)
+    old["hooks"]["PostToolUse"][0]["hooks"].append(other)
+    settings.write_text(json.dumps(old), encoding="utf-8")
+    assert tr.install(settings, tr.settings(cmd.command(16000, 110), 120)) == "replaced"
+    hooks = [h for e in json.loads(settings.read_text(encoding="utf-8"))["hooks"]["PostToolUse"] for h in e["hooks"]]
+    assert [h["command"] for h in hooks if tr.SCRIPT in h["command"]] == [cmd.command(16000, 110)]
+    assert other in hooks
+
+
+def test_an_install_while_another_holds_the_settings_file_is_refused_and_writes_nothing(tmp_path, monkeypatch):
+    import contextlib
+
+    from harness import exclusive
+    settings = tmp_path / "settings.json"
+    settings.write_text("{}", encoding="utf-8")
+    taken = []
+    monkeypatch.setattr(exclusive, "alone", lambda name, wait_s: taken.append(name) or contextlib.nullcontext(False))
+    with pytest.raises(RuntimeError, match="another soh tool-route --install"):
+        tr.install(settings, tr.settings(cmd.command(tr.CHARS, 110), tr.TIMEOUT_S))
+    assert settings.read_text(encoding="utf-8") == "{}" and taken and taken[0].endswith(".lock")
+
+
+def test_install_from_a_home_that_is_not_the_live_one_is_refused(tmp_path, monkeypatch, capsys):
+    from harness import cli
+    settings = tmp_path / "settings.json"
+    assert cli.main(["tool-route", "--install", str(settings)]) == 1
+    assert "not the live home" in capsys.readouterr().out and not settings.exists()
+    monkeypatch.setattr(paths, "DEFAULT_HOME", paths.home())
+    assert cli.main(["tool-route", "--install", str(settings)]) == 0
+    assert tr.SCRIPT in settings.read_text(encoding="utf-8")
