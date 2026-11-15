@@ -96,9 +96,6 @@ NOT_GATING = {
     f"{X}:ALERT_TIMEOUT_S":"how long the deploy alert script may take; the outcome is already recorded (#1506)",
     f"{X}:restore->sqlite3.connect(timeout)": "how long the restore waits for the store's lock; a timeout leaves "
                                               "the rollback saying the restore FAILED and alerts (#1506)",
-    "harness/node_store_copy.py:_copy->sqlite3.connect(timeout)": "how long a node's store copy or restore waits for "
-                                                                  "the store's lock; a timeout fails the install "
-                                                                  "before anything reinstalls (#2023)",
     f"{Q}:recent(days)": "how far back soh deploy lists deploys; a listing, it gates nothing (#1506)",
     "scripts/launchd.sh:LH_DEFER_WAIT_S": "how long install waits for a live periodic run to end before reloading "
                                           "it; at the deadline the unit stays deferred and install fails (#1058)",
@@ -109,6 +106,7 @@ NOT_GATING = {
                          "watchdog.STOP_GRACE_S (#1000)",
     "harness/node_deploy.py:DRAIN_POLL_S": "it paces how often a draining node is asked how many requests it is processing; DRAIN_S bounds the wait (#1815)",
     "harness/node_deploy.py:in_flight->node_state.read(fresh_s)": "a drain asks the node for its in-flight count on every poll; a cached report would show requests already finished (#1815)",
+    "harness/node_store_copy.py:BUSY_WAIT_S": "how long a node's store copy or restore waits for a busy store; past it the install fails before anything reinstalls (#2023, #2038)",
 }
 
 NEVER_CUTS = {
