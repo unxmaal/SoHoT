@@ -52,7 +52,7 @@ class Clock:
 
 @pytest.fixture
 def planted(monkeypatch):
-    """The Studio of #2045: 77.8 GB ceiling, 18.0 reserve, 32.8 GiB pinned, 3.8 GiB Docker VM, so 23.2 GiB is the most a load gets."""
+    """The Studio of #2045, as its memory settings and pinned set stood when the screen was held back."""
     entry = lambda stem, gib: {"stem": stem, "bytes": int(gib * GIB), "served": f"llamacpp:{stem}", "ctx": 32768}  # noqa: E731
     interactive.write({"url": URL, "bytes": int(32.8 * GIB),
                        "lanes": {"code": entry(CODE, 27.7), "decide": entry(DECIDE, 5.1)}})
@@ -111,6 +111,8 @@ def test_the_window_is_refused_when_the_pinned_set_is_not_all_loaded_before_it(p
     assert not interactive.windowed() and ("/models/unload", CODE) not in server.calls
 
 
+@pytest.mark.gauntlet("a-wait-with-no-deadline-owner-or-end-state", site="harness/screen_window.py:restore")
+@pytest.mark.gauntlet("a-wait-with-no-deadline-owner-or-end-state", site="harness/screen_window.py:opened")
 def test_a_restore_that_cannot_be_confirmed_refuses_the_window_and_lifts_the_flag(planted):
     server, clock = Server(loads=False), Clock()
     with pytest.raises(screen_window.Refused, match="did not load back"):
@@ -120,6 +122,7 @@ def test_a_restore_that_cannot_be_confirmed_refuses_the_window_and_lifts_the_fla
     assert not interactive.windowed(), "the watchdog's interactive_down then restarts the unit"
 
 
+@pytest.mark.gauntlet("a-wait-with-no-deadline-owner-or-end-state", site="harness/screen_window.py:opened")
 def test_an_interactive_request_in_flight_is_never_cut_the_window_is_refused_after_the_drain(planted):
     server, clock = Server(busy=1), Clock()
     with pytest.raises(screen_window.Refused, match="in flight"):
@@ -206,9 +209,8 @@ def test_a_planted_25_gib_candidate_with_32_8_gib_pinned_is_screened_in_a_window
     monkeypatch.setattr(screen_cmd, "verdict_of_run", lambda *a, **k: screen.Verdict("screened", "ran", ""))
     monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out, conn=None: {})
     monkeypatch.setattr(candidates, "from_receipt", lambda *a, **k: None)
-    monkeypatch.setattr(candidates, "ensure", lambda *a, **k: 1)
+    monkeypatch.setattr(candidates, "ensure", lambda *a, **k: None)
     monkeypatch.setattr(candidates, "key_for", lambda *a, **k: "")
-    monkeypatch.setattr(ms, "decide_or_skip", lambda store, name, outcome, **k: decided.append(outcome))
     monkeypatch.setattr(router, "release_spec", lambda *a, **k: [])
 
     def run(argv, **kw):
@@ -219,7 +221,13 @@ def test_a_planted_25_gib_candidate_with_32_8_gib_pinned_is_screened_in_a_window
     for mod in ("mlx_server", "audio_models"):
         monkeypatch.setattr(importlib.import_module(f"harness.{mod}"), "release_spec", lambda *a, **k: [])
     row = {"name": "google/gemma-4-31B-it", "candidate": "hf-text:google/gemma-4-31B-it", "modality": "text"}
-    assert screen_cmd._screen_one(None, None, row) == (True, "screened", None)
+    conn = ms.connect()
+    ms.record(conn, ms.Seen(name=row["name"], source="t", kind="weights", lane="text", why="seeded"))
+    try:
+        assert screen_cmd._screen_one(None, conn, row) == (True, "screened", None)
+        decided.append(ms.latest(conn, row["name"])["outcome"])
+    finally:
+        conn.close()
     assert ran == [(0.0, {"unloaded"}, True)], "the screen ran with the pinned set released"
     assert decided == ["screened"]
     assert set(server.status.values()) == {"loaded"} and not interactive.windowed()
