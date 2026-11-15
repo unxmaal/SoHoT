@@ -2,6 +2,8 @@
 import re
 from pathlib import Path
 
+from tests import tree_cache
+
 _DROP = re.compile(r"\bALTER\s+TABLE\s+\S+\s+DROP\s+COLUMN\b", re.I)
 TESTS = Path(__file__).parent
 
@@ -11,8 +13,9 @@ def drop_columns(text: str) -> list[int]:
 
 
 def test_no_test_drops_a_column():
-    found = [f"{p.name}:{n}" for p in sorted(TESTS.rglob("*.py"))
-             for n in drop_columns(p.read_text(encoding="utf-8"))]
+    found = tree_cache.each(lambda text, rel: [f"{rel}:{n}" for n in drop_columns(text)],
+                            ((p.read_text(encoding="utf-8"), p.relative_to(TESTS.parent).as_posix())
+                             for p in sorted(TESTS.rglob("*.py"))))
     assert found == [], f"build the old DDL with old_store instead: {found}"
 
 

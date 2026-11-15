@@ -34,10 +34,21 @@ def _sources():
 
 
 def _texts(only=None):
+    keep = tree_cache.scan_only()
     for path in _sources():
         rel = path.relative_to(REPO).as_posix()
-        if only is None or only(rel):
+        if (keep is None or rel in keep) and (only is None or only(rel)):
             yield path.read_text(encoding="utf-8"), rel
+
+
+def _untyped_text_io(text, rel):
+    # Parsed, not grepped: the call may be spread over several lines, and a
+    # line-wise check reported three already-fixed sites as offenders.
+    return [f"{rel}:{node.lineno}: .{node.func.attr}()" for node in ast.walk(ast.parse(text, filename=rel))
+            if (isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr in _TEXT_IO
+                and not any(kw.arg == "encoding" for kw in node.keywords))]
 
 
 def test_no_text_file_is_read_or_written_without_an_explicit_encoding():
@@ -47,18 +58,7 @@ def test_no_text_file_is_read_or_written_without_an_explicit_encoding():
     feed and a cloned candidate's source. The author's machine cannot produce
     this failure, which is the whole reason it is asserted against the source.
     """
-    offenders = []
-    for path in _sources():
-        # Parsed, not grepped: the call may be spread over several lines, and a
-        # line-wise check reported three already-fixed sites as offenders.
-        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        for node in ast.walk(tree):
-            if (isinstance(node, ast.Call)
-                    and isinstance(node.func, ast.Attribute)
-                    and node.func.attr in _TEXT_IO
-                    and not any(kw.arg == "encoding" for kw in node.keywords)):
-                offenders.append(
-                    f"{path.relative_to(REPO).as_posix()}:{node.lineno}: .{node.func.attr}()")
+    offenders = tree_cache.each(_untyped_text_io, _texts())
     assert not offenders, (
         "text I/O without an explicit encoding defaults to the locale codepage "
         "on Windows:\n  " + "\n  ".join(offenders))
@@ -78,16 +78,14 @@ def test_no_temp_file_is_opened_as_text_without_an_explicit_encoding():
     assert not offenders, "\n  ".join(["text-mode temp files with no encoding:", *offenders])
 
 
+def _bsd_df(text, rel):
+    return [f"{rel}:{number}: {line.strip()}" for number, line in enumerate(text.splitlines(), start=1)
+            if not line.lstrip().startswith("#") and _BSD_DF.search(line)]
+
+
 def test_no_script_uses_a_bsd_only_df_flag():
-    offenders = []
-    for path in sorted((REPO / "scripts").glob("*.sh")):
-        for number, line in enumerate(
-                path.read_text(encoding="utf-8").splitlines(), start=1):
-            if line.lstrip().startswith("#"):
-                continue
-            if _BSD_DF.search(line):
-                offenders.append(
-                    f"{path.relative_to(REPO).as_posix()}:{number}: {line.strip()}")
+    scripts = ((p.read_text(encoding="utf-8"), p.relative_to(REPO).as_posix()) for p in sorted((REPO / "scripts").glob("*.sh")))
+    offenders = tree_cache.each(_bsd_df, scripts)
     assert not offenders, (
         "df -g is BSD-only; use `df -Pk` and divide by 1048576 -- "
         + "; ".join(offenders))
@@ -183,13 +181,12 @@ def test_every_module_a_test_imports_is_installed_on_every_platform():
     groups = _test_groups()
     requirements = _requirements()
     everywhere = _closure({d for d, marker, g in requirements if not marker and (g is None or g in groups)})
-    offenders = []
-    for path in sorted((REPO / "tests").rglob("*.py")):
-        rel = path.relative_to(REPO).as_posix()
-        text = path.read_text(encoding="utf-8")
+
+    def uncovered(text, rel):
         covered = everywhere | _skip_covered(text, rel, requirements)
-        offenders += [f"{rel}:{line}: {top}" for line, top in gscanners.unguarded_imports(text, rel)
-                      if _third_party(top) and not _dists(top) & covered]
+        return [f"{rel}:{line}: {top}" for line, top in gscanners.unguarded_imports(text, rel)
+                if _third_party(top) and not _dists(top) & covered]
+    offenders = tree_cache.each(uncovered, _texts(lambda rel: rel.startswith("tests/")))
     assert not offenders, (
         "a test imports a module no unmarked requirement in [project] or the groups `make test` syncs "
         f"({', '.join(sorted(groups))}) provides, so Linux or Windows CI may not have it; declare it, "

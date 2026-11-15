@@ -16,12 +16,13 @@ from pathlib import Path
 
 from gauntlet.mutation import imported
 
+from tests import tree_cache
 from tests.gauntlet import covmap
 from tests.gauntlet.mutation import REPO
 
 FULL = ("pyproject.toml", "uv.lock", "Makefile", ".python-version")
 FULL_UNDER = (".github/workflows/",)
-# Repo-wide ratchets: they read every source file, so any change can add a site they guard.
+# Repo-wide ratchets, with every test tree_cache.scanning finds: any change can add a site they guard.
 ALWAYS = (
     "tests/test_gauntlet_detectors.py", "tests/test_gauntlet_mutation.py", "tests/test_gauntlet_scanners.py",
     "tests/test_harness_privacy.py", "tests/test_json_everywhere.py", "tests/test_knob_backlog_1085.py",
@@ -258,7 +259,7 @@ def select(changed, texts, tests, files=(), edges=None, cmap=None, diff=None, st
     if cmap is not None:
         unseen = (tests - set(cmap["tests"])) | (tests & stale)
         seen |= traced & unseen
-    always = {t for t in ALWAYS if t in tests}
+    always = (set(ALWAYS) | set(tree_cache.scanning(texts))) & set(tests)
     chosen = sorted(seen | always)
     return chosen, why + [f"  always: {len(always)} repo-wide ratchets"]
 
