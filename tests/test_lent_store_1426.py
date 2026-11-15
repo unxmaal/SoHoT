@@ -112,6 +112,7 @@ NOT_RUN = {
     "claude-news --notify": "records and notifies", "ledger --record": "upserts ledger_days",
     "runtimes --watch": "reads PyPI and GitHub releases and records proposals",
     "runtimes --trial": "trial-installs a runtime release",
+    "ledger --by": "reads Claude Code transcripts only, never the store (#2031)",
     "ledger --sample-power": "appends a power reading", "morning --notify": "notifies (the morning unit)",
     "sweep-check --notify": "records the check", "craft --revalidate": "runs the installed release",
     "delegated --close": "records outcomes", "disk --record": "writes download rows",
