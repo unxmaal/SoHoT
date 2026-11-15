@@ -246,8 +246,8 @@
   },
   {
    "candidate": "akhilaaa3/Jev-Omni",
-   "decided_at": "2026-11-14T04:59:57Z",
-   "detail": "not screened: needs 34.3 GB but only 14.3 GB is safely available (32.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "decided_at": "2026-11-15T02:06:38Z",
+   "detail": "not screened: needs 22.3 GB but only 10.9 GB is safely available (28.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
@@ -257,12 +257,12 @@
    "serves": false,
    "status": "pending",
    "tier": "screen",
-   "until": "room_gb:>34.3"
+   "until": "room_gb:>22.3"
   },
   {
    "candidate": "akhilaaa3/Jev-Omni,temperature=0",
-   "decided_at": "2026-11-14T04:59:57Z",
-   "detail": "not screened: needs 34.3 GB but only 14.3 GB is safely available (32.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "decided_at": "2026-11-15T02:06:38Z",
+   "detail": "not screened: needs 22.3 GB but only 10.9 GB is safely available (28.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
@@ -272,7 +272,7 @@
    "serves": false,
    "status": "pending",
    "tier": "screen",
-   "until": "room_gb:>34.3"
+   "until": "room_gb:>22.3"
   },
   {
    "candidate": "apus-ailab/APUS-OpenJev-v1-4B-GGUF",
@@ -311,7 +311,7 @@
   },
   {
    "candidate": "bespokelabs/Bespoke-Nimble-9B",
-   "decided_at": "2026-11-14T05:22:29Z",
+   "decided_at": "2026-11-15T03:57:29Z",
    "detail": "not measured: harness_error",
    "exam": {
     "about": "family Qwen/Qwen3.5-9B, 9B params, by bespokelabs",
@@ -327,7 +327,7 @@
     "peak_gb": null,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-14T05:22:27Z",
+    "run_at": "2026-11-15T03:57:28Z",
     "served_as": "",
     "source": "https://huggingface.co/bespokelabs/Bespoke-Nimble-9B",
     "total": 661,
@@ -338,7 +338,7 @@
    "proposal": "bespokelabs/Bespoke-Nimble-9B",
    "reason": "harness",
    "receipt_key": "bespokelabs/Bespoke-Nimble-9B",
-   "run_id": 976,
+   "run_id": 1009,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -704,7 +704,7 @@
   },
   {
    "candidate": "nimble:bespokelabs/Bespoke-Nimble-9B",
-   "decided_at": "2026-11-14T05:22:29Z",
+   "decided_at": "2026-11-15T03:57:29Z",
    "detail": "not measured: harness_error",
    "exam": {
     "about": "9B params",
@@ -736,7 +736,7 @@
    "proposal": "bespokelabs/Bespoke-Nimble-9B",
    "reason": "harness",
    "receipt_key": "nimble/Bespoke-Nimble-9B",
-   "run_id": 976,
+   "run_id": 1009,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -778,7 +778,7 @@
    "until": ""
   }
  ],
- "cursor": 1794640863480214,
+ "cursor": 1794715049678822,
  "events": [
   {
    "at": "2026-09-22T13:14:31Z",
@@ -1304,6 +1304,51 @@
    "reason": "candidate",
    "run_id": 981,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-15T02:06:30Z",
+   "candidate": "bespokelabs/Bespoke-Nimble-9B",
+   "chosen": null,
+   "detail": "not screened: needs 20.2 GB but only 10.7 GB is safely available (28.6 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794708390644678,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-15T02:06:38Z",
+   "candidate": "akhilaaa3/Jev-Omni",
+   "chosen": null,
+   "detail": "not screened: needs 22.3 GB but only 10.9 GB is safely available (28.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794708398957308,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-15T03:57:29Z",
+   "candidate": "bespokelabs/Bespoke-Nimble-9B",
+   "chosen": null,
+   "detail": "not measured: harness_error",
+   "how": "",
+   "id": 1794715049678822,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "harness",
+   "run_id": 1009,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -1402,7 +1447,7 @@
      "passed": null,
      "peak_gb": null,
      "reference": false,
-     "run_at": "2026-11-14T05:22:27Z",
+     "run_at": "2026-11-15T03:57:28Z",
      "served_as": "",
      "source": "https://huggingface.co/bespokelabs/Bespoke-Nimble-9B",
      "total": 661,
@@ -1429,8 +1474,8 @@
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-11-14T05:22:27Z",
-   "runs": 6
+   "run_at": "2026-11-15T03:57:28Z",
+   "runs": 7
   },
   {
    "cases": 132,
@@ -1999,7 +2044,7 @@
    "runs": 4
   }
  ],
- "generated_at": "2026-11-14T08:00:41Z",
+ "generated_at": "2026-11-15T08:00:30Z",
  "knobs": [],
  "lane": {
   "cases": 661,
