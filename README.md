@@ -1188,6 +1188,18 @@ each `mcp__mcm-engine__search` result, shows the kept hits and names the rest
 by id, and leaves the result whole on any failure. `soh kb-filter --settings
 --dir DIR` prints the settings block that turns it on; nothing installs it.
 
+`soh tool-route --install ~/.claude/settings.json` adds a PostToolUse hook
+(`scripts/tool-route-hook.py`, run from the deploy checkout) that hands a Bash
+result or whole-file Read of 8,000 characters or more (knob `tool_route_chars`)
+to the local extract or spans lane (#2032). The session sees the digest, its
+call_id and the path of the whole output under the worktree's `tmp/tool-route`;
+each routed call is a delegation in the ledger. `SOH_RAW=1` in a command, a
+Read with offset/limit, or `SOH_ROUTE=off` in the session's environment leaves
+results whole, as does any failure of the lane or the hook.
+Running `--install` again replaces an older tool-route entry rather than
+adding a second, and it is refused from a home that is not the live one.
+`soh tool-route --settings` prints the block instead.
+
 `soh ledger` joins cloud and local per day (#826). Cloud is Claude Code's
 input, output and cache tokens from
 `npx ccusage@<CCUSAGE_PIN version> daily --json --mode calculate --offline`,

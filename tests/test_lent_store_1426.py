@@ -133,6 +133,8 @@ NOT_RUN = {
     "kb-filter --eval": "asks the decide and extract lanes; reads transcripts, no store",
     "kb-filter --hook": "reads a PostToolUse event on stdin; may ask the decide lane, no store",
     "kb-filter --settings": "prints a settings block, no store",
+    "tool-route --hook": "reads a PostToolUse event on stdin and asks the extract or code lane; test_tool_route_2032 runs it",
+    "tool-route --settings": "prints a settings block, no store",
     "digest --run": "runs the given command, then the extract lane",
 }
 

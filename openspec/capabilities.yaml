@@ -246,6 +246,8 @@ capabilities:
       - evals/digest_ab.py
       - harness/kb_filter.py
       - harness/commands/kb_filter.py
+      - harness/tool_route.py
+      - harness/commands/tool_route.py
 
   - name: availability
     summary: Known-answer probes of each resident text lane, and incidents and uptime derived from them.
