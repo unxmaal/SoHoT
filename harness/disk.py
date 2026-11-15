@@ -737,7 +737,25 @@ def sweep(run_start: float | None = None, say=print, conn=None, **which) -> dict
         say(f"    {gib(r['bytes']):>7} GiB  {r['repo'] or r['path']}  ({r['why']})")
     for r in got["errors"]:
         say(f"    not removed: {r['path']}: {r['error']}")
+    got["uv_envs"] = uv_env_prune(say)
     got["uv"] = uv_prune(say)
+    return got
+
+
+def uv_env_prune(say=print) -> dict:
+    """uv_cache.prune_envs() reported: the environments in use, how many removed and the bytes freed, or why skipped."""
+    from harness import uv_cache
+    try:
+        got = uv_cache.prune_envs()
+    except OSError as exc:
+        got = {"skipped": str(exc)}
+    if "skipped" in got:
+        say(f"  uv environments not pruned: {got['skipped']}")
+        return got
+    say(f"  uv environments: removed {len(got['removed'])}, freed {gib(got['bytes'])} GiB; kept {len(got['in_use'])} "
+        f"in use, {got['fresh']} under {uv_cache.ENV_MAX_AGE_S} s old")
+    if got["in_use"]:
+        say(f"    in use: {', '.join(got['in_use'])}")
     return got
 
 
