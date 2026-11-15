@@ -104,7 +104,7 @@ def _one(a, out: Path, issue: int, title: str, body: str, base: str, replay: boo
 
 
 def _show(rec) -> None:
-    note(f"#{rec.issue:<6} {rec.klass or '-':<22} {'LOCAL' if rec.resolved else 'ESCALATE':<8} {rec.stage}: "
+    note(f"#{rec.issue:<6} {rec.klass or '-':<22} {'LOCAL' if rec.resolved else 'PLANNED' if rec.stage == 'planned' else 'ESCALATE':<8} {rec.stage}: "
          f"{rec.why[:120]} (attempts {len(rec.attempts)}, plan {rec.plan_tokens.get('input', 0) + rec.plan_tokens.get('output', 0) + rec.plan_tokens.get('cache_write', 0):,} cloud)",
          flush=True)
 
@@ -148,7 +148,8 @@ def _replay(a, out: Path) -> int:
             break
         title, body = _issue(c.issue)
         rec = _one(a, out, c.issue, title, body, c.base, True, c.held_out, c.merge)
-        _keep(a, out, rec, True)
+        if not a.plan_only:
+            _keep(a, out, rec, True)
         _show(rec)
         recs.append(rec)
     rows = [{"issue": r.issue, "class": r.klass or "unplanned", "resolved": r.resolved, "why": r.why,

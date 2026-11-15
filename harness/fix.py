@@ -42,7 +42,7 @@ PLAN_SYSTEM = f"""You plan one fix for a small local model that cannot interpret
 with Read, Grep and Glob: the whole plan has a {PLAN_TOKEN_CAP:,}-token budget. Then answer with ONE JSON object \
 and nothing else:
 {{"class": "{'" | "'.join(CLASSES)}" | "{OUT_OF_CLASS}", "why": "one line",
-"files": ["at most {MAX_FILES} repo-relative source files to change, never a test"],
+"files": ["at most {MAX_FILES} repo-relative files to change, an existing test only when it is the defect"],
 "test_path": "tests/test_<topic>_<issue>.py, a file that does not exist yet",
 "test_code": "the complete pytest file",
 "brief": "exact instructions: which function or line changes and to what"}}
@@ -125,7 +125,7 @@ def parse_plan(text: str) -> Plan:
         cuts.cut("fix_max_files", "a plan naming more source files than one plan may change", kept=0, dropped=1)
     if not files or len(files) > MAX_FILES:
         raise PlanError(f"a plan changes 1 to {MAX_FILES} files, not {len(files)}")
-    bad = [f for f in files if not _safe(f) or f.startswith("tests/") or FORBIDDEN.search(f)]
+    bad = [f for f in files if not _safe(f) or f == test_path or FORBIDDEN.search(f)]
     if bad:
         raise PlanError(f"files no plan may change: {bad}")
     if not (_safe(test_path) and test_path.startswith("tests/") and Path(test_path).name.startswith("test_")

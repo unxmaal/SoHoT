@@ -212,7 +212,7 @@ def test_plan_only_stops_after_the_base_check(ws):
     ({"files": ["harness/memory_store/migrations/v99.py"]}, "no plan may change"),
     ({"files": ["harness/memory_store/schema.py"]}, "no plan may change"),
     ({"files": ["harness/node_deploy.py"]}, "no plan may change"),
-    ({"files": ["tests/test_x.py"]}, "no plan may change"),
+    ({"files": [TEST]}, "no plan may change"),
     ({"files": ["../outside.py"]}, "no plan may change"),
     ({"test_path": "harness/test_x.py"}, "not tests/test_"),
     ({"test_path": "tests/../x/test_x.py"}, "not tests/test_"),
@@ -222,6 +222,11 @@ def test_plan_only_stops_after_the_base_check(ws):
 def test_a_plan_that_names_what_no_plan_may_is_refused(change, says):
     with pytest.raises(fix.PlanError, match=says.replace("(", r"\(")):
         fix.parse_plan(json.dumps({**_plan(), **change}))
+
+
+def test_a_flaky_test_plan_may_change_an_existing_test_but_never_the_planned_one():
+    got = fix.parse_plan(json.dumps({**_plan(klass="flaky_test"), "files": ["tests/conftest.py", "tests/test_other.py"]}))
+    assert got.files == ("tests/conftest.py", "tests/test_other.py")
 
 
 def test_a_plan_in_a_fenced_block_with_prose_around_it_parses():
