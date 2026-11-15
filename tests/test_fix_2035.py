@@ -249,10 +249,10 @@ def test_a_candidate_is_a_merged_pr_with_a_test_and_at_most_three_source_files()
     assert fix.candidate(["harness/memory_store/migrations/v9.py", "tests/test_a.py"], "abc", 5, 6) is None
 
 
-def test_records_land_in_delegations_and_the_cloud_plan_is_kept_out_of_local_tokens(tmp_path, ws):
+def test_records_land_in_delegations_and_the_cloud_plan_is_kept_out_of_local_tokens(ws):
     from harness import ledger
     from harness import memory_store as ms
-    conn = ms.connect(tmp_path / "store.db")
+    conn = ms.connect()
     good = _run(ws, _planner(_plan()), _executor(fixes))
     fix.store(conn, good, "sohot-agent", at=1000.0)
     bad = fix.Record(8, fix.new_call_id(), klass="flaky_test", stage="hash", why="edited",

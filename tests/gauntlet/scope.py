@@ -58,6 +58,57 @@ def is_test(path):
     return path.startswith("tests/") and Path(path).name.startswith("test_") and path.endswith(".py")
 
 
+_ROOTS = {"REPO", "ROOT", "REPO_ROOT", "TESTS"}
+_DATA_DIRS = {d.rstrip("/").rpartition("/")[2] for d in DATA}
+
+
+def _names(node):
+    return {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
+
+
+def _anchored(body, known):
+    """known plus every name an assignment in body binds from __file__ or from a name already anchored."""
+    out = set(known)
+    for n in body:
+        if isinstance(n, ast.ImportFrom):
+            out |= {a.asname or a.name for a in n.names if a.name in _ROOTS}
+        value = getattr(n, "value", None) if isinstance(n, (ast.Assign, ast.AnnAssign)) else None
+        data = value is not None and any(isinstance(c, ast.Constant) and c.value in _DATA_DIRS for c in ast.walk(value))
+        if value is not None and not data and ("__file__" in ast.unparse(value) or _names(value) & out):
+            out |= {t.id for t in (n.targets if isinstance(n, ast.Assign) else [n.target]) if isinstance(t, ast.Name)}
+    return out
+
+
+def _walks(call, roots):
+    f = call.func
+    if not isinstance(f, ast.Attribute):
+        return False
+    pattern = call.args[0].value if call.args and isinstance(call.args[0], ast.Constant) else ""
+    if f.attr == "rglob" or (f.attr == "glob" and isinstance(pattern, str) and ("**" in pattern or pattern.endswith(".py"))):
+        return bool(_names(f.value) & roots)
+    return f.attr == "walk" and getattr(f.value, "id", "") == "os" and bool(call.args) and bool(_names(call.args[0]) & roots)
+
+
+def walking(texts):
+    """Test files that walk the repo's own tree (rglob, os.walk, a code glob anchored at __file__ or REPO): every change can add a site. #2053."""
+    out = set()
+    for rel, text in texts.items():
+        if not is_test(rel):
+            continue
+        try:
+            tree = ast.parse(text)
+        except SyntaxError:
+            continue
+        top = _anchored(tree.body, set())
+        scopes = [(tree, top)] + [
+            (fn, _anchored(list(ast.walk(fn)), top | {a.arg for a, d in zip(fn.args.args[::-1], fn.args.defaults[::-1])
+                                                      if _names(d) & top}))
+            for fn in ast.walk(tree) if isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef))]
+        if any(isinstance(c, ast.Call) and _walks(c, roots) for node, roots in scopes for c in ast.walk(node)):
+            out.add(rel)
+    return out
+
+
 def graph(texts):
     """({path: module-level importers}, {path: function-level importers or namers}, {path: files naming it in a string})."""
     mods = {module_name(p): p for p in texts}
@@ -259,7 +310,7 @@ def select(changed, texts, tests, files=(), edges=None, cmap=None, diff=None, st
     if cmap is not None:
         unseen = (tests - set(cmap["tests"])) | (tests & stale)
         seen |= traced & unseen
-    always = (set(ALWAYS) | set(tree_cache.scanning(texts))) & set(tests)
+    always = (set(ALWAYS) | set(tree_cache.scanning(texts)) | walking(texts)) & set(tests)
     chosen = sorted(seen | always)
     return chosen, why + [f"  always: {len(always)} repo-wide ratchets"]
 

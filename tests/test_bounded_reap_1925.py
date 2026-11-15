@@ -65,6 +65,7 @@ def test_a_stopped_child_is_named_with_its_state_and_the_cut_recorded(seen, caps
     child = subprocess.Popen(SLEEPER)
     try:
         os.kill(child.pid, signal.SIGSTOP)
+        assert os.WIFSTOPPED(os.waitpid(child.pid, os.WUNTRACED)[1])
         assert _returns_within(lambda: reaping.wait(child, "a test")) is False
         err = capsys.readouterr().err
         assert f"pid {child.pid} did not exit within {BOUND:g} s" in err and "state T" in err, err
@@ -76,7 +77,7 @@ def test_a_stopped_child_is_named_with_its_state_and_the_cut_recorded(seen, caps
 
 def test_a_child_that_exits_is_reaped_and_nothing_is_cut(seen):
     child = subprocess.Popen([sys.executable, "-c", "pass"])
-    assert reaping.wait(child, "a test") is True and child.returncode == 0
+    assert reaping.wait(child, "a test", timeout=60.0) is True and child.returncode == 0
     assert seen == []
 
 
