@@ -30,7 +30,7 @@ test-network:             ## ask third parties whether what they publish is stil
 	uv run pytest tests/ -q -m network
 
 test-litellm:             ## the gateway usage callback inside a real LiteLLM proxy (#481)
-	. scripts/versions.sh && uv run --group mcp --python 3.12 --with "$$LITELLM_PIN" pytest tests/ -q -m litellm
+	. scripts/versions.sh && uv run --group mcp --python 3.12 --with "$$LITELLM_PIN" --with-requirements scripts/locks/litellm.txt pytest tests/ -q -m litellm
 
 coverage:                 ## REPORT coverage, never gate on it; then the diff figure
 	uv run pytest tests/ -q --cov=harness --cov=evals \

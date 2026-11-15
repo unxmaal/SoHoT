@@ -587,6 +587,14 @@ def _free_disk_is_pinned(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_uv_prune(monkeypatch, tmp_path_factory):
+    """No disk sweep prunes the runner's own uv cache: it points at an empty scratch path unless a test passes run. #2049."""
+    from harness import uv_cache
+    gone, real = tmp_path_factory.getbasetemp() / "no-uv-cache", uv_cache.cache_dir
+    monkeypatch.setattr(uv_cache, "cache_dir", lambda run=None: gone if run is None else real(run))
+
+
+@pytest.fixture(autouse=True)
 def _no_real_registry(monkeypatch):
     """No test reads a benchmark registry; a fixture fetcher is passed instead. #491."""
     from harness import benchmarks

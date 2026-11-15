@@ -737,6 +737,24 @@ def sweep(run_start: float | None = None, say=print, conn=None, **which) -> dict
         say(f"    {gib(r['bytes']):>7} GiB  {r['repo'] or r['path']}  ({r['why']})")
     for r in got["errors"]:
         say(f"    not removed: {r['path']}: {r['error']}")
+    got["uv"] = uv_prune(say)
+    return got
+
+
+def uv_prune(say=print) -> dict:
+    """uv_cache.prune() reported: bytes freed, or why it was skipped; and the data volume if still under monit's alert."""
+    from harness import monitor, uv_cache
+    try:
+        got = uv_cache.prune()
+    except OSError as exc:
+        got = {"skipped": str(exc)}
+    if "skipped" in got:
+        say(f"  uv cache prune skipped: {got['skipped']}")
+        return got
+    say(f"  uv cache: freed {gib(got['bytes'])} GiB")
+    if got["free"] < monitor.DISK_ALERT_GIB * 1024 ** 3:
+        say(f"  the uv cache's volume still has {gib(got['free'])} GiB free, under monit's "
+            f"{monitor.DISK_ALERT_GIB} GiB alert")
     return got
 
 

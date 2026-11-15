@@ -10,4 +10,4 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/env.sh
 [ $# -eq 2 ] || { echo "usage: $0 REPO FILE.gguf" >&2; exit 2; }
-HF_HUB_OFFLINE=0 uv run --with huggingface_hub python -m harness.gguf "$1" "$2"
+HF_HUB_OFFLINE=0 uv run python -m harness.gguf "$1" "$2"

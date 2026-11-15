@@ -40,7 +40,7 @@ else
   # harness.tts_server: a DELETE /v1/models gives the model's memory back, which the stock server never does. #1671
   RUN=(-m harness.tts_server --host "${TTS_HOST:-0.0.0.0}" --port "${TTS_PORT:-8890}")
 fi
-exec uv run --no-project \
+exec uv run --no-project --python 3.12 --with-requirements scripts/locks/tts.txt \
   --with "$MLX_AUDIO_PIN" --with "$UVICORN_PIN" --with "$WEBRTCVAD_PIN" \
   --with "$FASTAPI_PIN" --with "$MULTIPART_PIN" --with "$SETUPTOOLS_PIN" \
   --with "$MISAKI_PIN" --with "$SOUNDFILE_PIN" --with "$SPACY_PIN" --with "$PRESHED_PIN" --with "$EN_CORE_WEB_SM_PIN" \

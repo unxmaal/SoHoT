@@ -112,6 +112,7 @@ capabilities:
       - harness/relist.py
       - harness/commands/relist.py
       - harness/test_weights.py
+      - harness/uv_cache.py
 
   - name: discovery-sources
     summary: Feeds, registries, papers, posts and neighbours that propose candidates, techniques and benchmarks.
