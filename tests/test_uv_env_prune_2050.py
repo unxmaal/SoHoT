@@ -21,7 +21,7 @@ def _env(archive, name, old=True, venv=True):
     (entry / "lib").mkdir(parents=True)
     (entry / "lib" / "mod.py").write_bytes(b"x" * 4096)
     if venv:
-        (entry / "pyvenv.cfg").write_text("home = /usr/bin\n")
+        (entry / "pyvenv.cfg").write_text("home = /usr/bin\n", encoding="utf-8")
     if old:
         os.utime(entry, (OLD, OLD))
     return entry
@@ -91,6 +91,7 @@ def test_a_recent_environments_v2_link_keeps_an_old_entry(cache):
     assert got["removed"] == [] and got["fresh"] == 1 and entry.is_dir()
 
 
+@pytest.mark.gauntlet("nothing-and-failed-return-the-same-value", site="harness/uv_cache.py:in_use:except")
 @pytest.mark.parametrize("how", ["missing", "timeout", "empty"])
 def test_nothing_is_removed_when_the_processes_cannot_be_listed(cache, how):
     entry = _env(cache / "archive-v0", "OLDenv")
@@ -101,6 +102,8 @@ def test_nothing_is_removed_when_the_processes_cannot_be_listed(cache, how):
         if how == "timeout":
             raise subprocess.TimeoutExpired(cmd, 1)
         return subprocess.CompletedProcess(cmd, 1, "", "")
+    assert uv_cache.in_use(cache, run) is None
+    assert uv_cache.in_use(cache, lambda cmd, **kw: subprocess.CompletedProcess(cmd, 0, "nothing\n", "")) == set()
     assert "skipped" in uv_cache.prune_envs_at(cache, run=run)
     assert entry.is_dir()
 

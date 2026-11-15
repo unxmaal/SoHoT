@@ -118,8 +118,9 @@ def prune(popen=None) -> dict:
     return prune_at(cache, popen) if cache else {"skipped": "no uv cache to prune"}
 
 
-def in_use(cache: Path, run=subprocess.run) -> set[str] | None:
+def in_use(cache: Path, run=None) -> set[str] | None:
     """archive-v0 entries a running process names in its open files (lsof -nP) or args; None when either cannot be read."""
+    run = run or subprocess.run
     out = ""
     for cmd in (["lsof", "-nP"], ["ps", "-A", "-ww", "-o", "args="]):
         try:
@@ -153,12 +154,12 @@ def _size(path: Path) -> int:
         for f in files:
             try:
                 total += os.lstat(os.path.join(top, f)).st_size
-            except OSError:
-                pass
+            except FileNotFoundError:
+                continue
     return total
 
 
-def prune_envs_at(cache: Path, now: float | None = None, run=subprocess.run) -> dict:
+def prune_envs_at(cache: Path, now: float | None = None, run=None) -> dict:
     """Remove archive-v0 venvs no process uses, older than ENV_MAX_AGE_S, outside uv's lock: {"removed", ...} or {"skipped"}."""
     if not ENV_PRUNE:
         return {"skipped": "ENV_PRUNE is off"}
@@ -191,10 +192,8 @@ def prune_envs_at(cache: Path, now: float | None = None, run=subprocess.run) -> 
             continue
         for link in mine:
             link.unlink(missing_ok=True)
-            try:
+            if not any(link.parent.iterdir()):
                 link.parent.rmdir()
-            except OSError:
-                pass
         removed.append(entry.name)
         freed += size
     if removed:
