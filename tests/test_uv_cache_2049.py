@@ -123,6 +123,28 @@ def test_the_sweep_says_why_the_prune_was_skipped(monkeypatch):
     assert lines == [f"  uv cache prune skipped: {uv_cache.HELD}"]
 
 
+def test_a_uv_that_cannot_say_where_its_cache_is_is_reported_as_failed_not_as_no_cache(monkeypatch):
+    monkeypatch.delenv("UV_CACHE_DIR", raising=False)
+    monkeypatch.setattr(uv_cache.shutil, "which", lambda name: "/fake/bin/uv")
+
+    def failing(argv, **kw):
+        return subprocess.CompletedProcess(argv, 2, "", "error: no home directory\n")
+
+    def slow(argv, **kw):
+        raise subprocess.TimeoutExpired(argv, kw["timeout"])
+
+    for run, want in ((failing, "exited 2: error: no home directory"), (slow, "ran past 30 s")):
+        with pytest.raises(OSError, match=want):
+            uv_cache.cache_dir(run)
+    stubbed = uv_cache.cache_dir
+    monkeypatch.setattr(uv_cache, "cache_dir", lambda run=None: stubbed(failing))
+    lines = []
+    got = disk.uv_prune(lines.append)
+    assert "exited 2" in got["skipped"] and "no uv cache" not in got["skipped"]
+    assert lines == [f"  uv cache prune skipped: {got['skipped']}"]
+    monkeypatch.setattr(uv_cache.shutil, "which", lambda name: None)
+    assert stubbed(failing) is None
+
 def _pins() -> dict:
     text = (REPO / "scripts" / "versions.sh").read_text(encoding="utf-8")
     return dict(re.findall(r'^([A-Z0-9_]+)="([^"]*)"', text, re.M))
