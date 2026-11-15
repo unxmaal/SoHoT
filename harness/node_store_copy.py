@@ -5,10 +5,14 @@ import json
 import os
 import sqlite3
 import sys
+import time
 from pathlib import Path
+
+BUSY_WAIT_S = 120.0
 
 #: The one copy a node keeps: the store as the release before the pending install left it.
 NAME = "node-install.db"
+_WAITING = (5, 6)  # SQLITE_BUSY, SQLITE_LOCKED
 
 
 def _postgres(home: Path, environ) -> bool:
@@ -28,11 +32,18 @@ def _schema(conn) -> int:
 
 def _copy(src: Path, dest: Path) -> int:
     """SQLite's backup API from a mode=ro connection of SRC onto DEST; the schema DEST then holds."""
+    wait = BUSY_WAIT_S
+    deadline = time.monotonic() + wait
+
+    def _busy(status, remaining, total):
+        if status in _WAITING and time.monotonic() > deadline:
+            raise TimeoutError(f"{src} stayed locked for {wait:g} s; copying it to {dest} gave up")
+
     s = sqlite3.connect(f"{src.resolve().as_uri()}?mode=ro", uri=True)
     try:
-        d = sqlite3.connect(str(dest), timeout=60)
+        d = sqlite3.connect(str(dest), timeout=wait)
         try:
-            s.backup(d)
+            s.backup(d, progress=_busy)
             return _schema(d)
         finally:
             d.close()

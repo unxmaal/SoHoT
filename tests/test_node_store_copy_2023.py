@@ -4,9 +4,11 @@ from __future__ import annotations
 import json
 import os
 import shlex
+import signal
 import sqlite3
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -146,8 +148,20 @@ def _run_script(tmp_path, home, bash, *args):
     env = {k: v for k, v in os.environ.items() if k not in ("LOCALHARNESS_HOME", "LOCALHARNESS_STORE")}
     env["HOME"] = str(home)
     argv = node_deploy.ssh_argv(n, *args)
-    return subprocess.run([bash, *shlex.split(argv[-1])[1:]], input=node_deploy.SCRIPT, text=True,
-                          capture_output=True, env=env, timeout=60)
+    return _bounded([bash, *shlex.split(argv[-1])[1:]], node_deploy.SCRIPT, env)
+
+
+def _bounded(argv, script, env, timeout=60):
+    """subprocess.run in its own process group, the whole group killed when TIMEOUT passes (#2038)."""
+    p = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                         env=env, start_new_session=True)
+    try:
+        out, err = p.communicate(script, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        os.killpg(p.pid, signal.SIGKILL)
+        p.communicate()
+        raise
+    return subprocess.CompletedProcess(argv, p.returncode, out, err)
 
 
 @pytest.mark.parametrize("bash", BASHES)
@@ -228,3 +242,23 @@ def test_the_copy_reads_the_store_backend_as_the_harness_does(tmp_path, monkeypa
     elif marker:
         (home / store.MARKER).write_text(json.dumps({"backend": marker}), encoding="utf-8")
     assert node_store_copy._postgres(home, os.environ) == (store.backend() == store.POSTGRES)
+
+
+def test_a_store_held_busy_fails_the_copy_inside_its_wait(tmp_path):
+    db = tmp_path / "discovery.db"
+    _store(db, 105)
+    lock = sqlite3.connect(db, isolation_level=None)
+    lock.execute("BEGIN EXCLUSIVE")
+    code = ("import sys; from harness import node_store_copy as m; m.BUSY_WAIT_S = 0.5; "
+            "raise SystemExit(m.main(sys.argv[1:]))")
+    env = {k: v for k, v in os.environ.items() if k != store.BACKEND_ENV}
+    env["PYTHONPATH"] = str(Path(node_store_copy.__file__).parents[1])
+    try:
+        started = time.monotonic()
+        got = _bounded([sys.executable, "-c", code, "backup", str(tmp_path)], "", env, timeout=20)
+        took = time.monotonic() - started
+    finally:
+        lock.close()
+    assert got.returncode == 1, got.stdout + got.stderr
+    assert f"{db} stayed locked for 0.5 s" in got.stderr and "TimeoutError" in got.stderr, got.stderr
+    assert took < 15
