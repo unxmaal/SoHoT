@@ -132,9 +132,8 @@ def _stamp(text) -> float | None:
     return (t if t.tzinfo else t.replace(tzinfo=_dt.timezone.utc)).timestamp()
 
 
-def usage_messages(files, since: float, until: float | None = None) -> list[dict]:
-    """Claude Code usage per API message, once over every file by (message.id, requestId): the final record, else the largest."""
-    got: dict = {}
+def usage_records(files):
+    """(path, record, message, at) for each assistant record that carries usage and a readable timestamp."""
     for path in files:
         with open(path, encoding="utf-8", errors="ignore") as fh:
             for line in fh:
@@ -148,18 +147,39 @@ def usage_messages(files, since: float, until: float | None = None) -> list[dict
                 if rec.get("type") != "assistant" or not isinstance(msg, dict) or not isinstance(msg.get("usage"), dict):
                     continue
                 at = _stamp(rec.get("timestamp"))
-                if at is None or at < since or (until is not None and at >= until):
-                    continue
-                key = (msg.get("id"), rec.get("requestId")) if msg.get("id") and rec.get("requestId") else rec.get("uuid")
-                m = got.setdefault(key, {"at": at, "session": str(rec.get("sessionId") or ""),
-                                         "model": str(msg.get("model") or "?"), "final": False, **_zero()})
-                final = bool(msg.get("stop_reason"))
-                if m["final"] and not final:
-                    continue
-                for src, name in USAGE_KEYS:
-                    n = int(msg["usage"].get(src) or 0)
-                    m[name] = n if final and not m["final"] else max(m[name], n)
-                m["final"] = m["final"] or final
+                if at is not None:
+                    yield path, rec, msg, at
+
+
+def usage_key(rec: dict, msg: dict):
+    """What makes two usage records one API request: (message.id, requestId), else the record's own uuid."""
+    return (msg.get("id"), rec.get("requestId")) if msg.get("id") and rec.get("requestId") else rec.get("uuid")
+
+
+def merge_usage(got: dict, key, rec: dict, msg: dict, at: float) -> dict:
+    """Fold one usage record into its request's row in `got`: the final record's counts, else the largest seen."""
+    m = got.setdefault(key, {"at": at, "session": str(rec.get("sessionId") or ""),
+                             "model": str(msg.get("model") or "?"), "final": False, **_zero()})
+    final = bool(msg.get("stop_reason"))
+    if m["final"] and not final:
+        return m
+    for src, name in USAGE_KEYS:
+        n = int(msg["usage"].get(src) or 0)
+        m[name] = n if final and not m["final"] else max(m[name], n)
+    m["final"] = m["final"] or final
+    return m
+
+
+def in_window(at: float, since: float, until: float | None = None) -> bool:
+    return at >= since and (until is None or at < until)
+
+
+def usage_messages(files, since: float, until: float | None = None) -> list[dict]:
+    """Claude Code usage per API message, once over every file by (message.id, requestId): the final record, else the largest."""
+    got: dict = {}
+    for _path, rec, msg, at in usage_records(files):
+        if in_window(at, since, until):
+            merge_usage(got, usage_key(rec, msg), rec, msg, at)
     return list(got.values())
 
 

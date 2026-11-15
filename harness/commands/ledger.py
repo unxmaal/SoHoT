@@ -297,6 +297,60 @@ def show_compare(C: dict) -> None:
         note(f"{k}: {v}")
 
 
+def gather_by(a, now: float) -> dict:
+    """`--by`: counted cloud tokens by kind, agent type and cache write cause, over the plain ledger's own window. #2031."""
+    from harness import context_report as cr, ledger, token_flow
+    days = ledger.days_between(cr.parse_when(a.since, now), now)
+    B = token_flow.gather(ledger.day_start(days[0]), top=a.top)
+    return {"window": {"first_day": days[0], "last_day": days[-1]}, **B}
+
+
+def _by_row(label: str, g: dict) -> str:
+    return (f"{label:<34} {g['streams']:>7,} {g['requests']:>8,} {_tok(g['counted']):>9} {_share(g['share']):>5} "
+            f"{_tok(g['input']):>9} {_tok(g['output']):>9} {_tok(g['cache_write']):>11}")
+
+
+def _share(share) -> str:
+    return "n/a" if share is None else f"{share:.0%}"
+
+
+def show_by(B: dict) -> None:
+    w = B["window"]
+    note(f"cloud by cause {w['first_day']} .. {w['last_day']}")
+    if not B["available"]:
+        note(f"counted   unavailable: {B['why']}")
+        return
+    t, x = B["tokens"], B["expiry"]
+    note(f"counted   {_tok(B['counted'])} = {_tok(t['input'])} in + {_tok(t['output'])} out + {_tok(t['cache_write'])} "
+         f"cache write, over {B['requests']:,} requests in {B['streams']:,} streams ({_tok(t['cache_read'])} cache read "
+         "not counted)")
+    idle = "" if not x["events"] else (f"; median {_tok(int(x['median_tokens']))} after "
+                                       f"{x['median_idle_s'] / 60:.1f} min idle")
+    note(f"expiry    {_tok(x['cache_write'])} rewritten after a cache expiry, {_share(x['share'])} of counted cloud, "
+         f"in {x['events']:,} rewrites{idle}")
+    note("          from transcripts, which miss output Claude Code never records (#1160): a lower bound")
+    head = f"{'':<34} {'streams':>7} {'requests':>8} {'counted':>9} {'share':>5} {'input':>9} {'output':>9} {'cache write':>11}"
+    note("\nby kind")
+    note(head)
+    for k in B["kinds"]:
+        note(_by_row(k["kind"], k))
+    note("\nsubagents by agent type")
+    for g in B["agents"]:
+        note(_by_row(g["agent"], g))
+    note(f"\ncache write by cause {'':<21} {'writes':>8} {'tokens':>9} {'share':>5}")
+    for c in B["causes"]:
+        note(f"{c['kind'] + ', ' + c['cause']:<42} {c['events']:>8,} {_tok(c['cache_write']):>9} {_share(c['share']):>5}")
+    if x["tools"]:
+        note("\nexpiry rewrites by the tool call of the request before")
+        for tool in x["tools"]:
+            note(f"{tool['tool'][:42]:<42} {tool['events']:>8,} {_tok(tool['cache_write']):>9} {_share(tool['share']):>5}")
+    note(f"\ntop {len(B['top'])} streams by counted tokens")
+    for s in B["top"]:
+        label = f"{s['stream'][:24]} {s['kind']}" + (f" {s['agent'] or 'unnamed'}" if s["kind"] != "main" else "")
+        note(f"{label[:50]:<50} {_tok(s['counted']):>9} {_share(s['share']):>5} {s['requests']:>7,} reqs "
+             f"{s['expiry_rewrites']:>3} expiry rewrites")
+
+
 def asked_days(specs: list[str]) -> list[str]:
     """Each --day as one day or a FIRST..LAST range, sorted and once each; ValueError on a bad one."""
     import datetime as _dt
@@ -376,6 +430,16 @@ def cmd_ledger(a) -> int:
     now = time.time()
     if getattr(a, "day", None):
         return cmd_days(a, now)
+    if getattr(a, "by", False):
+        try:
+            B = gather_by(a, now)
+        except ValueError as exc:
+            note(str(exc))
+            emit(False, error=str(exc))
+            return 2
+        show_by(B)
+        emit(B["available"], **B)
+        return 0 if B["available"] else 1
     if getattr(a, "compare", ""):
         try:
             C = gather_compare(a.compare)
