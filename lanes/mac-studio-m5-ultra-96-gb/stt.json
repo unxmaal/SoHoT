@@ -575,7 +575,7 @@
   },
   {
    "candidate": "stt:mlx-community/Qwen3-ASR-0.6B-4bit",
-   "decided_at": "2026-10-19T11:51:28Z",
+   "decided_at": "2026-11-15T02:04:56Z",
    "detail": "fits: MLX-native, smallest variant model.safetensors: 0.7 GiB of 1 weight file",
    "exam": null,
    "outcome": "queued",
@@ -1670,7 +1670,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-14T08:00:43Z",
+ "generated_at": "2026-11-15T08:00:32Z",
  "knobs": [],
  "lane": {
   "cases": 480,
