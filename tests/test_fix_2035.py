@@ -24,11 +24,11 @@ def _git(ws: Path, *args) -> None:
 def ws(tmp_path) -> Path:
     w = tmp_path / "ws"
     (w / "pkg").mkdir(parents=True)
-    (w / "pkg" / "mod.py").write_text("def f():\n    return 1\n")
-    (w / "pkg" / "other.py").write_text("X = 1\n")
+    (w / "pkg" / "mod.py").write_text("def f():\n    return 1\n", encoding="utf-8")
+    (w / "pkg" / "other.py").write_text("X = 1\n", encoding="utf-8")
     (w / "tests").mkdir()
-    (w / "tests" / "test_other.py").write_text("from pkg.mod import f\n\n\ndef test_int():\n    assert isinstance(f(), int)\n")
-    (w / ".gitignore").write_text("__pycache__/\n")
+    (w / "tests" / "test_other.py").write_text("from pkg.mod import f\n\n\ndef test_int():\n    assert isinstance(f(), int)\n", encoding="utf-8")
+    (w / ".gitignore").write_text("__pycache__/\n", encoding="utf-8")
     _git(w, "init", "-q")
     _git(w, "add", ".gitignore", "pkg", "tests")
     _git(w, "commit", "-qm", "base")
@@ -64,21 +64,21 @@ def _executor(*edits):
 
 
 def fixes(ws):
-    (ws / "pkg" / "mod.py").write_text("def f():\n    return 2\n")
+    (ws / "pkg" / "mod.py").write_text("def f():\n    return 2\n", encoding="utf-8")
 
 
 def edits_the_test(ws):
-    (ws / TEST).write_text(FAILING.replace("== 2", "== 1"))
+    (ws / TEST).write_text(FAILING.replace("== 2", "== 1"), encoding="utf-8")
 
 
 def touches_unplanned(ws):
     fixes(ws)
-    (ws / "pkg" / "other.py").write_text("X = 2\n")
+    (ws / "pkg" / "other.py").write_text("X = 2\n", encoding="utf-8")
 
 
 def adds_unplanned(ws):
     fixes(ws)
-    (ws / "pkg" / "new.py").write_text("Y = 1\n")
+    (ws / "pkg" / "new.py").write_text("Y = 1\n", encoding="utf-8")
 
 
 def nothing(ws):
@@ -140,12 +140,12 @@ def test_a_planned_test_that_collects_nothing_is_refused_at_base(ws):
 def test_a_test_that_imports_what_does_not_exist_yet_counts_as_failing_at_base(ws):
     code = "from pkg.mod import g\n\n\ndef test_g():\n    assert g() == 3\n"
     rec = _run(ws, _planner(_plan(code)), _executor(lambda w: (w / "pkg" / "mod.py").write_text(
-        "def f():\n    return 1\n\n\ndef g():\n    return 3\n")))
+        "def f():\n    return 1\n\n\ndef g():\n    return 3\n", encoding="utf-8")))
     assert rec.resolved, rec.why
 
 
 def test_a_still_failing_test_is_refused_and_the_second_attempt_is_told_why(ws):
-    execute = _executor(lambda w: (w / "pkg" / "mod.py").write_text("def f():\n    return 3\n"), fixes)
+    execute = _executor(lambda w: (w / "pkg" / "mod.py").write_text("def f():\n    return 3\n", encoding="utf-8"), fixes)
     rec = _run(ws, _planner(_plan()), execute)
     assert rec.resolved and len(rec.attempts) == 2
     assert rec.attempts[0]["stage"] == "test"
@@ -157,7 +157,7 @@ def test_the_second_attempt_starts_again_from_base(ws):
     seen = []
 
     def second(w):
-        seen.append(((w / "pkg" / "other.py").read_text(), (w / "pkg" / "new.py").exists()))
+        seen.append(((w / "pkg" / "other.py").read_text(encoding="utf-8"), (w / "pkg" / "new.py").exists()))
         fixes(w)
     rec = _run(ws, _planner(_plan()), _executor(lambda w: (touches_unplanned(w), adds_unplanned(w)), second))
     assert seen == [("X = 1\n", False)] and rec.resolved
@@ -171,7 +171,7 @@ def test_a_failing_check_is_refused(ws):
 @pytest.mark.parametrize("body, resolved", [("return 2", True), ("return '2'", False)])
 def test_a_failing_selected_test_is_refused(ws, body, resolved):
     plan = _plan("from pkg.mod import f\n\n\ndef test_f():\n    assert str(f()) == '2'\n")
-    rec = _run(ws, _planner(plan), _executor(lambda w: (w / "pkg" / "mod.py").write_text(f"def f():\n    {body}\n")),
+    rec = _run(ws, _planner(plan), _executor(lambda w: (w / "pkg" / "mod.py").write_text(f"def f():\n    {body}\n", encoding="utf-8")),
                select=lambda w, files: ["tests/test_other.py"], attempts=1)
     assert rec.resolved is resolved and rec.stage == ("ok" if resolved else "tests")
 
@@ -179,7 +179,7 @@ def test_a_failing_selected_test_is_refused(ws, body, resolved):
 @pytest.mark.parametrize("held, resolved", [("assert f() == 2", True), ("assert False", False)])
 def test_the_merged_prs_own_test_must_also_pass(ws, held, resolved):
     _git(ws, "checkout", "-q", "-b", "pr")
-    (ws / "tests" / "test_held.py").write_text(f"from pkg.mod import f\n\n\ndef test_h():\n    {held}\n")
+    (ws / "tests" / "test_held.py").write_text(f"from pkg.mod import f\n\n\ndef test_h():\n    {held}\n", encoding="utf-8")
     _git(ws, "add", "tests/test_held.py")
     _git(ws, "commit", "-qm", "pr")
     _git(ws, "checkout", "-q", "-")
@@ -235,8 +235,8 @@ def test_a_plan_in_a_fenced_block_with_prose_around_it_parses():
 
 
 def test_selected_tests_are_those_that_import_a_changed_module(ws):
-    (ws / "tests" / "test_paren.py").write_text("from pkg import (\n    other,\n    mod,\n)\n")
-    (ws / "tests" / "test_unrelated.py").write_text("import os\n")
+    (ws / "tests" / "test_paren.py").write_text("from pkg import (\n    other,\n    mod,\n)\n", encoding="utf-8")
+    (ws / "tests" / "test_unrelated.py").write_text("import os\n", encoding="utf-8")
     assert fix.selected_tests(ws, ["pkg/mod.py"]) == ["tests/test_other.py", "tests/test_paren.py"]
     assert fix.selected_tests(ws, ["README.md"]) == []
 
@@ -278,3 +278,41 @@ def test_soh_fix_needs_an_issue_and_a_mode():
     assert a.func(a) == 1
     with pytest.raises(SystemExit):
         cli.build_parser().parse_args(["fix", "12", "--plan-only", "--execute"])
+
+
+@pytest.mark.gauntlet("nothing-and-failed-return-the-same-value", site="harness/commands/fix.py:_executor:none-message")
+def test_no_gateway_key_stops_the_local_step_instead_of_running_it_keyless(monkeypatch):
+    from harness import gateway_key
+    from harness.commands import fix as cmd
+    monkeypatch.setattr(gateway_key, "key", lambda: "")
+    a = cmd_args("12", "--execute")
+    with pytest.raises(OSError, match="no gateway key"):
+        cmd._executor(a)
+
+
+@pytest.mark.gauntlet("an-effect-reachable-from-a-run-that-is-not-the-live-deploy",
+                      site="harness/commands/fix.py:_candidates:_gh")
+@pytest.mark.gauntlet("an-effect-reachable-from-a-run-that-is-not-the-live-deploy",
+                      site="harness/commands/fix.py:_issue:_gh")
+def test_every_gh_call_of_a_replay_only_reads(monkeypatch):
+    from harness.commands import fix as cmd
+    calls = []
+    answers = {"list": [{"number": 5, "closedByPullRequestsReferences": [{"number": 6}]}],
+               "issue": {"title": "t", "body": "b", "closedByPullRequestsReferences": [{"number": 6}]},
+               "pr": {"state": "MERGED", "mergeCommit": {"oid": "abc"},
+                      "files": [{"path": "harness/a.py"}, {"path": "tests/test_a.py"}]}}
+
+    def run(argv, cwd, timeout=0):
+        calls.append(argv)
+        key = "list" if argv[2] == "list" else argv[1]
+        return 0, json.dumps(answers[key])
+    monkeypatch.setattr(fix, "run_cmd", run)
+    got = cmd._candidates(cmd_args("replay"))
+    assert cmd._issue(5) == ("t", "b")
+    assert [(c.issue, c.base, c.held_out) for c in got] == [(5, "abc^", ("tests/test_a.py",))]
+    assert calls and all(c[0] == "gh" and c[2] in ("view", "list") for c in calls)
+
+
+def cmd_args(*argv):
+    from harness.commands.common import parsed
+    return parsed("fix", *argv)
