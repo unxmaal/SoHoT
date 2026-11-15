@@ -54,18 +54,18 @@
   },
   {
    "candidate": "diffusers-video:FastVideo/FastVideo-FastH3-8-Step-V2",
-   "decided_at": "2026-10-19T10:43:54Z",
-   "detail": "unknown: no variant groups its weights (audio_vae/*.safetensors,text_encoder/*.safetensors,transformer/*.safetensors,vae/*.safetensors), so their 137.7 GiB sum is not a size it runs at",
+   "decided_at": "2026-11-15T02:27:25Z",
+   "detail": "not screened: needs 137.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released",
    "exam": null,
    "outcome": "queued",
    "proposal": "FastVideo/FastVideo-FastH3-8-Step-V2",
-   "reason": "harness",
+   "reason": "memory",
    "receipt_key": "diffusers-video/FastVideo-FastH3-8-Step-V2",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
-   "until": "layout:audio_vae/*.safetensors,text_encoder/*.safetensors,transformer/*.safetensors,vae/*.safetensors"
+   "tier": "screen",
+   "until": "room_gb:>137.7"
   },
   {
    "candidate": "h3",
@@ -105,7 +105,7 @@
    "until": ""
   }
  ],
- "cursor": 1794537007701734,
+ "cursor": 1794709645659311,
  "events": [
   {
    "at": "2026-09-19T23:24:35Z",
@@ -225,6 +225,21 @@
    "outcome": "broken",
    "reason": "candidate",
    "run_id": 930,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-15T02:27:25Z",
+   "candidate": "FastVideo/FastVideo-FastH3-8-Step-V2",
+   "chosen": null,
+   "detail": "not screened: needs 137.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released",
+   "how": "",
+   "id": 1794709645659311,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
    "tier": "screen"
   }
  ],
@@ -394,7 +409,7 @@
    "runs": 7
   }
  ],
- "generated_at": "2026-11-13T03:38:05Z",
+ "generated_at": "2026-11-15T08:00:30Z",
  "knobs": [],
  "lane": {
   "cases": 1,
