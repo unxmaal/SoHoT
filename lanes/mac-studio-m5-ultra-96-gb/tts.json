@@ -412,18 +412,18 @@
   },
   {
    "candidate": "tts:OpenMOSS-Team/MOSS-TTS-v1.5",
-   "decided_at": "2026-11-14T05:11:06Z",
-   "detail": "not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: huggingface_hub.errors.LocalEntryNotFoundError: Cannot find an appropriate cached snapshot folder for the specified revision on the local dis",
+   "decided_at": "2026-11-15T02:27:23Z",
+   "detail": "not screened: needs 15.8 GB but only 9.9 GB is safely available (27.9 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "exam": null,
    "outcome": "queued",
    "proposal": "OpenMOSS-Team/MOSS-TTS-v1.5",
-   "reason": "harness",
+   "reason": "memory",
    "receipt_key": "MOSS-TTS-v1.5",
-   "run_id": 970,
+   "run_id": null,
    "serves": false,
    "status": "pending",
    "tier": "screen",
-   "until": ""
+   "until": "room_gb:>15.8"
   },
   {
    "candidate": "tts:nvidia/magpie_tts_multilingual_357m",
@@ -456,7 +456,7 @@
    "until": "format:.pt"
   }
  ],
- "cursor": 1794633073169208,
+ "cursor": 1794709643509284,
  "events": [
   {
    "at": "2026-09-19T21:17:40Z",
@@ -1132,6 +1132,21 @@
    "reason": "runtime",
    "run_id": 972,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-15T02:27:23Z",
+   "candidate": "OpenMOSS-Team/MOSS-TTS-v1.5",
+   "chosen": null,
+   "detail": "not screened: needs 15.8 GB but only 9.9 GB is safely available (27.9 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794709643509284,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -1302,7 +1317,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-14T08:00:43Z",
+ "generated_at": "2026-11-15T08:00:32Z",
  "knobs": [],
  "lane": {
   "cases": 470,
