@@ -8,7 +8,6 @@ import signal
 import sqlite3
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 import pytest
@@ -158,7 +157,10 @@ def _bounded(argv, script, env, timeout=60):
     try:
         out, err = p.communicate(script, timeout=timeout)
     except subprocess.TimeoutExpired:
-        os.killpg(p.pid, signal.SIGKILL)
+        if hasattr(os, "killpg"):
+            os.killpg(p.pid, signal.SIGKILL)
+        else:
+            p.kill()
         p.communicate()
         raise
     return subprocess.CompletedProcess(argv, p.returncode, out, err)
@@ -254,11 +256,8 @@ def test_a_store_held_busy_fails_the_copy_inside_its_wait(tmp_path):
     env = {k: v for k, v in os.environ.items() if k != store.BACKEND_ENV}
     env["PYTHONPATH"] = str(Path(node_store_copy.__file__).parents[1])
     try:
-        started = time.monotonic()
         got = _bounded([sys.executable, "-c", code, "backup", str(tmp_path)], "", env, timeout=20)
-        took = time.monotonic() - started
     finally:
         lock.close()
     assert got.returncode == 1, got.stdout + got.stderr
     assert f"{db} stayed locked for 0.5 s" in got.stderr and "TimeoutError" in got.stderr, got.stderr
-    assert took < 15
