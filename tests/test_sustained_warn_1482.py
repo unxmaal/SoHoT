@@ -167,7 +167,7 @@ def test_the_measure_loop_takes_no_measurement_while_headroom_is_negative(monkey
 def _runner(monkeypatch, room=50.0, per=114688, screening=False):
     sent, got = [], []
     monkeypatch.setattr(completion, "complete_full", lambda *a, **kw: sent.append(kw) or None)
-    monkeypatch.setattr(memory, "mlx_kv_bytes_per_token", lambda repo: per)
+    monkeypatch.setattr(memory, "mlx_kv_bytes_per_token", lambda repo, **kw: per)
     monkeypatch.setattr(cuts, "cut", lambda knob, what, **kw: got.append(knob))
     r = CompletionRunner(serving.MLX_URL, SMALL, max_tokens=1000)
     r.headroom = lambda: room

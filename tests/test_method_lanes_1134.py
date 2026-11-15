@@ -57,7 +57,7 @@ def test_a_plan_method_filed_under_code_is_not_scheduled_on_the_repo_lane(conn, 
     _screened(conn, "plan:llamacpp:Ornith-1.5-35B-Q4_K_M", "code")
     got = [(r["name"], measure_cmd.lane_for(r, repo_gate.args_for(argparse.Namespace(lane=""), r).lane))
            for r in _queue(conn, monkeypatch, "", True)]
-    assert got == [("plan:llamacpp:Ornith-1.5-35B-Q4_K_M", "code")]
+    assert sorted(got) == [("plan:llamacpp:Ornith-1.5-35B-Q4_K_M", "code"), ("plan:llamacpp:Ornith-1.5-35B-Q4_K_M", "extract")]
     assert repo_gate.blocked(conn, {"name": "plan:llamacpp:Ornith-1.5-35B-Q4_K_M", "lane": "code"}) == ""
     assert _queue(conn, monkeypatch, "repo", True) == []
 

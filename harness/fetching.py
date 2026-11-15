@@ -369,7 +369,7 @@ def row(conn, name: str) -> dict | None:
 
 
 def by_lane_turns(rows: list[dict], conn=None) -> list[dict]:
-    """Rank order taken a lane at a time: every lane's #1 before any lane's #2; a parent rides in its child's lane. #1084."""
+    """Rank order taken a lane at a time: every lane's #1 before any lane's #2, work lanes first; a parent rides in its child's lane. #1084, #2033."""
     names = [r["name"] for r in rows]
     child_lane: dict[str, str] = {}
     if conn is not None and names:
@@ -386,9 +386,11 @@ def by_lane_turns(rows: list[dict], conn=None) -> list[dict]:
             or lanes.canonical(r.get("lane") or "")
         queues.setdefault(key, []).append(r)
     at = {id(r): i for i, r in enumerate(rows)}
+    # Within a turn the work lanes go first, then rank order. #2033.
+    work = {id(r): (lanes.WORK.index(k) if k in lanes.WORK else len(lanes.WORK)) for k, q in queues.items() for r in q}
     out, turn = [], 0
     while len(out) < len(rows):
-        out += sorted((q[turn] for q in queues.values() if turn < len(q)), key=lambda r: at[id(r)])
+        out += sorted((q[turn] for q in queues.values() if turn < len(q)), key=lambda r: (work[id(r)], at[id(r)]))
         turn += 1
     return out
 

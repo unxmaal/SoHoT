@@ -70,6 +70,8 @@ def cmd_delegated(a) -> int:
                  f"{_rate(r['used_rate']):>5} {_rate(r['edited_rate']):>6} "
                  f"{_rate(r['discarded_rate']):>9} {r['accepted']:>8} {r['rejected']:>8} "
                  f"{r['unknown']:>7} {r['pending']:>7} {med:>8}")
+            for shape, b in (r.get("shapes") or {}).items():
+                note(f"  {shape or 'unshaped':<8} {b['count']:>5} {b['recorded']:>8} {_rate(b['used_rate']):>5}")
     if waits:
         note(f"\nwaits on a held machine and whole latency (#1556)\n{'lane':<10} {'waits':>5} {'refused':>7} "
              f"{'cut':>4} {'beside':>6} {'median s':>8} {'max s':>7} {'p95 s':>7}  target")

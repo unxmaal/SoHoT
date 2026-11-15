@@ -514,6 +514,11 @@ def complete(lane: str, prompt: str, system: str | None = None,
         raise Refused("empty prompt")
     _preflight(prompt, system or "", max_tokens=max_tokens)
     spec, where = route(lane, model)
+    if delegated:
+        from harness import delegations
+        shaped_out = delegations.shape_refusal(lane, spec)
+        if shaped_out:
+            raise Refused(shaped_out)
     from harness import methods
     base = methods.base_of(spec) or spec
     _budget(base, max_tokens, prompt, system or completion.SYSTEM.get(lane, ""), where=where)

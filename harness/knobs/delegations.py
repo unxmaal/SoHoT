@@ -10,6 +10,10 @@ KNOBS = [
        note="shortest answer line, whitespace collapsed, looked for in a later tool input (#1158)"),
     _k("delegation_span_share", ["harness/delegations.py:SPAN_SHARE"], [0.1, 0.25, 0.5],
        note="share of the answer's own lines a later tool input must hold to count it accepted (#1158)"),
+    _k("delegations_shape_floor", ["harness/delegations.py:SHAPE_FLOOR"], [0.5, 0.3, 0.7],
+       note="the used-as-is share under which a gated lane's bare prompts go to cloud (#2033)"),
+    _k("delegations_shape_min", ["harness/delegations.py:SHAPE_MIN"], [8, 5, 15],
+       note="recorded outcomes of one shape on one spec before the floor may refuse it (#2033)"),
 ]
 
 NEVER_CUTS = {

@@ -138,7 +138,7 @@ LEFT_OUT = {
         "test_lifecycle_stateful_1766.py", "test_machine_scope_1769.py", "test_crash_between_writes_1758.py",
         "test_verdict_event_1942.py"),
     "harness/serving.py": (
-        "test_store_down_refuse_1648.py", "test_styx_batch_1689.py", "test_engine_build_1607.py", "test_install_env_1518.py", "test_runtime_trials_1474.py", "test_mlx_backlog.py", "test_runner_gap_until_950.py", "test_agent_limits.py", "test_claims_lane.py", "test_decide_lane.py",
+        "test_kv_layers_2033.py", "test_store_down_refuse_1648.py", "test_styx_batch_1689.py", "test_engine_build_1607.py", "test_install_env_1518.py", "test_runtime_trials_1474.py", "test_mlx_backlog.py", "test_runner_gap_until_950.py", "test_agent_limits.py", "test_claims_lane.py", "test_decide_lane.py",
         "test_delegate_resident.py", "test_delegations.py", "test_lane_probe_924.py", "test_machine_host.py",
         "test_machine_identity.py", "test_mlx_dead_912.py", "test_purpose_825.py", "test_usage_gateway.py",
         "test_vllm.py", "test_repo_failures_921.py", "test_presence_960.py", "test_limit_cuts_1087_harness_di.py",
