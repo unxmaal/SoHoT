@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 107
+SCHEMA_VERSION = 108
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -615,7 +615,9 @@ CREATE TABLE IF NOT EXISTS delegations (
     -- NULL until the caller says: used, edited or discarded.
     outcome           TEXT,
     why               TEXT NOT NULL DEFAULT '',
-    outcome_at        REAL
+    outcome_at        REAL,
+    -- The task's shape: prompt, spans, digest, ask or decide; '' before #2033.
+    shape             TEXT NOT NULL DEFAULT ''
 );
 
 -- A delegation that found the machine held by another job: how long it waited for it to yield, and how it ended. #1556.

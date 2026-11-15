@@ -490,8 +490,8 @@ def size_gb(path: str) -> float | None:
     return total / 1024 ** 3 if total else None
 
 
-def mlx_kv_bytes_per_token(repo: str, path: str | None = None) -> int:
-    """f16 K and V bytes one token of context costs this repo (or the weights at `path`), from its config.json; 0 when unknown. #699."""
+def mlx_kv_bytes_per_token(repo: str, path: str | None = None, ctx: int = 0) -> int:
+    """f16 K and V bytes one token costs this repo (or the weights at `path`) averaged over `ctx` tokens, from its config.json; 0 when unknown. #699, #2033."""
     import json
     path = path or cache_path(repo)
     if not path:
@@ -503,14 +503,38 @@ def mlx_kv_bytes_per_token(repo: str, path: str | None = None) -> int:
     except (OSError, ValueError):
         return 0
     cfg = cfg.get("text_config") if isinstance(cfg.get("text_config"), dict) else cfg
+    if not ctx:
+        from harness import serving
+        ctx = serving.MLX_REQUEST_CTX
     try:
-        layers = int(cfg.get("num_hidden_layers") or 0)
-        heads = int(cfg.get("num_attention_heads") or 0)
-        kv = int(cfg.get("num_key_value_heads") or heads)
-        dim = int(cfg.get("head_dim") or (int(cfg.get("hidden_size") or 0) // heads if heads else 0))
+        return -(-kv_bytes(cfg, ctx) // ctx)
     except (TypeError, ValueError):
         return 0
-    return 2 * layers * kv * dim * 2
+
+
+def kv_bytes(cfg: dict, ctx: int) -> int:
+    """f16 K and V bytes `ctx` tokens hold: sliding layers keep their window, linear-attention layers no cache. #2033."""
+    layers = int(cfg.get("num_hidden_layers") or 0)
+    heads = int(cfg.get("num_attention_heads") or 0)
+    kv = int(cfg.get("num_key_value_heads") or heads)
+    dim = int(cfg.get("head_dim") or (int(cfg.get("hidden_size") or 0) // heads if heads else 0))
+    types = cfg.get("layer_types")
+    every = int(cfg.get("full_attention_interval") or 0)
+    if not isinstance(types, list) or len(types) != layers:
+        types = [("full_attention" if (i + 1) % every == 0 else "linear_attention") if every else "full_attention"
+                 for i in range(layers)]
+    window = int(cfg.get("sliding_window") or 0)
+    full_kv = int(cfg.get("num_global_key_value_heads") or kv)
+    full_dim = int(cfg.get("global_head_dim") or dim)
+    total = 0
+    for t in types:
+        if t == "full_attention":
+            total += 2 * full_kv * full_dim * 2 * ctx
+        elif t == "sliding_attention":
+            total += 2 * kv * dim * 2 * (min(window, ctx) if window else ctx)
+        elif "linear" not in str(t) and "mamba" not in str(t):
+            total += 2 * kv * dim * 2 * ctx
+    return total
 
 
 #: Bits per weight in an unquantised checkpoint. Used to scale the on-disk

@@ -212,6 +212,9 @@ def measurable(store, top: int, want: str = "", top_knob: str = "discover_top") 
     from harness import cuts
     from harness import memory_store as ms
     every = ms.survivors(store, limit=1_000_000, limit_knob="harness/commands/measure.py:measurable->ms.survivors(limit)")
+    if not want:
+        # A text survivor filed under code is the extract lane's challenger too. #2033.
+        every = every + [{**r, "measure_lane": w} for r in every for w in lanes.also_in(r.get("lane"))]
     rows = [r for r in every if takes(r, want)]
     return cuts.take(rows, top, top_knob, "measurable survivors past --top", conn=store)
 
@@ -319,6 +322,8 @@ def lane_for(row: dict, want: str = "") -> str:
     want = (want or "").strip().lower()
     if lanes.canonical(row.get("lane")) == repo_gate.GATE:
         return repo_gate.GATE
+    if row.get("measure_lane") and not want:
+        return row["measure_lane"]
     if want and methods.serves(row.get("name", ""), row.get("lane"), want):
         return want
     return lanes.canonical(row.get("lane"))

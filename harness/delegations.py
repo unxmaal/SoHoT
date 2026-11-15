@@ -12,6 +12,7 @@ import sys
 import time
 import uuid
 from contextlib import contextmanager
+from contextvars import ContextVar
 from pathlib import Path
 
 from harness import atomic_file
@@ -50,6 +51,68 @@ class UnknownCall(KeyError):
         return self.args[0]
 
 
+#: What kind of task a delegation is: a bare prompt, or a shape whose answer a check or a file bounds. #2033.
+PROMPT = "prompt"
+#: Shapes whose answer is checked against the file or log it names, so a low used-rate never refuses them. #2033.
+CHECKED = ("spans", "digest")
+#: Lanes whose bare prompts are refused once their measured used-rate is under SHAPE_FLOOR. #2033.
+SHAPE_GATED = ("code",)
+#: The used-as-is share under which a lane's shape goes to cloud instead of a local call. #2033.
+SHAPE_FLOOR = 0.5
+#: Recorded outcomes of one shape on one spec before SHAPE_FLOOR may refuse it. #2033.
+SHAPE_MIN = 8
+_SHAPE: ContextVar[str] = ContextVar("delegation_shape", default=PROMPT)
+
+
+@contextmanager
+def shaped(shape: str):
+    """Delegations made inside are recorded as `shape`. #2033."""
+    token = _SHAPE.set(shape)
+    try:
+        yield
+    finally:
+        _SHAPE.reset(token)
+
+
+def shape() -> str:
+    return _SHAPE.get()
+
+
+def used_rate(conn, lane: str, spec: str, kind: str, last: int = 50) -> tuple[float | None, int]:
+    """Used-as-is share of the newest `last` recorded outcomes of `kind` on `spec`; unshaped rows count for every kind. #2033."""
+    rows = conn.execute("SELECT outcome FROM delegations WHERE lane = ? AND spec = ? AND shape IN (?, '') "
+                        "AND outcome IN (?, ?, ?) ORDER BY at DESC LIMIT ?",
+                        (lane, spec, kind, *OUTCOMES, last)).fetchall()
+    said = [r["outcome"] for r in rows]
+    return (said.count("used") / len(said) if said else None), len(said)
+
+
+def shape_refusal(lane: str, spec: str, kind: str | None = None) -> str:
+    """Why a `lane` delegation of this shape to `spec` goes to cloud: its measured used-rate, '' when it may run. #2033."""
+    kind = kind or shape()
+    if lane not in SHAPE_GATED or kind in CHECKED:
+        return ""
+    try:
+        with ledger() as conn:
+            if conn is None or isinstance(conn, Spool):
+                return ""
+            rate, n = used_rate(conn, lane, spec, kind)
+    except Exception:  # noqa: BLE001 - an unread ledger never refuses work
+        return ""
+    if rate is None or rate >= SHAPE_FLOOR:
+        return ""
+    from harness import cuts
+    if n < SHAPE_MIN:
+        cuts.cut("delegations_shape_min", f"{lane} {kind} on {spec}: used as-is {rate:.0%} of only {n}, still run",
+                 value=SHAPE_MIN, kept=1, dropped=0)
+        return ""
+    cuts.cut("harness/delegations.py:SHAPE_FLOOR", f"{lane} {kind} on {spec}: used as-is {rate:.0%} of {n}",
+             value=SHAPE_FLOOR, kept=0, dropped=1)
+    return (f"{lane} {kind} delegations to {spec} were used as-is {rate:.0%} of the last {n} recorded; "
+            f"under {SHAPE_FLOOR:.0%} this shape is done in cloud, not locally. "
+            f"Spans and digest modes still run here")
+
+
 def new_id() -> str:
     return "local-" + uuid.uuid4().hex
 
@@ -63,12 +126,12 @@ def _row(call_id: str, lane: str, spec: str = "", model: str = "", seconds=None,
 
 def record(conn, call_id: str, lane: str, spec: str = "", model: str = "",
            seconds=None, prompt_tokens=None, completion_tokens=None,
-           id_source: str = LOCAL, at: float | None = None) -> str:
+           id_source: str = LOCAL, at: float | None = None, shape: str = "") -> str:
     r = _row(call_id, lane, spec, model, seconds, prompt_tokens, completion_tokens, id_source, at)
     conn.execute(
         "INSERT OR REPLACE INTO delegations (call_id, id_source, at, lane, spec, model, "
-        "seconds, prompt_tokens, completion_tokens, outcome, why, outcome_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, '', NULL)", tuple(r.values()))
+        "seconds, prompt_tokens, completion_tokens, outcome, why, outcome_at, shape) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, '', NULL, ?)", (*r.values(), shape))
     conn.commit()
     return call_id
 
@@ -240,7 +303,7 @@ def note(got: dict, call_id: str, gateway: bool = False) -> dict:
             if isinstance(conn, Spool):
                 conn.put("delegation", call_id=call_id, row=row)
             elif conn is not None:
-                record(conn, **row)
+                record(conn, **row, shape=shape())
                 _mirror("delegation", call_id=call_id, row=row)
     except Exception as exc:  # noqa: BLE001
         print(f"delegations: not recorded ({exc})", file=sys.stderr)
@@ -472,7 +535,7 @@ def rows(conn, call_id: str) -> dict:
 def report(conn, since: float, now: float | None = None) -> list[dict]:
     """Per lane over the last `since` seconds: count, reported rate and rates, closed kinds, median seconds."""
     now = time.time() if now is None else now
-    rows = conn.execute("SELECT lane, outcome, seconds FROM delegations WHERE at >= ?",
+    rows = conn.execute("SELECT lane, outcome, seconds, shape FROM delegations WHERE at >= ?",
                         (now - since,)).fetchall()
     by_lane: dict[str, list] = {}
     for r in rows:
@@ -489,8 +552,22 @@ def report(conn, since: float, now: float | None = None) -> list[dict]:
             **{f"{o}_rate": (said.count(o) / len(said) if said else None) for o in OUTCOMES},
             **{k: kinds.count(k) for k in KINDS},
             "median_seconds": round(statistics.median(secs), 3) if secs else None,
+            "shapes": _by_shape(items),
         })
     return out
+
+
+def _by_shape(items: list) -> dict:
+    """Per shape: calls, recorded outcomes and the used-as-is share of them. #2033."""
+    out: dict = {}
+    for i in items:
+        b = out.setdefault(i["shape"] or "", {"count": 0, "said": []})
+        b["count"] += 1
+        if i["outcome"] in OUTCOMES:
+            b["said"].append(i["outcome"])
+    return {k: {"count": b["count"], "recorded": len(b["said"]),
+                "used_rate": b["said"].count("used") / len(b["said"]) if b["said"] else None}
+            for k, b in sorted(out.items())}
 
 
 # --- closing outcomes from the caller's transcript (#1158) -----------------------------------------

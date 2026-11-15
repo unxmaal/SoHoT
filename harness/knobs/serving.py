@@ -185,6 +185,7 @@ NOT_GATING = {
     **{f"gateway/{name}:litellm_settings.num_retries": "pinned at 0 by a test, so no retry hides a failed "
        "upstream or folds two attempts into one timing (#694)" for name in ("config.yaml", "config.cuda.yaml")},
     "harness/gateway_switch_state.py:PS_TIMEOUT_S": "a ps that does not answer leaves the switch's process unjudged (alive None), so reconcile leaves the row for the next caller (#1736)",
+    "harness/memory.py:mlx_kv_bytes_per_token(ctx)": "0 prices at serving.MLX_REQUEST_CTX, the mlx_request_ctx knob; a caller passes the context it will send (#2033)",
 }
 
 NEVER_CUTS = {

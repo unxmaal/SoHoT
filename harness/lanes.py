@@ -200,6 +200,16 @@ def serves(candidate_lane, target_lane) -> bool:
 
 
 
+#: The lanes that carry delegated work, the most work served first. #2033.
+WORK = ("extract", "claims", "decide", "code")
+
+
+def also_in(lane) -> tuple[str, ...]:
+    """The other work lanes a candidate filed under work lane `lane` is measured in too. #2033."""
+    got = canonical(lane)
+    return tuple(w for w in WORK if w != got and serves(got, w)) if got in WORK else ()
+
+
 #: Not lanes: where a technique goes when it names a text model or a serving system but no lane's task. #631.
 SERVING = "serving"
 GENERAL = "general"

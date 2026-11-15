@@ -259,7 +259,8 @@ def test_the_cli_records_reports_and_refuses_an_unknown_id(conn, capsys):
     assert got["report"] == [{"lane": "code", "count": 1, "recorded": 1, "recorded_rate": 1.0,
                               "used_rate": 0.0, "edited_rate": 0.0, "discarded_rate": 1.0,
                               "accepted": 0, "rejected": 1, "unknown": 0, "pending": 0,
-                              "median_seconds": 4.0}]
+                              "median_seconds": 4.0,
+                              "shapes": {"": {"count": 1, "recorded": 1, "used_rate": 0.0}}}]
 
 
 def test_the_cli_needs_an_id_and_outcome_or_report(capsys):

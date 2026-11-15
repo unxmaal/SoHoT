@@ -266,7 +266,7 @@ class CompletionRunner(BaseRunner):
                 f"not sent: a {tokens}-token prompt is past the {serving.MLX_REQUEST_CTX} tokens an mlx_lm.server "
                 f"request is priced at", reasons.CONTEXT_EXCEEDED,
                 knobs.hit("mlx_request_ctx", serving.MLX_REQUEST_CTX, "tokens"))
-        per = memory.mlx_kv_bytes_per_token(self.model)
+        per = memory.mlx_kv_bytes_per_token(self.model, ctx=tokens + budget)
         if not per:
             return
         need = (tokens + budget) * per / 1024 ** 3

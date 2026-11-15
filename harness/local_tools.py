@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from harness import ask, cuts, delegate, digest, spans
+from harness import ask, cuts, delegate, delegations, digest, spans
 
 
 def complete(prompt: str = "", lane: str = "", system: str | None = None, max_tokens: int | None = None,
@@ -17,20 +17,24 @@ def complete(prompt: str = "", lane: str = "", system: str | None = None, max_to
             raise ValueError("mode \"digest\" reads logs: pass them in `paths`")
         if here:
             here()
-        return digest.run(paths, question or prompt, lane=lane or "extract", cwd=cwd, max_tokens=max_tokens,
-                          delegated=True)
+        with delegations.shaped("digest"):
+            return digest.run(paths, question or prompt, lane=lane or "extract", cwd=cwd, max_tokens=max_tokens,
+                              delegated=True)
     if mode == "spans":
         if not paths:
             raise ValueError("mode \"spans\" reads one file: pass it in `paths`")
         if here:
             here()
-        return spans.ask_file(paths, question or prompt, lane=lane or "code", cwd=cwd,
-                              max_tokens=max_tokens, delegated=True)
+        with delegations.shaped("spans"):
+            return spans.ask_file(paths, question or prompt, lane=lane or "code", cwd=cwd,
+                                  max_tokens=max_tokens, delegated=True)
     if paths:
         if here:
             here()
-        return ask.ask(paths, question or prompt, lane=lane or "extract", cwd=cwd,
-                       max_tokens=max_tokens or ask.REPLY_TOKENS, system=system, thinking=thinking, delegated=True)
+        with delegations.shaped("ask"):
+            return ask.ask(paths, question or prompt, lane=lane or "extract", cwd=cwd,
+                           max_tokens=max_tokens or ask.REPLY_TOKENS, system=system, thinking=thinking,
+                           delegated=True)
     if question and not prompt:
         raise ValueError("`question` asks about `paths`; pass the files, or put the task in `prompt`")
     given = {} if max_tokens is None else {"max_tokens": max_tokens}
@@ -46,4 +50,5 @@ def _prompted(prompt: str, lane: str, system: str | None, max_tokens: int = 2048
 
 
 def decide(question: str, schema: dict, context: str = "") -> dict:
-    return delegate.decide(question, schema, context=context, delegated=True)
+    with delegations.shaped("decide"):
+        return delegate.decide(question, schema, context=context, delegated=True)
