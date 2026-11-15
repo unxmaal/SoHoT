@@ -1,12 +1,13 @@
 """The test files a change can break, for a pull request's CI run; main, nightly and full-ci run everything (#1567, #1571).
 
-python -m tests.gauntlet.scope [--base REF] [--files F ...] [--map FILE] [--out FILE]
+python -m tests.gauntlet.scope [--base REF] [--files F ...] [--map FILE] [--out FILE] [--run PYTEST ...]
 python -m tests.gauntlet.scope --replay N [--junit FILE] [--map FILE]
 """
 
 import argparse
 import ast
 import functools
+import os
 import re
 import subprocess
 import sys
@@ -304,9 +305,12 @@ def merge_base(base, root=REPO):
 
 
 def changed_since(base, root=REPO):
-    out = subprocess.run(["git", "diff", "--name-only", "--no-renames", merge_base(base, root), "HEAD"], cwd=root,
-                         capture_output=True, text=True, check=True).stdout
-    return [p for p in out.splitlines() if p]
+    """Files changed since the merge base, committed or not, and new untracked ones; a CI checkout has only the first. #2034."""
+    def git(*argv):
+        return subprocess.run(["git", *argv], cwd=root, capture_output=True, text=True, check=True).stdout.splitlines()
+    out = git("diff", "--name-only", "--no-renames", merge_base(base, root)) + git("ls-files", "--others",
+                                                                                  "--exclude-standard")
+    return sorted({p for p in out if p})
 
 
 def _show(ref, path, root):
@@ -378,6 +382,7 @@ def main(argv=None):
     ap.add_argument("--files", nargs="*", help="changed files, instead of the diff")
     ap.add_argument("--out", type=Path, help="write the selected test files here; removed when the suite is full")
     ap.add_argument("--map", type=Path, help="choose by this coverage map (tests.gauntlet.covmap) where it is current")
+    ap.add_argument("--run", nargs=argparse.REMAINDER, help="then run this pytest command on the selection, else on all")
     ap.add_argument("--replay", type=int, help="replay the newest N merged PRs' files against today's tree")
     ap.add_argument("--junit", type=Path, help="with --replay: weigh each selection by this run's per-file seconds")
     a = ap.parse_args(argv)
@@ -409,12 +414,21 @@ def main(argv=None):
         print("selection: " + why[0])
         if a.out:
             a.out.unlink(missing_ok=True)
-        return 0
-    print(f"selection: {len(chosen)} of {len(tests)} test files")
-    print("\n".join(why))
-    if a.out:
-        a.out.write_text("".join(t + "\n" for t in chosen), encoding="utf-8")
-    return 0
+    else:
+        print(f"selection: {len(chosen)} of {len(tests)} test files")
+        print("\n".join(why))
+        if a.out:
+            a.out.write_text("".join(t + "\n" for t in chosen), encoding="utf-8")
+    return run(a.run, a.out if chosen is not None else None) if a.run else 0
+
+
+def run(argv, listing, environ=None):
+    """Run argv with SOHOT_SELECTED naming the listing, or with none so the whole suite runs. #2034."""
+    env = {k: v for k, v in (os.environ if environ is None else environ).items() if k != "SOHOT_SELECTED"}
+    if listing is not None:
+        env["SOHOT_SELECTED"] = str(listing)
+    sys.stdout.flush()
+    return subprocess.call(argv, env=env)
 
 
 if __name__ == "__main__":

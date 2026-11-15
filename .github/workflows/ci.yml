@@ -21,9 +21,9 @@ on:
         default: ""
 
 concurrency:
-  # A push gets its own group: in a shared one the next merge's run waited for this whole run, check-postgres too (#1802).
+  # Pushes to main share a group: the running run finishes and the newest pending one tests the whole merged batch (#2034).
   # A dispatch's inputs are in its group, so a narrow dispatch neither waits for nor queues behind another (#1906).
-  group: check-${{ github.event_name }}-${{ github.event_name == 'push' && github.sha || github.ref }}${{ github.event_name == 'workflow_dispatch' && format('-{0}-{1}', inputs.jobs, inputs.tests) || '' }}
+  group: check-${{ github.event_name }}-${{ github.ref }}${{ github.event_name == 'workflow_dispatch' && format('-{0}-{1}', inputs.jobs, inputs.tests) || '' }}
   # A main run always finishes, or merges faster than check-macos would leave no main sha green (#1702).
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
@@ -504,9 +504,8 @@ jobs:
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
   check-windows:
-    # Deferred to the nightly run; a PR labelled full-ci runs it now.
+    # Off the nightly: Windows is parked and its job failed every night 11-08..11-14 (#2034); dispatch or full-ci runs it.
     if: >-
-      github.event_name == 'schedule' ||
       (github.event_name == 'workflow_dispatch' && (inputs.jobs == 'all' || contains(inputs.jobs, 'check-windows'))) ||
       (github.event_name == 'pull_request' &&
        contains(github.event.pull_request.labels.*.name, 'full-ci'))
