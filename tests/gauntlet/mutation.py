@@ -113,7 +113,7 @@ LEFT_OUT = {
         "test_engine_trials_1475.py", "test_screen_server_killer_1544.py", "test_mflux_second_repo_1546.py", "test_interactive_1561.py",
         "test_slot_plan_refusal_1651.py", "test_incumbent_silent_1656.py", "test_machine_scope_1769.py",
         "test_download_event_1878.py", "test_verdict_event_1942.py", "test_detail_prefix_1998.py"),
-    "harness/screen.py": ("test_test_weights_2015.py", "test_harness_error_streak_2012.py", "test_screen_passed_over_2020.py", 
+    "harness/screen.py": ("test_screen_window_2045.py", "test_test_weights_2015.py", "test_harness_error_streak_2012.py", "test_screen_passed_over_2020.py", 
         "test_measure_gateway_1660.py", "test_attachment_tags_949.py", "test_lane_too_small_1049.py", "test_vision_engines_1282.py",
         "test_variants_947.py", "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",
         "test_harness_report.py", "test_incumbent_lookup.py", "test_lane_metric_validity.py", "test_loop_backpressure.py",
@@ -147,7 +147,7 @@ LEFT_OUT = {
         "test_node_digest_1683.py", "test_scratch_home_serving_1711.py", "test_scratch_home_flag_1867.py",
         "test_vs_readers_1960.py", "test_ca_inventory_1776.py"),
     "harness/router.py": (
-        "test_delegate_resident.py", "test_machine_host.py", "test_router_ready_1012.py", "test_sweep_ceiling_806.py",
+        "test_screen_window_2045.py", "test_delegate_resident.py", "test_machine_host.py", "test_router_ready_1012.py", "test_sweep_ceiling_806.py",
         "test_watchdog.py", "test_memory_warn_1082.py", "test_idle_unload_1157.py", "test_router_down_1181.py",
         "test_limit_cuts_1087_harness_ac.py", "test_sustained_warn_1482.py", "test_interactive_1561.py",
         "test_interactive_node_1562.py", "test_pinned_incumbent_1578.py", "test_tts_footprint_1671.py",

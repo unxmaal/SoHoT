@@ -307,8 +307,8 @@ def loaded(where: serving.Route, get=None, config=None) -> bool | None:
 
 def _gate(where: serving.Route) -> bool | None:
     """Refuse a call that would load a model while another job holds the machine lock; its residency, None unasked."""
-    # The interactive server keeps its models whatever evals load: never wait, never yield. #1561.
-    if interactive.upstream(where):
+    # The interactive server keeps its models whatever evals load, and the cloud loads none here. #1561, #2045.
+    if interactive.upstream(where) or interactive.hosted(where):
         return True
     try:
         base, _ = upstream(where)
@@ -408,7 +408,7 @@ def _serving(where: serving.Route, lane: str, max_tokens: int, timeout: float | 
             lease.idle()
         return
     # A server on another host is not this machine's to preempt; the interactive server's models are never evicted.
-    if not serves or (base and not serving.loopback(base)) or interactive.upstream(where):
+    if not serves or (base and not serving.loopback(base)) or interactive.upstream(where) or interactive.hosted(where):
         yield {"timeout": _allowance(where, max_tokens, timeout), "waited": 0.0, "beside": ""}
         return
     lease = serve_lease.Lease(lane, f"a {lane} delegation")

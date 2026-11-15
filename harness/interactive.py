@@ -37,6 +37,8 @@ MODELS_NAME = "interactive-models"
 WARM_WAIT_S = 600.0
 WARM_POLL_S = 2.0
 GIB = 1024 ** 3
+#: The drain flag name a screen window holds while it has the pinned set released. #2045.
+WINDOW = "interactive"
 
 
 def url() -> str:
@@ -255,10 +257,22 @@ def pinned() -> dict:
     return dict(read().get("lanes") or {})
 
 
+def windowed(now: float | None = None) -> bool:
+    """Whether a screen window has this machine's pinned set released, interactive work sent to a node or the cloud. #2045."""
+    from harness import gateway_switch
+    return gateway_switch.draining(now, node=WINDOW)
+
+
+def hosted(where) -> bool:
+    """Whether `where` is the gateway's cloud alias, which loads nothing here. #2045."""
+    from harness import completion, routes
+    return where is not None and where.model == routes.CLOUD and serving.bare(where.base) == completion.gateway_url()
+
+
 def reserved_bytes() -> int:
-    """What the pinned set holds of this machine's memory for good; 0 when it runs elsewhere or not at all."""
+    """What the pinned set holds of this machine's memory for good; 0 when it runs elsewhere, not at all, or a window released it."""
     plan = read()
-    if not plan.get("lanes") or not serving.loopback(str(plan.get("url") or "")):
+    if not plan.get("lanes") or windowed() or not serving.loopback(str(plan.get("url") or "")):
         return 0
     return int(plan.get("bytes") or 0)
 
@@ -309,6 +323,9 @@ def route(lane: str, get=None, config=None) -> tuple[str, serving.Route] | None:
     via = node_route(lane, config)
     if via:
         return via
+    if windowed() and lane in pinned():
+        from harness import completion, routes
+        return routes.CLOUD, serving.Route(completion.gateway_url(), routes.CLOUD, {}, {})
     held = holds(lane, get)
     if not held:
         return None
@@ -513,7 +530,7 @@ def finding(w) -> list:
     """The watchdog's interactive_down finding when the server is down, missing a pinned model or drifted."""
     from harness.watchdog import Finding, Subject
     got = w.interactive or {}
-    if not got.get("planned") or (got["up"] and not got["missing"] and not got.get("drift")):
+    if not got.get("planned") or windowed() or (got["up"] and not got["missing"] and not got.get("drift")):
         return []
     return [Finding("interactive_down", Subject("server", "interactive", "the launchd interactive unit is loaded",
                                                 detail={"service": "interactive"}),
