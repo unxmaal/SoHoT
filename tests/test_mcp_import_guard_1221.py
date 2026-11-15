@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from tests import tree_cache
+
 REPO = Path(__file__).resolve().parents[1]
 MCP_ONLY = ("mcp", "harness.mcp_server")
 
@@ -36,9 +38,8 @@ def unguarded(text: str, rel: str) -> list[str]:
 
 
 def test_no_test_reaches_harness_mcp_server_but_through_importorskip():
-    found = []
-    for path in sorted((REPO / "tests").rglob("*.py")):
-        found += unguarded(path.read_text(encoding="utf-8"), path.relative_to(REPO).as_posix())
+    found = tree_cache.each(unguarded, ((p.read_text(encoding="utf-8"), p.relative_to(REPO).as_posix())
+                                        for p in sorted((REPO / "tests").rglob("*.py"))))
     assert not found, "\n".join(found)
 
 

@@ -12,7 +12,7 @@ PYTEST_N ?= auto
 
 check: lint test          ## static checks + unit tests (no services needed)
 
-precheck:                 ## only the registration ratchets, each failure with the line that fixes it (#1697)
+precheck:                 ## the registration ratchets and the tree scans over changed files, each failure with its fix (#1697, #2047)
 	uv run --group mcp python -m tests.gauntlet.precheck
 
 test:                     ## unit tests (fast; excludes the model-loading ones), across every core (#720)

@@ -1,4 +1,5 @@
 """Whole-tree scan results kept on disk and keyed by the exact text they read, shared by xdist workers and later runs (#1590)."""
+import ast
 import dataclasses
 import functools
 import hashlib
@@ -23,6 +24,10 @@ CACHE_NAME = "tree-scan"
 FILE = "scans.sqlite"
 BUSY_S = 120
 HERE = Path(__file__).resolve().parent
+#: Newline-separated repo-relative paths: each() and listed() then read only these files (make precheck, #2047).
+ONLY_ENV = "SOHOT_SCAN_ONLY"
+#: Calls that make a test a whole-tree scan precheck can run over the changed files alone.
+SCANS = ("each", "scan_tree")
 
 
 def directory():
@@ -89,8 +94,36 @@ def _write(where: Path, kind: str, rows: list) -> None:
         conn.close()
 
 
+def scan_only() -> frozenset | None:
+    got = os.environ.get(ONLY_ENV)
+    return None if got is None else frozenset(r for r in got.splitlines() if r)
+
+
+def scanning(texts: dict) -> dict:
+    """{test file: [test functions]} whose body scans through each() or scan_tree()."""
+    out = {}
+    for rel, text in texts.items():
+        if not (rel.startswith("tests/") and Path(rel).name.startswith("test_")):
+            continue
+        try:
+            tree = ast.parse(text)
+        except SyntaxError:
+            continue
+        for fn in tree.body:
+            if not (isinstance(fn, ast.FunctionDef) and fn.name.startswith("test_")):
+                continue
+            calls = {(c.func.value.id if isinstance(c.func.value, ast.Name) else "", c.func.attr)
+                     for c in ast.walk(fn) if isinstance(c, ast.Call) and isinstance(c.func, ast.Attribute)}
+            if any(("tree_cache", n) in calls for n in SCANS):
+                out.setdefault(rel, []).append(fn.name)
+    return out
+
+
 def each(scanner, items) -> list[str]:
     """scanner(text, rel) over (text, rel) items, findings in item order; a file is scanned again only once its text changes."""
+    keep = scan_only()
+    if keep is not None:
+        items = [(text, rel) for text, rel in items if rel in keep]
     where, version = directory(), code(scanner)
     if where is None or version is None:
         return [f for text, rel in items for f in scanner(text, rel)]
@@ -109,12 +142,18 @@ def each(scanner, items) -> list[str]:
     return out
 
 
+@functools.cache
+def _listing(lister, root):
+    """A lister's answer, asked once per process: only while scanning the changed files, whose tree holds still."""
+    return tuple(lister(root))
+
+
 def listed(root, want, only=None, lister=None):
     """(text, rel) of each file gauntlet's scan_tree would scan, in its order."""
-    root = Path(root)
-    for path in (lister or gscanners._files.publishable)(root):
+    root, keep, lister = Path(root), scan_only(), lister or gscanners._files.publishable
+    for path in (lister(root) if keep is None else _listing(lister, root)):
         rel = path.relative_to(root).as_posix()
-        if path.is_file() and want(path) and (only is None or only(rel)):
+        if (keep is None or rel in keep) and path.is_file() and want(path) and (only is None or only(rel)):
             yield path.read_text(encoding="utf-8", errors="replace"), rel
 
 

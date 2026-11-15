@@ -1,11 +1,14 @@
-"""`make precheck`: only the registration ratchets of make check, each failure with the line that fixes it (#1697)."""
+"""`make precheck`: the registration ratchets of make check and its tree scans over the changed files, each failure with its fix (#1697, #2047)."""
 from __future__ import annotations
 
 import ast
 import dataclasses
 import os
+import subprocess
 import sys
+import tempfile
 import time
+import xml.etree.ElementTree as ET
 from collections import namedtuple
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
@@ -273,8 +276,59 @@ def mode_flags(root=REPO, parser=None) -> list[Problem]:
             for f in sorted(set(modes(parser)) - listed)]
 
 
+BASE = "origin/main"
+#: Env a pytest precheck starts must not inherit: a parent run's listing, log, workers or coverage map.
+CHILD_DROP = ("PYTEST_ADDOPTS", "PYTEST_XDIST_WORKER", "PYTEST_XDIST_WORKER_COUNT", "SOHOT_COVERAGE_MAP",
+              "SOHOT_SELECTED", "SOHOT_TEST_LOG", "SOHOT_CATCHES")
+
+
+def _scan_run(root, nodes, only, junit):
+    from tests import tree_cache
+    env = {k: v for k, v in os.environ.items() if k not in CHILD_DROP}
+    env[tree_cache.ONLY_ENV] = "\n".join(only)
+    return subprocess.Popen([sys.executable, "-m", "pytest", "-q", "-p", "no:xdist", "-p", "no:cacheprovider",
+                             f"--junitxml={junit}", *nodes], cwd=root, env=env, stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT, text=True, encoding="utf-8")
+
+
+def _failures(junit: Path) -> dict:
+    out = {}
+    for case in ET.parse(junit).getroot().iter("testcase") if junit.is_file() else ():
+        bad = case.find("failure") if case.find("failure") is not None else case.find("error")
+        if bad is not None:
+            msg = (bad.get("message") or bad.text or "").splitlines()
+            out[f"{case.get('classname', '').replace('.', '/')}.py::{case.get('name')}"] = (
+                [ln for ln in msg if not ln.startswith("assert ")] or msg[:1])[:40]
+    return out
+
+
+def tree_scans(root=REPO, base=BASE) -> list[Problem]:
+    """Every whole-tree scan test over only the files changed since the merge base; one that fails over none is no scan."""
+    from tests import tree_cache
+    from tests.gauntlet import scope
+    try:
+        changed = [p for p in scope.changed_since(base, root) if (Path(root) / p).is_file()]
+    except subprocess.CalledProcessError:
+        return []
+    texts = {p.relative_to(root).as_posix(): p.read_text(encoding="utf-8", errors="replace")
+             for p in sorted((Path(root) / "tests").glob("test_*.py"))}
+    nodes = [f"{rel}::{name}" for rel, names in sorted(tree_cache.scanning(texts).items()) for name in names]
+    if not changed or not nodes:
+        return []
+    with tempfile.TemporaryDirectory() as d:
+        runs = {k: (Path(d) / f"{k}.xml", _scan_run(root, nodes, only, Path(d) / f"{k}.xml"))
+                for k, only in (("changed", changed), ("none", []))}
+        logs = {k: proc.communicate()[0] for k, (_, proc) in runs.items()}
+        got = {k: _failures(junit) for k, (junit, _) in runs.items()}
+    out = [_p("tree scan", node, *msg) for node, msg in got["changed"].items() if node not in got["none"]]
+    for k, (_, proc) in runs.items():
+        if proc.returncode not in (0, 1) or (proc.returncode == 1 and not got[k]):
+            out.append(_p("tree scan", f"pytest over {k} exited {proc.returncode}", *logs[k].splitlines()[-20:]))
+    return out
+
+
 CHECKS = (knob_sites, knob_backlog_lines, knob_entries, limit_traces, module_layout, unit_outputs, mutation_tests,
-          eval_homes, detector_bindings, move_tables, mode_flags)
+          eval_homes, detector_bindings, move_tables, mode_flags, tree_scans)
 
 
 #: Checks that each take knobs.inventory share one process, so the inventory is built once, not four times (#1590).
