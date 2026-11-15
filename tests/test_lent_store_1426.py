@@ -50,6 +50,7 @@ FLAGS = ("--store", "--db", "--replay", "--dry-run")
 
 #: "command --flag" -> (argv lists, own ms.connect calls) for each flag that selects a read-only mode; run on a seeded home. #1432.
 READ_ONLY = {
+    "fix --report": ([["fix", "--report"]], 0),
     "adopt --power": ([["adopt", "--power"], ["adopt", "--power", "--lane", "code"]], 0),
     "adopt --table": ([["adopt", "--power", "--table"]], 0),
     "adopt --serving": ([["adopt", "--serving"]], 0),
@@ -90,6 +91,8 @@ MODIFIERS = {
 }
 #: Flags whose mode writes, downloads, runs a model or reads the network by design, so it is not run here.
 NOT_RUN = {
+    "fix --plan-only": "runs claude -p and gh against the network; it writes no store row (#2035)",
+    "fix --execute": "runs claude -p and the local model; its delegation rows are pinned in tests/test_fix_2035.py",
     "atomic --report-only": "held in RUNS",
     "scaffold module --command": "writes a command module and edits harness/cli.py in the checkout, never the store (#1697)",
     "scaffold unit --every-machine": "writes a launchd unit into the checkout's scripts, never the store (#1697)",
