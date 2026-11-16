@@ -154,15 +154,20 @@ _catches: dict = {}
 
 #: Options a pytest a test starts must not inherit: CI's own report, and a hypothesis profile only this conftest registers.
 CHILD_DROPS = ("--junitxml", "--junit-xml", "--hypothesis-profile")
+#: Coverage too: a child writes .coverage into its own tree (#2058). xdist workers need it at spawn, so they drop it.
+COV_VALUED = ("--cov", "--cov-report", "--cov-config", "--cov-context", "--cov-fail-under")
 
 
-def _for_children(addopts: str) -> str:
+def _for_children(addopts: str, cov: bool = True) -> str:
     import shlex
-    out, words = [], iter(shlex.split(addopts))
-    for w in words:
+    out, words, i = [], shlex.split(addopts), 0
+    while i < len(words):
+        w, i = words[i], i + 1
         if w in CHILD_DROPS:
-            next(words, None)
-        elif not w.startswith(tuple(f"{d}=" for d in CHILD_DROPS)):
+            i += 1
+        elif cov and w in COV_VALUED:
+            i += i < len(words) and not words[i].startswith("-")
+        elif not w.startswith(tuple(f"{d}=" for d in CHILD_DROPS) + (("--cov=", "--cov-") if cov else ())):
             out.append(w)
     return shlex.join(out)
 
@@ -292,8 +297,9 @@ def pytest_configure(config):
     listed = os.environ.pop(SELECTED_ENV, "")
     _selected["file"] = getattr(config, "workerinput", {}).get(SELECTED_ENV, listed)
     # A pytest a test starts inherits PYTEST_ADDOPTS: it overwrote CI's JUnit XML (#1146) and met an unregistered profile (#1633).
-    if any(d in os.environ.get("PYTEST_ADDOPTS", "") for d in CHILD_DROPS):
-        os.environ["PYTEST_ADDOPTS"] = _for_children(os.environ["PYTEST_ADDOPTS"])
+    spawns = getattr(getattr(config, "option", None), "dist", "no") != "no" and not hasattr(config, "workerinput")
+    if any(d in os.environ.get("PYTEST_ADDOPTS", "") for d in (*CHILD_DROPS, "--cov")):
+        os.environ["PYTEST_ADDOPTS"] = _for_children(os.environ["PYTEST_ADDOPTS"], cov=not spawns)
     if path and not hasattr(config, "workerinput"):
         _test_log["file"] = open(path, "a", encoding="utf-8", buffering=1)
         _test_log["spent"] = {}
