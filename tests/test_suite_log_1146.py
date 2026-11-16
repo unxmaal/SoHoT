@@ -70,6 +70,30 @@ def test_a_pytest_a_test_starts_on_another_tree_does_not_meet_the_nightly_hypoth
     assert got.returncode == 0 and (tmp_path / "r.xml").is_file(), got.stdout + got.stderr
 
 
+def test_a_pytest_a_test_starts_writes_no_coverage_into_its_tree(monkeypatch, tmp_path):
+    """check-linux rides --cov on PYTEST_ADDOPTS; a child's .coverage was an unplanned file to soh fix's scope gate. #2058."""
+    monkeypatch.setattr(conftest, "_test_log", {})
+    monkeypatch.setenv("PYTEST_ADDOPTS", "--durations=30 --cov=harness --cov evals --cov-report=term --cov-report json "
+                                         "--cov-branch --cov -x")
+    conftest.pytest_configure(SimpleNamespace())
+    assert os.environ["PYTEST_ADDOPTS"] == "--durations=30 -x"
+    (tmp_path / "test_other.py").write_text("def test_x():\n    pass\n", encoding="utf-8")
+    got = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "test_other.py"],
+                         cwd=tmp_path, capture_output=True, text=True, timeout=120)
+    assert got.returncode == 0, got.stdout + got.stderr
+    assert sorted(p.name for p in tmp_path.iterdir() if p.name != "__pycache__") == ["test_other.py"]
+
+
+def test_an_xdist_controller_keeps_coverage_for_its_workers_and_each_worker_drops_it(monkeypatch):
+    monkeypatch.setattr(conftest, "_test_log", {})
+    cov = "--durations=30 --cov=harness --cov-report=json"
+    monkeypatch.setenv("PYTEST_ADDOPTS", cov)
+    conftest.pytest_configure(SimpleNamespace(option=SimpleNamespace(dist="load")))
+    assert os.environ["PYTEST_ADDOPTS"] == cov
+    conftest.pytest_configure(SimpleNamespace(option=SimpleNamespace(dist="load"), workerinput={}))
+    assert os.environ["PYTEST_ADDOPTS"] == "--durations=30"
+
+
 def test_a_run_with_no_junit_reports_from_the_log_and_names_what_was_running(tmp_path, capsys):
     now = time.time()
     log = tmp_path / "times.tsv"
