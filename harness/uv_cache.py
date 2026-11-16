@@ -6,6 +6,7 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 from pathlib import Path
 
 DIR_TIMEOUT_S = 30.0
@@ -15,8 +16,9 @@ PRUNE_TIMEOUT_S = 900.0
 #: What uv prints first when another uv process holds the cache: it would wait for it, so the prune is skipped.
 IN_USE = "Cache is currently in-use"
 HELD = "another uv process holds the cache lock (any running `uv run`, this one's parent included); never forced"
-_UNITS = {u: 1024 ** i for i, u in enumerate(("B", "KiB", "MiB", "GiB", "TiB"))}
-_REMOVED = re.compile(r"\(([\d.]+)\s*(B|KiB|MiB|GiB|TiB)\)")
+_UNITS = {u: 1024 ** i for i, u in enumerate(("B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"))}
+_REMOVED = re.compile(r"^Removed \d+ (?:files?|director(?:y|ies))(?: \(([\d.]+)\s*([KMGTPE]?i?B)\))?\s*$", re.M)
+_NOTHING = re.compile(r"^No unused entries found\s*$", re.M)
 
 
 def cache_dir(run=None) -> Path | None:
@@ -53,14 +55,16 @@ def held(cache: Path) -> bool | None:
     return False
 
 
-def removed_bytes(text: str) -> int:
-    """The size in uv's `Removed N files (SIZE)` line; 0 when it removed nothing."""
+def removed_bytes(text: str) -> int | None:
+    """The size in uv's `Removed N files (SIZE)` line, 0 when it removed no file; None: no summary uv is known to print."""
     m = _REMOVED.search(text)
-    return round(float(m.group(1)) * _UNITS[m.group(2)]) if m else 0
+    if m:
+        return round(float(m.group(1)) * _UNITS[m.group(2)]) if m.group(1) and m.group(2) in _UNITS else 0
+    return 0 if _NOTHING.search(text) else None
 
 
 def prune_at(cache: Path, popen=None) -> dict:
-    """`uv cache prune` on `cache`, never --force: {"bytes", "free"} or {"skipped": why}. Never raises."""
+    """`uv cache prune` on `cache`, never --force: {"bytes", "free"}, "bytes" None plus uv's "summary" when unread, or {"skipped": why}."""
     uv = shutil.which("uv")
     if not uv:
         return {"skipped": "no uv on PATH"}
@@ -79,16 +83,23 @@ def prune_at(cache: Path, popen=None) -> dict:
         proc.kill()
         proc.communicate()
         return {"skipped": HELD}
+    late = []
+    # Read the rest through the same buffer readline() filled: communicate() reads the raw pipe and loses it (#2056).
+    timer = threading.Timer(PRUNE_TIMEOUT_S, lambda: (late.append(True), proc.kill()))
+    timer.start()
     try:
-        rest, _ = proc.communicate(timeout=PRUNE_TIMEOUT_S)
-    except subprocess.TimeoutExpired:
-        proc.kill()
-        proc.communicate()
+        rest = proc.stdout.read()
+        proc.wait()
+    finally:
+        timer.cancel()
+    if late:
         return {"skipped": f"uv cache prune ran past {PRUNE_TIMEOUT_S:.0f} s"}
     text = first + (rest or "")
+    last = text.strip().splitlines()[-1:]
     if proc.returncode != 0:
-        return {"skipped": f"uv cache prune exited {proc.returncode}: {text.strip().splitlines()[-1:]}"}
-    return {"bytes": removed_bytes(text), "free": shutil.disk_usage(cache).free}
+        return {"skipped": f"uv cache prune exited {proc.returncode}: {last}"}
+    got = {"bytes": removed_bytes(text), "free": shutil.disk_usage(cache).free}
+    return got if got["bytes"] is not None else {**got, "summary": last[0] if last else ""}
 
 
 def prune(popen=None) -> dict:

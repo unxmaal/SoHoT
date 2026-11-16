@@ -751,7 +751,10 @@ def uv_prune(say=print) -> dict:
     if "skipped" in got:
         say(f"  uv cache prune skipped: {got['skipped']}")
         return got
-    say(f"  uv cache: freed {gib(got['bytes'])} GiB")
+    if got["bytes"] is None:
+        say(f"  uv cache pruned, size freed not read from uv's summary: {got['summary']!r}")
+    else:
+        say(f"  uv cache: freed {gib(got['bytes'])} GiB")
     if got["free"] < monitor.DISK_ALERT_GIB * 1024 ** 3:
         say(f"  the uv cache's volume still has {gib(got['free'])} GiB free, under monit's "
             f"{monitor.DISK_ALERT_GIB} GiB alert")

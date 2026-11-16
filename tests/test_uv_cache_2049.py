@@ -99,9 +99,46 @@ def test_no_cache_is_skipped_with_its_path(tmp_path):
 
 @pytest.mark.parametrize("text,want", [("Pruning cache at: c\nRemoved 3 files (8.0KiB)\n", 8192),
                                        ("Removed 12 files (1.5GiB)", round(1.5 * 1024 ** 3)),
-                                       ("Pruning cache at: c\nNo unused entries found\n", 0)])
+                                       ("Pruning cache at: c\nNo unused entries found\n", 0),
+                                       ("Pruning cache at: c\nRemoved 1 file (296.0KiB)\n", 303104),
+                                       ("Removed 1 file (293.0KiB)\r\n", 300032),
+                                       ("Removed 7 files (512B)\n", 512),
+                                       ("Removed 2 files (3.0PiB)\n", 3 * 1024 ** 5),
+                                       ("Pruning cache at: c\nRemoved 1 directory\n", 0),
+                                       ("Removed 4 directories\n", 0),
+                                       ("Pruning cache at: c\n", None),
+                                       ("Freed 3 files (8.0KiB)\n", None),
+                                       ("", None)])
 def test_bytes_freed_are_read_from_uvs_summary(text, want):
     assert uv_cache.removed_bytes(text) == want
+
+
+def _printed(lines):
+    """A popen whose process has printed every line and exited before prune_at reads its first line."""
+    def popen(argv, **kw):
+        proc = subprocess.Popen([sys.executable, "-c", f"print({lines!r})"], **kw)
+        proc.wait()
+        return proc
+    return popen
+
+
+def test_a_summary_already_in_the_pipe_with_the_first_line_is_still_read(tmp_path, monkeypatch):
+    # #2056: Linux uv wrote both lines before readline(); communicate() then read the raw pipe and lost the second.
+    monkeypatch.setattr(uv_cache.shutil, "which", lambda name: "/fake/bin/uv")
+    monkeypatch.setattr(uv_cache, "held", lambda c: False)
+    got = uv_cache.prune_at(tmp_path, _printed("Pruning cache at: c\nRemoved 1 file (296.0KiB)"))
+    assert got["bytes"] == 303104, got
+
+
+def test_a_summary_uv_is_not_known_to_print_is_reported_not_read_as_nothing_freed(tmp_path, monkeypatch):
+    monkeypatch.setattr(uv_cache.shutil, "which", lambda name: "/fake/bin/uv")
+    monkeypatch.setattr(uv_cache, "held", lambda c: False)
+    got = uv_cache.prune_at(tmp_path, _printed("Pruning cache at: c\nFreed 3 entries, 1.2 GB"))
+    assert got["bytes"] is None and got["summary"] == "Freed 3 entries, 1.2 GB", got
+    lines = []
+    monkeypatch.setattr(uv_cache, "prune", lambda: got)
+    disk.uv_prune(lines.append)
+    assert lines[0] == "  uv cache pruned, size freed not read from uv's summary: 'Freed 3 entries, 1.2 GB'"
 
 
 def test_the_sweep_reports_bytes_freed_and_a_volume_still_under_the_alert(monkeypatch):
