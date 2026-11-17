@@ -204,12 +204,21 @@ jobs:
         run: uv run python -m harness.ci_budget
 
   store-touched:
-    # Whether a change reaches the store seam, so check-postgres runs only then, and nightly (#1507).
+    # Whether a change reaches the store seam, so check-postgres runs only then, and nightly (#1507); and its legs (#2060).
     if: github.event_name != 'workflow_dispatch' || (inputs.jobs == 'all' || contains(inputs.jobs, 'check-postgres'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      # The coverage map and the last main run's test times are artifacts (#1571, #2060).
+      actions: read
     outputs:
       touched: ${{ steps.diff.outputs.touched }}
+      shards: ${{ steps.plan.outputs.shards }}
+      plan: ${{ steps.plan.outputs.plan }}
+    env:
+      # A push to main runs what it reaches, as a pull request does; the whole suite is the nightly's (#1584).
+      SOHOT_FAST_PATH: ${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'full-ci'))) && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -217,6 +226,7 @@ jobs:
       - id: diff
         env:
           BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+          EVENT: ${{ github.event_name }}
         run: |
           seam='^(harness/store[a-z_]*\.py|harness/memory_store/|harness/migration_check\.py|harness/commands/store\.py|deploy/postgres/|tests/conftest\.py|tests/test_store_postgres_1507\.py|tests/test_harness_store\.py|tests/gauntlet/postgres_known\.txt|tests/gauntlet/explicit_store_paths\.txt|Makefile|pyproject\.toml|uv\.lock|\.github/workflows/ci\.yml)'
           if changed="$(git diff --name-only "$BASE"...HEAD 2>/dev/null)"; then
@@ -226,6 +236,48 @@ jobs:
           fi
           echo "store seam files changed: ${hits:-none}"
           echo "touched=$([ -n "$hits" ] && echo 1 || echo 0)" >> "$GITHUB_OUTPUT"
+          # check-postgres's own condition: the nightly and a dispatch run it whatever changed.
+          case "$EVENT" in schedule|workflow_dispatch) hits="${hits:-$EVENT}" ;; esac
+          echo "plan=$([ -n "$hits" ] && echo 1 || echo 0)" >> "$GITHUB_OUTPUT"
+
+      - uses: astral-sh/setup-uv@v5
+        if: steps.diff.outputs.plan == '1'
+
+      - name: Which tests this change can reach
+        # A PR diffs against its base branch, a push against the commit main was at before it (#1567, #1571, #1584).
+        # Standard library only, so no `uv sync` on the way to the Postgres runners (#2060).
+        if: steps.diff.outputs.plan == '1' && env.SOHOT_FAST_PATH == '1'
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          py=(uv run --no-project --python 3.12 python)
+          listing="$RUNNER_TEMP/selected.txt"
+          map="$RUNNER_TEMP/coverage-map.json"
+          "${py[@]}" -m tests.gauntlet.covmap fetch --out "$map" || echo "::warning::no coverage map; tracing by import"
+          if ! "${py[@]}" -m tests.gauntlet.scope --base "$BASE" --map "$map" --out "$listing"; then
+            echo "::warning::test selection failed; running the full suite"
+            rm -f "$listing"
+          fi
+
+      - name: The last main run's test times
+        if: steps.diff.outputs.plan == '1'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prev=$(gh run list --workflow ci.yml --branch main --event push --status success -L 1 --json databaseId -q '.[0].databaseId' || true)
+          [ -z "$prev" ] || gh run download "$prev" -n junit-macos -D "$RUNNER_TEMP/prev" || true
+
+      - id: plan
+        name: Split the tests across check-postgres runners
+        # Over tests.gauntlet.shard.FILES_PER_SHARD files, legs balanced by the last main run's seconds (#2060).
+        if: steps.diff.outputs.plan == '1'
+        env:
+          TESTS: ${{ inputs.tests }}
+        run: |
+          uv run --no-project --python 3.12 python -m tests.gauntlet.shard --listing "$RUNNER_TEMP/selected.txt" \
+            --junit "$RUNNER_TEMP/prev/junit.xml" --tests "$TESTS" --github-output "$GITHUB_OUTPUT"
 
   check-postgres:
     # The suite on Postgres (#1507): nightly and on demand always, otherwise only when the change reaches the store seam.
@@ -236,14 +288,17 @@ jobs:
       (github.event_name == 'workflow_dispatch' && (inputs.jobs == 'all' || contains(inputs.jobs, 'check-postgres'))) ||
       needs.store-touched.outputs.touched == '1'
     runs-on: macos-latest
-    # 1.4x (a slow M1 host, #1520) the PR job p95 51.5 min, timeouts projected (harness.ci_history --job check-postgres, #1590).
+    # One leg per planned shard; a red leg leaves the others to say what else is red (#2060).
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.store-touched.outputs.shards || '[1]') }}
+    # 1.4x (a slow M1 host, #1520) the unsplit PR job p95 51.5 min, which bounds a leg until legs are measured (#1590, #2060).
     timeout-minutes: 73
     permissions:
       contents: read
-      # The selection reads the nightly coverage map, an artifact (#1571).
-      actions: read
     env:
-      # A push to main runs what it reaches, as a pull request does; the whole suite is the nightly's (#1584).
+      # A push to main skips `long` tests, as a pull request does; the nightly runs them (#1584).
       SOHOT_FAST_PATH: ${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'full-ci'))) && '1' || '0' }}
       PGHOST: 127.0.0.1
       PGPORT: "5432"
@@ -256,7 +311,9 @@ jobs:
           fetch-depth: 0
 
       - name: Cores
-        run: echo "PYTEST_XDIST_AUTO_NUM_WORKERS=$(( $(sysctl -n hw.ncpu) + 1 ))" >> "$GITHUB_ENV"
+        run: |
+          echo "JOB_STARTED_S=$(date +%s)" >> "$GITHUB_ENV"
+          echo "PYTEST_XDIST_AUTO_NUM_WORKERS=$(( $(sysctl -n hw.ncpu) + 1 ))" >> "$GITHUB_ENV"
 
       - uses: astral-sh/setup-uv@v5
         with:
@@ -277,21 +334,18 @@ jobs:
 
       - run: bash scripts/ci-retry.sh uv sync --python 3.12
 
-      - name: Which tests this change can reach
-        # A PR diffs against its base branch, a push against the commit main was at before it (#1567, #1571, #1584).
-        if: env.SOHOT_FAST_PATH == '1'
+      - name: This leg's tests
+        # store-touched chose them; none means the whole suite on one leg, or a dispatch's named tests (#2060).
         env:
-          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
-          GH_TOKEN: ${{ github.token }}
+          PLAN: ${{ fromJSON(needs.store-touched.outputs.plan || '{}')[format('{0}', matrix.shard)] }}
+          LEG: ${{ matrix.shard }}
+          LEGS: ${{ strategy.job-total }}
         run: |
-          listing="$RUNNER_TEMP/selected.txt"
-          map="$RUNNER_TEMP/coverage-map.json"
-          uv run python -m tests.gauntlet.covmap fetch --out "$map" || echo "::warning::no coverage map; tracing by import"
-          if ! uv run python -m tests.gauntlet.scope --base "$BASE" --map "$map" --out "$listing"; then
-            echo "::warning::test selection failed; running the full suite"
-            rm -f "$listing"
+          echo "shard $LEG of $LEGS: $(printf '%s' "$PLAN" | grep -c . || true) test files"
+          if [ -n "$PLAN" ]; then
+            printf '%s' "$PLAN" > "$RUNNER_TEMP/selected.txt"
+            echo "SOHOT_SELECTED=$RUNNER_TEMP/selected.txt" >> "$GITHUB_ENV"
           fi
-          if [ -s "$listing" ]; then echo "SOHOT_SELECTED=$listing" >> "$GITHUB_ENV"; fi
 
       - name: make test-postgres-suite
         env:
@@ -312,6 +366,10 @@ jobs:
             grep -E '^SKIPPED' /tmp/check.log || echo 'nothing skipped'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: How much of the timeout this leg used
+        if: always()
+        run: uv run python -m harness.ci_budget
 
   check-linux:
     # Deferred to the nightly run; a PR labelled full-ci runs it now.

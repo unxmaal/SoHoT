@@ -208,18 +208,19 @@ PG = "check-postgres"
 def test_a_push_to_main_runs_on_postgres_only_what_it_reaches_and_the_nightly_runs_it_all():
     """#1584: push run 42412868007 ran the whole Postgres suite and was cut at 35 min."""
     doc, _ = _ci()
-    job = doc["jobs"][PG]
+    job, plan = doc["jobs"][PG], doc["jobs"]["store-touched"]
     expr = job["env"][FAST]
     assert "github.event_name == 'push'" in expr and "github.event_name == 'pull_request'" in expr
     assert "schedule" not in expr and "workflow_dispatch" not in expr
     assert expr.replace(" ", "").endswith("&&'1'||'0'}}")
-    select = next(s for s in job["steps"] if "tests.gauntlet.scope" in s.get("run", ""))
-    assert select["if"] == f"env.{FAST} == '1'"
+    assert plan["env"][FAST] == expr, "the legs skip `long` tests exactly when the plan selected (#2060)"
+    select = next(s for s in plan["steps"] if "tests.gauntlet.scope" in s.get("run", ""))
+    assert select["if"] == f"steps.diff.outputs.plan == '1' && env.{FAST} == '1'"
     assert '--base "$BASE"' in select["run"] and "--map" in select["run"]
     base = select["env"]["BASE"]
     assert "github.event.before" in base and "format('origin/{0}', github.base_ref)" in base
-    assert base == doc["jobs"]["store-touched"]["steps"][1]["env"]["BASE"], "one base for what reaches the store and what runs"
-    assert job["permissions"]["actions"] == "read", "the coverage map is an artifact"
+    assert base == plan["steps"][1]["env"]["BASE"], "one base for what reaches the store and what runs"
+    assert plan["permissions"]["actions"] == "read", "the coverage map is an artifact"
 
 
 RERUN = CI.parent / "rerun-cancelled.yml"
@@ -543,7 +544,7 @@ def test_no_step_pastes_a_dispatch_input_into_its_script():
     assert pasted == []
     with_tests = {n for n, j in doc["jobs"].items() for s in j.get("steps", [])
                   if "${{ inputs.tests }}" in str(s.get("env", {}))}
-    assert with_tests == set(SUITE_STEPS) | {"dispatch-inputs"}
+    assert with_tests == set(SUITE_STEPS) | {"dispatch-inputs", "store-touched"}, "store-touched: one leg (#2060)"
 
 
 def test_a_narrow_dispatch_on_linux_skips_the_litellm_suite():
