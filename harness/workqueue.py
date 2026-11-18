@@ -464,12 +464,25 @@ def _pressed(level, now: float) -> tuple[bool, str]:
                   f"{contention.DEPLOY_PRESSURE_S:.0f} s bound on memory pressure")
 
 
+def _deploy_first(now: float | None) -> bool:
+    try:
+        with _store() as c:
+            head = ready(c, time.time() if now is None else now)[:1]
+    except RuntimeError:
+        return False
+    return bool(head) and head[0]["kind"] == DEPLOY
+
+
 def gate(sample=None, now: float | None = None) -> tuple[bool, str]:
     """(open, why): may the next job start now? A running job always finishes. #573."""
     from harness import env, pressure
     lifted = queue_hold.lift([queue_pause._held_flag(), queue_pause._pause_flag()])
     if queue_pause.paused():
-        return False, queue_hold.why_paused(queue_pause._pause_flag())
+        why = queue_hold.why_paused(queue_pause._pause_flag())
+        if queue_hold.disk_of(queue_pause.body() or "") is not None and _deploy_first(now):
+            # A deploy takes little space, and the release that frees the disk has to get through. #2066.
+            return True, f"{why}; only the deploy starts"
+        return False, why
     if lifted:
         ok, why = gate(sample, now)
         return ok, f"{'; '.join(lifted)}; {why}"

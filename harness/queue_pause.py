@@ -19,9 +19,9 @@ def paused() -> bool:
     return _pause_flag().exists()
 
 
-def pause(why: str = "", holder: int | None = None) -> None:
-    """Pause the queue; a holder pid makes it a hold that ends with that process, not an owner's pause. #1760."""
-    _pause_flag().write_text(queue_hold.text(why, holder), encoding="utf-8")
+def pause(why: str = "", holder: int | None = None, disk: str | None = None) -> None:
+    """Pause the queue; a holder pid ends it with that process, a disk path once that volume has room again. #1760, #2066."""
+    _pause_flag().write_text(queue_hold.text(why, holder, disk=disk), encoding="utf-8")
 
 
 def body() -> str | None:
@@ -221,4 +221,9 @@ def deploy_turn(now: float) -> None:
     for line in said:
         print(f"{time.strftime('%H:%M:%S')} {line}", flush=True)
     watch_deploys(now)
+    try:
+        from harness import monitor
+        monitor.disk_held(now)
+    except Exception as exc:  # noqa: BLE001 - a disk re-alert must not stop the worker
+        print(f"{time.strftime('%H:%M:%S')} disk pause check failed: {exc}", flush=True)
     gateway_switch.turn()

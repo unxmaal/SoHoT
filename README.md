@@ -1765,7 +1765,8 @@ and fails unless launchd then lists a running monit; one already on the same con
 `scripts/launchd.sh install` and `reinstall` run it wherever monit was set up and fail when it is not loaded. Every `monitor_cycle` it checks free
 space on the system Data volume (alert under `monitor_disk_alert`; at
 `monitor_disk_pause` it pauses the job queue and every running eval, then
-alerts), the weights volume when it is a separate disk (alert when it is
+alerts; the pause holds no deploy, re-alerts with free space and growers each `deploy_pause_realert`,
+and lifts itself once free space is past `monitor_disk_pause` plus `monitor_disk_resume`), the weights volume when it is a separate disk (alert when it is
 unmounted or under the fetch floor), memory pressure (alert after
 `monitor_memory_warn` at warn or worse; it recovers only after `monitor_memory_calm` at
 normal, so a flapping episode alerts once), and the ports of the installed gateway,
