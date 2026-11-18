@@ -73,9 +73,9 @@ def from_job(job: dict, run: dict, name: str = JOB) -> dict | None:
     """One row for a completed attempt of the job, or None when it never ran its make step."""
     if not named(job.get("name", ""), name) or job.get("status") != "completed" or job.get("conclusion") == "skipped":
         return None
-    if "steps" in job and not job["steps"]:
-        return None
     step = next((s for s in job.get("steps") or [] if (s.get("name") or "").startswith(STEP)), None)
+    if "steps" in job and step is None:
+        return None
     start, end = _ts(job.get("started_at")), _ts(job.get("completed_at"))
     s0, s1 = (_ts(step.get("started_at")), _ts(step.get("completed_at"))) if step else (None, None)
     return {"run": run["databaseId"], "attempt": job.get("run_attempt", 1), "job": job["id"], "name": job["name"],

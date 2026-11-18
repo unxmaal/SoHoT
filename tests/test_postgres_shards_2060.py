@@ -78,7 +78,8 @@ def test_check_postgres_runs_one_leg_per_planned_shard_and_every_leg_finishes():
     doc = _ci()
     job = doc["jobs"]["check-postgres"]
     assert job["strategy"]["fail-fast"] is False
-    assert job["strategy"]["matrix"]["shard"] == "${{ fromJSON(needs.store-touched.outputs.shards || '[1]') }}"
+    planned = "needs.store-touched.result == 'success' && needs.store-touched.outputs.shards"
+    assert job["strategy"]["matrix"]["shard"] == f"${{{{ fromJSON({planned} || '[1]') }}}}"
     plan = next(s for s in doc["jobs"]["store-touched"]["steps"] if "tests.gauntlet.shard" in s.get("run", ""))
     assert plan["id"] in doc["jobs"]["store-touched"]["outputs"]["shards"]
     env = next(s for s in job["steps"] if s.get("name") == "This leg's tests")["env"]
@@ -93,7 +94,7 @@ def test_the_plan_step_writes_a_leg_list_github_can_expand(tmp_path):
     listing.write_text("".join(f + "\n" for f in FILES), encoding="utf-8")
     out = tmp_path / "out"
     env = {**os.environ, "GITHUB_OUTPUT": str(out), "RUNNER_TEMP": str(tmp_path), "TESTS": ""}
-    run = step["run"].replace("uv run --no-project --python 3.12 python", shlex.quote(sys.executable))
+    run = step["run"].replace("uv run --no-sync python", shlex.quote(sys.executable))
     r = subprocess.run([shells.BASH, "-c", run], env=env, capture_output=True, text=True,
                        cwd=CI.parents[2], timeout=60)
     assert r.returncode == 0, r.stderr

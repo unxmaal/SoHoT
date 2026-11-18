@@ -127,6 +127,9 @@ def test_any_job_or_matrix_leg_is_read_from_its_first_make_step():
     pg = {**_job("00:00:00", "00:30:00"), "name": "check-postgres"}
     pg["steps"] = [{**pg["steps"][0], "name": "make test-postgres-suite"}]
     assert ci_history.from_job(pg, RUN, "check-postgres")["check_min"] == 29.0
+    verdict = {**_job("00:00:00", "00:00:09"), "name": "check-postgres"}
+    verdict["steps"] = [{**verdict["steps"][0], "name": "Planned, and ran green or had nothing to run"}]
+    assert ci_history.from_job(verdict, RUN, "check-postgres") is None, "the required context runs no suite (#2062)"
 
 
 def test_a_run_cut_at_its_limit_projects_its_length_from_the_progress_it_reached():
