@@ -60,6 +60,8 @@ KINDS = DISK_KINDS + ("volume", "volume-low", "memory", "service", "deploy", "st
 #: (monit name, launchd unit, port variable, the launcher's default port): read as scripts/serve-*.sh read them.
 SERVICES = (("gateway", "gateway", "GATEWAY_PORT", 4000), ("mlx", "mlx", "MLX_PORT", 8081),
             ("tts", "tts", "TTS_PORT", 8890))
+#: Services monit watches only while speech is on.
+SPEECH = ("tts",)
 HEADER = "# Rendered by `soh monitor install` (#1485). Install again rather than editing it."
 _UNQUOTABLE = re.compile(r'[\s"]')
 
@@ -150,11 +152,11 @@ def scripts_dir() -> Path:
 
 
 def watched_services(agents: Path | None = None) -> list[tuple[str, int]]:
-    """(name, port) of every service whose launchd unit is installed."""
-    from harness import volume
+    """(name, port) of every service whose launchd unit is installed; tts only while speech is on (#2068)."""
+    from harness import audio, volume
     where = agents or volume.agents_dir()
     return [(name, int(os.environ.get(var) or port)) for name, unit, var, port in SERVICES
-            if (where / f"{volume.PREFIX}.{unit}.plist").is_file()]
+            if (where / f"{volume.PREFIX}.{unit}.plist").is_file() and (name not in SPEECH or audio.speech_enabled())]
 
 
 def spec_here(run=subprocess.run) -> dict:

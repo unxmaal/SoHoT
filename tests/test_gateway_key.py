@@ -299,8 +299,9 @@ def _smoke(env_extra: dict, tmp_path, cwd=REPO, script="scripts/smoke.sh"):
            "SOHOT_GATEWAY_STORE": "file", "READY_TIMEOUT": "2",
            "MLX_PORT": "9", "TTS_PORT": "9", "SMOKE_G2P_CHECK": "true",
            "SMOKE_INSTALL_CHECK": "true", "SMOKE_ENGINES_CHECK": "true", **env_extra}
-    if "SOHOT_GATEWAY_KEY" not in env_extra:
-        env.pop("SOHOT_GATEWAY_KEY", None)
+    for name in ("SOHOT_GATEWAY_KEY", "SOHOT_SPEECH"):
+        if name not in env_extra:
+            env.pop(name, None)
     return subprocess.run([BASH, str(script)], cwd=cwd, env=env,
                            capture_output=True, text=True, encoding="utf-8",
                            timeout=120)
@@ -319,7 +320,7 @@ def test_smoke_runs_the_g2p_check_it_is_given_never_the_audio_env_build(gateway,
     """serve-tts.sh --check resolves mlx-audio and spaCy, ~30 s per smoke test on a fresh runner (#1146)."""
     ran = tmp_path / "g2p-ran"
     r = _smoke({"SOHOT_GATEWAY_KEY": "sk-right", "GATEWAY_PORT": str(gateway.server_address[1]),
-                "SMOKE_G2P_CHECK": f"touch {ran}"}, tmp_path)
+                "SMOKE_G2P_CHECK": f"touch {ran}", "SOHOT_SPEECH": "1"}, tmp_path)
     assert ran.exists() and "PASS  tts G2P builds offline" in r.stdout
 
 
