@@ -56,7 +56,7 @@ TITLE = "SoHoT monit"
 RECOVERED = "recovered"
 DISK_KINDS = ("disk", "disk-pause")
 KINDS = DISK_KINDS + ("volume", "volume-low", "memory", "service", "deploy", "store", "store-backup", "gpu-refused",
-                           RECOVERED)
+                           "queue-stale", RECOVERED)
 #: (monit name, launchd unit, port variable, the launcher's default port): read as scripts/serve-*.sh read them.
 SERVICES = (("gateway", "gateway", "GATEWAY_PORT", 4000), ("mlx", "mlx", "MLX_PORT", 8081),
             ("tts", "tts", "TTS_PORT", 8890))
@@ -180,10 +180,11 @@ def render(s: dict) -> str:
     prefix = f"/usr/bin/env PATH={_word(s['path'])} {paths.ENV_VAR}={home}"
     alert = f"{prefix} {_word(s['scripts'])}/monit-alert.sh"
 
-    def then(kind: str, recover: bool = True, calm: int = 1) -> str:
+    def then(kind: str, recover: bool = True, calm: int = 1, repeat: int = 0) -> str:
         after = f" for {calm} cycles" if calm > 1 else ""
         back = f' else if succeeded{after} then exec "{alert} {RECOVERED}"' if recover else ""
-        return f'then exec "{alert} {kind}"{back}'
+        again = f" repeat every {repeat} cycles" if repeat else ""
+        return f'then exec "{alert} {kind}"{again}{back}'
 
     out = [HEADER, f"set daemon {CYCLE_S}", f"set log {home}/logs/monit.log", f"set pidfile {st}/monit.pid",
            f"set idfile {st}/monit.id", f"set statefile {st}/monit.state",
@@ -199,6 +200,10 @@ def render(s: dict) -> str:
             f"with timeout {CLI_TIMEOUT_S} seconds",
             f"    if status != 0 for {cycles(MEMORY_WARN_S)} cycles "
             f"{then('memory', calm=cycles(MEMORY_CALM_S))}", ""]
+    from harness import contention
+    out += [f'check program queue_moves with path "{prefix} {s["scripts"]}/monit-queue.sh" '
+            f"with timeout {CLI_TIMEOUT_S} seconds",
+            f"    if status != 0 {then('queue-stale', repeat=cycles(contention.PAUSE_REALERT_S))}", ""]
     for name, port in s.get("services") or []:
         out += [f"check host service_{_word(name)} with address 127.0.0.1",
                 f"    if failed port {int(port)} type tcp for {cycles(SERVICE_DOWN_S)} cycles {then('service')}", ""]
@@ -463,7 +468,7 @@ def du_line(rows: list[dict]) -> str:
 def pause_all(reason: str) -> dict:
     """Pause the job queue and every running eval through its pause file, the watchdog's request path."""
     from harness import queue_pause, watchdog_observe
-    queue_pause.pause()
+    queue_pause.pause(reason)
     reader = watchdog_observe.ProgressFiles()
     return {"queue": "paused", "runs": [reader.pause(r, reason) for r in reader.runs()]}
 

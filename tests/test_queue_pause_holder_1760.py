@@ -83,7 +83,8 @@ def test_an_owner_pause_is_never_lifted():
     got = subprocess.run([shells.BASH, "-c", script], cwd=REPO, env=_env(), capture_output=True, text=True,
                          timeout=120)
     assert got.stdout.strip() == "was-paused", got.stderr[-800:]
-    assert _gate() == (False, "paused (soh jobs resume)"), "quiesce never turns an owner's pause into its own"
+    ok, why = _gate()
+    assert not ok and why.endswith(": owner (soh jobs resume)"), "quiesce never turns an owner's pause into its own"
     assert queue_hold.holder_of(queue_pause._pause_flag().read_text(encoding="utf-8")) is None
 
 

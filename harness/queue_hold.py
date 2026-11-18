@@ -13,24 +13,81 @@ from harness import proc_identity
 HOLDER_ENV = "LH_QUEUE_HOLDER"
 _TAG = "holder "
 _STAMP = "%Y-%m-%dT%H:%M:%S"
+_BY = "by "
+_SAYS = (("session", "CLAUDE_CODE_SESSION_ID"), ("agent", "AI_AGENT"), ("subagent", "CLAUDE_CODE_CHILD_SESSION"))
+#: What a pause taken with no reason says in its place, so it reads as flagged. #2064.
+NO_REASON = "no reason given"
 
 
-def text(why: str, holder: int | None) -> str:
-    """A flag's body: when and why, then the holder's identity when a process holds it."""
-    head = f"{time.strftime(_STAMP)} {why}".strip()
-    return head if holder is None else f"{head}\n{_TAG}{json.dumps(proc_identity.identity(holder))}"
+def caller(environ=None) -> dict:
+    """Who takes a pause: this process, its parent, its argv, and the agent session that ran it when one did. #2064."""
+    env = environ if environ is not None else os.environ
+    rec = {"pid": os.getpid(), "ppid": os.getppid(), "argv": [a[:200] for a in sys.argv[:12]]}
+    rec.update({k: env[v] for k, v in _SAYS if env.get(v)})
+    return rec
 
 
-def holder_of(body: str) -> dict | None:
-    """The identity a flag body records, None for an owner's pause."""
+def text(why: str, holder: int | None, environ=None) -> str:
+    """A flag's body: when and why, the holder's identity when a process holds it, then who took it. #1760, #2064."""
+    lines = [f"{time.strftime(_STAMP)} {why.strip() or NO_REASON}"]
+    if holder is not None:
+        lines.append(f"{_TAG}{json.dumps(proc_identity.identity(holder))}")
+    return "\n".join([*lines, f"{_BY}{json.dumps(caller(environ))}"])
+
+
+def _line(body: str, tag: str) -> dict | None:
     for line in body.splitlines()[1:]:
-        if line.startswith(_TAG):
+        if line.startswith(tag):
             try:
-                got = json.loads(line[len(_TAG):])
+                got = json.loads(line[len(tag):])
             except ValueError:
                 return None
             return got if isinstance(got, dict) else None
     return None
+
+
+def holder_of(body: str) -> dict | None:
+    """The identity a flag body records, None for an owner's pause."""
+    return _line(body, _TAG)
+
+
+def by_of(body: str) -> dict | None:
+    """Who took the pause a flag body records, None for a flag written before #2064."""
+    return _line(body, _BY)
+
+
+def since(body: str) -> float | None:
+    """When the pause was taken, from its stamp; None when the body has none."""
+    stamp = (body.split(None, 1) or [""])[0]
+    try:
+        return time.mktime(time.strptime(stamp, _STAMP))
+    except ValueError:
+        return None
+
+
+def reason(body: str) -> str:
+    head = (body.splitlines() or [""])[0].split(None, 1)
+    return head[1].strip() if len(head) > 1 and head[1].strip() else NO_REASON
+
+
+def who(body: str) -> str:
+    """The caller a flag names: its command, pid and agent session; an old flag says nobody recorded it."""
+    by = by_of(body)
+    if by is None:
+        return "an unrecorded caller (no holder line)"
+    argv = [str(a) for a in by.get("argv") or []]
+    cmd = " ".join([Path(argv[0]).name, *argv[1:]]) if argv else "?"
+    said = [f"`{cmd}` pid {by.get('pid')}"]
+    if by.get("agent"):
+        said.append(str(by["agent"]) + (" subagent" if by.get("subagent") else ""))
+    if by.get("session"):
+        said.append(f"session {str(by['session'])[:8]}")
+    return ", ".join(said)
+
+
+def describe(body: str) -> str:
+    stamp = (body.split(None, 1) or ["?"])[0]
+    return f"since {stamp} by {who(body)}: {reason(body)}"
 
 
 def from_env(environ=None) -> int | None:
@@ -69,7 +126,7 @@ def why_paused(flag: Path) -> str:
         body = ""
     rec = holder_of(body)
     if rec is None:
-        return "paused (soh jobs resume)"
+        return f"paused {describe(body)} (soh jobs resume)"
     return f"held by pid {rec.get('pid')} ({body.splitlines()[0]}); lifted when it ends"
 
 

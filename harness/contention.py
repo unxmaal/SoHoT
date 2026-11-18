@@ -17,6 +17,10 @@ SERVING = ("mcp",)
 DEPLOY_PRESSURE_S = 1800.0
 #: Seconds a deploy may wait, for any reason, before one alert names why. #1672.
 DEPLOY_ALERT_S = 10800.0
+#: Seconds between alerts while a queue pause keeps a pending deploy waiting. #2064.
+PAUSE_REALERT_S = 43200.0
+#: Seconds an owner's queue pause may block a pending deploy before the alert names it and who took it. #2064.
+PAUSE_STALE_S = 86400.0
 
 _said = ""
 

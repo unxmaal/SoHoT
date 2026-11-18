@@ -74,7 +74,8 @@ def test_the_override_stops_a_relaunching_job_with_its_child_and_nothing_starts_
         assert said[1].startswith(f"job {job['id']} stopped for the deploy (")
         got = wq.get(job["id"])
         assert got["state"] == wq.PENDING and got["note"].startswith("stopped for a deploy at ")
-        assert wq.gate() == (False, "paused (soh jobs resume)"), "no job starts until the install ends"
+        ok, why = wq.gate()
+        assert not ok and why.endswith("(soh jobs resume)"), "no job starts until the install ends"
         assert wq.release_for_deploy() == "queue released after the deploy"
         assert not wq.paused() and not queue_pause._held_flag().exists()
     finally:

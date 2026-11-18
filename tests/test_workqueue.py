@@ -80,7 +80,8 @@ UNKNOWN = pressure.Pressure()
 
 def test_pause_closes_the_gate_and_resume_opens_it():
     wq.pause()
-    assert wq.gate(sample=lambda: CALM) == (False, "paused (soh jobs resume)")
+    ok, why = wq.gate(sample=lambda: CALM)
+    assert not ok and why.startswith("paused since ") and why.endswith(": no reason given (soh jobs resume)")
     wq.resume()
     assert wq.gate(sample=lambda: CALM)[0]
 
@@ -152,7 +153,7 @@ def test_the_command_keeps_its_own_separators_and_flags(capsys):
 
 
 def test_pause_resume_and_list_through_the_cli(capsys):
-    assert cli.main(["jobs", "pause", "--json"]) == 0
+    assert cli.main(["jobs", "pause", "--reason", "a test", "--json"]) == 0
     assert json.loads(capsys.readouterr().out)["paused"] is True
     cli.main(["jobs", "add", "--", "true"])
     capsys.readouterr()
