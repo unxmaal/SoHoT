@@ -243,15 +243,19 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         if: steps.diff.outputs.plan == '1'
 
+      - name: What the planner imports
+        # scope imports the pinned gauntlet, a dev dependency; the project itself is not needed (#2062).
+        if: steps.diff.outputs.plan == '1'
+        run: bash scripts/ci-retry.sh uv sync --only-group dev --frozen --python 3.12
+
       - name: Which tests this change can reach
         # A PR diffs against its base branch, a push against the commit main was at before it (#1567, #1571, #1584).
-        # Standard library only, so no `uv sync` on the way to the Postgres runners (#2060).
         if: steps.diff.outputs.plan == '1' && env.SOHOT_FAST_PATH == '1'
         env:
           BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          py=(uv run --no-project --python 3.12 python)
+          py=(uv run --no-sync python)
           listing="$RUNNER_TEMP/selected.txt"
           map="$RUNNER_TEMP/coverage-map.json"
           "${py[@]}" -m tests.gauntlet.covmap fetch --out "$map" || echo "::warning::no coverage map; tracing by import"
@@ -276,23 +280,26 @@ jobs:
         env:
           TESTS: ${{ inputs.tests }}
         run: |
-          uv run --no-project --python 3.12 python -m tests.gauntlet.shard --listing "$RUNNER_TEMP/selected.txt" \
+          uv run --no-sync python -m tests.gauntlet.shard --listing "$RUNNER_TEMP/selected.txt" \
             --junit "$RUNNER_TEMP/prev/junit.xml" --tests "$TESTS" --github-output "$GITHUB_OUTPUT"
 
   check-postgres:
     # The suite on Postgres (#1507): nightly and on demand always, otherwise only when the change reaches the store seam.
     # macOS like check-macos; its runners have no Docker, so Homebrew's postgresql@16, the container's major version.
+    # A failed plan runs the whole suite on one leg rather than skip it (#2062).
     needs: store-touched
     if: >-
+      !cancelled() && (
       github.event_name == 'schedule' ||
       (github.event_name == 'workflow_dispatch' && (inputs.jobs == 'all' || contains(inputs.jobs, 'check-postgres'))) ||
-      needs.store-touched.outputs.touched == '1'
+      needs.store-touched.outputs.touched == '1' || needs.store-touched.result == 'failure')
+    name: check-postgres (${{ matrix.shard }})
     runs-on: macos-latest
     # One leg per planned shard; a red leg leaves the others to say what else is red (#2060).
     strategy:
       fail-fast: false
       matrix:
-        shard: ${{ fromJSON(needs.store-touched.outputs.shards || '[1]') }}
+        shard: ${{ fromJSON(needs.store-touched.result == 'success' && needs.store-touched.outputs.shards || '[1]') }}
     # 1.4x (a slow M1 host, #1520) the unsplit PR job p95 51.5 min, which bounds a leg until legs are measured (#1590, #2060).
     timeout-minutes: 73
     permissions:
@@ -337,7 +344,7 @@ jobs:
       - name: This leg's tests
         # store-touched chose them; none means the whole suite on one leg, or a dispatch's named tests (#2060).
         env:
-          PLAN: ${{ fromJSON(needs.store-touched.outputs.plan || '{}')[format('{0}', matrix.shard)] }}
+          PLAN: ${{ fromJSON(needs.store-touched.result == 'success' && needs.store-touched.outputs.plan || '{}')[format('{0}', matrix.shard)] }}
           LEG: ${{ matrix.shard }}
           LEGS: ${{ strategy.job-total }}
         run: |
@@ -370,6 +377,37 @@ jobs:
       - name: How much of the timeout this leg used
         if: always()
         run: uv run python -m harness.ci_budget
+
+  postgres-verdict:
+    # The required context: passes only on a plan and a green Postgres run, or a plan that found nothing to run (#2062).
+    name: check-postgres
+    needs: [store-touched, check-postgres]
+    if: >-
+      !cancelled() &&
+      (github.event_name != 'workflow_dispatch' || (inputs.jobs == 'all' || contains(inputs.jobs, 'check-postgres')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions: {}
+    steps:
+      - name: Planned, and ran green or had nothing to run
+        env:
+          PLANNER: ${{ needs.store-touched.result }}
+          TOUCHED: ${{ needs.store-touched.outputs.touched }}
+          LEGS: ${{ needs.check-postgres.result }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          echo "store-touched: $PLANNER (touched=$TOUCHED), check-postgres legs: $LEGS"
+          if [ "$PLANNER" != success ]; then
+            echo "::error::store-touched $PLANNER: the Postgres run was not planned, so it cannot pass"; exit 1
+          fi
+          case "$LEGS" in
+            success) ;;
+            skipped)
+              if [ "$TOUCHED" != 0 ] || [ "$EVENT" = schedule ] || [ "$EVENT" = workflow_dispatch ]; then
+                echo "::error::check-postgres was skipped with touched=$TOUCHED on $EVENT"; exit 1
+              fi ;;
+            *) echo "::error::check-postgres $LEGS"; exit 1 ;;
+          esac
 
   check-linux:
     # Deferred to the nightly run; a PR labelled full-ci runs it now.

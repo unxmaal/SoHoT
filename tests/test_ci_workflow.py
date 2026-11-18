@@ -355,10 +355,12 @@ def test_a_push_to_main_is_never_cancelled_by_the_next_merge():
     assert _cancels(value, "pull_request")
 
 
-def _eval(expr: str, inputs=None, labels=(), **github):
-    """One Actions expression over a github context and dispatch inputs; && || ! == != contains format failure()."""
+def _eval(expr: str, inputs=None, labels=(), needs=None, **github):
+    """One Actions expression over a github context, dispatch inputs and needs ("job.result", "job.outputs.x")."""
     expr = expr.replace("github.event.pull_request.labels.*.name", repr(list(labels)))
-    expr = re.sub(r"\bneeds\.[\w-]+\.outputs\.\w+", "''", expr).replace("failure()", "False")
+    expr = re.sub(r"\bneeds\.([\w-]+)\.(result|outputs\.\w+)", lambda m: repr((needs or {}).get(
+        f"{m.group(1)}.{m.group(2)}", "success" if m.group(2) == "result" else "")), expr)
+    expr = expr.replace("failure()", "False").replace("cancelled()", "False")
     expr = re.sub(r"\bgithub\.(\w+)", lambda g: repr(github[g.group(1)]), expr)
     expr = re.sub(r"\binputs\.(\w+)", lambda g: repr((inputs or {}).get(g.group(1), "")), expr)
     expr = re.sub(r"!(?!=)", " not ", expr).replace("&&", " and ").replace("||", " or ")
@@ -454,9 +456,15 @@ def _running(event: str, labels=(), **inputs) -> set:
             needs = job.get("needs", [])
             needs = [needs] if isinstance(needs, str) else needs
             cond = " ".join(str(job.get("if", "True")).split())
-            ran[name] = all(runs(n) for n in needs) and bool(_eval(cond, inputs, labels, event_name=event))
+            # A status function in if: lets the job run when a job it needs was skipped.
+            gated = not re.search(r"\b(always|cancelled|failure)\(\)", cond)
+            ran[name] = ((not gated or all(runs(n) for n in needs))
+                         and bool(_eval(cond, inputs, labels, event_name=event)))
         return ran[name]
     return {name for name in jobs if runs(name)}
+
+
+VERDICT = "postgres-verdict"
 
 
 def test_a_plain_dispatch_and_the_nightly_run_every_job_they_ran_before_inputs():
@@ -464,17 +472,18 @@ def test_a_plain_dispatch_and_the_nightly_run_every_job_they_ran_before_inputs()
     _, on = _ci()
     defaults = {k: v["default"] for k, v in on["workflow_dispatch"]["inputs"].items()}
     assert defaults == {"jobs": "all", "tests": ""}
-    every = set(SELECTABLE) | {"store-touched"}
+    every = set(SELECTABLE) | {"store-touched", VERDICT}
     assert _running("schedule") == every - {"check-windows"}
     assert _running("workflow_dispatch", **defaults) == every | {"dispatch-inputs"}
-    assert _running("push") == {"check-macos", "store-touched"}
-    assert _running("pull_request") == {"check-macos", "store-touched", "mutation-plan"}
-    assert _running("pull_request", labels=[LABEL]) == {"check-macos", "store-touched", "mutation-plan", *DEFERRED}
+    assert _running("push") == {"check-macos", "store-touched", VERDICT}
+    assert _running("pull_request") == {"check-macos", "store-touched", "mutation-plan", VERDICT}
+    assert _running("pull_request", labels=[LABEL]) == {"check-macos", "store-touched", "mutation-plan", VERDICT,
+                                                        *DEFERRED}
 
 
 def test_a_dispatch_runs_only_the_jobs_it_names():
     for name in SELECTABLE:
-        extra = {"store-touched"} if name == "check-postgres" else set()
+        extra = {"store-touched", VERDICT} if name == "check-postgres" else set()
         assert _running("workflow_dispatch", jobs=name) == {name, "dispatch-inputs"} | extra, name
     assert _running("workflow_dispatch", jobs="check-linux, check-windows") == {
         "check-linux", "check-windows", "dispatch-inputs"}
@@ -484,7 +493,7 @@ def test_the_dispatch_input_check_knows_every_selectable_job():
     doc, _ = _ci()
     step = doc["jobs"]["dispatch-inputs"]["steps"][0]
     assert tuple(step["env"]["KNOWN"].split()) == SELECTABLE
-    selectable = {n for n, j in doc["jobs"].items() if "inputs.jobs" in str(j.get("if", ""))} - {"store-touched"}
+    selectable = {n for n, j in doc["jobs"].items() if "inputs.jobs" in str(j.get("if", ""))} - {"store-touched", VERDICT}
     assert selectable == set(SELECTABLE)
 
 
@@ -561,3 +570,106 @@ def test_dispatches_with_different_inputs_do_not_queue_behind_each_other():
     assert windows != _group("workflow_dispatch", ref, "a" * 40, jobs="all", tests="")
     assert windows == _group("workflow_dispatch", ref, "b" * 40, jobs="check-windows", tests="tests/test_a.py")
     assert _group("schedule", "refs/heads/main", "a" * 40) == "check-schedule-refs/heads/main"
+
+
+def _plan_steps():
+    doc, _ = _ci()
+    steps = doc["jobs"]["store-touched"]["steps"]
+    sync = next(i for i, s in enumerate(steps) if "uv sync" in s.get("run", ""))
+    planners = [i for i, s in enumerate(steps) if "tests.gauntlet." in s.get("run", "")]
+    return steps, sync, planners
+
+
+def _module_imports(path: Path) -> set[str]:
+    import ast
+    names = set()
+    for node in ast.parse(path.read_text(encoding="utf-8")).body:
+        if isinstance(node, ast.Import):
+            names |= {a.name for a in node.names}
+        elif isinstance(node, ast.ImportFrom) and not node.level:
+            names.add(node.module)
+            names |= {f"{node.module}.{a.name}" for a in node.names}
+    return names
+
+
+def test_the_planner_installs_what_scope_and_shard_import():
+    """store-touched ran scope with no dependency installed and failed on `import gauntlet` on every run (#2062)."""
+    import sys
+    import tomllib
+    steps, sync, planners = _plan_steps()
+    group = re.search(r"uv sync --only-group (\S+) --frozen", steps[sync]["run"]).group(1)
+    assert planners and all(sync < i for i in planners), "the planner's dependencies are installed before it runs"
+    for i in planners:
+        assert "uv run --no-sync python" in steps[i]["run"] and "--no-project" not in steps[i]["run"], steps[i]["run"]
+        assert steps[i]["if"].startswith(steps[sync]["if"]), "installed whenever a planner step runs"
+    root = CI.parents[2]
+    reqs = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["dependency-groups"][group]
+    installed = {re.match(r"[\w.-]+", r).group(0).lower().replace("-", "_") for r in reqs if isinstance(r, str)}
+    seen, todo, missing = set(), ["tests.gauntlet.scope", "tests.gauntlet.shard", "tests.gauntlet.covmap"], set()
+    while todo:
+        mod = todo.pop()
+        if mod in seen:
+            continue
+        seen.add(mod)
+        top = mod.split(".")[0]
+        local = root.joinpath(*mod.split("."))
+        if local.with_suffix(".py").is_file():
+            todo += sorted(_module_imports(local.with_suffix(".py")))
+        elif (local / "__init__.py").is_file():
+            todo += sorted(_module_imports(local / "__init__.py"))
+        elif top not in sys.stdlib_module_names and top not in ("harness", "tests") and top not in installed:
+            missing.add(top)
+    assert missing == set(), f"the planner imports {missing}, which `uv sync --only-group {group}` does not install"
+
+
+def _needs(result="success", touched="", shards="", plan=""):
+    return {"store-touched.result": result, "store-touched.outputs.touched": touched,
+            "store-touched.outputs.shards": shards, "store-touched.outputs.plan": plan}
+
+
+def _from_json(expr: str, **needs):
+    inner = re.fullmatch(r"\$\{\{\s*fromJSON\((.*)\)(\[.*\])?\s*\}\}", expr.strip()).group(1)
+    return _eval(inner, needs=_needs(**needs))
+
+
+def test_a_failed_plan_runs_the_whole_postgres_suite_rather_than_skip_it():
+    """store-touched failing skipped check-postgres, and a skipped check reads as passed (#2062)."""
+    doc, _ = _ci()
+    job = doc["jobs"][PG]
+    cond = " ".join(job["if"].split())
+    for event in ("pull_request", "push"):
+        assert _eval(cond, needs=_needs("failure"), event_name=event) is True, event
+        assert _eval(cond, needs=_needs(touched="0"), event_name=event) is False, event
+        assert _eval(cond, needs=_needs(touched="1"), event_name=event) is True, event
+    assert _from_json(job["strategy"]["matrix"]["shard"], result="failure", shards="[1, 2, 3]") == "[1]"
+    assert _from_json(job["strategy"]["matrix"]["shard"], shards="[1, 2, 3]") == "[1, 2, 3]"
+    leg = next(s for s in job["steps"] if "PLAN" in s.get("env", {}))
+    assert _from_json(leg["env"]["PLAN"], result="failure", plan="planned") == "{}"
+    assert "matrix.shard" in job["name"] and job["name"] != PG, "no leg, run or skipped, is the required context"
+
+
+def _verdict(planner: str, touched: str, legs: str, event: str = "pull_request") -> int:
+    doc, _ = _ci()
+    (step,) = doc["jobs"][VERDICT]["steps"]
+    env = {"PLANNER": planner, "TOUCHED": touched, "LEGS": legs, "EVENT": event}
+    return subprocess.run([BASH, "-c", step["run"]], env={**os.environ, **env}, capture_output=True).returncode
+
+
+@needs_bash
+def test_the_required_check_passes_only_on_a_plan_and_what_it_planned_running_green():
+    """A required check that read as passed because its producer failed let #2061 merge untested (#2062, RULE #381)."""
+    doc, _ = _ci()
+    job = doc["jobs"][VERDICT]
+    assert job["name"] == PG and set(job["needs"]) == {"store-touched", PG}
+    assert "!cancelled()" in job["if"] and "always()" not in job["if"]
+    assert [n for n, j in doc["jobs"].items() if j.get("name", n) == PG] == [VERDICT]
+    env = job["steps"][0]["env"]
+    assert env["PLANNER"] == "${{ needs.store-touched.result }}" and env["LEGS"] == f"${{{{ needs.{PG}.result }}}}"
+    assert env["TOUCHED"] == "${{ needs.store-touched.outputs.touched }}"
+    assert _verdict("success", "1", "success") == 0
+    assert _verdict("success", "0", "skipped") == 0 and _verdict("success", "0", "skipped", "push") == 0
+    for red in (("failure", "", "success"), ("failure", "1", "failure"), ("cancelled", "", "skipped"),
+                ("skipped", "", "skipped"), ("success", "1", "skipped"), ("success", "", "skipped"),
+                ("success", "1", "failure"), ("success", "1", "cancelled"), ("success", "0", "skipped", "schedule"),
+                ("success", "0", "skipped", "workflow_dispatch")):
+        assert _verdict(*red) == 1, red
