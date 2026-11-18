@@ -25,6 +25,16 @@ import httpx
 from harness import audio_log, reasons
 
 DEFAULT_BASE_URL = "http://127.0.0.1:8890/v1"
+#: Speech is paused unless this is set; scripts/smoke.sh reads the same values (#2068).
+SPEECH_ENV = "SOHOT_SPEECH"
+SPEECH_ON = ("1", "true", "yes", "on")
+
+
+def speech_enabled(environ=None) -> bool:
+    """Whether a broken tts or stt server may fail a deploy or raise a health alert."""
+    return (os.environ if environ is None else environ).get(SPEECH_ENV, "").strip().lower() in SPEECH_ON
+
+
 #: The same lane runs a different model on each machine, and the default says
 #: WHICH. parakeet is MLX and does not run under CUDA; the Windows box
 #: transcribes with faster-whisper, and a result recording parakeet would name

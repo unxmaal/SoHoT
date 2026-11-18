@@ -183,62 +183,68 @@ else
 fi
 
 # ---- audio ------------------------------------------------------------------
-#
-# Half the goal, and until now nothing guarded it the way the text seam is
-# guarded. Both round trips are sub-second, so there is no reason to skip them.
-#
-# The status code is NOT sufficient: mlx_audio answers 200 with an EMPTY BODY
-# when misaki is missing, and it answers 200 then closes mid-stream when the
-# requested voice is not in the local cache. Assert on the bytes.
-A="http://$H:${TTS_PORT:-8890}/v1"
-
-# WHICH MODEL TO ASK FOR IS A PROPERTY OF THE MACHINE. The Mac transcribes with
-# parakeet under MLX; the CUDA box runs faster-whisper and refuses a parakeet
-# request rather than answering it with Whisper under another name. Reading the
-# defaults from harness/audio.py keeps one source of truth: hardcoding them
-# here made this check fail on the machine whose lane was working.
-SMOKE_TTS_MODEL="${SMOKE_TTS_MODEL:-$(uv run python -c   'from harness import audio; print(audio.DEFAULT_TTS_MODEL)' 2>/dev/null || echo mlx-community/Kokoro-82M-bf16)}"
-SMOKE_STT_MODEL="${SMOKE_STT_MODEL:-$(uv run python -c   'from harness import audio; print(audio.DEFAULT_STT_MODEL)' 2>/dev/null || echo mlx-community/parakeet-tdt-0.6b-v2)}"
-# A full template, not `-t prefix`: BSD mktemp invents the suffix and GNU
-# refuses without XXXXXX, so the bare form fails on Git Bash, prints "too
-# few X's" and leaves $WAV as ".wav" in the working directory.
-WAV="$(mktemp "${TMPDIR:-/tmp}/smoke-tts.XXXXXX")"
-mv "$WAV" "$WAV.wav" && WAV="$WAV.wav"
-trap 'rm -f "$WAV"' EXIT
-
-if curl -sf --max-time 60 "$A/audio/speech" -H 'Content-Type: application/json' \
-     -d "{\"model\":\"$SMOKE_TTS_MODEL\",\"input\":\"the gateway is up\",\"voice\":\"${TTS_VOICE:-bm_george}\",\"response_format\":\"wav\"}" \
-     -o "$WAV" 2>/dev/null; then
-  # 8000 bytes is a fifth of a second at 16k mono. A bare 44-byte WAV header
-  # passes `test -s` and plays as silence.
-  BYTES=$(wc -c < "$WAV" | tr -d ' ')
-  if [ "$BYTES" -ge 8000 ]; then
-    ok "tts speech ($BYTES bytes)"
-  else
-    no "tts speech returned $BYTES bytes; check the server log for an ImportError or a missing voice"
-  fi
+# Speech is paused unless SOHOT_SPEECH is 1/true/yes/on, as harness.audio.speech_enabled reads it (#2068).
+case "$(printf %s "${SOHOT_SPEECH:-}" | tr -d "[:space:]" | tr "[:upper:]" "[:lower:]")" in 1|true|yes|on) SPEECH=1 ;; *) SPEECH=0 ;; esac
+if [ "$SPEECH" -ne 1 ]; then
+  printf 'SKIP  speech checks (tts speech, tts G2P, stt round trip): speech is paused; SOHOT_SPEECH=1 gates on them\n'
 else
-  no "tts speech"
-fi
+  #
+  # Half the goal, and until now nothing guarded it the way the text seam is
+  # guarded. Both round trips are sub-second; they gate only while speech is on.
+  #
+  # The status code is NOT sufficient: mlx_audio answers 200 with an EMPTY BODY
+  # when misaki is missing, and it answers 200 then closes mid-stream when the
+  # requested voice is not in the local cache. Assert on the bytes.
+  A="http://$H:${TTS_PORT:-8890}/v1"
 
-# misaki downloads its spaCy model from GitHub per request when the server env lacks it. #1045
-# Tests replace the check: it builds the whole audio env, ~30 s on a fresh CI runner. #1146
-G2P_CHECK="${SMOKE_G2P_CHECK:-scripts/serve-tts.sh --check}"
-if [ "$(uname -s)" = "Darwin" ] && { [ "$H" = 127.0.0.1 ] || [ "$H" = localhost ]; }; then
-  if $G2P_CHECK >/dev/null 2>&1; then
-    ok "tts G2P builds offline"
+  # WHICH MODEL TO ASK FOR IS A PROPERTY OF THE MACHINE. The Mac transcribes with
+  # parakeet under MLX; the CUDA box runs faster-whisper and refuses a parakeet
+  # request rather than answering it with Whisper under another name. Reading the
+  # defaults from harness/audio.py keeps one source of truth: hardcoding them
+  # here made this check fail on the machine whose lane was working.
+  SMOKE_TTS_MODEL="${SMOKE_TTS_MODEL:-$(uv run python -c   'from harness import audio; print(audio.DEFAULT_TTS_MODEL)' 2>/dev/null || echo mlx-community/Kokoro-82M-bf16)}"
+  SMOKE_STT_MODEL="${SMOKE_STT_MODEL:-$(uv run python -c   'from harness import audio; print(audio.DEFAULT_STT_MODEL)' 2>/dev/null || echo mlx-community/parakeet-tdt-0.6b-v2)}"
+  # A full template, not `-t prefix`: BSD mktemp invents the suffix and GNU
+  # refuses without XXXXXX, so the bare form fails on Git Bash, prints "too
+  # few X's" and leaves $WAV as ".wav" in the working directory.
+  WAV="$(mktemp "${TMPDIR:-/tmp}/smoke-tts.XXXXXX")"
+  mv "$WAV" "$WAV.wav" && WAV="$WAV.wav"
+  trap 'rm -f "$WAV"' EXIT
+
+  if curl -sf --max-time 60 "$A/audio/speech" -H 'Content-Type: application/json' \
+       -d "{\"model\":\"$SMOKE_TTS_MODEL\",\"input\":\"the gateway is up\",\"voice\":\"${TTS_VOICE:-bm_george}\",\"response_format\":\"wav\"}" \
+       -o "$WAV" 2>/dev/null; then
+    # 8000 bytes is a fifth of a second at 16k mono. A bare 44-byte WAV header
+    # passes `test -s` and plays as silence.
+    BYTES=$(wc -c < "$WAV" | tr -d ' ')
+    if [ "$BYTES" -ge 8000 ]; then
+      ok "tts speech ($BYTES bytes)"
+    else
+      no "tts speech returned $BYTES bytes; check the server log for an ImportError or a missing voice"
+    fi
   else
-    no "tts G2P needs the network: run scripts/serve-tts.sh --check"
+    no "tts speech"
   fi
-fi
 
-if [ -s "$WAV" ]; then
-  curl -sf --max-time 60 "$A/audio/transcriptions" \
-    -F "file=@$WAV" -F "model=$SMOKE_STT_MODEL" \
-    | grep -qi 'gateway' && ok "stt transcription round trip" \
-    || no "stt transcription round trip"
-else
-  no "stt transcription round trip (no audio to transcribe)"
+  # misaki downloads its spaCy model from GitHub per request when the server env lacks it. #1045
+  # Tests replace the check: it builds the whole audio env, ~30 s on a fresh CI runner. #1146
+  G2P_CHECK="${SMOKE_G2P_CHECK:-scripts/serve-tts.sh --check}"
+  if [ "$(uname -s)" = "Darwin" ] && { [ "$H" = 127.0.0.1 ] || [ "$H" = localhost ]; }; then
+    if $G2P_CHECK >/dev/null 2>&1; then
+      ok "tts G2P builds offline"
+    else
+      no "tts G2P needs the network: run scripts/serve-tts.sh --check"
+    fi
+  fi
+
+  if [ -s "$WAV" ]; then
+    curl -sf --max-time 60 "$A/audio/transcriptions" \
+      -F "file=@$WAV" -F "model=$SMOKE_STT_MODEL" \
+      | grep -qi 'gateway' && ok "stt transcription round trip" \
+      || no "stt transcription round trip"
+  else
+    no "stt transcription round trip (no audio to transcribe)"
+  fi
 fi
 
 # Machine monitoring through monit (#1485): warns, never fails, and never prints the webhook.
