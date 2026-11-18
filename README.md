@@ -3049,7 +3049,7 @@ MCP `image` or `video` tool, or someone here typing
 ```bash
 soh jobs add --title "30B coder on code" -- uv run python -m evals.run --modality code --candidates mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit,mlx-community/Qwen3-4B-Instruct-2507-4bit
 soh jobs list      # each job's state, and whether the next one may start
-soh jobs pause     # hold everything; a running job still finishes
+soh jobs pause --reason "why"   # hold everything; a running job still finishes. The flag records who and why
 soh jobs resume
 soh jobs cancel 0003
 soh jobs priority 0005 10   # higher runs first; ties run in the order added

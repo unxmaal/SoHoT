@@ -86,8 +86,9 @@ def cmd_jobs(a) -> int:
     night, start = bool(getattr(a, "night", False)), getattr(a, "not_before", "")
     despite = bool(getattr(a, "despite_hold", False))
     resource = getattr(a, "resource", "") or ""
+    why = getattr(a, "reason", "") or ""
     while rest[:1] in (["--title"], ["--json"], ["--priority"], ["--cwd"], ["--night"],
-                       ["--not-before"], ["--despite-hold"], ["--resource"]):
+                       ["--not-before"], ["--despite-hold"], ["--resource"], ["--reason"]):
         if rest[0] == "--json":
             common._JSON, rest = True, rest[1:]
         elif rest[0] == "--despite-hold":
@@ -102,6 +103,8 @@ def cmd_jobs(a) -> int:
             title, rest = rest[1], rest[2:]
         elif len(rest) > 1 and rest[0] == "--cwd":
             cwd, rest = rest[1], rest[2:]
+        elif len(rest) > 1 and rest[0] == "--reason":
+            why, rest = rest[1], rest[2:]
         elif len(rest) > 1:
             try:
                 priority = int(rest[1])
@@ -152,8 +155,10 @@ def cmd_jobs(a) -> int:
             return 0
     except ValueError as exc:
         return err(str(exc))
+    if a.action == "pause" and not why.strip():
+        return err("pause needs --reason: a pause nobody can explain blocks deploys until someone finds it. #2064")
     if a.action in ("pause", "resume"):
-        (queue_pause.pause if a.action == "pause" else queue_pause.resume)()
+        queue_pause.pause(why) if a.action == "pause" else queue_pause.resume()
         ok, why = wq.gate()
         note(f"{a.action}d; next job {'may start' if ok else 'waits'}: {why}")
         emit(paused=queue_pause.paused(), gate_open=ok, why=why)

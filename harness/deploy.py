@@ -17,7 +17,7 @@ from pathlib import Path
 
 from harness import atomic_file, store_home
 from harness import deploy_state as ds
-from harness import deploy_switch, job_claim, job_procs, job_state as js, paths, proc_identity, queue_pause
+from harness import deploy_switch, job_claim, job_procs, job_state as js, paths, proc_identity, queue_hold, queue_pause
 from harness import workqueue as wq
 
 KIND = "deploy"
@@ -175,7 +175,7 @@ def wait(conn, now: float | None = None, sample=None) -> dict | None:
     if busy:
         why = "waiting for the running job(s) " + ", ".join(j["id"] for j in busy)
     return {"job": job["id"], "sha": job["output"], "since": since, "first": first, "waited": now - since,
-            "why": why, "held": bool(held)}
+            "why": why, "held": bool(held), "pause": queue_pause.body()}
 
 
 def wait_line(w: dict) -> str:
@@ -184,8 +184,37 @@ def wait_line(w: dict) -> str:
             + (w["why"] or "starts at the worker's next poll"))
 
 
+def _pause_alerted() -> Path:
+    return wq.root() / "deploy-pause-alerted"
+
+
+def _realert_due(now: float) -> bool:
+    """Whether a queue pause still blocking an alerted deploy is due to alert again. #2064."""
+    from harness import contention
+    if not queue_pause.paused():
+        return False
+    try:
+        last = float(_pause_alerted().read_text(encoding="utf-8").strip())
+    except (OSError, ValueError):
+        return True
+    return now - last >= contention.PAUSE_REALERT_S
+
+
+def blocked_line(w: dict, now: float) -> tuple[str, str]:
+    """(event, line): the wait, or 'blocked' when an owner's pause older than PAUSE_STALE_S holds it, naming who. #2064."""
+    from harness import contention
+    body = w.get("pause") or ""
+    taken = queue_hold.since(body) if body else None
+    if taken is None or queue_hold.holder_of(body) is not None or now - taken < contention.PAUSE_STALE_S:
+        return "waiting", wait_line(w)
+    days = min(now - taken, w["waited"]) / 86400
+    return "blocked", (f"deploys blocked {days:.1f} days by a pause from {queue_hold.who(body)} "
+                       f"({queue_hold.reason(body)}), taken {time.strftime('%Y-%m-%d %H:%M', time.localtime(taken))}; "
+                       f"deploy job {w['job']} of {w['sha'][:12]} waits on it (soh jobs resume)")
+
+
 def watch_wait(now: float | None = None, alert=None) -> dict | None:
-    """One alert per wait once a pending deploy has waited contention.DEPLOY_ALERT_S, naming why; not for a pause or sweep. #1672."""
+    """One alert once a pending deploy has waited DEPLOY_ALERT_S, naming why, and again each PAUSE_REALERT_S a queue pause holds it. #1672, #2064."""
     from harness import contention, cuts
     now = time.time() if now is None else now
     try:
@@ -195,14 +224,26 @@ def watch_wait(now: float | None = None, alert=None) -> dict | None:
     with wq._store() as c:
         job = next((j for j in wq.pending(c) if j["kind"] == KIND), None)
         since, first = waiting_since(c, job["id"]) if job is not None else (now, None)
-        if now - since < contention.DEPLOY_ALERT_S or said == str(first):
+        again = said == str(first)
+        if now - since < contention.DEPLOY_ALERT_S or (again and not _realert_due(now)):
             return None
         w = wait(c, now)
-    if w is None or not w["why"] or w["held"]:
+    if w is None or not w["why"] or w["held"] or (again and w["pause"] is None):
         return None
     _wait_alerted().write_text(str(w["first"]), encoding="utf-8")
-    cuts.cut("deploy_wait_alert", "pending deploy alerted as stuck", dropped=1)
-    (alert or _alert_script)(wait_line(w))
+    if w["pause"] is not None:
+        _pause_alerted().write_text(str(now), encoding="utf-8")
+    event, line = blocked_line(w, now)
+    if again:
+        cuts.cut("deploy_pause_realert", "queue pause blocking a deploy alerted again", dropped=1)
+    else:
+        cuts.cut("deploy_wait_alert", "pending deploy alerted as stuck", dropped=1)
+    if event == "blocked":
+        cuts.cut("deploy_pause_stale", "owner pause named as blocking deploys", dropped=1)
+    if alert:
+        alert(line)
+    else:
+        _alert_script(line, event)
     return w
 
 

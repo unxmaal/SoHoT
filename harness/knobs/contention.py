@@ -7,6 +7,12 @@ KNOBS = [
             "deploy starts; a client served since a batch GPU job started pauses it. Store 2026-11-07, 14 d: 2090 "
             "client requests, gaps p50 0.7 s, p99 182 s; at 600 s they form 14 bursts and hold GPU work 0.34 h/day "
             "(0.25 at 300 s, 0.61 at 1800 s) (#1509)"),
+    _k("deploy_pause_realert", ["harness/contention.py:PAUSE_REALERT_S"], [21600.0, 43200.0, 86400.0], unit="s",
+       note="seconds between alerts while a queue pause keeps a pending deploy waiting, after the first "
+            "deploy_wait_alert; 2026-11-15 one alert, then three days of silence behind an owner pause (#2064)"),
+    _k("deploy_pause_stale", ["harness/contention.py:PAUSE_STALE_S"], [43200.0, 86400.0, 172800.0], unit="s",
+       note="seconds an owner's queue pause may block a pending deploy before the alert says deploys are "
+            "blocked by that pause and names who took it and why (#2064)"),
     _k("deploy_pressure_wait", ["harness/contention.py:DEPLOY_PRESSURE_S"], [0.0, 900.0, 1800.0, 3600.0], unit="s",
        note="seconds a deploy waits on memory pressure past normal, counted from its first superseded job, before "
             "it starts anyway; a deploy loads no model, it restarts the servers, and smoke's cold loads are what a "

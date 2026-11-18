@@ -24,6 +24,14 @@ def pause(why: str = "", holder: int | None = None) -> None:
     _pause_flag().write_text(queue_hold.text(why, holder), encoding="utf-8")
 
 
+def body() -> str | None:
+    """The pause flag's text, None when the queue is not paused; an empty flag still pauses it. #2064."""
+    try:
+        return _pause_flag().read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return None
+
+
 def resume() -> None:
     _pause_flag().unlink(missing_ok=True)
 

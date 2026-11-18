@@ -544,7 +544,7 @@ def needs(r: dict) -> list[str]:
     out.extend(deploys.line(x) for x in r.get("deploys") or [] if x["outcome"] not in ("", deploys.DEPLOYED))
     w = r.get("deploy_wait")
     if w and w["why"] and w["waited"] >= contention.DEPLOY_ALERT_S:
-        out.append(deploys.wait_line(w))
+        out.append(deploys.blocked_line(w, w["since"] + w["waited"])[1])
     from harness import release_procs
     old = r.get("old_release")
     if old and old["procs"]:

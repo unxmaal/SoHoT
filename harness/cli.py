@@ -1022,6 +1022,8 @@ def build_parser() -> argparse.ArgumentParser:
     jobs.add_argument("rest", nargs=argparse.REMAINDER,
                       help="add: -- <command...>; cancel: <id>")
     jobs.add_argument("--title", default="")
+    jobs.add_argument("--reason", default="",
+                      help="pause: why, required; the flag records it with who paused, and alerts name both. #2064")
     jobs.add_argument("--priority", type=int, default=0,
                       help="higher runs first; ties run in the order added")
     jobs.add_argument("--cwd", default="",
