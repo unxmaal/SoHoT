@@ -14,6 +14,8 @@ KNOBS = [
     _k("monitor_disk_pause", [f"{M}:DISK_PAUSE_GIB"], [10, 25, 40], unit="GiB",
        note="free GiB at which the queue and running evals pause before monit alerts: about 100 min at the 10-31 "
             "fill rate (#1485). " + FILL),
+    _k("monitor_disk_resume", ["harness/monitor.py:DISK_RESUME_GIB"], [5, 15, 25], unit="GiB",
+       note="free GiB above monitor_disk_pause the Data volume must reach before a disk pause lifts itself; 15 resumes at 40 GiB, under the 50 GiB alert, so one sweep's worth of room does not flap the queue; 2026-11-15 a disk pause held 3.5 days after the disk recovered to 85% (#2066)"),
     _k("monitor_du_timeout", [f"{M}:DU_TIMEOUT_S"], [10, 30, 60, 120], unit="s",
        note="seconds the du of the known growers may take on a disk alert; a du of runs alone took over 3 min on "
             "11-01, so a cut grower reads 'not measured' (KB sohot-1485-disk-measurements-2026-11-01)"),

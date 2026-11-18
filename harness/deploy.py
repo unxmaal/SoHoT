@@ -781,6 +781,7 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
             rec.update({"id": deploy_id, "sha": sha, "job_id": job_id, "link": str(link), "release": str(release),
                         "previous": str(previous), "previous_sha": previous_sha, "db": str(ms.db_path()),
                         "backup": "", "migrated": False, "queue_was_paused": held[0], "pause_note": note,
+                        "queue_body": queue_pause.body() if held[0] else None,
                         "queue_flag": str(queue_pause._pause_flag()), "install": steps.install,
                         "rollback_install": steps.install, "verify": [steps.smoke, steps.coherence],
                         "repair": steps.repair, "alert": steps.alert, "log": str(log_path),
@@ -865,13 +866,16 @@ def _lift(rec: dict) -> str:
     flag = Path(rec.get("queue_flag") or queue_pause._pause_flag())
     if not flag.exists():
         return ""
-    if rec.get("queue_was_paused"):
-        return "the queue stays paused, as its owner had it"
     note = rec.get("pause_note")
     try:
         text = flag.read_text(encoding="utf-8")
     except OSError:
         text = ""
+    if rec.get("queue_was_paused"):
+        if rec.get("queue_body") and note and note in text:
+            # The pause it found goes back as it was, so a disk pause still lifts itself. #2066.
+            flag.write_text(rec["queue_body"], encoding="utf-8")
+        return "the queue stays paused, as its owner had it"
     if note and note not in text:
         return "the queue stays paused: its owner paused it after the deploy did"
     flag.unlink(missing_ok=True)

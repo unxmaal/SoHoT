@@ -22,6 +22,8 @@ from harness import paths
 DISK_ALERT_GIB = 50
 #: Free GiB at which the queue and the running evals pause, then monit alerts.
 DISK_PAUSE_GIB = 25
+#: Free GiB above DISK_PAUSE_GIB the Data volume must reach before a disk pause lifts itself. #2066.
+DISK_RESUME_GIB = 15
 #: Seconds between monit's checks.
 CYCLE_S = 300
 #: Seconds memory pressure stays at warn or worse before monit alerts.
@@ -54,7 +56,8 @@ WEBHOOK = "SOH_ALERT_WEBHOOK"
 LABEL = "com.unxmaal.localharness.monit"
 TITLE = "SoHoT monit"
 RECOVERED = "recovered"
-DISK_KINDS = ("disk", "disk-pause")
+DISK_HELD = "disk-held"
+DISK_KINDS = ("disk", "disk-pause", DISK_HELD)
 KINDS = DISK_KINDS + ("volume", "volume-low", "memory", "service", "deploy", "store", "store-backup", "gpu-refused",
                            "queue-stale", RECOVERED)
 #: (monit name, launchd unit, port variable, the launcher's default port): read as scripts/serve-*.sh read them.
@@ -468,7 +471,7 @@ def du_line(rows: list[dict]) -> str:
 def pause_all(reason: str) -> dict:
     """Pause the job queue and every running eval through its pause file, the watchdog's request path."""
     from harness import queue_pause, watchdog_observe
-    queue_pause.pause(reason)
+    queue_pause.pause(reason, disk=str(paths.home()))
     reader = watchdog_observe.ProgressFiles()
     return {"queue": "paused", "runs": [reader.pause(r, reason) for r in reader.runs()]}
 
@@ -523,7 +526,8 @@ def alert(kind: str, environ=None, *, notify=None, send=None, pause=None, measur
             message += _lasted(entry, opened)
     if kind == "disk-pause":
         n = len(entry["paused"].get("runs") or [])
-        message += f"; paused the job queue and {n} running eval(s); `soh jobs resume` once space is back"
+        message += (f"; paused the job queue and {n} running eval(s); it lifts itself at "
+                    f"{DISK_PAUSE_GIB + DISK_RESUME_GIB} GiB free, and a deploy still runs")
     entry["message"] = message
     entry["desktop"] = notify(TITLE, entry["message"])
     entry["webhook"] = _scrub(send(f"{TITLE}: {entry['message']}", url), url) if url else "no webhook set"
@@ -537,6 +541,38 @@ def alert(kind: str, environ=None, *, notify=None, send=None, pause=None, measur
         record(after, home)
         entry["du"] = line
     return entry
+
+
+def _held_alerted() -> Path:
+    from harness import workqueue as wq
+    return wq.root() / "disk-pause-alerted"
+
+
+def disk_held(now: float | None = None, measure=None) -> dict | None:
+    """Lift a disk pause whose volume has room again; else alert each PAUSE_REALERT_S with free space and growers. #2066."""
+    from harness import contention, cuts, heartbeat, queue_hold, queue_pause
+    now = time.time() if now is None else now
+    queue_hold.lift([queue_pause._pause_flag()])
+    body = queue_pause.body()
+    disk = queue_hold.disk_of(body) if body else None
+    if disk is None:
+        _held_alerted().unlink(missing_ok=True)
+        return None
+    try:
+        last = float(_held_alerted().read_text(encoding="utf-8").strip())
+    except (OSError, ValueError):
+        last = queue_hold.since(body) or now
+        _held_alerted().write_text(str(last), encoding="utf-8")
+    if now - last < contention.PAUSE_REALERT_S:
+        return None
+    _held_alerted().write_text(str(now), encoding="utf-8")
+    cuts.cut("deploy_pause_realert", "disk pause holding the queue alerted again", dropped=1)
+    taken = queue_hold.since(body) or last
+    desc = (f"the queue has been paused {heartbeat.ago(now - taken)} for disk: "
+            f"{queue_hold.free_said(disk['path'])}, it lifts itself at "
+            f"{queue_hold.resume_gib()} GiB ({queue_hold.reason(body)})")
+    return alert(DISK_HELD, {"MONIT_SERVICE": "system_data", "MONIT_EVENT": "held", "MONIT_DESCRIPTION": desc},
+                 measure=measure, clock=lambda: now)
 
 
 def open_failure(service: str, home: Path | None = None) -> dict | None:

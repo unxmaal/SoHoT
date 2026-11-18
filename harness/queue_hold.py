@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -14,6 +15,7 @@ HOLDER_ENV = "LH_QUEUE_HOLDER"
 _TAG = "holder "
 _STAMP = "%Y-%m-%dT%H:%M:%S"
 _BY = "by "
+_DISK = "disk "
 _SAYS = (("session", "CLAUDE_CODE_SESSION_ID"), ("agent", "AI_AGENT"), ("subagent", "CLAUDE_CODE_CHILD_SESSION"))
 #: What a pause taken with no reason says in its place, so it reads as flagged. #2064.
 NO_REASON = "no reason given"
@@ -27,11 +29,13 @@ def caller(environ=None) -> dict:
     return rec
 
 
-def text(why: str, holder: int | None, environ=None) -> str:
-    """A flag's body: when and why, the holder's identity when a process holds it, then who took it. #1760, #2064."""
+def text(why: str, holder: int | None, environ=None, disk: str | None = None) -> str:
+    """A flag's body: when and why, the holder's identity or the disk it waits on, then who took it. #1760, #2064, #2066."""
     lines = [f"{time.strftime(_STAMP)} {why.strip() or NO_REASON}"]
     if holder is not None:
         lines.append(f"{_TAG}{json.dumps(proc_identity.identity(holder))}")
+    if disk is not None:
+        lines.append(f"{_DISK}{json.dumps({'path': disk, 'free_gib': free_gib(disk)})}")
     return "\n".join([*lines, f"{_BY}{json.dumps(caller(environ))}"])
 
 
@@ -49,6 +53,44 @@ def _line(body: str, tag: str) -> dict | None:
 def holder_of(body: str) -> dict | None:
     """The identity a flag body records, None for an owner's pause."""
     return _line(body, _TAG)
+
+
+def disk_of(body: str) -> dict | None:
+    """The volume a disk pause waits on, None for any other pause. #2066."""
+    got = _line(body, _DISK)
+    return got if got is not None and isinstance(got.get("path"), str) else None
+
+
+def free_gib(path: str) -> float | None:
+    try:
+        return round(shutil.disk_usage(path).free / 1024 ** 3, 1)
+    except OSError:
+        return None
+
+
+def free_said(path: str) -> str:
+    free = free_gib(path)
+    return f"{path} unreadable, so it stays paused" if free is None else f"{free} GiB free on {path}"
+
+
+def resume_gib() -> int:
+    """Free GiB at which a disk pause lifts itself: monit's pause floor plus the hysteresis knob. #2066."""
+    from harness import monitor
+    return monitor.DISK_PAUSE_GIB + monitor.DISK_RESUME_GIB
+
+
+def _gone(body: str) -> str | None:
+    """Why the pause in `body` no longer holds: its holder is gone, or the disk it waits on has room again."""
+    rec = holder_of(body)
+    if rec is not None and proc_identity.same(rec) is False:
+        return f"its holder pid {rec.get('pid')} is gone"
+    disk = disk_of(body)
+    free = free_gib(disk["path"]) if disk is not None else None
+    if free is not None and free >= resume_gib():
+        from harness import cuts
+        cuts.cut("harness/monitor.py:DISK_RESUME_GIB", f"disk pause lifted at {free} GiB free on {disk['path']}")
+        return f"{disk['path']} has {free} GiB free, at least {resume_gib()} GiB"
+    return None
 
 
 def by_of(body: str) -> dict | None:
@@ -96,15 +138,15 @@ def from_env(environ=None) -> int | None:
 
 
 def lift(flags: list[Path]) -> list[str]:
-    """Remove each flag whose recorded holder is gone; a holder that cannot be read ('cannot say') keeps it."""
+    """Remove each flag whose holder is gone or whose disk has room again; one that cannot be read ('cannot say') stays."""
     said = []
     for flag in flags:
         try:
             body = flag.read_text(encoding="utf-8")
         except FileNotFoundError:
             continue
-        rec = holder_of(body)
-        if rec is None or proc_identity.same(rec) is not False:
+        gone = _gone(body)
+        if gone is None:
             continue
         try:
             if flag.read_text(encoding="utf-8") != body:
@@ -112,7 +154,7 @@ def lift(flags: list[Path]) -> list[str]:
         except FileNotFoundError:
             continue
         flag.unlink(missing_ok=True)
-        said.append(f"{flag.name} lifted: its holder pid {rec.get('pid')} is gone ({body.splitlines()[0]})")
+        said.append(f"{flag.name} lifted: {gone} ({body.splitlines()[0]})")
     for line in said:
         print(f"{time.strftime('%H:%M:%S')} {line}", file=sys.stderr, flush=True)
     return said
@@ -124,7 +166,10 @@ def why_paused(flag: Path) -> str:
         body = flag.read_text(encoding="utf-8")
     except FileNotFoundError:
         body = ""
-    rec = holder_of(body)
+    rec, disk = holder_of(body), disk_of(body)
+    if disk is not None:
+        return (f"paused {describe(body)}; {free_said(disk['path'])}, "
+                f"lifts itself at {resume_gib()} GiB (soh jobs resume)")
     if rec is None:
         return f"paused {describe(body)} (soh jobs resume)"
     return f"held by pid {rec.get('pid')} ({body.splitlines()[0]}); lifted when it ends"
