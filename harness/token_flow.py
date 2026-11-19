@@ -141,10 +141,12 @@ def account(reqs: list[dict], top: int = TOP) -> dict:
                 "expiry_rewrites": sum(1 for r in rewrites if (r["kind"], r["stream"]) == (k, s))}
                for (k, s, a), g in per.items()]
     big = lambda rows, k: sorted(rows, key=lambda r: (-r[k], str(sorted(r.items()))))  # noqa: E731
+    lives = [{"kind": k, "agent": a if k == SUB else "", "ttl": t, **g, "share": _share(g["counted"], n)}
+             for (k, a, t), g in _group(reqs, lambda r: (r["kind"], r["agent"] or UNNAMED, r["ttl"])).items()]
     return {"counted": n, "tokens": {k: total[k] for k in ledger._zero()}, "requests": total["requests"],
             "streams": total["streams"], "kinds": kinds, "agents": big(agents, "counted"),
             "causes": big(causes, "cache_write"), "expiry": expiry(rewrites, n), "terms": big(terms, "tokens"),
-            "top": big(streams, "counted")[:max(0, top)]}
+            "top": big(streams, "counted")[:max(0, top)], "lifetimes": big(lives, "counted")}
 
 
 def expiry(rewrites: list[dict], counted: int) -> dict:
@@ -156,10 +158,17 @@ def expiry(rewrites: list[dict], counted: int) -> dict:
         t["events"] += 1
     size = sum(r["cache_write"] for r in rewrites)
     by_ttl = {ttl: sum(r["cache_write"] for r in rewrites if r["ttl"] == ttl) for ttl in TTL_S}
+    kt: dict = {}
+    for r in rewrites:
+        kt.setdefault((r["kind"], r["ttl"]), []).append(r)
+    by_kind = [{"kind": k, "ttl": t, "cache_write": sum(r["cache_write"] for r in rs), "events": len(rs),
+                "share": _share(sum(r["cache_write"] for r in rs), counted),
+                "median_idle_s": statistics.median(r["idle_s"] for r in rs)} for (k, t), rs in kt.items()]
     return {"cache_write": size, "events": len(rewrites), "share": _share(size, counted),
             "median_tokens": statistics.median(r["cache_write"] for r in rewrites) if rewrites else None,
             "median_idle_s": statistics.median(r["idle_s"] for r in rewrites) if rewrites else None,
             "by_ttl": {k: v for k, v in by_ttl.items() if v},
+            "by_kind": sorted(by_kind, key=lambda g: (-g["cache_write"], g["kind"], g["ttl"])),
             "tools": sorted(({"tool": k, **v, "share": _share(v["cache_write"], size)} for k, v in tools.items()),
                             key=lambda t: (-t["cache_write"], t["tool"]))}
 
@@ -183,7 +192,12 @@ def morning(now: float, *, root=None) -> dict:
         return got
     return {"available": True, "first_day": first, "last_day": ledger.day_of(now - 86400), "days": ledger.RATIO_DAYS,
             "counted": got["counted"], "expiry": {k: got["expiry"][k] for k in ("cache_write", "events", "share")},
-            "terms": got["terms"][:TERMS]}
+            "terms": got["terms"][:TERMS], "short_lived": short_lived(got["lifetimes"])}
+
+
+def short_lived(lifetimes: list[dict]) -> list[str]:
+    """Subagent types that wrote a cache of the short lifetime, which any idle past it writes again whole (#2036)."""
+    return sorted({g["agent"] for g in lifetimes if g["kind"] == SUB and g["ttl"] == "5m" and g["cache_write"]})
 
 
 def _pct(share: float | None) -> str:
@@ -197,5 +211,6 @@ def terms_line(m: dict | None) -> str:
     if not m.get("available"):
         return f"cloud     terms n/a: {m.get('why')}"
     parts = "; ".join(f"{t['term']} {ledger._mtok(t['tokens'])} ({_pct(t['share'])})" for t in m["terms"])
+    short = f"; subagents on a 5m cache: {', '.join(m['short_lived'])}" if m.get("short_lived") else ""
     return (f"cloud     {m['days']}d {ledger._mtok(m['counted'])} counted in transcripts; largest: {parts or 'none'}; "
-            f"expiry rewrites {_pct(m['expiry']['share'])}")
+            f"expiry rewrites {_pct(m['expiry']['share'])}{short}")

@@ -299,10 +299,23 @@ def show_compare(C: dict) -> None:
 
 def gather_by(a, now: float) -> dict:
     """`--by`: counted cloud tokens by kind, agent type and cache write cause, over the plain ledger's own window. #2031."""
-    from harness import context_report as cr, ledger, token_flow
-    days = ledger.days_between(cr.parse_when(a.since, now), now)
-    B = token_flow.gather(ledger.day_start(days[0]), top=a.top)
+    from harness import ledger, token_flow
+    since = by_bound(a.since, now)
+    until = by_bound(a.until, now) if getattr(a, "until", "") else None
+    if until is not None and until <= since:
+        raise ValueError(f"--until {a.until} is not after --since {a.since}")
+    days = ledger.days_between(since, now if until is None else until - 1)
+    B = token_flow.gather(ledger.day_start(days[0]), until, top=a.top)
     return {"window": {"first_day": days[0], "last_day": days[-1]}, **B}
+
+
+def by_bound(text: str, now: float) -> float:
+    """A --by window bound: a bare date is that local day's start, as the window's days are local (#2036)."""
+    import re
+
+    from harness import context_report as cr, ledger
+    raw = str(text).strip()
+    return ledger.day_start(raw) if re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw) else cr.parse_when(raw, now)
 
 
 def _by_row(label: str, g: dict) -> str:
@@ -340,6 +353,15 @@ def show_by(B: dict) -> None:
     note(f"\ncache write by cause {'':<21} {'writes':>8} {'tokens':>9} {'share':>5}")
     for c in B["causes"]:
         note(f"{c['kind'] + ', ' + c['cause']:<42} {c['events']:>8,} {_tok(c['cache_write']):>9} {_share(c['share']):>5}")
+    if x["by_kind"]:
+        note(f"\nexpiry rewrites by kind and cache lifetime {'writes':>8} {'tokens':>9} {'share':>5} {'median idle':>12}")
+        for g in x["by_kind"]:
+            note(f"{g['kind'] + ', ' + g['ttl'] + ' cache':<42} {g['events']:>8,} {_tok(g['cache_write']):>9} "
+                 f"{_share(g['share']):>5} {g['median_idle_s'] / 60:>8.1f} min")
+    note(f"\ncache lifetime written {'':<11} {'streams':>7} {'requests':>8} {'counted':>9} {'share':>5}")
+    for g in B["lifetimes"]:
+        label = f"{g['kind']}{' ' + g['agent'] if g['agent'] else ''}, {g['ttl']}"
+        note(f"{label[:34]:<34} {g['streams']:>7,} {g['requests']:>8,} {_tok(g['counted']):>9} {_share(g['share']):>5}")
     if x["tools"]:
         note("\nexpiry rewrites by the tool call of the request before")
         for tool in x["tools"]:
