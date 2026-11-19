@@ -139,6 +139,55 @@ def test_a_root_that_sits_under_a_directory_named_subagents_does_not_make_every_
     assert (A["available"], A["files"], A["source"], A["lower_bound"]) == (True, 2, "transcripts", True)
 
 
+def test_expiry_rewrites_split_by_kind_and_lifetime_and_every_request_by_the_lifetime_it_wrote(tmp_path):
+    write(tmp_path, "proj/s1.jsonl", idle_stream("m", "1h", idle=3700.0))
+    write(tmp_path, "proj/s1/subagents/agent-a1.jsonl", idle_stream("a", "5m", agent="sohot-fix"))
+    write(tmp_path, "proj/s1/subagents/agent-a2.jsonl", idle_stream("b", "1h", agent="sohot-fix"))
+    A = flow(tmp_path)
+    assert [(g["kind"], g["ttl"], g["cache_write"], g["events"], g["median_idle_s"]) for g in A["expiry"]["by_kind"]] == [
+        ("main", "1h", PLANTED, 1, 3700.0), ("subagent", "5m", PLANTED, 1, 360.0)]
+    assert sum(g["share"] for g in A["expiry"]["by_kind"]) == A["expiry"]["share"]
+    assert sorted((g["kind"], g["agent"], g["ttl"], g["streams"], g["requests"]) for g in A["lifetimes"]) == [
+        ("main", "", "1h", 1, 4), ("subagent", "sohot-fix", "1h", 1, 4), ("subagent", "sohot-fix", "5m", 1, 4)]
+    assert sum(g["counted"] for g in A["lifetimes"]) == A["counted"]
+    assert token_flow.short_lived(A["lifetimes"]) == ["sohot-fix"]
+
+
+def test_a_week_of_one_hour_subagents_flags_no_short_lived_cache(tmp_path):
+    write(tmp_path, "proj/s1/subagents/agent-a1.jsonl", idle_stream("a", "1h", agent="sohot-fix"))
+    write(tmp_path, "proj/s1.jsonl", idle_stream("m", "5m"))
+    m = token_flow.morning(local("2026-10-15", 6), root=tmp_path)
+    assert m["short_lived"] == [] and "5m cache" not in token_flow.terms_line(m)
+
+
+def test_ledger_by_until_bounds_the_window_and_a_bare_date_is_the_local_day(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("SOH_CLAUDE_PROJECTS", str(tmp_path))
+    write(tmp_path, "proj/s1/subagents/agent-a1.jsonl", [
+        *idle_stream("a", "5m", agent="sohot-fix"),
+        rec(local("2026-10-09", 1), "late", cw=111, cr=PLANTED, agent="sohot-fix"),
+        rec(local("2026-10-10", 1), "after", cw=99_999, agent="sohot-fix")])
+    assert cli.main(["ledger", "--by", "--since", SINCE_DAY, "--until", "2026-10-10", "--json"]) == 0
+    doc = json.loads(capsys.readouterr().out)
+    assert (doc["window"]["first_day"], doc["window"]["last_day"]) == (SINCE_DAY, "2026-10-09")
+    assert doc["requests"] == 5 and doc["tokens"]["cache_write"] == 5000 + 340 + PLANTED + 111
+    assert cli.main(["ledger", "--by", "--since", "2026-10-09", "--json"]) == 0
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["window"]["first_day"] == "2026-10-09" and doc["requests"] == 2
+    assert cli.main(["ledger", "--by", "--since", SINCE_DAY, "--until", SINCE_DAY]) == 2
+    assert "is not after --since" in capsys.readouterr().out
+
+
+def test_ledger_by_prints_expiry_by_kind_and_lifetime_and_the_lifetime_table(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("SOH_CLAUDE_PROJECTS", str(tmp_path))
+    write(tmp_path, "proj/s1/subagents/agent-a1.jsonl", idle_stream("a", "5m", agent="sohot-fix"))
+    assert cli.main(["ledger", "--by", "--since", SINCE_ARG]) == 0
+    out = capsys.readouterr().out.splitlines()
+    i = out.index(next(x for x in out if x.startswith("expiry rewrites by kind and cache lifetime")))
+    assert out[i + 1].split() == ["subagent,", "5m", "cache", "1", "7,777", "59%", "6.0", "min"]
+    j = out.index(next(x for x in out if x.startswith("cache lifetime written")))
+    assert out[j + 1].split() == ["subagent", "sohot-fix,", "5m", "1", "4", "13,161", "100%"]
+
+
 def test_records_of_one_request_count_once_in_a_file_and_across_sibling_files(tmp_path):
     shared = [rec(T0, "x1", cw=3000, out=20, stop=None, n=0), rec(T0 + 1, "x1", cw=3000, out=90, n=1)]
     write(tmp_path, "proj/s1/subagents/agent-a1.jsonl", shared + [rec(T0 + 5, "a2", cw=10, cr=3000)])
@@ -243,7 +292,8 @@ def test_the_morning_account_spans_the_ratio_week_ending_yesterday(tmp_path):
     assert m["expiry"] == {"cache_write": PLANTED + 5000, "events": 2, "share": (PLANTED + 5000) / m["counted"]}
     assert token_flow.terms_line(m) == (
         "cloud     7d 17,762 counted in transcripts; largest: subagent cache write, rewrite after expiry 12,777 (72%); "
-        "subagent output 4,040 (23%); subagent cache write, growth 940 (5%); expiry rewrites 72%")
+        "subagent output 4,040 (23%); subagent cache write, growth 940 (5%); expiry rewrites 72%; "
+        "subagents on a 5m cache: sohot-fix")
 
 
 def test_morning_leads_with_the_ratio_then_the_three_largest_cloud_terms(tmp_path):
@@ -263,7 +313,7 @@ def test_morning_leads_with_the_ratio_then_the_three_largest_cloud_terms(tmp_pat
     assert lines[0].startswith("local:cloud ")
     assert lines[1] == ("cloud     7d 13,161 counted in transcripts; largest: subagent cache write, rewrite after expiry "
                         "7,777 (59%); subagent cache write, cold start 5,000 (38%); subagent cache write, growth 340 (3%); "
-                        "expiry rewrites 59%")
+                        "expiry rewrites 59%; subagents on a 5m cache: sohot-fix")
     assert lines[2].startswith("since ")
     assert bare["flow"] is None and morning_cmd.render(bare)[1].startswith("since ")
 
