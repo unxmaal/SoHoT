@@ -132,11 +132,13 @@ def _stamp(text) -> float | None:
     return (t if t.tzinfo else t.replace(tzinfo=_dt.timezone.utc)).timestamp()
 
 
-def usage_records(files):
+def usage_records(files, each_line=None):
     """(path, record, message, at) for each assistant record that carries usage and a readable timestamp."""
     for path in files:
         with open(path, encoding="utf-8", errors="ignore") as fh:
             for line in fh:
+                if each_line is not None:
+                    each_line(path, line)
                 if '"usage"' not in line:
                     continue
                 try:

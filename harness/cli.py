@@ -710,6 +710,8 @@ def build_parser() -> argparse.ArgumentParser:
                      help="counted cloud tokens by main or subagent, agent type and cache write cause, from the "
                           "transcripts (#2031)")
     led.add_argument("--top", type=int, default=10, metavar="N", help="with --by: the N largest streams (default 10)")
+    led.add_argument("--merged", action="store_true",
+                     help="with --by: pull request rows only for merged ones, merged state from gh (#2031)")
     led.add_argument("--sample-power", action="store_true",
                      help="append one macmon reading to the power log and exit (the energy unit)")
     led.set_defaults(func=ledger_cmd.cmd_ledger)

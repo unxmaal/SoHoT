@@ -297,17 +297,27 @@ def show_compare(C: dict) -> None:
         note(f"{k}: {v}")
 
 
-def gather_by(a, now: float) -> dict:
-    """`--by`: counted cloud tokens by kind, agent type and cache write cause, over the plain ledger's own window. #2031."""
-    from harness import context_report as cr, ledger, token_flow
+def gather_by(a, now: float, gh=None) -> dict:
+    """`--by`: counted cloud tokens by kind, agent type, cache write cause and pull request, over the plain ledger's
+    own window. #2031."""
+    from harness import ci_history, context_report as cr, ledger, token_flow
     days = ledger.days_between(cr.parse_when(a.since, now), now)
     B = token_flow.gather(ledger.day_start(days[0]), top=a.top)
+    if B["available"] and getattr(a, "merged", False):
+        try:
+            B = token_flow.merged_only(B, token_flow.merged_prs(B["prs"], gh or ci_history._gh))
+        except (RuntimeError, OSError, ValueError) as exc:
+            B = {**B, "merged_unread": str(exc)}
     return {"window": {"first_day": days[0], "last_day": days[-1]}, **B}
 
 
 def _by_row(label: str, g: dict) -> str:
     return (f"{label:<34} {g['streams']:>7,} {g['requests']:>8,} {_tok(g['counted']):>9} {_share(g['share']):>5} "
             f"{_tok(g['input']):>9} {_tok(g['output']):>9} {_tok(g['cache_write']):>11}")
+
+
+_BY_HEAD = (f"{'':<34} {'streams':>7} {'requests':>8} {'counted':>9} {'share':>5} {'input':>9} {'output':>9} "
+            f"{'cache write':>11}")
 
 
 def _share(share) -> str:
@@ -329,7 +339,7 @@ def show_by(B: dict) -> None:
     note(f"expiry    {_tok(x['cache_write'])} rewritten after a cache expiry, {_share(x['share'])} of counted cloud, "
          f"in {x['events']:,} rewrites{idle}")
     note("          from transcripts, which miss output Claude Code never records (#1160): a lower bound")
-    head = f"{'':<34} {'streams':>7} {'requests':>8} {'counted':>9} {'share':>5} {'input':>9} {'output':>9} {'cache write':>11}"
+    head = _BY_HEAD
     note("\nby kind")
     note(head)
     for k in B["kinds"]:
@@ -349,6 +359,25 @@ def show_by(B: dict) -> None:
         label = f"{s['stream'][:24]} {s['kind']}" + (f" {s['agent'] or 'unnamed'}" if s["kind"] != "main" else "")
         note(f"{label[:50]:<50} {_tok(s['counted']):>9} {_share(s['share']):>5} {s['requests']:>7,} reqs "
              f"{s['expiry_rewrites']:>3} expiry rewrites")
+    show_prs(B, len(B["top"]))
+
+
+def show_prs(B: dict, top: int) -> None:
+    from harness import token_flow
+    which = "merged pull request" if "not_merged" in B else "pull request"
+    import statistics
+    mid = f"; median {_tok(int(statistics.median(p['counted'] for p in B['prs'])))} each" if B["prs"] else ""
+    note(f"\ncounted by {which}, joined on the stream whose gh pr create opened it ({len(B['prs']):,}{mid}; "
+         f"top {top})")
+    if B.get("merged_unread"):
+        note(f"merged    unread: {B['merged_unread'][:200]}")
+    note(_BY_HEAD)
+    for p in B["prs"][:max(0, top)]:
+        note(_by_row(p["pr"], p))
+    if "not_merged" in B:
+        note(f"{'opened, not merged':<34} {'':>7} {'':>8} {_tok(B['not_merged']['counted']):>9} "
+             f"{_share(B['not_merged']['share']):>5}")
+    note(f"{token_flow.NO_PR:<34} {'':>7} {'':>8} {_tok(B['no_pr']['counted']):>9} {_share(B['no_pr']['share']):>5}")
 
 
 def asked_days(specs: list[str]) -> list[str]:
