@@ -543,7 +543,9 @@ def _monit_set_up(tmp_path):
     """A machine where soh monitor install ran once: its plist, a live monit, and a monit binary that checks fine."""
     for d in ("bin", "state", "home/Library/LaunchAgents"):
         (tmp_path / d).mkdir(parents=True, exist_ok=True)
-    (tmp_path / "bin" / "monit").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    # It answers the guard's load probe as a monit with the guard loaded would. #2072.
+    (tmp_path / "bin" / "monit").write_text('#!/bin/sh\n[ -n "$MONIT_GUARD_PROBE" ] && echo $$ > "$MONIT_GUARD_PROBE"\n'
+                                            "exit 0\n", encoding="utf-8")
     (tmp_path / "bin" / "monit").chmod(0o755)
     (tmp_path / "home" / "Library" / "LaunchAgents" / f"{MONIT}.plist").write_text("old", encoding="utf-8")
     (tmp_path / "state" / MONIT).touch()

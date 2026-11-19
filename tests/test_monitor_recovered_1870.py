@@ -101,7 +101,7 @@ def _scratch_monit(tmp_path, monkeypatch, statuses: list[int]) -> str:
     rc.chmod(0o600)
     monit = shutil.which("monit")
     try:
-        started = subprocess.run([monit, "-c", str(rc)], capture_output=True, text=True, timeout=30)
+        started = subprocess.run(monitor.guarded([monit, "-c", str(rc)], monitor.guard(monit, d)), capture_output=True, text=True, timeout=30)
         assert started.returncode == 0, started.stdout + started.stderr
         deadline = time.monotonic() + len(statuses) + 15
         while time.monotonic() < deadline and (d / "seq").read_text(encoding="utf-8").strip():
@@ -112,7 +112,7 @@ def _scratch_monit(tmp_path, monkeypatch, statuses: list[int]) -> str:
     return trace.read_text(encoding="utf-8") if trace.exists() else ""
 
 
-@pytest.mark.skipif(shutil.which("monit") is None, reason="monit is not installed")
+@pytest.mark.skipif(shutil.which("monit") is None or shutil.which("cc") is None, reason="needs monit and cc")
 def test_memory_flapping_under_monit_alerts_once_per_episode(tmp_path, monkeypatch):
     got = _scratch_monit(tmp_path, monkeypatch, [1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0])
     assert got.split() == ["memory", "recovered"]

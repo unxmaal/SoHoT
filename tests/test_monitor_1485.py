@@ -360,7 +360,7 @@ def test_the_pressure_check_fails_past_normal_only(tmp_path, level, rc):
     assert got.returncode == rc and (level or "unknown") in got.stdout
 
 
-@pytest.mark.skipif(shutil.which("monit") is None, reason="monit is not installed")
+@pytest.mark.skipif(shutil.which("monit") is None or shutil.which("cc") is None, reason="needs monit and cc")
 def test_monit_started_on_the_rendered_httpd_lines_answers_on_its_socket():
     """#1492: monit -t accepts an httpd block monit 6 then refuses to start; start it to see."""
     monit = shutil.which("monit")
@@ -384,7 +384,7 @@ def test_monit_started_on_the_rendered_httpd_lines_answers_on_its_socket():
     rc.chmod(0o600)
     pid = home / "monit" / "monit.pid"
     try:
-        started = subprocess.run([monit, "-c", str(rc)], capture_output=True, text=True, timeout=30)
+        started = subprocess.run(monitor.guarded([monit, "-c", str(rc)], monitor.guard(monit, home)), capture_output=True, text=True, timeout=30)
         assert started.returncode == 0, started.stdout + started.stderr
         deadline = time.monotonic() + 15
         while not sock.exists() and time.monotonic() < deadline:
