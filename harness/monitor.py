@@ -54,6 +54,9 @@ POST_CHARS = 2000
 ENV_FILE = "monitor.env"
 WEBHOOK = "SOH_ALERT_WEBHOOK"
 LABEL = "com.unxmaal.localharness.monit"
+#: monit 6.0.0 sends kill(-1, SIGKILL) when a fork or pipe fails; this dylib, loaded into monit, refuses it. #2072.
+GUARD_SOURCE = Path(__file__).resolve().parents[1] / "scripts" / "monit-guard.c"
+GUARD_PROBE = "MONIT_GUARD_PROBE"
 TITLE = "SoHoT monit"
 RECOVERED = "recovered"
 DISK_HELD = "disk-held"
@@ -224,9 +227,40 @@ def render(s: dict) -> str:
     return "\n".join(out)
 
 
+def guard_path(home: Path | None = None) -> Path:
+    return rc_path(home).parent / "monit-guard.dylib"
+
+
+def guarded(argv: list[str], lib: Path, **env: str) -> list[str]:
+    """argv run with the guard dylib loaded into it, through /usr/bin/env so launchd passes it on."""
+    return ["/usr/bin/env", f"DYLD_INSERT_LIBRARIES={lib}", *(f"{k}={v}" for k, v in env.items()), *argv]
+
+
+def guard(monit: str, home: Path | None = None, run=subprocess.run) -> Path:
+    """Build the guard into the home and prove dyld loads it into this monit; InstallError otherwise."""
+    lib = guard_path(home)
+    lib.parent.mkdir(parents=True, exist_ok=True)
+    new, probe = lib.with_name(lib.name + ".new"), lib.with_name(lib.name + ".probe")
+    got = run(["cc", "-dynamiclib", "-O2", "-o", str(new), str(GUARD_SOURCE)], capture_output=True, text=True,
+              timeout=CLI_TIMEOUT_S * 4)
+    if got.returncode != 0:
+        raise InstallError(f"cc could not build {lib}, so monit stays unloaded: {(got.stderr or got.stdout)[-300:]}")
+    probe.unlink(missing_ok=True)
+    run(guarded([monit, "-V"], new, **{GUARD_PROBE: str(probe)}), capture_output=True, text=True,
+        timeout=CLI_TIMEOUT_S)
+    if not probe.is_file():
+        new.unlink(missing_ok=True)
+        raise InstallError(f"dyld did not load {new.name} into {monit}, so its kill(-1) would not be refused; "
+                           "monit stays unloaded")
+    probe.unlink()
+    atomic_file.replace(new, lib)
+    return lib
+
+
 def plist(monit: str, home: Path) -> bytes:
     log = str(Path(home) / "logs" / "monit.log")
-    return plistlib.dumps({"Label": LABEL, "ProgramArguments": [monit, "-I", "-c", str(rc_path(home))],
+    argv = guarded([monit, "-I", "-c", str(rc_path(home))], guard_path(home))
+    return plistlib.dumps({"Label": LABEL, "ProgramArguments": argv,
                            "RunAtLoad": True, "KeepAlive": True, "StandardOutPath": log, "StandardErrorPath": log,
                            "ProcessType": "Background"})
 
@@ -273,6 +307,7 @@ def install(run=subprocess.run, which=shutil.which, platform: str | None = None,
     said = syntax(monit, rc, run=run)
     if said:
         raise InstallError(f"monit -t refused {rc}: {said}")
+    guard(monit, run=run)
     unit = plist_path()
     unit.parent.mkdir(parents=True, exist_ok=True)
     body = plist(monit, paths.home())

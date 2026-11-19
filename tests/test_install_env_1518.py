@@ -268,6 +268,7 @@ def _install(monkeypatch, run, tmp_path):
     monkeypatch.setattr(monitor, "spec_here", lambda run=None: {"models": "", "data": "/", "services": []})
     monkeypatch.setattr(monitor, "render", lambda s: "check program p with path /usr/bin/true\n")
     monkeypatch.setattr(monitor, "syntax", lambda monit, rc, run=None: "")
+    monkeypatch.setattr(monitor, "guard", lambda monit, home=None, run=None: tmp_path / "g.dylib")
     return monitor.install(run=run, which=lambda n: "/x/monit", platform="darwin", sleep=lambda s: None)
 
 
