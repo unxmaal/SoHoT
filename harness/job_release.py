@@ -142,6 +142,16 @@ def plan(job: dict, new: Path | None, stale: str = "", check=refusal) -> dict | 
             "why": f"release {built.name} built it and {gone}; started on release {new.name}"}
 
 
+def continuation(job: dict, argv: list) -> tuple[str, list]:
+    """The cwd and argv a paused job's continuation is queued with: moved into this release when another built it. ValueError when it cannot. #2070."""
+    p = plan({**job, "argv": list(argv), "reason": js.ADDED}, here())
+    if p is None:
+        return job.get("cwd") or str(paths.REPO), list(argv)
+    if p["action"] == REFUSED:
+        raise ValueError(f"not queued: {p['why']}")
+    return p["cwd"], p["argv"]
+
+
 def repoint(conn, job: dict, p: dict) -> bool:
     """Point a claimed job at release p['release']: its cwd and argv, with a note naming the release that built it. Does not commit."""
     import json

@@ -636,10 +636,11 @@ def _dropped(states: list[str]) -> str:
 def _resume(conn, sw: dict, value, job: dict, add) -> dict | None:
     """Queue a paused value's continuation and point the open sweep at it in one transaction; None if another writer moved the sweep. #1733, #1755."""
     from harness import job_state as js
-    from harness import paths, runs
+    from harness import job_release, runs
     from harness import job_settle
     run = runs.for_job(conn, int(job["id"]))
     argv = job["argv"] if run is None else job_settle.resume_argv(job["argv"], runs.run_dir(run["path"]))
+    cwd, argv = job_release.continuation(job, argv)
     jobs: list = []
 
     def own(rows):
@@ -647,7 +648,7 @@ def _resume(conn, sw: dict, value, job: dict, add) -> dict | None:
         return _move(conn, sw, OPEN, OPEN, RESUMED, commit=False, jobs=json.dumps(jobs))
     got, rows = js.add_owned(conn, [(argv, {
         "title": job["title"] or f"sweep {sw['knob']}={value:g} on {sw['lane']}: {sw['spec']}",
-        "cwd": job["cwd"] or str(paths.REPO), "priority": PRIORITY, "requested_by": REQUESTED_BY})], own, add)
+        "cwd": cwd, "priority": PRIORITY, "requested_by": REQUESTED_BY})], own, add)
     if got is None:
         return None
     nxt = rows[0]
@@ -672,7 +673,11 @@ def settle(conn, *, now: float, write: bool = True, add=None, resumed: list | No
         paused = [(v, j) for (v, j), s in zip(jobs, states) if s == js.PAUSED]
         if paused:
             for value, job_id in paused if write else ():
-                got = _resume(conn, sw, value, wq.get(job_id, conn=conn), add or wq.add)
+                try:
+                    got = _resume(conn, sw, value, wq.get(job_id, conn=conn), add or wq.add)
+                except ValueError as e:
+                    got = {"id": sw["id"], "knob": sw["knob"], "lane": sw["lane"], "value": value,
+                           "paused": job_id, "job": None, "refused": str(e)}
                 if got is not None and resumed is not None:
                     resumed.append(got)
             continue
@@ -725,7 +730,8 @@ def render(got: dict) -> str:
     from harness import power
     lines = [f"  {s['detail'] or s['outcome']}" for s in got["settled"]]
     lines += [f"  sweep {r['id']} {r['knob']}={r['value']:g} on {r['lane']}: job {r['paused']} paused, "
-              f"resumed as job {r['job']}" for r in got.get("resumed", ())]
+              + (f"not resumed: {r['refused']}" if r.get("refused") else f"resumed as job {r['job']}")
+              for r in got.get("resumed", ())]
     lines += [f"  queued nothing: {got['held']}"] if got.get("held") and not got.get("dry_run") else []
     for p in got["planned"]:
         t = p["trigger"]

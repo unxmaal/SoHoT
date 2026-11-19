@@ -20,6 +20,9 @@ def report(got: dict) -> None:
         note(f"  settled {s['lane']} {s['spec']}: {s['outcome']} ({s['reason']}"
              f"{', ' + s['failure_class'] if s['failure_class'] else ''}): {s['detail']}")
     for s in got.get("resumed", []):
+        if s.get("refused"):
+            note(f"  not resuming {s['lane']} {s['spec']}: job {s['paused']} paused; {s['refused']}")
+            continue
         note(f"  resuming {s['lane']} {s['spec']}: job {s['paused']} paused; job {s['job']} continues "
              f"{s['out'] or 'it'} at night")
     for e in got["planned"]:
