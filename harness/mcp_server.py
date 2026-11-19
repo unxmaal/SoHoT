@@ -467,6 +467,34 @@ def _describe(job: dict) -> JobInfo:
     return info
 
 
+#: Host headers /status answers, from transport_security once serve() runs; None answers any. #2075.
+STATUS_HOSTS: set[str] | None = None
+
+
+async def _status(request, as_json: bool):
+    from starlette.concurrency import run_in_threadpool
+    from starlette.responses import HTMLResponse, PlainTextResponse, Response
+
+    from harness import status_page
+    if STATUS_HOSTS is not None and request.headers.get("host", "").lower() not in STATUS_HOSTS:
+        return PlainTextResponse("this host name is not allowed", status_code=421)
+    r = await run_in_threadpool(status_page.cached)
+    if as_json:
+        return Response(status_page.as_json(r), media_type="application/json")
+    return HTMLResponse(status_page.page(r))
+
+
+@SERVER.custom_route("/status", methods=["GET"])
+async def status_page_route(request):
+    """The LAN status page, read-only. #2075."""
+    return await _status(request, as_json=False)
+
+
+@SERVER.custom_route("/status.json", methods=["GET"])
+async def status_json_route(request):
+    return await _status(request, as_json=True)
+
+
 def transport_security(host: str, port: int, extra=()):
     """Who is allowed to name this server in a Host header.
 
@@ -538,7 +566,10 @@ def serve(host: str, port: int, allow=(), grace: float = SHUTDOWN_GRACE_S) -> No
     """streamable-http under a uvicorn that stops within `grace` and first stops stale servers on its port."""
     import uvicorn
 
-    app = SERVER.streamable_http_app(transport_security=transport_security(host, port, allow), host=host)
+    global STATUS_HOSTS
+    guard = transport_security(host, port, allow)
+    STATUS_HOSTS = {h.lower() for h in guard.allowed_hosts}
+    app = SERVER.streamable_http_app(transport_security=guard, host=host)
     config = uvicorn.Config(app, host=host, port=port, log_level=SERVER.settings.log_level.lower(),
                             timeout_graceful_shutdown=max(1, round(grace)))
     socks = listen_sockets(host, port)

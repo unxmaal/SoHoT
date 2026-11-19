@@ -471,6 +471,7 @@ capabilities:
       - harness/clips.py
       - harness/burndown.py
       - harness/commands/burndown.py
+      - harness/status_page.py
 
   - name: canary
     summary: Planted candidates with known verdicts, run for real under an isolated home.
