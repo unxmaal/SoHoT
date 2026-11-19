@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import itertools
+import json
 import re
 import statistics
 from pathlib import Path
@@ -10,11 +11,14 @@ from harness import ledger
 
 MAIN, SUB = "main", "subagent"
 COLD, EXPIRED, REWRITE, GROWTH = "cold start", "rewrite after expiry", "rewrite, no idle gap", "growth"
-CAUSES = (COLD, EXPIRED, REWRITE, GROWTH)
+COMPACTED = "rewrite after compaction"
+CAUSES = (COLD, COMPACTED, EXPIRED, REWRITE, GROWTH)
 #: Seconds a cache write lives, by the lifetime the request asked for (usage.cache_creation).
 TTL_S = {"5m": 300.0, "1h": 3600.0}
 NO_TOOL = "no tool in flight"
 UNNAMED = "unnamed"
+NO_PR = "opened no pull request"
+PR_URL = re.compile(r"https://github\.com/([\w.-]+/[\w.-]+)/pull/(\d+)")
 #: What a Bash call was waiting on, first match wins.
 BASH_WAITS = (("CI wait (gh)", r"gh (run|pr) (watch|checks|view)|gh run list|until .*gh "),
               ("sleep or poll loop", r"\bsleep\b|until |while "),
@@ -44,11 +48,13 @@ def lifetime(usage: dict) -> str | None:
     return None if not five and not hour else "1h" if hour > five else "5m"
 
 
-def cause(prev: dict | None, row: dict) -> tuple[str, float | None]:
-    """(cause, idle seconds) of one request's cache write, from the request before it in its stream."""
+def cause(prev: dict | None, row: dict, compacted: bool = False) -> tuple[str, float | None]:
+    """(cause, idle seconds) of one request's cache write, from the request before it and a compaction between."""
     if prev is None:
         return COLD, None
     idle = row["at"] - prev["at"]
+    if compacted:
+        return COMPACTED, idle
     if row["cache_read"] >= row["cache_write"]:
         return GROWTH, idle
     return (EXPIRED if idle > TTL_S[row["ttl"]] else REWRITE), idle
@@ -60,12 +66,65 @@ def kind_of(path, root=None) -> str:
     return SUB if "subagents" in (p.relative_to(root) if root is not None else p).parts else MAIN
 
 
+def _result_text(block: dict) -> str:
+    c = block.get("content")
+    if isinstance(c, list):
+        return "\n".join(str(b.get("text") or "") for b in c if isinstance(b, dict))
+    return str(c or "")
+
+
+class Marks:
+    """Per transcript, the compaction boundaries and the pull requests a `gh pr create` in it opened, with times."""
+
+    def __init__(self):
+        self.compactions: dict = {}
+        self.prs: dict = {}
+        self._asked: dict = {}
+
+    def line(self, path, line: str) -> None:
+        if '"compact_boundary"' not in line and "gh pr create" not in line and not (
+                self._asked.get(path) and '"tool_result"' in line):
+            return
+        try:
+            rec = json.loads(line)
+        except ValueError:
+            return
+        if not isinstance(rec, dict):
+            return
+        at = ledger._stamp(rec.get("timestamp"))
+        if at is None:
+            return
+        if rec.get("type") == "system" and rec.get("subtype") == "compact_boundary":
+            self.compactions.setdefault(path, []).append(at)
+            return
+        msg = rec.get("message")
+        for block in msg.get("content") if isinstance(msg, dict) and isinstance(msg.get("content"), list) else ():
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") == "tool_use" and block.get("name") == "Bash" and "gh pr create" in str(
+                    (block.get("input") or {}).get("command") if isinstance(block.get("input"), dict) else ""):
+                self._asked.setdefault(path, set()).add(block.get("id"))
+            elif block.get("type") == "tool_result" and block.get("tool_use_id") in self._asked.get(path, ()):
+                m = PR_URL.search(_result_text(block))
+                if m:
+                    self.prs.setdefault(path, []).append((at, f"{m.group(1).lower()}#{m.group(2)}"))
+
+
+def pr_of(opened: list, at: float, kind: str) -> str | None:
+    """The pull request a request at `at` worked toward: the next one its stream opened, else a subagent's last."""
+    for when, pr in opened:
+        if when >= at:
+            return pr
+    return opened[-1][1] if opened and kind == SUB else None
+
+
 def read(files, since: float, until: float | None = None, root=None) -> list[dict]:
-    """Each API request counted in the window, once, with its stream, agent type and its cache write's cause."""
+    """Each API request counted in the window, once, with its stream, agent type, cache write cause and pull request."""
     counted: dict = {}
     owner: dict = {}
     streams = []
-    for path, recs in itertools.groupby(ledger.usage_records(files), key=lambda r: r[0]):
+    marks = Marks()
+    for path, recs in itertools.groupby(ledger.usage_records(files, marks.line), key=lambda r: r[0]):
         rows: dict = {}
         agent = ""
         for _path, rec, msg, at in recs:
@@ -79,17 +138,21 @@ def read(files, since: float, until: float | None = None, root=None) -> list[dic
             for block in msg.get("content") if isinstance(msg.get("content"), list) else ():
                 if isinstance(block, dict) and block.get("type") == "tool_use":
                     row["tool"] = tool_label(str(block.get("name") or "?"), block.get("input"))
-        streams.append({"stream": Path(path).stem, "kind": kind_of(path, root), "agent": agent, "rows": rows})
+        streams.append({"stream": Path(path).stem, "kind": kind_of(path, root), "agent": agent, "rows": rows,
+                        "path": path})
     out = []
     for i, s in enumerate(streams):
         prev, ttl = None, "5m"
+        bounds = marks.compactions.get(s["path"], [])
+        opened = sorted(marks.prs.get(s["path"], []))
         for key, row in sorted(s["rows"].items(), key=lambda kv: kv[1]["at"]):
             ttl = row["ttl"] = row.get("ttl") or ttl
-            why, idle = cause(prev, row)
+            why, idle = cause(prev, row, prev is not None and any(prev["at"] < b <= row["at"] for b in bounds))
             if owner[key] == i and key in counted:
                 out.append({**counted[key], "stream": s["stream"], "kind": s["kind"],
                             "agent": s["agent"] if s["kind"] == SUB else "", "cause": why, "idle_s": idle, "ttl": ttl,
-                            "after": (prev.get("tool") or NO_TOOL) if why == EXPIRED else None})
+                            "after": (prev.get("tool") or NO_TOOL) if why == EXPIRED else None,
+                            "pr": pr_of(opened, row["at"], s["kind"])})
             prev = row
     return out
 
@@ -141,10 +204,30 @@ def account(reqs: list[dict], top: int = TOP) -> dict:
                 "expiry_rewrites": sum(1 for r in rewrites if (r["kind"], r["stream"]) == (k, s))}
                for (k, s, a), g in per.items()]
     big = lambda rows, k: sorted(rows, key=lambda r: (-r[k], str(sorted(r.items()))))  # noqa: E731
+    prs = [{"pr": p, **g, "share": _share(g["counted"], n)}
+           for p, g in _group([r for r in reqs if r.get("pr")], lambda r: r["pr"]).items()]
+    no_pr = n - sum(p["counted"] for p in prs)
     return {"counted": n, "tokens": {k: total[k] for k in ledger._zero()}, "requests": total["requests"],
             "streams": total["streams"], "kinds": kinds, "agents": big(agents, "counted"),
             "causes": big(causes, "cache_write"), "expiry": expiry(rewrites, n), "terms": big(terms, "tokens"),
-            "top": big(streams, "counted")[:max(0, top)]}
+            "top": big(streams, "counted")[:max(0, top)], "prs": big(prs, "counted"),
+            "no_pr": {"counted": no_pr, "share": _share(no_pr, n)}}
+
+
+def merged_only(account_: dict, merged: set) -> dict:
+    """The account's pull request rows cut to the merged ones; the rest fold into opened, not merged."""
+    keep = [p for p in account_["prs"] if p["pr"] in merged]
+    rest = sum(p["counted"] for p in account_["prs"] if p["pr"] not in merged)
+    return {**account_, "prs": keep, "not_merged": {"counted": rest, "share": _share(rest, account_["counted"])}}
+
+
+def merged_prs(prs: list[dict], gh) -> set:
+    """Which of `prs` are merged, one `gh pr list` per repository; `gh(argv) -> stdout`."""
+    out: set = set()
+    for repo in sorted({p["pr"].split("#")[0] for p in prs}):
+        got = gh(["pr", "list", "--repo", repo, "--state", "merged", "--limit", "1000", "--json", "number"])
+        out |= {f"{repo}#{x['number']}" for x in json.loads(got or "[]")}
+    return out
 
 
 def expiry(rewrites: list[dict], counted: int) -> dict:
