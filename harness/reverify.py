@@ -535,16 +535,17 @@ def judge(conn, rv: dict, job: dict | None) -> tuple[str, str, str, str, int | N
 def _resume(conn, rv: dict, job: dict, now: float, add) -> dict | None:
     """Queue a paused re-run's continuation and repoint the reverification in one commit; None if another settle did. #1403, #1755."""
     from harness import job_state as js
-    from harness import paths, runs
+    from harness import job_release, runs
     from harness import job_settle
     run = runs.for_job(conn, int(job["id"]))
     argv = job["argv"] if run is None else job_settle.resume_argv(job["argv"], runs.run_dir(run["path"]))
+    cwd, argv = job_release.continuation(job, argv)
 
     def own(jobs):
         return conn.execute("UPDATE reverifications SET job_id = ? WHERE id = ? AND job_id = ?",
                             (int(jobs[0]["id"]), rv["id"], int(job["id"]))).rowcount or None
     got, rows = js.add_owned(conn, [(argv, {
-        "title": job["title"] or f"reverify {rv['lane']}: {rv['spec']}", "cwd": job["cwd"] or str(paths.REPO),
+        "title": job["title"] or f"reverify {rv['lane']}: {rv['spec']}", "cwd": cwd,
         "priority": PRIORITY, "requested_by": REQUESTED_BY})], own, add)
     if got is None:
         return None
@@ -604,7 +605,11 @@ def settle(conn, *, now: float, write: bool = True, add=None, resumed: list | No
             continue
         if job is not None and job["state"] == wq.PAUSED:
             if write:
-                got = _resume(conn, rv, job, now, add or wq.add)
+                try:
+                    got = _resume(conn, rv, job, now, add or wq.add)
+                except ValueError as e:
+                    got = {"id": rv["id"], "lane": rv["lane"], "spec": rv["spec"], "paused": job["id"],
+                           "job": None, "out": None, "refused": str(e)}
                 if got is not None and resumed is not None:
                     resumed.append(got)
             continue
