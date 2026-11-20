@@ -54,7 +54,7 @@
   },
   {
    "candidate": "diffusers-video:FastVideo/FastVideo-FastH3-8-Step-V2",
-   "decided_at": "2026-11-15T02:27:25Z",
+   "decided_at": "2026-11-20T03:37:52Z",
    "detail": "not screened: needs 137.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released",
    "exam": null,
    "outcome": "queued",
@@ -75,8 +75,8 @@
     "about": "",
     "candidate": "h3/minimax-h3",
     "cases": 1,
-    "first_s": 170.728,
-    "median_s": 171.527,
+    "first_s": 179.289,
+    "median_s": 149.709,
     "metrics": {
      "motion": 0.0378
     },
@@ -84,10 +84,10 @@
     "not_run": "",
     "pass_rate": 1.0,
     "passed": 2,
-    "peak_gb": 3.47,
+    "peak_gb": 3.5,
     "reference": false,
     "repeat": 2,
-    "run_at": "2026-11-09T02:50:28Z",
+    "run_at": "2026-11-20T06:27:21Z",
     "served_as": "",
     "source": "",
     "total": 2,
@@ -105,7 +105,7 @@
    "until": ""
   }
  ],
- "cursor": 1794709645659311,
+ "cursor": 1795145872288366,
  "events": [
   {
    "at": "2026-09-19T23:24:35Z",
@@ -241,6 +241,21 @@
    "reason": "memory",
    "run_id": null,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-20T03:37:52Z",
+   "candidate": "FastVideo/FastVideo-FastH3-8-Step-V2",
+   "chosen": null,
+   "detail": "not screened: needs 137.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released",
+   "how": "",
+   "id": 1795145872288366,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -274,8 +289,8 @@
     {
      "about": "",
      "candidate": "h3/minimax-h3",
-     "first_s": 170.728,
-     "median_s": 171.527,
+     "first_s": 179.289,
+     "median_s": 149.709,
      "metrics": {
       "motion": 0.0378
      },
@@ -283,9 +298,9 @@
      "not_run": "",
      "pass_rate": 1.0,
      "passed": 2,
-     "peak_gb": 3.47,
+     "peak_gb": 3.5,
      "reference": false,
-     "run_at": "2026-11-09T02:50:28Z",
+     "run_at": "2026-11-20T06:27:21Z",
      "served_as": "",
      "source": "",
      "total": 2,
@@ -293,8 +308,8 @@
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-11-09T02:50:28Z",
-   "runs": 1
+   "run_at": "2026-11-20T06:27:21Z",
+   "runs": 2
   },
   {
    "cases": 1,
@@ -409,7 +424,7 @@
    "runs": 7
   }
  ],
- "generated_at": "2026-11-15T08:00:30Z",
+ "generated_at": "2026-11-20T08:00:46Z",
  "knobs": [],
  "lane": {
   "cases": 1,
@@ -441,8 +456,8 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-11-09T02:50:28Z",
-  "median_s": 171.527,
+  "measured_at": "2026-11-20T06:27:21Z",
+  "median_s": 149.709,
   "metrics": {
    "motion": 0.0378
   },
