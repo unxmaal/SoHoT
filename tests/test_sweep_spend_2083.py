@@ -88,22 +88,28 @@ def test_a_crash_in_upkeep_is_named_in_the_ceiling_summary_not_ran_out_of_measur
     assert "ValueError" in notes[heartbeat.CEILING_UNUSED]["why"]
 
 
-def _waiting_and_ran(at):
+def _waiting_and_ran(at, elsewhere=None):
     conn = ms.connect()
     try:
         ms.record(conn, ms.Seen(name="org/peer-4b", source="t", kind="weights", lane="decide", why="seeded"))
         ms.decide(conn, "org/peer-4b", "queued", tier="inspect", detail="fits: 2.9 GiB")
-        if at is not None:
-            conn.execute("INSERT INTO runs (path, lane, tier, generated_at, recorded_at) VALUES (?,?,?,?,?)",
-                         ("20261115-0241-adopt-svg", "svg", "measure", at, at))
+        mid = ms.remember_machine(conn)
+        other = conn.execute("INSERT INTO machines (fingerprint, first_seen, last_seen) VALUES (?,?,?)",
+                             ("fp-node", NOW, NOW)).lastrowid if elsewhere is not None else None
+        for path, t, m in (("20261115-0241-adopt-svg", at, mid), ("20261119-claims-node", elsewhere, other)):
+            if t is not None:
+                conn.execute("INSERT INTO runs (path, lane, tier, machine_id, generated_at, recorded_at) "
+                             "VALUES (?,?,?,?,?,?)", (path, "svg", "measure", m, t, t))
         conn.commit()
     finally:
         conn.close()
 
 
+@pytest.mark.gauntlet("a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null",
+                       site="harness/status_page.py:spend:runs")
 @pytest.mark.parametrize("days", [4.5, None])
 def test_candidates_waiting_with_no_screen_for_days_is_red(tmp_path, days):
-    _waiting_and_ran(None if days is None else NOW - days * 86400)
+    _waiting_and_ran(None if days is None else NOW - days * 86400, elsewhere=NOW - 600)
     r = _gather(tmp_path)
     state, head = _tiles(r)["discovery"]
     assert state == sv.BAD and head.startswith("no screen") and "1 waiting" in head

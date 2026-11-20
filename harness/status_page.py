@@ -153,10 +153,12 @@ def discovery(now: float, beat=None) -> dict:
 
 def spend(conn, now: float) -> dict:
     """When the last screen or measure run ran, and how many candidates wait for a screen. #2083."""
+    from harness import machine_scope
     from harness import memory_store as ms
     if conn is None:
         return {"error": "store down: screens and measures not read"}
-    got = conn.execute("SELECT MAX(COALESCE(generated_at, recorded_at)) AS t FROM runs").fetchone()
+    here, mine = machine_scope.here(conn, "runs.ran_here")
+    got = conn.execute(f"SELECT MAX(COALESCE(generated_at, recorded_at)) AS t FROM runs WHERE {here}", mine).fetchone()
     last = got[0] if got else None
     return {"last_run_at": last, "waiting": ms.judgeable_total(conn)}
 
