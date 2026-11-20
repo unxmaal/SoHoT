@@ -575,6 +575,41 @@ def _measure(a, sweep, failed: list, rc: int = 0) -> int:
         measure_cmd.take_incumbents(want)
     except Exception as exc:  # noqa: BLE001 - a lane that cannot take its incumbent keeps the one it has
         print(f"  incumbent from measurement: not checked ({type(exc).__name__}: {exc})", flush=True)
+    from harness import screen_window
+    store = ms.connect()
+    try:
+        queued = _queued_lanes(store, want, top)
+    finally:
+        store.close()
+    hold = sweep.remaining() if sweep is not None and queued else 0.0
+    try:
+        with screen_window.idle_release(hold, "the measure step", keep=_pinned_incumbents(queued)):
+            return _measure_queued(a, sweep, failed, rc, want, top)
+    except screen_window.Refused as exc:
+        print(f"  window: {exc}", flush=True)
+        return _step("restore the interactive server's pinned set", 1, failed) or rc
+
+
+def _queued_lanes(store, want: str, top: int) -> set[str]:
+    """The lanes the measure step has measurements queued in. #2087."""
+    rows = repo_gate.join(measure_cmd.measurable(store, top or EVERY, want), store, want, on=repo_gate.active())
+    return {measure_cmd.lane_for(r, want) for r in rows}
+
+
+def _pinned_incumbents(lanes) -> set[str]:
+    """The pinned stems that answer an incumbent of `lanes`, which a measure window keeps loaded. #2087."""
+    from harness import adopt, interactive, screen, winners
+    typed, out = winners.typed(), set()
+    for lane in lanes:
+        incumbent = adopt.default_for(lane, typed.get(lane, ""))
+        got = interactive.pinned_here(screen.candidate_for(lane, incumbent) or incumbent) if incumbent else None
+        if got:
+            out.add(got["stem"])
+    return out
+
+
+def _measure_queued(a, sweep, failed: list, rc: int, want: str, top: int) -> int:
+    from harness import memory_store as ms
     store = ms.connect()
     try:
         fresh = measure_queue(store, want, top, sweep)

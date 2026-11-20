@@ -2,22 +2,47 @@
 from __future__ import annotations
 
 import contextlib
+import sys
 import time
 
 from harness import cuts, gateway_switch, interactive, memory, node_state, router
 
 DRAIN_S = 120.0
+IDLE_S = 1800.0
 
 
 class Refused(RuntimeError):
     """The window did not open, or its pinned set was not confirmed back after it."""
 
 
-def wanted(need_gb: float | None) -> bool:
-    """Whether a load of `need_gb` is kept out only by the pinned set, so a window would let it load."""
-    if not isinstance(need_gb, (int, float)) or not memory.held_back(need_gb):
+def quiet_s(now: float | None = None, conn=None) -> float:
+    """Seconds since the last interactive request on a lane pinned here ended: inf when none ran, 0 when unread. #2087."""
+    from harness import runs
+    now = time.time() if now is None else now
+    try:
+        with runs.store(conn) as c:
+            last = interactive.last_request(c, now=now)
+    except Exception as exc:  # noqa: BLE001 - an unread history never releases the pinned set
+        print(f"window: the interactive requests could not be read ({exc}); the pinned set stays", file=sys.stderr)
+        return 0.0
+    return float("inf") if last is None else max(now - last, 0.0)
+
+
+def wanted(need_gb: float | None, now: float | None = None) -> bool:
+    """Whether a refused load of `need_gb` fits once the pinned set is released: always when only the pins hold it back, else when the set sat idle IDLE_S. #2087."""
+    if not isinstance(need_gb, (int, float)) or need_gb <= 0:
         return False
-    return need_gb <= memory.standing_gb() + memory.pinned_gb() + 1e-9
+    if memory.held_back(need_gb):
+        return need_gb <= memory.standing_gb() + memory.pinned_gb() + 1e-9
+    room = memory.room_gb()
+    if need_gb <= room + 1e-9 or need_gb > room + memory.pinned_gb() + 1e-9:
+        return False
+    quiet = quiet_s(now)
+    if quiet < IDLE_S:
+        cuts.cut("sweep_window_idle", f"a {need_gb:.1f} GiB load: the last interactive request ended {quiet:.0f} s ago",
+                 value=IDLE_S, kept=0, dropped=1)
+        return False
+    return True
 
 
 def _status(plan: dict, get=None) -> tuple[str, dict | None]:
@@ -50,41 +75,69 @@ def restore(plan: dict, get=None, post=None, sleep=time.sleep, clock=time.monoto
 
 
 @contextlib.contextmanager
-def opened(hold_s: float | None, why: str, *, get=None, post=None, sleep=time.sleep, clock=time.monotonic, say=print):
-    """Send interactive work to a node or the cloud, release the pinned set for at most `hold_s`, then put it back."""
+def opened(hold_s: float | None, why: str, *, keep=(), get=None, post=None, sleep=time.sleep, clock=time.monotonic,
+           say=print):
+    """Send interactive work to a node or the cloud, release the pinned set but `keep` for at most `hold_s`, then put it back."""
     if not hold_s:
         raise Refused("no engine bounds the screen, so the window could not be given an end")
     plan = interactive.read()
     stems = sorted({e["stem"] for e in (plan.get("lanes") or {}).values()})
+    gone = [s for s in stems if s not in set(keep)]
     base, got = _status(plan, get)
-    if not stems or not base:
+    if not gone or not base:
         raise Refused("nothing is pinned here to release")
     if got is None or any(got.get(s) != "loaded" for s in stems):
         raise Refused(f"the pinned set is not all loaded now ({got}), so its restore could not be confirmed")
+    interactive.keep_in_window([s for s in stems if s not in gone])
     gateway_switch.start_drain(time.time() + DRAIN_S + float(hold_s) + interactive.WARM_WAIT_S, node=interactive.WINDOW)
     missing: list[str] = []
     try:
         ask = interactive._ask(base, get) or (lambda path: router._get(path, base))
-        start, busy = clock(), node_state._busy(ask, stems)
+        start, busy = clock(), node_state._busy(ask, gone)
         while busy != 0 and clock() - start < DRAIN_S:
             sleep(interactive.WARM_POLL_S)
-            busy = node_state._busy(ask, stems)
+            busy = node_state._busy(ask, gone)
         if busy != 0:
             cuts.cut("screen_window_drain", f"{why}: interactive requests still in flight", kept=0, dropped=1)
             raise Refused(f"the interactive server still had {'unknown' if busy is None else busy} request(s) "
                           f"in flight after {DRAIN_S:g} s")
-        router.release(stems, why, get=interactive._ask(base, get), post=_poster(base, post), keep=set(),
+        router.release(gone, why, get=interactive._ask(base, get), post=_poster(base, post), keep=set(),
                        say=say, base=base, proven_idle=True)
         _, got = _status(plan, get)
-        kept = [s for s in stems if got is None or got.get(s) in router.RESIDENT]
+        kept = [s for s in gone if got is None or got.get(s) in router.RESIDENT]
         if kept:
             raise Refused(f"{', '.join(kept)} stayed resident on the interactive server")
-        say(f"   window: released {', '.join(stems)} for at most {float(hold_s):.0f} s; interactive work goes to "
+        say(f"   window: released {', '.join(gone)} for at most {float(hold_s):.0f} s; interactive work goes to "
             f"a node or the cloud")
-        yield stems
+        yield gone
     finally:
         missing = restore(plan, get, post, sleep, clock)
         gateway_switch.stop_drain(node=interactive.WINDOW)
-        say(f"   window: {'restored ' + ', '.join(stems) if not missing else 'NOT restored: ' + ', '.join(missing)}")
+        interactive.keep_in_window(None)
+        say(f"   window: {'restored ' + ', '.join(gone) if not missing else 'NOT restored: ' + ', '.join(missing)}")
     if missing:
         raise Refused(f"{', '.join(missing)} did not load back in {interactive.WARM_WAIT_S:g} s")
+
+
+@contextlib.contextmanager
+def idle_release(hold_s: float | None, why: str, keep=(), *, now: float | None = None, say=print, **kw):
+    """A sweep step's window: the pinned set but `keep` released when no interactive request ran in IDLE_S, else nothing released. #2087."""
+    plan = interactive.read()
+    gone = {e["stem"] for e in (plan.get("lanes") or {}).values()} - set(keep)
+    if not hold_s or hold_s <= 0 or not gone or not interactive.reserved_bytes():
+        yield []
+        return
+    quiet = quiet_s(now)
+    if quiet < IDLE_S:
+        cuts.cut("sweep_window_idle", f"{why}: the last interactive request ended {quiet:.0f} s ago", value=IDLE_S,
+                 kept=0, dropped=1)
+        say(f"   window: the last interactive request ended {quiet:.0f} s ago, under {IDLE_S:g} s; the pinned set stays")
+        yield []
+        return
+    with contextlib.ExitStack() as stack:
+        try:
+            got = stack.enter_context(opened(hold_s, why, keep=keep, say=say, **kw))
+        except Refused as exc:
+            say(f"   window: not opened: {exc}")
+            got = []
+        yield got
