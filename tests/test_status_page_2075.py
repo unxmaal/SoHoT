@@ -11,6 +11,7 @@ from harness import memory_store as ms
 from harness import monitor, queue_hold, queue_pause, status_page as sp
 
 NOW = time.time()
+NO_FEATURES = lambda conn, now, q: {"rows": []}  # noqa: E731
 BEAT = {"status": "finished", "started": NOW - 3600, "finished": NOW - 600, "rc": 0,
         "line": "last discovery loop finished 10m ago, rc 0"}
 
@@ -21,7 +22,7 @@ def _mon(rows=("gateway   OK   Process",), running=True):
 
 
 def _gather(tmp_path, **kw):
-    args = {"connect": ms.connect, "beat": BEAT, "where": tmp_path, "mon": _mon(),
+    args = {"connect": ms.connect, "beat": BEAT, "where": tmp_path, "mon": _mon(), "features": NO_FEATURES,
             "health": lambda lane: {"lane": lane, "spec": "m", "base": "http://127.0.0.1:1", "generating": True, "why": ""},
             "reach": lambda since, now: [], "flow": lambda now: {"available": False, "why": "no transcripts"}}
     args.update(kw)

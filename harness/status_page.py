@@ -292,8 +292,13 @@ def banner(r: dict, now: float) -> list[str]:
     return out
 
 
+def _features(conn, now: float, q: dict) -> dict:
+    from harness import features
+    return features.gather(conn, now, q)
+
+
 def gather(now: float | None = None, *, connect=None, beat=None, where=None, git=None, mon=None, health=None,
-           reach=None, flow=None, home: Path | None = None, environ=None) -> dict:
+           reach=None, flow=None, home: Path | None = None, environ=None, features=None) -> dict:
     """Every section, each with its own as_of; with the store down the store-free sections still read."""
     from harness import morning
     now = time.time() if now is None else now
@@ -312,6 +317,7 @@ def gather(now: float | None = None, *, connect=None, beat=None, where=None, git
              "services": _section(services, now, health, reach),
              "ratio": _section(ratio, conn, now, flow)}
         r["timeline"] = _section(timeline, conn, now, r["discovery"], r["queue"], home)
+        r["features"] = _section(features or _features, conn, now, r["queue"])
     finally:
         if conn is not None:
             conn.close()

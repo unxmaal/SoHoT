@@ -17,6 +17,7 @@ from harness import status_view as sv
 from harness import workqueue as wq
 
 NOW = time.time()
+NO_FEATURES = lambda conn, now, q: {"rows": []}  # noqa: E731
 BEAT = {"status": "finished", "started": NOW - 3600, "finished": NOW - 600, "rc": 0,
         "line": "last discovery loop finished 10m ago, rc 0"}
 CRASH = "RuntimeError: the sweep died in the middle of a lane"
@@ -48,7 +49,7 @@ def _gather(tmp_path, backup_at=None, **kw):
     b = d / f"{store_service.BACKUP_PREFIX}2026-11-19{store_service.BACKUP_SUFFIX}"
     b.write_text("x", encoding="utf-8")
     os.utime(b, (backup_at or NOW, backup_at or NOW))
-    args = {"connect": ms.connect, "beat": BEAT, "where": tmp_path, "mon": _mon(),
+    args = {"connect": ms.connect, "beat": BEAT, "where": tmp_path, "mon": _mon(), "features": NO_FEATURES,
             "health": lambda lane: {"lane": lane, "spec": "m", "base": "http://127.0.0.1:1", "generating": True, "why": ""},
             "reach": lambda since, now: [{"node": "n1", "down_now": False, "down_s": 0.0}], "flow": lambda now: FLOW}
     args.update(kw)
@@ -177,7 +178,7 @@ def test_status_json_carries_the_ratio_days_causes_and_timeline(tmp_path):
     assert ra["counted"] == 1000 and ra["causes"][-1] == {"term": "other", "tokens": 250}
     kinds = {(e["kind"], e["state"]) for e in r["timeline"]["events"]}
     assert {("deploy", sv.OK), ("job", sv.BAD), ("discovery", sv.OK)} <= kinds
-    page = sp.page(sp.gather(NOW, connect=ms.connect, beat=BEAT, where=tmp_path, mon=_mon(),
+    page = sp.page(sp.gather(NOW, connect=ms.connect, beat=BEAT, where=tmp_path, mon=_mon(), features=NO_FEATURES,
                              health=lambda lane: {"lane": lane}, reach=lambda s, n: [], flow=lambda n: FLOW), NOW)
     assert "1:45" in page and "largest: <b>subagent cache write, rewrite after expiry</b> 60%" in page
     assert page.count("class='chk'") == 2 and page.count("class='ev ") >= 3
