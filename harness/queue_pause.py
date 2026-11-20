@@ -41,6 +41,17 @@ def _held_flag() -> Path:
     return wq.root() / "paused.deploy"
 
 
+def deploy_held() -> str:
+    """Why a pending deploy cannot start until someone acts, or '': deploys paused, or a queue pause the gate keeps it behind. #2083."""
+    from harness import deploy
+    if deploy.paused():
+        return "deploys are paused (soh deploy resume)"
+    got = body()
+    if got is None or _held_flag().exists() or queue_hold.disk_of(got) is not None:
+        return ""
+    return queue_hold.why_paused(_pause_flag())
+
+
 def paused_for_deploy(environ=None) -> bool:
     """Whether a due deploy asked this queued job to pause, so the worker re-pends it rather than it queueing a continuation. #1675."""
     from harness import workqueue as wq
@@ -120,9 +131,9 @@ def _stopped_argv(job: dict, pids: set) -> list[str] | None:
 
 def preempt_for_deploy(now: float | None = None, evals=None, signal_=None) -> list[str]:
     """A due deploy asks each running measurement job's evals here to pause at their next case; the job then waits to resume. #1672."""
-    from harness import deploy, hold, workqueue as wq
+    from harness import hold, workqueue as wq
     sig = signal_ if signal_ is not None else getattr(signal, "SIGUSR1", None)
-    if sig is None or deploy.paused():
+    if sig is None or deploy_held():
         return []
     with wq._store() as c:
         if not any(j["kind"] == resources.DEPLOY and wq.due(j, now) for j in wq.pending(c)):
