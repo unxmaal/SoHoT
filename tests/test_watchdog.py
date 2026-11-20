@@ -161,8 +161,9 @@ def test_long_run_is_the_same_by_day_and_at_night(tmp_path):
 
 
 def test_overrun_trips_at_the_factor_over_plan_and_not_under_it(tmp_path):
-    slow = owned_eval(tmp_path, progress=[run(511, planned=10.0, observed=10.0 * wd.OVERRUN_FACTOR + 1)])
-    fine = owned_eval(tmp_path, progress=[run(511, planned=10.0, observed=10.0 * wd.OVERRUN_FACTOR - 1)])
+    stalled = NIGHT - 2 * wd.STALL_S
+    slow = owned_eval(tmp_path, progress=[run(511, planned=10.0, observed=10.0 * wd.OVERRUN_FACTOR + 1, last=stalled)])
+    fine = owned_eval(tmp_path, progress=[run(511, planned=10.0, observed=10.0 * wd.OVERRUN_FACTOR - 1, last=stalled)])
     found = judged(slow)[1]
     assert ids(found, "overrun") == ["eval pgid 510"]
     assert found[0].evidence["candidate"] == "a"

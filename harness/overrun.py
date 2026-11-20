@@ -1,4 +1,4 @@
-"""The per-case cells of a paired run's checkpoint and the challenger/incumbent ratio the overrun criterion judges."""
+"""The per-case cells of a paired run's checkpoint, the challenger/incumbent ratio the overrun criterion judges, and a too-slow run's re-price."""
 from __future__ import annotations
 
 
@@ -59,3 +59,20 @@ def paired(by: dict, inc: str, ch: str, minimum: int | None = None):
         b = sum(theirs[c][0] for c in pairs)
         return (sum(mine[c][0] for c in pairs) / b if b else None), "seconds", len(pairs)
     return None
+
+
+def observed_plan(plan, out, inc_spec: str, spec: str):
+    """A run the watchdog stopped as too slow resumes priced at the seconds per case it observed. #2088."""
+    from dataclasses import replace
+
+    from evals import watch
+    from harness import watchdog
+    got = watch.read_progress(out) if out and watch.stop_reason(out) == watchdog.TOO_SLOW else {}
+    if int(got.get("done") or 0) < watchdog.OVERRUN_MIN_CASES:
+        return plan
+    seen, specs, est = got.get("observed_s_per_case") or {}, got.get("specs") or {}, dict(plan.estimate or {})
+    for who, side in (("incumbent", inc_spec), ("challenger", spec)):
+        rate = next((v for k, v in seen.items() if v and side in (k, specs.get(k))), None)
+        if rate:
+            est[f"{who}_s"] = float(rate) / (est.get(f"{who}_calls") or 1)
+    return replace(plan, estimate=est)

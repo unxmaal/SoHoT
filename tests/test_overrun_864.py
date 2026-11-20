@@ -14,7 +14,7 @@ from harness.commands import measure as measure_cmd
 from harness.commands.measure import Launched
 from harness.memory_store.migrations import v102
 from tests.test_resume_813 import CH, INC, Eval, _measure, _pauses, _rows, world  # noqa: F401
-from tests.test_watchdog import ids, judged, owned_eval
+from tests.test_watchdog import NIGHT, ids, judged, owned_eval
 
 FIXTURES = Path(__file__).parent / "fixtures" / "watchdog_864"
 ORNITH = "llamacpp:Ornith-1.5-35B-Q4_K_M"
@@ -35,8 +35,12 @@ def _honest(progress):
     return {k: inc if k == ORNITH else inc * DECODE[ORNITH] / DECODE[k] for k in progress["planned_s_per_case"]}
 
 
+#: Long past any stall limit: an over-plan run this idle is an overrun, not a slow one re-planned. #2088.
+STALLED_S = 7 * 24 * 3600.0
+
+
 def _eval_at(tmp_path, ident, rows, progress, planned=None):
-    """An owned evals.run whose run directory holds these checkpoint rows and this progress."""
+    """An owned evals.run, no case finished for a stall, whose run directory holds these checkpoint rows and this progress."""
     tmp_path.mkdir(parents=True, exist_ok=True)
     ck = watch.Checkpoint(tmp_path, ident)
     walls = {}
@@ -44,6 +48,7 @@ def _eval_at(tmp_path, ident, rows, progress, planned=None):
         ck.add(r, r["wall_s"])
         walls.setdefault(r["candidate"], []).append(r["wall_s"])
     got = {**progress, "state": "running", "pid": 511, "done": len(rows), "_dir": str(tmp_path),
+           "last_progress_at": NIGHT - STALLED_S,
            "planned_s_per_case": planned or progress["planned_s_per_case"],
            "observed_s_per_case": {k: sum(v) / len(v) for k, v in walls.items()}}
     return owned_eval(tmp_path, progress=[got])

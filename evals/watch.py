@@ -122,6 +122,8 @@ class Silent(Stop):
 class Watch:
     planned: dict = field(default_factory=dict)
     stop_at: float | None = None
+    #: The run's --stop-at before a look slice's --stop-after shortened it: the ceiling the watchdog re-plans within. #2088.
+    ceiling_at: float | None = None
     outdir: Path | None = None
     left: dict = field(default_factory=dict)
     walls: dict = field(default_factory=dict)
@@ -348,6 +350,8 @@ class Progress:
                "serving_yields": self.eye.served(),
                "specs": self.specs, "planned_s_per_case": self.eye.planned,
                "observed_s_per_case": {k: self.eye.observed(k) for k in self.eye.walls},
+               "left": dict(self.eye.left),
+               "ceiling_at": None if self.eye.ceiling_at is None else self.eye.ceiling_at + self.eye.yield_s,
                "started_at": self.started, "last_progress_at": self.at,
                "pid": os.getpid(), "pgid": pgid, "pid_started": proc_identity.started(os.getpid()),
                "pause_file": str(self.path.parent / PAUSE_FILE),
