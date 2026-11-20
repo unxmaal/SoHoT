@@ -316,6 +316,37 @@ def _checks(mon: dict) -> str:
     return f"<section class='panel'><h2>Monitor checks</h2><div class='dots'>{dots}</div></section>"
 
 
+_FSTATE = {"on": "ok", "on demand": "dem", "off": "unknown", "paused": "warn", "parked": "warn", "broken": "bad",
+           "unknown": "unknown"}
+_FKIND = (("unit", "Units"), ("switch", "Switches"), ("lane", "Lanes"), ("node", "Nodes"), ("engine", "Engines"),
+          ("hook", "Hooks"))
+
+
+def _features(fe: dict, now: float) -> str:
+    out = [f"<section class='panel' data-panel='features'><h2>Features <span class='asof'>as of "
+           f"{_when(fe.get('as_of'), now)}</span></h2>"]
+    if fe.get("error"):
+        return "".join(out) + f"<p class='head'>{_badge(UNKNOWN)} not read</p></section>"
+    rows = fe.get("rows") or []
+    for kind, name in _FKIND:
+        got = [r for r in rows if r["kind"] == kind]
+        if not got:
+            continue
+        counts = {}
+        for r in got:
+            counts[r["state"]] = counts.get(r["state"], 0) + 1
+        loud = any(r["state"] in ("broken", "paused", "parked", "unknown") for r in got)
+        out.append(f"<details class='fg' data-kind='{kind}'{' open' if loud else ''}><summary><b>{name}</b> "
+                   + " · ".join(f"{n} {esc(k)}" for k, n in counts.items()) + "</summary><div class='ft'>")
+        for r in got:
+            when = f" · since {_when(r['since'], now)}" if r.get("since") else ""
+            out.append(f"<div class='fr' data-state='{esc(r['state'])}'><span class='fs {_FSTATE.get(r['state'], 'unknown')}'>"
+                       f"{esc(r['state'])}</span><span class='fn'>{esc(r['name'])}</span>"
+                       f"<span class='fb'>{esc(r['by'])}{when}</span></div>")
+        out.append("</div></details>")
+    return "".join(out) + "</section>"
+
+
 _DARK = ("--page:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--grid:#2c2c2a;--axis:#383835;"
          "--ring:rgba(255,255,255,.12);--c1:#3987e5;--c2:#d95926;--c3:#199e70;--c4:#c98500;--c5:#d55181;--other:#5a5955")
 CSS = (":root{--page:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--grid:#e1e0d9;--axis:#c3c2b7;"
@@ -370,12 +401,17 @@ h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:0}h3{font-size:13px;ma
 .ev.warn,.ev.unknown{color:#0b0b0b}
 .bar{position:absolute;top:50%;height:6px;transform:translateY(-50%);background:var(--st);opacity:.45;border-radius:3px}
 .dots{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px 12px;font-size:13px}
+.fg{margin:8px 0 0}.fg summary{cursor:pointer;font-size:13px;color:var(--ink2)}.fg summary b{color:var(--ink)}
+.ft{margin-top:6px;font-size:13px}.fr{display:grid;grid-template-columns:80px minmax(0,1fr);gap:2px 8px;padding:4px 0;border-top:1px solid var(--grid)}
+.fs{grid-row:span 2;align-self:start;text-align:center;border-radius:10px;padding:1px 6px;font-size:11px;background:var(--st);color:#fff}
+.fs.warn,.fs.unknown{color:#0b0b0b}.dem{--st:var(--c1)}.fn{font-weight:600;overflow-wrap:anywhere}.fb{color:var(--ink2);overflow-wrap:anywhere}
+@media (min-width:700px){.fr{grid-template-columns:80px 160px minmax(0,1fr)}.fs{grid-row:auto}}
 .chk{display:flex;gap:6px;align-items:center;overflow-wrap:anywhere}.chk .badge{width:16px;height:16px;font-size:10px}
 """)
 
 
 def page(r: dict, lines: dict[str, list[str]], now: float | None = None) -> str:
-    """The page: banner or all clear, six tiles, the ratio panel, the 24 h strip and the monitor grid."""
+    """The page: banner or all clear, six tiles, the ratio panel, the 24 h strip, the feature table and the monitor grid."""
     now = time.time() if now is None else now
     gen = r["generated"]
     out = ["<!doctype html><html><head><meta charset='utf-8'>",
@@ -401,6 +437,7 @@ def page(r: dict, lines: dict[str, list[str]], now: float | None = None) -> str:
     out.append("</div>")
     out.append(_ratio(r["ratio"], lines.get("Ratio") or [], now))
     out.append(_timeline(r.get("timeline") or {"error": "not gathered"}, now))
+    out.append(_features(r.get("features") or {"error": "not gathered"}, now))
     out.append(_checks(r["monitor"]))
     out.append("</body></html>")
     return "\n".join(out)
