@@ -146,3 +146,15 @@ def settle(conn, pause_id: int, state: str, why: str = "", looks: list | None = 
     if state == PAUSED:
         raise IllegalMove(f"pause {pause_id}: a settle names where the pause ends, not {PAUSED}")
     return _move(conn, pause_id, PAUSED, state, why=why, **({} if looks is None else {"looks": json.dumps(looks)}))
+
+
+def settle_here(pause_id: int, state: str, why: str, looks: list | None = None) -> None:
+    """settle() on this home's store; a lent store (a dry run) is never written."""
+    from harness import memory_store as ms
+    if ms.lent() is not None:
+        return
+    store = ms.connect()
+    try:
+        settle(store, pause_id, state, why, looks)
+    finally:
+        store.close()

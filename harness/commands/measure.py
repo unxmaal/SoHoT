@@ -9,7 +9,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from evals import watch
-from harness import lanes, methods, paths, reasons, runs, test_weights
+from harness import lanes, methods, paths, paused, reasons, runs, test_weights
 from harness.commands.common import emit, err, note
 from harness.commands import jobs as jobs_cmd
 
@@ -252,7 +252,7 @@ def room_for(row: dict) -> tuple[bool, float | None, str]:
     with runs.store() as store:
         try:
             spec = candidates.for_proposal(store, lanes.canonical(row.get("lane")), name,
-                                           row.get("attaches_to") or "") or ""
+                                           candidates.attachment(store, row)) or ""
         except Exception:  # noqa: BLE001 - an unbuildable spec is priced by its weights alone
             spec = ""
     need = memory.need_gb(target, spec=spec, parallel=1)
@@ -366,8 +366,15 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         print(f"  {name}: its method does not run the {lane} lane, so it is not measured there (#1134)", flush=True)
         return 0
     with runs.store() as store:
-        spec = (screen.candidate_for(lane, name, row.get("attaches_to") or "", conn=store) if dry else
-                candidates.for_proposal(store, lane, name, row.get("attaches_to") or ""))
+        spec, gap = candidates.challenger(store, lane, row, dry)
+    if gap:
+        # An adapter no engine here loads is declined, never launched to fail every sweep. #2086.
+        print(f"  {name}: not measured: {gap}", flush=True)
+        if sweep is not None:
+            sweep.lines.append(f"{name}: not measured: {gap}")
+        if not dry:
+            _settle(name, "declined", f"not measured: {gap}", lane, reasons.RUNTIME)
+        return 0
     if not spec:
         return err(f"{name}: screened in the {lane} lane and no candidate "
                    f"spec can be built for it")
@@ -503,7 +510,7 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
     taken = (held or {}).get("looks") or []
     if held and held.get("id") is not None:
         # The run finished; whatever is read from it next, nothing is left to resume.
-        _settle_pause(held["id"], "done", f"finished after {len(taken)} pause(s)")
+        paused.settle_here(held["id"], "done", f"finished after {len(taken)} pause(s)")
     data = _receipt_at(out)
     if not data:
         return err(f"{name}: the run stored no receipt for {out}, so nothing "
@@ -935,7 +942,7 @@ def _stale(held: dict, what: str, name: str, sweep) -> None:
     why = (f"stale: {what} since the pause at {held['done']}/{held['total']}; restarted, "
            f"the paused rows stay in {held['out']}")
     if held.get("id") is not None:
-        _settle_pause(held["id"], "stale", why)
+        paused.settle_here(held["id"], "stale", why)
     print(f"  {name}: {why}", flush=True)
     if sweep is not None:
         sweep.lines.append(f"{name}: {why}")
@@ -945,7 +952,7 @@ def _ended(name: str, held, out, sweep) -> int:
     """A run the watchdog stopped as an overrun: ended and flagged, its rows kept, never resumed. #1409."""
     why = f"stopped by the watchdog as an overrun: a suspected harness defect, not resumed; its rows stay in {out}"
     if held and held.get("id") is not None:
-        _settle_pause(held["id"], "defect", why)
+        paused.settle_here(held["id"], "defect", why)
     if sweep is not None:
         sweep.lines.append(f"{name}: {why}")
     return err(f"{name}: {why}")
@@ -967,18 +974,6 @@ def _dry_argv(lane: str, name: str, incumbent: str, plan, held, inc_spec: str, s
     print(f"\n  {lane}: {name} against {incumbent} (dry run: nothing launched, nothing recorded)")
     print(f"    {' '.join(argv + (['--gateway', route] if route else []))}", flush=True)
     return 0
-
-
-def _settle_pause(pause_id: int, state: str, why: str, looks: list | None = None) -> None:
-    from harness import paused
-    from harness import memory_store as ms
-    if ms.lent() is not None:
-        return
-    store = ms.connect()
-    try:
-        paused.settle(store, pause_id, state, why, looks)
-    finally:
-        store.close()
 
 
 def _resumed_plan(stored: dict, fresh):
@@ -1051,7 +1046,7 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
         print(f"    {'ADOPTED' if verdict.adopt else 'kept the incumbent'}: {verdict.why}", flush=True)
         _record(verdict, spec, progress.get("run_id"), out)
         if held and held.get("id") is not None:
-            _settle_pause(held["id"], "done", look.text, taken)
+            paused.settle_here(held["id"], "done", look.text, taken)
         if sweep is not None:
             sweep.lines.append(f"{name}: {look.text}")
         return 0
@@ -1443,12 +1438,12 @@ def take_incumbents(want: str = "") -> list:
     return out
 
 
-def _settle(name: str, outcome: str, detail: str, lane: str = "") -> None:
+def _settle(name: str, outcome: str, detail: str, lane: str = "", reason: str = reasons.CANDIDATE) -> None:
     from harness import memory_store as ms
     store = ms.connect()
     try:
         ms.decide(store, name, outcome, tier=ms.MEASURE, detail=detail[:200],
-                  reason=reasons.CANDIDATE, lane=lane)
+                  reason=reason, lane=lane)
     except (KeyError, ms.IllegalTransition):
         pass
     finally:

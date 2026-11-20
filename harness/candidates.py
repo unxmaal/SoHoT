@@ -85,6 +85,25 @@ def link_variants(conn, base: str | None = None) -> int:
     return n
 
 
+def attachment(conn, row: dict) -> str:
+    """The row's attaches_to, else the stored one: a paused or named row carries only its name and lane. #2086."""
+    if row.get("attaches_to"):
+        return row["attaches_to"]
+    got = conn.execute("SELECT attaches_to FROM proposals WHERE name = ?", (row.get("name", ""),)).fetchone()
+    return (got["attaches_to"] if got else "") or ""
+
+
+def challenger(conn, lane: str, row: dict, dry: bool = False) -> tuple[str, str]:
+    """(spec, "") for a measure's challenger, or ("", why) for an adapter no engine here loads. #2086."""
+    from harness import screen
+    name, attaches = row.get("name", ""), attachment(conn, row)
+    gap = screen.runner_gap(lane, name, attaches, conn=conn) if attaches.strip().lower() in screen.ADAPTER_KINDS else ""
+    if gap:
+        return "", gap
+    return (screen.candidate_for(lane, name, attaches, conn=conn) if dry else
+            for_proposal(conn, lane, name, attaches)), ""
+
+
 def for_proposal(conn, lane: str, name: str, attaches_to: str = "") -> str:
     """Build the spec for a proposal once and store it; "" when none exists."""
     from harness import screen
