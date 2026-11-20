@@ -18,14 +18,11 @@ from tests.test_deploy_hold_1675 import _leads, loop_beat  # noqa: F401 - fixtur
 from tests.test_deploy_wait_1672 import _deploy
 from tests.test_status_view_2078 import NOW, _gather, _tiles
 
-usr1 = pytest.mark.skipif(not hasattr(signal, "SIGUSR1"), reason="SIGUSR1 is POSIX")
-
-
 def _owner_pause():
     queue_pause.pause("owner looking at the disk")
 
 
-@usr1
+@pytest.mark.skipif(not hasattr(signal, "SIGUSR1"), reason="SIGUSR1 is POSIX")
 def test_a_deploy_the_paused_queue_will_not_start_does_not_take_the_sweep(loop_beat):
     _deploy(time.time())
     _owner_pause()
@@ -37,7 +34,7 @@ def test_a_deploy_the_paused_queue_will_not_start_does_not_take_the_sweep(loop_b
         loop_cmd._beat(tier)
 
 
-@usr1
+@pytest.mark.skipif(not hasattr(signal, "SIGUSR1"), reason="SIGUSR1 is POSIX")
 def test_a_disk_pause_still_lets_the_deploy_through_so_the_sweep_yields(loop_beat):
     _deploy(time.time())
     queue_pause.pause("disk full", disk=str(paths.home()))
