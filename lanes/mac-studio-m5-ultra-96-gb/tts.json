@@ -84,14 +84,14 @@
   },
   {
    "candidate": "tts:SpragAI/qwen3-tts-emotion-tags",
-   "decided_at": "2026-11-11T03:09:28Z",
+   "decided_at": "2026-11-20T03:06:39Z",
    "detail": "it ran and passed nothing: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: ValueError: CustomVoice model requires 'voice' (speaker name) (e.g., ['serena', 'vivian', 'uncle_fu', 'ryan', 'aiden', 'ono_anna', 'sohee', '",
    "exam": null,
    "outcome": "broken",
    "proposal": "SpragAI/qwen3-tts-emotion-tags",
    "reason": "candidate",
    "receipt_key": "qwen3-tts-emotion-tags",
-   "run_id": 829,
+   "run_id": 1037,
    "serves": false,
    "status": "rejected",
    "tier": "screen",
@@ -381,6 +381,21 @@
    "until": ""
   },
   {
+   "candidate": "tts:OpenMOSS-Team/MOSS-TTS-v1.5",
+   "decided_at": "2026-11-20T03:37:50Z",
+   "detail": "2 case(s) passed a screen",
+   "exam": null,
+   "outcome": "screened",
+   "proposal": "OpenMOSS-Team/MOSS-TTS-v1.5",
+   "reason": "candidate",
+   "receipt_key": "MOSS-TTS-v1.5",
+   "run_id": 1041,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "tts:OpenMOSS-Team/MOSS-SoundEffect-v2.0",
    "decided_at": "2026-10-19T01:12:59Z",
    "detail": "fits: smallest variant text_encoder/model-00001-of-00002.safetensors (+3): 10.4 GiB of 4 weight files",
@@ -409,21 +424,6 @@
    "status": "pending",
    "tier": "inspect",
    "until": "format:.bin"
-  },
-  {
-   "candidate": "tts:OpenMOSS-Team/MOSS-TTS-v1.5",
-   "decided_at": "2026-11-15T02:27:23Z",
-   "detail": "not screened: needs 15.8 GB but only 9.9 GB is safely available (27.9 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
-   "exam": null,
-   "outcome": "queued",
-   "proposal": "OpenMOSS-Team/MOSS-TTS-v1.5",
-   "reason": "memory",
-   "receipt_key": "MOSS-TTS-v1.5",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>15.8"
   },
   {
    "candidate": "tts:nvidia/magpie_tts_multilingual_357m",
@@ -456,7 +456,7 @@
    "until": "format:.pt"
   }
  ],
- "cursor": 1794709643509284,
+ "cursor": 1795145870495441,
  "events": [
   {
    "at": "2026-09-19T21:17:40Z",
@@ -1147,6 +1147,36 @@
    "reason": "memory",
    "run_id": null,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-20T03:06:39Z",
+   "candidate": "tts:SpragAI/qwen3-tts-emotion-tags",
+   "chosen": null,
+   "detail": "it ran and passed nothing: long-clause: tts failed while generating: peer closed connection without sending complete message body (incomplete chunked read). the audio server's log says: ValueError: CustomVoice model requires 'voice' (speaker name) (e.g., ['serena', 'vivian', 'uncle_fu', 'ryan', 'aiden', 'ono_anna', 'sohee', '",
+   "how": "",
+   "id": 1795143999477084,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 1037,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-20T03:37:50Z",
+   "candidate": "tts:OpenMOSS-Team/MOSS-TTS-v1.5",
+   "chosen": null,
+   "detail": "2 case(s) passed a screen",
+   "how": "",
+   "id": 1795145870495441,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 1041,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -1317,7 +1347,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-15T08:00:32Z",
+ "generated_at": "2026-11-20T08:00:48Z",
  "knobs": [],
  "lane": {
   "cases": 470,
@@ -1347,7 +1377,7 @@
   "pass_rate": 0.854,
   "serves": "mlx-community/Kokoro-82M-bf16",
   "serves_model": "mlx-community/Kokoro-82M-bf16; family yl4579/StyleTTS2-LJSpeech, 82M params, bf16, by mlx-community",
-  "stale": false
+  "stale": true
  },
  "since": 0
 }
