@@ -105,8 +105,6 @@ def _waiting_and_ran(at, elsewhere=None):
         conn.close()
 
 
-@pytest.mark.gauntlet("a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null",
-                       site="harness/status_page.py:spend:runs")
 @pytest.mark.parametrize("days", [4.5, None])
 def test_candidates_waiting_with_no_screen_for_days_is_red(tmp_path, days):
     _waiting_and_ran(None if days is None else NOW - days * 86400, elsewhere=NOW - 600)
