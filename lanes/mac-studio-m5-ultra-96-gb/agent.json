@@ -717,7 +717,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-14T08:00:41Z",
+ "generated_at": "2026-11-20T08:00:46Z",
  "knobs": [],
  "lane": {
   "cases": 374,
@@ -766,7 +766,7 @@
   "pass_rate": 0.947,
   "serves": "llamacpp:Ornith-1.5-35B-Q4_K_M",
   "serves_model": "llamacpp:Ornith-1.5-35B-Q4_K_M; 35B (3B active) params, Q4_K_M, by ornith-ai",
-  "stale": false
+  "stale": true
  },
  "since": 0
 }
