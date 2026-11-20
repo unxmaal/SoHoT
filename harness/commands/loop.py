@@ -236,9 +236,9 @@ def _yield_on_signal():
 
 def _deploy_in_flight() -> bool:
     """Whether a deploy this sweep yielded to is still pending or switching here. #1675."""
-    from harness import deploy, paths
+    from harness import paths, queue_pause
     from harness import workqueue as wq
-    if deploy.paused():
+    if queue_pause.deploy_held():
         return False
     try:
         with wq._store() as c:
@@ -248,13 +248,14 @@ def _deploy_in_flight() -> bool:
         return paths.deploy_checkout() in (None, paths.REPO.resolve())
 
 
-def _after_deploy(left, sleep=None, clock=None, busy=None) -> int:
-    """Wait for the deploy within the ceiling left, then hand serve-discover.sh what is left; 0 if it ran out. #1675."""
+def _after_deploy(left, sleep=None, clock=None, busy=None, held=None) -> int:
+    """Wait for the deploy within the ceiling left, then hand serve-discover.sh what is left; 0 if it ran out. #1675, #2083."""
     import json
     import time
 
-    from harness import paths, power
+    from harness import paths, power, queue_pause
     sleep, clock, busy = sleep or time.sleep, clock or time.monotonic, busy or _deploy_in_flight
+    held = held or queue_pause.deploy_held
     left = float(power.SWEEP_CEILING_H) * 3600 if left is None else float(left)
     end = clock() + left
     while busy():
@@ -267,7 +268,9 @@ def _after_deploy(left, sleep=None, clock=None, busy=None) -> int:
         sleep(YIELD_POLL_S)
     rest = max(0.0, end - clock())
     (paths.home() / YIELD_FILE).write_text(json.dumps({"left_s": rest, "at": time.time()}), encoding="utf-8")
-    print(f"=== the deploy is done; the sweep goes on from the deployed release with {power._hm(rest)} "
+    why = held()
+    done = f"the deploy cannot start ({why})" if why else "the deploy is done"
+    print(f"=== {done}; the sweep goes on from the deployed release with {power._hm(rest)} "
           f"of its ceiling ===", flush=True)
     return YIELDED
 
@@ -473,6 +476,10 @@ def _spend_and_settle(a, rc: int, failed: list | None = None, sweep=None) -> int
     from harness import router
     try:
         rc = _loop_spend(a, rc, failed if failed is not None else [], sweep)
+    except Exception as exc:
+        if sweep is not None and not sweep.stopped:
+            sweep.stopped = f"a {type(exc).__name__} stopped the sweep before its ceiling: {exc}"[:300]
+        raise
     finally:
         router.settle("the discovery loop is done")
         if sweep is not None:

@@ -15,6 +15,8 @@ REFRESH_S = 60.0
 ALERT_DAYS = 7
 #: Seconds the status page's timeline strip reaches back. #2078.
 TIMELINE_S = 86400.0
+#: Seconds with no screen or measure run, while candidates wait, before the page goes red. #2083.
+SPEND_STALE_S = 2 * 86400.0
 DEPLOYED = "deployed"
 _SECRET_NAME = re.compile(r"(WEBHOOK|TOKEN|SECRET|PASSWORD|PASSWD|API_KEY|_KEY$|^KEY$|DSN|CREDENTIAL)", re.I)
 _URL = re.compile(r"\b[a-z][a-z0-9+.-]*://[^\s'\"<>)\]]+", re.I)
@@ -149,6 +151,24 @@ def discovery(now: float, beat=None) -> dict:
     return out
 
 
+def spend(conn, now: float) -> dict:
+    """When the last screen or measure run ran, and how many candidates wait for a screen. #2083."""
+    from harness import memory_store as ms
+    if conn is None:
+        return {"error": "store down: screens and measures not read"}
+    got = conn.execute("SELECT MAX(COALESCE(generated_at, recorded_at)) AS t FROM runs").fetchone()
+    last = got[0] if got else None
+    return {"last_run_at": last, "waiting": ms.judgeable_total(conn)}
+
+
+def spend_stalled(sp: dict, now: float) -> bool:
+    """Candidates wait and nothing was screened or measured for SPEND_STALE_S. #2083."""
+    if sp.get("error") or not sp.get("waiting"):
+        return False
+    last = sp.get("last_run_at")
+    return last is None or now - float(last) > SPEND_STALE_S
+
+
 def monitor_section(now: float, status=None, home: Path | None = None) -> dict:
     from harness import monitor
     got = (status or monitor.status)()
@@ -251,6 +271,11 @@ def banner(r: dict, now: float) -> list[str]:
         out.append(f"discovery failed: {disc.get('failure') or 'rc ' + str(disc.get('rc'))}")
     if disc.get("overdue"):
         out.append(f"discovery overdue: {disc['overdue']}")
+    sp = disc.get("spend") or {}
+    if spend_stalled(sp, now):
+        since = _t(sp.get("last_run_at"))
+        out.append(f"discovery screens nothing: no screen or measure since {since} while {sp['waiting']} "
+                   f"candidate(s) wait")
     if mon.get("error"):
         out.append(f"monitor not read: {mon['error']}")
     elif not mon.get("running"):
@@ -280,7 +305,7 @@ def gather(now: float | None = None, *, connect=None, beat=None, where=None, git
              "store": _section(store, conn, why, home),
              "queue": _section(queue, conn, now),
              "deploy": _section(deploy_section, conn, now, where, git),
-             "discovery": _section(discovery, now, beat),
+             "discovery": {**_section(discovery, now, beat), "spend": _section(spend, conn, now)},
              "monitor": _section(monitor_section, now, mon, home),
              "services": _section(services, now, health, reach),
              "ratio": _section(ratio, conn, now, flow)}
@@ -317,6 +342,12 @@ def _ago(t, now: float) -> str:
     return f"{_t(t)} ({s / 3600:.1f} h ago)" if s >= 3600 else f"{_t(t)} ({s / 60:.0f} min ago)"
 
 
+def _spend_line(sp: dict, now: float) -> str:
+    if sp.get("error"):
+        return f"screens and measures not read: {sp['error']}"
+    return f"last screen or measure {_ago(sp.get('last_run_at'), now)}; {sp.get('waiting')} candidate(s) waiting"
+
+
 def lines(r: dict) -> dict[str, list[str]]:
     """Each section as plain lines, the page's text."""
     now = r["generated"]
@@ -336,7 +367,8 @@ def lines(r: dict) -> dict[str, list[str]]:
         disc.get("line") or "no discovery loop heartbeat",
         f"started {_t(disc.get('started'))}, finished {_t(disc.get('finished'))}, rc {disc.get('rc')}"
         + (f", error: {disc['failure']}" if disc.get("failure") else ""),
-        f"next scheduled {_t(disc.get('next'))}" + (f"; overdue: {disc['overdue']}" if disc.get("overdue") else "")]
+        f"next scheduled {_t(disc.get('next'))}" + (f"; overdue: {disc['overdue']}" if disc.get("overdue") else ""),
+        _spend_line(disc.get("spend") or {}, now)]
     out["Monitor"] = mon.get("error") and [mon["error"]] or [
         f"monit {'running' if mon.get('running') else 'NOT running'}, config {'current' if mon.get('current') else 'not current'}, "
         f"alerts {'to the webhook' if mon.get('alerting') else 'desktop only'}",

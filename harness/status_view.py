@@ -101,7 +101,7 @@ def _queue(q: dict, now: float):
 
 
 def _discovery(disc: dict, now: float):
-    from harness.status_page import discovery_failed
+    from harness.status_page import discovery_failed, spend_stalled
     if disc.get("error"):
         return UNKNOWN, "not read", None
     nxt = f" · next {hm(disc['next'])}" if disc.get("next") else ""
@@ -110,6 +110,10 @@ def _discovery(disc: dict, now: float):
         return BAD, "stalled" + nxt, disc.get("started")
     if discovery_failed(disc):
         return BAD, f"failed {ago(disc.get('finished'), now)}{nxt}", disc.get("finished")
+    sp = disc.get("spend") or {}
+    if spend_stalled(sp, now):
+        t = sp.get("last_run_at")
+        return BAD, "no screen " + (f"in {ago(t, now).removesuffix(' ago')}" if t else "ever") + f" · {sp['waiting']} waiting", t
     if disc.get("overdue"):
         return WARN, "overdue" + nxt, disc.get("finished")
     if not st:
