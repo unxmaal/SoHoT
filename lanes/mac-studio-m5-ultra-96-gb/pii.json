@@ -396,7 +396,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-09T08:03:21Z",
+ "generated_at": "2026-11-20T08:00:47Z",
  "knobs": [],
  "lane": {
   "cases": 556,
@@ -428,7 +428,7 @@
   "pass_rate": 0.739,
   "serves": "pii-regex",
   "serves_model": "pii-regex",
-  "stale": false
+  "stale": true
  },
  "since": 0
 }
