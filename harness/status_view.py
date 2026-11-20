@@ -47,8 +47,6 @@ def ago(t, now: float) -> str:
     if not t:
         return "never"
     s = now - float(t)
-    if s < -60:
-        return "in " + span(-s)
     return "just now" if s < 60 else span(s) + " ago"
 
 

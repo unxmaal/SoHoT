@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import time
 from pathlib import Path
@@ -41,10 +42,12 @@ def _deploys(*rows):
         conn.close()
 
 
-def _gather(tmp_path, **kw):
+def _gather(tmp_path, backup_at=None, **kw):
     d = store_service.backup_dir()
     d.mkdir(parents=True, exist_ok=True)
-    (d / f"{store_service.BACKUP_PREFIX}2026-11-19{store_service.BACKUP_SUFFIX}").write_text("x", encoding="utf-8")
+    b = d / f"{store_service.BACKUP_PREFIX}2026-11-19{store_service.BACKUP_SUFFIX}"
+    b.write_text("x", encoding="utf-8")
+    os.utime(b, (backup_at or NOW, backup_at or NOW))
     args = {"connect": ms.connect, "beat": BEAT, "where": tmp_path, "mon": _mon(),
             "health": lambda lane: {"lane": lane, "spec": "m", "base": "http://127.0.0.1:1", "generating": True, "why": ""},
             "reach": lambda since, now: [{"node": "n1", "down_now": False, "down_s": 0.0}], "flow": lambda now: FLOW}
@@ -79,6 +82,13 @@ def test_all_clear_is_six_green_tiles_and_one_line(tmp_path):
     page = sp.page(r, NOW)
     assert "All clear." in page and "class='alert'" not in page
     assert _drawn(page) == {k: s for k, (s, _) in got.items()}
+
+
+def test_a_backup_stamped_after_the_gather_time_is_just_now_not_in_the_future(tmp_path):
+    r = _gather(tmp_path, backup_at=NOW + 1200)
+    assert re.fullmatch(r"schema \d+ · backup just now", _tiles(r)["store"][1])
+    assert "backup in " not in sp.page(r, NOW)
+    assert sv.ago(NOW + 1200, NOW) == "just now" and sp._ago(NOW + 1200, NOW).endswith("(0 min ago)")
 
 
 def test_a_long_queue_pause_is_a_red_queue_tile(tmp_path):

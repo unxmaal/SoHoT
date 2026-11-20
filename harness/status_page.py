@@ -313,7 +313,7 @@ def _t(t) -> str:
 def _ago(t, now: float) -> str:
     if not t:
         return "never"
-    s = now - float(t)
+    s = max(0.0, now - float(t))
     return f"{_t(t)} ({s / 3600:.1f} h ago)" if s >= 3600 else f"{_t(t)} ({s / 60:.0f} min ago)"
 
 
