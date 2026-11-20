@@ -8,23 +8,22 @@
     "about": "",
     "candidate": "mflux/dev-q8",
     "cases": 584,
-    "first_s": 37.099,
-    "median_s": 24.416,
+    "first_s": 38.263,
+    "median_s": 28.475,
     "metrics": {
-     "cer": 0.0,
-     "staging": 0.753
+     "staging": 0.9278
     },
     "model": "mflux/dev-q8",
     "not_run": "",
-    "pass_rate": 0.533,
-    "passed": 311,
-    "peak_gb": 20.56,
+    "pass_rate": 0.862,
+    "passed": 156,
+    "peak_gb": 20.55,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-12T08:08:08Z",
+    "run_at": "2026-11-20T07:36:40Z",
     "served_as": "",
     "source": "",
-    "total": 584,
+    "total": 181,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -301,21 +300,6 @@
    "until": "runner:mflux/mlx"
   },
   {
-   "candidate": "mflux:mlx-community/flux2-klein-9b-4bit",
-   "decided_at": "2026-11-09T01:55:53Z",
-   "detail": "it ran and passed nothing: fox-snow: exit 1: ValueError: [reshape] Cannot reshape array of size 1048576 into shape (1,256,24,128).; geneval-000-single-object: exit 1: ValueError: [reshape] Cannot reshape array of size 1048576 into shape (1,256,24,128).; staging-bird-above-boat: exit 1: ValueError: [reshape] Cannot reshape arr",
-   "exam": null,
-   "outcome": "broken",
-   "proposal": "mlx-community/flux2-klein-9b-4bit",
-   "reason": "candidate",
-   "receipt_key": "mflux/mlx-community/flux2-klein-9b-4bit-q8",
-   "run_id": 754,
-   "serves": false,
-   "status": "rejected",
-   "tier": "screen",
-   "until": ""
-  },
-  {
    "candidate": "mflux:realrebelai/Krea-2-Turbo-BBOX_GGUFs",
    "decided_at": "2026-11-15T02:27:21Z",
    "detail": "needs its own runner: the stock loader could not assemble it: fox-snow: exit 1: FileNotFoundError: No safetensors files found in vae; geneval-000-single-object: exit 1: FileNotFoundError: No safetensors files found in mo",
@@ -466,8 +450,8 @@
   },
   {
    "candidate": "mflux:Tongyi-MAI/Z-Image",
-   "decided_at": "2026-11-15T02:27:35Z",
-   "detail": "not screened: needs 19.1 GB but only 9.9 GB is safely available (27.9 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "decided_at": "2026-11-20T05:53:16Z",
+   "detail": "not fetched 2026-11-20: the screen share of the sweep ceiling is spent",
    "exam": {
     "about": "by Tongyi-MAI",
     "candidate": "mflux/Tongyi-MAI/Z-Image-q8",
@@ -493,16 +477,31 @@
    },
    "outcome": "queued",
    "proposal": "Tongyi-MAI/Z-Image",
-   "reason": "memory",
+   "reason": "limit",
    "receipt_key": "mflux/Tongyi-MAI/Z-Image-q8",
    "run_id": null,
    "serves": false,
    "status": "pending",
+   "tier": "fetch",
+   "until": ""
+  },
+  {
+   "candidate": "mflux:mlx-community/flux2-klein-9b-4bit",
+   "decided_at": "2026-11-20T03:50:25Z",
+   "detail": "not screened: needs 8.9 GB but only 2.6 GB is safely available (20.6 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "exam": null,
+   "outcome": "queued",
+   "proposal": "mlx-community/flux2-klein-9b-4bit",
+   "reason": "memory",
+   "receipt_key": "mflux/mlx-community/flux2-klein-9b-4bit-q8",
+   "run_id": null,
+   "serves": false,
+   "status": "pending",
    "tier": "screen",
-   "until": "room_gb:>19.1"
+   "until": "room_gb:>8.9"
   }
  ],
- "cursor": 1794709655511459,
+ "cursor": 1795146625195013,
  "events": [
   {
    "at": "2026-09-18T22:18:09Z",
@@ -2963,6 +2962,21 @@
    "reason": "memory",
    "run_id": null,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-20T03:50:25Z",
+   "candidate": "mlx-community/flux2-klein-9b-4bit",
+   "chosen": null,
+   "detail": "not screened: needs 8.9 GB but only 2.6 GB is safely available (20.6 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1795146625195013,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -2975,28 +2989,27 @@
     {
      "about": "",
      "candidate": "mflux/dev-q8",
-     "first_s": 37.099,
-     "median_s": 24.416,
+     "first_s": 38.263,
+     "median_s": 28.475,
      "metrics": {
-      "cer": 0.0,
-      "staging": 0.753
+      "staging": 0.9278
      },
      "model": "mflux/dev-q8",
      "not_run": "",
-     "pass_rate": 0.533,
-     "passed": 311,
-     "peak_gb": 20.56,
+     "pass_rate": 0.862,
+     "passed": 156,
+     "peak_gb": 20.55,
      "reference": false,
-     "run_at": "2026-11-12T08:08:08Z",
+     "run_at": "2026-11-20T07:36:40Z",
      "served_as": "",
      "source": "",
-     "total": 584,
+     "total": 181,
      "ttft_median_s": null,
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-11-12T08:08:08Z",
-   "runs": 2
+   "run_at": "2026-11-20T07:36:40Z",
+   "runs": 3
   },
   {
    "cases": 3,
@@ -3225,7 +3238,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-15T08:00:28Z",
+ "generated_at": "2026-11-20T08:00:44Z",
  "knobs": [],
  "lane": {
   "cases": 584,
@@ -3254,16 +3267,15 @@
   "adopted_at": "2026-10-06T19:21:16Z",
   "adopted_how": "by-hand",
   "incumbent": "mflux:flux2-klein-4b",
-  "measured_at": "2026-11-12T08:08:08Z",
-  "median_s": 24.416,
+  "measured_at": "2026-11-20T07:36:40Z",
+  "median_s": 28.475,
   "metrics": {
-   "cer": 0.0,
-   "staging": 0.753
+   "staging": 0.9278
   },
   "not_run": "",
   "parked": "",
   "parked_until": "",
-  "pass_rate": 0.533,
+  "pass_rate": 0.862,
   "serves": "mflux:dev",
   "serves_model": "mflux:dev",
   "stale": false
