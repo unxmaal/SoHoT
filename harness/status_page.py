@@ -1,19 +1,20 @@
 """The LAN status page: /status and /status.json from the morning, deploy and queue gatherers (#2075)."""
 from __future__ import annotations
 
-import html
 import json
 import os
 import re
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 #: Seconds a gathered status is served before a request gathers again; the page reloads at this pace. #2075.
 REFRESH_S = 60.0
 #: Days of monit alerts the page looks back through for the last one sent.
 ALERT_DAYS = 7
+#: Seconds the status page's timeline strip reaches back. #2078.
+TIMELINE_S = 86400.0
 DEPLOYED = "deployed"
 _SECRET_NAME = re.compile(r"(WEBHOOK|TOKEN|SECRET|PASSWORD|PASSWD|API_KEY|_KEY$|^KEY$|DSN|CREDENTIAL)", re.I)
 _URL = re.compile(r"\b[a-z][a-z0-9+.-]*://[^\s'\"<>)\]]+", re.I)
@@ -131,6 +132,10 @@ def next_run(hours: list[int], now: float) -> float | None:
     return None
 
 
+def discovery_failed(disc: dict) -> bool:
+    return disc.get("status") == "finished" and bool(disc.get("failure") or disc.get("rc") not in (0, None))
+
+
 def discovery(now: float, beat=None) -> dict:
     from harness import heartbeat
     beat = heartbeat.summary() if beat is None else beat
@@ -167,14 +172,65 @@ def services(now: float, health=None, reach=None) -> dict:
 
 def ratio(conn, now: float, flow=None) -> dict:
     from harness import ledger, morning, token_flow
-    out = {"line": "", "terms": "", "headline": None}
+    out = {"line": "", "terms": "", "headline": None, "days": [], "causes": [], "counted": None}
     if conn is not None:
         out["headline"] = morning.ratio(conn, now)
         out["line"] = ledger.ratio_line(out["headline"]) if out["headline"] else "no ledger_days table"
+        if out["headline"]:
+            out["days"] = ratio_days(conn, out["headline"]["week"])
     else:
         out["line"] = "store down: ratio not read"
-    out["terms"] = token_flow.terms_line((flow or token_flow.morning)(now))
+    m = (flow or token_flow.morning)(now)
+    out["terms"] = token_flow.terms_line(m)
+    out["causes"], out["counted"] = causes(m)
     return out
+
+
+def ratio_days(conn, week: dict) -> list[dict]:
+    """Local and cloud tokens for each day of the ratio's week, None where the day has no count. #2078."""
+    from harness import ledger
+    got = {r["day"]: r.get("ratio") or {} for r in ledger.recorded(conn, week["first_day"])}
+    first = date.fromisoformat(week["first_day"])
+    want = [(first + timedelta(days=i)).isoformat() for i in range(week["of"])]
+    return [{"day": d, "local": got.get(d, {}).get("local"), "cloud": got.get(d, {}).get("cloud")} for d in want]
+
+
+def causes(m: dict | None) -> tuple[list[dict], int | None]:
+    """The morning account's largest terms and the rest as other, against counted cloud. #2078."""
+    if not m or not m.get("available") or not m.get("counted"):
+        return [], None
+    got = [{"term": t["term"], "tokens": t["tokens"]} for t in m["terms"] if t.get("tokens")]
+    rest = m["counted"] - sum(t["tokens"] for t in got)
+    return got + ([{"term": "other", "tokens": rest}] if rest > 0 else []), m["counted"]
+
+
+def timeline(conn, now: float, disc: dict, q: dict, home: Path | None = None) -> dict:
+    """Deploys, discovery runs, finished jobs, monit alerts and the pause over the last TIMELINE_S. #2078."""
+    from harness import deploy, monitor
+    from harness import workqueue as wq
+    since = now - TIMELINE_S
+    ev = []
+    if disc.get("started"):
+        bad = disc.get("status") == "stalled" or discovery_failed(disc)
+        ev.append({"kind": "discovery", "at": disc["started"], "end": disc.get("finished") or now,
+                   "state": "bad" if bad else "ok", "label": f"discovery {disc.get('status') or 'run'}"})
+    if q.get("paused") and q.get("paused_since"):
+        ev.append({"kind": "pause", "at": q["paused_since"], "end": now, "state": "warn", "label": "queue paused"})
+    ev += [{"kind": "alert", "at": a.get("at"), "state": "warn" if a.get("held") else "bad",
+            "label": f"{a.get('kind')} {a.get('service')}: {str(a.get('description') or '')[:80]}"}
+           for a in monitor.alerts(since, home) if a.get("at")]
+    if conn is not None:
+        for d in deploy.since(conn, since):
+            out = d.get("outcome") or ""
+            ev.append({"kind": "deploy", "at": d["started_at"], "state": "ok" if out == DEPLOYED else "bad" if out else "unknown",
+                       "label": f"deploy {d['id']} {(d.get('sha') or '')[:8]} {out or 'running'}"})
+        here, args = wq._claimed(conn)
+        rows = conn.execute("SELECT id, kind, state, finished_at FROM jobs WHERE finished_at >= ? AND state IN (?, ?) "
+                            f"AND {here} ORDER BY finished_at", (since, wq.DONE, wq.FAILED, *args)).fetchall()
+        ev += [{"kind": "job", "at": j["finished_at"], "state": "ok" if j["state"] == wq.DONE else "bad",
+                "label": f"job {wq.label(j['id'])} {j['kind']} {j['state']}"} for j in rows]
+    ev = [e for e in ev if float(e.get("end") or e["at"]) >= since]
+    return {"since": since, "until": now, "events": sorted(ev, key=lambda e: float(e["at"]))}
 
 
 def banner(r: dict, now: float) -> list[str]:
@@ -191,7 +247,7 @@ def banner(r: dict, now: float) -> list[str]:
         out.append(f"queue paused {(now - q['paused_since']) / 3600:.1f} h: {q.get('reason')}")
     if disc.get("status") == "stalled":
         out.append(f"discovery stalled: {disc.get('line')}")
-    elif disc.get("status") == "finished" and (disc.get("failure") or disc.get("rc") not in (0, None)):
+    elif discovery_failed(disc):
         out.append(f"discovery failed: {disc.get('failure') or 'rc ' + str(disc.get('rc'))}")
     if disc.get("overdue"):
         out.append(f"discovery overdue: {disc['overdue']}")
@@ -204,8 +260,8 @@ def banner(r: dict, now: float) -> list[str]:
     lane = r["services"].get("lane") or {}
     if lane.get("generating") is False:
         out.append(f"the {lane.get('lane')} lane cannot generate: {lane.get('why') or lane.get('base')}")
-    out += [f"{k} not read: {r[k]['error']}" for k in ("store", "queue", "deploy", "discovery", "services", "ratio")
-            if r[k].get("error")]
+    out += [f"{k} not read: {r[k]['error']}" for k in ("store", "queue", "deploy", "discovery", "services", "ratio",
+                                                       "timeline") if r[k].get("error")]
     return out
 
 
@@ -228,6 +284,7 @@ def gather(now: float | None = None, *, connect=None, beat=None, where=None, git
              "monitor": _section(monitor_section, now, mon, home),
              "services": _section(services, now, health, reach),
              "ratio": _section(ratio, conn, now, flow)}
+        r["timeline"] = _section(timeline, conn, now, r["discovery"], r["queue"], home)
     finally:
         if conn is not None:
             conn.close()
@@ -266,7 +323,7 @@ def lines(r: dict) -> dict[str, list[str]]:
     s, q, d, disc, mon, sv, ra = (r[k] for k in ("store", "queue", "deploy", "discovery", "monitor", "services", "ratio"))
     out = {}
     out["Deploy"] = d.get("error") and [d["error"]] or [
-        f"serving {(d.get('head') or 'unknown')[:12]}; origin/main {(d.get('main') or 'unknown')[:12]}"
+        f"serving {(d.get('head') or 'unknown')[:8]}; origin/main {(d.get('main') or 'unknown')[:8]}"
         + (f", {d['behind']} behind" if d.get("behind") else "") + (f" ({d['tree_why']})" if d.get("tree_why") else ""),
         f"last: {d['last']['line']}" if d.get("last") else (d.get("why") or "no deploy in 7 days"),
         f"waiting: {d['wait']['line']}" if d.get("wait") else f"next: {d.get('blocked') or 'a deploy may start at the next poll'}"]
@@ -300,31 +357,6 @@ def lines(r: dict) -> dict[str, list[str]]:
     return {k: [x for x in v if x] for k, v in out.items()}
 
 
-_KEYS = {"Deploy": "deploy", "Queue": "queue", "Discovery": "discovery", "Monitor": "monitor",
-         "Services": "services", "Ratio": "ratio", "Store": "store"}
-_CSS = """:root{--bg:#fff;--fg:#1b1b1b;--dim:#666;--bad:#b00020;--badbg:#fde7ea;--line:#ddd}
-@media (prefers-color-scheme: dark){:root{--bg:#141414;--fg:#e8e8e8;--dim:#999;--bad:#ff8a80;--badbg:#3a1416;--line:#333}}
-body{background:var(--bg);color:var(--fg);font:15px/1.45 -apple-system,system-ui,sans-serif;margin:0 auto;max-width:960px;padding:16px}
-h1{font-size:20px}h2{font-size:16px;margin:18px 0 4px;border-bottom:1px solid var(--line)}
-.asof{color:var(--dim);font-weight:normal;font-size:12px}
-.banner{background:var(--badbg);color:var(--bad);border:2px solid var(--bad);padding:8px 12px;border-radius:6px}
-.ok{color:var(--dim)}ul{margin:4px 0;padding-left:20px}li{overflow-wrap:anywhere}"""
-
-
-def page(r: dict) -> str:
-    e = html.escape
-    out = ["<!doctype html><html><head><meta charset='utf-8'>",
-           "<meta name='viewport' content='width=device-width,initial-scale=1'>",
-           f"<meta http-equiv='refresh' content='{int(r.get('refresh_s') or REFRESH_S)}'>",
-           f"<title>SoHoT status</title><style>{_CSS}</style></head><body>",
-           f"<h1>SoHoT status <span class='asof'>as of {e(_t(r['generated']))} · <a href='status.json'>json</a></span></h1>"]
-    if r["banner"]:
-        out.append("<div class='banner'><b>Needs you</b><ul>" + "".join(f"<li>{e(b)}</li>" for b in r["banner"]) + "</ul></div>")
-    else:
-        out.append("<p class='ok'>Nothing needs you.</p>")
-    for title, body in lines(r).items():
-        asof = r[_KEYS[title]].get("as_of")
-        out.append(f"<h2>{e(title)} <span class='asof'>as of {e(time.strftime('%H:%M:%S', time.localtime(asof)) if asof else '?')}</span></h2>")
-        out.append("<ul>" + "".join(f"<li>{e(x)}</li>" for x in body) + "</ul>")
-    out.append("</body></html>")
-    return "\n".join(out)
+def page(r: dict, now: float | None = None) -> str:
+    from harness import status_view
+    return status_view.page(r, lines(r), now)
