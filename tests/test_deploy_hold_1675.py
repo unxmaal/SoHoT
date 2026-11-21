@@ -296,14 +296,14 @@ def test_a_yielded_sweep_finishes_its_heartbeat_waits_for_the_deploy_and_exits_7
     assert beat[heartbeat.PAUSED]["tier"] == "measure"
 
 
-def test_the_wait_ends_when_the_deploy_is_done_and_hands_on_the_ceiling_left():
+def test_the_wait_ends_when_the_deploy_is_done_and_hands_on_the_ceiling_left_whole():
     t = {"now": 0.0}
     busy = iter([True, True, False])
     got = loop_cmd._after_deploy(3600.0, sleep=lambda s: t.update(now=t["now"] + s), clock=lambda: t["now"],
                                  busy=lambda: next(busy))
     assert got == loop_cmd.YIELDED
     left = json.loads((paths.home() / loop_cmd.YIELD_FILE).read_text(encoding="utf-8"))["left_s"]
-    assert left == 3600.0 - 2 * loop_cmd.YIELD_POLL_S
+    assert left == 3600.0, "the time the deploy took is the sweep's again (#2097)"
     from harness import power
     a = types.SimpleNamespace(ceiling_h=None)
     assert loop_cmd._ceiling_s(a, environ={}) == float(power.SWEEP_CEILING_H) * 3600, "a fresh sweep has it all"
@@ -311,11 +311,12 @@ def test_the_wait_ends_when_the_deploy_is_done_and_hands_on_the_ceiling_left():
     assert not (paths.home() / loop_cmd.YIELD_FILE).exists(), "the ceiling left is handed on once"
 
 
-def test_a_deploy_that_outlasts_the_ceiling_ends_the_sweep():
-    t = {"now": 0.0}
+def test_a_deploy_that_outlasts_the_wait_cap_hands_on_the_ceiling_left():
+    t = {"now": time.mktime((2026, 11, 20, 12, 0, 0, 0, 0, -1))}
     got = loop_cmd._after_deploy(60.0, sleep=lambda s: t.update(now=t["now"] + s), clock=lambda: t["now"],
                                  busy=lambda: True)
-    assert got == 0 and not (paths.home() / loop_cmd.YIELD_FILE).exists()
+    assert got == loop_cmd.YIELDED
+    assert json.loads((paths.home() / loop_cmd.YIELD_FILE).read_text(encoding="utf-8"))["left_s"] == 60.0
 
 
 def test_a_deploy_job_pending_or_switching_here_is_in_flight():
