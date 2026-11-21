@@ -43,6 +43,8 @@ DECODE_TOK_S = {"Mac17_15": 145.0}
 DEADLINE_GRACE = 1.25
 #: Hours a discover loop may run from its start; a measurement running at it pauses for the next sweep. #806, #813.
 SWEEP_CEILING_H = 6.0
+#: Local hour by which a sweep that yielded to a deploy ends, however much of its ceiling it got back. #2097.
+SWEEP_MORNING_H = 6
 #: Repeats past the one reaching this share of the best power buy nothing.
 PLATEAU = 0.95
 #: Or within this much of it.

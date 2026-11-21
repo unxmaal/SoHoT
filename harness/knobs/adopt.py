@@ -74,6 +74,8 @@ KNOBS = [
        note="seconds a re-run's queue job may wait pending (contention gate, hold, memory admission) before the reverification settles unrun, the job is cancelled and one alert names what it waited on; settled re-runs here took at most 48 h from queue to settle, reverification 52 waited 85 h behind memory admission (#1765)"),
     _k("sweep_ceiling_h", ["harness/power.py:SWEEP_CEILING_H"], [4.0, 6.0, 8.0],
        note="hours a discover loop runs from its start; a measurement running at it pauses and resumes next sweep (#806, #813)"),
+    _k("sweep_morning_h", ["harness/power.py:SWEEP_MORNING_H"], [5, 6, 7],
+       note="local hour a sweep that yielded to a deploy gets its waited time back until; past it the sweep ends for the morning (#2097)"),
     _k("sweep_unused_s", ["harness/ceiling.py:UNUSED_S"], [1800.0, 3600.0, 7200.0],
        note="ceiling seconds a finished sweep may leave unused before soh morning names why (#1082)"),
     _k("unseen_rate", ["harness/power.py:UNSEEN"], [0.25, 0.5, 0.75],

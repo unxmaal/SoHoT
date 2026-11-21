@@ -248,25 +248,38 @@ def _deploy_in_flight() -> bool:
         return paths.deploy_checkout() in (None, paths.REPO.resolve())
 
 
+def _morning(now: float) -> float:
+    """The first power.SWEEP_MORNING_H local hour after `now`, as an epoch. #2097."""
+    import time
+
+    from harness import power
+    t = time.localtime(now)
+    for day in (t.tm_mday, t.tm_mday + 1):
+        at = time.mktime((t.tm_year, t.tm_mon, day, int(power.SWEEP_MORNING_H), 0, 0, 0, 0, -1))
+        if at > now:
+            return at
+    return now
+
+
 def _after_deploy(left, sleep=None, clock=None, busy=None, held=None) -> int:
-    """Wait for the deploy within the ceiling left, then hand serve-discover.sh what is left; 0 if it ran out. #1675, #2083."""
+    """Wait for the deploy until the morning, then hand serve-discover.sh the ceiling it yielded, cut to the morning; 0 if it came first. #1675, #2083, #2097."""
     import json
     import time
 
-    from harness import paths, power, queue_pause
-    sleep, clock, busy = sleep or time.sleep, clock or time.monotonic, busy or _deploy_in_flight
+    from harness import cuts, paths, power, queue_pause
+    sleep, clock, busy = sleep or time.sleep, clock or time.time, busy or _deploy_in_flight
     held = held or queue_pause.deploy_held
     left = float(power.SWEEP_CEILING_H) * 3600 if left is None else float(left)
-    end = clock() + left
+    end = _morning(clock())
     while busy():
         if clock() >= end:
-            from harness import cuts
-            cuts.cut("sweep_ceiling_h", "the sweep's ceiling ran out while it waited for the deploy it yielded to",
-                     value=left / 3600)
-            print("=== the sweep's ceiling ran out waiting for the deploy; the next sweep goes on ===", flush=True)
+            cuts.cut("sweep_morning_h", "the morning came while the sweep waited for the deploy it yielded to")
+            print("=== the morning came while the sweep waited for the deploy; the next sweep goes on ===", flush=True)
             return 0
         sleep(YIELD_POLL_S)
-    rest = max(0.0, end - clock())
+    rest = max(0.0, min(left, end - clock()))
+    if rest < left:
+        cuts.cut("sweep_morning_h", "the morning cut the ceiling a sweep got back after the deploy it yielded to")
     (paths.home() / YIELD_FILE).write_text(json.dumps({"left_s": rest, "at": time.time()}), encoding="utf-8")
     why = held()
     done = f"the deploy cannot start ({why})" if why else "the deploy is done"
