@@ -68,7 +68,8 @@ def observed_plan(plan, out, inc_spec: str, spec: str):
     from evals import watch
     from harness import watchdog
     got = watch.read_progress(out) if out and watch.stop_reason(out) == watchdog.TOO_SLOW else {}
-    if int(got.get("done") or 0) < watchdog.OVERRUN_MIN_CASES:
+    finished = int(got.get("done") or 0)
+    if finished < watchdog.OVERRUN_MIN_CASES:
         return plan
     seen, specs, est = got.get("observed_s_per_case") or {}, got.get("specs") or {}, dict(plan.estimate or {})
     for who, side in (("incumbent", inc_spec), ("challenger", spec)):

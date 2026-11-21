@@ -15,7 +15,7 @@ INC, CH = "llamacpp:Ornith-1.5-35B-Q4_K_M", "daksh-neo/acervo-extractor-qwen3.5-
 
 
 def _run(last_s=39.0, ceiling_s=3 * 3600.0, left=None, now=NIGHT):
-    """runs/20261120-012727-adopt-code as the watchdog read it: 23/135 done, the challenger at 44.17 s/case against 12.72 planned."""
+    """The adopt-code run of #2088 as the watchdog read it: the challenger far over its planned seconds per case."""
     got = {"state": "running", "pid": 511, "done": 23, "total": 135, "specs": {INC: INC, CH: CH},
            "planned_s_per_case": {INC: 49.05, CH: 12.72}, "observed_s_per_case": {INC: None, CH: 44.172427882318914},
            "started_at": now - 1062.0, "last_progress_at": now - last_s,
