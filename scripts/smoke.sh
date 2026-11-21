@@ -83,8 +83,8 @@ if [ "$LOCAL" -eq 1 ]; then
        printf '%s\n' "$PHANTOMS" ;;
     *) printf 'SKIP  router phantoms: %s\n' "$PHANTOMS" ;;
   esac
-  # The interactive server is up with every pinned lane model loaded, or pins nothing here (#1561).
-  PINNED="$(uv run python -m harness.interactive health 2>&1)" \
+  # The interactive server is up with every pinned lane model loaded, or pins nothing here (#1561); a missing one is loaded first (#2093).
+  PINNED="$(uv run python -m harness.interactive health --repair 2>&1)" \
     && ok "interactive server holds its pinned models" || no "interactive server: $PINNED"
 else
   printf 'SKIP  engine checks: the engine listens on the serving machine only\n'

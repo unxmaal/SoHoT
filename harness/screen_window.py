@@ -57,13 +57,13 @@ def _poster(base: str, post=None):
     return post or (lambda p, b: router._post(p, b, base, **({"key": secret} if secret else {})))
 
 
-def restore(plan: dict, get=None, post=None, sleep=time.sleep, clock=time.monotonic) -> list[str]:
-    """Load the pinned set back and wait for it; the stems still not loaded once interactive.WARM_WAIT_S is spent."""
+def restore(plan: dict, get=None, post=None, sleep=time.sleep, clock=time.monotonic, released=()) -> list[str]:
+    """Load the pinned set back and wait for it; the stems not loaded once WARM_WAIT_S is spent, a `released` one counting only once loaded after the router showed it gone. #2093."""
     stems = sorted({e["stem"] for e in (plan.get("lanes") or {}).values()})
-    end, asked = clock() + interactive.WARM_WAIT_S, set()
+    end, asked, released = clock() + interactive.WARM_WAIT_S, set(), set(released)
     while True:
         base, got = _status(plan, get)
-        missing = [s for s in stems if (got or {}).get(s) != "loaded"]
+        missing = [s for s in stems if (got or {}).get(s) != "loaded" or (s in released and s not in asked)]
         if not missing:
             return []
         want = [s for s in missing if got is not None and got.get(s) not in router.RESIDENT and s not in asked]
@@ -72,6 +72,27 @@ def restore(plan: dict, get=None, post=None, sleep=time.sleep, clock=time.monoto
         if clock() >= end:
             return missing
         sleep(interactive.WARM_POLL_S)
+
+
+def _resident(plan: dict, stems, get=None, sleep=time.sleep, clock=time.monotonic) -> list[str]:
+    """Wait up to DRAIN_S for the router to show each of `stems` gone, since an unload answers before it lands. #2093."""
+    end = clock() + DRAIN_S
+    while True:
+        _, got = _status(plan, get)
+        held = [s for s in stems if got is None or got.get(s) in router.RESIDENT]
+        if not held or clock() >= end:
+            return held
+        sleep(interactive.WARM_POLL_S)
+
+
+def _unrestored(missing: list[str], why: str, say) -> None:
+    from harness import monitor
+    text = f"{', '.join(missing)} did not load back on the interactive server after {why}"
+    say(f"   WARN window: NOT restored: {text}")
+    try:
+        monitor.alert("service", {"MONIT_SERVICE": "interactive", "MONIT_DESCRIPTION": text[:400]})
+    except Exception as exc:  # noqa: BLE001 - an alert that fails never hides the WARN
+        say(f"   WARN window: the alert could not be sent: {exc}")
 
 
 @contextlib.contextmanager
@@ -91,6 +112,7 @@ def opened(hold_s: float | None, why: str, *, keep=(), get=None, post=None, slee
     interactive.keep_in_window([s for s in stems if s not in gone])
     gateway_switch.start_drain(time.time() + DRAIN_S + float(hold_s) + interactive.WARM_WAIT_S, node=interactive.WINDOW)
     missing: list[str] = []
+    released: list[str] = []
     try:
         ask = interactive._ask(base, get) or (lambda path: router._get(path, base))
         start, busy = clock(), node_state._busy(ask, gone)
@@ -101,20 +123,23 @@ def opened(hold_s: float | None, why: str, *, keep=(), get=None, post=None, slee
             cuts.cut("screen_window_drain", f"{why}: interactive requests still in flight", kept=0, dropped=1)
             raise Refused(f"the interactive server still had {'unknown' if busy is None else busy} request(s) "
                           f"in flight after {DRAIN_S:g} s")
-        router.release(gone, why, get=interactive._ask(base, get), post=_poster(base, post), keep=set(),
-                       say=say, base=base, proven_idle=True)
-        _, got = _status(plan, get)
-        kept = [s for s in gone if got is None or got.get(s) in router.RESIDENT]
+        unloaded = router.release(gone, why, get=interactive._ask(base, get), post=_poster(base, post), keep=set(),
+                                  say=say, base=base, proven_idle=True)
+        released = unloaded
+        kept = _resident(plan, gone, get, sleep, clock)
         if kept:
             raise Refused(f"{', '.join(kept)} stayed resident on the interactive server")
         say(f"   window: released {', '.join(gone)} for at most {float(hold_s):.0f} s; interactive work goes to "
             f"a node or the cloud")
         yield gone
     finally:
-        missing = restore(plan, get, post, sleep, clock)
+        missing = restore(plan, get, post, sleep, clock, released=released)
         gateway_switch.stop_drain(node=interactive.WINDOW)
         interactive.keep_in_window(None)
-        say(f"   window: {'restored ' + ', '.join(gone) if not missing else 'NOT restored: ' + ', '.join(missing)}")
+        if missing:
+            _unrestored(missing, why, say)
+        else:
+            say(f"   window: restored {', '.join(gone)}")
     if missing:
         raise Refused(f"{', '.join(missing)} did not load back in {interactive.WARM_WAIT_S:g} s")
 

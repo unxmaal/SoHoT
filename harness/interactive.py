@@ -566,6 +566,24 @@ def health(plan: dict | None = None, get=None) -> dict:
             "missing": [s for s in stems if (got or {}).get(s) not in router.RESIDENT]}
 
 
+
+def repair(plan: dict | None = None, get=None, post=None, sleep=time.sleep, clock=time.monotonic,
+           wait_s: float = WARM_WAIT_S) -> list[str]:
+    """Load each pinned stem the server is up without, unless a screen window released it, and wait up to `wait_s`; the stems back. #2093."""
+    got = health(plan, get)
+    if not got.get("planned") or not got["up"] or not got["missing"] or windowed():
+        return []
+    want, end = list(got["missing"]), clock() + wait_s
+    load(want, got["url"], post)
+    while True:
+        missing = health(plan, get).get("missing") or []
+        if not missing or clock() >= end:
+            back = [s for s in want if s not in missing]
+            print(f"interactive: reloaded {', '.join(back) or 'nothing'} of the missing {', '.join(want)}",
+                  file=sys.stderr)
+            return back
+        sleep(WARM_POLL_S)
+
 #: What the watchdog's interactive_down criterion catches; its action restarts the unit, never stops it. #1561.
 WHAT = "the interactive server is down, a pinned model is not loaded, or a pinned lane's model changed"
 
@@ -682,7 +700,7 @@ def preset(out: Path, plan: dict) -> Path:
 
 
 def main(argv=None) -> int:
-    """`python -m harness.interactive plan|check|serve PRESET|warm|health`."""
+    """`python -m harness.interactive plan|check|serve PRESET|warm|health [--repair]`."""
     argv = sys.argv[1:] if argv is None else argv
     what = argv[0] if argv else ""
     if what == "plan":
@@ -708,6 +726,8 @@ def main(argv=None) -> int:
         print(json.dumps(warm(None, WARM_WAIT_S), sort_keys=True), file=sys.stderr)
         return 0
     if what == "health":
+        if "--repair" in argv[1:]:
+            repair()
         got = health()
         got["nodes"] = node_health()
         print(json.dumps(got, sort_keys=True))
