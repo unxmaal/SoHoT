@@ -2,14 +2,14 @@
  "candidates": [
   {
    "candidate": "diffusers-video:LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
-   "decided_at": "2026-11-13T02:30:07Z",
+   "decided_at": "2026-11-21T05:44:24Z",
    "detail": "it ran and passed nothing: fox-run: exit 1",
    "exam": null,
    "outcome": "broken",
    "proposal": "LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
    "reason": "candidate",
    "receipt_key": "diffusers-video/Minimax-H3-ref2v_Anime_2_Realism",
-   "run_id": 930,
+   "run_id": 1101,
    "serves": false,
    "status": "rejected",
    "tier": "screen",
@@ -54,18 +54,18 @@
   },
   {
    "candidate": "diffusers-video:FastVideo/FastVideo-FastH3-8-Step-V2",
-   "decided_at": "2026-11-20T03:37:52Z",
-   "detail": "not screened: needs 137.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released",
+   "decided_at": "2026-11-21T05:18:35Z",
+   "detail": "unknown: no variant groups its weights (audio_vae/*.safetensors,text_encoder/*.safetensors,transformer/*.safetensors,vae/*.safetensors), so their 137.7 GiB sum is not a size it runs at",
    "exam": null,
    "outcome": "queued",
    "proposal": "FastVideo/FastVideo-FastH3-8-Step-V2",
-   "reason": "memory",
+   "reason": "harness",
    "receipt_key": "diffusers-video/FastVideo-FastH3-8-Step-V2",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>137.7"
+   "tier": "inspect",
+   "until": "layout:audio_vae/*.safetensors,text_encoder/*.safetensors,transformer/*.safetensors,vae/*.safetensors"
   },
   {
    "candidate": "h3",
@@ -105,7 +105,7 @@
    "until": ""
   }
  ],
- "cursor": 1795145872288366,
+ "cursor": 1795239864454808,
  "events": [
   {
    "at": "2026-09-19T23:24:35Z",
@@ -255,6 +255,36 @@
    "outcome": "queued",
    "reason": "memory",
    "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-21T04:28:27Z",
+   "candidate": "FastVideo/FastVideo-FastH3-8-Step-V2",
+   "chosen": null,
+   "detail": "not screened: needs 137.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released",
+   "how": "",
+   "id": 1795235307118171,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-21T05:44:24Z",
+   "candidate": "diffusers-video:LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
+   "chosen": null,
+   "detail": "it ran and passed nothing: fox-run: exit 1",
+   "how": "",
+   "id": 1795239864454808,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 1101,
    "tier": "screen"
   }
  ],
@@ -424,7 +454,7 @@
    "runs": 7
   }
  ],
- "generated_at": "2026-11-20T08:00:46Z",
+ "generated_at": "2026-11-21T08:10:20Z",
  "knobs": [],
  "lane": {
   "cases": 1,
