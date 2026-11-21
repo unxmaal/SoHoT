@@ -86,8 +86,8 @@
     "about": "",
     "candidate": "pii-regex/patterns",
     "cases": 556,
-    "first_s": 0.027,
-    "median_s": 0.025,
+    "first_s": 0.024,
+    "median_s": 0.022,
     "metrics": {
      "pii_f1": 0.7964,
      "pii_precision": 1.0,
@@ -100,7 +100,7 @@
     "peak_gb": 0.01,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-09T02:42:54Z",
+    "run_at": "2026-11-20T10:39:49Z",
     "served_as": "",
     "source": "",
     "total": 556,
@@ -259,8 +259,8 @@
     {
      "about": "",
      "candidate": "pii-regex/patterns",
-     "first_s": 0.027,
-     "median_s": 0.025,
+     "first_s": 0.024,
+     "median_s": 0.022,
      "metrics": {
       "pii_f1": 0.7964,
       "pii_precision": 1.0,
@@ -272,7 +272,7 @@
      "passed": 411,
      "peak_gb": 0.01,
      "reference": false,
-     "run_at": "2026-11-09T02:42:54Z",
+     "run_at": "2026-11-20T10:39:49Z",
      "served_as": "",
      "source": "",
      "total": 556,
@@ -303,8 +303,8 @@
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-11-09T02:42:54Z",
-   "runs": 2
+   "run_at": "2026-11-20T10:39:49Z",
+   "runs": 3
   },
   {
    "cases": 166,
@@ -396,7 +396,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-20T08:00:47Z",
+ "generated_at": "2026-11-21T08:10:21Z",
  "knobs": [],
  "lane": {
   "cases": 556,
@@ -415,8 +415,8 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-11-09T02:42:54Z",
-  "median_s": 0.025,
+  "measured_at": "2026-11-20T10:39:49Z",
+  "median_s": 0.022,
   "metrics": {
    "pii_f1": 0.7964,
    "pii_precision": 1.0,
@@ -428,7 +428,7 @@
   "pass_rate": 0.739,
   "serves": "pii-regex",
   "serves_model": "pii-regex",
-  "stale": true
+  "stale": false
  },
  "since": 0
 }
