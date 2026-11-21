@@ -58,6 +58,7 @@ def planted(monkeypatch):
                        "lanes": {"code": entry(CODE, 27.7), "decide": entry(DECIDE, 5.1)}})
     monkeypatch.setattr(memory, "ceiling_gb", lambda: 77.8)
     monkeypatch.setattr(memory, "measured_reserve_gb", lambda: 18.0)
+    monkeypatch.setattr(memory, "available_gb", lambda: 64.0)
     monkeypatch.setattr(containers, "vm_gb", lambda: 3.8)
     monkeypatch.setattr(interactive, "key", lambda environ=None: "")
     monkeypatch.setattr(interactive, "_served", lambda config=None: {})

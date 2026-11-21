@@ -213,6 +213,7 @@ def _screen(monkeypatch, outcome, *, fits=True, fetch_ok=True, limit=5):
     monkeypatch.setattr(memory, "check_model", lambda *a, **k: (True, "") if fits else
                         (False, "needs 40.0 GB, only 9.0 GB is safely available"))
     monkeypatch.setattr(memory, "wait_for", lambda *a, **k: "room_gb:>40.0")
+    monkeypatch.setattr(memory, "room_gb", lambda: 0.0)
     fetched, released = [], []
     monkeypatch.setattr(fetching, "for_test", lambda conn, row, **k: fetched.append(row["name"]) or (
         {"repo": row["name"], "ok": True, "why": "/x"} if fetch_ok else

@@ -1,4 +1,5 @@
 """Knobs of slots and context of served models, and what a server listens on (#751)."""
+from harness.knobs.base import _k
 from harness.knobs.base import MACHINE, TEXT_LANES, _k
 
 KNOBS = [
@@ -97,6 +98,8 @@ KNOBS = [
     _k("slot_probe_settle", ["harness/slot_probe.py:SETTLE_S"], [2.0, 5.0, 10.0],
        note="seconds a slot has to go idle after the probe closes its stream; llama-server checks the connection "
             "per token, a few ms at the stored decode rates, so 5 s is room for a busy machine (#1127)"),
+    _k("sweep_window_idle", ["harness/screen_window.py:IDLE_S"], [900, 1800, 3600], unit="s",
+       note="seconds with no interactive request before a sweep's screen or measure step releases the interactive server's pinned set for loads the fit check refuses beside it; a request inside it keeps the set (#2087)"),
 ]
 
 NOT_GATING = {

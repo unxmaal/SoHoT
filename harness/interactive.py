@@ -39,6 +39,8 @@ WARM_POLL_S = 2.0
 GIB = 1024 ** 3
 #: The drain flag name a screen window holds while it has the pinned set released. #2045.
 WINDOW = "interactive"
+#: The pinned stems an open window keeps loaded, beside the plan. #2087.
+WINDOW_KEPT_NAME = "interactive-window.json"
 
 
 def url() -> str:
@@ -124,17 +126,36 @@ def stem_for(spec: str, config=None, stand_in: bool = True) -> str:
     return ""
 
 
-def demand(conn, lane: str, names, now: float | None = None) -> dict:
-    """A lane's interactive requests over DEMAND_DAYS: count, p99 and max of prompt plus reply tokens, peak overlap."""
+def _lane_requests(lane: str, names) -> tuple[str, tuple]:
+    """The WHERE clause and its args for a lane's interactive gateway requests: no eval, smoke or watchdog traffic."""
     from harness import purpose, usage
     names = sorted({n for n in names if n})
+    return ("purpose NOT IN (?, ?, ?) AND (alias = ? OR (client = ? AND lane = ?)"
+            f"{' OR alias IN (' + ','.join('?' * len(names)) + ')' if names else ''})",
+            (purpose.EVAL, purpose.SMOKE, purpose.WATCHDOG, f"sohot-{lane}", usage.DIRECT_CLIENT, lane, *names))
+
+
+def last_request(conn, now: float | None = None) -> float | None:
+    """When the last interactive request on a lane this machine's plan pins ended, None when none ran in DEMAND_DAYS. #2087."""
     since = (time.time() if now is None else now) - DEMAND_DAYS * 86400
+    ends = []
+    for lane, entry in (read().get("lanes") or {}).items():
+        where, args = _lane_requests(lane, {entry.get("stem"), _alias(entry.get("served"))})
+        got = conn.execute(f"SELECT MAX(at + COALESCE(total_s, 0)) FROM gateway_requests WHERE at >= ? AND {where}",
+                           (since, *args)).fetchone()
+        if got and got[0] is not None:
+            ends.append(float(got[0]))
+    return max(ends) if ends else None
+
+
+def demand(conn, lane: str, names, now: float | None = None) -> dict:
+    """A lane's interactive requests over DEMAND_DAYS: count, p99 and max of prompt plus reply tokens, peak overlap."""
+    from harness import usage
+    since = (time.time() if now is None else now) - DEMAND_DAYS * 86400
+    where, args = _lane_requests(lane, names)
     rows = conn.execute(
         "SELECT at, total_s, COALESCE(prompt_tokens, 0) + COALESCE(completion_tokens, 0) FROM gateway_requests "
-        f"WHERE at >= ? AND purpose NOT IN (?, ?, ?) AND (alias = ? OR (client = ? AND lane = ?)"
-        f"{' OR alias IN (' + ','.join('?' * len(names)) + ')' if names else ''})",
-        (since, purpose.EVAL, purpose.SMOKE, purpose.WATCHDOG, f"sohot-{lane}", usage.DIRECT_CLIENT, lane,
-         *names)).fetchall()
+        f"WHERE at >= ? AND {where}", (since, *args)).fetchall()
     tokens = sorted(int(r[2]) for r in rows if r[2])
     spans = [usage.span(r[0], r[1]) for r in rows if r[1]]
     edges = sorted([(start, 1) for start, _ in spans] + [(end, -1) for _, end in spans])
@@ -263,6 +284,38 @@ def windowed(now: float | None = None) -> bool:
     return gateway_switch.draining(now, node=WINDOW)
 
 
+def _kept_path() -> Path:
+    return plan_path().with_name(WINDOW_KEPT_NAME)
+
+
+def keep_in_window(stems) -> None:
+    """Record the pinned stems a window keeps loaded; None clears the record. #2087."""
+    path = _kept_path()
+    if stems is None:
+        path.unlink(missing_ok=True)
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(sorted(stems)), encoding="utf-8")
+
+
+def window_kept(now: float | None = None) -> set[str]:
+    """The pinned stems an open window kept loaded; empty when no window is open, every pinned stem when its record is unreadable. #2087."""
+    if not windowed(now):
+        return set()
+    try:
+        got = json.loads(_kept_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        got = None
+    if not isinstance(got, list):
+        return {e["stem"] for e in (read().get("lanes") or {}).values()}
+    return {str(s) for s in got}
+
+
+def released(stem: str) -> bool:
+    """Whether an open window has `stem` unloaded from the interactive server. #2087."""
+    return windowed() and stem not in window_kept()
+
+
 def hosted(where) -> bool:
     """Whether `where` is the gateway's cloud alias, which loads nothing here. #2045."""
     from harness import completion, routes
@@ -270,10 +323,13 @@ def hosted(where) -> bool:
 
 
 def reserved_bytes() -> int:
-    """What the pinned set holds of this machine's memory for good; 0 when it runs elsewhere, not at all, or a window released it."""
+    """What the pinned set holds of this machine's memory for good; in a window only what it kept, 0 when it runs elsewhere or not at all."""
     plan = read()
-    if not plan.get("lanes") or windowed() or not serving.loopback(str(plan.get("url") or "")):
+    if not plan.get("lanes") or not serving.loopback(str(plan.get("url") or "")):
         return 0
+    if windowed():
+        kept = window_kept()
+        return sum({e["stem"]: int(e.get("bytes") or 0) for e in plan["lanes"].values() if e.get("stem") in kept}.values())
     return int(plan.get("bytes") or 0)
 
 
@@ -404,6 +460,7 @@ def answer(specs=None):
     base = _here_base(plan)
     entries = [] if not base else (list((plan.get("lanes") or {}).values()) if specs is None else
                                    [e for e in map(pinned_here, specs) if e])
+    entries = [e for e in entries if not released(e["stem"])]
     was = dict(_ARMS)
     _ARMS.update({e["stem"]: base for e in entries})
     try:
@@ -508,6 +565,24 @@ def health(plan: dict | None = None, get=None) -> dict:
     return {"planned": True, "url": base, "up": got is not None, "pinned": stems,
             "missing": [s for s in stems if (got or {}).get(s) not in router.RESIDENT]}
 
+
+
+def repair(plan: dict | None = None, get=None, post=None, sleep=time.sleep, clock=time.monotonic,
+           wait_s: float = WARM_WAIT_S) -> list[str]:
+    """Load each pinned stem the server is up without, unless a screen window released it, and wait up to `wait_s`; the stems back. #2093."""
+    got = health(plan, get)
+    if not got.get("planned") or not got["up"] or not got["missing"] or windowed():
+        return []
+    want, end = list(got["missing"]), clock() + wait_s
+    load(want, got["url"], post)
+    while True:
+        missing = health(plan, get).get("missing") or []
+        if not missing or clock() >= end:
+            back = [s for s in want if s not in missing]
+            print(f"interactive: reloaded {', '.join(back) or 'nothing'} of the missing {', '.join(want)}",
+                  file=sys.stderr)
+            return back
+        sleep(WARM_POLL_S)
 
 #: What the watchdog's interactive_down criterion catches; its action restarts the unit, never stops it. #1561.
 WHAT = "the interactive server is down, a pinned model is not loaded, or a pinned lane's model changed"
@@ -625,7 +700,7 @@ def preset(out: Path, plan: dict) -> Path:
 
 
 def main(argv=None) -> int:
-    """`python -m harness.interactive plan|check|serve PRESET|warm|health`."""
+    """`python -m harness.interactive plan|check|serve PRESET|warm|health [--repair]`."""
     argv = sys.argv[1:] if argv is None else argv
     what = argv[0] if argv else ""
     if what == "plan":
@@ -651,6 +726,8 @@ def main(argv=None) -> int:
         print(json.dumps(warm(None, WARM_WAIT_S), sort_keys=True), file=sys.stderr)
         return 0
     if what == "health":
+        if "--repair" in argv[1:]:
+            repair()
         got = health()
         got["nodes"] = node_health()
         print(json.dumps(got, sort_keys=True))
