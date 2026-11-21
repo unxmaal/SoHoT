@@ -311,11 +311,12 @@ def test_the_wait_ends_when_the_deploy_is_done_and_hands_on_the_ceiling_left_who
     assert not (paths.home() / loop_cmd.YIELD_FILE).exists(), "the ceiling left is handed on once"
 
 
-def test_a_deploy_that_outlasts_the_morning_ends_the_sweep():
-    t = {"now": 0.0}
+def test_a_deploy_that_outlasts_the_wait_cap_hands_on_the_ceiling_left():
+    t = {"now": time.mktime((2026, 11, 20, 12, 0, 0, 0, 0, -1))}
     got = loop_cmd._after_deploy(60.0, sleep=lambda s: t.update(now=t["now"] + s), clock=lambda: t["now"],
                                  busy=lambda: True)
-    assert got == 0 and not (paths.home() / loop_cmd.YIELD_FILE).exists()
+    assert got == loop_cmd.YIELDED
+    assert json.loads((paths.home() / loop_cmd.YIELD_FILE).read_text(encoding="utf-8"))["left_s"] == 60.0
 
 
 def test_a_deploy_job_pending_or_switching_here_is_in_flight():

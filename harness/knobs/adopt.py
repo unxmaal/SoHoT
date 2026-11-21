@@ -78,6 +78,8 @@ KNOBS = [
        note="local hour a sweep that yielded to a deploy gets its waited time back until; past it the sweep ends for the morning (#2097)"),
     _k("sweep_unused_s", ["harness/ceiling.py:UNUSED_S"], [1800.0, 3600.0, 7200.0],
        note="ceiling seconds a finished sweep may leave unused before soh morning names why (#1082)"),
+    _k("sweep_yield_wait", ["harness/power.py:SWEEP_YIELD_WAIT_S"], [3600.0, 7200.0, 10800.0], unit="s",
+       note="seconds a sweep that yielded to a deploy waits for it; past it the sweep goes on with its ceiling and yields to it no more (#2097)"),
     _k("unseen_rate", ["harness/power.py:UNSEEN"], [0.25, 0.5, 0.75],
        note="pass rate a plan assumes for an incumbent with no draws; such a plan is unmeasured (#698)"),
     _k("weedout_add_s", ["harness/weedout.py:ADD_S"], [0.5, 1.0, 5.0, 10.0], unit="s",

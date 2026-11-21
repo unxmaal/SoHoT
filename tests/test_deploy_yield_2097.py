@@ -40,7 +40,28 @@ def test_the_ceiling_given_back_stops_at_the_morning_cutoff():
     assert now + rest == _local(21, power.SWEEP_MORNING_H)
 
 
-def test_a_deploy_that_outlasts_the_morning_ends_the_sweep():
-    got, rest, now = _yield_at(_local(20, 23, 18), 3600.0, 24 * 3600.0)
-    assert got == 0 and rest == 0.0
-    assert now == _local(21, power.SWEEP_MORNING_H)
+def test_a_deploy_that_never_finishes_lets_the_sweep_go_on_after_the_wait_cap_without_yielding_again():
+    at = _local(20, 23, 18)
+    got, rest, now = _yield_at(at, 3 * 3600.0 + 42 * 60, 1e9)
+    assert got == loop_cmd.YIELDED
+    assert now - at <= power.SWEEP_YIELD_WAIT_S + loop_cmd.YIELD_POLL_S
+    assert rest == 3 * 3600.0 + 42 * 60
+    assert not loop_cmd._may_yield(environ={"LH_SWEEP_RESUMED": "1"}), "it would yield to the same stuck deploy again"
+
+
+def test_a_stuck_deploy_near_the_morning_ends_the_sweep_at_the_morning():
+    got, rest, now = _yield_at(_local(21, power.SWEEP_MORNING_H, 0) - 1800, 2 * 3600.0, 1e9)
+    assert got == 0 and now == _local(21, power.SWEEP_MORNING_H)
+
+
+def test_a_daytime_sweep_waits_at_most_the_cap_and_gets_its_whole_ceiling_back():
+    at = _local(21, 11)
+    got, rest, now = _yield_at(at, 5 * 3600.0, 1e9)
+    assert got == loop_cmd.YIELDED and rest == 5 * 3600.0
+    assert now - at <= power.SWEEP_YIELD_WAIT_S + loop_cmd.YIELD_POLL_S, "a daytime sweep waited for the next morning"
+
+
+def test_a_sweep_whose_deploy_finished_still_offers_to_yield():
+    _yield_at(_local(20, 23, 18), 3600.0, 600.0)
+    assert loop_cmd._may_yield(environ={"LH_SWEEP_RESUMED": "1"})
+    assert loop_cmd._may_yield(environ={})

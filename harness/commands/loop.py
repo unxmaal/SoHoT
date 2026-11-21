@@ -194,7 +194,7 @@ def _report_loop(a) -> int:
         return 0
     heartbeat.start(lane=(getattr(a, "lane", "") or "").strip().lower(),
                     total=LOOP_TOTAL if run else len(LOOP_STEPS))
-    restore = _yield_on_signal() if run else (lambda: None)
+    restore = _yield_on_signal() if run and _may_yield() else (lambda: None)
     try:
         rc = _run_loop(a)
     except WeightsGone as gone:
@@ -262,7 +262,7 @@ def _morning(now: float) -> float:
 
 
 def _after_deploy(left, sleep=None, clock=None, busy=None, held=None) -> int:
-    """Wait for the deploy until the morning, then hand serve-discover.sh the ceiling it yielded, cut to the morning; 0 if it came first. #1675, #2083, #2097."""
+    """Wait for the deploy up to power.SWEEP_YIELD_WAIT_S, then hand serve-discover.sh the ceiling it yielded, cut to the morning; 0 if it came first. #1675, #2083, #2097."""
     import json
     import time
 
@@ -271,21 +271,43 @@ def _after_deploy(left, sleep=None, clock=None, busy=None, held=None) -> int:
     held = held or queue_pause.deploy_held
     left = float(power.SWEEP_CEILING_H) * 3600 if left is None else float(left)
     end = _morning(clock())
+    cap = clock() + float(power.SWEEP_YIELD_WAIT_S)
+    stuck = False
     while busy():
         if clock() >= end:
             cuts.cut("sweep_morning_h", "the morning came while the sweep waited for the deploy it yielded to")
             print("=== the morning came while the sweep waited for the deploy; the next sweep goes on ===", flush=True)
             return 0
+        if clock() >= cap:
+            cuts.cut("sweep_yield_wait", "the sweep stopped waiting for the deploy it yielded to and went on")
+            stuck = True
+            break
         sleep(YIELD_POLL_S)
     rest = max(0.0, min(left, end - clock()))
     if rest < left:
         cuts.cut("sweep_morning_h", "the morning cut the ceiling a sweep got back after the deploy it yielded to")
-    (paths.home() / YIELD_FILE).write_text(json.dumps({"left_s": rest, "at": time.time()}), encoding="utf-8")
+    (paths.home() / YIELD_FILE).write_text(json.dumps({"left_s": rest, "at": time.time(), "yields": not stuck}),
+                                           encoding="utf-8")
     why = held()
-    done = f"the deploy cannot start ({why})" if why else "the deploy is done"
+    done = (f"the deploy is not done after {power._hm(power.SWEEP_YIELD_WAIT_S)}; the sweep yields to it no more" if stuck
+            else f"the deploy cannot start ({why})" if why else "the deploy is done")
     print(f"=== {done}; the sweep goes on from the deployed release with {power._hm(rest)} "
           f"of its ceiling ===", flush=True)
     return YIELDED
+
+
+def _may_yield(environ=None) -> bool:
+    """False for a sweep going on after it gave up waiting on a deploy, which would only ask it to yield again. #2097."""
+    import json
+    import os
+
+    from harness import paths
+    if (environ if environ is not None else os.environ).get("LH_SWEEP_RESUMED") != "1":
+        return True
+    try:
+        return json.loads((paths.home() / YIELD_FILE).read_text(encoding="utf-8")).get("yields", True) is not False
+    except (OSError, ValueError, AttributeError):
+        return True
 
 
 def _ceiling_s(a, environ=None) -> float:
