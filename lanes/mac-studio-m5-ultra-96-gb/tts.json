@@ -255,6 +255,21 @@
    "until": "policy:trust_remote_code@rumik_oss"
   },
   {
+   "candidate": "tts:rumik-ai/rumik-oss-1-mlx-4bit",
+   "decided_at": "2026-11-21T04:23:20Z",
+   "detail": "needs its own runner: the stock loader could not assemble it: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'rumik-ai/rumik-oss-1-mlx-4bit': Could not determine model type for rumik-ai/rumik-oss-1-mlx-4bit\"}; numbers-and-units: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'rumik-ai/rumik-oss-1-mlx-4bit': Could not determine model ",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "rumik-ai/rumik-oss-1-mlx-4bit",
+   "reason": "runtime",
+   "receipt_key": "rumik-oss-1-mlx-4bit",
+   "run_id": 1092,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "runner:tts/rumik_oss"
+  },
+  {
    "candidate": "tts:rumik-ai/rumik-oss-1-mlx-8bit",
    "decided_at": "2026-11-14T05:11:13Z",
    "detail": "needs its own runner: the stock loader could not assemble it: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'rumik-ai/rumik-oss-1-mlx-8bit': Could not determine model type for rumik-ai/rumik-oss-1-mlx-8bit\"}; numbers-and-units: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'rumik-ai/rumik-oss-1-mlx-8bit': Could not determine model ",
@@ -456,7 +471,7 @@
    "until": "format:.pt"
   }
  ],
- "cursor": 1795145870495441,
+ "cursor": 1795235000582066,
  "events": [
   {
    "at": "2026-09-19T21:17:40Z",
@@ -1177,6 +1192,21 @@
    "reason": "candidate",
    "run_id": 1041,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-21T04:23:20Z",
+   "candidate": "tts:rumik-ai/rumik-oss-1-mlx-4bit",
+   "chosen": null,
+   "detail": "needs its own runner: the stock loader could not assemble it: long-clause: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'rumik-ai/rumik-oss-1-mlx-4bit': Could not determine model type for rumik-ai/rumik-oss-1-mlx-4bit\"}; numbers-and-units: tts failed: HTTP 500: {\"detail\":\"Failed to load model 'rumik-ai/rumik-oss-1-mlx-4bit': Could not determine model ",
+   "how": "",
+   "id": 1795235000582066,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "runtime",
+   "run_id": 1092,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -1347,7 +1377,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-20T08:00:48Z",
+ "generated_at": "2026-11-21T08:10:22Z",
  "knobs": [],
  "lane": {
   "cases": 470,
