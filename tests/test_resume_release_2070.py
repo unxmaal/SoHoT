@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from harness import job_release, reverify, workqueue as wq
+from harness import job_release, reverify, store_copy, workqueue as wq
 from harness import memory_store as ms
 from tests.test_job_release_1788 import release
 from tests.test_reverify import NOW, _latest, _queue_and_finish, cases, conn, on, powered, upgraded  # noqa: F401
@@ -31,7 +31,7 @@ def _twin(conn, rv_id, old, cwd=None) -> int:
     job = wq.add(src["argv"], conn=conn)
     conn.execute("UPDATE jobs SET state = ? WHERE id = ?", (wq.PAUSED, int(job["id"])))
     _built_by(conn, job["id"], old, cwd)
-    cols = [r[1] for r in conn.execute("PRAGMA table_info(reverifications)") if r[1] != "id"]
+    cols = [c for c in store_copy.columns(conn, "reverifications") if c != "id"]
     cur = conn.execute(f"INSERT INTO reverifications ({', '.join(cols)}) SELECT {', '.join(cols)} "
                        "FROM reverifications WHERE id = ?", (int(rv_id),))
     conn.execute("UPDATE reverifications SET job_id = ? WHERE id = ?", (int(job["id"]), cur.lastrowid))
