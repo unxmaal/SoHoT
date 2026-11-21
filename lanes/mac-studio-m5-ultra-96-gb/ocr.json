@@ -9,21 +9,21 @@
     "candidate": "hf-ocr/PaddleOCR-VL-1.6",
     "cases": 448,
     "first_s": 21.003,
-    "median_s": 8.3,
+    "median_s": 7.572,
     "metrics": {
-     "cer": 1.0211
+     "cer": 0.6458
     },
     "model": "hf-ocr/PaddleOCR-VL-1.6",
     "not_run": "",
-    "pass_rate": 0.768,
-    "passed": 63,
+    "pass_rate": 0.828,
+    "passed": 371,
     "peak_gb": 0.01,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-20T04:41:29Z",
+    "run_at": "2026-11-20T10:38:57Z",
     "served_as": "",
     "source": "",
-    "total": 82,
+    "total": 448,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -93,19 +93,19 @@
     "first_s": 0.382,
     "median_s": 0.3,
     "metrics": {
-     "cer": 0.2116
+     "cer": 0.1696
     },
     "model": "osocr/auto",
     "not_run": "",
-    "pass_rate": 0.605,
-    "passed": 49,
+    "pass_rate": 0.721,
+    "passed": 323,
     "peak_gb": 0.25,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-20T04:41:29Z",
+    "run_at": "2026-11-20T10:38:57Z",
     "served_as": "",
     "source": "",
-    "total": 81,
+    "total": 448,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -374,20 +374,20 @@
      "about": "",
      "candidate": "hf-ocr/PaddleOCR-VL-1.6",
      "first_s": 21.003,
-     "median_s": 8.3,
+     "median_s": 7.572,
      "metrics": {
-      "cer": 1.0211
+      "cer": 0.6458
      },
      "model": "hf-ocr/PaddleOCR-VL-1.6",
      "not_run": "",
-     "pass_rate": 0.768,
-     "passed": 63,
+     "pass_rate": 0.828,
+     "passed": 371,
      "peak_gb": 0.01,
      "reference": false,
-     "run_at": "2026-11-20T04:41:29Z",
+     "run_at": "2026-11-20T10:38:57Z",
      "served_as": "",
      "source": "",
-     "total": 82,
+     "total": 448,
      "ttft_median_s": null,
      "ttft_p95_s": null
     },
@@ -397,23 +397,23 @@
      "first_s": 0.382,
      "median_s": 0.3,
      "metrics": {
-      "cer": 0.2116
+      "cer": 0.1696
      },
      "model": "osocr/auto",
      "not_run": "",
-     "pass_rate": 0.605,
-     "passed": 49,
+     "pass_rate": 0.721,
+     "passed": 323,
      "peak_gb": 0.25,
      "reference": false,
-     "run_at": "2026-11-20T04:41:29Z",
+     "run_at": "2026-11-20T10:38:57Z",
      "served_as": "",
      "source": "",
-     "total": 81,
+     "total": 448,
      "ttft_median_s": null,
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-11-20T04:41:29Z",
+   "run_at": "2026-11-20T10:38:57Z",
    "runs": 4
   },
   {
@@ -562,7 +562,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-20T08:00:47Z",
+ "generated_at": "2026-11-21T08:10:20Z",
  "knobs": [],
  "lane": {
   "cases": 448,
@@ -581,15 +581,15 @@
   "adopted_at": "2026-11-07T06:29:12Z",
   "adopted_how": "measured",
   "incumbent": "osocr:auto",
-  "measured_at": "2026-11-20T04:41:29Z",
-  "median_s": 8.3,
+  "measured_at": "2026-11-20T10:38:57Z",
+  "median_s": 7.572,
   "metrics": {
-   "cer": 1.0211
+   "cer": 0.6458
   },
   "not_run": "",
   "parked": "",
   "parked_until": "",
-  "pass_rate": 0.768,
+  "pass_rate": 0.828,
   "serves": "hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6",
   "serves_model": "hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6",
   "stale": false
