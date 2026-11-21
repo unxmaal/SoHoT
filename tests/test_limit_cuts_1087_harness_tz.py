@@ -212,10 +212,14 @@ def _eval(done=10, planned=10.0, observed=10.0, last=None, now=NIGHT, key="eval 
     return wd.Subject("eval", key, "test", pid=500, pgid=500, elapsed_s=600.0, command="evals.run", progress=run)
 
 
+#: No case finished for longer than the stall limit: an overrun, not a slow run re-planned (#2088).
+STALLED = NIGHT - wd.STALL_S - 60
+
+
 def test_overrun_past_the_factor_is_a_cut_and_within_it_is_not():
     assert wd._overrun(wd.World(now=NIGHT, evals=[_eval(observed=15.0)])) == []
     assert _cuts() == []
-    assert len(wd._overrun(wd.World(now=NIGHT, evals=[_eval(observed=30.0)]))) == 1
+    assert len(wd._overrun(wd.World(now=NIGHT, evals=[_eval(observed=30.0, last=STALLED)]))) == 1
     assert _cuts() == [("watchdog_overrun_factor", None, 1)]
 
 
@@ -231,7 +235,7 @@ def test_a_slow_challenger_held_back_for_too_few_pairs_is_a_min_pairs_cut(monkey
         cases = [f"c{i}" for i in range(n)]
         return ("inc", {"inc": {c: [10.0, None, 1] for c in cases}, "ch": {c: [30.0, None, 1] for c in cases}})
 
-    s = _eval()
+    s = _eval(last=STALLED)
     s.progress.update({"planned_s_per_case": {"inc": 10.0, "ch": 10.0},
                        "observed_s_per_case": {"inc": 10.0, "ch": 30.0}})
     monkeypatch.setattr(wd, "_cells", lambda run: paired(wd.OVERRUN_MIN_PAIRS - 1))

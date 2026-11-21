@@ -1292,6 +1292,7 @@ def _main(args) -> int:
         if item is not None:
             # The worker runs this job in items: stop at the item's end and say so, so it queues the next. #1618.
             args.stop_after, args.queue_item = item, True
+        args.ceiling_at = args.stop_at
         if getattr(args, "stop_after", None) is not None:
             after = watch.clock() + args.stop_after
             args.stop_at = after if args.stop_at is None else min(args.stop_at, after)
@@ -1670,7 +1671,8 @@ def _execute_at(args, overrides: dict, held: contextlib.ExitStack) -> int:
     clocks = engine_timeouts(args.modality, planned)
     total = sum(len(mine) for _, _, mine in planned)
     eye = watch.Watch(planned=planned_seconds(args, planned, budget, ladder, total, candidates),
-                      stop_at=getattr(args, "stop_at", None), outdir=outdir)
+                      stop_at=getattr(args, "stop_at", None), ceiling_at=getattr(args, "ceiling_at", None),
+                      outdir=outdir)
     todo = []
     for candidate, runner, mine in planned:
         prior = restored.get(runner.candidate, [])

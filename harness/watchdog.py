@@ -33,6 +33,8 @@ KINDS = ("adopt", "confirm", "eval", "other", "sweep")
 OVERRUN_FACTOR = 2.0
 #: Cases a run must have finished before its observed rate is judged against the plan.
 OVERRUN_MIN_CASES = 3
+#: The stop of a run still finishing cases too slowly for its ceiling: paused, then resumed at its observed rate. #2088.
+TOO_SLOW = "too_slow"
 #: Cases both candidates of a paired run must have finished before the challenger is judged against the incumbent (#864).
 OVERRUN_MIN_PAIRS = 5
 #: No case finished for this long reads as wedged, or this many planned cases if that is longer.
@@ -248,8 +250,42 @@ def _long_run(w: World) -> list[Finding]:
     return out
 
 
+def _stall_limit(run: dict) -> float:
+    """Seconds with no case finished that read as wedged: STALL_S, or STALL_CASES planned cases if longer."""
+    return max([STALL_S] + [STALL_CASES * v for v in (run.get("planned_s_per_case") or {}).values() if v])
+
+
+def _idle_s(run: dict, now: float) -> float | None:
+    """Seconds since the run's last finished case, less what it yielded to serving; None when it never said. #1556."""
+    last = run.get("last_progress_at") or run.get("started_at")
+    return None if last is None else now - float(last) - serve_lease.yielded_s(run, now, since_case=True)
+
+
+def _replanned(run: dict, now: float) -> tuple[float, float | None]:
+    """(seconds the rest takes at each side's observed rate, seconds left to the run's ceiling or None). #2088."""
+    planned, seen = run.get("planned_s_per_case") or {}, run.get("observed_s_per_case") or {}
+    rate = {k: seen.get(k) or planned.get(k) for k in {*planned, *seen}}
+    rate = {k: float(v) for k, v in rate.items() if v}
+    left = run.get("left") or {}
+    if left and all(k in rate for k, n in left.items() if n):
+        rest = sum(int(n) * rate[k] for k, n in left.items() if n)
+    else:
+        rest = max(0, int(run.get("total") or 0) - int(run.get("done") or 0)) * max(rate.values(), default=0.0)
+    ceiling = run.get("ceiling_at")
+    return rest, None if ceiling is None else float(ceiling) - now
+
+
 def _overrun(w: World) -> list[Finding]:
-    out, few_cases, few_pairs, per_case = [], 0, 0, []
+    return _over_plan(w)[0]
+
+
+def _too_slow(w: World) -> list[Finding]:
+    return _over_plan(w, record=False)[1]
+
+
+def _over_plan(w: World, record: bool = True) -> tuple[list[Finding], list[Finding]]:
+    """(overruns: over plan with no case finished for a stall, too slow: still finishing cases but past the ceiling). #2088."""
+    out, slow, few_cases, few_pairs, per_case, fits = [], [], 0, 0, [], 0
     for s in w.evals:
         run = s.progress or {}
         planned, seen = run.get("planned_s_per_case") or {}, run.get("observed_s_per_case") or {}
@@ -289,11 +325,29 @@ def _overrun(w: World) -> list[Finding]:
                                                     "basis": basis, "paired": n, "against": inc}))
         if worst:
             _, k, extra = max(worst, key=lambda x: x[0])
-            out.append(Finding("overrun", s, {"candidate": k, "observed_s_per_case": round(seen[k], 2),
-                                              "planned_s_per_case": round(planned[k], 2), "factor": OVERRUN_FACTOR,
-                                              "done": run.get("done"), "total": run.get("total"),
-                                              "specs": run.get("specs"), **extra}))
+            said = {"candidate": k, "observed_s_per_case": round(seen[k], 2), "planned_s_per_case": round(planned[k], 2),
+                    "factor": OVERRUN_FACTOR, "done": run.get("done"), "total": run.get("total"),
+                    "specs": run.get("specs"), **extra}
+            idle = _idle_s(run, w.now)
+            if idle is None or idle > _stall_limit(run):
+                out.append(Finding("overrun", s, {**said, **({} if idle is None else {"since_last_case_s": round(idle)})}))
+                continue
+            # Still finishing cases: a slow model, not a defect. Re-planned at the observed rate. #2088.
+            rest, room = _replanned(run, w.now)
+            if room is None or rest <= room:
+                fits += 1
+            else:
+                slow.append(Finding(TOO_SLOW, s, {**said, "projected_s": round(rest), "ceiling_left_s": round(room),
+                                                    "since_last_case_s": round(idle)}))
+    if not record:
+        return out, slow
     from harness import cuts
+    if fits:
+        cuts.cut("watchdog_overrun_factor", "runs over their plan still finishing cases, re-planned within their ceiling",
+                 kept=fits)
+    if slow:
+        cuts.cut("watchdog_overrun_factor", "runs still finishing cases too slowly to end inside their ceiling",
+                 dropped=len(slow))
     if out:
         cuts.cut("watchdog_overrun_factor", "runs judged far over their plan", dropped=len(out))
     if few_cases:
@@ -304,19 +358,17 @@ def _overrun(w: World) -> list[Finding]:
     if per_case:
         cuts.cut("watchdog_overrun_min_pairs", f"challengers not paired, within plan per case: {per_case[0]}",
                  kept=len(per_case))
-    return out
+    return out, slow
 
 
 def _no_progress(w: World) -> list[Finding]:
     out, stalled = [], {}
     for s in w.evals:
         run = s.progress or {}
-        last = run.get("last_progress_at") or run.get("started_at")
-        if last is None:
+        idle = _idle_s(run, w.now)
+        if idle is None:
             continue
-        plans = [v for v in (run.get("planned_s_per_case") or {}).values() if v]
-        limit = max([STALL_S] + [STALL_CASES * v for v in plans])
-        idle = w.now - float(last) - serve_lease.yielded_s(run, w.now, since_case=True)
+        limit = _stall_limit(run)
         if idle > limit:
             stall_knob = "watchdog_stall" if limit == STALL_S else "watchdog_stall_cases"
             stalled[stall_knob] = stalled.get(stall_knob, 0) + 1
@@ -608,7 +660,12 @@ CRITERIA = (
               _long_run, "has run longer than its kind's limit"),
     Criterion("overrun", ("watchdog_overrun_factor", "watchdog_overrun_min_cases", "watchdog_overrun_min_pairs"), FILE, STOP,
               ("processes", "progress"), _overrun,
-              "observed s/case far over the plan's, or a challenger far slower than planned on the incumbent's cases"),
+              "over the plan's s/case, or a challenger far slower than planned on the incumbent's cases, and no case finished "
+              "for a stall: a suspected harness defect"),
+    Criterion(TOO_SLOW, ("watchdog_overrun_factor", "watchdog_overrun_min_cases", "watchdog_stall",
+                           "watchdog_stall_cases"), NOTE, STOP, ("processes", "progress"), _too_slow,
+              "over the plan but still finishing cases, and the rest at its observed rate ends past its ceiling: "
+              "stopped, its cases kept and resumed at that rate"),
     Criterion("no_progress", ("watchdog_stall", "watchdog_stall_cases"), NOTIFY, STOP, ("processes", "progress"),
               _no_progress, "no case finished for too long: wedged"),
     Criterion("orphan", ("watchdog_orphan_grace",), REAP, FILE, ("processes",), _orphan,

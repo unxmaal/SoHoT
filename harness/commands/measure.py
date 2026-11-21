@@ -9,7 +9,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from evals import watch
-from harness import lanes, methods, paths, paused, reasons, runs, test_weights
+from harness import lanes, methods, overrun, paths, paused, reasons, runs, test_weights
 from harness.commands.common import emit, err, note
 from harness.commands import jobs as jobs_cmd
 
@@ -418,6 +418,7 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
     if held:
         # A resume runs the exam it started: the stored plan's repeat and side, this sweep's slice. #813.
         plan = _resumed_plan(held["plan"], plan) if held.get("plan") is not None else _recovered_plan(held, plan)
+        plan = overrun.observed_plan(plan, held.get("out"), inc_spec, spec)
     blank = None if held else adopt.undecidable(lane, inc_spec, spec, plan, split)
     if blank is not None:
         print(f"\n  {lane}: {name} against {incumbent}: not run, {blank.why}", flush=True)
