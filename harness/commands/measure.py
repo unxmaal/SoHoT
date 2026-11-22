@@ -492,8 +492,7 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         if held is None:
             return rc
         from harness import job_procs
-        if (sweep is None and job_procs.item_s() is not None and job_procs.item_ended()) or (
-                sweep is not None and sweep.looks_left == 0):
+        if sweep is not None and sweep.looks_left == 0 or sweep is None and job_procs.item_s() is not None and job_procs.item_ended():
             # Under the queue each look slice is one item; the next resumes this held run on the same models. #1618, #2111.
             print(f"  {name}: item ended at a look; the next item resumes it", flush=True)
             loaded.clear()

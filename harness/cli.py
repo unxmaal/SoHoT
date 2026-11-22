@@ -750,6 +750,9 @@ def build_parser() -> argparse.ArgumentParser:
                      help="desktop notification when something needs a person (the morning unit)")
     mor.add_argument("--no-model", action="store_true",
                      help="deterministic headline; do not ask the local model to condense it")
+    mor.add_argument("--days", type=int, default=0, metavar="N",
+                     help="instead, one line for each of the last N days, read from the store: comparisons "
+                          "finished and jobs failed with a harness error")
     mor.set_defaults(func=morning_cmd.cmd_morning)
     mon = sub.add_parser("monitor", help="machine monitoring through monit: render or install its config, its "
                          "status, and the alert action monit runs (#1485)")

@@ -44,7 +44,7 @@ def _die(job) -> None:
     """The job's worker and process went away mid-run, and the next worker settles it."""
     assert wq._claim(job, wq.log_dir() / f"{job['id']}.log")
     job_claim.path(job["id"]).write_text(
-        f'{{"pid": {os.getpid()}, "pgid": {os.getpgid(0)}, "started": "1.000000"}}', encoding="utf-8")
+        f'{{"pid": {os.getpid()}, "pgid": {os.getpid()}, "started": "1.000000"}}', encoding="utf-8")
     job_settle._recover()
     assert wq.get(job["id"])["state"] == wq.FAILED
 
