@@ -539,6 +539,8 @@ capabilities:
       - harness/release_procs.py
       - harness/live_gate.py
       - harness/node_store_copy.py
+      - harness/merge_gate.py
+      - harness/commands/merge_gate.py
 
   - name: repo-hygiene
     summary: What a public reader gets, personal setup kept out of it, stated claims, coverage, specs and the gauntlet.

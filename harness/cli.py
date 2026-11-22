@@ -101,6 +101,7 @@ from harness.commands import quarantine as quarantine_cmd
 from harness.commands import relist as relist_cmd
 from harness.commands import fix as fix_cmd
 from harness.commands import tool_route as tool_route_cmd
+from harness.commands import merge_gate as merge_gate_cmd
 
 # What scripts, tests and other modules take from harness.cli, from where it now lives.
 from harness.commands.common import say  # noqa: F401
@@ -818,6 +819,7 @@ def build_parser() -> argparse.ArgumentParser:
     relist_cmd.add_parser(sub)
     fix_cmd.add_parser(sub)
     tool_route_cmd.add_parser(sub)
+    merge_gate_cmd.add_parser(sub)
     dlg = sub.add_parser("delegated", help="record what became of a local_complete, local_decide or "
                          "`soh local` answer, show a call_id's rows (no outcome), or --report the rates per lane")
     dlg.add_argument("call_id", nargs="?", default="", help="the call_id the delegation returned")
