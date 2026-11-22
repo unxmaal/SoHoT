@@ -3,8 +3,7 @@ import pytest
 
 from tests.test_status_page_2075 import _app
 
-pytest.importorskip("harness.mcp_server", reason="needs the `mcp` group: uv run --group mcp pytest")
-from harness import mcp_server as srv  # noqa: E402
+srv = pytest.importorskip("harness.mcp_server", reason="needs the `mcp` group: uv run --group mcp pytest")
 
 PHONE = "100.64.0.9"
 NAME = "Box.Example.ts.net."
@@ -30,7 +29,7 @@ def test_without_the_file_a_private_address_is_refused(served):
 
 def test_names_in_the_file_are_allowed_with_and_without_the_port(served):
     client, home = served
-    (home / "status-hosts").write_text(f"{PHONE}\n{NAME}\n")
+    (home / "status-hosts").write_text(f"{PHONE}\n{NAME}\n", encoding="utf-8")
     for host in (f"{PHONE}:8899", PHONE, "box.example.ts.net:8899"):
         assert _codes(client, host) == [200, 200], host
     assert _codes(client, "other.example:8899") == [421, 421]
@@ -39,20 +38,20 @@ def test_names_in_the_file_are_allowed_with_and_without_the_port(served):
 def test_the_file_is_read_per_request(served):
     client, home = served
     assert _codes(client, f"{PHONE}:8899", ("/status",)) == [421]
-    (home / "status-hosts").write_text(PHONE + "\n")
+    (home / "status-hosts").write_text(PHONE + "\n", encoding="utf-8")
     assert _codes(client, f"{PHONE}:8899", ("/status",)) == [200]
 
 
 def test_the_action_endpoint_passes_the_host_check(served):
     client, home = served
-    (home / "status-hosts").write_text(PHONE + "\n")
+    (home / "status-hosts").write_text(PHONE + "\n", encoding="utf-8")
     assert client.post("/status/action", data={}, headers={"host": f"{PHONE}:8899"}).status_code != 421
     assert client.post("/status/action", data={}, headers={"host": "other.example:8899"}).status_code == 421
 
 
 def test_the_mcp_allow_list_is_not_widened(served):
     _, home = served
-    (home / "status-hosts").write_text(PHONE + "\n")
+    (home / "status-hosts").write_text(PHONE + "\n", encoding="utf-8")
     allowed = srv.transport_security("0.0.0.0", 8899).allowed_hosts
     assert PHONE not in allowed and f"{PHONE}:8899" not in allowed
     assert PHONE in srv.status_hosts()
@@ -60,7 +59,7 @@ def test_the_mcp_allow_list_is_not_widened(served):
 
 def test_comments_and_blank_lines_add_nothing(served):
     client, home = served
-    (home / "status-hosts").write_text("# the phone\n\n   \n")
+    (home / "status-hosts").write_text("# the phone\n\n   \n", encoding="utf-8")
     assert srv.status_hosts() == srv.STATUS_HOSTS
     assert _codes(client, f"{PHONE}:8899") == [421, 421]
 
@@ -75,5 +74,5 @@ def test_an_unreadable_file_is_a_421_not_a_500(served):
 def test_without_a_served_port_only_the_bare_name_is_added(monkeypatch, tmp_path):
     monkeypatch.setattr(srv, "STATUS_HOSTS", {"localhost"})
     monkeypatch.setattr(srv, "STATUS_PORT", None)
-    (tmp_path / "status-hosts").write_text(PHONE + "\n")
+    (tmp_path / "status-hosts").write_text(PHONE + "\n", encoding="utf-8")
     assert srv.status_hosts(tmp_path) == {"localhost", PHONE}
