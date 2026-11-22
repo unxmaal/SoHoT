@@ -469,6 +469,24 @@ def _describe(job: dict) -> JobInfo:
 
 #: Host headers /status answers, from transport_security once serve() runs; None answers any. #2075.
 STATUS_HOSTS: set[str] | None = None
+STATUS_PORT: int | None = None
+STATUS_HOSTS_FILE = "status-hosts"
+
+
+def status_hosts(home: Path | None = None) -> set[str]:
+    """STATUS_HOSTS plus the names in the home's status-hosts file (and each with the served port), read per call. #2124."""
+    names = set(STATUS_HOSTS or ())
+    try:
+        text = ((home or paths.home()) / STATUS_HOSTS_FILE).read_text(encoding="utf-8")
+    except OSError:
+        return names
+    for line in text.splitlines():
+        name = line.split("#")[0].strip().rstrip(".").lower()
+        if name:
+            names.add(name)
+            if STATUS_PORT is not None:
+                names.add(f"{name}:{STATUS_PORT}")
+    return names
 
 
 async def _status(request, as_json: bool):
@@ -476,7 +494,7 @@ async def _status(request, as_json: bool):
     from starlette.responses import HTMLResponse, PlainTextResponse, Response
 
     from harness import status_page
-    if STATUS_HOSTS is not None and request.headers.get("host", "").lower() not in STATUS_HOSTS:
+    if STATUS_HOSTS is not None and request.headers.get("host", "").lower() not in status_hosts():
         return PlainTextResponse("this host name is not allowed", status_code=421)
     r = await run_in_threadpool(status_page.cached)
     if as_json:
@@ -511,7 +529,7 @@ async def status_action_route(request):
     from starlette.responses import HTMLResponse, PlainTextResponse
 
     from harness import owner_actions, status_page
-    if STATUS_HOSTS is not None and request.headers.get("host", "").lower() not in STATUS_HOSTS:
+    if STATUS_HOSTS is not None and request.headers.get("host", "").lower() not in status_hosts():
         return PlainTextResponse("this host name is not allowed", status_code=421)
     body = await request.body()
     form = {} if len(body) > owner_actions.BODY_MAX else {
@@ -592,9 +610,10 @@ def serve(host: str, port: int, allow=(), grace: float = SHUTDOWN_GRACE_S) -> No
     """streamable-http under a uvicorn that stops within `grace` and first stops stale servers on its port."""
     import uvicorn
 
-    global STATUS_HOSTS
+    global STATUS_HOSTS, STATUS_PORT
     guard = transport_security(host, port, allow)
     STATUS_HOSTS = {h.lower() for h in guard.allowed_hosts}
+    STATUS_PORT = port
     app = SERVER.streamable_http_app(transport_security=guard, host=host)
     config = uvicorn.Config(app, host=host, port=port, log_level=SERVER.settings.log_level.lower(),
                             timeout_graceful_shutdown=max(1, round(grace)), proxy_headers=False)
