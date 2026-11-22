@@ -250,13 +250,10 @@ _SAID: list[str] = [""]
 
 def turn() -> None:
     """The worker's turn: mend, said once, logged rather than raised."""
-    from harness import memory_store as ms
+    from harness import workqueue as wq
     try:
-        conn = ms.connect()
-        try:
-            line = mend(conn)
-        finally:
-            conn.close()
+        with wq._store() as c:
+            line = mend(c)
     except Exception as exc:  # noqa: BLE001 - a sweep check must not stop the worker, on any store
         line = f"sweep check failed: {exc}"
     if line and line != _SAID[0]:
