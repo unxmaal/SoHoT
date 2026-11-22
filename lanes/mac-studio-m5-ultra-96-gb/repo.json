@@ -215,6 +215,48 @@
    "until": ""
   },
   {
+   "candidate": "llamacpp:Qwen3.6-27B-Q4_K_M",
+   "decided_at": "2026-11-22T07:15:09Z",
+   "detail": "extract: lane too small, needs 499 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1157 more extract cases are needed before a null says anything about lmst",
+   "exam": {
+    "about": "27B params, Q4_K_M",
+    "candidate": "llamacpp:Qwen3.6-27B-Q4_K_M",
+    "cases": 72,
+    "first_s": 642.909,
+    "median_s": 592.505,
+    "metrics": {
+     "completion_tokens": 13413.0,
+     "patch_applied": 0.4,
+     "resolved": 0.2,
+     "test_s": 36.2033,
+     "tokens_per_s": 33.9667,
+     "wall_s": 424.803
+    },
+    "model": "llamacpp:Qwen3.6-27B-Q4_K_M",
+    "not_run": "",
+    "pass_rate": 0.2,
+    "passed": 1,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-07T13:50:47Z",
+    "served_as": "",
+    "source": "",
+    "total": 5,
+    "ttft_median_s": 280.087,
+    "ttft_p95_s": 524.576
+   },
+   "outcome": "declined",
+   "proposal": "lmstudio-community/Qwen3.6-27B-GGUF",
+   "reason": "limit",
+   "receipt_key": "llamacpp:Qwen3.6-27B-Q4_K_M",
+   "run_id": 1151,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>1606"
+  },
+  {
    "candidate": "llamacpp:Qwopus3.5-27B-v3-Q4_K_M",
    "decided_at": "2026-11-20T07:14:29Z",
    "detail": "extract: lane too small, needs 499 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1157 more extract cases are needed before a null says anything about llam",
@@ -461,48 +503,6 @@
    "reason": "candidate",
    "receipt_key": "Qwen/Qwen3-0.6B",
    "run_id": 566,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
-   "candidate": "llamacpp:Qwen3.6-27B-Q4_K_M",
-   "decided_at": "2026-11-20T02:46:13Z",
-   "detail": "4 case(s) passed a screen",
-   "exam": {
-    "about": "27B params, Q4_K_M",
-    "candidate": "llamacpp:Qwen3.6-27B-Q4_K_M",
-    "cases": 72,
-    "first_s": 642.909,
-    "median_s": 592.505,
-    "metrics": {
-     "completion_tokens": 13413.0,
-     "patch_applied": 0.4,
-     "resolved": 0.2,
-     "test_s": 36.2033,
-     "tokens_per_s": 33.9667,
-     "wall_s": 424.803
-    },
-    "model": "llamacpp:Qwen3.6-27B-Q4_K_M",
-    "not_run": "",
-    "pass_rate": 0.2,
-    "passed": 1,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-07T13:50:47Z",
-    "served_as": "",
-    "source": "",
-    "total": 5,
-    "ttft_median_s": 280.087,
-    "ttft_p95_s": 524.576
-   },
-   "outcome": "screened",
-   "proposal": "lmstudio-community/Qwen3.6-27B-GGUF",
-   "reason": "candidate",
-   "receipt_key": "llamacpp:Qwen3.6-27B-Q4_K_M",
-   "run_id": 1034,
    "serves": false,
    "status": "screened",
    "tier": "screen",
@@ -789,7 +789,7 @@
    "until": ""
   }
  ],
- "cursor": 1795158869551595,
+ "cursor": 1795331709814277,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -2455,6 +2455,21 @@
    "reason": "limit",
    "run_id": 1057,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-22T07:15:09Z",
+   "candidate": "lmstudio-community/Qwen3.6-27B-GGUF",
+   "chosen": null,
+   "detail": "extract: lane too small, needs 499 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1157 more extract cases are needed before a null says anything about lmst",
+   "how": "",
+   "id": 1795331709814277,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1151,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -4030,7 +4045,7 @@
    "runs": 3
   }
  ],
- "generated_at": "2026-11-20T08:00:47Z",
+ "generated_at": "2026-11-22T08:04:38Z",
  "knobs": [
   {
    "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
@@ -4116,7 +4131,7 @@
   "pass_rate": 0.222,
   "serves": "llamacpp:Ornith-1.5-35B-Q4_K_M",
   "serves_model": "llamacpp:Ornith-1.5-35B-Q4_K_M; 35B (3B active) params, Q4_K_M, by ornith-ai",
-  "stale": false
+  "stale": true
  },
  "since": 0
 }
