@@ -121,6 +121,46 @@
    "until": "cases:decide>730"
   },
   {
+   "candidate": "nimble:bespokelabs/Bespoke-Nimble-9B-v2",
+   "decided_at": "2026-11-22T15:59:37Z",
+   "detail": "2 case(s) passed a screen",
+   "exam": {
+    "about": "9B params",
+    "candidate": "nimble/Bespoke-Nimble-9B-v2",
+    "cases": 132,
+    "first_s": 10.695,
+    "median_s": 4.253,
+    "metrics": {
+     "calibrated": 1.0,
+     "decide_accuracy": 0.7423,
+     "decide_brier": 0.3174,
+     "decide_ece": 0.0516
+    },
+    "model": "nimble/Bespoke-Nimble-9B-v2",
+    "not_run": "",
+    "pass_rate": 0.371,
+    "passed": 49,
+    "peak_gb": 20.22,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-10T06:07:12Z",
+    "served_as": "",
+    "source": "",
+    "total": 132,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "screened",
+   "proposal": "bespokelabs/Bespoke-Nimble-9B-v2",
+   "reason": "candidate",
+   "receipt_key": "nimble/Bespoke-Nimble-9B-v2",
+   "run_id": 1158,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "sky7350/Mica-v0.5-4B",
    "decided_at": "2026-11-13T02:29:59Z",
    "detail": "2 case(s) passed a screen",
@@ -241,14 +281,14 @@
   },
   {
    "candidate": "akhilaaa3/Jev-Omni",
-   "decided_at": "2026-11-22T05:35:17Z",
+   "decided_at": "2026-11-22T15:56:03Z",
    "detail": "not screened: refused_by_gateway. The harness could not deliver the request, which says nothing about the candidate: check-squad2-56dddf4066d3e219004dad5f: akhilaaa3/Jev-Omni is asked on mlx_lm.server, which ignores the decide lane's response_format, so its reply would be scored on a request the lane never sends. #572; guard-browsesafe-1130: akhilaaa3/Jev-Omni is asked on mlx_lm.server, which ignores the decide la",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
    "reason": "harness",
    "receipt_key": "akhilaaa3/Jev-Omni",
-   "run_id": 1140,
+   "run_id": 1156,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -256,14 +296,14 @@
   },
   {
    "candidate": "akhilaaa3/Jev-Omni,temperature=0",
-   "decided_at": "2026-11-22T05:35:17Z",
+   "decided_at": "2026-11-22T15:56:03Z",
    "detail": "not screened: refused_by_gateway. The harness could not deliver the request, which says nothing about the candidate: check-squad2-56dddf4066d3e219004dad5f: akhilaaa3/Jev-Omni is asked on mlx_lm.server, which ignores the decide lane's response_format, so its reply would be scored on a request the lane never sends. #572; guard-browsesafe-1130: akhilaaa3/Jev-Omni is asked on mlx_lm.server, which ignores the decide la",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
    "reason": "harness",
    "receipt_key": "akhilaaa3/Jev-Omni",
-   "run_id": 1140,
+   "run_id": 1156,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -341,7 +381,7 @@
   },
   {
    "candidate": "decider:StrandsAgents/strands-decider-2B-hobson-v21",
-   "decided_at": "2026-11-22T05:56:01Z",
+   "decided_at": "2026-11-22T15:56:14Z",
    "detail": "not screened: our snapshot lacks files its runner opens; refetch: check-squad2-56dddf4066d3e219004dad5f: exit 1: needs StrandsAgents/strands-decider-2B-hobson-v21, which is not in the hub cache; soh fetch --run: huggingface_hub.errors.IncompleteSnapshotError: The cached snapshot for 'StrandsAgents/strands-decider-2B-hobson-v21' (revision 'main', commit 5c9d44fdeb3",
    "exam": {
     "about": "2B params",
@@ -373,7 +413,7 @@
    "proposal": "StrandsAgents/strands-decider-2B-hobson-v21",
    "reason": "harness",
    "receipt_key": "decider/strands-decider-2B-hobson-v21",
-   "run_id": 1146,
+   "run_id": 1157,
    "serves": false,
    "status": "pending",
    "tier": "fetch",
@@ -703,46 +743,6 @@
    "until": ""
   },
   {
-   "candidate": "nimble:bespokelabs/Bespoke-Nimble-9B-v2",
-   "decided_at": "2026-11-22T06:26:32Z",
-   "detail": "not fetched 2026-11-22: the screen share of the sweep ceiling is spent",
-   "exam": {
-    "about": "9B params",
-    "candidate": "nimble/Bespoke-Nimble-9B-v2",
-    "cases": 132,
-    "first_s": 10.695,
-    "median_s": 4.253,
-    "metrics": {
-     "calibrated": 1.0,
-     "decide_accuracy": 0.7423,
-     "decide_brier": 0.3174,
-     "decide_ece": 0.0516
-    },
-    "model": "nimble/Bespoke-Nimble-9B-v2",
-    "not_run": "",
-    "pass_rate": 0.371,
-    "passed": 49,
-    "peak_gb": 20.22,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-10T06:07:12Z",
-    "served_as": "",
-    "source": "",
-    "total": 132,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "queued",
-   "proposal": "bespokelabs/Bespoke-Nimble-9B-v2",
-   "reason": "limit",
-   "receipt_key": "nimble/Bespoke-Nimble-9B-v2",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "fetch",
-   "until": ""
-  },
-  {
    "candidate": "q3-4b",
    "decided_at": "",
    "detail": "",
@@ -778,7 +778,7 @@
    "until": ""
   }
  ],
- "cursor": 1795333129077096,
+ "cursor": 1795363177815342,
  "events": [
   {
    "at": "2026-09-22T13:14:31Z",
@@ -1499,6 +1499,36 @@
    "reason": "limit",
    "run_id": 1109,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-22T15:56:03Z",
+   "candidate": "akhilaaa3/Jev-Omni",
+   "chosen": null,
+   "detail": "not screened: refused_by_gateway. The harness could not deliver the request, which says nothing about the candidate: check-squad2-56dddf4066d3e219004dad5f: akhilaaa3/Jev-Omni is asked on mlx_lm.server, which ignores the decide lane's response_format, so its reply would be scored on a request the lane never sends. #572; guard-browsesafe-1130: akhilaaa3/Jev-Omni is asked on mlx_lm.server, which ignores the decide la",
+   "how": "",
+   "id": 1795362963687040,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "harness",
+   "run_id": 1156,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-22T15:59:37Z",
+   "candidate": "nimble:bespokelabs/Bespoke-Nimble-9B-v2",
+   "chosen": null,
+   "detail": "2 case(s) passed a screen",
+   "how": "",
+   "id": 1795363177815342,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 1158,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -2194,7 +2224,7 @@
    "runs": 4
   }
  ],
- "generated_at": "2026-11-22T08:04:37Z",
+ "generated_at": "2026-11-22T21:30:58Z",
  "knobs": [],
  "lane": {
   "cases": 661,
