@@ -192,6 +192,10 @@ def _report_loop(a) -> int:
     if held:  # the owner's benchmark hold. #1564
         print(f"=== no sweep: {held} ===", flush=True)
         return 0
+    queued = _queued_sweep() if run else ""
+    if queued:  # before the heartbeat, which is the queued sweep's. #2111
+        print(f"=== no sweep: {queued} ===", flush=True)
+        return 0
     heartbeat.start(lane=(getattr(a, "lane", "") or "").strip().lower(),
                     total=LOOP_TOTAL if run else len(LOOP_STEPS))
     restore = _yield_on_signal() if run and _may_yield() else (lambda: None)
@@ -215,6 +219,19 @@ def _report_loop(a) -> int:
         restore()
     heartbeat.finish(rc)
     return rc
+
+
+def _queued_sweep() -> str:
+    """Why the loop process starts no sweep, else "": one runs as queue jobs, a step of it waiting or running. #2111."""
+    from harness import memory_store as ms
+    from harness.commands import loop_steps
+    conn = ms.connect()
+    try:
+        for cycle, job in loop_steps.live(conn).items():
+            return f"sweep {cycle} runs as queue jobs, its next step job {job}"
+    finally:
+        conn.close()
+    return ""
 
 
 def _yield_on_signal():

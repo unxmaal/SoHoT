@@ -1,4 +1,4 @@
-"""`soh discover --loop --run --jobs`: one sweep as queue jobs, a step each with its own resource class, each queuing the next. #1508."""
+"""`soh discover --loop --run --jobs`: sweeps as queue jobs, a step each with its own resource class, each queuing the next, the last the next sweep. #1508, #2111."""
 from __future__ import annotations
 
 import contextvars
@@ -38,6 +38,8 @@ RETIRED = {"fetch": "screen"}
 CARRIED = (("lane", "--lane"), ("top", "--top"), ("repeat", "--repeat"),
            ("ceiling_h", "--ceiling-h"), ("effect", "--effect"), ("power_budget_min", "--power-budget-min"))
 FAILED = "failed_steps"
+#: The find half, every step before the spend; a sweep queued by the one before leaves it out inside the schedule's gap. #2111.
+SPACED = tuple(s.name for s in STEPS if s.tier not in loop_cmd.SPEND_STEPS)
 
 
 def step(name: str) -> Step:
@@ -110,7 +112,8 @@ def _mine() -> dict | None:
     return wq.get(key) if key else None
 
 
-def queue(name: str, cycle: str, a, conn=None, again: bool = False, commit: bool = True) -> dict:
+def queue(name: str, cycle: str, a, conn=None, again: bool = False, commit: bool = True,
+          not_before: float | None = None) -> dict:
     """Queue step `name` of `cycle` once, or with `again` this job's own continuation once; an earlier job of it comes back with `existed`."""
     from harness import paths
     from harness import memory_store as ms
@@ -126,7 +129,7 @@ def queue(name: str, cycle: str, a, conn=None, again: bool = False, commit: bool
                 return {**wq.get(job, conn), "existed": True}
         return wq.add(words, title=f"discover {name} (cycle {cycle})", cwd=str(paths.REPO),
                       priority=int((me or {}).get("priority") or 0), requested_by="discover",
-                      resource=step(name).resource, conn=conn, commit=commit)
+                      resource=step(name).resource, conn=conn, commit=commit, not_before=not_before)
     finally:
         if own:
             conn.close()
@@ -153,6 +156,48 @@ def queue_cycle(a) -> int:
         conn.close()
     print(f"queued sweep {cycle}: its {STEPS[0].name} step is job {job['id']}; each step queues the next")
     return 0
+
+
+def _started(conn, name: str) -> float:
+    """When a job of step `name` last started on this machine, in any sweep; 0.0 when none did."""
+    from harness import machine_scope
+    here, mine = machine_scope.here(conn, "jobs.claimable")
+    for r in conn.execute(f"SELECT argv, started_at FROM jobs WHERE requested_by = ? AND started_at IS NOT NULL "
+                          f"AND {here} ORDER BY started_at DESC", ("discover", *mine)):
+        if _step_of(json.loads(r["argv"] or "[]")) == name:
+            return float(r["started_at"])
+    return 0.0
+
+
+def _first(conn, at: float) -> Step:
+    """The step a sweep due at `at` starts with: the first once the schedule's gap since the last feed sweep is over. #2111."""
+    from harness import heartbeat
+    if at - _started(conn, STEPS[0].name) >= heartbeat.sweep_every_s(heartbeat.discover_hours()):
+        return STEPS[0]
+    return next(s for s in STEPS if s.name not in SPACED)
+
+
+def _again(a, cycle: str) -> None:
+    """Queue the sweep after closed `cycle`, due the gate's idle window from now; none beside another that waits or runs. #2111."""
+    from harness import contention
+    from harness import memory_store as ms
+    conn = ms.connect()
+    try:
+        others = live(conn, but=cycle)
+        if others:
+            got, job = next(iter(others.items()))
+            print(f"sweep {got} has a step queued as job {job}; no other follows sweep {cycle}", flush=True)
+            return
+        at = time.time() + contention.IDLE_S
+        first = _first(conn, at)
+        job = queue(first.name, str(int(at)), a, conn, not_before=at)
+    except ValueError as exc:
+        print(f"no sweep follows sweep {cycle}: its first step could not be queued ({exc})", file=sys.stderr)
+        return
+    finally:
+        conn.close()
+    print(f"queued sweep {int(at)} to follow: its {first.name} step is job {job['id']}, "
+          f"due {time.strftime('%H:%M', time.localtime(at))}", flush=True)
 
 
 def _who(conn, cycle: str) -> dict:
@@ -316,6 +361,7 @@ def _next(a, me: Step, cycle: str, sweep, seen: list, rc: int) -> int:
         heartbeat.note(CLOSED, cycle)
         _end(cycle, loop_cmd._why_nonzero(1 if seen else 0, seen))
         print(f"\nsweep {cycle} is closed: its {me.name} step is its last")
+        _again(a, cycle)
         return rc
     from harness import memory_store as ms
     conn = ms.connect()

@@ -34,7 +34,8 @@ def _work():
 
 
 def _step_jobs() -> list[dict]:
-    return [j for j in wq.jobs() if "--step" in j["argv"]]
+    """The step jobs of the sweep under test; the next sweep's first step waits for its time. #2111."""
+    return [j for j in wq.jobs() if "--step" in j["argv"] and not j["not_before"]]
 
 
 def _name(job) -> str:
@@ -86,13 +87,14 @@ def _ended(leaves) -> None:
     assert leaves == [*steps.NAMES, "settled"], "a step ran more than once, or out of order"
     jobs = _step_jobs()
     assert [_name(j) for j in jobs] == list(steps.NAMES), "a step was queued more than once"
-    assert wq.pending() == [] and not [j for j in wq.jobs() if j["state"] == wq.RUNNING], "the queue did not end empty"
+    assert [bool(j["not_before"]) for j in wq.pending()] == [True], "the queue did not end with only the next sweep waiting"
+    assert not [j for j in wq.jobs() if j["state"] == wq.RUNNING]
     beat = hb.read()
     assert beat["state"] == hb.FINISHED and beat["rc"] == 1 and beat[steps.CLOSED] == beat[hb.CYCLE]
     assert beat[steps.FAILED] == ["inspect"]
 
 
-def test_a_whole_sweep_runs_each_step_once_through_its_tiers_and_ends_with_the_queue_empty(leaves):
+def test_a_whole_sweep_runs_each_step_once_through_its_tiers_and_ends_with_only_the_next_sweep_waiting(leaves):
     assert steps.queue_cycle(_ns()) == 0
     _work()
     _ended(leaves)
