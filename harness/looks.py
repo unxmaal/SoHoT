@@ -91,6 +91,9 @@ def look(rows, *, lane: str, inc_key: str, ch_key: str, split, plan: dict, alpha
     head = (f"look {n} at {done}/{planned} holdout cells: {cell.gained} gained, {cell.lost} lost, "
             f"conditional power {cp:.2f}, alpha {nominal:.4f} of {alpha:.4f} spendable here"
             f"{f', no adopt until {len(missing)} more case(s) have a cell' if missing else ''}")
+    # Every holdout cell in leaves nothing for a later look to learn: this one is the final gate. #2101.
+    final = bool(done) and not missing and done >= planned
+    v = None
     if done and nominal > 0:
         v = adopt.decide(lane, {"candidate": inc_key}, {"candidate": ch_key}, rows, split=split,
                          spec=spec, tested=tested, alpha=nominal)
@@ -105,6 +108,10 @@ def look(rows, *, lane: str, inc_key: str, ch_key: str, split, plan: dict, alpha
         v = adopt._lane_too_small(lane, inc_key, ch_key, v, plan, split) or v
         return Look(n, t, cell.gained, cell.lost, nominal, used, cp, "futility",
                     f"{head}; stopped for futility", done), v
+    if final:
+        v = v or adopt.Verdict(lane, inc_key, ch_key, False, f"final: {head}; no alpha left to spend")
+        return Look(n, t, cell.gained, cell.lost, nominal, used, cp, "final",
+                    f"{head}; every holdout cell in, declined", done), v
     return Look(n, t, cell.gained, cell.lost, nominal, used, cp, "continue", f"{head}; continues", done), None
 
 
