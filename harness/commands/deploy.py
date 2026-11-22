@@ -30,6 +30,13 @@ def _poll(force: bool, sha: str, nodes: bool = False) -> int:
         pass  # deploy.refused said it once, when the cause changed. #2011
     else:
         note(f"nothing queued: {got['why']}")
+    try:
+        from harness import merge_gate
+        gate = merge_gate.queue()
+        if gate:
+            note(f"queued {gate['id']}: {gate['title']}")
+    except Exception as exc:  # noqa: BLE001 - the gate never stops a deploy poll
+        note(f"merge gate not queued: {exc}")
     # A node down at the deploy, or added since, follows at the next poll. #1692.
     emit(**got, nodes=_nodes() if nodes else {})
     return 0

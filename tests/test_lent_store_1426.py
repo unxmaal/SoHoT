@@ -85,7 +85,7 @@ MODIFIERS = {
     "context --main-only",
     "morning --no-model", "claude-news --no-record", "benchmarks --force", "benchmarks --passages",
     "cases --reextract", "jobs --night", "jobs --despite-hold","disk --yes", "adopt --unscreened",
-    "adopt --all-machines",
+    "adopt --all-machines", "merge-gate --again",
     "judge --all-machines", "ask --live-home", "spans --live-home", "digest --live-home", "digest --no-model", "kb-filter --no-model", "kb-filter --rebuild",
     "kb-filter --strict", "residency-sim --no-jobs",
 }

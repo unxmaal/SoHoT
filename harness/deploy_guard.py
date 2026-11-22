@@ -1,4 +1,4 @@
-"""Deploy only a main commit whose own push run of check-macos passed, or whose tree a passed PR run tested. #870, #1684.
+"""Deploy only a main commit whose tree the local gate passed, whose own push run of check-macos passed, or whose tree a passed PR run tested. #870, #1684, #2110.
 
 scripts/launchd.sh deploy runs this as a file with the commit it is about to check out, so it
 imports nothing outside the stdlib. Exit 0 lets the deploy go ahead; anything else refuses it.
@@ -13,12 +13,14 @@ import sys
 
 WORKFLOW = "ci.yml"
 JOB = "check-macos"
+#: The commit status context the local merge gate posts; its description starts with the tree it tested. #2110
+GATE = "local-gate"
 OVERRIDE = "LH_DEPLOY_UNCHECKED"
 GH_TIMEOUT_S = 60.0
 OK, REFUSED = 0, 1
 PASSED, FAILED, CANCELLED, WAITING, NONE = "passed", "failed", "cancelled", "waiting", "none"
 #: How judge() accepted a sha: main's own push run, or a passed PR run on the same tree (#1684).
-BY_MAIN, BY_PR = "main", "pr"
+BY_MAIN, BY_PR, BY_GATE = "main", "pr", "gate"
 _PR = re.compile(r"\(#(\d+)\)\s*$|^Merge pull request #(\d+)")
 
 
@@ -76,6 +78,34 @@ def _scan(sha: str, argv: list[str], gh, what: str) -> tuple[str, str]:
     return state, f"{JOB} did not pass for {sha[:12]}: " + "; ".join(w for _, w in failed)
 
 
+def stamp(tree: str) -> str:
+    """How a gate status names the tree it tested."""
+    return f"tree {tree}"
+
+
+def gated(sha: str, gh=None, repo=None, git=None) -> tuple[str, str]:
+    """(state, why) of the newest local-gate status naming sha's own tree, on sha or on its pull request's head. #2110"""
+    gh = gh or _gh
+    git = git or _git
+    def out(*argv: str) -> str:
+        got = git(list(argv), repo)
+        if got.returncode != 0:
+            raise GhError(f"git {argv[0]} failed: {(got.stderr or got.stdout).strip()[:200]}")
+        return got.stdout.strip()
+    tree = out("rev-parse", f"{sha}^{{tree}}")
+    heads = [sha]
+    m = _PR.search(out("log", "-1", "--format=%s", sha))
+    if m:
+        out("fetch", "-q", "--no-tags", "origin", f"refs/pull/{m.group(1) or m.group(2)}/head")
+        heads.append(out("rev-parse", "FETCH_HEAD^{commit}"))
+    for head in heads:
+        for s in json.loads(gh(["api", f"repos/{{owner}}/{{repo}}/commits/{head}/statuses?per_page=100"]) or "[]"):
+            if s.get("context") == GATE and (s.get("description") or "").split()[:2] == ["tree", tree]:
+                state = {"success": PASSED, "pending": WAITING}.get(s.get("state"), FAILED)
+                return state, f"{GATE} is {s.get('state')} for tree {tree[:12]}, posted on {head[:12]}"
+    return NONE, f"no {GATE} status names {sha[:12]}'s tree {tree[:12]}"
+
+
 def own(sha: str, gh=None) -> tuple[str, str]:
     """(state, why) of `sha`'s own push run on main; raises GhError, or ValueError on an unreadable answer."""
     gh = gh or _gh
@@ -112,17 +142,23 @@ def twin(sha: str, gh=None, repo=None, git=None) -> tuple[bool, str]:
 
 
 def judge(sha: str, gh=None, repo=None, git=None) -> tuple[bool, str, str]:
-    """(deployable, why, BY_MAIN or BY_PR or '') for `sha`; main's own concluded run outranks any PR run."""
+    """(deployable, why, BY_MAIN or BY_GATE or BY_PR or '') for `sha`; where main's own run did not pass, a gate verdict on its tree decides."""
     try:
         state, why = own(sha, gh)
-        if state == PASSED:
-            return True, why, BY_MAIN
-        if state not in (WAITING, NONE):
-            return False, why, ""
     except GhError as exc:
-        return False, f"cannot ask GitHub whether {sha[:12]} passed {JOB}: {exc}", ""
+        state, why = "", f"cannot ask GitHub whether {sha[:12]} passed {JOB}: {exc}"
     except (ValueError, KeyError, TypeError) as exc:
-        return False, f"gh answered something unreadable for {sha[:12]}: {exc}", ""
+        state, why = "", f"gh answered something unreadable for {sha[:12]}: {exc}"
+    if state == PASSED:
+        return True, why, BY_MAIN
+    try:
+        local, said = gated(sha, gh, repo, git)
+    except (GhError, ValueError, LookupError, TypeError, AttributeError):
+        local = NONE
+    if local in (PASSED, FAILED):
+        return local == PASSED, f"{said}; main's own run: {why}", BY_GATE if local == PASSED else ""
+    if state not in (WAITING, NONE):
+        return False, why, ""
     try:
         ok, said = twin(sha, gh, repo, git)
     except (GhError, ValueError, KeyError, TypeError) as exc:
