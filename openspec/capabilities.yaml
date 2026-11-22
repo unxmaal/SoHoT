@@ -474,6 +474,7 @@ capabilities:
       - harness/status_page.py
       - harness/status_view.py
       - harness/features.py
+      - harness/owner_actions.py
 
   - name: canary
     summary: Planted candidates with known verdicts, run for real under an isolated home.
@@ -539,6 +540,8 @@ capabilities:
       - harness/release_procs.py
       - harness/live_gate.py
       - harness/node_store_copy.py
+      - harness/merge_gate.py
+      - harness/commands/merge_gate.py
 
   - name: repo-hygiene
     summary: What a public reader gets, personal setup kept out of it, stated claims, coverage, specs and the gauntlet.

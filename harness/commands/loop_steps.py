@@ -107,6 +107,19 @@ def live(conn, but: str = "") -> dict[str, str]:
     return got
 
 
+def waiting(conn) -> list[dict]:
+    """[{id, step}] for each sweep step of this machine that waits in the queue. #2116."""
+    from harness import machine_scope
+    from harness import workqueue as wq
+    here, mine = machine_scope.here(conn, "jobs.claimable")
+    got = []
+    for r in conn.execute(f"SELECT id, argv FROM jobs WHERE state = ? AND {here} ORDER BY id", (wq.PENDING, *mine)):
+        words = json.loads(r["argv"] or "[]")
+        if _cycle_of(words) and _step_of(words) in NAMES:
+            got.append({"id": wq.label(r["id"]), "step": _step_of(words)})
+    return got
+
+
 def _mine() -> dict | None:
     from harness import workqueue as wq
     key = os.environ.get(wq.JOB_ENV, "").strip()

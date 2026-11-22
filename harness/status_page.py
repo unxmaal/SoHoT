@@ -163,6 +163,12 @@ def spend(conn, now: float) -> dict:
     return {"last_run_at": last, "waiting": ms.judgeable_total(conn)}
 
 
+def queued_sweep(conn) -> dict:
+    """The sweep steps waiting in the queue: what turning continuous discovery off cancels. #2116."""
+    from harness.commands import loop_steps
+    return {"jobs": loop_steps.waiting(conn)} if conn is not None else {"jobs": [], "why": "store down: queue not read"}
+
+
 def spend_stalled(sp: dict, now: float) -> bool:
     """Candidates wait and nothing was screened or measured for SPEND_STALE_S. #2083."""
     if sp.get("error") or not sp.get("waiting"):
@@ -312,7 +318,8 @@ def gather(now: float | None = None, *, connect=None, beat=None, where=None, git
              "store": _section(store, conn, why, home),
              "queue": _section(queue, conn, now),
              "deploy": _section(deploy_section, conn, now, where, git),
-             "discovery": {**_section(discovery, now, beat), "spend": _section(spend, conn, now)},
+             "discovery": {**_section(discovery, now, beat), "spend": _section(spend, conn, now),
+                           "queued": _section(queued_sweep, conn)},
              "monitor": _section(monitor_section, now, mon, home),
              "services": _section(services, now, health, reach),
              "ratio": _section(ratio, conn, now, flow)}
@@ -333,6 +340,12 @@ def cached(now: float | None = None, gather_=None) -> dict:
         if got is None or now - got["generated"] >= REFRESH_S:
             got = _cache["r"] = (gather_ or gather)(now)
         return got
+
+
+def forget() -> None:
+    """Drop the cached gather: the next read shows what an owner action just changed. #2116."""
+    with _lock:
+        _cache.clear()
 
 
 def as_json(r: dict) -> str:
@@ -397,6 +410,6 @@ def lines(r: dict) -> dict[str, list[str]]:
     return {k: [x for x in v if x] for k, v in out.items()}
 
 
-def page(r: dict, now: float | None = None) -> str:
+def page(r: dict, now: float | None = None, extra: str = "") -> str:
     from harness import status_view
-    return status_view.page(r, lines(r), now)
+    return status_view.page(r, lines(r), now, extra)

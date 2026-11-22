@@ -347,6 +347,9 @@ def show_by(B: dict) -> None:
     note("\nsubagents by agent type")
     for g in B["agents"]:
         note(_by_row(g["agent"], g))
+    note("\nby model")
+    for g in B["models"]:
+        note(_by_row("main " + g["model"] if g["kind"] == "main" else f"{g['kind']} {g['agent']} {g['model']}", g))
     note(f"\ncache write by cause {'':<21} {'writes':>8} {'tokens':>9} {'share':>5}")
     for c in B["causes"]:
         note(f"{c['kind'] + ', ' + c['cause']:<42} {c['events']:>8,} {_tok(c['cache_write']):>9} {_share(c['share']):>5}")
@@ -373,7 +376,8 @@ def show_prs(B: dict, top: int) -> None:
         note(f"merged    unread: {B['merged_unread'][:200]}")
     note(_BY_HEAD)
     for p in B["prs"][:max(0, top)]:
-        note(_by_row(p["pr"], p))
+        note(_by_row(p["pr"], p) + "  " + " ".join(
+            f"{m}={_tok(t)}" for m, t in sorted(p["models"].items(), key=lambda kv: (-kv[1], kv[0]))))
     if "not_merged" in B:
         note(f"{'opened, not merged':<34} {'':>7} {'':>8} {_tok(B['not_merged']['counted']):>9} "
              f"{_share(B['not_merged']['share']):>5}")

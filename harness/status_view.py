@@ -410,7 +410,7 @@ h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:0}h3{font-size:13px;ma
 """)
 
 
-def page(r: dict, lines: dict[str, list[str]], now: float | None = None) -> str:
+def page(r: dict, lines: dict[str, list[str]], now: float | None = None, extra: str = "") -> str:
     """The page: banner or all clear, six tiles, the ratio panel, the 24 h strip, the feature table and the monitor grid."""
     now = time.time() if now is None else now
     gen = r["generated"]
@@ -439,5 +439,6 @@ def page(r: dict, lines: dict[str, list[str]], now: float | None = None) -> str:
     out.append(_timeline(r.get("timeline") or {"error": "not gathered"}, now))
     out.append(_features(r.get("features") or {"error": "not gathered"}, now))
     out.append(_checks(r["monitor"]))
+    out.append(extra)
     out.append("</body></html>")
     return "\n".join(out)

@@ -172,7 +172,7 @@ def test_a_kept_record_outliving_its_window_is_ignored(night):
 
 def test_an_unreadable_kept_record_counts_the_whole_set_held_not_released(night):
     from harness import gateway_switch
-    gateway_switch.start_drain(NOW + 600, node=interactive.WINDOW)
+    gateway_switch.start_drain(time.time() + 600, node=interactive.WINDOW)
     try:
         interactive.keep_in_window([])
         assert interactive.window_kept() == set() and memory.pinned_gb() == 0.0

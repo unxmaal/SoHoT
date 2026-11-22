@@ -710,6 +710,18 @@ claude mcp add --transport http soh http://<host>.local:8899/mcp
 > machine's GPU. That is a deliberate choice for a home network. On any network
 > you do not control, bind to localhost instead: `MCP_HOST=127.0.0.1`.
 
+The same port serves a status page at `/status` (and `/status.json`). It is
+read-only unless the home names an owner device: put one line per device in
+`~/localharness/owner-devices`, either the device's Tailscale stable node id or
+its full tailnet name (`tailscale whois --json <its address>` prints both).
+The page then shows that device, and only it, a fixed list of owner actions:
+deploy now, the benchmarks and gate holds, queue pause and resume, continuous
+discovery on and off. A press is a POST with the page's token and a second
+confirming press, and is accepted only when `tailscale whois` names the
+connection's own peer address as a listed device. Loopback, this machine's own
+addresses, a forwarded request and a failed lookup are refused. Every press is
+appended to `~/localharness/owner-actions.jsonl`.
+
 That exposes `svg`, `web`, `code`, `image` and `video` to the assistant. Each of those shells
 out to `soh`, so the CLI, the eval suite and the MCP server run identical
 commands, and what gets measured is what ships.
