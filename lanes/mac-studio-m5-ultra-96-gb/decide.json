@@ -1,6 +1,41 @@
 {
  "candidates": [
   {
+   "candidate": "bespokelabs/Bespoke-Nimble-9B",
+   "decided_at": "2026-11-22T07:38:49Z",
+   "detail": "decide: lane too small, needs 153 holdout cases: 132 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 70 more decide cases are needed before a null says anything about nimble/B",
+   "exam": {
+    "about": "family Qwen/Qwen3.5-9B, 9B params, by bespokelabs",
+    "candidate": "bespokelabs/Bespoke-Nimble-9B",
+    "cases": 661,
+    "first_s": null,
+    "median_s": null,
+    "metrics": {},
+    "model": "bespokelabs/Bespoke-Nimble-9B",
+    "not_run": "harness_error",
+    "pass_rate": null,
+    "passed": null,
+    "peak_gb": null,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-20T06:02:24Z",
+    "served_as": "",
+    "source": "https://huggingface.co/bespokelabs/Bespoke-Nimble-9B",
+    "total": 661,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "declined",
+   "proposal": "bespokelabs/Bespoke-Nimble-9B",
+   "reason": "limit",
+   "receipt_key": "bespokelabs/Bespoke-Nimble-9B",
+   "run_id": 1109,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:decide>730"
+  },
+  {
    "candidate": "convaiinnovations/laya,temperature=0",
    "decided_at": "2026-10-23T02:21:06Z",
    "detail": "the installed runtime could not load it: check-squad2-56dddf4066d3e219004dad5f: warm-up: gateway returned HTTP 404: {\"error\": \"Model type laya not supported.\"}; guard-browsesafe-179: warm-up: gateway returned HTTP 404: {\"error\": \"Model type laya not supported.\"}; policy-civil-comments-10156: warm-up: gateway returned HTTP 404: {\"error\": \"M",
@@ -46,84 +81,9 @@
    "until": ""
   },
   {
-   "candidate": "nimble:bespokelabs/Bespoke-Nimble-9B-v2",
-   "decided_at": "2026-11-14T07:21:03Z",
-   "detail": "decide: does not beat the incumbent on the lane's metric; significantly worse: 132 lost against 0 gained, p=0.00; comparison 2 on this holdout, so alpha 0.05/2 = 0.0250; dev: 0 gained, 529 lost, p=0.0",
-   "exam": {
-    "about": "9B params",
-    "candidate": "nimble/Bespoke-Nimble-9B-v2",
-    "cases": 132,
-    "first_s": 10.695,
-    "median_s": 4.253,
-    "metrics": {
-     "calibrated": 1.0,
-     "decide_accuracy": 0.7423,
-     "decide_brier": 0.3174,
-     "decide_ece": 0.0516
-    },
-    "model": "nimble/Bespoke-Nimble-9B-v2",
-    "not_run": "",
-    "pass_rate": 0.371,
-    "passed": 49,
-    "peak_gb": 20.22,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-10T06:07:12Z",
-    "served_as": "",
-    "source": "",
-    "total": 132,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "declined",
-   "proposal": "bespokelabs/Bespoke-Nimble-9B-v2",
-   "reason": "candidate",
-   "receipt_key": "nimble/Bespoke-Nimble-9B-v2",
-   "run_id": 981,
-   "serves": false,
-   "status": "rejected",
-   "tier": "adopt",
-   "until": ""
-  },
-  {
-   "candidate": "bespokelabs/Bespoke-Nimble-9B",
-   "decided_at": "2026-11-21T02:30:22Z",
-   "detail": "2 case(s) passed a screen",
-   "exam": {
-    "about": "family Qwen/Qwen3.5-9B, 9B params, by bespokelabs",
-    "candidate": "bespokelabs/Bespoke-Nimble-9B",
-    "cases": 661,
-    "first_s": null,
-    "median_s": null,
-    "metrics": {},
-    "model": "bespokelabs/Bespoke-Nimble-9B",
-    "not_run": "harness_error",
-    "pass_rate": null,
-    "passed": null,
-    "peak_gb": null,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-20T06:02:24Z",
-    "served_as": "",
-    "source": "https://huggingface.co/bespokelabs/Bespoke-Nimble-9B",
-    "total": 661,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "screened",
-   "proposal": "bespokelabs/Bespoke-Nimble-9B",
-   "reason": "candidate",
-   "receipt_key": "bespokelabs/Bespoke-Nimble-9B",
-   "run_id": 1083,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
    "candidate": "nimble:bespokelabs/Bespoke-Nimble-9B",
-   "decided_at": "2026-11-21T02:30:22Z",
-   "detail": "2 case(s) passed a screen",
+   "decided_at": "2026-11-22T07:38:49Z",
+   "detail": "decide: lane too small, needs 153 holdout cases: 132 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 70 more decide cases are needed before a null says anything about nimble/B",
    "exam": {
     "about": "9B params",
     "candidate": "nimble/Bespoke-Nimble-9B",
@@ -150,15 +110,15 @@
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
-   "outcome": "screened",
+   "outcome": "declined",
    "proposal": "bespokelabs/Bespoke-Nimble-9B",
-   "reason": "candidate",
+   "reason": "limit",
    "receipt_key": "nimble/Bespoke-Nimble-9B",
-   "run_id": 1083,
+   "run_id": 1109,
    "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:decide>730"
   },
   {
    "candidate": "sky7350/Mica-v0.5-4B",
@@ -281,14 +241,14 @@
   },
   {
    "candidate": "akhilaaa3/Jev-Omni",
-   "decided_at": "2026-11-21T06:05:35Z",
+   "decided_at": "2026-11-22T05:35:17Z",
    "detail": "not screened: refused_by_gateway. The harness could not deliver the request, which says nothing about the candidate: check-squad2-56dddf4066d3e219004dad5f: akhilaaa3/Jev-Omni is asked on mlx_lm.server, which ignores the decide lane's response_format, so its reply would be scored on a request the lane never sends. #572; guard-browsesafe-1130: akhilaaa3/Jev-Omni is asked on mlx_lm.server, which ignores the decide la",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
    "reason": "harness",
    "receipt_key": "akhilaaa3/Jev-Omni",
-   "run_id": 1105,
+   "run_id": 1140,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -296,14 +256,14 @@
   },
   {
    "candidate": "akhilaaa3/Jev-Omni,temperature=0",
-   "decided_at": "2026-11-21T06:05:35Z",
+   "decided_at": "2026-11-22T05:35:17Z",
    "detail": "not screened: refused_by_gateway. The harness could not deliver the request, which says nothing about the candidate: check-squad2-56dddf4066d3e219004dad5f: akhilaaa3/Jev-Omni is asked on mlx_lm.server, which ignores the decide lane's response_format, so its reply would be scored on a request the lane never sends. #572; guard-browsesafe-1130: akhilaaa3/Jev-Omni is asked on mlx_lm.server, which ignores the decide la",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
    "reason": "harness",
    "receipt_key": "akhilaaa3/Jev-Omni",
-   "run_id": 1105,
+   "run_id": 1140,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -381,8 +341,8 @@
   },
   {
    "candidate": "decider:StrandsAgents/strands-decider-2B-hobson-v21",
-   "decided_at": "2026-11-21T05:19:45Z",
-   "detail": "retest 2/3: broken at screen",
+   "decided_at": "2026-11-22T05:56:01Z",
+   "detail": "not screened: our snapshot lacks files its runner opens; refetch: check-squad2-56dddf4066d3e219004dad5f: exit 1: needs StrandsAgents/strands-decider-2B-hobson-v21, which is not in the hub cache; soh fetch --run: huggingface_hub.errors.IncompleteSnapshotError: The cached snapshot for 'StrandsAgents/strands-decider-2B-hobson-v21' (revision 'main', commit 5c9d44fdeb3",
    "exam": {
     "about": "2B params",
     "candidate": "decider/strands-decider-2B-hobson-v21",
@@ -411,12 +371,12 @@
    },
    "outcome": "queued",
    "proposal": "StrandsAgents/strands-decider-2B-hobson-v21",
-   "reason": "reopened",
+   "reason": "harness",
    "receipt_key": "decider/strands-decider-2B-hobson-v21",
-   "run_id": null,
+   "run_id": 1146,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
+   "tier": "fetch",
    "until": ""
   },
   {
@@ -743,6 +703,46 @@
    "until": ""
   },
   {
+   "candidate": "nimble:bespokelabs/Bespoke-Nimble-9B-v2",
+   "decided_at": "2026-11-22T06:26:32Z",
+   "detail": "not fetched 2026-11-22: the screen share of the sweep ceiling is spent",
+   "exam": {
+    "about": "9B params",
+    "candidate": "nimble/Bespoke-Nimble-9B-v2",
+    "cases": 132,
+    "first_s": 10.695,
+    "median_s": 4.253,
+    "metrics": {
+     "calibrated": 1.0,
+     "decide_accuracy": 0.7423,
+     "decide_brier": 0.3174,
+     "decide_ece": 0.0516
+    },
+    "model": "nimble/Bespoke-Nimble-9B-v2",
+    "not_run": "",
+    "pass_rate": 0.371,
+    "passed": 49,
+    "peak_gb": 20.22,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-10T06:07:12Z",
+    "served_as": "",
+    "source": "",
+    "total": 132,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "queued",
+   "proposal": "bespokelabs/Bespoke-Nimble-9B-v2",
+   "reason": "limit",
+   "receipt_key": "nimble/Bespoke-Nimble-9B-v2",
+   "run_id": null,
+   "serves": false,
+   "status": "pending",
+   "tier": "fetch",
+   "until": ""
+  },
+  {
    "candidate": "q3-4b",
    "decided_at": "",
    "detail": "",
@@ -778,7 +778,7 @@
    "until": ""
   }
  ],
- "cursor": 1795241135895609,
+ "cursor": 1795333129077096,
  "events": [
   {
    "at": "2026-09-22T13:14:31Z",
@@ -1454,6 +1454,51 @@
    "reason": "harness",
    "run_id": 1105,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-22T02:32:10Z",
+   "candidate": "akhilaaa3/Jev-Omni",
+   "chosen": null,
+   "detail": "not screened: needs 22.3 GB but only 7.0 GB is safely available (25.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1795314730283894,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-22T05:35:17Z",
+   "candidate": "akhilaaa3/Jev-Omni",
+   "chosen": null,
+   "detail": "not screened: refused_by_gateway. The harness could not deliver the request, which says nothing about the candidate: check-squad2-56dddf4066d3e219004dad5f: akhilaaa3/Jev-Omni is asked on mlx_lm.server, which ignores the decide lane's response_format, so its reply would be scored on a request the lane never sends. #572; guard-browsesafe-1130: akhilaaa3/Jev-Omni is asked on mlx_lm.server, which ignores the decide la",
+   "how": "",
+   "id": 1795325717673981,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "harness",
+   "run_id": 1140,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-22T07:38:49Z",
+   "candidate": "nimble:bespokelabs/Bespoke-Nimble-9B",
+   "chosen": null,
+   "detail": "decide: lane too small, needs 153 holdout cases: 132 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 70 more decide cases are needed before a null says anything about nimble/B",
+   "how": "",
+   "id": 1795333129077096,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1109,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -2149,7 +2194,7 @@
    "runs": 4
   }
  ],
- "generated_at": "2026-11-21T08:10:20Z",
+ "generated_at": "2026-11-22T08:04:37Z",
  "knobs": [],
  "lane": {
   "cases": 661,
