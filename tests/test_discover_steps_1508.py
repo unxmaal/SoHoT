@@ -166,7 +166,7 @@ def test_a_step_stops_its_sweep_while_a_loop_process_holds_the_store_lease(ran):
     steps.queue_cycle(_ns())
     first = wq.pending()[0]
     assert _one(first)["rc"] == 1
-    assert ran == [] and wq.pending() == []
+    assert ran == [] and [bool(j["not_before"]) for j in wq.pending()] == [True], "the refused step does not wait to ask again"
 
 
 def test_a_loop_process_refuses_while_a_queued_sweep_holds_the_lease(ran, capsys):

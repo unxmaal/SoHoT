@@ -7,6 +7,7 @@ import os
 import sys
 import time
 import traceback
+import types
 from typing import NamedTuple
 
 from harness import resources
@@ -190,9 +191,18 @@ def _first(conn, at: float) -> Step:
     return next(s for s in STEPS if s.name not in SPACED)
 
 
-def _again(a, cycle: str) -> None:
-    """Queue the sweep after closed `cycle`, due the gate's idle window from now; none beside another that waits or runs. #2111."""
+def _follow(conn, a) -> str:
+    """Queue the next sweep's first step, due the gate's idle window from now; the line that says so. #2111."""
     from harness import contention
+    at = time.time() + contention.IDLE_S
+    first = _first(conn, at)
+    job = queue(first.name, str(int(at)), a, conn, not_before=at)
+    return (f"queued sweep {int(at)} to follow: its {first.name} step is job {job['id']}, "
+            f"due {time.strftime('%H:%M', time.localtime(at))}")
+
+
+def _again(a, cycle: str) -> None:
+    """Queue the sweep after closed `cycle`; none beside another that waits or runs. #2111."""
     from harness import memory_store as ms
     conn = ms.connect()
     try:
@@ -201,16 +211,67 @@ def _again(a, cycle: str) -> None:
             got, job = next(iter(others.items()))
             print(f"sweep {got} has a step queued as job {job}; no other follows sweep {cycle}", flush=True)
             return
-        at = time.time() + contention.IDLE_S
-        first = _first(conn, at)
-        job = queue(first.name, str(int(at)), a, conn, not_before=at)
+        print(_follow(conn, a), flush=True)
     except ValueError as exc:
         print(f"no sweep follows sweep {cycle}: its first step could not be queued ({exc})", file=sys.stderr)
-        return
     finally:
         conn.close()
-    print(f"queued sweep {int(at)} to follow: its {first.name} step is job {job['id']}, "
-          f"due {time.strftime('%H:%M', time.localtime(at))}", flush=True)
+
+
+def _last(conn) -> tuple[list[str], str] | None:
+    """(argv, state) of the newest step job of this machine, in any sweep."""
+    from harness import machine_scope
+    here, mine = machine_scope.here(conn, "jobs.claimable")
+    for r in conn.execute(f"SELECT argv, state FROM jobs WHERE requested_by = ? AND {here} ORDER BY id DESC",
+                          ("discover", *mine)):
+        words = json.loads(r["argv"] or "[]")
+        if _cycle_of(words) and RETIRED.get(_step_of(words), _step_of(words)) in NAMES:
+            return words, r["state"]
+    return None
+
+
+def mend(conn) -> str:
+    """Queue what follows a queued sweep whose last step ended with nothing after it: what it did or waits for, "" when none is broken. #2111."""
+    from harness import env, heartbeat
+    from harness import workqueue as wq
+    beat = heartbeat.read() or {}
+    # The loop process's sweep carries no cycle, and a cancelled step is the owner's way back to it.
+    if not beat.get(heartbeat.CYCLE) or live(conn):
+        return ""
+    last = _last(conn)
+    if last is None or last[1] == wq.CANCELLED:
+        return ""
+    words = last[0]
+    name, cycle = RETIRED.get(_step_of(words), _step_of(words)), _cycle_of(words)
+    vol = env.unmounted(env.configured())
+    if vol:
+        return f"sweep {cycle} ended at its {name} step; none follows while the weights volume {vol} {env.NOT_MOUNTED}"
+    a = types.SimpleNamespace(**{attr: words[words.index(flag) + 1] for attr, flag in CARRIED if flag in words[:-1]})
+    try:
+        if beat.get(CLOSED) == cycle or name == NAMES[-1]:
+            return f"sweep {cycle} ended at its {name} step with none after it; {_follow(conn, a)}"
+        after = NAMES[NAMES.index(name) + 1]
+        job = queue(after, cycle, a, conn)
+    except ValueError as exc:
+        return f"sweep {cycle} ended at its {name} step and what follows could not be queued ({exc})"
+    return f"sweep {cycle} ended at its {name} step with none after it; queued its {after} step as job {job['id']}"
+
+
+#: What the worker last said of a broken sweep, so it says each thing once.
+_SAID: list[str] = [""]
+
+
+def turn() -> None:
+    """The worker's turn: mend, said once, logged rather than raised."""
+    from harness import workqueue as wq
+    try:
+        with wq._store() as c:
+            line = mend(c)
+    except Exception as exc:  # noqa: BLE001 - a sweep check must not stop the worker, on any store
+        line = f"sweep check failed: {exc}"
+    if line and line != _SAID[0]:
+        print(f"{time.strftime('%H:%M:%S')} {line}", flush=True)
+    _SAID[0] = line
 
 
 def _who(conn, cycle: str) -> dict:
@@ -313,6 +374,17 @@ def _already(name: str, cycle: str) -> str:
     return f"job {wq.label(job)} follows it" if job is not None else ""
 
 
+def _retry(a, name: str, cycle: str) -> None:
+    """A step refused the lease waits in the queue to ask again after the gate's idle window. #2111."""
+    from harness import contention
+    try:
+        job = queue(name, cycle, a, again=True, not_before=time.time() + contention.IDLE_S)
+    except ValueError as exc:
+        print(f"the {name} step of sweep {cycle} could not be queued again ({exc})", file=sys.stderr)
+        return
+    print(f"the {name} step of sweep {cycle} asks again as job {job['id']}", flush=True)
+
+
 def run_step(a) -> int:
     """One step of a queued sweep: under the sweep's lease and heartbeat, then its successor queued whatever it returned."""
     from harness import ceiling, heartbeat, power
@@ -333,13 +405,14 @@ def run_step(a) -> int:
               f"sweep {cycle} stops before its {name} step", file=sys.stderr)
         if heartbeat.attach(cycle):
             heartbeat.finish(1, error="another discover loop holds the store lease")
+        _retry(a, name, cycle)
         return 1
     me = step(name)
     lane = (getattr(a, "lane", "") or "").strip().lower()
     data = None if me is STEPS[0] else heartbeat.attach(cycle)
     data = data or heartbeat.start(lane=lane, total=loop_cmd.LOOP_TOTAL, cycle=cycle)
     sweep = ceiling.Sweep(float(getattr(a, "ceiling_h", None) or power.SWEEP_CEILING_H) * 3600,
-                          started=float(data["started"]))
+                          started=float(data["started"]), looks_left=1 if name == "measure" else None)
     failed: list[str] = []
     print(f"\n=== sweep {cycle}: the {name} step ===", flush=True)
     entered = _RUNNING.set(name)
@@ -365,9 +438,9 @@ def run_step(a) -> int:
 
 
 def _next(a, me: Step, cycle: str, sweep, seen: list, rc: int) -> int:
-    """Queue the step after `me`, or this measure again when a run paused on request; the last step ends the sweep."""
+    """Queue the step after `me`, or this measure again when a run paused on request or it left a look to take; the last step ends the sweep."""
     from harness import heartbeat
-    after = me if me.name == "measure" and sweep.halted else (
+    after = me if me.name == "measure" and (sweep.halted or sweep.more) else (
         None if me is STEPS[-1] else STEPS[STEPS.index(me) + 1])
     if after is None:
         _settle(sweep)
@@ -397,7 +470,7 @@ def _next(a, me: Step, cycle: str, sweep, seen: list, rc: int) -> int:
     if job.get("existed"):
         print(f"\nthe {after.name} step of sweep {cycle} is already job {job['id']}; not queuing another", flush=True)
         return rc
-    if after is me:
+    if after is me and sweep.halted:
         # A run paused on request waits in the queue; its model must not hold memory the requester needs.
         _unload("the discovery loop's measure paused on request")
     print(f"\nqueued the {after.name} step of sweep {cycle} as job {job['id']}", flush=True)

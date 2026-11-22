@@ -202,11 +202,34 @@ def render(r: dict) -> list[str]:
     return out
 
 
+def day_lines(rows: list[dict]) -> list[str]:
+    """One line a day: comparisons finished, then jobs failed with a harness error. #2111."""
+    def said(got: dict) -> str:
+        return f"{sum(got.values())}" + (f" ({', '.join(f'{k} {v}' for k, v in sorted(got.items()))})" if got else "")
+    return [f"{r['day']}  comparisons finished {said(r['finished'])}; jobs failed with a harness error {said(r['failed'])}"
+            for r in rows]
+
+
+def _days(a, now: float) -> int:
+    from harness import morning
+    conn = morning.snapshot()
+    try:
+        rows = morning.days(conn, now, int(a.days))
+    finally:
+        conn.close()
+    for ln in day_lines(rows):
+        note(ln)
+    emit(days=rows)
+    return 0
+
+
 def cmd_morning(a) -> int:
     from harness import audio_models, canary, context_report as cr, heartbeat, monitor, morning, node_reach, paths
     from harness import release_procs, token_flow
 
     now = time.time()
+    if getattr(a, "days", 0):
+        return _days(a, now)
     try:
         since = cr.parse_when(a.since, now)
     except ValueError as exc:

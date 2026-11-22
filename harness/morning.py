@@ -92,6 +92,35 @@ def machine_name(r: dict) -> str:
     return f"machine {r['machine_id']}" + (f" ({r['hw_model']})" if r.get("hw_model") else "")
 
 
+#: A failed job that is no harness error: the machine can never admit it.
+NOT_ERRORS = ("never_fits",)
+
+
+def days(conn, now: float, n: int) -> list[dict]:
+    """Each of the last `n` local days, newest first: this machine's comparisons finished by outcome, its jobs failed with a harness error by reason. #2111."""
+    from datetime import timedelta
+    first = datetime.fromtimestamp(now).replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=max(1, n) - 1)
+    out = {(first + timedelta(days=i)).strftime("%Y-%m-%d"): {"finished": {}, "failed": {}} for i in range(max(1, n))}
+
+    def count(kind: str, at, label: str) -> None:
+        got = out.get(datetime.fromtimestamp(float(at)).strftime("%Y-%m-%d"))
+        if got is not None:
+            got[kind][label] = got[kind].get(label, 0) + 1
+    if _has(conn, "verdicts"):
+        here, mine = _here(conn, "verdicts.decided_here")
+        for r in conn.execute(f"SELECT outcome, decided_at FROM verdicts WHERE tier = 'adopt' AND decided_at >= ? "
+                              f"AND {here}", (first.timestamp(), *mine)).fetchall():
+            count("finished", r["decided_at"], r["outcome"])
+    if _has(conn, "jobs"):
+        here, mine = _here(conn, "jobs.claimed")
+        for r in conn.execute("SELECT reason, rc, COALESCE(finished_at, started_at, created_at) AS at FROM jobs "
+                              f"WHERE state = 'failed' AND COALESCE(finished_at, started_at, created_at) >= ? AND {here}",
+                              (first.timestamp(), *mine)).fetchall():
+            if r["reason"] not in NOT_ERRORS:
+                count("failed", r["at"], (r["reason"] or "failed") + ("" if r["rc"] is None else f" rc {r['rc']}"))
+    return [{"day": day, **got} for day, got in sorted(out.items(), reverse=True)]
+
+
 def sweep(conn, since: float, beat: dict | None) -> dict:
     """What the sweep screened, measured, paused, stopped and settled since `since`, and how the loop ended."""
     out = {"screened": {}, "measured": {"runs": [], "elsewhere": [], "verdicts": {}}, "paused": [], "stopped": [],

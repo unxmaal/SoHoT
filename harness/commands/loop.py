@@ -222,16 +222,16 @@ def _report_loop(a) -> int:
 
 
 def _queued_sweep() -> str:
-    """Why the loop process starts no sweep, else "": one runs as queue jobs, a step of it waiting or running. #2111."""
+    """Why the loop process starts no sweep, else "": one runs as queue jobs, or a broken one is put back in the queue. #2111."""
     from harness import memory_store as ms
     from harness.commands import loop_steps
     conn = ms.connect()
     try:
         for cycle, job in loop_steps.live(conn).items():
             return f"sweep {cycle} runs as queue jobs, its next step job {job}"
+        return loop_steps.mend(conn)
     finally:
         conn.close()
-    return ""
 
 
 def _yield_on_signal():
@@ -678,6 +678,9 @@ def _measure_queued(a, sweep, failed: list, rc: int, want: str, top: int) -> int
         sweep.stopped = ""
     paused: list[str] = []
     rc = _measure_all(a, fresh, sweep, failed, rc, paused=paused)
+    if sweep is not None and sweep.more:
+        # The next job measures the rest on the weights the screen kept. #2111.
+        return rc
     # A run paused at an item boundary goes on in this sweep's next item, on the same weights. #1618, #2015.
     _after_verdicts("measure", keep=paused)
     return rc
@@ -820,11 +823,16 @@ def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=No
             paused.append(row.get("name", ""))
         # A paused pair resumes next sweep; it is not a failed step. #1374.
         rc = _step(f"measure {row.get('name', '')}".strip(), 0 if got == watch.PAUSED else got, failed) or rc
-        if sweep is not None and sweep.squeezed:
+        squeezed = sweep is not None and bool(sweep.squeezed)
+        if squeezed:
             # Its model is released by now: re-sample memory before each start from here on.
             print(f"  {row.get('name', '')} was paused for memory; going on with what fits, smallest first",
                   flush=True)
             sweep.squeezed, tight = "", True
+        if sweep is not None and sweep.looks_left == 0:
+            # A queue job is one look of one comparison; the next job takes what is left, the next sweep after a memory pause. #2111.
+            sweep.more = not squeezed and (bool(queue) or got == watch.PAUSED)
+            break
     return rc
 
 
