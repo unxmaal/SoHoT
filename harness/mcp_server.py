@@ -481,7 +481,14 @@ async def _status(request, as_json: bool):
     r = await run_in_threadpool(status_page.cached)
     if as_json:
         return Response(status_page.as_json(r), media_type="application/json")
-    return HTMLResponse(status_page.page(r))
+    from harness import owner_actions
+    extra = await run_in_threadpool(owner_actions.panel_for, _peer(request), request.headers, r)
+    return HTMLResponse(status_page.page(r, extra=extra), headers={"cache-control": "no-store"} if extra else None)
+
+
+def _peer(request) -> str | None:
+    """The connection's own peer address; serve() keeps uvicorn from rewriting it from a header. #2116."""
+    return request.client.host if request.client else None
 
 
 @SERVER.custom_route("/status", methods=["GET"])
@@ -493,6 +500,25 @@ async def status_page_route(request):
 @SERVER.custom_route("/status.json", methods=["GET"])
 async def status_json_route(request):
     return await _status(request, as_json=True)
+
+
+@SERVER.custom_route("/status/action", methods=["POST"])
+async def status_action_route(request):
+    """One press of an owner action; who may press is owner_actions.caller. #2116."""
+    from urllib.parse import parse_qs
+
+    from starlette.concurrency import run_in_threadpool
+    from starlette.responses import HTMLResponse, PlainTextResponse
+
+    from harness import owner_actions, status_page
+    if STATUS_HOSTS is not None and request.headers.get("host", "").lower() not in STATUS_HOSTS:
+        return PlainTextResponse("this host name is not allowed", status_code=421)
+    body = await request.body()
+    form = {} if len(body) > owner_actions.BODY_MAX else {
+        k: v[-1] for k, v in parse_qs(body.decode("utf-8", "replace"), keep_blank_values=True).items()}
+    r = await run_in_threadpool(status_page.cached)
+    code, text = await run_in_threadpool(owner_actions.press, _peer(request), request.headers, form, r)
+    return HTMLResponse(text, status_code=code, headers={"cache-control": "no-store"})
 
 
 def transport_security(host: str, port: int, extra=()):
@@ -571,7 +597,7 @@ def serve(host: str, port: int, allow=(), grace: float = SHUTDOWN_GRACE_S) -> No
     STATUS_HOSTS = {h.lower() for h in guard.allowed_hosts}
     app = SERVER.streamable_http_app(transport_security=guard, host=host)
     config = uvicorn.Config(app, host=host, port=port, log_level=SERVER.settings.log_level.lower(),
-                            timeout_graceful_shutdown=max(1, round(grace)))
+                            timeout_graceful_shutdown=max(1, round(grace)), proxy_headers=False)
     socks = listen_sockets(host, port)
     for line in stale_report(port, pid=os.getpid()):
         print(line, file=sys.stderr, flush=True)
