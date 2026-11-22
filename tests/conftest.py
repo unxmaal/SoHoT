@@ -692,6 +692,14 @@ def _fresh_size_refreshes(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_worktree_prune(monkeypatch, tmp_path_factory):
+    """No test reads or removes this checkout's sibling worktrees: the checkout is an empty scratch folder. #2114."""
+    from harness import worktrees
+    gone = tmp_path_factory.getbasetemp() / "no-checkout"
+    monkeypatch.setattr(worktrees, "checkout", lambda: gone)
+
+
+@pytest.fixture(autouse=True)
 def _no_real_disk_sweep(monkeypatch):
     """No test deletes from the real weights cache. #373."""
     from harness import disk
