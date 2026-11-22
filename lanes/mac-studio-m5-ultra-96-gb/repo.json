@@ -216,8 +216,8 @@
   },
   {
    "candidate": "llamacpp:Qwen3.6-27B-Q4_K_M",
-   "decided_at": "2026-11-22T07:15:09Z",
-   "detail": "extract: lane too small, needs 499 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1157 more extract cases are needed before a null says anything about lmst",
+   "decided_at": "2026-11-22T20:33:20Z",
+   "detail": "extract: better on the metric, but 10 lost against 23 gained is p=0.04, so the difference is not established; comparison 3 on this holdout, so alpha 0.05/3 = 0.0167; dev: 37 gained, 0 lost, p=0.00",
    "exam": {
     "about": "27B params, Q4_K_M",
     "candidate": "llamacpp:Qwen3.6-27B-Q4_K_M",
@@ -248,13 +248,13 @@
    },
    "outcome": "declined",
    "proposal": "lmstudio-community/Qwen3.6-27B-GGUF",
-   "reason": "limit",
+   "reason": "candidate",
    "receipt_key": "llamacpp:Qwen3.6-27B-Q4_K_M",
-   "run_id": 1151,
+   "run_id": 1169,
    "serves": false,
    "status": "rejected",
    "tier": "adopt",
-   "until": "cases:extract>1606"
+   "until": ""
   },
   {
    "candidate": "llamacpp:Qwopus3.5-27B-v3-Q4_K_M",
@@ -429,7 +429,7 @@
    "decided_at": "2026-10-23T03:39:22Z",
    "detail": "2 case(s) passed a screen",
    "exam": {
-    "about": "0.6B params, by Qwen",
+    "about": "family Qwen/Qwen3-0.6B-Base, 0.6B params, by Qwen",
     "candidate": "Qwen/Qwen3-0.6B",
     "cases": 72,
     "first_s": 0.0,
@@ -471,7 +471,7 @@
    "decided_at": "2026-10-23T03:39:22Z",
    "detail": "2 case(s) passed a screen",
    "exam": {
-    "about": "0.6B params, by Qwen",
+    "about": "family Qwen/Qwen3-0.6B-Base, 0.6B params, by Qwen",
     "candidate": "Qwen/Qwen3-0.6B",
     "cases": 72,
     "first_s": 0.0,
@@ -789,7 +789,7 @@
    "until": ""
   }
  ],
- "cursor": 1795331709814277,
+ "cursor": 1795379600732742,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -2470,6 +2470,21 @@
    "reason": "limit",
    "run_id": 1151,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-22T20:33:20Z",
+   "candidate": "llamacpp:Qwen3.6-27B-Q4_K_M",
+   "chosen": null,
+   "detail": "extract: better on the metric, but 10 lost against 23 gained is p=0.04, so the difference is not established; comparison 3 on this holdout, so alpha 0.05/3 = 0.0167; dev: 37 gained, 0 lost, p=0.00",
+   "how": "",
+   "id": 1795379600732742,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": 1169,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -2695,7 +2710,7 @@
      "ttft_p95_s": 616.111
     },
     {
-     "about": "0.6B params, by Qwen",
+     "about": "family Qwen/Qwen3-0.6B-Base, 0.6B params, by Qwen",
      "candidate": "Qwen/Qwen3-0.6B",
      "first_s": 0.0,
      "median_s": 0.0,
@@ -2815,7 +2830,7 @@
      "ttft_p95_s": 134.471
     },
     {
-     "about": "0.6B params, by Qwen",
+     "about": "family Qwen/Qwen3-0.6B-Base, 0.6B params, by Qwen",
      "candidate": "Qwen/Qwen3-0.6B",
      "first_s": 202.007,
      "median_s": 5.661,
@@ -4045,7 +4060,7 @@
    "runs": 3
   }
  ],
- "generated_at": "2026-11-22T08:04:38Z",
+ "generated_at": "2026-11-22T21:30:59Z",
  "knobs": [
   {
    "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
