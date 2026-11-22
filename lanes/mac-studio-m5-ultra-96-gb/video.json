@@ -53,8 +53,23 @@
    "until": "cases:video>177"
   },
   {
+   "candidate": "diffusers-video:TenStrip/LTX2.3-10Eros",
+   "decided_at": "2026-11-22T05:55:53Z",
+   "detail": "it ran and passed nothing: fox-run: exit 1",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "TenStrip/LTX2.3-10Eros",
+   "reason": "candidate",
+   "receipt_key": "diffusers-video/LTX2.3-10Eros",
+   "run_id": 1145,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "diffusers-video:FastVideo/FastVideo-FastH3-8-Step-V2",
-   "decided_at": "2026-11-21T05:18:35Z",
+   "decided_at": "2026-11-22T05:06:56Z",
    "detail": "unknown: no variant groups its weights (audio_vae/*.safetensors,text_encoder/*.safetensors,transformer/*.safetensors,vae/*.safetensors), so their 137.7 GiB sum is not a size it runs at",
    "exam": null,
    "outcome": "queued",
@@ -105,7 +120,7 @@
    "until": ""
   }
  ],
- "cursor": 1795239864454808,
+ "cursor": 1795326953955960,
  "events": [
   {
    "at": "2026-09-19T23:24:35Z",
@@ -183,6 +198,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-05T03:22:45Z",
+   "candidate": "TenStrip/LTX2.3-10Eros",
+   "chosen": null,
+   "detail": "not screened: needs 27.2 GB but only 14.0 GB is safely available (31.9 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1793848965797255,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-05T03:41:35Z",
    "candidate": "diffusers-video:LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
    "chosen": null,
@@ -195,6 +225,21 @@
    "outcome": "broken",
    "reason": "candidate",
    "run_id": 705,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-09T02:01:28Z",
+   "candidate": "TenStrip/LTX2.3-10Eros",
+   "chosen": null,
+   "detail": "not screened: needs 27.2 GB but only 26.8 GB is safely available (50.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 33.0 GB held by the interactive server's pinned models)",
+   "how": "",
+   "id": 1794189688123712,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
    "tier": "screen"
   },
   {
@@ -213,6 +258,51 @@
    "tier": "adopt"
   },
   {
+   "at": "2026-11-10T03:57:24Z",
+   "candidate": "TenStrip/LTX2.3-10Eros",
+   "chosen": null,
+   "detail": "not screened: needs 27.2 GB but only 26.8 GB is safely available (50.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 33.0 GB held by the interactive server's pinned models)",
+   "how": "",
+   "id": 1794283044414086,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-11T03:09:21Z",
+   "candidate": "TenStrip/LTX2.3-10Eros",
+   "chosen": null,
+   "detail": "not screened: needs 27.2 GB but only 23.2 GB is safely available (56.6 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794366561059824,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-12T03:40:08Z",
+   "candidate": "TenStrip/LTX2.3-10Eros",
+   "chosen": null,
+   "detail": "not screened: needs 27.2 GB but only 23.2 GB is safely available (52.7 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794454808573108,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-13T02:30:07Z",
    "candidate": "diffusers-video:LiseTY/Minimax-H3-ref2v_Anime_2_Realism",
    "chosen": null,
@@ -225,6 +315,66 @@
    "outcome": "broken",
    "reason": "candidate",
    "run_id": 930,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-13T02:30:13Z",
+   "candidate": "TenStrip/LTX2.3-10Eros",
+   "chosen": null,
+   "detail": "not screened: needs 27.2 GB but only 6.3 GB is safely available (24.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794537013563871,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-13T03:01:52Z",
+   "candidate": "TenStrip/LTX2.3-10Eros",
+   "chosen": null,
+   "detail": "not screened: needs 27.2 GB but only 23.2 GB is safely available (46.5 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794538912379814,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-14T04:59:57Z",
+   "candidate": "TenStrip/LTX2.3-10Eros",
+   "chosen": null,
+   "detail": "not screened: needs 27.2 GB but only 14.6 GB is safely available (32.6 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794632397869974,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-15T02:06:31Z",
+   "candidate": "TenStrip/LTX2.3-10Eros",
+   "chosen": null,
+   "detail": "not screened: needs 27.2 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released",
+   "how": "",
+   "id": 1794708391347197,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
    "tier": "screen"
   },
   {
@@ -243,12 +393,42 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-20T02:56:23Z",
+   "candidate": "TenStrip/LTX2.3-10Eros",
+   "chosen": null,
+   "detail": "not screened: needs 27.2 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: Ornith-1.5-35B-Q4_K_M, Qwen2.5-7B-Instruct-Q4_K_M, imajev-4b-Q8_0 stayed resident on the interactive server",
+   "how": "",
+   "id": 1795143383668667,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-20T03:37:52Z",
    "candidate": "FastVideo/FastVideo-FastH3-8-Step-V2",
    "chosen": null,
    "detail": "not screened: needs 137.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released",
    "how": "",
    "id": 1795145872288366,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-21T04:08:23Z",
+   "candidate": "TenStrip/LTX2.3-10Eros",
+   "chosen": null,
+   "detail": "not screened: needs 27.2 GB but only 19.2 GB is safely available (37.2 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 3.8 GB given to the Docker VM); no screen window: still short with the pinned set released: needs 27.2 GB but only 19.2 GB is safely available (37.2 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1795234103233317,
    "incumbent": "",
    "kind": "screen",
    "knob": "",
@@ -285,6 +465,51 @@
    "outcome": "broken",
    "reason": "candidate",
    "run_id": 1101,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-22T02:32:07Z",
+   "candidate": "TenStrip/LTX2.3-10Eros",
+   "chosen": null,
+   "detail": "not screened: needs 27.2 GB but only 21.6 GB is safely available (39.6 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 3.8 GB given to the Docker VM); no screen window: still short with the pinned set released: needs 27.2 GB but only 21.6 GB is safely available (39.6 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1795314727517569,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-22T03:06:31Z",
+   "candidate": "FastVideo/FastVideo-FastH3-8-Step-V2",
+   "chosen": null,
+   "detail": "not screened: needs 137.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released",
+   "how": "",
+   "id": 1795316791369498,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-22T05:55:53Z",
+   "candidate": "diffusers-video:TenStrip/LTX2.3-10Eros",
+   "chosen": null,
+   "detail": "it ran and passed nothing: fox-run: exit 1",
+   "how": "",
+   "id": 1795326953955960,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 1145,
    "tier": "screen"
   }
  ],
@@ -454,7 +679,7 @@
    "runs": 7
   }
  ],
- "generated_at": "2026-11-21T08:10:20Z",
+ "generated_at": "2026-11-22T08:04:37Z",
  "knobs": [],
  "lane": {
   "cases": 1,
