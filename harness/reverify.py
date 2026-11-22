@@ -335,12 +335,28 @@ def _reran_for_cases(last: dict | None, base_id) -> bool:
     return any(k == CASES for k, *_ in json.loads(last["triggers"] or "[]"))
 
 
+def _never_here(conn, last: dict | None) -> str:
+    """Why the last re-run's job, refused as never fitting, still could never be admitted here; '' when it now could. #2100."""
+    from harness import admission
+    from harness import job_state as js
+    if not last or last["job_id"] is None:
+        return ""
+    job = conn.execute("SELECT reason, argv FROM jobs WHERE id = ?", (last["job_id"],)).fetchone()
+    if job is None or job["reason"] != js.NEVER_FITS:
+        return ""
+    argv = json.loads(job["argv"]) if isinstance(job["argv"], str) else list(job["argv"] or [])
+    return admission.never(admission.need({"argv": argv}, resident=lambda: []))
+
+
 def _skip(conn, item: dict, found: list, now: float, base_id=None) -> str:
     last = _latest(conn, item["lane"], item["candidate_id"])
     if last and not last["outcome"]:
         return f"already queued as job {last['job_id'] or '(gone)'}"
     if not found:
         return "nothing moved"
+    never = _never_here(conn, last)
+    if never:
+        return f"its last re-run never fit and still would not: {never}"
     due = (last["settled_at"] or 0) + days_for(conn, item["lane"]) * 86400.0 if last else 0.0
     if last and last["outcome"] in FLAGGED and now < due and not _harness_moved(conn, last):
         return f"flagged {last['outcome']}: {last['detail']}; re-run again in {(due - now) / 86400.0:.1f} days"

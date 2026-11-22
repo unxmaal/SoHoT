@@ -764,11 +764,38 @@ def _admitted(job: dict) -> bool:
         if refused:
             _never_fits(c, job, refused)
             return False
+        if not ok and _windowed(job, n):
+            job["window"] = ITEM_S
+            return True
         if not ok and job.get("note") != f"waits for memory: {why}":
             c.execute("UPDATE jobs SET note = ? WHERE id = ? AND state = ?",
                       (f"waits for memory: {why}", int(job["id"]), PENDING))
             c.commit()
     return ok
+
+
+def _windowed(job: dict, n) -> bool:
+    """Whether a refused gpu item fits once the interactive server's pinned set is released for it. #2100."""
+    from harness import interactive, screen_window
+    return itemized(job) and interactive.reserved_bytes() > 0 and screen_window.wanted(n.gb)
+
+
+def _in_window(job: dict, popen=None) -> dict | None:
+    """Run one item of a job with the pinned set released for at most ITEM_S; a window that will not open defers it. #2100."""
+    from harness import screen_window
+    ran, why = None, ""
+    try:
+        with screen_window.opened(job["window"], f"job {label(job['id'])} ({job.get('title') or 'untitled'})"):
+            ran = run_one(job, popen=popen)
+    except screen_window.Refused as exc:
+        why = f"waits for a window: {exc}"
+    if ran is None:
+        with _store() as c:
+            c.execute("UPDATE jobs SET note = ?, not_before = ? WHERE id = ? AND state = ?",
+                      (why or job.get("refused") or job.get("note") or "", time.time() + screen_window.DRAIN_S,
+                       int(job["id"]), PENDING))
+            c.commit()
+    return ran
 
 
 def _never_fits(c, job: dict, why: str) -> None:
@@ -861,7 +888,7 @@ def run_pending(popen=None, gate=lambda: (True, ""), clock=time.time, watch: flo
 
     def work(job):
         try:
-            ran = run_one(job, popen=popen)
+            ran = _in_window(job, popen) if job.get("window") else run_one(job, popen=popen)
             if ran is not None:
                 done.append(ran)
                 if ran.get("handed_off"):

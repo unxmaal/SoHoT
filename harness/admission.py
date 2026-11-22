@@ -106,19 +106,19 @@ def budget_gb(held: list[dict]) -> tuple[float, str]:
 
 
 def never(n: Need) -> str:
-    """Why a need can never be admitted here, even with no lease held: over the ceiling less the reserve and held set; '' when it may fit later. #1926."""
-    from harness import memory
+    """Why a need can never be admitted here, even with no lease held and the pinned set released: over the ceiling less the reserve and Docker VM; '' when it may fit later. #1926, #2100."""
+    from harness import containers, memory
     if not n.gb:
         return ""
     ceiling = memory.ceiling_gb()
-    reserve, held = memory.measured_reserve_gb(), memory.held_gb()
-    most = ceiling - reserve - held
+    reserve, vm = memory.measured_reserve_gb(), containers.vm_gb()
+    most = ceiling - reserve - vm
     if ceiling <= 0 or n.gb <= most + 1e-9:
         return ""
     return (f"needs {n.gb:.1f} GiB ({', '.join(f'{s} {g}' for s, g in n.priced)}) but at most {most:.1f} GiB is ever "
-            f"admissible here: a {ceiling:.1f} GiB ceiling less a {reserve:.1f} GiB reserve and {held:.1f} GiB held by "
-            f"pinned models and the Docker VM. Run it on another node, or with a smaller quant, or after stopping what "
-            f"holds the {held:.1f} GiB; a harness limit, never the model's")
+            f"admissible here: a {ceiling:.1f} GiB ceiling less a {reserve:.1f} GiB reserve and {vm:.1f} GiB given to "
+            f"the Docker VM, with the interactive server's pinned models released. Run it on another node or with a "
+            f"smaller quant{', or with the Docker VM stopped' if n.gb <= most + vm + 1e-9 else ''}; a harness limit, never the model's")
 
 
 def admit(n: Need, held: list[dict], sample=None) -> tuple[bool, str]:

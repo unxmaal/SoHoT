@@ -3,7 +3,7 @@ import types
 
 import pytest
 
-from harness import admission, containers, memory, monitor, pressure, reverify
+from harness import admission, containers, memory, monitor, pressure, reverify, screen_window
 from harness import job_state as js
 from harness import workqueue as wq
 from tests.test_reverify import NOW, _latest, check, conn, on, powered, queued, upgraded  # noqa: F401
@@ -11,7 +11,7 @@ from tests.test_reverify import NOW, _latest, check, conn, on, powered, queued, 
 HUGE = ["uv", "run", "python", "-m", "evals.run", "--modality", "music", "--candidates", "llamacpp:Huge-46B"]
 BIG = ["uv", "run", "python", "-m", "evals.run", "--modality", "code", "--candidates", "llamacpp:Big-20B"]
 SMALL = ["uv", "run", "python", "-m", "evals.run", "--modality", "code", "--candidates", "llamacpp:Small-4B"]
-SIZES = {"llamacpp:Huge-46B": 46.0, "llamacpp:Big-20B": 20.0, "llamacpp:Small-4B": 4.0}
+SIZES = {"llamacpp:Huge-46B": 60.0, "llamacpp:Big-20B": 20.0, "llamacpp:Small-4B": 4.0}
 
 
 @pytest.fixture
@@ -49,15 +49,16 @@ def test_a_job_that_can_never_fit_is_refused_by_name_with_one_alert_and_how_to_r
     assert (got["state"], got["reason"]) == (wq.FAILED, js.NEVER_FITS)
     assert not got["started"] and got["rc"] is None and got["finished"]
     note = got["note"]
-    assert note.startswith("refused: needs 46.0 GiB (llamacpp:Huge-46B 46.0)")
-    assert "at most 23.2 GiB is ever admissible" in note and "36.6 GiB held" in note and "18.0 GiB reserve" in note
+    assert note.startswith("refused: needs 60.0 GiB (llamacpp:Huge-46B 60.0)")
+    assert "at most 51.8 GiB is ever admissible" in note and "8.0 GiB given to the Docker VM" in note and "18.0 GiB reserve" in note
     assert "another node" in note and "smaller quant" in note
     assert len(alerts) == 1 and f"job {wq.label(job['id'])}" in alerts[0][1] and "never started" in alerts[0][1]
-    assert "at most 23.2 GiB" in alerts[0][1]
+    assert "at most 51.8 GiB" in alerts[0][1]
     assert _ran() == [] and len(alerts) == 1 and wq.get(job["id"])["state"] == wq.FAILED
 
 
-def test_a_job_that_can_fit_later_keeps_waiting_and_starts_once_it_fits(machine, alerts):
+def test_a_job_that_can_fit_later_keeps_waiting_and_starts_once_it_fits(machine, alerts, monkeypatch):
+    monkeypatch.setattr(screen_window, "quiet_s", lambda now=None, conn=None: 0.0)
     job = wq.add(BIG, title="big")
     machine["available"] = 30.0
     for _ in range(3):
@@ -71,8 +72,8 @@ def test_a_job_that_can_fit_later_keeps_waiting_and_starts_once_it_fits(machine,
 
 
 def test_never_is_silent_for_a_need_that_fits_the_ceiling_or_is_not_priced(machine, monkeypatch):
-    assert admission.never(admission.Need(23.2)) == ""
-    assert admission.never(admission.Need(23.3, priced=[("x", 23.3)])).startswith("needs 23.3 GiB (x 23.3)")
+    assert admission.never(admission.Need(51.8)) == ""
+    assert admission.never(admission.Need(51.9, priced=[("x", 51.9)])).startswith("needs 51.9 GiB (x 51.9)")
     assert admission.never(admission.Need(None)) == "" and admission.never(admission.Need(0.0)) == ""
     monkeypatch.setattr(memory, "ceiling_gb", lambda: 0.0)
     assert admission.never(admission.Need(500.0)) == ""
