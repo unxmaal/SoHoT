@@ -236,6 +236,36 @@
    "until": "policy:trust_remote_code@gptx2"
   },
   {
+   "candidate": "ConwayResearch/Underdog-Saluki-27B-1.0",
+   "decided_at": "2026-11-22T04:36:30Z",
+   "detail": "the screen exited 75",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "ConwayResearch/Underdog-Saluki-27B-1.0",
+   "reason": "candidate",
+   "receipt_key": "ConwayResearch/Underdog-Saluki-27B-1.0",
+   "run_id": 1132,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "ConwayResearch/Underdog-Saluki-27B-1.0,temperature=0",
+   "decided_at": "2026-11-22T04:36:30Z",
+   "detail": "the screen exited 75",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "ConwayResearch/Underdog-Saluki-27B-1.0",
+   "reason": "candidate",
+   "receipt_key": "ConwayResearch/Underdog-Saluki-27B-1.0",
+   "run_id": 1132,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "DeepMostInnovations/sales-conversion-model-reinf-learning",
    "decided_at": "2026-10-18T00:42:26Z",
    "detail": "retracted: DeepMostInnovations/sales-conversion-model-reinf-learning's runner could not open the repo's layout, a runner gap rather than a verdict on DeepMostInnovations/sales-conversion-model-reinf-learning: it ran and passed nothing: chunk-bytes: gateway returned HTTP 404: {\"error\": \"No safetensors found in 105963aa2bcdaa9a41600366ee7218bb03e397d2\"}",
@@ -419,34 +449,34 @@
    "until": "policy:trust_remote_code@better_gpt"
   },
   {
-   "candidate": "IFM/K2-Horizon-7B-GGUF",
-   "decided_at": "2026-11-15T02:42:20Z",
-   "detail": "the screen exited 75",
+   "candidate": "Jacklu0831/deletion-tuning-masks",
+   "decided_at": "2026-11-22T04:45:36Z",
+   "detail": "3 screens in a row could not be delivered (harness_error); the harness needs a fix, and a retest or a higher screen_harness_errors reopens it: not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: chunk-bytes: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2] No such file or directory: 'config.json'\"}; evaluate-expr: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2",
    "exam": null,
-   "outcome": "broken",
-   "proposal": "IFM/K2-Horizon-7B-GGUF",
-   "reason": "candidate",
-   "receipt_key": "IFM/K2-Horizon-7B-GGUF",
-   "run_id": 998,
+   "outcome": "declined",
+   "proposal": "Jacklu0831/deletion-tuning-masks",
+   "reason": "limit",
+   "receipt_key": "Jacklu0831/deletion-tuning-masks",
+   "run_id": 1133,
    "serves": false,
    "status": "rejected",
    "tier": "screen",
-   "until": ""
+   "until": "limit:screen_harness_errors>3"
   },
   {
-   "candidate": "IFM/K2-Horizon-7B-GGUF,temperature=0",
-   "decided_at": "2026-11-15T02:42:20Z",
-   "detail": "the screen exited 75",
+   "candidate": "Jacklu0831/deletion-tuning-masks,temperature=0",
+   "decided_at": "2026-11-22T04:45:36Z",
+   "detail": "3 screens in a row could not be delivered (harness_error); the harness needs a fix, and a retest or a higher screen_harness_errors reopens it: not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: chunk-bytes: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2] No such file or directory: 'config.json'\"}; evaluate-expr: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2",
    "exam": null,
-   "outcome": "broken",
-   "proposal": "IFM/K2-Horizon-7B-GGUF",
-   "reason": "candidate",
-   "receipt_key": "IFM/K2-Horizon-7B-GGUF",
-   "run_id": 998,
+   "outcome": "declined",
+   "proposal": "Jacklu0831/deletion-tuning-masks",
+   "reason": "limit",
+   "receipt_key": "Jacklu0831/deletion-tuning-masks",
+   "run_id": 1133,
    "serves": false,
    "status": "rejected",
    "tier": "screen",
-   "until": ""
+   "until": "limit:screen_harness_errors>3"
   },
   {
    "candidate": "Jackrong/Qwopus3.5-27B-v3-GGUF",
@@ -1379,6 +1409,36 @@
    "until": "runner:transformers"
   },
   {
+   "candidate": "bartowski/endless-frontier_BigBang-v1-GGUF",
+   "decided_at": "2026-11-22T04:55:27Z",
+   "detail": "the screen exited 75",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "bartowski/endless-frontier_BigBang-v1-GGUF",
+   "reason": "candidate",
+   "receipt_key": "bartowski/endless-frontier_BigBang-v1-GGUF",
+   "run_id": 1134,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "bartowski/endless-frontier_BigBang-v1-GGUF,temperature=0",
+   "decided_at": "2026-11-22T04:55:27Z",
+   "detail": "the screen exited 75",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "bartowski/endless-frontier_BigBang-v1-GGUF",
+   "reason": "candidate",
+   "receipt_key": "bartowski/endless-frontier_BigBang-v1-GGUF",
+   "run_id": 1134,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "claude-code:claude-opus-5-5",
    "decided_at": "2026-10-09T17:56:16Z",
    "detail": "web: reference model; never a lane default (the incumbent stays: the cases disagree 2-2 with no majority (accessible-nav: q3-4b, dark-mode-toggle: q3-coder, data-table: q3-4b, form-validation: claude-",
@@ -1476,36 +1536,6 @@
    "status": "rejected",
    "tier": "screen",
    "until": "runner:gliner2"
-  },
-  {
-   "candidate": "google/gemma-4-31B-it-qat-w4a16-ct",
-   "decided_at": "2026-11-21T05:44:14Z",
-   "detail": "the installed runtime could not load it: chunk-bytes: warm-up: gateway returned HTTP 404: {\"error\": \"Received 1231 parameters not in model: \\nlanguage_model.model.layers.0.mlp.down_proj.weight_packed,\\nlanguage_model.model.layers.0.mlp.down_proj.weight_scale,\\nlanguage_model.model.layers.0.mlp.down_proj.weight_shape,\\nlanguage_model.model.",
-   "exam": null,
-   "outcome": "declined",
-   "proposal": "google/gemma-4-31B-it-qat-w4a16-ct",
-   "reason": "runtime",
-   "receipt_key": "google/gemma-4-31B-it-qat-w4a16-ct",
-   "run_id": 1100,
-   "serves": false,
-   "status": "rejected",
-   "tier": "screen",
-   "until": "runner:mlx-vlm"
-  },
-  {
-   "candidate": "google/gemma-4-31B-it-qat-w4a16-ct,temperature=0",
-   "decided_at": "2026-11-21T05:44:14Z",
-   "detail": "the installed runtime could not load it: chunk-bytes: warm-up: gateway returned HTTP 404: {\"error\": \"Received 1231 parameters not in model: \\nlanguage_model.model.layers.0.mlp.down_proj.weight_packed,\\nlanguage_model.model.layers.0.mlp.down_proj.weight_scale,\\nlanguage_model.model.layers.0.mlp.down_proj.weight_shape,\\nlanguage_model.model.",
-   "exam": null,
-   "outcome": "declined",
-   "proposal": "google/gemma-4-31B-it-qat-w4a16-ct",
-   "reason": "runtime",
-   "receipt_key": "google/gemma-4-31B-it-qat-w4a16-ct",
-   "run_id": 1100,
-   "serves": false,
-   "status": "rejected",
-   "tier": "screen",
-   "until": "runner:mlx-vlm"
   },
   {
    "candidate": "google/gemma-4-E4B-it",
@@ -1704,6 +1734,36 @@
    "status": "rejected",
    "tier": "screen",
    "until": "limit:screen_harness_errors>3"
+  },
+  {
+   "candidate": "linuxid10t/G9v3-39A5B-GGUF",
+   "decided_at": "2026-11-22T05:00:33Z",
+   "detail": "the installed runtime could not load it: llama-server: llama_model_load: error loading model: unknown model architecture: 'g9v3' (server-load.log, eval.log lines 1608788-1608830)",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "linuxid10t/G9v3-39A5B-GGUF",
+   "reason": "runtime",
+   "receipt_key": "linuxid10t/G9v3-39A5B-GGUF",
+   "run_id": 1135,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "version:llama.cpp>11960"
+  },
+  {
+   "candidate": "linuxid10t/G9v3-39A5B-GGUF,temperature=0",
+   "decided_at": "2026-11-22T05:00:33Z",
+   "detail": "the installed runtime could not load it: llama-server: llama_model_load: error loading model: unknown model architecture: 'g9v3' (server-load.log, eval.log lines 1608788-1608830)",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "linuxid10t/G9v3-39A5B-GGUF",
+   "reason": "runtime",
+   "receipt_key": "linuxid10t/G9v3-39A5B-GGUF",
+   "run_id": 1135,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "version:llama.cpp>11960"
   },
   {
    "candidate": "llamacpp:Bonsai-8B",
@@ -2493,6 +2553,21 @@
    "until": "cases:code>1227"
   },
   {
+   "candidate": "llamacpp:Qwen3.6-27B-Q4_K_M",
+   "decided_at": "2026-11-22T07:15:09Z",
+   "detail": "extract: lane too small, needs 499 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1157 more extract cases are needed before a null says anything about lmst",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "lmstudio-community/Qwen3.6-27B-GGUF",
+   "reason": "limit",
+   "receipt_key": "llamacpp:Qwen3.6-27B-Q4_K_M",
+   "run_id": 1151,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>1606"
+  },
+  {
    "candidate": "llamacpp:Qwen3.6-35B-A3B-DFlash-Q4_K_M",
    "decided_at": "2026-10-19T16:45:42Z",
    "detail": "re-decided (#1039): drafter in its own card or load log: this attaches to a model rather than being one, and no lane can run it alone",
@@ -2527,7 +2602,7 @@
    "decided_at": "2026-11-12T04:30:39Z",
    "detail": "code: lane too small, needs 371 holdout cases: 135 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 787 more code cases are needed before a null says anything about llamacpp:Qw",
    "exam": {
-    "about": "family Qwen/Qwen3.6-35B-A3B, 35B (3B active) params, Q4_K_M, by unsloth",
+    "about": "35B (3B active) params, Q4_K_M",
     "candidate": "llamacpp:Qwen3.6-35B-A3B-UD-Q4_K_M",
     "cases": 135,
     "first_s": 9.424,
@@ -2546,7 +2621,7 @@
     "repeat": 1,
     "run_at": "2026-11-12T04:30:38Z",
     "served_as": "",
-    "source": "https://huggingface.co/unsloth/Qwen3.6-35B-A3B-GGUF",
+    "source": "",
     "total": 23,
     "ttft_median_s": 28.081,
     "ttft_p95_s": 54.667
@@ -2566,7 +2641,7 @@
    "decided_at": "2026-11-12T04:30:39Z",
    "detail": "code: lane too small, needs 371 holdout cases: 135 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 787 more code cases are needed before a null says anything about llamacpp:Qw",
    "exam": {
-    "about": "family Qwen/Qwen3.6-35B-A3B, 35B (3B active) params, Q4_K_M, by unsloth",
+    "about": "35B (3B active) params, Q4_K_M",
     "candidate": "llamacpp:Qwen3.6-35B-A3B-UD-Q4_K_M",
     "cases": 135,
     "first_s": 9.424,
@@ -2585,7 +2660,7 @@
     "repeat": 1,
     "run_at": "2026-11-12T04:30:38Z",
     "served_as": "",
-    "source": "https://huggingface.co/unsloth/Qwen3.6-35B-A3B-GGUF",
+    "source": "",
     "total": 23,
     "ttft_median_s": 28.081,
     "ttft_p95_s": 54.667
@@ -3145,6 +3220,36 @@
    "until": "cases:code>3156"
   },
   {
+   "candidate": "lmstudio-community/Qwen3.6-27B-GGUF",
+   "decided_at": "2026-11-22T07:15:09Z",
+   "detail": "extract: lane too small, needs 499 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1157 more extract cases are needed before a null says anything about lmst",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "lmstudio-community/Qwen3.6-27B-GGUF",
+   "reason": "limit",
+   "receipt_key": "lmstudio-community/Qwen3.6-27B-GGUF",
+   "run_id": 1151,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>1606"
+  },
+  {
+   "candidate": "lmstudio-community/Qwen3.6-27B-GGUF,temperature=0",
+   "decided_at": "2026-11-22T07:15:09Z",
+   "detail": "extract: lane too small, needs 499 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1157 more extract cases are needed before a null says anything about lmst",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "lmstudio-community/Qwen3.6-27B-GGUF",
+   "reason": "limit",
+   "receipt_key": "lmstudio-community/Qwen3.6-27B-GGUF",
+   "run_id": 1151,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>1606"
+  },
+  {
    "candidate": "lmsys/vicuna-7b-v1.3",
    "decided_at": "2026-10-06T04:04:19Z",
    "detail": "dead: last commit 3.2 years ago",
@@ -3158,6 +3263,36 @@
    "status": "rejected",
    "tier": "inspect",
    "until": "commit_after:2023-08-01T18:26:56.000Z"
+  },
+  {
+   "candidate": "matthewhaynesonline/gemma-4-E2B-it-crap-1.1",
+   "decided_at": "2026-11-22T04:30:54Z",
+   "detail": "the screen exited 75",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "matthewhaynesonline/gemma-4-E2B-it-crap-1.1",
+   "reason": "candidate",
+   "receipt_key": "matthewhaynesonline/gemma-4-E2B-it-crap-1.1",
+   "run_id": 1130,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "matthewhaynesonline/gemma-4-E2B-it-crap-1.1,temperature=0",
+   "decided_at": "2026-11-22T04:30:54Z",
+   "detail": "the screen exited 75",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "matthewhaynesonline/gemma-4-E2B-it-crap-1.1",
+   "reason": "candidate",
+   "receipt_key": "matthewhaynesonline/gemma-4-E2B-it-crap-1.1",
+   "run_id": 1130,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
   },
   {
    "candidate": "mistralai/Shieldstral-1.0-3B",
@@ -4157,6 +4292,36 @@
    "status": "rejected",
    "tier": "adopt",
    "until": "cases:code>1240"
+  },
+  {
+   "candidate": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF",
+   "decided_at": "2026-11-22T02:26:14Z",
+   "detail": "the screen exited 75",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF",
+   "reason": "candidate",
+   "receipt_key": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF",
+   "run_id": 1125,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF,temperature=0",
+   "decided_at": "2026-11-22T02:26:14Z",
+   "detail": "the screen exited 75",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF",
+   "reason": "candidate",
+   "receipt_key": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF",
+   "run_id": 1125,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
   },
   {
    "candidate": "z-lab/Qwen3.6-35B-A3B-DFlash",
@@ -5493,21 +5658,6 @@
    "until": ""
   },
   {
-   "candidate": "llamacpp:Qwen3.6-27B-Q4_K_M",
-   "decided_at": "2026-11-20T02:46:13Z",
-   "detail": "4 case(s) passed a screen",
-   "exam": null,
-   "outcome": "screened",
-   "proposal": "lmstudio-community/Qwen3.6-27B-GGUF",
-   "reason": "candidate",
-   "receipt_key": "llamacpp:Qwen3.6-27B-Q4_K_M",
-   "run_id": 1034,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
    "candidate": "llamacpp:Qwen3.6-27B-Q4_K_M,temperature=0",
    "decided_at": "2026-10-20T01:26:13Z",
    "detail": "4 case(s) passed a screen",
@@ -6235,36 +6385,6 @@
    "until": ""
   },
   {
-   "candidate": "lmstudio-community/Qwen3.6-27B-GGUF",
-   "decided_at": "2026-11-20T02:46:13Z",
-   "detail": "4 case(s) passed a screen",
-   "exam": null,
-   "outcome": "screened",
-   "proposal": "lmstudio-community/Qwen3.6-27B-GGUF",
-   "reason": "candidate",
-   "receipt_key": "lmstudio-community/Qwen3.6-27B-GGUF",
-   "run_id": 1034,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
-   "candidate": "lmstudio-community/Qwen3.6-27B-GGUF,temperature=0",
-   "decided_at": "2026-11-20T02:46:13Z",
-   "detail": "4 case(s) passed a screen",
-   "exam": null,
-   "outcome": "screened",
-   "proposal": "lmstudio-community/Qwen3.6-27B-GGUF",
-   "reason": "candidate",
-   "receipt_key": "lmstudio-community/Qwen3.6-27B-GGUF",
-   "run_id": 1034,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
    "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit,temperature=0",
    "decided_at": "2026-11-10T03:58:39Z",
    "detail": "2 case(s) passed a screen",
@@ -6691,33 +6811,33 @@
    "until": ""
   },
   {
-   "candidate": "Jacklu0831/deletion-tuning-masks",
-   "decided_at": "2026-11-21T06:53:29Z",
-   "detail": "not fetched 2026-11-21: the screen share of the sweep ceiling is spent",
+   "candidate": "IFM/K2-Horizon-7B-GGUF",
+   "decided_at": "2026-11-22T05:08:22Z",
+   "detail": "retest 1/3: broken at screen",
    "exam": null,
    "outcome": "queued",
-   "proposal": "Jacklu0831/deletion-tuning-masks",
-   "reason": "limit",
-   "receipt_key": "Jacklu0831/deletion-tuning-masks",
+   "proposal": "IFM/K2-Horizon-7B-GGUF",
+   "reason": "reopened",
+   "receipt_key": "IFM/K2-Horizon-7B-GGUF",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "fetch",
+   "tier": "inspect",
    "until": ""
   },
   {
-   "candidate": "Jacklu0831/deletion-tuning-masks,temperature=0",
-   "decided_at": "2026-11-21T06:53:29Z",
-   "detail": "not fetched 2026-11-21: the screen share of the sweep ceiling is spent",
+   "candidate": "IFM/K2-Horizon-7B-GGUF,temperature=0",
+   "decided_at": "2026-11-22T05:08:22Z",
+   "detail": "retest 1/3: broken at screen",
    "exam": null,
    "outcome": "queued",
-   "proposal": "Jacklu0831/deletion-tuning-masks",
-   "reason": "limit",
-   "receipt_key": "Jacklu0831/deletion-tuning-masks",
+   "proposal": "IFM/K2-Horizon-7B-GGUF",
+   "reason": "reopened",
+   "receipt_key": "IFM/K2-Horizon-7B-GGUF",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "fetch",
+   "tier": "inspect",
    "until": ""
   },
   {
@@ -6782,8 +6902,8 @@
   },
   {
    "candidate": "NemoStation/Marlin-2B",
-   "decided_at": "2026-11-21T06:53:29Z",
-   "detail": "not fetched 2026-11-21: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-22T06:26:33Z",
+   "detail": "not fetched 2026-11-22: the screen share of the sweep ceiling is spent",
    "exam": null,
    "outcome": "queued",
    "proposal": "NemoStation/Marlin-2B",
@@ -6797,8 +6917,8 @@
   },
   {
    "candidate": "NemoStation/Marlin-2B,temperature=0",
-   "decided_at": "2026-11-21T06:53:29Z",
-   "detail": "not fetched 2026-11-21: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-22T06:26:33Z",
+   "detail": "not fetched 2026-11-22: the screen share of the sweep ceiling is spent",
    "exam": null,
    "outcome": "queued",
    "proposal": "NemoStation/Marlin-2B",
@@ -6842,8 +6962,8 @@
   },
   {
    "candidate": "Qwen/Qwen-Image-Bench",
-   "decided_at": "2026-11-21T06:53:29Z",
-   "detail": "not fetched 2026-11-21: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-22T06:26:33Z",
+   "detail": "not fetched 2026-11-22: the screen share of the sweep ceiling is spent",
    "exam": null,
    "outcome": "queued",
    "proposal": "Qwen/Qwen-Image-Bench",
@@ -6857,8 +6977,8 @@
   },
   {
    "candidate": "Qwen/Qwen-Image-Bench,temperature=0",
-   "decided_at": "2026-11-21T06:53:29Z",
-   "detail": "not fetched 2026-11-21: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-22T06:26:33Z",
+   "detail": "not fetched 2026-11-22: the screen share of the sweep ceiling is spent",
    "exam": null,
    "outcome": "queued",
    "proposal": "Qwen/Qwen-Image-Bench",
@@ -6886,9 +7006,39 @@
    "until": ""
   },
   {
+   "candidate": "google/gemma-4-31B-it-qat-w4a16-ct",
+   "decided_at": "2026-11-22T02:02:37Z",
+   "detail": "fits: smallest variant model.safetensors: 21.7 GiB of 1 weight file",
+   "exam": null,
+   "outcome": "queued",
+   "proposal": "google/gemma-4-31B-it-qat-w4a16-ct",
+   "reason": "candidate",
+   "receipt_key": "google/gemma-4-31B-it-qat-w4a16-ct",
+   "run_id": null,
+   "serves": false,
+   "status": "pending",
+   "tier": "inspect",
+   "until": ""
+  },
+  {
+   "candidate": "google/gemma-4-31B-it-qat-w4a16-ct,temperature=0",
+   "decided_at": "2026-11-22T02:02:37Z",
+   "detail": "fits: smallest variant model.safetensors: 21.7 GiB of 1 weight file",
+   "exam": null,
+   "outcome": "queued",
+   "proposal": "google/gemma-4-31B-it-qat-w4a16-ct",
+   "reason": "candidate",
+   "receipt_key": "google/gemma-4-31B-it-qat-w4a16-ct",
+   "run_id": null,
+   "serves": false,
+   "status": "pending",
+   "tier": "inspect",
+   "until": ""
+  },
+  {
    "candidate": "ibm-granite/granite-4.1-8b",
-   "decided_at": "2026-11-21T06:53:29Z",
-   "detail": "not fetched 2026-11-21: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-22T06:26:33Z",
+   "detail": "not fetched 2026-11-22: the screen share of the sweep ceiling is spent",
    "exam": {
     "about": "family granite, 8B params, by ibm-granite",
     "candidate": "ibm-granite/granite-4.1-8b",
@@ -6926,8 +7076,8 @@
   },
   {
    "candidate": "ibm-granite/granite-4.1-8b,temperature=0",
-   "decided_at": "2026-11-21T06:53:29Z",
-   "detail": "not fetched 2026-11-21: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-22T06:26:33Z",
+   "detail": "not fetched 2026-11-22: the screen share of the sweep ceiling is spent",
    "exam": {
     "about": "family granite, 8B params, by ibm-granite",
     "candidate": "ibm-granite/granite-4.1-8b",
@@ -6980,8 +7130,8 @@
   },
   {
    "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
-   "decided_at": "2026-11-21T06:53:29Z",
-   "detail": "not fetched 2026-11-21: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-22T06:26:33Z",
+   "detail": "not fetched 2026-11-22: the screen share of the sweep ceiling is spent",
    "exam": {
     "about": "family ornith-ai/Ornith-1.5-35B-A3B, 35B (3B active) params, Q4_K_S, by peculiar-ragdoll",
     "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
@@ -7019,8 +7169,8 @@
   },
   {
    "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S,temperature=0",
-   "decided_at": "2026-11-21T06:53:29Z",
-   "detail": "not fetched 2026-11-21: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-22T06:26:33Z",
+   "detail": "not fetched 2026-11-22: the screen share of the sweep ceiling is spent",
    "exam": {
     "about": "family ornith-ai/Ornith-1.5-35B-A3B, 35B (3B active) params, Q4_K_S, by peculiar-ragdoll",
     "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
@@ -7058,8 +7208,8 @@
   },
   {
    "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
-   "decided_at": "2026-11-21T06:53:29Z",
-   "detail": "not fetched 2026-11-21: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-22T06:26:33Z",
+   "detail": "not fetched 2026-11-22: the screen share of the sweep ceiling is spent",
    "exam": {
     "about": "family CohereLabs/command-a-plus-05-2026-bf16, IQ1_S, by bartowski",
     "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
@@ -7097,8 +7247,8 @@
   },
   {
    "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S,temperature=0",
-   "decided_at": "2026-11-21T06:53:29Z",
-   "detail": "not fetched 2026-11-21: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-22T06:26:33Z",
+   "detail": "not fetched 2026-11-22: the screen share of the sweep ceiling is spent",
    "exam": {
     "about": "family CohereLabs/command-a-plus-05-2026-bf16, IQ1_S, by bartowski",
     "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
@@ -7136,8 +7286,8 @@
   },
   {
    "candidate": "llamacpp:microsoft_Fara-7B-Q4_K_M",
-   "decided_at": "2026-11-21T06:53:29Z",
-   "detail": "not fetched 2026-11-21: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-22T06:26:33Z",
+   "detail": "not fetched 2026-11-22: the screen share of the sweep ceiling is spent",
    "exam": {
     "about": "family microsoft/Fara-7B, 7B params, Q4_K_M, by bartowski",
     "candidate": "llamacpp:microsoft_Fara-7B-Q4_K_M",
@@ -7175,8 +7325,8 @@
   },
   {
    "candidate": "llamacpp:microsoft_Fara-7B-Q4_K_M,temperature=0",
-   "decided_at": "2026-11-21T06:53:29Z",
-   "detail": "not fetched 2026-11-21: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-22T06:26:33Z",
+   "detail": "not fetched 2026-11-22: the screen share of the sweep ceiling is spent",
    "exam": {
     "about": "family microsoft/Fara-7B, 7B params, Q4_K_M, by bartowski",
     "candidate": "llamacpp:microsoft_Fara-7B-Q4_K_M",
@@ -7214,8 +7364,8 @@
   },
   {
    "candidate": "llamacpp:ornith15-trained-head",
-   "decided_at": "2026-11-21T06:53:29Z",
-   "detail": "not fetched 2026-11-21: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-22T06:26:33Z",
+   "detail": "not fetched 2026-11-22: the screen share of the sweep ceiling is spent",
    "exam": {
     "about": "family ornith-ai/Ornith-1.5-35B-A3B, 35B (3B active) params, by conFIGur8tor",
     "candidate": "llamacpp:ornith15-trained-head",
@@ -7253,8 +7403,8 @@
   },
   {
    "candidate": "llamacpp:ornith15-trained-head,temperature=0",
-   "decided_at": "2026-11-21T06:53:29Z",
-   "detail": "not fetched 2026-11-21: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-22T06:26:33Z",
+   "detail": "not fetched 2026-11-22: the screen share of the sweep ceiling is spent",
    "exam": {
     "about": "family ornith-ai/Ornith-1.5-35B-A3B, 35B (3B active) params, by conFIGur8tor",
     "candidate": "llamacpp:ornith15-trained-head",
@@ -7496,8 +7646,8 @@
   },
   {
    "candidate": "zhengmh/OmniVTG-7B",
-   "decided_at": "2026-11-21T06:53:29Z",
-   "detail": "not fetched 2026-11-21: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-22T06:26:33Z",
+   "detail": "not fetched 2026-11-22: the screen share of the sweep ceiling is spent",
    "exam": {
     "about": "family qwen2_5_vl, 7B params, by zhengmh",
     "candidate": "zhengmh/OmniVTG-7B",
@@ -7535,8 +7685,8 @@
   },
   {
    "candidate": "zhengmh/OmniVTG-7B,temperature=0",
-   "decided_at": "2026-11-21T06:53:29Z",
-   "detail": "not fetched 2026-11-21: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-22T06:26:33Z",
+   "detail": "not fetched 2026-11-22: the screen share of the sweep ceiling is spent",
    "exam": {
     "about": "family qwen2_5_vl, 7B params, by zhengmh",
     "candidate": "zhengmh/OmniVTG-7B",
@@ -7573,7 +7723,7 @@
    "until": ""
   }
  ],
- "cursor": 1795244007973310,
+ "cursor": 1795331709814277,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -17911,6 +18061,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-15T02:27:26Z",
+   "candidate": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 21.1 GB but only 10.1 GB is safely available (28.1 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794709646147318,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-15T02:27:27Z",
    "candidate": "LiquidAI/LFM2.5-24B-A2B-GGUF",
    "chosen": null,
@@ -17983,6 +18148,66 @@
    "outcome": "declined",
    "reason": "limit",
    "run_id": 999,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-15T02:42:39Z",
+   "candidate": "matthewhaynesonline/gemma-4-E2B-it-crap-1.1",
+   "chosen": null,
+   "detail": "not screened: needs 9.5 GB but only 5.3 GB is safely available (23.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794710559997729,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-15T02:42:41Z",
+   "candidate": "linuxid10t/G9v3-39A5B-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 21.9 GB but only 5.3 GB is safely available (23.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794710561884923,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-15T02:42:42Z",
+   "candidate": "bartowski/endless-frontier_BigBang-v1-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 20.4 GB but only 5.3 GB is safely available (23.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794710562316688,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-15T02:42:43Z",
+   "candidate": "ConwayResearch/Underdog-Saluki-27B-1.0",
+   "chosen": null,
+   "detail": "not screened: needs 7.4 GB but only 5.3 GB is safely available (23.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794710563236612,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
    "tier": "screen"
   },
   {
@@ -18361,6 +18586,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-20T03:50:27Z",
+   "candidate": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 21.1 GB but only 2.6 GB is safely available (20.6 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1795146627025940,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-20T05:53:16Z",
    "candidate": "Jackrong/Qwopus3.5-27B-v3-GGUF",
    "chosen": null,
@@ -18496,6 +18736,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-21T04:22:18Z",
+   "candidate": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 21.1 GB but only 14.3 GB is safely available (32.2 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1795234938231030,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-21T04:37:37Z",
    "candidate": "Jiunsong/supergemma4-26b-uncensored-gguf-v2",
    "chosen": null,
@@ -18539,6 +18794,111 @@
    "reason": "candidate",
    "run_id": 1107,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-22T02:26:14Z",
+   "candidate": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF",
+   "chosen": null,
+   "detail": "the screen exited 75",
+   "how": "",
+   "id": 1795314374164709,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 1125,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-22T04:30:54Z",
+   "candidate": "matthewhaynesonline/gemma-4-E2B-it-crap-1.1",
+   "chosen": null,
+   "detail": "the screen exited 75",
+   "how": "",
+   "id": 1795321854210771,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 1130,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-22T04:36:30Z",
+   "candidate": "ConwayResearch/Underdog-Saluki-27B-1.0",
+   "chosen": null,
+   "detail": "the screen exited 75",
+   "how": "",
+   "id": 1795322190362952,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 1132,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-22T04:45:36Z",
+   "candidate": "Jacklu0831/deletion-tuning-masks",
+   "chosen": null,
+   "detail": "3 screens in a row could not be delivered (harness_error); the harness needs a fix, and a retest or a higher screen_harness_errors reopens it: not screened: harness_error. The harness could not deliver the request, which says nothing about the candidate: chunk-bytes: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2] No such file or directory: 'config.json'\"}; evaluate-expr: warm-up: gateway returned HTTP 404: {\"error\": \"[Errno 2",
+   "how": "",
+   "id": 1795322736905290,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1133,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-22T04:55:27Z",
+   "candidate": "bartowski/endless-frontier_BigBang-v1-GGUF",
+   "chosen": null,
+   "detail": "the screen exited 75",
+   "how": "",
+   "id": 1795323327916003,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 1134,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-22T05:00:33Z",
+   "candidate": "linuxid10t/G9v3-39A5B-GGUF",
+   "chosen": null,
+   "detail": "the installed runtime could not load it: llama-server: llama_model_load: error loading model: unknown model architecture: 'g9v3' (server-load.log, eval.log lines 1608788-1608830)",
+   "how": "",
+   "id": 1795323633214689,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "runtime",
+   "run_id": 1135,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-22T07:15:09Z",
+   "candidate": "lmstudio-community/Qwen3.6-27B-GGUF",
+   "chosen": null,
+   "detail": "extract: lane too small, needs 499 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1157 more extract cases are needed before a null says anything about lmst",
+   "how": "",
+   "id": 1795331709814277,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1151,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -18679,7 +19039,7 @@
      "ttft_p95_s": 114.315
     },
     {
-     "about": "family Qwen/Qwen3.6-35B-A3B, 35B (3B active) params, Q4_K_M, by unsloth",
+     "about": "35B (3B active) params, Q4_K_M",
      "candidate": "llamacpp:Qwen3.6-35B-A3B-UD-Q4_K_M",
      "first_s": 9.424,
      "median_s": 32.276,
@@ -18696,7 +19056,7 @@
      "reference": false,
      "run_at": "2026-11-12T04:30:38Z",
      "served_as": "",
-     "source": "https://huggingface.co/unsloth/Qwen3.6-35B-A3B-GGUF",
+     "source": "",
      "total": 23,
      "ttft_median_s": 28.081,
      "ttft_p95_s": 54.667
@@ -18899,7 +19259,7 @@
    "repeat": 1,
    "rows": [
     {
-     "about": "family Qwen/Qwen3.6-35B-A3B, 35B (3B active) params, Q4_K_M, by unsloth",
+     "about": "35B (3B active) params, Q4_K_M",
      "candidate": "llamacpp:Qwen3.6-35B-A3B-UD-Q4_K_M",
      "first_s": 11.436,
      "median_s": 34.177,
@@ -18916,7 +19276,7 @@
      "reference": false,
      "run_at": "2026-11-11T06:06:23Z",
      "served_as": "",
-     "source": "https://huggingface.co/unsloth/Qwen3.6-35B-A3B-GGUF",
+     "source": "",
      "total": 31,
      "ttft_median_s": 32.829,
      "ttft_p95_s": 84.601
@@ -20708,7 +21068,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-21T08:10:17Z",
+ "generated_at": "2026-11-22T08:04:35Z",
  "knobs": [],
  "lane": {
   "cases": 451,
@@ -20741,7 +21101,7 @@
   "pass_rate": 0.717,
   "serves": "llamacpp:Ornith-1.5-35B-Q4_K_M",
   "serves_model": "llamacpp:Ornith-1.5-35B-Q4_K_M; 35B (3B active) params, Q4_K_M, by ornith-ai",
-  "stale": false
+  "stale": true
  },
  "since": 0
 }
