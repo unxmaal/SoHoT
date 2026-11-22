@@ -68,7 +68,7 @@ def test_each_step_runs_as_its_own_job_with_its_class_and_queues_the_next(ran):
     _work()
     assert ran == [*steps.NAMES, "settled"]
     assert len(ran.starts) == 1, "a step restarted the sweep ceiling"
-    got = [j for j in wq.jobs() if "--step" in j["argv"]]
+    got = [j for j in wq.jobs() if "--step" in j["argv"] and not j["not_before"]]
     assert [j["argv"][j["argv"].index("--step") + 1] for j in got] == list(steps.NAMES)
     assert [j["resource"] for j in got] == [s.resource for s in steps.STEPS]
     assert {j["state"] for j in got} == {wq.DONE}
@@ -146,7 +146,8 @@ def test_a_measure_paused_on_request_queues_itself_and_the_next_resumes_the_paus
     assert len(unloads) == 1, "a measure waiting in the queue kept its model loaded"
     _one(again[0])
     assert calls == ["org/other", "org/new"]
-    assert wq.pending() == [] and hb.read()["state"] == hb.FINISHED
+    assert [bool(j["not_before"]) for j in wq.pending()] == [True], "only the next sweep waits after the close"
+    assert hb.read()["state"] == hb.FINISHED
 
 
 def test_a_second_sweep_is_not_queued_while_one_has_a_step_waiting(ran, capsys):
