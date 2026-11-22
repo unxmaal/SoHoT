@@ -579,8 +579,8 @@ UPKEEP = SPEND_STEPS[:4]
 
 
 def _upkeep(tier: str) -> None:
-    """One UPKEEP step under its header: retests, reverify, knob sweeps or the disk sweep."""
-    from harness import disk
+    """One UPKEEP step under its header: retests, reverify, knob sweeps or the disk sweep and the merged worktrees."""
+    from harness import disk, worktrees
     print(f"\n=== {tier} ===")
     _beat(tier)
     if tier == "retests":
@@ -592,6 +592,7 @@ def _upkeep(tier: str) -> None:
         _sweeps()
     else:
         disk.sweep()
+        worktrees.sweep()
 
 
 def _screen(a, sweep, plan: dict, failed: list) -> int:
