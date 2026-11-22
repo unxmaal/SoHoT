@@ -154,8 +154,8 @@
   },
   {
    "candidate": "llamacpp:Qwen3.6-27B-Q4_K_M",
-   "decided_at": "2026-11-22T07:15:09Z",
-   "detail": "extract: lane too small, needs 499 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1157 more extract cases are needed before a null says anything about lmst",
+   "decided_at": "2026-11-22T20:33:20Z",
+   "detail": "extract: better on the metric, but 10 lost against 23 gained is p=0.04, so the difference is not established; comparison 3 on this holdout, so alpha 0.05/3 = 0.0167; dev: 37 gained, 0 lost, p=0.00",
    "exam": {
     "about": "27B params, Q4_K_M",
     "candidate": "llamacpp:Qwen3.6-27B-Q4_K_M",
@@ -182,13 +182,13 @@
    },
    "outcome": "declined",
    "proposal": "lmstudio-community/Qwen3.6-27B-GGUF",
-   "reason": "limit",
+   "reason": "candidate",
    "receipt_key": "llamacpp:Qwen3.6-27B-Q4_K_M",
-   "run_id": 1151,
+   "run_id": 1169,
    "serves": false,
    "status": "rejected",
    "tier": "adopt",
-   "until": "cases:extract>1606"
+   "until": ""
   },
   {
    "candidate": "llamacpp:Qwopus3.5-27B-v3-Q4_K_M",
@@ -268,79 +268,79 @@
   },
   {
    "candidate": "lmstudio-community/Qwen3.6-27B-GGUF",
-   "decided_at": "2026-11-22T07:15:09Z",
-   "detail": "extract: lane too small, needs 499 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1157 more extract cases are needed before a null says anything about lmst",
+   "decided_at": "2026-11-22T20:33:20Z",
+   "detail": "extract: better on the metric, but 10 lost against 23 gained is p=0.04, so the difference is not established; comparison 3 on this holdout, so alpha 0.05/3 = 0.0167; dev: 37 gained, 0 lost, p=0.00",
    "exam": {
     "about": "family Qwen/Qwen3.6-27B, 27B params, by lmstudio-community",
     "candidate": "lmstudio-community/Qwen3.6-27B-GGUF",
-    "cases": 450,
-    "first_s": 6.874,
-    "median_s": 18.705,
+    "cases": 152,
+    "first_s": 5.872,
+    "median_s": 13.518,
     "metrics": {
-     "completion_tokens": 826.5909,
-     "tokens_per_s": 45.3061
+     "completion_tokens": 663.5855,
+     "tokens_per_s": 44.7204
     },
     "model": "lmstudio-community/Qwen3.6-27B-GGUF",
     "not_run": "",
-    "pass_rate": 0.493,
-    "passed": 34,
+    "pass_rate": 0.809,
+    "passed": 123,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-22T08:04:15Z",
+    "run_at": "2026-11-22T07:15:08Z",
     "served_as": "",
     "source": "https://huggingface.co/lmstudio-community/Qwen3.6-27B-GGUF",
-    "total": 69,
-    "ttft_median_s": 18.34,
-    "ttft_p95_s": 30.652
+    "total": 152,
+    "ttft_median_s": 13.42,
+    "ttft_p95_s": 28.968
    },
    "outcome": "declined",
    "proposal": "lmstudio-community/Qwen3.6-27B-GGUF",
-   "reason": "limit",
+   "reason": "candidate",
    "receipt_key": "lmstudio-community/Qwen3.6-27B-GGUF",
-   "run_id": 1151,
+   "run_id": 1169,
    "serves": false,
    "status": "rejected",
    "tier": "adopt",
-   "until": "cases:extract>1606"
+   "until": ""
   },
   {
    "candidate": "lmstudio-community/Qwen3.6-27B-GGUF,temperature=0",
-   "decided_at": "2026-11-22T07:15:09Z",
-   "detail": "extract: lane too small, needs 499 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1157 more extract cases are needed before a null says anything about lmst",
+   "decided_at": "2026-11-22T20:33:20Z",
+   "detail": "extract: better on the metric, but 10 lost against 23 gained is p=0.04, so the difference is not established; comparison 3 on this holdout, so alpha 0.05/3 = 0.0167; dev: 37 gained, 0 lost, p=0.00",
    "exam": {
     "about": "family Qwen/Qwen3.6-27B, 27B params, by lmstudio-community",
     "candidate": "lmstudio-community/Qwen3.6-27B-GGUF",
-    "cases": 450,
-    "first_s": 6.874,
-    "median_s": 18.705,
+    "cases": 152,
+    "first_s": 5.872,
+    "median_s": 13.518,
     "metrics": {
-     "completion_tokens": 826.5909,
-     "tokens_per_s": 45.3061
+     "completion_tokens": 663.5855,
+     "tokens_per_s": 44.7204
     },
     "model": "lmstudio-community/Qwen3.6-27B-GGUF",
     "not_run": "",
-    "pass_rate": 0.493,
-    "passed": 34,
+    "pass_rate": 0.809,
+    "passed": 123,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-22T08:04:15Z",
+    "run_at": "2026-11-22T07:15:08Z",
     "served_as": "",
     "source": "https://huggingface.co/lmstudio-community/Qwen3.6-27B-GGUF",
-    "total": 69,
-    "ttft_median_s": 18.34,
-    "ttft_p95_s": 30.652
+    "total": 152,
+    "ttft_median_s": 13.42,
+    "ttft_p95_s": 28.968
    },
    "outcome": "declined",
    "proposal": "lmstudio-community/Qwen3.6-27B-GGUF",
-   "reason": "limit",
+   "reason": "candidate",
    "receipt_key": "lmstudio-community/Qwen3.6-27B-GGUF",
-   "run_id": 1151,
+   "run_id": 1169,
    "serves": false,
    "status": "rejected",
    "tier": "adopt",
-   "until": "cases:extract>1606"
+   "until": ""
   },
   {
    "candidate": "local-large",
@@ -379,6 +379,82 @@
    "status": "rejected",
    "tier": "adopt",
    "until": ""
+  },
+  {
+   "candidate": "mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
+   "decided_at": "2026-11-22T21:25:12Z",
+   "detail": "extract: lane too small, needs 524 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1240 more extract cases are needed before a null says anything about mlx-",
+   "exam": {
+    "about": "family OBLITERATUS/Qwen3.6-27B-OBLITERATED, 27B params, 4bit, by mlx-community",
+    "candidate": "mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
+    "cases": 152,
+    "first_s": 16.264,
+    "median_s": 16.62,
+    "metrics": {
+     "completion_tokens": 787.0066,
+     "tokens_per_s": 46.7113
+    },
+    "model": "mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
+    "not_run": "",
+    "pass_rate": 0.816,
+    "passed": 124,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-22T21:25:11Z",
+    "served_as": "",
+    "source": "https://huggingface.co/mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
+    "total": 152,
+    "ttft_median_s": 16.293,
+    "ttft_p95_s": 28.596
+   },
+   "outcome": "declined",
+   "proposal": "mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
+   "reason": "limit",
+   "receipt_key": "mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
+   "run_id": 1171,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>1689"
+  },
+  {
+   "candidate": "mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit,temperature=0",
+   "decided_at": "2026-11-22T21:25:12Z",
+   "detail": "extract: lane too small, needs 524 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1240 more extract cases are needed before a null says anything about mlx-",
+   "exam": {
+    "about": "family OBLITERATUS/Qwen3.6-27B-OBLITERATED, 27B params, 4bit, by mlx-community",
+    "candidate": "mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
+    "cases": 152,
+    "first_s": 16.264,
+    "median_s": 16.62,
+    "metrics": {
+     "completion_tokens": 787.0066,
+     "tokens_per_s": 46.7113
+    },
+    "model": "mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
+    "not_run": "",
+    "pass_rate": 0.816,
+    "passed": 124,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-22T21:25:11Z",
+    "served_as": "",
+    "source": "https://huggingface.co/mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
+    "total": 152,
+    "ttft_median_s": 16.293,
+    "ttft_p95_s": 28.596
+   },
+   "outcome": "declined",
+   "proposal": "mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
+   "reason": "limit",
+   "receipt_key": "mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
+   "run_id": 1171,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>1689"
   },
   {
    "candidate": "neutral:mlx-community/Qwen2.5-7B-Instruct-4bit",
@@ -850,26 +926,26 @@
    "exam": {
     "about": "7B params, 4bit, by mlx-community",
     "candidate": "mlx-community/Qwen2.5-7B-Instruct-4bit",
-    "cases": 450,
-    "first_s": 0.3,
-    "median_s": 0.325,
+    "cases": 152,
+    "first_s": 0.325,
+    "median_s": 0.309,
     "metrics": {
-     "completion_tokens": 5.9062,
-     "tokens_per_s": 18.05
+     "completion_tokens": 4.7246,
+     "tokens_per_s": 15.0703
     },
     "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
     "not_run": "",
-    "pass_rate": 0.072,
-    "passed": 5,
+    "pass_rate": 0.724,
+    "passed": 110,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-22T08:04:15Z",
+    "run_at": "2026-11-22T07:15:08Z",
     "served_as": "",
     "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-    "total": 69,
-    "ttft_median_s": 0.17,
-    "ttft_p95_s": 0.202
+    "total": 152,
+    "ttft_median_s": 0.165,
+    "ttft_p95_s": 0.197
    },
    "outcome": "",
    "proposal": "",
@@ -882,7 +958,7 @@
    "until": ""
   }
  ],
- "cursor": 1795331709814277,
+ "cursor": 1795382712503762,
  "events": [
   {
    "at": "2026-10-03T13:46:46Z",
@@ -3015,6 +3091,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-01T01:22:53Z",
+   "candidate": "mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
+   "chosen": null,
+   "detail": "1 case(s) passed a screen",
+   "how": "",
+   "id": 1793496173763116,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 630,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-01T01:57:33Z",
    "candidate": "deepen:mlx-community/Qwen2.5-7B-Instruct-4bit",
    "chosen": null,
@@ -3253,157 +3344,67 @@
    "reason": "limit",
    "run_id": 1151,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-22T20:33:20Z",
+   "candidate": "llamacpp:Qwen3.6-27B-Q4_K_M",
+   "chosen": null,
+   "detail": "extract: better on the metric, but 10 lost against 23 gained is p=0.04, so the difference is not established; comparison 3 on this holdout, so alpha 0.05/3 = 0.0167; dev: 37 gained, 0 lost, p=0.00",
+   "how": "",
+   "id": 1795379600732742,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": 1169,
+   "tier": "adopt"
+  },
+  {
+   "at": "2026-11-22T21:25:12Z",
+   "candidate": "mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
+   "chosen": null,
+   "detail": "extract: lane too small, needs 524 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1240 more extract cases are needed before a null says anything about mlx-",
+   "how": "",
+   "id": 1795382712503762,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1171,
+   "tier": "adopt"
   }
  ],
  "exams": [
-  {
-   "cases": 450,
-   "differs": [],
-   "first_run_at": "2026-10-22T06:16:32Z",
-   "repeat": 1,
-   "rows": [
-    {
-     "about": "7B params, 4bit, by mlx-community",
-     "candidate": "neutral/mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "first_s": 0.106,
-     "median_s": 0.115,
-     "metrics": {
-      "completion_tokens": 6.4422,
-      "method_calls": 1.0
-     },
-     "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "not_run": "",
-     "pass_rate": 0.7,
-     "passed": 315,
-     "peak_gb": 0.0,
-     "reference": false,
-     "run_at": "2026-10-22T06:16:32Z",
-     "served_as": "",
-     "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "total": 450,
-     "ttft_median_s": null,
-     "ttft_p95_s": null
-    },
-    {
-     "about": "7B params, 4bit, by mlx-community",
-     "candidate": "plan/mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "first_s": 0.507,
-     "median_s": 0.259,
-     "metrics": {
-      "completion_tokens": 19.8289,
-      "method_calls": 2.0
-     },
-     "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "not_run": "",
-     "pass_rate": 0.631,
-     "passed": 284,
-     "peak_gb": 0.0,
-     "reference": false,
-     "run_at": "2026-10-22T06:26:39Z",
-     "served_as": "",
-     "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "total": 450,
-     "ttft_median_s": null,
-     "ttft_p95_s": null
-    },
-    {
-     "about": "7B params, 4bit, by mlx-community",
-     "candidate": "plan/local-large",
-     "first_s": 0.524,
-     "median_s": 0.258,
-     "metrics": {
-      "completion_tokens": 19.6933,
-      "method_calls": 2.0
-     },
-     "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "not_run": "",
-     "pass_rate": 0.627,
-     "passed": 282,
-     "peak_gb": 0.0,
-     "reference": false,
-     "run_at": "2026-10-22T06:30:09Z",
-     "served_as": "",
-     "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "total": 450,
-     "ttft_median_s": null,
-     "ttft_p95_s": null
-    },
-    {
-     "about": "family Qwen/Qwen3.6-27B, 27B params, by lmstudio-community",
-     "candidate": "lmstudio-community/Qwen3.6-27B-GGUF",
-     "first_s": 6.874,
-     "median_s": 18.705,
-     "metrics": {
-      "completion_tokens": 826.5909,
-      "tokens_per_s": 45.3061
-     },
-     "model": "lmstudio-community/Qwen3.6-27B-GGUF",
-     "not_run": "",
-     "pass_rate": 0.493,
-     "passed": 34,
-     "peak_gb": 0.0,
-     "reference": false,
-     "run_at": "2026-11-22T08:04:15Z",
-     "served_as": "",
-     "source": "https://huggingface.co/lmstudio-community/Qwen3.6-27B-GGUF",
-     "total": 69,
-     "ttft_median_s": 18.34,
-     "ttft_p95_s": 30.652
-    },
-    {
-     "about": "7B params, 4bit, by mlx-community",
-     "candidate": "deepen/mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "first_s": 2.517,
-     "median_s": 0.426,
-     "metrics": {
-      "completion_tokens": 76.7244,
-      "method_calls": 2.0
-     },
-     "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "not_run": "",
-     "pass_rate": 0.364,
-     "passed": 164,
-     "peak_gb": 0.0,
-     "reference": false,
-     "run_at": "2026-10-22T06:23:09Z",
-     "served_as": "",
-     "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "total": 450,
-     "ttft_median_s": null,
-     "ttft_p95_s": null
-    },
-    {
-     "about": "7B params, 4bit, by mlx-community",
-     "candidate": "mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "first_s": 0.3,
-     "median_s": 0.325,
-     "metrics": {
-      "completion_tokens": 5.9062,
-      "tokens_per_s": 18.05
-     },
-     "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "not_run": "",
-     "pass_rate": 0.072,
-     "passed": 5,
-     "peak_gb": 0.0,
-     "reference": false,
-     "run_at": "2026-11-22T08:04:15Z",
-     "served_as": "",
-     "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "total": 69,
-     "ttft_median_s": 0.17,
-     "ttft_p95_s": 0.202
-    }
-   ],
-   "run_at": "2026-11-22T08:04:15Z",
-   "runs": 5
-  },
   {
    "cases": 152,
    "differs": [],
    "first_run_at": "2026-10-08T00:58:22Z",
    "repeat": 1,
    "rows": [
+    {
+     "about": "family OBLITERATUS/Qwen3.6-27B-OBLITERATED, 27B params, 4bit, by mlx-community",
+     "candidate": "mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
+     "first_s": 16.264,
+     "median_s": 16.62,
+     "metrics": {
+      "completion_tokens": 787.0066,
+      "tokens_per_s": 46.7113
+     },
+     "model": "mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
+     "not_run": "",
+     "pass_rate": 0.816,
+     "passed": 124,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-22T21:25:11Z",
+     "served_as": "",
+     "source": "https://huggingface.co/mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
+     "total": 152,
+     "ttft_median_s": 16.293,
+     "ttft_p95_s": 28.596
+    },
     {
      "about": "family Qwen/Qwen3.6-27B, 27B params, by lmstudio-community",
      "candidate": "lmstudio-community/Qwen3.6-27B-GGUF",
@@ -3559,7 +3560,171 @@
      "ttft_p95_s": 3.735
     }
    ],
-   "run_at": "2026-11-22T07:15:08Z",
+   "run_at": "2026-11-22T21:25:11Z",
+   "runs": 8
+  },
+  {
+   "cases": 450,
+   "differs": [],
+   "first_run_at": "2026-10-22T06:16:32Z",
+   "repeat": 1,
+   "rows": [
+    {
+     "about": "7B params, 4bit, by mlx-community",
+     "candidate": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+     "first_s": 0.561,
+     "median_s": 0.4,
+     "metrics": {
+      "completion_tokens": 5.0867,
+      "tokens_per_s": 12.608
+     },
+     "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+     "not_run": "",
+     "pass_rate": 0.747,
+     "passed": 130,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-22T20:33:19Z",
+     "served_as": "",
+     "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
+     "total": 174,
+     "ttft_median_s": 0.258,
+     "ttft_p95_s": 0.297
+    },
+    {
+     "about": "27B params, Q4_K_M",
+     "candidate": "llamacpp:Qwen3.6-27B-Q4_K_M",
+     "first_s": 7.051,
+     "median_s": 15.603,
+     "metrics": {
+      "completion_tokens": 731.0383,
+      "tokens_per_s": 44.7172
+     },
+     "model": "llamacpp:Qwen3.6-27B-Q4_K_M",
+     "not_run": "",
+     "pass_rate": 0.715,
+     "passed": 188,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-22T20:33:19Z",
+     "served_as": "",
+     "source": "",
+     "total": 263,
+     "ttft_median_s": 15.325,
+     "ttft_p95_s": 35.176
+    },
+    {
+     "about": "7B params, 4bit, by mlx-community",
+     "candidate": "neutral/mlx-community/Qwen2.5-7B-Instruct-4bit",
+     "first_s": 0.106,
+     "median_s": 0.115,
+     "metrics": {
+      "completion_tokens": 6.4422,
+      "method_calls": 1.0
+     },
+     "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+     "not_run": "",
+     "pass_rate": 0.7,
+     "passed": 315,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-10-22T06:16:32Z",
+     "served_as": "",
+     "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
+     "total": 450,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "about": "7B params, 4bit, by mlx-community",
+     "candidate": "plan/mlx-community/Qwen2.5-7B-Instruct-4bit",
+     "first_s": 0.507,
+     "median_s": 0.259,
+     "metrics": {
+      "completion_tokens": 19.8289,
+      "method_calls": 2.0
+     },
+     "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+     "not_run": "",
+     "pass_rate": 0.631,
+     "passed": 284,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-10-22T06:26:39Z",
+     "served_as": "",
+     "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
+     "total": 450,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "about": "7B params, 4bit, by mlx-community",
+     "candidate": "plan/local-large",
+     "first_s": 0.524,
+     "median_s": 0.258,
+     "metrics": {
+      "completion_tokens": 19.6933,
+      "method_calls": 2.0
+     },
+     "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+     "not_run": "",
+     "pass_rate": 0.627,
+     "passed": 282,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-10-22T06:30:09Z",
+     "served_as": "",
+     "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
+     "total": 450,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "about": "family Qwen/Qwen3.6-27B, 27B params, by lmstudio-community",
+     "candidate": "lmstudio-community/Qwen3.6-27B-GGUF",
+     "first_s": 7.047,
+     "median_s": 19.121,
+     "metrics": {
+      "completion_tokens": 855.0482,
+      "tokens_per_s": 45.0181
+     },
+     "model": "lmstudio-community/Qwen3.6-27B-GGUF",
+     "not_run": "",
+     "pass_rate": 0.483,
+     "passed": 43,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-22T19:09:07Z",
+     "served_as": "",
+     "source": "https://huggingface.co/lmstudio-community/Qwen3.6-27B-GGUF",
+     "total": 89,
+     "ttft_median_s": 18.869,
+     "ttft_p95_s": 31.286
+    },
+    {
+     "about": "7B params, 4bit, by mlx-community",
+     "candidate": "deepen/mlx-community/Qwen2.5-7B-Instruct-4bit",
+     "first_s": 2.517,
+     "median_s": 0.426,
+     "metrics": {
+      "completion_tokens": 76.7244,
+      "method_calls": 2.0
+     },
+     "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+     "not_run": "",
+     "pass_rate": 0.364,
+     "passed": 164,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-10-22T06:23:09Z",
+     "served_as": "",
+     "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
+     "total": 450,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    }
+   ],
+   "run_at": "2026-11-22T20:33:19Z",
    "runs": 7
   },
   {
@@ -3661,7 +3826,7 @@
    "runs": 3
   }
  ],
- "generated_at": "2026-11-22T08:04:39Z",
+ "generated_at": "2026-11-22T21:31:00Z",
  "knobs": [],
  "lane": {
   "cases": 450,
@@ -3680,16 +3845,16 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-11-22T08:04:15Z",
-  "median_s": 0.325,
+  "measured_at": "2026-11-22T20:33:19Z",
+  "median_s": 0.4,
   "metrics": {
-   "completion_tokens": 5.9062,
-   "tokens_per_s": 18.05
+   "completion_tokens": 5.0867,
+   "tokens_per_s": 12.608
   },
   "not_run": "",
   "parked": "",
   "parked_until": "",
-  "pass_rate": 0.072,
+  "pass_rate": 0.747,
   "serves": "mlx-community/Qwen2.5-7B-Instruct-4bit",
   "serves_model": "mlx-community/Qwen2.5-7B-Instruct-4bit; 7B params, 4bit, by mlx-community",
   "stale": false
