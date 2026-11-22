@@ -995,12 +995,14 @@ def serve(poll: float = 30.0, sleep=time.sleep, popen=None,
           gate_fn=None, forever=True, clock=time.time) -> None:
     """The worker service: check the gate every `poll` seconds, run what waits."""
     from harness import paused_jobs
+    from harness.commands import loop_steps
     gate_fn = gate_fn or gate
     said = ""
     while True:
         queue_pause.settle_deploys()
         queue_pause.deploy_turn(clock())
         paused_jobs.turn(clock())
+        loop_steps.turn()
         try:
             waiting = ready(now=clock())
         except RuntimeError as exc:
