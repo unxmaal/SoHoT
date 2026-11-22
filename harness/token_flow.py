@@ -204,11 +204,19 @@ def account(reqs: list[dict], top: int = TOP) -> dict:
                 "expiry_rewrites": sum(1 for r in rewrites if (r["kind"], r["stream"]) == (k, s))}
                for (k, s, a), g in per.items()]
     big = lambda rows, k: sorted(rows, key=lambda r: (-r[k], str(sorted(r.items()))))  # noqa: E731
-    prs = [{"pr": p, **g, "share": _share(g["counted"], n)}
+    models = [{"kind": k, "agent": a or UNNAMED, "model": m, **g, "share": _share(g["counted"], n)}
+              for (k, a, m), g in _group(reqs, lambda r: (r["kind"], r["agent"], r["model"])).items()]
+    by_pr: dict = {}
+    for r in reqs:
+        if r.get("pr"):
+            pm = by_pr.setdefault(r["pr"], {})
+            pm[r["model"]] = pm.get(r["model"], 0) + _counted(r)
+    prs = [{"pr": p, **g, "share": _share(g["counted"], n), "models": by_pr[p]}
            for p, g in _group([r for r in reqs if r.get("pr")], lambda r: r["pr"]).items()]
     no_pr = n - sum(p["counted"] for p in prs)
     return {"counted": n, "tokens": {k: total[k] for k in ledger._zero()}, "requests": total["requests"],
             "streams": total["streams"], "kinds": kinds, "agents": big(agents, "counted"),
+            "models": big(models, "counted"),
             "causes": big(causes, "cache_write"), "expiry": expiry(rewrites, n), "terms": big(terms, "tokens"),
             "top": big(streams, "counted")[:max(0, top)], "prs": big(prs, "counted"),
             "no_pr": {"counted": no_pr, "share": _share(no_pr, n)}}
