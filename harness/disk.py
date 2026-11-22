@@ -564,12 +564,15 @@ def plan(inv: Inventory, now: float, wanted: str = REJECTED) -> list[Entry]:
 
 def delete(inv: Inventory, now: float, wanted: str = REJECTED, conn=None,
            source: str = "lh disk") -> list[dict]:
-    """Remove what safe_to_delete allows; refuse everything if keepers are unknown."""
+    """Remove what safe_to_delete allows, never a live paused run's weights (#2105); refuse everything if keepers are unknown."""
     if not inv.complete:
         raise RuntimeError("refusing to delete: " + "; ".join(inv.problems))
     hub, ggufs = Path(inv.hub), Path(inv.gguf)
     removed = []
+    held = resumed(conn) if conn is not None else set()
     for e in plan(inv, now, wanted):
+        if _names(e) & held:
+            continue
         hub_gguf = e.kind == "hub" and bool(e.repo) and any(Path(e.path).rglob("*.gguf"))
         try:
             links = _remove(e, hub, ggufs)

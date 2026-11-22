@@ -44,6 +44,14 @@ def find(conn, lane: str, spec: str) -> dict | None:
     return _row(row) if row else None
 
 
+def under_another_spec(conn, lane: str, proposal: str, spec: str) -> list[dict]:
+    """This machine's live pauses of `proposal` in the lane run under a challenger spec other than `spec`. #2105."""
+    here, args = _here(conn)
+    return [_row(r) for r in conn.execute(
+        f"SELECT * FROM paused_runs WHERE lane = ? AND proposal = ? AND challenger <> ? AND state = ? AND {here} "
+        "ORDER BY id", ((lane or "").strip().lower(), proposal, spec, PAUSED, *args))]
+
+
 def dir_state(conn, out, lane: str, inc_spec: str, spec: str) -> str:
     """The one DIR_STATES name for a paired run directory; only ABANDONED is a resumable pause with no row. #864, #1730."""
     from evals import watch

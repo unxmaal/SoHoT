@@ -1687,7 +1687,9 @@ def _execute_at(args, overrides: dict, held: contextlib.ExitStack) -> int:
     progress = watch.Progress(outdir, eye, specs, total, len(results))
     progress.write()
     block = None if args.screen or len(todo) < 2 else pair_block([c for c, _, _ in todo], args.gateway)
-    order = list(dict.fromkeys(c.id for _, _, mine in planned for c in mine))
+    # The --order file's sequence, not the first candidate's: a reused incumbent cell keeps its place. #2105.
+    at = {c.id: i for i, c in enumerate(cases)}
+    order = sorted(dict.fromkeys(c.id for _, _, mine in planned for c in mine), key=lambda k: at.get(k, len(at)))
     segments = paired_segments(order, [rest for _, _, rest in todo], block, key=lambda c: c.id)
     if block:
         print(f"── paired order: {block} case(s) per candidate in turn", flush=True)

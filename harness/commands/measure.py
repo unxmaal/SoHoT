@@ -228,10 +228,10 @@ def takes(row: dict, want: str = "") -> bool:
 
 
 def resume_first(store, fresh: list[dict], want: str = "") -> list[dict]:
-    """Paused measurements before anything new, each once. #813."""
+    """Paused measurements before anything new, each once. #813, #2105."""
     from harness import paused
-    held = [r for r in ({"name": p["proposal"] or p["challenger"], "lane": p["lane"]} for p in paused.waiting(store))
-            if takes(r, want)]
+    every = [{"name": p["proposal"] or p["challenger"], "lane": p["lane"]} for p in paused.waiting(store)]
+    held = [r for i, r in enumerate(every) if takes(r, want) and r not in every[:i]]
     names = {r["name"] for r in held}
     return held + [r for r in fresh if r.get("name") not in names]
 
@@ -918,8 +918,11 @@ def _held(lane: str, inc_spec: str, spec: str, split, name: str, sweep):
                             split.version)
     with runs.store() as store:
         held = paused.find(store, lane, spec)
+        left = paused.under_another_spec(store, lane, name, spec)
         found = None if held else paused.abandoned(store, paths.home() / "runs", lane, inc_spec, spec)
         stopped = bool(held) and watchdog.overrun_stopped(store, held["out"])
+    for other in left:
+        _stale(other, f"the challenger is {spec} now, not {other['challenger']}", name, sweep)
     if stopped:
         _ended(name, held, held["out"], sweep)
         return None, ident

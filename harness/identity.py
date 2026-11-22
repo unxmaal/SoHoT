@@ -134,7 +134,8 @@ def dist_digest(name: str) -> str:
         files = metadata.distribution(name).files or []
     except metadata.PackageNotFoundError:
         return ""
-    lines = sorted(f"{f}|{f.hash.value if f.hash else ''}" for f in files)
+    # A console script outside site-packages carries an installer-written shebang naming the venv. #2105.
+    lines = sorted(f"{f}|{f.hash.value if f.hash else ''}" for f in files if not str(f).startswith(".."))
     return hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest() if lines else ""
 
 
