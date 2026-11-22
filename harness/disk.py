@@ -649,7 +649,8 @@ def due(inv: Inventory, now: float, *, names=None, keep_states=(), keep=(), word
 
     A CANDIDATE'S WEIGHTS ARE KEPT ONLY FOR A TEST ABOUT TO RUN THEM: one a
     running job names, a state in `keep_states` (screened, while the measure
-    step of the same sweep follows) or a name in `keep`. `names` limits the
+    step of the same sweep follows), a name in `keep`, or (in release) a
+    paused run the next measure step resumes. `names` limits the
     candidates considered to those, so one test's end removes only its own.
     """
     names = None if names is None else {n.lower() for n in names}
@@ -672,6 +673,12 @@ def due(inv: Inventory, now: float, *, names=None, keep_states=(), keep=(), word
     return out
 
 
+def resumed(conn) -> set[str]:
+    """The names the next measure step resumes before anything new: this machine's live paused runs. #2099."""
+    from harness.commands import measure as measure_cmd
+    return {r["name"].lower() for r in measure_cmd.resume_first(conn, []) if r.get("name")}
+
+
 def release(inv: Inventory, now: float, conn=None, **which) -> list[dict]:
     """Remove what due() names, each stamped with its removed_by, the router told of any GGUF. #780, #2015."""
     if conn is None or not inv.complete:
@@ -679,6 +686,7 @@ def release(inv: Inventory, now: float, conn=None, **which) -> list[dict]:
     from harness import cuts
     hub, ggufs = Path(inv.hub), Path(inv.gguf)
     out = []
+    which = {**which, "keep": {*which.get("keep", ()), *resumed(conn)}}
     for e, why, by in due(inv, now, words=busy(conn), **which):
         hub_gguf = e.kind == "hub" and bool(e.repo) and any(Path(e.path).rglob("*.gguf"))
         try:
