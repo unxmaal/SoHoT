@@ -1606,7 +1606,9 @@ def _execute_at(args, overrides: dict, held: contextlib.ExitStack) -> int:
                 "split": side, "split_version": holdout.version(args.modality), "cases_digest": cases_digest(cases),
                 "max_tokens": budget, "budget_ladder": list(ladder),
                 "knobs": knobs.settings(args.modality, overrides),
-                "identities": {c: combined_identity(idents[c]) for c in candidates}}
+                "identities": {c: combined_identity(idents[c]) for c in candidates},
+                "case_identities": {c: {"digest": idents[c].get("digest", ""), "cases": idents[c].get("cases") or {}}
+                                    for c in candidates}}
     if harness != "patch":
         identity["harness"] = harness
     if taken:
@@ -1617,18 +1619,24 @@ def _execute_at(args, overrides: dict, held: contextlib.ExitStack) -> int:
               f"pass --resume to continue it, or name another --out (#1441)", file=sys.stderr)
         return 1
     had = had if getattr(args, "resume", False) else None
-    if had and watch.differs(had[0], identity):
+    changed = watch.differs(had[0], identity) if had else []
+    kept = watch.kept_rows(had[0], identity, had[1]) if changed else None
+    if changed and not kept:
         print(f"stale: the checkpoint in {outdir} ran another exam "
-              f"({', '.join(watch.differs(had[0], identity))} changed); not resumed", file=sys.stderr)
+              f"({', '.join(changed)} changed); not resumed", file=sys.stderr)
         return watch.STALE
+    if kept:
+        print(f"── {', '.join(changed)} changed: {len(kept)} of {len(had[1])} checkpointed row(s) kept, "
+              f"the rest rerun (#2107)", flush=True)
+        had = (identity, kept)
     restored: dict = {}
     for row in (had or ({}, []))[1]:
         restored.setdefault(row.get("candidate"), []).append(row)
     # Progress names this process before the checkpoint exists, so no exit leaves a dir with no state. #1740.
     prior = watch.read_progress(outdir) if had else {}
     watch.Progress(outdir, watch.Watch(outdir=outdir), {}, int(prior.get("total") or 0),
-                   int(prior.get("done") or 0)).write()
-    ckpt = watch.Checkpoint(outdir, identity, keep=bool(had))
+                   len(kept) if kept else int(prior.get("done") or 0)).write()
+    ckpt = watch.Checkpoint(outdir, identity, keep=bool(had), rows=kept or None)
     # A pause request was for the run it paused, not this one.
     (outdir / watch.PAUSE_FILE).unlink(missing_ok=True)
 

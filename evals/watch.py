@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from harness import atomic_file
-from harness import proc_identity, run_state
+from harness import holdout, proc_identity, run_state
 
 #: Exit status of a run paused at --stop-at or on request, rows checkpointed. #813.
 PAUSED = 75
@@ -281,13 +281,30 @@ def asks_pause(eye: Watch):
 
 
 #: Identity fields a checkpoint from before they were recorded lacks; their absence there is not a change. #1094.
-LATER = ("identities",)
+LATER = ("identities", "case_identities")
+
+#: Identity fields whose change a checkpoint survives case by case. #2107.
+PER_CASE = ("cases_digest", "identities", "case_identities")
 
 
 def differs(had: dict, now: dict) -> list[str]:
     """The identity fields a checkpoint and this run disagree on."""
     return sorted(k for k in set(had) | set(now) if had.get(k) != now.get(k)
                   and not (k in LATER and k not in had))
+
+
+def kept_rows(had: dict, now: dict, rows: list[dict]) -> list[dict]:
+    """The rows whose case and every side's identity are unchanged and readable; none past another change. #2107."""
+    if set(differs(had, now)) - set(PER_CASE):
+        return []
+    was, cur, sides = had.get("case_identities") or {}, now.get("case_identities") or {}, now.get("candidates") or []
+
+    def same(side: str, case: str) -> bool:
+        a, b = was.get(side) or {}, cur.get(side) or {}
+        mine = (a.get("cases") or {}).get(case)
+        return bool(a.get("digest") and mine) and a["digest"] == b.get("digest") and mine == (b.get("cases") or {}).get(case)
+
+    return [r for r in rows if sides and all(same(s, holdout.base_id(r.get("case_id"))) for s in sides)]
 
 
 def read(outdir) -> tuple[dict, list[dict]] | None:
@@ -309,9 +326,14 @@ def read(outdir) -> tuple[dict, list[dict]] | None:
 class Checkpoint:
     """Every finished case as one line, so a pause or a kill loses at most the case in flight."""
 
-    def __init__(self, outdir, identity: dict, keep: bool = False):
+    def __init__(self, outdir, identity: dict, keep: bool = False, rows: list[dict] | None = None):
         self.path = Path(outdir) / CHECKPOINT
-        if not keep:
+        if rows is not None:
+            tmp = self.path.with_suffix(".kept")
+            tmp.write_text("".join(json.dumps(x, default=str) + "\n" for x in
+                                   [{"identity": identity}, *({"row": r} for r in rows)]), encoding="utf-8")
+            atomic_file.replace(tmp, self.path)
+        elif not keep:
             self.path.write_text(json.dumps({"identity": identity}) + "\n", encoding="utf-8")
         else:
             self._cut_torn()
