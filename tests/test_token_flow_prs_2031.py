@@ -85,7 +85,8 @@ def test_each_planted_pull_request_gets_the_tokens_of_the_stream_that_opened_it(
     assert pr_row(A, "unxmaal/sohot#101") == {
         "pr": "unxmaal/sohot#101", "input": 4, "output": 37, "cache_read": 1000 + PLANTED,
         "cache_write": 1000 + PLANTED + 5, "requests": 3, "streams": 1, "counted": 1000 + PLANTED + 5 + 4 + 37,
-        "share": (1000 + PLANTED + 5 + 4 + 37) / A["counted"]}
+        "share": (1000 + PLANTED + 5 + 4 + 37) / A["counted"],
+        "models": {"claude-test": 1000 + PLANTED + 5 + 4 + 37}}
     assert (pr_row(A, "unxmaal/sohot#102")["cache_write"], pr_row(A, "unxmaal/sohot#102")["requests"]) == (340, 2)
     assert (pr_row(A, "unxmaal/sohot#103")["cache_write"], pr_row(A, "unxmaal/sohot#103")["requests"]) == (68, 2)
     assert A["no_pr"]["counted"] == 900 + 1 + 3
