@@ -281,14 +281,14 @@
   },
   {
    "candidate": "akhilaaa3/Jev-Omni",
-   "decided_at": "2026-11-23T04:16:27Z",
+   "decided_at": "2026-11-23T10:27:54Z",
    "detail": "not screened: refused_by_gateway. The harness could not deliver the request, which says nothing about the candidate: check-squad2-56dddf4066d3e219004dad5f: akhilaaa3/Jev-Omni is asked on mlx_lm.server, which ignores the decide lane's response_format, so its reply would be scored on a request the lane never sends. #572; guard-browsesafe-1130: akhilaaa3/Jev-Omni is asked on mlx_lm.server, which ignores the decide la",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
    "reason": "harness",
    "receipt_key": "akhilaaa3/Jev-Omni",
-   "run_id": 1192,
+   "run_id": 1206,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -296,14 +296,14 @@
   },
   {
    "candidate": "akhilaaa3/Jev-Omni,temperature=0",
-   "decided_at": "2026-11-23T04:16:27Z",
+   "decided_at": "2026-11-23T10:27:54Z",
    "detail": "not screened: refused_by_gateway. The harness could not deliver the request, which says nothing about the candidate: check-squad2-56dddf4066d3e219004dad5f: akhilaaa3/Jev-Omni is asked on mlx_lm.server, which ignores the decide lane's response_format, so its reply would be scored on a request the lane never sends. #572; guard-browsesafe-1130: akhilaaa3/Jev-Omni is asked on mlx_lm.server, which ignores the decide la",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
    "reason": "harness",
    "receipt_key": "akhilaaa3/Jev-Omni",
-   "run_id": 1192,
+   "run_id": 1206,
    "serves": false,
    "status": "pending",
    "tier": "screen",
@@ -381,7 +381,7 @@
   },
   {
    "candidate": "decider:StrandsAgents/strands-decider-2B-hobson-v21",
-   "decided_at": "2026-11-23T04:20:59Z",
+   "decided_at": "2026-11-23T10:32:43Z",
    "detail": "not screened: our snapshot lacks files its runner opens; refetch: check-squad2-56dddf4066d3e219004dad5f: exit 1: needs StrandsAgents/strands-decider-2B-hobson-v21, which is not in the hub cache; soh fetch --run: huggingface_hub.errors.IncompleteSnapshotError: The cached snapshot for 'StrandsAgents/strands-decider-2B-hobson-v21' (revision 'main', commit 5c9d44fdeb3",
    "exam": {
     "about": "2B params",
@@ -413,7 +413,7 @@
    "proposal": "StrandsAgents/strands-decider-2B-hobson-v21",
    "reason": "harness",
    "receipt_key": "decider/strands-decider-2B-hobson-v21",
-   "run_id": 1193,
+   "run_id": 1207,
    "serves": false,
    "status": "pending",
    "tier": "fetch",
@@ -778,7 +778,7 @@
    "until": ""
   }
  ],
- "cursor": 1795407387762578,
+ "cursor": 1795429674422406,
  "events": [
   {
    "at": "2026-09-22T13:14:31Z",
@@ -1559,6 +1559,21 @@
    "reason": "harness",
    "run_id": 1192,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-23T10:27:54Z",
+   "candidate": "akhilaaa3/Jev-Omni",
+   "chosen": null,
+   "detail": "not screened: refused_by_gateway. The harness could not deliver the request, which says nothing about the candidate: check-squad2-56dddf4066d3e219004dad5f: akhilaaa3/Jev-Omni is asked on mlx_lm.server, which ignores the decide lane's response_format, so its reply would be scored on a request the lane never sends. #572; guard-browsesafe-1130: akhilaaa3/Jev-Omni is asked on mlx_lm.server, which ignores the decide la",
+   "how": "",
+   "id": 1795429674422406,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "harness",
+   "run_id": 1206,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -2254,7 +2269,7 @@
    "runs": 4
   }
  ],
- "generated_at": "2026-11-23T09:56:10Z",
+ "generated_at": "2026-11-23T14:12:14Z",
  "knobs": [],
  "lane": {
   "cases": 661,
