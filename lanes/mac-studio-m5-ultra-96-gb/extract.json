@@ -1,6 +1,82 @@
 {
  "candidates": [
   {
+   "candidate": "HauhauCS/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive",
+   "decided_at": "2026-11-23T01:54:10Z",
+   "detail": "extract: lane too small, needs 524 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1240 more extract cases are needed before a null says anything about llam",
+   "exam": {
+    "about": "family Qwen/Qwen3.6-27B, 27B params, by HauhauCS",
+    "candidate": "HauhauCS/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive",
+    "cases": 152,
+    "first_s": 21.944,
+    "median_s": 16.699,
+    "metrics": {
+     "completion_tokens": 832.0686,
+     "tokens_per_s": 47.0137
+    },
+    "model": "HauhauCS/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive",
+    "not_run": "",
+    "pass_rate": 0.794,
+    "passed": 81,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-23T01:00:51Z",
+    "served_as": "",
+    "source": "https://huggingface.co/HauhauCS/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive",
+    "total": 102,
+    "ttft_median_s": 16.561,
+    "ttft_p95_s": 29.42
+   },
+   "outcome": "declined",
+   "proposal": "HauhauCS/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive",
+   "reason": "limit",
+   "receipt_key": "HauhauCS/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive",
+   "run_id": 1184,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>1689"
+  },
+  {
+   "candidate": "Jackrong/Qwopus3.6-27B-v1-preview-GGUF",
+   "decided_at": "2026-11-23T02:24:27Z",
+   "detail": "extract: lane too small, needs 524 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1240 more extract cases are needed before a null says anything about Jack",
+   "exam": {
+    "about": "family Qwen/Qwen3.6-27B, 27B params, by Jackrong",
+    "candidate": "Jackrong/Qwopus3.6-27B-v1-preview-GGUF",
+    "cases": 152,
+    "first_s": 10.336,
+    "median_s": 8.428,
+    "metrics": {
+     "completion_tokens": 406.2933,
+     "tokens_per_s": 44.5607
+    },
+    "model": "Jackrong/Qwopus3.6-27B-v1-preview-GGUF",
+    "not_run": "",
+    "pass_rate": 0.803,
+    "passed": 122,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-23T02:24:26Z",
+    "served_as": "",
+    "source": "https://huggingface.co/Jackrong/Qwopus3.6-27B-v1-preview-GGUF",
+    "total": 152,
+    "ttft_median_s": 8.278,
+    "ttft_p95_s": 17.058
+   },
+   "outcome": "declined",
+   "proposal": "Jackrong/Qwopus3.6-27B-v1-preview-GGUF",
+   "reason": "limit",
+   "receipt_key": "Jackrong/Qwopus3.6-27B-v1-preview-GGUF",
+   "run_id": 1186,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>1689"
+  },
+  {
    "candidate": "claude-code:claude-opus-5-5",
    "decided_at": "2026-10-09T17:56:16Z",
    "detail": "web: reference model; never a lane default (the incumbent stays: the cases disagree 2-2 with no majority (accessible-nav: q3-4b, dark-mode-toggle: q3-coder, data-table: q3-4b, form-validation: claude-",
@@ -189,6 +265,82 @@
    "status": "rejected",
    "tier": "adopt",
    "until": ""
+  },
+  {
+   "candidate": "llamacpp:Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS",
+   "decided_at": "2026-11-23T01:54:10Z",
+   "detail": "extract: lane too small, needs 524 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1240 more extract cases are needed before a null says anything about llam",
+   "exam": {
+    "about": "family Qwen/Qwen3.6-27B, 27B params, IQ4_XS, by HauhauCS",
+    "candidate": "llamacpp:Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS",
+    "cases": 152,
+    "first_s": 23.115,
+    "median_s": 16.544,
+    "metrics": {
+     "completion_tokens": 794.7551,
+     "tokens_per_s": 46.6374
+    },
+    "model": "llamacpp:Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS",
+    "not_run": "",
+    "pass_rate": 0.816,
+    "passed": 124,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-23T01:54:09Z",
+    "served_as": "",
+    "source": "https://huggingface.co/HauhauCS/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive",
+    "total": 152,
+    "ttft_median_s": 16.05,
+    "ttft_p95_s": 25.724
+   },
+   "outcome": "declined",
+   "proposal": "HauhauCS/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive",
+   "reason": "limit",
+   "receipt_key": "llamacpp:Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS",
+   "run_id": 1184,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>1689"
+  },
+  {
+   "candidate": "llamacpp:Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS,temperature=0",
+   "decided_at": "2026-11-23T01:54:10Z",
+   "detail": "extract: lane too small, needs 524 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1240 more extract cases are needed before a null says anything about llam",
+   "exam": {
+    "about": "family Qwen/Qwen3.6-27B, 27B params, IQ4_XS, by HauhauCS",
+    "candidate": "llamacpp:Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS",
+    "cases": 152,
+    "first_s": 23.115,
+    "median_s": 16.544,
+    "metrics": {
+     "completion_tokens": 794.7551,
+     "tokens_per_s": 46.6374
+    },
+    "model": "llamacpp:Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS",
+    "not_run": "",
+    "pass_rate": 0.816,
+    "passed": 124,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-23T01:54:09Z",
+    "served_as": "",
+    "source": "https://huggingface.co/HauhauCS/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive",
+    "total": 152,
+    "ttft_median_s": 16.05,
+    "ttft_p95_s": 25.724
+   },
+   "outcome": "declined",
+   "proposal": "HauhauCS/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive",
+   "reason": "limit",
+   "receipt_key": "llamacpp:Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS",
+   "run_id": 1184,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>1689"
   },
   {
    "candidate": "llamacpp:Qwopus3.5-27B-v3-Q4_K_M",
@@ -761,6 +913,120 @@
    "until": ""
   },
   {
+   "candidate": "unsloth/Qwen3.5-4B-GGUF",
+   "decided_at": "2026-11-23T02:50:33Z",
+   "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 58 lost against 7 gained, p=0.00; comparison 4 on this holdout, so alpha 0.05/4 = 0.0125; dev: not run, dev and holdout ",
+   "exam": {
+    "about": "family Qwen/Qwen3.5-4B, 4B params, by unsloth",
+    "candidate": "unsloth/Qwen3.5-4B-GGUF",
+    "cases": 152,
+    "first_s": 11.202,
+    "median_s": 11.219,
+    "metrics": {
+     "completion_tokens": 693.5692,
+     "tokens_per_s": 163.5354
+    },
+    "model": "unsloth/Qwen3.5-4B-GGUF",
+    "not_run": "",
+    "pass_rate": 0.395,
+    "passed": 60,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-23T02:50:32Z",
+    "served_as": "",
+    "source": "https://huggingface.co/unsloth/Qwen3.5-4B-GGUF",
+    "total": 152,
+    "ttft_median_s": 2.968,
+    "ttft_p95_s": 11.09
+   },
+   "outcome": "declined",
+   "proposal": "unsloth/Qwen3.5-4B-GGUF",
+   "reason": "candidate",
+   "receipt_key": "unsloth/Qwen3.5-4B-GGUF",
+   "run_id": 1187,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
+   "candidate": "unsloth/Qwen3.5-4B-GGUF,temperature=0",
+   "decided_at": "2026-11-23T02:50:33Z",
+   "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 58 lost against 7 gained, p=0.00; comparison 4 on this holdout, so alpha 0.05/4 = 0.0125; dev: not run, dev and holdout ",
+   "exam": {
+    "about": "family Qwen/Qwen3.5-4B, 4B params, by unsloth",
+    "candidate": "unsloth/Qwen3.5-4B-GGUF",
+    "cases": 152,
+    "first_s": 11.202,
+    "median_s": 11.219,
+    "metrics": {
+     "completion_tokens": 693.5692,
+     "tokens_per_s": 163.5354
+    },
+    "model": "unsloth/Qwen3.5-4B-GGUF",
+    "not_run": "",
+    "pass_rate": 0.395,
+    "passed": 60,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-23T02:50:32Z",
+    "served_as": "",
+    "source": "https://huggingface.co/unsloth/Qwen3.5-4B-GGUF",
+    "total": 152,
+    "ttft_median_s": 2.968,
+    "ttft_p95_s": 11.09
+   },
+   "outcome": "declined",
+   "proposal": "unsloth/Qwen3.5-4B-GGUF",
+   "reason": "candidate",
+   "receipt_key": "unsloth/Qwen3.5-4B-GGUF",
+   "run_id": 1187,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
+   "candidate": "Jackrong/Qwopus3.6-27B-v2-MTP-GGUF",
+   "decided_at": "2026-10-22T01:39:42Z",
+   "detail": "4 case(s) passed a screen",
+   "exam": {
+    "about": "family Qwen/Qwen3.6-27B, 27B params, by Jackrong",
+    "candidate": "Jackrong/Qwopus3.6-27B-v2-MTP-GGUF",
+    "cases": 152,
+    "first_s": 11.163,
+    "median_s": 9.344,
+    "metrics": {
+     "completion_tokens": 398.2891,
+     "tokens_per_s": 44.2375
+    },
+    "model": "Jackrong/Qwopus3.6-27B-v2-MTP-GGUF",
+    "not_run": "",
+    "pass_rate": 0.752,
+    "passed": 106,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-23T03:26:22Z",
+    "served_as": "",
+    "source": "https://huggingface.co/Jackrong/Qwopus3.6-27B-v2-MTP-GGUF",
+    "total": 141,
+    "ttft_median_s": 8.726,
+    "ttft_p95_s": 16.899
+   },
+   "outcome": "screened",
+   "proposal": "Jackrong/Qwopus3.6-27B-v2-MTP-GGUF",
+   "reason": "candidate",
+   "receipt_key": "Jackrong/Qwopus3.6-27B-v2-MTP-GGUF",
+   "run_id": 529,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "deepen:mlx-community/Qwen2.5-7B-Instruct-4bit",
    "decided_at": "2026-11-01T01:57:33Z",
    "detail": "3 case(s) passed a screen",
@@ -875,6 +1141,82 @@
    "until": ""
   },
   {
+   "candidate": "llamacpp:Qwopus3.6-27B-v2-MTP-Q4_K_M",
+   "decided_at": "2026-10-22T01:39:42Z",
+   "detail": "4 case(s) passed a screen",
+   "exam": {
+    "about": "family Qwen/Qwen3.6-27B, 27B params, Q4_K_M, by Jackrong",
+    "candidate": "llamacpp:Qwopus3.6-27B-v2-MTP-Q4_K_M",
+    "cases": 152,
+    "first_s": 8.303,
+    "median_s": 9.3,
+    "metrics": {
+     "completion_tokens": 460.5577,
+     "tokens_per_s": 44.1865
+    },
+    "model": "llamacpp:Qwopus3.6-27B-v2-MTP-Q4_K_M",
+    "not_run": "",
+    "pass_rate": 0.607,
+    "passed": 34,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-23T03:41:29Z",
+    "served_as": "",
+    "source": "https://huggingface.co/Jackrong/Qwopus3.6-27B-v2-MTP-GGUF",
+    "total": 56,
+    "ttft_median_s": 8.457,
+    "ttft_p95_s": 24.637
+   },
+   "outcome": "screened",
+   "proposal": "Jackrong/Qwopus3.6-27B-v2-MTP-GGUF",
+   "reason": "candidate",
+   "receipt_key": "llamacpp:Qwopus3.6-27B-v2-MTP-Q4_K_M",
+   "run_id": 529,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "llamacpp:Qwopus3.6-27B-v2-MTP-Q4_K_M,temperature=0",
+   "decided_at": "2026-10-22T01:39:42Z",
+   "detail": "4 case(s) passed a screen",
+   "exam": {
+    "about": "family Qwen/Qwen3.6-27B, 27B params, Q4_K_M, by Jackrong",
+    "candidate": "llamacpp:Qwopus3.6-27B-v2-MTP-Q4_K_M",
+    "cases": 152,
+    "first_s": 8.303,
+    "median_s": 9.3,
+    "metrics": {
+     "completion_tokens": 460.5577,
+     "tokens_per_s": 44.1865
+    },
+    "model": "llamacpp:Qwopus3.6-27B-v2-MTP-Q4_K_M",
+    "not_run": "",
+    "pass_rate": 0.607,
+    "passed": 34,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-23T03:41:29Z",
+    "served_as": "",
+    "source": "https://huggingface.co/Jackrong/Qwopus3.6-27B-v2-MTP-GGUF",
+    "total": 56,
+    "ttft_median_s": 8.457,
+    "ttft_p95_s": 24.637
+   },
+   "outcome": "screened",
+   "proposal": "Jackrong/Qwopus3.6-27B-v2-MTP-GGUF",
+   "reason": "candidate",
+   "receipt_key": "llamacpp:Qwopus3.6-27B-v2-MTP-Q4_K_M",
+   "run_id": 529,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "llamacpp:Qwen2.5-7B-Instruct-Q4_K_M",
    "decided_at": "",
    "detail": "",
@@ -958,7 +1300,7 @@
    "until": ""
   }
  ],
- "cursor": 1795382712503762,
+ "cursor": 1795402233076620,
  "events": [
   {
    "at": "2026-10-03T13:46:46Z",
@@ -2956,6 +3298,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-10-22T01:39:42Z",
+   "candidate": "llamacpp:Qwopus3.6-27B-v2-MTP-Q4_K_M",
+   "chosen": null,
+   "detail": "4 case(s) passed a screen",
+   "how": "",
+   "id": 1792633182797266,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 529,
+   "tier": "screen"
+  },
+  {
    "at": "2026-10-22T01:55:42Z",
    "candidate": "plan:local-large",
    "chosen": null,
@@ -3088,6 +3445,51 @@
    "outcome": "screened",
    "reason": "candidate",
    "run_id": 558,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-23T02:05:58Z",
+   "candidate": "Jackrong/Qwopus3.6-27B-v1-preview-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 15.4 GB but only 8.8 GB is safely available (26.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1792721158179560,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-24T04:12:16Z",
+   "candidate": "llamacpp:Qwopus3.6-27B-v1-preview-Q4_K_M",
+   "chosen": null,
+   "detail": "3 case(s) passed a screen",
+   "how": "",
+   "id": 1792815136027797,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 577,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-25T03:21:11Z",
+   "candidate": "llamacpp:Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS",
+   "chosen": null,
+   "detail": "4 case(s) passed a screen",
+   "how": "",
+   "id": 1792898471404458,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 582,
    "tier": "screen"
   },
   {
@@ -3241,6 +3643,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-15T03:15:23Z",
+   "candidate": "unsloth/Qwen3.5-4B-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 2.6 GB but only 2.4 GB is safely available (20.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794712523709235,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-20T02:46:13Z",
    "candidate": "lmstudio-community/Qwen3.6-27B-GGUF",
    "chosen": null,
@@ -3346,6 +3763,21 @@
    "tier": "adopt"
   },
   {
+   "at": "2026-11-22T18:20:49Z",
+   "candidate": "unsloth/Qwen3.5-4B-GGUF",
+   "chosen": null,
+   "detail": "2 case(s) passed a screen",
+   "how": "",
+   "id": 1795371649631559,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 1166,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-22T20:33:20Z",
    "candidate": "llamacpp:Qwen3.6-27B-Q4_K_M",
    "chosen": null,
@@ -3374,6 +3806,51 @@
    "reason": "limit",
    "run_id": 1171,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-23T01:54:10Z",
+   "candidate": "llamacpp:Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS",
+   "chosen": null,
+   "detail": "extract: lane too small, needs 524 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1240 more extract cases are needed before a null says anything about llam",
+   "how": "",
+   "id": 1795398850061068,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1184,
+   "tier": "adopt"
+  },
+  {
+   "at": "2026-11-23T02:24:27Z",
+   "candidate": "Jackrong/Qwopus3.6-27B-v1-preview-GGUF",
+   "chosen": null,
+   "detail": "extract: lane too small, needs 524 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1240 more extract cases are needed before a null says anything about Jack",
+   "how": "",
+   "id": 1795400667503846,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1186,
+   "tier": "adopt"
+  },
+  {
+   "at": "2026-11-23T02:50:33Z",
+   "candidate": "unsloth/Qwen3.5-4B-GGUF",
+   "chosen": null,
+   "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 58 lost against 7 gained, p=0.00; comparison 4 on this holdout, so alpha 0.05/4 = 0.0125; dev: not run, dev and holdout ",
+   "how": "",
+   "id": 1795402233076620,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": 1187,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -3383,6 +3860,28 @@
    "first_run_at": "2026-10-08T00:58:22Z",
    "repeat": 1,
    "rows": [
+    {
+     "about": "family Qwen/Qwen3.6-27B, 27B params, IQ4_XS, by HauhauCS",
+     "candidate": "llamacpp:Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS",
+     "first_s": 23.115,
+     "median_s": 16.544,
+     "metrics": {
+      "completion_tokens": 794.7551,
+      "tokens_per_s": 46.6374
+     },
+     "model": "llamacpp:Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS",
+     "not_run": "",
+     "pass_rate": 0.816,
+     "passed": 124,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-23T01:54:09Z",
+     "served_as": "",
+     "source": "https://huggingface.co/HauhauCS/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive",
+     "total": 152,
+     "ttft_median_s": 16.05,
+     "ttft_p95_s": 25.724
+    },
     {
      "about": "family OBLITERATUS/Qwen3.6-27B-OBLITERATED, 27B params, 4bit, by mlx-community",
      "candidate": "mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
@@ -3428,6 +3927,50 @@
      "ttft_p95_s": 28.968
     },
     {
+     "about": "family Qwen/Qwen3.6-27B, 27B params, by Jackrong",
+     "candidate": "Jackrong/Qwopus3.6-27B-v1-preview-GGUF",
+     "first_s": 10.336,
+     "median_s": 8.428,
+     "metrics": {
+      "completion_tokens": 406.2933,
+      "tokens_per_s": 44.5607
+     },
+     "model": "Jackrong/Qwopus3.6-27B-v1-preview-GGUF",
+     "not_run": "",
+     "pass_rate": 0.803,
+     "passed": 122,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-23T02:24:26Z",
+     "served_as": "",
+     "source": "https://huggingface.co/Jackrong/Qwopus3.6-27B-v1-preview-GGUF",
+     "total": 152,
+     "ttft_median_s": 8.278,
+     "ttft_p95_s": 17.058
+    },
+    {
+     "about": "family Qwen/Qwen3.6-27B, 27B params, by HauhauCS",
+     "candidate": "HauhauCS/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive",
+     "first_s": 21.944,
+     "median_s": 16.699,
+     "metrics": {
+      "completion_tokens": 832.0686,
+      "tokens_per_s": 47.0137
+     },
+     "model": "HauhauCS/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive",
+     "not_run": "",
+     "pass_rate": 0.794,
+     "passed": 81,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-23T01:00:51Z",
+     "served_as": "",
+     "source": "https://huggingface.co/HauhauCS/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive",
+     "total": 102,
+     "ttft_median_s": 16.561,
+     "ttft_p95_s": 29.42
+    },
+    {
      "about": "family unsloth/Qwen3.5-27B, 27B params, Q4_K_M, by Jackrong",
      "candidate": "llamacpp:Qwopus3.5-27B-v3-Q4_K_M",
      "first_s": 6.12,
@@ -3470,6 +4013,28 @@
      "total": 97,
      "ttft_median_s": 12.046,
      "ttft_p95_s": 27.96
+    },
+    {
+     "about": "family Qwen/Qwen3.6-27B, 27B params, by Jackrong",
+     "candidate": "Jackrong/Qwopus3.6-27B-v2-MTP-GGUF",
+     "first_s": 11.163,
+     "median_s": 9.344,
+     "metrics": {
+      "completion_tokens": 398.2891,
+      "tokens_per_s": 44.2375
+     },
+     "model": "Jackrong/Qwopus3.6-27B-v2-MTP-GGUF",
+     "not_run": "",
+     "pass_rate": 0.752,
+     "passed": 106,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-23T03:26:22Z",
+     "served_as": "",
+     "source": "https://huggingface.co/Jackrong/Qwopus3.6-27B-v2-MTP-GGUF",
+     "total": 141,
+     "ttft_median_s": 8.726,
+     "ttft_p95_s": 16.899
     },
     {
      "about": "7B params, 4bit, by mlx-community",
@@ -3538,6 +4103,28 @@
      "ttft_p95_s": 8.941
     },
     {
+     "about": "family Qwen/Qwen3.6-27B, 27B params, Q4_K_M, by Jackrong",
+     "candidate": "llamacpp:Qwopus3.6-27B-v2-MTP-Q4_K_M",
+     "first_s": 8.303,
+     "median_s": 9.3,
+     "metrics": {
+      "completion_tokens": 460.5577,
+      "tokens_per_s": 44.1865
+     },
+     "model": "llamacpp:Qwopus3.6-27B-v2-MTP-Q4_K_M",
+     "not_run": "",
+     "pass_rate": 0.607,
+     "passed": 34,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-23T03:41:29Z",
+     "served_as": "",
+     "source": "https://huggingface.co/Jackrong/Qwopus3.6-27B-v2-MTP-GGUF",
+     "total": 56,
+     "ttft_median_s": 8.457,
+     "ttft_p95_s": 24.637
+    },
+    {
      "about": "family SandyVeliz/acervo-extractor-qwen3.5-9b, 9B params, by daksh-neo",
      "candidate": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
      "first_s": 3.728,
@@ -3558,10 +4145,32 @@
      "total": 152,
      "ttft_median_s": 1.248,
      "ttft_p95_s": 3.735
+    },
+    {
+     "about": "family Qwen/Qwen3.5-4B, 4B params, by unsloth",
+     "candidate": "unsloth/Qwen3.5-4B-GGUF",
+     "first_s": 11.202,
+     "median_s": 11.219,
+     "metrics": {
+      "completion_tokens": 693.5692,
+      "tokens_per_s": 163.5354
+     },
+     "model": "unsloth/Qwen3.5-4B-GGUF",
+     "not_run": "",
+     "pass_rate": 0.395,
+     "passed": 60,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-23T02:50:32Z",
+     "served_as": "",
+     "source": "https://huggingface.co/unsloth/Qwen3.5-4B-GGUF",
+     "total": 152,
+     "ttft_median_s": 2.968,
+     "ttft_p95_s": 11.09
     }
    ],
-   "run_at": "2026-11-22T21:25:11Z",
-   "runs": 8
+   "run_at": "2026-11-23T03:41:29Z",
+   "runs": 14
   },
   {
    "cases": 450,
@@ -3826,7 +4435,7 @@
    "runs": 3
   }
  ],
- "generated_at": "2026-11-22T21:31:00Z",
+ "generated_at": "2026-11-23T03:44:34Z",
  "knobs": [],
  "lane": {
   "cases": 450,
