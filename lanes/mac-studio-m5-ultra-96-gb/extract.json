@@ -305,6 +305,44 @@
    "until": "cases:extract>1689"
   },
   {
+   "candidate": "HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive",
+   "decided_at": "2026-11-24T13:19:46Z",
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about Hauh",
+   "exam": {
+    "about": "family Qwen/Qwen3.6-35B-A3B, 35B (3B active) params, by HauhauCS",
+    "candidate": "HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive",
+    "cases": 152,
+    "first_s": 9.249,
+    "median_s": 6.17,
+    "metrics": {
+     "completion_tokens": 811.912,
+     "tokens_per_s": 144.7344
+    },
+    "model": "HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive",
+    "not_run": "",
+    "pass_rate": 0.704,
+    "passed": 107,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-24T13:19:45Z",
+    "served_as": "",
+    "source": "https://huggingface.co/HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive",
+    "total": 152,
+    "ttft_median_s": 5.61,
+    "ttft_p95_s": 10.249
+   },
+   "outcome": "declined",
+   "proposal": "HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive",
+   "reason": "limit",
+   "receipt_key": "HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive",
+   "run_id": 1283,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>2116"
+  },
+  {
    "candidate": "IFM/K2-Horizon-7B-GGUF",
    "decided_at": "2026-11-23T09:16:07Z",
    "detail": "extract: lane too small, needs 546 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1314 more extract cases are needed before a null says anything about IFM/",
@@ -533,6 +571,44 @@
    "until": "cases:extract>1763"
   },
   {
+   "candidate": "KyleHessling1/Qwopus-GLM-18B-Merged-GGUF",
+   "decided_at": "2026-11-24T11:25:16Z",
+   "detail": "extract: lane too small, needs 649 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1657 more extract cases are needed before a null says anything about Kyle",
+   "exam": {
+    "about": "family Jackrong/Qwen3.5-9B-GLM5.1-Distill-v1, 18B params, by KyleHessling1",
+    "candidate": "KyleHessling1/Qwopus-GLM-18B-Merged-GGUF",
+    "cases": 152,
+    "first_s": 3.496,
+    "median_s": 26.791,
+    "metrics": {
+     "completion_tokens": 1306.7097,
+     "tokens_per_s": 66.6742
+    },
+    "model": "KyleHessling1/Qwopus-GLM-18B-Merged-GGUF",
+    "not_run": "",
+    "pass_rate": 0.324,
+    "passed": 24,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-24T11:25:15Z",
+    "served_as": "",
+    "source": "https://huggingface.co/KyleHessling1/Qwopus-GLM-18B-Merged-GGUF",
+    "total": 74,
+    "ttft_median_s": 18.231,
+    "ttft_p95_s": 44.408
+   },
+   "outcome": "declined",
+   "proposal": "KyleHessling1/Qwopus-GLM-18B-Merged-GGUF",
+   "reason": "limit",
+   "receipt_key": "KyleHessling1/Qwopus-GLM-18B-Merged-GGUF",
+   "run_id": 1278,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>2106"
+  },
+  {
    "candidate": "LiquidAI/LFM2.5-1.2B-Instruct",
    "decided_at": "2026-11-24T01:15:08Z",
    "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 71 lost against 3 gained, p=0.00; comparison 12 on this holdout, so alpha 0.05/12 = 0.0042; dev: not run, dev and holdou",
@@ -603,6 +679,158 @@
    "reason": "candidate",
    "receipt_key": "LiquidAI/LFM2.5-1.2B-Instruct",
    "run_id": 1251,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
+   "candidate": "LiquidAI/LFM2.5-8B-A1B",
+   "decided_at": "2026-11-24T12:33:08Z",
+   "detail": "extract: lane too small, needs 649 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1657 more extract cases are needed before a null says anything about Liqu",
+   "exam": {
+    "about": "family LiquidAI/LFM2.5-8B-A1B-Base, 8B (1B active) params, by LiquidAI",
+    "candidate": "LiquidAI/LFM2.5-8B-A1B",
+    "cases": 152,
+    "first_s": 2.06,
+    "median_s": 1.462,
+    "metrics": {
+     "completion_tokens": 241.5066,
+     "tokens_per_s": 145.2947
+    },
+    "model": "LiquidAI/LFM2.5-8B-A1B",
+    "not_run": "",
+    "pass_rate": 0.625,
+    "passed": 95,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-24T12:33:07Z",
+    "served_as": "",
+    "source": "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B",
+    "total": 152,
+    "ttft_median_s": 1.281,
+    "ttft_p95_s": 3.27
+   },
+   "outcome": "declined",
+   "proposal": "LiquidAI/LFM2.5-8B-A1B",
+   "reason": "limit",
+   "receipt_key": "LiquidAI/LFM2.5-8B-A1B",
+   "run_id": 1280,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>2106"
+  },
+  {
+   "candidate": "LiquidAI/LFM2.5-8B-A1B,temperature=0",
+   "decided_at": "2026-11-24T12:33:08Z",
+   "detail": "extract: lane too small, needs 649 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1657 more extract cases are needed before a null says anything about Liqu",
+   "exam": {
+    "about": "family LiquidAI/LFM2.5-8B-A1B-Base, 8B (1B active) params, by LiquidAI",
+    "candidate": "LiquidAI/LFM2.5-8B-A1B",
+    "cases": 152,
+    "first_s": 2.06,
+    "median_s": 1.462,
+    "metrics": {
+     "completion_tokens": 241.5066,
+     "tokens_per_s": 145.2947
+    },
+    "model": "LiquidAI/LFM2.5-8B-A1B",
+    "not_run": "",
+    "pass_rate": 0.625,
+    "passed": 95,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-24T12:33:07Z",
+    "served_as": "",
+    "source": "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B",
+    "total": 152,
+    "ttft_median_s": 1.281,
+    "ttft_p95_s": 3.27
+   },
+   "outcome": "declined",
+   "proposal": "LiquidAI/LFM2.5-8B-A1B",
+   "reason": "limit",
+   "receipt_key": "LiquidAI/LFM2.5-8B-A1B",
+   "run_id": 1280,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>2106"
+  },
+  {
+   "candidate": "Qwen/Qwen3-0.6B",
+   "decided_at": "2026-11-24T12:56:05Z",
+   "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 47 lost against 6 gained, p=0.00; comparison 15 on this holdout, so alpha 0.05/15 = 0.0033; dev: not run, dev and holdou",
+   "exam": {
+    "about": "family Qwen/Qwen3-0.6B-Base, 0.6B params, by Qwen",
+    "candidate": "Qwen/Qwen3-0.6B",
+    "cases": 152,
+    "first_s": 0.774,
+    "median_s": 1.05,
+    "metrics": {
+     "completion_tokens": 265.0789,
+     "tokens_per_s": 174.2125
+    },
+    "model": "Qwen/Qwen3-0.6B",
+    "not_run": "",
+    "pass_rate": 0.461,
+    "passed": 70,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-24T12:56:04Z",
+    "served_as": "",
+    "source": "https://huggingface.co/Qwen/Qwen3-0.6B",
+    "total": 152,
+    "ttft_median_s": 0.85,
+    "ttft_p95_s": 6.539
+   },
+   "outcome": "declined",
+   "proposal": "Qwen/Qwen3-0.6B",
+   "reason": "candidate",
+   "receipt_key": "Qwen/Qwen3-0.6B",
+   "run_id": 1282,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
+   "candidate": "Qwen/Qwen3-0.6B,temperature=0",
+   "decided_at": "2026-11-24T12:56:05Z",
+   "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 47 lost against 6 gained, p=0.00; comparison 15 on this holdout, so alpha 0.05/15 = 0.0033; dev: not run, dev and holdou",
+   "exam": {
+    "about": "family Qwen/Qwen3-0.6B-Base, 0.6B params, by Qwen",
+    "candidate": "Qwen/Qwen3-0.6B",
+    "cases": 152,
+    "first_s": 0.774,
+    "median_s": 1.05,
+    "metrics": {
+     "completion_tokens": 265.0789,
+     "tokens_per_s": 174.2125
+    },
+    "model": "Qwen/Qwen3-0.6B",
+    "not_run": "",
+    "pass_rate": 0.461,
+    "passed": 70,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-24T12:56:04Z",
+    "served_as": "",
+    "source": "https://huggingface.co/Qwen/Qwen3-0.6B",
+    "total": 152,
+    "ttft_median_s": 0.85,
+    "ttft_p95_s": 6.539
+   },
+   "outcome": "declined",
+   "proposal": "Qwen/Qwen3-0.6B",
+   "reason": "candidate",
+   "receipt_key": "Qwen/Qwen3-0.6B",
+   "run_id": 1282,
    "serves": false,
    "status": "rejected",
    "tier": "adopt",
@@ -1101,6 +1329,44 @@
    "status": "rejected",
    "tier": "adopt",
    "until": "cases:extract>2083"
+  },
+  {
+   "candidate": "bartowski/K2-Horizon-MoVA-36B-A4B-GGUF",
+   "decided_at": "2026-11-24T12:49:07Z",
+   "detail": "extract: lane too small, needs 649 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1657 more extract cases are needed before a null says anything about bart",
+   "exam": {
+    "about": "family IFM/K2-Horizon-MoVA-36B-A4B, 36B (4B active) params, by bartowski",
+    "candidate": "bartowski/K2-Horizon-MoVA-36B-A4B-GGUF",
+    "cases": 152,
+    "first_s": 3.574,
+    "median_s": 3.251,
+    "metrics": {
+     "completion_tokens": 338.6443,
+     "tokens_per_s": 91.0779
+    },
+    "model": "bartowski/K2-Horizon-MoVA-36B-A4B-GGUF",
+    "not_run": "",
+    "pass_rate": 0.803,
+    "passed": 122,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-24T12:49:06Z",
+    "served_as": "",
+    "source": "https://huggingface.co/bartowski/K2-Horizon-MoVA-36B-A4B-GGUF",
+    "total": 152,
+    "ttft_median_s": 3.19,
+    "ttft_p95_s": 8.385
+   },
+   "outcome": "declined",
+   "proposal": "bartowski/K2-Horizon-MoVA-36B-A4B-GGUF",
+   "reason": "limit",
+   "receipt_key": "bartowski/K2-Horizon-MoVA-36B-A4B-GGUF",
+   "run_id": 1281,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>2106"
   },
   {
    "candidate": "bartowski/Qwen_Qwen3.5-0.8B-GGUF",
@@ -3195,6 +3461,44 @@
    "until": ""
   },
   {
+   "candidate": "ukisai/Swift-Qwen3.8-27B-GGUF",
+   "decided_at": "2026-11-05T03:22:45Z",
+   "detail": "4 case(s) passed a screen",
+   "exam": {
+    "about": "family ukisai/Swift-Qwen3.8-27b, 27B params, by ukisai",
+    "candidate": "ukisai/Swift-Qwen3.8-27B-GGUF",
+    "cases": 152,
+    "first_s": 2.603,
+    "median_s": 8.581,
+    "metrics": {
+     "completion_tokens": 403.4191,
+     "tokens_per_s": 41.1301
+    },
+    "model": "ukisai/Swift-Qwen3.8-27B-GGUF",
+    "not_run": "",
+    "pass_rate": 0.784,
+    "passed": 109,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-24T13:48:41Z",
+    "served_as": "",
+    "source": "https://huggingface.co/ukisai/Swift-Qwen3.8-27B-GGUF",
+    "total": 139,
+    "ttft_median_s": 8.336,
+    "ttft_p95_s": 24.282
+   },
+   "outcome": "screened",
+   "proposal": "ukisai/Swift-Qwen3.8-27B-GGUF",
+   "reason": "candidate",
+   "receipt_key": "ukisai/Swift-Qwen3.8-27B-GGUF",
+   "run_id": 697,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "llamacpp:Qwen2.5-7B-Instruct-Q4_K_M",
    "decided_at": "",
    "detail": "",
@@ -3278,7 +3582,7 @@
    "until": ""
   }
  ],
- "cursor": 1795505533618442,
+ "cursor": 1795526386441995,
  "events": [
   {
    "at": "2026-10-03T13:46:46Z",
@@ -3326,6 +3630,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-10-03T14:06:18Z",
+   "candidate": "llamacpp:Swift-Qwen3.8-27B-Q4_K_M",
+   "chosen": null,
+   "detail": "not screened: needs 16.8 GB but only 7.6 GB is safely available (13.6 GB free, 24.0 GB GPU ceiling, 6.0 GB reserved for the system)",
+   "how": "",
+   "id": 1791036378685445,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-10-03T14:07:08Z",
    "candidate": "LiquidAI/LFM2.5-1.2B-Instruct",
    "chosen": null,
@@ -3356,6 +3675,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-10-03T14:08:56Z",
+   "candidate": "Qwen/Qwen3-0.6B",
+   "chosen": null,
+   "detail": "1 case(s) passed a screen",
+   "how": "",
+   "id": 1791036536221054,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 250,
+   "tier": "screen"
+  },
+  {
    "at": "2026-10-03T14:09:41Z",
    "candidate": "llamacpp:K2-Horizon-7B-Q4_K_M",
    "chosen": null,
@@ -3367,6 +3701,21 @@
    "knob": "",
    "outcome": "queued",
    "reason": "reopened",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-03T15:48:31Z",
+   "candidate": "llamacpp:Swift-Qwen3.8-27B-Q4_K_M",
+   "chosen": null,
+   "detail": "not screened: needs 16.8 GB but only 11.8 GB is safely available (15.6 GB free, 24.0 GB GPU ceiling, 3.8 GB reserved for the system)",
+   "how": "",
+   "id": 1791042511892243,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
    "run_id": null,
    "tier": "screen"
   },
@@ -3401,6 +3750,51 @@
    "tier": "screen"
   },
   {
+   "at": "2026-10-03T15:51:25Z",
+   "candidate": "Qwen/Qwen3-0.6B",
+   "chosen": null,
+   "detail": "it ran and passed nothing: chunk-bytes: 4/6 checks passed; chunks(b'abcdef', 3) == [b'abc', b'def'] -> returned False",
+   "how": "",
+   "id": 1791042685153230,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 262,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-03T15:52:13Z",
+   "candidate": "Qwen/Qwen3-0.6B",
+   "chosen": null,
+   "detail": "retracted: one stochastic draw contradicted an earlier pass (#308)",
+   "how": "",
+   "id": 1791042733407769,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "reopened",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-04T14:26:40Z",
+   "candidate": "llamacpp:Swift-Qwen3.8-27B-Q4_K_M",
+   "chosen": null,
+   "detail": "not screened: needs 16.8 GB but only 8.6 GB is safely available (12.4 GB free, 24.0 GB GPU ceiling, 3.8 GB reserved for the system)",
+   "how": "",
+   "id": 1791124000998459,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-10-04T14:27:02Z",
    "candidate": "LiquidAI/LFM2.5-1.2B-Instruct",
    "chosen": null,
@@ -3414,6 +3808,66 @@
    "reason": "candidate",
    "run_id": 278,
    "tier": "screen"
+  },
+  {
+   "at": "2026-10-04T14:29:16Z",
+   "candidate": "Qwen/Qwen3-0.6B",
+   "chosen": null,
+   "detail": "1 case(s) passed a screen",
+   "how": "",
+   "id": 1791124156554742,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 281,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-06T04:50:44Z",
+   "candidate": "llamacpp:Swift-Qwen3.8-27B-Q4_K_M",
+   "chosen": null,
+   "detail": "1 case(s) passed a screen",
+   "how": "",
+   "id": 1791262244159759,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 318,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-06T05:21:16Z",
+   "candidate": "llamacpp:Swift-Qwen3.8-27B-Q4_K_M",
+   "chosen": null,
+   "detail": "code: does not beat the incumbent on the lane's metric",
+   "how": "",
+   "id": 1791264076391487,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": null,
+   "tier": "adopt"
+  },
+  {
+   "at": "2026-10-06T05:21:16Z",
+   "candidate": "llamacpp:Swift-Qwen3.8-27B-Q4_K_M",
+   "chosen": null,
+   "detail": "code: does not beat the incumbent on the lane's metric",
+   "how": "",
+   "id": 1791264076392413,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": null,
+   "tier": "measure"
   },
   {
    "at": "2026-10-06T05:29:56Z",
@@ -3491,12 +3945,42 @@
    "tier": "screen"
   },
   {
+   "at": "2026-10-06T06:05:48Z",
+   "candidate": "Qwen/Qwen3-0.6B",
+   "chosen": null,
+   "detail": "it ran and passed nothing: chunk-bytes: gateway returned HTTP 404: {\"error\": \"generation thread died\"}",
+   "how": "",
+   "id": 1791266748929651,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "harness",
+   "run_id": 330,
+   "tier": "screen"
+  },
+  {
    "at": "2026-10-06T11:28:53Z",
    "candidate": "LiquidAI/LFM2.5-1.2B-Instruct",
    "chosen": null,
    "detail": "retracted: 'generation thread died' was a setting this harness chose, not a verdict on LiquidAI/LFM2.5-1.2B-Instruct",
    "how": "",
    "id": 1791286133542504,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "reopened",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-06T11:28:53Z",
+   "candidate": "Qwen/Qwen3-0.6B",
+   "chosen": null,
+   "detail": "retracted: 'generation thread died' was a setting this harness chose, not a verdict on Qwen/Qwen3-0.6B",
+   "how": "",
+   "id": 1791286133542505,
    "incumbent": "",
    "kind": "screen",
    "knob": "",
@@ -3527,6 +4011,36 @@
    "detail": "code: does not beat the incumbent on the lane's metric",
    "how": "",
    "id": 1791286834003231,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": null,
+   "tier": "adopt"
+  },
+  {
+   "at": "2026-10-06T11:49:59Z",
+   "candidate": "Qwen/Qwen3-0.6B",
+   "chosen": null,
+   "detail": "1 case(s) passed a screen",
+   "how": "",
+   "id": 1791287399337772,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 338,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-06T12:05:16Z",
+   "candidate": "Qwen/Qwen3-0.6B",
+   "chosen": null,
+   "detail": "code: does not beat the incumbent on the lane's metric",
+   "how": "",
+   "id": 1791288316217845,
    "incumbent": "",
    "kind": "verdict",
    "knob": "",
@@ -5471,6 +5985,36 @@
    "tier": "adopt"
   },
   {
+   "at": "2026-10-14T01:13:53Z",
+   "candidate": "LiquidAI/LFM2.5-8B-A1B",
+   "chosen": null,
+   "detail": "2 case(s) passed a screen",
+   "how": "",
+   "id": 1791940433996316,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 450,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-16T03:34:01Z",
+   "candidate": "LiquidAI/LFM2.5-8B-A1B",
+   "chosen": null,
+   "detail": "code: futility: look 2 at 116/135 holdout cells: 2 gained, 38 lost, conditional power 0.00, alpha 0.0037 of 0.0071 spendable here; under the plan's +0.20 the challenger reaches the gate with probabili",
+   "how": "",
+   "id": 1792121641546888,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": 452,
+   "tier": "adopt"
+  },
+  {
    "at": "2026-10-18T00:44:50Z",
    "candidate": "llamacpp:K2-Horizon-7B-Q4_K_M",
    "chosen": null,
@@ -5483,6 +6027,21 @@
    "outcome": "declined",
    "reason": "runtime",
    "run_id": 327,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-19T20:14:58Z",
+   "candidate": "llamacpp:Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M",
+   "chosen": null,
+   "detail": "5 case(s) passed a screen",
+   "how": "",
+   "id": 1792440898996689,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 503,
    "tier": "screen"
   },
   {
@@ -5499,6 +6058,21 @@
    "reason": "candidate",
    "run_id": 518,
    "tier": "screen"
+  },
+  {
+   "at": "2026-10-20T03:36:26Z",
+   "candidate": "llamacpp:Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M",
+   "chosen": null,
+   "detail": "code: futility: look 4 at 79/135 holdout cells: 6 gained, 7 lost, conditional power 0.00, alpha 0.0002 of 0.0042 spendable here; under the plan's +0.20 the challenger reaches the gate with probability",
+   "how": "",
+   "id": 1792467386691623,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": 506,
+   "tier": "adopt"
   },
   {
    "at": "2026-10-22T01:39:42Z",
@@ -5666,6 +6240,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-10-23T03:39:22Z",
+   "candidate": "Qwen/Qwen3-0.6B",
+   "chosen": null,
+   "detail": "2 case(s) passed a screen",
+   "how": "",
+   "id": 1792726762369217,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 566,
+   "tier": "screen"
+  },
+  {
    "at": "2026-10-24T04:12:16Z",
    "candidate": "llamacpp:Qwopus3.6-27B-v1-preview-Q4_K_M",
    "chosen": null,
@@ -5693,6 +6282,21 @@
    "outcome": "screened",
    "reason": "candidate",
    "run_id": 582,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-26T01:28:46Z",
+   "candidate": "LiquidAI/LFM2.5-8B-A1B",
+   "chosen": null,
+   "detail": "not screened: needs 17.3 GB but only 9.4 GB is safely available (27.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1792978126345600,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
    "tier": "screen"
   },
   {
@@ -5741,6 +6345,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-10-30T02:45:18Z",
+   "candidate": "HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive",
+   "chosen": null,
+   "detail": "not screened: needs 19.7 GB but only 15.3 GB is safely available (33.2 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1793328318864787,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-01T01:22:53Z",
    "candidate": "mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
    "chosen": null,
@@ -5768,6 +6387,36 @@
    "outcome": "queued",
    "reason": "memory",
    "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-01T01:49:18Z",
+   "candidate": "HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive",
+   "chosen": null,
+   "detail": "not screened: needs 19.7 GB but only 7.8 GB is safely available (25.7 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1793497758228203,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-01T01:51:36Z",
+   "candidate": "LiquidAI/LFM2.5-8B-A1B",
+   "chosen": null,
+   "detail": "2 case(s) passed a screen",
+   "how": "",
+   "id": 1793497896732918,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 641,
    "tier": "screen"
   },
   {
@@ -5831,6 +6480,36 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-03T03:00:23Z",
+   "candidate": "llamacpp:Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M",
+   "chosen": null,
+   "detail": "2 case(s) passed a screen",
+   "how": "",
+   "id": 1793674823396425,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 670,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-04T05:02:32Z",
+   "candidate": "llamacpp:K2-Horizon-MoVA-36B-A4B-Q4_K_M",
+   "chosen": null,
+   "detail": "3 case(s) passed a screen",
+   "how": "",
+   "id": 1793768552884046,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 684,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-04T05:02:33Z",
    "candidate": "LiquidAI/LFM2.5-24B-A2B-GGUF",
    "chosen": null,
@@ -5846,6 +6525,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-04T05:38:04Z",
+   "candidate": "llamacpp:Qwopus-GLM-18B-Healed-Q4_K_M",
+   "chosen": null,
+   "detail": "2 case(s) passed a screen",
+   "how": "",
+   "id": 1793770684869087,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 685,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-04T05:45:14Z",
    "candidate": "dealignai/Gemma-4-31B-JANG_4M-CRACK",
    "chosen": null,
@@ -5858,6 +6552,21 @@
    "outcome": "queued",
    "reason": "memory",
    "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-05T03:22:45Z",
+   "candidate": "llamacpp:Swift-Qwen3.8-27B-Q4_K_M",
+   "chosen": null,
+   "detail": "4 case(s) passed a screen",
+   "how": "",
+   "id": 1793848965514064,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 697,
    "tier": "screen"
   },
   {
@@ -7659,6 +8368,81 @@
    "reason": "limit",
    "run_id": 1271,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-24T11:25:16Z",
+   "candidate": "KyleHessling1/Qwopus-GLM-18B-Merged-GGUF",
+   "chosen": null,
+   "detail": "extract: lane too small, needs 649 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1657 more extract cases are needed before a null says anything about Kyle",
+   "how": "",
+   "id": 1795519516009572,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1278,
+   "tier": "adopt"
+  },
+  {
+   "at": "2026-11-24T12:33:08Z",
+   "candidate": "LiquidAI/LFM2.5-8B-A1B",
+   "chosen": null,
+   "detail": "extract: lane too small, needs 649 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1657 more extract cases are needed before a null says anything about Liqu",
+   "how": "",
+   "id": 1795523588200175,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1280,
+   "tier": "adopt"
+  },
+  {
+   "at": "2026-11-24T12:49:07Z",
+   "candidate": "bartowski/K2-Horizon-MoVA-36B-A4B-GGUF",
+   "chosen": null,
+   "detail": "extract: lane too small, needs 649 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1657 more extract cases are needed before a null says anything about bart",
+   "how": "",
+   "id": 1795524547595998,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1281,
+   "tier": "adopt"
+  },
+  {
+   "at": "2026-11-24T12:56:05Z",
+   "candidate": "Qwen/Qwen3-0.6B",
+   "chosen": null,
+   "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 47 lost against 6 gained, p=0.00; comparison 15 on this holdout, so alpha 0.05/15 = 0.0033; dev: not run, dev and holdou",
+   "how": "",
+   "id": 1795524965380977,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": 1282,
+   "tier": "adopt"
+  },
+  {
+   "at": "2026-11-24T13:19:46Z",
+   "candidate": "HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive",
+   "chosen": null,
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about Hauh",
+   "how": "",
+   "id": 1795526386441995,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1283,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -7766,6 +8550,28 @@
      "ttft_p95_s": 28.968
     },
     {
+     "about": "family IFM/K2-Horizon-MoVA-36B-A4B, 36B (4B active) params, by bartowski",
+     "candidate": "bartowski/K2-Horizon-MoVA-36B-A4B-GGUF",
+     "first_s": 3.574,
+     "median_s": 3.251,
+     "metrics": {
+      "completion_tokens": 338.6443,
+      "tokens_per_s": 91.0779
+     },
+     "model": "bartowski/K2-Horizon-MoVA-36B-A4B-GGUF",
+     "not_run": "",
+     "pass_rate": 0.803,
+     "passed": 122,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-24T12:49:06Z",
+     "served_as": "",
+     "source": "https://huggingface.co/bartowski/K2-Horizon-MoVA-36B-A4B-GGUF",
+     "total": 152,
+     "ttft_median_s": 3.19,
+     "ttft_p95_s": 8.385
+    },
+    {
      "about": "family Qwen/Qwen3.6-27B, 27B params, by Jackrong",
      "candidate": "Jackrong/Qwopus3.6-27B-v1-preview-GGUF",
      "first_s": 10.336,
@@ -7852,6 +8658,28 @@
      "total": 152,
      "ttft_median_s": 1.63,
      "ttft_p95_s": 5.595
+    },
+    {
+     "about": "family ukisai/Swift-Qwen3.8-27b, 27B params, by ukisai",
+     "candidate": "ukisai/Swift-Qwen3.8-27B-GGUF",
+     "first_s": 2.603,
+     "median_s": 8.581,
+     "metrics": {
+      "completion_tokens": 403.4191,
+      "tokens_per_s": 41.1301
+     },
+     "model": "ukisai/Swift-Qwen3.8-27B-GGUF",
+     "not_run": "",
+     "pass_rate": 0.784,
+     "passed": 109,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-24T13:48:41Z",
+     "served_as": "",
+     "source": "https://huggingface.co/ukisai/Swift-Qwen3.8-27B-GGUF",
+     "total": 139,
+     "ttft_median_s": 8.336,
+     "ttft_p95_s": 24.282
     },
     {
      "about": "by HauhauCS",
@@ -8228,6 +9056,28 @@
      "ttft_p95_s": 0.197
     },
     {
+     "about": "family Qwen/Qwen3.6-35B-A3B, 35B (3B active) params, by HauhauCS",
+     "candidate": "HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive",
+     "first_s": 9.249,
+     "median_s": 6.17,
+     "metrics": {
+      "completion_tokens": 811.912,
+      "tokens_per_s": 144.7344
+     },
+     "model": "HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive",
+     "not_run": "",
+     "pass_rate": 0.704,
+     "passed": 107,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-24T13:19:45Z",
+     "served_as": "",
+     "source": "https://huggingface.co/HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive",
+     "total": 152,
+     "ttft_median_s": 5.61,
+     "ttft_p95_s": 10.249
+    },
+    {
      "about": "family google/gemma-4-26B-A4B-it, 26B (4B active) params, by HauhauCS",
      "candidate": "HauhauCS/Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced",
      "first_s": 13.232,
@@ -8336,6 +9186,28 @@
      "total": 152,
      "ttft_median_s": 3.843,
      "ttft_p95_s": 12.002
+    },
+    {
+     "about": "family LiquidAI/LFM2.5-8B-A1B-Base, 8B (1B active) params, by LiquidAI",
+     "candidate": "LiquidAI/LFM2.5-8B-A1B",
+     "first_s": 2.06,
+     "median_s": 1.462,
+     "metrics": {
+      "completion_tokens": 241.5066,
+      "tokens_per_s": 145.2947
+     },
+     "model": "LiquidAI/LFM2.5-8B-A1B",
+     "not_run": "",
+     "pass_rate": 0.625,
+     "passed": 95,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-24T12:33:07Z",
+     "served_as": "",
+     "source": "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B",
+     "total": 152,
+     "ttft_median_s": 1.281,
+     "ttft_p95_s": 3.27
     },
     {
      "about": "family mistralai/Mistral-7B-v0.3, 7B params, by mistralai",
@@ -8471,6 +9343,28 @@
      "ttft_p95_s": 3.735
     },
     {
+     "about": "family Qwen/Qwen3-0.6B-Base, 0.6B params, by Qwen",
+     "candidate": "Qwen/Qwen3-0.6B",
+     "first_s": 0.774,
+     "median_s": 1.05,
+     "metrics": {
+      "completion_tokens": 265.0789,
+      "tokens_per_s": 174.2125
+     },
+     "model": "Qwen/Qwen3-0.6B",
+     "not_run": "",
+     "pass_rate": 0.461,
+     "passed": 70,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-24T12:56:04Z",
+     "served_as": "",
+     "source": "https://huggingface.co/Qwen/Qwen3-0.6B",
+     "total": 152,
+     "ttft_median_s": 0.85,
+     "ttft_p95_s": 6.539
+    },
+    {
      "about": "family TheOneWhoWill/Coding-Monkey-Gemma, by TheOneWhoWill",
      "candidate": "TheOneWhoWill/Coding-Monkey-Gemma-GGUF",
      "first_s": 0.489,
@@ -8603,6 +9497,28 @@
      "ttft_p95_s": 15.103
     },
     {
+     "about": "family Jackrong/Qwen3.5-9B-GLM5.1-Distill-v1, 18B params, by KyleHessling1",
+     "candidate": "KyleHessling1/Qwopus-GLM-18B-Merged-GGUF",
+     "first_s": 3.496,
+     "median_s": 26.791,
+     "metrics": {
+      "completion_tokens": 1306.7097,
+      "tokens_per_s": 66.6742
+     },
+     "model": "KyleHessling1/Qwopus-GLM-18B-Merged-GGUF",
+     "not_run": "",
+     "pass_rate": 0.324,
+     "passed": 24,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-24T11:25:15Z",
+     "served_as": "",
+     "source": "https://huggingface.co/KyleHessling1/Qwopus-GLM-18B-Merged-GGUF",
+     "total": 74,
+     "ttft_median_s": 18.231,
+     "ttft_p95_s": 44.408
+    },
+    {
      "about": "family LiquidAI/LFM2.5-1.2B-Base, 1.2B params, by LiquidAI",
      "candidate": "LiquidAI/LFM2.5-1.2B-Instruct",
      "first_s": 0.265,
@@ -8713,8 +9629,8 @@
      "ttft_p95_s": 1.328
     }
    ],
-   "run_at": "2026-11-24T07:32:12Z",
-   "runs": 47
+   "run_at": "2026-11-24T13:48:41Z",
+   "runs": 53
   },
   {
    "cases": 152,
@@ -9042,7 +9958,7 @@
    "runs": 3
   }
  ],
- "generated_at": "2026-11-24T07:34:57Z",
+ "generated_at": "2026-11-24T13:50:39Z",
  "knobs": [],
  "lane": {
   "cases": 450,
