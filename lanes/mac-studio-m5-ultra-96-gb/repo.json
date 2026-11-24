@@ -169,6 +169,90 @@
    "until": ""
   },
   {
+   "candidate": "Qwen/Qwen3-0.6B",
+   "decided_at": "2026-11-24T12:56:05Z",
+   "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 47 lost against 6 gained, p=0.00; comparison 15 on this holdout, so alpha 0.05/15 = 0.0033; dev: not run, dev and holdou",
+   "exam": {
+    "about": "family Qwen/Qwen3-0.6B-Base, 0.6B params, by Qwen",
+    "candidate": "Qwen/Qwen3-0.6B",
+    "cases": 72,
+    "first_s": 0.0,
+    "median_s": 0.0,
+    "metrics": {
+     "completion_tokens": 439.0,
+     "patch_applied": 0.0,
+     "resolved": 0.0,
+     "test_s": 0.0,
+     "tokens_per_s": 163.6,
+     "wall_s": 3.022
+    },
+    "model": "Qwen/Qwen3-0.6B",
+    "not_run": "",
+    "pass_rate": 0.0,
+    "passed": 0,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-07T05:59:04Z",
+    "served_as": "",
+    "source": "https://huggingface.co/Qwen/Qwen3-0.6B",
+    "total": 14,
+    "ttft_median_s": 1.752,
+    "ttft_p95_s": 1.752
+   },
+   "outcome": "declined",
+   "proposal": "Qwen/Qwen3-0.6B",
+   "reason": "candidate",
+   "receipt_key": "Qwen/Qwen3-0.6B",
+   "run_id": 1282,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
+   "candidate": "Qwen/Qwen3-0.6B,temperature=0",
+   "decided_at": "2026-11-24T12:56:05Z",
+   "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 47 lost against 6 gained, p=0.00; comparison 15 on this holdout, so alpha 0.05/15 = 0.0033; dev: not run, dev and holdou",
+   "exam": {
+    "about": "family Qwen/Qwen3-0.6B-Base, 0.6B params, by Qwen",
+    "candidate": "Qwen/Qwen3-0.6B",
+    "cases": 72,
+    "first_s": 0.0,
+    "median_s": 0.0,
+    "metrics": {
+     "completion_tokens": 439.0,
+     "patch_applied": 0.0,
+     "resolved": 0.0,
+     "test_s": 0.0,
+     "tokens_per_s": 163.6,
+     "wall_s": 3.022
+    },
+    "model": "Qwen/Qwen3-0.6B",
+    "not_run": "",
+    "pass_rate": 0.0,
+    "passed": 0,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-07T05:59:04Z",
+    "served_as": "",
+    "source": "https://huggingface.co/Qwen/Qwen3-0.6B",
+    "total": 14,
+    "ttft_median_s": 1.752,
+    "ttft_p95_s": 1.752
+   },
+   "outcome": "declined",
+   "proposal": "Qwen/Qwen3-0.6B",
+   "reason": "candidate",
+   "receipt_key": "Qwen/Qwen3-0.6B",
+   "run_id": 1282,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
    "candidate": "claude-code:claude-opus-5-5",
    "decided_at": "2026-10-09T17:56:16Z",
    "detail": "web: reference model; never a lane default (the incumbent stays: the cases disagree 2-2 with no majority (accessible-nav: q3-4b, dark-mode-toggle: q3-coder, data-table: q3-4b, form-validation: claude-",
@@ -635,90 +719,6 @@
    "until": ""
   },
   {
-   "candidate": "Qwen/Qwen3-0.6B",
-   "decided_at": "2026-10-23T03:39:22Z",
-   "detail": "2 case(s) passed a screen",
-   "exam": {
-    "about": "family Qwen/Qwen3-0.6B-Base, 0.6B params, by Qwen",
-    "candidate": "Qwen/Qwen3-0.6B",
-    "cases": 72,
-    "first_s": 0.0,
-    "median_s": 0.0,
-    "metrics": {
-     "completion_tokens": 439.0,
-     "patch_applied": 0.0,
-     "resolved": 0.0,
-     "test_s": 0.0,
-     "tokens_per_s": 163.6,
-     "wall_s": 3.022
-    },
-    "model": "Qwen/Qwen3-0.6B",
-    "not_run": "",
-    "pass_rate": 0.0,
-    "passed": 0,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-07T05:59:04Z",
-    "served_as": "",
-    "source": "https://huggingface.co/Qwen/Qwen3-0.6B",
-    "total": 14,
-    "ttft_median_s": 1.752,
-    "ttft_p95_s": 1.752
-   },
-   "outcome": "screened",
-   "proposal": "Qwen/Qwen3-0.6B",
-   "reason": "candidate",
-   "receipt_key": "Qwen/Qwen3-0.6B",
-   "run_id": 566,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
-   "candidate": "Qwen/Qwen3-0.6B,temperature=0",
-   "decided_at": "2026-10-23T03:39:22Z",
-   "detail": "2 case(s) passed a screen",
-   "exam": {
-    "about": "family Qwen/Qwen3-0.6B-Base, 0.6B params, by Qwen",
-    "candidate": "Qwen/Qwen3-0.6B",
-    "cases": 72,
-    "first_s": 0.0,
-    "median_s": 0.0,
-    "metrics": {
-     "completion_tokens": 439.0,
-     "patch_applied": 0.0,
-     "resolved": 0.0,
-     "test_s": 0.0,
-     "tokens_per_s": 163.6,
-     "wall_s": 3.022
-    },
-    "model": "Qwen/Qwen3-0.6B",
-    "not_run": "",
-    "pass_rate": 0.0,
-    "passed": 0,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-07T05:59:04Z",
-    "served_as": "",
-    "source": "https://huggingface.co/Qwen/Qwen3-0.6B",
-    "total": 14,
-    "ttft_median_s": 1.752,
-    "ttft_p95_s": 1.752
-   },
-   "outcome": "screened",
-   "proposal": "Qwen/Qwen3-0.6B",
-   "reason": "candidate",
-   "receipt_key": "Qwen/Qwen3-0.6B",
-   "run_id": 566,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
    "candidate": "mlx-community/Qwen3-8B-4bit",
    "decided_at": "2026-10-22T01:54:19Z",
    "detail": "3 case(s) passed a screen",
@@ -789,7 +789,7 @@
    "until": ""
   }
  ],
- "cursor": 1795482692480502,
+ "cursor": 1795524965380977,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -2485,6 +2485,21 @@
    "reason": "candidate",
    "run_id": 1250,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-24T12:56:05Z",
+   "candidate": "Qwen/Qwen3-0.6B",
+   "chosen": null,
+   "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 47 lost against 6 gained, p=0.00; comparison 15 on this holdout, so alpha 0.05/15 = 0.0033; dev: not run, dev and holdou",
+   "how": "",
+   "id": 1795524965380977,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": 1282,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -4060,7 +4075,7 @@
    "runs": 3
   }
  ],
- "generated_at": "2026-11-24T02:16:33Z",
+ "generated_at": "2026-11-24T13:50:38Z",
  "knobs": [
   {
    "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
