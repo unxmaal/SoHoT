@@ -720,8 +720,8 @@
   },
   {
    "candidate": "mlx-community/Qwen3-8B-4bit",
-   "decided_at": "2026-10-22T01:54:19Z",
-   "detail": "3 case(s) passed a screen",
+   "decided_at": "2026-11-24T19:28:03Z",
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about mlx-",
    "exam": {
     "about": "family Qwen/Qwen3-8B, 8B params, 4bit, by mlx-community",
     "candidate": "mlx-community/Qwen3-8B-4bit",
@@ -743,20 +743,20 @@
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
-   "outcome": "screened",
+   "outcome": "declined",
    "proposal": "mlx-community/Qwen3-8B-4bit",
-   "reason": "candidate",
+   "reason": "limit",
    "receipt_key": "mlx-community/Qwen3-8B-4bit",
-   "run_id": 539,
+   "run_id": 1301,
    "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>2116"
   },
   {
    "candidate": "mlx-community/Qwen3-8B-4bit,temperature=0",
-   "decided_at": "2026-10-22T01:54:19Z",
-   "detail": "3 case(s) passed a screen",
+   "decided_at": "2026-11-24T19:28:03Z",
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about mlx-",
    "exam": {
     "about": "family Qwen/Qwen3-8B, 8B params, 4bit, by mlx-community",
     "candidate": "mlx-community/Qwen3-8B-4bit",
@@ -778,18 +778,18 @@
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
-   "outcome": "screened",
+   "outcome": "declined",
    "proposal": "mlx-community/Qwen3-8B-4bit",
-   "reason": "candidate",
+   "reason": "limit",
    "receipt_key": "mlx-community/Qwen3-8B-4bit",
-   "run_id": 539,
+   "run_id": 1301,
    "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>2116"
   }
  ],
- "cursor": 1795524965380977,
+ "cursor": 1795548483323264,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -2500,6 +2500,21 @@
    "reason": "candidate",
    "run_id": 1282,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-24T19:28:03Z",
+   "candidate": "mlx-community/Qwen3-8B-4bit",
+   "chosen": null,
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about mlx-",
+   "how": "",
+   "id": 1795548483323264,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1301,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -4075,7 +4090,7 @@
    "runs": 3
   }
  ],
- "generated_at": "2026-11-24T13:50:38Z",
+ "generated_at": "2026-11-24T20:05:57Z",
  "knobs": [
   {
    "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
