@@ -551,6 +551,90 @@
    "until": "cases:code>3156"
   },
   {
+   "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+   "decided_at": "2026-11-24T01:11:32Z",
+   "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 31 lost against 9 gained, p=0.00; comparison 11 on this holdout, so alpha 0.05/11 = 0.0045; dev: not run, dev and holdou",
+   "exam": {
+    "about": "4B params, 4bit, by mlx-community",
+    "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "cases": 80,
+    "first_s": 3.03,
+    "median_s": 3.106,
+    "metrics": {
+     "completion_tokens": 485.8333,
+     "patch_applied": 0.5,
+     "resolved": 0.0,
+     "test_s": 0.3755,
+     "tokens_per_s": 103.1667,
+     "wall_s": 5.9972
+    },
+    "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "not_run": "",
+    "pass_rate": 0.0,
+    "passed": 0,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-10-23T07:12:06Z",
+    "served_as": "",
+    "source": "https://huggingface.co/mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "total": 6,
+    "ttft_median_s": 0.851,
+    "ttft_p95_s": 4.599
+   },
+   "outcome": "declined",
+   "proposal": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+   "reason": "candidate",
+   "receipt_key": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+   "run_id": 1250,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
+   "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit,temperature=0",
+   "decided_at": "2026-11-24T01:11:32Z",
+   "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 31 lost against 9 gained, p=0.00; comparison 11 on this holdout, so alpha 0.05/11 = 0.0045; dev: not run, dev and holdou",
+   "exam": {
+    "about": "4B params, 4bit, by mlx-community",
+    "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "cases": 80,
+    "first_s": 3.03,
+    "median_s": 3.106,
+    "metrics": {
+     "completion_tokens": 485.8333,
+     "patch_applied": 0.5,
+     "resolved": 0.0,
+     "test_s": 0.3755,
+     "tokens_per_s": 103.1667,
+     "wall_s": 5.9972
+    },
+    "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "not_run": "",
+    "pass_rate": 0.0,
+    "passed": 0,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-10-23T07:12:06Z",
+    "served_as": "",
+    "source": "https://huggingface.co/mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "total": 6,
+    "ttft_median_s": 0.851,
+    "ttft_p95_s": 4.599
+   },
+   "outcome": "declined",
+   "proposal": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+   "reason": "candidate",
+   "receipt_key": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+   "run_id": 1250,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
    "candidate": "Qwen/Qwen3-0.6B",
    "decided_at": "2026-10-23T03:39:22Z",
    "detail": "2 case(s) passed a screen",
@@ -635,90 +719,6 @@
    "until": ""
   },
   {
-   "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
-   "decided_at": "2026-11-10T03:58:39Z",
-   "detail": "2 case(s) passed a screen",
-   "exam": {
-    "about": "4B params, 4bit, by mlx-community",
-    "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
-    "cases": 80,
-    "first_s": 3.03,
-    "median_s": 3.106,
-    "metrics": {
-     "completion_tokens": 485.8333,
-     "patch_applied": 0.5,
-     "resolved": 0.0,
-     "test_s": 0.3755,
-     "tokens_per_s": 103.1667,
-     "wall_s": 5.9972
-    },
-    "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
-    "not_run": "",
-    "pass_rate": 0.0,
-    "passed": 0,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-10-23T07:12:06Z",
-    "served_as": "",
-    "source": "https://huggingface.co/mlx-community/Qwen3-4B-Instruct-2507-4bit",
-    "total": 6,
-    "ttft_median_s": 0.851,
-    "ttft_p95_s": 4.599
-   },
-   "outcome": "screened",
-   "proposal": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
-   "reason": "candidate",
-   "receipt_key": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
-   "run_id": 803,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
-   "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit,temperature=0",
-   "decided_at": "2026-11-10T03:58:39Z",
-   "detail": "2 case(s) passed a screen",
-   "exam": {
-    "about": "4B params, 4bit, by mlx-community",
-    "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
-    "cases": 80,
-    "first_s": 3.03,
-    "median_s": 3.106,
-    "metrics": {
-     "completion_tokens": 485.8333,
-     "patch_applied": 0.5,
-     "resolved": 0.0,
-     "test_s": 0.3755,
-     "tokens_per_s": 103.1667,
-     "wall_s": 5.9972
-    },
-    "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
-    "not_run": "",
-    "pass_rate": 0.0,
-    "passed": 0,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-10-23T07:12:06Z",
-    "served_as": "",
-    "source": "https://huggingface.co/mlx-community/Qwen3-4B-Instruct-2507-4bit",
-    "total": 6,
-    "ttft_median_s": 0.851,
-    "ttft_p95_s": 4.599
-   },
-   "outcome": "screened",
-   "proposal": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
-   "reason": "candidate",
-   "receipt_key": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
-   "run_id": 803,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
    "candidate": "mlx-community/Qwen3-8B-4bit",
    "decided_at": "2026-10-22T01:54:19Z",
    "detail": "3 case(s) passed a screen",
@@ -789,7 +789,7 @@
    "until": ""
   }
  ],
- "cursor": 1795424641844197,
+ "cursor": 1795482692480502,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -2470,6 +2470,21 @@
    "reason": "limit",
    "run_id": 1200,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-24T01:11:32Z",
+   "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+   "chosen": null,
+   "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 31 lost against 9 gained, p=0.00; comparison 11 on this holdout, so alpha 0.05/11 = 0.0045; dev: not run, dev and holdou",
+   "how": "",
+   "id": 1795482692480502,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": 1250,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -4045,7 +4060,7 @@
    "runs": 3
   }
  ],
- "generated_at": "2026-11-23T09:56:11Z",
+ "generated_at": "2026-11-24T02:16:33Z",
  "knobs": [
   {
    "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
