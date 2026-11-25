@@ -149,7 +149,6 @@ def _app(monkeypatch, tmp_path):
     r = _gather(tmp_path)
     monkeypatch.setattr(sp, "cached", lambda: r)
     guard = srv.transport_security("0.0.0.0", 8899)
-    monkeypatch.setattr(srv, "STATUS_HOSTS", {h.lower() for h in guard.allowed_hosts})
     return TestClient(srv.SERVER.streamable_http_app(transport_security=guard, host="0.0.0.0"))
 
 
@@ -160,7 +159,3 @@ def test_the_mcp_server_serves_status_and_status_json(monkeypatch, tmp_path):
     got = client.get("/status.json", headers={"host": "localhost:8899"})
     assert got.status_code == 200 and got.json()["banner"] == []
 
-
-def test_status_refuses_a_host_name_outside_the_allowlist(monkeypatch, tmp_path):
-    client = _app(monkeypatch, tmp_path)
-    assert client.get("/status", headers={"host": "rebound.example.com"}).status_code == 421

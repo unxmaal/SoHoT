@@ -1,16 +1,12 @@
-"""Owner actions on the status page: a fixed list of existing verbs, accepted only from an allowed device (#2116)."""
+"""Owner actions on the status page: a fixed list of existing verbs, accepted from any peer on the connection itself (#2116, #2128)."""
 from __future__ import annotations
 
 import hashlib
 import hmac
 import html
-import ipaddress
 import json
-import os
 import re
 import secrets
-import shutil
-import socket
 import subprocess
 import sys
 import threading
@@ -25,12 +21,7 @@ TOKEN_TTL_S = 900.0
 
 ACTION_TIMEOUT_S = 120.0
 
-WHOIS_TIMEOUT_S = 5.0
-
-#: One allowed device per line in the home: its tailnet stable node id or its full tailnet name. Missing or empty: read-only.
-DEVICES = "owner-devices"
 AUDIT = "owner-actions.jsonl"
-APP_BIN = "/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 #: A request carrying any of these did not come straight from its caller, so its peer address names nobody.
 FORWARDED = ("forwarded", "x-forwarded-for", "x-forwarded-host", "x-forwarded-proto", "x-real-ip", "via")
 TAIL = 2000
@@ -93,84 +84,14 @@ ACTIONS = (
 BY_NAME = {a.name: a for a in ACTIONS}
 
 
-def allowed(home: Path | None = None) -> set[str]:
-    """The devices that may act, from the home's config; none when there is no list, an error when it cannot be read."""
-    from harness import paths
-    try:
-        text = ((home or paths.home()) / DEVICES).read_text(encoding="utf-8")
-    except FileNotFoundError:
-        return set()
-    return {line.split("#")[0].strip().rstrip(".") for line in text.splitlines()} - {""}
-
-
-def tailscale_bin(which=None, exists=None) -> str | None:
-    return (which or shutil.which)("tailscale") or (APP_BIN if (exists or os.path.exists)(APP_BIN) else None)
-
-
-def whois(ip: str, run=None, binary: str | None = None) -> dict:
-    """The private network's own record of the device at `ip`; LookupError when it cannot be read."""
-    exe = binary or tailscale_bin()
-    if not exe:
-        raise LookupError("no tailscale binary on PATH or in the app bundle")
-    try:
-        p = (run or subprocess.run)([exe, "whois", "--json", ip], capture_output=True, text=True,
-                                    timeout=WHOIS_TIMEOUT_S, stdin=subprocess.DEVNULL)
-    except (OSError, subprocess.SubprocessError) as exc:
-        raise LookupError(f"whois did not run: {type(exc).__name__}") from exc
-    if p.returncode != 0:
-        raise LookupError(f"whois exited {p.returncode}")
-    try:
-        got = json.loads(p.stdout)
-        node = got["Node"]
-        return {"id": str(node.get("StableID") or ""), "name": str(node.get("Name") or "").rstrip(".").lower(),
-                "user": str((got.get("UserProfile") or {}).get("LoginName") or "")}
-    except (ValueError, KeyError, TypeError, AttributeError) as exc:
-        raise LookupError("whois answered no node") from exc
-
-
-def _binds(ip: str) -> bool:
-    with socket.socket(socket.AF_INET6 if ":" in ip else socket.AF_INET, socket.SOCK_DGRAM) as s:
-        try:
-            s.bind((ip, 0))
-        except OSError:
-            return False
-    return True
-
-
-def is_local(ip: str, binds=None) -> bool:
-    """Loopback, or any address this machine holds: a process here is never the owner's device."""
-    try:
-        a = ipaddress.ip_address(str(ip).split("%")[0])
-    except ValueError:
-        return True
-    a = getattr(a, "ipv4_mapped", None) or a
-    return a.is_loopback or a.is_unspecified or (binds or _binds)(str(a))
-
-
-def caller(peer: str | None, headers, *, home: Path | None = None, lookup=None, local=None) -> tuple[dict | None, str]:
-    """(device, "") when the connection's peer is an allowed device, else (None, why)."""
-    try:
-        allow = allowed(home)
-    except (OSError, ValueError) as exc:
-        return None, f"the allowed-device list cannot be read: {type(exc).__name__}"
-    if not allow:
-        return None, "no allowed device is configured: the page is read-only"
+def caller(peer: str | None, headers) -> tuple[dict | None, str]:
+    """({"name", "id"}, "") for any peer with its own connection address, else (None, why). #2128."""
     sent = {str(k).lower() for k in headers}
     if sent & set(FORWARDED):
         return None, "a forwarded request: its peer address is not the caller's"
     if not peer:
         return None, "no peer address"
-    if (local or is_local)(peer):
-        return None, "a request from this machine"
-    try:
-        who = (lookup or whois)(peer)
-    except Exception as exc:  # noqa: BLE001 - any failed lookup is a refusal, never an acceptance
-        return None, f"identity lookup unavailable: {exc}"[:200]
-    if not isinstance(who, dict):
-        return None, "identity lookup unavailable: it named no device"
-    if who.get("id") and who["id"] in allow or who.get("name") and who["name"] in {a.lower() for a in allow}:
-        return who, ""
-    return None, "not an allowed device"
+    return {"name": peer, "id": peer}, ""
 
 
 def _sign(peer: str, device: str, exp: int) -> str:
@@ -250,10 +171,9 @@ def panel(r: dict, tok: str, post: str = "status/action") -> str:
     return "\n".join(out)
 
 
-def panel_for(peer: str | None, headers, r: dict, *, now: float | None = None, home: Path | None = None,
-              lookup=None, local=None) -> str:
-    """The panel for an allowed device's page; nothing for every other reader."""
-    who, _ = caller(peer, headers, home=home, lookup=lookup, local=local)
+def panel_for(peer: str | None, headers, r: dict, *, now: float | None = None, home: Path | None = None) -> str:
+    """The panel for a page read from another device; nothing for a forwarded request."""
+    who, _ = caller(peer, headers)
     return panel(r, token(peer or "", who, now)) if who else ""
 
 
@@ -264,7 +184,7 @@ def _refused(code: int, why: str, entry: dict, home: Path | None) -> tuple[int, 
 
 
 def press(peer: str | None, headers, form: dict, r: dict, *, now: float | None = None, home: Path | None = None,
-          lookup=None, local=None, run=None) -> tuple[int, str]:
+          run=None) -> tuple[int, str]:
     """One POST: the first press asks, the second, carrying that press's confirmation, runs the verb once."""
     from harness import status_page
     from harness import status_view as sv
@@ -272,7 +192,7 @@ def press(peer: str | None, headers, form: dict, r: dict, *, now: float | None =
     name, arg, nonce = (str(form.get(k) or "") for k in ("action", "arg", "confirm"))
     entry = {"at": time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(now)), "peer": peer or "", "device": "",
              "action": name[:80], "arg": arg[:80], "press": "confirm" if nonce else "first"}
-    who, why = caller(peer, headers, home=home, lookup=lookup, local=local)
+    who, why = caller(peer, headers)
     if not who:
         return _refused(403, why, entry, home)
     entry.update(device=who.get("name") or who.get("id"), device_id=who.get("id"), user=who.get("user"))

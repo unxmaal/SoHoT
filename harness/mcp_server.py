@@ -467,35 +467,11 @@ def _describe(job: dict) -> JobInfo:
     return info
 
 
-#: Host headers /status answers, from transport_security once serve() runs; None answers any. #2075.
-STATUS_HOSTS: set[str] | None = None
-STATUS_PORT: int | None = None
-STATUS_HOSTS_FILE = "status-hosts"
-
-
-def status_hosts(home: Path | None = None) -> set[str]:
-    """STATUS_HOSTS plus the names in the home's status-hosts file (and each with the served port), read per call. #2124."""
-    names = set(STATUS_HOSTS or ())
-    try:
-        text = ((home or paths.home()) / STATUS_HOSTS_FILE).read_text(encoding="utf-8")
-    except OSError:
-        return names
-    for line in text.splitlines():
-        name = line.split("#")[0].strip().rstrip(".").lower()
-        if name:
-            names.add(name)
-            if STATUS_PORT is not None:
-                names.add(f"{name}:{STATUS_PORT}")
-    return names
-
-
 async def _status(request, as_json: bool):
     from starlette.concurrency import run_in_threadpool
-    from starlette.responses import HTMLResponse, PlainTextResponse, Response
+    from starlette.responses import HTMLResponse, Response
 
     from harness import status_page
-    if STATUS_HOSTS is not None and request.headers.get("host", "").lower() not in status_hosts():
-        return PlainTextResponse("this host name is not allowed", status_code=421)
     r = await run_in_threadpool(status_page.cached)
     if as_json:
         return Response(status_page.as_json(r), media_type="application/json")
@@ -511,7 +487,7 @@ def _peer(request) -> str | None:
 
 @SERVER.custom_route("/status", methods=["GET"])
 async def status_page_route(request):
-    """The LAN status page, read-only. #2075."""
+    """The LAN status page, answered under any Host name. #2075, #2128."""
     return await _status(request, as_json=False)
 
 
@@ -526,11 +502,9 @@ async def status_action_route(request):
     from urllib.parse import parse_qs
 
     from starlette.concurrency import run_in_threadpool
-    from starlette.responses import HTMLResponse, PlainTextResponse
+    from starlette.responses import HTMLResponse
 
     from harness import owner_actions, status_page
-    if STATUS_HOSTS is not None and request.headers.get("host", "").lower() not in status_hosts():
-        return PlainTextResponse("this host name is not allowed", status_code=421)
     body = await request.body()
     form = {} if len(body) > owner_actions.BODY_MAX else {
         k: v[-1] for k, v in parse_qs(body.decode("utf-8", "replace"), keep_blank_values=True).items()}
@@ -610,10 +584,7 @@ def serve(host: str, port: int, allow=(), grace: float = SHUTDOWN_GRACE_S) -> No
     """streamable-http under a uvicorn that stops within `grace` and first stops stale servers on its port."""
     import uvicorn
 
-    global STATUS_HOSTS, STATUS_PORT
     guard = transport_security(host, port, allow)
-    STATUS_HOSTS = {h.lower() for h in guard.allowed_hosts}
-    STATUS_PORT = port
     app = SERVER.streamable_http_app(transport_security=guard, host=host)
     config = uvicorn.Config(app, host=host, port=port, log_level=SERVER.settings.log_level.lower(),
                             timeout_graceful_shutdown=max(1, round(grace)), proxy_headers=False)
