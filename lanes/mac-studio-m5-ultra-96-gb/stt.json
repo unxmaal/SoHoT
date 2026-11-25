@@ -76,6 +76,43 @@
    "until": "limit:screen_cases>6"
   },
   {
+   "candidate": "stt:microsoft/VibeVoice-ASR-Streaming-7B",
+   "decided_at": "2026-11-25T06:23:49Z",
+   "detail": "stt: does not beat the incumbent on the lane's metric; significantly worse: 131 lost against 1 gained, p=0.00; comparison 4 on this holdout, so alpha 0.05/4 = 0.0125; dev: 0 gained, 343 lost, p=0.00",
+   "exam": {
+    "about": "7B params",
+    "candidate": "VibeVoice-ASR-Streaming-7B",
+    "cases": 480,
+    "first_s": 3.718,
+    "median_s": 1.069,
+    "metrics": {
+     "wer": 0.186
+    },
+    "model": "VibeVoice-ASR-Streaming-7B",
+    "not_run": "",
+    "pass_rate": 0.571,
+    "passed": 274,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-25T06:23:48Z",
+    "served_as": "",
+    "source": "",
+    "total": 480,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "declined",
+   "proposal": "microsoft/VibeVoice-ASR-Streaming-7B",
+   "reason": "candidate",
+   "receipt_key": "VibeVoice-ASR-Streaming-7B",
+   "run_id": 1328,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
    "candidate": "stt:mistralai/Voxtral-Mini-4B-Realtime-2602",
    "decided_at": "2026-11-14T07:51:11Z",
    "detail": "stt: lane too small, needs 1407 holdout cases: 134 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 4244 more stt cases are needed before a null says anything about Voxtral-Min",
@@ -418,22 +455,22 @@
     "about": "0.6B params",
     "candidate": "parakeet-tdt-0.6b-v2",
     "cases": 480,
-    "first_s": 0.505,
-    "median_s": 0.137,
+    "first_s": 7.184,
+    "median_s": 0.106,
     "metrics": {
-     "wer": 0.015
+     "wer": 0.0145
     },
     "model": "parakeet-tdt-0.6b-v2",
     "not_run": "",
     "pass_rate": 0.985,
-    "passed": 455,
+    "passed": 473,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-14T07:51:09Z",
+    "run_at": "2026-11-25T06:23:48Z",
     "served_as": "",
     "source": "",
-    "total": 462,
+    "total": 480,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -460,21 +497,6 @@
    "serves": false,
    "status": "measured",
    "tier": "measure",
-   "until": ""
-  },
-  {
-   "candidate": "stt:microsoft/VibeVoice-ASR-Streaming-7B",
-   "decided_at": "2026-11-01T01:51:52Z",
-   "detail": "1 case(s) passed a screen",
-   "exam": null,
-   "outcome": "screened",
-   "proposal": "microsoft/VibeVoice-ASR-Streaming-7B",
-   "reason": "candidate",
-   "receipt_key": "VibeVoice-ASR-Streaming-7B",
-   "run_id": 642,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
    "until": ""
   },
   {
@@ -604,7 +626,7 @@
    "until": ""
   }
  ],
- "cursor": 1795240484107726,
+ "cursor": 1795587829986653,
  "events": [
   {
    "at": "2026-09-08T02:00:21Z",
@@ -1430,6 +1452,21 @@
    "reason": "runtime",
    "run_id": 1103,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-25T06:23:49Z",
+   "candidate": "stt:microsoft/VibeVoice-ASR-Streaming-7B",
+   "chosen": null,
+   "detail": "stt: does not beat the incumbent on the lane's metric; significantly worse: 131 lost against 1 gained, p=0.00; comparison 4 on this holdout, so alpha 0.05/4 = 0.0125; dev: 0 gained, 343 lost, p=0.00",
+   "how": "",
+   "id": 1795587829986653,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": 1328,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -1468,21 +1505,21 @@
     {
      "about": "0.6B params",
      "candidate": "parakeet-tdt-0.6b-v2",
-     "first_s": 0.505,
-     "median_s": 0.137,
+     "first_s": 7.184,
+     "median_s": 0.106,
      "metrics": {
-      "wer": 0.015
+      "wer": 0.0145
      },
      "model": "parakeet-tdt-0.6b-v2",
      "not_run": "",
      "pass_rate": 0.985,
-     "passed": 455,
+     "passed": 473,
      "peak_gb": 0.0,
      "reference": false,
-     "run_at": "2026-11-14T07:51:09Z",
+     "run_at": "2026-11-25T06:23:48Z",
      "served_as": "",
      "source": "",
-     "total": 462,
+     "total": 480,
      "ttft_median_s": null,
      "ttft_p95_s": null
     },
@@ -1548,10 +1585,31 @@
      "total": 480,
      "ttft_median_s": null,
      "ttft_p95_s": null
+    },
+    {
+     "about": "7B params",
+     "candidate": "VibeVoice-ASR-Streaming-7B",
+     "first_s": 3.718,
+     "median_s": 1.069,
+     "metrics": {
+      "wer": 0.186
+     },
+     "model": "VibeVoice-ASR-Streaming-7B",
+     "not_run": "",
+     "pass_rate": 0.571,
+     "passed": 274,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-25T06:23:48Z",
+     "served_as": "",
+     "source": "",
+     "total": 480,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-11-14T07:51:09Z",
-   "runs": 4
+   "run_at": "2026-11-25T06:23:48Z",
+   "runs": 5
   },
   {
    "cases": 480,
@@ -1715,7 +1773,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-21T08:10:22Z",
+ "generated_at": "2026-11-25T08:30:29Z",
  "knobs": [],
  "lane": {
   "cases": 480,
@@ -1734,10 +1792,10 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-11-14T07:51:09Z",
-  "median_s": 0.137,
+  "measured_at": "2026-11-25T06:23:48Z",
+  "median_s": 0.106,
   "metrics": {
-   "wer": 0.015
+   "wer": 0.0145
   },
   "not_run": "",
   "parked": "",
@@ -1745,7 +1803,7 @@
   "pass_rate": 0.985,
   "serves": "mlx-community/parakeet-tdt-0.6b-v2",
   "serves_model": "mlx-community/parakeet-tdt-0.6b-v2; 0.6B params, by mlx-community",
-  "stale": true
+  "stale": false
  },
  "since": 0
 }
