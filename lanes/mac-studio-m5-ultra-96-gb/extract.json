@@ -1901,6 +1901,158 @@
    "until": "cases:extract>1926"
   },
   {
+   "candidate": "deepen:llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "decided_at": "2026-11-25T08:25:54Z",
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about deep",
+   "exam": {
+    "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
+    "candidate": "deepen/llamacpp:Ornith-1.5-35B-Q4_K_M",
+    "cases": 152,
+    "first_s": 7.122,
+    "median_s": 4.596,
+    "metrics": {
+     "completion_tokens": 753.2105,
+     "method_calls": 2.0
+    },
+    "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+    "not_run": "",
+    "pass_rate": 0.737,
+    "passed": 112,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-25T08:25:54Z",
+    "served_as": "",
+    "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
+    "total": 152,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "declined",
+   "proposal": "deepen:llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "reason": "limit",
+   "receipt_key": "deepen/llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "run_id": 1332,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>2116"
+  },
+  {
+   "candidate": "deepen:llamacpp:Ornith-1.5-35B-Q4_K_M,temperature=0",
+   "decided_at": "2026-11-25T08:25:54Z",
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about deep",
+   "exam": {
+    "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
+    "candidate": "deepen/llamacpp:Ornith-1.5-35B-Q4_K_M",
+    "cases": 152,
+    "first_s": 7.122,
+    "median_s": 4.596,
+    "metrics": {
+     "completion_tokens": 753.2105,
+     "method_calls": 2.0
+    },
+    "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+    "not_run": "",
+    "pass_rate": 0.737,
+    "passed": 112,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-25T08:25:54Z",
+    "served_as": "",
+    "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
+    "total": 152,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "declined",
+   "proposal": "deepen:llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "reason": "limit",
+   "receipt_key": "deepen/llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "run_id": 1332,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>2116"
+  },
+  {
+   "candidate": "deepen:mlx-community/Qwen2.5-7B-Instruct-4bit",
+   "decided_at": "2026-11-25T07:20:58Z",
+   "detail": "code: does not beat the incumbent on the lane's metric; significantly worse: 77 lost against 1 gained, p=0.00; comparison 22 on this holdout, so alpha 0.05/22 = 0.0023; dev: not run, dev and holdout a",
+   "exam": {
+    "about": "7B params, 4bit, by mlx-community",
+    "candidate": "deepen/mlx-community/Qwen2.5-7B-Instruct-4bit",
+    "cases": 450,
+    "first_s": 2.517,
+    "median_s": 0.426,
+    "metrics": {
+     "completion_tokens": 76.7244,
+     "method_calls": 2.0
+    },
+    "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+    "not_run": "",
+    "pass_rate": 0.364,
+    "passed": 164,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-10-22T06:23:09Z",
+    "served_as": "",
+    "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
+    "total": 450,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "declined",
+   "proposal": "deepen:mlx-community/Qwen2.5-7B-Instruct-4bit",
+   "reason": "candidate",
+   "receipt_key": "deepen/mlx-community/Qwen2.5-7B-Instruct-4bit",
+   "run_id": 1330,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
+   "candidate": "deepen:mlx-community/Qwen2.5-7B-Instruct-4bit,temperature=0",
+   "decided_at": "2026-11-25T07:20:58Z",
+   "detail": "code: does not beat the incumbent on the lane's metric; significantly worse: 77 lost against 1 gained, p=0.00; comparison 22 on this holdout, so alpha 0.05/22 = 0.0023; dev: not run, dev and holdout a",
+   "exam": {
+    "about": "7B params, 4bit, by mlx-community",
+    "candidate": "deepen/mlx-community/Qwen2.5-7B-Instruct-4bit",
+    "cases": 450,
+    "first_s": 2.517,
+    "median_s": 0.426,
+    "metrics": {
+     "completion_tokens": 76.7244,
+     "method_calls": 2.0
+    },
+    "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+    "not_run": "",
+    "pass_rate": 0.364,
+    "passed": 164,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-10-22T06:23:09Z",
+    "served_as": "",
+    "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
+    "total": 450,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "declined",
+   "proposal": "deepen:mlx-community/Qwen2.5-7B-Instruct-4bit",
+   "reason": "candidate",
+   "receipt_key": "deepen/mlx-community/Qwen2.5-7B-Instruct-4bit",
+   "run_id": 1330,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
    "candidate": "google/gemma-4-12B-it",
    "decided_at": "2026-11-23T19:33:47Z",
    "detail": "extract: lane too small, needs 595 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1477 more extract cases are needed before a null says anything about goog",
@@ -4183,82 +4335,6 @@
    "until": "cases:extract>2116"
   },
   {
-   "candidate": "deepen:mlx-community/Qwen2.5-7B-Instruct-4bit",
-   "decided_at": "2026-11-01T01:57:33Z",
-   "detail": "3 case(s) passed a screen",
-   "exam": {
-    "about": "7B params, 4bit, by mlx-community",
-    "candidate": "deepen/mlx-community/Qwen2.5-7B-Instruct-4bit",
-    "cases": 450,
-    "first_s": 2.517,
-    "median_s": 0.426,
-    "metrics": {
-     "completion_tokens": 76.7244,
-     "method_calls": 2.0
-    },
-    "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
-    "not_run": "",
-    "pass_rate": 0.364,
-    "passed": 164,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-10-22T06:23:09Z",
-    "served_as": "",
-    "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-    "total": 450,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "screened",
-   "proposal": "deepen:mlx-community/Qwen2.5-7B-Instruct-4bit",
-   "reason": "candidate",
-   "receipt_key": "deepen/mlx-community/Qwen2.5-7B-Instruct-4bit",
-   "run_id": 650,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
-   "candidate": "deepen:mlx-community/Qwen2.5-7B-Instruct-4bit,temperature=0",
-   "decided_at": "2026-11-01T01:57:33Z",
-   "detail": "3 case(s) passed a screen",
-   "exam": {
-    "about": "7B params, 4bit, by mlx-community",
-    "candidate": "deepen/mlx-community/Qwen2.5-7B-Instruct-4bit",
-    "cases": 450,
-    "first_s": 2.517,
-    "median_s": 0.426,
-    "metrics": {
-     "completion_tokens": 76.7244,
-     "method_calls": 2.0
-    },
-    "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
-    "not_run": "",
-    "pass_rate": 0.364,
-    "passed": 164,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-10-22T06:23:09Z",
-    "served_as": "",
-    "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-    "total": 450,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "screened",
-   "proposal": "deepen:mlx-community/Qwen2.5-7B-Instruct-4bit",
-   "reason": "candidate",
-   "receipt_key": "deepen/mlx-community/Qwen2.5-7B-Instruct-4bit",
-   "run_id": 650,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
    "candidate": "llamacpp:Qwen2.5-7B-Instruct-Q4_K_M",
    "decided_at": "",
    "detail": "",
@@ -4342,7 +4418,7 @@
    "until": ""
   }
  ],
- "cursor": 1795565096885153,
+ "cursor": 1795595154916760,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -7195,6 +7271,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-10-20T01:35:07Z",
+   "candidate": "deepen:llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "chosen": null,
+   "detail": "2 case(s) passed a screen",
+   "how": "",
+   "id": 1792460107558333,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 519,
+   "tier": "screen"
+  },
+  {
    "at": "2026-10-20T03:36:26Z",
    "candidate": "llamacpp:Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M",
    "chosen": null,
@@ -7343,6 +7434,21 @@
    "reason": "candidate",
    "run_id": 545,
    "tier": "screen"
+  },
+  {
+   "at": "2026-10-22T04:01:02Z",
+   "candidate": "deepen:llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "chosen": null,
+   "detail": "code: futility: look 4 at 89/135 holdout cells: 7 gained, 11 lost, conditional power 0.00, alpha 0.0003 of 0.0036 spendable here; under the plan's +0.20 the challenger reaches the gate with probabilit",
+   "how": "",
+   "id": 1792641662601984,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": 521,
+   "tier": "adopt"
   },
   {
    "at": "2026-10-22T06:13:25Z",
@@ -7672,6 +7778,21 @@
    "outcome": "screened",
    "reason": "candidate",
    "run_id": 641,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-01T01:56:48Z",
+   "candidate": "deepen:llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "chosen": null,
+   "detail": "2 case(s) passed a screen",
+   "how": "",
+   "id": 1793498208327660,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 648,
    "tier": "screen"
   },
   {
@@ -10103,6 +10224,36 @@
    "reason": "candidate",
    "run_id": 1316,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-25T07:20:58Z",
+   "candidate": "deepen:mlx-community/Qwen2.5-7B-Instruct-4bit",
+   "chosen": null,
+   "detail": "code: does not beat the incumbent on the lane's metric; significantly worse: 77 lost against 1 gained, p=0.00; comparison 22 on this holdout, so alpha 0.05/22 = 0.0023; dev: not run, dev and holdout a",
+   "how": "",
+   "id": 1795591258275516,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": 1330,
+   "tier": "adopt"
+  },
+  {
+   "at": "2026-11-25T08:25:54Z",
+   "candidate": "deepen:llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "chosen": null,
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about deep",
+   "how": "",
+   "id": 1795595154916760,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1332,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -10848,6 +10999,28 @@
      "ttft_p95_s": 5.046
     },
     {
+     "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
+     "candidate": "deepen/llamacpp:Ornith-1.5-35B-Q4_K_M",
+     "first_s": 7.122,
+     "median_s": 4.596,
+     "metrics": {
+      "completion_tokens": 753.2105,
+      "method_calls": 2.0
+     },
+     "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+     "not_run": "",
+     "pass_rate": 0.737,
+     "passed": 112,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-25T08:25:54Z",
+     "served_as": "",
+     "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
+     "total": 152,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
      "about": "family XHToken/Spark-X2.5-4B, 4B params, by peculiar-ragdoll",
      "candidate": "peculiar-ragdoll/Sharp-Spark-X2.5-4B-GGUF",
      "first_s": 2.28,
@@ -11553,8 +11726,8 @@
      "ttft_p95_s": 1.328
     }
    ],
-   "run_at": "2026-11-25T00:04:56Z",
-   "runs": 65
+   "run_at": "2026-11-25T08:25:54Z",
+   "runs": 66
   },
   {
    "cases": 152,
@@ -11882,7 +12055,7 @@
    "runs": 3
   }
  ],
- "generated_at": "2026-11-25T02:18:01Z",
+ "generated_at": "2026-11-25T08:30:29Z",
  "knobs": [],
  "lane": {
   "cases": 450,
