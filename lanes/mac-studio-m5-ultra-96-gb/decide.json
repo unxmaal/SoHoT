@@ -281,8 +281,8 @@
   },
   {
    "candidate": "akhilaaa3/Jev-Omni",
-   "decided_at": "2026-11-24T20:58:49Z",
-   "detail": "not screened: needs 22.3 GB but only 17.2 GB is safely available (35.2 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "decided_at": "2026-11-25T02:51:48Z",
+   "detail": "not screened: needs 22.3 GB but only 16.5 GB is safely available (34.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM); no screen window: no engine bounds the screen, so the window could not be given an end",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
@@ -292,12 +292,12 @@
    "serves": false,
    "status": "pending",
    "tier": "screen",
-   "until": "room_gb:>22.3"
+   "until": "room_gb:>23.1"
   },
   {
    "candidate": "akhilaaa3/Jev-Omni,temperature=0",
-   "decided_at": "2026-11-24T20:58:49Z",
-   "detail": "not screened: needs 22.3 GB but only 17.2 GB is safely available (35.2 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "decided_at": "2026-11-25T02:51:48Z",
+   "detail": "not screened: needs 22.3 GB but only 16.5 GB is safely available (34.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM); no screen window: no engine bounds the screen, so the window could not be given an end",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
@@ -307,7 +307,7 @@
    "serves": false,
    "status": "pending",
    "tier": "screen",
-   "until": "room_gb:>22.3"
+   "until": "room_gb:>23.1"
   },
   {
    "candidate": "apus-ailab/APUS-OpenJev-v1-4B-GGUF",
@@ -381,7 +381,7 @@
   },
   {
    "candidate": "decider:StrandsAgents/strands-decider-2B-hobson-v21",
-   "decided_at": "2026-11-24T21:03:52Z",
+   "decided_at": "2026-11-25T02:57:02Z",
    "detail": "not screened: our snapshot lacks files its runner opens; refetch: check-squad2-56dddf4066d3e219004dad5f: exit 1: needs StrandsAgents/strands-decider-2B-hobson-v21, which is not in the hub cache; soh fetch --run: huggingface_hub.errors.IncompleteSnapshotError: The cached snapshot for 'StrandsAgents/strands-decider-2B-hobson-v21' (revision 'main', commit 5c9d44fdeb3",
    "exam": {
     "about": "2B params",
@@ -413,7 +413,7 @@
    "proposal": "StrandsAgents/strands-decider-2B-hobson-v21",
    "reason": "harness",
    "receipt_key": "decider/strands-decider-2B-hobson-v21",
-   "run_id": 1308,
+   "run_id": 1324,
    "serves": false,
    "status": "pending",
    "tier": "fetch",
@@ -778,7 +778,7 @@
    "until": ""
   }
  ],
- "cursor": 1795553929046999,
+ "cursor": 1795575108205196,
  "events": [
   {
    "at": "2026-09-22T13:14:31Z",
@@ -1664,6 +1664,21 @@
    "reason": "memory",
    "run_id": null,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-25T02:51:48Z",
+   "candidate": "akhilaaa3/Jev-Omni",
+   "chosen": null,
+   "detail": "not screened: needs 22.3 GB but only 16.5 GB is safely available (34.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM); no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795575108205196,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -2359,7 +2374,7 @@
    "runs": 4
   }
  ],
- "generated_at": "2026-11-25T02:17:59Z",
+ "generated_at": "2026-11-25T08:30:27Z",
  "knobs": [],
  "lane": {
   "cases": 661,
