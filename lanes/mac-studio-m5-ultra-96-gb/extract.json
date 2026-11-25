@@ -2967,6 +2967,82 @@
    "until": "cases:extract>2116"
   },
   {
+   "candidate": "mlx-community/Qwen3.5-9B-MLX-4bit",
+   "decided_at": "2026-11-25T00:04:56Z",
+   "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 62 lost against 6 gained, p=0.00; comparison 16 on this holdout, so alpha 0.05/16 = 0.0031; dev: not run, dev and holdou",
+   "exam": {
+    "about": "family Qwen/Qwen3.5-9B, 9B params, 4bit, by mlx-community",
+    "candidate": "mlx-community/Qwen3.5-9B-MLX-4bit",
+    "cases": 152,
+    "first_s": 13.939,
+    "median_s": 13.242,
+    "metrics": {
+     "completion_tokens": 762.9661,
+     "tokens_per_s": 129.6
+    },
+    "model": "mlx-community/Qwen3.5-9B-MLX-4bit",
+    "not_run": "",
+    "pass_rate": 0.362,
+    "passed": 55,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-25T00:04:56Z",
+    "served_as": "",
+    "source": "https://huggingface.co/mlx-community/Qwen3.5-9B-MLX-4bit",
+    "total": 152,
+    "ttft_median_s": 4.661,
+    "ttft_p95_s": 11.524
+   },
+   "outcome": "declined",
+   "proposal": "mlx-community/Qwen3.5-9B-MLX-4bit",
+   "reason": "candidate",
+   "receipt_key": "mlx-community/Qwen3.5-9B-MLX-4bit",
+   "run_id": 1316,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
+   "candidate": "mlx-community/Qwen3.5-9B-MLX-4bit,temperature=0",
+   "decided_at": "2026-11-25T00:04:56Z",
+   "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 62 lost against 6 gained, p=0.00; comparison 16 on this holdout, so alpha 0.05/16 = 0.0031; dev: not run, dev and holdou",
+   "exam": {
+    "about": "family Qwen/Qwen3.5-9B, 9B params, 4bit, by mlx-community",
+    "candidate": "mlx-community/Qwen3.5-9B-MLX-4bit",
+    "cases": 152,
+    "first_s": 13.939,
+    "median_s": 13.242,
+    "metrics": {
+     "completion_tokens": 762.9661,
+     "tokens_per_s": 129.6
+    },
+    "model": "mlx-community/Qwen3.5-9B-MLX-4bit",
+    "not_run": "",
+    "pass_rate": 0.362,
+    "passed": 55,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-25T00:04:56Z",
+    "served_as": "",
+    "source": "https://huggingface.co/mlx-community/Qwen3.5-9B-MLX-4bit",
+    "total": 152,
+    "ttft_median_s": 4.661,
+    "ttft_p95_s": 11.524
+   },
+   "outcome": "declined",
+   "proposal": "mlx-community/Qwen3.5-9B-MLX-4bit",
+   "reason": "candidate",
+   "receipt_key": "mlx-community/Qwen3.5-9B-MLX-4bit",
+   "run_id": 1316,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
    "candidate": "mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
    "decided_at": "2026-11-22T21:25:12Z",
    "detail": "extract: lane too small, needs 524 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1240 more extract cases are needed before a null says anything about mlx-",
@@ -3041,6 +3117,82 @@
    "status": "rejected",
    "tier": "adopt",
    "until": "cases:extract>1689"
+  },
+  {
+   "candidate": "mlx-community/granite-4.0-1b-4bit",
+   "decided_at": "2026-11-24T23:33:56Z",
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about mlx-",
+   "exam": {
+    "about": "family ibm-granite/granite-4.0-1b, 1B params, 4bit, by mlx-community",
+    "candidate": "mlx-community/granite-4.0-1b-4bit",
+    "cases": 152,
+    "first_s": 0.352,
+    "median_s": 0.202,
+    "metrics": {
+     "completion_tokens": 5.4145,
+     "tokens_per_s": 24.7901
+    },
+    "model": "mlx-community/granite-4.0-1b-4bit",
+    "not_run": "",
+    "pass_rate": 0.645,
+    "passed": 98,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-24T23:33:55Z",
+    "served_as": "",
+    "source": "https://huggingface.co/mlx-community/granite-4.0-1b-4bit",
+    "total": 152,
+    "ttft_median_s": 0.066,
+    "ttft_p95_s": 0.076
+   },
+   "outcome": "declined",
+   "proposal": "mlx-community/granite-4.0-1b-4bit",
+   "reason": "limit",
+   "receipt_key": "mlx-community/granite-4.0-1b-4bit",
+   "run_id": 1315,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>2116"
+  },
+  {
+   "candidate": "mlx-community/granite-4.0-1b-4bit,temperature=0",
+   "decided_at": "2026-11-24T23:33:56Z",
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about mlx-",
+   "exam": {
+    "about": "family ibm-granite/granite-4.0-1b, 1B params, 4bit, by mlx-community",
+    "candidate": "mlx-community/granite-4.0-1b-4bit",
+    "cases": 152,
+    "first_s": 0.352,
+    "median_s": 0.202,
+    "metrics": {
+     "completion_tokens": 5.4145,
+     "tokens_per_s": 24.7901
+    },
+    "model": "mlx-community/granite-4.0-1b-4bit",
+    "not_run": "",
+    "pass_rate": 0.645,
+    "passed": 98,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-24T23:33:55Z",
+    "served_as": "",
+    "source": "https://huggingface.co/mlx-community/granite-4.0-1b-4bit",
+    "total": 152,
+    "ttft_median_s": 0.066,
+    "ttft_p95_s": 0.076
+   },
+   "outcome": "declined",
+   "proposal": "mlx-community/granite-4.0-1b-4bit",
+   "reason": "limit",
+   "receipt_key": "mlx-community/granite-4.0-1b-4bit",
+   "run_id": 1315,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>2116"
   },
   {
    "candidate": "mradermacher/NeoHorse-1-4B-i1-GGUF",
@@ -4190,7 +4342,7 @@
    "until": ""
   }
  ],
- "cursor": 1795549091777200,
+ "cursor": 1795565096885153,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -9891,6 +10043,66 @@
    "reason": "limit",
    "run_id": 1302,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-24T23:24:26Z",
+   "candidate": "mlx-community/Qwen3.5-9B-MLX-4bit",
+   "chosen": null,
+   "detail": "2 case(s) passed a screen",
+   "how": "",
+   "id": 1795562666563947,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 1313,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-24T23:24:47Z",
+   "candidate": "mlx-community/granite-4.0-1b-4bit",
+   "chosen": null,
+   "detail": "2 case(s) passed a screen",
+   "how": "",
+   "id": 1795562687007487,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 1314,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-24T23:33:56Z",
+   "candidate": "mlx-community/granite-4.0-1b-4bit",
+   "chosen": null,
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about mlx-",
+   "how": "",
+   "id": 1795563236409402,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1315,
+   "tier": "adopt"
+  },
+  {
+   "at": "2026-11-25T00:04:56Z",
+   "candidate": "mlx-community/Qwen3.5-9B-MLX-4bit",
+   "chosen": null,
+   "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 62 lost against 6 gained, p=0.00; comparison 16 on this holdout, so alpha 0.05/16 = 0.0031; dev: not run, dev and holdou",
+   "how": "",
+   "id": 1795565096885153,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": 1316,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -10856,6 +11068,28 @@
      "ttft_p95_s": 12.002
     },
     {
+     "about": "family ibm-granite/granite-4.0-1b, 1B params, 4bit, by mlx-community",
+     "candidate": "mlx-community/granite-4.0-1b-4bit",
+     "first_s": 0.352,
+     "median_s": 0.202,
+     "metrics": {
+      "completion_tokens": 5.4145,
+      "tokens_per_s": 24.7901
+     },
+     "model": "mlx-community/granite-4.0-1b-4bit",
+     "not_run": "",
+     "pass_rate": 0.645,
+     "passed": 98,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-24T23:33:55Z",
+     "served_as": "",
+     "source": "https://huggingface.co/mlx-community/granite-4.0-1b-4bit",
+     "total": 152,
+     "ttft_median_s": 0.066,
+     "ttft_p95_s": 0.076
+    },
+    {
      "about": "family LiquidAI/LFM2.5-8B-A1B-Base, 8B (1B active) params, by LiquidAI",
      "candidate": "LiquidAI/LFM2.5-8B-A1B",
      "first_s": 2.06,
@@ -11143,6 +11377,28 @@
      "ttft_p95_s": 14.034
     },
     {
+     "about": "family Qwen/Qwen3.5-9B, 9B params, 4bit, by mlx-community",
+     "candidate": "mlx-community/Qwen3.5-9B-MLX-4bit",
+     "first_s": 13.939,
+     "median_s": 13.242,
+     "metrics": {
+      "completion_tokens": 762.9661,
+      "tokens_per_s": 129.6
+     },
+     "model": "mlx-community/Qwen3.5-9B-MLX-4bit",
+     "not_run": "",
+     "pass_rate": 0.362,
+     "passed": 55,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-25T00:04:56Z",
+     "served_as": "",
+     "source": "https://huggingface.co/mlx-community/Qwen3.5-9B-MLX-4bit",
+     "total": 152,
+     "ttft_median_s": 4.661,
+     "ttft_p95_s": 11.524
+    },
+    {
      "about": "family Qwen/Qwen3.5-9B, 9B params, by unsloth",
      "candidate": "unsloth/Qwen3.5-9B-GGUF",
      "first_s": 15.037,
@@ -11297,8 +11553,8 @@
      "ttft_p95_s": 1.328
     }
    ],
-   "run_at": "2026-11-24T19:38:10Z",
-   "runs": 63
+   "run_at": "2026-11-25T00:04:56Z",
+   "runs": 65
   },
   {
    "cases": 152,
@@ -11626,7 +11882,7 @@
    "runs": 3
   }
  ],
- "generated_at": "2026-11-24T20:05:58Z",
+ "generated_at": "2026-11-25T02:18:01Z",
  "knobs": [],
  "lane": {
   "cases": 450,
