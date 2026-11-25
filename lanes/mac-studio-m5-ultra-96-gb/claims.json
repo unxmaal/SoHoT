@@ -23,47 +23,33 @@
     "about": "7B params, Q4_K_M, by bartowski",
     "candidate": "Qwen2.5-7B-Instruct-Q4_K_M",
     "cases": 299,
-    "first_s": 0.26,
-    "median_s": 0.143,
+    "first_s": 0.084,
+    "median_s": 0.074,
     "metrics": {
-     "claims_bad_matched_cited_only": 0.0909,
-     "claims_bad_matched_conversation": 0.0,
-     "claims_balanced": 0.5931,
-     "claims_case_recall": 0.5208,
-     "claims_case_specificity": 0.6653,
-     "claims_emitted": 0.875,
-     "claims_empty_rate": 0.668,
+     "claims_balanced": 0.002,
+     "claims_case_recall": 0.0,
+     "claims_case_specificity": 0.004,
+     "claims_emitted": 0.0,
+     "claims_empty_rate": 1.0,
      "claims_judge_calibrated": 0.0,
      "claims_matcher_version": 2.0,
-     "claims_near_miss_cited_only": 0.1818,
-     "claims_near_miss_conversation": 0.0667,
-     "claims_pass_cited_only": 0.3182,
-     "claims_pass_conversation": 0.8,
-     "claims_precision_cited_only": 0.8214,
-     "claims_precision_conversation": 0.9221,
-     "claims_recall_cited_only": 0.2875,
-     "claims_recall_conversation": 0.6574,
      "claims_schema_valid": 1.0,
-     "claims_unreviewed_cited_only": 1.7273,
-     "claims_unreviewed_conversation": 1.4667,
-     "claims_verbatim_cited_only": 0.2727,
-     "claims_verbatim_conversation": 0.9778,
-     "completion_tokens": 27.2601,
-     "tokens_per_s": 65.1953
+     "completion_tokens": 5.0,
+     "tokens_per_s": 14.4
     },
     "model": "Qwen2.5-7B-Instruct-Q4_K_M",
     "not_run": "",
-    "pass_rate": 0.642,
-    "passed": 192,
+    "pass_rate": 0.003,
+    "passed": 1,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-02T05:34:12Z",
+    "run_at": "2026-11-25T15:46:26Z",
     "served_as": "",
     "source": "https://huggingface.co/bartowski/Qwen2.5-7B-Instruct-GGUF",
     "total": 299,
-    "ttft_median_s": 0.082,
-    "ttft_p95_s": 0.199
+    "ttft_median_s": 0.319,
+    "ttft_p95_s": 0.319
    },
    "outcome": "",
    "proposal": "",
@@ -203,6 +189,59 @@
     [
      "case text",
      "360e1b7d"
+    ],
+    [
+     "Qwen2.5-7B-Instruct-Q4_K_M ctx",
+     "16384"
+    ]
+   ],
+   "first_run_at": "2026-11-25T15:46:26Z",
+   "repeat": 1,
+   "rows": [
+    {
+     "about": "7B params, Q4_K_M, by bartowski",
+     "candidate": "Qwen2.5-7B-Instruct-Q4_K_M",
+     "first_s": 0.084,
+     "median_s": 0.074,
+     "metrics": {
+      "claims_balanced": 0.002,
+      "claims_case_recall": 0.0,
+      "claims_case_specificity": 0.004,
+      "claims_emitted": 0.0,
+      "claims_empty_rate": 1.0,
+      "claims_judge_calibrated": 0.0,
+      "claims_matcher_version": 2.0,
+      "claims_schema_valid": 1.0,
+      "completion_tokens": 5.0,
+      "tokens_per_s": 14.4
+     },
+     "model": "Qwen2.5-7B-Instruct-Q4_K_M",
+     "not_run": "",
+     "pass_rate": 0.003,
+     "passed": 1,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-25T15:46:26Z",
+     "served_as": "",
+     "source": "https://huggingface.co/bartowski/Qwen2.5-7B-Instruct-GGUF",
+     "total": 299,
+     "ttft_median_s": 0.319,
+     "ttft_p95_s": 0.319
+    }
+   ],
+   "run_at": "2026-11-25T15:46:26Z",
+   "runs": 1
+  },
+  {
+   "cases": 299,
+   "differs": [
+    [
+     "case text",
+     "360e1b7d"
+    ],
+    [
+     "Qwen2.5-7B-Instruct-Q4_K_M ctx",
+     "32768"
     ]
    ],
    "first_run_at": "2026-10-12T23:41:03Z",
@@ -262,6 +301,10 @@
     [
      "case text",
      "d82b0e17"
+    ],
+    [
+     "Qwen2.5-7B-Instruct-Q4_K_M ctx",
+     "not recorded"
     ]
    ],
    "first_run_at": "2026-10-08T19:57:13Z",
@@ -434,7 +477,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-09T08:03:21Z",
+ "generated_at": "2026-11-25T19:25:39Z",
  "knobs": [],
  "lane": {
   "cases": 299,
@@ -453,41 +496,27 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-11-02T05:34:12Z",
-  "median_s": 0.143,
+  "measured_at": "2026-11-25T15:46:26Z",
+  "median_s": 0.074,
   "metrics": {
-   "claims_bad_matched_cited_only": 0.0909,
-   "claims_bad_matched_conversation": 0.0,
-   "claims_balanced": 0.5931,
-   "claims_case_recall": 0.5208,
-   "claims_case_specificity": 0.6653,
-   "claims_emitted": 0.875,
-   "claims_empty_rate": 0.668,
+   "claims_balanced": 0.002,
+   "claims_case_recall": 0.0,
+   "claims_case_specificity": 0.004,
+   "claims_emitted": 0.0,
+   "claims_empty_rate": 1.0,
    "claims_judge_calibrated": 0.0,
    "claims_matcher_version": 2.0,
-   "claims_near_miss_cited_only": 0.1818,
-   "claims_near_miss_conversation": 0.0667,
-   "claims_pass_cited_only": 0.3182,
-   "claims_pass_conversation": 0.8,
-   "claims_precision_cited_only": 0.8214,
-   "claims_precision_conversation": 0.9221,
-   "claims_recall_cited_only": 0.2875,
-   "claims_recall_conversation": 0.6574,
    "claims_schema_valid": 1.0,
-   "claims_unreviewed_cited_only": 1.7273,
-   "claims_unreviewed_conversation": 1.4667,
-   "claims_verbatim_cited_only": 0.2727,
-   "claims_verbatim_conversation": 0.9778,
-   "completion_tokens": 27.2601,
-   "tokens_per_s": 65.1953
+   "completion_tokens": 5.0,
+   "tokens_per_s": 14.4
   },
   "not_run": "",
   "parked": "",
   "parked_until": "",
-  "pass_rate": 0.642,
+  "pass_rate": 0.003,
   "serves": "Qwen2.5-7B-Instruct-Q4_K_M",
   "serves_model": "Qwen2.5-7B-Instruct-Q4_K_M; 7B params, Q4_K_M, by bartowski",
-  "stale": true
+  "stale": false
  },
  "since": 0
 }
