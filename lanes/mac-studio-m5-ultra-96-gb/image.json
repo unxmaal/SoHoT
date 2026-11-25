@@ -8,22 +8,22 @@
     "about": "",
     "candidate": "mflux/dev-q8",
     "cases": 181,
-    "first_s": 34.842,
-    "median_s": 14.622,
+    "first_s": 36.692,
+    "median_s": 35.214,
     "metrics": {
-     "staging": 0.7843
+     "staging": 0.4524
     },
     "model": "mflux/dev-q8",
     "not_run": "",
-    "pass_rate": 0.597,
-    "passed": 108,
-    "peak_gb": 20.53,
+    "pass_rate": 0.0,
+    "passed": 0,
+    "peak_gb": 20.42,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-25T06:01:10Z",
+    "run_at": "2026-11-25T19:25:15Z",
     "served_as": "",
     "source": "",
-    "total": 181,
+    "total": 7,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -485,23 +485,23 @@
    "exam": {
     "about": "",
     "candidate": "diffusers/prxpixel-t2i",
-    "cases": 3,
-    "first_s": 73.727,
-    "median_s": 65.414,
+    "cases": 181,
+    "first_s": 67.835,
+    "median_s": 60.112,
     "metrics": {
-     "cer": 0.0
+     "staging": 0.7738
     },
     "model": "diffusers/prxpixel-t2i",
     "not_run": "",
-    "pass_rate": 1.0,
-    "passed": 3,
-    "peak_gb": 29.81,
+    "pass_rate": 0.571,
+    "passed": 4,
+    "peak_gb": 30.68,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-10-19T23:03:36Z",
+    "run_at": "2026-11-25T19:25:15Z",
     "served_as": "",
     "source": "",
-    "total": 3,
+    "total": 7,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -3429,28 +3429,49 @@
     },
     {
      "about": "",
-     "candidate": "mflux/dev-q8",
-     "first_s": 34.842,
-     "median_s": 14.622,
+     "candidate": "diffusers/prxpixel-t2i",
+     "first_s": 67.835,
+     "median_s": 60.112,
      "metrics": {
-      "staging": 0.7843
+      "staging": 0.7738
+     },
+     "model": "diffusers/prxpixel-t2i",
+     "not_run": "",
+     "pass_rate": 0.571,
+     "passed": 4,
+     "peak_gb": 30.68,
+     "reference": false,
+     "run_at": "2026-11-25T19:25:15Z",
+     "served_as": "",
+     "source": "",
+     "total": 7,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "about": "",
+     "candidate": "mflux/dev-q8",
+     "first_s": 36.692,
+     "median_s": 35.214,
+     "metrics": {
+      "staging": 0.4524
      },
      "model": "mflux/dev-q8",
      "not_run": "",
-     "pass_rate": 0.597,
-     "passed": 108,
-     "peak_gb": 20.53,
+     "pass_rate": 0.0,
+     "passed": 0,
+     "peak_gb": 20.42,
      "reference": false,
-     "run_at": "2026-11-25T06:01:10Z",
+     "run_at": "2026-11-25T19:25:15Z",
      "served_as": "",
      "source": "",
-     "total": 181,
+     "total": 7,
      "ttft_median_s": null,
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-11-25T06:01:10Z",
-   "runs": 1
+   "run_at": "2026-11-25T19:25:15Z",
+   "runs": 2
   },
   {
    "cases": 584,
@@ -3711,7 +3732,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-25T08:30:25Z",
+ "generated_at": "2026-11-25T19:25:36Z",
  "knobs": [],
  "lane": {
   "cases": 584,
@@ -3740,15 +3761,15 @@
   "adopted_at": "2026-10-06T19:21:16Z",
   "adopted_how": "by-hand",
   "incumbent": "mflux:flux2-klein-4b",
-  "measured_at": "2026-11-25T06:01:10Z",
-  "median_s": 14.622,
+  "measured_at": "2026-11-25T19:25:15Z",
+  "median_s": 35.214,
   "metrics": {
-   "staging": 0.7843
+   "staging": 0.4524
   },
   "not_run": "",
   "parked": "",
   "parked_until": "",
-  "pass_rate": 0.597,
+  "pass_rate": 0.0,
   "serves": "mflux:dev",
   "serves_model": "mflux:dev",
   "stale": false
