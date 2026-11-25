@@ -1838,6 +1838,36 @@
    "until": "version:mlx-lm>0.32.0"
   },
   {
+   "candidate": "SiddhJagani/Qwen3.8-2B-mlx-4Bit",
+   "decided_at": "2026-11-24T23:17:27Z",
+   "detail": "it ran and passed nothing: chunk-bytes: 2/6 checks passed; chunks(b'abcdefg', 3) == [b'abc', b'def', b'g'] -> returned False; evaluate-expr: failed to run: ValueError: invalid literal for int() with base 10: '2 + 3'; glob-match: 5/10 checks passed; match('a*b*c', 'abxbc') is True -> returned False; hevalpro-0: 2/3 checks pass",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "SiddhJagani/Qwen3.8-2B-mlx-4Bit",
+   "reason": "limit",
+   "receipt_key": "SiddhJagani/Qwen3.8-2B-mlx-4Bit",
+   "run_id": 1312,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "limit:screen_cases>6"
+  },
+  {
+   "candidate": "SiddhJagani/Qwen3.8-2B-mlx-4Bit,temperature=0",
+   "decided_at": "2026-11-24T23:17:27Z",
+   "detail": "it ran and passed nothing: chunk-bytes: 2/6 checks passed; chunks(b'abcdefg', 3) == [b'abc', b'def', b'g'] -> returned False; evaluate-expr: failed to run: ValueError: invalid literal for int() with base 10: '2 + 3'; glob-match: 5/10 checks passed; match('a*b*c', 'abxbc') is True -> returned False; hevalpro-0: 2/3 checks pass",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "SiddhJagani/Qwen3.8-2B-mlx-4Bit",
+   "reason": "limit",
+   "receipt_key": "SiddhJagani/Qwen3.8-2B-mlx-4Bit",
+   "run_id": 1312,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "limit:screen_cases>6"
+  },
+  {
    "candidate": "SupraLabs/Supra-50M-Reasoning",
    "decided_at": "2026-10-18T00:44:51Z",
    "detail": "re-decided from its stored rows (#955): its replies looped or collapsed until the token budget cut them: check the receipt's sampler against the model card's recommended settings (temperature, repetition or presence penalty) before reading this as the model's",
@@ -5182,6 +5212,84 @@
    "until": "cases:extract>2116"
   },
   {
+   "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
+   "decided_at": "2026-11-25T00:44:59Z",
+   "detail": "code: lane too small, needs 372 holdout cases: 135 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 790 more code cases are needed before a null says anything about llamacpp:Ti",
+   "exam": {
+    "about": "family ornith-ai/Ornith-1.5-35B-A3B, 35B (3B active) params, Q4_K_S, by peculiar-ragdoll",
+    "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
+    "cases": 135,
+    "first_s": 0.764,
+    "median_s": 14.098,
+    "metrics": {
+     "code_pass": 0.8983,
+     "completion_tokens": 3949.7627,
+     "tokens_per_s": 131.4644
+    },
+    "model": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
+    "not_run": "",
+    "pass_rate": 0.817,
+    "passed": 49,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-25T00:44:59Z",
+    "served_as": "",
+    "source": "https://huggingface.co/peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF",
+    "total": 60,
+    "ttft_median_s": 11.249,
+    "ttft_p95_s": 121.933
+   },
+   "outcome": "declined",
+   "proposal": "peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF",
+   "reason": "limit",
+   "receipt_key": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
+   "run_id": 1317,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:code>1240"
+  },
+  {
+   "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S,temperature=0",
+   "decided_at": "2026-11-25T00:44:59Z",
+   "detail": "code: lane too small, needs 372 holdout cases: 135 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 790 more code cases are needed before a null says anything about llamacpp:Ti",
+   "exam": {
+    "about": "family ornith-ai/Ornith-1.5-35B-A3B, 35B (3B active) params, Q4_K_S, by peculiar-ragdoll",
+    "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
+    "cases": 135,
+    "first_s": 0.764,
+    "median_s": 14.098,
+    "metrics": {
+     "code_pass": 0.8983,
+     "completion_tokens": 3949.7627,
+     "tokens_per_s": 131.4644
+    },
+    "model": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
+    "not_run": "",
+    "pass_rate": 0.817,
+    "passed": 49,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-25T00:44:59Z",
+    "served_as": "",
+    "source": "https://huggingface.co/peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF",
+    "total": 60,
+    "ttft_median_s": 11.249,
+    "ttft_p95_s": 121.933
+   },
+   "outcome": "declined",
+   "proposal": "peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF",
+   "reason": "limit",
+   "receipt_key": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
+   "run_id": 1317,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:code>1240"
+  },
+  {
    "candidate": "llamacpp:ZAYA1-8B-Q4_K_M",
    "decided_at": "2026-11-12T03:40:04Z",
    "detail": "the installed runtime could not load it: llama-server: llama_model_load: error loading model: unknown model architecture: 'zaya' (server-load.log, eval.log lines 1499369-1499411)",
@@ -6218,6 +6326,36 @@
    "until": "cases:extract>2116"
   },
   {
+   "candidate": "mlx-community/Qwen3.5-9B-MLX-4bit",
+   "decided_at": "2026-11-25T00:04:56Z",
+   "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 62 lost against 6 gained, p=0.00; comparison 16 on this holdout, so alpha 0.05/16 = 0.0031; dev: not run, dev and holdou",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "mlx-community/Qwen3.5-9B-MLX-4bit",
+   "reason": "candidate",
+   "receipt_key": "mlx-community/Qwen3.5-9B-MLX-4bit",
+   "run_id": 1316,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
+   "candidate": "mlx-community/Qwen3.5-9B-MLX-4bit,temperature=0",
+   "decided_at": "2026-11-25T00:04:56Z",
+   "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 62 lost against 6 gained, p=0.00; comparison 16 on this holdout, so alpha 0.05/16 = 0.0031; dev: not run, dev and holdou",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "mlx-community/Qwen3.5-9B-MLX-4bit",
+   "reason": "candidate",
+   "receipt_key": "mlx-community/Qwen3.5-9B-MLX-4bit",
+   "run_id": 1316,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
    "candidate": "mlx-community/Qwen3.6-27B-OBLITERATED-MLX-4bit",
    "decided_at": "2026-11-22T21:25:12Z",
    "detail": "extract: lane too small, needs 524 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1240 more extract cases are needed before a null says anything about mlx-",
@@ -6324,6 +6462,36 @@
    "status": "rejected",
    "tier": "adopt",
    "until": ""
+  },
+  {
+   "candidate": "mlx-community/granite-4.0-1b-4bit",
+   "decided_at": "2026-11-24T23:33:56Z",
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about mlx-",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "mlx-community/granite-4.0-1b-4bit",
+   "reason": "limit",
+   "receipt_key": "mlx-community/granite-4.0-1b-4bit",
+   "run_id": 1315,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>2116"
+  },
+  {
+   "candidate": "mlx-community/granite-4.0-1b-4bit,temperature=0",
+   "decided_at": "2026-11-24T23:33:56Z",
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about mlx-",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "mlx-community/granite-4.0-1b-4bit",
+   "reason": "limit",
+   "receipt_key": "mlx-community/granite-4.0-1b-4bit",
+   "run_id": 1315,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>2116"
   },
   {
    "candidate": "mradermacher/NeoHorse-1-4B-i1-GGUF",
@@ -6708,6 +6876,36 @@
    "status": "rejected",
    "tier": "adopt",
    "until": "cases:extract>1926"
+  },
+  {
+   "candidate": "peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF",
+   "decided_at": "2026-11-25T00:44:59Z",
+   "detail": "code: lane too small, needs 372 holdout cases: 135 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 790 more code cases are needed before a null says anything about llamacpp:Ti",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF",
+   "reason": "limit",
+   "receipt_key": "peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF",
+   "run_id": 1317,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:code>1240"
+  },
+  {
+   "candidate": "peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF,temperature=0",
+   "decided_at": "2026-11-25T00:44:59Z",
+   "detail": "code: lane too small, needs 372 holdout cases: 135 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 790 more code cases are needed before a null says anything about llamacpp:Ti",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF",
+   "reason": "limit",
+   "receipt_key": "peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF",
+   "run_id": 1317,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:code>1240"
   },
   {
    "candidate": "plan:llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -8002,33 +8200,33 @@
   },
   {
    "candidate": "Qwen/Qwen-Image-Bench",
-   "decided_at": "2026-11-24T16:41:22Z",
-   "detail": "not screened: needs 51.0 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "decided_at": "2026-11-24T23:31:43Z",
+   "detail": "not fetched 2026-11-24: the screen share of the sweep ceiling is spent",
    "exam": null,
    "outcome": "queued",
    "proposal": "Qwen/Qwen-Image-Bench",
-   "reason": "memory",
+   "reason": "limit",
    "receipt_key": "Qwen/Qwen-Image-Bench",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>53.0"
+   "tier": "fetch",
+   "until": ""
   },
   {
    "candidate": "Qwen/Qwen-Image-Bench,temperature=0",
-   "decided_at": "2026-11-24T16:41:22Z",
-   "detail": "not screened: needs 51.0 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "decided_at": "2026-11-24T23:31:43Z",
+   "detail": "not fetched 2026-11-24: the screen share of the sweep ceiling is spent",
    "exam": null,
    "outcome": "queued",
    "proposal": "Qwen/Qwen-Image-Bench",
-   "reason": "memory",
+   "reason": "limit",
    "receipt_key": "Qwen/Qwen-Image-Bench",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>53.0"
+   "tier": "fetch",
+   "until": ""
   },
   {
    "candidate": "Qwen2.5-7B-Instruct-Q4_K_M",
@@ -8091,87 +8289,9 @@
    "until": ""
   },
   {
-   "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
-   "decided_at": "2026-11-24T05:28:38Z",
-   "detail": "not fetched 2026-11-24: the screen share of the sweep ceiling is spent",
-   "exam": {
-    "about": "family ornith-ai/Ornith-1.5-35B-A3B, 35B (3B active) params, Q4_K_S, by peculiar-ragdoll",
-    "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
-    "cases": 14,
-    "first_s": 78.231,
-    "median_s": 5.227,
-    "metrics": {
-     "code_pass": 0.9747,
-     "completion_tokens": 897.25,
-     "tokens_per_s": 122.8875
-    },
-    "model": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
-    "not_run": "",
-    "pass_rate": 0.881,
-    "passed": 37,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 3,
-    "run_at": "2026-10-06T04:36:01Z",
-    "served_as": "",
-    "source": "https://huggingface.co/peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF",
-    "total": 42,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "queued",
-   "proposal": "peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF",
-   "reason": "limit",
-   "receipt_key": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "fetch",
-   "until": ""
-  },
-  {
-   "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S,temperature=0",
-   "decided_at": "2026-11-24T05:28:38Z",
-   "detail": "not fetched 2026-11-24: the screen share of the sweep ceiling is spent",
-   "exam": {
-    "about": "family ornith-ai/Ornith-1.5-35B-A3B, 35B (3B active) params, Q4_K_S, by peculiar-ragdoll",
-    "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
-    "cases": 14,
-    "first_s": 78.231,
-    "median_s": 5.227,
-    "metrics": {
-     "code_pass": 0.9747,
-     "completion_tokens": 897.25,
-     "tokens_per_s": 122.8875
-    },
-    "model": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
-    "not_run": "",
-    "pass_rate": 0.881,
-    "passed": 37,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 3,
-    "run_at": "2026-10-06T04:36:01Z",
-    "served_as": "",
-    "source": "https://huggingface.co/peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF",
-    "total": 42,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "queued",
-   "proposal": "peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF",
-   "reason": "limit",
-   "receipt_key": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "fetch",
-   "until": ""
-  },
-  {
    "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
-   "decided_at": "2026-11-24T16:32:24Z",
-   "detail": "not screened: needs 45.9 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "decided_at": "2026-11-24T23:31:43Z",
+   "detail": "not fetched 2026-11-24: the screen share of the sweep ceiling is spent",
    "exam": {
     "about": "family CohereLabs/command-a-plus-05-2026-bf16, IQ1_S, by bartowski",
     "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
@@ -8199,18 +8319,18 @@
    },
    "outcome": "queued",
    "proposal": "bartowski/command-a-plus-05-2026-GGUF",
-   "reason": "memory",
+   "reason": "limit",
    "receipt_key": "llamacpp:command-a-plus-05-2026-IQ1_S",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>45.9"
+   "tier": "fetch",
+   "until": ""
   },
   {
    "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S,temperature=0",
-   "decided_at": "2026-11-24T16:32:24Z",
-   "detail": "not screened: needs 45.9 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "decided_at": "2026-11-24T23:31:43Z",
+   "detail": "not fetched 2026-11-24: the screen share of the sweep ceiling is spent",
    "exam": {
     "about": "family CohereLabs/command-a-plus-05-2026-bf16, IQ1_S, by bartowski",
     "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
@@ -8238,13 +8358,13 @@
    },
    "outcome": "queued",
    "proposal": "bartowski/command-a-plus-05-2026-GGUF",
-   "reason": "memory",
+   "reason": "limit",
    "receipt_key": "llamacpp:command-a-plus-05-2026-IQ1_S",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>45.9"
+   "tier": "fetch",
+   "until": ""
   },
   {
    "candidate": "lolzinventor/Qwen3.5-4B-Base-ZitGen-V1",
@@ -8338,7 +8458,7 @@
   },
   {
    "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit",
-   "decided_at": "2026-11-24T05:28:38Z",
+   "decided_at": "2026-11-24T23:31:43Z",
    "detail": "not fetched 2026-11-24: the screen share of the sweep ceiling is spent",
    "exam": null,
    "outcome": "queued",
@@ -8451,7 +8571,7 @@
    "until": ""
   }
  ],
- "cursor": 1795550665195074,
+ "cursor": 1795567499793951,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -21202,6 +21322,111 @@
    "reason": "limit",
    "run_id": 1303,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-24T23:08:15Z",
+   "candidate": "peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF",
+   "chosen": null,
+   "detail": "4 case(s) passed a screen",
+   "how": "",
+   "id": 1795561695512090,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 1311,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-24T23:17:27Z",
+   "candidate": "SiddhJagani/Qwen3.8-2B-mlx-4Bit",
+   "chosen": null,
+   "detail": "it ran and passed nothing: chunk-bytes: 2/6 checks passed; chunks(b'abcdefg', 3) == [b'abc', b'def', b'g'] -> returned False; evaluate-expr: failed to run: ValueError: invalid literal for int() with base 10: '2 + 3'; glob-match: 5/10 checks passed; match('a*b*c', 'abxbc') is True -> returned False; hevalpro-0: 2/3 checks pass",
+   "how": "",
+   "id": 1795562247370494,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1312,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-24T23:24:26Z",
+   "candidate": "mlx-community/Qwen3.5-9B-MLX-4bit",
+   "chosen": null,
+   "detail": "2 case(s) passed a screen",
+   "how": "",
+   "id": 1795562666563947,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 1313,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-24T23:24:47Z",
+   "candidate": "mlx-community/granite-4.0-1b-4bit",
+   "chosen": null,
+   "detail": "2 case(s) passed a screen",
+   "how": "",
+   "id": 1795562687007487,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 1314,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-24T23:33:56Z",
+   "candidate": "mlx-community/granite-4.0-1b-4bit",
+   "chosen": null,
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about mlx-",
+   "how": "",
+   "id": 1795563236409402,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1315,
+   "tier": "adopt"
+  },
+  {
+   "at": "2026-11-25T00:04:56Z",
+   "candidate": "mlx-community/Qwen3.5-9B-MLX-4bit",
+   "chosen": null,
+   "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 62 lost against 6 gained, p=0.00; comparison 16 on this holdout, so alpha 0.05/16 = 0.0031; dev: not run, dev and holdou",
+   "how": "",
+   "id": 1795565096885153,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": 1316,
+   "tier": "adopt"
+  },
+  {
+   "at": "2026-11-25T00:44:59Z",
+   "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
+   "chosen": null,
+   "detail": "code: lane too small, needs 372 holdout cases: 135 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 790 more code cases are needed before a null says anything about llamacpp:Ti",
+   "how": "",
+   "id": 1795567499793951,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1317,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -21224,6 +21449,29 @@
    "first_run_at": "2026-11-12T04:30:38Z",
    "repeat": 1,
    "rows": [
+    {
+     "about": "family ornith-ai/Ornith-1.5-35B-A3B, 35B (3B active) params, Q4_K_S, by peculiar-ragdoll",
+     "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
+     "first_s": 0.764,
+     "median_s": 14.098,
+     "metrics": {
+      "code_pass": 0.8983,
+      "completion_tokens": 3949.7627,
+      "tokens_per_s": 131.4644
+     },
+     "model": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
+     "not_run": "",
+     "pass_rate": 0.817,
+     "passed": 49,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-25T00:44:59Z",
+     "served_as": "",
+     "source": "https://huggingface.co/peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF",
+     "total": 60,
+     "ttft_median_s": 11.249,
+     "ttft_p95_s": 121.933
+    },
     {
      "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
      "candidate": "t-evoteam/llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -21586,8 +21834,8 @@
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-11-24T20:04:24Z",
-   "runs": 15
+   "run_at": "2026-11-25T00:44:59Z",
+   "runs": 16
   },
   {
    "cases": 135,
@@ -23418,7 +23666,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-24T20:05:54Z",
+ "generated_at": "2026-11-25T02:17:57Z",
  "knobs": [],
  "lane": {
   "cases": 451,
