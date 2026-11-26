@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import sys
 import time
@@ -125,6 +126,26 @@ def who(body: str) -> str:
     if by.get("session"):
         said.append(f"session {str(by['session'])[:8]}")
     return ", ".join(said)
+
+
+_DEPLOY_WHY = re.compile(r"^(?:deploy (\d+) of |held for a deploy)")
+
+
+def deploy_hold(body: str) -> dict | None:
+    """The deploy a pause belongs to and whether its process is still there, None for any other pause. #2141."""
+    why = reason(body)
+    got = _DEPLOY_WHY.match(why)
+    if got is None:
+        return None
+    rec, by = holder_of(body), by_of(body) or {}
+    if rec is not None:
+        live = proc_identity.same(rec) is not False
+        pid = rec.get("pid")
+    else:
+        pid = by.get("pid")
+        began = proc_identity.began(int(pid)) if isinstance(pid, int) else None
+        live = began is not None and began <= (since(body) or time.time()) + 2
+    return {"id": int(got.group(1)) if got.group(1) else None, "pid": pid, "live": live}
 
 
 def describe(body: str) -> str:

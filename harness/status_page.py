@@ -98,6 +98,7 @@ def queue(conn, now: float) -> dict:
     if body is not None:
         out["paused_since"], out["reason"], out["by"] = queue_hold.since(body), queue_hold.reason(body), queue_hold.by_of(body)
         out["who"] = queue_hold.who(body)
+        out["deploy_hold"] = queue_hold.deploy_hold(body)
     if conn is None:
         out["why"] = "store down: running and pending jobs not read"
         return out
@@ -311,7 +312,9 @@ def gather(now: float | None = None, *, connect=None, beat=None, where=None, git
         r["timeline"] = {} if light else _section(timeline, conn, now, r["discovery"], r["queue"], home)
         r["features"] = _section(features or _features, conn, now, r["queue"])
         r["stops"] = {"holds": _section(needs_you.read_holds, conn, now), "jobs": _section(needs_you.read_jobs, conn, now),
-                      "gateway": _section(needs_you.read_gateway), "monit": _section(needs_you.read_monit, now, home)}
+                      "gateway": _section(needs_you.read_gateway), "monit": _section(needs_you.read_monit, now, home, r["monitor"])}
+        if (r["queue"].get("deploy_hold") or {}).get("live"):
+            r["deploy"]["in_progress"] = r["queue"]["deploy_hold"]
     finally:
         if conn is not None:
             conn.close()
