@@ -235,17 +235,23 @@ def test_a_planted_25_gib_candidate_with_32_8_gib_pinned_is_screened_in_a_window
     assert memory.pinned_gb() == pytest.approx(32.8)
 
 
-@pytest.mark.parametrize("lane,each", [("code", 32768 / 25.0), ("svg", 180.0), ("repo", 32768 / 25.0),
-                                       ("agent", 900.0), ("craft", 900.0), ("", 180.0), (None, 180.0)])
-def test_a_served_llm_screen_is_bounded_by_its_lanes_clock_per_case(lane, each):
-    from evals.run import SCREEN_CASES
+def test_the_real_window_is_granted_to_a_planted_llm_candidate_that_fits_with_the_pins_released(planted):
     from harness import screen
-    assert screen.deadline_s("org/model", lane) == pytest.approx(completion.LOAD_TIMEOUT_S + SCREEN_CASES * each)
+    need, spec = 56.0, "hf-text:org/fifty-six-gib"
+    assert 77.8 - 18.0 - 3.8 == pytest.approx(need) and memory.held_back(need) and screen_window.wanted(need)
+    server, clock = Server(), Clock()
+    with screen_window.opened(screen.deadline_s(spec, "code"), "a screen window for the planted candidate",
+                              get=server.get, post=server.post, sleep=clock.sleep, clock=clock,
+                              say=lambda m: None) as released:
+        assert released == [CODE, DECIDE] and not memory.held_back(need)
+    assert set(server.status.values()) == {"loaded"} and not interactive.windowed()
 
 
-@pytest.mark.parametrize("spec", ["org/model", "llamacpp:org/model", "vllm:org/model", "ds4:org/model"])
-def test_each_served_llm_spelling_gets_a_bound_and_a_speech_or_unknown_engine_does_not(spec):
+def test_the_real_window_is_not_taken_for_a_planted_llm_candidate_that_does_not_fit_even_released(planted):
     from harness import screen
-    assert screen.deadline_s(spec, "code") > 0
-    assert screen.deadline_s("stt:org/model", "code") is None
-    assert screen.deadline_s("claude-code:x", "agent") is None
+    need = 56.5
+    assert memory.held_back(need) and not screen_window.wanted(need)
+    server, clock = Server(), Clock()
+    with screen_window.opened(screen.deadline_s("hf-text:org/too-big", "code"), "planted", get=server.get,
+                              post=server.post, sleep=clock.sleep, clock=clock, say=lambda m: None):
+        assert memory.held_back(need), "still short with the pinned set released"
