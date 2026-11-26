@@ -69,7 +69,7 @@
   },
   {
    "candidate": "diffusers-video:FastVideo/FastVideo-FastH3-8-Step-V2",
-   "decided_at": "2026-11-25T18:34:56Z",
+   "decided_at": "2026-11-26T21:50:10Z",
    "detail": "not screened: needs 137.7 GiB but at most 23.3 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released",
    "exam": null,
    "outcome": "queued",
@@ -120,7 +120,7 @@
    "until": ""
   }
  ],
- "cursor": 1795631696327442,
+ "cursor": 1795729810491521,
  "events": [
   {
    "at": "2026-09-19T23:24:35Z",
@@ -571,6 +571,21 @@
    "reason": "memory",
    "run_id": null,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-26T21:50:10Z",
+   "candidate": "FastVideo/FastVideo-FastH3-8-Step-V2",
+   "chosen": null,
+   "detail": "not screened: needs 137.7 GiB but at most 23.3 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released",
+   "how": "",
+   "id": 1795729810491521,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -739,7 +754,7 @@
    "runs": 7
   }
  ],
- "generated_at": "2026-11-25T19:25:38Z",
+ "generated_at": "2026-11-26T22:19:39Z",
  "knobs": [],
  "lane": {
   "cases": 1,
