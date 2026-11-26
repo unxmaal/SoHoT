@@ -34,7 +34,7 @@ def _row(name="Org/Big-27B"):
 
 def _screen(conn, need, monkeypatch, deadline):
     monkeypatch.setattr(memory, "need_gb", lambda *a, **k: need)
-    monkeypatch.setattr(screen, "deadline_s", lambda candidate: deadline)
+    monkeypatch.setattr(screen, "deadline_s", lambda candidate, modality=None: deadline)
     row = _row()
     ms.record(conn, ms.Seen(name=row["name"], source="t", kind="weights", lane="text", why="seeded"))
     return screen_cmd._screen_one(None, conn, row)

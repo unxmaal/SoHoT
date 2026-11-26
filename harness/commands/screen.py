@@ -464,7 +464,7 @@ def _screen_one(a, store, r: dict) -> tuple[bool, str | None, int | None]:
                           reason=known.reason, until=known.until, failure_class=known.failure_class)
         return False, known.outcome, None
     # A window the screen could not be granted is found out before the weights are fetched for it. #2127.
-    no_window = screen_window.refusal(screen.deadline_s(r["candidate"])) if windowed else ""
+    no_window = screen_window.refusal(screen.deadline_s(r["candidate"], r["modality"])) if windowed else ""
     if no_window:
         return _no_window(store, r, why_not, no_window)
     # The test fetches what it runs, right before it runs it. #2015.
