@@ -107,10 +107,12 @@ fi
 
 section "the project itself"
 need uv "curl -LsSf https://astral.sh/uv/install.sh | sh"
-if have soh; then
+if have soh && soh --help >/dev/null 2>&1; then
   ok "soh on PATH"
+elif have soh; then
+  bad "soh on PATH runs" "$(command -v soh) exits non-zero on --help; bash scripts/launchd.sh install rewrites the shim to the live release"
 else
-  bad "soh on PATH" 'uv tool install --python 3.12 --editable . && export PATH="$HOME/.local/bin:$PATH"'
+  bad "soh on PATH" 'bash scripts/launchd.sh install, with $HOME/.local/bin on PATH'
 fi
 
 section "weights root"
