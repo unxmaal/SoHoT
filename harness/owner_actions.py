@@ -30,6 +30,7 @@ HELD_BY = "owner: from the status page"
 PAUSE_REASONS = ("owner: the machine is needed", "owner: looking into a failure", "owner: maintenance")
 _SHA = re.compile(r"^[0-9a-f]{7,40}$")
 _JOB = re.compile(r"^\d{1,9}$")
+_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 _KEY = secrets.token_bytes(32)
 _lock = threading.Lock()
 _confirms: dict[str, tuple] = {}
@@ -64,13 +65,51 @@ def _failed_jobs(r: dict) -> list[tuple[str, str]]:
     return _jobs(r, ("failed",))
 
 
-def _stuck_jobs(r: dict) -> list[tuple[str, str]]:
-    return _jobs(r, ("running", "paused"))
+def _queue_ids(r: dict, key: str) -> list[dict]:
+    return [j for j in (r.get("queue") or {}).get(key) or [] if _JOB.match(str(j.get("id") or ""))]
+
+
+def _cancellable(r: dict) -> list[tuple[str, str]]:
+    """Every job the page lists as running, waiting, paused or stuck."""
+    got = dict(_jobs(r, ("running", "paused")))
+    for key in ("running", "waiting"):
+        got.update({str(j["id"]): f"job {j['id']} ({j.get('title')})" for j in _queue_ids(r, key)})
+    return sorted(got.items())
+
+
+def _held_jobs(r: dict) -> list[tuple[str, str]]:
+    return [(str(j["id"]), f"job {j['id']} ({j.get('title')})") for j in _queue_ids(r, "waiting") if j.get("held")]
+
+
+def _raisable(r: dict) -> list[tuple[str, str]]:
+    """Each waiting job but the first, paired with the priority one above the highest waiting: `id:priority`."""
+    rows = _queue_ids(r, "waiting")
+    top = max([int(j.get("priority") or 0) for j in rows] or [0]) + 1
+    return [(f"{j['id']}:{top}", f"job {j['id']} ({j.get('title')}) to priority {top}") for j in rows[1:]]
+
+
+def _rows(r: dict, kind: str, states: tuple[str, ...]) -> list[tuple[str, str]]:
+    return [(x["name"], x["name"]) for x in (r.get("features") or {}).get("rows") or []
+            if x.get("kind") == kind and x.get("state") in states and _NAME.match(str(x.get("name") or ""))]
 
 
 def _units(r: dict) -> list[tuple[str, str]]:
+    """The units the page lists as loaded, and the stopped ones the Needs-you band names."""
     from harness import needs_you
-    return [(n, n) for n in needs_you.unit_names(r)]
+    names = [n for n in needs_you.unit_names(r) if _NAME.match(n)] + [n for n, _ in _rows(r, "unit", ("on", "on demand", "broken"))]
+    return [(n, n) for n in dict.fromkeys(names)]
+
+
+def _routed_nodes(r: dict) -> list[tuple[str, str]]:
+    return _rows(r, "node", ("on",))
+
+
+def _parked_nodes(r: dict) -> list[tuple[str, str]]:
+    return _rows(r, "node", ("parked",))
+
+
+def _lanes(r: dict) -> list[tuple[str, str]]:
+    return _rows(r, "lane", ("on", "on demand"))
 
 
 @dataclass(frozen=True)
@@ -80,9 +119,14 @@ class Action:
     does: str
     argv: tuple[str, ...]
     offers: Callable[[dict], list[tuple[str, str]]] | None = None
+    #: The arg is several words joined by ":" (a job id and its new priority).
+    split: bool = False
 
     def verb(self, arg: str) -> list[str]:
-        return [arg if w == "{}" else w for w in self.argv]
+        out: list[str] = []
+        for w in self.argv:
+            out += (arg.split(":") if self.split else [arg]) if w == "{}" else [w]
+        return out
 
 
 ACTIONS = (
@@ -101,9 +145,16 @@ ACTIONS = (
            ("jobs", "cancel", "{}"), _sweep_jobs),
     Action("job_retry", "Retry job", "queues the failed job's command again as a new job", ("jobs", "retry", "{}"),
            _failed_jobs),
-    Action("job_cancel", "Cancel job", "stops the job and records it cancelled", ("jobs", "cancel", "{}"), _stuck_jobs),
+    Action("job_cancel", "Cancel job", "stops the job and records it cancelled", ("jobs", "cancel", "{}"), _cancellable),
+    Action("job_let", "Let through the hold", "lets the held job start while benchmarks are held", ("hold", "let", "{}"), _held_jobs),
+    Action("job_first", "Run first", "raises the job above every waiting job", ("jobs", "priority", "{}"), _raisable, True),
     Action("unit_restart", "Restart unit", "restarts the unit through scripts/launchd.sh, never unloading it",
            ("unit-restart", "{}"), _units),
+    Action("node_park", "Park node", "keeps the node in nodes.yaml but leaves it out of routing, probes and checks",
+           ("node-park", "park", "{}"), _routed_nodes),
+    Action("node_unpark", "Unpark node", "routes to the node again", ("node-park", "unpark", "{}"), _parked_nodes),
+    Action("lane_reverify", "Reverify lane", "queues a re-run of the lane's served model when a reverify trigger has fired",
+           ("reverify", "--lane", "{}"), _lanes),
 )
 BY_NAME = {a.name: a for a in ACTIONS}
 
@@ -207,11 +258,11 @@ def token_for(peer: str | None, headers, *, now: float | None = None) -> str:
     return token(peer or "", who, now) if who else ""
 
 
-def button(action: str, arg: str, tok: str, post: str = "status/action") -> str:
-    """One press of `action` on `arg` from the Needs-you band; the same confirm flow as the panel."""
+def button(action: str, arg: str, tok: str, post: str = "status/action", *, bare: bool = False) -> str:
+    """One press of `action` on `arg` from the Needs-you band or a row; the same confirm flow as the panel."""
     from harness import status_view as sv
     a = BY_NAME[action]
-    label = f"{a.label} {arg[:12]}" if arg else a.label
+    label = f"{a.label} {arg.split(':')[0][:12]}" if arg and not bare else a.label
     return (f"<form class='act' method='post' action='{post}'>{_hidden(token=tok, action=action, **({'arg': arg} if arg else {}))}"
             f"<button title='{_attr(a.does)}'>{sv.esc(label)}</button></form>")
 

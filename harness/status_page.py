@@ -77,6 +77,18 @@ def store(conn, why: str = "", home: Path | None = None) -> dict:
     return out
 
 
+WAITING_SHOWN = 20
+
+
+def _waiting(conn, jobs: list[dict], now: float) -> list[dict]:
+    """The first WAITING_SHOWN pending jobs in run order, each with whether the benchmarks hold keeps it back. #2135."""
+    from harness import hold
+    from harness import workqueue as wq
+    held = hold.active(conn, now)
+    return [{"id": wq.label(j["id"]), "kind": j.get("kind"), "title": j.get("title"), "priority": int(j.get("priority") or 0),
+             "held": hold.held_back(conn, j, held)} for j in jobs[:WAITING_SHOWN]]
+
+
 def queue(conn, now: float) -> dict:
     from harness import queue_hold, queue_pause, queue_stale
     from harness import workqueue as wq
@@ -91,7 +103,9 @@ def queue(conn, now: float) -> dict:
         return out
     out["running"] = [{k: j.get(k) for k in ("id", "kind", "title", "started_at")}
                       for j in wq._select(conn, "WHERE state = ?", (wq.RUNNING,))]
-    out["pending"] = len(wq.pending(conn))
+    waiting = wq.pending(conn)
+    out["pending"] = len(waiting)
+    out["waiting"] = _waiting(conn, waiting, now)
     out["last_moved"] = queue_stale.last_moved(conn)
     return out
 

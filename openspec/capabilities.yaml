@@ -224,6 +224,8 @@ capabilities:
       - harness/reaping.py
       - harness/screen_window.py
       - harness/gateway_degraded.py
+      - harness/node_park.py
+      - harness/commands/node_park.py
 
   - name: local-delegation
     summary: local_complete and local_decide over MCP or `soh local`, handed to a lane's adopted local model, and what became of each answer.
@@ -482,6 +484,7 @@ capabilities:
       - harness/commands/needs_you.py
       - harness/unit_restart.py
       - harness/commands/unit_restart.py
+      - harness/status_buttons.py
 
   - name: canary
     summary: Planted candidates with known verdicts, run for real under an isolated home.

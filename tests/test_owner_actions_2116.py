@@ -19,7 +19,11 @@ MAIN = "a" * 40
 R = {"generated": NOW, "deploy": {"head": "b" * 40, "main": MAIN, "wait": None},
      "discovery": {"queued": {"jobs": [{"id": "0042", "step": "sweep"}]}},
      "stops": {"jobs": {"rows": [{"id": "0007", "title": "t", "state": "failed"}, {"id": "0008", "title": "u", "state": "running"}]},
-               "gateway": {"mark": {"at": NOW, "reason": "x"}}}}
+               "gateway": {"mark": {"at": NOW, "reason": "x"}}},
+     "queue": {"running": [{"id": "0008", "kind": "command", "title": "u"}],
+               "waiting": [{"id": "0009", "title": "a", "priority": 0, "held": True}, {"id": "0010", "title": "b", "priority": 0, "held": False}]},
+     "features": {"rows": [{"kind": "node", "name": "styx", "state": "on"}, {"kind": "node", "name": "olm", "state": "parked"},
+                           {"kind": "lane", "name": "code", "state": "on demand"}]}}
 
 
 class Home:
@@ -156,7 +160,8 @@ def test_every_action_is_an_existing_verb_with_no_free_argument():
     parser = cli.build_parser()
     assert [a.name for a in oa.ACTIONS] == ["deploy_now", "benchmarks_hold", "benchmarks_release", "gate_hold",
                                             "gate_release", "queue_pause", "queue_resume", "discovery_on",
-                                            "discovery_off", "job_retry", "job_cancel", "unit_restart"]
+                                            "discovery_off", "job_retry", "job_cancel", "job_let", "job_first", "unit_restart", "node_park",
+                                            "node_unpark", "lane_reverify"]
     for a in oa.ACTIONS:
         assert (a.offers is not None) == ("{}" in a.argv) and a.argv.count("{}") <= 1
         got = parser.parse_args(a.verb(a.offers(R)[0][0]) if a.offers else list(a.argv))
