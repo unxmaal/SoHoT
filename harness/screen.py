@@ -587,17 +587,30 @@ def argv(row: dict, outdir=None) -> list[str]:
 
 
 
-def deadline_s(candidate: str) -> float | None:
-    """The longest a screen of this candidate may run: its cases at the engine's derived clock and their reruns (#708, #1256); None when no engine bounds it. #705."""
+def deadline_s(candidate: str, modality: str = "") -> float | None:
+    """The longest a screen of this candidate may run: its cases at the engine's derived clock and their reruns (#708, #1256); for a served LLM, one cold load plus its cases at the lane's reply allowance (#2146); None when nothing bounds it. #705."""
     from harness import engine_timeout, engines
-    from evals.run import SCREEN_CASES
+    from evals.run import SCREEN_CASES, kind_of
     if candidate.partition(":")[0] not in engines.names():
-        return None
+        if kind_of(candidate) not in ("gateway", "llamacpp", "vllm", "ds4"):
+            return None
+        return llm_deadline_s(modality, SCREEN_CASES)
     try:
         engine = engines.resolve(candidate)
     except ValueError:
         return None
     return engine_timeout.for_cases(engine, SCREEN_CASES)
+
+
+def llm_deadline_s(modality: str, cases: int) -> float:
+    """One cold load, then `cases` requests each at the clock its lane's reply budget (or an agent case) allows."""
+    from harness import completion
+    from evals.core import AGENT_MODALITIES, CRAFT_MODALITIES, REPO_MODALITIES
+    from evals.runners import agent
+    each = completion.timeout_for(completion.budget(modality) or completion.MAX_TOKENS)
+    if modality in AGENT_MODALITIES | CRAFT_MODALITIES | REPO_MODALITIES:
+        each = max(each, agent.CASE_TIMEOUT_S)
+    return completion.LOAD_TIMEOUT_S + cases * each
 
 
 class Verdict(NamedTuple):

@@ -203,7 +203,6 @@ def test_a_planted_25_gib_candidate_with_32_8_gib_pinned_is_screened_in_a_window
     monkeypatch.setattr(screen_window, "opened", functools.partial(
         screen_window.opened, get=server.get, post=server.post, sleep=clock.sleep, clock=clock, say=lambda m: None))
     monkeypatch.setattr(screen_window, "refusal", functools.partial(screen_window.refusal, get=server.get))
-    monkeypatch.setattr(screen, "deadline_s", lambda candidate: 900.0)
     monkeypatch.setattr(heartbeat, "held", lambda *a, **k: contextlib.nullcontext())
     for name, value in (("known_killer", None), ("_fetched", ("", False)), ("snapshot_gap", "")):
         monkeypatch.setattr(screen_cmd, name, lambda *a, _v=value, **k: _v)

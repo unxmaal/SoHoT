@@ -484,8 +484,8 @@ def _screen_one(a, store, r: dict) -> tuple[bool, str | None, int | None]:
     proc, unrestored = None, ""
     try:
         # The lock is taken here so its wait reaches the heartbeat; the child inherits it. #705.
-        with heartbeat.held("eval", screen.deadline_s(r["candidate"]), say=lambda m: print(f"   {m}", flush=True)):
-            with (screen_window.opened(screen.deadline_s(r["candidate"]), f"a screen window for {r['name']}")
+        with heartbeat.held("eval", screen.deadline_s(r["candidate"], r["modality"]), say=lambda m: print(f"   {m}", flush=True)):
+            with (screen_window.opened(screen.deadline_s(r["candidate"], r["modality"]), f"a screen window for {r['name']}")
                   if windowed else contextlib.nullcontext()):
                 if windowed:
                     room, why_not = memory.check_model(r["name"], spec=r["candidate"], parallel=1)
