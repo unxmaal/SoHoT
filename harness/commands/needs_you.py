@@ -14,6 +14,8 @@ def add_parser(sub) -> None:
 def cmd_needs_you(a) -> int:
     from harness import needs_you, status_page
     r = status_page.gather(light=True)
+    if a.alert:
+        needs_you.reconcile_monit(r.get("monitor"))
     conds = needs_you.conditions(r)
     note(*(f"{c['title']}: {c['why']}" if c["why"] else c["title"] for c in conds) or ["Nothing is stopped."])
     sent = needs_you.sync(r) if a.alert else None
