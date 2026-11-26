@@ -206,3 +206,29 @@ def test_the_timeline_shows_only_jobs_this_machine_ran(tmp_path):
         conn.close()
     jobs = [e["label"].split()[2] for e in _gather(tmp_path)["timeline"]["events"] if e["kind"] == "job"]
     assert jobs == ["mine"]
+
+
+def _zero_ratio_page(tmp_path, **kw):
+    r = _gather(tmp_path)
+    r["ratio"]["headline"] = {"week": {"ratio": 0, "days": 7, "target": 0, **kw.get("week", {})},
+                              "yesterday": {"ratio": 0, "last_day": "2026-11-25"}}
+    return sv.page(r, {}, NOW)
+
+
+def test_ratio_text_never_raises():
+    assert sv.ratio_text(0) == "0:1" and sv.ratio_text(0.0) == "0:1"
+    assert [sv.ratio_text(x) for x in (-1, float("nan"), float("inf"), None, "x")] == ["n/a"] * 5
+
+
+def test_page_renders_with_ratio_zero_for_today_yesterday_and_target(tmp_path):
+    page = _zero_ratio_page(tmp_path)
+    assert "0:1" in page and "</html>" in page and "could not render" not in page
+
+
+def test_one_section_raising_degrades_to_an_error_line(tmp_path, monkeypatch):
+    def boom(*a, **k):
+        raise ZeroDivisionError("x")
+    monkeypatch.setattr(sv, "_timeline", boom)
+    page = sv.page(_gather(tmp_path), {}, NOW)
+    assert "Timeline" in page and "could not render: ZeroDivisionError" in page
+    assert "</html>" in page and "class='chk'" in page
