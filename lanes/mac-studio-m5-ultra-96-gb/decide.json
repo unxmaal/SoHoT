@@ -281,8 +281,8 @@
   },
   {
    "candidate": "akhilaaa3/Jev-Omni",
-   "decided_at": "2026-11-26T21:49:57Z",
-   "detail": "not screened: needs 22.3 GB but only -7.5 GB is safely available (10.5 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "decided_at": "2026-11-26T22:32:08Z",
+   "detail": "not screened: needs 22.3 GB but only 21.3 GB is safely available (39.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
@@ -296,8 +296,8 @@
   },
   {
    "candidate": "akhilaaa3/Jev-Omni,temperature=0",
-   "decided_at": "2026-11-26T21:49:57Z",
-   "detail": "not screened: needs 22.3 GB but only -7.5 GB is safely available (10.5 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "decided_at": "2026-11-26T22:32:08Z",
+   "detail": "not screened: needs 22.3 GB but only 21.3 GB is safely available (39.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "exam": null,
    "outcome": "queued",
    "proposal": "akhilaaa3/Jev-Omni",
@@ -381,8 +381,8 @@
   },
   {
    "candidate": "decider:StrandsAgents/strands-decider-2B-hobson-v21",
-   "decided_at": "2026-11-26T21:50:01Z",
-   "detail": "not screened: needs 5.8 GB but only -8.2 GB is safely available (9.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "decided_at": "2026-11-26T22:32:23Z",
+   "detail": "not screened: our snapshot lacks files its runner opens; refetch: check-squad2-56dddf4066d3e219004dad5f: exit 1: needs StrandsAgents/strands-decider-2B-hobson-v21, which is not in the hub cache; soh fetch --run: huggingface_hub.errors.IncompleteSnapshotError: The cached snapshot for 'StrandsAgents/strands-decider-2B-hobson-v21' (revision 'main', commit 5c9d44fdeb3",
    "exam": {
     "about": "2B params",
     "candidate": "decider/strands-decider-2B-hobson-v21",
@@ -411,13 +411,13 @@
    },
    "outcome": "queued",
    "proposal": "StrandsAgents/strands-decider-2B-hobson-v21",
-   "reason": "memory",
+   "reason": "harness",
    "receipt_key": "decider/strands-decider-2B-hobson-v21",
-   "run_id": null,
+   "run_id": 1348,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>5.8"
+   "tier": "fetch",
+   "until": ""
   },
   {
    "candidate": "eval-imajev-4b",
@@ -784,7 +784,7 @@
    "until": ""
   }
  ],
- "cursor": 1795729801499065,
+ "cursor": 1795732328406774,
  "events": [
   {
    "at": "2026-09-22T13:14:31Z",
@@ -1760,6 +1760,21 @@
    "reason": "memory",
    "run_id": null,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-26T22:32:08Z",
+   "candidate": "akhilaaa3/Jev-Omni",
+   "chosen": null,
+   "detail": "not screened: needs 22.3 GB but only 21.3 GB is safely available (39.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1795732328406774,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -2507,7 +2522,7 @@
    "runs": 4
   }
  ],
- "generated_at": "2026-11-26T22:19:39Z",
+ "generated_at": "2026-11-26T22:45:01Z",
  "knobs": [],
  "lane": {
   "cases": 661,
