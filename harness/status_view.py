@@ -72,6 +72,8 @@ def _deploy(d: dict, now: float):
     last = d.get("last") or {}
     if d.get("error"):
         return UNKNOWN, "not read", None
+    if d.get("in_progress"):
+        return WARN, " ".join(filter(None, ("deploy", str(d["in_progress"].get("id") or ""), "in progress"))), None
     if d.get("failing"):
         return BAD, f"{d['failing']} failed · last {ago(last.get('at'), now)}", last.get("at")
     if d.get("wait"):

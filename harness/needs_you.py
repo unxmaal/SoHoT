@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 from pathlib import Path
 
@@ -67,11 +68,17 @@ def read_gateway() -> dict:
     return {"mark": gateway_degraded.read()}
 
 
-def read_monit(now: float, home: Path | None = None) -> dict:
-    """The monit alerts still open: a failure that paged and has not recovered, as `soh morning` lists them."""
+#: Monit states that mean the service passes now; "not monitored" and "initializing" say nothing either way.
+_MONIT_PASSING = re.compile(r"^(ok|running|accessible|online.*|status ok)$", re.I)
+
+
+def read_monit(now: float, home: Path | None = None, live: dict | None = None) -> dict:
+    """The monit alerts still open in the log whose service monit does not now report passing. #2143."""
     from harness import monitor
+    live = live or {}
+    state = {c["check"]: bool(_MONIT_PASSING.match(c["state"])) for c in live.get("checks") or [] if live.get("running")}
     return {"open": [{k: a.get(k) for k in ("at", "kind", "service", "description")}
-                     for a in monitor.still_open(monitor.alerts(0, home))]}
+                     for a in monitor.still_open(monitor.alerts(0, home)) if not state.get(a.get("service"), False)]}
 
 
 def _age(t, now: float) -> str:
@@ -109,9 +116,16 @@ def _queue(r: dict) -> list[dict]:
     if q.get("error") or not q.get("paused"):
         return []
     who = f" ({q['who']})" if q.get("who") else ""
-    return [cond("queue-paused", "The queue is paused: no job starts", f"{q.get('reason')}{who}",
-                 since=q.get("paused_since"), source="queue", fix=[("queue_resume", "")],
-                 line=f"queue paused {_age(q.get('paused_since'), r['generated'])}: {q.get('reason')}")]
+    held = q.get("deploy_hold")
+    if held and held["live"]:
+        return []
+    since = q.get("paused_since")
+    title = "The queue is paused: no job starts"
+    if held:
+        title = "A deploy's queue pause is stuck: its process is gone"
+    return [cond("queue-paused", title, f"{q.get('reason')}{who}",
+                 since=since, source="queue", fix=[("queue_resume", "")],
+                 line=f"queue paused {_age(since, r['generated'])}: {q.get('reason')}")]
 
 
 def _discovery(r: dict, held: bool) -> list[dict]:

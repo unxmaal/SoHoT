@@ -16,6 +16,7 @@ _TAG = "holder "
 _STAMP = "%Y-%m-%dT%H:%M:%S"
 _BY = "by "
 _DISK = "disk "
+_DEPLOY = "deploy "
 _SAYS = (("session", "CLAUDE_CODE_SESSION_ID"), ("agent", "AI_AGENT"), ("subagent", "CLAUDE_CODE_CHILD_SESSION"))
 #: What a pause taken with no reason says in its place, so it reads as flagged. #2064.
 NO_REASON = "no reason given"
@@ -29,13 +30,15 @@ def caller(environ=None) -> dict:
     return rec
 
 
-def text(why: str, holder: int | None, environ=None, disk: str | None = None) -> str:
+def text(why: str, holder: int | None, environ=None, disk: str | None = None, deploy: int | bool | None = None) -> str:
     """A flag's body: when and why, the holder's identity or the disk it waits on, then who took it. #1760, #2064, #2066."""
     lines = [f"{time.strftime(_STAMP)} {why.strip() or NO_REASON}"]
     if holder is not None:
         lines.append(f"{_TAG}{json.dumps(proc_identity.identity(holder))}")
     if disk is not None:
         lines.append(f"{_DISK}{json.dumps({'path': disk, 'free_gib': free_gib(disk)})}")
+    if deploy is not None and deploy is not False:
+        lines.append(f"{_DEPLOY}{json.dumps({'id': None if deploy is True else int(deploy)})}")
     return "\n".join([*lines, f"{_BY}{json.dumps(caller(environ))}"])
 
 
@@ -125,6 +128,22 @@ def who(body: str) -> str:
     if by.get("session"):
         said.append(f"session {str(by['session'])[:8]}")
     return ", ".join(said)
+
+
+def deploy_hold(body: str) -> dict | None:
+    """The deploy a pause belongs to and whether its process is still there, None for any other pause. #2141."""
+    mark = _line(body, _DEPLOY)
+    if mark is None:
+        return None
+    rec, by = holder_of(body), by_of(body) or {}
+    if rec is not None:
+        live = proc_identity.same(rec) is not False
+        pid = rec.get("pid")
+    else:
+        pid = by.get("pid")
+        began = proc_identity.began(int(pid)) if isinstance(pid, int) else None
+        live = began is not None and began <= (since(body) or time.time()) + 2
+    return {"id": mark.get("id"), "pid": pid, "live": live}
 
 
 def describe(body: str) -> str:
