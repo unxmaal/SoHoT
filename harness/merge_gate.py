@@ -24,6 +24,8 @@ DESCRIPTION_MAX = 140
 #: The suite's xdist workers on a machine that is doing other work. #1722
 MAKE = ("make", "PYTEST_N=6")
 TIMED_OUT = 124
+#: Passes that start a tree and die before its verdict, after which the poll stops queueing another for it. #2140
+RETRY_MAX = 3
 _SEAM = re.compile(r"^\s*seam='(.+)'\s*$", re.M)
 
 
@@ -67,9 +69,56 @@ def verdict(head: str, key: str, gh) -> str:
     return ""
 
 
-def post(head: str, state: str, text: str, gh) -> None:
+def _open_path() -> Path:
+    return root() / "open.json"
+
+
+def opened() -> dict:
+    """{head: {"text", "tries"}} for each pending status this machine posted that no final verdict has replaced."""
+    try:
+        got = json.loads(_open_path().read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {}
+    except (OSError, ValueError):
+        return {"": {"text": "the record of pending verdicts is unreadable", "tries": 0}}
+    return got if isinstance(got, dict) else {"": {"text": "the record of pending verdicts is unreadable", "tries": 0}}
+
+
+def _track(head: str, state: str, text: str, started: bool = False) -> None:
+    from harness import atomic_file
+    rows = opened()
+    if state == PENDING:
+        rows[head] = {"text": text, "tries": rows.get(head, {}).get("tries", 0) + (1 if started else 0)}
+    else:
+        rows.pop(head, None)
+    tmp = _open_path().with_suffix(".tmp")
+    tmp.write_text(json.dumps(rows, sort_keys=True), encoding="utf-8")
+    atomic_file.replace(tmp, _open_path())
+
+
+def _again_path() -> Path:
+    return root() / "again"
+
+
+def _holder() -> bool:
+    from harness import exclusive
+    return exclusive._taken(root() / "lock")
+
+
+def stranded() -> dict:
+    """The pending statuses no pass is working on: a pass that held the lock died, or one that found it held has nobody to run for it."""
+    if _holder():
+        return {}
+    got = dict(opened())
+    if _again_path().exists():
+        got.setdefault("", {"text": "a pass found the lock held and the holder is gone", "tries": 0})
+    return got
+
+
+def post(head: str, state: str, text: str, gh, started: bool = False) -> None:
     gh(["api", "-X", "POST", f"repos/{{owner}}/{{repo}}/statuses/{head}", "-f", f"state={state}",
         "-f", f"context={CONTEXT}", "-f", f"description={text[:DESCRIPTION_MAX]}"])
+    _track(head, state, text, started)
 
 
 def plan(repo, pr: dict | None, gh) -> dict:
@@ -158,7 +207,7 @@ def _settle(repo, item: dict, gh, run) -> dict:
         item["state"] = FAILURE
         post(item["head"], FAILURE, f"{where}: does not merge onto main", gh)
         return item
-    post(item["head"], PENDING, f"{where}: running", gh)
+    post(item["head"], PENDING, f"{where}: running", gh, started=True)
     try:
         failed = tested(repo, item, run)
         item["state"], said = (FAILURE, f"{failed} failed") if failed else (SUCCESS, "passed")
@@ -169,7 +218,22 @@ def _settle(repo, item: dict, gh, run) -> dict:
 
 
 def run_pass(repo, only: int | None = None, again: bool = False, gh=None, run=None, say=print) -> list[dict]:
-    """Test main's tip and each candidate pull request whose merged tree has no verdict, and post one; the rows it judged."""
+    """Test main's tip and each candidate pull request whose merged tree has no verdict, and post one; the rows it judged.
+
+    A pass that finds the lock held leaves a mark, and the holder runs one more pass when it lets go. #2140
+    """
+    held, rows = _pass(repo, only, again, gh, run, say)
+    while held:
+        try:
+            _again_path().unlink()
+        except FileNotFoundError:
+            break
+        held, more = _pass(repo, None, False, gh, run, say)
+        rows += more
+    return rows
+
+
+def _pass(repo, only, again, gh, run, say) -> tuple[bool, list[dict]]:
     from harness import exclusive
     gh = gh or (lambda argv: guard._gh(argv, cwd=str(repo)))
     def due(pr):
@@ -183,12 +247,20 @@ def run_pass(repo, only: int | None = None, again: bool = False, gh=None, run=No
     held = exclusive._take(fd)
     try:
         if not held:
+            _again_path().touch()
+            held = exclusive._take(fd)
+            if held:
+                _again_path().unlink(missing_ok=True)
+        if not held:
             say("another merge gate pass is running")
-            return []
+            return False, []
         wanted = [pr for pr in candidates(gh) if only in (None, pr["number"])]
         if only is not None and not wanted:
             raise GateError(f"#{only} is not an open, non-draft pull request on main from this repository's own branch")
         todo = [i for i in map(due, ([None] if only is None else []) + wanted) if i]
+        if only is None:
+            for head in set(opened()) - {pr["headRefOid"] for pr in wanted} - {i["head"] for i in todo}:
+                _track(head, FAILURE, "")
         for i in todo:
             if i["tree"]:
                 post(i["head"], PENDING, f"{i['key']} on {i['base'][:12]}: queued", gh)
@@ -198,7 +270,7 @@ def run_pass(repo, only: int | None = None, again: bool = False, gh=None, run=No
             now = due(i["pr"])
             if now:
                 rows.append(_settle(repo, now, gh, run))
-        return rows
+        return True, rows
     finally:
         if held:
             exclusive._release(fd)
@@ -210,20 +282,37 @@ def _refs(src) -> str:
 
 
 def queue(src=None, conn=None, refs=None) -> dict | None:
-    """On the scheduler, queue one pass as a cpu job when origin's main or a pull request head moved since the last one queued; else None."""
-    from harness import deploy, resources
-    from harness import workqueue as wq
+    """On the scheduler, queue one pass as a cpu job when origin's main or a pull request head moved since the last one queued, or a pass died with a pending status; else None."""
     src = Path(src) if src is not None else paths.deploy_checkout()
     if src is None or not (src / ".git").exists() or paths.role() != paths.SCHEDULER:
         return None
     mark = hashlib.sha256((refs or _refs)(src).encode()).hexdigest()
     seen = root() / "seen"
-    if seen.exists() and seen.read_text(encoding="utf-8").strip() == mark:
+    moved = not (seen.exists() and seen.read_text(encoding="utf-8").strip() == mark)
+    if not moved and not retestable():
         return None
+    job = enqueue(src, conn)
+    if job and moved:
+        seen.write_text(mark, encoding="utf-8")
+    return job
+
+
+def retestable() -> dict:
+    """What `stranded` finds that the poll may still queue a pass for: a tree whose passes have died RETRY_MAX times waits for the owner."""
+    from harness import cuts
+    rows = stranded()
+    kept = {h: v for h, v in rows.items() if not h or v.get("tries", 0) < RETRY_MAX}
+    if len(kept) < len(rows):
+        cuts.cut("merge_gate_retries", "stranded merge gate verdicts", kept=len(kept), dropped=len(rows) - len(kept))
+    return kept
+
+
+def enqueue(src, conn=None) -> dict | None:
+    """One cpu pass for `src` unless one waits or runs already."""
+    from harness import deploy, resources
+    from harness import workqueue as wq
     with wq._store(conn) as c:
         if wq._select(c, "WHERE requested_by = ? AND state IN (?, ?)", (REQUESTER, wq.PENDING, wq.RUNNING)):
             return None
-        job = wq.add([*deploy.SOH, "merge-gate", "--repo", str(src)], title="merge gate", cwd=str(src),
-                     resource=resources.CPU, requested_by=REQUESTER, conn=c)
-    seen.write_text(mark, encoding="utf-8")
-    return job
+        return wq.add([*deploy.SOH, "merge-gate", "--repo", str(src)], title="merge gate", cwd=str(src),
+                      resource=resources.CPU, requested_by=REQUESTER, conn=c)
