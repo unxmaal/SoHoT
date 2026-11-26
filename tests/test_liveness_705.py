@@ -107,7 +107,7 @@ esac
     hf.mkdir()
     env = {**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}",
            "HF_ROOT": str(hf), "HF_MIN_FREE_GB": "0", "ANTHROPIC_API_KEY": "x",
-           "LOCALHARNESS_HOME": str(tmp_path / "home")}
+           "LOCALHARNESS_HOME": str(tmp_path / "home"), "GATEWAY_SERVED_WAIT_S": "0"}
     got = subprocess.run([shells.BASH, str(REPO / "scripts" / "serve-gateway.sh")],
                          env=env, capture_output=True, text=True, timeout=60)
     assert "WARN" in got.stderr and "gateway/config.yaml" in got.stderr, got.stderr

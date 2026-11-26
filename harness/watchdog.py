@@ -169,6 +169,8 @@ class World:
     #: Models a lane, an adoption or a gateway alias serves; None when unreadable.
     protected: set | None = None
     gateway_up: bool | None = None
+    #: serve-gateway.sh's mark that the gateway serves the base config, plus why the served one cannot be built now. #2132.
+    gateway_degraded: dict | None = None
     mlx_generating: bool | None = None
     interactive: dict = field(default_factory=dict)
     fallbacks: list | None = None
@@ -622,6 +624,14 @@ def _gateway_down(w: World) -> list[Finding]:
                                             detail={"service": "gateway"}), {"liveliness": "no answer"})]
 
 
+def _gateway_degraded(w: World) -> list[Finding]:
+    d = w.gateway_degraded
+    if not d or d.get("unbuildable"):
+        return []
+    return [Finding("gateway_degraded", Subject("gateway", "gateway", "the launchd gateway unit serves the base config",
+                                                detail={"service": "gateway"}), {"since": d.get("at"), "reason": d.get("reason")})]
+
+
 def _mlx_dead(w: World) -> list[Finding]:
     if w.mlx_generating is not False:
         return []
@@ -693,6 +703,8 @@ CRITERIA = (
               "memory at warn for several wakes with nothing to give back: pause the sweep, told once"),
     Criterion("gateway_down", (), NOTIFY, RESTART, ("gateway",), _gateway_down,
               "the gateway's liveliness probe fails"),
+    Criterion("gateway_degraded", (), RESTART, NOTIFY, ("gateway",), _gateway_degraded,
+              "the gateway serves the base config with no sohot-<lane> aliases and the store can now build the served one"),
     Criterion("mlx_dead", (), RESTART, NOTIFY, ("mlx",), _mlx_dead,
               "mlx_lm.server is up but its generation thread died, so every request fails"),
     Criterion("interactive_down", (), RESTART, NOTIFY, (), interactive.finding, interactive.WHAT),

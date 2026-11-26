@@ -62,7 +62,7 @@ RECOVERED = "recovered"
 DISK_HELD = "disk-held"
 DISK_KINDS = ("disk", "disk-pause", DISK_HELD)
 KINDS = DISK_KINDS + ("volume", "volume-low", "memory", "service", "deploy", "store", "store-backup", "gpu-refused",
-                           "queue-stale", RECOVERED)
+                           "queue-stale", "gateway-degraded", RECOVERED)
 #: (monit name, launchd unit, port variable, the launcher's default port): read as scripts/serve-*.sh read them.
 SERVICES = (("gateway", "gateway", "GATEWAY_PORT", 4000), ("mlx", "mlx", "MLX_PORT", 8081),
             ("tts", "tts", "TTS_PORT", 8890))
@@ -215,6 +215,10 @@ def render(s: dict) -> str:
     for name, port in s.get("services") or []:
         out += [f"check host service_{_word(name)} with address 127.0.0.1",
                 f"    if failed port {int(port)} type tcp for {cycles(SERVICE_DOWN_S)} cycles {then('service')}", ""]
+    if any(name == "gateway" for name, _ in s.get("services") or []):
+        out += [f'check program gateway_served with path "{prefix} {s["scripts"]}/monit-gateway.sh" '
+                f"with timeout {CLI_TIMEOUT_S} seconds",
+                f"    if status != 0 {then('gateway-degraded')}", ""]
     if s.get("store"):
         from harness import store_service
         store = f"{prefix} {s['scripts']}/monit-store.sh"

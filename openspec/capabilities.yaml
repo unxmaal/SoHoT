@@ -223,6 +223,7 @@ capabilities:
       - harness/tether.py
       - harness/reaping.py
       - harness/screen_window.py
+      - harness/gateway_degraded.py
 
   - name: local-delegation
     summary: local_complete and local_decide over MCP or `soh local`, handed to a lane's adopted local model, and what became of each answer.
