@@ -92,7 +92,7 @@ def test_a_pause_held_by_a_live_deploy_is_the_deploy_tile_not_the_band(tmp_path)
 
 
 def test_a_live_holder_line_pause_for_a_deploy_install_is_not_the_band_either(tmp_path):
-    _flag("held for a deploy by pid 1", os.getpid(), _after_start(), holder=True)
+    _flag("held for a deploy by pid 1", os.getpid(), _after_start(), holder=True, deploy=True)
     r = gather(tmp_path)
     assert "queue-paused" not in keys(r) and r["deploy"]["in_progress"]["live"]
     assert status_view._deploy(r["deploy"], NOW)[1] == "deploy in progress"
@@ -118,7 +118,7 @@ def test_an_owners_pause_still_shows_with_resume(tmp_path):
 
 
 def test_a_holder_line_pause_whose_holder_is_gone_is_a_stuck_pause(tmp_path):
-    _flag("held for a deploy by pid 1", _dead_pid(), NOW - 60, holder=True)
+    _flag("held for a deploy by pid 1", _dead_pid(), NOW - 60, holder=True, deploy=True)
     r = gather(tmp_path)
     assert "stuck" in cond(r, "queue-paused")["title"] and "in_progress" not in r["deploy"]
 
