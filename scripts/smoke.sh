@@ -155,6 +155,8 @@ if [ "$LOCAL" -eq 1 ]; then
   /bin/bash scripts/lan-probe.sh || FAIL=1
   # The MCP server on 127.0.0.1 and ::1 both, whichever a client's localhost resolves to (#1555).
   /bin/bash scripts/mcp-probe.sh 127.0.0.1 || FAIL=1
+  # soh and lh on PATH run the live release (#2126); enforced after the switch, when install has written them.
+  /bin/bash scripts/smoke-introduced.sh /bin/bash scripts/path-shim.sh check || FAIL=1
   /bin/bash scripts/smoke-introduced.sh /bin/bash scripts/mcp-probe.sh '[::1]' || FAIL=1
   NODES_OUT="$(SOHOT_GATEWAY_KEY="$KEY" uv run python -m harness.nodes smoke --gateway "$G" 2>&1)" || FAIL=1
   printf '%s\n' "$NODES_OUT"

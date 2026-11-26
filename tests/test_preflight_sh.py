@@ -185,6 +185,13 @@ def test_soh_absent_is_a_failure(tmp_path):
     assert code == 1
 
 
+def test_soh_that_does_not_run_is_a_failure(tmp_path):
+    """A file on PATH is not a working command: a shim into a missing tree must be reported (#2126)."""
+    code, out = run_preflight(tmp_path, _bin(tmp_path, soh="exit 127"))
+    assert "MISSING  soh on PATH runs" in out, out
+    assert code == 1
+
+
 # ---- parity with the Python half (#153) -------------------------------------
 #
 # The list of audio players exists in two languages: harness/audio.py decides

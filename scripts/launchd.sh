@@ -172,7 +172,7 @@ units() {
 # uv, ffmpeg, rsvg-convert and rec all live in /opt/homebrew/bin, so without
 # this every service dies on "command not found" -- the same trap a GUI-spawned
 # wezterm set for the voice scripts, and it is just as invisible here.
-# $HOME/.local/bin is where uv puts `soh`, and serve-mcp.sh shells out to it for
+# $HOME/.local/bin is where scripts/path-shim.sh puts `soh`, and serve-mcp.sh shells out to it for
 # every tool call. Without it that unit loads, listens, and fails each call with
 # "soh: command not found".
 JOB_PATH="$HOME/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
@@ -589,6 +589,8 @@ install_units() {
     deploy
     _run_deployed install
   fi
+  # soh and lh on PATH run the live release; a foreign file there is reported, not a reason to stop the install. #2126.
+  /bin/bash "$DEPLOY/scripts/path-shim.sh" install >&2 || echo "WARN: a soh/lh shim was not written (see above); the post-switch smoke checks soh on PATH" >&2
   preflight
   [ "${1:-}" = reinstall ] || _record_install_env
   mkdir -p "$AGENTS"
