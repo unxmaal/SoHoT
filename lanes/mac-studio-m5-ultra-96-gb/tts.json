@@ -427,51 +427,51 @@
   },
   {
    "candidate": "tts:OpenMOSS-Team/MOSS-TTS-Nano-100M",
-   "decided_at": "2026-10-19T15:04:33Z",
-   "detail": "unknown: runners wanted: its weights are .bin, and no tts runner here loads that format",
+   "decided_at": "2026-11-26T21:49:54Z",
+   "detail": "not screened: needs 0.2 GB but only -7.6 GB is safely available (10.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "exam": null,
    "outcome": "queued",
    "proposal": "OpenMOSS-Team/MOSS-TTS-Nano-100M",
-   "reason": "harness",
+   "reason": "memory",
    "receipt_key": "MOSS-TTS-Nano-100M",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
-   "until": "format:.bin"
+   "tier": "screen",
+   "until": "room_gb:>0.2"
   },
   {
    "candidate": "tts:nvidia/magpie_tts_multilingual_357m",
-   "decided_at": "2026-10-19T15:04:42Z",
-   "detail": "unknown: runners wanted: its weights are .gguf, .nemo, and no tts runner here loads that format",
+   "decided_at": "2026-11-26T21:49:59Z",
+   "detail": "not screened: needs 2.2 GB but only -7.6 GB is safely available (10.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "exam": null,
    "outcome": "queued",
    "proposal": "nvidia/magpie_tts_multilingual_357m",
-   "reason": "harness",
+   "reason": "memory",
    "receipt_key": "magpie_tts_multilingual_357m",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
-   "until": "format:.gguf|.nemo"
+   "tier": "screen",
+   "until": "room_gb:>2.2"
   },
   {
    "candidate": "tts:owensong/Inflect-Nano-v1",
-   "decided_at": "2026-10-19T15:04:42Z",
-   "detail": "unknown: runners wanted: its weights are .pt, and no tts runner here loads that format",
+   "decided_at": "2026-11-26T21:50:03Z",
+   "detail": "not screened: needs 0.0 GB but only -7.2 GB is safely available (10.7 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "exam": null,
    "outcome": "queued",
    "proposal": "owensong/Inflect-Nano-v1",
-   "reason": "harness",
+   "reason": "memory",
    "receipt_key": "Inflect-Nano-v1",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
-   "until": "format:.pt"
+   "tier": "screen",
+   "until": "room_gb:>0.0"
   }
  ],
- "cursor": 1795235000582066,
+ "cursor": 1795729803926918,
  "events": [
   {
    "at": "2026-09-19T21:17:40Z",
@@ -1207,6 +1207,51 @@
    "reason": "runtime",
    "run_id": 1092,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-26T21:49:54Z",
+   "candidate": "OpenMOSS-Team/MOSS-TTS-Nano-100M",
+   "chosen": null,
+   "detail": "not screened: needs 0.2 GB but only -7.6 GB is safely available (10.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1795729794917822,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-26T21:49:59Z",
+   "candidate": "nvidia/magpie_tts_multilingual_357m",
+   "chosen": null,
+   "detail": "not screened: needs 2.2 GB but only -7.6 GB is safely available (10.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1795729799907915,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-26T21:50:03Z",
+   "candidate": "owensong/Inflect-Nano-v1",
+   "chosen": null,
+   "detail": "not screened: needs 0.0 GB but only -7.2 GB is safely available (10.7 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1795729803926918,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -1377,7 +1422,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-21T08:10:22Z",
+ "generated_at": "2026-11-26T22:19:42Z",
  "knobs": [],
  "lane": {
   "cases": 470,
