@@ -5,7 +5,7 @@ from pathlib import Path
 from gauntlet import scanners as gscanners
 
 from tests import tree_cache
-from tests.gauntlet import scanners
+from tests.gauntlet import owner_verbs, scanners
 
 REPO = Path(__file__).resolve().parent.parent
 
@@ -311,3 +311,63 @@ def test_every_allowed_download_site_still_downloads():
              if not any(d in (REPO / rel).read_text(encoding="utf-8")
                         for d in ("snapshot_download", "hf_hub_download", "hf download"))]
     assert not stale, f"an allowed site that no longer downloads leaves a hole for the next one: {stale}"
+
+
+def _cli(*extra):
+    import argparse
+    ap = argparse.ArgumentParser(prog="soh")
+    sub = ap.add_subparsers(dest="command")
+    sub.add_parser("restart")
+    hold = sub.add_parser("hold")
+    hold.add_argument("scope", choices=["gpu", "status"])
+    for name in extra:
+        sub.add_parser(name)
+    return owner_verbs.verb_paths(ap)
+
+
+def _owner_found(paths, argvs=(("restart", "{}"), ("hold", "gpu")), exempt=None, not_owner=None):
+    bound = owner_verbs.bound(argvs, paths)
+    return owner_verbs.check(paths, bound, exempt or {}, not_owner or {"hold status": "read-only"})
+
+
+def test_the_parsers_verbs_include_a_positional_choice_as_a_verb():
+    assert ("hold", "gpu") in _cli() and ("hold",) in _cli()
+
+
+def test_an_owner_verb_with_no_action_and_no_exemption_is_found():
+    found = _owner_found(_cli("wipe"))
+    assert len(found) == 1 and "'wipe' has no status-page Action" in found[0]
+
+
+def test_a_bound_or_exempted_verb_is_left_alone_and_the_bad_line_still_fires_beside_it():
+    assert _owner_found(_cli()) == []
+    assert _owner_found(_cli("wipe"), exempt={"wipe": "too dangerous for one tap"}) == []
+    assert len(_owner_found(_cli("wipe", "purge"), exempt={"wipe": "too dangerous for one tap"})) == 1
+
+
+def test_an_exemption_for_a_verb_the_parser_no_longer_has_is_found():
+    found = _owner_found(_cli(), exempt={"gone": "was one tap"})
+    assert len(found) == 1 and "'gone' names a verb the parser no longer has" in found[0]
+
+
+def test_an_exempted_verb_that_gained_an_action_is_found():
+    found = _owner_found(_cli(), exempt={"restart": "no button yet, see #2138"})
+    assert len(found) == 1 and "has an Action and is also exempted" in found[0]
+
+
+def test_an_action_spelling_a_group_or_no_verb_is_found():
+    found = _owner_found(_cli(), argvs=(("restart", "{}"), ("hold", "gpu"), ("hold",)))
+    assert len(found) == 1 and "'hold', which is not a leaf verb" in found[0]
+
+
+def test_an_exemption_without_a_one_line_reason_is_found():
+    assert len(_owner_found(_cli("wipe"), exempt={"wipe": ""})) == 1
+
+
+def test_every_owner_verb_of_the_real_parser_is_a_status_page_action_or_a_listed_exemption():
+    from harness import owner_actions
+    from harness.cli import build_parser
+    paths = owner_verbs.verb_paths(build_parser())
+    bound = owner_verbs.bound([a.argv for a in owner_actions.ACTIONS], paths)
+    found = owner_verbs.check(paths, bound, owner_verbs.OWNER_EXEMPT, owner_verbs.NOT_OWNER)
+    assert not found, "\n".join(found)
