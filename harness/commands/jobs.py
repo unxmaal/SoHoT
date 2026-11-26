@@ -146,6 +146,13 @@ def cmd_jobs(a) -> int:
             note(f"{job['id']} priority {job['priority']}: {job['title']}")
             emit(job=job)
             return 0
+        if a.action == "retry":
+            if not rest:
+                return err("retry needs a job id")
+            job = wq.retry(rest[0])
+            note(f"queued {job['id']}, a retry of {rest[0]}: {job['title']}")
+            emit(job=job)
+            return 0
         if a.action == "cancel":
             if not rest:
                 return err("cancel needs a job id")

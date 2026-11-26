@@ -91,6 +91,7 @@ MODIFIERS = {
 }
 #: Flags whose mode writes, downloads, runs a model or reads the network by design, so it is not run here.
 NOT_RUN = {
+    "needs-you --alert": "gathers the status page's sections and writes monit alert lines, never the store; pinned in tests/test_needs_you_2134.py",
     "fix --plan-only": "runs claude -p and gh against the network; it writes no store row (#2035)",
     "worktrees --prune": "runs git and gh on the checkout's worktrees, never the store; pinned in tests/test_worktrees_2114.py",
     "fix --execute": "runs claude -p and the local model; its delegation rows are pinned in tests/test_fix_2035.py",

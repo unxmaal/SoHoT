@@ -30,6 +30,10 @@ CYCLE_S = 300
 MEMORY_WARN_S = 600
 #: Seconds memory pressure stays normal before monit ends its episode with one recovered alert. #1870.
 MEMORY_CALM_S = 3600
+#: Seconds the Needs-you pass may take to gather the status page's sections and alert on what began or cleared. #2134.
+NEEDS_YOU_TIMEOUT_S = 120
+#: Cycles in a row the Needs-you pass must fail before monit alerts that it cannot read the status. #2134.
+NEEDS_YOU_FAILS = 3
 #: Seconds a service port stays closed before monit alerts; launchd restarts it meanwhile.
 SERVICE_DOWN_S = 600
 #: Local hour in which monit asks each cycle whether the store's daily dump is due; the first ask makes it. #1591.
@@ -62,7 +66,7 @@ RECOVERED = "recovered"
 DISK_HELD = "disk-held"
 DISK_KINDS = ("disk", "disk-pause", DISK_HELD)
 KINDS = DISK_KINDS + ("volume", "volume-low", "memory", "service", "deploy", "store", "store-backup", "gpu-refused",
-                           "queue-stale", "gateway-degraded", RECOVERED)
+                           "queue-stale", "gateway-degraded", "needs-you", RECOVERED)
 #: (monit name, launchd unit, port variable, the launcher's default port): read as scripts/serve-*.sh read them.
 SERVICES = (("gateway", "gateway", "GATEWAY_PORT", 4000), ("mlx", "mlx", "MLX_PORT", 8081),
             ("tts", "tts", "TTS_PORT", 8890))
@@ -212,6 +216,9 @@ def render(s: dict) -> str:
     out += [f'check program queue_moves with path "{prefix} {s["scripts"]}/monit-queue.sh" '
             f"with timeout {CLI_TIMEOUT_S} seconds",
             f"    if status != 0 {then('queue-stale', repeat=cycles(contention.PAUSE_REALERT_S))}", ""]
+    out += [f'check program needs_you_pass with path "{prefix} {s["scripts"]}/monit-needs-you.sh" '
+            f"with timeout {NEEDS_YOU_TIMEOUT_S} seconds",
+            f"    if status != 0 for {NEEDS_YOU_FAILS} cycles {then('needs-you')}", ""]
     for name, port in s.get("services") or []:
         out += [f"check host service_{_word(name)} with address 127.0.0.1",
                 f"    if failed port {int(port)} type tcp for {cycles(SERVICE_DOWN_S)} cycles {then('service')}", ""]

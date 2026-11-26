@@ -54,6 +54,25 @@ def _sweep_jobs(r: dict) -> list[tuple[str, str]]:
     return [(str(j["id"]), f"job {j['id']} ({j.get('step')})") for j in jobs if _JOB.match(str(j.get("id") or ""))]
 
 
+def _jobs(r: dict, states: tuple[str, ...]) -> list[tuple[str, str]]:
+    rows = ((r.get("stops") or {}).get("jobs") or {}).get("rows") or []
+    return [(str(j["id"]), f"job {j['id']} ({j.get('title')})") for j in rows
+            if j.get("state") in states and _JOB.match(str(j.get("id") or ""))]
+
+
+def _failed_jobs(r: dict) -> list[tuple[str, str]]:
+    return _jobs(r, ("failed",))
+
+
+def _stuck_jobs(r: dict) -> list[tuple[str, str]]:
+    return _jobs(r, ("running", "paused"))
+
+
+def _units(r: dict) -> list[tuple[str, str]]:
+    from harness import needs_you
+    return [(n, n) for n in needs_you.unit_names(r)]
+
+
 @dataclass(frozen=True)
 class Action:
     name: str
@@ -80,6 +99,11 @@ ACTIONS = (
            ("discover", "--loop", "--run", "--jobs")),
     Action("discovery_off", "Continuous discovery off", "cancels the waiting sweep step, so no next sweep is queued",
            ("jobs", "cancel", "{}"), _sweep_jobs),
+    Action("job_retry", "Retry job", "queues the failed job's command again as a new job", ("jobs", "retry", "{}"),
+           _failed_jobs),
+    Action("job_cancel", "Cancel job", "stops the job and records it cancelled", ("jobs", "cancel", "{}"), _stuck_jobs),
+    Action("unit_restart", "Restart unit", "restarts the unit through scripts/launchd.sh, never unloading it",
+           ("unit-restart", "{}"), _units),
 )
 BY_NAME = {a.name: a for a in ACTIONS}
 
@@ -175,6 +199,21 @@ def panel_for(peer: str | None, headers, r: dict, *, now: float | None = None, h
     """The panel for a page read from another device; nothing for a forwarded request."""
     who, _ = caller(peer, headers)
     return panel(r, token(peer or "", who, now)) if who else ""
+
+
+def token_for(peer: str | None, headers, *, now: float | None = None) -> str:
+    """The page token for a caller allowed to press, else ''."""
+    who, _ = caller(peer, headers)
+    return token(peer or "", who, now) if who else ""
+
+
+def button(action: str, arg: str, tok: str, post: str = "status/action") -> str:
+    """One press of `action` on `arg` from the Needs-you band; the same confirm flow as the panel."""
+    from harness import status_view as sv
+    a = BY_NAME[action]
+    label = f"{a.label} {arg[:12]}" if arg else a.label
+    return (f"<form class='act' method='post' action='{post}'>{_hidden(token=tok, action=action, **({'arg': arg} if arg else {}))}"
+            f"<button title='{_attr(a.does)}'>{sv.esc(label)}</button></form>")
 
 
 def _refused(code: int, why: str, entry: dict, home: Path | None) -> tuple[int, str]:

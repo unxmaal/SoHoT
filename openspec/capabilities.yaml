@@ -478,6 +478,10 @@ capabilities:
       - harness/status_view.py
       - harness/features.py
       - harness/owner_actions.py
+      - harness/needs_you.py
+      - harness/commands/needs_you.py
+      - harness/unit_restart.py
+      - harness/commands/unit_restart.py
 
   - name: canary
     summary: Planted candidates with known verdicts, run for real under an isolated home.

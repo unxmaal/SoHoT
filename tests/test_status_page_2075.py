@@ -37,7 +37,7 @@ def test_a_healthy_machine_has_no_banner_and_every_section(tmp_path):
     r = _gather(tmp_path)
     assert r["banner"] == []
     text = sp.page(r)
-    assert "Nothing needs you" in text and "class='banner'" not in text
+    assert "Nothing is stopped." in text and "class='need'" not in text
     for title in ("Deploy", "Queue", "Discovery", "Monitor", "Services", "Ratio", "Store"):
         assert f"<h2>{title} <span class='asof'>as of" in text
     assert all(r[k]["as_of"] for k in ("store", "queue", "deploy", "discovery", "monitor", "services", "ratio"))
@@ -55,10 +55,10 @@ def test_a_queue_paused_past_the_stale_alert_is_a_banner(tmp_path):
     assert "PAUSED since" in sp.page(r)
 
 
-def test_a_recent_queue_pause_shows_but_is_not_a_banner(tmp_path):
+def test_a_recent_queue_pause_is_in_the_band_at_once(tmp_path):
     queue_pause.pause("a deploy runs")
     r = _gather(tmp_path)
-    assert r["queue"]["paused"] and not [b for b in r["banner"] if b.startswith("queue")]
+    assert r["queue"]["paused"] and [b for b in r["banner"] if b.startswith("queue paused") and "a deploy runs" in b]
 
 
 def test_a_failed_deploy_is_a_banner_and_counts_its_run(tmp_path):

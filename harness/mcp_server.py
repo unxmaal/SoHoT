@@ -477,7 +477,8 @@ async def _status(request, as_json: bool):
         return Response(status_page.as_json(r), media_type="application/json")
     from harness import owner_actions
     extra = await run_in_threadpool(owner_actions.panel_for, _peer(request), request.headers, r)
-    return HTMLResponse(status_page.page(r, extra=extra), headers={"cache-control": "no-store"} if extra else None)
+    tok = await run_in_threadpool(owner_actions.token_for, _peer(request), request.headers)
+    return HTMLResponse(status_page.page(r, extra=extra, token=tok), headers={"cache-control": "no-store"} if extra else None)
 
 
 def _peer(request) -> str | None:

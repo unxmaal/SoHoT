@@ -103,6 +103,8 @@ from harness.commands import fix as fix_cmd
 from harness.commands import tool_route as tool_route_cmd
 from harness.commands import merge_gate as merge_gate_cmd
 from harness.commands import worktrees as worktrees_cmd
+from harness.commands import needs_you as needs_you_cmd
+from harness.commands import unit_restart as unit_restart_cmd
 
 # What scripts, tests and other modules take from harness.cli, from where it now lives.
 from harness.commands.common import say  # noqa: F401
@@ -825,6 +827,8 @@ def build_parser() -> argparse.ArgumentParser:
     tool_route_cmd.add_parser(sub)
     merge_gate_cmd.add_parser(sub)
     worktrees_cmd.add_parser(sub)
+    needs_you_cmd.add_parser(sub)
+    unit_restart_cmd.add_parser(sub)
     dlg = sub.add_parser("delegated", help="record what became of a local_complete, local_decide or "
                          "`soh local` answer, show a call_id's rows (no outcome), or --report the rates per lane")
     dlg.add_argument("call_id", nargs="?", default="", help="the call_id the delegation returned")
@@ -1027,9 +1031,9 @@ def build_parser() -> argparse.ArgumentParser:
     jobs = sub.add_parser("jobs", help="the work queue: by priority then id, one GPU job at a time and "
                           "network, disk and cpu jobs beside it up to their capacity, while memory pressure is normal")
     jobs.add_argument("action", choices=("add", "list", "pause", "resume",
-                                         "cancel", "priority"))
+                                         "cancel", "priority", "retry"))
     jobs.add_argument("rest", nargs=argparse.REMAINDER,
-                      help="add: -- <command...>; cancel: <id>")
+                      help="add: -- <command...>; cancel, retry: <id>")
     jobs.add_argument("--title", default="")
     jobs.add_argument("--reason", default="",
                       help="pause: why, required; the flag records it with who paused, and alerts name both. #2064")
