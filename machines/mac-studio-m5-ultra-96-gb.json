@@ -66,12 +66,12 @@
   }
  ],
  "export_version": 4,
- "generated_at": "2026-11-26T22:19:25Z",
+ "generated_at": "2026-11-26T22:44:44Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 1.12,
+   "age_days": 1.14,
    "comparison": [
     {
      "about": "",
@@ -472,7 +472,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 1.62,
+   "age_days": 1.64,
    "comparison": [
     {
      "about": "7B params, 4bit, by mlx-community",
@@ -2801,17 +2801,17 @@
    "pass_rate": 0.717,
    "passed": 71,
    "real_use": {
-    "completion_tokens": 3965,
+    "completion_tokens": 3861,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 130611,
-    "requests": 1142,
+    "prompt_tokens": 126269,
+    "requests": 1141,
     "tool_calls": 0,
-    "ttft_p50": 1.5854,
+    "ttft_p50": 1.7163,
     "ttft_p95": 2.7198
    },
    "serves": "llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -2826,7 +2826,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 1.88,
+   "age_days": 1.9,
    "comparison": [
     {
      "about": "4B params, 4bit, by mlx-community",
@@ -3550,7 +3550,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 1.28,
+   "age_days": 1.3,
    "comparison": [
     {
      "about": "30B (3B active) params, 4bit, by mlx-community",
@@ -4322,7 +4322,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 6.66,
+   "age_days": 6.68,
    "comparison": [
     {
      "about": "",
@@ -4536,7 +4536,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 24.62,
+   "age_days": 24.64,
    "comparison": [
     {
      "about": "",
@@ -4679,7 +4679,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.27,
+   "age_days": 1.29,
    "comparison": [
     {
      "about": "4B params, Q8_0, by mindchain",
@@ -5468,15 +5468,15 @@
    "pass_rate": 0.0,
    "passed": 0,
    "real_use": {
-    "completion_tokens": 31606,
+    "completion_tokens": 31618,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 338397,
-    "requests": 2654,
+    "prompt_tokens": 338430,
+    "requests": 2655,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -5493,7 +5493,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 5.51,
+   "age_days": 5.53,
    "comparison": [
     {
      "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
@@ -5994,7 +5994,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 6.49,
+   "age_days": 6.5,
    "comparison": [
     {
      "about": "",
@@ -6261,7 +6261,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 6.49,
+   "age_days": 6.5,
    "comparison": [
     {
      "about": "",
@@ -6399,7 +6399,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 6.49,
+   "age_days": 6.5,
    "comparison": [
     {
      "about": "",
@@ -6621,7 +6621,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.27,
+   "age_days": 1.29,
    "comparison": [
     {
      "about": "7B params, Q4_K_M, by bartowski",
@@ -6970,15 +6970,15 @@
    "pass_rate": 0.003,
    "passed": 1,
    "real_use": {
-    "completion_tokens": 164611,
+    "completion_tokens": 164708,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 74702,
-    "requests": 1698,
+    "prompt_tokens": 74746,
+    "requests": 1699,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -6995,7 +6995,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 11.82,
+   "age_days": 11.84,
    "comparison": [
     {
      "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
@@ -8626,7 +8626,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.58,
+   "age_days": 1.6,
    "comparison": [
     {
      "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
@@ -10463,17 +10463,17 @@
    "pass_rate": 0.747,
    "passed": 130,
    "real_use": {
-    "completion_tokens": 40117,
+    "completion_tokens": 40105,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 540314,
-    "requests": 2069,
+    "prompt_tokens": 533185,
+    "requests": 2065,
     "tool_calls": 0,
-    "ttft_p50": 1.1176540851593018,
+    "ttft_p50": 1.046949863433838,
     "ttft_p95": 10.248120069503784
    },
    "serves": "mlx-community/Qwen2.5-7B-Instruct-4bit",
@@ -10488,7 +10488,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.66,
+   "age_days": 1.68,
    "comparison": [
     {
      "about": "0.6B params",
@@ -10860,7 +10860,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 17.79,
+   "age_days": 17.81,
    "comparison": [
     {
      "about": "",
@@ -11101,7 +11101,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-11-26T22:18:58Z",
+  "last_seen": "2026-11-26T22:44:02Z",
   "memory_gb": 96.0,
   "os": "macOS 27.2",
   "runtimes": [
@@ -11394,7 +11394,7 @@
       "2026-11-22": 220184.0,
       "2026-11-24": 48172.0,
       "2026-11-25": 44048.0,
-      "2026-11-26": 293566.0
+      "2026-11-26": 309929.0
      },
      "Edit": {
       "2026-09-03": 159.0,
@@ -11458,7 +11458,7 @@
       "2026-11-21": 25.0,
       "2026-11-22": 58.0,
       "2026-11-24": 34.0,
-      "2026-11-26": 136.0
+      "2026-11-26": 162.0
      },
      "Read": {
       "2026-09-03": 1485.0,
@@ -11523,7 +11523,7 @@
       "2026-11-21": 8153.0,
       "2026-11-22": 139947.0,
       "2026-11-24": 22395.0,
-      "2026-11-26": 78989.0
+      "2026-11-26": 81495.0
      },
      "WebFetch": {
       "2026-09-07": 831.0,
@@ -11678,7 +11678,7 @@
       "2026-11-22": 27973.0,
       "2026-11-24": 1006.0,
       "2026-11-25": 4838.0,
-      "2026-11-26": 9742.0
+      "2026-11-26": 10111.0
      },
      "mcm-engine search": {
       "2026-09-03": 6017.0,
@@ -11756,7 +11756,7 @@
       "2026-11-22": 158912.0,
       "2026-11-24": 30236.0,
       "2026-11-25": 6361.0,
-      "2026-11-26": 108738.0
+      "2026-11-26": 123160.0
      },
      "other": {
       "2026-09-03": 1399.0,
@@ -11834,7 +11834,7 @@
       "2026-11-22": 11713.0,
       "2026-11-24": 5838.0,
       "2026-11-25": 3228.0,
-      "2026-11-26": 12390.0
+      "2026-11-26": 14082.0
      }
     },
     "title": "Tool-result tokens into Claude's context",
@@ -11864,7 +11864,7 @@
       "2026-11-20": "10 accepted, 5 rejected, 5 unknown, 0 pending",
       "2026-11-21": "11 accepted, 1 rejected, 1 unknown, 0 pending",
       "2026-11-22": "11 accepted, 7 rejected, 10 unknown, 0 pending",
-      "2026-11-26": "4 accepted, 1 rejected, 0 unknown, 30 pending"
+      "2026-11-26": "4 accepted, 1 rejected, 0 unknown, 31 pending"
      }
     },
     "note": "Share of closed outcomes, reported or inferred from the caller's transcript, that were accepted rather than rejected.",
