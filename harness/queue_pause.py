@@ -19,9 +19,9 @@ def paused() -> bool:
     return _pause_flag().exists()
 
 
-def pause(why: str = "", holder: int | None = None, disk: str | None = None) -> None:
+def pause(why: str = "", holder: int | None = None, disk: str | None = None, deploy: int | bool | None = None) -> None:
     """Pause the queue; a holder pid ends it with that process, a disk path once that volume has room again. #1760, #2066."""
-    _pause_flag().write_text(queue_hold.text(why, holder, disk=disk), encoding="utf-8")
+    _pause_flag().write_text(queue_hold.text(why, holder, disk=disk, deploy=deploy), encoding="utf-8")
 
 
 def body() -> str | None:
@@ -66,7 +66,7 @@ def hold_for_deploy(grace: float | None = None, stop=None, tree=None, stop_rest=
     said = queue_hold.lift([_held_flag(), _pause_flag()])
     if not paused():
         # The marker goes down before the pause it marks, so no death between them leaves an owner-looking pause. #1754.
-        text = queue_hold.text(f"held for a deploy by pid {holder or os.getpid()}", holder)
+        text = queue_hold.text(f"held for a deploy by pid {holder or os.getpid()}", holder, deploy=True)
         _held_flag().write_text(text, encoding="utf-8")
         _pause_flag().write_text(text, encoding="utf-8")
         said.append("queue held for the deploy; it is released when the install ends")

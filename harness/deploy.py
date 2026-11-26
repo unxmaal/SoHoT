@@ -789,7 +789,7 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
                         "run_identity": proc_identity.identity(os.getpid())})
             taking(PAUSE)
             # Paused before the migration, so no job of this release starts against the new schema. #1795.
-            queue_pause.pause(note)
+            queue_pause.pause(note, deploy=deploy_id)
             have, want = _store_schema(c), wq.code_schema(release) or 0
             schema = {"schema_from": have, "schema_to": max(have, want)}
             saved, migrated = "", want > have

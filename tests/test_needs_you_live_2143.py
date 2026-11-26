@@ -62,9 +62,11 @@ def test_a_service_monit_is_not_watching_stays_open(tmp_path):
     assert "monit-models_volume" in keys(gather(tmp_path, mon=_mon(rows=(VOLUME.format("Not monitored"),))))
 
 
-def _flag(why, pid, began_at, holder=False):
+def _flag(why, pid, began_at, holder=False, deploy=18):
     stamp = time.strftime(queue_hold._STAMP, time.localtime(began_at))
     lines = [f"{stamp} {why}"]
+    if deploy:
+        lines.append(queue_hold._DEPLOY + json.dumps({"id": None if deploy is True else deploy}))
     if holder:
         lines.append(queue_hold._TAG + json.dumps(proc_identity.identity(pid)))
     lines.append(queue_hold._BY + json.dumps({"pid": pid, "ppid": 1, "argv": ["cli.py", "deploy", "run", "18065209"]}))
@@ -119,3 +121,10 @@ def test_a_holder_line_pause_whose_holder_is_gone_is_a_stuck_pause(tmp_path):
     _flag("held for a deploy by pid 1", _dead_pid(), NOW - 60, holder=True)
     r = gather(tmp_path)
     assert "stuck" in cond(r, "queue-paused")["title"] and "in_progress" not in r["deploy"]
+
+
+def test_a_pause_is_a_deploys_by_what_the_flag_records_not_by_what_its_reason_says(tmp_path):
+    _flag("deploy 18 of 180652093a1b", os.getpid(), _after_start(), deploy=None)
+    assert "stuck" not in cond(gather(tmp_path), "queue-paused")["title"]
+    queue_pause.pause("deploy 7 of abc", deploy=7)
+    assert queue_hold.deploy_hold(queue_pause.body())["id"] == 7
