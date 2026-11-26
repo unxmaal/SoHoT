@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import os
 import platform
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -642,10 +643,6 @@ def held_back(need_gb: float | None) -> str:
             f"server's pinned models stay held (beside the system reserve and the Docker VM); a screen window can release them")
 
 
-#: The until a refused load waits on, up to the figure. #928.
-ROOM_UNTIL = "room_gb:>"
-
-
 def room_gb() -> float:
     """What fits() would budget here now with nothing resident: the quantity `room_gb:>n` reads. #928."""
     return budget_gb(available_gb(), ceiling_gb() - held_gb(), 0.0, measured_reserve_gb())
@@ -657,9 +654,10 @@ def wait_for(repo: str, spec: str = "", parallel: int = 0, resident_gb: float = 
     need = need_gb(repo, quantize, spec, parallel)
     if isinstance(need, str) or need is None:
         return ""
-    return f"{ROOM_UNTIL}{need + resident_gb:.1f}"
+    return f"room_gb:>{need + resident_gb:.1f}"
 
 
 def wait_need(until: str) -> str:
     """The need `wait_for` wrote into `until`, as written, '' for any other until: the one reader of that format. #2148."""
-    return until[len(ROOM_UNTIL):] if until.startswith(ROOM_UNTIL) and until[len(ROOM_UNTIL):].replace(".", "", 1).isdigit() else ""
+    got = re.fullmatch(r"room_gb:>(\d+(?:\.\d+)?)", until or "")
+    return got.group(1) if got else ""

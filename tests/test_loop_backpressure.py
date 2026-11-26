@@ -86,7 +86,7 @@ def test_a_real_held_back_refusal_counts_in_the_streak(tmp_path, monkeypatch):
     assert "GiB" in why
     conn = ms.connect()
     for night in range(2):
-        _refusal_row(conn, why + f" (night {night})", f"{memory.ROOM_UNTIL}48.1")
+        _refusal_row(conn, why + f" (night {night})", "room_gb:>48.1")
     assert screen_cmd.memory_deferrals(conn, "org/photo") == (2, "48.1")
     conn.close()
 
@@ -96,7 +96,7 @@ def test_an_unrelated_refusal_does_not_count_in_the_streak(tmp_path, monkeypatch
     _seed(tmp_path, monkeypatch, ["org/photo"], deferrals=0, need="0")
     monkeypatch.setattr(memory, "standing_gb", lambda: 23.2)
     conn = ms.connect()
-    _refusal_row(conn, memory.held_back(48.1), f"{memory.ROOM_UNTIL}48.1")
+    _refusal_row(conn, memory.held_back(48.1), "room_gb:>48.1")
     _refusal_row(conn, "needs 48.1 GiB but the disk is full", "")
     assert screen_cmd.memory_deferrals(conn, "org/photo") == (0, "")
     conn.close()
@@ -104,5 +104,5 @@ def test_an_unrelated_refusal_does_not_count_in_the_streak(tmp_path, monkeypatch
 
 def test_wait_need_reads_only_what_wait_for_writes():
     from harness import memory
-    assert memory.wait_need(f"{memory.ROOM_UNTIL}26.5") == "26.5"
+    assert memory.wait_need("room_gb:>26.5") == "26.5"
     assert [memory.wait_need(u) for u in ("", "memory_gb:>26.5", "room_gb:>x", "room_gb:>")] == [""] * 4
