@@ -59,8 +59,10 @@ def hm(t) -> str:
 
 
 def ratio_text(r) -> str:
-    if r is None:
+    if r is None or isinstance(r, bool) or not isinstance(r, (int, float)) or not math.isfinite(r) or r < 0:
         return "n/a"
+    if r == 0:
+        return "0:1"
     if r >= 1:
         return f"{r:.0f}:1" if abs(r - round(r)) < 0.05 else f"{r:.1f}:1"
     return f"1:{1 / r:.0f}"
@@ -410,6 +412,13 @@ h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:0}h3{font-size:13px;ma
 """)
 
 
+def _safe(name: str, fn, *args) -> str:
+    try:
+        return fn(*args)
+    except Exception as e:  # noqa: BLE001 - one broken section must not 500 the page
+        return f"<section class='panel'><h2>{esc(name)}</h2><p class='head'>{_badge(UNKNOWN)} could not render: {esc(type(e).__name__)}</p></section>"
+
+
 def page(r: dict, lines: dict[str, list[str]], now: float | None = None, extra: str = "") -> str:
     """The page: banner or all clear, six tiles, the ratio panel, the 24 h strip, the feature table and the monitor grid."""
     now = time.time() if now is None else now
@@ -433,12 +442,12 @@ def page(r: dict, lines: dict[str, list[str]], now: float | None = None, extra: 
     else:
         out.append(f"<p class='clear'>{_badge(OK)} All clear. Nothing needs you.</p>")
     out.append("<div class='tiles'>")
-    out += [_tile(t, lines.get(t["name"]) or [], r[t["key"]].get("as_of"), now) for t in tiles(r, now)]
+    out.append(_safe("Tiles", lambda: "".join(_tile(t, lines.get(t["name"]) or [], r[t["key"]].get("as_of"), now) for t in tiles(r, now))))
     out.append("</div>")
-    out.append(_ratio(r["ratio"], lines.get("Ratio") or [], now))
-    out.append(_timeline(r.get("timeline") or {"error": "not gathered"}, now))
-    out.append(_features(r.get("features") or {"error": "not gathered"}, now))
-    out.append(_checks(r["monitor"]))
+    out.append(_safe("Ratio", _ratio, r["ratio"], lines.get("Ratio") or [], now))
+    out.append(_safe("Timeline", _timeline, r.get("timeline") or {"error": "not gathered"}, now))
+    out.append(_safe("Features", _features, r.get("features") or {"error": "not gathered"}, now))
+    out.append(_safe("Checks", _checks, r["monitor"]))
     out.append(extra)
     out.append("</body></html>")
     return "\n".join(out)
