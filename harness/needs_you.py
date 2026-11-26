@@ -6,7 +6,7 @@ import re
 import time
 from pathlib import Path
 
-from harness import atomic_file
+from harness import atomic_file, cuts, monitor
 
 #: Seconds a failed job stays in the band, unless a later job of its title has run since.
 FAILED_WINDOW_S = 86400.0
@@ -16,6 +16,10 @@ PAUSED_GRACE_S = 3600.0
 CLEAR_PASSES = 2
 #: Monit alert kinds that name a stop of their own: the others have their section (store, deploy) or are not stops.
 MONIT_KINDS = ("memory", "disk", "disk-pause", "volume", "volume-low")
+#: Seconds after a deploy ends that its own transients may still show: one monit cycle to lift the pause or re-run a check, one for the pass that reads it. #2153.
+SETTLE_S = 2 * monitor.CYCLE_S
+#: Monit checks of the units a deploy's reinstall restarts.
+SERVICE_PREFIX = "service_"
 KIND = "needs-you"
 SERVICE = "needs-you/"
 STATE = "needs-you.json"
@@ -66,6 +70,29 @@ def read_jobs(conn, now: float) -> dict:
 def read_gateway() -> dict:
     from harness import gateway_degraded
     return {"mark": gateway_degraded.read()}
+
+
+def read_deploying(now: float, queue: dict | None = None) -> dict:
+    """The newest deploy's record, and the record of the deploy holding the queue pause: each running or when it ended."""
+    from harness import deploy
+    held = ((queue or {}).get("deploy_hold") or {}).get("id")
+    return {"newest": deploy.activity(now), "held": deploy.activity(now, held) if held is not None else None}
+
+
+def _settling(act: dict | None, now: float) -> bool:
+    """Whether a deploy is at work, or ended less than SETTLE_S ago: what it restarts may be down, a pause of its may await its lift."""
+    if not act:
+        return False
+    if act.get("running"):
+        return True
+    if act.get("finished_at") is None or not 0 <= now - act["finished_at"] < SETTLE_S:
+        return False
+    cuts.cut("harness/needs_you.py:SETTLE_S", f"deploy {act.get('id')} ended {now - act['finished_at']:.0f} s ago: its transients stay out of the band")
+    return True
+
+
+def _deploying(r: dict) -> bool:
+    return _settling(((r.get("stops") or {}).get("deploying") or {}).get("newest"), r["generated"])
 
 
 def read_gate() -> dict:
@@ -133,6 +160,8 @@ def _queue(r: dict) -> list[dict]:
     who = f" ({q['who']})" if q.get("who") else ""
     held = q.get("deploy_hold")
     if held and held["live"]:
+        return []
+    if held and _settling(((r.get("stops") or {}).get("deploying") or {}).get("held"), r["generated"]):
         return []
     since = q.get("paused_since")
     title = "The queue is paused: no job starts"
@@ -237,7 +266,9 @@ def _monit(r: dict) -> list[dict]:
     out = []
     for a in ((r.get("stops") or {}).get("monit") or {}).get("open") or []:
         svc, kind = str(a["service"]), a["kind"]
-        if kind == "service" and svc.startswith("service_"):
+        if kind == "service" and svc.startswith(SERVICE_PREFIX):
+            if _deploying(r):
+                continue
             out.append(cond(f"service-{svc}", f"{svc.removeprefix('service_')} is not answering", a["description"] or "",
                             since=a["at"], source="monit", fix=[("unit_restart", svc.removeprefix("service_"))]))
         elif kind in MONIT_KINDS:
@@ -262,7 +293,8 @@ def _machine(r: dict) -> list[dict]:
         out.append(cond("monit-down", "Monit is not running", why, source="monitor", line=f"monit is not running: {why}",
                         none="nothing watches the machine until `soh monitor install` runs on it"))
     out += [cond(f"check-{c['check']}", f"Check {c['check']} is {c['state']}", "", source="monitor",
-                 line=f"check {c['check']} is {c['state']}", none="its monit check says so; it clears when the check passes") for c in mon.get("checks") or [] if not c["ok"]]
+                 line=f"check {c['check']} is {c['state']}", none="its monit check says so; it clears when the check passes") for c in mon.get("checks") or []
+            if not c["ok"] and not (_deploying(r) and str(c["check"]).startswith(SERVICE_PREFIX))]
     out += [cond(f"unit-{x['name']}", f"The {x['name']} unit is down", x["by"], since=x.get("since"), source="features",
                  fix=[("unit_restart", x["name"])]) for x in (r.get("features") or {}).get("rows") or []
             if x["kind"] == "unit" and x["state"] == "broken"]

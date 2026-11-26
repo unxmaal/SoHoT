@@ -1174,6 +1174,23 @@ def deployed_at(conn) -> float | None:
     return float(row[0]) if row and row[0] is not None else None
 
 
+def activity(now: float, deploy_id=None, alive=job_procs.alive) -> dict | None:
+    """The record of deploy `deploy_id` (the newest when None): whether its job or switch still works, when it ended. #2153."""
+    if deploy_id is None:
+        ids = [p for p in records_dir().glob("*.json") if p.stem.isdigit()]
+        path = max(ids, key=lambda p: int(p.stem), default=None)
+    else:
+        path = record_path(int(deploy_id)) if str(deploy_id).isdigit() else None
+    rec = _read(path) if path is not None else {}
+    if not rec:
+        return None
+    ended = rec.get("finished_at") if rec.get("outcome") else None
+    if rec.get("outcome") and ended is None:
+        ended = path.stat().st_mtime
+    return {"id": int(path.stem), "running": not rec.get("outcome") and _running(rec, now, alive),
+            "finished_at": float(ended) if ended is not None else None}
+
+
 def _same(a: str, b) -> bool:
     return bool(a and b) and os.path.realpath(a) == os.path.realpath(str(b))
 
