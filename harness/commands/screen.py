@@ -422,6 +422,16 @@ def _report_screen(a) -> int:
     return 0
 
 
+def _no_window(store, r: dict, why_not: str, why: str) -> tuple[bool, str | None, int | None]:
+    """The queued verdict of a candidate whose screen window was refused; its weights stay unfetched until room is free. #2127."""
+    from harness import memory_store as ms
+    print(f"   QUEUED: no screen window: {why}")
+    ms.decide_or_skip(store, r["name"], "queued", tier=ms.SCREEN, reason=reasons.MEMORY,
+                      detail=f"not screened: {why_not}; no screen window: {why}"[:600],
+                      until=memory.wait_for(r["name"], spec=r["candidate"], parallel=1))
+    return False, "queued", None
+
+
 def _screen_one(a, store, r: dict) -> tuple[bool, str | None, int | None]:
     """Fetch, check and screen one candidate: (a screen started, its outcome or None, the step's exit when it stops). #2015."""
     import subprocess
@@ -453,6 +463,10 @@ def _screen_one(a, store, r: dict) -> tuple[bool, str | None, int | None]:
         ms.decide_or_skip(store, r["name"], known.outcome, tier=ms.SCREEN, detail=known.detail[:600],
                           reason=known.reason, until=known.until, failure_class=known.failure_class)
         return False, known.outcome, None
+    # A window the screen could not be granted is found out before the weights are fetched for it. #2127.
+    no_window = screen_window.refusal(screen.deadline_s(r["candidate"])) if windowed else ""
+    if no_window:
+        return _no_window(store, r, why_not, no_window)
     # The test fetches what it runs, right before it runs it. #2015.
     missing, deferred = _fetched(store, r)
     if missing:
@@ -480,11 +494,7 @@ def _screen_one(a, store, r: dict) -> tuple[bool, str | None, int | None]:
                 proc = subprocess.run(screen.argv(r, outdir=outdir), capture_output=True, text=True)
     except screen_window.Refused as exc:
         if proc is None:
-            print(f"   QUEUED: no screen window: {exc}")
-            ms.decide_or_skip(store, r["name"], "queued", tier=ms.SCREEN, reason=reasons.MEMORY,
-                              detail=f"not screened: {why_not}; no screen window: {exc}"[:600],
-                              until=memory.wait_for(r["name"], spec=r["candidate"], parallel=1))
-            return False, "queued", None
+            return _no_window(store, r, why_not, str(exc))
         unrestored = str(exc)
     except OSError as exc:
         print(f"   QUEUED: the screen could not start: {exc}")
