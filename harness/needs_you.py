@@ -72,11 +72,21 @@ def read_gateway() -> dict:
 _MONIT_PASSING = re.compile(r"^(ok|running|accessible|online.*|status ok)$", re.I)
 
 
+def _passing(live: dict | None) -> dict[str, bool]:
+    live = live or {}
+    return {c["check"]: bool(_MONIT_PASSING.match(c["state"])) for c in live.get("checks") or [] if live.get("running")}
+
+
+def reconcile_monit(live: dict | None, home: Path | None = None) -> list[dict]:
+    """Write the 'recovered' line a monit restart dropped, for each open alert whose check monit reports passing. #2150."""
+    from harness import monitor
+    return monitor.reconcile({k for k, ok in _passing(live).items() if ok}, home)
+
+
 def read_monit(now: float, home: Path | None = None, live: dict | None = None) -> dict:
     """The monit alerts still open in the log whose service monit does not now report passing. #2143."""
     from harness import monitor
-    live = live or {}
-    state = {c["check"]: bool(_MONIT_PASSING.match(c["state"])) for c in live.get("checks") or [] if live.get("running")}
+    state = _passing(live)
     return {"open": [{k: a.get(k) for k in ("at", "kind", "service", "description")}
                      for a in monitor.still_open(monitor.alerts(0, home)) if not state.get(a.get("service"), False)]}
 

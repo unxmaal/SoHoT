@@ -682,6 +682,21 @@ def still_open(found: list[dict]) -> list[dict]:
     return [a for a in last.values() if a.get("kind") != RECOVERED]
 
 
+def reconcile(passing: set[str], home: Path | None = None, clock=time.time) -> list[dict]:
+    """Close each open alert whose service monit reports passing: a monit restart drops the recovery it owed. #2150."""
+    now, out = clock(), []
+    for a in still_open(alerts(0, home)):
+        if a.get("service") not in passing:
+            continue
+        note = f"reconciled: monit reports {a['service']} passing now; its recovery was lost when monit restarted"
+        entry = {"at": now, "kind": RECOVERED, "service": a["service"], "event": "reconciled", "description": note,
+                 "message": f"{RECOVERED}: {a['service']}: {note}", "failed_at": a.get("at"), "reconciled": True,
+                 "held": "not sent: reconciled from monit's live state, so no page"}
+        record(entry, home)
+        out.append(entry)
+    return out
+
+
 def morning(since: float, run=subprocess.run, which=shutil.which, home: Path | None = None) -> dict:
     """The brief's monitor section: monit's summary and the alerts in the window."""
     monit, rc = which("monit"), rc_path(home)
