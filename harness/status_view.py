@@ -190,13 +190,13 @@ def _when(t, now: float, text: str | None = None) -> str:
     return f"<time title='{stamp(t)}'>{esc(text or ago(t, now))}</time>" if t else esc(text or "never")
 
 
-def _tile(t: dict, body: list[str], as_of, now: float) -> str:
+def _tile(t: dict, body: list[str], as_of, now: float, more: str = "") -> str:
     head = esc(t["headline"])
     if t["at"]:
         head = f"<span title='{stamp(t['at'])}'>{head}</span>"
     return (f"<details class='tile {t['state']}' data-tile='{t['key']}'><summary>{_badge(t['state'])}"
             f"<h2>{esc(t['name'])} <span class='asof'>as of {_when(as_of, now)}</span></h2>"
-            f"<p class='head'>{head}</p></summary><ul>{''.join(f'<li>{esc(x)}</li>' for x in body)}</ul></details>")
+            f"<p class='head'>{head}</p></summary><ul>{''.join(f'<li>{esc(x)}</li>' for x in body)}</ul>{more}</details>")
 
 
 def _pos(r: float) -> float:
@@ -315,7 +315,7 @@ _FKIND = (("unit", "Units"), ("switch", "Switches"), ("lane", "Lanes"), ("node",
           ("hook", "Hooks"))
 
 
-def _features(fe: dict, now: float) -> str:
+def _features(fe: dict, now: float, acts=None) -> str:
     out = [f"<section class='panel' data-panel='features'><h2>Features <span class='asof'>as of "
            f"{_when(fe.get('as_of'), now)}</span></h2>"]
     if fe.get("error"):
@@ -335,7 +335,8 @@ def _features(fe: dict, now: float) -> str:
             when = f" · since {_when(r['since'], now)}" if r.get("since") else ""
             out.append(f"<div class='fr' data-state='{esc(r['state'])}'><span class='fs {_FSTATE.get(r['state'], 'unknown')}'>"
                        f"{esc(r['state'])}</span><span class='fn'>{esc(r['name'])}</span>"
-                       f"<span class='fb'>{esc(r['by'])}{when}</span></div>")
+                       f"<span class='fb'>{esc(r['by'])}{when}</span>"
+                       + (f"<span class='fa'>{acts(r['kind'], r['name'])}</span>" if acts else "") + "</div>")
         out.append("</div></details>")
     return "".join(out) + "</section>"
 
@@ -401,7 +402,10 @@ h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:0}h3{font-size:13px;ma
 .ft{margin-top:6px;font-size:13px}.fr{display:grid;grid-template-columns:80px minmax(0,1fr);gap:2px 8px;padding:4px 0;border-top:1px solid var(--grid)}
 .fs{grid-row:span 2;align-self:start;text-align:center;border-radius:10px;padding:1px 6px;font-size:11px;background:var(--st);color:#fff}
 .fs.warn,.fs.unknown{color:#0b0b0b}.dem{--st:var(--c1)}.fn{font-weight:600;overflow-wrap:anywhere}.fb{color:var(--ink2);overflow-wrap:anywhere}
-@media (min-width:700px){.fr{grid-template-columns:80px 160px minmax(0,1fr)}.fs{grid-row:auto}}
+.fa,.jr .fa{display:flex;flex-wrap:wrap;gap:6px;grid-column:2/-1}.fa .act{margin:0}.fa button{padding:4px 10px;font-size:13px}
+.rows{margin:8px 0 0;font-size:13px}.jr{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;padding:4px 0;border-top:1px solid var(--grid)}
+.jt{flex:1 1 220px;overflow-wrap:anywhere;color:var(--ink2)}.jr .fa{grid-column:auto}
+@media (min-width:700px){.fr{grid-template-columns:80px 160px minmax(0,1fr) auto}.fs{grid-row:auto}.fa{grid-column:auto}}
 .chk{display:flex;gap:6px;align-items:center;overflow-wrap:anywhere}.chk .badge{width:16px;height:16px;font-size:10px}
 """)
 
@@ -448,6 +452,22 @@ live.innerHTML=n.innerHTML;live.dataset.gen=n.dataset.gen;live.dataset.now=n.dat
 setInterval(tick,5000);setInterval(refresh,every);tick();})();"""
 
 
+def _rows(key: str, r: dict, tok: str) -> str:
+    """The buttons beside a tile's listed items, for a device that may press; a section that fails to read adds none. #2135."""
+    from harness import status_buttons
+    if not tok or key not in ("queue", "discovery"):
+        return ""
+    try:
+        return status_buttons.jobs(r, tok) if key == "queue" else status_buttons.discovery(r, tok)
+    except Exception as e:  # noqa: BLE001 - a broken button row must not take its tile down
+        return f"<p class='nn'>buttons not drawn: {esc(type(e).__name__)}</p>"
+
+
+def _acts(r: dict, tok: str):
+    from harness import status_buttons
+    return status_buttons.feature(r, tok) if tok else None
+
+
 def _safe(name: str, fn, *args) -> str:
     try:
         return fn(*args)
@@ -469,11 +489,12 @@ def page(r: dict, lines: dict[str, list[str]], now: float | None = None, extra: 
            f"{esc(span(max(0.0, now - gen)))} old</span> · <a href='status.json'>json</a></span></div>"]
     out.append(_safe("Needs you", _band, r, now, token))
     out.append("<div class='tiles'>")
-    out.append(_safe("Tiles", lambda: "".join(_tile(t, lines.get(t["name"]) or [], r[t["key"]].get("as_of"), now) for t in tiles(r, now))))
+    out.append(_safe("Tiles", lambda: "".join(_tile(t, lines.get(t["name"]) or [], r[t["key"]].get("as_of"), now, _rows(t["key"], r, token))
+                                              for t in tiles(r, now))))
     out.append("</div>")
     out.append(_safe("Ratio", _ratio, r["ratio"], lines.get("Ratio") or [], now))
     out.append(_safe("Timeline", _timeline, r.get("timeline") or {"error": "not gathered"}, now))
-    out.append(_safe("Features", _features, r.get("features") or {"error": "not gathered"}, now))
+    out.append(_safe("Features", _features, r.get("features") or {"error": "not gathered"}, now, _acts(r, token)))
     out.append(_safe("Checks", _checks, r["monitor"]))
     out.append(extra)
     out.append(f"</div><script>{REFRESH_JS}</script></body></html>")
