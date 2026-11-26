@@ -55,11 +55,27 @@ export LITELLM_MASTER_KEY
 export PYTHONUTF8=1
 export PYTHONIOENCODING=utf-8
 
-# The base config plus sohot-<lane> aliases for what each text lane has adopted. #297.
+# The base config plus sohot-<lane> aliases for what each text lane has adopted; retried while the store starts. #297, #2132.
 CONFIG="${GATEWAY_CONFIG:-gateway/config.yaml}"
-if ! SERVED="$(uv run python -m harness.gateway "$CONFIG")"; then
-  echo "WARN: the served config could not be generated; serving $CONFIG with no sohot-<lane> aliases. #705" >&2
-  SERVED="$CONFIG"
+WAIT_S="${GATEWAY_SERVED_WAIT_S:-120}"
+POLL_S="${GATEWAY_SERVED_POLL_S:-5}"
+[ "$POLL_S" -ge 1 ] 2>/dev/null || POLL_S=1
+waited=0
+degraded=0
+until SERVED="$(uv run python -m harness.gateway "$CONFIG")"; do
+  if [ "$waited" -ge "$WAIT_S" ]; then
+    echo "WARN: the served config could not be generated in ${WAIT_S}s; serving $CONFIG with no sohot-<lane> aliases until the watchdog restarts it. #705, #2132" >&2
+    uv run python -m harness.gateway_degraded mark "the served config could not be built in ${WAIT_S}s at start" >&2 || true
+    SERVED="$CONFIG"
+    degraded=1
+    break
+  fi
+  echo "WAIT: the served config could not be generated; trying again in ${POLL_S}s (${waited}s of ${WAIT_S}s). #2132" >&2
+  sleep "$POLL_S"
+  waited=$((waited + POLL_S))
+done
+if [ "$degraded" -eq 0 ]; then
+  uv run python -m harness.gateway_degraded clear >&2 || true
 fi
 # Each serving node's key from the Keychain, for the os.environ/ reference the served config names. #684.
 NODE_EXPORTS="$(uv run python -m harness.nodes exports)" || NODE_EXPORTS=""

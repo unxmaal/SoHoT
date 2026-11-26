@@ -178,6 +178,15 @@ class Probes:
             return False
         return r.status_code == 200
 
+    def gateway_degraded(self) -> dict | None:
+        """The degraded mark with "unbuildable" set while the served config still cannot be built; None with no mark. #2132."""
+        from harness import gateway_degraded
+        got = gateway_degraded.read()
+        if got is None:
+            return None
+        why = gateway_degraded.buildable()
+        return {**got, "unbuildable": why} if why else got
+
     def mlx_generating(self) -> bool | None:
         """False when the loaded mlx unit answers that its generation thread died (#912); None when it cannot be asked."""
         from harness import watchdog as wd
@@ -410,6 +419,7 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
     world.mlx_held = probes.mlx_held()
     world.protected = probes.protected() if world.mlx_held else None
     world.gateway_up = probes.gateway_up()
+    world.gateway_degraded = probes.gateway_degraded() if world.gateway_up else None
     world.mlx_generating = probes.mlx_generating()
     world.interactive = interactive.watch(probes.launchd_loaded("interactive"))
     world.fallbacks = probes.fallbacks(conn)

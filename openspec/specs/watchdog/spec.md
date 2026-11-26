@@ -631,6 +631,19 @@ Test: tests/test_mlx_dead_912.py::test_a_restart_that_did_not_fix_it_escalates_t
 - **THEN** it is refused with no call
 Test: tests/test_mlx_dead_912.py::test_restarting_mlx_off_macos_is_refused
 
+### Requirement: gateway_degraded
+The watchdog SHALL find gateway_degraded when the loaded gateway unit is marked (serve-gateway.sh could not build the served config within `GATEWAY_SERVED_WAIT_S` and serves the base config with no sohot-<lane> aliases) and the store can now build it, and its action SHALL be a restart through `launchd.sh restart gateway`; while the store still cannot build it the watchdog SHALL leave the gateway alone, and monit SHALL page the mark as `gateway-degraded`.
+
+#### Scenario: Store back, store still down, no mark, no unit
+- **WHEN** a mark exists and the served config builds, a mark exists and it does not, no mark exists, or no gateway unit is loaded
+- **THEN** gateway_degraded trips, does not trip, does not trip, or is skipped
+Test: tests/test_gateway_degraded_2132.py::test_the_watchdog_restarts_a_degraded_gateway_once_the_store_can_build_the_served_config
+
+#### Scenario: Start waits, then marks
+- **WHEN** serve-gateway.sh cannot build the served config
+- **THEN** it retries every `GATEWAY_SERVED_POLL_S` up to `GATEWAY_SERVED_WAIT_S`, then serves the base config and writes the mark; a later successful start removes it
+Test: tests/test_gateway_degraded_2132.py::test_a_store_that_never_answers_is_waited_for_a_bounded_time_then_marked
+
 ### Requirement: node_fallbacks
 The watchdog SHALL find node_fallbacks on each serving node that handed back at least `FALLBACK_MAX` (20) requests in the live audit window, and a parked node SHALL yield none.
 

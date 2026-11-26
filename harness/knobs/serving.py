@@ -147,6 +147,8 @@ NOT_GATING = {
     "scripts/lan-probe.sh:LAN_PROBE_WAIT_EXTRA_S": "how long the deploy waits for a launchd probe to write; never a lane's outcome (#739)",
     "scripts/logs.sh:LOG_KEEP": "generations of a service log kept across restarts; how much history is readable, never what a lane measures (#786)",
     "scripts/logs.sh:LOG_MAX_BYTES": "size past which a kept log is dropped rather than given a generation slot; retention, never a lane's outcome (#786)",
+    "scripts/serve-gateway.sh:GATEWAY_SERVED_POLL_S": "how often start asks the store again for the served config; never a lane's outcome (#2132)",
+    "scripts/serve-gateway.sh:GATEWAY_SERVED_WAIT_S": "how long start waits for the store before serving the base config and marking it; the mark and its alert are the record, never a lane's outcome (#2132)",
     "scripts/launchd.sh:PREFLIGHT_WAIT_S": "how long install waits for the weights probe agent; a timeout is its own verdict, never a lane's outcome (#705)",
     **{f"harness/context.py:SWA_PERIOD[{a}]": "llama.cpp's hard-coded sliding-window period of an architecture, a fact of "
        "the model (#692)" for a in ("gemma2", "gemma3", "cohere2", "gpt-oss")},
