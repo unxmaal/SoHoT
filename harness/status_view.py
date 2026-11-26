@@ -182,15 +182,6 @@ def tiles(r: dict, now: float) -> list[dict]:
     return out
 
 
-def alerts(r: dict) -> list[dict]:
-    """Each banner line as a short title and the detail that belongs under it."""
-    out = []
-    for b in r.get("banner") or []:
-        title, _, detail = b.partition(": ")
-        out.append({"title": title[:1].upper() + title[1:], "detail": detail})
-    return out
-
-
 def _badge(state: str) -> str:
     return f"<b class='badge {state}' role='img' aria-label='{WORD[state]}'>{ICON[state]}</b>"
 
@@ -362,8 +353,11 @@ h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:0}h3{font-size:13px;ma
 .asof{color:var(--ink2);font-weight:normal;font-size:12px}a{color:var(--c1)}
 .top{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;margin-bottom:10px}
 .clear{margin:8px 0 14px;font-weight:600;display:flex;gap:8px;align-items:center}
-.alert{background:var(--surface);border:1px solid var(--ring);border-left:4px solid var(--bad);border-radius:6px;padding:8px 10px;margin:0 0 8px}
-.alert summary{font-weight:600}.alert p{margin:6px 0 0;color:var(--ink2);overflow-wrap:anywhere;font-size:13px}
+.needs{margin:0 0 14px}.needs h2{font-size:17px;margin:0 0 8px}.count{background:var(--bad);color:#fff;border-radius:10px;padding:1px 8px;font-size:13px}
+.need{background:var(--surface);border:1px solid var(--ring);border-left:4px solid var(--bad);border-radius:6px;padding:8px 10px;margin:0 0 8px}
+.nh{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}.nh h3{margin:0;font-size:15px;color:var(--ink);flex:1 1 220px}
+.nw{margin:6px 0 0;color:var(--ink2);overflow-wrap:anywhere;font-size:13px}.nf{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center}
+.nn{color:var(--ink2);font-size:13px;margin-top:6px}.stale{color:var(--bad);font-weight:600}
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 14px;align-items:start}
 .tile,.panel{background:var(--surface);border:1px solid var(--ring);border-radius:8px}
 .tile{border-left:4px solid var(--st);padding:10px}.tile summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:auto 1fr;gap:2px 8px}
@@ -412,6 +406,48 @@ h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:0}h3{font-size:13px;ma
 """)
 
 
+def _need(c: dict, now: float, tok: str) -> str:
+    from harness import owner_actions
+    stopped = f"stopped {span(now - float(c['since']))}" if c.get("since") else "age unknown"
+    when = f"<time title='{stamp(c['since'])}'>{esc(stopped)}</time>" if c.get("since") else esc(stopped)
+    if c.get("fix") and tok:
+        fix = "".join(owner_actions.button(f["action"], f["arg"], tok) for f in c["fix"])
+    elif c.get("fix"):
+        fix = "<span class='nn'>Open this page from a device that may press buttons to fix it here.</span>"
+    else:
+        fix = f"<span class='nn'>No button: {esc(c.get('none') or 'it clears when its cause does')}</span>"
+    why = f"<p class='nw'>{esc(c['why'])}</p>" if c.get("why") else ""
+    return (f"<article class='need' data-key='{esc(c['key'])}'><div class='nh'>{_badge(BAD)}<h3>{esc(c['title'])}</h3>"
+            f"<span class='asof'>{when}</span></div>{why}<div class='nf'>{fix}</div></article>")
+
+
+def _band(r: dict, now: float, tok: str) -> str:
+    """Every condition that stops work, each with its age, cause and button; one line when nothing is stopped."""
+    conds = r.get("needs_you") or []
+    if not conds:
+        return f"<section class='needs ok' data-needs='0'><p class='clear'>{_badge(OK)} Nothing is stopped.</p></section>"
+    return (f"<section class='needs' data-needs='{len(conds)}' aria-live='polite'><h2>Needs you "
+            f"<span class='count'>{len(conds)}</span></h2>{''.join(_need(c, now, tok) for c in conds)}</section>")
+
+
+REFRESH_JS = """(function(){
+var live=document.getElementById('live');if(!live)return;
+var every=(+live.dataset.every||60)*1000,seen=Date.now(),dirty=false,failed=false;
+function el(){return document.getElementById('age');}
+function fmt(s){return s<90?Math.round(s)+' s':s<5400?Math.round(s/60)+' min':(s/3600).toFixed(1)+' h';}
+function tick(){var a=el();if(!a)return;var s=(+live.dataset.now-+live.dataset.gen)+(Date.now()-seen)/1000;
+a.textContent=(failed?'refresh failed, showing data ':'')+fmt(Math.max(0,s))+' old';
+a.className=failed||s*1000>3*every?'stale':'';}
+function busy(){var f=document.activeElement;return dirty||(f&&f.closest&&f.closest('form')&&f!==document.body);}
+live.addEventListener('change',function(e){if(e.target.closest&&e.target.closest('form'))dirty=true;});
+function refresh(){if(busy()){var a=el();if(a)a.textContent+=' (refresh waits on your choice)';return;}
+fetch(location.href,{cache:'no-store',credentials:'same-origin'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.text();})
+.then(function(t){var n=new DOMParser().parseFromString(t,'text/html').getElementById('live');if(!n)throw new Error('no page');
+live.innerHTML=n.innerHTML;live.dataset.gen=n.dataset.gen;live.dataset.now=n.dataset.now;seen=Date.now();dirty=false;failed=false;tick();})
+.catch(function(){failed=true;tick();});}
+setInterval(tick,5000);setInterval(refresh,every);tick();})();"""
+
+
 def _safe(name: str, fn, *args) -> str:
     try:
         return fn(*args)
@@ -419,28 +455,19 @@ def _safe(name: str, fn, *args) -> str:
         return f"<section class='panel'><h2>{esc(name)}</h2><p class='head'>{_badge(UNKNOWN)} could not render: {esc(type(e).__name__)}</p></section>"
 
 
-def page(r: dict, lines: dict[str, list[str]], now: float | None = None, extra: str = "") -> str:
-    """The page: banner or all clear, six tiles, the ratio panel, the 24 h strip, the feature table and the monitor grid."""
+def page(r: dict, lines: dict[str, list[str]], now: float | None = None, extra: str = "", token: str = "") -> str:
+    """The page: the Needs-you band, six tiles, the ratio panel, the 24 h strip, the feature table and the monitor grid."""
     now = time.time() if now is None else now
     gen = r["generated"]
+    every = int(r.get("refresh_s") or 60)
     out = ["<!doctype html><html><head><meta charset='utf-8'>",
            "<meta name='viewport' content='width=device-width,initial-scale=1'>",
-           f"<meta http-equiv='refresh' content='{int(r.get('refresh_s') or 60)}'>",
+           f"<noscript><meta http-equiv='refresh' content='{every}'></noscript>",
            f"<title>SoHoT status</title><style>{CSS}</style></head><body>",
-           f"<div class='top'><h1>SoHoT status</h1><span class='asof'>gathered {_when(gen, now)} · "
-           "<a href='status.json'>json</a></span></div>"]
-    got = alerts(r)
-    if got:
-        out.append("<div class='banner'>")
-        for a in got:
-            if a["detail"]:
-                out.append(f"<details class='alert'><summary>{_badge(BAD)} {esc(a['title'])}</summary>"
-                           f"<p>{esc(a['detail'])}</p></details>")
-            else:
-                out.append(f"<div class='alert'><b>{_badge(BAD)} {esc(a['title'])}</b></div>")
-        out.append("</div>")
-    else:
-        out.append(f"<p class='clear'>{_badge(OK)} All clear. Nothing needs you.</p>")
+           f"<div id='live' data-gen='{gen:.0f}' data-now='{now:.0f}' data-every='{every}'>",
+           f"<div class='top'><h1>SoHoT status</h1><span class='asof'>gathered {_when(gen, now)} · data <span id='age'>"
+           f"{esc(span(max(0.0, now - gen)))} old</span> · <a href='status.json'>json</a></span></div>"]
+    out.append(_safe("Needs you", _band, r, now, token))
     out.append("<div class='tiles'>")
     out.append(_safe("Tiles", lambda: "".join(_tile(t, lines.get(t["name"]) or [], r[t["key"]].get("as_of"), now) for t in tiles(r, now))))
     out.append("</div>")
@@ -449,5 +476,5 @@ def page(r: dict, lines: dict[str, list[str]], now: float | None = None, extra: 
     out.append(_safe("Features", _features, r.get("features") or {"error": "not gathered"}, now))
     out.append(_safe("Checks", _checks, r["monitor"]))
     out.append(extra)
-    out.append("</body></html>")
+    out.append(f"</div><script>{REFRESH_JS}</script></body></html>")
     return "\n".join(out)

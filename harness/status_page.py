@@ -85,6 +85,7 @@ def queue(conn, now: float) -> dict:
            "running": [], "pending": None, "last_moved": None}
     if body is not None:
         out["paused_since"], out["reason"], out["by"] = queue_hold.since(body), queue_hold.reason(body), queue_hold.by_of(body)
+        out["who"] = queue_hold.who(body)
     if conn is None:
         out["why"] = "store down: running and pending jobs not read"
         return out
@@ -141,10 +142,10 @@ def discovery_failed(disc: dict) -> bool:
 def discovery(now: float, beat=None) -> dict:
     from harness import heartbeat
     beat = heartbeat.summary() if beat is None else beat
-    out = {"status": "", "started": None, "finished": None, "rc": None, "failure": "", "line": "",
+    out = {"status": "", "started": None, "finished": None, "rc": None, "failure": "", "line": "", "age_s": None,
            "next": next_run(heartbeat.discover_hours(), now), "overdue": heartbeat.overdue(beat) if beat else ""}
     if beat:
-        out.update({k: beat.get(k) for k in ("status", "started", "finished", "rc", "line")})
+        out.update({k: beat.get(k) for k in ("status", "started", "finished", "rc", "line", "age_s")})
         out["failure"] = beat.get("error") or ""
     else:
         out["overdue"] = heartbeat.overdue(None)
@@ -262,40 +263,9 @@ def timeline(conn, now: float, disc: dict, q: dict, home: Path | None = None) ->
 
 
 def banner(r: dict, now: float) -> list[str]:
-    """What needs the owner, one line each."""
-    from harness import queue_stale
-    out = []
-    s, q, d, disc, mon = r["store"], r["queue"], r["deploy"], r["discovery"], r["monitor"]
-    if not s.get("up"):
-        out.append(f"store down: {s.get('why') or s.get('error') or 'unreachable'}")
-    if d.get("failing"):
-        last = d.get("last") or {}
-        out.append(f"deploy failing: {d['failing']} in a row, last {last.get('line') or last.get('outcome')}")
-    if q.get("paused") and q.get("paused_since") and now - q["paused_since"] > queue_stale.QUEUE_STALE_S:
-        out.append(f"queue paused {(now - q['paused_since']) / 3600:.1f} h: {q.get('reason')}")
-    if disc.get("status") == "stalled":
-        out.append(f"discovery stalled: {disc.get('line')}")
-    elif discovery_failed(disc):
-        out.append(f"discovery failed: {disc.get('failure') or 'rc ' + str(disc.get('rc'))}")
-    if disc.get("overdue"):
-        out.append(f"discovery overdue: {disc['overdue']}")
-    sp = disc.get("spend") or {}
-    if spend_stalled(sp, now):
-        since = _t(sp.get("last_run_at"))
-        out.append(f"discovery screens nothing: no screen or measure since {since} while {sp['waiting']} "
-                   f"candidate(s) wait")
-    if mon.get("error"):
-        out.append(f"monitor not read: {mon['error']}")
-    elif not mon.get("running"):
-        out.append("monit is not running: " + "; ".join(mon.get("problems") or ["no checks run"]))
-    out += [f"check {c['check']} is {c['state']}" for c in mon.get("checks") or [] if not c["ok"]]
-    out += [f"node {n['node']} is down" for n in (r["services"].get("nodes") or []) if n["down_now"]]
-    lane = r["services"].get("lane") or {}
-    if lane.get("generating") is False:
-        out.append(f"the {lane.get('lane')} lane cannot generate: {lane.get('why') or lane.get('base')}")
-    out += [f"{k} not read: {r[k]['error']}" for k in ("store", "queue", "deploy", "discovery", "services", "ratio",
-                                                       "timeline") if r[k].get("error")]
-    return out
+    """What needs the owner, one line each: the Needs-you band's conditions."""
+    from harness import needs_you
+    return [c["line"] for c in needs_you.conditions(r)]
 
 
 def _features(conn, now: float, q: dict) -> dict:
@@ -304,9 +274,10 @@ def _features(conn, now: float, q: dict) -> dict:
 
 
 def gather(now: float | None = None, *, connect=None, beat=None, where=None, git=None, mon=None, health=None,
-           reach=None, flow=None, home: Path | None = None, environ=None, features=None) -> dict:
-    """Every section, each with its own as_of; with the store down the store-free sections still read."""
-    from harness import morning
+           reach=None, flow=None, home: Path | None = None, environ=None, features=None, light: bool = False) -> dict:
+    """Every section, each with its own as_of; with the store down the store-free sections still read. `light` skips the
+    ratio and the 24 h strip, which the Needs-you alert pass does not need."""
+    from harness import morning, needs_you
     now = time.time() if now is None else now
     conn, why = None, ""
     try:
@@ -322,13 +293,16 @@ def gather(now: float | None = None, *, connect=None, beat=None, where=None, git
                            "queued": _section(queued_sweep, conn)},
              "monitor": _section(monitor_section, now, mon, home),
              "services": _section(services, now, health, reach),
-             "ratio": _section(ratio, conn, now, flow)}
-        r["timeline"] = _section(timeline, conn, now, r["discovery"], r["queue"], home)
+             "ratio": {} if light else _section(ratio, conn, now, flow)}
+        r["timeline"] = {} if light else _section(timeline, conn, now, r["discovery"], r["queue"], home)
         r["features"] = _section(features or _features, conn, now, r["queue"])
+        r["stops"] = {"holds": _section(needs_you.read_holds, conn, now), "jobs": _section(needs_you.read_jobs, conn, now),
+                      "gateway": _section(needs_you.read_gateway), "monit": _section(needs_you.read_monit, now, home)}
     finally:
         if conn is not None:
             conn.close()
-    r["banner"] = banner(r, now)
+    r["needs_you"] = needs_you.conditions(r)
+    r["banner"] = [c["line"] for c in r["needs_you"]]
     return scrub(r, _secret_values(environ, home))
 
 
@@ -410,6 +384,6 @@ def lines(r: dict) -> dict[str, list[str]]:
     return {k: [x for x in v if x] for k, v in out.items()}
 
 
-def page(r: dict, now: float | None = None, extra: str = "") -> str:
+def page(r: dict, now: float | None = None, extra: str = "", token: str = "") -> str:
     from harness import status_view
-    return status_view.page(r, lines(r), now, extra)
+    return status_view.page(r, lines(r), now, extra, token)

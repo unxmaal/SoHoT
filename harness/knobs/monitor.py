@@ -39,6 +39,7 @@ NOT_GATING = {
     f"{M}:START_WAIT_S": "how long install waits for launchd to list the new monit's pid; past it install fails (#1521)",
     f"{M}:BOOTSTRAP_TRIES": "bootstraps install tries before it says monit is not loaded; a failure is loud (#1521)",
     f"{M}:POLL_S": "the pause between launchctl polls; a pace only (#1521)",
+    "harness/monitor.py:NEEDS_YOU_TIMEOUT_S": "monit's bound on one Needs-you pass; a pass cut short is retried next cycle and no verdict reads it (#2134)",
 }
 
 NEVER_CUTS = {

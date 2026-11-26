@@ -366,6 +366,18 @@ def set_priority(job_id: str, priority: int, conn=None) -> dict:
         return _select(c, "WHERE id = ?", (_key(job_id),))[0]
 
 
+def retry(job_id: str, conn=None) -> dict:
+    """Queue a failed job's command again as a new job; only a failed job is retried."""
+    with _store(conn) as c:
+        job = get(job_id, conn=c)
+        if job is None:
+            raise ValueError(f"no job {job_id}")
+        if job["state"] != FAILED:
+            raise ValueError(f"job {job_id} is {job['state']}; only a failed job can be retried")
+        return add(job["argv"], title=job["title"], cwd=job["cwd"], kind=job["kind"], output=job["output"],
+                   priority=job["priority"], requested_by=job["requested_by"], resource=job["resource"], conn=c)
+
+
 def cancel(job_id: str, conn=None, grace: float = CANCEL_GRACE_S) -> dict:
     """Record a pending job cancelled; stop a running one's process group, wait, and record it cancelled. #628, #1364."""
     with _store(conn) as c:

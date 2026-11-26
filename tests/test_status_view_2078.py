@@ -81,7 +81,7 @@ def test_all_clear_is_six_green_tiles_and_one_line(tmp_path):
     assert got["services"][1] == "1 node up · lane generating"
     assert re.fullmatch(r"schema \d+ · backup just now", got["store"][1])
     page = sp.page(r, NOW)
-    assert "All clear." in page and "class='alert'" not in page
+    assert "Nothing is stopped." in page and "class='need'" not in page
     assert _drawn(page) == {k: s for k, (s, _) in got.items()}
 
 
@@ -102,7 +102,7 @@ def test_a_long_queue_pause_is_a_red_queue_tile(tmp_path):
     assert _tiles(r)["queue"] == (sv.BAD, "paused 13 h")
     page = sp.page(r, NOW)
     assert _drawn(page)["queue"] == sv.BAD
-    assert "owner testing a model" not in _outside(page) and "owner testing a model" in page
+    assert "The queue is paused" in page and "owner testing a model" in page
     assert ("pause", sv.WARN) in {(e["kind"], e["state"]) for e in r["timeline"]["events"]}
 
 
@@ -119,10 +119,9 @@ def test_a_failing_deploy_is_red_and_its_detail_and_path_stay_folded(tmp_path):
     assert _tiles(r)["deploy"] == (sv.BAD, "2 failed · last 5 min ago")
     page = sp.page(r, NOW)
     assert _drawn(page)["deploy"] == sv.BAD
-    out = _outside(page)
-    assert "smoke before the switch" not in out and str(Path.home()) not in out
+    assert str(Path.home()) not in _outside(page)
     assert "smoke before the switch" in page and str(Path.home()) not in page
-    assert "<summary><b class='badge bad' role='img' aria-label='failing'>✕</b> Deploy failing</summary>" in page
+    assert "<h3>Deploys are failing</h3>" in page
     assert "3" * 9 not in page and "3" * 8 in page
 
 
@@ -132,7 +131,7 @@ def test_a_crashed_discovery_is_red_and_its_error_stays_folded(tmp_path):
     assert state == sv.BAD and re.fullmatch(r"failed 10 min ago · next \d\d:\d\d", head)
     page = sp.page(r, NOW)
     assert _drawn(page)["discovery"] == sv.BAD
-    assert CRASH not in _outside(page) and CRASH in page
+    assert "The discovery loop failed" in page and CRASH in page
     assert any(e["kind"] == "discovery" and e["state"] == sv.BAD for e in r["timeline"]["events"])
 
 
@@ -146,8 +145,7 @@ def test_with_the_store_down_its_tiles_say_so_and_the_error_stays_folded(tmp_pat
     assert got["deploy"] == (sv.UNKNOWN, "history not read")
     assert got["discovery"][0] == sv.OK and got["monitor"][0] == sv.OK
     page = sp.page(r, NOW)
-    assert "connection refused" not in _outside(page) and "connection refused" in page
-    assert "Store down" in _outside(page)
+    assert "connection refused" in page and "<h3>The store is down</h3>" in page
 
 
 @pytest.mark.parametrize("beat", [BEAT, {**BEAT, "rc": 1, "error": CRASH}, {**BEAT, "status": "stalled"}, {}])

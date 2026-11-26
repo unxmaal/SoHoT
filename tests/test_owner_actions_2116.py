@@ -17,7 +17,9 @@ PHONE = "203.0.113.7"
 OTHER = "203.0.113.8"
 MAIN = "a" * 40
 R = {"generated": NOW, "deploy": {"head": "b" * 40, "main": MAIN, "wait": None},
-     "discovery": {"queued": {"jobs": [{"id": "0042", "step": "sweep"}]}}}
+     "discovery": {"queued": {"jobs": [{"id": "0042", "step": "sweep"}]}},
+     "stops": {"jobs": {"rows": [{"id": "0007", "title": "t", "state": "failed"}, {"id": "0008", "title": "u", "state": "running"}]},
+               "gateway": {"mark": {"at": NOW, "reason": "x"}}}}
 
 
 class Home:
@@ -154,7 +156,7 @@ def test_every_action_is_an_existing_verb_with_no_free_argument():
     parser = cli.build_parser()
     assert [a.name for a in oa.ACTIONS] == ["deploy_now", "benchmarks_hold", "benchmarks_release", "gate_hold",
                                             "gate_release", "queue_pause", "queue_resume", "discovery_on",
-                                            "discovery_off"]
+                                            "discovery_off", "job_retry", "job_cancel", "unit_restart"]
     for a in oa.ACTIONS:
         assert (a.offers is not None) == ("{}" in a.argv) and a.argv.count("{}") <= 1
         got = parser.parse_args(a.verb(a.offers(R)[0][0]) if a.offers else list(a.argv))
@@ -208,7 +210,7 @@ def _client(monkeypatch, peer):
     srv = pytest.importorskip("harness.mcp_server", reason="needs the `mcp` group: uv run --group mcp pytest")
     from starlette.testclient import TestClient
     monkeypatch.setattr(sp, "cached", lambda: R)
-    monkeypatch.setattr(sp, "page", lambda r, now=None, extra="": f"<html>{extra}</html>")
+    monkeypatch.setattr(sp, "page", lambda r, now=None, extra="", token="": f"<html>{extra}</html>")
     guard = srv.transport_security("0.0.0.0", 8899)
     ran = []
     monkeypatch.setattr(oa, "run_verb", lambda argv, run=None: ran.append(argv) or {"rc": 0, "out": "ok"})
