@@ -7,7 +7,6 @@ are not owner-facing and are grouped under NOT_OWNER with the reason.
 """
 import argparse
 
-NO_BUTTON = "no button yet, see #2138"
 READ = "read-only report; changes nothing"
 GENERATE = "one-shot generation for the caller; changes no standing state"
 MEASURE = "measurement or replay over stored rows; no standing state changes"
@@ -18,21 +17,16 @@ UNIT = "run by its own launchd unit, not by hand"
 # A verb is a leaf path ("deploy now"); every owner verb with no Action is here, with why.
 OWNER_EXEMPT = {
     "jobs add": "takes an arbitrary command; not one tap",
-    "deploy pause": NO_BUTTON,
-    "deploy resume": NO_BUTTON,
-    "deploy poll": NO_BUTTON,
-    "deploy nodes": NO_BUTTON,
-    "deploy repair": NO_BUTTON,
+    "deploy poll": "follows the nodes over ssh in the foreground; the page's 120 s action timeout would kill it mid-install",
+    "deploy nodes": "installs on each node over ssh in the foreground; the 120 s action timeout would kill it mid-install",
+    "deploy repair": "restores the store and reinstalls a release for up to an hour; the 120 s action timeout would kill it",
     "deploy run": "the deploy job's own step; only the queue runs it",
     "deploy migrate": "the deploy job's own step and a store migration: too dangerous for one tap",
     "gate hold": "folded into hold gpu, which is the gate_hold button",
     "gate release": "folded into hold release gpu, which is the gate_release button",
-    "adopt": NO_BUTTON,
-    "decline": NO_BUTTON,
+    "adopt": "runs a paired GPU measurement for hours and names a lane and a challenger; not one tap, nor in 120 s",
+    "decline": "a terminal verdict on a repo with the owner's reason, and the page gathers no list of candidates awaiting one",
     "propose": "takes free text naming a technique; not one tap",
-    "review on": NO_BUTTON,
-    "review off": NO_BUTTON,
-    "router relist": NO_BUTTON,
     "monitor install": "installs the monit config; a deploy step, not one tap",
     "monitor alert": "sent by monit itself, not by hand",
     "volume stop": "stops everything reading the models volume: too dangerous for one tap",
@@ -43,9 +37,8 @@ OWNER_EXEMPT = {
     "store pg-up": "starts the store's Postgres; a terminal job",
     "store pg-down": "stops the store's Postgres: too dangerous for one tap",
     "store pg-roles": "rewrites database roles: too dangerous for one tap",
-    "store pg-backup": NO_BUTTON,
     "store pg-restore": "overwrites the live store from a backup: too dangerous for one tap",
-    "quarantine": NO_BUTTON,
+    "quarantine": "--apply deletes files for good after hashing tens of GiB, longer than the 120 s action timeout",
     "gguf-aux": "--apply moves model files; a terminal job",
     "gateway key": "prints the gateway secret, which must never reach a page",
     "headless run": "starts a claude -p session; a terminal job",

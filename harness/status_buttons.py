@@ -52,11 +52,29 @@ def discovery(r: dict, tok: str) -> str:
             f"<span class='fa'>{buttons}</span></div></div>")
 
 
+def store(r: dict, tok: str) -> str:
+    """The Store tile's row: the dump button while no daily dump was made today."""
+    from harness import status_view as sv
+    if not oa.backup_due(r):
+        return ""
+    return (f"<div class='rows' data-rows='store'><div class='jr'><span class='jt'>{sv.esc('no dump made today')}</span>"
+            f"<span class='fa'>{oa.button('pg_backup', '', tok, bare=True)}</span></div></div>")
+
+
+#: The Features switches an owner flips: row name -> (action when on, action when not).
+SWITCHES = {"deploys": ("deploy_pause", "deploy_resume"), "review": ("review_off", "review_on")}
+
+
 def feature(r: dict, tok: str):
     """A function (kind, name) -> the buttons for that Features row, '' for a row nothing acts on."""
     got = offered(r)
     by_kind = {"unit": ("unit_restart",), "node": ("node_park", "node_unpark"), "lane": ("lane_reverify",)}
 
     def acts(kind: str, name: str) -> str:
+        if kind == "switch":
+            on, off = SWITCHES.get(name, ("", ""))
+            row = next((x for x in (r.get("features") or {}).get("rows") or [] if x.get("kind") == kind and x.get("name") == name), {})
+            act = on if row.get("state") == "on" else off if row.get("state") in ("off", "paused") else ""
+            return oa.button(act, "", tok, bare=True) if act else ""
         return _forms(got, tok, [(a, name) for a in by_kind.get(kind, ())])
     return acts

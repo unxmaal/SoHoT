@@ -112,6 +112,14 @@ def _lanes(r: dict) -> list[tuple[str, str]]:
     return _rows(r, "lane", ("on", "on demand"))
 
 
+def backup_due(r: dict) -> bool:
+    """A Postgres store that is up with no daily dump yet today, by the page's own clock."""
+    st, day = r.get("store") or {}, time.strftime("%Y%m%d", time.localtime(r.get("generated") or time.time()))
+    at = st.get("backup_at")
+    return bool(st.get("up") and st.get("backend") == "postgres"
+                and not (at is not None and time.strftime("%Y%m%d", time.localtime(at)) == day))
+
+
 @dataclass(frozen=True)
 class Action:
     name: str
@@ -154,6 +162,15 @@ ACTIONS = (
     Action("node_park", "Park node", "keeps the node in nodes.yaml but leaves it out of routing, probes and checks",
            ("node-park", "park", "{}"), _routed_nodes),
     Action("node_unpark", "Unpark node", "routes to the node again", ("node-park", "unpark", "{}"), _parked_nodes),
+    Action("deploy_pause", "Pause deploys", "queues no deploy until resumed; a deploy already running finishes",
+           ("deploy", "pause")),
+    Action("deploy_resume", "Resume deploys", "deploys may be queued and start again", ("deploy", "resume")),
+    Action("review_off", "Switch the review off", "the weekly review does not run until switched on", ("review", "off")),
+    Action("review_on", "Switch the review on", "the weekly review runs when due again", ("review", "on")),
+    Action("router_relist", "Relist the router", "restarts the router once so it lists what has a file; refuses when an advertised "
+           "id still has its file", ("router", "relist")),
+    Action("pg_backup", "Back up the store", "writes today's checked Postgres dump unless one was made today",
+           ("store", "pg-backup", "--due")),
     Action("lane_reverify", "Reverify lane", "queues a re-run of the lane's served model when a reverify trigger has fired",
            ("reverify", "--lane", "{}"), _lanes),
 )

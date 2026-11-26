@@ -68,7 +68,8 @@ def _section(fn, *args) -> dict:
 
 def store(conn, why: str = "", home: Path | None = None) -> dict:
     from harness import deploy, store_service
-    out = {"up": conn is not None, "why": why, "schema": None, "backup_at": None}
+    from harness import store as store_mod
+    out = {"up": conn is not None, "why": why, "schema": None, "backup_at": None, "backend": store_mod.backend()}
     if conn is not None:
         out["schema"] = deploy._store_schema(conn)
     dumps = store_service.backups(home)
@@ -312,7 +313,7 @@ def gather(now: float | None = None, *, connect=None, beat=None, where=None, git
         r["timeline"] = {} if light else _section(timeline, conn, now, r["discovery"], r["queue"], home)
         r["features"] = _section(features or _features, conn, now, r["queue"])
         r["stops"] = {"holds": _section(needs_you.read_holds, conn, now), "jobs": _section(needs_you.read_jobs, conn, now),
-                      "gateway": _section(needs_you.read_gateway), "deploying": _section(needs_you.read_deploying, now, r["queue"]), "gate": _section(needs_you.read_gate),
+                      "gateway": _section(needs_you.read_gateway), "router": _section(needs_you.read_router), "deploying": _section(needs_you.read_deploying, now, r["queue"]), "gate": _section(needs_you.read_gate),
                       "monit": _section(needs_you.read_monit, now, home, r["monitor"])}
         if (r["queue"].get("deploy_hold") or {}).get("live"):
             r["deploy"]["in_progress"] = r["queue"]["deploy_hold"]
