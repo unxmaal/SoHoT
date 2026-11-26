@@ -7770,6 +7770,36 @@
    "until": "cases:code>1240"
   },
   {
+   "candidate": "t-prompt-modification:llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "decided_at": "2026-11-26T21:59:15Z",
+   "detail": "the screen exited 75",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "t-prompt-modification:llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "reason": "candidate",
+   "receipt_key": "t-prompt-modification/llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "run_id": 1347,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "t-prompt-modification:llamacpp:Ornith-1.5-35B-Q4_K_M,temperature=0",
+   "decided_at": "2026-11-26T21:59:15Z",
+   "detail": "the screen exited 75",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "t-prompt-modification:llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "reason": "candidate",
+   "receipt_key": "t-prompt-modification/llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "run_id": 1347,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "unsloth/Qwen3.5-4B-GGUF",
    "decided_at": "2026-11-23T02:50:33Z",
    "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 58 lost against 7 gained, p=0.00; comparison 4 on this holdout, so alpha 0.05/4 = 0.0125; dev: not run, dev and holdout ",
@@ -8118,6 +8148,36 @@
    "until": ""
   },
   {
+   "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "decided_at": "2026-11-26T21:58:49Z",
+   "detail": "1 case(s) passed a screen",
+   "exam": null,
+   "outcome": "screened",
+   "proposal": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "reason": "candidate",
+   "receipt_key": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "run_id": 1346,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit,temperature=0",
+   "decided_at": "2026-11-26T21:58:49Z",
+   "detail": "1 case(s) passed a screen",
+   "exam": null,
+   "outcome": "screened",
+   "proposal": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "reason": "candidate",
+   "receipt_key": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "run_id": 1346,
+   "serves": false,
+   "status": "screened",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "mlx-community/Qwen3.8-27B-OBLITERATED-OptiQ-4bit",
    "decided_at": "2026-11-24T04:54:38Z",
    "detail": "2 case(s) passed a screen",
@@ -8254,33 +8314,33 @@
   },
   {
    "candidate": "NemoStation/Marlin-2B",
-   "decided_at": "2026-11-22T15:33:00Z",
-   "detail": "fits: smallest variant model-00001-of-00002.safetensors (+1): 5.1 GiB of 2 weight files",
+   "decided_at": "2026-11-26T21:50:06Z",
+   "detail": "not screened: needs 5.1 GB but only -7.0 GB is safely available (11.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "exam": null,
    "outcome": "queued",
    "proposal": "NemoStation/Marlin-2B",
-   "reason": "candidate",
+   "reason": "memory",
    "receipt_key": "NemoStation/Marlin-2B",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
-   "until": ""
+   "tier": "screen",
+   "until": "room_gb:>5.1"
   },
   {
    "candidate": "NemoStation/Marlin-2B,temperature=0",
-   "decided_at": "2026-11-22T15:33:00Z",
-   "detail": "fits: smallest variant model-00001-of-00002.safetensors (+1): 5.1 GiB of 2 weight files",
+   "decided_at": "2026-11-26T21:50:06Z",
+   "detail": "not screened: needs 5.1 GB but only -7.0 GB is safely available (11.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "exam": null,
    "outcome": "queued",
    "proposal": "NemoStation/Marlin-2B",
-   "reason": "candidate",
+   "reason": "memory",
    "receipt_key": "NemoStation/Marlin-2B",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
-   "until": ""
+   "tier": "screen",
+   "until": "room_gb:>5.1"
   },
   {
    "candidate": "Qwen/Qwen-Drive-1.0-4B",
@@ -8314,33 +8374,33 @@
   },
   {
    "candidate": "Qwen/Qwen-Image-Bench",
-   "decided_at": "2026-11-25T05:30:01Z",
-   "detail": "not fetched 2026-11-25: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-26T21:58:16Z",
+   "detail": "not screened: needs 51.0 GiB but at most 23.3 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
    "exam": null,
    "outcome": "queued",
    "proposal": "Qwen/Qwen-Image-Bench",
-   "reason": "limit",
+   "reason": "memory",
    "receipt_key": "Qwen/Qwen-Image-Bench",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "fetch",
-   "until": ""
+   "tier": "screen",
+   "until": "room_gb:>51.0"
   },
   {
    "candidate": "Qwen/Qwen-Image-Bench,temperature=0",
-   "decided_at": "2026-11-25T05:30:01Z",
-   "detail": "not fetched 2026-11-25: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-26T21:58:16Z",
+   "detail": "not screened: needs 51.0 GiB but at most 23.3 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
    "exam": null,
    "outcome": "queued",
    "proposal": "Qwen/Qwen-Image-Bench",
-   "reason": "limit",
+   "reason": "memory",
    "receipt_key": "Qwen/Qwen-Image-Bench",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "fetch",
-   "until": ""
+   "tier": "screen",
+   "until": "room_gb:>51.0"
   },
   {
    "candidate": "Qwen2.5-7B-Instruct-Q4_K_M",
@@ -8404,8 +8464,8 @@
   },
   {
    "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
-   "decided_at": "2026-11-25T05:30:02Z",
-   "detail": "not fetched 2026-11-25: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-26T21:58:57Z",
+   "detail": "not screened: needs 45.9 GiB but at most 23.3 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
    "exam": {
     "about": "family CohereLabs/command-a-plus-05-2026-bf16, IQ1_S, by bartowski",
     "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
@@ -8433,18 +8493,18 @@
    },
    "outcome": "queued",
    "proposal": "bartowski/command-a-plus-05-2026-GGUF",
-   "reason": "limit",
+   "reason": "memory",
    "receipt_key": "llamacpp:command-a-plus-05-2026-IQ1_S",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "fetch",
-   "until": ""
+   "tier": "screen",
+   "until": "room_gb:>45.9"
   },
   {
    "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S,temperature=0",
-   "decided_at": "2026-11-25T05:30:02Z",
-   "detail": "not fetched 2026-11-25: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-26T21:58:57Z",
+   "detail": "not screened: needs 45.9 GiB but at most 23.3 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
    "exam": {
     "about": "family CohereLabs/command-a-plus-05-2026-bf16, IQ1_S, by bartowski",
     "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
@@ -8472,13 +8532,13 @@
    },
    "outcome": "queued",
    "proposal": "bartowski/command-a-plus-05-2026-GGUF",
-   "reason": "limit",
+   "reason": "memory",
    "receipt_key": "llamacpp:command-a-plus-05-2026-IQ1_S",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "fetch",
-   "until": ""
+   "tier": "screen",
+   "until": "room_gb:>45.9"
   },
   {
    "candidate": "lolzinventor/Qwen3.5-4B-Base-ZitGen-V1",
@@ -8568,21 +8628,6 @@
    "serves": false,
    "status": "pending",
    "tier": "inspect",
-   "until": ""
-  },
-  {
-   "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit",
-   "decided_at": "2026-11-25T05:30:01Z",
-   "detail": "not fetched 2026-11-25: the screen share of the sweep ceiling is spent",
-   "exam": null,
-   "outcome": "queued",
-   "proposal": "mlx-community/Llama-3.2-3B-Instruct-4bit",
-   "reason": "limit",
-   "receipt_key": "mlx-community/Llama-3.2-3B-Instruct-4bit",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "fetch",
    "until": ""
   },
   {
@@ -8685,7 +8730,7 @@
    "until": ""
   }
  ],
- "cursor": 1795595154916760,
+ "cursor": 1795730355315605,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -21661,6 +21706,81 @@
    "reason": "limit",
    "run_id": 1332,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-26T21:50:06Z",
+   "candidate": "NemoStation/Marlin-2B",
+   "chosen": null,
+   "detail": "not screened: needs 5.1 GB but only -7.0 GB is safely available (11.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1795729806038944,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-26T21:58:16Z",
+   "candidate": "Qwen/Qwen-Image-Bench",
+   "chosen": null,
+   "detail": "not screened: needs 51.0 GiB but at most 23.3 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795730296144772,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-26T21:58:49Z",
+   "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "chosen": null,
+   "detail": "1 case(s) passed a screen",
+   "how": "",
+   "id": 1795730329129204,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 1346,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-26T21:58:57Z",
+   "candidate": "bartowski/command-a-plus-05-2026-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 45.9 GiB but at most 23.3 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795730337519852,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-26T21:59:15Z",
+   "candidate": "t-prompt-modification:llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "chosen": null,
+   "detail": "the screen exited 75",
+   "how": "",
+   "id": 1795730355315605,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": 1347,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -23951,7 +24071,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-25T08:30:25Z",
+ "generated_at": "2026-11-26T22:19:37Z",
  "knobs": [],
  "lane": {
   "cases": 451,
