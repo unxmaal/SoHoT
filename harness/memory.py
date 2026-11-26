@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import os
 import platform
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -654,3 +655,9 @@ def wait_for(repo: str, spec: str = "", parallel: int = 0, resident_gb: float = 
     if isinstance(need, str) or need is None:
         return ""
     return f"room_gb:>{need + resident_gb:.1f}"
+
+
+def wait_need(until: str) -> str:
+    """The need `wait_for` wrote into `until`, as written, '' for any other until: the one reader of that format. #2148."""
+    got = re.fullmatch(r"room_gb:>(\d+(?:\.\d+)?)", until or "")
+    return got.group(1) if got else ""

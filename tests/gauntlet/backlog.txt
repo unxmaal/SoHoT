@@ -51,7 +51,6 @@ a-decision-read-back-out-of-a-sentence-the-code-wrote evals/repo_routing.py:load
 a-decision-read-back-out-of-a-sentence-the-code-wrote evals/workload_baseline.py:_load:detail
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/adopt.py:record:evidence
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/clips.py:heard:detail
-a-decision-read-back-out-of-a-sentence-the-code-wrote harness/commands/screen.py:memory_deferrals:detail
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/context_class.py:_look_ahead:said
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/deploy_guard.py:twin:subject
 a-decision-read-back-out-of-a-sentence-the-code-wrote harness/github.py:_gh:detail
