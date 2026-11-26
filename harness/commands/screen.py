@@ -464,7 +464,7 @@ def _screen_one(a, store, r: dict) -> tuple[bool, str | None, int | None]:
                           reason=known.reason, until=known.until, failure_class=known.failure_class)
         return False, known.outcome, None
     # A window the screen could not be granted is found out before the weights are fetched for it. #2127.
-    no_window = screen_window.refusal(screen.deadline_s(r["candidate"])) if windowed else ""
+    no_window = screen_window.refusal(screen.deadline_s(r["candidate"], r["modality"])) if windowed else ""
     if no_window:
         return _no_window(store, r, why_not, no_window)
     # The test fetches what it runs, right before it runs it. #2015.
@@ -484,8 +484,8 @@ def _screen_one(a, store, r: dict) -> tuple[bool, str | None, int | None]:
     proc, unrestored = None, ""
     try:
         # The lock is taken here so its wait reaches the heartbeat; the child inherits it. #705.
-        with heartbeat.held("eval", screen.deadline_s(r["candidate"]), say=lambda m: print(f"   {m}", flush=True)):
-            with (screen_window.opened(screen.deadline_s(r["candidate"]), f"a screen window for {r['name']}")
+        with heartbeat.held("eval", screen.deadline_s(r["candidate"], r["modality"]), say=lambda m: print(f"   {m}", flush=True)):
+            with (screen_window.opened(screen.deadline_s(r["candidate"], r["modality"]), f"a screen window for {r['name']}")
                   if windowed else contextlib.nullcontext()):
                 if windowed:
                     room, why_not = memory.check_model(r["name"], spec=r["candidate"], parallel=1)

@@ -39,7 +39,7 @@ MODULES = {
         "tests/test_runner_packages_1027.py", "tests/test_requires_backends_1031.py", "tests/test_audio_env_1030.py",
         "tests/test_tts_drop_1036.py", "tests/test_drafters_1039.py", "tests/test_plan_refusal_1047.py"],
     "harness/screen.py": [
-        "tests/test_runner_gap_until_950.py", "tests/test_gguf_first_911.py", "tests/test_harness_screen.py", "tests/test_harness_screen_spec.py", "tests/test_screen_evidence.py",
+        "tests/test_screen_deadline_2146.py", "tests/test_runner_gap_until_950.py", "tests/test_gguf_first_911.py", "tests/test_harness_screen.py", "tests/test_harness_screen_spec.py", "tests/test_screen_evidence.py",
         "tests/test_screen_server_death.py", "tests/test_screen_server_killer_1544.py", "tests/test_decide_lane.py", "tests/test_refusal_shapes.py",
         "tests/test_verdict_reasons.py", "tests/test_screen_case_fit.py", "tests/test_methods.py",
         "tests/test_ds4.py", "tests/test_screen_fair.py", "tests/test_gguf_route.py",

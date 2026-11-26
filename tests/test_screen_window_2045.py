@@ -203,7 +203,6 @@ def test_a_planted_25_gib_candidate_with_32_8_gib_pinned_is_screened_in_a_window
     monkeypatch.setattr(screen_window, "opened", functools.partial(
         screen_window.opened, get=server.get, post=server.post, sleep=clock.sleep, clock=clock, say=lambda m: None))
     monkeypatch.setattr(screen_window, "refusal", functools.partial(screen_window.refusal, get=server.get))
-    monkeypatch.setattr(screen, "deadline_s", lambda candidate: 900.0)
     monkeypatch.setattr(heartbeat, "held", lambda *a, **k: contextlib.nullcontext())
     for name, value in (("known_killer", None), ("_fetched", ("", False)), ("snapshot_gap", "")):
         monkeypatch.setattr(screen_cmd, name, lambda *a, _v=value, **k: _v)
@@ -234,3 +233,25 @@ def test_a_planted_25_gib_candidate_with_32_8_gib_pinned_is_screened_in_a_window
     assert decided == ["screened"]
     assert set(server.status.values()) == {"loaded"} and not interactive.windowed()
     assert memory.pinned_gb() == pytest.approx(32.8)
+
+
+def test_the_real_window_is_granted_to_a_planted_llm_candidate_that_fits_with_the_pins_released(planted):
+    from harness import screen
+    need, spec = 56.0, "hf-text:org/fifty-six-gib"
+    assert 77.8 - 18.0 - 3.8 == pytest.approx(need) and memory.held_back(need) and screen_window.wanted(need)
+    server, clock = Server(), Clock()
+    with screen_window.opened(screen.deadline_s(spec, "code"), "a screen window for the planted candidate",
+                              get=server.get, post=server.post, sleep=clock.sleep, clock=clock,
+                              say=lambda m: None) as released:
+        assert released == [CODE, DECIDE] and not memory.held_back(need)
+    assert set(server.status.values()) == {"loaded"} and not interactive.windowed()
+
+
+def test_the_real_window_is_not_taken_for_a_planted_llm_candidate_that_does_not_fit_even_released(planted):
+    from harness import screen
+    need = 56.5
+    assert memory.held_back(need) and not screen_window.wanted(need)
+    server, clock = Server(), Clock()
+    with screen_window.opened(screen.deadline_s("hf-text:org/too-big", "code"), "planted", get=server.get,
+                              post=server.post, sleep=clock.sleep, clock=clock, say=lambda m: None):
+        assert memory.held_back(need), "still short with the pinned set released"

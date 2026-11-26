@@ -228,7 +228,7 @@ def test_a_video_screen_declares_its_engines_deadline(monkeypatch, tmp_path):
 
 def test_a_screen_of_a_candidate_no_engine_bounds_keeps_the_default_threshold():
     from harness import screen
-    assert screen.deadline_s("org/text-model") is None
+    assert screen.deadline_s("stt:org/speech-model") is None
     assert screen.deadline_s("diffusers-video:") is None
 
 

@@ -638,8 +638,8 @@ def held_back(need_gb: float | None) -> str:
     most = standing_gb()
     if need_gb <= most + 1e-9:
         return ""
-    return (f"needs {need_gb:.1f} GiB but at most {max(most, 0.0):.1f} GiB is ever free for a load here beside the "
-            f"system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released")
+    return (f"needs {need_gb:.1f} GiB but at most {max(most, 0.0):.1f} GiB is free for a load here while the interactive "
+            f"server's pinned models stay held (beside the system reserve and the Docker VM); a screen window can release them")
 
 
 def room_gb() -> float:
