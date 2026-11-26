@@ -2,6 +2,8 @@
 from harness.knobs.base import _k
 
 KNOBS = [
+    _k("merge_gate_retries", ["harness/merge_gate.py:RETRY_MAX"], [3], unit="passes",
+       note="Passes that start a tree and die before its verdict before the deploy poll stops queueing another for it; the Needs-you button still can (#2140)"),
     _k("merge_gate_step_timeout", ["harness/merge_gate.py:STEP_TIMEOUT_S"], [3600.0], unit="s",
        note="One step of the local merge gate (the suite, the Postgres suite, one module's mutation run) is cut and fails the verdict after this long; ci.yml gives its longest job 60 minutes (#2110)"),
 ]

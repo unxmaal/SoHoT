@@ -148,6 +148,7 @@ ACTIONS = (
     Action("job_cancel", "Cancel job", "stops the job and records it cancelled", ("jobs", "cancel", "{}"), _cancellable),
     Action("job_let", "Let through the hold", "lets the held job start while benchmarks are held", ("hold", "let", "{}"), _held_jobs),
     Action("job_first", "Run first", "raises the job above every waiting job", ("jobs", "priority", "{}"), _raisable, True),
+    Action("gate_again", "Test again", "queues a merge gate pass; trees with only a pending verdict are tested", ("merge-gate", "--queue")),
     Action("unit_restart", "Restart unit", "restarts the unit through scripts/launchd.sh, never unloading it",
            ("unit-restart", "{}"), _units),
     Action("node_park", "Park node", "keeps the node in nodes.yaml but leaves it out of routing, probes and checks",

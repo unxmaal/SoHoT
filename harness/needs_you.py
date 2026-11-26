@@ -68,6 +68,11 @@ def read_gateway() -> dict:
     return {"mark": gateway_degraded.read()}
 
 
+def read_gate() -> dict:
+    from harness import merge_gate
+    return {"rows": [{"head": h, "text": v["text"], "tries": v["tries"]} for h, v in merge_gate.stranded().items()]}
+
+
 #: Monit states that mean the service passes now; "not monitored" and "initializing" say nothing either way.
 _MONIT_PASSING = re.compile(r"^(ok|running|accessible|online.*|status ok)$", re.I)
 
@@ -218,6 +223,16 @@ def _gateway(r: dict) -> list[dict]:
                  fix=[("unit_restart", "gateway")])]
 
 
+def _gate(r: dict) -> list[dict]:
+    rows = ((r.get("stops") or {}).get("gate") or {}).get("rows") or []
+    if not rows:
+        return []
+    heads = ", ".join((x["head"][:8] or "a waiting pass") for x in rows)
+    return [cond("gate-stranded", "A merge gate pass died", f"{len(rows)} verdict(s) stay pending with no pass running: {heads}",
+                 source="gate", fix=[("gate_again", "")],
+                 line=f"merge gate: pending with no pass running ({heads})")]
+
+
 def _monit(r: dict) -> list[dict]:
     out = []
     for a in ((r.get("stops") or {}).get("monit") or {}).get("open") or []:
@@ -265,7 +280,7 @@ def _machine(r: dict) -> list[dict]:
 def conditions(r: dict) -> list[dict]:
     """Every condition that stops work in the gathered status `r`, oldest first; each from the source its CLI reads."""
     held = bool(_holds_of(r, "benchmarks"))
-    out = (_machine(r) + _holds(r) + _queue(r) + _discovery(r, held) + _jobs(r) + _deploy(r) + _gateway(r) + _monit(r))
+    out = (_machine(r) + _holds(r) + _queue(r) + _discovery(r, held) + _jobs(r) + _deploy(r) + _gateway(r) + _gate(r) + _monit(r))
     out += [cond(f"unread-{k}", f"{k.capitalize()} was not read", r[k]["error"], source=k, alert=False,
                  line=f"{k} not read: {r[k]['error']}") for k in ("store", "queue", "deploy", "discovery", "services", "ratio",
                                                                   "timeline") if (r.get(k) or {}).get("error")]

@@ -68,7 +68,7 @@ NOT_OWNER = {
                      "staging", "degenerate", "floors", "coherence", "load-log", "cases", "weedout-replay",
                      "reuse-replay", "residency-sim", "route-trial", "canary", "verify", "sensitivity",
                      "headless env", "headless exec", "atomic", "chaos"], MEASURE),
-    **dict.fromkeys(["scaffold", "fix", "merge-gate", "review run"], DEV),
+    **dict.fromkeys(["scaffold", "fix", "review run"], DEV),
     "watchdog": UNIT,
 }
 

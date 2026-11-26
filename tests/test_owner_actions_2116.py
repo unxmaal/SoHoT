@@ -160,7 +160,7 @@ def test_every_action_is_an_existing_verb_with_no_free_argument():
     parser = cli.build_parser()
     assert [a.name for a in oa.ACTIONS] == ["deploy_now", "benchmarks_hold", "benchmarks_release", "gate_hold",
                                             "gate_release", "queue_pause", "queue_resume", "discovery_on",
-                                            "discovery_off", "job_retry", "job_cancel", "job_let", "job_first", "unit_restart", "node_park",
+                                            "discovery_off", "job_retry", "job_cancel", "job_let", "job_first", "gate_again", "unit_restart", "node_park",
                                             "node_unpark", "lane_reverify"]
     for a in oa.ACTIONS:
         assert (a.offers is not None) == ("{}" in a.argv) and a.argv.count("{}") <= 1
