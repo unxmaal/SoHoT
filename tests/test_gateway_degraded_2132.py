@@ -160,3 +160,19 @@ def test_the_monit_check_fails_only_while_a_mark_exists(capsys):
     assert "store down at start" in capsys.readouterr().out
     gateway_degraded.clear()
     assert gateway_degraded.check() == 0
+
+
+@pytest.mark.gauntlet("a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates", site="harness/gateway_degraded.py:mark")
+def test_a_second_mark_replaces_the_first_and_clear_removes_it():
+    gateway_degraded.mark("first", now=1.0)
+    gateway_degraded.mark("second", now=2.0)
+    assert gateway_degraded.read() == {"at": 2.0, "reason": "second"}
+    gateway_degraded.clear()
+    assert gateway_degraded.read() is None
+
+
+@pytest.mark.gauntlet("nothing-and-failed-return-the-same-value", site="harness/gateway_degraded.py:read:except")
+def test_an_unreadable_mark_is_still_a_degraded_gateway_not_none():
+    gateway_degraded.path().write_text("{not json", encoding="utf-8")
+    assert gateway_degraded.read() == {"reason": "unreadable mark"}
+    assert gateway_degraded.check() == 1

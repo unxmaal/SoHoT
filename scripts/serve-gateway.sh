@@ -65,7 +65,7 @@ degraded=0
 until SERVED="$(uv run python -m harness.gateway "$CONFIG")"; do
   if [ "$waited" -ge "$WAIT_S" ]; then
     echo "WARN: the served config could not be generated in ${WAIT_S}s; serving $CONFIG with no sohot-<lane> aliases until the watchdog restarts it. #705, #2132" >&2
-    uv run python -m harness.gateway_degraded mark "the served config could not be built in ${WAIT_S}s at start" >&2 || true
+    uv run python -m harness.gateway_degraded mark "the served config could not be built in ${WAIT_S}s at start" >&2 || echo "WARN: the degraded mark could not be written, so nothing will page. #2132" >&2
     SERVED="$CONFIG"
     degraded=1
     break
@@ -75,7 +75,7 @@ until SERVED="$(uv run python -m harness.gateway "$CONFIG")"; do
   waited=$((waited + POLL_S))
 done
 if [ "$degraded" -eq 0 ]; then
-  uv run python -m harness.gateway_degraded clear >&2 || true
+  uv run python -m harness.gateway_degraded clear >&2 || echo "WARN: a stale degraded mark could not be cleared. #2132" >&2
 fi
 # Each serving node's key from the Keychain, for the os.environ/ reference the served config names. #684.
 NODE_EXPORTS="$(uv run python -m harness.nodes exports)" || NODE_EXPORTS=""
