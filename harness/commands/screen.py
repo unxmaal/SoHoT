@@ -113,21 +113,18 @@ def _deferred(store, name: str) -> None:
     cuts.cut("screen_memory_deferrals", f"{name} deferral left unrecorded", conn=store)
 
 
-_NEEDS = re.compile(r"needs (\d+(?:\.\d+)?) GB")
-
-
 def memory_deferrals(conn, name: str) -> tuple[int, str]:
     """How many of a name's newest verdicts in a row are screen memory deferrals of one need, and that need. #910."""
     from harness import memory_store as ms
     streak, need = 0, ""
     for v in conn.execute(
-            "SELECT v.tier, v.reason, v.detail FROM verdicts v JOIN proposals p "
+            "SELECT v.tier, v.reason, v.until FROM verdicts v JOIN proposals p "
             "ON p.id = v.proposal_id WHERE p.name = ? ORDER BY v.id DESC", (name,)):
-        got = _NEEDS.search(v["detail"] or "")
+        got = memory.wait_need(v["until"] or "")
         if v["tier"] != ms.SCREEN or v["reason"] != reasons.MEMORY or not got \
-                or (need and got.group(1) != need):
+                or (need and got != need):
             break
-        streak, need = streak + 1, got.group(1)
+        streak, need = streak + 1, got
     return streak, need
 
 
@@ -448,13 +445,14 @@ def _screen_one(a, store, r: dict) -> tuple[bool, str | None, int | None]:
         # A memory deferral screens nothing, so it does not spend a slot. #910.
         print(f"   QUEUED: {why_not}")
         streak, need = memory_deferrals(store, r["name"])
-        got = _NEEDS.search(why_not)
-        if streak >= MEMORY_DEFERRALS and got and got.group(1) == need:
+        until = memory.wait_for(r["name"], spec=r["candidate"], parallel=1)
+        got = memory.wait_need(until)
+        if streak >= MEMORY_DEFERRALS and got and got == need:
             _deferred(store, r["name"])
             print(f"   deferred {streak} times for {need} GB; left queued")
             return False, None, None
         ms.decide_or_skip(store, r["name"], "queued", tier=ms.SCREEN, detail=f"not screened: {why_not}"[:600],
-                          reason=reasons.MEMORY, until=memory.wait_for(r["name"], spec=r["candidate"], parallel=1))
+                          reason=reasons.MEMORY, until=until)
         return False, "queued", None
     # Screening it again would only kill the shared server again. #1544.
     known = known_killer(store, r["name"], r["candidate"])
