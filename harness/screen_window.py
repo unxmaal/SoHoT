@@ -95,20 +95,33 @@ def _unrestored(missing: list[str], why: str, say) -> None:
         say(f"   WARN window: the alert could not be sent: {exc}")
 
 
+def _grantable(hold_s: float | None, keep=(), get=None) -> tuple[str, dict, list[str], str, dict | None]:
+    """(why a window could not open now or "", the plan, its stems, the server base, its statuses). Changes nothing."""
+    if not hold_s:
+        return "no engine bounds the screen, so the window could not be given an end", {}, [], "", None
+    plan = interactive.read()
+    stems = sorted({e["stem"] for e in (plan.get("lanes") or {}).values()})
+    base, got = _status(plan, get)
+    if not [s for s in stems if s not in set(keep)] or not base:
+        return "nothing is pinned here to release", plan, stems, base, got
+    if got is None or any(got.get(s) != "loaded" for s in stems):
+        return f"the pinned set is not all loaded now ({got}), so its restore could not be confirmed", plan, stems, base, got
+    return "", plan, stems, base, got
+
+
+def refusal(hold_s: float | None, keep=(), get=None) -> str:
+    """Why a window of `hold_s` would be refused now, "" when it would open: asked before a candidate is fetched for it. #2127."""
+    return _grantable(hold_s, keep, get)[0]
+
+
 @contextlib.contextmanager
 def opened(hold_s: float | None, why: str, *, keep=(), get=None, post=None, sleep=time.sleep, clock=time.monotonic,
            say=print):
     """Send interactive work to a node or the cloud, release the pinned set but `keep` for at most `hold_s`, then put it back."""
-    if not hold_s:
-        raise Refused("no engine bounds the screen, so the window could not be given an end")
-    plan = interactive.read()
-    stems = sorted({e["stem"] for e in (plan.get("lanes") or {}).values()})
+    why, plan, stems, base, _ = _grantable(hold_s, keep, get)
+    if why:
+        raise Refused(why)
     gone = [s for s in stems if s not in set(keep)]
-    base, got = _status(plan, get)
-    if not gone or not base:
-        raise Refused("nothing is pinned here to release")
-    if got is None or any(got.get(s) != "loaded" for s in stems):
-        raise Refused(f"the pinned set is not all loaded now ({got}), so its restore could not be confirmed")
     interactive.keep_in_window([s for s in stems if s not in gone])
     gateway_switch.start_drain(time.time() + DRAIN_S + float(hold_s) + interactive.WARM_WAIT_S, node=interactive.WINDOW)
     missing: list[str] = []
