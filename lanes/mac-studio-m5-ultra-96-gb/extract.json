@@ -2965,6 +2965,82 @@
    "until": ""
   },
   {
+   "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "decided_at": "2026-11-27T10:25:54Z",
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about mlx-",
+   "exam": {
+    "about": "family mlx-community/Llama-3.2-3B-Instruct, 3B params, 4bit, by mlx-community",
+    "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+    "cases": 152,
+    "first_s": 0.359,
+    "median_s": 0.196,
+    "metrics": {
+     "completion_tokens": 5.4079,
+     "tokens_per_s": 25.5526
+    },
+    "model": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+    "not_run": "",
+    "pass_rate": 0.664,
+    "passed": 101,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-27T10:25:53Z",
+    "served_as": "",
+    "source": "https://huggingface.co/mlx-community/Llama-3.2-3B-Instruct-4bit",
+    "total": 152,
+    "ttft_median_s": 0.068,
+    "ttft_p95_s": 0.077
+   },
+   "outcome": "declined",
+   "proposal": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "reason": "limit",
+   "receipt_key": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "run_id": 1362,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>2116"
+  },
+  {
+   "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit,temperature=0",
+   "decided_at": "2026-11-27T10:25:54Z",
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about mlx-",
+   "exam": {
+    "about": "family mlx-community/Llama-3.2-3B-Instruct, 3B params, 4bit, by mlx-community",
+    "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+    "cases": 152,
+    "first_s": 0.359,
+    "median_s": 0.196,
+    "metrics": {
+     "completion_tokens": 5.4079,
+     "tokens_per_s": 25.5526
+    },
+    "model": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+    "not_run": "",
+    "pass_rate": 0.664,
+    "passed": 101,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-27T10:25:53Z",
+    "served_as": "",
+    "source": "https://huggingface.co/mlx-community/Llama-3.2-3B-Instruct-4bit",
+    "total": 152,
+    "ttft_median_s": 0.068,
+    "ttft_p95_s": 0.077
+   },
+   "outcome": "declined",
+   "proposal": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "reason": "limit",
+   "receipt_key": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "run_id": 1362,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>2116"
+  },
+  {
    "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
    "decided_at": "2026-11-24T01:11:32Z",
    "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 31 lost against 9 gained, p=0.00; comparison 11 on this holdout, so alpha 0.05/11 = 0.0045; dev: not run, dev and holdou",
@@ -4418,7 +4494,7 @@
    "until": ""
   }
  ],
- "cursor": 1795595154916760,
+ "cursor": 1795775154130655,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -4617,6 +4693,21 @@
   },
   {
    "at": "2026-10-03T14:09:07Z",
+   "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "chosen": null,
+   "detail": "1 case(s) passed a screen",
+   "how": "",
+   "id": 1791036547484707,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 251,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-03T14:09:07Z",
    "candidate": "Qwen/Qwen3-8B",
    "chosen": null,
    "detail": "not screened: needs 15.3 GB but only 7.0 GB is safely available (13.0 GB free, 24.0 GB GPU ceiling, 6.0 GB reserved for the system)",
@@ -4722,6 +4813,21 @@
   },
   {
    "at": "2026-10-03T15:51:36Z",
+   "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "chosen": null,
+   "detail": "1 case(s) passed a screen",
+   "how": "",
+   "id": 1791042696672653,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 263,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-03T15:51:36Z",
    "candidate": "Qwen/Qwen3-8B",
    "chosen": null,
    "detail": "not screened: needs 15.3 GB but only 9.1 GB is safely available (12.9 GB free, 24.0 GB GPU ceiling, 3.8 GB reserved for the system)",
@@ -4812,6 +4918,21 @@
   },
   {
    "at": "2026-10-04T14:29:27Z",
+   "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "chosen": null,
+   "detail": "1 case(s) passed a screen",
+   "how": "",
+   "id": 1791124167894262,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 282,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-04T14:29:27Z",
    "candidate": "Qwen/Qwen3-8B",
    "chosen": null,
    "detail": "not screened: needs 15.3 GB but only 8.8 GB is safely available (12.6 GB free, 24.0 GB GPU ceiling, 3.8 GB reserved for the system)",
@@ -4824,6 +4945,21 @@
    "reason": "memory",
    "run_id": null,
    "tier": "screen"
+  },
+  {
+   "at": "2026-10-04T14:51:43Z",
+   "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "chosen": null,
+   "detail": "code: does not beat the incumbent on the lane's metric",
+   "how": "",
+   "id": 1791125503887209,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "candidate",
+   "run_id": null,
+   "tier": "adopt"
   },
   {
    "at": "2026-10-06T04:50:44Z",
@@ -10254,6 +10390,36 @@
    "reason": "limit",
    "run_id": 1332,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-26T21:58:49Z",
+   "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "chosen": null,
+   "detail": "1 case(s) passed a screen",
+   "how": "",
+   "id": 1795730329129204,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "screened",
+   "reason": "candidate",
+   "run_id": 1346,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-27T10:25:54Z",
+   "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "chosen": null,
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about mlx-",
+   "how": "",
+   "id": 1795775154130655,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1362,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -11219,6 +11385,28 @@
      "ttft_p95_s": 13.627
     },
     {
+     "about": "family mlx-community/Llama-3.2-3B-Instruct, 3B params, 4bit, by mlx-community",
+     "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+     "first_s": 0.359,
+     "median_s": 0.196,
+     "metrics": {
+      "completion_tokens": 5.4079,
+      "tokens_per_s": 25.5526
+     },
+     "model": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+     "not_run": "",
+     "pass_rate": 0.664,
+     "passed": 101,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-27T10:25:53Z",
+     "served_as": "",
+     "source": "https://huggingface.co/mlx-community/Llama-3.2-3B-Instruct-4bit",
+     "total": 152,
+     "ttft_median_s": 0.068,
+     "ttft_p95_s": 0.077
+    },
+    {
      "about": "family apodex/Apodex-1.1-mini, by bartowski",
      "candidate": "bartowski/apodex_Apodex-1.1-mini-GGUF",
      "first_s": 13.382,
@@ -11726,8 +11914,8 @@
      "ttft_p95_s": 1.328
     }
    ],
-   "run_at": "2026-11-25T08:25:54Z",
-   "runs": 66
+   "run_at": "2026-11-27T10:25:53Z",
+   "runs": 67
   },
   {
    "cases": 152,
@@ -12055,7 +12243,7 @@
    "runs": 3
   }
  ],
- "generated_at": "2026-11-25T08:30:29Z",
+ "generated_at": "2026-11-27T11:09:20Z",
  "knobs": [],
  "lane": {
   "cases": 450,
