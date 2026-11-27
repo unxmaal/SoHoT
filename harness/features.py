@@ -161,6 +161,20 @@ def holds(conn, now: float) -> list[dict]:
     return out
 
 
+def owner_rows() -> list[dict]:
+    """The deploys pause and the weekly review's kill switch, each read from the file `soh deploy pause` / `soh review off` writes."""
+    from harness import deploy, review
+    try:
+        since = deploy._pause_flag().stat().st_mtime
+    except OSError:
+        since = None
+    out = [row("switch", "deploys", PAUSED, "paused by soh deploy pause: nothing is queued", since)
+           if since is not None else row("switch", "deploys", ON, "not paused")]
+    out.append(row("switch", "review", OFF, "soh review off: the weekly review does not run") if review.is_off()
+               else row("switch", "review", ON, "the weekly review runs when due"))
+    return out
+
+
 def queue_row(q: dict) -> list[dict]:
     if q.get("error"):
         return [row("switch", "queue", UNKNOWN, q["error"])]
@@ -265,6 +279,7 @@ def gather(conn, now: float, queue: dict | None = None, *, root: Path | None = N
             rows.append(row("switch", f"{n} unit environment", UNKNOWN, f"{p.name} does not parse: {exc}"[:300]))
     rows += _group("switch", switches, root, envs, readers)
     rows += _group("switch", holds, conn, now) if conn is not None else [row("switch", "holds", UNKNOWN, "store down")]
+    rows += _group("switch", owner_rows)
     if queue is not None:
         rows += queue_row(queue)
     every = []

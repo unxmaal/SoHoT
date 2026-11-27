@@ -457,10 +457,11 @@ setInterval(tick,5000);setInterval(refresh,every);tick();})();"""
 def _rows(key: str, r: dict, tok: str) -> str:
     """The buttons beside a tile's listed items, for a device that may press; a section that fails to read adds none. #2135."""
     from harness import status_buttons
-    if not tok or key not in ("queue", "discovery"):
+    rows = {"queue": status_buttons.jobs, "discovery": status_buttons.discovery, "store": status_buttons.store}
+    if not tok or key not in rows:
         return ""
     try:
-        return status_buttons.jobs(r, tok) if key == "queue" else status_buttons.discovery(r, tok)
+        return rows[key](r, tok)
     except Exception as e:  # noqa: BLE001 - a broken button row must not take its tile down
         return f"<p class='nn'>buttons not drawn: {esc(type(e).__name__)}</p>"
 
