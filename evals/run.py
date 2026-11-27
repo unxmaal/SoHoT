@@ -1248,6 +1248,9 @@ def _parser():
     ap.add_argument("--stop-after", type=float, default=None, metavar="SECONDS",
                     help="pause this many seconds after the run holds the machine, or at --stop-at if sooner; "
                          "a slice spends none of its time waiting for the lock (#1554)")
+    ap.add_argument("--stop-cells", type=int, default=None, metavar="CELLS",
+                    help="pause after this many more cells (a case every candidate ran), rounded up to a paired "
+                         f"block, rows checkpointed, exit {watch.PAUSED}, for an interim look (#2167)")
     ap.add_argument("--plan-s", type=float, action="append", default=None, metavar="SECONDS",
                     help="planned seconds per case, once per candidate in order, written to "
                          f"{watch.PROGRESS} for a watchdog (#810). Default: each candidate's "
@@ -1699,6 +1702,7 @@ def _execute_at(args, overrides: dict, held: contextlib.ExitStack) -> int:
     at = {c.id: i for i, c in enumerate(cases)}
     order = sorted(dict.fromkeys(c.id for _, _, mine in planned for c in mine), key=lambda k: at.get(k, len(at)))
     segments = paired_segments(order, [rest for _, _, rest in todo], block, key=lambda c: c.id)
+    eye.stop_cases = look_cases(getattr(args, "stop_cells", None), block, len(todo))
     if block:
         print(f"── paired order: {block} case(s) per candidate in turn", flush=True)
     kept = [{} for _ in todo]
@@ -2097,6 +2101,13 @@ def incumbent_silent(results, key: str, since: int = 0, n: int | None = None) ->
         return ""
     return (f"stopped: the incumbent {key} answered none of its first {len(mine)} case(s), every one "
             f"harness_error ({(mine[0].detail or '').strip()[:240]}); no comparison to make (#1656)")
+
+
+def look_cases(cells: int | None, block: int | None, candidates: int) -> int | None:
+    """Case runs a launch takes before its look: `cells` rounded up to whole paired blocks, once per candidate. #2167."""
+    if not cells or cells < 1:
+        return None
+    return -(-cells // (block or 1)) * (block or 1) * max(1, candidates)
 
 
 def paired_segments(order, rest, block, key=lambda c: c) -> list[tuple[int, list]]:

@@ -414,7 +414,7 @@ def run_step(a) -> int:
     data = None if me is STEPS[0] else heartbeat.attach(cycle)
     data = data or heartbeat.start(lane=lane, total=loop_cmd.LOOP_TOTAL, cycle=cycle)
     sweep = ceiling.Sweep(float(getattr(a, "ceiling_h", None) or power.SWEEP_CEILING_H) * 3600,
-                          started=float(data["started"]), looks_left=1 if name == "measure" else None)
+                          started=float(data["started"]), pairs_left=1 if name == "measure" else None)
     failed: list[str] = []
     print(f"\n=== sweep {cycle}: the {name} step ===", flush=True)
     entered = _RUNNING.set(name)

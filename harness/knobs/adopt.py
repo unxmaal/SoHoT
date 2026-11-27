@@ -55,6 +55,8 @@ KNOBS = [
        note="how long the owner's open-anyway on a closed lane lasts before it closes again (#2164)"),
     _k("lane_gate_power", ["harness/lane_gate.py:GATE_POWER"], [0.5, 0.7, 0.8, 0.9], unit="share",
        note="a lane whose power plan at its adopt effect is under this takes no challengers: no fetch, no screen, no measure; reverify and knob sweeps still run (#2164)"),
+    _k("look_cells", ["harness/looks.py:LOOK_CELLS"], [0, 5, 10, 20, 40],
+       note="holdout cells a paired run takes between interim looks; 0 sizes it so one look (LOOK_COST_S, a resume's model reloads) costs LOOK_SHARE of the cells' own time; looks spend alpha by information fraction, so more of them cost no power (#2167)"),
     _k("look_idle_slices", ["harness/commands/measure.py:IDLE_SLICES"], [1, 2, 3],
        note="look slices in a row that may stop at their stop time with no new case before a paired run pauses "
             "for the next sweep; job 0239's first slice spent 954 s of 1800 waiting for the eval lock and two cold "
@@ -105,6 +107,8 @@ NOT_GATING = {
                                     "them when close; every count equals the exact one (#1590)",
     "harness/power.py:_LOG_MARGIN": "how near alpha a log-space tail may sit before _critical sums it exactly; every "
                                     "count equals the exact one (#1590)",
+    "harness/looks.py:LOOK_COST_S": "sizes how many holdout cells a look waits for; every cell still runs and the looks spend alpha by information fraction (#2167)",
+    "harness/looks.py:LOOK_SHARE": "the share of a run's time a look may cost, which sizes the cells between looks; no case is dropped (#2167)",
 }
 
 NEVER_CUTS = {
@@ -112,6 +116,8 @@ NEVER_CUTS = {
                                    "lifts is recorded where it binds (#2164)",
     "harness/commands/measure.py:IDLE_SLICES": "pauses a paired run whose slices land no case; the pause is kept and "
                                                "the next sweep resumes it, so no case is dropped (#1554)",
+    "harness/looks.py:LOOK_CELLS": "sets how many holdout cells a paired run takes between interim looks; it resumes after "
+                                   "each look unless the look decides, so no case is dropped (#2167)",
     "harness/looks.py:LOOK_INTERVAL_S": "sets when a paired run stops for an interim look; it resumes after the look "
                                         "unless the look decides, so no case is dropped (#1353)",
     "harness/effects.py:MIN_CASES": "read only when soh knobs effects derives power.EFFECT offline; no run is cut (#725)",

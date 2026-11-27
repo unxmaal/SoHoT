@@ -35,7 +35,9 @@ def spend(top=1):
     a = cli.build_parser().parse_args([
         "discover", "--loop", "--run", "--lane", "code", "--top", str(top), "--budget-gib", "12",
         "--repeat", "4", "--power-budget-min", "1e9", "--ceiling-h", "1e9"])
-    return loop_cmd._spend_and_settle(a, 0, [], ceiling.Sweep(1e9 * 3600))
+    got = loop_cmd._spend_and_settle(a, 0, [], ceiling.Sweep(1e9 * 3600))
+    circuit.confirm_held()
+    return got
 
 
 def plant(name, gib=0.7, card=True):

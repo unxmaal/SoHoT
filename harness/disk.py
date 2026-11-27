@@ -677,9 +677,9 @@ def due(inv: Inventory, now: float, *, names=None, keep_states=(), keep=(), word
 
 
 def resumed(conn) -> set[str]:
-    """The names the next measure step resumes before anything new: this machine's live paused runs. #2099."""
-    from harness.commands import measure as measure_cmd
-    return {r["name"].lower() for r in measure_cmd.resume_first(conn, []) if r.get("name")}
+    """The names of this machine's live paused runs, held back by a closed lane or not: weights stay until a verdict. #2099, #2167."""
+    from harness import paused
+    return {(p["proposal"] or p["challenger"]).lower() for p in paused.waiting(conn) if p["proposal"] or p["challenger"]}
 
 
 def release(inv: Inventory, now: float, conn=None, **which) -> list[dict]:

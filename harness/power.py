@@ -331,6 +331,8 @@ class Plan:
     #: The run's case order and the incumbent rate per case behind it (harness.weedout). #1439.
     order: tuple | None = None
     rates: dict | None = None
+    #: Holdout cells between interim looks (looks.every), None for looks by the clock alone. #2167.
+    look_cells: int | None = None
 
     def as_dict(self) -> dict:
         return asdict(self)

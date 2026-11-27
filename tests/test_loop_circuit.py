@@ -180,7 +180,9 @@ def mac():
 @pytest.fixture
 def world(monkeypatch, tmp_path, _home, machine_is):
     from evals import core
-    from harness import holdout
+    from harness import holdout, looks
+    # The fake answers in no time, so the run takes its looks at the end, as a launch with no look did. #2167.
+    monkeypatch.setattr(looks, "LOOK_CELLS", 10**6)
     real_load = core.load_cases
     monkeypatch.setattr(core, "load_cases", lambda d: _hand_written(real_load(d)))
     holdout._splits.cache_clear()
@@ -246,9 +248,25 @@ def latest(name):
 
 
 def loop(*extra):
-    return cli.main(["discover", "--loop", "--run", "--lane", "code", "--top", "1",
-                     "--budget-gib", "12", "--repeat", "4", "--power-budget-min", "1e9",
-                     "--ceiling-h", "1e9", *extra])
+    got = cli.main(["discover", "--loop", "--run", "--lane", "code", "--top", "1",
+                    "--budget-gib", "12", "--repeat", "4", "--power-budget-min", "1e9",
+                    "--ceiling-h", "1e9", *extra])
+    confirm_held()
+    return got
+
+
+def confirm_held():
+    """The night run of the dev cases a holdout win waits for: the measure runs the holdout only. #2167."""
+    from harness import reasons
+    from harness.commands import measure as measure_cmd
+    conn = ms.connect()
+    try:
+        held = [r[0] for r in conn.execute("SELECT id FROM verdicts WHERE failure_class = ? ORDER BY id",
+                                           (reasons.CONFIRMING,))]
+    finally:
+        conn.close()
+    for vid in held:
+        measure_cmd.confirm_job(vid)
 
 
 def adopted():
