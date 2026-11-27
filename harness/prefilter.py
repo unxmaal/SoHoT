@@ -34,7 +34,7 @@ def _why(conn, row: dict, standing, sizer) -> tuple[str, str] | None:
     if need > most + 1e-9:
         return WINDOW, (f"{target} needs {need:.1f} GiB, more than the {max(most, 0.0):.1f} GiB a load can get here "
                         f"with the interactive server's pinned models released")
-    if target:
+    if target and not fetching.have(target, conn):
         own = fetching.plan(target, int(row.get("size_bytes") or 0) or fetching.MAX_DOWNLOAD, free=1 << 60)
         if own.reason == reasons.LIMIT:
             return DEPENDENCY, f"{target}: {own.why}"
