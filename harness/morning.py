@@ -612,6 +612,14 @@ def parked_nodes() -> list[str]:
     return nodes.parked_names()
 
 
+def yield_trend(conn, now: float) -> dict | None:
+    from harness import pipeline_yield
+    try:
+        return pipeline_yield.trend(conn, now)
+    except Exception:  # noqa: BLE001 - a store without the tables has no trend, and the report goes on
+        return None
+
+
 def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, where=None, lanes=None,
            health=None, stalls=None, canary=None, parked=None, incumbent=None, monitor=None, pulls=None,
            tts=None, waiting=None, reach=None, old=None, flow=None) -> dict:
@@ -630,7 +638,7 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "deploy_repairs": deploy_repairs(),
          "pulls": pulls(now) if pulls else None, "tts": tts() if tts else None,
          "deploy_wait": waiting(conn, now) if waiting else None, "old_release": old() if old else None,
-         "flow": flow(now) if flow else None}
+         "flow": flow(now) if flow else None, "yield_trend": yield_trend(conn, now)}
     from harness import hold, job_release
     r["hold"], r["gpu_hold"] = hold.held(conn, now), hold.held(conn, now, hold.GPU)
     r["releases"] = job_release.morning(conn, since, where)

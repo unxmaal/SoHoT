@@ -51,7 +51,7 @@ NOT_OWNER = {
                     GENERATE),
     **dict.fromkeys(["report", "repo-report", "repo-route", "baseline", "throughput", "usage", "api-spend",
                      "claude-news", "context", "ledger", "inventory", "morning", "sweep-check", "runtimes",
-                     "funnel", "families", "availability", "knobs", "measure-order", "lane-feed", "otel",
+                     "funnel", "yield", "families", "availability", "knobs", "measure-order", "lane-feed", "otel",
                      "needs-you", "worktrees", "disk", "memory", "benchmarks", "audit", "discover-why",
                      "specs", "votes", "gate status", "hold status", "jobs list", "deploy status",
                      "monitor render", "monitor status", "volume status", "store pg-status",

@@ -121,28 +121,28 @@ def _failures(steps: list[dict]) -> list[dict]:
             for (cycle, step), ids in bad.items() if len(ids) > 1]
 
 
+def lost(conn, fetched: list[dict]) -> list[dict]:
+    """The fetched downloads removed again with no verdict on their candidate since they started."""
+    here, mine = _mine(conn, "verdicts.decided_here")
+    last = {int(r[0]): float(r[1]) for r in conn.execute(
+        "SELECT proposal_id, MAX(decided_at) FROM verdicts WHERE tier IN ('screen', 'measure', 'adopt') AND proposal_id IS NOT NULL "
+        f"AND {here} GROUP BY proposal_id", mine)}
+    return [d for d in fetched if d["removed_at"] is not None and d["removal_verdict_id"] is None
+            and not (d["proposal_id"] is not None and last.get(d["proposal_id"], 0.0) >= float(d["started_at"] or 0))]
+
+
 def _downloads(conn, since: float, fetched: list[dict]) -> tuple[list[dict], dict, dict]:
     """(candidates fetched more than once, the deleted-without-verdict leak, the evicted-while-queued leak)."""
     key = lambda d: d["proposal_id"] if d["proposal_id"] is not None else d["repo"]  # noqa: E731
     count = Counter(key(d) for d in fetched)
     names = {d["proposal_id"]: d["repo"] for d in fetched}
     twice = [{"name": names.get(k) or str(k), "n": n} for k, n in count.items() if n > 1]
-    here, mine = _mine(conn, "verdicts.decided_here")
-    last = {int(r[0]): float(r[1]) for r in conn.execute(
-        "SELECT proposal_id, MAX(decided_at) FROM verdicts WHERE tier IN ('screen', 'measure', 'adopt') AND proposal_id IS NOT NULL "
-        f"AND {here} GROUP BY proposal_id", mine)}
     state = {int(r[0]): r[1] for r in conn.execute("SELECT id, state FROM proposals")}
-    lost, evicted = [], set()
-    for d in fetched:
-        if d["removed_at"] is None:
-            continue
-        pid = d["proposal_id"]
-        if d["removal_verdict_id"] is None and not (pid is not None and last.get(pid, 0.0) >= float(d["started_at"] or 0)):
-            lost.append(d)
-        if pid is not None and state.get(pid) == "screened":
-            evicted.add(pid)
-    gone = {"key": "deleted", "n": round(sum(d["bytes"] for d in lost) / GIB, 1),
-            "text": f"{sum(d['bytes'] for d in lost) / GIB:.1f} GiB downloaded, then deleted with no verdict ({len(lost)} download(s))"}
+    gone_rows = lost(conn, fetched)
+    evicted = {d["proposal_id"] for d in fetched if d["removed_at"] is not None and d["proposal_id"] is not None
+               and state.get(d["proposal_id"]) == "screened"}
+    gone = {"key": "deleted", "n": round(sum(d["bytes"] for d in gone_rows) / GIB, 1),
+            "text": f"{sum(d['bytes'] for d in gone_rows) / GIB:.1f} GiB downloaded, then deleted with no verdict ({len(gone_rows)} download(s))"}
     out = {"key": "evicted", "n": len(evicted), "text": f"weights of {len(evicted)} candidate(s) evicted while their measure was still queued"}
     return twice, gone, out
 

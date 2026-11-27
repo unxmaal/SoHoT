@@ -348,6 +348,32 @@ def _flow(fl: dict, now: float, needs: list) -> str:
     return "".join(out) + "</section>"
 
 
+def _yield(y: dict, now: float) -> str:
+    """Discovery yield: per lane, GPU hours per decided verdict and per adoption, GiB wasted and the undecided share of measure hours. #2163."""
+    out = [f"<section class='panel' data-panel='yield'><h2>Discovery yield <span class='asof'>as of {_when(y.get('as_of'), now)}</span></h2>"]
+    if y.get("error"):
+        return "".join(out) + f"<p class='head'>{_badge(UNKNOWN)} not read</p></section>"
+    wins = y.get("windows") or {}
+    f = lambda v, spec=".1f": "-" if v is None else format(v, spec)  # noqa: E731
+    head = "".join(f"<th>{esc(d)} d h/decided</th><th>{esc(d)} d h/adoption</th>" for d in wins)
+    rows = []
+    for lane in sorted({x["lane"] for w in wins.values() for x in w["lanes"]}):
+        cells, red, last = [], False, None
+        for w in wins.values():
+            x = next((x for x in w["lanes"] if x["lane"] == lane), None)
+            cells.append(f"<td>{f(x and x['hours_per_decided'])}</td><td>{f(x and x['hours_per_adoption'])}</td>")
+            last = x or last
+        red = bool(last and last["red"])
+        share = "-" if not last or last["undecided_share"] is None else f"{last['undecided_share']:.0%}"
+        mark = f"{_badge(BAD)} " if red else ""
+        rows.append(f"<tr class='{'bad' if red else ''}' data-lane='{esc(lane)}' data-red='{int(red)}'><th>{esc(lane or '(none)')}</th>{''.join(cells)}"
+                    f"<td>{mark}{esc(share)}</td><td>{f(last and last['gib'])} / {f(last and last['wasted_gib'])}</td></tr>")
+    span_d = max((int(d) for d in wins), default=0)
+    out.append(f"<div class='yt'><table><tr><th>lane</th>{head}<th>{span_d} d undecided share of measure hours</th>"
+               f"<th>{span_d} d GiB / wasted</th></tr>{''.join(rows)}</table></div>")
+    return "".join(out) + "</section>"
+
+
 def _checks(mon: dict) -> str:
     checks = mon.get("checks") or []
     if not checks:
@@ -419,6 +445,7 @@ h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:0}h3{font-size:13px;ma
 .flow .edge line,.flow .edge path{stroke:var(--axis);stroke-width:1.5}.flow .edge.rep line,.flow .edge.rep path{stroke:var(--bad);stroke-width:3.5}
 .flow .edge.rep text{fill:var(--bad);font-weight:700}.flow .sub{fill:var(--ink2)}.fl{list-style:none;padding:0;margin:8px 0 0}.fl li{padding:3px 0;font-size:13px}
 .fl .rp,.fl .lk{border-left:4px solid var(--bad);padding-left:8px;margin:4px 0}
+.yt{overflow-x:auto;margin-top:8px}.yt table{border-collapse:collapse;font-size:13px;width:100%}.yt th,.yt td{padding:3px 8px;text-align:right;border-top:1px solid var(--grid)}.yt th:first-child{text-align:left}.yt tr.bad td,.yt tr.bad th{color:var(--bad);font-weight:600}
 .badge{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--st);color:#fff;font-size:12px;flex:none}
 .badge.warn,.badge.unknown{color:#0b0b0b}
 .panel{padding:12px;margin:0 0 14px}.panel summary{cursor:pointer;color:var(--ink2);font-size:13px;margin-top:10px}
@@ -548,6 +575,7 @@ def page(r: dict, lines: dict[str, list[str]], now: float | None = None, extra: 
     out.append(_safe("Ratio", _ratio, r["ratio"], lines.get("Ratio") or [], now))
     out.append(_safe("Timeline", _timeline, r.get("timeline") or {"error": "not gathered"}, now))
     out.append(_safe("Discovery flow", _flow, r.get("discovery_flow") or {"error": "not gathered"}, now, r.get("needs_you") or []))
+    out.append(_safe("Discovery yield", _yield, r.get("pipeline_yield") or {"error": "not gathered"}, now))
     out.append(_safe("Features", _features, r.get("features") or {"error": "not gathered"}, now, _acts(r, token)))
     out.append(_safe("Checks", _checks, r["monitor"]))
     out.append(extra)
