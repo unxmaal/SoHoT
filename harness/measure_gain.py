@@ -51,6 +51,8 @@ class Gain:
     evidence: tuple = ()
     why: str = ""
     first: Gain | None = None
+    #: P(it beats the incumbent by the adopt effect) from its screen race (#2166); None where it has no paired screen.
+    posterior: float | None = None
 
     @property
     def key(self) -> float | None:
@@ -69,8 +71,9 @@ class Gain:
             f = self.first
             after = (f", after its {f.lane} comparison (gain {f.expected:.4f}/cell over "
                      f"{f'{f.minutes:.0f} min' if f.minutes else 'unpriced'})")
+        screen = f", screen posterior {self.posterior:.3f}" if self.posterior is not None else ""
         return (f"{self.name} ({self.lane}): gain {self.expected:.4f}/cell above +{self.effect:.2f} "
-                f"(mean {self.mean:+.3f}, sd {self.sd:.3f}) over {cost}{after}, key {key}; {seen}")
+                f"(mean {self.mean:+.3f}, sd {self.sd:.3f}) over {cost}{after}, key {key}{screen}; {seen}")
 
 
 @dataclass
@@ -82,6 +85,7 @@ class Context:
     standing: object = None
     rates: dict = field(default_factory=dict)
     costs: dict = field(default_factory=dict)
+    screens: dict = field(default_factory=dict)
 
 
 def _cutoff(before: float | None) -> float:
@@ -202,12 +206,32 @@ def evidence(ctx: Context, name: str, lane: str) -> list[Evidence]:
         cells = c.cells if how == "own" else c.cells * RELATED_CELLS / (c.cells + RELATED_CELLS)
         out.append(Evidence((c.gained - c.lost) * cells / c.cells, float(cells),
                             f"{how} run {c.run_id} {c.gained}/{c.lost} of {c.cells}"))
-    if lane not in ctx.rates:
-        ctx.rates[lane] = incumbent_rates(ctx.conn, lane)
-    got = screen_evidence(screen_rows(ctx.conn, name, lane, ctx.before), ctx.rates[lane], lane)
+    got = screen_evidence(_screened(ctx, name, lane), _rates(ctx, lane), lane)
     if got is not None:
         out.append(got)
     return out
+
+
+def _rates(ctx: Context, lane: str) -> dict:
+    if lane not in ctx.rates:
+        ctx.rates[lane] = incumbent_rates(ctx.conn, lane)
+    return ctx.rates[lane]
+
+
+def _screened(ctx: Context, name: str, lane: str) -> list[dict]:
+    if (name, lane) not in ctx.screens:
+        ctx.screens[(name, lane)] = screen_rows(ctx.conn, name, lane, ctx.before)
+    return ctx.screens[(name, lane)]
+
+
+def screen_posterior(ctx: Context, name: str, lane: str, effect: float) -> float | None:
+    """P(it beats the incumbent by `effect`) from its stored screen rows raced against the incumbent's stored cells (#2166); None with no paired case."""
+    from harness import screen, screen_race
+    rows = _screened(ctx, name, lane)
+    if not rows or lane in screen.MEDIA_LANES or lane in screen.WER_SCREENED:
+        return None
+    race = screen_race.replay(rows, _rates(ctx, lane), lane, effect)
+    return race.p if race.cases else None
 
 
 def posterior(evs) -> tuple[float, float]:
@@ -270,14 +294,16 @@ def score(ctx: Context, row: dict, want: str = "", gated: bool = False) -> Gain:
         except (*_STORE_ERRORS, ValueError, OSError) as exc:
             ctx.costs[key] = (None, f"pricing failed: {exc}")
     mins, why = ctx.costs[key]
-    return Gain(name, lane, mean, sd, effect, expected_gain(mean, sd, effect), mins, tuple(evs), why)
+    return Gain(name, lane, mean, sd, effect, expected_gain(mean, sd, effect), mins, tuple(evs), why,
+                posterior=screen_posterior(ctx, name, lane, effect))
 
 
 def order(conn, rows, want: str = "", before: float | None = None, ctx: Context | None = None,
           gated=None) -> tuple[list, list]:
-    """Rows by expected gain per GPU-minute, highest first, unpriced last; ties keep their order. Returns (rows, gains)."""
+    """Rows with a paired screen by its posterior, then the rest and any tie by gain per GPU-minute, unpriced last; ties keep their order. Returns (rows, gains). #2166."""
     rows = list(rows)
     ctx = ctx or context(conn, before)
     gains = [score(ctx, r, want, bool(gated and gated(r))) for r in rows]
-    at = sorted(range(len(rows)), key=lambda i: (gains[i].key is None, -(gains[i].key or 0.0), i))
+    at = sorted(range(len(rows)), key=lambda i: (gains[i].posterior is None, -(gains[i].posterior or 0.0),
+                                                 gains[i].key is None, -(gains[i].key or 0.0), i))
     return [rows[i] for i in at], [gains[i] for i in at]

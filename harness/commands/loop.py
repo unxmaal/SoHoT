@@ -707,7 +707,7 @@ def measure_queue(store, want: str, top: int, sweep=None, room=None, slots=None,
 
 
 def _by_gain(store, rows: list[dict], want: str, say=print, gated=None) -> list[dict]:
-    """Rows by expected gain per GPU-minute, each key said; ties and unpriced rows keep the survivors order. #1315."""
+    """Rows by screen posterior, then expected gain per GPU-minute, each key said; ties and unpriced rows keep the survivors order. #1315, #2166."""
     from harness import measure_gain
     ordered, gains = measure_gain.order(store, rows, want, gated=gated)
     for i, g in enumerate(gains):
