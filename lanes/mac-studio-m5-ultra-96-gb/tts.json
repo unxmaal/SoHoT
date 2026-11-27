@@ -427,48 +427,48 @@
   },
   {
    "candidate": "tts:OpenMOSS-Team/MOSS-TTS-Nano-100M",
-   "decided_at": "2026-11-26T21:49:54Z",
-   "detail": "not screened: needs 0.2 GB but only -7.6 GB is safely available (10.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "decided_at": "2026-11-27T17:54:24Z",
+   "detail": "unknown: runners wanted: its weights are .bin, and no tts runner here loads that format",
    "exam": null,
    "outcome": "queued",
    "proposal": "OpenMOSS-Team/MOSS-TTS-Nano-100M",
-   "reason": "memory",
+   "reason": "harness",
    "receipt_key": "MOSS-TTS-Nano-100M",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>0.2"
+   "tier": "inspect",
+   "until": "format:.bin"
   },
   {
    "candidate": "tts:nvidia/magpie_tts_multilingual_357m",
-   "decided_at": "2026-11-26T21:49:59Z",
-   "detail": "not screened: needs 2.2 GB but only -7.6 GB is safely available (10.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "decided_at": "2026-11-27T17:54:39Z",
+   "detail": "unknown: runners wanted: its weights are .gguf, .nemo, and no tts runner here loads that format",
    "exam": null,
    "outcome": "queued",
    "proposal": "nvidia/magpie_tts_multilingual_357m",
-   "reason": "memory",
+   "reason": "harness",
    "receipt_key": "magpie_tts_multilingual_357m",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>2.2"
+   "tier": "inspect",
+   "until": "format:.gguf|.nemo"
   },
   {
    "candidate": "tts:owensong/Inflect-Nano-v1",
-   "decided_at": "2026-11-26T21:50:03Z",
-   "detail": "not screened: needs 0.0 GB but only -7.2 GB is safely available (10.7 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "decided_at": "2026-11-27T17:54:39Z",
+   "detail": "unknown: runners wanted: its weights are .pt, and no tts runner here loads that format",
    "exam": null,
    "outcome": "queued",
    "proposal": "owensong/Inflect-Nano-v1",
-   "reason": "memory",
+   "reason": "harness",
    "receipt_key": "Inflect-Nano-v1",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>0.0"
+   "tier": "inspect",
+   "until": "format:.pt"
   }
  ],
  "cursor": 1795729803926918,
@@ -1422,7 +1422,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-26T22:19:42Z",
+ "generated_at": "2026-11-27T20:09:59Z",
  "knobs": [],
  "lane": {
   "cases": 470,
