@@ -367,7 +367,7 @@ def _yield(y: dict, now: float) -> str:
         share = "-" if not last or last["undecided_share"] is None else f"{last['undecided_share']:.0%}"
         mark = f"{_badge(BAD)} " if red else ""
         rows.append(f"<tr class='{'bad' if red else ''}' data-lane='{esc(lane)}' data-red='{int(red)}'><th>{esc(lane or '(none)')}</th>{''.join(cells)}"
-                    f"<td>{mark}{esc(share)}</td><td>{f(last and last['gib'])} / {f(last and last['wasted_gib'])}</td></tr>")
+                    f"<td>{mark}{esc(share)}</td><td>{f(last and last['gib'])} / {f(last and last['wasted_gib'])} ({f(last and last['wasted_undecided_gib'])} undecided, {f(last and last['wasted_again_gib'])} again)</td></tr>")
     span_d = max((int(d) for d in wins), default=0)
     out.append(f"<div class='yt'><table><tr><th>lane</th>{head}<th>{span_d} d undecided share of measure hours</th>"
                f"<th>{span_d} d GiB / wasted</th></tr>{''.join(rows)}</table></div>")
