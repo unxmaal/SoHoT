@@ -315,7 +315,8 @@ def _fetched(store, r: dict) -> tuple[str, bool]:
         if not got["ok"]:
             return got["why"] or "the fetch failed", bool(got.get("deferred"))
     else:
-        why = fetching.ensure(store, methods.weights_of(r["name"]) if methods.is_method(r["name"]) else r["name"])
+        why = fetching.ensure(store, methods.weights_of(r["name"]) if methods.is_method(r["name"]) else r["name"],
+                              via="the screen", tier="fetch")
         if why:
             return why, False
     again = screen.plan([r])[0]
@@ -425,7 +426,7 @@ def _no_window(store, r: dict, why_not: str, why: str) -> tuple[bool, str | None
     print(f"   QUEUED: no screen window: {why}")
     ms.decide_or_skip(store, r["name"], "queued", tier=ms.SCREEN, reason=reasons.MEMORY,
                       detail=f"not screened: {why_not}; no screen window: {why}"[:600],
-                      until=memory.wait_for(r["name"], spec=r["candidate"], parallel=1))
+                      until=memory.wait_for(r["name"], spec=r["candidate"], parallel=1, remote=True))
     return False, "queued", None
 
 
@@ -437,15 +438,15 @@ def _screen_one(a, store, r: dict) -> tuple[bool, str | None, int | None]:
     from harness import memory_store as ms
 
     # Headroom, including what is already resident, sized from the listing before anything is fetched. #284, #2015.
-    room, why_not = memory.check_model(r["name"], spec=r["candidate"], parallel=1)
-    windowed = not room and screen_window.wanted(memory.need_gb(r["name"], None, r["candidate"], 1))
+    room, why_not = memory.check_model(r["name"], spec=r["candidate"], parallel=1, remote=True)
+    windowed = not room and screen_window.wanted(memory.need_gb(r["name"], None, r["candidate"], 1, True))
     if windowed:
         print(f"   WINDOW: {why_not}; the pinned set is released for this screen")
     if not room and not windowed:
         # A memory deferral screens nothing, so it does not spend a slot. #910.
         print(f"   QUEUED: {why_not}")
         streak, need = memory_deferrals(store, r["name"])
-        until = memory.wait_for(r["name"], spec=r["candidate"], parallel=1)
+        until = memory.wait_for(r["name"], spec=r["candidate"], parallel=1, remote=True)
         got = memory.wait_need(until)
         if streak >= MEMORY_DEFERRALS and got and got == need:
             _deferred(store, r["name"])

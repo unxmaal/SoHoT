@@ -11,7 +11,7 @@ from pathlib import Path
 from harness import cuts, download_state, downloads, knobs
 from harness import memory_store as ms
 from harness import rank
-from harness import lanes, reasons, screen, variants
+from harness import lanes, reasons, refetch, screen, variants
 
 GIB = 1024 ** 3
 #: Room a download leaves above the deploy's own floor (env.HF_MIN_FREE_GB), so discovery never blocks a deploy. #2011.
@@ -30,6 +30,10 @@ class FetchDeferred(FetchError):
 
 class NoRoom(FetchError):
     """What the download would really take leaves the volume under the floor; a fact about this disk. #2011."""
+
+
+class Refetch(FetchError):
+    """The repo landed within the refetch window and no verdict was written since. #2161."""
 
 
 class Unloadable(FetchError):
@@ -84,7 +88,7 @@ FORMAT, NO_LANE, UNINSPECTED, FAILED = "format", "no lane", "uninspected", "last
 #: The fetch's own recorded refusal (a runner gap, a base it waits on), read back by the funnel. #1084.
 SKIPPED = "fetch skipped"
 #: The event of the fetch verdict that records a download, the one fetch verdict that is not a skip. #1878.
-DOWNLOADED = "downloaded"
+DOWNLOADED = refetch.LANDED_EVENT
 #: That verdict's detail, display only; an older release still reads it. #1878.
 DOWNLOADED_DETAIL = "downloaded"
 SILENT = (FORMAT, NO_LANE, UNINSPECTED)
@@ -659,9 +663,18 @@ def _refusal(conn, row: dict) -> dict | None:
     return None
 
 
+def _budget(conn, repo: str, via: str, owner: str = "") -> None:
+    """Raise Refetch when `repo` landed within the window and no verdict was written since. #2161."""
+    why = refetch.refusal(conn, repo, via, owner)
+    if why:
+        raise Refetch(why)
+
+
 def _land(conn, name: str, card: dict, *, snapshot=None, listing=None, hf_download=None, free=None, floor=None,
-          refresh: bool = True) -> str:
+          refresh: bool = True, via: str = "fetch") -> str:
     """Download `name` the way its lane's runner loads it and tell the router of a new GGUF; the path. #2015."""
+    _budget(conn, name, via)
+    refetch.clear(name)
     text = lanes.canonical(card.get("lane") or "") in lanes.GGUF_SERVED
     where = download(name, snapshot=snapshot, listing=listing, hf_download=hf_download, text=text, conn=conn,
                      require_weights=True, model_type=card.get("model_type") or "", lane=card.get("lane") or "",
@@ -682,9 +695,30 @@ def _needs(conn, name: str, *, free, floor, snapshot=None, refresh: bool = True,
     if sizer is None:
         from harness import inspect as ins
         sizer = ins.hf_size
+
+    def fetch(dep: str) -> str:
+        _budget(conn, dep, f"{name}'s dependency", name)
+        refetch.clear(dep)
+        return download(dep, snapshot=snapshot, conn=conn, refresh=refresh)
     return _fetch_needs(name, [m for m in requires(name, conn) if not have(m, conn)],
-                        bases=runner_bases(name, conn), sizer=sizer, free=free, floor=floor,
-                        fetch=lambda dep: download(dep, snapshot=snapshot, conn=conn, refresh=refresh))
+                        bases=runner_bases(name, conn), sizer=sizer, free=free, floor=floor, fetch=fetch)
+
+
+def dependency_gap(conn, target: str, *, free=None, floor=None, sizer=None) -> tuple[Plan, str] | None:
+    """The first dependency `target` will need, known before it is downloaded, that may not be: its plan and why. #2161."""
+    if sizer is None:
+        from harness import inspect as ins
+        sizer = ins.hf_size
+    floor = disk_floor() if floor is None else floor
+    bases = runner_bases(target, conn)
+    for dep in sorted(set(requires(target, conn)) | set(downloads.recorded_requires(target, conn))):
+        if dep == target or have(dep, conn):
+            continue
+        p = plan(dep, sizer(dep) or -1, free=free, floor=floor)
+        if not p.ok:
+            what = f"{dep}, the base its runner needs" if dep in bases else f"{dep}, needed by {target}"
+            return p, f"{what}: {p.why}"
+    return None
 
 
 def for_test(conn, row: dict, *, snapshot=None, listing=None, hf_download=None, free: int | None = None,
@@ -706,9 +740,14 @@ def for_test(conn, row: dict, *, snapshot=None, listing=None, hf_download=None, 
         # Our own gap, or a disk that will be freed, is not an answer about the candidate. #211, #408, #528.
         outcome = "queued" if p.reason in (reasons.HARNESS, reasons.MACHINE) else "declined"
         return _refused(conn, row, outcome, p.why, reason=p.reason, until=p.until)
+    # What it will need beside itself is checked before a byte of it is fetched. #2161.
+    gap = dependency_gap(conn, name, free=free, floor=floor, sizer=sizer)
+    if gap:
+        outcome = "queued" if gap[0].reason in (reasons.HARNESS, reasons.MACHINE) else "declined"
+        return _refused(conn, row, outcome, gap[1], reason=gap[0].reason, until=gap[0].until)
     try:
         where = _land(conn, name, row, snapshot=snapshot, listing=listing, hf_download=hf_download,
-                      free=free, floor=floor, refresh=refresh)
+                      free=free, floor=floor, refresh=refresh, via="the screen")
     except FetchDeferred as exc:
         return {"repo": name, "ok": False, "why": str(exc), "deferred": True}
     except Unloadable as exc:
@@ -727,8 +766,9 @@ def for_test(conn, row: dict, *, snapshot=None, listing=None, hf_download=None, 
     done, cost, waiting = _needs(conn, name, free=free, floor=floor, snapshot=snapshot, refresh=refresh, sizer=sizer)
     if waiting:
         reason, why = waiting
-        ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=f"waiting on {why}"[:600], reason=reason)
-        return {"repo": name, "ok": False, "why": f"waiting on {why}", "needs": done,
+        ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=f"{refetch.WAITING}{why}"[:600], reason=reason,
+                          event=refetch.WAITING_EVENT)
+        return {"repo": name, "ok": False, "why": f"{refetch.WAITING}{why}", "needs": done,
                 **({"deferred": True} if any(d.get("deferred") for d in done) else {})}
     return {"repo": name, "ok": True, "bytes": size + cost, "why": where, "needs": done}
 
@@ -741,14 +781,28 @@ def card(conn, name: str) -> dict:
     return dict(got) if got else {}
 
 
+def _decline(conn, name: str, p: Plan, why: str, tier: str) -> None:
+    """The verdict of a candidate whose dependency cannot be fetched, so no sweep picks it again until its until is met. #2161."""
+    outcome = "queued" if p.reason in (reasons.HARNESS, reasons.MACHINE) else "declined"
+    try:
+        ms.decide_or_skip(conn, name, outcome, tier=tier, detail=why[:600], reason=p.reason, until=p.until)
+    except KeyError as exc:
+        print(f"  {name}: not recorded: {exc}", flush=True)
+
+
 def ensure(conn, name: str, *, snapshot=None, listing=None, hf_download=None, free: int | None = None,
-           floor: int | None = None, sizer=None, refresh: bool = True) -> str:
-    """Fetch what a measurement of `name` loads and is not on disk, under the floor: why it could not, or "". #2015."""
+           floor: int | None = None, sizer=None, refresh: bool = True, via: str = "measure", tier: str = "measure") -> str:
+    """Fetch what a measurement of `name` loads and is not on disk, under the floor: why it could not, or "". #2015, #2161."""
     from harness import methods
     target = methods.weights_of(name) if methods.is_method(name) else name
     if not target or not missing(target, conn):
         return ""
     floor = disk_floor() if floor is None else floor
+    # Its dependencies are checked before a byte of it is fetched, and a refusal is a verdict. #2161.
+    gap = dependency_gap(conn, target, free=free, floor=floor, sizer=sizer)
+    if gap:
+        _decline(conn, name, gap[0], gap[1], tier)
+        return gap[1]
     if not have(target, conn):
         facts = card(conn, target)
         p = plan(target, int(facts.get("size_bytes") or 0), free=free, floor=floor)
@@ -756,7 +810,7 @@ def ensure(conn, name: str, *, snapshot=None, listing=None, hf_download=None, fr
             return f"{target}: {p.why}"
         try:
             _land(conn, target, facts, snapshot=snapshot, listing=listing, hf_download=hf_download,
-                  free=free, floor=floor, refresh=refresh)
+                  free=free, floor=floor, refresh=refresh, via=via)
         except FetchError as exc:
             return f"{target}: {exc}"
     _, _, waiting = _needs(conn, target, free=free, floor=floor, snapshot=snapshot, refresh=refresh, sizer=sizer)

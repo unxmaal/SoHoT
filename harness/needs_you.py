@@ -72,6 +72,11 @@ def read_incumbent() -> dict:
     return {"rows": [{"lane": lane, **v} for lane, v in sorted(incumbent_down.read().items())]}
 
 
+def read_refetch(now: float | None = None) -> dict:
+    from harness import refetch
+    return {"rows": [{"repo": repo, **v} for repo, v in sorted(refetch.read(now).items())]}
+
+
 def read_gateway() -> dict:
     from harness import gateway_degraded
     return {"mark": gateway_degraded.read()}
@@ -263,6 +268,15 @@ def _incumbent(r: dict) -> list[dict]:
     return out
 
 
+def _refetch(r: dict) -> list[dict]:
+    out = []
+    for x in ((r.get("stops") or {}).get("refetch") or {}).get("rows") or []:
+        out.append(cond(f"refetch-{x['repo']}", f"{x['repo']} was refused a second download", f"asked for by {x.get('via') or '?'}: {x.get('why', '')}",
+                        since=x.get("at"), source="fetch", none="a verdict written for it, or the refetch window passing, lets it download again",
+                        line=f"{x['repo']} refetch refused (asked for by {x.get('via') or '?'})"))
+    return out
+
+
 def _gateway(r: dict) -> list[dict]:
     mark = ((r.get("stops") or {}).get("gateway") or {}).get("mark")
     if mark is None:
@@ -349,7 +363,7 @@ def _machine(r: dict) -> list[dict]:
 def conditions(r: dict) -> list[dict]:
     """Every condition that stops work in the gathered status `r`, oldest first; each from the source its CLI reads."""
     held = bool(_holds_of(r, "benchmarks"))
-    out = (_machine(r) + _holds(r) + _queue(r) + _discovery(r, held) + _jobs(r) + _deploy(r) + _paused_deploys(r) + _router(r) + _incumbent(r) + _gateway(r) + _gate(r) + _monit(r))
+    out = (_machine(r) + _holds(r) + _queue(r) + _discovery(r, held) + _jobs(r) + _deploy(r) + _paused_deploys(r) + _router(r) + _incumbent(r) + _refetch(r) + _gateway(r) + _gate(r) + _monit(r))
     out += [cond(f"unread-{k}", f"{k.capitalize()} was not read", r[k]["error"], source=k, alert=False,
                  line=f"{k} not read: {r[k]['error']}") for k in ("store", "queue", "deploy", "discovery", "services", "ratio",
                                                                   "timeline") if (r.get(k) or {}).get("error")]

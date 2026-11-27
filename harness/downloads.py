@@ -494,6 +494,21 @@ def requires(repo: str, conn=None) -> list[str]:
     return sorted(out)
 
 
+def recorded_requires(repo: str, conn=None) -> list[str]:
+    """What any whole download of `repo` on this machine named, its weights since removed or not: what a fetch can foresee it needs. #2161."""
+    with store(conn) as c:
+        here, mine = machine_scope.here(c, "downloads.mine")
+        rows = c.execute(f"SELECT requires FROM downloads WHERE lower(repo) = ? AND kind = ? AND state IN (?, ?) AND {here}",
+                         (repo.lower(), HUB, ds.COMPLETE, ds.REMOVED, *mine)).fetchall()
+    out = set()
+    for r in rows:
+        try:
+            out.update(json.loads(r["requires"] or "[]"))
+        except ValueError:
+            continue
+    return sorted(out)
+
+
 def complete_hub(conn) -> list[dict]:
     """Every complete hub download on this machine, still present."""
     with store(conn) as c:

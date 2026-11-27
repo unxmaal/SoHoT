@@ -503,14 +503,33 @@ def mlx_kv_bytes_per_token(repo: str, path: str | None = None, ctx: int = 0) -> 
         cfg = json.loads(found[0].read_text(encoding="utf-8")) if found else {}
     except (OSError, ValueError):
         return 0
+    from harness import serving
+    return _kv_per_token(cfg, ctx or serving.MLX_REQUEST_CTX)
+
+
+def _kv_per_token(cfg: dict, ctx: int) -> int:
     cfg = cfg.get("text_config") if isinstance(cfg.get("text_config"), dict) else cfg
-    if not ctx:
-        from harness import serving
-        ctx = serving.MLX_REQUEST_CTX
     try:
         return -(-kv_bytes(cfg, ctx) // ctx)
     except (TypeError, ValueError):
         return 0
+
+
+_REMOTE_KV: dict[str, int] = {}
+
+
+def remote_kv_bytes_per_token(repo: str) -> int:
+    """mlx_kv_bytes_per_token for a repo not fetched yet, from the config.json the registry serves (a few KB, not its weights); 0 when unreadable. #2161."""
+    if repo not in _REMOTE_KV:
+        import json
+        from harness import inspect as ins
+        from harness import serving
+        try:
+            cfg = json.loads(ins.hf_get(f"https://huggingface.co/{repo}/raw/main/config.json"))
+        except Exception:  # noqa: BLE001 - a config that cannot be read is priced as no KV, and is not remembered
+            return 0
+        _REMOTE_KV[repo] = _kv_per_token(cfg if isinstance(cfg, dict) else {}, serving.MLX_REQUEST_CTX)
+    return _REMOTE_KV[repo]
 
 
 def kv_bytes(cfg: dict, ctx: int) -> int:
@@ -546,7 +565,7 @@ _BASE_BITS = 16
 def check_model(repo: str, resident_gb: float = 0.0,
                 reserve_gb: float | None = None,
                 quantize: int | None = None,
-                spec: str = "", parallel: int = 0) -> tuple[bool, str]:
+                spec: str = "", parallel: int = 0, remote: bool = False) -> tuple[bool, str]:
     """One call: will loading `repo` be safe on this machine right now?
 
     `quantize` is the bit width the CALLER will load at. Without it this used
@@ -556,7 +575,7 @@ def check_model(repo: str, resident_gb: float = 0.0,
     successfully on the same machine. A guard that blocks working work gets
     switched off, which is worse than no guard at all.
     """
-    need = need_gb(repo, quantize, spec, parallel)
+    need = need_gb(repo, quantize, spec, parallel, remote)
     if need is None:
         # Allowed, but said out loud. Refusing everything uncached would make
         # the guard the thing that breaks the workflow.
@@ -588,8 +607,8 @@ def check_model(repo: str, resident_gb: float = 0.0,
 
 
 def need_gb(repo: str, quantize: int | None = None, spec: str = "",
-            parallel: int = 0) -> float | str | None:
-    """What loading `repo` costs in GB, None when unknown, or why it cannot be priced."""
+            parallel: int = 0, remote: bool = False) -> float | str | None:
+    """What loading `repo` costs in GB, None when unknown, or why it cannot be priced; `remote` reads the KV of weights not fetched yet from the registry's config. #2161."""
     path = cache_path(repo)
     need = size_gb(path) if path else listed_gb(repo)
     if need is not None and quantize:
@@ -611,7 +630,8 @@ def need_gb(repo: str, quantize: int | None = None, spec: str = "",
     if parallel:
         from harness import serving
         # Each request in flight holds its own KV cache beside the weights. #699.
-        need += parallel * mlx_kv_bytes_per_token(repo) * serving.MLX_REQUEST_CTX / 1024 ** 3
+        kv = mlx_kv_bytes_per_token(repo) or (remote_kv_bytes_per_token(repo) if remote and not cache_path(repo) else 0)
+        need += parallel * kv * serving.MLX_REQUEST_CTX / 1024 ** 3
     return need
 
 
@@ -643,15 +663,21 @@ def held_back(need_gb: float | None) -> str:
             f"server's pinned models stay held (beside the system reserve and the Docker VM); a screen window can release them")
 
 
+def released_gb() -> float:
+    """What fits() would budget with the pinned set released: the memory free now plus what the pins hold, under the ceiling less the Docker VM. #2161."""
+    from harness import containers
+    return budget_gb(available_gb() + pinned_gb(), ceiling_gb() - containers.vm_gb(), 0.0, measured_reserve_gb())
+
+
 def room_gb() -> float:
     """What fits() would budget here now with nothing resident: the quantity `room_gb:>n` reads. #928."""
     return budget_gb(available_gb(), ceiling_gb() - held_gb(), 0.0, measured_reserve_gb())
 
 
 def wait_for(repo: str, spec: str = "", parallel: int = 0, resident_gb: float = 0.0,
-             quantize: int | None = None) -> str:
+             quantize: int | None = None, remote: bool = False) -> str:
     """The until a load fits() refused waits on: room for its need, or '' when the need is unknown. #928."""
-    need = need_gb(repo, quantize, spec, parallel)
+    need = need_gb(repo, quantize, spec, parallel, remote)
     if isinstance(need, str) or need is None:
         return ""
     return f"room_gb:>{need + resident_gb:.1f}"
