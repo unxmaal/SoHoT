@@ -1,0 +1,37 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0541
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What was the rid of the request to /api/users?'
+context: 'falcon - [13/Nov/2026:09:15] "GET /static/app.js HTTP/1.1" 301 28393 rid=e546fe51
+
+  falcon - [01/Nov/2026:10:25] "GET /api/search HTTP/1.1" 301 88107 rid=5ae67c37
+
+  juniper - [04/Nov/2026:23:37] "GET /healthz HTTP/1.1" 200 44679 rid=623d1b7d
+
+  borealis - [01/Nov/2026:16:57] "GET /login HTTP/1.1" 200 72982 rid=178ec58d
+
+  delta - [27/Nov/2026:07:44] "GET /api/upload HTTP/1.1" 404 56763 rid=31e2dc30
+
+  atlas - [03/Nov/2026:13:18] "GET /api/users HTTP/1.1" 502 37526 rid=a1ad0f0c'
+assert:
+  equals:
+  - a1ad0f0c
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '541'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log_request

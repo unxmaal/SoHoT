@@ -1,0 +1,32 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1624
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the port of the billing service?'
+context: "services:\n  notify:\n    image: registry.example.org/notify:4.16.3\n    port: 3081\n    replicas:\
+  \ 8\n    timeout: 18s\n  export:\n    image: registry.example.org/export:2.8.2\n    port: 8344\n   \
+  \ replicas: 7\n    timeout: 110s\n  ingest:\n    image: registry.example.org/ingest:2.14.8\n    port:\
+  \ 6246\n    replicas: 4\n    timeout: 40s\n  render:\n    image: registry.example.org/render:2.3.8\n\
+  \    port: 8173\n    replicas: 1\n    timeout: 58s\n  billing:\n    image: registry.example.org/billing:3.11.3\n\
+  \    port: 4503\n    replicas: 1\n    timeout: 91s"
+assert:
+  equals:
+  - '4503'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1624'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: config

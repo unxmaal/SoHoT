@@ -1,0 +1,36 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0713
+modality: code
+prompt: 'Write a Python function `cache_hits(seq)` that simulates a cache holding at most 2 items over
+  the sequence of requests `seq` and returns the number of requests that were already in the cache. A
+  missing item is inserted; if the cache is full, the item that has been in the cache longest (a hit does
+  not refresh it) is evicted first.
+
+
+  Example: `cache_hits([2]) returns 0`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - cache_hits([2, 1, 3, 2, 1, 5, 1, 5, 6, 4, 5, 6, 4]) == 2
+  - cache_hits([2, 1, 4, 1, 1, 5, 4, 3, 6, 2, 6]) == 4
+  - cache_hits([1, 3, 3, 3, 1, 5, 4, 2, 6, 6, 2]) == 5
+  - cache_hits([1, 6, 5, 2, 4, 2, 4, 5, 6, 4, 3, 6, 4]) == 2
+  - cache_hits([3, 1, 4, 1, 6, 1, 4, 5, 5, 1, 5, 6, 4, 6]) == 4
+  - cache_hits([2]) == 0
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '713'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: algo-cache

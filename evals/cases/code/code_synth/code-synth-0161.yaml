@@ -1,0 +1,53 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0161
+modality: code
+prompt: 'Write a Python function `process(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Rotate the list left by 1 positions, wrapping around (an empty list stays empty).
+
+  2. Remove every negative value.
+
+  3. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  4. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  5. Replace every value with the largest value seen so far.
+
+  6. Keep only the first 6 values (all of them if there are fewer).
+
+  7. Reverse the list.
+
+  8. Divide every value by 2 with floor division (so -7 divided by 2 gives -4).
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `process([-7, 5, -3, 16, 14]) returns [8, 8]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process([]) == []
+  - process([-9]) == []
+  - process([19, 24, -3, -12, 9, -2, 0, -3, 18]) == [4, 12]
+  - process([25, 6, -8, -8, -1, 22, 24]) == [11, 11]
+  - process([14, 19, 12, 5, -8, 0, 11]) == [6, 9]
+  - process([-5, 0, 15, 25, 17]) == [7, 7]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '161'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

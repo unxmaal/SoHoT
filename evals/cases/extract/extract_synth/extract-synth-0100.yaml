@@ -1,0 +1,32 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0100
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the timeout of the ingest service?'
+context: "services:\n  gateway:\n    image: registry.example.org/gateway:3.16.2\n    port: 5358\n    replicas:\
+  \ 4\n    timeout: 109s\n  scheduler:\n    image: registry.example.org/scheduler:1.12.0\n    port: 4882\n\
+  \    replicas: 1\n    timeout: 73s\n  billing:\n    image: registry.example.org/billing:4.1.2\n    port:\
+  \ 8279\n    replicas: 1\n    timeout: 118s\n  notify:\n    image: registry.example.org/notify:4.2.9\n\
+  \    port: 8402\n    replicas: 2\n    timeout: 32s\n  ingest:\n    image: registry.example.org/ingest:1.1.9\n\
+  \    port: 6868\n    replicas: 4\n    timeout: 24s"
+assert:
+  equals:
+  - 24s
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '100'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: config

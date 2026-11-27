@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0872
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Fix filter pack parser"?'
+context: "commit 5cc82300ec923c1ef0685057d2c12e126124f4a6\nAuthor: Mateo Ivanova <mateo@example.com>\n\
+  Date:   2026-11-01\n\n    Fix filter pack parser\n\ncommit f735278613acfa2b3b6ff3bd4fd39f851767515c\n\
+  Author: Jolene Whitlock <jolene@example.com>\nDate:   2026-11-05\n\n    Remove keypad retry\n\ncommit\
+  \ e9ed8c2299dbf6403efc2603fa3761d6fda0c372\nAuthor: Talia Lindqvist <talia@example.com>\nDate:   2026-11-14\n\
+  \n    Remove hose clamp parser"
+assert:
+  equals:
+  - mateo@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '872'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

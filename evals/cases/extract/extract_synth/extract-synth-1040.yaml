@@ -1,0 +1,32 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1040
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Tune filter pack cache"?'
+context: "commit c6f6c5fc8937800fdaf3b7f7371e098354375183\nAuthor: Umar Whitlock <umar@example.com>\n\
+  Date:   2026-11-11\n\n    Fix sensor parser\n\ncommit 55b304a2f7d06cd7a1bb58118e23687d21477ae7\nAuthor:\
+  \ Yusuf Quintero <yusuf@example.com>\nDate:   2026-11-05\n\n    Add cable set cache\n\ncommit 12a382a86501f2ea30353d6650a67a241b0321e6\n\
+  Author: Elena Sandoval <elena@example.com>\nDate:   2026-11-07\n\n    Tune filter pack cache\n\ncommit\
+  \ b584d58eb5c7cc5db05737adef9509b19fb9b7ae\nAuthor: Celia Ekwueme <celia@example.com>\nDate:   2026-11-19\n\
+  \n    Tune battery cache"
+assert:
+  equals:
+  - Elena Sandoval
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1040'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

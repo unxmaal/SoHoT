@@ -1,0 +1,53 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0924
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 4489 end with?'
+context: '2026-11-13 10:32:39 delta-4 INFO job 3657 started
+
+  2026-11-13 10:39:47 delta-4 INFO job 3657 exited with code 0 after 428s
+
+  2026-11-15 19:20:17 delta-4 INFO job 4489 started
+
+  2026-11-15 19:30:38 delta-4 WARN job 4489 exited with code 137 after 621s
+
+  2026-11-16 02:07:34 delta-1 INFO job 6836 started
+
+  2026-11-16 02:17:22 delta-3 WARN job 6836 exited with code 17 after 588s
+
+  2026-11-20 05:57:13 delta-1 INFO job 4652 started
+
+  2026-11-20 06:01:33 delta-4 INFO job 4652 exited with code 0 after 260s
+
+  2026-11-21 02:10:38 delta-1 INFO job 1663 started
+
+  2026-11-21 02:16:12 delta-3 INFO job 1663 exited with code 0 after 334s
+
+  2026-11-23 19:05:23 delta-3 INFO job 1562 started
+
+  2026-11-23 19:10:58 delta-4 WARN job 1562 exited with code 17 after 335s
+
+  2026-11-25 20:15:24 delta-2 INFO job 8781 started
+
+  2026-11-25 20:15:43 delta-1 INFO job 8781 exited with code 0 after 19s'
+assert:
+  equals:
+  - '137'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '924'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

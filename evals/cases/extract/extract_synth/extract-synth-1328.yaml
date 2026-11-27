@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1328
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Fix hose clamp limit"?'
+context: "commit fe77b1e8a63cdd0c0f665b6971a1fe707bc013ac\nAuthor: Elena Galloway <elena@example.com>\n\
+  Date:   2026-11-09\n\n    Add cable set cache\n\ncommit ac70476d5d8839b7a5f58a2f002c3d846a3b8919\nAuthor:\
+  \ Priya Rasmussen <priya@example.com>\nDate:   2026-11-03\n\n    Tune filter pack cache\n\ncommit ca0545072ea75d89c035079de7f15e809b0a6e4c\n\
+  Author: Yusuf Pemberton <yusuf@example.com>\nDate:   2026-11-25\n\n    Fix hose clamp limit"
+assert:
+  equals:
+  - Yusuf Pemberton
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1328'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

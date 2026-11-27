@@ -1,0 +1,35 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0417
+modality: code
+prompt: 'Write a Python function `min_coins(coins, amount)` that returns the fewest coins that sum to
+  exactly `amount`, where `coins` lists distinct denominations and each denomination may be used at most
+  1 time. Return -1 if the amount cannot be made; an amount of 0 needs 0 coins.
+
+
+  Example: `min_coins([2, 7], 6) returns -1`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - min_coins([5, 10, 3, 7], 11) == -1
+  - min_coins([4, 2, 10, 5], 15) == 2
+  - min_coins([3, 1, 2], 13) == -1
+  - min_coins([4, 2, 7, 3], 6) == 2
+  - min_coins([3, 10, 4, 1], 9) == -1
+  - min_coins([7, 1, 2], 1) == 1
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '417'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: algo-coins

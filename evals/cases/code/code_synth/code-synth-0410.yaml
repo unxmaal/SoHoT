@@ -1,0 +1,44 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0410
+modality: code
+prompt: 'Write a Python function `process(rows)`. `rows` is a list of (name, department, mark) tuples
+  with integer marks and unique names, possibly empty. Given them, return the names of the 2 highest marks
+  as a list, highest mark first, equal marks ordered by name ascending; if there are fewer than 2 rows
+  return every name.
+
+
+  Example: `process([(''Sol'', ''qa'', 60), (''Quin'', ''qa'', 90), (''Rhea'', ''qa'', 90), (''Ada'',
+  ''dev'', 50), (''Wren'', ''dev'', 80), (''Fay'', ''dev'', 80), (''Dara'', ''hr'', 90)]) returns [''Dara'',
+  ''Quin'']`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process([('Kira', 'qa', 80), ('Jon', 'sales', 95), ('Nico', 'qa', 80), ('Eli', 'hr', 60), ('Xan',
+    'hr', 95), ('Tess', 'sales', 60)]) == ['Jon', 'Xan']
+  - process([('Tess', 'hr', 50), ('Uma', 'legal', 50), ('Cleo', 'hr', 90), ('Fay', 'hr', 80), ('Zed',
+    'ops', 80)]) == ['Cleo', 'Fay']
+  - process([('Gus', 'qa', 80), ('Mina', 'legal', 80), ('Dara', 'qa', 80), ('Olga', 'sales', 60)]) ==
+    ['Dara', 'Gus']
+  - process([('Sol', 'ops', 80), ('Kira', 'dev', 70), ('Bram', 'ops', 60), ('Pia', 'hr', 60), ('Leo',
+    'dev', 60), ('Xan', 'ops', 70), ('Iris', 'ops', 80)]) == ['Iris', 'Sol']
+  - process([('Rhea', 'sales', 70), ('Ada', 'qa', 70), ('Gus', 'qa', 50), ('Tess', 'ops', 50), ('Dara',
+    'sales', 80), ('Jon', 'ops', 90)]) == ['Jon', 'Dara']
+  - process([('Eli', 'hr', 80), ('Cleo', 'dev', 80), ('Xan', 'dev', 70), ('Dara', 'hr', 80)]) == ['Cleo',
+    'Dara']
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '410'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-topk

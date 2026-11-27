@@ -1,0 +1,35 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0097
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What was the rid of the request to /static/app.js?'
+context: 'harbor - [05/Nov/2026:07:28] "GET /static/app.js HTTP/1.1" 200 59807 rid=8dd1c2e0
+
+  cinder - [23/Nov/2026:01:32] "GET /api/orders HTTP/1.1" 200 29762 rid=2ba541b0
+
+  borealis - [18/Nov/2026:16:59] "GET /api/users HTTP/1.1" 200 45027 rid=d06255d2
+
+  borealis - [09/Nov/2026:19:12] "GET /healthz HTTP/1.1" 200 26512 rid=5d3ea4b7
+
+  atlas - [02/Nov/2026:00:31] "GET /api/upload HTTP/1.1" 500 28508 rid=37a6f0bc'
+assert:
+  equals:
+  - 8dd1c2e0
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '97'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log_request

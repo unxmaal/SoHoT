@@ -1,0 +1,53 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0083
+modality: code
+prompt: 'Write a Python function `apply_rules(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Replace every value with the largest value seen so far.
+
+  2. Replace every value with its square.
+
+  3. Keep the values at indices 0, 3, 6, and so on.
+
+  4. Reverse the list.
+
+  5. Sort descending.
+
+  6. Add 9 to every value.
+
+  7. Replace every value with the largest of itself and the up to 3 values before it.
+
+  8. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  Then: Return the sum of the values (0 for an empty list).
+
+
+  Example: `apply_rules([5, 1, -9, -6, 22, 13, 4, 10, 14]) returns 493`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules([]) == 0
+  - apply_rules([-1]) == 10
+  - apply_rules([0, 10, 13, 25, 13, -6]) == 634
+  - apply_rules([-10, 24, -6, -6, 16, 20, 4, 19, 8]) == 585
+  - apply_rules([14, 17, -7, -9, 2, 10, 0]) == 298
+  - apply_rules([12, 20, 14]) == 153
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '83'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

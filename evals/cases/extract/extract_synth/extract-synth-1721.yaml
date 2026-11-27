@@ -1,0 +1,37 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1721
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Which region has the highest Q2 figure?'
+context: 'Region | Q1 | Q2 | Q3 | Q4
+
+  Lima | 9,580 | 4,440 | 5,110 | 3,150
+
+  Quito | 3,920 | 2,870 | 8,700 | 6,220
+
+  Bergen | 7,400 | 5,280 | 6,130 | 2,180
+
+  Tallinn | 9,160 | 5,210 | 1,660 | 8,950
+
+  Perth | 5,790 | 3,680 | 2,410 | 2,110'
+assert:
+  equals:
+  - Bergen
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1721'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: table

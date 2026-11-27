@@ -1,0 +1,54 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0782
+modality: code
+prompt: 'Write a Python function `transform(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Replace every value with its remainder after division by 6, as Python''s % gives it (never negative).
+
+  2. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  3. Replace every value with its absolute value.
+
+  4. Divide every value by 2 with floor division (so -7 divided by 2 gives -4).
+
+  5. Add -5 to every value.
+
+  6. Keep only the first 5 values (all of them if there are fewer).
+
+  7. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  8. Multiply every value by 5.
+
+  Then: Return the resulting list.
+
+
+  Example: `transform([1, 2, 17, -4, -2, 19, 3]) returns [-25, -45, -50, -50, -40]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([]) == []
+  - transform([1]) == [-25]
+  - transform([18, -3, -7]) == [-25, -45, -50]
+  - transform([3, 11, -4, -3, 0]) == [-20, -25, -25, -20, -15]
+  - transform([7, -7, 2]) == [-25, -35, -40]
+  - transform([0, 7, 24, -1]) == [-25, -50, -75, -85]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '782'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

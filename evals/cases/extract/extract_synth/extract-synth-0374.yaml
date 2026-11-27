@@ -1,0 +1,29 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0374
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the invoice number?'
+context: "Zephyr Optics\nInvoice INV-2026-6720   Issued 2026-11-07\nBill to: Alder Creek Farms   Customer\
+  \ PO: PO-78358\n  mount plate  x3   @     $13.44 =      $40.32\n  sensor       x18  @      $6.94 = \
+  \    $124.92\n  Subtotal: $165.24\n  Shipping: $10.54\n  Tax: $8.26\n  Total due: $184.04 by 2026-12-10"
+assert:
+  equals:
+  - INV-2026-6720
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '374'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: invoice

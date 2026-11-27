@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0260
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Tune mount plate retry"?'
+context: "commit 8b79c5fab38b84bfc3292399009e5a9fa33819d4\nAuthor: Soren Ivanova <soren@example.com>\n\
+  Date:   2026-11-06\n\n    Tune mount plate retry\n\ncommit 71416ffc046dc58ef2e09adfd83ec4bb9a4be4ba\n\
+  Author: Talia Brightwater <talia@example.com>\nDate:   2026-11-07\n\n    Remove sensor parser\n\ncommit\
+  \ 1a7c0ea716ad1539c7c4f4877868185d1f88381e\nAuthor: Farah Marchetti <farah@example.com>\nDate:   2026-11-02\n\
+  \n    Add bolt kit retry\n\ncommit aa30b1cc8d1e19c015ec0337541aa2147c856840\nAuthor: Lucia Ivanova <lucia@example.com>\n\
+  Date:   2026-11-19\n\n    Add label roll cache\n\ncommit cdd2f169e10dd35f9279132a5d66dc5d83af6457\n\
+  Author: Avery Fairbanks <avery@example.com>\nDate:   2026-11-08\n\n    Add bolt kit parser"
+assert:
+  equals:
+  - Soren Ivanova
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '260'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

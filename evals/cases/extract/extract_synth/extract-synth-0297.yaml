@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0297
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the wireless range of model K80?'
+context: 'Model K80: weight 2.6 kg, battery 8100 mAh, wireless range 27 m, price $325.00
+
+  Model T92: weight 3.5 kg, battery 5700 mAh, wireless range 44 m, price $205.00
+
+  Model R83: weight 3.1 kg, battery 9600 mAh, wireless range 8 m, price $276.00
+
+  Model T11: weight 3.5 kg, battery 10500 mAh, wireless range 64 m, price $203.00'
+assert:
+  equals:
+  - 27 m
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '297'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: spec_sheet

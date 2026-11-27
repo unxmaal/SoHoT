@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0188
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the first 7 characters of the hash of the commit "Fix mount plate limit"?'
+context: "commit dfd2a7df00a22c1473532313d79f66ce8ba4f267\nAuthor: Mateo Zielinski <mateo@example.com>\n\
+  Date:   2026-11-08\n\n    Remove toner parser\n\ncommit c23e4c1943bb60fe7f3e8e042169511b0fd05b7d\nAuthor:\
+  \ Ivo Castellan <ivo@example.com>\nDate:   2026-11-01\n\n    Fix mount plate limit\n\ncommit 8c357b440d7adb12e94959bd0083849d66b6c540\n\
+  Author: Elena Okonkwo <elena@example.com>\nDate:   2026-11-23\n\n    Remove keypad cache"
+assert:
+  equals:
+  - c23e4c1
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '188'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

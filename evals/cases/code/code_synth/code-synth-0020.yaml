@@ -1,0 +1,51 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0020
+modality: code
+prompt: 'Write a Python function `run_pipeline(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Drop the first 1 values (an empty list if there are fewer).
+
+  2. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  3. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  4. Replace every value with its absolute value.
+
+  5. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  6. Keep only the values greater than 2.
+
+  Then: Return the second largest distinct value, or None if there are fewer than two distinct values.
+
+
+  Example: `run_pipeline([-8, 23, 13, 9, -12]) returns 104`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline([]) == None
+  - run_pipeline([4]) == None
+  - run_pipeline([20, -3, 13, -10]) == 3
+  - run_pipeline([24, 11, 5]) == 11
+  - run_pipeline([24, -1, 24]) == None
+  - run_pipeline([15, 8, 8, -12, 6, 12]) == 38
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '20'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-6-steps

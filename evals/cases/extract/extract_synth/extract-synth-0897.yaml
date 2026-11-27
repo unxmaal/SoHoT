@@ -1,0 +1,34 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0897
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the price of model R93?'
+context: 'Model R93: weight 3.1 kg, battery 2800 mAh, wireless range 69 m, price $561.00
+
+  Model X23: weight 3.1 kg, battery 2700 mAh, wireless range 9 m, price $76.00
+
+  Model M99: weight 3.7 kg, battery 11100 mAh, wireless range 90 m, price $449.00
+
+  Model X85: weight 2.4 kg, battery 8700 mAh, wireless range 86 m, price $512.00'
+assert:
+  equals:
+  - $561.00
+  - '561.00'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '897'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: spec_sheet

@@ -1,0 +1,37 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1054
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Which SKU is the item called filter pack S5?'
+context: 'sku,name,qty,unit_price
+
+  SKU1525,battery S6,190,$25.96
+
+  SKU9702,label roll M8,297,$11.79
+
+  SKU6920,hose clamp L8,97,$13.34
+
+  SKU4807,battery M1,359,$74.81
+
+  SKU8148,filter pack S5,373,$31.98'
+assert:
+  equals:
+  - SKU8148
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1054'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: inventory

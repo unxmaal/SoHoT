@@ -1,0 +1,53 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1428
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 2203 end with?'
+context: '2026-11-12 20:31:28 ember-1 INFO job 9872 started
+
+  2026-11-12 20:31:46 ember-1 WARN job 9872 exited with code 126 after 18s
+
+  2026-11-14 03:07:00 ember-3 INFO job 6274 started
+
+  2026-11-14 03:13:09 ember-3 WARN job 6274 exited with code 137 after 369s
+
+  2026-11-15 18:44:39 ember-2 INFO job 2203 started
+
+  2026-11-15 18:46:05 ember-2 WARN job 2203 exited with code 255 after 86s
+
+  2026-11-21 01:51:23 ember-1 INFO job 5481 started
+
+  2026-11-21 02:06:20 ember-4 WARN job 5481 exited with code 126 after 897s
+
+  2026-11-24 02:45:32 ember-1 INFO job 3428 started
+
+  2026-11-24 02:50:03 ember-1 INFO job 3428 exited with code 0 after 271s
+
+  2026-11-25 08:11:55 ember-2 INFO job 4552 started
+
+  2026-11-25 08:12:09 ember-4 INFO job 4552 exited with code 0 after 14s
+
+  2026-11-25 13:27:52 ember-1 INFO job 9605 started
+
+  2026-11-25 13:32:52 ember-3 WARN job 9605 exited with code 137 after 300s'
+assert:
+  equals:
+  - '255'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1428'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

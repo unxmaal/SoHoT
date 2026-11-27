@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0218
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How much tax is charged?'
+context: "Quarry Lane Tools\nInvoice INV-2026-2300   Issued 2026-10-18\nBill to: Tidewater Press   Customer\
+  \ PO: PO-13906\n  toner        x4   @     $66.81 =     $267.24\n  keypad       x14  @    $111.53 = \
+  \  $1,561.42\n  sensor       x11  @    $157.35 =   $1,730.85\n  bolt kit     x14  @     $46.43 =   \
+  \  $650.02\n  Subtotal: $4,209.53\n  Shipping: $9.16\n  Tax: $210.47\n  Total due: $4,429.16 by 2026-12-07"
+assert:
+  equals:
+  - $210.47
+  - '210.47'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '218'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: invoice

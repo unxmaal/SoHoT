@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0638
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: By what date is payment due? Use the form YYYY-MM-DD.'
+context: "Ostrich Egg Games\nInvoice INV-2027-4740   Issued 2026-11-15\nBill to: Redwood Signals   Customer\
+  \ PO: PO-10266\n  filter pack  x15  @    $126.68 =   $1,900.20\n  toner        x10  @     $80.86 = \
+  \    $808.60\n  bolt kit     x18  @    $102.62 =   $1,847.16\n  gasket       x13  @    $209.15 =   $2,718.95\n\
+  \  Subtotal: $7,274.91\n  Shipping: $37.73\n  Tax: $509.24\n  Total due: $7,821.88 by 2027-01-11"
+assert:
+  equals:
+  - '2027-01-11'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '638'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: invoice

@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1737
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the weight of model X88?'
+context: 'Model X88: weight 1.7 kg, battery 3400 mAh, wireless range 76 m, price $381.00
+
+  Model X75: weight 1.1 kg, battery 9700 mAh, wireless range 43 m, price $891.00
+
+  Model K88: weight 1.0 kg, battery 3200 mAh, wireless range 12 m, price $633.00
+
+  Model K46: weight 2.2 kg, battery 6000 mAh, wireless range 9 m, price $189.00'
+assert:
+  equals:
+  - 1.7 kg
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1737'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: spec_sheet

@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1004
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Tune hose clamp limit"?'
+context: "commit f20ebf0532636d0cb0098ae5648880c883ca2a50\nAuthor: Hana Kowalczyk <hana@example.com>\n\
+  Date:   2026-11-18\n\n    Tune desk lamp limit\n\ncommit adef79deb33827e9e4f513e48d85469aa3c6a03d\n\
+  Author: Quinn Zielinski <quinn@example.com>\nDate:   2026-11-22\n\n    Add mount plate cache\n\ncommit\
+  \ 9cd322daf2ee952b4d5c86258c26bf83940ac499\nAuthor: Elena Sandoval <elena@example.com>\nDate:   2026-11-21\n\
+  \n    Remove battery retry\n\ncommit 0b4768745a2fe2423a121a0bbf71c3a01104be55\nAuthor: Talia Ivanova\
+  \ <talia@example.com>\nDate:   2026-11-12\n\n    Tune hose clamp limit\n\ncommit 5646496ceb9e48242c1e9331458e5e02e843c062\n\
+  Author: Talia Okonkwo <talia@example.com>\nDate:   2026-11-23\n\n    Fix filter pack parser"
+assert:
+  equals:
+  - talia@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1004'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

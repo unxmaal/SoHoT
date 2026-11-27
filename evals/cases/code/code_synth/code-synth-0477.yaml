@@ -1,0 +1,37 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0477
+modality: code
+prompt: 'Write a Python function `run_program(tokens)` for a small stack machine. `tokens` is a list whose
+  items are ints (pushed onto the stack) or the strings ''drop'', ''sub'', ''swap'', ''add'': drop removes
+  the top value; sub pops b then a and pushes a - b, so the value pushed first is a; swap exchanges the
+  top two values; add pops two values and pushes their sum. An operation that needs more values than the
+  stack has does nothing. Return the final stack as a list, bottom first.
+
+
+  Example: `run_program([''add'', -1, ''swap'', 5, 3, ''swap'', ''sub'', ''add'', ''swap'']) returns [-3]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_program([-1, 6]) == [-1, 6]
+  - run_program([6, 'sub', 'add', 'swap', 6, 0]) == [6, 6, 0]
+  - run_program(['drop', -3, -2, 'sub', 2, 'sub', 6, 'drop']) == [-3]
+  - run_program([5, 'add', 'sub', 'sub', 'swap', 'drop', 2, 'swap']) == [2]
+  - run_program(['swap', 'add']) == []
+  - run_program(['sub', 'sub', 'swap', 'drop', 'add', 1, -2, 6]) == [1, -2, 6]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '477'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: algo-stack

@@ -1,0 +1,54 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0384
+modality: code
+prompt: 'Write a Python function `process(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Convert to uppercase.
+
+  2. Replace runs of whitespace with a single space and strip both ends.
+
+  3. Convert to uppercase.
+
+  4. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  5. Shift every letter forward by 5 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  6. Replace runs of whitespace with a single space and strip both ends.
+
+  7. Sort the characters in ascending code point order.
+
+  8. Replace every ''s'' with ''b'' (lowercase only).
+
+  Then: Return how many characters it has.
+
+
+  Example: `process(''22Cc2b.yy1bzya'') returns 14`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process('12345') == 5
+  - process('abc123xyz') == 9
+  - process('queue QUEUE') == 11
+  - process('eeeee fff') == 9
+  - process('mississippi river') == 17
+  - process('The 3 little pigs 33') == 20
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '384'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-8-steps

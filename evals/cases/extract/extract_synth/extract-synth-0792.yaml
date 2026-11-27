@@ -1,0 +1,61 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0792
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 2240 end with?'
+context: '2026-11-11 05:08:05 ember-1 INFO job 7097 started
+
+  2026-11-11 05:19:40 ember-1 INFO job 7097 exited with code 0 after 695s
+
+  2026-11-11 22:01:06 ember-3 INFO job 7569 started
+
+  2026-11-11 22:09:18 ember-2 WARN job 7569 exited with code 255 after 492s
+
+  2026-11-13 02:02:42 ember-1 INFO job 3015 started
+
+  2026-11-13 02:09:56 ember-4 WARN job 3015 exited with code 17 after 434s
+
+  2026-11-14 01:59:13 ember-1 INFO job 2068 started
+
+  2026-11-14 02:05:28 ember-2 WARN job 2068 exited with code 137 after 375s
+
+  2026-11-15 20:27:56 ember-4 INFO job 8997 started
+
+  2026-11-15 20:42:55 ember-1 WARN job 8997 exited with code 2 after 899s
+
+  2026-11-18 03:40:31 ember-3 INFO job 2719 started
+
+  2026-11-18 03:50:24 ember-3 WARN job 2719 exited with code 255 after 593s
+
+  2026-11-20 04:47:47 ember-2 INFO job 7657 started
+
+  2026-11-20 05:00:48 ember-2 WARN job 7657 exited with code 126 after 781s
+
+  2026-11-24 19:06:29 ember-2 INFO job 9377 started
+
+  2026-11-24 19:12:38 ember-3 WARN job 9377 exited with code 126 after 369s
+
+  2026-11-26 07:12:14 ember-2 INFO job 2240 started
+
+  2026-11-26 07:12:18 ember-1 WARN job 2240 exited with code 255 after 4s'
+assert:
+  equals:
+  - '255'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '792'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

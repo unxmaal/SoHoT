@@ -1,0 +1,53 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0762
+modality: code
+prompt: 'Write a Python function `transform(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Replace every value with its remainder after division by 5, as Python''s % gives it (never negative).
+
+  2. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  3. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  4. Sort descending.
+
+  5. Clamp every value into the range 0 to 4, both inclusive.
+
+  6. Keep only the first 5 values (all of them if there are fewer).
+
+  7. Keep only the last 2 values, in their order (all of them if there are fewer).
+
+  8. Keep only the even values.
+
+  Then: Return how many distinct values there are.
+
+
+  Example: `transform([13, 1, -1, 23, -5, 17, 18, -4]) returns 2`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([]) == 0
+  - transform([3]) == 0
+  - transform([7, 13, -10, 14, 25, 6]) == 1
+  - transform([1, 20, -7, 15, 17, 5, 2, 1, 13]) == 1
+  - transform([24, 6, -5]) == 2
+  - transform([-9, -8, 1, 5, 4, -4, 23, 1]) == 0
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '762'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

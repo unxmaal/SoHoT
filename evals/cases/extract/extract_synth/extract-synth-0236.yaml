@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0236
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Remove sensor cache"?'
+context: "commit b87bf3b17711ad259bc179ad6e5d02d16d915a03\nAuthor: Dmitri Ekwueme <dmitri@example.com>\n\
+  Date:   2026-11-10\n\n    Fix keypad limit\n\ncommit 95d242fc3b7d319e018adf7e93aab777c3abae3d\nAuthor:\
+  \ Wendell Okonkwo <wendell@example.com>\nDate:   2026-11-10\n\n    Tune sensor parser\n\ncommit 0c120404d02c4369b7eedac212d8fc127cc1d499\n\
+  Author: Avery Whitlock <avery@example.com>\nDate:   2026-11-05\n\n    Fix battery limit\n\ncommit 620e87dbb79d318f0e85963b85a4170f9b49eb81\n\
+  Author: Mateo Pemberton <mateo@example.com>\nDate:   2026-11-26\n\n    Remove hose clamp limit\n\ncommit\
+  \ 2391bb1e65275b9ff7e811313c7cb4602ce580b2\nAuthor: Soren Galloway <soren@example.com>\nDate:   2026-11-12\n\
+  \n    Remove sensor cache"
+assert:
+  equals:
+  - Soren Galloway
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '236'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

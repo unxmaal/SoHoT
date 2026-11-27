@@ -1,0 +1,51 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0649
+modality: code
+prompt: 'Write a Python function `solve(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  2. Remove every digit.
+
+  3. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  4. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  5. Replace runs of whitespace with a single space and strip both ends.
+
+  6. Swap the case of every letter.
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `solve(''C.2z.Cx0B 0'') returns ''1c1.1Z1.1c1X1b1''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve('noon') == '1N1O1N'
+  - solve('  ') == '1'
+  - solve('The 3 little pigs 33') == '1L1I1T1L1E1'
+  - solve('Programming in Python') == '1p1R1O1G1R1A1M1I1N1G1'
+  - solve('') == ''
+  - solve('  jumps   over the  lazy dog ') == '1J1U1M1P1S1'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '649'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-6-steps

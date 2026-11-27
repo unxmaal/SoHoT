@@ -1,0 +1,54 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0301
+modality: code
+prompt: 'Write a Python function `transform(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Keep the values at indices 0, 3, 6, and so on.
+
+  2. Remove every negative value.
+
+  3. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  4. Keep only the values greater than -1.
+
+  5. Remove every negative value.
+
+  6. Replace every value with its absolute value.
+
+  7. Clamp every value into the range -5 to 4, both inclusive.
+
+  8. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  Then: Return the sum of the values (0 for an empty list).
+
+
+  Example: `transform([23, 7, 9, 13, 3]) returns 8`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([]) == 0
+  - transform([7]) == 4
+  - transform([15, 2, -10, 9, 25, 10]) == 8
+  - transform([22, 24, 2]) == 4
+  - transform([18, -8, 12, 11, 17, 14, -2, -7, 15]) == 8
+  - transform([15, 19, 6, 7]) == 8
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '301'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

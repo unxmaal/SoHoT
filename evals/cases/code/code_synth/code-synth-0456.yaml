@@ -1,0 +1,41 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0456
+modality: code
+prompt: 'Write a Python function `min_jumps(grid, start, goal)`. `grid` is a list of equal-length strings
+  of ''.'' (open) and ''#'' (blocked); `start` and `goal` are (row, col) tuples of open cells. A piece
+  moves like a chess knight but jumps 1 cells along one axis and 3 along the other, in any of the orientations
+  that gives (both signs on both axes, either axis first). It jumps over anything but must land on an
+  open cell inside the grid. Return the fewest jumps from `start` to `goal`, or -1 if it cannot get there.
+
+
+  Example: `min_jumps([''...#....'', ''...#....'', ''........'', ''........''], (0, 0), (3, 7)) returns
+  3`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - min_jumps(['......', '......', '...#..', '....#.', '......', '....#.', '......'], (0, 0), (6, 5))
+    == -1
+  - min_jumps(['........', '...#.#..', '...#....', '.......#', '........', '........'], (0, 0), (5, 7))
+    == 3
+  - min_jumps(['......#', '#......', '#...##.', '......#', '.##..#.'], (0, 0), (4, 6)) == 4
+  - min_jumps(['.....#.', '.......', '.#....#', '....##.', '.##....', '.......', '#..#...'], (0, 0), (6,
+    6)) == 4
+  - min_jumps(['.....', '.....', '#....', '.....', '...#.', '.#...', '..#..'], (0, 0), (6, 4)) == 4
+  - min_jumps(['....', '....', '....', '.#..', '...#', '.##.', '....'], (0, 0), (6, 3)) == -1
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '456'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: hard-leaper

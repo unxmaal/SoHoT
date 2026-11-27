@@ -1,0 +1,32 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1592
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Fix toner cache"?'
+context: "commit 02a4e5ed0d6180ef9bcfde5eca7b480d0ff7697a\nAuthor: Nadia Kowalczyk <nadia@example.com>\n\
+  Date:   2026-11-13\n\n    Tune bolt kit retry\n\ncommit 9669c4adc37ddb7a3245b863861c58bc3e05cc4e\nAuthor:\
+  \ Lucia Whitlock <lucia@example.com>\nDate:   2026-11-13\n\n    Remove hose clamp cache\n\ncommit 1f332121ef96cf4856836c2dd558a04e292ad75b\n\
+  Author: Vera Castellan <vera@example.com>\nDate:   2026-11-21\n\n    Fix toner cache\n\ncommit ac6a790beb4b4deb7ce111d482b8093156514194\n\
+  Author: Kenji Dunmore <kenji@example.com>\nDate:   2026-11-20\n\n    Remove keypad retry\n\ncommit d4fc88873d579618c729f89dfb5c1fe24a2da163\n\
+  Author: Vera Valdivia <vera@example.com>\nDate:   2026-11-10\n\n    Add cable set parser"
+assert:
+  equals:
+  - vera@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1592'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

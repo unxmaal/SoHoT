@@ -1,0 +1,32 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1436
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Tune filter pack limit"?'
+context: "commit f5409dbf095ecce7c02ca1c0a89281b3d32e70fb\nAuthor: Oren Valdivia <oren@example.com>\n\
+  Date:   2026-11-07\n\n    Remove cable set parser\n\ncommit 5af80d01feaf4fbaea675da9d7c80b87da327311\n\
+  Author: Gideon Lindqvist <gideon@example.com>\nDate:   2026-11-08\n\n    Fix filter pack limit\n\ncommit\
+  \ 71d8c95a87926bc1bde9a94db379a2583e721252\nAuthor: Yusuf Marchetti <yusuf@example.com>\nDate:   2026-11-26\n\
+  \n    Tune filter pack limit\n\ncommit f77a3c239eaf60dc3ea34046ef47c0151e947601\nAuthor: Gideon Halvorsen\
+  \ <gideon@example.com>\nDate:   2026-11-10\n\n    Add filter pack parser"
+assert:
+  equals:
+  - yusuf@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1436'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

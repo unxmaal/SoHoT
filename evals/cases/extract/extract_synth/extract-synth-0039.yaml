@@ -1,0 +1,42 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0039
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: On what date is the launch retro now held? Use the form YYYY-MM-DD.'
+context: 'From: Oren Dunmore
+
+  Subject: launch retro
+
+
+  Hi all, the launch retro is on 2026-11-28 in room C32. Lucia Nakamura will present.
+
+
+  --- reply from Lucia Nakamura ---
+
+  Can we move the launch retro to 2027-01-08? I am travelling on 2026-11-28. The room stays the same.
+
+
+  --- reply from Oren Dunmore ---
+
+  Agreed, the launch retro is now on 2027-01-08. Please bring the printed notes for item 3.'
+assert:
+  equals:
+  - '2027-01-08'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '39'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: email

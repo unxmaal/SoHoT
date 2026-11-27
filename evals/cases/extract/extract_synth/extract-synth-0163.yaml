@@ -1,0 +1,45 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0163
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: In which version was #612 addressed?'
+context: '## 2.7.3 (2026-09-05)
+
+  - Fixed bolt kit handling (#249)
+
+  - Improved battery handling (#612)
+
+  ## 2.6.2 (2026-08-18)
+
+  - Fixed toner handling (#353)
+
+  - Improved cable set handling (#748)
+
+  ## 2.5.2 (2026-07-28)
+
+  - Added label roll handling (#768)
+
+  - Fixed keypad handling (#429)
+
+  - Removed gasket handling (#706)'
+assert:
+  equals:
+  - 2.7.3
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '163'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: changelog

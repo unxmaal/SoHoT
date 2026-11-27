@@ -1,0 +1,48 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0760
+modality: code
+prompt: 'Write a Python function `apply_rules(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Replace every value with the largest of itself and the up to 2 values before it.
+
+  2. Remove every value that is a multiple of 7 (0 is a multiple of everything).
+
+  3. Replace every value with the largest of itself and the up to 2 values before it.
+
+  4. Replace every value with its square.
+
+  5. Rotate the list left by 9 positions, wrapping around (an empty list stays empty).
+
+  6. Keep the values at indices 0, 2, 4, and so on.
+
+  Then: Return the resulting list.
+
+
+  Example: `apply_rules([3, -8, 14, 12, 3, 17]) returns [9, 289]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules([]) == []
+  - apply_rules([7]) == []
+  - apply_rules([-11, 14, 11, 7, -2, -5, -9, 23, -5]) == [529, 121, 529]
+  - apply_rules([-9, -6, 3, -3, 20, 0, 2]) == [9, 400, 400, 36]
+  - apply_rules([18, 15, -9, -4, 22]) == [484, 324, 324]
+  - apply_rules([6, -8, 9]) == [36, 81]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '760'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-6-steps

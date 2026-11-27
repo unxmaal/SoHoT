@@ -1,0 +1,45 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1440
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 9098 end with?'
+context: '2026-11-10 08:22:44 harbor-1 INFO job 8562 started
+
+  2026-11-10 08:29:03 harbor-3 INFO job 6752 started
+
+  2026-11-10 08:37:28 harbor-1 WARN job 8562 exited with code 2 after 884s
+
+  2026-11-10 08:39:25 harbor-1 WARN job 6752 exited with code 255 after 622s
+
+  2026-11-12 06:38:37 harbor-2 INFO job 9098 started
+
+  2026-11-12 06:46:15 harbor-3 WARN job 9098 exited with code 126 after 458s
+
+  2026-11-19 17:08:32 harbor-2 INFO job 6979 started
+
+  2026-11-19 17:20:07 harbor-3 WARN job 6979 exited with code 126 after 695s
+
+  2026-11-20 11:57:43 harbor-3 INFO job 1415 started
+
+  2026-11-20 12:10:21 harbor-3 INFO job 1415 exited with code 0 after 758s'
+assert:
+  equals:
+  - '126'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1440'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

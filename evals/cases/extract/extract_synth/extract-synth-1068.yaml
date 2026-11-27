@@ -1,0 +1,53 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1068
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 8948 end with?'
+context: '2026-11-12 19:46:20 indigo-1 INFO job 8948 started
+
+  2026-11-12 19:49:24 indigo-3 WARN job 8948 exited with code 17 after 184s
+
+  2026-11-13 00:58:14 indigo-4 INFO job 5493 started
+
+  2026-11-13 01:05:01 indigo-1 INFO job 5493 exited with code 0 after 407s
+
+  2026-11-16 05:45:57 indigo-3 INFO job 9880 started
+
+  2026-11-16 05:55:41 indigo-1 WARN job 9880 exited with code 126 after 584s
+
+  2026-11-22 01:21:32 indigo-2 INFO job 6781 started
+
+  2026-11-22 01:34:53 indigo-3 INFO job 6781 exited with code 0 after 801s
+
+  2026-11-22 08:44:43 indigo-1 INFO job 1664 started
+
+  2026-11-22 08:47:37 indigo-2 WARN job 1664 exited with code 1 after 174s
+
+  2026-11-22 11:52:43 indigo-3 INFO job 7212 started
+
+  2026-11-22 11:55:56 indigo-2 INFO job 7212 exited with code 0 after 193s
+
+  2026-11-26 12:55:38 indigo-4 INFO job 9866 started
+
+  2026-11-26 12:55:50 indigo-3 WARN job 9866 exited with code 255 after 12s'
+assert:
+  equals:
+  - '17'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1068'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

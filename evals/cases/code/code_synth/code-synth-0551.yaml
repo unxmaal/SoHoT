@@ -1,0 +1,43 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0551
+modality: code
+prompt: 'Write a Python function `apply_rules(rows)`. `rows` is a list of (name, department, rating) tuples
+  with integer ratings and unique names, possibly empty. Given them, return a dict mapping each department
+  that has at least one rating of 80 or more to how many such ratings it has.
+
+
+  Example: `apply_rules([(''Hugo'', ''legal'', 60), (''Bram'', ''sales'', 90), (''Tess'', ''legal'', 80),
+  (''Yara'', ''ops'', 80), (''Ada'', ''ops'', 80), (''Uma'', ''legal'', 60), (''Cleo'', ''legal'', 70)])
+  returns {''sales'': 1, ''legal'': 1, ''ops'': 2}`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - 'apply_rules([(''Bram'', ''ops'', 95), (''Gus'', ''sales'', 70), (''Eli'', ''sales'', 50), (''Hugo'',
+    ''sales'', 50), (''Fay'', ''sales'', 60), (''Leo'', ''dev'', 70)]) == {''ops'': 1}'
+  - 'apply_rules([(''Hugo'', ''legal'', 95), (''Cleo'', ''ops'', 80), (''Quin'', ''legal'', 60), (''Bram'',
+    ''legal'', 60), (''Zed'', ''legal'', 60), (''Tess'', ''legal'', 80)]) == {''legal'': 2, ''ops'': 1}'
+  - 'apply_rules([(''Iris'', ''ops'', 50), (''Fay'', ''ops'', 70), (''Olga'', ''sales'', 70), (''Quin'',
+    ''qa'', 80), (''Wren'', ''ops'', 80), (''Ada'', ''sales'', 70)]) == {''qa'': 1, ''ops'': 1}'
+  - 'apply_rules([(''Kira'', ''legal'', 70), (''Rhea'', ''dev'', 70), (''Fay'', ''legal'', 95), (''Ada'',
+    ''dev'', 70)]) == {''legal'': 1}'
+  - 'apply_rules([(''Zed'', ''ops'', 95), (''Mina'', ''dev'', 60), (''Uma'', ''qa'', 80), (''Leo'', ''ops'',
+    70), (''Bram'', ''dev'', 80), (''Yara'', ''dev'', 95)]) == {''ops'': 1, ''qa'': 1, ''dev'': 2}'
+  - 'apply_rules([(''Pia'', ''dev'', 50), (''Fay'', ''dev'', 90), (''Jon'', ''dev'', 70), (''Bram'', ''dev'',
+    90), (''Hugo'', ''dev'', 90)]) == {''dev'': 3}'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '551'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-count

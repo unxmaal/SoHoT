@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0776
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Tune keypad parser"?'
+context: "commit 4002cefb8b1feb3065fb771ef0c9d23f32cc5355\nAuthor: Hana Zielinski <hana@example.com>\n\
+  Date:   2026-11-03\n\n    Remove toner retry\n\ncommit 2dcc867b3b1f1bb260a7b26c37cc66e5dfcaf89e\nAuthor:\
+  \ Mateo Pemberton <mateo@example.com>\nDate:   2026-11-02\n\n    Tune keypad parser\n\ncommit 68bccf8bf8677744b84afb5d7eaca62904d6aad8\n\
+  Author: Celia Sandoval <celia@example.com>\nDate:   2026-11-10\n\n    Add label roll cache"
+assert:
+  equals:
+  - Mateo Pemberton
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '776'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

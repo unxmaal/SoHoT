@@ -1,0 +1,32 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0740
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the first 7 characters of the hash of the commit "Fix toner limit"?'
+context: "commit 2eb551ac11d15397e809163a1b4ec55422813881\nAuthor: Oren Rasmussen <oren@example.com>\n\
+  Date:   2026-11-04\n\n    Add bolt kit cache\n\ncommit dcd6d526792fd58d30d8471ee4c602633e7bc981\nAuthor:\
+  \ Quinn Jaramillo <quinn@example.com>\nDate:   2026-11-06\n\n    Add keypad parser\n\ncommit c790b152be9e5ae55aab84963408e19bacb92779\n\
+  Author: Quinn Valdivia <quinn@example.com>\nDate:   2026-11-26\n\n    Fix toner limit\n\ncommit 61879c64782193ecb89734fa93b01a6591f5e56b\n\
+  Author: Dmitri Dunmore <dmitri@example.com>\nDate:   2026-11-21\n\n    Add gasket parser\n\ncommit 36a9e93dcb5228713950c4665b5f66f50e04952c\n\
+  Author: Celia Marchetti <celia@example.com>\nDate:   2026-11-05\n\n    Add sensor parser"
+assert:
+  equals:
+  - c790b15
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '740'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

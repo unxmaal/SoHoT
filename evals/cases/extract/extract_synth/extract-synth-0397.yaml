@@ -1,0 +1,35 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0397
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What was the rid of the request to /api/reports?'
+context: 'juniper - [25/Nov/2026:01:17] "GET /api/search HTTP/1.1" 500 6879 rid=4ab15e82
+
+  falcon - [06/Nov/2026:23:57] "GET /login HTTP/1.1" 500 65830 rid=49a78ad1
+
+  harbor - [03/Nov/2026:05:15] "GET /api/upload HTTP/1.1" 200 82735 rid=31dc4710
+
+  ember - [14/Nov/2026:23:51] "GET /static/app.js HTTP/1.1" 200 50879 rid=95119a8d
+
+  borealis - [25/Nov/2026:02:37] "GET /api/reports HTTP/1.1" 502 75694 rid=a62b717f'
+assert:
+  equals:
+  - a62b717f
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '397'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log_request

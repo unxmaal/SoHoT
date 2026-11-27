@@ -1,0 +1,58 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0160
+modality: code
+prompt: 'Write a Python function `run_pipeline(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  2. Reverse the list.
+
+  3. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  4. Sort ascending.
+
+  5. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  6. Remove duplicates, keeping the first occurrence of each value.
+
+  7. Reverse the list.
+
+  8. Sort descending.
+
+  9. Replace every value with its absolute value.
+
+  10. Multiply every value by 2.
+
+  Then: Return the sum of the values (0 for an empty list).
+
+
+  Example: `run_pipeline([24, 7, 24, -12]) returns 86`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline([]) == 0
+  - run_pipeline([-5]) == 10
+  - run_pipeline([-1, 17, -11, -6, -2, 12, 14, -9, 14]) == 124
+  - run_pipeline([-11, -6, 24, -9, -8, 23, 25]) == 572
+  - run_pipeline([20, 24, 7, 17, 23, 23, -12]) == 448
+  - run_pipeline([-10, 23, -5, 19, -8, 9, 11, 23]) == 554
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '160'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-10-steps

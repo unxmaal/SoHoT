@@ -1,0 +1,53 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0672
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 2907 end with?'
+context: '2026-11-13 03:22:22 falcon-1 INFO job 6691 started
+
+  2026-11-13 03:26:44 falcon-2 WARN job 6691 exited with code 126 after 262s
+
+  2026-11-16 05:34:41 falcon-1 INFO job 2231 started
+
+  2026-11-16 05:45:25 falcon-1 INFO job 2231 exited with code 0 after 644s
+
+  2026-11-16 22:03:11 falcon-4 INFO job 4270 started
+
+  2026-11-16 22:17:38 falcon-4 WARN job 4270 exited with code 255 after 867s
+
+  2026-11-21 00:11:36 falcon-2 INFO job 6103 started
+
+  2026-11-21 00:13:55 falcon-4 WARN job 6103 exited with code 137 after 139s
+
+  2026-11-21 09:07:15 falcon-4 INFO job 7969 started
+
+  2026-11-21 09:18:43 falcon-4 WARN job 7969 exited with code 126 after 688s
+
+  2026-11-25 09:41:10 falcon-2 INFO job 7284 started
+
+  2026-11-25 09:54:20 falcon-1 INFO job 7284 exited with code 0 after 790s
+
+  2026-11-26 00:45:47 falcon-4 INFO job 2907 started
+
+  2026-11-26 00:58:59 falcon-1 WARN job 2907 exited with code 1 after 792s'
+assert:
+  equals:
+  - '1'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '672'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

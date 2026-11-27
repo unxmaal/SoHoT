@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1664
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Remove cable set retry"?'
+context: "commit 69e4f4d8ed95c54a865dffa32d0e6fa24869b09e\nAuthor: Yusuf Nakamura <yusuf@example.com>\n\
+  Date:   2026-11-06\n\n    Fix mount plate limit\n\ncommit 857063ea6057bb9a3168c767546dee492815a01d\n\
+  Author: Oren Pemberton <oren@example.com>\nDate:   2026-11-26\n\n    Tune battery limit\n\ncommit 7540f08d0a6e8513d1af6ca812fa84afea5f0542\n\
+  Author: Elena Thorne <elena@example.com>\nDate:   2026-11-17\n\n    Remove cable set retry"
+assert:
+  equals:
+  - elena@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1664'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

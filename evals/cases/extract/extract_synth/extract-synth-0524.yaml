@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0524
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Remove filter pack cache"?'
+context: "commit 3578b3781a9f2b6c31da64213fe7dc0b389fc4e5\nAuthor: Jolene Valdivia <jolene@example.com>\n\
+  Date:   2026-11-21\n\n    Fix mount plate limit\n\ncommit bbfaa124daa8e156b991dc9623e3ff2fd1c60a16\n\
+  Author: Quinn Underhill <quinn@example.com>\nDate:   2026-11-16\n\n    Remove filter pack cache\n\n\
+  commit 78eebff0f794efd2b2006533cb9316a66b0e5fe1\nAuthor: Vera Kowalczyk <vera@example.com>\nDate:  \
+  \ 2026-11-03\n\n    Tune sensor retry"
+assert:
+  equals:
+  - quinn@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '524'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

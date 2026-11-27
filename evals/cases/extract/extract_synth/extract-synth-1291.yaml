@@ -1,0 +1,51 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1291
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: In which version was #744 addressed?'
+context: '## 3.7.2 (2026-09-28)
+
+  - Added toner handling (#349)
+
+  - Added battery handling (#237)
+
+  ## 3.6.5 (2026-09-05)
+
+  - Fixed cable set handling (#165)
+
+  - Removed sensor handling (#205)
+
+  - Improved battery handling (#881)
+
+  ## 3.5.3 (2026-08-12)
+
+  - Fixed bolt kit handling (#273)
+
+  - Removed desk lamp handling (#744)
+
+  ## 3.4.1 (2026-07-31)
+
+  - Improved desk lamp handling (#391)
+
+  - Removed sensor handling (#148)'
+assert:
+  equals:
+  - 3.5.3
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1291'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: changelog

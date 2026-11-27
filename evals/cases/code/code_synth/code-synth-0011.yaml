@@ -1,0 +1,43 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0011
+modality: code
+prompt: 'Write a Python function `apply_rules(rows)`. `rows` is a list of (name, department, score) tuples
+  with integer scores and unique names, possibly empty. Given them, return the sorted list of names whose
+  score is strictly above the average score of their own department.
+
+
+  Example: `apply_rules([(''Sol'', ''legal'', 50), (''Olga'', ''legal'', 70), (''Rhea'', ''dev'', 70),
+  (''Ada'', ''dev'', 80), (''Zed'', ''dev'', 80), (''Vic'', ''dev'', 95), (''Jon'', ''legal'', 80)]) returns
+  [''Jon'', ''Olga'', ''Vic'']`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules([('Bram', 'sales', 80), ('Hugo', 'dev', 80), ('Jon', 'dev', 60), ('Iris', 'sales', 70),
+    ('Wren', 'sales', 60), ('Tess', 'dev', 70)]) == ['Bram', 'Hugo']
+  - apply_rules([('Cleo', 'sales', 50), ('Mina', 'qa', 80), ('Hugo', 'hr', 80), ('Nico', 'hr', 80), ('Olga',
+    'hr', 95)]) == ['Olga']
+  - apply_rules([('Vic', 'legal', 70), ('Bram', 'dev', 60), ('Rhea', 'legal', 80), ('Jon', 'legal', 80),
+    ('Tess', 'dev', 90), ('Iris', 'ops', 80)]) == ['Jon', 'Rhea', 'Tess']
+  - apply_rules([('Hugo', 'qa', 70), ('Jon', 'qa', 80), ('Kira', 'hr', 80), ('Yara', 'qa', 80), ('Uma',
+    'hr', 80)]) == ['Jon', 'Yara']
+  - apply_rules([('Quin', 'dev', 70), ('Nico', 'ops', 80), ('Xan', 'ops', 70), ('Sol', 'sales', 80), ('Gus',
+    'dev', 70), ('Uma', 'dev', 50), ('Kira', 'ops', 70), ('Hugo', 'dev', 50)]) == ['Gus', 'Nico', 'Quin']
+  - apply_rules([('Jon', 'dev', 50), ('Tess', 'ops', 95), ('Nico', 'dev', 95), ('Xan', 'qa', 80), ('Bram',
+    'ops', 80), ('Zed', 'dev', 80)]) == ['Nico', 'Tess', 'Zed']
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '11'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-above

@@ -1,0 +1,56 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0223
+modality: code
+prompt: 'Write a Python function `process(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Replace every value with its square.
+
+  2. Remove every negative value.
+
+  3. Keep only the even values.
+
+  4. Add -9 to every value.
+
+  5. Divide every value by 2 with integer division that rounds toward zero (so -7 divided by 2 gives -3).
+
+  6. Rotate the list left by 3 positions, wrapping around (an empty list stays empty).
+
+  7. Replace every value with its square.
+
+  8. Multiply every value by 2.
+
+  9. Keep only the even values.
+
+  10. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  Then: Return the resulting list.
+
+
+  Example: `process([6, 19, -2, 8]) returns [8, 338, 1458]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process([]) == []
+  - process([-6]) == [338]
+  - process([3, 2, 18, -9, 5]) == [8, 49298]
+  - process([24, -9, -4, -8, -2, 15, 10]) == [4050, 8, 18, 160178, 1458]
+  - process([-3, -8, 9, 8]) == [1458, 1458]
+  - process([-1, -8, 7]) == [1458]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '223'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-10-steps

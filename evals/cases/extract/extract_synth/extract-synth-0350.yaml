@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0350
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the total due?'
+context: "Ostrich Egg Games\nInvoice INV-2027-9251   Issued 2026-11-20\nBill to: Tidewater Press   Customer\
+  \ PO: PO-45620\n  desk lamp    x15  @    $152.15 =   $2,282.25\n  filter pack  x16  @    $158.40 = \
+  \  $2,534.40\n  battery      x8   @      $8.63 =      $69.04\n  label roll   x7   @     $53.51 =   \
+  \  $374.57\n  Subtotal: $5,260.26\n  Shipping: $24.25\n  Tax: $368.21\n  Total due: $5,652.72 by 2026-12-16"
+assert:
+  equals:
+  - $5,652.72
+  - 5,652.72
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '350'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: invoice

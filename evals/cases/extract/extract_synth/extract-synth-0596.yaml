@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0596
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Add sensor retry"?'
+context: "commit 594cf4b1d6c44ba08ef4d80a1a16d510d526cc73\nAuthor: Avery Okonkwo <avery@example.com>\n\
+  Date:   2026-11-14\n\n    Tune filter pack limit\n\ncommit 36a45edcb38c1ebce2191a452fc353fabd38093a\n\
+  Author: Soren Quintero <soren@example.com>\nDate:   2026-11-15\n\n    Tune bolt kit retry\n\ncommit\
+  \ 9441138632e36f16edfc89d55e6f1086a49706e7\nAuthor: Dmitri Okonkwo <dmitri@example.com>\nDate:   2026-11-11\n\
+  \n    Add sensor retry\n\ncommit 2bed8016aee669b5365e0a3f77b03a53633d400d\nAuthor: Oren Pemberton <oren@example.com>\n\
+  Date:   2026-11-03\n\n    Add keypad limit\n\ncommit 09e0990416f20a2753f8d57b728346c6c71a625e\nAuthor:\
+  \ Hana Kowalczyk <hana@example.com>\nDate:   2026-11-06\n\n    Remove battery retry"
+assert:
+  equals:
+  - dmitri@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '596'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

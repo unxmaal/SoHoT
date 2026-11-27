@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0356
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Fix filter pack parser"?'
+context: "commit a3b9f2695258ac240ce67c1c441427c0fa1ff1c6\nAuthor: Dmitri Zielinski <dmitri@example.com>\n\
+  Date:   2026-11-03\n\n    Fix filter pack parser\n\ncommit 97b03b69e9363e965796b239f8dcfaac3a454af7\n\
+  Author: Quinn Sandoval <quinn@example.com>\nDate:   2026-11-25\n\n    Remove cable set cache\n\ncommit\
+  \ c4be382a6cc1d57d1b0cb1d5a119d34d03d33853\nAuthor: Hana Marchetti <hana@example.com>\nDate:   2026-11-04\n\
+  \n    Add toner cache"
+assert:
+  equals:
+  - dmitri@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '356'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

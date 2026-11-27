@@ -1,0 +1,34 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0075
+modality: code
+prompt: 'Write a Python function `count_bits(lo, hi)` returning how many integers x with lo <= x <= hi
+  (both inclusive, lo >= 0) have exactly 1 bit set to 1 in binary. If hi < lo the answer is 0.
+
+
+  Example: `count_bits(30, 65) returns 2`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - count_bits(24, 37) == 1
+  - count_bits(33, 71) == 1
+  - count_bits(23, 41) == 1
+  - count_bits(12, 64) == 3
+  - count_bits(39, 53) == 0
+  - count_bits(6, 37) == 3
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '75'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: algo-bits

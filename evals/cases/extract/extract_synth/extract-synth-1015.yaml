@@ -1,0 +1,51 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1015
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: In which version was #631 addressed?'
+context: '## 2.8.0 (2026-09-23)
+
+  - Added toner handling (#164)
+
+  - Removed bolt kit handling (#830)
+
+  ## 2.7.4 (2026-09-06)
+
+  - Added filter pack handling (#462)
+
+  - Removed label roll handling (#631)
+
+  - Fixed filter pack handling (#225)
+
+  ## 2.6.1 (2026-08-23)
+
+  - Fixed bolt kit handling (#715)
+
+  - Improved sensor handling (#488)
+
+  ## 2.5.5 (2026-07-25)
+
+  - Fixed filter pack handling (#796)
+
+  - Improved battery handling (#742)'
+assert:
+  equals:
+  - 2.7.4
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1015'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: changelog

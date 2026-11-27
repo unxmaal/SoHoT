@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0830
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the total due?'
+context: "Lumen Works\nInvoice INV-2027-3010   Issued 2026-10-23\nBill to: Redwood Signals   Customer\
+  \ PO: PO-71684\n  filter pack  x4   @    $179.51 =     $718.04\n  battery      x13  @     $59.09 = \
+  \    $768.17\n  Subtotal: $1,486.21\n  Shipping: $7.23\n  Tax: $148.62\n  Total due: $1,642.06 by 2027-01-18"
+assert:
+  equals:
+  - $1,642.06
+  - 1,642.06
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '830'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: invoice

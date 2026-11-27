@@ -1,0 +1,54 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0109
+modality: code
+prompt: 'Write a Python function `reduce_data(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  2. Sort the characters in ascending code point order.
+
+  3. Remove every vowel (a, e, i, o, u, either case).
+
+  4. Keep only the first occurrence of each character.
+
+  5. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  6. Replace every ''b'' with ''r'' (lowercase only).
+
+  7. Replace runs of whitespace with a single space and strip both ends.
+
+  8. Convert to uppercase.
+
+  Then: Return the resulting string.
+
+
+  Example: `reduce_data(''2CCc2,0ax0'') returns ''1,1011121C1C1X''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data('mississippi river') == '1 11121M1P1R1S1V'
+  - reduce_data('Zebra 42 crossing 7') == '1 111214171Z1R1C1G1N1R1S'
+  - reduce_data('A man a plan a canal Panama') == '1 111P1C1L1M1N1P'
+  - reduce_data('hELLo WoRLD') == '1 11121D1L1R1W1H'
+  - reduce_data('aabbbcccc') == '1213141R1C'
+  - reduce_data('The 3 little pigs 33') == '1 1112131T1G1H1L1P1S1T'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '109'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-8-steps

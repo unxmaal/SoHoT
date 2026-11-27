@@ -1,0 +1,63 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0009
+modality: code
+prompt: 'Write a Python function `run_pipeline(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Swap the case of every letter.
+
+  2. Collapse every run of the same character into one character.
+
+  3. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  4. Collapse every run of the same character into one character.
+
+  5. Convert to lowercase.
+
+  6. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  7. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  8. Remove every digit.
+
+  9. Remove every vowel (a, e, i, o, u, either case).
+
+  10. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  11. Remove every vowel (a, e, i, o, u, either case).
+
+  12. Collapse every run of the same character into one character.
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `run_pipeline(''zA.A b,Ab.Ab 2,b'') returns ''B,b.b''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline('A man a plan a canal Panama') == 'Pln'
+  - run_pipeline('12345') == ''
+  - run_pipeline('Hello, World') == 'Wrld'
+  - run_pipeline('Level') == 'Lvl'
+  - run_pipeline('Data-driven 2025') == 'Dt-drvn'
+  - run_pipeline('zz yy xx') == 'Z'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '9'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-12-steps

@@ -1,0 +1,57 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0576
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 6401 end with?'
+context: '2026-11-10 21:36:09 borealis-4 INFO job 9964 started
+
+  2026-11-10 21:39:17 borealis-2 INFO job 9964 exited with code 0 after 188s
+
+  2026-11-15 11:35:13 borealis-2 INFO job 1902 started
+
+  2026-11-15 11:45:52 borealis-2 WARN job 1902 exited with code 17 after 639s
+
+  2026-11-21 04:56:51 borealis-4 INFO job 6401 started
+
+  2026-11-21 05:00:43 borealis-4 WARN job 6401 exited with code 137 after 232s
+
+  2026-11-22 01:39:58 borealis-2 INFO job 8825 started
+
+  2026-11-22 01:50:55 borealis-4 WARN job 8825 exited with code 126 after 657s
+
+  2026-11-22 14:36:18 borealis-2 INFO job 1580 started
+
+  2026-11-22 14:46:22 borealis-2 INFO job 1580 exited with code 0 after 604s
+
+  2026-11-23 22:44:17 borealis-1 INFO job 5244 started
+
+  2026-11-23 22:46:47 borealis-4 WARN job 5244 exited with code 1 after 150s
+
+  2026-11-24 13:21:23 borealis-1 INFO job 2363 started
+
+  2026-11-24 13:31:02 borealis-3 WARN job 2363 exited with code 1 after 579s
+
+  2026-11-25 00:01:49 borealis-4 INFO job 6057 started
+
+  2026-11-25 00:05:42 borealis-2 WARN job 6057 exited with code 1 after 233s'
+assert:
+  equals:
+  - '137'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '576'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

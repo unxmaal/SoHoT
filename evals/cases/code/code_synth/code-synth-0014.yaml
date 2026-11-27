@@ -1,0 +1,36 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0014
+modality: code
+prompt: 'Write a Python function `minutes_covered(ranges)` where `ranges` is a list of strings like ''09:30-10:15''
+  (24-hour HH:MM-HH:MM, same day, start before end). Return the total number of minutes covered by at
+  least one range; overlapping time is counted once.
+
+
+  Example: `minutes_covered([''18:22-20:02'', ''18:48-21:10'', ''13:19-13:53'', ''02:57-04:10'']) returns
+  275`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - minutes_covered(['01:05-01:25', '20:17-21:43']) == 106
+  - minutes_covered(['16:10-16:58']) == 48
+  - minutes_covered(['09:09-09:25', '13:45-13:53', '17:18-18:10', '20:02-21:38', '16:55-17:33']) == 195
+  - minutes_covered(['05:25-05:30']) == 5
+  - minutes_covered(['04:27-04:49', '04:07-06:15', '14:57-16:43', '14:54-16:31', '21:28-22:19']) == 288
+  - minutes_covered([]) == 0
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '14'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: algo-union

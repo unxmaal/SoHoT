@@ -1,0 +1,57 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0612
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 9056 end with?'
+context: '2026-11-11 04:16:56 juniper-3 INFO job 3815 started
+
+  2026-11-11 04:28:07 juniper-4 WARN job 3815 exited with code 1 after 671s
+
+  2026-11-14 13:31:05 juniper-1 INFO job 4304 started
+
+  2026-11-14 13:36:06 juniper-3 WARN job 4304 exited with code 1 after 301s
+
+  2026-11-18 06:42:51 juniper-1 INFO job 7475 started
+
+  2026-11-18 06:45:12 juniper-3 WARN job 7475 exited with code 255 after 141s
+
+  2026-11-18 12:41:28 juniper-2 INFO job 9056 started
+
+  2026-11-18 12:54:46 juniper-3 WARN job 9056 exited with code 255 after 798s
+
+  2026-11-19 22:47:36 juniper-3 INFO job 4788 started
+
+  2026-11-19 22:59:30 juniper-4 WARN job 4788 exited with code 1 after 714s
+
+  2026-11-21 16:36:39 juniper-3 INFO job 7147 started
+
+  2026-11-21 16:50:52 juniper-4 WARN job 7147 exited with code 1 after 853s
+
+  2026-11-22 09:14:58 juniper-1 INFO job 2949 started
+
+  2026-11-22 09:20:49 juniper-1 WARN job 2949 exited with code 17 after 351s
+
+  2026-11-25 04:02:36 juniper-4 INFO job 6795 started
+
+  2026-11-25 04:12:50 juniper-3 INFO job 6795 exited with code 0 after 614s'
+assert:
+  equals:
+  - '255'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '612'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

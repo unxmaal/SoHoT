@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0296
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the first 7 characters of the hash of the commit "Remove mount plate cache"?'
+context: "commit 87cedc576a9d4ce54474afc13a90240cc29ffa5f\nAuthor: Soren Underhill <soren@example.com>\n\
+  Date:   2026-11-03\n\n    Fix gasket retry\n\ncommit ff8c8d2fb19c8a4e2867263f8f50200e328b25d9\nAuthor:\
+  \ Dmitri Ivanova <dmitri@example.com>\nDate:   2026-11-01\n\n    Add keypad limit\n\ncommit 38263acab58dbb3f419f477fa992b1028b122e14\n\
+  Author: Quinn Whitlock <quinn@example.com>\nDate:   2026-11-16\n\n    Fix filter pack cache\n\ncommit\
+  \ 1ac49ef7b5cb790236131f629489a16ff5a95e0c\nAuthor: Vera Ekwueme <vera@example.com>\nDate:   2026-11-19\n\
+  \n    Fix mount plate retry\n\ncommit c2ea9faddc66af32d881ef4291f6dac8cf30939d\nAuthor: Dmitri Lindqvist\
+  \ <dmitri@example.com>\nDate:   2026-11-09\n\n    Remove mount plate cache"
+assert:
+  equals:
+  - c2ea9fa
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '296'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

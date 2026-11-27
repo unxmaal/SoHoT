@@ -1,0 +1,41 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0646
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Which SKU is the item called label roll L6?'
+context: 'sku,name,qty,unit_price
+
+  SKU7601,battery S1,117,$79.14
+
+  SKU6272,gasket S7,299,$47.86
+
+  SKU1612,sensor M7,333,$13.44
+
+  SKU2338,label roll L6,99,$58.83
+
+  SKU3597,cable set L3,393,$24.24
+
+  SKU7489,sensor S1,285,$62.68
+
+  SKU3894,keypad S8,276,$45.63'
+assert:
+  equals:
+  - SKU2338
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '646'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: inventory

@@ -2963,6 +2963,17 @@ negative control: the page built from the spec passes, a bare page and the
 next case's page do not, and a hard kind's rows left as the prompt gives them
 fail.
 
+The code lane's second generated source is `code_synth` (#603): seeded specs
+(step pipelines over int lists and strings, record queries, and parameterised
+algorithm problems, some needing inputs too large for brute force), each with
+the reference that computed its checks and a deliberately wrong variant under
+`wrong/` that must fail one. The extract lane's is `extract_synth` (#603):
+seeded logs, invoices, mail threads, configs, tables, itineraries, changelogs,
+commit logs, spec sheets, stock lists and recipes, each asking for one value
+among near-miss distractors. Both are dated 2026-11-27 and contain nothing
+published before it, so no model has trained on them. `soh cases control
+<source>` runs the negative controls.
+
 The agent lane's generated source is `agent_synth` (#603): `agent_synth.COUNT`
 seeded repos in the hand set's families and bundle format. Fix cases plant
 bugs in several modules of a package (or one bug behind a wrapper module whose test is the only

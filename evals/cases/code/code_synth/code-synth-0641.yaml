@@ -1,0 +1,48 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0641
+modality: code
+prompt: 'Write a Python function `compute(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Reverse the list.
+
+  2. Remove every negative value.
+
+  3. Keep the values at indices 0, 3, 6, and so on.
+
+  4. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  5. Multiply every value by 5.
+
+  6. Rotate the list left by 4 positions, wrapping around (an empty list stays empty).
+
+  Then: Return the resulting list.
+
+
+  Example: `compute([16, -5, 13]) returns [65]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute([]) == []
+  - compute([5]) == [25]
+  - compute([-6, 7, 8, 24, 9, -11, 21, 17]) == [85, 120]
+  - compute([-12, -7, -1, 2, -3, 17]) == [85]
+  - compute([7, -2, -6, 8, 7, 25, -5]) == [35, 125]
+  - compute([-9, -5, 22, 16, -6, 9, -8]) == [45]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '641'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-6-steps

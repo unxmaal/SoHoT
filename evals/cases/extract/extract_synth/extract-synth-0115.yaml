@@ -1,0 +1,57 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0115
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: In which version was #623 addressed?'
+context: '## 3.11.0 (2026-10-03)
+
+  - Fixed cable set handling (#796)
+
+  - Fixed bolt kit handling (#550)
+
+  - Fixed cable set handling (#468)
+
+  ## 3.10.4 (2026-09-03)
+
+  - Fixed label roll handling (#144)
+
+  - Added mount plate handling (#704)
+
+  - Fixed label roll handling (#888)
+
+  ## 3.9.0 (2026-08-28)
+
+  - Improved keypad handling (#618)
+
+  - Removed mount plate handling (#117)
+
+  - Removed bolt kit handling (#116)
+
+  ## 3.8.2 (2026-07-28)
+
+  - Added cable set handling (#623)
+
+  - Added mount plate handling (#567)
+
+  - Added bolt kit handling (#328)'
+assert:
+  equals:
+  - 3.8.2
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '115'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: changelog

@@ -1,0 +1,40 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0850
+modality: code
+prompt: 'Write a Python function `compute(rows)`. `rows` is a list of (name, region, rating) tuples with
+  integer ratings and unique names, possibly empty. Given them, return the sorted list of names whose
+  rating is strictly above the average rating of their own region.
+
+
+  Example: `compute([(''Bram'', ''dev'', 70), (''Wren'', ''dev'', 60), (''Dara'', ''qa'', 70), (''Zed'',
+  ''sales'', 90)]) returns [''Bram'']`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute([('Quin', 'hr', 70), ('Cleo', 'hr', 90), ('Eli', 'ops', 80), ('Sol', 'legal', 50)]) == ['Cleo']
+  - compute([('Ada', 'sales', 50), ('Hugo', 'dev', 70), ('Nico', 'dev', 50), ('Olga', 'dev', 70)]) ==
+    ['Hugo', 'Olga']
+  - compute([('Wren', 'hr', 70), ('Fay', 'hr', 90), ('Tess', 'hr', 60), ('Dara', 'hr', 80), ('Uma', 'dev',
+    80), ('Leo', 'hr', 50), ('Nico', 'sales', 50)]) == ['Dara', 'Fay']
+  - compute([('Iris', 'hr', 60), ('Wren', 'hr', 60), ('Pia', 'ops', 50), ('Hugo', 'qa', 90)]) == []
+  - compute([('Tess', 'qa', 50), ('Yara', 'qa', 70), ('Jon', 'ops', 50), ('Kira', 'ops', 80), ('Dara',
+    'qa', 90), ('Sol', 'qa', 50)]) == ['Dara', 'Kira', 'Yara']
+  - compute([('Zed', 'dev', 60), ('Olga', 'legal', 50), ('Kira', 'legal', 80), ('Sol', 'sales', 90), ('Tess',
+    'sales', 95)]) == ['Kira', 'Tess']
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '850'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-above

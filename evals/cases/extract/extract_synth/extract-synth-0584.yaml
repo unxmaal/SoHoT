@@ -1,0 +1,32 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0584
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Add battery cache"?'
+context: "commit ecbf83121795c4ee02f7fc92fdef5c1c7d62d8a2\nAuthor: Soren Valdivia <soren@example.com>\n\
+  Date:   2026-11-21\n\n    Remove filter pack limit\n\ncommit bda0e6bbee7ceade27dce6b280c7e81baf26f5ef\n\
+  Author: Avery Jaramillo <avery@example.com>\nDate:   2026-11-18\n\n    Add bolt kit retry\n\ncommit\
+  \ 4fff29708e02c9d1ec79117bee0b1534e0cebab3\nAuthor: Soren Nakamura <soren@example.com>\nDate:   2026-11-13\n\
+  \n    Tune sensor limit\n\ncommit 3eeee7c37900259173dceb2f7d2caca5aa9a0429\nAuthor: Bruno Quintero <bruno@example.com>\n\
+  Date:   2026-11-26\n\n    Add battery cache"
+assert:
+  equals:
+  - bruno@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '584'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

@@ -1,0 +1,50 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0525
+modality: code
+prompt: 'Write a Python function `solve(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  2. Collapse every run of the same character into one character.
+
+  3. Shift every letter forward by 6 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  4. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  5. Replace runs of whitespace with a single space and strip both ends.
+
+  6. Remove every vowel (a, e, i, o, u, either case).
+
+  Then: Return the resulting string.
+
+
+  Example: `solve(''y1,x 021 ,2'') returns '',2 021 1,d''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve('  ') == ''
+  - solve('Programming in Python') == 'Vznt t Vxmxgstm'
+  - solve('banana bandana') == 'Hgtjgtg Hgtgtg'
+  - solve('eeeee fff') == 'L K'
+  - solve('queue QUEUE') == 'Wkk Wkk'
+  - solve('tab\tseparated  words') == 'Cxjy Ykvgxgzkj Zgh'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '525'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-6-steps

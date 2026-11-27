@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0704
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the first 7 characters of the hash of the commit "Remove label roll cache"?'
+context: "commit 7446acff84e57910ecea1d63af93e1a90fec96d1\nAuthor: Mateo Brightwater <mateo@example.com>\n\
+  Date:   2026-11-09\n\n    Tune toner retry\n\ncommit 598e0b1e5d139bfeb205d7a76795071159c9fc21\nAuthor:\
+  \ Hana Dunmore <hana@example.com>\nDate:   2026-11-04\n\n    Remove label roll cache\n\ncommit ad39daa2460b1b384a4d78c566da925aee814a2a\n\
+  Author: Dmitri Galloway <dmitri@example.com>\nDate:   2026-11-13\n\n    Fix bolt kit retry"
+assert:
+  equals:
+  - 598e0b1
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '704'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

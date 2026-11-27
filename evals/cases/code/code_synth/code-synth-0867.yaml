@@ -1,0 +1,53 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0867
+modality: code
+prompt: 'Write a Python function `process(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Swap the case of every letter.
+
+  2. Shift every letter forward by 6 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  3. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  4. Sort the characters in ascending code point order.
+
+  5. Cut the text to at most 9 characters, then pad it on the right with ''.'' up to 9 characters.
+
+  6. Convert to lowercase.
+
+  7. Collapse every run of the same character into one character.
+
+  8. Remove every digit.
+
+  Then: Return the resulting string.
+
+
+  Example: `process('' B2c2C1A2,1'') returns '',igh''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process('') == '.'
+  - process('Level') == 'bkr.'
+  - process('banana bandana') == ' gh'
+  - process('12345') == '.'
+  - process('abc123xyz') == 'defghi'
+  - process('eeeee fff') == ' kl'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '867'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-8-steps

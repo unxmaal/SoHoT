@@ -1,0 +1,53 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0725
+modality: code
+prompt: 'Write a Python function `reduce_data(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  2. Keep only the first occurrence of each character.
+
+  3. Convert to uppercase.
+
+  4. Collapse every run of the same character into one character.
+
+  5. Remove every digit.
+
+  6. Swap the case of every letter.
+
+  7. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  8. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  Then: Return the number of words (whitespace-separated).
+
+
+  Example: `reduce_data(''xc..2.C1z'') returns 1`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data('x') == 1
+  - reduce_data('hELLo WoRLD') == 2
+  - reduce_data('') == 0
+  - reduce_data('12345') == 0
+  - reduce_data('  jumps   over the  lazy dog ') == 2
+  - reduce_data('zz yy xx') == 2
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '725'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-8-steps

@@ -1,0 +1,52 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0481
+modality: code
+prompt: 'Write a Python function `process(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Replace every value with its remainder after division by 9, as Python''s % gives it (never negative).
+
+  2. Keep only the last 3 values, in their order (all of them if there are fewer).
+
+  3. Clamp every value into the range 1 to 8, both inclusive.
+
+  4. Keep only the first 6 values (all of them if there are fewer).
+
+  5. Keep only the last 5 values, in their order (all of them if there are fewer).
+
+  6. Collapse each run of equal adjacent values into one value.
+
+  7. Remove duplicates, keeping the first occurrence of each value.
+
+  8. Divide every value by 3 with integer division that rounds toward zero (so -7 divided by 3 gives -2).
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `process([-7, -9, -8, 21, -12, -6, 3, -4, 15]) returns [1, 1]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process([]) == []
+  - process([5]) == [1]
+  - process([15, 11, 21]) == [0, 1]
+  - process([13, 19, 6, 12]) == [0, 1]
+  - process([16, 17, 10, -12, 3, 19, 8, -3, 21]) == [1, 2]
+  - process([-12, -3, -4, 25, -7, 11, 25, 15]) == [0, 2]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '481'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

@@ -1,0 +1,32 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0092
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the first 7 characters of the hash of the commit "Add label roll retry"?'
+context: "commit 8f1d1642496a3a3ea69e5ba3aa999168a9bffb8d\nAuthor: Mateo Whitlock <mateo@example.com>\n\
+  Date:   2026-11-09\n\n    Tune hose clamp retry\n\ncommit af18c7bf9e4e21a2cb8c2b886a484174fecd5069\n\
+  Author: Ivo Okonkwo <ivo@example.com>\nDate:   2026-11-05\n\n    Remove cable set cache\n\ncommit e5a626bc03e6d578be52aa49362fa69a1dbcc0bf\n\
+  Author: Wendell Dunmore <wendell@example.com>\nDate:   2026-11-05\n\n    Fix bolt kit retry\n\ncommit\
+  \ 9f3de4ed242cdec0d41691ea8d1e913ba2869b4e\nAuthor: Avery Ekwueme <avery@example.com>\nDate:   2026-11-14\n\
+  \n    Add label roll retry"
+assert:
+  equals:
+  - 9f3de4e
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '92'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

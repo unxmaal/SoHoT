@@ -1,0 +1,59 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0524
+modality: code
+prompt: 'Write a Python function `solve(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  2. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  3. Replace every maximal run of digits with the number of digits in it.
+
+  4. Remove every digit.
+
+  5. Replace every maximal run of digits with the number of digits in it.
+
+  6. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  7. Collapse every run of the same character into one character.
+
+  8. Remove every vowel (a, e, i, o, u, either case).
+
+  9. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  10. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  Then: Return the resulting string.
+
+
+  Example: `solve(''0B1bycaxC .1b'') returns ''1B1b1y1c1x1c1 1.1b''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve('Ünïcode ok') == '1Ü1n1ï1c1d1 1K'
+  - solve('Data-driven 2025') == '1D1t1-1d1r1v1n'
+  - solve('queue QUEUE') == '1Q1 1Q'
+  - solve('12345') == ''
+  - solve('') == ''
+  - solve('  jumps   over the  lazy dog ') == '1J1m1p1s1 1V1r1 1T1h1 1L1z1y1 1D1g'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '524'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-10-steps

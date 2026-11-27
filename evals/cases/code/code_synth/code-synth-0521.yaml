@@ -1,0 +1,54 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0521
+modality: code
+prompt: 'Write a Python function `reduce_data(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Sort ascending.
+
+  2. Remove duplicates, keeping the first occurrence of each value.
+
+  3. Remove every negative value.
+
+  4. Keep the values at indices 0, 2, 4, and so on.
+
+  5. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  6. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  7. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  8. Keep only the first 3 values (all of them if there are fewer).
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `reduce_data([16, -12, -7, -9, 0, 16]) returns [0]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data([]) == []
+  - reduce_data([-7]) == []
+  - reduce_data([-12, -4, 19, 13, -1, -11, -11, 16]) == [45]
+  - reduce_data([-7, 18, 1, -10, 5, -12, -12, 8, 20]) == [10, 29]
+  - reduce_data([18, 2, 0, 9, 6, -2, -5, 4]) == [4, 13]
+  - reduce_data([-4, 3, -5, 20, 22]) == [28]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '521'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

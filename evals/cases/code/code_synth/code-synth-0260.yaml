@@ -1,0 +1,52 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0260
+modality: code
+prompt: 'Write a Python function `transform(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Remove every value that is a multiple of 7 (0 is a multiple of everything).
+
+  2. Replace every value with the largest value seen so far.
+
+  3. Replace every value with its remainder after division by 9, as Python''s % gives it (never negative).
+
+  4. Multiply every value by 5.
+
+  5. Replace every value with its square.
+
+  6. Replace every value with its remainder after division by 6, as Python''s % gives it (never negative).
+
+  7. Sort ascending.
+
+  8. Keep the values at indices 0, 3, 6, and so on.
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `transform([19, 18, 4, -4]) returns [1, 1]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([]) == []
+  - transform([-6]) == [3]
+  - transform([24, -1, 19]) == [0]
+  - transform([24, 24, 11, 23, 9, 7, 19, -10]) == [0, 0]
+  - transform([1, 2, 6, 25, 15, 16, -7, 13]) == [0, 1]
+  - transform([15, 5, 17, -11, 3, 16]) == [0, 4]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '260'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

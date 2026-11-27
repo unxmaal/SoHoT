@@ -1,0 +1,35 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0118
+modality: code
+prompt: 'Write a Python function `count_subsets(nums, target)` that returns, modulo 5, how many subsets
+  of positions of `nums` sum to exactly `target`. Two equal values at different positions count as different
+  subsets; the empty subset has sum 0.
+
+
+  Example: `count_subsets([5, 5, 1, 5, 1, 1, 1, 6, 1], 5) returns 4`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - count_subsets([5, 3, 1, 5, 3, 2, 4], 11) == 0
+  - count_subsets([6, 3, 1, 6, 3, 4, 4, 3, 1, 5, 5, 3], 3) == 4
+  - count_subsets([4, 1, 4, 2], 5) == 2
+  - count_subsets([2, 4, 1, 3, 6, 1, 2, 3, 6, 1, 3], 9) == 1
+  - count_subsets([4, 2, 6], 7) == 0
+  - count_subsets([3, 3, 3, 4, 1, 4], 12) == 3
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '118'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: algo-subsets

@@ -1,0 +1,36 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0738
+modality: code
+prompt: 'Write a Python function `term(n)` returning the n-th term, modulo 998244353, of the sequence
+  a(0) = 4, a(1) = 4, a(2) = 4 and, for n >= 3, a(n) = 4 * a(n-1) + 2 * a(n-2) + 1 * a(n-3). n can be
+  as large as 10**18.
+
+
+  Example: `term(4611686018427387921) returns 802088654`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - term(0) == 4
+  - term(2) == 4
+  - term(3) == 28
+  - term(7) == 11236
+  - term(20) == 343642071
+  - term(847203617) == 66285442
+  - term(999999999999999112) == 943640433
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '738'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: hard-recurrence

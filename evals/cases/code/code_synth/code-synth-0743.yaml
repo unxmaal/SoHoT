@@ -1,0 +1,53 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0743
+modality: code
+prompt: 'Write a Python function `solve(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Remove duplicates, keeping the first occurrence of each value.
+
+  2. Divide every value by 4 with floor division (so -7 divided by 4 gives -2).
+
+  3. Replace every value with the largest value seen so far.
+
+  4. Add 2 to every value.
+
+  5. Divide every value by 2 with floor division (so -7 divided by 2 gives -4).
+
+  6. Remove every negative value.
+
+  7. Add -5 to every value.
+
+  8. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `solve([22, 15, 11, 21, 10, 1, -2, -3, -12]) returns [-4, -4]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve([]) == []
+  - solve([-6]) == [-5]
+  - solve([13, 12, 0, 7, 21, 9, 2, 0, 1]) == [-6, -6]
+  - solve([15, 15, 21, 15, -9, 13]) == [-5, -4]
+  - solve([14, 16, 20, 13]) == [-5, -4]
+  - solve([19, -10, -5, 9, -9, -7, -3, 21]) == [-4, -4]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '743'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

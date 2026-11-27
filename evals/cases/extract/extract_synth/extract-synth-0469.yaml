@@ -1,0 +1,35 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0469
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What was the rid of the request to /healthz?'
+context: 'indigo - [03/Nov/2026:06:34] "GET /healthz HTTP/1.1" 500 77415 rid=e10fcfa9
+
+  delta - [25/Nov/2026:15:13] "GET /api/users HTTP/1.1" 200 49342 rid=ceeb8ebf
+
+  atlas - [19/Nov/2026:04:13] "GET /api/upload HTTP/1.1" 404 13735 rid=a060d0d9
+
+  cinder - [06/Nov/2026:19:21] "GET /static/app.js HTTP/1.1" 200 21823 rid=8b5c5128
+
+  ember - [09/Nov/2026:21:43] "GET /api/orders HTTP/1.1" 301 10325 rid=8bd2856c'
+assert:
+  equals:
+  - e10fcfa9
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '469'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log_request

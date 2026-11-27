@@ -1,0 +1,45 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0550
+modality: code
+prompt: 'Write a Python function `compute(rows)`. `rows` is a list of (name, department, score) tuples
+  with integer scores and unique names, possibly empty. Given them, return the names of the 4 highest
+  scores as a list, highest score first, equal scores ordered by name ascending; if there are fewer than
+  4 rows return every name.
+
+
+  Example: `compute([(''Gus'', ''ops'', 80), (''Tess'', ''dev'', 95), (''Hugo'', ''qa'', 80), (''Zed'',
+  ''ops'', 95), (''Leo'', ''ops'', 50), (''Eli'', ''dev'', 60), (''Pia'', ''dev'', 60)]) returns [''Tess'',
+  ''Zed'', ''Gus'', ''Hugo'']`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute([('Rhea', 'dev', 60), ('Pia', 'legal', 90), ('Kira', 'legal', 70), ('Tess', 'legal', 60),
+    ('Wren', 'hr', 70), ('Mina', 'hr', 70)]) == ['Pia', 'Kira', 'Mina', 'Wren']
+  - compute([('Wren', 'legal', 80), ('Pia', 'ops', 80), ('Jon', 'legal', 80), ('Dara', 'legal', 80), ('Mina',
+    'qa', 80)]) == ['Dara', 'Jon', 'Mina', 'Pia']
+  - compute([('Dara', 'hr', 90), ('Bram', 'hr', 60), ('Xan', 'qa', 70), ('Iris', 'qa', 95)]) == ['Iris',
+    'Dara', 'Xan', 'Bram']
+  - compute([('Tess', 'legal', 80), ('Zed', 'ops', 80), ('Quin', 'legal', 70), ('Iris', 'legal', 90),
+    ('Vic', 'legal', 70), ('Dara', 'legal', 95), ('Kira', 'qa', 80), ('Nico', 'ops', 90)]) == ['Dara',
+    'Iris', 'Nico', 'Kira']
+  - compute([('Quin', 'dev', 80), ('Fay', 'legal', 80), ('Olga', 'ops', 95), ('Sol', 'legal', 70), ('Tess',
+    'dev', 80), ('Zed', 'ops', 95)]) == ['Olga', 'Zed', 'Fay', 'Quin']
+  - compute([('Eli', 'dev', 95), ('Xan', 'qa', 80), ('Uma', 'qa', 60), ('Yara', 'dev', 95)]) == ['Eli',
+    'Yara', 'Xan', 'Uma']
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '550'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-topk

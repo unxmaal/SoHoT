@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0460
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the replica count of the billing service?'
+context: "services:\n  billing:\n    image: registry.example.org/billing:1.11.6\n    port: 5017\n    replicas:\
+  \ 5\n    timeout: 96s\n  export:\n    image: registry.example.org/export:4.18.6\n    port: 6389\n  \
+  \  replicas: 7\n    timeout: 43s\n  notify:\n    image: registry.example.org/notify:4.15.7\n    port:\
+  \ 5691\n    replicas: 5\n    timeout: 42s\n  ingest:\n    image: registry.example.org/ingest:3.15.7\n\
+  \    port: 7436\n    replicas: 4\n    timeout: 114s"
+assert:
+  equals:
+  - '5'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '460'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: config

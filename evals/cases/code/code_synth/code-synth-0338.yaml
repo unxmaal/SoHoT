@@ -1,0 +1,36 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0338
+modality: code
+prompt: 'Write a Python function `count_paths(grid)` where `grid` is a non-empty list of equal-length
+  strings of ''.'' (open) and ''#'' (blocked). Return the number of ways to go from the top-left cell
+  to the bottom-right cell moving one cell right, down or diagonally down-right per move, never entering
+  a ''#'' cell, modulo 1000. The start and end cells are open.
+
+
+  Example: `count_paths([''.#.'', ''..#'', ''.#.'', ''#..'', ''...'']) returns 5`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - count_paths(['...', '...']) == 5
+  - count_paths(['.....', '.....', '..##.', '#....']) == 27
+  - count_paths(['...', '.#.', '...']) == 4
+  - count_paths(['..', '.#', '..']) == 2
+  - count_paths(['..#..', '.#..#', '..#..', '#....']) == 12
+  - count_paths(['..', '##', '..']) == 0
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '338'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: algo-paths

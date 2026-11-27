@@ -1,0 +1,49 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0108
+modality: code
+prompt: 'Write a Python function `transform(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  2. Replace runs of whitespace with a single space and strip both ends.
+
+  3. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  4. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  5. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  6. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  Then: Return the resulting string.
+
+
+  Example: `transform(''0ab0cbyCa. cab00'') returns ''00bac .acybc0ba0''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform('12345') == '54321'
+  - transform('mississippi river') == 'Revir Ippississim'
+  - transform('Hello, World') == 'Dlrow ,olleh'
+  - transform('A man a plan a canal Panama') == 'A Nam A'
+  - transform('aabbbcccc') == 'Ccccbbbaa'
+  - transform('zz yy xx') == 'Xx Yy Zz'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '108'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-6-steps

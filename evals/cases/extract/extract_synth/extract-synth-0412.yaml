@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0412
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the timeout of the render service?'
+context: "services:\n  auth:\n    image: registry.example.org/auth:2.15.1\n    port: 3237\n    replicas:\
+  \ 8\n    timeout: 72s\n  notify:\n    image: registry.example.org/notify:3.4.7\n    port: 8112\n   \
+  \ replicas: 2\n    timeout: 95s\n  ingest:\n    image: registry.example.org/ingest:2.9.7\n    port:\
+  \ 5479\n    replicas: 8\n    timeout: 68s\n  render:\n    image: registry.example.org/render:3.16.4\n\
+  \    port: 8913\n    replicas: 3\n    timeout: 22s"
+assert:
+  equals:
+  - 22s
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '412'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: config

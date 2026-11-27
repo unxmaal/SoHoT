@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0580
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the port of the gateway service?'
+context: "services:\n  ingest:\n    image: registry.example.org/ingest:3.0.0\n    port: 8643\n    replicas:\
+  \ 8\n    timeout: 45s\n  scheduler:\n    image: registry.example.org/scheduler:4.10.6\n    port: 7125\n\
+  \    replicas: 5\n    timeout: 49s\n  gateway:\n    image: registry.example.org/gateway:4.15.8\n   \
+  \ port: 5983\n    replicas: 7\n    timeout: 8s\n  search:\n    image: registry.example.org/search:1.10.7\n\
+  \    port: 8752\n    replicas: 4\n    timeout: 116s"
+assert:
+  equals:
+  - '5983'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '580'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: config

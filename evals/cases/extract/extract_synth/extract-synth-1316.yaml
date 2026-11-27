@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1316
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the first 7 characters of the hash of the commit "Tune hose clamp parser"?'
+context: "commit 1ff57219951a01f5c6c78b5cf922ac0809a5b2ac\nAuthor: Quinn Abernathy <quinn@example.com>\n\
+  Date:   2026-11-14\n\n    Remove gasket retry\n\ncommit ee8d22e11271547fd06c131c12c0b9bdd0594f10\nAuthor:\
+  \ Celia Whitlock <celia@example.com>\nDate:   2026-11-05\n\n    Tune hose clamp parser\n\ncommit 5c47bb3f302697e38f367d1c938405173945c2de\n\
+  Author: Umar Thorne <umar@example.com>\nDate:   2026-11-22\n\n    Add keypad limit\n\ncommit da96e8615892c249676ec88f15924694a1079f8e\n\
+  Author: Gideon Zielinski <gideon@example.com>\nDate:   2026-11-11\n\n    Remove desk lamp cache"
+assert:
+  equals:
+  - ee8d22e
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1316'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

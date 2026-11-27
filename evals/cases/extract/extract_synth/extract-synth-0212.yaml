@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0212
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the first 7 characters of the hash of the commit "Tune toner parser"?'
+context: "commit 7f8cec22dcf75bbe8e8ccf899862a7c873c66f1f\nAuthor: Jolene Dunmore <jolene@example.com>\n\
+  Date:   2026-11-13\n\n    Add gasket cache\n\ncommit 3afaf4fd8c42803e47d184833c0617073b7da79f\nAuthor:\
+  \ Gideon Galloway <gideon@example.com>\nDate:   2026-11-26\n\n    Fix hose clamp cache\n\ncommit dc21bc77abae5080f7af5c60021b94ced8afe46a\n\
+  Author: Bruno Brightwater <bruno@example.com>\nDate:   2026-11-21\n\n    Tune toner parser\n\ncommit\
+  \ a2be2e1f2b76be0fadddfa19e35dff2a9962688d\nAuthor: Bruno Nakamura <bruno@example.com>\nDate:   2026-11-23\n\
+  \n    Tune cable set retry\n\ncommit 71579c9b9ba37ef0cfb30fbcf3db552daae0ac9e\nAuthor: Kenji Galloway\
+  \ <kenji@example.com>\nDate:   2026-11-08\n\n    Add mount plate limit"
+assert:
+  equals:
+  - dc21bc7
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '212'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

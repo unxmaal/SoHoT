@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0512
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Remove bolt kit parser"?'
+context: "commit 1d88d66b4e81c18da822e1d7a47a5e669d6c3058\nAuthor: Hana Valdivia <hana@example.com>\n\
+  Date:   2026-11-05\n\n    Add label roll cache\n\ncommit 20bb6b98231ffc409e8e27dfa388e14e7e9b75ce\n\
+  Author: Ivo Underhill <ivo@example.com>\nDate:   2026-11-23\n\n    Remove bolt kit parser\n\ncommit\
+  \ 57661194c8bc27e99d2d02a593a11d7ace7338a9\nAuthor: Umar Okonkwo <umar@example.com>\nDate:   2026-11-13\n\
+  \n    Tune filter pack parser"
+assert:
+  equals:
+  - Ivo Underhill
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '512'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

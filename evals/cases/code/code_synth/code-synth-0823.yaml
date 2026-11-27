@@ -1,0 +1,63 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0823
+modality: code
+prompt: 'Write a Python function `apply_rules(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Add -9 to every value.
+
+  2. Keep the values at indices 0, 2, 4, and so on.
+
+  3. Replace every value with its square.
+
+  4. Sort ascending.
+
+  5. Replace every value with its absolute value.
+
+  6. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  7. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  8. Replace every value with the largest value seen so far.
+
+  9. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  10. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  11. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  12. Collapse each run of equal adjacent values into one value.
+
+  Then: Return the largest value, or -1 for an empty list.
+
+
+  Example: `apply_rules([14, 8, 23, 25, 5, -9, 24]) returns 133`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules([]) == -1
+  - apply_rules([9]) == -1
+  - apply_rules([-11, 17, -5, 5, 19, 24, 2, 23, 15]) == 236
+  - apply_rules([-3, 5, 17, 16, -10, 0]) == -1
+  - apply_rules([22, -1, 17, 23, 23, 5, -1, 20]) == 6
+  - apply_rules([22, -12, 14, 13, 5, 10, 3]) == 113
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '823'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-12-steps

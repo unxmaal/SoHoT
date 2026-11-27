@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0784
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the replica count of the auth service?'
+context: "services:\n  notify:\n    image: registry.example.org/notify:3.1.8\n    port: 7853\n    replicas:\
+  \ 5\n    timeout: 115s\n  auth:\n    image: registry.example.org/auth:2.10.1\n    port: 8395\n    replicas:\
+  \ 8\n    timeout: 23s\n  scheduler:\n    image: registry.example.org/scheduler:2.12.2\n    port: 5351\n\
+  \    replicas: 8\n    timeout: 11s\n  gateway:\n    image: registry.example.org/gateway:4.10.9\n   \
+  \ port: 7405\n    replicas: 2\n    timeout: 56s"
+assert:
+  equals:
+  - '8'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '784'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: config

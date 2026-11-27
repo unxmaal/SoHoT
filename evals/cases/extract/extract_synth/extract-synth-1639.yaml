@@ -1,0 +1,53 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1639
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the most recent version listed?'
+context: '## 3.12.3 (2026-09-20)
+
+  - Improved filter pack handling (#352)
+
+  - Removed keypad handling (#353)
+
+  ## 3.11.0 (2026-09-01)
+
+  - Improved gasket handling (#297)
+
+  - Removed gasket handling (#384)
+
+  - Improved mount plate handling (#779)
+
+  ## 3.10.1 (2026-08-23)
+
+  - Removed filter pack handling (#355)
+
+  - Fixed toner handling (#147)
+
+  ## 3.9.3 (2026-08-03)
+
+  - Removed cable set handling (#461)
+
+  - Improved sensor handling (#351)
+
+  - Improved gasket handling (#711)'
+assert:
+  equals:
+  - 3.12.3
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1639'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: changelog

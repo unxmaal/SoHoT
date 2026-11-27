@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0320
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the first 7 characters of the hash of the commit "Add sensor parser"?'
+context: "commit 6ce0112fc451e7a6a3fb5568c65c269462a127f2\nAuthor: Talia Underhill <talia@example.com>\n\
+  Date:   2026-11-07\n\n    Tune filter pack parser\n\ncommit 6071e3450cf6da7047c6d514ba28a89c7a5973f4\n\
+  Author: Mateo Castellan <mateo@example.com>\nDate:   2026-11-09\n\n    Remove label roll parser\n\n\
+  commit 182378bae9a817a82fd6d862afb4a1e92007e484\nAuthor: Rosa Zielinski <rosa@example.com>\nDate:  \
+  \ 2026-11-24\n\n    Add filter pack parser\n\ncommit c3bc0158675c65479b29f78ed0e9ade44319bc2d\nAuthor:\
+  \ Bruno Galloway <bruno@example.com>\nDate:   2026-11-07\n\n    Add sensor parser\n\ncommit 51c502487531b9248e49a5d0695ee4efe456e1e5\n\
+  Author: Yusuf Lindqvist <yusuf@example.com>\nDate:   2026-11-11\n\n    Remove keypad cache"
+assert:
+  equals:
+  - c3bc015
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '320'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

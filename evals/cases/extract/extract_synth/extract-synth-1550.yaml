@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1550
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How much tax is charged?'
+context: "Tidewater Press\nInvoice INV-2027-7774   Issued 2026-11-18\nBill to: Juniper Analytics   Customer\
+  \ PO: PO-85953\n  keypad       x2   @     $90.10 =     $180.20\n  label roll   x15  @     $13.81 = \
+  \    $207.15\n  Subtotal: $387.35\n  Shipping: $21.39\n  Tax: $19.36\n  Total due: $428.10 by 2027-02-02"
+assert:
+  equals:
+  - $19.36
+  - '19.36'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1550'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: invoice

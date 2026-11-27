@@ -1,0 +1,43 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0750
+modality: code
+prompt: 'Write a Python function `transform(rows)`. `rows` is a list of (name, team, rating) tuples with
+  integer ratings and unique names, possibly empty. Given them, return the names of the 3 highest ratings
+  as a list, highest rating first, equal ratings ordered by name ascending; if there are fewer than 3
+  rows return every name.
+
+
+  Example: `transform([(''Fay'', ''hr'', 50), (''Bram'', ''qa'', 70), (''Iris'', ''hr'', 60), (''Ada'',
+  ''hr'', 80), (''Gus'', ''hr'', 60)]) returns [''Ada'', ''Bram'', ''Gus'']`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([('Quin', 'qa', 80), ('Pia', 'legal', 80), ('Ada', 'legal', 80), ('Fay', 'qa', 80), ('Mina',
+    'ops', 80), ('Yara', 'ops', 95), ('Bram', 'ops', 50), ('Tess', 'legal', 60)]) == ['Yara', 'Ada', 'Fay']
+  - transform([('Iris', 'sales', 70), ('Pia', 'dev', 90), ('Fay', 'sales', 70), ('Ada', 'sales', 90)])
+    == ['Ada', 'Pia', 'Fay']
+  - transform([('Tess', 'qa', 80), ('Mina', 'qa', 80), ('Dara', 'qa', 95), ('Xan', 'ops', 80), ('Iris',
+    'qa', 80), ('Uma', 'hr', 70), ('Sol', 'ops', 95)]) == ['Dara', 'Sol', 'Iris']
+  - transform([('Bram', 'qa', 95), ('Jon', 'qa', 95), ('Olga', 'qa', 80), ('Quin', 'qa', 50), ('Xan',
+    'ops', 95), ('Hugo', 'ops', 80), ('Uma', 'ops', 90)]) == ['Bram', 'Jon', 'Xan']
+  - transform([('Hugo', 'dev', 90), ('Tess', 'hr', 60), ('Leo', 'hr', 50), ('Sol', 'hr', 70), ('Fay',
+    'dev', 90), ('Eli', 'dev', 60), ('Gus', 'qa', 50)]) == ['Fay', 'Hugo', 'Sol']
+  - transform([('Hugo', 'dev', 80), ('Ada', 'dev', 70), ('Bram', 'dev', 70), ('Cleo', 'dev', 70)]) ==
+    ['Hugo', 'Ada', 'Bram']
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '750'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-topk

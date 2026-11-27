@@ -1,0 +1,43 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0230
+modality: code
+prompt: 'Write a Python function `solve(rows)`. `rows` is a list of (name, team, mark) tuples with integer
+  marks and unique names, possibly empty. Given them, return a dict mapping each team that has at least
+  one mark of 70 or more to how many such marks it has.
+
+
+  Example: `solve([(''Nico'', ''qa'', 70), (''Eli'', ''dev'', 95), (''Rhea'', ''dev'', 90), (''Iris'',
+  ''dev'', 80)]) returns {''qa'': 1, ''dev'': 3}`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - 'solve([(''Kira'', ''hr'', 90), (''Zed'', ''legal'', 60), (''Dara'', ''dev'', 95), (''Eli'', ''hr'',
+    60), (''Bram'', ''dev'', 70)]) == {''hr'': 1, ''dev'': 2}'
+  - 'solve([(''Leo'', ''ops'', 70), (''Dara'', ''ops'', 80), (''Cleo'', ''legal'', 70), (''Iris'', ''ops'',
+    80), (''Gus'', ''legal'', 60)]) == {''ops'': 3, ''legal'': 1}'
+  - 'solve([(''Jon'', ''ops'', 70), (''Iris'', ''legal'', 60), (''Pia'', ''ops'', 95), (''Rhea'', ''sales'',
+    50), (''Bram'', ''legal'', 90), (''Sol'', ''legal'', 80), (''Nico'', ''legal'', 90)]) == {''ops'':
+    2, ''legal'': 3}'
+  - 'solve([(''Wren'', ''ops'', 90), (''Tess'', ''qa'', 80), (''Cleo'', ''qa'', 95), (''Bram'', ''qa'',
+    90), (''Jon'', ''ops'', 70), (''Vic'', ''hr'', 80)]) == {''ops'': 2, ''qa'': 3, ''hr'': 1}'
+  - 'solve([(''Ada'', ''dev'', 80), (''Yara'', ''hr'', 90), (''Leo'', ''hr'', 50), (''Rhea'', ''dev'',
+    70), (''Fay'', ''legal'', 50), (''Xan'', ''hr'', 80)]) == {''dev'': 2, ''hr'': 2}'
+  - 'solve([(''Pia'', ''hr'', 80), (''Zed'', ''dev'', 80), (''Ada'', ''legal'', 80), (''Quin'', ''dev'',
+    80)]) == {''hr'': 1, ''dev'': 2, ''legal'': 1}'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '230'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-count

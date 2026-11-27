@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0968
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Tune gasket parser"?'
+context: "commit 6b297a6875c4fa066ec4df9c9774b5a41e1dce03\nAuthor: Celia Okonkwo <celia@example.com>\n\
+  Date:   2026-11-11\n\n    Tune gasket parser\n\ncommit f794cd15a03e968b8671e6bcec654f3f92a59b7d\nAuthor:\
+  \ Nadia Brightwater <nadia@example.com>\nDate:   2026-11-24\n\n    Add bolt kit cache\n\ncommit 7a1c4d3875eadcb369debf0c4fb6e64f1c23d5b9\n\
+  Author: Avery Rasmussen <avery@example.com>\nDate:   2026-11-21\n\n    Tune toner cache"
+assert:
+  equals:
+  - celia@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '968'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

@@ -1,0 +1,44 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0651
+modality: code
+prompt: 'Write a Python function `compute(rows)`. `rows` is a list of (name, department, mark) tuples
+  with integer marks and unique names, possibly empty. Given them, return the sorted list of names whose
+  mark is strictly above the average mark of their own department.
+
+
+  Example: `compute([(''Dara'', ''ops'', 60), (''Olga'', ''hr'', 50), (''Leo'', ''legal'', 95), (''Mina'',
+  ''ops'', 90), (''Vic'', ''legal'', 90), (''Jon'', ''hr'', 60), (''Gus'', ''legal'', 50), (''Tess'',
+  ''ops'', 70)]) returns [''Jon'', ''Leo'', ''Mina'', ''Vic'']`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute([('Dara', 'qa', 70), ('Jon', 'sales', 70), ('Quin', 'hr', 60), ('Gus', 'hr', 60), ('Fay',
+    'sales', 80), ('Xan', 'hr', 60), ('Tess', 'qa', 70)]) == ['Fay']
+  - compute([('Uma', 'sales', 50), ('Nico', 'qa', 70), ('Bram', 'sales', 95), ('Tess', 'dev', 50), ('Xan',
+    'qa', 50), ('Kira', 'sales', 95), ('Wren', 'sales', 50)]) == ['Bram', 'Kira', 'Nico']
+  - compute([('Wren', 'ops', 90), ('Dara', 'qa', 60), ('Hugo', 'qa', 80), ('Xan', 'qa', 80), ('Quin',
+    'qa', 70), ('Zed', 'ops', 50), ('Gus', 'ops', 80), ('Kira', 'legal', 50)]) == ['Gus', 'Hugo', 'Wren',
+    'Xan']
+  - compute([('Yara', 'legal', 80), ('Pia', 'qa', 95), ('Tess', 'dev', 80), ('Cleo', 'dev', 70), ('Xan',
+    'legal', 80), ('Mina', 'legal', 80), ('Sol', 'qa', 90)]) == ['Pia', 'Tess']
+  - compute([('Vic', 'hr', 50), ('Sol', 'sales', 90), ('Dara', 'hr', 90), ('Leo', 'qa', 60), ('Pia', 'qa',
+    95), ('Eli', 'sales', 95), ('Uma', 'hr', 60)]) == ['Dara', 'Eli', 'Pia']
+  - compute([('Iris', 'dev', 70), ('Rhea', 'dev', 70), ('Gus', 'ops', 80), ('Uma', 'qa', 90), ('Tess',
+    'dev', 70), ('Nico', 'ops', 95), ('Fay', 'dev', 70)]) == ['Nico']
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '651'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-above

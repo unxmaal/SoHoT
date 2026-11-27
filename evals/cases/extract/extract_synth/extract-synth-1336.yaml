@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1336
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the timeout of the metrics service?'
+context: "services:\n  ingest:\n    image: registry.example.org/ingest:3.7.4\n    port: 9759\n    replicas:\
+  \ 8\n    timeout: 81s\n  export:\n    image: registry.example.org/export:4.12.2\n    port: 6617\n  \
+  \  replicas: 2\n    timeout: 88s\n  metrics:\n    image: registry.example.org/metrics:1.6.6\n    port:\
+  \ 6826\n    replicas: 2\n    timeout: 111s"
+assert:
+  equals:
+  - 111s
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1336'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: config

@@ -1,0 +1,32 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1148
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Remove battery retry"?'
+context: "commit e8565d1469a864ad6e9a93ad86c4950105c4ca1a\nAuthor: Bruno Marchetti <bruno@example.com>\n\
+  Date:   2026-11-24\n\n    Fix keypad retry\n\ncommit 358756494398d9456f6a9acae51f998b39879f05\nAuthor:\
+  \ Avery Castellan <avery@example.com>\nDate:   2026-11-05\n\n    Fix desk lamp retry\n\ncommit 69912c117b407fa2910949f07bfabee6ec4715cc\n\
+  Author: Lucia Galloway <lucia@example.com>\nDate:   2026-11-15\n\n    Remove battery retry\n\ncommit\
+  \ b5c2839786c51d33c11e11982041c2fcc98fffbe\nAuthor: Talia Pemberton <talia@example.com>\nDate:   2026-11-01\n\
+  \n    Remove sensor parser"
+assert:
+  equals:
+  - lucia@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1148'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

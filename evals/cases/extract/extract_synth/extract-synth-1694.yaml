@@ -1,0 +1,29 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1694
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the customer PO?'
+context: "Fennel Street Bakery\nInvoice INV-2026-5124   Issued 2026-11-27\nBill to: Lumen Works   Customer\
+  \ PO: PO-38231\n  bolt kit     x19  @     $36.76 =     $698.44\n  label roll   x20  @    $216.41 = \
+  \  $4,328.20\n  Subtotal: $5,026.64\n  Shipping: $29.40\n  Tax: $402.13\n  Total due: $5,458.17 by 2027-01-26"
+assert:
+  equals:
+  - PO-38231
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1694'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: invoice

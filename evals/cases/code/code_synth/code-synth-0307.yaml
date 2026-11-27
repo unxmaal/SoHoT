@@ -1,0 +1,61 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0307
+modality: code
+prompt: 'Write a Python function `reduce_data(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  2. Cut the text to at most 8 characters, then pad it on the right with ''.'' up to 8 characters.
+
+  3. Convert to uppercase.
+
+  4. Keep only the first 2 whitespace-separated words, joined by single spaces.
+
+  5. Sort the characters in ascending code point order.
+
+  6. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  7. Replace runs of whitespace with a single space and strip both ends.
+
+  8. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  9. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  10. Convert to lowercase.
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `reduce_data(''B C1C Ayy'') returns ''311b121c''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data('Rotor 99') == '1219121o121r111t'
+  - reduce_data('zz yy xx') == '121y121z'
+  - reduce_data('12345') == '131.3112111311141115'
+  - reduce_data('aabbbcccc') == '121a131b131c'
+  - reduce_data('banana bandana') == '131a121b121n'
+  - reduce_data('Hello, World') == '111,111e111h121l111o111w'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '307'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-10-steps

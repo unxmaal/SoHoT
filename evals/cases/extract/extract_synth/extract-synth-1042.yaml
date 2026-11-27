@@ -1,0 +1,39 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1042
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the name of SKU9213?'
+context: 'sku,name,qty,unit_price
+
+  SKU5124,filter pack M7,206,$86.35
+
+  SKU4365,label roll L5,145,$95.59
+
+  SKU7725,filter pack S3,201,$47.42
+
+  SKU9213,hose clamp M5,319,$81.36
+
+  SKU3449,keypad M6,292,$41.02
+
+  SKU7083,toner L6,230,$54.97'
+assert:
+  equals:
+  - hose clamp M5
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1042'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: inventory

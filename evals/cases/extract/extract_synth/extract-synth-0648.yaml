@@ -1,0 +1,57 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0648
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 8286 end with?'
+context: '2026-11-11 01:24:23 delta-2 INFO job 7350 started
+
+  2026-11-11 01:28:05 delta-3 WARN job 7350 exited with code 17 after 222s
+
+  2026-11-15 05:09:59 delta-1 INFO job 1938 started
+
+  2026-11-15 05:21:33 delta-4 INFO job 1938 exited with code 0 after 694s
+
+  2026-11-16 21:28:26 delta-3 INFO job 8286 started
+
+  2026-11-16 21:36:50 delta-2 WARN job 8286 exited with code 2 after 504s
+
+  2026-11-19 15:52:27 delta-1 INFO job 9235 started
+
+  2026-11-19 15:58:26 delta-2 WARN job 9235 exited with code 1 after 359s
+
+  2026-11-19 16:45:47 delta-2 INFO job 7730 started
+
+  2026-11-19 16:53:05 delta-2 WARN job 7730 exited with code 137 after 438s
+
+  2026-11-22 19:16:15 delta-3 INFO job 8576 started
+
+  2026-11-22 19:25:16 delta-2 WARN job 8576 exited with code 255 after 541s
+
+  2026-11-25 01:31:54 delta-4 INFO job 5105 started
+
+  2026-11-25 01:45:36 delta-4 WARN job 5105 exited with code 126 after 822s
+
+  2026-11-25 08:25:45 delta-4 INFO job 8664 started
+
+  2026-11-25 08:26:27 delta-2 WARN job 8664 exited with code 1 after 42s'
+assert:
+  equals:
+  - '2'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '648'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

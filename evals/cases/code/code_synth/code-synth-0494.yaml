@@ -1,0 +1,35 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0494
+modality: code
+prompt: 'Write a Python function `edit_cost(a, b)` returning the minimum total cost of turning string
+  `a` into string `b` when inserting a character costs 3, deleting one costs 1, replacing one character
+  with a different one costs 4, and keeping a matching character is free.
+
+
+  Example: `edit_cost(''ab'', ''cab'') returns 3`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - edit_cost('flaw', 'cab') == 9
+  - edit_cost('cab', 'lawn') == 11
+  - edit_cost('abc', 'sitting') == 24
+  - edit_cost('saturday', 'lawn') == 16
+  - edit_cost('cab', 'abc') == 4
+  - edit_cost('lawn', 'plan') == 4
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '494'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: algo-edit

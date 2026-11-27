@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0548
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Tune keypad parser"?'
+context: "commit e5011c16c9f47edbb40b39f2671709e47fecf3f9\nAuthor: Dmitri Nakamura <dmitri@example.com>\n\
+  Date:   2026-11-25\n\n    Add sensor retry\n\ncommit bc59f65845efc1df0800cdcb9cd39b98056ba256\nAuthor:\
+  \ Hana Underhill <hana@example.com>\nDate:   2026-11-18\n\n    Fix gasket limit\n\ncommit 2bec4ab0248630e4d14cfb1e3e62d7c52dd657b4\n\
+  Author: Jolene Nakamura <jolene@example.com>\nDate:   2026-11-15\n\n    Tune filter pack parser\n\n\
+  commit 4ec2b6f8779238bdf6c83bbf1fd0833814db0fdf\nAuthor: Lucia Okonkwo <lucia@example.com>\nDate:  \
+  \ 2026-11-16\n\n    Tune keypad parser\n\ncommit 19db38ea84ffd140bdba95051c4021bd0be1cbbc\nAuthor: Yusuf\
+  \ Pemberton <yusuf@example.com>\nDate:   2026-11-08\n\n    Tune mount plate parser"
+assert:
+  equals:
+  - lucia@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '548'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

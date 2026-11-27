@@ -1,0 +1,53 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1740
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 7787 end with?'
+context: '2026-11-14 03:08:08 harbor-4 INFO job 4460 started
+
+  2026-11-14 03:20:08 harbor-4 INFO job 4460 exited with code 0 after 720s
+
+  2026-11-14 22:09:55 harbor-2 INFO job 7635 started
+
+  2026-11-14 22:12:00 harbor-3 INFO job 7635 exited with code 0 after 125s
+
+  2026-11-15 03:18:19 harbor-2 INFO job 4442 started
+
+  2026-11-15 03:31:19 harbor-4 INFO job 4442 exited with code 0 after 780s
+
+  2026-11-17 05:59:40 harbor-1 INFO job 9587 started
+
+  2026-11-17 06:11:27 harbor-2 WARN job 9587 exited with code 137 after 707s
+
+  2026-11-17 21:02:02 harbor-1 INFO job 8924 started
+
+  2026-11-17 21:03:35 harbor-4 WARN job 8924 exited with code 1 after 93s
+
+  2026-11-18 20:49:20 harbor-1 INFO job 7787 started
+
+  2026-11-18 20:58:47 harbor-4 INFO job 7787 exited with code 0 after 567s
+
+  2026-11-22 19:18:28 harbor-4 INFO job 5729 started
+
+  2026-11-22 19:31:09 harbor-4 INFO job 5729 exited with code 0 after 761s'
+assert:
+  equals:
+  - '0'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1740'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

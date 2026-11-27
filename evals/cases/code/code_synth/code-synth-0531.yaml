@@ -1,0 +1,45 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0531
+modality: code
+prompt: 'Write a Python function `reduce_data(rows)`. `rows` is a list of (name, department, mark) tuples
+  with integer marks and unique names, possibly empty. Given them, return a dict mapping each department
+  that has at least one mark of 60 or more to how many such marks it has.
+
+
+  Example: `reduce_data([(''Jon'', ''legal'', 80), (''Sol'', ''sales'', 80), (''Olga'', ''sales'', 80),
+  (''Zed'', ''legal'', 80), (''Leo'', ''ops'', 60), (''Hugo'', ''sales'', 80), (''Kira'', ''legal'', 70)])
+  returns {''legal'': 3, ''sales'': 3, ''ops'': 1}`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - 'reduce_data([(''Gus'', ''ops'', 80), (''Vic'', ''ops'', 90), (''Quin'', ''qa'', 95), (''Xan'', ''hr'',
+    90), (''Bram'', ''qa'', 70), (''Tess'', ''qa'', 50), (''Kira'', ''hr'', 95), (''Rhea'', ''qa'', 70)])
+    == {''ops'': 2, ''qa'': 3, ''hr'': 2}'
+  - 'reduce_data([(''Bram'', ''sales'', 80), (''Mina'', ''dev'', 60), (''Iris'', ''hr'', 60), (''Zed'',
+    ''sales'', 80)]) == {''sales'': 2, ''dev'': 1, ''hr'': 1}'
+  - 'reduce_data([(''Mina'', ''qa'', 70), (''Nico'', ''qa'', 95), (''Uma'', ''hr'', 50), (''Dara'', ''hr'',
+    80)]) == {''qa'': 2, ''hr'': 1}'
+  - 'reduce_data([(''Fay'', ''ops'', 70), (''Vic'', ''ops'', 95), (''Uma'', ''qa'', 80), (''Kira'', ''dev'',
+    80)]) == {''ops'': 2, ''qa'': 1, ''dev'': 1}'
+  - 'reduce_data([(''Yara'', ''legal'', 60), (''Mina'', ''ops'', 90), (''Vic'', ''legal'', 80), (''Uma'',
+    ''legal'', 50), (''Bram'', ''legal'', 95), (''Zed'', ''legal'', 50), (''Olga'', ''legal'', 70), (''Leo'',
+    ''sales'', 80)]) == {''legal'': 4, ''ops'': 1, ''sales'': 1}'
+  - 'reduce_data([(''Pia'', ''qa'', 95), (''Wren'', ''hr'', 80), (''Sol'', ''qa'', 50), (''Leo'', ''legal'',
+    95), (''Eli'', ''legal'', 95)]) == {''qa'': 1, ''hr'': 1, ''legal'': 2}'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '531'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-count

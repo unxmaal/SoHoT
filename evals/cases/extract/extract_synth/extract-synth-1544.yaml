@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1544
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the first 7 characters of the hash of the commit "Fix battery limit"?'
+context: "commit 8a5485c8fcb9c7cbba478488e15764658f4d0e4b\nAuthor: Celia Valdivia <celia@example.com>\n\
+  Date:   2026-11-07\n\n    Tune battery retry\n\ncommit 1017557c02ce1abd0b204021258e501b9273aaec\nAuthor:\
+  \ Celia Whitlock <celia@example.com>\nDate:   2026-11-05\n\n    Tune bolt kit cache\n\ncommit 8d013d05f0256c663f2185ff9db530d1e41ba60f\n\
+  Author: Hana Ekwueme <hana@example.com>\nDate:   2026-11-26\n\n    Fix battery limit\n\ncommit 205969693b0dc9f8375d73786657ac7eb8be5038\n\
+  Author: Farah Dunmore <farah@example.com>\nDate:   2026-11-04\n\n    Tune mount plate cache"
+assert:
+  equals:
+  - 8d013d0
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1544'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

@@ -1,0 +1,52 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0383
+modality: code
+prompt: 'Write a Python function `compute(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  2. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  3. Sort ascending.
+
+  4. Drop the first 2 values (an empty list if there are fewer).
+
+  5. Replace every value with its square.
+
+  6. Sort ascending.
+
+  7. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  8. Rotate the list left by 1 positions, wrapping around (an empty list stays empty).
+
+  Then: Return how many distinct values there are.
+
+
+  Example: `compute([8, 8, 17, 11, 16, -3, -9]) returns 4`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute([]) == 0
+  - compute([3]) == 0
+  - compute([-2, 10, -11, 22, 4, -12]) == 4
+  - compute([-10, 11, 11, 13, 16, -9, -3, 19, 9]) == 6
+  - compute([3, 20, -9, -3, -11, 23]) == 3
+  - compute([16, 25, -4, 12, 25, 21, 24, -9, 20]) == 6
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '383'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

@@ -1,0 +1,49 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0127
+modality: code
+prompt: 'Write a Python function `apply_rules(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Keep only the first occurrence of each character.
+
+  2. Replace runs of whitespace with a single space and strip both ends.
+
+  3. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  4. Keep only the first occurrence of each character.
+
+  5. Replace every ''l'' with ''r'' (lowercase only).
+
+  6. Collapse every run of the same character into one character.
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `apply_rules(''b,1..1c c,201'') returns ''b,1.c''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules('hELLo WoRLD') == 'hELo'
+  - apply_rules('') == ''
+  - apply_rules('  jumps   over the  lazy dog ') == 'jumpsoverthrazydg'
+  - apply_rules('12345') == '12345'
+  - apply_rules('Level') == 'Levr'
+  - apply_rules('banana bandana') == 'ban'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '127'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-6-steps

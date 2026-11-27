@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0440
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Remove cable set cache"?'
+context: "commit 106886426f2f5a2048c166d2e7f3b219ea5087e9\nAuthor: Mateo Jaramillo <mateo@example.com>\n\
+  Date:   2026-11-25\n\n    Remove gasket limit\n\ncommit 95fc24d0543585744e865565148a58b364e9e1ab\nAuthor:\
+  \ Priya Pemberton <priya@example.com>\nDate:   2026-11-26\n\n    Add cable set retry\n\ncommit c0b9dbfcbea83ebd1aff36fe1e092d0a82e52e4d\n\
+  Author: Dmitri Okonkwo <dmitri@example.com>\nDate:   2026-11-24\n\n    Remove cable set cache"
+assert:
+  equals:
+  - dmitri@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '440'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

@@ -1,0 +1,49 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1099
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: In which version was #718 addressed?'
+context: '## 3.8.5 (2026-09-18)
+
+  - Fixed battery handling (#629)
+
+  - Removed sensor handling (#746)
+
+  ## 3.7.2 (2026-09-09)
+
+  - Improved gasket handling (#225)
+
+  - Fixed bolt kit handling (#839)
+
+  ## 3.6.2 (2026-08-19)
+
+  - Improved mount plate handling (#718)
+
+  - Added bolt kit handling (#215)
+
+  ## 3.5.0 (2026-08-07)
+
+  - Removed keypad handling (#411)
+
+  - Removed toner handling (#359)'
+assert:
+  equals:
+  - 3.6.2
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1099'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: changelog

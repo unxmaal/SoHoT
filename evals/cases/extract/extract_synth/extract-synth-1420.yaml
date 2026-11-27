@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1420
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the port of the search service?'
+context: "services:\n  search:\n    image: registry.example.org/search:2.14.4\n    port: 6062\n    replicas:\
+  \ 3\n    timeout: 92s\n  notify:\n    image: registry.example.org/notify:1.15.2\n    port: 5487\n  \
+  \  replicas: 6\n    timeout: 83s\n  auth:\n    image: registry.example.org/auth:4.10.7\n    port: 6539\n\
+  \    replicas: 7\n    timeout: 53s\n  render:\n    image: registry.example.org/render:2.5.1\n    port:\
+  \ 5674\n    replicas: 8\n    timeout: 99s"
+assert:
+  equals:
+  - '6062'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1420'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: config

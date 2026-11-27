@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1622
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How much tax is charged?'
+context: "Juniper Analytics\nInvoice INV-2027-7835   Issued 2026-11-13\nBill to: Saffron Robotics   Customer\
+  \ PO: PO-44593\n  sensor       x12  @    $243.42 =   $2,921.04\n  toner        x14  @     $11.31 = \
+  \    $158.34\n  keypad       x1   @     $28.10 =      $28.10\n  Subtotal: $3,107.48\n  Shipping: $16.96\n\
+  \  Tax: $155.37\n  Total due: $3,279.81 by 2027-01-08"
+assert:
+  equals:
+  - $155.37
+  - '155.37'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1622'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: invoice

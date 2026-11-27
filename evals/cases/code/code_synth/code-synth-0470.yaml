@@ -1,0 +1,46 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0470
+modality: code
+prompt: 'Write a Python function `process(rows)`. `rows` is a list of (name, team, score) tuples with
+  integer scores and unique names, possibly empty. Given them, return a dict mapping each team that has
+  at least one score of 60 or more to how many such scores it has.
+
+
+  Example: `process([(''Hugo'', ''sales'', 70), (''Cleo'', ''ops'', 80), (''Dara'', ''ops'', 95), (''Ada'',
+  ''ops'', 60), (''Mina'', ''ops'', 70), (''Sol'', ''legal'', 60)]) returns {''sales'': 1, ''ops'': 4,
+  ''legal'': 1}`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - 'process([(''Zed'', ''dev'', 50), (''Wren'', ''legal'', 50), (''Rhea'', ''sales'', 80), (''Uma'',
+    ''legal'', 70), (''Jon'', ''dev'', 70), (''Iris'', ''dev'', 70), (''Yara'', ''sales'', 70), (''Ada'',
+    ''legal'', 50)]) == {''sales'': 2, ''legal'': 1, ''dev'': 2}'
+  - 'process([(''Hugo'', ''hr'', 70), (''Xan'', ''sales'', 80), (''Vic'', ''qa'', 90), (''Yara'', ''hr'',
+    90), (''Tess'', ''sales'', 60), (''Cleo'', ''qa'', 70)]) == {''hr'': 2, ''sales'': 2, ''qa'': 2}'
+  - 'process([(''Nico'', ''dev'', 50), (''Quin'', ''hr'', 80), (''Iris'', ''dev'', 70), (''Hugo'', ''hr'',
+    95), (''Olga'', ''hr'', 60), (''Eli'', ''legal'', 90)]) == {''hr'': 3, ''dev'': 1, ''legal'': 1}'
+  - 'process([(''Iris'', ''qa'', 70), (''Quin'', ''sales'', 80), (''Tess'', ''ops'', 90), (''Vic'', ''qa'',
+    70), (''Zed'', ''sales'', 50), (''Cleo'', ''sales'', 50), (''Jon'', ''qa'', 80)]) == {''qa'': 3, ''sales'':
+    1, ''ops'': 1}'
+  - 'process([(''Yara'', ''dev'', 70), (''Xan'', ''sales'', 70), (''Tess'', ''sales'', 50), (''Pia'',
+    ''dev'', 70), (''Iris'', ''qa'', 95), (''Kira'', ''sales'', 80), (''Jon'', ''qa'', 60)]) == {''dev'':
+    2, ''sales'': 2, ''qa'': 2}'
+  - 'process([(''Yara'', ''ops'', 80), (''Iris'', ''sales'', 60), (''Ada'', ''ops'', 60), (''Hugo'', ''sales'',
+    60), (''Cleo'', ''ops'', 80), (''Eli'', ''sales'', 80)]) == {''ops'': 3, ''sales'': 3}'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '470'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-count

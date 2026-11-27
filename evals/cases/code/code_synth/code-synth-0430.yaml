@@ -1,0 +1,42 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0430
+modality: code
+prompt: 'Write a Python function `transform(rows)`. `rows` is a list of (name, region, rating) tuples
+  with integer ratings and unique names, possibly empty. Given them, return the sorted list of names whose
+  rating is strictly above the average rating of their own region.
+
+
+  Example: `transform([(''Xan'', ''ops'', 50), (''Yara'', ''sales'', 70), (''Zed'', ''legal'', 80), (''Pia'',
+  ''legal'', 80), (''Leo'', ''legal'', 70)]) returns [''Pia'', ''Zed'']`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([('Olga', 'dev', 50), ('Yara', 'dev', 50), ('Pia', 'ops', 90), ('Mina', 'hr', 80), ('Ada',
+    'dev', 90)]) == ['Ada']
+  - transform([('Nico', 'ops', 90), ('Mina', 'ops', 70), ('Wren', 'ops', 90), ('Vic', 'hr', 80), ('Iris',
+    'sales', 80)]) == ['Nico', 'Wren']
+  - transform([('Bram', 'sales', 60), ('Fay', 'hr', 80), ('Sol', 'sales', 95), ('Leo', 'sales', 60), ('Tess',
+    'hr', 60), ('Yara', 'legal', 80)]) == ['Fay', 'Sol']
+  - transform([('Kira', 'ops', 50), ('Uma', 'ops', 95), ('Sol', 'legal', 80), ('Iris', 'dev', 70), ('Cleo',
+    'dev', 60), ('Leo', 'dev', 70)]) == ['Iris', 'Leo', 'Uma']
+  - transform([('Leo', 'ops', 70), ('Kira', 'sales', 90), ('Mina', 'ops', 50), ('Nico', 'ops', 70)]) ==
+    ['Leo', 'Nico']
+  - transform([('Mina', 'dev', 50), ('Bram', 'legal', 80), ('Eli', 'dev', 70), ('Gus', 'ops', 70), ('Kira',
+    'ops', 90), ('Vic', 'legal', 80)]) == ['Eli', 'Kira']
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '430'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-above

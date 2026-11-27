@@ -1,0 +1,53 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0943
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the most recent version listed?'
+context: '## 2.10.3 (2026-10-04)
+
+  - Added battery handling (#166)
+
+  - Added keypad handling (#827)
+
+  ## 2.9.4 (2026-09-06)
+
+  - Fixed gasket handling (#468)
+
+  - Fixed mount plate handling (#734)
+
+  - Added desk lamp handling (#795)
+
+  ## 2.8.5 (2026-08-09)
+
+  - Fixed toner handling (#131)
+
+  - Fixed bolt kit handling (#809)
+
+  ## 2.7.2 (2026-07-28)
+
+  - Improved hose clamp handling (#113)
+
+  - Added toner handling (#192)
+
+  - Improved keypad handling (#833)'
+assert:
+  equals:
+  - 2.10.3
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '943'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: changelog

@@ -1,0 +1,37 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0032
+modality: code
+prompt: 'Write a Python function `wrap_text(text)` that splits `text` into words on whitespace and packs
+  them greedily into lines of at most 10 characters, words separated by one space, never splitting a word
+  (a word longer than 10 sits alone on its line). Return the list of lines; no words gives an empty list.
+
+
+  Example: `wrap_text('''') returns []`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - wrap_text('juliet zebra india golf a charlie') == ['juliet', 'zebra', 'india golf', 'a charlie']
+  - wrap_text('alpha echo a foxtrot') == ['alpha echo', 'a foxtrot']
+  - wrap_text('kilo bravo kilo echo ok ok echo ok ok') == ['kilo bravo', 'kilo echo', 'ok ok echo', 'ok
+    ok']
+  - wrap_text('juliet kilo a hotel lima internationalization charlie internationalization hotel') == ['juliet',
+    'kilo a', 'hotel lima', 'internationalization', 'charlie', 'internationalization', 'hotel']
+  - wrap_text('bravo a lima echo alpha') == ['bravo a', 'lima echo', 'alpha']
+  - wrap_text('internationalization alpha kilo bravo') == ['internationalization', 'alpha kilo', 'bravo']
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '32'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: algo-wrap

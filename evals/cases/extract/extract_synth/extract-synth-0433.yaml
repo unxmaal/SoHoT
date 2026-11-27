@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0433
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What was the rid of the request to /api/invoices?'
+context: 'falcon - [13/Nov/2026:14:13] "GET /api/reports HTTP/1.1" 200 7657 rid=f547683a
+
+  borealis - [01/Nov/2026:01:25] "GET /api/orders HTTP/1.1" 301 29021 rid=9bcf3665
+
+  indigo - [04/Nov/2026:15:29] "GET /api/search HTTP/1.1" 301 26997 rid=eb5ee367
+
+  ember - [21/Nov/2026:20:27] "GET /api/invoices HTTP/1.1" 502 72199 rid=05c96ffe'
+assert:
+  equals:
+  - 05c96ffe
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '433'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log_request

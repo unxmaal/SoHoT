@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1556
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Fix mount plate limit"?'
+context: "commit ed0c7ff1b0be6c2f0b05ff6be82ae2f5cae6c632\nAuthor: Farah Fairbanks <farah@example.com>\n\
+  Date:   2026-11-17\n\n    Add battery limit\n\ncommit 6e6ec4ecf086f6728ac53c684062dbc350b89e04\nAuthor:\
+  \ Elena Rasmussen <elena@example.com>\nDate:   2026-11-09\n\n    Fix keypad cache\n\ncommit 805574ce2f7f36acb73c530738c0a46d5fc50f65\n\
+  Author: Vera Valdivia <vera@example.com>\nDate:   2026-11-04\n\n    Fix mount plate limit\n\ncommit\
+  \ 5104975172c954e14aa36c58946f96fba157670e\nAuthor: Wendell Marchetti <wendell@example.com>\nDate: \
+  \  2026-11-12\n\n    Fix desk lamp parser\n\ncommit 0638a37414d628f700714c88a6d838e127b809d4\nAuthor:\
+  \ Farah Ivanova <farah@example.com>\nDate:   2026-11-15\n\n    Fix cable set limit"
+assert:
+  equals:
+  - Vera Valdivia
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1556'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

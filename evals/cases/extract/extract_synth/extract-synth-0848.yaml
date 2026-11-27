@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0848
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the first 7 characters of the hash of the commit "Add mount plate cache"?'
+context: "commit 4359fd84062c320cba8854663b0d855812aea12c\nAuthor: Ivo Nakamura <ivo@example.com>\nDate:\
+  \   2026-11-25\n\n    Remove cable set cache\n\ncommit 367a88771204cd188ce8bf90a534b6e8e6c22b3d\nAuthor:\
+  \ Jolene Halvorsen <jolene@example.com>\nDate:   2026-11-08\n\n    Add mount plate cache\n\ncommit f656ab442b212bcc1669f589bc6c05eb2cc33bc7\n\
+  Author: Avery Whitlock <avery@example.com>\nDate:   2026-11-15\n\n    Remove sensor retry\n\ncommit\
+  \ 8518c211e1635a82379d7ee09eab5fe5a32b2cef\nAuthor: Wendell Abernathy <wendell@example.com>\nDate: \
+  \  2026-11-13\n\n    Remove keypad limit\n\ncommit becd8c954cbc5876712d234cf9612fd4eb62f079\nAuthor:\
+  \ Oren Lindqvist <oren@example.com>\nDate:   2026-11-05\n\n    Add sensor retry"
+assert:
+  equals:
+  - 367a887
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '848'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

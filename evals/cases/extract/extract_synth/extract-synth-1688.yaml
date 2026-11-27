@@ -1,0 +1,32 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1688
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Remove mount plate cache"?'
+context: "commit 6087832d4cdae12e99bc47955030607c7c83ec5e\nAuthor: Farah Lindqvist <farah@example.com>\n\
+  Date:   2026-11-04\n\n    Tune toner parser\n\ncommit 3b945446c1aab198f5143bebe4b1d9dc2851c0df\nAuthor:\
+  \ Hana Zielinski <hana@example.com>\nDate:   2026-11-17\n\n    Fix filter pack limit\n\ncommit 6a6d536c8d0b421112be5396a92b640de7f85a06\n\
+  Author: Hana Nakamura <hana@example.com>\nDate:   2026-11-03\n\n    Fix toner limit\n\ncommit 3befdbd89b7b22b563682f65c0a839fe8a910c67\n\
+  Author: Farah Thorne <farah@example.com>\nDate:   2026-11-19\n\n    Fix bolt kit parser\n\ncommit 81e25873d99c8540a7bf74bb8b1c81abb42b07ce\n\
+  Author: Lucia Fairbanks <lucia@example.com>\nDate:   2026-11-14\n\n    Remove mount plate cache"
+assert:
+  equals:
+  - Lucia Fairbanks
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1688'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

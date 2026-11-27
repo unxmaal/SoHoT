@@ -1,0 +1,43 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0830
+modality: code
+prompt: 'Write a Python function `apply_rules(rows)`. `rows` is a list of (name, team, mark) tuples with
+  integer marks and unique names, possibly empty. Given them, return a list of (name, rank) tuples ordered
+  by rank then name; rank is competition style: the highest mark is rank 1, equal marks share a rank,
+  and the rank after a tie skips (marks 90, 80, 80, 70 rank 1, 2, 2, 4).
+
+
+  Example: `apply_rules([(''Pia'', ''dev'', 95), (''Nico'', ''ops'', 70), (''Wren'', ''legal'', 80), (''Xan'',
+  ''dev'', 80), (''Leo'', ''ops'', 50), (''Quin'', ''dev'', 80), (''Bram'', ''ops'', 70)]) returns [(''Pia'',
+  1), (''Quin'', 2), (''Wren'', 2), (''Xan'', 2), (''Bram'', 5), (''Nico'', 5), (''Leo'', 7)]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules([('Yara', 'qa', 90), ('Dara', 'qa', 70), ('Tess', 'ops', 50), ('Kira', 'qa', 70)]) ==
+    [('Yara', 1), ('Dara', 2), ('Kira', 2), ('Tess', 4)]
+  - apply_rules([('Leo', 'hr', 60), ('Tess', 'qa', 90), ('Jon', 'hr', 50), ('Vic', 'qa', 70), ('Sol',
+    'hr', 95), ('Ada', 'hr', 80), ('Rhea', 'hr', 80)]) == [('Sol', 1), ('Tess', 2), ('Ada', 3), ('Rhea',
+    3), ('Vic', 5), ('Leo', 6), ('Jon', 7)]
+  - apply_rules([('Nico', 'legal', 80), ('Wren', 'sales', 70), ('Gus', 'sales', 95), ('Hugo', 'sales',
+    60), ('Vic', 'sales', 80)]) == [('Gus', 1), ('Nico', 2), ('Vic', 2), ('Wren', 4), ('Hugo', 5)]
+  - apply_rules([('Mina', 'legal', 60), ('Nico', 'dev', 95), ('Jon', 'dev', 80), ('Sol', 'dev', 60), ('Fay',
+    'sales', 80)]) == [('Nico', 1), ('Fay', 2), ('Jon', 2), ('Mina', 4), ('Sol', 4)]
+  - apply_rules([('Uma', 'ops', 70), ('Fay', 'ops', 50), ('Ada', 'ops', 80), ('Rhea', 'ops', 50), ('Xan',
+    'sales', 95)]) == [('Xan', 1), ('Ada', 2), ('Uma', 3), ('Fay', 4), ('Rhea', 4)]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '830'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-rank

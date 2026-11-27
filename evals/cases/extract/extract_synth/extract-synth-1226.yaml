@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1226
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How much tax is charged?'
+context: "Saffron Robotics\nInvoice INV-2027-9758   Issued 2026-11-22\nBill to: Lumen Works   Customer\
+  \ PO: PO-18432\n  battery      x13  @     $30.28 =     $393.64\n  sensor       x12  @    $109.70 = \
+  \  $1,316.40\n  toner        x7   @     $59.94 =     $419.58\n  gasket       x8   @      $7.21 =   \
+  \   $57.68\n  Subtotal: $2,187.30\n  Shipping: $6.89\n  Tax: $218.73\n  Total due: $2,412.92 by 2027-01-12"
+assert:
+  equals:
+  - $218.73
+  - '218.73'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1226'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: invoice

@@ -1,0 +1,57 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0645
+modality: code
+prompt: 'Write a Python function `solve(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Replace every maximal run of digits with the number of digits in it.
+
+  2. Replace runs of whitespace with a single space and strip both ends.
+
+  3. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  4. Replace every ''i'' with ''c'' (lowercase only).
+
+  5. Shift every letter forward by 4 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  6. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  7. Keep only the first 2 whitespace-separated words, joined by single spaces.
+
+  8. Keep only the first occurrence of each character.
+
+  9. Remove every digit.
+
+  10. Keep only the first 2 whitespace-separated words, joined by single spaces.
+
+  Then: Return how many characters it has.
+
+
+  Example: `solve(''aBbzB zzz'') returns 5`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve('Zebra 42 crossing 7') == 6
+  - solve('aabbbcccc') == 3
+  - solve('Level') == 4
+  - solve('') == 0
+  - solve('queue QUEUE') == 7
+  - solve('  jumps   over the  lazy dog ') == 8
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '645'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-10-steps
