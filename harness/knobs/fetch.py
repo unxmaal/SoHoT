@@ -16,6 +16,8 @@ KNOBS = [
     _k("fetch_progress_poll", ["harness/downloads.py:PROGRESS_POLL_S"], [10.0, 60.0, 300.0], unit="s",
        note="seconds between looks at the bytes a download wrote, each growth a heartbeat beat; 60 s is 1/60 of "
             "sweep_check_stall and 2.3 GiB at the slowest night rate, 39.6 MiB/s (#771)"),
+    _k("measure_wip", ["harness/wip.py:LIMIT"], [1, 2, 3, 4], unit="measures",
+       note="most screened, paused and running measures one open lane holds; the screen pulls a lane's next candidate only below it (#2165)"),
     _k("screen_days", [f"{C}:SCREEN_DAYS"], [7, 30, 90],
        note="days of screen verdicts the seconds-per-screen estimate reads (#1084)"),
     _k("screen_estimate", [f"{C}:SCREEN_S"], [120.0, 300.0, 600.0, 1200.0],

@@ -87,8 +87,21 @@ def _judge_fits(fits, store_path=None) -> int:
     return 0
 
 
+def _record_prefilter(want: str) -> None:
+    """Each queued candidate the prefilter keeps out of the ranked list gets a fetch verdict naming why. #2165."""
+    from harness import prefilter
+    from harness import memory_store as ms
+    store = ms.connect()
+    try:
+        held = prefilter.split(store, loop_cmd._queueable(store, want)[0])[1]
+        if held:
+            prefilter.record(store, held)
+    finally:
+        store.close()
+
+
 def _screen_plan(want: str) -> list[dict]:
-    from harness import rank, screen
+    from harness import prefilter, rank, screen
     from harness import memory_store as ms
     store = ms.connect()
     try:
@@ -97,6 +110,7 @@ def _screen_plan(want: str) -> list[dict]:
         # loop fetched two image models and then said "nothing queued to
         # screen". Issue #209.
         rows, _ = loop_cmd._queueable(store, want)
+        rows = prefilter.split(store, rows)[0]
         # The same store as the fetch's ranking, so both tiers order by one key. #275, #881.
         ranked = rank.rank(rows, serving=rank.serving(),
                            measured_lanes=rank.lanes_with_receipts(store), conn=store)
@@ -304,7 +318,7 @@ def screen_detail(why: str, stderr: str, summary) -> str:
 
 def _todo(full: list[dict], store) -> list[dict]:
     """Ready rows and the ones a screen fetches as it starts them, lanes in turns; `fetch` says how. #1084, #2015."""
-    from harness import fetching, methods, screen
+    from harness import fetching, methods, screen, wip
     out = []
     for r in full:
         if r["state"] == screen.READY:
@@ -319,7 +333,7 @@ def _todo(full: list[dict], store) -> list[dict]:
         elif fetching.have(target, store):
             # Its own weights are here and only what it loads beside them is not.
             out.append({**r, "fetch": {}})
-    return fetching.by_lane_turns(out, store)
+    return wip.pull(store, fetching.by_lane_turns(out, store), say=print)
 
 
 def _fetched(store, r: dict) -> tuple[str, bool]:
@@ -373,10 +387,12 @@ def _report_screen(a) -> int:
     that spends real time and real memory, and one that starts doing so because
     something ranked well is how a laptop ends up unusable overnight.
     """
-    from harness import screen
+    from harness import screen, wip
     from harness import memory_store as ms
 
     want = (getattr(a, "lane", "") or "").strip().lower()
+    if getattr(a, "run", False):
+        _record_prefilter(want)
     full = _open_lanes(_screen_plan(want), record=bool(getattr(a, "run", False)))
     if not full:
         print("nothing queued to screen")
@@ -405,6 +421,8 @@ def _report_screen(a) -> int:
             return 0
         limit, taken = getattr(a, "limit", 1), 0
         until, per = getattr(a, "screen_until", None), float(getattr(a, "screen_s", 0) or 0)
+        # The screens the lanes pull are the share this step needs; the rest of the ceiling is the measure step's. #2165.
+        until = wip.share_until(until, time.time(), len(todo), per)
         for r in todo:
             if taken >= limit:
                 cuts.cut(getattr(a, "limit_knob", None) or "discover_top",
@@ -432,6 +450,10 @@ def _report_screen(a) -> int:
             taken += started
             if stop is not None:
                 return stop
+            # A screen that did not stay in hand leaves its lane room for the next candidate it would pull. #2165.
+            more = todo.backfill(r) if got != "screened" and hasattr(todo, "backfill") else None
+            if more is not None:
+                todo.append(more)
     finally:
         store.close()
     return 0

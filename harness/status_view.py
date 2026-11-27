@@ -302,6 +302,16 @@ def _timeline(tl: dict, now: float) -> str:
     return "".join(out) + "</section>"
 
 
+def _wip(rows: list) -> str:
+    """Each lane's measures in hand out of its WIP limit; a closed lane takes no challengers and says so. #2165."""
+    if not rows:
+        return ""
+    items = "".join(f"<li class='wp{' full' if w['used'] >= w['limit'] and not w['closed'] else ''}' data-wip='{esc(w['lane'])}'>"
+                    f"{esc(w['lane'])} {'closed' if w['closed'] else str(w['used']) + ' of ' + str(w['limit'])}"
+                    f"{' (' + esc(', '.join(w['names'])) + ')' if w['names'] else ''}</li>" for w in rows)
+    return f"<p class='nn'>Measures in hand per lane (measure_wip)</p><ul class='fl wip'>{items}</ul>"
+
+
 def _flow(fl: dict, now: float, needs: list) -> str:
     """The discovery flow: the seven nodes with in, out and time, an edge count between each, the repeats and the leak markers. #2158."""
     out = [f"<section class='panel' data-flow='1'><h2>Discovery flow <span class='asof'>as of {_when(fl.get('as_of'), now)}"
@@ -330,6 +340,7 @@ def _flow(fl: dict, now: float, needs: list) -> str:
                      + f"<title>{esc(', '.join(f'{r['name']} x{r['n']}' for r in e['repeats']) or 'no repeat')}</title></g>")
     parts.append("</svg>")
     out.append("".join(parts))
+    out.append(_wip(fl.get("wip") or []))
     keys = [c.get("key", "") for c in needs]
 
     def link(prefix: str = "", ids=()) -> str:

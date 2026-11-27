@@ -75,16 +75,23 @@ def _verdict_since(conn, names: set, since: float) -> bool:
     return got is not None
 
 
-def refusal(conn, repo: str, via: str, owner: str = "", now: float | None = None) -> str:
-    """Why `repo` may not be downloaded again now, "" when it may: it landed within the window and no verdict that decided it was written since, and a refusal is marked for a person. #2161."""
+def holds(conn, repo: str, via: str, owner: str = "", now: float | None = None) -> str:
+    """Why `repo` may not be downloaded again now, "" when it may: it landed within the window and no verdict that decided it was written since. #2161, #2165."""
     now = time.time() if now is None else now
     last = _last(conn, repo, now)
     if last is None or _verdict_since(conn, {n for n in (repo, owner) if n}, last["started_at"]):
         return ""
-    why = (f"{repo} was downloaded {(now - last['started_at']) / 3600:.1f} h ago ({last['bytes'] / GIB:.1f} GiB) and no verdict "
-           f"was written since, so it is not downloaded again within {REFETCH_WINDOW_S / 3600:g} h (asked for by {via})")
-    cuts.cut("refetch_window", why, value=REFETCH_WINDOW_S, kept=0, dropped=1, conn=conn)
-    mark(repo, via, why, now)
+    return (f"{repo} was downloaded {(now - last['started_at']) / 3600:.1f} h ago ({last['bytes'] / GIB:.1f} GiB) and no verdict "
+            f"was written since, so it is not downloaded again within {REFETCH_WINDOW_S / 3600:g} h (asked for by {via})")
+
+
+def refusal(conn, repo: str, via: str, owner: str = "", now: float | None = None) -> str:
+    """`holds`, and a refusal is a recorded cut and marked for a person. #2161."""
+    now = time.time() if now is None else now
+    why = holds(conn, repo, via, owner, now)
+    if why:
+        cuts.cut("refetch_window", why, value=REFETCH_WINDOW_S, kept=0, dropped=1, conn=conn)
+        mark(repo, via, why, now)
     return why
 
 

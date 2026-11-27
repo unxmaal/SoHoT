@@ -297,8 +297,8 @@ def missing(model_id: str, conn=None) -> list[str]:
 
 
 def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
-           needs_lane: bool = True, lane: str = "", name: str = "") -> list[dict]:
-    """Weights queued and not on disk, in the order the screen fetches them; `name` alone, unranked. #81, #2015.
+           needs_lane: bool = True, lane: str = "", name: str = "", prefiltered: bool = False) -> list[dict]:
+    """Weights queued and not on disk, in the order the screen fetches them; `name` alone, unranked. #81, #2015, #2165.
 
     A weight NO LANE CAN TEST is returned but never counted as fetchable:
     downloading is only justified by a measurement that follows it, and an
@@ -364,8 +364,10 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
         # queue report and not the fetch. Issue #211.
         from harness import lanes
         out = [r for r in out if lanes.serves(r.get("lane"), lane)]
-    from harness import lane_gate
+    from harness import lane_gate, prefilter
     out = lane_gate.keep(conn, out)[0]
+    if prefiltered:
+        out = prefilter.split(conn, out)[0]
     return by_lane_turns(in_rank_order(out, conn), conn)
 
 
@@ -632,38 +634,45 @@ def _refused(conn, row: dict, outcome: str, why: str, *, reason: str, until: str
     return {"repo": row["resolved"] or row["name"], "ok": False, "why": why}
 
 
+def runnable_gap(conn, row: dict) -> tuple[str, str, str, str] | None:
+    """Why no screen here can run `row`, as (outcome, why, reason, until), or None; nothing recorded. #81, #254, #2165."""
+    # AN ADAPTER IS NOT A CANDIDATE, and this tier is where that costs gigabytes. #414.
+    attachment = row.get("attaches_to") or ""
+    # An attachment is one on every machine, so it is decided before this machine's runtimes. #1039.
+    if attachment and not screen.takes_attachment(row.get("lane") or "", attachment):
+        return ("declined", f"{attachment} in its own card: this attaches to a model rather than "
+                f"being one, and no lane can run it alone", reasons.CANDIDATE, "")
+    # A lane discovery never screens loads its own weights when a person runs it. #1282.
+    if lanes.canonical(row.get("lane") or "") in lanes.BY_HAND:
+        return "queued", screen.by_hand(row["lane"], row["name"], card=row), reasons.HARNESS, ""
+    # A runtime this machine lacks is an answer about this machine, with what would end the wait. #254, #266, #415.
+    needs = rank.unrunnable(row, None)
+    if needs:
+        return ("declined", f"{needs}: this machine has no runtime that can load these weights", reasons.MACHINE,
+                f"runtime:{needs.removeprefix('needs-')}")
+    # A lane having a runner is not a runner taking this model; an engine entry would make it runnable. #213.
+    gap = screen.runner_gap(row.get("lane") or "", row["name"], attachment, conn=conn)
+    if gap:
+        return "queued", f"{gap}: no runner in the {row['lane']} lane can load it", reasons.HARNESS, ""
+    from harness import ds4
+    if ds4.recognised(row["name"]):
+        # A ds4 file is one very large download; a person starts it. #611.
+        spec = screen.candidate_for(row.get("lane") or "", row["name"], conn=conn)
+        stem = spec.partition(",")[0].removeprefix(ds4.PREFIX)
+        return ("queued", f"a ds4 model is fetched by hand: uv run python -m harness.ds4 fetch "
+                f"{row['name']} {stem}.gguf", reasons.LIMIT, "")
+    return None
+
+
 def _refusal(conn, row: dict) -> dict | None:
     """The refusal a candidate gets before any byte is fetched, recorded, or None when it may be fetched. #81, #254, #2015."""
     name = row["resolved"] or row["name"]
     why = why_not(row)
     if why and why[0] in SILENT:
         return {"repo": name, "ok": False, "why": why[1]}
-    # AN ADAPTER IS NOT A CANDIDATE, and this tier is where that costs gigabytes. #414.
-    attachment = row.get("attaches_to") or ""
-    # An attachment is one on every machine, so it is decided before this machine's runtimes. #1039.
-    if attachment and not screen.takes_attachment(row.get("lane") or "", attachment):
-        return _refused(conn, row, "declined", f"{attachment} in its own card: this attaches to a model rather than "
-                        f"being one, and no lane can run it alone", reason=reasons.CANDIDATE)
-    # A lane discovery never screens loads its own weights when a person runs it. #1282.
-    if lanes.canonical(row.get("lane") or "") in lanes.BY_HAND:
-        return _refused(conn, row, "queued", screen.by_hand(row["lane"], row["name"], card=row), reason=reasons.HARNESS)
-    # A runtime this machine lacks is an answer about this machine, with what would end the wait. #254, #266, #415.
-    needs = rank.unrunnable(row, None)
-    if needs:
-        return _refused(conn, row, "declined", f"{needs}: this machine has no runtime that can load these weights",
-                        reason=reasons.MACHINE, until=f"runtime:{needs.removeprefix('needs-')}")
-    # A lane having a runner is not a runner taking this model; an engine entry would make it runnable. #213.
-    gap = screen.runner_gap(row.get("lane") or "", row["name"], attachment, conn=conn)
+    gap = runnable_gap(conn, row)
     if gap:
-        return _refused(conn, row, "queued", f"{gap}: no runner in the {row['lane']} lane can load it",
-                        reason=reasons.HARNESS)
-    from harness import ds4
-    if ds4.recognised(row["name"]):
-        # A ds4 file is one very large download; a person starts it. #611.
-        spec = screen.candidate_for(row.get("lane") or "", row["name"], conn=conn)
-        stem = spec.partition(",")[0].removeprefix(ds4.PREFIX)
-        return _refused(conn, row, "queued", f"a ds4 model is fetched by hand: uv run python -m harness.ds4 fetch "
-                        f"{row['name']} {stem}.gguf", reason=reasons.LIMIT)
+        return _refused(conn, row, gap[0], gap[1], reason=gap[2], until=gap[3])
     return None
 
 
