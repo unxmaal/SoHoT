@@ -1,0 +1,89 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0000
+modality: claims
+prompt: '[1] user-5b22: if the Onyx2 had a dollar for every fan it has, it would still be loud
+
+  [2] user-5b22: my Onyx2 weighs more than my cat and is less friendly haha
+
+  [3] user-5b22: my Onyx2 weighs more than my cat and is less friendly haha
+
+  [4] user-8e72: the Onyx2 will happily run an R8000 processor
+
+  [5] user-930b: if the Onyx2 had a dollar for every fan it has, it would still be loud
+
+  [6] user-930b: anyone know a good shop for the Onyx2?
+
+  [7] user-5b22: anyone know about the O2?
+
+  [8] user-930b: it boots off a 36 GB drive
+
+  [9] user-930b: a collector''s site at example.com has the PROM updates for the Onyx2
+
+  [10] user-701c: can the Onyx2 run a modern browser?'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-930b
+    claim: The O2 accepts a 36 GB SCSI drive.
+    verdict: good
+    refs:
+    - 8
+    interface: conversation
+  - user: user-930b
+    claim: PROM updates for the Onyx2 can be found at a collector's site at example.com.
+    verdict: good
+    refs:
+    - 9
+    interface: conversation
+  - user: user-8e72
+    claim: The Onyx2 can take an R8000 CPU.
+    verdict: good
+    refs: &id001
+    - 4
+    interface: conversation
+  - user: user-8e72
+    claim: The Onyx2 can take an R14000 CPU.
+    verdict: wrong
+    refs: *id001
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '0'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

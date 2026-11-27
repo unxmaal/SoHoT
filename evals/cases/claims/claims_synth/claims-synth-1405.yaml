@@ -1,0 +1,70 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-1405
+modality: claims
+prompt: '[1] user-2891: what is the best irix for the Personal IRIS?
+
+  [2] user-2891: nothing beats the sound of a Onyx booting
+
+  [3] user-5130: that is the best thing i have heard all day
+
+  [4] user-5130: my Crimson is the best machine ever
+
+  [5] user-5130: the Crimson heats my room so well i cancelled the furnace lol
+
+  [6] user-2891: hey everyone
+
+  [7] user-5130: good morning all
+
+  [8] user-5130: i would trade my laptop for a Onyx any day
+
+  [9] user-5130: if the Personal IRIS had a dollar for every fan it has, it would still be loud
+
+  [10] user-2891: where do people get parts for the Personal IRIS?
+
+  [11] user-2891: how much memory can the Crimson hold?'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  expect_empty: true
+  reviews: []
+  basis: generated chat holding no factual claim
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '1405'
+  date: ''
+  transform: chat of questions, opinions, jokes and greetings only, so no claim is right
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

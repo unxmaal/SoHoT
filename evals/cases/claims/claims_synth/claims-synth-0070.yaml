@@ -1,0 +1,89 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0070
+modality: claims
+prompt: '[1] user-7ae4: would the Indigo2 be loud in a bedroom?
+
+  [2] user-a45a: is the O2 any good for audio work?
+
+  [3] user-a45a: anyone know about the Indy?
+
+  [4] user-e8cd: it has gigabit ethernet built in
+
+  [5] user-e8cd: where do people get parts for the Indigo2?
+
+  [6] user-e8cd: nothing beats the sound of a Indy booting
+
+  [7] user-e8cd: anyone know about the Indigo2?
+
+  [8] user-7ae4: it runs the R14000 fine
+
+  [9] user-e8cd: i would trade my laptop for a Indy any day
+
+  [10] user-a45a: Indigo2 owners can fit 256 MB of RAM at most'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-7ae4
+    claim: The Indigo2 can take an R14000 CPU.
+    verdict: good
+    refs:
+    - 8
+    interface: conversation
+  - user: user-a45a
+    claim: The Indigo2 supports up to 256 MB of RAM.
+    verdict: good
+    refs: &id001
+    - 10
+    interface: conversation
+  - user: user-e8cd
+    claim: The Indy has a gigabit Ethernet port.
+    verdict: good
+    refs:
+    - 4
+    interface: conversation
+  - user: user-a45a
+    claim: The Indigo2 supports up to 8 GB of RAM.
+    verdict: wrong
+    refs: *id001
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '70'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

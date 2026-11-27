@@ -1,0 +1,89 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0684
+modality: claims
+prompt: '[1] user-f392: would the Fuel be loud in a bedroom?
+
+  [2] user-a850: i think the Origin 200 is overrated honestly
+
+  [3] user-f40a: Origin 200 boards accept the R4400 chip
+
+  [4] user-f392: does the Origin 200 even take an R14000 cpu?
+
+  [5] user-a850: what a week
+
+  [6] user-f40a: the Origin 200 was sold with VPro V12 graphics
+
+  [7] user-a850: can the Fuel run a modern browser?
+
+  [8] user-a850: lol
+
+  [9] user-f40a: the Personal IRIS is happiest on irix 6.5.30
+
+  [10] user-f40a: nothing beats the sound of a Fuel booting'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-f40a
+    claim: The Personal IRIS runs IRIX 6.2.
+    verdict: wrong
+    refs: &id001
+    - 9
+    interface: conversation
+  - user: user-f40a
+    claim: The Personal IRIS runs IRIX 6.5.30.
+    verdict: good
+    refs: *id001
+    interface: conversation
+  - user: user-f40a
+    claim: The Origin 200 can be fitted with VPro V12 graphics.
+    verdict: good
+    refs:
+    - 6
+    interface: conversation
+  - user: user-f40a
+    claim: The Origin 200 can take an R4400 CPU.
+    verdict: good
+    refs:
+    - 3
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '684'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

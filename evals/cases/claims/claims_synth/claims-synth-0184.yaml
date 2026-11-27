@@ -1,0 +1,89 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0184
+modality: claims
+prompt: '[1] user-8663: back now
+
+  [2] user-9190: gotta run, dinner
+
+  [3] user-8663: can the Indigo run a modern browser?
+
+  [4] user-333c: i put an R4400 in my Tezro last year
+
+  [5] user-9190: ok cool
+
+  [6] user-9190: see you tomorrow
+
+  [7] user-8356: grab the IRIX overlays for the Fuel from the techpubs library
+
+  [8] user-8356: i love this channel
+
+  [9] user-8356: the Indigo case design is gorgeous
+
+  [10] user-333c: anyone with a Tezro is welcome to post in here'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-333c
+    claim: They run an R4400 CPU in their Tezro.
+    verdict: good
+    refs:
+    - 4
+    interface: cited-only
+  - user: user-8356
+    claim: IRIX overlays for the Fuel can be found at a collector's site at example.com.
+    verdict: wrong
+    refs: &id001
+    - 7
+    interface: cited-only
+  - user: user-333c
+    claim: Owners of the Tezro are welcome to post in the channel.
+    verdict: not_useful
+    refs:
+    - 10
+    interface: cited-only
+  - user: user-8356
+    claim: IRIX overlays for the Fuel can be found at the techpubs library.
+    verdict: good
+    refs: *id001
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '184'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

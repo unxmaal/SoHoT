@@ -1,0 +1,75 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0536
+modality: claims
+prompt: '[1] user-96df: ok cool
+
+  [2] user-90a5: the Indy heats my room so well i cancelled the furnace lol
+
+  [3] user-90a5: grab the PROM updates for the Crimson from a collector''s site at example.com
+
+  [4] user-96df: i think the Crimson is overrated honestly
+
+  [5] user-90a5: anyone know about the Octane?
+
+  [6] user-96df: it comes with Impact MXI graphics'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-90a5
+    claim: PROM updates for the Crimson can be found at a collector's site at example.com.
+    verdict: good
+    refs: &id001
+    - 3
+    interface: conversation
+  - user: user-90a5
+    claim: PROM updates for the Crimson can be found at the Nekochan forum.
+    verdict: wrong
+    refs: *id001
+    interface: conversation
+  - user: user-96df
+    claim: The Octane can be fitted with Impact MXI graphics.
+    verdict: good
+    refs:
+    - 6
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '536'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

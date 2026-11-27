@@ -1,0 +1,81 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0657
+modality: claims
+prompt: '[1] user-f04b: what a week
+
+  [2] user-f04b: if the Onyx had a dollar for every fan it has, it would still be loud
+
+  [3] user-aac3: the Octane will happily run an R5000 processor
+
+  [4] user-f04b: if the Onyx had a dollar for every fan it has, it would still be loud
+
+  [5] user-f04b: Indigo2 owners can fit 512 MB of RAM at most
+
+  [6] user-cc38: anyone with a Octane is welcome to post in here'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-cc38
+    claim: Owners of the Octane are welcome to post in the channel.
+    verdict: not_useful
+    refs:
+    - 6
+    interface: conversation
+  - user: user-f04b
+    claim: The Indigo2 supports up to 512 MB of RAM.
+    verdict: good
+    refs:
+    - 5
+    interface: conversation
+  - user: user-aac3
+    claim: The Octane can take an R5000 CPU.
+    verdict: good
+    refs: &id001
+    - 3
+    interface: conversation
+  - user: user-aac3
+    claim: The Octane can be fitted with VPro V12 graphics.
+    verdict: made_up
+    refs: *id001
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '657'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

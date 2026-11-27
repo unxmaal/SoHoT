@@ -1,0 +1,81 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0646
+modality: claims
+prompt: '[1] user-6a0c: i named my Indigo after my ex, it also refuses to boot sometimes
+
+  [2] user-bf69: the SGI Depot has the power supply parts for the Origin 200
+
+  [3] user-2eb5: has anyone tried that yet?
+
+  [4] user-2eb5: anyone know about the O2?
+
+  [5] user-bf69: a collector''s site at example.com has them
+
+  [6] user-2eb5: the O2 tops out at 4 GB of memory'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-bf69
+    claim: Power supply parts for the Origin 200 can be found at the SGI Depot.
+    verdict: good
+    refs:
+    - 2
+    interface: cited-only
+  - user: user-2eb5
+    claim: The O2 supports up to 4 GB of RAM.
+    verdict: good
+    refs:
+    - 6
+    interface: cited-only
+  - user: user-bf69
+    claim: Install media for the O2 can be found at the Nekochan forum.
+    verdict: wrong
+    refs: &id001
+    - 5
+    interface: cited-only
+  - user: user-bf69
+    claim: Install media for the O2 can be found at a collector's site at example.com.
+    verdict: good
+    refs: *id001
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '646'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

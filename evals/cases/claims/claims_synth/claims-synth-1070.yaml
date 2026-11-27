@@ -1,0 +1,85 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-1070
+modality: claims
+prompt: '[1] user-69f0: i would trade my laptop for a Octane any day
+
+  [2] user-69f0: the Octane looks so much better than any beige box
+
+  [3] user-0ea6: that is the best thing i have heard all day
+
+  [4] user-08e0: anyone know about the Octane?
+
+  [5] user-69f0: an archive at ftp.example.org has them
+
+  [6] user-69f0: the Crimson tops out at 128 MB of memory
+
+  [7] user-0ea6: anyone know about the Crimson?
+
+  [8] user-69f0: it takes an R10000 cpu no problem'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-69f0
+    claim: The Crimson can take an R8000 CPU.
+    verdict: wrong
+    refs: &id001
+    - 8
+    interface: cited-only
+  - user: user-69f0
+    claim: PROM updates for the Octane can be found at an archive at ftp.example.org.
+    verdict: good
+    refs:
+    - 5
+    interface: cited-only
+  - user: user-69f0
+    claim: The Crimson supports up to 128 MB of RAM.
+    verdict: good
+    refs:
+    - 6
+    interface: cited-only
+  - user: user-69f0
+    claim: The Crimson can take an R10000 CPU.
+    verdict: good
+    refs: *id001
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '1070'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

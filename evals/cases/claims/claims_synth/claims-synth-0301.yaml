@@ -1,0 +1,97 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0301
+modality: claims
+prompt: '[1] user-81a6: i love this channel
+
+  [2] user-7800: can the Personal IRIS run a modern browser?
+
+  [3] user-7800: my Octane2 is on 100 Mbit ethernet here
+
+  [4] user-687d: how much memory can the Octane2 hold?
+
+  [5] user-81a6: for the Octane2 you want irix 6.2
+
+  [6] user-687d: the Octane2 looks so much better than any beige box
+
+  [7] user-7800: i love this channel
+
+  [8] user-7800: i swapped my Octane2 disk for a 18 GB scsi drive
+
+  [9] user-81a6: nice, thanks for the link
+
+  [10] user-7800: where do people get parts for the Personal IRIS?
+
+  [11] user-7800: anyone with a Octane2 is welcome to post in here'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-7800
+    claim: Owners of the Octane2 are welcome to post in the channel.
+    verdict: not_useful
+    refs:
+    - 11
+    interface: cited-only
+  - user: user-81a6
+    claim: The Octane2 runs IRIX 6.2.
+    verdict: good
+    refs: &id001
+    - 5
+    interface: cited-only
+  - user: user-7800
+    claim: Their Octane2 boots from a 18 GB SCSI drive.
+    verdict: good
+    refs:
+    - 8
+    interface: cited-only
+  - user: user-81a6
+    claim: The Octane2 can take an R12000 CPU.
+    verdict: made_up
+    refs: *id001
+    interface: cited-only
+  - user: user-7800
+    claim: Their Octane2 uses 100 Mbit Ethernet.
+    verdict: good
+    refs:
+    - 3
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '301'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

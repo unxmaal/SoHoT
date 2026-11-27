@@ -1,0 +1,91 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0402
+modality: claims
+prompt: '[1] user-11ad: i love this channel
+
+  [2] user-11ad: if the Onyx had a dollar for every fan it has, it would still be loud
+
+  [3] user-4429: anyone know about the Indy?
+
+  [4] user-83d3: it comes with Extreme graphics
+
+  [5] user-11ad: Newport graphics exist for the Crimson
+
+  [6] user-83d3: for the Crimson you want irix 6.2
+
+  [7] user-11ad: haha that is great
+
+  [8] user-83d3: anyone with a Indy is welcome to post in here'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-11ad
+    claim: The Crimson can be fitted with SE graphics.
+    verdict: wrong
+    refs: &id001
+    - 5
+    interface: conversation
+  - user: user-83d3
+    claim: The Indy can be fitted with Extreme graphics.
+    verdict: good
+    refs:
+    - 4
+    interface: conversation
+  - user: user-11ad
+    claim: The Crimson can be fitted with Newport graphics.
+    verdict: good
+    refs: *id001
+    interface: conversation
+  - user: user-83d3
+    claim: Owners of the Indy are welcome to post in the channel.
+    verdict: not_useful
+    refs:
+    - 8
+    interface: conversation
+  - user: user-83d3
+    claim: The Crimson runs IRIX 6.2.
+    verdict: good
+    refs:
+    - 6
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '402'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

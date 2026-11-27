@@ -1,0 +1,97 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0990
+modality: claims
+prompt: '[1] user-20db: if the Tezro had a dollar for every fan it has, it would still be loud
+
+  [2] user-fd66: where do people get parts for the Origin 200?
+
+  [3] user-fd66: i named my Tezro after my ex, it also refuses to boot sometimes
+
+  [4] user-e35e: my Tezro links at 10 Mbit ethernet
+
+  [5] user-fd66: the Origin 200 looks so much better than any beige box
+
+  [6] user-e35e: max memory on the Tezro is 1 GB
+
+  [7] user-fd66: the Origin 200 heats my room so well i cancelled the furnace lol
+
+  [8] user-fd66: the Tezro on my desk has SI graphics
+
+  [9] user-20db: what a week
+
+  [10] user-fd66: nice, thanks for the link
+
+  [11] user-fd66: anyone with a Tezro is welcome to post in here'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-e35e
+    claim: Their Tezro uses gigabit Ethernet.
+    verdict: wrong
+    refs: &id001
+    - 4
+    interface: conversation
+  - user: user-fd66
+    claim: Owners of the Tezro are welcome to post in the channel.
+    verdict: not_useful
+    refs:
+    - 11
+    interface: conversation
+  - user: user-fd66
+    claim: Their Tezro has SI graphics.
+    verdict: good
+    refs:
+    - 8
+    interface: conversation
+  - user: user-e35e
+    claim: The Tezro supports up to 1 GB of RAM.
+    verdict: good
+    refs:
+    - 6
+    interface: conversation
+  - user: user-e35e
+    claim: Their Tezro uses 10 Mbit Ethernet.
+    verdict: good
+    refs: *id001
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '990'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

@@ -1,0 +1,87 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-1280
+modality: claims
+prompt: '[1] user-118f: would the Fuel be loud in a bedroom?
+
+  [2] user-4a78: the Crimson was sold with Newport graphics
+
+  [3] user-4a78: my Crimson weighs more than my cat and is less friendly haha
+
+  [4] user-118f: does the Crimson even take an R10000 cpu?
+
+  [5] user-95e0: Fuel owners can fit 1 GB of RAM at most
+
+  [6] user-95e0: if the Fuel had a dollar for every fan it has, it would still be loud
+
+  [7] user-4a78: anyone know about the Fuel?
+
+  [8] user-95e0: it boots off a 36 GB drive
+
+  [9] user-95e0: back now'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-95e0
+    claim: The Fuel supports up to 1 GB of RAM.
+    verdict: good
+    refs: &id001
+    - 5
+    interface: cited-only
+  - user: user-4a78
+    claim: The Crimson can be fitted with Newport graphics.
+    verdict: good
+    refs:
+    - 2
+    interface: cited-only
+  - user: user-95e0
+    claim: The Fuel runs IRIX 6.2.
+    verdict: made_up
+    refs: *id001
+    interface: cited-only
+  - user: user-95e0
+    claim: The Fuel accepts a 36 GB SCSI drive.
+    verdict: good
+    refs:
+    - 8
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '1280'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

@@ -1,0 +1,89 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0133
+modality: claims
+prompt: '[1] user-2cb7: has anyone tried that yet?
+
+  [2] user-f5b7: my Fuel boots from a 36 GB drive
+
+  [3] user-2cb7: good morning all
+
+  [4] user-2cb7: anyone know about the Indigo?
+
+  [5] user-f5b7: it took a 73 GB scsi disk fine
+
+  [6] user-2cb7: nice, thanks for the link
+
+  [7] user-2cb7: does the Fuel even take an R4400 cpu?
+
+  [8] user-2cb7: 10 Mbit ethernet is built into the Fuel
+
+  [9] user-f5b7: i would trade my laptop for a Indigo any day
+
+  [10] user-f5b7: how much memory can the Indigo hold?'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-f5b7
+    claim: The Fuel supports up to 4 GB of RAM.
+    verdict: made_up
+    refs: &id001
+    - 2
+    interface: cited-only
+  - user: user-f5b7
+    claim: Their Fuel boots from a 36 GB SCSI drive.
+    verdict: good
+    refs: *id001
+    interface: cited-only
+  - user: user-f5b7
+    claim: The Indigo accepts a 73 GB SCSI drive.
+    verdict: good
+    refs:
+    - 5
+    interface: cited-only
+  - user: user-2cb7
+    claim: The Fuel has a 10 Mbit Ethernet port.
+    verdict: good
+    refs:
+    - 8
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '133'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

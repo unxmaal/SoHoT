@@ -1,0 +1,97 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-1387
+modality: claims
+prompt: '[1] user-072e: that is the best thing i have heard all day
+
+  [2] user-3977: ha, true
+
+  [3] user-072e: i put an R10000 in my Tezro last year
+
+  [4] user-072e: what a week
+
+  [5] user-0b45: a 73 GB scsi drive works in the Onyx2
+
+  [6] user-0b45: good luck with it
+
+  [7] user-72a9: anyone know about the Onyx2?
+
+  [8] user-072e: a mirror at example.net has them
+
+  [9] user-72a9: good luck with it
+
+  [10] user-072e: the Onyx2 heats my room so well i cancelled the furnace lol
+
+  [11] user-3977: anyone with a Tezro is welcome to post in here'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-3977
+    claim: Owners of the Tezro are welcome to post in the channel.
+    verdict: not_useful
+    refs:
+    - 11
+    interface: cited-only
+  - user: user-072e
+    claim: The Tezro accepts a 18 GB SCSI drive.
+    verdict: made_up
+    refs: &id001
+    - 3
+    interface: cited-only
+  - user: user-072e
+    claim: Power supply parts for the Onyx2 can be found at a mirror at example.net.
+    verdict: good
+    refs:
+    - 8
+    interface: cited-only
+  - user: user-072e
+    claim: They run an R10000 CPU in their Tezro.
+    verdict: good
+    refs: *id001
+    interface: cited-only
+  - user: user-0b45
+    claim: The Onyx2 accepts a 73 GB SCSI drive.
+    verdict: good
+    refs:
+    - 5
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '1387'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

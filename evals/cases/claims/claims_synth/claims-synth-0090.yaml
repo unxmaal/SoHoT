@@ -1,0 +1,87 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0090
+modality: claims
+prompt: '[1] user-3568: my Onyx2 is the best machine ever
+
+  [2] user-6d72: anyone know about the Origin 200?
+
+  [3] user-dc39: it will not go past 8 GB of memory
+
+  [4] user-a953: can the Fuel run a modern browser?
+
+  [5] user-3568: for the Origin 200 you want irix 6.2
+
+  [6] user-dc39: i think the Onyx2 is overrated honestly
+
+  [7] user-a953: my Onyx2 is on gigabit ethernet here
+
+  [8] user-a953: what a week
+
+  [9] user-a953: i think the Onyx2 is overrated honestly'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-a953
+    claim: Their Onyx2 uses gigabit Ethernet.
+    verdict: good
+    refs:
+    - 7
+    interface: cited-only
+  - user: user-3568
+    claim: The Origin 200 runs IRIX 6.2.
+    verdict: good
+    refs: &id001
+    - 5
+    interface: cited-only
+  - user: user-3568
+    claim: The Origin 200 runs IRIX 5.3.
+    verdict: wrong
+    refs: *id001
+    interface: cited-only
+  - user: user-dc39
+    claim: The Origin 200 supports up to 8 GB of RAM.
+    verdict: good
+    refs:
+    - 3
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '90'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

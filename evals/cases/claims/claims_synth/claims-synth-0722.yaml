@@ -1,0 +1,87 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0722
+modality: claims
+prompt: '[1] user-b523: ha, true
+
+  [2] user-b523: my Tezro sits on irix 6.3
+
+  [3] user-99fe: what a week
+
+  [4] user-b523: can the Octane run a modern browser?
+
+  [5] user-b523: a mirror at example.net has the firmware images for the O2
+
+  [6] user-b523: gotta run, dinner
+
+  [7] user-99fe: anyone else up this late?
+
+  [8] user-99fe: anyone know about the O2?
+
+  [9] user-b523: it only does gigabit on the wire'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-b523
+    claim: The O2 has a gigabit Ethernet port.
+    verdict: good
+    refs: &id001
+    - 9
+    interface: cited-only
+  - user: user-b523
+    claim: The O2 has a 100 Mbit Ethernet port.
+    verdict: wrong
+    refs: *id001
+    interface: cited-only
+  - user: user-b523
+    claim: They run IRIX 6.3 on their Tezro.
+    verdict: good
+    refs:
+    - 2
+    interface: cited-only
+  - user: user-b523
+    claim: Firmware images for the O2 can be found at a mirror at example.net.
+    verdict: good
+    refs:
+    - 5
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '722'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

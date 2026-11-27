@@ -1,0 +1,81 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0562
+modality: claims
+prompt: '[1] user-717e: does the Personal IRIS even take an R8000 cpu?
+
+  [2] user-f8f5: how much memory can the Onyx2 hold?
+
+  [3] user-3fb2: the Personal IRIS case design is gorgeous
+
+  [4] user-3fb2: for the Personal IRIS you want irix 6.3
+
+  [5] user-f8f5: hey everyone
+
+  [6] user-f8f5: anyone know about the Onyx2?
+
+  [7] user-9a61: it comes with VPro V12 graphics
+
+  [8] user-717e: hey everyone
+
+  [9] user-3fb2: my Personal IRIS weighs more than my cat and is less friendly haha'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-3fb2
+    claim: The Personal IRIS runs IRIX 6.3.
+    verdict: good
+    refs:
+    - 4
+    interface: conversation
+  - user: user-9a61
+    claim: The Onyx2 can be fitted with VPro V12 graphics.
+    verdict: good
+    refs: &id001
+    - 7
+    interface: conversation
+  - user: user-9a61
+    claim: The Onyx2 can be fitted with Newport graphics.
+    verdict: wrong
+    refs: *id001
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '562'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

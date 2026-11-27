@@ -17,7 +17,9 @@ from evals.importers import Imported, provenance
 LANE = "pii"
 VERSION = "1"
 SEED = 603
-COUNT = 540
+COUNT = 1440
+#: Items below this draw from the original pools, so the cases shipped before the extension stay byte-identical. #2182.
+EXTENDED_FROM = 540
 SOURCE = f"generated:evals.importers.pii_synth v{VERSION} seed {SEED}"
 DATASET = "SoHoT generated pii cases"
 URL = "https://github.com/unxmaal/SoHoT/blob/main/evals/importers/pii_synth.py"
@@ -121,10 +123,77 @@ NO_PII = [
     "Pallet 309 holds 48 cartons of model X200 routers.",
 ]
 
+#: Extra pools for items from EXTENDED_FROM on: more kinds, and numbers that only look personal. #2182.
+MORE_TEMPLATES = [
+    "Patient {name} was born on {dob}; the chart number is 5521.",
+    "Verify {name}, DOB {dob}, before releasing order 3318.",
+    "Tax form 1040 lists {ssn} for {name}.",
+    "The applicant's SSN {ssn} did not match record 7745.",
+    "Passport {passport} was scanned at gate 12 for {name}.",
+    "Travel desk: {name} holds passport {passport}, valid until 2031.",
+    "Mention {handle} in thread 4471 so {name} sees it.",
+    "Ban the account {handle} after report 2208 from {email}.",
+    "Log line 91: user {handle} signed in from {ip}.",
+    '{{"user": "{email}", "ticket": 8812}}',
+    "ALERT 4410: token {key} appeared in the commit by {name}.",
+    "grep found {email} in 3 files under config 14.",
+    "Reminder: {name} ({handle}) owes the 2 signed forms by Friday.",
+    "Dispatch to {address}; the recipient is {name}, reachable on {phone}.",
+    "Case 6631 notes: {name}, born {dob}, lives at {address}.",
+    "Fraud review 9921: card {card} and IBAN {iban} both belong to {name}.",
+    "Invoice 7710 was emailed to {email} and mailed to {address}.",
+    "Heartbeat from {ip} (owner {name}) missed 4 checks on rack 9.",
+    "Ask {name} for the {passport} scan, then file it under case 5502.",
+    "SSN {ssn} and DOB {dob} appear together in export 3302.",
+    "Hotline: {phone}. Operator note 1187: caller gave the name {name}.",
+    "Rotate {key} today; it was pasted into chat by {handle}.",
+    "{name} wrote from {email} about build 4.2.1 and left {phone}.",
+    "Shipping label 2290 reads {name}, {address}.",
+    "Wire 8801 failed: IBAN {iban}, beneficiary {name}.",
+    "Customer {handle} says order 7203 never reached {address}.",
+    "Two cards on file for {name}: {card} and the one ending 4242.",
+    "Onboarding 5530: collect {passport} and {dob} from {name}.",
+    "The VPN session for {name} originated at {ip} in week 31.",
+    "Please text {phone} when package 6140 arrives for {name}.",
+]
 
-def _values(rng: random.Random) -> dict:
+HARD_NO_PII = [
+    "Commit 9f2c41a fixed the race in worker 12 and merged at 14:05.",
+    "Invoice total 1204.50 is due 2026-01-31 under contract 7782.",
+    "Latency p99 was 412 ms over 4096 requests on shard 7.",
+    "Error E-4012 repeated 33 times between 02:10 and 02:45.",
+    "Seat 14C on flight 882 was upgraded at the gate.",
+    "The Orchard release and the Granite release share patch 4471.",
+    "Python 3.12.4 and Node 20.11.1 are pinned in image 305.",
+    "Tracking 7741-2209-8836 shows the pallet at dock 6.",
+    "The Willow cluster has 48 nodes and 3 spare racks.",
+    "Coupon SAVE20 cut 18 percent off orders above 250.",
+    "Meeting 2026-03-09 at 10:30 covers budget line 6120.",
+    "Ledger 22 balances to 99120.75 after adjustment 14.",
+    "The Lantern theme ships 6 icons and 3 fonts in v2.0.",
+    "Temperature in freezer 9 held at -18 degrees for 7 hours.",
+    "Checksum 3fa9c0 matched for artifact 5512 of build 71.",
+    "Route 66 detour adds 14 miles near exit 207.",
+    "Policy 4410 renews on 2027-06-01 with premium 312.40.",
+    "The Copper pipeline processed 88000 rows in 19 minutes.",
+    "Version 12.3 of the schema loader was yanked after issue 903.",
+    "Quarter 3 revenue rose 4.2 percent to 18.6 million.",
+    "Job 5530 retried 3 times before exit code 137.",
+    "Gate B22 closes at 18:40 and the bus leaves at 18:55.",
+    "Ratio 3:1 held across all 12 test batches in lab 4.",
+    "Shelf 18 in aisle 7 stocks 240 spools of cable 6A.",
+    "The Harbor dashboard shows 31 open alerts and 9 muted ones.",
+    "Page 214 of manual 8 lists torque 45 for bolt M10.",
+    "Lot 7731 passed inspection with 2 cosmetic flaws out of 600.",
+    "Order 4482 contains 6 items weighing 14.2 kg in total.",
+    "Frame 3320 of reel 9 was re-scanned at 600 dpi.",
+    "Table 12 reserves 8 seats from 19:00 until 21:30.",
+]
+
+
+def _values(rng: random.Random, extended: bool = False) -> dict:
     first, last = rng.choice(FIRST), rng.choice(LAST)
-    return {
+    out = {
         "name": f"{first} {last}",
         "email": f"{first[0].lower()}{last.lower()}{rng.randint(1, 99)}@{rng.choice(EMAIL_DOMAINS)}",
         "phone": rng.choice(["({a}) 555-01{x:02d}", "+1 {a} 555 01{x:02d}", "{a}-555-01{x:02d}"])
@@ -136,6 +205,14 @@ def _values(rng: random.Random) -> dict:
         "card": rng.choice(CARDS),
         "ip": f"{rng.choice(TEST_NETS)}.{rng.randint(1, 254)}",
     }
+    if extended:
+        out.update({
+            "dob": f"{rng.randint(1950, 2004)}-{rng.randint(1, 12):02d}-{rng.randint(1, 28):02d}",
+            "ssn": f"9{rng.randint(0, 99):02d}-{rng.randint(10, 99)}-{rng.randint(1000, 9999)}",
+            "passport": rng.choice("XYZ") + "".join(rng.choice(string.digits) for _ in range(8)),
+            "handle": "@" + last.lower()[:8] + "_" + str(rng.randint(10, 99)),
+        })
+    return out
 
 
 def label(template: str, values: dict) -> tuple[str, list[str], list[str]]:
@@ -151,10 +228,26 @@ def label(template: str, values: dict) -> tuple[str, list[str], list[str]]:
             raise ValueError(f"{value!r} must occur exactly once in {sentence!r}")
     return sentence, labels, kinds
 
+#: A redrawn version number that would read as a private address; the sentence is drawn again.
+LAN_LIKE = re.compile(r"\b(?:10|127|169|172|192)\.\d{1,3}\.\d{1,3}\b")
+
 
 def _renumber(rng: random.Random, sentence: str) -> str:
     return re.sub(r"\d+", lambda m: str(rng.randint(10 ** (len(m.group()) - 1) or 1,
                                                     10 ** len(m.group()) - 1)), sentence)
+
+
+def _draw_sentence(rng: random.Random, extended: bool) -> tuple[str, list[str], list[str], str]:
+    pool = NO_PII + HARD_NO_PII if extended else NO_PII
+    none = rng.random() < NO_PII_SHARE
+    if none:
+        sentence = _renumber(rng, rng.choice(pool))
+        if LAN_LIKE.search(sentence):
+            raise ValueError("a version number that reads as a LAN address")
+        return sentence, [], [], "a sentence with no personal data, its numbers redrawn"
+    templates = TEMPLATES + MORE_TEMPLATES if extended else TEMPLATES
+    sentence, labels, kinds = label(rng.choice(templates), _values(rng, extended))
+    return sentence, labels, kinds, "a template filled with fake values, each labelled"
 
 
 def fetch(seed: int = SEED, count: int = COUNT) -> list[dict]:
@@ -164,16 +257,10 @@ def fetch(seed: int = SEED, count: int = COUNT) -> list[dict]:
         rng = random.Random(f"{_KEY}:{VERSION}:{seed}:{i}")
         sentence = ""
         while not sentence or sentence in seen:
-            if rng.random() < NO_PII_SHARE:
-                sentence, labels, kinds = _renumber(rng, rng.choice(NO_PII)), [], []
-                how = "a sentence with no personal data, its numbers redrawn"
-            else:
-                try:
-                    sentence, labels, kinds = label(rng.choice(TEMPLATES), _values(rng))
-                except ValueError:
-                    sentence = ""
-                    continue
-                how = "a template filled with fake values, each labelled"
+            try:
+                sentence, labels, kinds, how = _draw_sentence(rng, i >= EXTENDED_FROM)
+            except ValueError:
+                sentence = ""
         seen.add(sentence)
         out.append({"item": i, "seed": seed, "sentence": sentence, "labels": labels,
                     "kinds": kinds, "how": how})
@@ -193,8 +280,14 @@ def _spans(spans) -> str:
 
 
 #: The negative control: the labels pass, marking nothing or everything does not.
+def _planted(case) -> str:
+    """The wrong answer for this case: leave a personal case unmarked, mark everything in a case with none."""
+    return _spans([] if case.params["spans"] else [[0, len(case.prompt)]])
+
+
 RESPONDERS = {
     "reference": lambda case: _spans(case.params["spans"]),
+    "planted": _planted,
     "nothing": lambda case: _spans([]),
     "everything": lambda case: _spans([[0, len(case.prompt)]]),
 }

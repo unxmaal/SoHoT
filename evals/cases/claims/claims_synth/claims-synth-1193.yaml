@@ -1,0 +1,77 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-1193
+modality: claims
+prompt: '[1] user-0a76: the Crimson case design is gorgeous
+
+  [2] user-1242: ha, true
+
+  [3] user-ac46: anyone else up this late?
+
+  [4] user-ac46: anyone know about the Fuel?
+
+  [5] user-0a76: it can take Elan graphics
+
+  [6] user-ac46: nice, thanks for the link
+
+  [7] user-0a76: XZ graphics exist for the Indigo'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-0a76
+    claim: The Indigo can be fitted with XZ graphics.
+    verdict: good
+    refs: &id001
+    - 7
+    interface: conversation
+  - user: user-0a76
+    claim: The Indigo accepts a 36 GB SCSI drive.
+    verdict: made_up
+    refs: *id001
+    interface: conversation
+  - user: user-0a76
+    claim: The Fuel can be fitted with Elan graphics.
+    verdict: good
+    refs:
+    - 5
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '1193'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

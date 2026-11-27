@@ -1,0 +1,93 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0600
+modality: claims
+prompt: '[1] user-c3b0: my Fuel weighs more than my cat and is less friendly haha
+
+  [2] user-d002: that is the best thing i have heard all day
+
+  [3] user-d002: anyone know about the Fuel?
+
+  [4] user-e316: it can take SE graphics
+
+  [5] user-e316: nice, thanks for the link
+
+  [6] user-c3b0: the Fuel tops out at 256 MB of memory
+
+  [7] user-d002: where do people get parts for the Crimson?
+
+  [8] user-925d: would the Fuel be loud in a bedroom?
+
+  [9] user-c3b0: anyone know about the Octane2?
+
+  [10] user-d002: it boots irix 6.5.22 without trouble
+
+  [11] user-925d: i love this channel
+
+  [12] user-d002: haha that is great'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-e316
+    claim: The Fuel can be fitted with SE graphics.
+    verdict: good
+    refs: &id001
+    - 4
+    interface: cited-only
+  - user: user-e316
+    claim: The Fuel can be fitted with Elan graphics.
+    verdict: wrong
+    refs: *id001
+    interface: cited-only
+  - user: user-d002
+    claim: The Octane2 runs IRIX 6.5.22.
+    verdict: good
+    refs:
+    - 10
+    interface: cited-only
+  - user: user-c3b0
+    claim: The Fuel supports up to 256 MB of RAM.
+    verdict: good
+    refs:
+    - 6
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '600'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

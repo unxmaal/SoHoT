@@ -1,0 +1,99 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0644
+modality: claims
+prompt: '[1] user-037e: where do people get parts for the Origin 200?
+
+  [2] user-0aea: the Tezro heats my room so well i cancelled the furnace lol
+
+  [3] user-a7de: has anyone tried that yet?
+
+  [4] user-a7de: the Tezro is happiest on irix 6.2
+
+  [5] user-a7de: see you tomorrow
+
+  [6] user-88ac: thanks, that helps
+
+  [7] user-037e: anyone know about the Origin 200?
+
+  [8] user-a7de: you can get those from an archive at ftp.example.org
+
+  [9] user-037e: hey everyone
+
+  [10] user-037e: i named my Tezro after my ex, it also refuses to boot sometimes
+
+  [11] user-0aea: the Personal IRIS tops out at 128 MB of memory
+
+  [12] user-a7de: anyone with a Tezro is welcome to post in here'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-a7de
+    claim: Firmware images for the Origin 200 can be found at an archive at ftp.example.org.
+    verdict: good
+    refs: &id001
+    - 8
+    interface: conversation
+  - user: user-a7de
+    claim: The Tezro runs IRIX 6.2.
+    verdict: good
+    refs:
+    - 4
+    interface: conversation
+  - user: user-0aea
+    claim: The Personal IRIS supports up to 128 MB of RAM.
+    verdict: good
+    refs:
+    - 11
+    interface: conversation
+  - user: user-a7de
+    claim: Owners of the Tezro are welcome to post in the channel.
+    verdict: not_useful
+    refs:
+    - 12
+    interface: conversation
+  - user: user-a7de
+    claim: Firmware images for the Origin 200 can be found at a collector's site at example.com.
+    verdict: wrong
+    refs: *id001
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '644'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

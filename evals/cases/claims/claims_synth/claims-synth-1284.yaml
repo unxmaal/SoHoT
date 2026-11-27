@@ -1,0 +1,89 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-1284
+modality: claims
+prompt: '[1] user-8def: ha, true
+
+  [2] user-8def: back now
+
+  [3] user-8def: nothing beats the sound of a Crimson booting
+
+  [4] user-cc43: my Origin 200 boots from a 36 GB drive
+
+  [5] user-8def: brb, coffee
+
+  [6] user-7f7a: O2 owners can fit 256 MB of RAM at most
+
+  [7] user-7f7a: nothing beats the sound of a O2 booting
+
+  [8] user-7f7a: nothing beats the sound of a Origin 200 booting
+
+  [9] user-cc43: you can order the Crimson with Impact MXI graphics
+
+  [10] user-7f7a: my Origin 200 weighs more than my cat and is less friendly haha'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-cc43
+    claim: Their Origin 200 boots from a 36 GB SCSI drive.
+    verdict: good
+    refs: &id001
+    - 4
+    interface: conversation
+  - user: user-7f7a
+    claim: The O2 supports up to 256 MB of RAM.
+    verdict: good
+    refs:
+    - 6
+    interface: conversation
+  - user: user-cc43
+    claim: The Origin 200 can take an R5000 CPU.
+    verdict: made_up
+    refs: *id001
+    interface: conversation
+  - user: user-cc43
+    claim: The Crimson can be fitted with Impact MXI graphics.
+    verdict: good
+    refs:
+    - 9
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '1284'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

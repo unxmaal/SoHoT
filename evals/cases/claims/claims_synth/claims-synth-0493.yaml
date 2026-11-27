@@ -1,0 +1,85 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0493
+modality: claims
+prompt: '[1] user-da73: how much memory can the Onyx hold?
+
+  [2] user-da73: what a week
+
+  [3] user-8ce8: i think the Onyx is overrated honestly
+
+  [4] user-da73: a 73 GB scsi drive works in the Tezro
+
+  [5] user-8b97: you can drop an R5000 into the Tezro
+
+  [6] user-8ce8: has anyone tried that yet?
+
+  [7] user-8ce8: Indigo2 owners can fit 8 GB of RAM at most
+
+  [8] user-8f1a: if the Tezro had a dollar for every fan it has, it would still be loud'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-8ce8
+    claim: The Indigo2 supports up to 2 GB of RAM.
+    verdict: wrong
+    refs: &id001
+    - 7
+    interface: cited-only
+  - user: user-da73
+    claim: The Tezro accepts a 73 GB SCSI drive.
+    verdict: good
+    refs:
+    - 4
+    interface: cited-only
+  - user: user-8ce8
+    claim: The Indigo2 supports up to 8 GB of RAM.
+    verdict: good
+    refs: *id001
+    interface: cited-only
+  - user: user-8b97
+    claim: The Tezro can take an R5000 CPU.
+    verdict: good
+    refs:
+    - 5
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '493'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

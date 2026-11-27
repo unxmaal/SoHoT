@@ -1,0 +1,85 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0713
+modality: claims
+prompt: '[1] user-2ba2: good luck with it
+
+  [2] user-32b9: what a week
+
+  [3] user-2ba2: for the Octane2 you want irix 6.5.22
+
+  [4] user-32b9: nothing beats the sound of a Octane2 booting
+
+  [5] user-f243: Impact MXI graphics exist for the Octane2
+
+  [6] user-32b9: gigabit ethernet is built into the Octane2
+
+  [7] user-f243: has anyone tried that yet?
+
+  [8] user-2ba2: the Tezro looks so much better than any beige box'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-2ba2
+    claim: The Octane2 runs IRIX 6.5.22.
+    verdict: good
+    refs:
+    - 3
+    interface: cited-only
+  - user: user-f243
+    claim: The Octane2 can be fitted with Impact MXI graphics.
+    verdict: good
+    refs: &id001
+    - 5
+    interface: cited-only
+  - user: user-f243
+    claim: The Octane2 accepts a 36 GB SCSI drive.
+    verdict: made_up
+    refs: *id001
+    interface: cited-only
+  - user: user-32b9
+    claim: The Octane2 has a gigabit Ethernet port.
+    verdict: good
+    refs:
+    - 6
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '713'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

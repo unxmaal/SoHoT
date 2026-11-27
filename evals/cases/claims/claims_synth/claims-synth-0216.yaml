@@ -1,0 +1,77 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0216
+modality: claims
+prompt: '[1] user-b73b: would the Indigo2 be loud in a bedroom?
+
+  [2] user-31f8: can the Indigo2 run a modern browser?
+
+  [3] user-b73b: Indy boards accept the R4400 chip
+
+  [4] user-2707: anyone know about the Indigo2?
+
+  [5] user-db20: it will not go past 8 GB of memory
+
+  [6] user-b73b: if the Challenge S had a dollar for every fan it has, it would still be loud
+
+  [7] user-b73b: i would trade my laptop for a Challenge S any day'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-db20
+    claim: The Indigo2 supports up to 8 GB of RAM.
+    verdict: good
+    refs:
+    - 5
+    interface: conversation
+  - user: user-b73b
+    claim: The Indy runs IRIX 6.5.30.
+    verdict: made_up
+    refs: &id001
+    - 3
+    interface: conversation
+  - user: user-b73b
+    claim: The Indy can take an R4400 CPU.
+    verdict: good
+    refs: *id001
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '216'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

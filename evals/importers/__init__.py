@@ -47,6 +47,7 @@ REGISTRY = [
     Source("history_infovore", "repo"),
     Source("transcripts", "repo"),
     Source("agent_synth", "agent"),
+    Source("claims_synth", "claims"),
 ]
 
 
