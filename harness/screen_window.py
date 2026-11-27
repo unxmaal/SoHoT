@@ -33,7 +33,7 @@ def wanted(need_gb: float | None, now: float | None = None) -> bool:
     if not isinstance(need_gb, (int, float)) or need_gb <= 0:
         return False
     if memory.held_back(need_gb):
-        return need_gb <= memory.released_gb() + 1e-9
+        return memory.released_fits(need_gb)[0]
     room = memory.room_gb()
     if need_gb <= room + 1e-9 or need_gb > room + memory.pinned_gb() + 1e-9:
         return False
@@ -43,6 +43,12 @@ def wanted(need_gb: float | None, now: float | None = None) -> bool:
                  value=IDLE_S, kept=0, dropped=1)
         return False
     return True
+
+
+def still_short(need_gb: float | None) -> str:
+    """Why `need_gb` does not fit with the pinned set released, '' when it does: the question `wanted` asked before the fetch. #2174."""
+    ok, why = memory.released_fits(need_gb)
+    return "" if ok else f"still short with the pinned set released: {why}"
 
 
 def _status(plan: dict, get=None) -> tuple[str, dict | None]:

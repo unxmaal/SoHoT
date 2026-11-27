@@ -17,7 +17,7 @@ STEP_NODE = {"sweep": "sweep", "repair": "inspect", "runtimes": "inspect", "insp
 UNDRAWN = ("retests", "reverify", "knob-sweeps", "disk")
 PASSED = ("queued", "screened", "measured")
 #: A removal verdict that settled the candidate; queued and screened are deferrals. #2170.
-DECIDED = ("declined", "broken", "measured", "adopted")
+DECIDED = refetch.DECIDED
 
 
 def _loads(text, default):

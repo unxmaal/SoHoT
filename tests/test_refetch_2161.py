@@ -157,7 +157,7 @@ def test_a_verdict_written_between_the_two_downloads_lets_the_second_one_go(monk
     try:
         _queued(conn, EDGE)
         _downloaded(conn, EDGE, ago_s=3600)
-        ms.decide(conn, EDGE, "queued", tier=ms.SCREEN, detail="not screened: it needs a restart", reason=reasons.HARNESS)
+        ms.decide(conn, EDGE, "declined", tier=ms.SCREEN, detail="it does not load", reason=reasons.CANDIDATE)
         conn.commit()
         assert fetching.ensure(conn, EDGE, free=900 * GIB, floor=0) == ""
         assert fetched == [EDGE]
@@ -258,7 +258,7 @@ def test_a_verdict_no_machine_stamped_still_answers_for_the_weights():
         _queued(conn, EDGE)
         _downloaded(conn, EDGE, ago_s=3600)
         assert refetch.refusal(conn, EDGE, "measure")
-        ms.decide(conn, EDGE, "queued", tier=ms.SCREEN, detail="not screened: restart", reason=reasons.HARNESS)
+        ms.decide(conn, EDGE, "declined", tier=ms.SCREEN, detail="it does not load", reason=reasons.CANDIDATE)
         conn.execute("UPDATE verdicts SET machine_id = NULL")
         conn.commit()
         assert refetch.refusal(conn, EDGE, "measure") == ""
