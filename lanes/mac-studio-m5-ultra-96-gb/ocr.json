@@ -9,21 +9,21 @@
     "candidate": "hf-ocr/PaddleOCR-VL-1.6",
     "cases": 448,
     "first_s": 26.828,
-    "median_s": 9.065,
+    "median_s": 10.458,
     "metrics": {
-     "cer": 0.4267
+     "cer": 1.586
     },
     "model": "hf-ocr/PaddleOCR-VL-1.6",
     "not_run": "",
-    "pass_rate": 0.737,
-    "passed": 14,
+    "pass_rate": 0.761,
+    "passed": 35,
     "peak_gb": 0.01,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-27T20:20:18Z",
+    "run_at": "2026-11-27T22:00:39Z",
     "served_as": "",
     "source": "",
-    "total": 19,
+    "total": 46,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -91,21 +91,21 @@
     "candidate": "osocr/auto",
     "cases": 448,
     "first_s": 1.622,
-    "median_s": 0.319,
+    "median_s": 0.356,
     "metrics": {
-     "cer": 0.1625
+     "cer": 0.2118
     },
     "model": "osocr/auto",
     "not_run": "",
-    "pass_rate": 0.722,
-    "passed": 13,
+    "pass_rate": 0.622,
+    "passed": 28,
     "peak_gb": 0.33,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-27T20:20:18Z",
+    "run_at": "2026-11-27T22:00:39Z",
     "served_as": "",
     "source": "",
-    "total": 18,
+    "total": 45,
     "ttft_median_s": null,
     "ttft_p95_s": null
    },
@@ -389,20 +389,20 @@
      "about": "",
      "candidate": "hf-ocr/PaddleOCR-VL-1.6",
      "first_s": 26.828,
-     "median_s": 9.065,
+     "median_s": 10.458,
      "metrics": {
-      "cer": 0.4267
+      "cer": 1.586
      },
      "model": "hf-ocr/PaddleOCR-VL-1.6",
      "not_run": "",
-     "pass_rate": 0.737,
-     "passed": 14,
+     "pass_rate": 0.761,
+     "passed": 35,
      "peak_gb": 0.01,
      "reference": false,
-     "run_at": "2026-11-27T20:20:18Z",
+     "run_at": "2026-11-27T22:00:39Z",
      "served_as": "",
      "source": "",
-     "total": 19,
+     "total": 46,
      "ttft_median_s": null,
      "ttft_p95_s": null
     },
@@ -410,25 +410,25 @@
      "about": "",
      "candidate": "osocr/auto",
      "first_s": 1.622,
-     "median_s": 0.319,
+     "median_s": 0.356,
      "metrics": {
-      "cer": 0.1625
+      "cer": 0.2118
      },
      "model": "osocr/auto",
      "not_run": "",
-     "pass_rate": 0.722,
-     "passed": 13,
+     "pass_rate": 0.622,
+     "passed": 28,
      "peak_gb": 0.33,
      "reference": false,
-     "run_at": "2026-11-27T20:20:18Z",
+     "run_at": "2026-11-27T22:00:39Z",
      "served_as": "",
      "source": "",
-     "total": 18,
+     "total": 45,
      "ttft_median_s": null,
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-11-27T20:20:18Z",
+   "run_at": "2026-11-27T22:00:39Z",
    "runs": 5
   },
   {
@@ -577,7 +577,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-27T21:02:48Z",
+ "generated_at": "2026-11-27T23:01:41Z",
  "knobs": [],
  "lane": {
   "cases": 448,
@@ -596,15 +596,15 @@
   "adopted_at": "2026-11-07T06:29:12Z",
   "adopted_how": "measured",
   "incumbent": "osocr:auto",
-  "measured_at": "2026-11-27T20:20:18Z",
-  "median_s": 9.065,
+  "measured_at": "2026-11-27T22:00:39Z",
+  "median_s": 10.458,
   "metrics": {
-   "cer": 0.4267
+   "cer": 1.586
   },
   "not_run": "",
   "parked": "",
   "parked_until": "",
-  "pass_rate": 0.737,
+  "pass_rate": 0.761,
   "serves": "hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6",
   "serves_model": "hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6",
   "stale": false
