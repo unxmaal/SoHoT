@@ -39,7 +39,7 @@ MODULES = {
         "tests/test_runner_packages_1027.py", "tests/test_requires_backends_1031.py", "tests/test_audio_env_1030.py",
         "tests/test_tts_drop_1036.py", "tests/test_drafters_1039.py", "tests/test_plan_refusal_1047.py"],
     "harness/screen.py": [
-        "tests/test_screen_deadline_2146.py", "tests/test_runner_gap_until_950.py", "tests/test_gguf_first_911.py", "tests/test_harness_screen.py", "tests/test_harness_screen_spec.py", "tests/test_screen_evidence.py",
+        "tests/test_screen_race_2166.py", "tests/test_screen_deadline_2146.py", "tests/test_runner_gap_until_950.py", "tests/test_gguf_first_911.py", "tests/test_harness_screen.py", "tests/test_harness_screen_spec.py", "tests/test_screen_evidence.py",
         "tests/test_screen_server_death.py", "tests/test_screen_server_killer_1544.py", "tests/test_decide_lane.py", "tests/test_refusal_shapes.py",
         "tests/test_verdict_reasons.py", "tests/test_screen_case_fit.py", "tests/test_methods.py",
         "tests/test_ds4.py", "tests/test_screen_fair.py", "tests/test_gguf_route.py",
@@ -113,7 +113,7 @@ LEFT_OUT = {
         "test_engine_trials_1475.py", "test_screen_server_killer_1544.py", "test_mflux_second_repo_1546.py", "test_interactive_1561.py",
         "test_slot_plan_refusal_1651.py", "test_incumbent_silent_1656.py", "test_machine_scope_1769.py",
         "test_download_event_1878.py", "test_verdict_event_1942.py", "test_detail_prefix_1998.py"),
-    "harness/screen.py": ("test_screen_race_2166.py", "test_idle_window_2087.py", "test_screen_window_2045.py", "test_screen_fetch_window_2127.py", "test_test_weights_2015.py", "test_harness_error_streak_2012.py", "test_screen_passed_over_2020.py", 
+    "harness/screen.py": ("test_idle_window_2087.py", "test_screen_window_2045.py", "test_screen_fetch_window_2127.py", "test_test_weights_2015.py", "test_harness_error_streak_2012.py", "test_screen_passed_over_2020.py", 
         "test_measure_gateway_1660.py", "test_attachment_tags_949.py", "test_lane_too_small_1049.py", "test_vision_engines_1282.py",
         "test_variants_947.py", "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",
         "test_harness_report.py", "test_incumbent_lookup.py", "test_lane_metric_validity.py", "test_loop_backpressure.py",

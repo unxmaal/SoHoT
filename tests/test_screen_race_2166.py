@@ -270,3 +270,33 @@ def test_the_canary_plants_are_decided_before_any_race(monkeypatch):
     race = _race(_plan(_incumbent(), cap=12), lambda c: False)
     assert screen.outcome(0, {"k": {"passed": 0, "total": race.cases, screen_race.KEY: race.record()}},
                           candidate="k")[3] != "limit:screen_futility>0.05"
+
+
+def test_a_declined_race_is_the_whole_verdict():
+    from harness import reasons
+    race = _race(_plan(_incumbent(), cap=12), lambda c: int(c[-2:]) % 4 == 0)
+    got = screen.outcome(0, _summary(race), candidate="k")
+    rec = race.record()
+    said = (f"2 case(s) passed a screen; raced {rec['cases']} case(s) against the incumbent's stored cells: "
+            f"gained {rec['gained']:g}, lost {rec['lost']:g}, P(beats it by 0.1) {rec['posterior']:.3f}, under 0.05")
+    assert got == screen.Verdict("declined", said, reasons.LIMIT, "limit:screen_futility>0.05", reasons.CONTENT_FAILED)
+
+
+def test_a_passed_race_and_an_unraced_screen_are_the_candidates_to_measure():
+    from harness import reasons
+    race = _race(_plan(_incumbent(0.3)), lambda c: True)
+    raced = screen.outcome(0, _summary(race, 1), candidate="k")
+    assert (raced.reason, raced.until, raced.failure_class) == (reasons.CANDIDATE, "", "")
+    assert screen.outcome(0, {"k": {"passed": 1, "total": 6}}, candidate="k") == screen.Verdict(
+        "screened", "1 case(s) passed a screen", reasons.CANDIDATE)
+
+
+def test_the_race_read_is_the_named_candidates_under_its_key():
+    worse = _race(_plan(_incumbent(), cap=12), lambda c: int(c[-2:]) % 4 == 0)
+    better = _race(_plan(_incumbent(0.3)), lambda c: True)
+    both = {"a/worse": {"passed": 2, **{screen_race.KEY: worse.record()}},
+            "b/better": {"passed": 2, **{screen_race.KEY: better.record()}}}
+    assert screen.outcome(0, both, candidate="spec:worse", key="a/worse")[0] == "declined"
+    assert screen.outcome(0, both, candidate="spec:better", key="b/better")[0] == "screened"
+    assert screen.outcome(0, {"a/worse": both["a/worse"]}, candidate="")[0] == "declined"
+    assert screen.outcome(0, {"a/worse": both["a/worse"]}, candidate="x", key="a/worse")[0] == "declined"
