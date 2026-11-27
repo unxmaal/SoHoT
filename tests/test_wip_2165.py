@@ -130,7 +130,7 @@ def test_a_load_over_what_a_screen_window_can_free_keeps_the_candidate_out(conn,
     _put(conn, "org/huge", "code", size_gib=90)
     _put(conn, "org/small", "code", size_gib=4)
     monkeypatch.setattr(memory, "standing_gb", lambda: 30.0)
-    monkeypatch.setattr(memory, "released_gb", lambda: 50.0)
+    monkeypatch.setattr(memory, "pinned_gb", lambda: 20.0)
     held = prefilter.split(conn, ms.judgeable(conn, limit=100))[1]
     assert held["org/huge"][0] == "window" and "org/small" not in held
 

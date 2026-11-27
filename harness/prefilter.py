@@ -30,9 +30,10 @@ def _why(conn, row: dict, standing, sizer) -> tuple[str, str] | None:
     lane = row.get("lane") or ""
     target = methods.weights_of(row["name"]) if methods.is_method(row["name"]) else name
     need = int(row.get("size_bytes") or 0) / fetching.GIB
-    if need > 0 and memory.held_back(need) and need > memory.released_gb() + 1e-9:
-        return WINDOW, (f"{target} needs {need:.1f} GiB, more than the {memory.released_gb():.1f} GiB a screen window "
-                        f"can free here")
+    most = memory.standing_gb() + memory.pinned_gb()
+    if need > most + 1e-9:
+        return WINDOW, (f"{target} needs {need:.1f} GiB, more than the {max(most, 0.0):.1f} GiB a load can get here "
+                        f"with the interactive server's pinned models released")
     if target:
         own = fetching.plan(target, int(row.get("size_bytes") or 0) or fetching.MAX_DOWNLOAD, free=1 << 60)
         if own.reason == reasons.LIMIT:
