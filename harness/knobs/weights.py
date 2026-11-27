@@ -20,6 +20,8 @@ KNOBS = [
        note="the largest weight this machine can hold; measured on 32 GB and scaled by RAM (#96)"),
     _k("quants_tries", ["harness/quants.py:TRIES"], [2, 4, 8],
        note="quantized descendants inspected per too-big or unloadable base before giving up; each is one registry call (#882)"),
+    _k("refetch_window", ["harness/refetch.py:REFETCH_WINDOW_S"], [43200.0, 86400.0, 172800.0], unit="s",
+       note="how long a repo's last download holds a refetch with no verdict between (#2161)"),
     _k("size_limit", ["harness/inspect.py:SIZE_LIMIT"], [2, 4, 12, 24, 64], probe="size_limit",
        note="how many named weights get sized per repo"),
     _k("size_refreshes", ["harness/inspect.py:SIZE_REFRESHES"], [5, 10, 30],

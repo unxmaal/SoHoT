@@ -313,10 +313,13 @@ def _flow(fl: dict, now: float, needs: list) -> str:
     for i, n in enumerate(fl["nodes"]):
         x = 2 + i * pitch
         t = span(n["seconds"]) if n.get("seconds") else "-"
-        parts.append(f"<g class='nd' data-node='{esc(n['name'])}'><rect x='{x}' y='30' width='{bw}' height='58' rx='6'/>"
+        again = n.get("redone") or {}
+        redo = (f"<text class='sub eg' x='{x + bw / 2}' y='92' text-anchor='middle'>{again.get('gib', 0):g} GiB again, 24 h</text>"
+                if n["name"] == "fetch" else "")
+        parts.append(f"<g class='nd' data-node='{esc(n['name'])}'><rect x='{x}' y='30' width='{bw}' height='{66 if redo else 58}' rx='6'/>"
                      f"<text x='{x + bw / 2}' y='47' text-anchor='middle' font-weight='700'>{esc(n['name'])}</text>"
                      f"<text x='{x + bw / 2}' y='62' text-anchor='middle'>{n['in']} in, {n['out']} out</text>"
-                     f"<text class='sub' x='{x + bw / 2}' y='78' text-anchor='middle'>{esc(t)}</text></g>")
+                     f"<text class='sub' x='{x + bw / 2}' y='78' text-anchor='middle'>{esc(t)}</text>{redo}</g>")
     for i, e in enumerate(fl["edges"]):
         x0, rep = 2 + i * pitch + bw, bool(e["repeats"])
         parts.append(f"<g class='edge{' rep' if rep else ''}' data-edge='{esc(e['src'])}-{esc(e['dst'])}'>"

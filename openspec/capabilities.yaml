@@ -116,6 +116,7 @@ capabilities:
       - harness/uv_cache.py
       - harness/worktrees.py
       - harness/commands/worktrees.py
+      - harness/refetch.py
 
   - name: discovery-sources
     summary: Feeds, registries, papers, posts and neighbours that propose candidates, techniques and benchmarks.

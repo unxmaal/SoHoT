@@ -29,11 +29,11 @@ def quiet_s(now: float | None = None, conn=None) -> float:
 
 
 def wanted(need_gb: float | None, now: float | None = None) -> bool:
-    """Whether a refused load of `need_gb` fits once the pinned set is released: always when only the pins hold it back, else when the set sat idle IDLE_S. #2087."""
+    """Whether a refused load of `need_gb` fits once the pinned set is released, by the memory then free: when only the pins hold it back, else when the set sat idle IDLE_S. #2087, #2161."""
     if not isinstance(need_gb, (int, float)) or need_gb <= 0:
         return False
     if memory.held_back(need_gb):
-        return need_gb <= memory.standing_gb() + memory.pinned_gb() + 1e-9
+        return need_gb <= memory.released_gb() + 1e-9
     room = memory.room_gb()
     if need_gb <= room + 1e-9 or need_gb > room + memory.pinned_gb() + 1e-9:
         return False

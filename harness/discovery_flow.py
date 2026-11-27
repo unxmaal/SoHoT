@@ -5,6 +5,8 @@ import json
 from collections import Counter, defaultdict
 from datetime import datetime
 
+from harness import refetch
+
 WINDOW_S = 7 * 86400.0
 GIB = float(1 << 30)
 NODES = ("sweep", "inspect", "rank", "fetch", "screen", "measure", "adopt")
@@ -179,6 +181,8 @@ def gather(conn, now: float, window_s: float = WINDOW_S) -> dict:
     counts = {"sweep": (sweeps, fresh), "inspect": (inspected, passed), "rank": (passed, taken),
               "fetch": (taken, downloaded), "screen": (screened, kept), "measure": (runs, decided), "adopt": (decided, adopted)}
     nodes = [{"name": n, "in": counts[n][0], "out": counts[n][1], "seconds": round(secs.get(n, 0.0), 1) or None} for n in NODES]
+    again = refetch.redone(conn, now)
+    next(n for n in nodes if n["name"] == "fetch")["redone"] = again
     edge_n = [inspected, passed, taken, screened, kept, decided]
     repeats: dict[tuple, list] = defaultdict(list)
     repeats[("rank", "fetch")] += [{**t, "kind": "fetch"} for t in twice]
@@ -203,5 +207,8 @@ def gather(conn, now: float, window_s: float = WINDOW_S) -> dict:
                       "text": f"{backlog} screened candidate(s) wait for measure; it finished {runs} run(s) in {window_s / 86400:.0f} d"})
     if evicted["n"]:
         leaks.append(evicted)
+    if again["n"]:
+        leaks.append({"key": "refetched", "n": again["gib"], "text": f"{again['gib']:.1f} GiB downloaded again in {refetch.REFETCH_WINDOW_S / 3600:g} h "
+                      f"({again['n']} download(s) of {again['repos']} repo(s) already fetched): Hugging Face warns of an egress quota"})
     return {"since": since, "until": now, "cycle": next((s["cycle"] for s in reversed(steps) if s["cycle"]), ""),
             "nodes": nodes, "edges": edges, "leaks": leaks}
