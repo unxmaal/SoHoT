@@ -830,8 +830,8 @@ def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=No
             print(f"  {row.get('name', '')} was paused for memory; going on with what fits, smallest first",
                   flush=True)
             sweep.squeezed, tight = "", True
-        if sweep is not None and sweep.looks_left == 0:
-            # A queue job is one look of one comparison; the next job takes what is left, the next sweep after a memory pause. #2111.
+        if sweep is not None and sweep.pairs_left == 0:
+            # A queue job is one comparison, looked at until it decides or pauses; the next job takes the rest. #2111, #2167.
             sweep.more = not squeezed and (bool(queue) or got == watch.PAUSED)
             break
     return rc

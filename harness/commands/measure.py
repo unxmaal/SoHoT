@@ -11,6 +11,7 @@ from pathlib import Path
 from evals import watch
 from harness import incumbent_down, lane_gate, lanes, methods, overrun, paths, paused, reasons, runs, test_weights
 from harness.commands.common import emit, err, note
+from harness.measure_slices import case_s as _case_s, short_slice as _short_slice, slice_of as _slice
 from harness.commands import jobs as jobs_cmd
 
 #: The watchdog criteria whose pause frees memory rather than asking the sweep to stop. #1082.
@@ -434,7 +435,7 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
     unfetched = test_weights.refused(name, sweep)
     if unfetched is not None:
         return unfetched
-    started, spans, idle = time.time(), 1, 0
+    started, spans, idle, counted = time.time(), 1, 0, False
     while True:
         part, last = _slice(plan, time.time() - started)
         short = _short_slice(part) if last else ""
@@ -463,8 +464,9 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
             print(f"    {' '.join(argv)}", flush=True)
             if spec not in loaded:
                 loaded.append(spec)
-            if sweep is not None and sweep.looks_left:
-                sweep.looks_left -= 1
+            if sweep is not None and sweep.pairs_left and not counted:
+                sweep.pairs_left -= 1
+                counted = True
             proc = _launch(argv, deadline_s=part.deadline_s)
             if proc.returncode == watch.STALE and held:
                 _stale(held, "the run's own checkpoint is another exam", name, sweep)
@@ -492,8 +494,8 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         if held is None:
             return rc
         from harness import job_procs
-        if sweep is not None and sweep.looks_left == 0 or sweep is None and job_procs.item_s() is not None and job_procs.item_ended():
-            # Under the queue each look slice is one item; the next resumes this held run on the same models. #1618, #2111.
+        if sweep is None and job_procs.item_s() is not None and job_procs.item_ended():
+            # Under a bare queue item each look slice is one item; the next resumes this held run on the same models. #1618, #2111.
             print(f"  {name}: item ended at a look; the next item resumes it", flush=True)
             loaded.clear()
             return watch.PAUSED
@@ -625,12 +627,11 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
     left = sweep.remaining() if sweep is not None else None
     budget = per if left is None else min(per, left)
     every = len(set(split.dev) | set(split.holdout))
-    full = power.projected_seconds(every, plan.repeat, median_s, calls)
     side, dev_skipped = "all", ""
-    if split.dev and full is not None and full > per:
+    if split.dev and split.holdout:
+        # The adopt decision reads only the holdout: dev runs after a verdict, and only for a report that needs it. #2167.
         side = "holdout"
-        dev_skipped = (f"dev: not run, dev and holdout at repeat {plan.repeat} would "
-                       f"take {power._hm(full)}, over the {power._hm(per)} budget")
+        dev_skipped = "dev: not run, the holdout decides; dev runs after a verdict, for a report that needs it"
     plan = power.within_budget(
         plan, [rates[c] for c in split.holdout],
         cases_run=every if side == "all" else len(split.holdout), median_s=median_s,
@@ -646,6 +647,8 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
                    if split.holdout else None, sweeps=sweeps,
                    why="; ".join(x for x in (spans, plan.why, power.unseen_note(draws), estimated) if x))
     plan = replace(plan, deadline_s=power.deadline(plan))
+    each = _case_s(plan)
+    plan = replace(plan, look_cells=looks.every(sum(each) if all(each) else None) or None)
     run = list(split.holdout) if side == "holdout" else list(dict.fromkeys([*split.holdout, *split.dev]))
     if run:
         plan = replace(plan, **weedout.planned(run, power.rates_from(draws, run)[0], secs, plan.effect))
@@ -656,7 +659,8 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
     if plan.projected_s is not None:
         print(f"    time: {plan.cases_run} case(s) x repeat {plan.repeat} x {calls} "
               f"call(s) projected at {power._hm(plan.projected_s)}; the budget ends at {power._hm(plan.budget_s)}"
-              f"{f', a look every {power._hm(looks.LOOK_INTERVAL_S)}' if 0 < (looks.LOOK_INTERVAL_S or 0) < plan.budget_s else ''}",
+              f"{f', a look every {plan.look_cells} holdout cell(s)' if plan.look_cells else ''}"
+              f"{f', or every {power._hm(looks.LOOK_INTERVAL_S)}' if 0 < (looks.LOOK_INTERVAL_S or 0) < plan.budget_s else ''}",
               flush=True)
     if dev_skipped:
         print(f"    {dev_skipped}", flush=True)
@@ -835,45 +839,19 @@ def _screen_refusal(a, lane: str, spec: str) -> str:
         return repo_screen.refusal(store, [spec], identity.lane_cases(lane))
 
 
-def _slice(plan, elapsed: float):
-    """(this launch's share of the plan, whether it is the budget's last): one look interval of what is left. #1353."""
-    from harness import looks
-    if plan.budget_s is None:
-        return plan, True
-    left = max(0.0, plan.budget_s - elapsed)
-    step = float(looks.LOOK_INTERVAL_S or 0.0)
-    deadline = None if plan.deadline_s is None else max(0.0, plan.deadline_s - elapsed)
-    last = step <= 0 or step >= left
-    return replace(plan, budget_s=left if last else step, deadline_s=deadline), last
-
-
 def _between_looks(proc, out, last: bool, before: int, idle: int) -> bool:
     """Whether a slice stopped at its own look time with budget left, so the run goes on after a look; `idle` slices before it ran nothing. #1554."""
-    if last or getattr(proc, "timed_out", False) or proc.returncode != watch.PAUSED:
+    if getattr(proc, "timed_out", False) or proc.returncode != watch.PAUSED:
         return False
-    progress = watch.read_progress(out)
-    if watch.pause_kind(progress) != watch.STOP_TIME:
+    # A look after K cells goes on while the budget lasts, in the budget's last slice too; the next launch tests what is left. #2167.
+    kind = watch.pause_kind(watch.read_progress(out))
+    if kind != watch.STOP_LOOK and (last or kind != watch.STOP_TIME):
         return False
     return _rows_in(out) > before or idle + 1 < IDLE_SLICES
 
 
 def _rows_in(out) -> int:
     return len((watch.read(out) or ({}, []))[1])
-
-
-def _case_s(plan) -> list:
-    """The planned seconds of one case for the incumbent and the challenger, each None when unpriced."""
-    est = plan.estimate or {}
-    return [est.get(f"{who}_s") and est[f"{who}_s"] * (est.get(f"{who}_calls") or 1)
-            for who in ("incumbent", "challenger")]
-
-
-def _short_slice(plan) -> str:
-    """Why the budget's last slice is too short to launch: it ends before one planned case of each side; "" if not. #1553."""
-    each = _case_s(plan)
-    if plan.budget_s is None or not all(each) or plan.budget_s >= sum(each):
-        return ""
-    return f"its slice ends in {plan.budget_s:.0f}s, under one planned case of each side ({sum(each):.0f}s)"
 
 
 def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False,
@@ -888,6 +866,8 @@ def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False,
     if getattr(plan, "order", None):
         from harness import weedout
         argv += ["--order", str(Path(out) / weedout.ORDER_FILE)]
+    if getattr(plan, "look_cells", None):
+        argv += ["--stop-cells", str(plan.look_cells)]
     if plan.budget_s is not None:
         argv += ["--stop-at", f"{time.time() + max(plan.budget_s, cap_s or 0.0):.0f}"]
         if cap_s is not None and cap_s > plan.budget_s:
@@ -994,7 +974,8 @@ def _resumed_plan(stored: dict, fresh):
     if got.order is not None:
         got = replace(got, order=tuple(got.order))
     # The exam is kept; its price is this sweep's, or a stale screen price judges the run. #864.
-    return replace(got, budget_s=fresh.budget_s, deadline_s=fresh.deadline_s, estimate=fresh.estimate)
+    return replace(got, budget_s=fresh.budget_s, deadline_s=fresh.deadline_s, estimate=fresh.estimate,
+                   look_cells=fresh.look_cells)
 
 
 def _recovered_plan(held: dict, fresh):

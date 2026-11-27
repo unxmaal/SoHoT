@@ -10,6 +10,18 @@ from statistics import NormalDist
 FUTILITY_CP = 0.10
 #: Seconds a paired run goes between interim looks inside its budget. #1353.
 LOOK_INTERVAL_S = 1800.0
+#: Holdout cells a paired run takes between interim looks; 0 sizes it so a look costs LOOK_SHARE of the plan. #2167.
+LOOK_CELLS = 0
+#: Seconds a look costs the run it pauses: the resume reloads both models before the first case. #1353, #2167.
+LOOK_COST_S = 60.0
+#: The share of a run's time the looks may cost. #2167.
+LOOK_SHARE = 0.05
+
+
+def every(pair_s: float | None) -> int:
+    """Holdout cells between looks: LOOK_CELLS, else as many as keep a look's cost under LOOK_SHARE of the cells' own time. #2167."""
+    sized = max(1, math.ceil(LOOK_COST_S / (LOOK_SHARE * pair_s))) if pair_s and pair_s > 0 else 0
+    return int(LOOK_CELLS) or sized
 
 
 def spent(t: float, alpha: float) -> float:

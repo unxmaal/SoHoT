@@ -27,8 +27,12 @@ PROGRESS = run_state.PROGRESS
 PAUSE_FILE = run_state.PAUSE_FILE
 #: How a run that paused at its stop time says so. #1618.
 AT_STOP_TIME = "paused at its stop time"
+#: How a run that paused after its look's cases says so. #2167.
+AT_LOOK = "paused at its look"
 #: Why a run paused, which readers decide on; its `why` sentence is for people. #1943.
 STOP_TIME, REQUESTED, DEFERRED, SILENT_KIND = "stop_time", "requested", "deferred", "silent"
+#: A run that paused after the cases a look was due at; the run goes on after it. #2167.
+STOP_LOOK = "stop_look"
 #: The progress.json field beside "why" that names the pause's kind; also kept on the pause's stored look. #1943.
 PAUSE_KIND = "pause_kind"
 #: The watchdog writes this, naming its criterion, before it signals a run to stop. #1409.
@@ -86,6 +90,8 @@ def pause_kind(record: dict) -> str:
     why = str(record.get("why") or "")
     if why.startswith(AT_STOP_TIME):
         return STOP_TIME
+    if why.startswith(AT_LOOK):
+        return STOP_LOOK
     if why.startswith("paused on request ("):
         return DEFERRED
     return REQUESTED if why.startswith("paused on request") else ""
@@ -122,6 +128,9 @@ class Silent(Stop):
 class Watch:
     planned: dict = field(default_factory=dict)
     stop_at: float | None = None
+    #: Cases (candidate runs) this launch takes before it pauses for a look; None takes them all. #2167.
+    stop_cases: int | None = None
+    laps: int = 0
     #: The run's --stop-at before a look slice's --stop-after shortened it: the ceiling the watchdog re-plans within. #2088.
     ceiling_at: float | None = None
     outdir: Path | None = None
@@ -153,6 +162,8 @@ class Watch:
         # The slice is the run's own time: seconds yielded to serving move its stop time on. #1556.
         if self.stop_at is not None and clock() >= self.stop_at + self.yield_s:
             raise Stop(f"{AT_STOP_TIME}, {self.left_cases()} case(s) left", STOP_TIME)
+        if self.stop_cases is not None and self.laps >= self.stop_cases:
+            raise Stop(f"{AT_LOOK}, {self.left_cases()} case(s) left", STOP_LOOK)
         self.restart(key, case)
         return served
 
@@ -235,6 +246,7 @@ class Watch:
         wall = max(0.0, clock() - self.began)
         self.walls.setdefault(key, []).append(wall)
         self.left[key] = max(0, self.left.get(key, 1) - 1)
+        self.laps += 1
         self.yield_since_case_s = 0.0
         if self.yielder is not None:
             self.yielder.between()

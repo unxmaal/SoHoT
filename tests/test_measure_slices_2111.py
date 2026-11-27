@@ -73,8 +73,8 @@ def step(monkeypatch):
 
     def measure(a, row, sweep):
         got.calls.append(row["name"])
-        if sweep.looks_left:
-            sweep.looks_left -= 1
+        if sweep.pairs_left:
+            sweep.pairs_left -= 1
         return got.look(row, sweep)
 
     monkeypatch.delenv(wq.JOB_ENV, raising=False)
@@ -93,7 +93,7 @@ def step(monkeypatch):
     return got
 
 
-def test_a_measure_job_takes_one_look_and_the_next_job_takes_the_rest(step):
+def test_a_measure_job_takes_one_comparison_and_the_next_job_takes_the_rest(step):
     def look(row, sweep):
         step.rows.remove(row["name"])
         return 0
@@ -112,7 +112,7 @@ def test_a_measure_job_takes_one_look_and_the_next_job_takes_the_rest(step):
 def test_a_comparison_that_launched_nothing_does_not_end_the_job(step):
     def look(row, sweep):
         step.rows.remove(row["name"])
-        sweep.looks_left = 1 if row["name"] == "org/a" else 0
+        sweep.pairs_left = 1 if row["name"] == "org/a" else 0
         return 0
     step.look = look
     wq.run_one(wq.pending()[0], popen=inproc.popen)
@@ -205,19 +205,21 @@ def _look(sweep):
     return measure_cmd._measure(_adopt_ns(), {"name": CH, "lane": "code"}, [], sweep)
 
 
-def test_a_sliced_measure_launches_one_look_and_the_next_slice_resumes_the_run(monkeypatch, world):
+def test_a_sliced_measure_job_keeps_looking_at_its_comparison_and_the_next_job_resumes_the_run(monkeypatch, world):
     fake = Slices([_rows(6, gained=1, lost=1), _rows(12, gained=2, lost=1)])
     monkeypatch.setattr(measure_cmd, "_launch", fake)
-    sweep = ceiling.Sweep(3600.0, looks_left=1)
-    assert _look(sweep) == watch.PAUSED and len(fake.argvs) == 1 and sweep.looks_left == 0
+    sweep = ceiling.Sweep(3600.0, pairs_left=2)
+    assert _look(sweep) == watch.PAUSED and len(fake.argvs) > 1 and "--resume" in fake.argvs[1]
+    assert sweep.pairs_left == 1, "a comparison costs the job one pair, not one per look"
+    launched = len(fake.argvs)
     conn = world()
     try:
         (p,) = _pauses(conn)
     finally:
         conn.close()
     assert p["state"] == "paused"
-    _look(ceiling.Sweep(3600.0, looks_left=1))
-    assert len(fake.argvs) == 2 and "--resume" in fake.argvs[1]
+    _look(ceiling.Sweep(3600.0, pairs_left=1))
+    assert len(fake.argvs) > launched and "--resume" in fake.argvs[launched]
 
 
 def test_a_measure_with_no_look_limit_goes_on_after_a_look_in_one_launch(monkeypatch, world):
@@ -225,4 +227,4 @@ def test_a_measure_with_no_look_limit_goes_on_after_a_look_in_one_launch(monkeyp
     monkeypatch.setattr(measure_cmd, "_launch", fake)
     sweep = ceiling.Sweep(3600.0)
     _look(sweep)
-    assert len(fake.argvs) > 1 and "--resume" in fake.argvs[1] and sweep.looks_left is None
+    assert len(fake.argvs) > 1 and "--resume" in fake.argvs[1] and sweep.pairs_left is None

@@ -20,6 +20,7 @@ class Outcome:
     how: str
     cases: int
     seconds: float
+    looks: int = 0
 
 
 def lane_rows(conn, lane: str) -> list[dict]:
@@ -87,26 +88,39 @@ def _history(rows: list[dict], inc: str, cases, skip_run: int | None = None):
 
 
 def walk(lane: str, seq: list[dict], cases, inc: str, ch: str, plan: dict, alpha: float,
-         step: float | None = None) -> Outcome:
-    """Rows in run order with a look each `step` seconds, as measure takes them; the end is the full gate."""
+         step: float | None = None, cells: int = 0) -> Outcome:
+    """Rows in run order with a look each `step` seconds, or each `cells` completed cells, as measure takes them; the end is the full gate."""
     step = looks.LOOK_INTERVAL_S if step is None else step
     split = holdout.Split(lane, (), tuple(cases), False)
     taken: list[dict] = []
     elapsed, nxt = 0.0, step
+    have: dict[str, set] = {}
+    done: set = set()
+    whole, due = 0, cells
     for i, r in enumerate(seq):
         elapsed += r["seconds"]
-        if not step or elapsed < nxt or i == len(seq) - 1:
+        if cells:
+            sides = have.setdefault(r["case_id"], set())
+            sides.add(r["candidate"])
+            if len(sides) == 2 and r["case_id"] not in done:
+                done.add(r["case_id"])
+                whole += 1
+            if whole < due or i == len(seq) - 1:
+                continue
+            due = whole + cells
+        elif not step or elapsed < nxt or i == len(seq) - 1:
             continue
-        while nxt <= elapsed:
-            nxt += step
+        else:
+            while nxt <= elapsed:
+                nxt += step
         lk, v = looks.look(seq[:i + 1], lane=lane, inc_key=inc, ch_key=ch, split=split, plan=plan, alpha=alpha,
                            spent_before=taken[-1]["spent"] if taken else 0.0, n=len(taken) + 1)
         taken.append(lk.as_dict())
         if v is not None:
-            return Outcome(v.adopt, lk.decision, len({q["base"] for q in seq[:i + 1]}), elapsed)
+            return Outcome(v.adopt, lk.decision, len({q["base"] for q in seq[:i + 1]}), elapsed, len(taken))
     spent = taken[-1]["spent"] if taken else 0.0
     v = adopt.decide(lane, {"candidate": inc}, {"candidate": ch}, seq, split=split, alpha=alpha - spent)
-    return Outcome(v.adopt, "final", len({q["base"] for q in seq}), elapsed)
+    return Outcome(v.adopt, "final", len({q["base"] for q in seq}), elapsed, len(taken))
 
 
 def in_order(seq: list[dict], ids) -> list[dict]:
@@ -133,9 +147,12 @@ def replay(conn, lane: str, alpha: float = adopt.ALPHA) -> list[dict]:
         full = adopt.decide(lane, {"candidate": x["inc"]}, {"candidate": x["ch"]}, mine, split=split, alpha=alpha)
         today = walk(lane, mine, cases, x["inc"], x["ch"], _plan(cases, rates, secs, effect, x["repeat"], False), alpha)
         plan = _plan(cases, rates, secs, effect, x["repeat"], True)
-        weed = walk(lane, in_order(mine, plan["order"]), cases, x["inc"], x["ch"], plan, alpha)
+        ordered = in_order(mine, plan["order"])
+        weed = walk(lane, ordered, cases, x["inc"], x["ch"], plan, alpha)
+        every = looks.every(sum(r["seconds"] for r in mine) / max(1, len(mine) // 2))
+        looked = walk(lane, ordered, cases, x["inc"], x["ch"], plan, alpha, step=0, cells=every)
         out.append({**x, "cases": len(cases), "seconds": sum(r["seconds"] for r in mine), "full": full.adopt,
-                    "today": today, "weedout": weed})
+                    "today": today, "weedout": weed, "looked": looked, "every": every})
     return out
 
 
@@ -209,10 +226,17 @@ def replay_lines(got: list[dict]) -> list[str]:
     v = lambda o: f"{'adopt' if o.adopt else 'keep'} {o.how} {o.cases} {o.seconds / 3600:.2f}h"
     lines = [f"run {x['run']}{'' if x['stored'] else ' (no verdict row)'}: {x['cases']} cases "
              f"{x['seconds'] / 3600:.2f}h, full {'adopt' if x['full'] else 'keep'}; today {v(x['today'])}; "
-             f"weed-out {v(x['weedout'])}{'' if x['weedout'].adopt == x['full'] else '  DIFFERS'}" for x in got]
+             f"weed-out {v(x['weedout'])}, {x['weedout'].looks} look(s); every {x['every']} cell(s) {v(x['looked'])}, "
+             f"{x['looked'].looks} look(s){'' if x['weedout'].adopt == x['full'] else '  DIFFERS'}"
+             f"{'' if x['looked'].adopt == x['weedout'].adopt else '  LOOKS DIFFER'}" for x in got]
     n = len(got)
     same = sum(1 for x in got if x["weedout"].adopt == x["full"])
     wrong = sum(1 for x in got if x["weedout"].adopt and not x["full"])
+    kept = sum(1 for x in got if x["looked"].adopt == x["weedout"].adopt)
+    lines.append(f"looks every K cells against every {looks.LOOK_INTERVAL_S:.0f} s: same verdict {kept}/{n}; cases "
+                 f"{sum(x['weedout'].cases for x in got)}/{sum(x['looked'].cases for x in got)}; hours "
+                 f"{sum(x['weedout'].seconds for x in got) / 3600:.2f}/{sum(x['looked'].seconds for x in got) / 3600:.2f}; "
+                 f"looks {sum(x['weedout'].looks for x in got)}/{sum(x['looked'].looks for x in got)}")
     lines.append(f"{n} paired run(s): weed-out same verdict {same}/{n}, adopts where full kept {wrong}; cases "
                  f"full/today/weed-out {sum(x['cases'] for x in got)}/{sum(x['today'].cases for x in got)}/"
                  f"{sum(x['weedout'].cases for x in got)}; hours {sum(x['seconds'] for x in got) / 3600:.1f}/"

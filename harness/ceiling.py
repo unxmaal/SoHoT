@@ -28,8 +28,8 @@ class Sweep:
     #: Why the measure step started nothing more, and how many measurements it left waiting. #1082.
     stopped: str = ""
     waiting: int = 0
-    #: The looks a queue job's measure step may still launch, None for no limit; `more` once it left work to the next job. #2111.
-    looks_left: int | None = None
+    #: Comparisons a queue job may still start, each looked at until it decides or pauses, None for no limit; `more` once work is left. #2111, #2167.
+    pairs_left: int | None = None
     more: bool = False
 
     def __post_init__(self):

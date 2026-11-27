@@ -54,7 +54,7 @@ def test_a_projection_over_budget_runs_the_holdout_only(store_run):
     _store(store_run, "svg", "inc", 100.0)
     _store(store_run, "svg", "ch", 100.0, name="ch-svg")
     _, fits = measure_cmd._plan(_ns(repeat=2, power_budget_min=10_000), "svg", "inc", "ch")
-    assert fits.side == "all" and not fits.dev_skipped
+    assert fits.side == "holdout" and "dev: not run" in fits.dev_skipped
     over = fits.projected_s / 60 * 0.75
     _, plan = measure_cmd._plan(_ns(repeat=2, power_budget_min=over), "svg", "inc", "ch")
     assert plan.side == "holdout"
@@ -164,3 +164,15 @@ def test_a_run_inside_its_deadline_returns_its_output():
 def test_the_critical_count_holds_past_a_thousand_discordant_cells():
     assert power._critical(1100, 0.05) <= 1100
     assert power.power_cells(0.3, 0.1, 4000, 0.05) > 0.99
+
+
+def test_a_paired_plan_runs_only_the_holdout_in_its_order_and_looks_every_k_cells(store_run):
+    from harness import holdout, looks
+    split = holdout.for_lane("svg")
+    _store(store_run, "svg", "inc", 100.0)
+    _store(store_run, "svg", "ch", 100.0, name="ch-svg")
+    _, plan = measure_cmd._plan(_ns(repeat=2, power_budget_min=10_000), "svg", "inc", "ch")
+    assert split.dev and set(plan.order) == set(split.holdout) and plan.order
+    assert plan.look_cells == looks.every(sum(measure_cmd._case_s(plan))) > 0
+    argv = measure_cmd._argv("svg", plan, "out", "inc", "ch")
+    assert argv[argv.index("--stop-cells") + 1] == str(plan.look_cells) and "holdout" in argv
