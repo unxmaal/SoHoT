@@ -1,0 +1,61 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0220
+modality: code
+prompt: 'Write a Python function `process(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Keep the values at indices 0, 2, 4, and so on.
+
+  2. Replace every value with its absolute value.
+
+  3. Drop the first 3 values (an empty list if there are fewer).
+
+  4. Reverse the list.
+
+  5. Replace every value with its absolute value.
+
+  6. Keep only the values greater than 3.
+
+  7. Add -1 to every value.
+
+  8. Reverse the list.
+
+  9. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  10. Reverse the list.
+
+  11. Keep only the values greater than -2.
+
+  12. Sort descending.
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `process([3, 13, 13, -2, 21, 15, 18, 0]) returns [17]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process([]) == []
+  - process([7]) == []
+  - process([1, 16, 22, 21, 4, -11, 21, 7]) == [20]
+  - process([12, 13, 0, 22, -1, 20, 11, 18]) == [10]
+  - process([-2, 12, 17, 14, 10]) == []
+  - process([9, 0, 4, 14, -12, -11, -11, -8]) == [10]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '220'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-12-steps

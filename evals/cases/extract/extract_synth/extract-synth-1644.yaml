@@ -1,0 +1,49 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1644
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 2883 end with?'
+context: '2026-11-10 18:56:17 juniper-2 INFO job 7958 started
+
+  2026-11-10 19:00:15 juniper-2 INFO job 7958 exited with code 0 after 238s
+
+  2026-11-16 02:24:55 juniper-1 INFO job 9207 started
+
+  2026-11-16 02:39:26 juniper-1 WARN job 9207 exited with code 126 after 871s
+
+  2026-11-16 07:20:51 juniper-1 INFO job 2883 started
+
+  2026-11-16 07:35:08 juniper-2 WARN job 2883 exited with code 137 after 857s
+
+  2026-11-20 00:26:35 juniper-2 INFO job 1996 started
+
+  2026-11-20 00:31:48 juniper-4 WARN job 1996 exited with code 255 after 313s
+
+  2026-11-22 04:16:47 juniper-2 INFO job 8606 started
+
+  2026-11-22 04:16:53 juniper-1 WARN job 8606 exited with code 126 after 6s
+
+  2026-11-23 09:11:24 juniper-4 INFO job 6857 started
+
+  2026-11-23 09:12:49 juniper-1 WARN job 6857 exited with code 17 after 85s'
+assert:
+  equals:
+  - '137'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1644'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

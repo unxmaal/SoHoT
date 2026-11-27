@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0632
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Tune desk lamp parser"?'
+context: "commit 50af1d56833f555c2f3a0b48c037320ea5f88777\nAuthor: Soren Castellan <soren@example.com>\n\
+  Date:   2026-11-16\n\n    Remove hose clamp limit\n\ncommit 1774f7cd220762c53f766d7e3742a977d240b998\n\
+  Author: Oren Lindqvist <oren@example.com>\nDate:   2026-11-26\n\n    Add gasket cache\n\ncommit 0e8957eda086ef16bff2396e73c0706cdb4cebf7\n\
+  Author: Vera Thorne <vera@example.com>\nDate:   2026-11-12\n\n    Add desk lamp limit\n\ncommit 308d89047e5314ea4523c1872f7ba6d3d243ac35\n\
+  Author: Wendell Ivanova <wendell@example.com>\nDate:   2026-11-09\n\n    Tune desk lamp parser"
+assert:
+  equals:
+  - Wendell Ivanova
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '632'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

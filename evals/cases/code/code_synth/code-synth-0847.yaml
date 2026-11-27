@@ -1,0 +1,50 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0847
+modality: code
+prompt: 'Write a Python function `run_pipeline(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Replace every maximal run of digits with the number of digits in it.
+
+  2. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  3. Collapse every run of the same character into one character.
+
+  4. Replace every maximal run of digits with the number of digits in it.
+
+  5. Remove every digit.
+
+  6. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  Then: Return the most frequent character, the smallest by code point if several tie, or '''' for an
+  empty string.
+
+
+  Example: `run_pipeline(''002yxb1,c0zAc'') returns ''c''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline('Zebra 42 crossing 7') == 'r'
+  - run_pipeline('noon') == 'n'
+  - run_pipeline('Rotor 99') == 'o'
+  - run_pipeline('Data-driven 2025') == 'a'
+  - run_pipeline('abc123xyz') == 'a'
+  - run_pipeline('  jumps   over the  lazy dog ') == ' '
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '847'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-6-steps

@@ -1,0 +1,32 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0148
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the replica count of the render service?'
+context: "services:\n  gateway:\n    image: registry.example.org/gateway:1.4.7\n    port: 5171\n    replicas:\
+  \ 5\n    timeout: 106s\n  billing:\n    image: registry.example.org/billing:1.1.2\n    port: 3571\n\
+  \    replicas: 7\n    timeout: 54s\n  search:\n    image: registry.example.org/search:3.12.8\n    port:\
+  \ 6578\n    replicas: 7\n    timeout: 60s\n  render:\n    image: registry.example.org/render:4.7.3\n\
+  \    port: 3804\n    replicas: 2\n    timeout: 71s\n  export:\n    image: registry.example.org/export:2.6.5\n\
+  \    port: 5738\n    replicas: 8\n    timeout: 112s"
+assert:
+  equals:
+  - '2'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '148'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: config

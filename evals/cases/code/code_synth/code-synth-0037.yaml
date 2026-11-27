@@ -1,0 +1,35 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0037
+modality: code
+prompt: 'Write a Python function `count_pairs(n)` returning how many pairs (i, j) with 1 <= i < j <= n
+  have gcd(i, j) equal to exactly 5. n can be as large as 1000000, so checking every pair is too slow.
+
+
+  Example: `count_pairs(1000000) returns 12158598917`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - count_pairs(0) == 0
+  - count_pairs(1) == 0
+  - count_pairs(7) == 0
+  - count_pairs(30) == 11
+  - count_pairs(580) == 4127
+  - count_pairs(27350) == 9095325
+  - count_pairs(400000) == 1945400165
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '37'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: hard-gcdpairs

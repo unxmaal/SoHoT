@@ -1,0 +1,39 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1678
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Which SKU is the item called keypad S4?'
+context: 'sku,name,qty,unit_price
+
+  SKU5544,toner S1,312,$28.01
+
+  SKU4701,keypad S4,6,$92.07
+
+  SKU8998,battery M4,64,$46.37
+
+  SKU2632,desk lamp M9,30,$38.88
+
+  SKU8244,cable set L6,119,$94.16
+
+  SKU5501,battery L6,125,$60.79'
+assert:
+  equals:
+  - SKU4701
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1678'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: inventory

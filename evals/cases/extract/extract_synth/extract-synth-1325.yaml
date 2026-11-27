@@ -1,0 +1,39 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1325
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the Q4 figure for Osaka?'
+context: 'Region | Q1 | Q2 | Q3 | Q4
+
+  Osaka | 2,360 | 4,470 | 8,020 | 6,660
+
+  Quito | 1,740 | 2,660 | 4,820 | 4,100
+
+  Lima | 6,170 | 1,630 | 2,980 | 1,250
+
+  Nairobi | 7,780 | 2,020 | 9,330 | 7,230
+
+  Cairo | 3,610 | 4,950 | 4,690 | 7,510
+
+  Oslo | 4,970 | 6,820 | 8,320 | 3,990'
+assert:
+  equals:
+  - 6,660
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1325'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: table

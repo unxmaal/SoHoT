@@ -1,0 +1,36 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0256
+modality: code
+prompt: 'Write a Python function `add_business_days(start, n)` where `start` is an ISO date string like
+  ''2026-12-01'' and n >= 0. Return the ISO date string that is n business days later: each counted day
+  is a Monday to Friday that is not one of these holidays: 2026-12-24, 2026-12-28, 2027-02-15. The start
+  day itself is never counted, and n = 0 returns `start` unchanged.
+
+
+  Example: `add_business_days(''2027-01-25'', 3) returns ''2027-01-28''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - add_business_days('2027-01-25', 12) == '2027-02-10'
+  - add_business_days('2027-01-02', 2) == '2027-01-05'
+  - add_business_days('2026-12-20', 6) == '2026-12-30'
+  - add_business_days('2027-01-13', 4) == '2027-01-19'
+  - add_business_days('2027-01-14', 5) == '2027-01-21'
+  - add_business_days('2027-01-09', 11) == '2027-01-25'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '256'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: algo-business

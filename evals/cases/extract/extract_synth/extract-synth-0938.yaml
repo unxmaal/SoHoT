@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0938
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How much tax is charged?'
+context: "Cobalt Dairy\nInvoice INV-2026-9920   Issued 2026-12-02\nBill to: Granite Peak Labs   Customer\
+  \ PO: PO-88640\n  cable set    x1   @     $19.94 =      $19.94\n  gasket       x9   @    $136.95 = \
+  \  $1,232.55\n  mount plate  x6   @     $38.80 =     $232.80\n  Subtotal: $1,485.29\n  Shipping: $6.71\n\
+  \  Tax: $103.97\n  Total due: $1,595.97 by 2027-01-27"
+assert:
+  equals:
+  - $103.97
+  - '103.97'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '938'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: invoice

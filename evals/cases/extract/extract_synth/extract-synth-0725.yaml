@@ -1,0 +1,35 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0725
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the Q2 figure for Nairobi?'
+context: 'Region | Q1 | Q2 | Q3 | Q4
+
+  Cairo | 9,040 | 2,150 | 7,100 | 8,790
+
+  Lima | 9,020 | 4,870 | 4,920 | 2,920
+
+  Nairobi | 7,580 | 7,900 | 6,730 | 8,830
+
+  Bergen | 7,900 | 8,680 | 8,670 | 8,490'
+assert:
+  equals:
+  - 7,900
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '725'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: table

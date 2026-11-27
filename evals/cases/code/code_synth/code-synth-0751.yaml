@@ -1,0 +1,42 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0751
+modality: code
+prompt: 'Write a Python function `transform(rows)`. `rows` is a list of (name, team, rating) tuples with
+  integer ratings and unique names, possibly empty. Given them, return the sorted list of names whose
+  rating is strictly above the average rating of their own team.
+
+
+  Example: `transform([(''Nico'', ''qa'', 70), (''Quin'', ''qa'', 60), (''Xan'', ''qa'', 60), (''Mina'',
+  ''sales'', 80)]) returns [''Nico'']`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([('Fay', 'sales', 60), ('Ada', 'hr', 90), ('Rhea', 'hr', 50), ('Wren', 'hr', 80), ('Quin',
+    'sales', 70), ('Xan', 'legal', 90), ('Sol', 'sales', 90)]) == ['Ada', 'Sol', 'Wren']
+  - transform([('Iris', 'hr', 70), ('Leo', 'hr', 70), ('Bram', 'legal', 95), ('Vic', 'hr', 80)]) == ['Vic']
+  - transform([('Wren', 'dev', 80), ('Dara', 'dev', 90), ('Pia', 'legal', 90), ('Vic', 'dev', 95)]) ==
+    ['Dara', 'Vic']
+  - transform([('Quin', 'dev', 90), ('Kira', 'ops', 95), ('Yara', 'dev', 50), ('Olga', 'ops', 50), ('Iris',
+    'ops', 90), ('Bram', 'hr', 60), ('Mina', 'hr', 70), ('Tess', 'dev', 80)]) == ['Iris', 'Kira', 'Mina',
+    'Quin', 'Tess']
+  - transform([('Gus', 'dev', 90), ('Rhea', 'sales', 70), ('Hugo', 'hr', 50), ('Zed', 'dev', 90), ('Cleo',
+    'hr', 70), ('Kira', 'hr', 80), ('Wren', 'hr', 80)]) == ['Kira', 'Wren']
+  - transform([('Nico', 'qa', 80), ('Fay', 'legal', 70), ('Zed', 'sales', 70), ('Eli', 'qa', 90), ('Rhea',
+    'legal', 90), ('Sol', 'sales', 95), ('Iris', 'qa', 70)]) == ['Eli', 'Rhea', 'Sol']
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '751'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-above

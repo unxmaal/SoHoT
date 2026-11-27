@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0566
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the total due?'
+context: "Northwind Freight\nInvoice INV-2026-6975   Issued 2026-10-09\nBill to: Ostrich Egg Games   Customer\
+  \ PO: PO-63865\n  toner        x15  @     $10.25 =     $153.75\n  filter pack  x4   @     $59.17 = \
+  \    $236.68\n  Subtotal: $390.43\n  Shipping: $42.57\n  Tax: $19.52\n  Total due: $452.52 by 2026-12-30"
+assert:
+  equals:
+  - $452.52
+  - '452.52'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '566'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: invoice

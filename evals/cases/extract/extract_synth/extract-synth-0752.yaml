@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0752
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Tune bolt kit retry"?'
+context: "commit f103ab6146e71c821aa0e473d6dca6ab6bdbebce\nAuthor: Ivo Kowalczyk <ivo@example.com>\nDate:\
+  \   2026-11-26\n\n    Tune desk lamp retry\n\ncommit 54bdbac65657552fa10c6109eaa0e40717e87c92\nAuthor:\
+  \ Soren Nakamura <soren@example.com>\nDate:   2026-11-07\n\n    Fix gasket cache\n\ncommit f705172632803597e262cd75e3a6050f5267cd4d\n\
+  Author: Ivo Brightwater <ivo@example.com>\nDate:   2026-11-15\n\n    Add desk lamp parser\n\ncommit\
+  \ 31ff41996fbfcfa0d099eb2f5d7953c174d4101f\nAuthor: Ivo Nakamura <ivo@example.com>\nDate:   2026-11-09\n\
+  \n    Add sensor parser\n\ncommit 67583abd0a791ab98f4df3c1a17dbefdccc7d2d4\nAuthor: Dmitri Ivanova <dmitri@example.com>\n\
+  Date:   2026-11-24\n\n    Tune bolt kit retry"
+assert:
+  equals:
+  - Dmitri Ivanova
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '752'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

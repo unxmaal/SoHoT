@@ -1,0 +1,49 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0060
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 1819 end with?'
+context: '2026-11-11 19:37:14 indigo-3 INFO job 1819 started
+
+  2026-11-11 19:49:46 indigo-1 WARN job 1819 exited with code 255 after 752s
+
+  2026-11-14 12:46:05 indigo-1 INFO job 7353 started
+
+  2026-11-14 12:54:18 indigo-3 WARN job 7353 exited with code 137 after 493s
+
+  2026-11-20 10:02:15 indigo-2 INFO job 1333 started
+
+  2026-11-20 10:08:48 indigo-1 WARN job 1333 exited with code 1 after 393s
+
+  2026-11-22 19:38:19 indigo-2 INFO job 9531 started
+
+  2026-11-22 19:46:47 indigo-2 WARN job 9531 exited with code 17 after 508s
+
+  2026-11-24 08:45:28 indigo-1 INFO job 1110 started
+
+  2026-11-24 08:54:01 indigo-3 WARN job 1110 exited with code 2 after 513s
+
+  2026-11-26 21:20:27 indigo-3 INFO job 7838 started
+
+  2026-11-26 21:21:43 indigo-4 WARN job 7838 exited with code 17 after 76s'
+assert:
+  equals:
+  - '255'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '60'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

@@ -1,0 +1,53 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0080
+modality: code
+prompt: 'Write a Python function `reduce_data(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  2. Replace every value with its square.
+
+  3. Replace every value with its absolute value.
+
+  4. Multiply every value by 3.
+
+  5. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  6. Sort descending.
+
+  7. Keep the values at indices 0, 2, 4, and so on.
+
+  8. Divide every value by 2 with integer division that rounds toward zero (so -7 divided by 2 gives -3).
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `reduce_data([18, 16, -11, 21, -11, -10, 2, -3, 5]) returns [486, 793]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data([]) == []
+  - reduce_data([-8]) == [96]
+  - reduce_data([11, 18, 21, 16, 0, -4, 22]) == [181, 3750]
+  - reduce_data([21, 10, -1]) == [661, 1441]
+  - reduce_data([2, -11, 11, 25, 4]) == [6, 121]
+  - reduce_data([3, 5, 16]) == [13, 864]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '80'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

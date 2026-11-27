@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0344
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Add keypad retry"?'
+context: "commit 5619af5040994102d5aae2dc0509e604b94b9a3d\nAuthor: Hana Fairbanks <hana@example.com>\n\
+  Date:   2026-11-17\n\n    Add keypad retry\n\ncommit 606337a52f644002adecfbf101ebcbe9408b989c\nAuthor:\
+  \ Wendell Sandoval <wendell@example.com>\nDate:   2026-11-04\n\n    Tune gasket retry\n\ncommit 315f64db5a8058c92b28572f7e85a6df9bc7f76d\n\
+  Author: Bruno Ivanova <bruno@example.com>\nDate:   2026-11-15\n\n    Add gasket retry"
+assert:
+  equals:
+  - hana@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '344'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

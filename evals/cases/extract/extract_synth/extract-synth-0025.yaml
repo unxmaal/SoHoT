@@ -1,0 +1,35 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0025
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What was the rid of the request to /api/search?'
+context: 'atlas - [28/Nov/2026:12:28] "GET /api/search HTTP/1.1" 301 80332 rid=969ca817
+
+  atlas - [02/Nov/2026:18:53] "GET /api/users HTTP/1.1" 502 53835 rid=13c63531
+
+  ember - [16/Nov/2026:14:13] "GET /healthz HTTP/1.1" 200 50756 rid=0919252c
+
+  borealis - [16/Nov/2026:07:58] "GET /api/orders HTTP/1.1" 404 57538 rid=1a7fc14b
+
+  delta - [17/Nov/2026:17:21] "GET /api/upload HTTP/1.1" 500 70827 rid=03b0cd44'
+assert:
+  equals:
+  - 969ca817
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '25'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log_request

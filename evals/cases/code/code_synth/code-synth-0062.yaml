@@ -1,0 +1,60 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0062
+modality: code
+prompt: 'Write a Python function `process(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Reverse the list.
+
+  2. Replace every value with its absolute value.
+
+  3. Remove duplicates, keeping the first occurrence of each value.
+
+  4. Reverse the list.
+
+  5. Replace every value with the largest of itself and the up to 1 values before it.
+
+  6. Replace every value with its remainder after division by 9, as Python''s % gives it (never negative).
+
+  7. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  8. Drop the first 3 values (an empty list if there are fewer).
+
+  9. Rotate the list left by 5 positions, wrapping around (an empty list stays empty).
+
+  10. Replace every value with the largest of itself and the up to 1 values before it.
+
+  11. Drop the first 1 values (an empty list if there are fewer).
+
+  12. Collapse each run of equal adjacent values into one value.
+
+  Then: Return the sum of the values (0 for an empty list).
+
+
+  Example: `process([-5, -1, 11, 0]) returns 0`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process([]) == 0
+  - process([5]) == 0
+  - process([9, 6, 20, -8, 24]) == 6
+  - process([20, 15, 0, -3]) == 0
+  - process([-2, 13, 21, 22, 9, -4, 17, 22, 1]) == 12
+  - process([9, 11, 18, -8, 8, 10, -5, 8]) == 9
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '62'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-12-steps

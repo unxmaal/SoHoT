@@ -1,0 +1,53 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0562
+modality: code
+prompt: 'Write a Python function `compute(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  2. Replace every value with its square.
+
+  3. Divide every value by 4 with integer division that rounds toward zero (so -7 divided by 4 gives -1).
+
+  4. Sort descending.
+
+  5. Replace every value with the largest of itself and the up to 2 values before it.
+
+  6. Sort descending.
+
+  7. Remove every negative value.
+
+  8. Keep only the last 4 values, in their order (all of them if there are fewer).
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `compute([-2, 9, -2, 10, 17, 8, -9, 19]) returns [25, 156]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute([]) == []
+  - compute([-3]) == [2]
+  - compute([15, -4, 2]) == [30, 30]
+  - compute([-10, 25, 8, -10, 8, 0, 9, 19]) == [56, 196]
+  - compute([10, 9, 10, 8, 4, 23, 1, 13, -12]) == [81, 90]
+  - compute([4, -4, 16, -6, 12]) == [36, 36]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '562'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

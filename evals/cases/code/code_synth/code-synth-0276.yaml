@@ -1,0 +1,39 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0276
+modality: code
+prompt: 'Write a Python function `wrap_text(text)` that splits `text` into words on whitespace and packs
+  them greedily into lines of at most 15 characters, words separated by one space, never splitting a word
+  (a word longer than 15 sits alone on its line). Return the list of lines; no words gives an empty list.
+
+
+  Example: `wrap_text(''lima echo juliet'') returns [''lima echo'', ''juliet'']`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - wrap_text('charlie golf ok foxtrot') == ['charlie golf ok', 'foxtrot']
+  - wrap_text('delta alpha zebra india') == ['delta alpha', 'zebra india']
+  - wrap_text('delta internationalization juliet alpha hotel zebra bravo golf juliet') == ['delta', 'internationalization',
+    'juliet alpha', 'hotel zebra', 'bravo golf', 'juliet']
+  - wrap_text('delta alpha bravo foxtrot juliet foxtrot alpha') == ['delta alpha', 'bravo foxtrot', 'juliet
+    foxtrot', 'alpha']
+  - wrap_text('foxtrot ok bravo bravo echo foxtrot charlie') == ['foxtrot ok', 'bravo bravo', 'echo foxtrot',
+    'charlie']
+  - wrap_text('delta bravo hotel echo internationalization juliet') == ['delta bravo', 'hotel echo', 'internationalization',
+    'juliet']
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '276'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: algo-wrap

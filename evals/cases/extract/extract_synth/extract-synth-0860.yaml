@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0860
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Remove gasket parser"?'
+context: "commit 589e1975dc24d578c516f4d49abb372a6683048f\nAuthor: Dmitri Okonkwo <dmitri@example.com>\n\
+  Date:   2026-11-15\n\n    Remove mount plate cache\n\ncommit ab1060973d1efcd51b89b0f0112d777e1a0d4952\n\
+  Author: Oren Okonkwo <oren@example.com>\nDate:   2026-11-02\n\n    Remove gasket parser\n\ncommit 24cffeaaa3bae216c78b8ebf9226c50b1008987d\n\
+  Author: Quinn Ivanova <quinn@example.com>\nDate:   2026-11-05\n\n    Fix battery cache"
+assert:
+  equals:
+  - Oren Okonkwo
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '860'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

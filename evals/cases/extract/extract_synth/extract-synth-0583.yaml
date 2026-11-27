@@ -1,0 +1,49 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0583
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: In which version was #233 addressed?'
+context: '## 2.5.1 (2026-09-16)
+
+  - Improved desk lamp handling (#818)
+
+  - Improved bolt kit handling (#229)
+
+  - Removed battery handling (#323)
+
+  ## 2.4.2 (2026-08-21)
+
+  - Fixed hose clamp handling (#642)
+
+  - Improved keypad handling (#445)
+
+  - Improved cable set handling (#233)
+
+  ## 2.3.4 (2026-08-04)
+
+  - Fixed toner handling (#735)
+
+  - Removed filter pack handling (#593)
+
+  - Fixed label roll handling (#637)'
+assert:
+  equals:
+  - 2.4.2
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '583'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: changelog

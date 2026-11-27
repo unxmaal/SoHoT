@@ -1,0 +1,44 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1630
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the unit price of SKU1871?'
+context: 'sku,name,qty,unit_price
+
+  SKU1871,toner L6,355,$79.38
+
+  SKU3758,label roll S5,303,$19.68
+
+  SKU1099,toner L1,307,$30.32
+
+  SKU7156,desk lamp S6,269,$83.95
+
+  SKU6400,hose clamp L1,240,$97.04
+
+  SKU5549,mount plate L6,86,$74.67
+
+  SKU6325,battery S4,186,$61.37
+
+  SKU3421,sensor S9,321,$43.43'
+assert:
+  equals:
+  - $79.38
+  - '79.38'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1630'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: inventory

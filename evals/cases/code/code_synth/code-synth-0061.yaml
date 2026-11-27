@@ -1,0 +1,52 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0061
+modality: code
+prompt: 'Write a Python function `run_pipeline(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Reverse the list.
+
+  2. Collapse each run of equal adjacent values into one value.
+
+  3. Remove every value that is a multiple of 7 (0 is a multiple of everything).
+
+  4. Rotate the list left by 5 positions, wrapping around (an empty list stays empty).
+
+  5. Remove every value that is a multiple of 5 (0 is a multiple of everything).
+
+  6. Sort ascending.
+
+  7. Collapse each run of equal adjacent values into one value.
+
+  8. Multiply every value by 3.
+
+  Then: Return the index of the first occurrence of the largest value, or -1 for an empty list.
+
+
+  Example: `run_pipeline([12, 12, 21, -7, -9, 12, 2, 24]) returns 3`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline([]) == -1
+  - run_pipeline([-4]) == 0
+  - run_pipeline([-9, 8, 20, 21, -9]) == 1
+  - run_pipeline([20, 1, 18, -11, 11, -12, 0]) == 4
+  - run_pipeline([-12, -7, 17]) == 1
+  - run_pipeline([18, 16, -2, 17, -9, 0, 2, 8]) == 6
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '61'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

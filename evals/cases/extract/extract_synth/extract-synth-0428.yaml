@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0428
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Fix gasket parser"?'
+context: "commit f71fcdd2947c7fd518a28f703d7bc204bbb3ab55\nAuthor: Umar Rasmussen <umar@example.com>\n\
+  Date:   2026-11-02\n\n    Remove sensor limit\n\ncommit ee9e39b20d1497b5025f2d2587f009a7afde4bad\nAuthor:\
+  \ Bruno Underhill <bruno@example.com>\nDate:   2026-11-19\n\n    Tune battery cache\n\ncommit 223dea0b73a79c6c5d5dfab831a46bc3922168c3\n\
+  Author: Oren Rasmussen <oren@example.com>\nDate:   2026-11-05\n\n    Fix gasket parser\n\ncommit 0e56434d406d1208d3b7f76228e60baa53b25bc8\n\
+  Author: Jolene Okonkwo <jolene@example.com>\nDate:   2026-11-24\n\n    Remove bolt kit retry"
+assert:
+  equals:
+  - oren@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '428'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

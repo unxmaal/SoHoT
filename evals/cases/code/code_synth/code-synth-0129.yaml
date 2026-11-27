@@ -1,0 +1,56 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0129
+modality: code
+prompt: 'Write a Python function `transform(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  2. Replace every ''e'' with ''b'' (lowercase only).
+
+  3. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  4. Collapse every run of the same character into one character.
+
+  5. Convert to uppercase.
+
+  6. Convert to lowercase.
+
+  7. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  8. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  9. Remove every digit.
+
+  10. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  Then: Return the resulting string.
+
+
+  Example: `transform('' ..Ba xb z'') returns ''z xb .ba''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform('Quick brown fox') == 'fox brown quick'
+  - transform('banana bandana') == 'bandana banana'
+  - transform('aabbbcccc') == 'abc'
+  - transform('A man a plan a canal Panama') == 'plan a man a'
+  - transform('The 3 little pigs 33') == 'pigs litlb thb'
+  - transform('hELLo WoRLD') == 'world helo'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '129'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-10-steps

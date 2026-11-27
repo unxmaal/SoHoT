@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0800
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the first 7 characters of the hash of the commit "Tune gasket limit"?'
+context: "commit 5e7ed703572d7cbe777b5c24278203802e601496\nAuthor: Ivo Lindqvist <ivo@example.com>\nDate:\
+  \   2026-11-02\n\n    Add battery cache\n\ncommit 23fc965797001c1b5db70eee8b39179979fc638f\nAuthor:\
+  \ Lucia Jaramillo <lucia@example.com>\nDate:   2026-11-22\n\n    Tune gasket limit\n\ncommit d8c200d0cabe00cfee2ea62d467edb550fe5099f\n\
+  Author: Vera Abernathy <vera@example.com>\nDate:   2026-11-01\n\n    Fix label roll limit\n\ncommit\
+  \ e43a16545dd01bc96572a8f91efd0d94eb3c5f83\nAuthor: Ivo Galloway <ivo@example.com>\nDate:   2026-11-24\n\
+  \n    Add keypad parser\n\ncommit 99fa1c3e0801471fb24b4532ffaa8c2bd1ddc3e1\nAuthor: Bruno Okonkwo <bruno@example.com>\n\
+  Date:   2026-11-22\n\n    Tune sensor cache"
+assert:
+  equals:
+  - 23fc965
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '800'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

@@ -1,0 +1,57 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1164
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 3938 end with?'
+context: '2026-11-12 13:53:43 borealis-2 INFO job 1143 started
+
+  2026-11-12 13:54:49 borealis-1 WARN job 1143 exited with code 1 after 66s
+
+  2026-11-12 22:03:28 borealis-1 INFO job 3938 started
+
+  2026-11-12 22:10:27 borealis-4 INFO job 3938 exited with code 0 after 419s
+
+  2026-11-18 19:56:19 borealis-3 INFO job 2254 started
+
+  2026-11-18 19:59:46 borealis-4 WARN job 2254 exited with code 137 after 207s
+
+  2026-11-20 18:51:15 borealis-4 INFO job 6734 started
+
+  2026-11-20 18:58:26 borealis-1 WARN job 6734 exited with code 2 after 431s
+
+  2026-11-21 10:14:10 borealis-2 INFO job 2915 started
+
+  2026-11-21 10:21:49 borealis-2 WARN job 2915 exited with code 1 after 459s
+
+  2026-11-22 20:40:31 borealis-3 INFO job 4984 started
+
+  2026-11-22 20:46:00 borealis-3 WARN job 4984 exited with code 17 after 329s
+
+  2026-11-24 07:13:53 borealis-4 INFO job 3801 started
+
+  2026-11-24 07:25:25 borealis-2 WARN job 3801 exited with code 17 after 692s
+
+  2026-11-26 07:16:47 borealis-1 INFO job 5257 started
+
+  2026-11-26 07:18:28 borealis-2 WARN job 5257 exited with code 137 after 101s'
+assert:
+  equals:
+  - '0'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1164'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

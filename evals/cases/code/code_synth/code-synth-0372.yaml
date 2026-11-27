@@ -1,0 +1,36 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0372
+modality: code
+prompt: 'Write a Python function `first_bracket_error(s)` for a string `s` in which only the brackets
+  () [] <> matter and every other character is ignored. Return the index of the first closing bracket
+  that has no matching opener of the same kind on top of the stack; if there is none, return the index
+  of the earliest opening bracket that is never closed; otherwise -1.
+
+
+  Example: `first_bracket_error('']a<([b'') returns 0`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - first_bracket_error('(<') == 0
+  - first_bracket_error('b') == -1
+  - first_bracket_error('b[))[<<([') == 2
+  - first_bracket_error('b]a<a][<a') == 1
+  - first_bracket_error(')') == 0
+  - first_bracket_error('(<<b[a]<(<(a') == 0
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '372'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: algo-brackets

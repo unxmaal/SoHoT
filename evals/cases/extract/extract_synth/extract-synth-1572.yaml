@@ -1,0 +1,61 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1572
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 7815 end with?'
+context: '2026-11-11 11:48:09 delta-1 INFO job 8896 started
+
+  2026-11-11 11:51:22 delta-1 WARN job 8896 exited with code 2 after 193s
+
+  2026-11-14 20:38:53 delta-2 INFO job 7949 started
+
+  2026-11-14 20:45:04 delta-4 WARN job 7949 exited with code 1 after 371s
+
+  2026-11-16 06:55:00 delta-4 INFO job 3220 started
+
+  2026-11-16 07:01:16 delta-3 INFO job 3220 exited with code 0 after 376s
+
+  2026-11-17 10:09:38 delta-3 INFO job 1189 started
+
+  2026-11-17 10:21:10 delta-2 WARN job 1189 exited with code 2 after 692s
+
+  2026-11-19 15:21:55 delta-1 INFO job 1344 started
+
+  2026-11-19 15:28:19 delta-2 WARN job 1344 exited with code 1 after 384s
+
+  2026-11-19 20:13:54 delta-4 INFO job 7815 started
+
+  2026-11-19 20:28:08 delta-2 WARN job 7815 exited with code 126 after 854s
+
+  2026-11-20 17:44:22 delta-3 INFO job 6024 started
+
+  2026-11-20 17:48:52 delta-2 WARN job 6024 exited with code 126 after 270s
+
+  2026-11-22 12:32:01 delta-4 INFO job 7159 started
+
+  2026-11-22 12:40:44 delta-3 WARN job 7159 exited with code 2 after 523s
+
+  2026-11-22 15:41:15 delta-2 INFO job 1302 started
+
+  2026-11-22 15:45:37 delta-1 WARN job 1302 exited with code 17 after 262s'
+assert:
+  equals:
+  - '126'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1572'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

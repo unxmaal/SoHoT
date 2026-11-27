@@ -1,0 +1,32 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1588
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the image of the export service?'
+context: "services:\n  export:\n    image: registry.example.org/export:2.1.6\n    port: 5224\n    replicas:\
+  \ 2\n    timeout: 86s\n  search:\n    image: registry.example.org/search:2.7.5\n    port: 3194\n   \
+  \ replicas: 6\n    timeout: 51s\n  scheduler:\n    image: registry.example.org/scheduler:2.19.2\n  \
+  \  port: 8912\n    replicas: 7\n    timeout: 54s\n  render:\n    image: registry.example.org/render:4.11.4\n\
+  \    port: 4267\n    replicas: 7\n    timeout: 50s\n  notify:\n    image: registry.example.org/notify:3.14.6\n\
+  \    port: 5689\n    replicas: 6\n    timeout: 89s"
+assert:
+  equals:
+  - registry.example.org/export:2.1.6
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1588'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: config

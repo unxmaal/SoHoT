@@ -1,0 +1,49 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0840
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 7675 end with?'
+context: '2026-11-11 02:37:53 falcon-3 INFO job 1193 started
+
+  2026-11-11 02:43:23 falcon-1 WARN job 1193 exited with code 255 after 330s
+
+  2026-11-15 17:39:34 falcon-4 INFO job 7043 started
+
+  2026-11-15 17:52:02 falcon-3 WARN job 7043 exited with code 255 after 748s
+
+  2026-11-15 19:01:11 falcon-2 INFO job 4962 started
+
+  2026-11-15 19:13:04 falcon-2 INFO job 4962 exited with code 0 after 713s
+
+  2026-11-16 02:16:15 falcon-2 INFO job 7675 started
+
+  2026-11-16 02:18:42 falcon-1 INFO job 7675 exited with code 0 after 147s
+
+  2026-11-18 03:39:43 falcon-2 INFO job 5586 started
+
+  2026-11-18 03:46:59 falcon-1 WARN job 5586 exited with code 1 after 436s
+
+  2026-11-20 22:52:55 falcon-3 INFO job 9596 started
+
+  2026-11-20 23:01:18 falcon-3 WARN job 9596 exited with code 255 after 503s'
+assert:
+  equals:
+  - '0'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '840'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

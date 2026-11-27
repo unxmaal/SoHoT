@@ -1,0 +1,44 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0118
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the unit price of SKU4685?'
+context: 'sku,name,qty,unit_price
+
+  SKU4685,hose clamp M4,345,$58.97
+
+  SKU5502,mount plate M2,209,$31.47
+
+  SKU5150,bolt kit S2,225,$23.54
+
+  SKU7081,toner L2,38,$56.43
+
+  SKU7036,bolt kit L7,249,$65.01
+
+  SKU2988,mount plate L6,372,$78.78
+
+  SKU2858,hose clamp L7,32,$40.73
+
+  SKU7203,mount plate M7,243,$88.94'
+assert:
+  equals:
+  - $58.97
+  - '58.97'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '118'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: inventory

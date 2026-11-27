@@ -1,0 +1,32 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0824
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Tune battery retry"?'
+context: "commit 4f893872049329a2ec50093ae3dbf15e3e2a2778\nAuthor: Umar Ivanova <umar@example.com>\nDate:\
+  \   2026-11-22\n\n    Add filter pack limit\n\ncommit 6816587c63a2818f013d3252268bfef04899c18f\nAuthor:\
+  \ Rosa Whitlock <rosa@example.com>\nDate:   2026-11-06\n\n    Remove filter pack limit\n\ncommit e1b396ba9926943eec79fe83f5cc584d95319dc1\n\
+  Author: Farah Dunmore <farah@example.com>\nDate:   2026-11-02\n\n    Fix sensor limit\n\ncommit bd99526be676449c11c7b32c0249546dc8aa3f9f\n\
+  Author: Rosa Dunmore <rosa@example.com>\nDate:   2026-11-07\n\n    Tune battery retry\n\ncommit fa77997c56df122b685d489ea66106d4b437ce98\n\
+  Author: Nadia Underhill <nadia@example.com>\nDate:   2026-11-20\n\n    Add label roll cache"
+assert:
+  equals:
+  - rosa@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '824'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

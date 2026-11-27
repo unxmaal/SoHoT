@@ -1,0 +1,36 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0112
+modality: code
+prompt: 'Write a Python function `finish_times(bursts)`. Processes 0..n-1 all arrive at time 0 and need
+  `bursts[i]` units of CPU. A round-robin scheduler gives the process at the front of the queue up to
+  6 units, then, if it is not finished, puts it at the back. Return the list of finishing times indexed
+  by process.
+
+
+  Example: `finish_times([8, 6]) returns [14, 12]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - finish_times([8, 8, 9]) == [20, 22, 25]
+  - finish_times([3, 5, 8, 5]) == [3, 8, 21, 19]
+  - finish_times([6, 6]) == [6, 12]
+  - finish_times([2, 1, 6, 7]) == [2, 3, 9, 16]
+  - finish_times([6, 9, 6]) == [6, 21, 18]
+  - finish_times([8, 3, 8, 9, 3]) == [26, 9, 28, 31, 24]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '112'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: algo-roundrobin

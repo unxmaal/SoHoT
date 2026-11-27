@@ -1,0 +1,53 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0163
+modality: code
+prompt: 'Write a Python function `process(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Keep only the first 3 values (all of them if there are fewer).
+
+  2. Replace every value with its square.
+
+  3. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  4. Keep only the values greater than 3.
+
+  5. Collapse each run of equal adjacent values into one value.
+
+  6. Replace every value with its absolute value.
+
+  7. Sort ascending.
+
+  8. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  Then: Return the largest value, or -1 for an empty list.
+
+
+  Example: `process([12, -1, -5]) returns 170`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process([]) == -1
+  - process([3]) == 9
+  - process([-5, 10, -9]) == 206
+  - process([24, 15, 2, 3, 1, 16]) == 805
+  - process([-7, 7, -3, 4, 18]) == 107
+  - process([-10, -3, 1, 18, 15, 14, 24, -5, 0]) == 110
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '163'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

@@ -1,0 +1,43 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0682
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Which SKU is the item called mount plate M3?'
+context: 'sku,name,qty,unit_price
+
+  SKU5575,battery S7,45,$64.32
+
+  SKU2050,keypad M2,281,$12.74
+
+  SKU6860,filter pack S1,195,$83.93
+
+  SKU2582,desk lamp S9,198,$81.80
+
+  SKU6757,mount plate M3,179,$6.94
+
+  SKU1462,sensor M6,366,$96.83
+
+  SKU4403,toner S4,297,$3.26
+
+  SKU1506,toner L6,362,$26.88'
+assert:
+  equals:
+  - SKU6757
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '682'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: inventory

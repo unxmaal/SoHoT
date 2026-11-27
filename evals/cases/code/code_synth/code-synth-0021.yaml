@@ -1,0 +1,57 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0021
+modality: code
+prompt: 'Write a Python function `apply_rules(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Sort ascending.
+
+  2. Divide every value by 3 with integer division that rounds toward zero (so -7 divided by 3 gives -2).
+
+  3. Replace every value with its square.
+
+  4. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  5. Replace every value with its square.
+
+  6. Keep only the first 5 values (all of them if there are fewer).
+
+  7. Collapse each run of equal adjacent values into one value.
+
+  8. Remove every value that is a multiple of 5 (0 is a multiple of everything).
+
+  9. Remove duplicates, keeping the first occurrence of each value.
+
+  10. Divide every value by 2 with integer division that rounds toward zero (so -7 divided by 2 gives
+  -3).
+
+  Then: Return the sum of the values (0 for an empty list).
+
+
+  Example: `apply_rules([21, 9, 1, 7, 7]) returns 1248`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules([]) == 0
+  - apply_rules([6]) == 8
+  - apply_rules([2, 20, -8, -8, 9, -4, -9]) == 48
+  - apply_rules([18, -1, 13, 19, 7]) == 784
+  - apply_rules([-4, 20, 25, 1, -9, 21, 23, 11, 2]) == 688
+  - apply_rules([-1, 11, 14, 0]) == 168
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '21'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-10-steps

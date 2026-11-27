@@ -1,0 +1,39 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0689
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the Q3 figure for Perth?'
+context: 'Region | Q1 | Q2 | Q3 | Q4
+
+  Bergen | 1,240 | 8,120 | 3,880 | 2,750
+
+  Osaka | 4,330 | 2,640 | 2,720 | 3,460
+
+  Perth | 4,520 | 1,150 | 9,120 | 2,900
+
+  Hanoi | 1,980 | 9,130 | 2,470 | 3,710
+
+  Lima | 6,270 | 4,370 | 1,430 | 8,460
+
+  Lisbon | 6,860 | 4,050 | 7,960 | 9,800'
+assert:
+  equals:
+  - 9,120
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '689'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: table

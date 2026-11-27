@@ -1,0 +1,47 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0711
+modality: code
+prompt: 'Write a Python function `apply_rules(rows)`. `rows` is a list of (name, region, rating) tuples
+  with integer ratings and unique names, possibly empty. Given them, return a dict mapping each region
+  that has at least one rating of 70 or more to how many such ratings it has.
+
+
+  Example: `apply_rules([(''Pia'', ''hr'', 95), (''Ada'', ''legal'', 70), (''Eli'', ''hr'', 70), (''Quin'',
+  ''legal'', 60), (''Hugo'', ''legal'', 50)]) returns {''hr'': 2, ''legal'': 1}`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - 'apply_rules([(''Wren'', ''legal'', 60), (''Fay'', ''dev'', 80), (''Bram'', ''qa'', 70), (''Dara'',
+    ''qa'', 70), (''Xan'', ''qa'', 70), (''Kira'', ''dev'', 80), (''Pia'', ''legal'', 80), (''Vic'', ''legal'',
+    70)]) == {''dev'': 2, ''qa'': 3, ''legal'': 2}'
+  - 'apply_rules([(''Sol'', ''hr'', 95), (''Dara'', ''legal'', 60), (''Bram'', ''legal'', 90), (''Mina'',
+    ''hr'', 70), (''Ada'', ''sales'', 60), (''Leo'', ''sales'', 90), (''Nico'', ''legal'', 50)]) == {''hr'':
+    2, ''legal'': 1, ''sales'': 1}'
+  - 'apply_rules([(''Mina'', ''dev'', 80), (''Eli'', ''hr'', 80), (''Ada'', ''dev'', 60), (''Jon'', ''hr'',
+    90), (''Bram'', ''qa'', 80), (''Yara'', ''qa'', 80), (''Rhea'', ''qa'', 95), (''Leo'', ''hr'', 50)])
+    == {''dev'': 1, ''hr'': 2, ''qa'': 3}'
+  - 'apply_rules([(''Bram'', ''hr'', 50), (''Zed'', ''hr'', 95), (''Wren'', ''ops'', 70), (''Vic'', ''ops'',
+    90), (''Jon'', ''hr'', 80), (''Nico'', ''hr'', 70)]) == {''hr'': 3, ''ops'': 2}'
+  - 'apply_rules([(''Dara'', ''ops'', 80), (''Jon'', ''sales'', 50), (''Kira'', ''dev'', 70), (''Leo'',
+    ''dev'', 60), (''Yara'', ''sales'', 80), (''Cleo'', ''dev'', 95)]) == {''ops'': 1, ''dev'': 2, ''sales'':
+    1}'
+  - 'apply_rules([(''Fay'', ''sales'', 95), (''Zed'', ''sales'', 70), (''Mina'', ''ops'', 90), (''Iris'',
+    ''qa'', 70), (''Uma'', ''qa'', 90), (''Dara'', ''qa'', 80), (''Pia'', ''sales'', 60), (''Olga'', ''ops'',
+    60)]) == {''sales'': 2, ''ops'': 1, ''qa'': 3}'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '711'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-count

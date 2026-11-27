@@ -1,0 +1,49 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0769
+modality: code
+prompt: 'Write a Python function `apply_rules(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Remove every digit.
+
+  2. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  3. Cut the text to at most 7 characters, then pad it on the right with ''.'' up to 7 characters.
+
+  4. Sort the characters in ascending code point order.
+
+  5. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  6. Convert to lowercase.
+
+  Then: Return the resulting string.
+
+
+  Example: `apply_rules(''C,B Bc2,'') returns ''1 2,2b1c1c''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules('Programming in Python') == '1a1g1i2m1n1r'
+  - apply_rules('queue QUEUE') == '1 1e2e1q2u'
+  - apply_rules('A man a plan a canal Panama') == '2 1a2a1m1n'
+  - apply_rules('Hello, World') == '1 1,1h1e2l1o'
+  - apply_rules('Zebra 42 crossing 7') == '1 1z1a1b1e1g1r'
+  - apply_rules('mississippi river') == '3i2p2s'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '769'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-6-steps

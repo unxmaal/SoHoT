@@ -1,0 +1,36 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0198
+modality: code
+prompt: 'Write a Python function `cutting_cost(length, cuts)`. A stick of the given length must be cut
+  at every position in `cuts` (distinct integers strictly between 0 and `length`, in any order); the cuts
+  may be made in any order. Making one cut costs the current length of the piece being cut plus a fixed
+  fee of 4. Return the minimum total cost of making all the cuts (0 if there are none).
+
+
+  Example: `cutting_cost(42, [18, 28]) returns 74`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - cutting_cost(34, [2, 1, 16, 11, 12, 27]) == 110
+  - cutting_cost(28, [6, 18, 11, 25, 1, 24, 12, 22]) == 119
+  - cutting_cost(39, [6, 7, 37, 8, 9, 12, 29, 33]) == 137
+  - cutting_cost(37, [19, 10]) == 64
+  - cutting_cost(26, [2, 18, 23, 11, 24, 6, 19, 15]) == 112
+  - cutting_cost(60, [53, 37, 39, 34, 25, 1, 18, 44, 50, 4]) == 238
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '198'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: hard-cuts

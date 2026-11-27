@@ -1,0 +1,43 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0142
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Which SKU is the item called label roll M2?'
+context: 'sku,name,qty,unit_price
+
+  SKU5054,cable set L8,204,$45.82
+
+  SKU6896,desk lamp L7,372,$29.88
+
+  SKU2669,hose clamp L5,47,$87.53
+
+  SKU6104,sensor L7,244,$20.08
+
+  SKU9872,hose clamp L6,255,$14.25
+
+  SKU5834,desk lamp S1,236,$39.12
+
+  SKU2212,cable set S6,222,$99.58
+
+  SKU8261,label roll M2,59,$92.03'
+assert:
+  equals:
+  - SKU8261
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '142'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: inventory

@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0224
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Remove desk lamp retry"?'
+context: "commit 9c1d05a3044ae1be2a954f0b863cbee1bac1cec9\nAuthor: Wendell Abernathy <wendell@example.com>\n\
+  Date:   2026-11-26\n\n    Tune cable set parser\n\ncommit 3b4354c5e19d1cca6972c78e6542618d3e0fc865\n\
+  Author: Soren Sandoval <soren@example.com>\nDate:   2026-11-20\n\n    Remove desk lamp retry\n\ncommit\
+  \ 8175649c6b9e16c3ce2c214570d05b77a9725490\nAuthor: Priya Ekwueme <priya@example.com>\nDate:   2026-11-12\n\
+  \n    Fix desk lamp limit"
+assert:
+  equals:
+  - Soren Sandoval
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '224'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

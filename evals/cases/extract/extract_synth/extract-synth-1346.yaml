@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1346
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who is the invoice billed to?'
+context: "Quarry Lane Tools\nInvoice INV-2026-3764   Issued 2026-10-30\nBill to: Lumen Works   Customer\
+  \ PO: PO-70678\n  hose clamp   x16  @     $10.38 =     $166.08\n  filter pack  x15  @    $166.49 = \
+  \  $2,497.35\n  battery      x16  @      $9.43 =     $150.88\n  cable set    x8   @    $123.85 =   \
+  \  $990.80\n  Subtotal: $3,805.11\n  Shipping: $24.25\n  Tax: $190.25\n  Total due: $4,019.61 by 2027-01-10"
+assert:
+  equals:
+  - Lumen Works
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1346'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: invoice

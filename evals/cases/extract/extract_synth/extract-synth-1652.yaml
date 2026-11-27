@@ -1,0 +1,32 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1652
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the first 7 characters of the hash of the commit "Remove gasket cache"?'
+context: "commit eda18a81fa14a4288ccc6c7a3775a02748b46243\nAuthor: Gideon Underhill <gideon@example.com>\n\
+  Date:   2026-11-23\n\n    Fix cable set retry\n\ncommit 534001b5c888542e178c82d66402d00f3a5eca4c\nAuthor:\
+  \ Lucia Ivanova <lucia@example.com>\nDate:   2026-11-02\n\n    Remove battery cache\n\ncommit a4aff87fc1dd0a77de5b43aae08050dfc60c8110\n\
+  Author: Farah Jaramillo <farah@example.com>\nDate:   2026-11-21\n\n    Remove gasket cache\n\ncommit\
+  \ 1a3e65214d860d14b8c50b6a91b3fca5f3064333\nAuthor: Jolene Okonkwo <jolene@example.com>\nDate:   2026-11-05\n\
+  \n    Fix cable set limit"
+assert:
+  equals:
+  - a4aff87
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1652'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

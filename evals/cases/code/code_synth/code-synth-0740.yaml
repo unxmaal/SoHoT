@@ -1,0 +1,53 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0740
+modality: code
+prompt: 'Write a Python function `compute(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Sort descending.
+
+  2. Keep only the first 6 values (all of them if there are fewer).
+
+  3. Add 9 to every value.
+
+  4. Replace every value with its square.
+
+  5. Replace every value with its absolute value.
+
+  6. Replace every value with the largest of itself and the up to 1 values before it.
+
+  7. Multiply every value by -1.
+
+  8. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  Then: Return the sum of the values (0 for an empty list).
+
+
+  Example: `compute([11, 7, 6, 20, 6]) returns 616`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute([]) == 0
+  - compute([7]) == 0
+  - compute([14, 23, -1, 19, -8, -8, 13]) == 960
+  - compute([5, -7, 1, -8]) == 192
+  - compute([25, -4, 24, 17, 19, 13, 6, -4, -3]) == 672
+  - compute([-2, 6, -9, 14, -12, -9, 5, -1]) == 480
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '740'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

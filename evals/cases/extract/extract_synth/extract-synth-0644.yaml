@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0644
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Add gasket retry"?'
+context: "commit 110cfd2ea8afd656c32f4d816efc7476c98f16f0\nAuthor: Priya Sandoval <priya@example.com>\n\
+  Date:   2026-11-18\n\n    Add sensor limit\n\ncommit fe8e9b2c21db88fe4133a29a610465d44a17421c\nAuthor:\
+  \ Oren Underhill <oren@example.com>\nDate:   2026-11-13\n\n    Remove mount plate limit\n\ncommit 35f7f56e4a2411cbdb04ca16bd5bbb4bfd2223f6\n\
+  Author: Hana Kowalczyk <hana@example.com>\nDate:   2026-11-10\n\n    Add gasket retry\n\ncommit 0f4b685d7bc5b2221923bdd36c5fc8e524d5aff9\n\
+  Author: Celia Halvorsen <celia@example.com>\nDate:   2026-11-08\n\n    Tune cable set retry"
+assert:
+  equals:
+  - Hana Kowalczyk
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '644'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

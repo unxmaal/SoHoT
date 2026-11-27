@@ -1,0 +1,53 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1560
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 5427 end with?'
+context: '2026-11-13 10:24:13 glacier-4 INFO job 5427 started
+
+  2026-11-13 10:28:49 glacier-3 WARN job 5427 exited with code 255 after 276s
+
+  2026-11-16 20:49:08 glacier-3 INFO job 1430 started
+
+  2026-11-16 20:57:49 glacier-1 WARN job 1430 exited with code 2 after 521s
+
+  2026-11-21 03:52:55 glacier-2 INFO job 4948 started
+
+  2026-11-21 03:55:37 glacier-2 WARN job 4948 exited with code 126 after 162s
+
+  2026-11-21 11:30:50 glacier-3 INFO job 3330 started
+
+  2026-11-21 11:41:50 glacier-4 WARN job 3330 exited with code 137 after 660s
+
+  2026-11-22 18:03:32 glacier-1 INFO job 5933 started
+
+  2026-11-22 18:12:38 glacier-3 INFO job 5933 exited with code 0 after 546s
+
+  2026-11-23 19:59:18 glacier-3 INFO job 9472 started
+
+  2026-11-23 20:08:39 glacier-3 WARN job 9472 exited with code 2 after 561s
+
+  2026-11-26 00:17:55 glacier-1 INFO job 9135 started
+
+  2026-11-26 00:28:33 glacier-1 WARN job 9135 exited with code 2 after 638s'
+assert:
+  equals:
+  - '255'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1560'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

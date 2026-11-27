@@ -1,0 +1,54 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0628
+modality: code
+prompt: 'Write a Python function `reduce_data(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Shift every letter forward by 3 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  2. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  3. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  4. Swap the case of every letter.
+
+  5. Keep only the first occurrence of each character.
+
+  6. Replace every ''a'' with ''b'' (lowercase only).
+
+  7. Convert to uppercase.
+
+  8. Swap the case of every letter.
+
+  Then: Return the resulting string.
+
+
+  Example: `reduce_data(''by21,CB 1.Bz'') returns ''1ef,2be c.''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data('eeeee fff') == '1h5 i3'
+  - reduce_data('hELLo WoRLD') == '1ro2hk guz'
+  - reduce_data('') == ''
+  - reduce_data('Programming in Python') == '1jqlp2durs kwb'
+  - reduce_data('abc123xyz') == 'c1ba32fed'
+  - reduce_data('Rotor 99') == '1urwu 92'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '628'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-8-steps

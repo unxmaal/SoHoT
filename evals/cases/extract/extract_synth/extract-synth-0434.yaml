@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0434
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the invoice number?'
+context: "Alder Creek Farms\nInvoice INV-2027-5953   Issued 2026-10-11\nBill to: Fennel Street Bakery\
+  \   Customer PO: PO-25174\n  toner        x1   @     $48.95 =      $48.95\n  label roll   x8   @   \
+  \ $160.54 =   $1,284.32\n  mount plate  x3   @     $90.56 =     $271.68\n  keypad       x2   @    $116.70\
+  \ =     $233.40\n  Subtotal: $1,838.35\n  Shipping: $37.17\n  Tax: $128.68\n  Total due: $2,004.20 by\
+  \ 2027-01-23"
+assert:
+  equals:
+  - INV-2027-5953
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '434'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: invoice

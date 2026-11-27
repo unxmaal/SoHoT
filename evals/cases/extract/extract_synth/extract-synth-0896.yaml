@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0896
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the first 7 characters of the hash of the commit "Remove cable set cache"?'
+context: "commit 2ce3246a3215b7ae945ed3de57e3501e48059673\nAuthor: Hana Ekwueme <hana@example.com>\nDate:\
+  \   2026-11-02\n\n    Add sensor limit\n\ncommit 5f449a62c7fb04495543d67d302ed351c248719a\nAuthor: Avery\
+  \ Halvorsen <avery@example.com>\nDate:   2026-11-22\n\n    Remove cable set cache\n\ncommit fee6519265f17b48bcf198c32d414dd2e2aa816a\n\
+  Author: Rosa Marchetti <rosa@example.com>\nDate:   2026-11-23\n\n    Fix label roll limit\n\ncommit\
+  \ 05eddfc86c8d064f2805a1acd1f1f446445b4ba9\nAuthor: Farah Thorne <farah@example.com>\nDate:   2026-11-20\n\
+  \n    Add hose clamp limit\n\ncommit df87fb600f0bd26affa73eeb8fbb304549f622d4\nAuthor: Nadia Ekwueme\
+  \ <nadia@example.com>\nDate:   2026-11-21\n\n    Add filter pack cache"
+assert:
+  equals:
+  - 5f449a6
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '896'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

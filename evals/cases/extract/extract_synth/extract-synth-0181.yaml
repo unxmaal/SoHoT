@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0181
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What was the rid of the request to /login?'
+context: 'falcon - [22/Nov/2026:00:29] "GET /api/cart HTTP/1.1" 404 55504 rid=b8e50723
+
+  borealis - [17/Nov/2026:02:45] "GET /api/reports HTTP/1.1" 301 4982 rid=1c5a6b7c
+
+  falcon - [15/Nov/2026:10:54] "GET /api/upload HTTP/1.1" 200 50584 rid=b95a91c8
+
+  falcon - [04/Nov/2026:23:40] "GET /login HTTP/1.1" 404 76122 rid=f250c011'
+assert:
+  equals:
+  - f250c011
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '181'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log_request

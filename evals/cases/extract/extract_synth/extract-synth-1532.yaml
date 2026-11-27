@@ -1,0 +1,32 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1532
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Fix battery retry"?'
+context: "commit b4c09e9639805116f0ef49917f119c8b2e1a92de\nAuthor: Lucia Kowalczyk <lucia@example.com>\n\
+  Date:   2026-11-01\n\n    Add sensor limit\n\ncommit d90ccdd54b2e26e0ed45138e656ce58cac973f3f\nAuthor:\
+  \ Farah Thorne <farah@example.com>\nDate:   2026-11-23\n\n    Add desk lamp limit\n\ncommit 76700022436c923cb5adcb984f6ebc929e1d9414\n\
+  Author: Farah Pemberton <farah@example.com>\nDate:   2026-11-03\n\n    Fix battery retry\n\ncommit b429ce55cb8e011251924d93baa3921852dd1e57\n\
+  Author: Oren Underhill <oren@example.com>\nDate:   2026-11-24\n\n    Add battery cache\n\ncommit 4da6e8a49061dab6aac2dcd8963cd3d940cbd90a\n\
+  Author: Avery Lindqvist <avery@example.com>\nDate:   2026-11-24\n\n    Add label roll limit"
+assert:
+  equals:
+  - Farah Pemberton
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1532'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

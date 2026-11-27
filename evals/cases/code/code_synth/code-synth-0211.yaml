@@ -1,0 +1,46 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0211
+modality: code
+prompt: 'Write a Python function `solve(rows)`. `rows` is a list of (name, region, rating) tuples with
+  integer ratings and unique names, possibly empty. Given them, return a dict mapping each region that
+  has at least one rating of 60 or more to how many such ratings it has.
+
+
+  Example: `solve([(''Mina'', ''ops'', 50), (''Olga'', ''hr'', 80), (''Quin'', ''ops'', 80), (''Jon'',
+  ''hr'', 70), (''Xan'', ''ops'', 70), (''Hugo'', ''sales'', 95), (''Vic'', ''ops'', 60)]) returns {''hr'':
+  2, ''ops'': 3, ''sales'': 1}`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - 'solve([(''Hugo'', ''qa'', 60), (''Xan'', ''qa'', 50), (''Leo'', ''qa'', 70), (''Yara'', ''qa'', 95),
+    (''Olga'', ''sales'', 70)]) == {''qa'': 3, ''sales'': 1}'
+  - 'solve([(''Iris'', ''hr'', 80), (''Vic'', ''hr'', 90), (''Yara'', ''hr'', 80), (''Quin'', ''hr'',
+    60)]) == {''hr'': 4}'
+  - 'solve([(''Tess'', ''dev'', 60), (''Xan'', ''sales'', 50), (''Hugo'', ''dev'', 70), (''Wren'', ''dev'',
+    90), (''Sol'', ''legal'', 70), (''Rhea'', ''legal'', 95)]) == {''dev'': 3, ''legal'': 2}'
+  - 'solve([(''Zed'', ''dev'', 70), (''Leo'', ''dev'', 90), (''Ada'', ''dev'', 70), (''Gus'', ''hr'',
+    70), (''Yara'', ''sales'', 50), (''Eli'', ''sales'', 80), (''Vic'', ''dev'', 60), (''Xan'', ''sales'',
+    95)]) == {''dev'': 4, ''hr'': 1, ''sales'': 2}'
+  - 'solve([(''Ada'', ''qa'', 80), (''Iris'', ''qa'', 80), (''Xan'', ''legal'', 70), (''Fay'', ''qa'',
+    95), (''Eli'', ''qa'', 70), (''Hugo'', ''qa'', 70), (''Olga'', ''legal'', 80), (''Dara'', ''legal'',
+    95)]) == {''qa'': 5, ''legal'': 3}'
+  - 'solve([(''Bram'', ''sales'', 70), (''Jon'', ''hr'', 90), (''Nico'', ''hr'', 80), (''Vic'', ''sales'',
+    80), (''Iris'', ''hr'', 90), (''Dara'', ''hr'', 80), (''Olga'', ''sales'', 70), (''Fay'', ''sales'',
+    95)]) == {''sales'': 4, ''hr'': 4}'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '211'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-count

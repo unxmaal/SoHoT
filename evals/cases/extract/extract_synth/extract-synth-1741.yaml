@@ -1,0 +1,35 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1741
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What was the rid of the request to /api/search?'
+context: 'delta - [23/Nov/2026:07:54] "GET /login HTTP/1.1" 200 88116 rid=309e4a97
+
+  harbor - [23/Nov/2026:19:59] "GET /api/search HTTP/1.1" 502 22133 rid=62c2178b
+
+  indigo - [24/Nov/2026:19:56] "GET /api/users HTTP/1.1" 404 75102 rid=536e3e95
+
+  indigo - [09/Nov/2026:03:02] "GET /api/reports HTTP/1.1" 301 80441 rid=b4e991ba
+
+  indigo - [17/Nov/2026:12:05] "GET /api/orders HTTP/1.1" 500 51016 rid=8f05bb5a'
+assert:
+  equals:
+  - 62c2178b
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1741'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log_request

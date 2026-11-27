@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0476
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Add sensor parser"?'
+context: "commit c90fc5910e2ea7ceb78969fb7c053cb8eff67f51\nAuthor: Nadia Okonkwo <nadia@example.com>\n\
+  Date:   2026-11-06\n\n    Fix desk lamp parser\n\ncommit 6ac55ae32121123609ab6c061c2b706961dd800a\n\
+  Author: Kenji Ivanova <kenji@example.com>\nDate:   2026-11-09\n\n    Remove label roll parser\n\ncommit\
+  \ ad8fd053eb14c277c05d8ef7fbb30b19f5a8b32f\nAuthor: Mateo Brightwater <mateo@example.com>\nDate:   2026-11-13\n\
+  \n    Add label roll limit\n\ncommit c0f1e932107f274dcb599852a6b3cfc29e941dbc\nAuthor: Oren Castellan\
+  \ <oren@example.com>\nDate:   2026-11-07\n\n    Fix battery limit\n\ncommit 597250cd70b62bc9dda138440a3042729ffe524f\n\
+  Author: Kenji Jaramillo <kenji@example.com>\nDate:   2026-11-09\n\n    Add sensor parser"
+assert:
+  equals:
+  - Kenji Jaramillo
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '476'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

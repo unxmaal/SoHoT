@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0626
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the invoice number?'
+context: "Fennel Street Bakery\nInvoice INV-2027-9510   Issued 2026-10-17\nBill to: Tidewater Press  \
+  \ Customer PO: PO-46394\n  label roll   x19  @    $126.73 =   $2,407.87\n  bolt kit     x15  @     $68.98\
+  \ =   $1,034.70\n  Subtotal: $3,442.57\n  Shipping: $34.22\n  Tax: $344.25\n  Total due: $3,821.04 by\
+  \ 2027-02-03"
+assert:
+  equals:
+  - INV-2027-9510
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '626'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: invoice

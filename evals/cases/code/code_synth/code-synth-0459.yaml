@@ -1,0 +1,35 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0459
+modality: code
+prompt: 'Write a Python function `longest_chain(xs)` that returns the length of the longest subsequence
+  of the list `xs` (elements kept in their original order, not necessarily adjacent) in which every element
+  is exactly -3 more than the one before it. An empty list gives 0.
+
+
+  Example: `longest_chain([8, -4, 4, -3, 5, -3, 3, -2]) returns 2`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - longest_chain([]) == 0
+  - longest_chain([7, -4, 0, -4, -1, 5, 0, 1, 3]) == 1
+  - longest_chain([4, 3, 8, 6, 6, -1]) == 1
+  - longest_chain([-2, 0, -1, -3, -3, 8, 3]) == 2
+  - longest_chain([6, -2]) == 1
+  - longest_chain([7, -1, -2, 1, -4, 8, 6, 2, -4, -2]) == 2
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '459'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: algo-chain

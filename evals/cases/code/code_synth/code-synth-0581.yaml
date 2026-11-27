@@ -1,0 +1,49 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0581
+modality: code
+prompt: 'Write a Python function `reduce_data(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Rotate the list left by 7 positions, wrapping around (an empty list stays empty).
+
+  2. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  3. Clamp every value into the range -4 to -1, both inclusive.
+
+  4. Sort descending.
+
+  5. Collapse each run of equal adjacent values into one value.
+
+  6. Replace every value with the largest of itself and the up to 3 values before it.
+
+  Then: Return the sum of the values (0 for an empty list).
+
+
+  Example: `reduce_data([2, 4, 16, -4, -5, -8, 10, 4, 12]) returns -2`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data([]) == 0
+  - reduce_data([8]) == -1
+  - reduce_data([11, 0, 20, -12, 23, 2, 9, -1, 7]) == -1
+  - reduce_data([20, 15, 11, -12, 8, 2, -7]) == -2
+  - reduce_data([14, 2, 12, -9, 12, -8, 11, -6, -9]) == -2
+  - reduce_data([-9, 18, 4, -4, 11, 5, 11]) == -1
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '581'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-6-steps

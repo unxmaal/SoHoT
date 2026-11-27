@@ -1,0 +1,45 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0630
+modality: code
+prompt: 'Write a Python function `compute(rows)`. `rows` is a list of (name, team, score) tuples with
+  integer scores and unique names, possibly empty. Given them, return a dict mapping each team that has
+  at least one score of 70 or more to how many such scores it has.
+
+
+  Example: `compute([(''Ada'', ''qa'', 50), (''Sol'', ''qa'', 70), (''Nico'', ''qa'', 60), (''Yara'',
+  ''legal'', 90), (''Olga'', ''qa'', 90), (''Cleo'', ''sales'', 80), (''Uma'', ''sales'', 50), (''Leo'',
+  ''sales'', 60)]) returns {''qa'': 2, ''legal'': 1, ''sales'': 1}`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - 'compute([(''Hugo'', ''ops'', 90), (''Ada'', ''ops'', 60), (''Zed'', ''ops'', 70), (''Gus'', ''ops'',
+    80), (''Vic'', ''ops'', 90), (''Quin'', ''ops'', 90)]) == {''ops'': 5}'
+  - 'compute([(''Olga'', ''sales'', 60), (''Bram'', ''ops'', 95), (''Hugo'', ''sales'', 90), (''Eli'',
+    ''ops'', 90)]) == {''ops'': 2, ''sales'': 1}'
+  - 'compute([(''Uma'', ''legal'', 90), (''Sol'', ''qa'', 95), (''Quin'', ''hr'', 80), (''Bram'', ''legal'',
+    95), (''Vic'', ''legal'', 70)]) == {''legal'': 3, ''qa'': 1, ''hr'': 1}'
+  - 'compute([(''Iris'', ''dev'', 80), (''Fay'', ''dev'', 70), (''Eli'', ''qa'', 70), (''Kira'', ''qa'',
+    60)]) == {''dev'': 2, ''qa'': 1}'
+  - 'compute([(''Rhea'', ''hr'', 70), (''Hugo'', ''dev'', 70), (''Dara'', ''qa'', 60), (''Cleo'', ''hr'',
+    60), (''Tess'', ''hr'', 60), (''Pia'', ''dev'', 95), (''Eli'', ''hr'', 80)]) == {''hr'': 2, ''dev'':
+    2}'
+  - 'compute([(''Gus'', ''sales'', 70), (''Leo'', ''hr'', 60), (''Hugo'', ''hr'', 80), (''Wren'', ''qa'',
+    90), (''Iris'', ''qa'', 50), (''Fay'', ''qa'', 70), (''Rhea'', ''hr'', 50), (''Sol'', ''qa'', 80)])
+    == {''sales'': 1, ''hr'': 1, ''qa'': 3}'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '630'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-count

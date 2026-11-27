@@ -1,0 +1,17 @@
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a.
+def count_bits(lo, hi):
+    from math import comb
+    if hi < lo:
+        return 0
+    def upto(m):
+        if m < 0:
+            return 0
+        bits, ones, res = bin(m)[2:], 0, 0
+        for i, b in enumerate(bits):
+            if b == '1':
+                rem, need = len(bits) - i - 1, 7 - ones
+                if 0 <= need <= rem:
+                    res += comb(rem, need)
+                ones += 1
+        return res + (ones == 7)
+    return upto(hi) - upto(lo - 1)

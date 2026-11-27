@@ -1,0 +1,58 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0242
+modality: code
+prompt: 'Write a Python function `run_pipeline(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  2. Keep only the values greater than 0.
+
+  3. Replace every value with its remainder after division by 9, as Python''s % gives it (never negative).
+
+  4. Remove duplicates, keeping the first occurrence of each value.
+
+  5. Replace every value with its remainder after division by 5, as Python''s % gives it (never negative).
+
+  6. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  7. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  8. Add -1 to every value.
+
+  9. Sort ascending.
+
+  10. Collapse each run of equal adjacent values into one value.
+
+  Then: Return the second largest distinct value, or None if there are fewer than two distinct values.
+
+
+  Example: `run_pipeline([-1, 12, 9, 1, 24, 16]) returns 6`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline([]) == None
+  - run_pipeline([5]) == None
+  - run_pipeline([22, 5, 19, 8]) == 3
+  - run_pipeline([2, 9, -8, 16, 12]) == 1
+  - run_pipeline([11, -7, 24, 0, 22, -7, -11, 13, 1]) == 4
+  - run_pipeline([18, -12, 9, 19, 4]) == 0
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '242'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-10-steps

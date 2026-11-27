@@ -1,0 +1,53 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0407
+modality: code
+prompt: 'Write a Python function `solve(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Keep only the first occurrence of each character.
+
+  2. Swap the case of every letter.
+
+  3. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  4. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  5. Swap the case of every letter.
+
+  6. Collapse every run of the same character into one character.
+
+  7. Remove every vowel (a, e, i, o, u, either case).
+
+  8. Remove every digit.
+
+  Then: Return how many characters it has.
+
+
+  Example: `solve(''z2C02zAcxB.a0,B0'') returns 7`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve('The 3 little pigs 33') == 8
+  - solve('queue QUEUE') == 3
+  - solve('  jumps   over the  lazy dog ') == 14
+  - solve('12345') == 0
+  - solve('mississippi river') == 6
+  - solve('Rotor 99') == 4
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '407'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-8-steps

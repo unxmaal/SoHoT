@@ -1,0 +1,49 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1272
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 2950 end with?'
+context: '2026-11-12 21:04:13 borealis-1 INFO job 5814 started
+
+  2026-11-12 21:10:31 borealis-4 WARN job 5814 exited with code 137 after 378s
+
+  2026-11-13 05:29:58 borealis-1 INFO job 6302 started
+
+  2026-11-13 05:39:11 borealis-3 WARN job 6302 exited with code 17 after 553s
+
+  2026-11-22 19:12:56 borealis-4 INFO job 3293 started
+
+  2026-11-22 19:18:33 borealis-4 WARN job 3293 exited with code 17 after 337s
+
+  2026-11-23 04:27:43 borealis-1 INFO job 3404 started
+
+  2026-11-23 04:42:19 borealis-4 WARN job 3404 exited with code 126 after 876s
+
+  2026-11-23 22:45:17 borealis-2 INFO job 2950 started
+
+  2026-11-23 22:47:54 borealis-4 WARN job 2950 exited with code 255 after 157s
+
+  2026-11-26 12:38:02 borealis-4 INFO job 1884 started
+
+  2026-11-26 12:38:12 borealis-1 WARN job 1884 exited with code 1 after 10s'
+assert:
+  equals:
+  - '255'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1272'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

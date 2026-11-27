@@ -1,0 +1,50 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0806
+modality: code
+prompt: 'Write a Python function `transform(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Remove every digit.
+
+  2. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  3. Replace every maximal run of digits with the number of digits in it.
+
+  4. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  5. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  6. Sort the characters in ascending code point order.
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `transform(''.Cay0.xbBx.0bcxC'') returns ''...11111111111111BCCabbcxxxy''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform('eeeee fff') == '135ef'
+  - transform('aabbbcccc') == '234abc'
+  - transform('Rotor 99') == '11111Roort'
+  - transform('  jumps   over the  lazy dog ') == '11111111111111111111aeehjlmoprstuvyz'
+  - transform('Ünïcode ok') == '1111111111cdeknooÜï'
+  - transform('x') == '1x'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '806'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-6-steps

@@ -1,0 +1,35 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0315
+modality: code
+prompt: 'Write a Python function `rotate_grid(m)` that rotates the rectangular list-of-lists `m` by 90
+  degrees clockwise 9 times and returns the new list of lists (a 2x3 grid becomes 3x2 after one turn;
+  `m` itself must not change).
+
+
+  Example: `rotate_grid([[2, 5, 0], [8, 1, 8], [4, 7, 1]]) returns [[4, 8, 2], [7, 1, 5], [1, 8, 0]]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - rotate_grid([[1, 6, 5], [8, 5, 9]]) == [[8, 1], [5, 6], [9, 5]]
+  - rotate_grid([[5]]) == [[5]]
+  - rotate_grid([[9], [3], [5], [1]]) == [[1, 5, 3, 9]]
+  - rotate_grid([[2]]) == [[2]]
+  - rotate_grid([[3, 0], [0, 4], [6, 2], [9, 0]]) == [[9, 6, 0, 3], [0, 2, 4, 0]]
+  - rotate_grid([[2, 6, 1, 0]]) == [[2], [6], [1], [0]]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '315'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: algo-rotate

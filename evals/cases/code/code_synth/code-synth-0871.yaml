@@ -1,0 +1,44 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0871
+modality: code
+prompt: 'Write a Python function `reduce_data(rows)`. `rows` is a list of (name, region, score) tuples
+  with integer scores and unique names, possibly empty. Given them, return the names of the 3 highest
+  scores as a list, highest score first, equal scores ordered by name ascending; if there are fewer than
+  3 rows return every name.
+
+
+  Example: `reduce_data([(''Mina'', ''sales'', 80), (''Vic'', ''qa'', 90), (''Uma'', ''ops'', 90), (''Ada'',
+  ''sales'', 60), (''Olga'', ''qa'', 80), (''Gus'', ''ops'', 70), (''Bram'', ''qa'', 95), (''Xan'', ''qa'',
+  60)]) returns [''Bram'', ''Uma'', ''Vic'']`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data([('Pia', 'legal', 90), ('Xan', 'qa', 50), ('Dara', 'legal', 95), ('Gus', 'legal', 60),
+    ('Kira', 'qa', 80), ('Tess', 'legal', 80), ('Fay', 'qa', 80)]) == ['Dara', 'Pia', 'Fay']
+  - reduce_data([('Dara', 'dev', 80), ('Ada', 'dev', 80), ('Hugo', 'ops', 60), ('Leo', 'dev', 70), ('Rhea',
+    'ops', 80), ('Olga', 'hr', 70), ('Sol', 'dev', 80)]) == ['Ada', 'Dara', 'Rhea']
+  - reduce_data([('Rhea', 'qa', 60), ('Gus', 'qa', 60), ('Dara', 'qa', 80), ('Kira', 'ops', 70), ('Bram',
+    'hr', 80), ('Ada', 'ops', 90), ('Iris', 'qa', 90), ('Pia', 'ops', 95)]) == ['Pia', 'Ada', 'Iris']
+  - reduce_data([('Wren', 'hr', 60), ('Tess', 'legal', 95), ('Sol', 'ops', 70), ('Vic', 'hr', 90), ('Eli',
+    'ops', 60), ('Bram', 'hr', 50)]) == ['Tess', 'Vic', 'Sol']
+  - reduce_data([('Leo', 'qa', 70), ('Nico', 'ops', 70), ('Zed', 'ops', 80), ('Uma', 'sales', 90), ('Yara',
+    'ops', 90), ('Quin', 'ops', 90)]) == ['Quin', 'Uma', 'Yara']
+  - reduce_data([('Tess', 'legal', 90), ('Rhea', 'sales', 95), ('Kira', 'legal', 90), ('Cleo', 'sales',
+    60)]) == ['Rhea', 'Kira', 'Tess']
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '871'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-topk

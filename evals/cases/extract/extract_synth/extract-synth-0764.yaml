@@ -1,0 +1,32 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0764
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Remove filter pack limit"?'
+context: "commit 2fb14376e601c4865201d82baf30740abb78b6ef\nAuthor: Mateo Underhill <mateo@example.com>\n\
+  Date:   2026-11-24\n\n    Remove filter pack limit\n\ncommit c769e34efc5e54dc2d4c6659d61648559b711d8e\n\
+  Author: Vera Ivanova <vera@example.com>\nDate:   2026-11-20\n\n    Add hose clamp retry\n\ncommit 1f58da1049f599d344849b1d7c29f2f91712f35d\n\
+  Author: Ivo Whitlock <ivo@example.com>\nDate:   2026-11-18\n\n    Tune mount plate parser\n\ncommit\
+  \ 4559b69f1aeb2c54299102331ace866e60aa3349\nAuthor: Soren Castellan <soren@example.com>\nDate:   2026-11-15\n\
+  \n    Add gasket retry"
+assert:
+  equals:
+  - mateo@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '764'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

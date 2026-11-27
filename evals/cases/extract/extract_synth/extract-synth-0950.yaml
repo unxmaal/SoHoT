@@ -1,0 +1,29 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0950
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who is the invoice billed to?'
+context: "Juniper Analytics\nInvoice INV-2026-9012   Issued 2026-11-26\nBill to: Ostrich Egg Games   Customer\
+  \ PO: PO-41890\n  hose clamp   x18  @    $187.88 =   $3,381.84\n  keypad       x19  @     $64.54 = \
+  \  $1,226.26\n  Subtotal: $4,608.10\n  Shipping: $42.21\n  Tax: $460.81\n  Total due: $5,111.12 by 2027-01-13"
+assert:
+  equals:
+  - Ostrich Egg Games
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '950'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: invoice

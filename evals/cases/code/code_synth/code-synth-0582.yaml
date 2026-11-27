@@ -1,0 +1,54 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0582
+modality: code
+prompt: 'Write a Python function `apply_rules(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Divide every value by 3 with floor division (so -7 divided by 3 gives -3).
+
+  2. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  3. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  4. Replace every value with its remainder after division by 5, as Python''s % gives it (never negative).
+
+  5. Remove every negative value.
+
+  6. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  7. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  8. Remove every negative value.
+
+  Then: Return the largest value, or -1 for an empty list.
+
+
+  Example: `apply_rules([13, 6, 25, 8, 10, 1, 23, -10, 12]) returns 2`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules([]) == -1
+  - apply_rules([0]) == -1
+  - apply_rules([9, -1, -12, -9, 16]) == 2
+  - apply_rules([22, 17, -9, 4, 4, 13, -2, 20, 4]) == 2
+  - apply_rules([-4, 22, -5, 4, -9, 22, 14]) == 3
+  - apply_rules([8, 13, 23, 19, 3, -4]) == 2
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '582'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

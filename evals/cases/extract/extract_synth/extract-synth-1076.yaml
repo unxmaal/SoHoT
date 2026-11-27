@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1076
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Remove sensor limit"?'
+context: "commit 57c9486bd46a1d899b02d422a319341858083af1\nAuthor: Mateo Kowalczyk <mateo@example.com>\n\
+  Date:   2026-11-10\n\n    Add bolt kit parser\n\ncommit 192ef69f2d2716abb302810eff56d51dc8454250\nAuthor:\
+  \ Nadia Marchetti <nadia@example.com>\nDate:   2026-11-04\n\n    Tune desk lamp limit\n\ncommit d171a005f1e337aa43f6d3a97a719cd547779f6b\n\
+  Author: Nadia Halvorsen <nadia@example.com>\nDate:   2026-11-25\n\n    Remove sensor limit\n\ncommit\
+  \ 596c9ac7d8cf3af398a4024bde44fc01b02cb13d\nAuthor: Kenji Valdivia <kenji@example.com>\nDate:   2026-11-07\n\
+  \n    Remove cable set cache\n\ncommit 5a0320ea2bebc8808a67a5dea32517bc6f7623ed\nAuthor: Wendell Okonkwo\
+  \ <wendell@example.com>\nDate:   2026-11-25\n\n    Tune battery parser"
+assert:
+  equals:
+  - Nadia Halvorsen
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1076'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

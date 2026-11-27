@@ -1,0 +1,41 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0650
+modality: code
+prompt: 'Write a Python function `reduce_data(rows)`. `rows` is a list of (name, region, mark) tuples
+  with integer marks and unique names, possibly empty. Given them, return the region with the highest
+  total mark, the alphabetically first one if several tie, or None if there are no rows.
+
+
+  Example: `reduce_data([(''Dara'', ''dev'', 80), (''Nico'', ''dev'', 70), (''Cleo'', ''legal'', 80),
+  (''Jon'', ''hr'', 80), (''Yara'', ''dev'', 90), (''Xan'', ''hr'', 70)]) returns ''dev''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data([('Olga', 'qa', 70), ('Leo', 'dev', 80), ('Cleo', 'qa', 80), ('Gus', 'dev', 50)]) == 'qa'
+  - reduce_data([('Kira', 'ops', 70), ('Uma', 'ops', 50), ('Jon', 'sales', 80), ('Yara', 'hr', 50), ('Wren',
+    'sales', 70), ('Olga', 'hr', 50), ('Xan', 'hr', 70)]) == 'hr'
+  - reduce_data([('Hugo', 'qa', 50), ('Iris', 'sales', 90), ('Leo', 'sales', 70), ('Sol', 'hr', 80), ('Ada',
+    'hr', 80)]) == 'hr'
+  - reduce_data([('Zed', 'hr', 70), ('Leo', 'ops', 70), ('Olga', 'hr', 50), ('Ada', 'ops', 80), ('Yara',
+    'dev', 60)]) == 'ops'
+  - reduce_data([('Ada', 'qa', 70), ('Fay', 'ops', 90), ('Iris', 'qa', 70), ('Wren', 'ops', 90), ('Tess',
+    'qa', 95), ('Quin', 'qa', 70), ('Yara', 'legal', 90)]) == 'qa'
+  - reduce_data([('Sol', 'hr', 95), ('Nico', 'hr', 80), ('Tess', 'hr', 90), ('Ada', 'dev', 50), ('Vic',
+    'hr', 80)]) == 'hr'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '650'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-best

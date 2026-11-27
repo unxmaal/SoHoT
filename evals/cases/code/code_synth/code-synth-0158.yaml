@@ -1,0 +1,38 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0158
+modality: code
+prompt: 'Write a Python function `merge_spans(spans)` where `spans` is a list of (start, end) integer
+  pairs with start <= end, in any order. Merge spans that overlap or whose gap is at most 3 (the next
+  start is at most the current end plus 3). Return the merged spans as a list of [start, end] lists sorted
+  by start.
+
+
+  Example: `merge_spans([(5, 9), (10, 14), (14, 18), (11, 12), (9, 12), (7, 9), (16, 19)]) returns [[5,
+  19]]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - merge_spans([(12, 16), (9, 10), (5, 8)]) == [[5, 16]]
+  - merge_spans([(0, 0)]) == [[0, 0]]
+  - merge_spans([(4, 8)]) == [[4, 8]]
+  - merge_spans([(19, 22), (2, 3), (15, 15), (2, 5), (4, 4), (10, 10)]) == [[2, 5], [10, 10], [15, 15],
+    [19, 22]]
+  - merge_spans([(17, 20), (16, 18), (1, 2), (19, 23)]) == [[1, 2], [16, 23]]
+  - merge_spans([]) == []
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '158'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: algo-merge

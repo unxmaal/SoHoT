@@ -1,0 +1,41 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0070
+modality: code
+prompt: 'Write a Python function `reduce_data(rows)`. `rows` is a list of (name, department, score) tuples
+  with integer scores and unique names, possibly empty. Given them, return the sorted list of names whose
+  score is strictly above the average score of their own department.
+
+
+  Example: `reduce_data([(''Dara'', ''qa'', 80), (''Pia'', ''ops'', 50), (''Yara'', ''qa'', 90), (''Hugo'',
+  ''dev'', 80)]) returns [''Yara'']`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data([('Eli', 'qa', 80), ('Zed', 'sales', 70), ('Yara', 'qa', 50), ('Leo', 'sales', 50)]) ==
+    ['Eli', 'Zed']
+  - reduce_data([('Pia', 'dev', 80), ('Uma', 'dev', 70), ('Zed', 'dev', 95), ('Sol', 'dev', 70), ('Cleo',
+    'dev', 90)]) == ['Cleo', 'Zed']
+  - reduce_data([('Vic', 'ops', 80), ('Jon', 'sales', 60), ('Iris', 'hr', 60), ('Tess', 'hr', 80), ('Quin',
+    'sales', 95)]) == ['Quin', 'Tess']
+  - reduce_data([('Gus', 'hr', 95), ('Hugo', 'hr', 60), ('Leo', 'hr', 70), ('Ada', 'ops', 70)]) == ['Gus']
+  - reduce_data([('Rhea', 'dev', 80), ('Fay', 'sales', 80), ('Pia', 'sales', 50), ('Zed', 'dev', 60),
+    ('Quin', 'sales', 80), ('Eli', 'sales', 70), ('Olga', 'dev', 50)]) == ['Fay', 'Quin', 'Rhea']
+  - reduce_data([('Fay', 'legal', 95), ('Olga', 'legal', 95), ('Mina', 'qa', 60), ('Leo', 'qa', 90), ('Eli',
+    'qa', 90), ('Nico', 'ops', 70)]) == ['Eli', 'Leo']
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '70'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-above

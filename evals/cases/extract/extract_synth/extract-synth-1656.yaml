@@ -1,0 +1,61 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1656
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 5993 end with?'
+context: '2026-11-10 03:04:59 falcon-1 INFO job 8554 started
+
+  2026-11-10 03:07:49 falcon-3 WARN job 8554 exited with code 17 after 170s
+
+  2026-11-11 19:38:51 falcon-3 INFO job 4585 started
+
+  2026-11-11 19:47:55 falcon-4 WARN job 4585 exited with code 2 after 544s
+
+  2026-11-15 02:04:21 falcon-4 INFO job 6850 started
+
+  2026-11-15 02:07:00 falcon-2 WARN job 6850 exited with code 255 after 159s
+
+  2026-11-15 07:08:33 falcon-4 INFO job 1019 started
+
+  2026-11-15 07:19:55 falcon-3 INFO job 1019 exited with code 0 after 682s
+
+  2026-11-15 20:28:54 falcon-4 INFO job 5993 started
+
+  2026-11-15 20:29:12 falcon-4 WARN job 5993 exited with code 126 after 18s
+
+  2026-11-17 12:07:20 falcon-3 INFO job 4341 started
+
+  2026-11-17 12:15:51 falcon-2 WARN job 4341 exited with code 1 after 511s
+
+  2026-11-20 13:51:07 falcon-4 INFO job 7446 started
+
+  2026-11-20 13:59:29 falcon-1 INFO job 7446 exited with code 0 after 502s
+
+  2026-11-22 21:41:40 falcon-1 INFO job 9287 started
+
+  2026-11-22 21:52:24 falcon-2 INFO job 9287 exited with code 0 after 644s
+
+  2026-11-23 05:33:04 falcon-1 INFO job 2973 started
+
+  2026-11-23 05:44:46 falcon-2 INFO job 2973 exited with code 0 after 702s'
+assert:
+  equals:
+  - '126'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1656'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

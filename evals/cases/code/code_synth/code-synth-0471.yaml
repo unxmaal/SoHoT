@@ -1,0 +1,46 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0471
+modality: code
+prompt: 'Write a Python function `compute(rows)`. `rows` is a list of (name, team, rating) tuples with
+  integer ratings and unique names, possibly empty. Given them, return a dict mapping each team that has
+  at least one rating of 70 or more to how many such ratings it has.
+
+
+  Example: `compute([(''Uma'', ''qa'', 80), (''Zed'', ''sales'', 90), (''Eli'', ''sales'', 90), (''Gus'',
+  ''dev'', 90), (''Leo'', ''dev'', 60)]) returns {''qa'': 1, ''sales'': 2, ''dev'': 1}`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - 'compute([(''Gus'', ''legal'', 50), (''Leo'', ''sales'', 70), (''Olga'', ''legal'', 70), (''Fay'',
+    ''sales'', 70), (''Ada'', ''qa'', 50), (''Mina'', ''legal'', 80), (''Cleo'', ''sales'', 70), (''Vic'',
+    ''qa'', 60)]) == {''sales'': 3, ''legal'': 2}'
+  - 'compute([(''Kira'', ''legal'', 70), (''Tess'', ''sales'', 70), (''Jon'', ''legal'', 95), (''Wren'',
+    ''sales'', 90), (''Sol'', ''sales'', 95), (''Ada'', ''sales'', 70), (''Zed'', ''hr'', 95), (''Gus'',
+    ''sales'', 70)]) == {''legal'': 2, ''sales'': 5, ''hr'': 1}'
+  - 'compute([(''Iris'', ''sales'', 80), (''Sol'', ''dev'', 50), (''Bram'', ''dev'', 90), (''Uma'', ''sales'',
+    95), (''Kira'', ''legal'', 95), (''Fay'', ''dev'', 80), (''Gus'', ''legal'', 70)]) == {''sales'':
+    2, ''dev'': 2, ''legal'': 2}'
+  - 'compute([(''Sol'', ''hr'', 95), (''Jon'', ''hr'', 50), (''Tess'', ''hr'', 50), (''Nico'', ''ops'',
+    95), (''Zed'', ''ops'', 95), (''Yara'', ''hr'', 90), (''Eli'', ''ops'', 50), (''Quin'', ''legal'',
+    70)]) == {''hr'': 2, ''ops'': 2, ''legal'': 1}'
+  - 'compute([(''Gus'', ''legal'', 90), (''Sol'', ''legal'', 60), (''Pia'', ''hr'', 70), (''Bram'', ''legal'',
+    60), (''Uma'', ''dev'', 80), (''Dara'', ''dev'', 90)]) == {''legal'': 1, ''hr'': 1, ''dev'': 2}'
+  - 'compute([(''Zed'', ''dev'', 95), (''Tess'', ''legal'', 70), (''Xan'', ''legal'', 95), (''Sol'', ''legal'',
+    90)]) == {''dev'': 1, ''legal'': 3}'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '471'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-count

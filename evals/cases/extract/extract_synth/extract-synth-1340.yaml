@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1340
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Tune hose clamp limit"?'
+context: "commit debabdf28e897a0f3dc1969e6611c2330be9c6c2\nAuthor: Yusuf Fairbanks <yusuf@example.com>\n\
+  Date:   2026-11-04\n\n    Tune hose clamp retry\n\ncommit 4b9f46026ad2c909837860e02bfdbef4db5463f8\n\
+  Author: Soren Quintero <soren@example.com>\nDate:   2026-11-16\n\n    Tune bolt kit parser\n\ncommit\
+  \ fe862eef6c2a07c8d0d0da83a286460ea5a73290\nAuthor: Farah Kowalczyk <farah@example.com>\nDate:   2026-11-14\n\
+  \n    Add filter pack parser\n\ncommit f4d6de992e62379142de86a6c279731fb627de56\nAuthor: Yusuf Marchetti\
+  \ <yusuf@example.com>\nDate:   2026-11-14\n\n    Remove hose clamp limit\n\ncommit 807c364bd5b428ff43dafe21728b16946803abc7\n\
+  Author: Celia Quintero <celia@example.com>\nDate:   2026-11-01\n\n    Tune hose clamp limit"
+assert:
+  equals:
+  - celia@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1340'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

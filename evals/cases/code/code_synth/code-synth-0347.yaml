@@ -1,0 +1,53 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0347
+modality: code
+prompt: 'Write a Python function `apply_rules(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Keep only the first occurrence of each character.
+
+  2. Convert to lowercase.
+
+  3. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  4. Convert to uppercase.
+
+  5. Remove every digit.
+
+  6. Keep only the first 2 whitespace-separated words, joined by single spaces.
+
+  7. Swap the case of every letter.
+
+  8. Keep only the first 2 whitespace-separated words, joined by single spaces.
+
+  Then: Return the number of words (whitespace-separated).
+
+
+  Example: `apply_rules(''Ab..caczx11 2xz'') returns 1`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules('abc123xyz') == 1
+  - apply_rules('A man a plan a canal Panama') == 2
+  - apply_rules('noon') == 1
+  - apply_rules('  jumps   over the  lazy dog ') == 1
+  - apply_rules('  ') == 0
+  - apply_rules('Programming in Python') == 2
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '347'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-8-steps

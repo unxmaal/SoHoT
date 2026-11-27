@@ -1,0 +1,37 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1057
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What was the rid of the request to /api/orders?'
+context: 'delta - [13/Nov/2026:12:42] "GET /api/invoices HTTP/1.1" 301 87144 rid=be996148
+
+  delta - [23/Nov/2026:19:02] "GET /api/upload HTTP/1.1" 404 31792 rid=e8961459
+
+  falcon - [07/Nov/2026:03:57] "GET /api/cart HTTP/1.1" 502 55157 rid=2fac440d
+
+  harbor - [05/Nov/2026:13:55] "GET /static/app.js HTTP/1.1" 404 37993 rid=596c8e5a
+
+  falcon - [19/Nov/2026:03:42] "GET /api/orders HTTP/1.1" 301 57728 rid=0aec8e29
+
+  cinder - [25/Nov/2026:18:02] "GET /login HTTP/1.1" 404 21163 rid=7652374d'
+assert:
+  equals:
+  - 0aec8e29
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1057'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log_request

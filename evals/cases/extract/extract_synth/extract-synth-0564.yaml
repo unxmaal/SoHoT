@@ -1,0 +1,45 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0564
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 9854 end with?'
+context: '2026-11-14 04:56:32 ember-3 INFO job 5120 started
+
+  2026-11-14 05:10:29 ember-4 WARN job 5120 exited with code 126 after 837s
+
+  2026-11-16 17:29:41 ember-1 INFO job 2583 started
+
+  2026-11-16 17:32:30 ember-1 INFO job 2583 exited with code 0 after 169s
+
+  2026-11-19 05:36:55 ember-4 INFO job 5065 started
+
+  2026-11-19 05:48:18 ember-3 INFO job 5065 exited with code 0 after 683s
+
+  2026-11-21 05:59:49 ember-4 INFO job 9854 started
+
+  2026-11-21 06:13:16 ember-1 WARN job 9854 exited with code 255 after 807s
+
+  2026-11-23 01:14:56 ember-2 INFO job 2305 started
+
+  2026-11-23 01:25:15 ember-2 WARN job 2305 exited with code 17 after 619s'
+assert:
+  equals:
+  - '255'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '564'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

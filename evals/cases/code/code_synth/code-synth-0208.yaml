@@ -1,0 +1,55 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0208
+modality: code
+prompt: 'Write a Python function `apply_rules(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Keep only the first occurrence of each character.
+
+  2. Sort the characters in ascending code point order.
+
+  3. Replace every maximal run of digits with the number of digits in it.
+
+  4. Convert to uppercase.
+
+  5. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  6. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  7. Shift every letter forward by 11 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  8. Remove every vowel (a, e, i, o, u, either case).
+
+  Then: Return the most frequent character, the smallest by code point if several tie, or '''' for an
+  empty string.
+
+
+  Example: `apply_rules(''CA2 ba20bz2 z.,0'') returns ''l''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules('aabbbcccc') == 'L'
+  - apply_rules('zz yy xx') == 'j'
+  - apply_rules('The 3 little pigs 33') == '1'
+  - apply_rules('  jumps   over the  lazy dog ') == 'L'
+  - apply_rules('hELLo WoRLD') == 'c'
+  - apply_rules('Data-driven 2025') == '-'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '208'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-8-steps

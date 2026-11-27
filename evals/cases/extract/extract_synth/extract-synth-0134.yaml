@@ -1,0 +1,29 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0134
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: By what date is payment due? Use the form YYYY-MM-DD.'
+context: "Ostrich Egg Games\nInvoice INV-2026-9161   Issued 2026-12-06\nBill to: Quarry Lane Tools   Customer\
+  \ PO: PO-30882\n  hose clamp   x20  @    $175.91 =   $3,518.20\n  gasket       x17  @      $7.97 = \
+  \    $135.49\n  Subtotal: $3,653.69\n  Shipping: $43.78\n  Tax: $365.36\n  Total due: $4,062.83 by 2026-12-17"
+assert:
+  equals:
+  - '2026-12-17'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '134'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: invoice

@@ -1,0 +1,53 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0482
+modality: code
+prompt: 'Write a Python function `process(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Remove duplicates, keeping the first occurrence of each value.
+
+  2. Remove every value that is a multiple of 4 (0 is a multiple of everything).
+
+  3. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  4. Keep the values at indices 0, 2, 4, and so on.
+
+  5. Replace every value with its remainder after division by 8, as Python''s % gives it (never negative).
+
+  6. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  7. Sort descending.
+
+  8. Replace every value with the largest value seen so far.
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `process([16, -3, 5, -3, -8, 4]) returns [5]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process([]) == []
+  - process([-7]) == [1]
+  - process([12, -10, 5, 11, -9, -4]) == [6, 6]
+  - process([-2, 19, 21, -3, -10, 16, -1, 13]) == [7, 7]
+  - process([17, 8, 8, 11, 4]) == [3]
+  - process([1, 4, 20, -12, 9, 6, 16]) == [1]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '482'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

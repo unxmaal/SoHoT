@@ -1,0 +1,61 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0700
+modality: code
+prompt: 'Write a Python function `reduce_data(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Sort ascending.
+
+  2. Divide every value by 3 with integer division that rounds toward zero (so -7 divided by 3 gives -2).
+
+  3. Clamp every value into the range -4 to 3, both inclusive.
+
+  4. Add -1 to every value.
+
+  5. Divide every value by 2 with integer division that rounds toward zero (so -7 divided by 2 gives -3).
+
+  6. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  7. Multiply every value by 3.
+
+  8. Replace every value with its square.
+
+  9. Collapse each run of equal adjacent values into one value.
+
+  10. Sort ascending.
+
+  11. Add 2 to every value.
+
+  12. Multiply every value by 3.
+
+  Then: Return the sum of the values (0 for an empty list).
+
+
+  Example: `reduce_data([2, 2, 19, -6, -2]) returns 72`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data([]) == 0
+  - reduce_data([-9]) == 114
+  - reduce_data([7, 24, 17, 23]) == 39
+  - reduce_data([-9, 5, 1, 17, 16]) == 153
+  - reduce_data([-11, 25, 24, 5, 8, 15]) == 153
+  - reduce_data([25, -5, 17]) == 33
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '700'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-12-steps

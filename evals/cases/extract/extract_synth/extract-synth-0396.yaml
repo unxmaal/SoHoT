@@ -1,0 +1,57 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0396
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 8556 end with?'
+context: '2026-11-11 11:43:25 indigo-1 INFO job 5475 started
+
+  2026-11-11 11:51:22 indigo-4 INFO job 5475 exited with code 0 after 477s
+
+  2026-11-13 16:40:23 indigo-1 INFO job 5192 started
+
+  2026-11-13 16:45:27 indigo-3 INFO job 5192 exited with code 0 after 304s
+
+  2026-11-14 02:12:19 indigo-4 INFO job 9938 started
+
+  2026-11-14 02:22:42 indigo-1 INFO job 9938 exited with code 0 after 623s
+
+  2026-11-14 09:32:52 indigo-1 INFO job 7470 started
+
+  2026-11-14 09:42:43 indigo-1 WARN job 7470 exited with code 126 after 591s
+
+  2026-11-16 07:27:08 indigo-3 INFO job 9191 started
+
+  2026-11-16 07:42:03 indigo-4 WARN job 9191 exited with code 1 after 895s
+
+  2026-11-16 11:16:02 indigo-1 INFO job 8556 started
+
+  2026-11-16 11:17:03 indigo-2 WARN job 8556 exited with code 126 after 61s
+
+  2026-11-20 05:58:08 indigo-3 INFO job 2225 started
+
+  2026-11-20 06:05:06 indigo-1 INFO job 2225 exited with code 0 after 418s
+
+  2026-11-24 14:31:09 indigo-4 INFO job 4982 started
+
+  2026-11-24 14:32:52 indigo-2 WARN job 4982 exited with code 17 after 103s'
+assert:
+  equals:
+  - '126'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '396'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

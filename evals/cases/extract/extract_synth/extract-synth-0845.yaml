@@ -1,0 +1,39 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0845
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the Q1 figure for Nairobi?'
+context: 'Region | Q1 | Q2 | Q3 | Q4
+
+  Quito | 2,110 | 6,690 | 2,240 | 5,430
+
+  Bergen | 7,630 | 9,180 | 1,540 | 6,560
+
+  Hanoi | 8,630 | 9,340 | 6,210 | 6,020
+
+  Nairobi | 3,720 | 1,200 | 4,180 | 4,980
+
+  Osaka | 6,620 | 3,390 | 8,030 | 1,810
+
+  Tallinn | 1,340 | 1,170 | 1,240 | 9,290'
+assert:
+  equals:
+  - 3,720
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '845'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: table

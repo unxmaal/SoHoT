@@ -1,0 +1,54 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0385
+modality: code
+prompt: 'Write a Python function `apply_rules(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Remove every digit.
+
+  2. Cut the text to at most 6 characters, then pad it on the right with ''.'' up to 6 characters.
+
+  3. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  4. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  5. Remove every digit.
+
+  6. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  7. Convert to lowercase.
+
+  8. Convert to uppercase.
+
+  Then: Return the resulting string.
+
+
+  Example: `apply_rules('',xb.y.C.xBz'') returns '',XB.Y.''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules('zz yy xx') == 'Z Y'
+  - apply_rules('') == '.'
+  - apply_rules('Hello, World') == 'HELO,'
+  - apply_rules('  jumps   over the  lazy dog ') == 'JUMP'
+  - apply_rules('Zebra 42 crossing 7') == 'ZEBRA'
+  - apply_rules('Data-driven 2025') == 'DATA-D'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '385'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-8-steps

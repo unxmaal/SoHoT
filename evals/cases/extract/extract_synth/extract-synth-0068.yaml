@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0068
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Tune label roll parser"?'
+context: "commit b3ba93f9921f29246dad96fc75e7776f3cd244a2\nAuthor: Priya Lindqvist <priya@example.com>\n\
+  Date:   2026-11-19\n\n    Add desk lamp parser\n\ncommit c45f717d2ddf55ccd976915e3d1a5f1e2560e9ec\n\
+  Author: Kenji Jaramillo <kenji@example.com>\nDate:   2026-11-21\n\n    Remove bolt kit parser\n\ncommit\
+  \ cec686a04846bcaac871571e0fe8c03a67e7b035\nAuthor: Soren Underhill <soren@example.com>\nDate:   2026-11-08\n\
+  \n    Remove hose clamp parser\n\ncommit 4a39b8ee3b58066dd2cbd7dbc6a26ac6f9a71439\nAuthor: Rosa Abernathy\
+  \ <rosa@example.com>\nDate:   2026-11-19\n\n    Fix hose clamp retry\n\ncommit 9df041013e3b1721cf5136fb2e1b8778e4ab0179\n\
+  Author: Ivo Brightwater <ivo@example.com>\nDate:   2026-11-17\n\n    Tune label roll parser"
+assert:
+  equals:
+  - ivo@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '68'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

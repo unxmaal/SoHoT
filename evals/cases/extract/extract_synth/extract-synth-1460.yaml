@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1460
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Remove filter pack retry"?'
+context: "commit e69c9cde89e937f8441b4437e68e4299a5694f68\nAuthor: Dmitri Kowalczyk <dmitri@example.com>\n\
+  Date:   2026-11-01\n\n    Remove desk lamp cache\n\ncommit ee8a375d3b7ba93e9b1a144c86f35b7f1913b85c\n\
+  Author: Hana Halvorsen <hana@example.com>\nDate:   2026-11-24\n\n    Add sensor parser\n\ncommit 3ded6c71b68c9d1fc8a3aab50105c059d2a9a051\n\
+  Author: Farah Thorne <farah@example.com>\nDate:   2026-11-09\n\n    Add label roll retry\n\ncommit 22d05974ffc955f22c7e45a1c9182469feac6fa4\n\
+  Author: Yusuf Halvorsen <yusuf@example.com>\nDate:   2026-11-17\n\n    Remove filter pack retry\n\n\
+  commit 6ffdb26327d90902f7109641eda6f4b7ad7fc357\nAuthor: Farah Galloway <farah@example.com>\nDate: \
+  \  2026-11-18\n\n    Add desk lamp parser"
+assert:
+  equals:
+  - Yusuf Halvorsen
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1460'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

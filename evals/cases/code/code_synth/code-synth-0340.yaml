@@ -1,0 +1,52 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0340
+modality: code
+prompt: 'Write a Python function `transform(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Drop the first 3 values (an empty list if there are fewer).
+
+  2. Remove every negative value.
+
+  3. Keep only the last 5 values, in their order (all of them if there are fewer).
+
+  4. Sort ascending.
+
+  5. Rotate the list left by 8 positions, wrapping around (an empty list stays empty).
+
+  6. Replace every value with its absolute value.
+
+  7. Remove duplicates, keeping the first occurrence of each value.
+
+  8. Remove every value that is a multiple of 5 (0 is a multiple of everything).
+
+  Then: Return the largest value, or -1 for an empty list.
+
+
+  Example: `transform([10, 14, 17, 11, -2, 16, 16]) returns 16`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([]) == -1
+  - transform([4]) == -1
+  - transform([16, -8, 8, -3, 4, 24, 8]) == 24
+  - transform([11, 11, -7]) == -1
+  - transform([23, 2, -8, -9, -11, 7]) == 7
+  - transform([20, 16, 19, 9, 20]) == 9
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '340'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

@@ -1,0 +1,61 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0180
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 7077 end with?'
+context: '2026-11-12 13:21:10 indigo-1 INFO job 2504 started
+
+  2026-11-12 13:23:57 indigo-2 INFO job 2504 exited with code 0 after 167s
+
+  2026-11-16 17:42:00 indigo-1 INFO job 4286 started
+
+  2026-11-16 17:45:41 indigo-3 INFO job 4286 exited with code 0 after 221s
+
+  2026-11-16 19:44:35 indigo-4 INFO job 8534 started
+
+  2026-11-16 19:49:48 indigo-2 WARN job 8534 exited with code 126 after 313s
+
+  2026-11-18 21:06:13 indigo-3 INFO job 3585 started
+
+  2026-11-18 21:14:16 indigo-4 WARN job 3585 exited with code 255 after 483s
+
+  2026-11-19 09:10:18 indigo-2 INFO job 7077 started
+
+  2026-11-19 09:22:43 indigo-2 INFO job 7077 exited with code 0 after 745s
+
+  2026-11-20 18:36:13 indigo-4 INFO job 9252 started
+
+  2026-11-20 18:50:18 indigo-2 WARN job 9252 exited with code 2 after 845s
+
+  2026-11-21 14:39:02 indigo-1 INFO job 2360 started
+
+  2026-11-21 14:52:02 indigo-3 INFO job 2360 exited with code 0 after 780s
+
+  2026-11-24 00:43:25 indigo-1 INFO job 1249 started
+
+  2026-11-24 00:54:10 indigo-2 INFO job 1249 exited with code 0 after 645s
+
+  2026-11-25 19:36:44 indigo-4 INFO job 4982 started
+
+  2026-11-25 19:39:32 indigo-3 WARN job 4982 exited with code 126 after 168s'
+assert:
+  equals:
+  - '0'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '180'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

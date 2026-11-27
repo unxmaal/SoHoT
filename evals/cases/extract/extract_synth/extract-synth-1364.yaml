@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1364
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Add battery retry"?'
+context: "commit 09ef7259abedaafbff7c9dfc14e602a8dcf54049\nAuthor: Ivo Galloway <ivo@example.com>\nDate:\
+  \   2026-11-04\n\n    Tune bolt kit cache\n\ncommit 9877b26f989e7725c4623a099b298a36f694c0d6\nAuthor:\
+  \ Wendell Brightwater <wendell@example.com>\nDate:   2026-11-02\n\n    Add battery retry\n\ncommit 157495ce4a0408ef5500d99924894d94952c2a0b\n\
+  Author: Oren Zielinski <oren@example.com>\nDate:   2026-11-12\n\n    Remove hose clamp parser\n\ncommit\
+  \ d9d6bb17f48049215603eb97b24d181c14e91cec\nAuthor: Priya Marchetti <priya@example.com>\nDate:   2026-11-06\n\
+  \n    Remove desk lamp limit\n\ncommit 08b854c6c849d9aaf468c89e4f225b4eeffcc956\nAuthor: Ivo Rasmussen\
+  \ <ivo@example.com>\nDate:   2026-11-25\n\n    Fix keypad parser"
+assert:
+  equals:
+  - wendell@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1364'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0140
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Remove gasket retry"?'
+context: "commit be437a37a127b26f3c73a89e20cca6270b320b57\nAuthor: Mateo Underhill <mateo@example.com>\n\
+  Date:   2026-11-07\n\n    Add desk lamp cache\n\ncommit 2aac2d76d763e7703272fd0c41c064f1ef70509d\nAuthor:\
+  \ Lucia Galloway <lucia@example.com>\nDate:   2026-11-23\n\n    Add filter pack parser\n\ncommit ff79f81ca07534d7373cb068add612fb253e6d1b\n\
+  Author: Farah Underhill <farah@example.com>\nDate:   2026-11-08\n\n    Remove gasket retry\n\ncommit\
+  \ 8f266f666b072f2feb67a2678b20034c07164fc9\nAuthor: Priya Galloway <priya@example.com>\nDate:   2026-11-25\n\
+  \n    Tune label roll cache\n\ncommit b11beb81c7ed0cc4818ea1abe754354d2eb886e8\nAuthor: Yusuf Castellan\
+  \ <yusuf@example.com>\nDate:   2026-11-24\n\n    Tune bolt kit retry"
+assert:
+  equals:
+  - Farah Underhill
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '140'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

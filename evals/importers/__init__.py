@@ -28,6 +28,7 @@ class Source:
 #: One line per importer; keep it a flat list so parallel additions merge cleanly.
 REGISTRY = [
     Source("leetcode", "code"),
+    Source("code_synth", "code"),
     Source("ocr_synth", "ocr"),
     Source("pii_synth", "pii"),
     Source("tts_synth", "tts"),
@@ -37,6 +38,7 @@ REGISTRY = [
     Source("web_synth", "web"),
     Source("squad2_check", "decide"),
     Source("squad2_extract", "extract"),
+    Source("extract_synth", "extract"),
     Source("squad2_retrieval", "retrieval"),
     Source("librispeech", "stt"),
     Source("history", "repo"),

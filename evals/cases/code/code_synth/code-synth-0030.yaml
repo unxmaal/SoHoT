@@ -1,0 +1,42 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0030
+modality: code
+prompt: 'Write a Python function `transform(rows)`. `rows` is a list of (name, team, mark) tuples with
+  integer marks and unique names, possibly empty. Given them, return the sorted list of names whose mark
+  is strictly above the average mark of their own team.
+
+
+  Example: `transform([(''Yara'', ''legal'', 50), (''Hugo'', ''sales'', 80), (''Ada'', ''sales'', 80),
+  (''Quin'', ''hr'', 95)]) returns []`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([('Pia', 'dev', 70), ('Nico', 'ops', 90), ('Tess', 'legal', 80), ('Fay', 'legal', 50), ('Gus',
+    'ops', 95)]) == ['Gus', 'Tess']
+  - transform([('Quin', 'hr', 80), ('Eli', 'hr', 50), ('Leo', 'dev', 80), ('Hugo', 'dev', 80), ('Kira',
+    'ops', 80)]) == ['Quin']
+  - transform([('Vic', 'legal', 50), ('Nico', 'legal', 50), ('Pia', 'hr', 90), ('Fay', 'sales', 70), ('Dara',
+    'legal', 80), ('Gus', 'sales', 50), ('Jon', 'legal', 95)]) == ['Dara', 'Fay', 'Jon']
+  - transform([('Rhea', 'ops', 60), ('Leo', 'hr', 95), ('Iris', 'dev', 60), ('Quin', 'hr', 70), ('Fay',
+    'dev', 80)]) == ['Fay', 'Leo']
+  - transform([('Sol', 'hr', 70), ('Uma', 'hr', 70), ('Zed', 'hr', 70), ('Bram', 'hr', 90), ('Xan', 'legal',
+    90), ('Olga', 'legal', 95), ('Gus', 'hr', 70)]) == ['Bram', 'Olga']
+  - transform([('Dara', 'sales', 50), ('Pia', 'dev', 95), ('Wren', 'dev', 70), ('Kira', 'legal', 50),
+    ('Tess', 'legal', 50)]) == ['Pia']
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '30'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-above

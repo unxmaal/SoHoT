@@ -1,0 +1,49 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0156
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 5485 end with?'
+context: '2026-11-10 08:52:58 glacier-3 INFO job 6819 started
+
+  2026-11-10 08:54:59 glacier-1 WARN job 6819 exited with code 255 after 121s
+
+  2026-11-11 12:46:18 glacier-2 INFO job 2108 started
+
+  2026-11-11 12:49:36 glacier-4 WARN job 2108 exited with code 137 after 198s
+
+  2026-11-12 07:54:52 glacier-3 INFO job 1188 started
+
+  2026-11-12 07:58:40 glacier-2 WARN job 1188 exited with code 1 after 228s
+
+  2026-11-14 21:09:30 glacier-4 INFO job 5485 started
+
+  2026-11-14 21:20:35 glacier-3 WARN job 5485 exited with code 17 after 665s
+
+  2026-11-16 04:24:17 glacier-3 INFO job 4766 started
+
+  2026-11-16 04:34:15 glacier-1 WARN job 4766 exited with code 137 after 598s
+
+  2026-11-25 15:19:47 glacier-1 INFO job 3654 started
+
+  2026-11-25 15:20:36 glacier-1 WARN job 3654 exited with code 17 after 49s'
+assert:
+  equals:
+  - '17'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '156'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

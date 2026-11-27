@@ -1,0 +1,61 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0164
+modality: code
+prompt: 'Write a Python function `apply_rules(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  2. Convert to uppercase.
+
+  3. Keep only the first occurrence of each character.
+
+  4. Convert to uppercase.
+
+  5. Remove every digit.
+
+  6. Convert to lowercase.
+
+  7. Shift every letter forward by 7 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  8. Keep only the first 2 whitespace-separated words, joined by single spaces.
+
+  9. Convert to uppercase.
+
+  10. Swap the case of every letter.
+
+  11. Replace every ''o'' with ''a'' (lowercase only).
+
+  12. Collapse every run of the same character into one character.
+
+  Then: Return the resulting string.
+
+
+  Example: `apply_rules(''Axy2ayAxAb'') returns ''ihef''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules('12345') == ''
+  - apply_rules('Zebra 42 crossing 7') == 'hyilg nupzvj'
+  - apply_rules('The 3 little pigs 33') == 'la spznw'
+  - apply_rules('Quick brown fox') == 'rjpbx udvyiem'
+  - apply_rules('') == ''
+  - apply_rules('Hello, World') == ',vsla kyd'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '164'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-12-steps

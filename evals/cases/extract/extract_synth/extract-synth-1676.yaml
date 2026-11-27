@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1676
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the first 7 characters of the hash of the commit "Remove bolt kit parser"?'
+context: "commit bb435c4f2aa2d593a22575aa29d820056d633e95\nAuthor: Avery Okonkwo <avery@example.com>\n\
+  Date:   2026-11-05\n\n    Add mount plate limit\n\ncommit 417c31a6cc1a9fb6b164aee4d85fe48a972e85bd\n\
+  Author: Mateo Valdivia <mateo@example.com>\nDate:   2026-11-11\n\n    Remove bolt kit parser\n\ncommit\
+  \ f1d7c1cc15c66dea4718c92e0b54cde3e9ca4308\nAuthor: Kenji Nakamura <kenji@example.com>\nDate:   2026-11-11\n\
+  \n    Fix bolt kit parser\n\ncommit 0dc94de9539f2b4f15f2903e9b71d0a60b91b3ee\nAuthor: Wendell Brightwater\
+  \ <wendell@example.com>\nDate:   2026-11-20\n\n    Fix battery retry\n\ncommit d5e097dd8feaa12ddb8339a67f428bb7e154b0eb\n\
+  Author: Umar Ekwueme <umar@example.com>\nDate:   2026-11-09\n\n    Add cable set limit"
+assert:
+  equals:
+  - 417c31a
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1676'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

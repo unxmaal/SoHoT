@@ -1,0 +1,52 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0763
+modality: code
+prompt: 'Write a Python function `transform(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Replace every value with the largest of itself and the up to 3 values before it.
+
+  2. Remove every negative value.
+
+  3. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  4. Replace every value with the largest value seen so far.
+
+  5. Replace every value with its square.
+
+  6. Multiply every value by 3.
+
+  7. Replace every value with its square.
+
+  8. Keep only the even values.
+
+  Then: Return the largest value, or -1 for an empty list.
+
+
+  Example: `transform([0, -10, -4, 0]) returns 0`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([]) == -1
+  - transform([1]) == -1
+  - transform([-3, 10, 24, -10]) == 2985984
+  - transform([25, 12, -1, 16, 1]) == 589824
+  - transform([18, 3, 5, 2, 2]) == 944784
+  - transform([15, 24, -12, -8, 13, 15, 13, -4, 13]) == 2985984
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '763'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

@@ -1,0 +1,44 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0590
+modality: code
+prompt: 'Write a Python function `transform(rows)`. `rows` is a list of (name, department, score) tuples
+  with integer scores and unique names, possibly empty. Given them, return a dict mapping each department
+  that has at least one score of 80 or more to how many such scores it has.
+
+
+  Example: `transform([(''Leo'', ''dev'', 60), (''Mina'', ''hr'', 90), (''Sol'', ''sales'', 60), (''Nico'',
+  ''dev'', 80)]) returns {''hr'': 1, ''dev'': 1}`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - 'transform([(''Yara'', ''sales'', 60), (''Zed'', ''sales'', 80), (''Rhea'', ''legal'', 70), (''Olga'',
+    ''legal'', 70)]) == {''sales'': 1}'
+  - 'transform([(''Olga'', ''sales'', 95), (''Leo'', ''legal'', 95), (''Cleo'', ''sales'', 80), (''Quin'',
+    ''sales'', 70)]) == {''sales'': 2, ''legal'': 1}'
+  - transform([('Yara', 'dev', 50), ('Tess', 'hr', 50), ('Cleo', 'qa', 50), ('Gus', 'dev', 60), ('Leo',
+    'hr', 70), ('Iris', 'dev', 70)]) == {}
+  - 'transform([(''Eli'', ''sales'', 70), (''Uma'', ''ops'', 90), (''Nico'', ''ops'', 90), (''Yara'',
+    ''dev'', 60), (''Quin'', ''ops'', 70), (''Olga'', ''ops'', 50), (''Zed'', ''sales'', 50), (''Wren'',
+    ''sales'', 50)]) == {''ops'': 2}'
+  - 'transform([(''Tess'', ''ops'', 80), (''Ada'', ''ops'', 80), (''Uma'', ''ops'', 70), (''Bram'', ''dev'',
+    80), (''Dara'', ''dev'', 60)]) == {''ops'': 2, ''dev'': 1}'
+  - 'transform([(''Xan'', ''ops'', 70), (''Rhea'', ''legal'', 80), (''Nico'', ''legal'', 50), (''Zed'',
+    ''ops'', 60), (''Vic'', ''sales'', 50), (''Quin'', ''ops'', 80), (''Bram'', ''sales'', 70), (''Cleo'',
+    ''legal'', 70)]) == {''legal'': 1, ''ops'': 1}'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '590'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-count

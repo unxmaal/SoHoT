@@ -1,0 +1,46 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0451
+modality: code
+prompt: 'Write a Python function `process(rows)`. `rows` is a list of (name, region, rating) tuples with
+  integer ratings and unique names, possibly empty. Given them, return a dict mapping each region that
+  has at least one rating of 70 or more to how many such ratings it has.
+
+
+  Example: `process([(''Rhea'', ''hr'', 95), (''Cleo'', ''qa'', 60), (''Hugo'', ''hr'', 50), (''Pia'',
+  ''hr'', 80), (''Uma'', ''hr'', 95), (''Vic'', ''hr'', 80), (''Bram'', ''qa'', 50)]) returns {''hr'':
+  4}`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - 'process([(''Rhea'', ''hr'', 90), (''Kira'', ''hr'', 90), (''Uma'', ''hr'', 90), (''Sol'', ''hr'',
+    50), (''Cleo'', ''hr'', 80), (''Wren'', ''dev'', 60)]) == {''hr'': 4}'
+  - 'process([(''Pia'', ''sales'', 80), (''Cleo'', ''dev'', 50), (''Dara'', ''qa'', 90), (''Vic'', ''qa'',
+    90), (''Xan'', ''sales'', 70), (''Yara'', ''sales'', 95), (''Leo'', ''qa'', 80)]) == {''sales'': 3,
+    ''qa'': 3}'
+  - 'process([(''Fay'', ''hr'', 90), (''Leo'', ''legal'', 80), (''Ada'', ''legal'', 50), (''Dara'', ''legal'',
+    95), (''Uma'', ''sales'', 80), (''Hugo'', ''legal'', 90), (''Rhea'', ''hr'', 60), (''Mina'', ''hr'',
+    60)]) == {''hr'': 1, ''legal'': 3, ''sales'': 1}'
+  - 'process([(''Kira'', ''qa'', 70), (''Nico'', ''qa'', 50), (''Jon'', ''hr'', 70), (''Vic'', ''qa'',
+    50)]) == {''qa'': 1, ''hr'': 1}'
+  - 'process([(''Zed'', ''sales'', 80), (''Rhea'', ''qa'', 70), (''Iris'', ''qa'', 60), (''Olga'', ''qa'',
+    60), (''Nico'', ''ops'', 60), (''Quin'', ''qa'', 70)]) == {''sales'': 1, ''qa'': 2}'
+  - 'process([(''Fay'', ''sales'', 50), (''Dara'', ''legal'', 80), (''Jon'', ''sales'', 80), (''Xan'',
+    ''sales'', 50), (''Wren'', ''dev'', 70), (''Eli'', ''dev'', 50)]) == {''legal'': 1, ''sales'': 1,
+    ''dev'': 1}'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '451'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-count

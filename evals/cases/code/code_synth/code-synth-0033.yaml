@@ -1,0 +1,37 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0033
+modality: code
+prompt: 'Write a Python function `merge_spans(spans)` where `spans` is a list of (start, end) integer
+  pairs with start <= end, in any order. Merge spans that overlap or whose gap is at most 1 (the next
+  start is at most the current end plus 1). Return the merged spans as a list of [start, end] lists sorted
+  by start.
+
+
+  Example: `merge_spans([(20, 22), (20, 24), (8, 11), (12, 12), (0, 3), (17, 21), (3, 5)]) returns [[0,
+  5], [8, 12], [17, 24]]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - merge_spans([(18, 21), (4, 4), (18, 21), (7, 10)]) == [[4, 4], [7, 10], [18, 21]]
+  - merge_spans([(11, 11), (13, 13), (12, 14), (15, 18), (9, 12), (2, 5), (6, 7)]) == [[2, 7], [9, 18]]
+  - merge_spans([(2, 4), (6, 8), (5, 9), (17, 21), (13, 17), (3, 7), (11, 15)]) == [[2, 9], [11, 21]]
+  - merge_spans([(4, 7), (9, 11), (18, 22), (8, 9)]) == [[4, 11], [18, 22]]
+  - merge_spans([(14, 15)]) == [[14, 15]]
+  - merge_spans([(17, 21)]) == [[17, 21]]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '33'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: algo-merge

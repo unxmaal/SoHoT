@@ -1,0 +1,45 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0811
+modality: code
+prompt: 'Write a Python function `solve(rows)`. `rows` is a list of (name, team, mark) tuples with integer
+  marks and unique names, possibly empty. Given them, return a dict mapping each team that has at least
+  one mark of 60 or more to how many such marks it has.
+
+
+  Example: `solve([(''Yara'', ''sales'', 80), (''Nico'', ''sales'', 50), (''Gus'', ''dev'', 60), (''Kira'',
+  ''dev'', 70), (''Wren'', ''sales'', 70), (''Mina'', ''sales'', 80)]) returns {''sales'': 3, ''dev'':
+  2}`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - 'solve([(''Bram'', ''sales'', 80), (''Iris'', ''dev'', 70), (''Yara'', ''dev'', 70), (''Xan'', ''sales'',
+    60), (''Eli'', ''dev'', 80)]) == {''sales'': 2, ''dev'': 3}'
+  - 'solve([(''Uma'', ''qa'', 80), (''Wren'', ''sales'', 70), (''Gus'', ''dev'', 50), (''Mina'', ''qa'',
+    60), (''Leo'', ''sales'', 90), (''Eli'', ''dev'', 80), (''Jon'', ''sales'', 80)]) == {''qa'': 2, ''sales'':
+    3, ''dev'': 1}'
+  - 'solve([(''Ada'', ''legal'', 80), (''Iris'', ''legal'', 80), (''Leo'', ''dev'', 50), (''Gus'', ''ops'',
+    80), (''Mina'', ''dev'', 70), (''Dara'', ''legal'', 80)]) == {''legal'': 3, ''ops'': 1, ''dev'': 1}'
+  - 'solve([(''Sol'', ''qa'', 70), (''Ada'', ''qa'', 50), (''Dara'', ''qa'', 80), (''Xan'', ''qa'', 80),
+    (''Pia'', ''sales'', 70), (''Rhea'', ''ops'', 80)]) == {''qa'': 3, ''sales'': 1, ''ops'': 1}'
+  - 'solve([(''Tess'', ''legal'', 70), (''Nico'', ''dev'', 95), (''Vic'', ''dev'', 80), (''Uma'', ''dev'',
+    60), (''Pia'', ''dev'', 80)]) == {''legal'': 1, ''dev'': 4}'
+  - 'solve([(''Fay'', ''qa'', 80), (''Zed'', ''dev'', 70), (''Gus'', ''qa'', 95), (''Iris'', ''sales'',
+    50), (''Kira'', ''sales'', 50), (''Yara'', ''sales'', 60), (''Wren'', ''qa'', 95), (''Eli'', ''qa'',
+    70)]) == {''qa'': 4, ''dev'': 1, ''sales'': 1}'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '811'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-count

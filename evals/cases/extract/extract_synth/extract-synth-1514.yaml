@@ -1,0 +1,31 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1514
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the total due?'
+context: "Zephyr Optics\nInvoice INV-2026-9888   Issued 2026-12-01\nBill to: Fennel Street Bakery   Customer\
+  \ PO: PO-33996\n  battery      x20  @      $4.12 =      $82.40\n  sensor       x3   @    $172.88 = \
+  \    $518.64\n  desk lamp    x4   @    $215.99 =     $863.96\n  Subtotal: $1,465.00\n  Shipping: $35.24\n\
+  \  Tax: $146.50\n  Total due: $1,646.74 by 2027-01-26"
+assert:
+  equals:
+  - $1,646.74
+  - 1,646.74
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1514'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: invoice

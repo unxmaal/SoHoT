@@ -1,0 +1,57 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0608
+modality: code
+prompt: 'Write a Python function `solve(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Convert to lowercase.
+
+  2. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  3. Remove every vowel (a, e, i, o, u, either case).
+
+  4. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  5. Replace every ''o'' with ''d'' (lowercase only).
+
+  6. Sort the characters in ascending code point order.
+
+  7. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  8. Replace runs of whitespace with a single space and strip both ends.
+
+  9. Swap the case of every letter.
+
+  10. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  Then: Return the resulting string.
+
+
+  Example: `solve(''a011A1BCya2ca2C0'') returns ''Ycccb2211100''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve('12345') == '54321'
+  - solve('Level') == 'Vll'
+  - solve('aabbbcccc') == 'Ccccbbb'
+  - solve('  ') == ''
+  - solve('abc123xyz') == 'Zyxcb321'
+  - solve('noon') == 'Nn'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '608'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-10-steps

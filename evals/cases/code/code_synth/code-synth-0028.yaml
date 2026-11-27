@@ -1,0 +1,54 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0028
+modality: code
+prompt: 'Write a Python function `run_pipeline(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  2. Swap the case of every letter.
+
+  3. Cut the text to at most 8 characters, then pad it on the right with ''.'' up to 8 characters.
+
+  4. Swap the case of every letter.
+
+  5. Remove every digit.
+
+  6. Remove every vowel (a, e, i, o, u, either case).
+
+  7. Keep only the first occurrence of each character.
+
+  8. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `run_pipeline(''x 2baA,11,1'') returns ''1b1,''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline('Hello, World') == '1H1l1,1'
+  - run_pipeline('') == '1.'
+  - run_pipeline('eeeee fff') == '1f'
+  - run_pipeline('Ünïcode ok') == '1Ü1n1ï1c1d1'
+  - run_pipeline('Data-driven 2025') == '1D1t1-1d1r'
+  - run_pipeline('Rotor 99') == '1R1t1r1'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '28'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-8-steps

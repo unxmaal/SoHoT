@@ -51,6 +51,14 @@ NOT_GATING = {
                                                                            "changes a case (#603)",
     "evals/importers/web_synth.py:ATTEMPTS": "redraws of one row before the generator refuses a kind too small "
                                              "for its share; it raises, it never changes a case (#603)",
+    "evals/importers/code_synth.py:ATTEMPTS": "redraws of one row before the generator refuses; it raises, it never "
+                                              "changes a case (#603)",
+    "evals/importers/extract_synth.py:ATTEMPTS": "redraws of one row before the generator refuses; it raises, it "
+                                                 "never changes a case (#603)",
+    "evals/importers/code_synth.py:TEMPLATE_CAP": "the most cases one problem shape fills so none dominates the set; "
+                                                  "a draw past it picks another shape and drops no source row (#603)",
+    "evals/importers/code_synth.py:CHECKS": "how many seeded inputs a case draws; each is written into the case, "
+                                            "and a draw with too few distinct answers is redrawn (#603)",
     "evals/importers/agent_synth.py:MAX_STEPS": "the step cap written into each generated case's params, as the hand "
                                                 "cases set theirs; the runner scales it by agent_steps_scale (#603)",
 }

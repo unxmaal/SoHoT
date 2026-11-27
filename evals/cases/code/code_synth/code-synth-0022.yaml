@@ -1,0 +1,52 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0022
+modality: code
+prompt: 'Write a Python function `compute(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Keep the values at indices 0, 3, 6, and so on.
+
+  2. Keep only the first 2 values (all of them if there are fewer).
+
+  3. Clamp every value into the range -1 to 5, both inclusive.
+
+  4. Sort ascending.
+
+  5. Collapse each run of equal adjacent values into one value.
+
+  6. Replace every value with the largest value seen so far.
+
+  7. Clamp every value into the range 1 to 8, both inclusive.
+
+  8. Keep only the first 4 values (all of them if there are fewer).
+
+  Then: Return the largest value, or -1 for an empty list.
+
+
+  Example: `compute([22, 3, -3, -9]) returns 5`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute([]) == -1
+  - compute([-3]) == 1
+  - compute([-1, -5, 9, 20, -4]) == 5
+  - compute([25, 2, -3, -12, 15, 6]) == 5
+  - compute([3, 5, 16, -1, 19, 13, 20]) == 3
+  - compute([15, 16, -4, -10]) == 5
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '22'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

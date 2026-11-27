@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1358
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the invoice number?'
+context: "Fennel Street Bakery\nInvoice INV-2026-9686   Issued 2026-12-05\nBill to: Saffron Robotics \
+  \  Customer PO: PO-88906\n  desk lamp    x9   @    $100.26 =     $902.34\n  mount plate  x18  @    \
+  \ $47.41 =     $853.38\n  Subtotal: $1,755.72\n  Shipping: $42.33\n  Tax: $140.45\n  Total due: $1,938.50\
+  \ by 2027-01-17"
+assert:
+  equals:
+  - INV-2026-9686
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1358'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: invoice

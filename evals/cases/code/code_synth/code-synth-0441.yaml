@@ -1,0 +1,57 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0441
+modality: code
+prompt: 'Write a Python function `transform(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Replace every value with the largest of itself and the up to 3 values before it.
+
+  2. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  3. Keep the values at indices 0, 3, 6, and so on.
+
+  4. Sort ascending.
+
+  5. Replace every value with its absolute value.
+
+  6. Collapse each run of equal adjacent values into one value.
+
+  7. Remove duplicates, keeping the first occurrence of each value.
+
+  8. Drop the first 1 values (an empty list if there are fewer).
+
+  9. Add 9 to every value.
+
+  10. Sort ascending.
+
+  Then: Return the index of the first occurrence of the largest value, or -1 for an empty list.
+
+
+  Example: `transform([-3, -6, -3, 20, 9, -5, 7, 21]) returns 1`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([]) == -1
+  - transform([-2]) == -1
+  - transform([6, -2, 4, 7, 2, 8, -10]) == 1
+  - transform([9, 0, 9]) == -1
+  - transform([8, 1, 8, 13, -2, -3]) == 0
+  - transform([9, 10, -11, 13, 8, 15, 1]) == 1
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '441'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-10-steps

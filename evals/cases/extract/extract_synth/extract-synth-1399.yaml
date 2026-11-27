@@ -1,0 +1,53 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1399
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: In which version was #101 addressed?'
+context: '## 3.12.2 (2026-09-23)
+
+  - Added sensor handling (#160)
+
+  - Improved sensor handling (#117)
+
+  ## 3.11.1 (2026-09-16)
+
+  - Improved desk lamp handling (#278)
+
+  - Added filter pack handling (#368)
+
+  ## 3.10.5 (2026-08-19)
+
+  - Fixed toner handling (#121)
+
+  - Added mount plate handling (#447)
+
+  - Removed keypad handling (#101)
+
+  ## 3.9.1 (2026-07-27)
+
+  - Added hose clamp handling (#452)
+
+  - Improved bolt kit handling (#319)
+
+  - Removed bolt kit handling (#238)'
+assert:
+  equals:
+  - 3.10.5
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1399'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: changelog

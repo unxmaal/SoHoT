@@ -1,0 +1,43 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1114
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the name of SKU7515?'
+context: 'sku,name,qty,unit_price
+
+  SKU9586,toner L1,330,$32.76
+
+  SKU7515,battery M4,157,$59.15
+
+  SKU3883,battery S3,191,$84.23
+
+  SKU6294,gasket S8,61,$19.43
+
+  SKU2815,hose clamp M6,116,$60.50
+
+  SKU7248,filter pack M2,390,$29.57
+
+  SKU2111,keypad M6,2,$66.32
+
+  SKU9015,bolt kit L5,303,$67.47'
+assert:
+  equals:
+  - battery M4
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1114'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: inventory

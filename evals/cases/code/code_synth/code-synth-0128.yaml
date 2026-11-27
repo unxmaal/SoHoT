@@ -1,0 +1,63 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0128
+modality: code
+prompt: 'Write a Python function `transform(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Shift every letter forward by 7 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  2. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  3. Swap the case of every letter.
+
+  4. Replace every ''r'' with ''i'' (lowercase only).
+
+  5. Swap the case of every letter.
+
+  6. Shift every letter forward by 8 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  7. Remove every vowel (a, e, i, o, u, either case).
+
+  8. Convert to lowercase.
+
+  9. Remove every vowel (a, e, i, o, u, either case).
+
+  10. Cut the text to at most 8 characters, then pad it on the right with ''.'' up to 8 characters.
+
+  11. Shift every letter forward by 9 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  12. Keep only the first occurrence of each character.
+
+  Then: Return how many characters it has.
+
+
+  Example: `transform(''bBAcb,xzxy'') returns 5`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform('zz yy xx') == 4
+  - transform('abc123xyz') == 8
+  - transform('banana bandana') == 4
+  - transform('  ') == 1
+  - transform('Quick brown fox') == 8
+  - transform('Rotor 99') == 5
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '128'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-12-steps

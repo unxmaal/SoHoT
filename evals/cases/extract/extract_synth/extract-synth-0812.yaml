@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0812
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Tune hose clamp retry"?'
+context: "commit 407e501a1c91fd8f7d95fc2c2248b93868d1fe40\nAuthor: Wendell Quintero <wendell@example.com>\n\
+  Date:   2026-11-08\n\n    Add gasket retry\n\ncommit 2c58df785d9a9e3c4666d0afb90b596a0303953e\nAuthor:\
+  \ Ivo Okonkwo <ivo@example.com>\nDate:   2026-11-15\n\n    Tune hose clamp retry\n\ncommit 5e26285c433d6c3cf73df5848a029b394f5010d9\n\
+  Author: Umar Ekwueme <umar@example.com>\nDate:   2026-11-16\n\n    Remove filter pack parser\n\ncommit\
+  \ cab3afb7e6d212d4519e6bbc5bde03180b1ba8e8\nAuthor: Yusuf Nakamura <yusuf@example.com>\nDate:   2026-11-02\n\
+  \n    Fix desk lamp cache\n\ncommit aa327fdd8c89752db82ee8e1128e198c43e521c0\nAuthor: Jolene Fairbanks\
+  \ <jolene@example.com>\nDate:   2026-11-18\n\n    Add bolt kit retry"
+assert:
+  equals:
+  - ivo@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '812'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0116
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the first 7 characters of the hash of the commit "Add sensor parser"?'
+context: "commit f2a32e2a64e73639529df702bed0d69447ed3602\nAuthor: Soren Jaramillo <soren@example.com>\n\
+  Date:   2026-11-17\n\n    Add sensor parser\n\ncommit 596d28c9806058863d1cc81d5bf2ef792e1fbbce\nAuthor:\
+  \ Oren Ekwueme <oren@example.com>\nDate:   2026-11-02\n\n    Add battery parser\n\ncommit 4b051335a679628f417490e831a52b02efe0ba7e\n\
+  Author: Hana Quintero <hana@example.com>\nDate:   2026-11-17\n\n    Add sensor cache"
+assert:
+  equals:
+  - f2a32e2
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '116'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

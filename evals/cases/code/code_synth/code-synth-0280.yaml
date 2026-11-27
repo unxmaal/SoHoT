@@ -1,0 +1,48 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0280
+modality: code
+prompt: 'Write a Python function `reduce_data(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Keep only the even values.
+
+  2. Clamp every value into the range 0 to 5, both inclusive.
+
+  3. Sort descending.
+
+  4. Keep the values at indices 0, 3, 6, and so on.
+
+  5. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  6. Clamp every value into the range -1 to 4, both inclusive.
+
+  Then: Return the resulting list.
+
+
+  Example: `reduce_data([-2, 0, -4, -12, 23, 16, 6, -5]) returns [0, 4]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data([]) == []
+  - reduce_data([-1]) == []
+  - reduce_data([21, -1, 7, 11, 9, -4, 13, -11]) == [0]
+  - reduce_data([20, -7, 1, 5, -3, 2, 7, 13, -7]) == [4]
+  - reduce_data([-9, -8, 6, 1, 20, 10, -1, 8]) == [4, 4]
+  - reduce_data([-3, 6, -7]) == [4]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '280'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-6-steps

@@ -1,0 +1,45 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1368
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What exit code did job 3897 end with?'
+context: '2026-11-12 21:38:44 cinder-1 INFO job 9473 started
+
+  2026-11-12 21:41:41 cinder-2 WARN job 9473 exited with code 1 after 177s
+
+  2026-11-13 06:41:26 cinder-1 INFO job 5665 started
+
+  2026-11-13 06:52:16 cinder-3 INFO job 5665 exited with code 0 after 650s
+
+  2026-11-15 11:50:15 cinder-4 INFO job 3897 started
+
+  2026-11-15 12:04:00 cinder-1 WARN job 3897 exited with code 126 after 825s
+
+  2026-11-19 12:44:30 cinder-3 INFO job 2746 started
+
+  2026-11-19 12:49:17 cinder-3 WARN job 2746 exited with code 1 after 287s
+
+  2026-11-19 21:54:19 cinder-2 INFO job 6022 started
+
+  2026-11-19 22:00:00 cinder-1 WARN job 6022 exited with code 255 after 341s'
+assert:
+  equals:
+  - '126'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1368'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log

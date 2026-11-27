@@ -1,0 +1,57 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0001
+modality: code
+prompt: 'Write a Python function `compute(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Replace every value with its remainder after division by 7, as Python''s % gives it (never negative).
+
+  2. Sort descending.
+
+  3. Drop the first 2 values (an empty list if there are fewer).
+
+  4. Divide every value by 3 with integer division that rounds toward zero (so -7 divided by 3 gives -2).
+
+  5. Remove every negative value.
+
+  6. Drop the first 1 values (an empty list if there are fewer).
+
+  7. Replace every value with the largest of itself and the up to 1 values before it.
+
+  8. Multiply every value by -1.
+
+  9. Divide every value by 4 with floor division (so -7 divided by 4 gives -2).
+
+  10. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  Then: Return how many distinct values there are.
+
+
+  Example: `compute([0, -6, -12, -5, 11, -10, -3, 13]) returns 2`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute([]) == 0
+  - compute([4]) == 0
+  - compute([-6, 19, 23, 23, -4, -9, -8, -5]) == 2
+  - compute([24, 13, 25, 24, 10, -11, 5]) == 1
+  - compute([12, 21, -3, 23, 8, 9, 9, -12, 24]) == 1
+  - compute([-9, -5, 15, -6, -4, 24, 8, -12]) == 1
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-10-steps

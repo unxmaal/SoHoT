@@ -1,0 +1,41 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0022
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How many units of SKU1412 are in stock?'
+context: 'sku,name,qty,unit_price
+
+  SKU8515,hose clamp M7,347,$6.68
+
+  SKU1207,filter pack M5,296,$8.18
+
+  SKU8678,sensor S4,35,$37.82
+
+  SKU2069,mount plate M3,229,$43.41
+
+  SKU4015,toner M4,18,$98.39
+
+  SKU8147,gasket S2,319,$94.67
+
+  SKU1412,desk lamp S8,295,$87.06'
+assert:
+  equals:
+  - '295'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '22'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: inventory

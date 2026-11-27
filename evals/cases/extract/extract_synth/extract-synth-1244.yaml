@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1244
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the first 7 characters of the hash of the commit "Tune filter pack retry"?'
+context: "commit 8db46f3af2ac399edc0deef5c2c771ee54934ddb\nAuthor: Umar Abernathy <umar@example.com>\n\
+  Date:   2026-11-22\n\n    Tune filter pack retry\n\ncommit 515515a8e220a883bfb16845ddb04bef038dc790\n\
+  Author: Oren Ekwueme <oren@example.com>\nDate:   2026-11-09\n\n    Fix toner limit\n\ncommit ad648b273dc8a80912ff0a3b8491b158de54c438\n\
+  Author: Mateo Lindqvist <mateo@example.com>\nDate:   2026-11-01\n\n    Tune sensor parser"
+assert:
+  equals:
+  - 8db46f3
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1244'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

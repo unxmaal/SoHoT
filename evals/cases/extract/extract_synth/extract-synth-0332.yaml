@@ -1,0 +1,32 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0332
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the first 7 characters of the hash of the commit "Tune battery cache"?'
+context: "commit b845d12cccec8c2224b675f20eb2cda3263df0a8\nAuthor: Farah Fairbanks <farah@example.com>\n\
+  Date:   2026-11-19\n\n    Tune battery cache\n\ncommit 1e7d2cfeba9fb4c35494ad36ba553c9013a29a15\nAuthor:\
+  \ Vera Whitlock <vera@example.com>\nDate:   2026-11-26\n\n    Add desk lamp parser\n\ncommit 767202db90830f8646f73eec2cc3c76bca27c25a\n\
+  Author: Vera Ivanova <vera@example.com>\nDate:   2026-11-06\n\n    Remove desk lamp retry\n\ncommit\
+  \ e96d344243849432fe940de3eee9f23e70a4082d\nAuthor: Kenji Quintero <kenji@example.com>\nDate:   2026-11-02\n\
+  \n    Tune filter pack cache"
+assert:
+  equals:
+  - b845d12
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '332'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

@@ -1,0 +1,32 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0176
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Tune battery parser"?'
+context: "commit f3f728ebe7fad32f349b13a3455ab94af7105e39\nAuthor: Talia Kowalczyk <talia@example.com>\n\
+  Date:   2026-11-16\n\n    Tune battery parser\n\ncommit d4444587977d3fddaf3ec3aefb749c2daf0437dd\nAuthor:\
+  \ Gideon Galloway <gideon@example.com>\nDate:   2026-11-17\n\n    Remove mount plate retry\n\ncommit\
+  \ 7652fcc5376e369fdee8178f8905c1d494d7c436\nAuthor: Quinn Brightwater <quinn@example.com>\nDate:   2026-11-06\n\
+  \n    Remove bolt kit parser\n\ncommit dff00c9409c99f7932634ee117e15cff8735633b\nAuthor: Umar Dunmore\
+  \ <umar@example.com>\nDate:   2026-11-02\n\n    Remove cable set parser"
+assert:
+  equals:
+  - Talia Kowalczyk
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '176'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

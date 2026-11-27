@@ -1,0 +1,32 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1448
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the email address of the author of the commit "Remove battery cache"?'
+context: "commit 2ae6093f41bd08de353011ccb569c56ba2f4bb52\nAuthor: Hana Abernathy <hana@example.com>\n\
+  Date:   2026-11-19\n\n    Remove bolt kit cache\n\ncommit 12224a253a37e314a7b347e0df722edacc3b224a\n\
+  Author: Priya Thorne <priya@example.com>\nDate:   2026-11-20\n\n    Remove battery cache\n\ncommit 26a8b831e7145b11c6a2002835a18f5d99c1e705\n\
+  Author: Quinn Ekwueme <quinn@example.com>\nDate:   2026-11-12\n\n    Fix sensor parser\n\ncommit 858616f88e531ecfb9f23c273618b01402cedb5e\n\
+  Author: Avery Pemberton <avery@example.com>\nDate:   2026-11-25\n\n    Add gasket parser\n\ncommit c1c8c06031fd8f9ff4aa67aae694bd4f5d3463cb\n\
+  Author: Yusuf Valdivia <yusuf@example.com>\nDate:   2026-11-22\n\n    Remove desk lamp cache"
+assert:
+  equals:
+  - priya@example.com
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1448'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

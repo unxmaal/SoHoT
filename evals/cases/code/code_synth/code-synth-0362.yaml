@@ -1,0 +1,48 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0362
+modality: code
+prompt: 'Write a Python function `transform(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Keep the values at indices 0, 2, 4, and so on.
+
+  2. Rotate the list left by 2 positions, wrapping around (an empty list stays empty).
+
+  3. Divide every value by 4 with integer division that rounds toward zero (so -7 divided by 4 gives -1).
+
+  4. Sort ascending.
+
+  5. Divide every value by 2 with floor division (so -7 divided by 2 gives -4).
+
+  6. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  Then: Return the second largest distinct value, or None if there are fewer than two distinct values.
+
+
+  Example: `transform([10, 1, 0, 14]) returns 0`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([]) == None
+  - transform([-1]) == None
+  - transform([10, -11, -9, 22, 24, 9]) == 1
+  - transform([-8, 16, 1, 19, 12]) == 0
+  - transform([22, 0, 0, 3, 17, -3]) == 0
+  - transform([21, -8, -8]) == -1
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '362'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-6-steps

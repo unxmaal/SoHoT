@@ -1,0 +1,62 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0707
+modality: code
+prompt: 'Write a Python function `compute(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Keep only the first occurrence of each character.
+
+  2. Collapse every run of the same character into one character.
+
+  3. Replace every ''t'' with ''n'' (lowercase only).
+
+  4. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  5. Keep only the first occurrence of each character.
+
+  6. Replace runs of whitespace with a single space and strip both ends.
+
+  7. Replace every ''e'' with ''d'' (lowercase only).
+
+  8. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  9. Keep only the first occurrence of each character.
+
+  10. Convert to lowercase.
+
+  11. Remove every digit.
+
+  12. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `compute(''C BxaA02xAa0x1'') returns ''bxa''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute('Quick brown fox') == 'brownfx'
+  - compute('aabbbcccc') == 'abc'
+  - compute('Hello, World') == 'hlo,'
+  - compute('mississippi river') == 'misp'
+  - compute('x') == 'x'
+  - compute('The 3 little pigs 33') == 'linpgs'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '707'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-12-steps

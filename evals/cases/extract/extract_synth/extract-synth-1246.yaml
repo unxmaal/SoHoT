@@ -1,0 +1,40 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1246
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the unit price of SKU8228?'
+context: 'sku,name,qty,unit_price
+
+  SKU1544,filter pack L4,272,$35.53
+
+  SKU9043,battery L8,227,$92.76
+
+  SKU8074,gasket S3,102,$39.99
+
+  SKU8228,label roll M3,309,$56.32
+
+  SKU7249,filter pack S2,307,$53.89
+
+  SKU8884,hose clamp S5,27,$78.72'
+assert:
+  equals:
+  - $56.32
+  - '56.32'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1246'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: inventory

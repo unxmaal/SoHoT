@@ -1,0 +1,55 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0041
+modality: code
+prompt: 'Write a Python function `transform(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Rotate the list left by 4 positions, wrapping around (an empty list stays empty).
+
+  2. Divide every value by 3 with integer division that rounds toward zero (so -7 divided by 3 gives -2).
+
+  3. Replace every value with the largest of itself and the up to 3 values before it.
+
+  4. Divide every value by 3 with floor division (so -7 divided by 3 gives -3).
+
+  5. Replace every value with the largest of itself and the up to 1 values before it.
+
+  6. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  7. Add -1 to every value.
+
+  8. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  Then: Return the lower median: the value at index (n - 1) // 2 of the sorted list, or 0 for an empty
+  list.
+
+
+  Example: `transform([11, 24, 7]) returns 1`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([]) == 0
+  - transform([-5]) == -2
+  - transform([19, 23, 22, 18]) == 1
+  - transform([14, 0, -1, 24, -11, 15, 7, 25, 12]) == -2
+  - transform([3, 5, -3, -7, 24, 14, 24, 5, 22]) == 1
+  - transform([18, 21, 2, 22, 3, 6]) == 0
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '41'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-8-steps

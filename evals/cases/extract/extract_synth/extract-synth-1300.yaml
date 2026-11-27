@@ -1,0 +1,30 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1300
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the replica count of the export service?'
+context: "services:\n  gateway:\n    image: registry.example.org/gateway:4.17.6\n    port: 5907\n    replicas:\
+  \ 2\n    timeout: 112s\n  scheduler:\n    image: registry.example.org/scheduler:3.6.6\n    port: 5631\n\
+  \    replicas: 4\n    timeout: 44s\n  export:\n    image: registry.example.org/export:3.16.5\n    port:\
+  \ 9796\n    replicas: 7\n    timeout: 81s"
+assert:
+  equals:
+  - '7'
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1300'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: config

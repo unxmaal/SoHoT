@@ -1,0 +1,37 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0829
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What was the rid of the request to /login?'
+context: 'glacier - [24/Nov/2026:02:42] "GET /api/reports HTTP/1.1" 301 44028 rid=9c8534b3
+
+  indigo - [03/Nov/2026:07:49] "GET /api/upload HTTP/1.1" 200 47139 rid=f3629dca
+
+  juniper - [18/Nov/2026:22:14] "GET /login HTTP/1.1" 200 57390 rid=6dc624c2
+
+  indigo - [12/Nov/2026:01:50] "GET /healthz HTTP/1.1" 502 30475 rid=20fa8f9e
+
+  juniper - [20/Nov/2026:13:33] "GET /api/invoices HTTP/1.1" 502 47866 rid=b924c956
+
+  ember - [14/Nov/2026:19:44] "GET /api/users HTTP/1.1" 502 60280 rid=8624f3bd'
+assert:
+  equals:
+  - 6dc624c2
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '829'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: log_request

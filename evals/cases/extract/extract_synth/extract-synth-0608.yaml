@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0608
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the first 7 characters of the hash of the commit "Fix toner retry"?'
+context: "commit ec0452bb2066510f8ed9a895db3e79b8f5082aaa\nAuthor: Oren Okonkwo <oren@example.com>\nDate:\
+  \   2026-11-24\n\n    Fix toner retry\n\ncommit 8f616c0cd23658725bd2c2d0b1ce84333a982b67\nAuthor: Hana\
+  \ Sandoval <hana@example.com>\nDate:   2026-11-24\n\n    Remove toner parser\n\ncommit 183539d5a060238bd2d4d325f3278d05656a4f6f\n\
+  Author: Vera Jaramillo <vera@example.com>\nDate:   2026-11-16\n\n    Remove desk lamp limit\n\ncommit\
+  \ 96829695b08ce914bed85e1863732cbd553cfadd\nAuthor: Ivo Ekwueme <ivo@example.com>\nDate:   2026-11-25\n\
+  \n    Remove filter pack retry\n\ncommit 46c7fe6ed16062b868f0c6b3f6f3dcc4e1a6fab4\nAuthor: Ivo Ivanova\
+  \ <ivo@example.com>\nDate:   2026-11-25\n\n    Tune hose clamp retry"
+assert:
+  equals:
+  - ec0452b
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '608'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

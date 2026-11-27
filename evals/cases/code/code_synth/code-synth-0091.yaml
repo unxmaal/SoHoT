@@ -1,0 +1,42 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0091
+modality: code
+prompt: 'Write a Python function `compute(rows)`. `rows` is a list of (name, team, score) tuples with
+  integer scores and unique names, possibly empty. Given them, return the sorted list of names whose score
+  is strictly above the average score of their own team.
+
+
+  Example: `compute([(''Hugo'', ''legal'', 95), (''Cleo'', ''hr'', 70), (''Zed'', ''hr'', 80), (''Bram'',
+  ''hr'', 70), (''Ada'', ''hr'', 90), (''Pia'', ''ops'', 95), (''Fay'', ''ops'', 50), (''Jon'', ''ops'',
+  70)]) returns [''Ada'', ''Pia'', ''Zed'']`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute([('Vic', 'legal', 70), ('Mina', 'hr', 70), ('Dara', 'hr', 95), ('Wren', 'ops', 80)]) == ['Dara']
+  - compute([('Kira', 'qa', 80), ('Gus', 'hr', 90), ('Vic', 'qa', 95), ('Zed', 'sales', 70), ('Iris',
+    'qa', 60), ('Dara', 'qa', 80), ('Bram', 'hr', 60)]) == ['Dara', 'Gus', 'Kira', 'Vic']
+  - compute([('Tess', 'hr', 60), ('Olga', 'qa', 90), ('Yara', 'sales', 90), ('Fay', 'sales', 80), ('Vic',
+    'sales', 80)]) == ['Yara']
+  - compute([('Olga', 'ops', 80), ('Mina', 'ops', 60), ('Cleo', 'sales', 60), ('Nico', 'sales', 60), ('Xan',
+    'qa', 80), ('Rhea', 'sales', 80), ('Ada', 'sales', 50)]) == ['Olga', 'Rhea']
+  - compute([('Fay', 'ops', 60), ('Quin', 'sales', 70), ('Eli', 'ops', 80), ('Cleo', 'ops', 70), ('Olga',
+    'sales', 60)]) == ['Eli', 'Quin']
+  - compute([('Bram', 'sales', 70), ('Eli', 'qa', 70), ('Tess', 'qa', 90), ('Hugo', 'sales', 80), ('Xan',
+    'ops', 70), ('Yara', 'ops', 95)]) == ['Hugo', 'Tess', 'Yara']
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '91'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: records-above

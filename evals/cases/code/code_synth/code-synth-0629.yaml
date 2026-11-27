@@ -1,0 +1,56 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0629
+modality: code
+prompt: 'Write a Python function `solve(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Convert to uppercase.
+
+  2. Cut the text to at most 7 characters, then pad it on the right with ''.'' up to 7 characters.
+
+  3. Remove every vowel (a, e, i, o, u, either case).
+
+  4. Collapse every run of the same character into one character.
+
+  5. Remove every vowel (a, e, i, o, u, either case).
+
+  6. Keep only the first occurrence of each character.
+
+  7. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  8. Remove every vowel (a, e, i, o, u, either case).
+
+  9. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  10. Swap the case of every letter.
+
+  Then: Return how many characters it has.
+
+
+  Example: `solve(''2C2,200x'') returns 4`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve('Zebra 42 crossing 7') == 5
+  - solve('  jumps   over the  lazy dog ') == 4
+  - solve('  ') == 1
+  - solve('Ünïcode ok') == 5
+  - solve('Level') == 3
+  - solve('A man a plan a canal Panama') == 2
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '629'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-10-steps

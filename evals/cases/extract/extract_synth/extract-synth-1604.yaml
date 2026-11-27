@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-1604
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who authored the commit "Add desk lamp limit"?'
+context: "commit ee296e35c11631d30123ebc1126e34bc39a3f963\nAuthor: Lucia Nakamura <lucia@example.com>\n\
+  Date:   2026-11-04\n\n    Add desk lamp limit\n\ncommit 87248dfbd7c5b99c665a3e07dccd22b9bd2d936c\nAuthor:\
+  \ Bruno Nakamura <bruno@example.com>\nDate:   2026-11-09\n\n    Tune battery parser\n\ncommit 196de608a7b6b79fe4d21b193699aa73581295be\n\
+  Author: Hana Okonkwo <hana@example.com>\nDate:   2026-11-20\n\n    Fix mount plate parser\n\ncommit\
+  \ f7ba2968478fb5806c5b9af6e1cbdb594cbd55de\nAuthor: Avery Thorne <avery@example.com>\nDate:   2026-11-19\n\
+  \n    Remove label roll parser\n\ncommit a8a2bc47f54a2d3c8f7f5ace5a26775752534e8c\nAuthor: Quinn Okonkwo\
+  \ <quinn@example.com>\nDate:   2026-11-06\n\n    Add toner limit"
+assert:
+  equals:
+  - Lucia Nakamura
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '1604'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog

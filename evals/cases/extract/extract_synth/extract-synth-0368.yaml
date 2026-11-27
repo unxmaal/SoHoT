@@ -1,0 +1,33 @@
+# SoHoT generated extract cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py).
+# Imported by evals/importers from generated:evals.importers.extract_synth v1 seed 603@56d5c48246121c02c9a611252be2cb4959709e38; re-import, do not edit.
+id: extract-synth-0368
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the first 7 characters of the hash of the commit "Fix gasket parser"?'
+context: "commit ee5b53e06f2cf9f9dd3758ae3fbf3e31373ff07d\nAuthor: Talia Lindqvist <talia@example.com>\n\
+  Date:   2026-11-22\n\n    Fix sensor parser\n\ncommit 9bba2c5812f8a1928ac4ec5c9b3167aedb46e31d\nAuthor:\
+  \ Talia Lindqvist <talia@example.com>\nDate:   2026-11-05\n\n    Add hose clamp parser\n\ncommit 1f0f0195468c1f62b97da6fdac94689de73f0138\n\
+  Author: Hana Underhill <hana@example.com>\nDate:   2026-11-10\n\n    Fix gasket parser\n\ncommit 18921675c753ef0c1a3d317865707d64f9d02e00\n\
+  Author: Umar Quintero <umar@example.com>\nDate:   2026-11-09\n\n    Tune hose clamp cache\n\ncommit\
+  \ 8983f0456941967b93794e8d360ba4fd0583d6e9\nAuthor: Lucia Zielinski <lucia@example.com>\nDate:   2026-11-24\n\
+  \n    Add bolt kit retry"
+assert:
+  equals:
+  - 1f0f019
+attribution:
+  dataset: SoHoT generated extract cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/extract_synth.py
+  license: generated
+  source: generated:evals.importers.extract_synth v1 seed 603
+  revision: 56d5c48246121c02c9a611252be2cb4959709e38
+  item: '368'
+  date: '2026-11-27'
+  transform: a seeded document with distractors; the asked-for value is the only exact answer, any listed
+    form passes
+  importer: evals.importers.extract_synth
+  version: '1'
+  seed: 603
+  family: gitlog
