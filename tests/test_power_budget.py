@@ -319,7 +319,7 @@ def test_adopt_power_reads_receipts_and_speaks_json(tmp_path, capsys, monkeypatc
     head = {"modality": "code", "max_tokens": completion.budget("code")}
     receipt.write_text(json.dumps({"receipt": head, "environment": env, "rows": rows}),
                        encoding="utf-8")
-    assert cli.main(["adopt", "--json", "--power", "--lane", "code",
+    assert cli.main(["adopt", "--json", "--power", "--lane", "code", "--effect", "0.04",
                      "--receipt", str(receipt)]) == 0
     got = json.loads(capsys.readouterr().out)
     row = got["lanes"][0]
