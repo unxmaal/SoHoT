@@ -9,7 +9,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from evals import watch
-from harness import lanes, methods, overrun, paths, paused, reasons, runs, test_weights
+from harness import incumbent_down, lanes, methods, overrun, paths, paused, reasons, runs, test_weights
 from harness.commands.common import emit, err, note
 from harness.commands import jobs as jobs_cmd
 
@@ -504,27 +504,27 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         # Stopped from outside (the watchdog, a TERM): its rows are kept and the next sweep resumes it. #864.
         print(f"    stopped by a signal (exit {proc.returncode}); its checkpointed cases are kept", flush=True)
         return _paused(name, lane, inc_spec, spec, split, plan, out, held, ident, sweep)
+    if proc.returncode == watch.SILENT:
+        return incumbent_down.stopped(name, lane, inc_spec, proc.stderr or "", dry)
     if proc.returncode != 0:
         stem, why = reasons.plan_refusal(proc.stderr or "")
         if _plan_limit(name, lane, incumbent, stem, why, _names(spec, stem) and not _names(inc_spec, stem), sweep, dry):
             return 0
         err(proc.stderr.strip()[-400:] or "no stderr")
         return 1
+    incumbent_down.clear(lane) if not dry else None
     taken = (held or {}).get("looks") or []
     if held and held.get("id") is not None:
         # The run finished; whatever is read from it next, nothing is left to resume.
         paused.settle_here(held["id"], "done", f"finished after {len(taken)} pause(s)")
     data = _receipt_at(out)
     if not data:
-        return err(f"{name}: the run stored no receipt for {out}, so nothing "
-                   f"can be adopted from it")
+        return err(f"{name}: the run stored no receipt for {out}, so nothing can be adopted from it")
     summary = data.get("summary") or {}
     rows = data.get("rows") or []
-    # The run's own specs map is the mapping; store it, then read keys back.
-    store = ms.connect()
+    store = ms.connect()  # the receipt's specs map is the mapping; store it, then read keys back
     try:
-        candidates.from_receipt(store, data.get("specs") or {}, lane=lane,
-                                proposals={spec: name})
+        candidates.from_receipt(store, data.get("specs") or {}, lane=lane, proposals={spec: name})
         inc_key = candidates.key_for(store, inc_spec)
         ch_key = candidates.key_for(store, spec)
         rows, summary, taken_from = _merge_reused(store, out, plan, rows, summary, inc_key)

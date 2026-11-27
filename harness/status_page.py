@@ -319,7 +319,7 @@ def gather(now: float | None = None, *, connect=None, beat=None, where=None, git
         r["features"] = _section(features or _features, conn, now, r["queue"])
         r["discovery_flow"] = {} if light else _section(_discovery_flow, conn, now)
         r["stops"] = {"holds": _section(needs_you.read_holds, conn, now), "jobs": _section(needs_you.read_jobs, conn, now),
-                      "gateway": _section(needs_you.read_gateway), "router": _section(needs_you.read_router), "deploying": _section(needs_you.read_deploying, now, r["queue"]), "gate": _section(needs_you.read_gate),
+                      "gateway": _section(needs_you.read_gateway), "incumbent": _section(needs_you.read_incumbent), "router": _section(needs_you.read_router), "deploying": _section(needs_you.read_deploying, now, r["queue"]), "gate": _section(needs_you.read_gate),
                       "monit": _section(needs_you.read_monit, now, home, r["monitor"])}
         if (r["queue"].get("deploy_hold") or {}).get("live"):
             r["deploy"]["in_progress"] = r["queue"]["deploy_hold"]
