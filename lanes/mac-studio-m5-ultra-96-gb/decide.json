@@ -121,36 +121,6 @@
    "until": ""
   },
   {
-   "candidate": "ggml-org/Laya-GGUF",
-   "decided_at": "2026-11-20T02:27:57Z",
-   "detail": "it ran and passed nothing: check-squad2-56dddf4066d3e219004dad5f: warm-up: gateway returned HTTP 501: {\"error\":{\"code\":501,\"message\":\"This model is a decision model without text generation, use systemone\",\"type\":\"not_supported_error\"}}; guard-browsesafe-1130: warm-up: gateway returned HTTP 501: {\"error\":{\"code\":501,\"messa",
-   "exam": null,
-   "outcome": "broken",
-   "proposal": "ggml-org/Laya-GGUF",
-   "reason": "candidate",
-   "receipt_key": "ggml-org/Laya-GGUF",
-   "run_id": 1032,
-   "serves": false,
-   "status": "rejected",
-   "tier": "screen",
-   "until": ""
-  },
-  {
-   "candidate": "ggml-org/Laya-GGUF,temperature=0",
-   "decided_at": "2026-11-20T02:27:57Z",
-   "detail": "it ran and passed nothing: check-squad2-56dddf4066d3e219004dad5f: warm-up: gateway returned HTTP 501: {\"error\":{\"code\":501,\"message\":\"This model is a decision model without text generation, use systemone\",\"type\":\"not_supported_error\"}}; guard-browsesafe-1130: warm-up: gateway returned HTTP 501: {\"error\":{\"code\":501,\"messa",
-   "exam": null,
-   "outcome": "broken",
-   "proposal": "ggml-org/Laya-GGUF",
-   "reason": "candidate",
-   "receipt_key": "ggml-org/Laya-GGUF",
-   "run_id": 1032,
-   "serves": false,
-   "status": "rejected",
-   "tier": "screen",
-   "until": ""
-  },
-  {
    "candidate": "nimble:bespokelabs/Bespoke-Nimble-9B",
    "decided_at": "2026-11-22T07:38:49Z",
    "detail": "decide: lane too small, needs 153 holdout cases: 132 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 70 more decide cases are needed before a null says anything about nimble/B",
@@ -459,6 +429,36 @@
    "serves": false,
    "status": "pending",
    "tier": "",
+   "until": ""
+  },
+  {
+   "candidate": "ggml-org/Laya-GGUF",
+   "decided_at": "2026-11-27T05:07:49Z",
+   "detail": "retest 3/3: broken at screen",
+   "exam": null,
+   "outcome": "queued",
+   "proposal": "ggml-org/Laya-GGUF",
+   "reason": "reopened",
+   "receipt_key": "ggml-org/Laya-GGUF",
+   "run_id": null,
+   "serves": false,
+   "status": "pending",
+   "tier": "inspect",
+   "until": ""
+  },
+  {
+   "candidate": "ggml-org/Laya-GGUF,temperature=0",
+   "decided_at": "2026-11-27T05:07:49Z",
+   "detail": "retest 3/3: broken at screen",
+   "exam": null,
+   "outcome": "queued",
+   "proposal": "ggml-org/Laya-GGUF",
+   "reason": "reopened",
+   "receipt_key": "ggml-org/Laya-GGUF",
+   "run_id": null,
+   "serves": false,
+   "status": "pending",
+   "tier": "inspect",
    "until": ""
   },
   {
@@ -2552,7 +2552,7 @@
    "runs": 4
   }
  ],
- "generated_at": "2026-11-27T04:57:20Z",
+ "generated_at": "2026-11-27T11:09:18Z",
  "knobs": [],
  "lane": {
   "cases": 661,
