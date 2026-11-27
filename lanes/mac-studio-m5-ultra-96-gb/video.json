@@ -769,7 +769,7 @@
    "runs": 7
   }
  ],
- "generated_at": "2026-11-27T04:57:20Z",
+ "generated_at": "2026-11-27T11:09:18Z",
  "knobs": [],
  "lane": {
   "cases": 1,
@@ -812,7 +812,7 @@
   "pass_rate": 1.0,
   "serves": "h3",
   "serves_model": "h3",
-  "stale": false
+  "stale": true
  },
  "since": 0
 }
