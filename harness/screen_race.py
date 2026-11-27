@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import math
 import statistics
+import sys
 from dataclasses import dataclass, field
 
 #: Posterior chance the challenger beats the incumbent by the adopt effect under which a race declines it.
@@ -141,7 +142,8 @@ def plan(lane: str, case_ids, cap: int, conn=None) -> Plan | None:
     try:
         with runs.store(conn) as c:
             rates, secs = stored(lane, c)
-    except Exception:  # noqa: BLE001 - no store reads as no cells
+    except Exception as exc:  # noqa: BLE001 - no store reads as no cells
+        print(f"screen: could not read the {lane} incumbent's cells for a race: {exc}", file=sys.stderr)
         return None
     ids = list(dict.fromkeys(holdout.base_id(i) for i in case_ids))
     ids = [i for i in ids if i in rates]
