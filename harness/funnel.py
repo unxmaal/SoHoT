@@ -102,7 +102,7 @@ def _said(history: list[dict], since: float) -> str:
 def proposals(conn, *, lane: str = "", since: float | None = None, now: float | None = None,
               top: int | None = None) -> list[dict]:
     """One row per proposal: stage, entry into its state, age since first sighting, and why it waits."""
-    from harness import ceiling, downloads, rank, report
+    from harness import ceiling, downloads, prefilter, rank, report
     now = time.time() if now is None else now
     # What a sweep screens: an explicit count, else what the ceiling has room for. #1084.
     top = top or ceiling.screen_capacity(conn, now=now)
@@ -111,7 +111,7 @@ def proposals(conn, *, lane: str = "", since: float | None = None, now: float | 
     for r in report.ranked(conn):
         per_lane.setdefault(rank.lane_of(r), []).append(r["name"])
     lane_rank = {n: i for names in per_lane.values() for i, n in enumerate(names)}
-    order = fetching.queued(conn)
+    order, left_out = prefilter.split(conn, fetching.queued(conn, prefiltered=False))
     fetchable, position, tried = {r["name"]: r for r in order}, {}, 0
     for r in order:
         got = fetching.why_not(r)
@@ -144,9 +144,12 @@ def proposals(conn, *, lane: str = "", since: float | None = None, now: float | 
                "raw_lane": p["lane"] or "", "reason": "", "why": "", "fetch_said": _said(history, start)}
         if state == "queued" and not downloaded:
             got = fetchable.get(p["name"])
-            row["reason"], row["why"] = _reason(got, top=top,
-                                                position=position.get(p["name"]),
-                                                skipped=_skipped(history, start)) if got else _unfetchable(p)
+            if p["name"] in left_out:
+                kind, why = left_out[p["name"]]
+                row["reason"], row["why"] = "prefilter", f"{kind}: {why}"
+            else:
+                row["reason"], row["why"] = _reason(got, top=top, position=position.get(p["name"]),
+                                                    skipped=_skipped(history, start)) if got else _unfetchable(p)
         out.append(row)
     return out
 

@@ -167,8 +167,9 @@ def _candidate_of(conn, lane: str, serves: str) -> int | None:
 
 def ranked(conn, rows=None) -> list[dict]:
     """The judgeable rows in rank order, as the queue and the funnel both read it. #925."""
-    from harness import rank
+    from harness import prefilter, rank
     rows = ms_judgeable(conn) if rows is None else rows
+    rows = prefilter.split(conn, rows)[0]
     return rank.rank(rows, serving=rank.serving(),
                      measured_lanes=rank.lanes_with_receipts(conn), conn=conn)
 

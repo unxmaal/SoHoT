@@ -176,7 +176,7 @@ def _downloads(conn, since: float, fetched: list[dict]) -> tuple[list[dict], dic
 
 def gather(conn, now: float, window_s: float = WINDOW_S) -> dict:
     """Nodes (in, out, seconds), edges (count, repeats) and leak markers over the last `window_s`, read from the store."""
-    from harness import power
+    from harness import power, wip
     from harness import workqueue as wq
     from harness.commands import loop_steps
     if conn is None:
@@ -238,4 +238,4 @@ def gather(conn, now: float, window_s: float = WINDOW_S) -> dict:
         leaks.append({"key": "refetched", "n": again["gib"], "text": f"{again['gib']:.1f} GiB downloaded again in {refetch.REFETCH_WINDOW_S / 3600:g} h "
                       f"({again['n']} download(s) of {again['repos']} repo(s) already fetched): Hugging Face warns of an egress quota"})
     return {"since": since, "until": now, "cycle": next((s["cycle"] for s in reversed(steps) if s["cycle"]), ""),
-            "nodes": nodes, "edges": edges, "leaks": leaks}
+            "nodes": nodes, "edges": edges, "leaks": leaks, "wip": wip.status(conn)}

@@ -119,6 +119,8 @@ capabilities:
       - harness/worktrees.py
       - harness/commands/worktrees.py
       - harness/refetch.py
+      - harness/wip.py
+      - harness/prefilter.py
 
   - name: discovery-sources
     summary: Feeds, registries, papers, posts and neighbours that propose candidates, techniques and benchmarks.
