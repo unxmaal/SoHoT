@@ -1,6 +1,36 @@
 {
  "candidates": [
   {
+   "candidate": "akhilaaa3/Jev-Omni",
+   "decided_at": "2026-11-26T23:09:28Z",
+   "detail": "the screen exited -30",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "akhilaaa3/Jev-Omni",
+   "reason": "candidate",
+   "receipt_key": "akhilaaa3/Jev-Omni",
+   "run_id": null,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "akhilaaa3/Jev-Omni,temperature=0",
+   "decided_at": "2026-11-26T23:09:28Z",
+   "detail": "the screen exited -30",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "akhilaaa3/Jev-Omni",
+   "reason": "candidate",
+   "receipt_key": "akhilaaa3/Jev-Omni",
+   "run_id": null,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "bespokelabs/Bespoke-Nimble-9B",
    "decided_at": "2026-11-22T07:38:49Z",
    "detail": "decide: lane too small, needs 153 holdout cases: 132 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 70 more decide cases are needed before a null says anything about nimble/B",
@@ -49,6 +79,46 @@
    "status": "rejected",
    "tier": "screen",
    "until": "version:mlx-lm>0.32.0"
+  },
+  {
+   "candidate": "decider:StrandsAgents/strands-decider-2B-hobson-v21",
+   "decided_at": "2026-11-26T23:14:34Z",
+   "detail": "the screen exited -30",
+   "exam": {
+    "about": "2B params",
+    "candidate": "decider/strands-decider-2B-hobson-v21",
+    "cases": 36,
+    "first_s": 14.977,
+    "median_s": 2.534,
+    "metrics": {
+     "calibrated": 1.0,
+     "decide_accuracy": 0.7143,
+     "decide_brier": 0.3911,
+     "decide_ece": 0.0872
+    },
+    "model": "decider/strands-decider-2B-hobson-v21",
+    "not_run": "",
+    "pass_rate": 0.25,
+    "passed": 9,
+    "peak_gb": 5.78,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-10-07T14:28:10Z",
+    "served_as": "",
+    "source": "",
+    "total": 36,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "broken",
+   "proposal": "StrandsAgents/strands-decider-2B-hobson-v21",
+   "reason": "candidate",
+   "receipt_key": "decider/strands-decider-2B-hobson-v21",
+   "run_id": null,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
   },
   {
    "candidate": "ggml-org/Laya-GGUF",
@@ -280,36 +350,6 @@
    "until": ""
   },
   {
-   "candidate": "akhilaaa3/Jev-Omni",
-   "decided_at": "2026-11-26T22:32:08Z",
-   "detail": "not screened: needs 22.3 GB but only 21.3 GB is safely available (39.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
-   "exam": null,
-   "outcome": "queued",
-   "proposal": "akhilaaa3/Jev-Omni",
-   "reason": "memory",
-   "receipt_key": "akhilaaa3/Jev-Omni",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>22.3"
-  },
-  {
-   "candidate": "akhilaaa3/Jev-Omni,temperature=0",
-   "decided_at": "2026-11-26T22:32:08Z",
-   "detail": "not screened: needs 22.3 GB but only 21.3 GB is safely available (39.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
-   "exam": null,
-   "outcome": "queued",
-   "proposal": "akhilaaa3/Jev-Omni",
-   "reason": "memory",
-   "receipt_key": "akhilaaa3/Jev-Omni",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>22.3"
-  },
-  {
    "candidate": "apus-ailab/APUS-OpenJev-v1-4B-GGUF",
    "decided_at": "",
    "detail": "",
@@ -377,46 +417,6 @@
    "serves": false,
    "status": "pending",
    "tier": "",
-   "until": ""
-  },
-  {
-   "candidate": "decider:StrandsAgents/strands-decider-2B-hobson-v21",
-   "decided_at": "2026-11-26T22:32:23Z",
-   "detail": "not screened: our snapshot lacks files its runner opens; refetch: check-squad2-56dddf4066d3e219004dad5f: exit 1: needs StrandsAgents/strands-decider-2B-hobson-v21, which is not in the hub cache; soh fetch --run: huggingface_hub.errors.IncompleteSnapshotError: The cached snapshot for 'StrandsAgents/strands-decider-2B-hobson-v21' (revision 'main', commit 5c9d44fdeb3",
-   "exam": {
-    "about": "2B params",
-    "candidate": "decider/strands-decider-2B-hobson-v21",
-    "cases": 36,
-    "first_s": 14.977,
-    "median_s": 2.534,
-    "metrics": {
-     "calibrated": 1.0,
-     "decide_accuracy": 0.7143,
-     "decide_brier": 0.3911,
-     "decide_ece": 0.0872
-    },
-    "model": "decider/strands-decider-2B-hobson-v21",
-    "not_run": "",
-    "pass_rate": 0.25,
-    "passed": 9,
-    "peak_gb": 5.78,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-10-07T14:28:10Z",
-    "served_as": "",
-    "source": "",
-    "total": 36,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "queued",
-   "proposal": "StrandsAgents/strands-decider-2B-hobson-v21",
-   "reason": "harness",
-   "receipt_key": "decider/strands-decider-2B-hobson-v21",
-   "run_id": 1348,
-   "serves": false,
-   "status": "pending",
-   "tier": "fetch",
    "until": ""
   },
   {
@@ -784,7 +784,7 @@
    "until": ""
   }
  ],
- "cursor": 1795732328406774,
+ "cursor": 1795734874718098,
  "events": [
   {
    "at": "2026-09-22T13:14:31Z",
@@ -1775,6 +1775,36 @@
    "reason": "memory",
    "run_id": null,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-26T23:09:28Z",
+   "candidate": "akhilaaa3/Jev-Omni",
+   "chosen": null,
+   "detail": "the screen exited -30",
+   "how": "",
+   "id": 1795734568083572,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-26T23:14:34Z",
+   "candidate": "decider:StrandsAgents/strands-decider-2B-hobson-v21",
+   "chosen": null,
+   "detail": "the screen exited -30",
+   "how": "",
+   "id": 1795734874718098,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": null,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -2522,7 +2552,7 @@
    "runs": 4
   }
  ],
- "generated_at": "2026-11-26T22:45:01Z",
+ "generated_at": "2026-11-27T04:57:20Z",
  "knobs": [],
  "lane": {
   "cases": 661,
