@@ -69,12 +69,12 @@
   },
   {
    "candidate": "diffusers-video:FastVideo/FastVideo-FastH3-8-Step-V2",
-   "decided_at": "2026-11-27T20:47:14Z",
-   "detail": "video lane closed to challengers: power 0.00 at +0.20 is under lane_gate_power 0.80, needs 101 more holdout cases (102 in all, 1 here); soh lane-gate open video overrides for a while",
+   "decided_at": "2026-11-27T22:01:04Z",
+   "detail": "prefilter: window: FastVideo/FastVideo-FastH3-8-Step-V2 needs 137.7 GiB, more than the 56.0 GiB a load can get here with the interactive server's pinned models released",
    "exam": null,
    "outcome": "queued",
    "proposal": "FastVideo/FastVideo-FastH3-8-Step-V2",
-   "reason": "limit",
+   "reason": "machine",
    "receipt_key": "diffusers-video/FastVideo-FastH3-8-Step-V2",
    "run_id": null,
    "serves": false,
@@ -784,7 +784,7 @@
    "runs": 7
   }
  ],
- "generated_at": "2026-11-27T21:02:47Z",
+ "generated_at": "2026-11-27T23:01:39Z",
  "knobs": [],
  "lane": {
   "cases": 1,
