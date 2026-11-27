@@ -191,6 +191,90 @@
    "until": "cases:decide>730"
   },
   {
+   "candidate": "sky7350/Mica-v0.5-4B",
+   "decided_at": "2026-11-27T20:55:16Z",
+   "detail": "decide: lane too small, needs 153 holdout cases: 132 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 70 more decide cases are needed before a null says anything about sky7350/",
+   "exam": {
+    "about": "family Qwen/Qwen3.5-4B, 4B params, by sky7350",
+    "candidate": "sky7350/Mica-v0.5-4B",
+    "cases": 661,
+    "first_s": 0.574,
+    "median_s": 0.385,
+    "metrics": {
+     "calibrated": 1.0,
+     "completion_tokens": 36.3419,
+     "decide_accuracy": 0.778,
+     "decide_brier": 0.3175,
+     "decide_ece": 0.0723,
+     "tokens_per_s": 92.8248
+    },
+    "model": "sky7350/Mica-v0.5-4B",
+    "not_run": "",
+    "pass_rate": 0.386,
+    "passed": 255,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-27T20:55:14Z",
+    "served_as": "",
+    "source": "https://huggingface.co/sky7350/Mica-v0.5-4B",
+    "total": 661,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "declined",
+   "proposal": "sky7350/Mica-v0.5-4B",
+   "reason": "limit",
+   "receipt_key": "sky7350/Mica-v0.5-4B",
+   "run_id": 1373,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:decide>730"
+  },
+  {
+   "candidate": "sky7350/Mica-v0.5-4B,temperature=0",
+   "decided_at": "2026-11-27T20:55:16Z",
+   "detail": "decide: lane too small, needs 153 holdout cases: 132 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 70 more decide cases are needed before a null says anything about sky7350/",
+   "exam": {
+    "about": "family Qwen/Qwen3.5-4B, 4B params, by sky7350",
+    "candidate": "sky7350/Mica-v0.5-4B",
+    "cases": 661,
+    "first_s": 0.574,
+    "median_s": 0.385,
+    "metrics": {
+     "calibrated": 1.0,
+     "completion_tokens": 36.3419,
+     "decide_accuracy": 0.778,
+     "decide_brier": 0.3175,
+     "decide_ece": 0.0723,
+     "tokens_per_s": 92.8248
+    },
+    "model": "sky7350/Mica-v0.5-4B",
+    "not_run": "",
+    "pass_rate": 0.386,
+    "passed": 255,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-27T20:55:14Z",
+    "served_as": "",
+    "source": "https://huggingface.co/sky7350/Mica-v0.5-4B",
+    "total": 661,
+    "ttft_median_s": null,
+    "ttft_p95_s": null
+   },
+   "outcome": "declined",
+   "proposal": "sky7350/Mica-v0.5-4B",
+   "reason": "limit",
+   "receipt_key": "sky7350/Mica-v0.5-4B",
+   "run_id": 1373,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:decide>730"
+  },
+  {
    "candidate": "nimble:bespokelabs/Bespoke-Nimble-9B-v2",
    "decided_at": "2026-11-22T15:59:37Z",
    "detail": "2 case(s) passed a screen",
@@ -225,90 +309,6 @@
    "reason": "candidate",
    "receipt_key": "nimble/Bespoke-Nimble-9B-v2",
    "run_id": 1158,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
-   "candidate": "sky7350/Mica-v0.5-4B",
-   "decided_at": "2026-11-13T02:29:59Z",
-   "detail": "2 case(s) passed a screen",
-   "exam": {
-    "about": "family Qwen/Qwen3.5-4B, 4B params, by sky7350",
-    "candidate": "sky7350/Mica-v0.5-4B",
-    "cases": 661,
-    "first_s": 0.384,
-    "median_s": 0.383,
-    "metrics": {
-     "calibrated": 1.0,
-     "completion_tokens": 36.3419,
-     "decide_accuracy": 0.778,
-     "decide_brier": 0.3175,
-     "decide_ece": 0.0723,
-     "tokens_per_s": 94.3492
-    },
-    "model": "sky7350/Mica-v0.5-4B",
-    "not_run": "",
-    "pass_rate": 0.386,
-    "passed": 255,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-05T05:47:33Z",
-    "served_as": "",
-    "source": "https://huggingface.co/sky7350/Mica-v0.5-4B",
-    "total": 661,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "screened",
-   "proposal": "sky7350/Mica-v0.5-4B",
-   "reason": "candidate",
-   "receipt_key": "sky7350/Mica-v0.5-4B",
-   "run_id": 929,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
-   "candidate": "sky7350/Mica-v0.5-4B,temperature=0",
-   "decided_at": "2026-11-13T02:29:59Z",
-   "detail": "2 case(s) passed a screen",
-   "exam": {
-    "about": "family Qwen/Qwen3.5-4B, 4B params, by sky7350",
-    "candidate": "sky7350/Mica-v0.5-4B",
-    "cases": 661,
-    "first_s": 0.384,
-    "median_s": 0.383,
-    "metrics": {
-     "calibrated": 1.0,
-     "completion_tokens": 36.3419,
-     "decide_accuracy": 0.778,
-     "decide_brier": 0.3175,
-     "decide_ece": 0.0723,
-     "tokens_per_s": 94.3492
-    },
-    "model": "sky7350/Mica-v0.5-4B",
-    "not_run": "",
-    "pass_rate": 0.386,
-    "passed": 255,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-05T05:47:33Z",
-    "served_as": "",
-    "source": "https://huggingface.co/sky7350/Mica-v0.5-4B",
-    "total": 661,
-    "ttft_median_s": null,
-    "ttft_p95_s": null
-   },
-   "outcome": "screened",
-   "proposal": "sky7350/Mica-v0.5-4B",
-   "reason": "candidate",
-   "receipt_key": "sky7350/Mica-v0.5-4B",
-   "run_id": 929,
    "serves": false,
    "status": "screened",
    "tier": "screen",
@@ -784,7 +784,7 @@
    "until": ""
   }
  ],
- "cursor": 1795804342282560,
+ "cursor": 1795812916909608,
  "events": [
   {
    "at": "2026-09-22T13:14:31Z",
@@ -1820,6 +1820,21 @@
    "reason": "candidate",
    "run_id": 1371,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-27T20:55:16Z",
+   "candidate": "sky7350/Mica-v0.5-4B",
+   "chosen": null,
+   "detail": "decide: lane too small, needs 153 holdout cases: 132 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 70 more decide cases are needed before a null says anything about sky7350/",
+   "how": "",
+   "id": 1795812916909608,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1373,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -1887,6 +1902,32 @@
      "ttft_p95_s": null
     },
     {
+     "about": "family Qwen/Qwen3.5-4B, 4B params, by sky7350",
+     "candidate": "sky7350/Mica-v0.5-4B",
+     "first_s": 0.574,
+     "median_s": 0.385,
+     "metrics": {
+      "calibrated": 1.0,
+      "completion_tokens": 36.3419,
+      "decide_accuracy": 0.778,
+      "decide_brier": 0.3175,
+      "decide_ece": 0.0723,
+      "tokens_per_s": 92.8248
+     },
+     "model": "sky7350/Mica-v0.5-4B",
+     "not_run": "",
+     "pass_rate": 0.386,
+     "passed": 255,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-27T20:55:14Z",
+     "served_as": "",
+     "source": "https://huggingface.co/sky7350/Mica-v0.5-4B",
+     "total": 661,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
      "about": "9B params",
      "candidate": "nimble/Bespoke-Nimble-9B",
      "first_s": 14.188,
@@ -1930,8 +1971,8 @@
      "ttft_p95_s": null
     }
    ],
-   "run_at": "2026-11-25T15:45:42Z",
-   "runs": 8
+   "run_at": "2026-11-27T20:55:14Z",
+   "runs": 9
   },
   {
    "cases": 132,
@@ -2567,7 +2608,7 @@
    "runs": 4
   }
  ],
- "generated_at": "2026-11-27T20:09:55Z",
+ "generated_at": "2026-11-27T21:02:47Z",
  "knobs": [],
  "lane": {
   "cases": 661,
