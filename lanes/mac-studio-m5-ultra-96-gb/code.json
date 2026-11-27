@@ -947,6 +947,21 @@
    "until": "cases:extract>2106"
   },
   {
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "decided_at": "2026-11-27T16:59:51Z",
+   "detail": "the screen exited -30",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "reason": "candidate",
+   "receipt_key": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "run_id": null,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-GGUF",
    "decided_at": "2026-11-24T17:58:54Z",
    "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about Less",
@@ -2749,6 +2764,21 @@
    "status": "rejected",
    "tier": "screen",
    "until": "limit:screen_cases>6"
+  },
+  {
+   "candidate": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
+   "decided_at": "2026-11-27T19:43:01Z",
+   "detail": "the screen exited 75 || paused on request, 4 case(s) left",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
+   "reason": "candidate",
+   "receipt_key": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
+   "run_id": null,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
   },
   {
    "candidate": "dealignai/Gemma-4-31B-JANG_4M-CRACK",
@@ -5628,6 +5658,36 @@
    "until": "version:llama.cpp>11960"
   },
   {
+   "candidate": "llamacpp:acervo-extractor-qwen3.5-9b-Q4_K_M",
+   "decided_at": "2026-11-27T19:43:01Z",
+   "detail": "the screen exited 75 || paused on request, 4 case(s) left",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
+   "reason": "candidate",
+   "receipt_key": "llamacpp:acervo-extractor-qwen3.5-9b-Q4_K_M",
+   "run_id": null,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "llamacpp:acervo-extractor-qwen3.5-9b-Q4_K_M,temperature=0",
+   "decided_at": "2026-11-27T19:43:01Z",
+   "detail": "the screen exited 75 || paused on request, 4 case(s) left",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
+   "reason": "candidate",
+   "receipt_key": "llamacpp:acervo-extractor-qwen3.5-9b-Q4_K_M",
+   "run_id": null,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "llamacpp:apodex_Apodex-1.1-mini-Q4_K_M",
    "decided_at": "2026-11-23T13:31:36Z",
    "detail": "extract: lane too small, needs 584 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1440 more extract cases are needed before a null says anything about bart",
@@ -8374,33 +8434,33 @@
   },
   {
    "candidate": "NemoStation/Marlin-2B",
-   "decided_at": "2026-11-26T21:50:06Z",
-   "detail": "not screened: needs 5.1 GB but only -7.0 GB is safely available (11.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "decided_at": "2026-11-27T17:54:27Z",
+   "detail": "fits: smallest variant model-00001-of-00002.safetensors (+1): 5.1 GiB of 2 weight files",
    "exam": null,
    "outcome": "queued",
    "proposal": "NemoStation/Marlin-2B",
-   "reason": "memory",
+   "reason": "candidate",
    "receipt_key": "NemoStation/Marlin-2B",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>5.1"
+   "tier": "inspect",
+   "until": ""
   },
   {
    "candidate": "NemoStation/Marlin-2B,temperature=0",
-   "decided_at": "2026-11-26T21:50:06Z",
-   "detail": "not screened: needs 5.1 GB but only -7.0 GB is safely available (11.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.7 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "decided_at": "2026-11-27T17:54:27Z",
+   "detail": "fits: smallest variant model-00001-of-00002.safetensors (+1): 5.1 GiB of 2 weight files",
    "exam": null,
    "outcome": "queued",
    "proposal": "NemoStation/Marlin-2B",
-   "reason": "memory",
+   "reason": "candidate",
    "receipt_key": "NemoStation/Marlin-2B",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>5.1"
+   "tier": "inspect",
+   "until": ""
   },
   {
    "candidate": "Qwen/Qwen-Drive-1.0-4B",
@@ -8434,33 +8494,33 @@
   },
   {
    "candidate": "Qwen/Qwen-Image-Bench",
-   "decided_at": "2026-11-27T14:21:55Z",
-   "detail": "not fetched 2026-11-27: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-27T19:41:51Z",
+   "detail": "not screened: needs 53.0 GiB but at most 23.3 GiB is free for a load here while the interactive server's pinned models stay held (beside the system reserve and the Docker VM); a screen window can release them",
    "exam": null,
    "outcome": "queued",
    "proposal": "Qwen/Qwen-Image-Bench",
-   "reason": "limit",
+   "reason": "memory",
    "receipt_key": "Qwen/Qwen-Image-Bench",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "fetch",
-   "until": ""
+   "tier": "screen",
+   "until": "room_gb:>53.0"
   },
   {
    "candidate": "Qwen/Qwen-Image-Bench,temperature=0",
-   "decided_at": "2026-11-27T14:21:55Z",
-   "detail": "not fetched 2026-11-27: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-27T19:41:51Z",
+   "detail": "not screened: needs 53.0 GiB but at most 23.3 GiB is free for a load here while the interactive server's pinned models stay held (beside the system reserve and the Docker VM); a screen window can release them",
    "exam": null,
    "outcome": "queued",
    "proposal": "Qwen/Qwen-Image-Bench",
-   "reason": "limit",
+   "reason": "memory",
    "receipt_key": "Qwen/Qwen-Image-Bench",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "fetch",
-   "until": ""
+   "tier": "screen",
+   "until": "room_gb:>53.0"
   },
   {
    "candidate": "Qwen2.5-7B-Instruct-Q4_K_M",
@@ -8475,21 +8535,6 @@
    "serves": false,
    "status": "pending",
    "tier": "",
-   "until": ""
-  },
-  {
-   "candidate": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
-   "decided_at": "2026-11-27T11:19:48Z",
-   "detail": "retest 1/3: declined at adopt",
-   "exam": null,
-   "outcome": "queued",
-   "proposal": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
-   "reason": "reopened",
-   "receipt_key": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "inspect",
    "until": ""
   },
   {
@@ -8538,39 +8583,9 @@
    "until": ""
   },
   {
-   "candidate": "llamacpp:acervo-extractor-qwen3.5-9b-Q4_K_M",
-   "decided_at": "2026-11-27T11:19:48Z",
-   "detail": "retest 1/3: declined at adopt",
-   "exam": null,
-   "outcome": "queued",
-   "proposal": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
-   "reason": "reopened",
-   "receipt_key": "llamacpp:acervo-extractor-qwen3.5-9b-Q4_K_M",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "inspect",
-   "until": ""
-  },
-  {
-   "candidate": "llamacpp:acervo-extractor-qwen3.5-9b-Q4_K_M,temperature=0",
-   "decided_at": "2026-11-27T11:19:48Z",
-   "detail": "retest 1/3: declined at adopt",
-   "exam": null,
-   "outcome": "queued",
-   "proposal": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
-   "reason": "reopened",
-   "receipt_key": "llamacpp:acervo-extractor-qwen3.5-9b-Q4_K_M",
-   "run_id": null,
-   "serves": false,
-   "status": "pending",
-   "tier": "inspect",
-   "until": ""
-  },
-  {
    "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
-   "decided_at": "2026-11-27T01:55:38Z",
-   "detail": "not fetched 2026-11-27: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-27T19:43:20Z",
+   "detail": "not screened: needs 45.9 GiB but at most 23.3 GiB is free for a load here while the interactive server's pinned models stay held (beside the system reserve and the Docker VM); a screen window can release them",
    "exam": {
     "about": "family CohereLabs/command-a-plus-05-2026-bf16, IQ1_S, by bartowski",
     "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
@@ -8598,18 +8613,18 @@
    },
    "outcome": "queued",
    "proposal": "bartowski/command-a-plus-05-2026-GGUF",
-   "reason": "limit",
+   "reason": "memory",
    "receipt_key": "llamacpp:command-a-plus-05-2026-IQ1_S",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "fetch",
-   "until": ""
+   "tier": "screen",
+   "until": "room_gb:>45.9"
   },
   {
    "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S,temperature=0",
-   "decided_at": "2026-11-27T01:55:38Z",
-   "detail": "not fetched 2026-11-27: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-27T19:43:20Z",
+   "detail": "not screened: needs 45.9 GiB but at most 23.3 GiB is free for a load here while the interactive server's pinned models stay held (beside the system reserve and the Docker VM); a screen window can release them",
    "exam": {
     "about": "family CohereLabs/command-a-plus-05-2026-bf16, IQ1_S, by bartowski",
     "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
@@ -8637,13 +8652,13 @@
    },
    "outcome": "queued",
    "proposal": "bartowski/command-a-plus-05-2026-GGUF",
-   "reason": "limit",
+   "reason": "memory",
    "receipt_key": "llamacpp:command-a-plus-05-2026-IQ1_S",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "fetch",
-   "until": ""
+   "tier": "screen",
+   "until": "room_gb:>45.9"
   },
   {
    "candidate": "lolzinventor/Qwen3.5-4B-Base-ZitGen-V1",
@@ -8835,7 +8850,7 @@
    "until": ""
   }
  ],
- "cursor": 1795786404511533,
+ "cursor": 1795808600237685,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -16564,6 +16579,21 @@
   },
   {
    "at": "2026-10-30T01:09:27Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 36.8 GB but only 4.9 GB is safely available (22.9 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1793322567349857,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-10-30T01:09:27Z",
    "candidate": "Zyphra/ZAYA1-8B",
    "chosen": null,
    "detail": "not screened: needs 17.7 GB but only 4.9 GB is safely available (22.9 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
@@ -16854,6 +16884,21 @@
    "detail": "not screened: needs 19.7 GB but only 7.8 GB is safely available (25.7 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
    "how": "",
    "id": 1793497758228203,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-01T01:49:18Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 36.8 GB but only 8.0 GB is safely available (26.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1793497758274699,
    "incumbent": "",
    "kind": "screen",
    "knob": "",
@@ -17208,6 +17253,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-03T02:56:30Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 36.8 GB but only 30.8 GB is safely available (48.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1793674590689465,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-03T03:00:23Z",
    "candidate": "llamacpp:Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M",
    "chosen": null,
@@ -17433,6 +17493,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-04T05:45:24Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 36.8 GB but only 12.0 GB is safely available (30.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1793771124649074,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-04T05:51:14Z",
    "candidate": "llamacpp:Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp",
    "chosen": null,
@@ -17574,6 +17649,21 @@
    "detail": "not screened: needs 51.1 GB but only 4.4 GB is safely available (22.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
    "how": "",
    "id": 1793849630369391,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-05T03:33:50Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 36.8 GB but only 17.4 GB is safely available (35.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1793849630461545,
    "incumbent": "",
    "kind": "screen",
    "knob": "",
@@ -17809,6 +17899,21 @@
   },
   {
    "at": "2026-11-06T02:16:07Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 36.8 GB but only 1.8 GB is safely available (19.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1793931367148873,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-06T02:16:07Z",
    "candidate": "Jiunsong/supergemma4-26b-uncensored-gguf-v2",
    "chosen": null,
    "detail": "not screened: needs 15.6 GB but only 1.8 GB is safely available (19.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
@@ -17949,6 +18054,21 @@
    "detail": "not screened: needs 51.1 GB but only 31.3 GB is safely available (49.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
    "how": "",
    "id": 1794019551925569,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-07T02:45:52Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 36.8 GB but only 31.2 GB is safely available (49.2 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1794019552112535,
    "incumbent": "",
    "kind": "screen",
    "knob": "",
@@ -18304,6 +18424,21 @@
   },
   {
    "at": "2026-11-09T01:55:38Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 36.8 GB but only 26.8 GB is safely available (52.5 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 33.0 GB held by the interactive server's pinned models)",
+   "how": "",
+   "id": 1794189338005184,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-09T01:55:38Z",
    "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
    "chosen": null,
    "detail": "not screened: needs 33.3 GB but only 26.8 GB is safely available (52.5 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 33.0 GB held by the interactive server's pinned models)",
@@ -18513,6 +18648,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-10T03:53:21Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 36.8 GB but only 26.8 GB is safely available (49.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 33.0 GB held by the interactive server's pinned models)",
+   "how": "",
+   "id": 1794282801221550,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-10T03:54:10Z",
    "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
    "chosen": null,
@@ -18693,6 +18843,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-11T03:09:06Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 36.8 GB but only 14.9 GB is safely available (32.9 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794366546646651,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-11T03:09:07Z",
    "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
    "chosen": null,
@@ -18789,6 +18954,21 @@
    "detail": "not screened: needs 51.1 GB but only 23.2 GB is safely available (53.6 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "how": "",
    "id": 1794454004643863,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-12T03:26:45Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 36.8 GB but only 23.2 GB is safely available (53.6 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794454005055058,
    "incumbent": "",
    "kind": "screen",
    "knob": "",
@@ -18978,6 +19158,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-13T02:20:00Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 36.8 GB but only 23.2 GB is safely available (48.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794536400212032,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-13T02:30:08Z",
    "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
    "chosen": null,
@@ -19044,6 +19239,21 @@
    "detail": "not screened: needs 51.1 GB but only 23.2 GB is safely available (44.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "how": "",
    "id": 1794538315928457,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-13T02:51:56Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 36.8 GB but only 23.2 GB is safely available (44.1 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794538316606605,
    "incumbent": "",
    "kind": "screen",
    "knob": "",
@@ -19149,6 +19359,21 @@
    "detail": "not screened: needs 51.1 GB but only 15.8 GB is safely available (33.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "how": "",
    "id": 1794632000513105,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-14T04:53:20Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 36.8 GB but only 15.8 GB is safely available (33.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794632000750611,
    "incumbent": "",
    "kind": "screen",
    "knob": "",
@@ -19479,6 +19704,21 @@
    "detail": "not screened: needs 13.5 GB but only 10.0 GB is safely available (28.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "how": "",
    "id": 1794709647268325,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-15T02:27:28Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released",
+   "how": "",
+   "id": 1794709648400717,
    "incumbent": "",
    "kind": "screen",
    "knob": "",
@@ -20283,6 +20523,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-20T04:00:44Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795147244850831,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-20T05:53:16Z",
    "candidate": "Jackrong/Qwopus3.5-27B-v3-GGUF",
    "chosen": null,
@@ -20433,6 +20688,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-21T04:28:24Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795235304138009,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-21T04:37:37Z",
    "candidate": "Jiunsong/supergemma4-26b-uncensored-gguf-v2",
    "chosen": null,
@@ -20490,6 +20760,21 @@
    "outcome": "broken",
    "reason": "candidate",
    "run_id": 1125,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-22T02:37:52Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795315072492110,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
    "tier": "screen"
   },
   {
@@ -20598,6 +20883,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-22T05:45:27Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795326327277141,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-22T07:15:09Z",
    "candidate": "lmstudio-community/Qwen3.6-27B-GGUF",
    "chosen": null,
@@ -20611,6 +20911,21 @@
    "reason": "limit",
    "run_id": 1151,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-22T16:35:27Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795365327866926,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   },
   {
    "at": "2026-11-22T17:24:31Z",
@@ -20823,6 +21138,21 @@
    "tier": "adopt"
   },
   {
+   "at": "2026-11-22T22:07:43Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795385263395181,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-22T23:28:12Z",
    "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
    "chosen": null,
@@ -20973,6 +21303,21 @@
    "tier": "adopt"
   },
   {
+   "at": "2026-11-23T04:20:50Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795407650386746,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-23T05:39:14Z",
    "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
    "chosen": null,
@@ -21091,6 +21436,21 @@
    "reason": "limit",
    "run_id": 1203,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-23T10:32:34Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795429954509352,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   },
   {
    "at": "2026-11-23T11:52:34Z",
@@ -21288,6 +21648,21 @@
    "tier": "adopt"
   },
   {
+   "at": "2026-11-23T14:47:44Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795445264249844,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-23T16:17:10Z",
    "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
    "chosen": null,
@@ -21436,6 +21811,21 @@
    "reason": "limit",
    "run_id": 1234,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-23T21:04:40Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795467880700636,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   },
   {
    "at": "2026-11-23T22:45:44Z",
@@ -21678,6 +22068,21 @@
    "tier": "adopt"
   },
   {
+   "at": "2026-11-24T02:52:45Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795488765605200,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-24T04:28:51Z",
    "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
    "chosen": null,
@@ -21903,6 +22308,21 @@
    "tier": "adopt"
   },
   {
+   "at": "2026-11-24T08:15:04Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795508104017956,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-24T09:40:52Z",
    "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
    "chosen": null,
@@ -22021,6 +22441,21 @@
    "reason": "limit",
    "run_id": 1283,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-24T14:23:07Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795530187597588,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   },
   {
    "at": "2026-11-24T15:48:10Z",
@@ -22293,6 +22728,21 @@
    "tier": "adopt"
   },
   {
+   "at": "2026-11-24T21:03:41Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795554221223381,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-24T22:36:55Z",
    "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
    "chosen": null,
@@ -22443,6 +22893,21 @@
    "tier": "adopt"
   },
   {
+   "at": "2026-11-25T02:56:51Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795575411210626,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-25T04:31:10Z",
    "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
    "chosen": null,
@@ -22561,6 +23026,66 @@
    "reason": "limit",
    "run_id": 1332,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-25T09:08:15Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795597695157870,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-25T17:39:49Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.3 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795628389639791,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-25T20:17:54Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.3 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795637874851128,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-26T21:49:58Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 28.7 GiB but at most 23.3 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795729798091835,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   },
   {
    "at": "2026-11-26T21:50:06Z",
@@ -22713,6 +23238,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-26T23:14:25Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 30.8 GB but only 28.9 GB is safely available (46.9 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 3.8 GB given to the Docker VM); no screen window: still short with the pinned set released: needs 30.8 GB but only 28.9 GB is safely available (46.9 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1795734865339160,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-27T00:20:55Z",
    "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
    "chosen": null,
@@ -22788,6 +23328,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-27T05:34:15Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 30.8 GB but only 18.0 GB is safely available (36.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 3.8 GB given to the Docker VM); no screen window: still short with the pinned set released: needs 30.8 GB but only 18.0 GB is safely available (36.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1795757655916575,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-27T07:09:51Z",
    "candidate": "amd/Instella-MoE-16B-A3B-Think",
    "chosen": null,
@@ -22833,6 +23388,21 @@
    "tier": "adopt"
   },
   {
+   "at": "2026-11-27T11:33:15Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "not screened: needs 30.8 GB but only 27.5 GB is safely available (45.5 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 3.8 GB given to the Docker VM); no screen window: still short with the pinned set released: needs 30.8 GB but only 27.5 GB is safely available (45.5 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1795779195892455,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-27T13:27:29Z",
    "candidate": "anemll/Qwen3.8-2.4T-A95B-FlashMoE-UD-Q1_0",
    "chosen": null,
@@ -22860,6 +23430,66 @@
    "outcome": "declined",
    "reason": "runtime",
    "run_id": 1365,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-27T16:59:51Z",
+   "candidate": "LessThanThreeAI/Qwen3.8-27B-Humanlike-Chat-2.0-FP8",
+   "chosen": null,
+   "detail": "the screen exited -30",
+   "how": "",
+   "id": 1795798791467401,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-27T19:41:51Z",
+   "candidate": "Qwen/Qwen-Image-Bench",
+   "chosen": null,
+   "detail": "not screened: needs 53.0 GiB but at most 23.3 GiB is free for a load here while the interactive server's pinned models stay held (beside the system reserve and the Docker VM); a screen window can release them",
+   "how": "",
+   "id": 1795808511433213,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-27T19:43:01Z",
+   "candidate": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
+   "chosen": null,
+   "detail": "the screen exited 75 || paused on request, 4 case(s) left",
+   "how": "",
+   "id": 1795808581284551,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-27T19:43:20Z",
+   "candidate": "bartowski/command-a-plus-05-2026-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 45.9 GiB but at most 23.3 GiB is free for a load here while the interactive server's pinned models stay held (beside the system reserve and the Docker VM); a screen window can release them",
+   "how": "",
+   "id": 1795808600237685,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
    "tier": "screen"
   }
  ],
@@ -25151,11 +25781,11 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-27T16:03:32Z",
+ "generated_at": "2026-11-27T20:09:52Z",
  "knobs": [],
  "lane": {
-  "cases": 451,
-  "cases_digest": "659e937c476d86d0",
+  "cases": 1331,
+  "cases_digest": "9e441ecf87cdc027",
   "name": "code",
   "params": {},
   "wanted": true
