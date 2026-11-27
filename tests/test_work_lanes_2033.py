@@ -25,6 +25,7 @@ def test_an_unscoped_measure_plans_a_code_survivor_in_both_lanes(monkeypatch):
     from harness import memory_store as ms
     survivors = [{"name": "Qwen/Qwen3-8B", "lane": "code"}, {"name": "img/x", "lane": "image"}]
     monkeypatch.setattr(ms, "survivors", lambda store, **kw: [dict(r) for r in survivors])
+    monkeypatch.setattr("harness.lane_gate.shut", lambda *a, **k: {})
     got = measure_cmd.measurable(None, 100)
     assert [(r["name"], measure_cmd.lane_for(r)) for r in got] == [
         ("Qwen/Qwen3-8B", "code"), ("img/x", "image"), ("Qwen/Qwen3-8B", "extract")]

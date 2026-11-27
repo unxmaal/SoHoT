@@ -105,6 +105,23 @@ def _screen_plan(want: str) -> list[dict]:
     return screen.plan(ranked)
 
 
+def _open_lanes(plan: list[dict], record: bool) -> list[dict]:
+    """The plan less candidates of a lane the gate closed; a screen run leaves each a queued verdict naming the gate. #2164."""
+    from harness import lane_gate
+    from harness import memory_store as ms
+    if not plan:
+        return plan
+    store = ms.connect()
+    try:
+        of = (lambda r: r.get("modality") or r.get("lane") or "")
+        kept, gates = lane_gate.keep(store, plan, lane_of=of, say=print)
+        if gates and record:
+            lane_gate.record(store, [r for r in plan if r not in kept], gates, lane_of=of)
+        return kept
+    finally:
+        store.close()
+
+
 #: Consecutive same-need memory deferrals after which the screen stops recording another one. #910.
 MEMORY_DEFERRALS = 3
 
@@ -360,7 +377,7 @@ def _report_screen(a) -> int:
     from harness import memory_store as ms
 
     want = (getattr(a, "lane", "") or "").strip().lower()
-    full = _screen_plan(want)
+    full = _open_lanes(_screen_plan(want), record=bool(getattr(a, "run", False)))
     if not full:
         print("nothing queued to screen")
         return 0

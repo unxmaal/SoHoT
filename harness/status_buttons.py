@@ -78,3 +78,9 @@ def feature(r: dict, tok: str):
             return oa.button(act, "", tok, bare=True) if act else ""
         return _forms(got, tok, [(a, name) for a in by_kind.get(kind, ())])
     return acts
+
+
+def closed_lanes(r: dict, tok: str):
+    """A function lane -> the open-anyway or close-again button for that Closed lanes row. #2164."""
+    got = offered(r)
+    return lambda lane: _forms(got, tok, [("lane_open", lane), ("lane_close", lane)])

@@ -102,6 +102,12 @@ def _row(r) -> dict:
     return got
 
 
+def note(conn, lane: str, name: str, why: str) -> int:
+    """Say why the live pauses of `name` in `lane` are not resumed; they stay paused. #2164."""
+    return sum(_move(conn, p["id"], PAUSED, PAUSED, why=why) for p in waiting(conn)
+               if p["lane"] == lane and name in (p["proposal"], p["challenger"]) and p["why"] != why)
+
+
 def _move(conn, pause_id: int, frm: str, to: str, **cols) -> bool:
     """The one writer of paused_runs.state: refuses a move MOVES does not list, else compare-and-swap on `frm`; False if it lost. #1730."""
     if frm is None or (frm, to) not in MOVES:

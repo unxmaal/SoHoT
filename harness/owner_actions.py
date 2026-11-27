@@ -120,6 +120,19 @@ def backup_due(r: dict) -> bool:
                 and not (at is not None and time.strftime("%Y%m%d", time.localtime(at)) == day))
 
 
+def _gate(r: dict, key: str) -> list[tuple[str, str]]:
+    rows = (r.get("lane_gate") or {}).get(key) or []
+    return [(g["lane"], f"{g['lane']} (power {g['power']:.2f})") for g in rows if _NAME.match(str(g.get("lane") or ""))]
+
+
+def _closed_lanes(r: dict) -> list[tuple[str, str]]:
+    return _gate(r, "closed")
+
+
+def _opened_lanes(r: dict) -> list[tuple[str, str]]:
+    return _gate(r, "opened")
+
+
 @dataclass(frozen=True)
 class Action:
     name: str
@@ -171,6 +184,9 @@ ACTIONS = (
            "id still has its file", ("router", "relist")),
     Action("pg_backup", "Back up the store", "writes today's checked Postgres dump unless one was made today",
            ("store", "pg-backup", "--due")),
+    Action("lane_open", "Open lane anyway", "opens a lane the power gate closed to challengers for a while; recorded, and it closes "
+           "again at its expiry", ("lane-gate", "open", "{}"), _closed_lanes),
+    Action("lane_close", "Close lane again", "ends the open-anyway of a gated lane now", ("lane-gate", "close", "{}"), _opened_lanes),
     Action("lane_reverify", "Reverify lane", "queues a re-run of the lane's served model when a reverify trigger has fired",
            ("reverify", "--lane", "{}"), _lanes),
 )

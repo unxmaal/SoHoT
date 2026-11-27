@@ -39,6 +39,11 @@ def cmd_adopt(a) -> int:
     lane = lanes.canonical(a.lane)
     if lane not in lanes.ALL:
         return err(f"unknown lane {a.lane!r}; known: {', '.join(lanes.ALL)}")
+    from harness import lane_gate
+    with lent_store() as conn:
+        shut = lane_gate.shut(conn, [lane]).get(lane)
+    if shut:
+        return err(f"{a.challenger}: not measured: {shut.why}")
     if dry:
         with lent_store():
             return measure_cmd._measure(a, {"name": a.challenger, "lane": lane}, [])
@@ -143,35 +148,6 @@ def _receipts(files) -> dict[str, list[dict]]:
     return out
 
 
-def _row(r: dict) -> dict:
-    return {"candidate": r.get("candidate"), "case_id": r.get("case_id"),
-            "passed": r.get("passed"), "seconds": r.get("seconds"), "metrics": r.get("metrics")}
-
-
-def _profile(lane: str, receipts: dict, conn) -> tuple[str, str, dict, float | None, tuple, list]:
-    """(incumbent key, its spec, its draws per case, its median seconds here at the lane's budget, settings, machines)."""
-    from harness import adopt, candidates, power, reply_cap, runs, screen, winners
-    served = adopt.default_for(lane, winners.typed().get(lane, ""))
-    spec = (screen.candidate_for(lane, served) or served) if served else ""
-    try:
-        key = candidates.key_of(spec) if spec else ""
-    except Exception:  # noqa: BLE001
-        key = ""
-    settings = (reply_cap.cap_for(conn, lane, [spec or served])[0], ())
-    machines = runs.here(conn)
-    if lane in receipts:
-        sets = [[_row(r) for r in got["rows"]] for got in receipts[lane]]
-        key = power.control_of(sets, prefer=[k for k in (key, spec, served) if k])
-        draws, _ = power.draws_from([r for rows in sets for r in rows], key, lane)
-        timed = [_row(r) for got in receipts[lane] if power.receipt_here(got["environment"])
-                 and power.reply_settings(json.dumps(got["receipt"]), lane) == settings for r in got["rows"]]
-        return key, spec or served, draws, power.draws_from(timed, key)[1], settings, machines
-    key = key or spec
-    draws, median = (power.served_profile(conn, lane, spec, settings, machines)
-                     if spec else ({}, None))
-    return key, spec or served, draws, median, settings, machines
-
-
 def _hm(seconds) -> str:
     if seconds is None:
         return "time unknown"
@@ -181,8 +157,7 @@ def _hm(seconds) -> str:
 
 def cmd_power(a) -> int:
     """Per lane: the repeat and holdout size power 0.8 needs, and what that run would cost. #591."""
-    from evals.run import STOCHASTIC_MODALITIES
-    from harness import adopt, holdout, power
+    from harness import holdout, lane_gate, power
 
     receipts = _receipts(getattr(a, "receipt", None) or [])
     challenger = getattr(a, "challenger", "") or ""
@@ -198,19 +173,14 @@ def cmd_power(a) -> int:
                        f"{', '.join(sorted(every))}")
         for lane in [want] if want else sorted(every):
             split = every[lane]
-            key, inc_spec, draws, inc_s, settings, machines = _profile(lane, receipts, conn)
+            effect = getattr(a, "effect", None) or power.effect_for(lane)
+            got = lane_gate.calc(conn, lane, split, receipts, effect)
+            key, inc_spec, draws, inc_s, settings, machines = (got.key, got.inc_spec, got.draws, got.inc_s,
+                                                               got.settings, got.machines)
+            rates, seen, tested, alpha, plan = got.rates, got.seen, got.tested, got.alpha, got.plan
             median, calls, est = power.pair_cost(conn, lane, incumbent=key, incumbent_spec=inc_spec,
                                                  incumbent_s=inc_s, challenger=challenger,
                                                  settings=settings, machines=machines)
-            rates, seen = power.rates_from(draws, split.holdout)
-            rho = power.icc([list(draws.values())])
-            effect = getattr(a, "effect", None) or power.effect_for(lane)
-            tested = adopt.comparisons(conn, lane, split.version)
-            alpha = adopt.alpha_for(tested)
-            plan = power.plan([rates[c] for c in split.holdout], effect,
-                              stochastic=lane in STOCHASTIC_MODALITIES,
-                              observed=seen, rho=rho, alpha=alpha,
-                              unmeasured=not any(draws.values()))
             missing = set(power.unmeasured(draws, split.holdout))
             measured = [rates[c] for c in split.holdout if c not in missing]
             alone = (power.power(measured, effect, plan.repeat, alpha, rho=plan.rho)

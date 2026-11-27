@@ -415,6 +415,28 @@ def _features(fe: dict, now: float, acts=None) -> str:
     return "".join(out) + "</section>"
 
 
+def _closed_lanes(lg: dict, now: float, acts=None) -> str:
+    """Each lane the power gate closes to challengers, what it needs, the growth issue, and the owner's open-anyway. #2164."""
+    out = [f"<section class='panel' data-panel='closed-lanes'><h2>Closed lanes <span class='asof'>as of "
+           f"{_when(lg.get('as_of'), now)}</span></h2>"]
+    if lg.get("error"):
+        return "".join(out) + f"<p class='head'>{_badge(UNKNOWN)} not read</p></section>"
+    rows = [(g, False) for g in lg.get("closed") or []] + [(g, True) for g in lg.get("opened") or []]
+    if not rows:
+        return "".join(out) + f"<p class='head'>{_badge(OK)} every lane reaches power {lg.get('threshold', 0):.2f}</p></section>"
+    out.append(f"<p class='head'>{len(lg.get('closed') or [])} closed to challengers: no fetch, no screen, no measure "
+               f"under power {lg.get('threshold', 0):.2f} · <a href='{esc(lg.get('issue'))}'>holdout growth</a></p><div class='ft'>")
+    for g, anyway in rows:
+        need = ("no holdout size reaches it" if g.get("more_holdout") is None else
+                f"needs {g['more_holdout']} more holdout cases ({g['more_cases']} lane cases)")
+        until = f" · open anyway until <time title='{stamp(g['until'])}'>{esc(ago(g['until'], now))}</time>" if anyway else ""
+        out.append(f"<div class='fr' data-lane='{esc(g['lane'])}'><span class='fs {'warn' if anyway else 'bad'}'>"
+                   f"{'open anyway' if anyway else 'closed'}</span><span class='fn'>{esc(g['lane'])}</span>"
+                   f"<span class='fb'>power {g['power']:.2f} at +{g['effect']:.2f}, {esc(need)}{until}</span>"
+                   + (f"<span class='fa'>{acts(g['lane'])}</span>" if acts else "") + "</div>")
+    return "".join(out) + "</div></section>"
+
+
 _DARK = ("--page:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--grid:#2c2c2a;--axis:#383835;"
          "--ring:rgba(255,255,255,.12);--c1:#3987e5;--c2:#d95926;--c3:#199e70;--c4:#c98500;--c5:#d55181;--other:#5a5955")
 CSS = (":root{--page:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--grid:#e1e0d9;--axis:#c3c2b7;"
@@ -548,6 +570,11 @@ def _acts(r: dict, tok: str):
     return status_buttons.feature(r, tok) if tok else None
 
 
+def _gate_acts(r: dict, tok: str):
+    from harness import status_buttons
+    return status_buttons.closed_lanes(r, tok) if tok else None
+
+
 def _safe(name: str, fn, *args) -> str:
     try:
         return fn(*args)
@@ -577,6 +604,7 @@ def page(r: dict, lines: dict[str, list[str]], now: float | None = None, extra: 
     out.append(_safe("Discovery flow", _flow, r.get("discovery_flow") or {"error": "not gathered"}, now, r.get("needs_you") or []))
     out.append(_safe("Discovery yield", _yield, r.get("pipeline_yield") or {"error": "not gathered"}, now))
     out.append(_safe("Features", _features, r.get("features") or {"error": "not gathered"}, now, _acts(r, token)))
+    out.append(_safe("Closed lanes", _closed_lanes, r.get("lane_gate") or {"error": "not gathered"}, now, _gate_acts(r, token)))
     out.append(_safe("Checks", _checks, r["monitor"]))
     out.append(extra)
     out.append(f"</div><script>{REFRESH_JS}</script></body></html>")
