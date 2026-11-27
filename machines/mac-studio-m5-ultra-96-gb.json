@@ -66,12 +66,12 @@
   }
  ],
  "export_version": 4,
- "generated_at": "2026-11-27T20:09:34Z",
+ "generated_at": "2026-11-27T21:02:31Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 0.41,
+   "age_days": 0.44,
    "comparison": [
     {
      "about": "",
@@ -472,7 +472,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 2.53,
+   "age_days": 2.57,
    "comparison": [
     {
      "about": "7B params, 4bit, by mlx-community",
@@ -2801,15 +2801,15 @@
    "pass_rate": 0.717,
    "passed": 71,
    "real_use": {
-    "completion_tokens": 4075,
+    "completion_tokens": 4089,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 132987,
-    "requests": 1248,
+    "prompt_tokens": 133106,
+    "requests": 1255,
     "tool_calls": 0,
     "ttft_p50": 1.5854,
     "ttft_p95": 2.7198
@@ -2826,7 +2826,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 2.79,
+   "age_days": 2.83,
    "comparison": [
     {
      "about": "4B params, 4bit, by mlx-community",
@@ -3550,7 +3550,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.38,
+   "age_days": 0.41,
    "comparison": [
     {
      "about": "30B (3B active) params, 4bit, by mlx-community",
@@ -4342,7 +4342,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.09,
+   "age_days": 0.13,
    "comparison": [
     {
      "about": "",
@@ -4556,7 +4556,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 25.53,
+   "age_days": 25.56,
    "comparison": [
     {
      "about": "",
@@ -4699,28 +4699,29 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 2.18,
+   "age_days": 0.01,
    "comparison": [
     {
-     "about": "4B params, Q8_0, by mindchain",
-     "candidate": "imajev-4b-Q8_0",
-     "first_s": 0.09,
-     "median_s": 0.082,
+     "about": "family Qwen/Qwen3.5-4B, 4B params, by sky7350",
+     "candidate": "sky7350/Mica-v0.5-4B",
+     "first_s": 0.574,
+     "median_s": 0.385,
      "metrics": {
       "calibrated": 1.0,
-      "completion_tokens": 35.5,
-      "decide_accuracy": 0.8,
-      "decide_brier": 0.2849,
-      "tokens_per_s": 55.85
+      "completion_tokens": 36.3419,
+      "decide_accuracy": 0.778,
+      "decide_brier": 0.3175,
+      "decide_ece": 0.0723,
+      "tokens_per_s": 92.8248
      },
-     "model": "imajev-4b-Q8_0",
+     "model": "sky7350/Mica-v0.5-4B",
      "not_run": "",
-     "pass_rate": 0.0,
-     "passed": 0,
+     "pass_rate": 0.386,
+     "passed": 255,
      "peak_gb": 0.0,
      "reference": false,
      "served_as": "",
-     "source": "https://huggingface.co/mindchain/imajev-4b-GGUF",
+     "source": "https://huggingface.co/sky7350/Mica-v0.5-4B",
      "total": 661,
      "ttft_median_s": null,
      "ttft_p95_s": null
@@ -4791,6 +4792,32 @@
        "ttft_p95_s": null
       },
       {
+       "about": "family Qwen/Qwen3.5-4B, 4B params, by sky7350",
+       "candidate": "sky7350/Mica-v0.5-4B",
+       "first_s": 0.574,
+       "median_s": 0.385,
+       "metrics": {
+        "calibrated": 1.0,
+        "completion_tokens": 36.3419,
+        "decide_accuracy": 0.778,
+        "decide_brier": 0.3175,
+        "decide_ece": 0.0723,
+        "tokens_per_s": 92.8248
+       },
+       "model": "sky7350/Mica-v0.5-4B",
+       "not_run": "",
+       "pass_rate": 0.386,
+       "passed": 255,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-11-27T20:55:14Z",
+       "served_as": "",
+       "source": "https://huggingface.co/sky7350/Mica-v0.5-4B",
+       "total": 661,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
        "about": "9B params",
        "candidate": "nimble/Bespoke-Nimble-9B",
        "first_s": 14.188,
@@ -4834,8 +4861,8 @@
        "ttft_p95_s": null
       }
      ],
-     "run_at": "2026-11-25T15:45:42Z",
-     "runs": 8
+     "run_at": "2026-11-27T20:55:14Z",
+     "runs": 9
     },
     {
      "cases": 132,
@@ -5472,7 +5499,7 @@
     }
    ],
    "lane": "decide",
-   "last_run_at": "2026-11-25T15:45:42Z",
+   "last_run_at": "2026-11-27T20:55:14Z",
    "measured_at": "2026-11-25T15:45:42Z",
    "median_s": 0.082,
    "metrics": {
@@ -5488,15 +5515,15 @@
    "pass_rate": 0.0,
    "passed": 0,
    "real_use": {
-    "completion_tokens": 31498,
+    "completion_tokens": 31570,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 338100,
-    "requests": 2645,
+    "prompt_tokens": 338298,
+    "requests": 2651,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -5513,7 +5540,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 6.42,
+   "age_days": 6.46,
    "comparison": [
     {
      "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
@@ -6014,45 +6041,45 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 7.4,
+   "age_days": 0.03,
    "comparison": [
     {
      "about": "",
      "candidate": "hf-ocr/PaddleOCR-VL-1.6",
-     "first_s": 21.003,
-     "median_s": 7.572,
+     "first_s": 26.828,
+     "median_s": 9.065,
      "metrics": {
-      "cer": 0.6458
+      "cer": 0.4267
      },
      "model": "hf-ocr/PaddleOCR-VL-1.6",
      "not_run": "",
-     "pass_rate": 0.828,
-     "passed": 371,
+     "pass_rate": 0.737,
+     "passed": 14,
      "peak_gb": 0.01,
      "reference": false,
      "served_as": "",
      "source": "",
-     "total": 448,
+     "total": 19,
      "ttft_median_s": null,
      "ttft_p95_s": null
     },
     {
      "about": "",
      "candidate": "osocr/auto",
-     "first_s": 0.382,
-     "median_s": 0.3,
+     "first_s": 1.622,
+     "median_s": 0.319,
      "metrics": {
-      "cer": 0.1696
+      "cer": 0.1625
      },
      "model": "osocr/auto",
      "not_run": "",
-     "pass_rate": 0.721,
-     "passed": 323,
-     "peak_gb": 0.25,
+     "pass_rate": 0.722,
+     "passed": 13,
+     "peak_gb": 0.33,
      "reference": false,
      "served_as": "",
      "source": "",
-     "total": 448,
+     "total": 18,
      "ttft_median_s": null,
      "ttft_p95_s": null
     }
@@ -6067,48 +6094,48 @@
       {
        "about": "",
        "candidate": "hf-ocr/PaddleOCR-VL-1.6",
-       "first_s": 21.003,
-       "median_s": 7.572,
+       "first_s": 26.828,
+       "median_s": 9.065,
        "metrics": {
-        "cer": 0.6458
+        "cer": 0.4267
        },
        "model": "hf-ocr/PaddleOCR-VL-1.6",
        "not_run": "",
-       "pass_rate": 0.828,
-       "passed": 371,
+       "pass_rate": 0.737,
+       "passed": 14,
        "peak_gb": 0.01,
        "reference": false,
-       "run_at": "2026-11-20T10:38:57Z",
+       "run_at": "2026-11-27T20:20:18Z",
        "served_as": "",
        "source": "",
-       "total": 448,
+       "total": 19,
        "ttft_median_s": null,
        "ttft_p95_s": null
       },
       {
        "about": "",
        "candidate": "osocr/auto",
-       "first_s": 0.382,
-       "median_s": 0.3,
+       "first_s": 1.622,
+       "median_s": 0.319,
        "metrics": {
-        "cer": 0.1696
+        "cer": 0.1625
        },
        "model": "osocr/auto",
        "not_run": "",
-       "pass_rate": 0.721,
-       "passed": 323,
-       "peak_gb": 0.25,
+       "pass_rate": 0.722,
+       "passed": 13,
+       "peak_gb": 0.33,
        "reference": false,
-       "run_at": "2026-11-20T10:38:57Z",
+       "run_at": "2026-11-27T20:20:18Z",
        "served_as": "",
        "source": "",
-       "total": 448,
+       "total": 18,
        "ttft_median_s": null,
        "ttft_p95_s": null
       }
      ],
-     "run_at": "2026-11-20T10:38:57Z",
-     "runs": 4
+     "run_at": "2026-11-27T20:20:18Z",
+     "runs": 5
     },
     {
      "cases": 450,
@@ -6257,22 +6284,22 @@
     }
    ],
    "lane": "ocr",
-   "last_run_at": "2026-11-20T10:38:57Z",
-   "measured_at": "2026-11-20T10:38:57Z",
-   "median_s": 7.572,
+   "last_run_at": "2026-11-27T20:20:18Z",
+   "measured_at": "2026-11-27T20:20:18Z",
+   "median_s": 9.065,
    "metrics": {
-    "cer": 0.6458
+    "cer": 0.4267
    },
    "not_run": "",
    "parked": "",
    "parked_until": "",
-   "pass_rate": 0.828,
-   "passed": 371,
+   "pass_rate": 0.737,
+   "passed": 14,
    "real_use": null,
    "serves": "hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6",
    "serves_model": "hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6",
-   "stale": true,
-   "total": 448,
+   "stale": false,
+   "total": 19,
    "ttft_median_s": null,
    "ttft_p95_s": null,
    "unverified": false,
@@ -6281,7 +6308,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 7.4,
+   "age_days": 7.43,
    "comparison": [
     {
      "about": "",
@@ -6419,7 +6446,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 7.4,
+   "age_days": 7.43,
    "comparison": [
     {
      "about": "",
@@ -6641,7 +6668,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 2.18,
+   "age_days": 2.22,
    "comparison": [
     {
      "about": "7B params, Q4_K_M, by bartowski",
@@ -6990,15 +7017,15 @@
    "pass_rate": 0.003,
    "passed": 1,
    "real_use": {
-    "completion_tokens": 163738,
+    "completion_tokens": 164320,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 74306,
-    "requests": 1689,
+    "prompt_tokens": 74570,
+    "requests": 1695,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -7015,7 +7042,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.08,
+   "age_days": 0.11,
    "comparison": [
     {
      "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
@@ -8646,7 +8673,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.41,
+   "age_days": 0.44,
    "comparison": [
     {
      "about": "family mlx-community/Llama-3.2-3B-Instruct, 3B params, 4bit, by mlx-community",
@@ -10505,18 +10532,18 @@
    "pass_rate": 0.747,
    "passed": 130,
    "real_use": {
-    "completion_tokens": 43966,
+    "completion_tokens": 44426,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 651577,
-    "requests": 2164,
+    "prompt_tokens": 665385,
+    "requests": 2179,
     "tool_calls": 0,
-    "ttft_p50": 1.0153210163116455,
-    "ttft_p95": 10.747729063034058
+    "ttft_p50": 1.0176019668579102,
+    "ttft_p95": 11.17490816116333
    },
    "serves": "mlx-community/Qwen2.5-7B-Instruct-4bit",
    "serves_model": "mlx-community/Qwen2.5-7B-Instruct-4bit; 7B params, 4bit, by mlx-community",
@@ -10530,7 +10557,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 2.57,
+   "age_days": 2.61,
    "comparison": [
     {
      "about": "0.6B params",
@@ -10902,7 +10929,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 18.7,
+   "age_days": 18.73,
    "comparison": [
     {
      "about": "",
@@ -11143,7 +11170,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-11-27T20:09:09Z",
+  "last_seen": "2026-11-27T21:01:36Z",
   "memory_gb": 96.0,
   "os": "macOS 27.2",
   "runtimes": [
@@ -11440,7 +11467,7 @@
       "2026-11-24": 48172.0,
       "2026-11-25": 44048.0,
       "2026-11-26": 325124.0,
-      "2026-11-27": 343186.0
+      "2026-11-27": 394431.0
      },
      "Edit": {
       "2026-09-03": 159.0,
@@ -11505,7 +11532,7 @@
       "2026-11-22": 58.0,
       "2026-11-24": 34.0,
       "2026-11-26": 162.0,
-      "2026-11-27": 26.0
+      "2026-11-27": 79.0
      },
      "Read": {
       "2026-09-03": 1485.0,
@@ -11571,7 +11598,7 @@
       "2026-11-22": 139947.0,
       "2026-11-24": 22395.0,
       "2026-11-26": 81495.0,
-      "2026-11-27": 95381.0
+      "2026-11-27": 97922.0
      },
      "WebFetch": {
       "2026-09-07": 831.0,
@@ -11807,7 +11834,7 @@
       "2026-11-24": 30236.0,
       "2026-11-25": 6361.0,
       "2026-11-26": 126688.0,
-      "2026-11-27": 82567.0
+      "2026-11-27": 93899.0
      },
      "other": {
       "2026-09-03": 1399.0,
@@ -11886,7 +11913,7 @@
       "2026-11-24": 5838.0,
       "2026-11-25": 3228.0,
       "2026-11-26": 15461.0,
-      "2026-11-27": 19012.0
+      "2026-11-27": 20197.0
      }
     },
     "title": "Tool-result tokens into Claude's context",
@@ -11916,8 +11943,8 @@
       "2026-11-20": "10 accepted, 5 rejected, 5 unknown, 0 pending",
       "2026-11-21": "11 accepted, 1 rejected, 1 unknown, 0 pending",
       "2026-11-22": "11 accepted, 7 rejected, 10 unknown, 0 pending",
-      "2026-11-26": "4 accepted, 1 rejected, 10 unknown, 23 pending",
-      "2026-11-27": "6 accepted, 5 rejected, 0 unknown, 103 pending"
+      "2026-11-26": "4 accepted, 1 rejected, 25 unknown, 8 pending",
+      "2026-11-27": "9 accepted, 7 rejected, 0 unknown, 107 pending"
      }
     },
     "note": "Share of closed outcomes, reported or inferred from the caller's transcript, that were accepted rather than rejected.",
@@ -11945,7 +11972,7 @@
       "2026-11-21": 0.9167,
       "2026-11-22": 0.6111,
       "2026-11-26": 0.8,
-      "2026-11-27": 0.5455
+      "2026-11-27": 0.5625
      }
     },
     "title": "Delegation acceptance by lane",
@@ -12402,7 +12429,7 @@
       "2026-11-24": 12.0,
       "2026-11-25": 0.0,
       "2026-11-26": 2.0,
-      "2026-11-27": 3.0
+      "2026-11-27": 4.0
      }
     },
     "title": "Plan cap used",
