@@ -289,6 +289,11 @@ def _features(conn, now: float, q: dict) -> dict:
     return features.gather(conn, now, q)
 
 
+def _discovery_flow(conn, now: float) -> dict:
+    from harness import discovery_flow
+    return discovery_flow.gather(conn, now)
+
+
 def gather(now: float | None = None, *, connect=None, beat=None, where=None, git=None, mon=None, health=None,
            reach=None, flow=None, home: Path | None = None, environ=None, features=None, light: bool = False) -> dict:
     """Every section, each with its own as_of; with the store down the store-free sections still read. `light` skips the
@@ -312,6 +317,7 @@ def gather(now: float | None = None, *, connect=None, beat=None, where=None, git
              "ratio": {} if light else _section(ratio, conn, now, flow)}
         r["timeline"] = {} if light else _section(timeline, conn, now, r["discovery"], r["queue"], home)
         r["features"] = _section(features or _features, conn, now, r["queue"])
+        r["discovery_flow"] = {} if light else _section(_discovery_flow, conn, now)
         r["stops"] = {"holds": _section(needs_you.read_holds, conn, now), "jobs": _section(needs_you.read_jobs, conn, now),
                       "gateway": _section(needs_you.read_gateway), "router": _section(needs_you.read_router), "deploying": _section(needs_you.read_deploying, now, r["queue"]), "gate": _section(needs_you.read_gate),
                       "monit": _section(needs_you.read_monit, now, home, r["monitor"])}

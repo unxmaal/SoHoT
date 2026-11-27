@@ -303,7 +303,6 @@ a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:d
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:day_clearances.until:no-writer
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:downloads.coresident_bytes:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:downloads.kv_cap_bytes:no-reader
-a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:downloads.removal_verdict_id:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:edges.shared:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:engine_screens.screened_at:no-reader
 a-stored-value-with-no-live-writer-or-no-reader harness/memory_store/schema.py:engine_trials.channel:no-reader

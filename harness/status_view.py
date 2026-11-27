@@ -302,6 +302,49 @@ def _timeline(tl: dict, now: float) -> str:
     return "".join(out) + "</section>"
 
 
+def _flow(fl: dict, now: float, needs: list) -> str:
+    """The discovery flow: the seven nodes with in, out and time, an edge count between each, the repeats and the leak markers. #2158."""
+    out = [f"<section class='panel' data-flow='1'><h2>Discovery flow <span class='asof'>as of {_when(fl.get('as_of'), now)}"
+           f"{' · last ' + span(fl['until'] - fl['since']) if fl.get('since') else ''}</span></h2>"]
+    if fl.get("error"):
+        return "".join(out) + f"<p class='head'>{_badge(UNKNOWN)} not read</p></section>"
+    pitch, bw = 118, 78
+    parts = [f"<svg class='flow' viewBox='0 0 {pitch * 6 + bw + 4} 108' role='img' aria-label='discovery flow: counts in and out of each step'>"]
+    for i, n in enumerate(fl["nodes"]):
+        x = 2 + i * pitch
+        t = span(n["seconds"]) if n.get("seconds") else "-"
+        parts.append(f"<g class='nd' data-node='{esc(n['name'])}'><rect x='{x}' y='30' width='{bw}' height='58' rx='6'/>"
+                     f"<text x='{x + bw / 2}' y='47' text-anchor='middle' font-weight='700'>{esc(n['name'])}</text>"
+                     f"<text x='{x + bw / 2}' y='62' text-anchor='middle'>{n['in']} in, {n['out']} out</text>"
+                     f"<text class='sub' x='{x + bw / 2}' y='78' text-anchor='middle'>{esc(t)}</text></g>")
+    for i, e in enumerate(fl["edges"]):
+        x0, rep = 2 + i * pitch + bw, bool(e["repeats"])
+        parts.append(f"<g class='edge{' rep' if rep else ''}' data-edge='{esc(e['src'])}-{esc(e['dst'])}'>"
+                     f"<line x1='{x0}' y1='59' x2='{x0 + pitch - bw - 5}' y2='59'/>"
+                     f"<path d='M{x0 + pitch - bw - 9} 54 L{x0 + pitch - bw - 3} 59 L{x0 + pitch - bw - 9} 64'  fill='none'/>"
+                     f"<text x='{x0 + (pitch - bw) / 2}' y='52' text-anchor='middle'>{e['n']}</text>"
+                     + (f"<text x='{x0 + (pitch - bw) / 2}' y='80' text-anchor='middle'>x{max(r['n'] for r in e['repeats'])}</text>" if rep else "")
+                     + f"<title>{esc(', '.join(f'{r['name']} x{r['n']}' for r in e['repeats']) or 'no repeat')}</title></g>")
+    parts.append("</svg>")
+    out.append("".join(parts))
+    keys = [c.get("key", "") for c in needs]
+
+    def link(prefix: str = "", ids=()) -> str:
+        want = [f"{prefix}{i}" for i in ids] if ids else [k for k in keys if prefix and k.startswith(prefix)]
+        hit = next((k for k in keys if k in want), "")
+        return f" <a href='#need-{esc(hit)}'>Needs you</a>" if hit else ""
+    rows = []
+    for e in fl["edges"]:
+        for r in e["repeats"]:
+            how = {"fetch": "fetched", "pair": "measured", "failure": ""}.get(r.get("kind"), "")
+            rows.append(f"<li class='rp' data-repeat='{esc(r.get('kind'))}'>{esc(e['src'])} to {esc(e['dst'])}: {esc(r['name'])} "
+                        f"{how} {r['n']} times{link('job-failed-', r.get('jobs') or ())}</li>")
+    for lk in fl["leaks"]:
+        rows.append(f"<li class='lk' data-leak='{esc(lk['key'])}'>{esc(lk['text'])}{link(lk.get('need', '')) if lk.get('need') else ''}</li>")
+    out.append(f"<ul class='fl'>{''.join(rows)}</ul>" if rows else "<p class='nn'>No repeats and no leaks.</p>")
+    return "".join(out) + "</section>"
+
+
 def _checks(mon: dict) -> str:
     checks = mon.get("checks") or []
     if not checks:
@@ -369,6 +412,10 @@ h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:0}h3{font-size:13px;ma
 .tile[open]{grid-column:1/-1}.tile h2 .asof{display:block;margin-top:2px}
 @media (min-width:700px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .ok{--st:var(--good)}.warn{--st:var(--warn)}.bad{--st:var(--bad)}.unknown{--st:var(--unk)}
+.flow{width:100%;height:auto;display:block}.flow text{fill:var(--ink);font-size:11px}.flow .nd rect{fill:var(--surface);stroke:var(--axis)}
+.flow .edge line,.flow .edge path{stroke:var(--axis);stroke-width:1.5}.flow .edge.rep line,.flow .edge.rep path{stroke:var(--bad);stroke-width:3.5}
+.flow .edge.rep text{fill:var(--bad);font-weight:700}.flow .sub{fill:var(--ink2)}.fl{list-style:none;padding:0;margin:8px 0 0}.fl li{padding:3px 0;font-size:13px}
+.fl .rp,.fl .lk{border-left:4px solid var(--bad);padding-left:8px;margin:4px 0}
 .badge{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--st);color:#fff;font-size:12px;flex:none}
 .badge.warn,.badge.unknown{color:#0b0b0b}
 .panel{padding:12px;margin:0 0 14px}.panel summary{cursor:pointer;color:var(--ink2);font-size:13px;margin-top:10px}
@@ -423,7 +470,7 @@ def _need(c: dict, now: float, tok: str) -> str:
     else:
         fix = f"<span class='nn'>No button: {esc(c.get('none') or 'it clears when its cause does')}</span>"
     why = f"<p class='nw'>{esc(c['why'])}</p>" if c.get("why") else ""
-    return (f"<article class='need' data-key='{esc(c['key'])}'><div class='nh'>{_badge(BAD)}<h3>{esc(c['title'])}</h3>"
+    return (f"<article class='need' id='need-{esc(c['key'])}' data-key='{esc(c['key'])}'><div class='nh'>{_badge(BAD)}<h3>{esc(c['title'])}</h3>"
             f"<span class='asof'>{when}</span></div>{why}<div class='nf'>{fix}</div></article>")
 
 
@@ -497,6 +544,7 @@ def page(r: dict, lines: dict[str, list[str]], now: float | None = None, extra: 
     out.append("</div>")
     out.append(_safe("Ratio", _ratio, r["ratio"], lines.get("Ratio") or [], now))
     out.append(_safe("Timeline", _timeline, r.get("timeline") or {"error": "not gathered"}, now))
+    out.append(_safe("Discovery flow", _flow, r.get("discovery_flow") or {"error": "not gathered"}, now, r.get("needs_you") or []))
     out.append(_safe("Features", _features, r.get("features") or {"error": "not gathered"}, now, _acts(r, token)))
     out.append(_safe("Checks", _checks, r["monitor"]))
     out.append(extra)
