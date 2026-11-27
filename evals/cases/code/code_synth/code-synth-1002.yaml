@@ -1,0 +1,52 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1002
+modality: code
+prompt: 'Write a Python function `compute(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  2. Sort the characters in ascending code point order.
+
+  3. Keep only the first 2 whitespace-separated words, joined by single spaces.
+
+  4. Remove every digit.
+
+  5. Replace every maximal run of digits with the number of digits in it.
+
+  6. Convert to lowercase.
+
+  7. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  8. Collapse every run of the same character into one character.
+
+  Then: Return the resulting string.
+
+
+  Example: `compute(''y.aAC.z1xBB0A'') returns ''.abcaxyz''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute('  jumps   over the  lazy dog ') == 'adeghjlmoprstuvyz'
+  - compute('A man a plan a canal Panama') == 'apaclmnp'
+  - compute('The 3 little pigs 33') == 'teghilpst'
+  - compute('x') == 'x'
+  - compute('Zebra 42 crossing 7') == 'zabceginors'
+  - compute('banana bandana') == 'abdn'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1002'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-8-steps

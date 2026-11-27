@@ -1,0 +1,49 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0921
+modality: code
+prompt: 'Write a Python function `apply_rules(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Keep only the first occurrence of each character.
+
+  2. Replace every ''e'' with ''d'' (lowercase only).
+
+  3. Sort the characters in ascending code point order.
+
+  4. Remove every digit.
+
+  5. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  6. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  Then: Return how many characters it has.
+
+
+  Example: `apply_rules(''cb.bC 2c1C2'') returns 10`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules('hELLo WoRLD') == 16
+  - apply_rules('Quick brown fox') == 26
+  - apply_rules('Programming in Python') == 24
+  - apply_rules('Hello, World') == 16
+  - apply_rules('zz yy xx') == 8
+  - apply_rules('Ünïcode ok') == 16
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '921'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-6-steps

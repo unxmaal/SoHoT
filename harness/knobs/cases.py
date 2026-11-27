@@ -57,6 +57,10 @@ NOT_GATING = {
                                                  "never changes a case (#603)",
     "evals/importers/code_synth.py:TEMPLATE_CAP": "the most cases one problem shape fills so none dominates the set; "
                                                   "a draw past it picks another shape and drops no source row (#603)",
+    "evals/importers/code_synth.py:MARGIN_FROM": "the item index where the added margin cases begin; it only orders the "
+                                                 "draws and drops no source row (#603)",
+    "evals/importers/code_synth.py:MARGIN_CAP": "extra cases one algorithm template may fill in the margin; a draw "
+                                                "past it picks another shape and drops no source row (#603)",
     "evals/importers/code_synth.py:CHECKS": "how many seeded inputs a case draws; each is written into the case, "
                                             "and a draw with too few distinct answers is redrawn (#603)",
     "evals/importers/agent_synth.py:MAX_STEPS": "the step cap written into each generated case's params, as the hand "

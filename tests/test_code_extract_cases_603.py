@@ -148,3 +148,21 @@ def test_a_code_draw_whose_wrong_variant_passes_every_check_is_refused():
 def test_no_two_code_prompts_are_the_same():
     prompts = [c.prompt for c in SHIPPED_CODE]
     assert len(set(prompts)) == len(prompts)
+
+
+#: Live `soh lane-gate status` 2026-11-27 with the first 880 cases: the code lane needed 417 holdout in all.
+LANE_GATE_NEEDS = 417
+
+
+def test_the_margin_cases_come_only_from_families_the_incumbent_can_lose_in():
+    margin = [r for r in code_synth.fetch() if r["item"] >= code_synth.MARGIN_FROM]
+    assert len(margin) == code_synth.COUNT - code_synth.MARGIN_FROM >= 150
+    assert {r["stratum"].split("-")[0] for r in margin} <= {"strs", "algo", "hard"}
+    assert [r for r in code_synth.fetch(count=code_synth.MARGIN_FROM)] == code_synth.fetch()[:code_synth.MARGIN_FROM]
+
+
+def test_the_margin_clears_the_lane_gate_need_with_room_to_spare(capsys, monkeypatch):
+    side = holdout.for_lane("code")
+    added = sum(1 for c in SHIPPED_CODE[code_synth.MARGIN_FROM:] if side.side(c.id) == "holdout")
+    assert added >= 40, added
+    assert _table_row(capsys, monkeypatch, "code")["holdout"] >= LANE_GATE_NEEDS + 30
