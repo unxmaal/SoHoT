@@ -1787,44 +1787,6 @@
    "until": ""
   },
   {
-   "candidate": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
-   "decided_at": "2026-11-20T06:22:06Z",
-   "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 45 lost against 12 gained, p=0.00; comparison 2 on this holdout, so alpha 0.05/2 = 0.0250; dev: not run, dev and holdout",
-   "exam": {
-    "about": "family SandyVeliz/acervo-extractor-qwen3.5-9b, 9B params, by daksh-neo",
-    "candidate": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
-    "cases": 152,
-    "first_s": 3.728,
-    "median_s": 3.139,
-    "metrics": {
-     "completion_tokens": 238.4526,
-     "tokens_per_s": 106.8621
-    },
-    "model": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
-    "not_run": "",
-    "pass_rate": 0.513,
-    "passed": 78,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-20T06:22:05Z",
-    "served_as": "",
-    "source": "https://huggingface.co/daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
-    "total": 152,
-    "ttft_median_s": 1.248,
-    "ttft_p95_s": 3.735
-   },
-   "outcome": "declined",
-   "proposal": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
-   "reason": "candidate",
-   "receipt_key": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
-   "run_id": 1055,
-   "serves": false,
-   "status": "rejected",
-   "tier": "adopt",
-   "until": ""
-  },
-  {
    "candidate": "dealignai/Gemma-4-31B-JANG_4M-CRACK",
    "decided_at": "2026-11-23T18:42:10Z",
    "detail": "extract: lane too small, needs 595 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1477 more extract cases are needed before a null says anything about deal",
@@ -4409,6 +4371,44 @@
    "status": "rejected",
    "tier": "adopt",
    "until": "cases:extract>2116"
+  },
+  {
+   "candidate": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
+   "decided_at": "2026-11-27T11:19:48Z",
+   "detail": "retest 1/3: declined at adopt",
+   "exam": {
+    "about": "family SandyVeliz/acervo-extractor-qwen3.5-9b, 9B params, by daksh-neo",
+    "candidate": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
+    "cases": 152,
+    "first_s": 3.728,
+    "median_s": 3.139,
+    "metrics": {
+     "completion_tokens": 238.4526,
+     "tokens_per_s": 106.8621
+    },
+    "model": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
+    "not_run": "",
+    "pass_rate": 0.513,
+    "passed": 78,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-20T06:22:05Z",
+    "served_as": "",
+    "source": "https://huggingface.co/daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
+    "total": 152,
+    "ttft_median_s": 1.248,
+    "ttft_p95_s": 3.735
+   },
+   "outcome": "queued",
+   "proposal": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
+   "reason": "reopened",
+   "receipt_key": "daksh-neo/acervo-extractor-qwen3.5-9b-GGUF",
+   "run_id": null,
+   "serves": false,
+   "status": "pending",
+   "tier": "inspect",
+   "until": ""
   },
   {
    "candidate": "llamacpp:Qwen2.5-7B-Instruct-Q4_K_M",
@@ -12243,7 +12243,7 @@
    "runs": 3
   }
  ],
- "generated_at": "2026-11-27T11:09:20Z",
+ "generated_at": "2026-11-27T16:03:36Z",
  "knobs": [],
  "lane": {
   "cases": 450,
