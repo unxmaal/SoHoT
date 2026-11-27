@@ -2246,6 +2246,36 @@
    "until": "runner:transformers"
   },
   {
+   "candidate": "amd/Instella-MoE-16B-A3B-Think",
+   "decided_at": "2026-11-27T07:09:51Z",
+   "detail": "the installed runtime could not load it: chunk-bytes: warm-up: gateway returned HTTP 404: {\"error\": \"Received 27 parameters not in model: \\nmodel.layers.0.self_attn.gate_proj.weight,\\nmodel.layers.1.self_attn.gate_proj.weight,\\nmodel.layers.10.self_attn.gate_proj.weight,\\nmodel.layers.11.self_attn.gate_proj.weight,\\nmodel.layers.12.self_at",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "amd/Instella-MoE-16B-A3B-Think",
+   "reason": "runtime",
+   "receipt_key": "amd/Instella-MoE-16B-A3B-Think",
+   "run_id": 1356,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "format:self_at"
+  },
+  {
+   "candidate": "amd/Instella-MoE-16B-A3B-Think,temperature=0",
+   "decided_at": "2026-11-27T07:09:51Z",
+   "detail": "the installed runtime could not load it: chunk-bytes: warm-up: gateway returned HTTP 404: {\"error\": \"Received 27 parameters not in model: \\nmodel.layers.0.self_attn.gate_proj.weight,\\nmodel.layers.1.self_attn.gate_proj.weight,\\nmodel.layers.10.self_attn.gate_proj.weight,\\nmodel.layers.11.self_attn.gate_proj.weight,\\nmodel.layers.12.self_at",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "amd/Instella-MoE-16B-A3B-Think",
+   "reason": "runtime",
+   "receipt_key": "amd/Instella-MoE-16B-A3B-Think",
+   "run_id": 1356,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "format:self_at"
+  },
+  {
    "candidate": "anemll/Hy4-preview-FlashMoE-STQ1_0",
    "decided_at": "2026-11-23T12:17:14Z",
    "detail": "the installed runtime could not load it: llama-server: llama_model_load: error loading model: unknown model architecture: 'hyv4' (server-load.log, eval.log lines 1642624-1642666)",
@@ -6340,6 +6370,36 @@
    "until": "limit:screen_cases>6"
   },
   {
+   "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "decided_at": "2026-11-27T10:25:54Z",
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about mlx-",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "reason": "limit",
+   "receipt_key": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "run_id": 1362,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>2116"
+  },
+  {
+   "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit,temperature=0",
+   "decided_at": "2026-11-27T10:25:54Z",
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about mlx-",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "reason": "limit",
+   "receipt_key": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "run_id": 1362,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": "cases:extract>2116"
+  },
+  {
    "candidate": "mlx-community/Mistral-7B-Instruct-v0.3-4bit",
    "decided_at": "2026-10-06T04:04:20Z",
    "detail": "dead: last commit 2.3 years ago",
@@ -8178,36 +8238,6 @@
    "until": ""
   },
   {
-   "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit",
-   "decided_at": "2026-11-26T21:58:49Z",
-   "detail": "1 case(s) passed a screen",
-   "exam": null,
-   "outcome": "screened",
-   "proposal": "mlx-community/Llama-3.2-3B-Instruct-4bit",
-   "reason": "candidate",
-   "receipt_key": "mlx-community/Llama-3.2-3B-Instruct-4bit",
-   "run_id": 1346,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
-   "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit,temperature=0",
-   "decided_at": "2026-11-26T21:58:49Z",
-   "detail": "1 case(s) passed a screen",
-   "exam": null,
-   "outcome": "screened",
-   "proposal": "mlx-community/Llama-3.2-3B-Instruct-4bit",
-   "reason": "candidate",
-   "receipt_key": "mlx-community/Llama-3.2-3B-Instruct-4bit",
-   "run_id": 1346,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
    "candidate": "mlx-community/Qwen3.8-27B-OBLITERATED-OptiQ-4bit",
    "decided_at": "2026-11-24T04:54:38Z",
    "detail": "2 case(s) passed a screen",
@@ -8404,33 +8434,33 @@
   },
   {
    "candidate": "Qwen/Qwen-Image-Bench",
-   "decided_at": "2026-11-27T01:55:38Z",
-   "detail": "not fetched 2026-11-27: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-27T07:52:46Z",
+   "detail": "not screened: needs 53.0 GB but only 37.5 GB is safely available (55.5 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 3.8 GB given to the Docker VM); no screen window: still short with the pinned set released: needs 53.0 GB but only 37.5 GB is safely available (55.5 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 3.8 GB given to the Docker VM)",
    "exam": null,
    "outcome": "queued",
    "proposal": "Qwen/Qwen-Image-Bench",
-   "reason": "limit",
+   "reason": "memory",
    "receipt_key": "Qwen/Qwen-Image-Bench",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "fetch",
-   "until": ""
+   "tier": "screen",
+   "until": "room_gb:>53.0"
   },
   {
    "candidate": "Qwen/Qwen-Image-Bench,temperature=0",
-   "decided_at": "2026-11-27T01:55:38Z",
-   "detail": "not fetched 2026-11-27: the screen share of the sweep ceiling is spent",
+   "decided_at": "2026-11-27T07:52:46Z",
+   "detail": "not screened: needs 53.0 GB but only 37.5 GB is safely available (55.5 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 3.8 GB given to the Docker VM); no screen window: still short with the pinned set released: needs 53.0 GB but only 37.5 GB is safely available (55.5 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 3.8 GB given to the Docker VM)",
    "exam": null,
    "outcome": "queued",
    "proposal": "Qwen/Qwen-Image-Bench",
-   "reason": "limit",
+   "reason": "memory",
    "receipt_key": "Qwen/Qwen-Image-Bench",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "fetch",
-   "until": ""
+   "tier": "screen",
+   "until": "room_gb:>53.0"
   },
   {
    "candidate": "Qwen2.5-7B-Instruct-Q4_K_M",
@@ -8760,7 +8790,7 @@
    "until": ""
   }
  ],
- "cursor": 1795739141177513,
+ "cursor": 1795775154130655,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -18153,6 +18183,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-09T01:53:00Z",
+   "candidate": "amd/Instella-MoE-16B-A3B-Think",
+   "chosen": null,
+   "detail": "not screened: needs 36.3 GB but only 17.9 GB is safely available (35.9 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 33.0 GB held by the interactive server's pinned models)",
+   "how": "",
+   "id": 1794189180834226,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-09T01:55:09Z",
    "candidate": "FINAL-Bench/Darwin-4B-David",
    "chosen": null,
@@ -18483,6 +18528,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-10T03:57:23Z",
+   "candidate": "amd/Instella-MoE-16B-A3B-Think",
+   "chosen": null,
+   "detail": "not screened: needs 36.3 GB but only 26.8 GB is safely available (50.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 33.0 GB held by the interactive server's pinned models)",
+   "how": "",
+   "id": 1794283043827611,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-10T03:58:39Z",
    "candidate": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
    "chosen": null,
@@ -18618,6 +18678,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-11T03:09:15Z",
+   "candidate": "amd/Instella-MoE-16B-A3B-Think",
+   "chosen": null,
+   "detail": "not screened: needs 36.3 GB but only 23.2 GB is safely available (57.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794366555748118,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-12T03:22:52Z",
    "candidate": "llamacpp:Qwen3.5-9B-DeepSeek-V4-Flash-Q4_K_M",
    "chosen": null,
@@ -18735,6 +18810,21 @@
    "outcome": "queued",
    "reason": "harness",
    "run_id": 870,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-12T03:40:07Z",
+   "candidate": "amd/Instella-MoE-16B-A3B-Think",
+   "chosen": null,
+   "detail": "not screened: needs 36.3 GB but only 23.2 GB is safely available (52.7 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794454807776120,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
    "tier": "screen"
   },
   {
@@ -18873,6 +18963,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-13T02:30:12Z",
+   "candidate": "amd/Instella-MoE-16B-A3B-Think",
+   "chosen": null,
+   "detail": "not screened: needs 36.3 GB but only 6.4 GB is safely available (24.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794537012600947,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-13T02:51:55Z",
    "candidate": "google/gemma-4-31B-it-qat-w4a16-ct",
    "chosen": null,
@@ -18930,6 +19035,21 @@
    "outcome": "queued",
    "reason": "harness",
    "run_id": 938,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-13T03:01:51Z",
+   "candidate": "amd/Instella-MoE-16B-A3B-Think",
+   "chosen": null,
+   "detail": "not screened: needs 36.3 GB but only 23.2 GB is safely available (46.6 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794538911254652,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
    "tier": "screen"
   },
   {
@@ -19095,6 +19215,21 @@
    "outcome": "queued",
    "reason": "harness",
    "run_id": 966,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-14T04:59:57Z",
+   "candidate": "amd/Instella-MoE-16B-A3B-Think",
+   "chosen": null,
+   "detail": "not screened: needs 36.3 GB but only 14.3 GB is safely available (32.2 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794632397328349,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
    "tier": "screen"
   },
   {
@@ -19599,6 +19734,21 @@
    "detail": "not screened: needs 16.4 GB but only 2.4 GB is safely available (20.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "how": "",
    "id": 1794712524750435,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-15T03:15:25Z",
+   "candidate": "amd/Instella-MoE-16B-A3B-Think",
+   "chosen": null,
+   "detail": "not screened: needs 29.5 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released",
+   "how": "",
+   "id": 1794712525077761,
    "incumbent": "",
    "kind": "screen",
    "knob": "",
@@ -20463,6 +20613,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-22T17:51:59Z",
+   "candidate": "amd/Instella-MoE-16B-A3B-Think",
+   "chosen": null,
+   "detail": "not screened: needs 29.5 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795369919420532,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-22T18:04:20Z",
    "candidate": "Qwen/Qwen3-4B",
    "chosen": null,
@@ -21048,6 +21213,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-23T16:34:19Z",
+   "candidate": "amd/Instella-MoE-16B-A3B-Think",
+   "chosen": null,
+   "detail": "not screened: needs 29.5 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795451659481845,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-23T16:59:00Z",
    "candidate": "HuggingFaceBio/Carbon-X",
    "chosen": null,
@@ -21174,6 +21354,21 @@
    "detail": "not screened: needs 16.4 GB but only 11.3 GB is safely available (29.3 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM); no screen window: no engine bounds the screen, so the window could not be given an end",
    "how": "",
    "id": 1795474982219161,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-23T23:08:12Z",
+   "candidate": "amd/Instella-MoE-16B-A3B-Think",
+   "chosen": null,
+   "detail": "not screened: needs 29.5 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795475292165856,
    "incumbent": "",
    "kind": "screen",
    "knob": "",
@@ -21420,6 +21615,21 @@
    "outcome": "screened",
    "reason": "candidate",
    "run_id": 1261,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-24T05:07:44Z",
+   "candidate": "amd/Instella-MoE-16B-A3B-Think",
+   "chosen": null,
+   "detail": "not screened: needs 29.5 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795496864783313,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
    "tier": "screen"
   },
   {
@@ -21693,6 +21903,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-24T15:53:31Z",
+   "candidate": "amd/Instella-MoE-16B-A3B-Think",
+   "chosen": null,
+   "detail": "not screened: needs 29.5 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795535611000710,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-24T15:58:11Z",
    "candidate": "HuggingFaceBio/Carbon-X",
    "chosen": null,
@@ -21948,6 +22173,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-24T22:58:18Z",
+   "candidate": "amd/Instella-MoE-16B-A3B-Think",
+   "chosen": null,
+   "detail": "not screened: needs 29.5 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795561098590340,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-24T23:03:47Z",
    "candidate": "HuggingFaceBio/Carbon-X",
    "chosen": null,
@@ -22083,6 +22323,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-25T04:44:03Z",
+   "candidate": "amd/Instella-MoE-16B-A3B-Think",
+   "chosen": null,
+   "detail": "not screened: needs 29.5 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795581843096203,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-25T04:48:07Z",
    "candidate": "HuggingFaceBio/Carbon-X",
    "chosen": null,
@@ -22203,6 +22458,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-26T21:58:09Z",
+   "candidate": "amd/Instella-MoE-16B-A3B-Think",
+   "chosen": null,
+   "detail": "not screened: needs 29.5 GiB but at most 23.3 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795730289999150,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-26T21:58:16Z",
    "candidate": "Qwen/Qwen-Image-Bench",
    "chosen": null,
@@ -22291,6 +22561,66 @@
    "reason": "candidate",
    "run_id": null,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-27T00:37:16Z",
+   "candidate": "amd/Instella-MoE-16B-A3B-Think",
+   "chosen": null,
+   "detail": "not screened: needs 36.3 GB but only 35.8 GB is safely available (53.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 3.8 GB given to the Docker VM); no screen window: still short with the pinned set released: needs 36.3 GB but only 35.8 GB is safely available (53.8 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1795739836549401,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-27T07:09:51Z",
+   "candidate": "amd/Instella-MoE-16B-A3B-Think",
+   "chosen": null,
+   "detail": "the installed runtime could not load it: chunk-bytes: warm-up: gateway returned HTTP 404: {\"error\": \"Received 27 parameters not in model: \\nmodel.layers.0.self_attn.gate_proj.weight,\\nmodel.layers.1.self_attn.gate_proj.weight,\\nmodel.layers.10.self_attn.gate_proj.weight,\\nmodel.layers.11.self_attn.gate_proj.weight,\\nmodel.layers.12.self_at",
+   "how": "",
+   "id": 1795763391701039,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "runtime",
+   "run_id": 1356,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-27T07:52:46Z",
+   "candidate": "Qwen/Qwen-Image-Bench",
+   "chosen": null,
+   "detail": "not screened: needs 53.0 GB but only 37.5 GB is safely available (55.5 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 3.8 GB given to the Docker VM); no screen window: still short with the pinned set released: needs 53.0 GB but only 37.5 GB is safely available (55.5 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1795765966274829,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-27T10:25:54Z",
+   "candidate": "mlx-community/Llama-3.2-3B-Instruct-4bit",
+   "chosen": null,
+   "detail": "extract: lane too small, needs 652 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1667 more extract cases are needed before a null says anything about mlx-",
+   "how": "",
+   "id": 1795775154130655,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1362,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -24581,7 +24911,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-27T04:57:18Z",
+ "generated_at": "2026-11-27T11:09:16Z",
  "knobs": [],
  "lane": {
   "cases": 451,
