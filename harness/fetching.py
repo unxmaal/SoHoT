@@ -297,7 +297,7 @@ def missing(model_id: str, conn=None) -> list[str]:
 
 
 def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
-           needs_lane: bool = True, lane: str = "", name: str = "", prefiltered: bool = True) -> list[dict]:
+           needs_lane: bool = True, lane: str = "", name: str = "", prefiltered: bool = False) -> list[dict]:
     """Weights queued and not on disk, in the order the screen fetches them; `name` alone, unranked. #81, #2015, #2165.
 
     A weight NO LANE CAN TEST is returned but never counted as fetchable:

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 
-from harness import lanes
+from harness import lanes, machine_scope
 
 #: Most screened, paused and running measures one open lane holds before its next candidate waits unscreened. #2165.
 LIMIT = 2
@@ -30,7 +30,8 @@ def used(conn) -> dict[str, list[str]]:
         add(r["lane"], r["name"])
     for p in paused.waiting(conn):
         add(p["lane"], p["proposal"] or p["challenger"])
-    for j in conn.execute("SELECT argv FROM jobs WHERE state = 'running'"):
+    here, mine = machine_scope.here(conn, "jobs.claimed")
+    for j in conn.execute(f"SELECT argv FROM jobs WHERE state = 'running' AND {here}", mine):
         try:
             argv = json.loads(j["argv"] or "[]")
         except ValueError:

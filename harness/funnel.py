@@ -111,8 +111,9 @@ def proposals(conn, *, lane: str = "", since: float | None = None, now: float | 
     for r in report.ranked(conn):
         per_lane.setdefault(rank.lane_of(r), []).append(r["name"])
     lane_rank = {n: i for names in per_lane.values() for i, n in enumerate(names)}
-    order, left_out = prefilter.split(conn, fetching.queued(conn, prefiltered=False))
-    fetchable, position, tried = {r["name"]: r for r in order}, {}, 0
+    every = fetching.queued(conn, prefiltered=False)
+    order, left_out = prefilter.split(conn, every)
+    fetchable, position, tried = {r["name"]: r for r in every}, {}, 0
     for r in order:
         got = fetching.why_not(r)
         if not got or got[0] == fetching.FAILED:
@@ -144,12 +145,11 @@ def proposals(conn, *, lane: str = "", since: float | None = None, now: float | 
                "raw_lane": p["lane"] or "", "reason": "", "why": "", "fetch_said": _said(history, start)}
         if state == "queued" and not downloaded:
             got = fetchable.get(p["name"])
-            if p["name"] in left_out:
-                kind, why = left_out[p["name"]]
-                row["reason"], row["why"] = "prefilter", f"{kind}: {why}"
-            else:
-                row["reason"], row["why"] = _reason(got, top=top, position=position.get(p["name"]),
-                                                    skipped=_skipped(history, start)) if got else _unfetchable(p)
+            row["reason"], row["why"] = _reason(got, top=top, position=position.get(p["name"]),
+                                                skipped=_skipped(history, start)) if got else _unfetchable(p)
+            # A gate's silent word stands; else the prefilter says why no ranked list holds it. #2165.
+            if p["name"] in left_out and row["reason"] not in fetching.SILENT:
+                row["reason"], row["why"] = "prefilter", prefilter.said(left_out[p["name"]])
         out.append(row)
     return out
 

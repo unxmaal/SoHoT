@@ -87,7 +87,20 @@ def _judge_fits(fits, store_path=None) -> int:
     return 0
 
 
-def _screen_plan(want: str, record: bool = False) -> list[dict]:
+def _record_prefilter(want: str) -> None:
+    """Each queued candidate the prefilter keeps out of the ranked list gets a fetch verdict naming why. #2165."""
+    from harness import prefilter
+    from harness import memory_store as ms
+    store = ms.connect()
+    try:
+        held = prefilter.split(store, loop_cmd._queueable(store, want)[0])[1]
+        if held:
+            prefilter.record(store, held)
+    finally:
+        store.close()
+
+
+def _screen_plan(want: str) -> list[dict]:
     from harness import prefilter, rank, screen
     from harness import memory_store as ms
     store = ms.connect()
@@ -97,9 +110,7 @@ def _screen_plan(want: str, record: bool = False) -> list[dict]:
         # loop fetched two image models and then said "nothing queued to
         # screen". Issue #209.
         rows, _ = loop_cmd._queueable(store, want)
-        rows, held = prefilter.split(store, rows)
-        if held and record:
-            prefilter.record(store, held)
+        rows = prefilter.split(store, rows)[0]
         # The same store as the fetch's ranking, so both tiers order by one key. #275, #881.
         ranked = rank.rank(rows, serving=rank.serving(),
                            measured_lanes=rank.lanes_with_receipts(store), conn=store)
@@ -380,7 +391,9 @@ def _report_screen(a) -> int:
     from harness import memory_store as ms
 
     want = (getattr(a, "lane", "") or "").strip().lower()
-    full = _open_lanes(_screen_plan(want, record=bool(getattr(a, "run", False))), record=bool(getattr(a, "run", False)))
+    if getattr(a, "run", False):
+        _record_prefilter(want)
+    full = _open_lanes(_screen_plan(want), record=bool(getattr(a, "run", False)))
     if not full:
         print("nothing queued to screen")
         return 0

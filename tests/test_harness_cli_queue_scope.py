@@ -98,6 +98,7 @@ def test_the_screen_tier_scopes_before_limiting_too(monkeypatch, capsys):
     monkeypatch.setattr("harness.rank.incumbents", lambda conn: {})
     monkeypatch.setattr("harness.rank.lanes_with_receipts", lambda *a, **k: set())
     monkeypatch.setattr("harness.lane_gate.shut", lambda *a, **k: {})
+    monkeypatch.setattr("harness.prefilter.split", lambda conn, rows, **k: (rows, {}))
     cli._report_screen(argparse.Namespace(lane="image", top=2, run=False,
                                           json=False))
     out = capsys.readouterr().out
@@ -124,6 +125,7 @@ def test_a_fetched_candidate_below_the_rank_head_is_still_screened(monkeypatch, 
     monkeypatch.setattr("harness.screen.plan", lambda ranked, **k: waiting + [fetched])
     monkeypatch.setattr("harness.screen.argv", lambda r, **k: ["screen", r["name"]])
     monkeypatch.setattr("harness.lane_gate.shut", lambda *a, **k: {})
+    monkeypatch.setattr("harness.prefilter.split", lambda conn, rows, **k: (rows, {}))
     cli._report_screen(argparse.Namespace(lane="", top=2, run=False, json=False))
     out = capsys.readouterr().out
     assert "1 ready to screen" in out and "org/fetched" in out, out

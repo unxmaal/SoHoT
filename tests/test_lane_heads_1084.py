@@ -84,7 +84,7 @@ def test_the_funnel_names_the_runner_gap_the_fetch_recorded(store, monkeypatch):
     # The next sweep's inspect rewrites the queued waypoint over the fetch's verdict.
     ms.decide(store, MICA, "queued", tier="inspect", detail="fits")
     got = _row(store, MICA)
-    assert got["reason"] == fetching.SKIPPED
+    assert got["reason"] == "prefilter"
     assert "needs its own runner" in got["why"]
 
 

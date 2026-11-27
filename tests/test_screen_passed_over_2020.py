@@ -32,6 +32,7 @@ def plan_row(name, state=screen.WAITING, lane="code"):
 
 def run(store, monkeypatch, plan, **kw):
     screened = []
+    monkeypatch.setattr("harness.wip.LIMIT", 99)
     monkeypatch.setattr(screen_cmd, "_screen_plan", lambda want: plan)
     monkeypatch.setattr(screen_cmd, "_release", lambda store, r: None)
     monkeypatch.setattr(screen_cmd, "_screen_one",

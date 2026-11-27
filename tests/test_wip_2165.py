@@ -51,8 +51,8 @@ def _pause(c, lane, name):
 
 def _job(c, lane, name, state="running"):
     argv = ["uv", "run", "soh", "adopt", "--lane", lane, "--challenger", name, "--repeat", "3"]
-    c.execute("INSERT INTO jobs (title, argv, state, requested_by, created_at) VALUES (?,?,?,?,?)",
-              (f"adopt {name}", json.dumps(argv), state, "test", time.time()))
+    c.execute("INSERT INTO jobs (title, argv, state, requested_by, created_at, machine_id) VALUES (?,?,?,?,?,?)",
+              (f"adopt {name}", json.dumps(argv), state, "test", time.time(), ms.remember_machine(c)))
 
 
 def test_wip_counts_a_lanes_screened_paused_and_running_measures_once_each(conn):
@@ -156,13 +156,13 @@ def test_a_refetch_the_budget_refuses_keeps_the_candidate_out(conn, monkeypatch)
 def test_a_screen_run_records_the_prefilter_reason_and_the_funnel_explains_it(conn, monkeypatch):
     monkeypatch.setattr(ms, "connect", lambda *a, **k: _Open(conn))
     _put(conn, "org/no-runner", "image", library="comfyui")
-    screen_cmd._screen_plan("", record=True)
+    screen_cmd._record_prefilter("")
     row = conn.execute("SELECT p.state, v.tier, v.detail FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
                        "WHERE p.name = 'org/no-runner'").fetchone()
     assert row["state"] == "queued" and row["tier"] == "fetch" and row["detail"].startswith("prefilter:")
     from harness import funnel
     got = {r["name"]: r for r in funnel.proposals(conn)}["org/no-runner"]
-    assert got["reason"] == "prefilter" and "runner" in got["why"] and got["stage"] != "ranked"
+    assert got["reason"] == "prefilter" and got["why"].startswith("runner:") and got["stage"] != "ranked"
 
 
 def test_the_flow_panel_shows_each_open_lanes_wip_out_of_its_limit(conn, monkeypatch):

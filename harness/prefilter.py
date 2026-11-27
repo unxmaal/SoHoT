@@ -67,9 +67,14 @@ def split(conn, rows: list[dict], *, standing=None) -> tuple[list[dict], dict[st
     return kept, held
 
 
+def said(held: tuple[str, str]) -> str:
+    """One held row's (kind, why) as a sentence."""
+    return f"{held[0]}: {held[1]}"
+
+
 def record(conn, held: dict[str, tuple[str, str]]) -> None:
     """Each row left out keeps its place as a queued fetch verdict naming why, which `soh funnel` reads."""
     for name, (kind, why) in held.items():
-        ms.decide_or_skip(conn, name, "queued", tier=ms.FETCH, detail=f"{SAID}{kind}: {why}"[:600],
+        ms.decide_or_skip(conn, name, "queued", tier=ms.FETCH, detail=f"{SAID}{said((kind, why))}"[:600],
                           reason=_REASON[kind], commit=False)
     conn.commit()
