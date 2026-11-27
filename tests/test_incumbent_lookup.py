@@ -39,13 +39,12 @@ def test_measure_plans_from_the_rows_stored_under_the_incumbents_old_name(rename
 
 def test_soh_power_profiles_the_incumbent_from_its_old_names_rows(renamed, monkeypatch):
     from harness import memory_store as ms
-    from harness import screen, winners
-    from harness.commands import adopt as adopt_cmd
+    from harness import lane_gate, screen, winners
     monkeypatch.setattr(winners, "typed", lambda: {"decide": NEW})
     monkeypatch.setattr(screen, "candidate_for", lambda lane, model, *a, **k: model)
     conn = ms.connect()
     try:
-        _, spec, draws, median, _, _ = adopt_cmd._profile("decide", {}, conn)
+        _, spec, draws, median, _, _ = lane_gate.profile("decide", {}, conn)
     finally:
         conn.close()
     assert spec == NEW

@@ -303,7 +303,7 @@ def gather(now: float | None = None, *, connect=None, beat=None, where=None, git
            reach=None, flow=None, home: Path | None = None, environ=None, features=None, light: bool = False) -> dict:
     """Every section, each with its own as_of; with the store down the store-free sections still read. `light` skips the
     ratio and the 24 h strip, which the Needs-you alert pass does not need."""
-    from harness import morning, needs_you
+    from harness import lane_gate, morning, needs_you
     now = time.time() if now is None else now
     conn, why = None, ""
     try:
@@ -322,6 +322,7 @@ def gather(now: float | None = None, *, connect=None, beat=None, where=None, git
              "ratio": {} if light else _section(ratio, conn, now, flow)}
         r["timeline"] = {} if light else _section(timeline, conn, now, r["discovery"], r["queue"], home)
         r["features"] = _section(features or _features, conn, now, r["queue"])
+        r["lane_gate"] = {} if light else _section(lane_gate.status, conn, now)
         r["discovery_flow"] = {} if light else _section(_discovery_flow, conn, now)
         r["pipeline_yield"] = {} if light else _section(_yield, conn, now)
         r["stops"] = {"holds": _section(needs_you.read_holds, conn, now), "jobs": _section(needs_you.read_jobs, conn, now),

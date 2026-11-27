@@ -9,7 +9,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from evals import watch
-from harness import incumbent_down, lanes, methods, overrun, paths, paused, reasons, runs, test_weights
+from harness import incumbent_down, lane_gate, lanes, methods, overrun, paths, paused, reasons, runs, test_weights
 from harness.commands.common import emit, err, note
 from harness.commands import jobs as jobs_cmd
 
@@ -215,7 +215,7 @@ def measurable(store, top: int, want: str = "", top_knob: str = "discover_top") 
     if not want:
         # A text survivor filed under code is the extract lane's challenger too. #2033.
         every = every + [{**r, "measure_lane": w} for r in every for w in lanes.also_in(r.get("lane"))]
-    rows = [r for r in every if takes(r, want)]
+    rows = lane_gate.keep(store, [r for r in every if takes(r, want)], lambda r: lane_for(r, want), say=print)[0]
     return cuts.take(rows, top, top_knob, "measurable survivors past --top", conn=store)
 
 
@@ -231,7 +231,7 @@ def resume_first(store, fresh: list[dict], want: str = "") -> list[dict]:
     """Paused measurements before anything new, each once. #813, #2105."""
     from harness import paused
     every = [{"name": p["proposal"] or p["challenger"], "lane": p["lane"]} for p in paused.waiting(store)]
-    held = [r for i, r in enumerate(every) if takes(r, want) and r not in every[:i]]
+    held = [r for i, r in enumerate(every) if takes(r, want) and r not in every[:i] and not lane_gate.hold_back(store, r["name"], r["lane"])]
     names = {r["name"] for r in held}
     return held + [r for r in fresh if r.get("name") not in names]
 

@@ -364,12 +364,16 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
         # queue report and not the fetch. Issue #211.
         from harness import lanes
         out = [r for r in out if lanes.serves(r.get("lane"), lane)]
+    from harness import lane_gate
+    out = lane_gate.keep(conn, out)[0]
     return by_lane_turns(in_rank_order(out, conn), conn)
 
 
 def row(conn, name: str) -> dict | None:
     """The fetch queue's row for `name` when a screen may fetch it now, else None. #2015."""
-    return next(iter(queued(conn, name=name)), None)
+    from harness import lane_gate
+    got = next(iter(queued(conn, name=name)), None)
+    return got if got is None or not lane_gate.keep(conn, [got])[1] else None
 
 
 def by_lane_turns(rows: list[dict], conn=None) -> list[dict]:

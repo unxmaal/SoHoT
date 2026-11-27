@@ -78,6 +78,8 @@ capabilities:
       - harness/baseline.py
       - harness/ceiling.py
       - harness/engine_timeout.py
+      - harness/lane_gate.py
+      - harness/commands/lane_gate.py
 
   - name: screen
     summary: The rung between a ranked queue and a measurement, and the queue's ranking by what is worth learning.

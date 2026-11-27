@@ -51,6 +51,10 @@ KNOBS = [
        note="fresh incumbent rows, every one harness_error, after which a paired run stops with exit 78 and its stop "
             "file says incumbent_silent; runs/20261108-232512-adopt-decide paired 196 challenger cases against an "
             "incumbent whose one failed warm-up (gateway 404) failed every case in 0.0 s (#1656)"),
+    _k("lane_gate_open_s", ["harness/lane_gate.py:OPEN_S"], [86400, 259200, 604800], unit="s",
+       note="how long the owner's open-anyway on a closed lane lasts before it closes again (#2164)"),
+    _k("lane_gate_power", ["harness/lane_gate.py:GATE_POWER"], [0.5, 0.7, 0.8, 0.9], unit="share",
+       note="a lane whose power plan at its adopt effect is under this takes no challengers: no fetch, no screen, no measure; reverify and knob sweeps still run (#2164)"),
     _k("look_idle_slices", ["harness/commands/measure.py:IDLE_SLICES"], [1, 2, 3],
        note="look slices in a row that may stop at their stop time with no new case before a paired run pauses "
             "for the next sweep; job 0239's first slice spent 954 s of 1800 waiting for the eval lock and two cold "
@@ -104,6 +108,8 @@ NOT_GATING = {
 }
 
 NEVER_CUTS = {
+    "harness/lane_gate.py:OPEN_S": "sets when the owner's open-anyway of a closed lane ends; the lane_gate_power cut it "
+                                   "lifts is recorded where it binds (#2164)",
     "harness/commands/measure.py:IDLE_SLICES": "pauses a paired run whose slices land no case; the pause is kept and "
                                                "the next sweep resumes it, so no case is dropped (#1554)",
     "harness/looks.py:LOOK_INTERVAL_S": "sets when a paired run stops for an interim look; it resumes after the look "

@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from harness import adopt, effects, holdout, knobs, power, reasons
+from harness import adopt, effects, holdout, knobs, lane_gate, power, reasons
 from harness import memory_store as ms
 from harness import paths, screen, workqueue
 from harness.commands import adopt as adopt_cmd
@@ -151,7 +151,7 @@ def test_replay_names_a_powered_null_that_a_smaller_effect_makes_underpowered(co
 def test_the_power_header_names_each_lanes_effect(conn, monkeypatch, capsys):
     monkeypatch.setattr(power, "EFFECT", {"code": 0.06})
     monkeypatch.setattr(holdout, "splits", lambda root=None: {"code": holdout.Split("code", ("d1",), ("h1",), False)})
-    monkeypatch.setattr(adopt_cmd, "_profile", lambda lane, receipts, conn: ("k", "s", {}, None, (0, ()), []))
+    monkeypatch.setattr(lane_gate, "profile", lambda lane, receipts, conn: ("k", "s", {}, None, (0, ()), []))
     monkeypatch.setattr(power, "pair_cost", lambda *a, **k: (None, 2, {}))
     monkeypatch.setattr(adopt, "comparisons", lambda conn, lane, version: 0)
     adopt_cmd.cmd_power(argparse.Namespace(lane="code", receipt=None, challenger="", effect=None,
