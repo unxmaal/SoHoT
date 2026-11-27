@@ -82,7 +82,7 @@ MODIFIERS = {
     "prompt --quiet", "rubric --no-browser", "judge --no-browser", "discover --platform", "discover --no-verify",
     "discover --no-control", "discover --from-store", "discover --requeue", "discover --judge",
     "inventory time --no-effort", "inventory time --hours", "inventory weight --no-ci", "inventory weight --markdown",
-    "context --main-only",
+    "context --main-only", "reverify --retry-incumbent",
     "morning --no-model", "claude-news --no-record", "benchmarks --force", "benchmarks --passages",
     "cases --reextract", "jobs --night", "jobs --despite-hold","disk --yes", "adopt --unscreened",
     "adopt --all-machines", "merge-gate --again", "merge-gate --queue",

@@ -13,6 +13,8 @@ OPEN_S = 3 * 86400.0
 OPEN_KIND = "lane-open:"
 GROWTH_ISSUE = "https://github.com/unxmaal/SoHoT/issues/603"
 OWNER = "owner: from the status page"
+#: A second reason to close a lane: its incumbent is marked down (incumbent_down); no override opens it. #2168.
+DOWN = "incumbent_down"
 
 
 @dataclass(frozen=True)
@@ -41,9 +43,13 @@ class Gate:
     cases_needed: int | None
     more_holdout: int | None
     more_cases: int | None
+    kind: str = "power"
+    detail: str = ""
 
     @property
     def why(self) -> str:
+        if self.kind == DOWN:
+            return f"{self.lane} lane closed to challengers: {self.detail}; soh reverify --lane {self.lane} clears it once it answers"
         need = ("no holdout size reaches it" if self.cases_needed is None else
                 f"needs {self.more_holdout} more holdout cases ({self.cases_needed} in all, {self.holdout} here)")
         return (f"{self.lane} lane closed to challengers: power {self.power:.2f} at +{self.effect:.2f} is under "
@@ -165,11 +171,26 @@ def close_lane(conn, lane: str, now: float | None = None) -> dict | None:
     return {**got, "released_at": now}
 
 
+def down_gate(lane: str) -> Gate | None:
+    """The gate on `lane` while its incumbent is marked down; None with no mark. #2168."""
+    from harness import incumbent_down, lanes
+    m = incumbent_down.marked(lane)
+    if m is None:
+        return None
+    return Gate(lanes.canonical(lane), 0.0, 0.0, 0, None, None, None, kind=DOWN, detail=incumbent_down.why(m))
+
+
 def shut(conn, wanted, now: float | None = None) -> dict[str, Gate]:
-    """lane -> its gate for each of `wanted` the gate closes now; a lane under an override is open."""
+    """lane -> its gate for each of `wanted` the gate closes now; a lane under an override is open, unless its incumbent is down."""
     out: dict[str, Gate] = {}
     for lane in dict.fromkeys(wanted):
-        if not lane or override(conn, lane, now):
+        if not lane:
+            continue
+        dead = down_gate(lane)
+        if dead is not None:
+            out[dead.lane] = dead
+            continue
+        if override(conn, lane, now):
             continue
         got = gate_for(conn, lane)
         if got is not None:
@@ -187,8 +208,9 @@ def keep(conn, rows: list[dict], lane_of=None, now: float | None = None, say=Non
     kept = [r for r in rows if lanes.canonical(lane_of(r)) not in shutting]
     for lane, g in shutting.items():
         n = sum(1 for r in rows if lanes.canonical(lane_of(r)) == lane)
-        cuts.cut("lane_gate_power", f"{lane}: {n} challenger(s) held back, power {g.power:.2f} at +{g.effect:.2f}",
-                 value=GATE_POWER, kept=0, dropped=n, conn=conn)
+        if g.kind != DOWN:
+            cuts.cut("lane_gate_power", f"{lane}: {n} challenger(s) held back, power {g.power:.2f} at +{g.effect:.2f}",
+                     value=GATE_POWER, kept=0, dropped=n, conn=conn)
         if say:
             say(f"  {g.why}")
     return kept, shutting
@@ -213,8 +235,8 @@ def record(conn, rows: list[dict], gates: dict[str, Gate], lane_of=None) -> None
     for r in rows:
         g = gates.get(lanes.canonical(lane_of(r)))
         if g is not None:
-            ms.decide_or_skip(conn, r["name"], "queued", tier=ms.FETCH, detail=g.why[:600], reason=reasons.LIMIT,
-                              commit=False)
+            ms.decide_or_skip(conn, r["name"], "queued", tier=ms.FETCH, detail=g.why[:600],
+                              reason=reasons.HARNESS if g.kind == DOWN else reasons.LIMIT, commit=False)
     conn.commit()
 
 
@@ -229,4 +251,7 @@ def status(conn, now: float | None = None) -> dict:
             continue
         o = override(conn, lane, now)
         (opened if o else closed).append({**g.as_dict(), **({"until": o["until"], "said": o["said"]} if o else {})})
-    return {"threshold": GATE_POWER, "closed": closed, "opened": opened, "issue": GROWTH_ISSUE}
+    from harness import incumbent_down
+    down = [{"lane": k, "runner": v.get("runner", ""), "pair": v.get("pair", ""), "why": v.get("why", ""),
+             "at": v.get("at", 0)} for k, v in sorted(incumbent_down.read().items()) if k != "?"]
+    return {"threshold": GATE_POWER, "closed": closed, "opened": opened, "down": down, "issue": GROWTH_ISSUE}

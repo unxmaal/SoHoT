@@ -24,7 +24,8 @@ R = {"generated": NOW, "deploy": {"head": "b" * 40, "main": MAIN, "wait": None},
                "waiting": [{"id": "0009", "title": "a", "priority": 0, "held": True}, {"id": "0010", "title": "b", "priority": 0, "held": False}]},
      "features": {"rows": [{"kind": "node", "name": "styx", "state": "on"}, {"kind": "node", "name": "olm", "state": "parked"},
                            {"kind": "lane", "name": "code", "state": "on demand"}]},
-     "lane_gate": {"closed": [{"lane": "code", "power": 0.07}], "opened": [{"lane": "tts", "power": 0.5}]}}
+     "lane_gate": {"closed": [{"lane": "code", "power": 0.07}], "opened": [{"lane": "tts", "power": 0.5}],
+                  "down": [{"lane": "svg", "runner": "llamacpp:inc"}]}}
 
 
 class Home:
@@ -163,7 +164,7 @@ def test_every_action_is_an_existing_verb_with_no_free_argument():
                                             "gate_release", "queue_pause", "queue_resume", "discovery_on",
                                             "discovery_off", "job_retry", "job_cancel", "job_let", "job_first", "gate_again", "unit_restart", "node_park",
                                             "node_unpark", "deploy_pause", "deploy_resume", "review_off", "review_on", "router_relist", "pg_backup",
-                                            "lane_open", "lane_close", "lane_reverify"]
+                                            "lane_open", "lane_close", "lane_reverify", "incumbent_retry"]
     for a in oa.ACTIONS:
         assert (a.offers is not None) == ("{}" in a.argv) and a.argv.count("{}") <= 1
         got = parser.parse_args(a.verb(a.offers(R)[0][0]) if a.offers else list(a.argv))

@@ -35,9 +35,23 @@ def mark(lane: str, runner: str, pair: str, why: str, now: float | None = None) 
     to.write_text(json.dumps(got, sort_keys=True), encoding="utf-8")
 
 
-def clear(lane: str) -> None:
-    """The lane's incumbent answered again: drop its mark."""
+def marked(lane: str) -> dict | None:
+    """The mark on `lane` (canonical or alias), or None; the unreadable-file placeholder marks no lane. #2168."""
+    from harness import lanes
+    want = lanes.canonical(lane)
+    return next((v for k, v in read().items() if k != "?" and lanes.canonical(k) == want), None)
+
+
+def why(m: dict) -> str:
+    """One line for a mark: which incumbent is down and what it did."""
+    return f"incumbent {m.get('runner') or '?'} is down: {m.get('why') or 'it answered none of its first cases'}"
+
+
+def clear(lane: str, ran_at: float | None = None) -> None:
+    """The lane's incumbent answered again: drop its mark; with ran_at, only a mark written before that run was queued."""
     got = read()
+    if ran_at is not None and float((got.get(lane) or {}).get("at") or 0) > ran_at:
+        return
     if got.pop(lane, None) is not None and "?" not in got:
         path().write_text(json.dumps(got, sort_keys=True), encoding="utf-8")
 

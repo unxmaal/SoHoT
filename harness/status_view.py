@@ -422,10 +422,17 @@ def _closed_lanes(lg: dict, now: float, acts=None) -> str:
     if lg.get("error"):
         return "".join(out) + f"<p class='head'>{_badge(UNKNOWN)} not read</p></section>"
     rows = [(g, False) for g in lg.get("closed") or []] + [(g, True) for g in lg.get("opened") or []]
-    if not rows:
+    down = lg.get("down") or []
+    if not rows and not down:
         return "".join(out) + f"<p class='head'>{_badge(OK)} every lane reaches power {lg.get('threshold', 0):.2f}</p></section>"
-    out.append(f"<p class='head'>{len(lg.get('closed') or [])} closed to challengers: no fetch, no screen, no measure "
-               f"under power {lg.get('threshold', 0):.2f} · <a href='{esc(lg.get('issue'))}'>holdout growth</a></p><div class='ft'>")
+    out.append(f"<p class='head'>{len(lg.get('closed') or []) + len(down)} closed to challengers: no fetch, no screen, no measure "
+               f"under power {lg.get('threshold', 0):.2f} or while the incumbent is down · "
+               f"<a href='{esc(lg.get('issue'))}'>holdout growth</a></p><div class='ft'>")
+    for d in down:
+        out.append(f"<div class='fr' data-lane='{esc(d['lane'])}'><span class='fs bad'>incumbent down</span>"
+                   f"<span class='fn'>{esc(d['lane'])}</span><span class='fb'>{esc(d.get('runner') or '?')}: {esc(d.get('why') or '')}"
+                   f" · marked <time title='{stamp(d['at'])}'>{esc(ago(d['at'], now))}</time> · a passing reverify clears it</span>"
+                   + (f"<span class='fa'>{acts(d['lane'])}</span>" if acts else "") + "</div>")
     for g, anyway in rows:
         need = ("no holdout size reaches it" if g.get("more_holdout") is None else
                 f"needs {g['more_holdout']} more holdout cases ({g['more_cases']} lane cases)")
