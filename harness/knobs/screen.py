@@ -10,6 +10,8 @@ KNOBS = [
        note="most cases a screen draws per lane and language; a zero-pass screen it capped waits on it (#691)"),
     _k("screen_confidence", ["harness/screen.py:SCREEN_CONFIDENCE"], [0.8, 0.9, 0.95, 0.99], limit="screen_confidence", unit="share",
        note="chance a model as good as the incumbent passes one screen case; sets how many it draws (#691)"),
+    _k("screen_futility", ["harness/screen_race.py:SCREEN_FUTILITY"], [0.01, 0.05, 0.1, 0.2], limit="screen_futility", unit="share",
+       note="posterior chance the challenger beats the incumbent by the adopt effect under which a screen race declines it (#2166)"),
     _k("screen_harness_errors", ["harness/commands/screen.py:HARNESS_ERRORS"], [2, 3, 5],
        limit="screen_harness_errors", unit="screens",
        note="screens of one candidate in a row ending harness_error before it is declined at this limit and the "
@@ -19,6 +21,8 @@ KNOBS = [
     _k("screen_outside_votes", ["evals/repo_screen.py:OUTSIDE_VOTES"], [2, 3, 4],
        note="independent third-party benchmarks ranking a candidate above Ornith before its failed repo screen "
             "is rerun rather than declined; the owner's rule on #1176, unmeasured"),
+    _k("screen_promise", ["harness/screen_race.py:SCREEN_PROMISE"], [0.3, 0.5, 0.7, 0.9],
+       note="posterior chance the challenger beats the incumbent by the adopt effect over which a screen race passes it early (#2166)"),
     _k("screen_repeats", ["evals/repo_screen.py:REPEATS"], [2, 3, 5],
        note="extra draws of a failed repo screen the outside votes disagree with, pooled before declining; "
             "same-config Ornith runs 466/472 differ on 4 of 39 cases (FINDING #597), so one draw is noisy (#1176)"),

@@ -20,6 +20,12 @@ INDEX = {
                      "tests/test_gauntlet_scanners.py::test_no_code_flips_the_offline_guard_except_through_env_online"]},
     "one-question-two-answers": {
         "detector": "duplicated_literals",
+        "waivers": {
+            "harness/exclusive.py:EXCLUSIVE":
+                "the lanes that hold a large local working set under the exclusive flock, not the lanes a screen shrinks (#314)",
+            "harness/screen.py:MEDIA_LANES":
+                "the lanes whose screen shrinks a case, pinned by test_only_the_media_lanes_are_shrunk (#2166)",
+        },
         "instances": _i(38, 51, 115, 117, 140, 153, 155, 157, 187, 207, 224, 249, 345, 520, rules=(268,)),
         "scanners": ["tests/test_duplicated_policy.py::test_every_duplicated_policy_still_has_a_guard",
                      "tests/test_gauntlet_scanners.py::test_no_code_flips_the_offline_guard_except_through_env_online",

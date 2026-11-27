@@ -97,6 +97,7 @@ capabilities:
       - harness/commands/runtimes.py
       - harness/remote_code.py
       - harness/inspect.py
+      - harness/screen_race.py
 
   - name: fetch-weights
     summary: Fetching the weights a test is about to run, removing what no test is about to run, and what may be obtained or fit.

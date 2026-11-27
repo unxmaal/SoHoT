@@ -807,8 +807,10 @@ def incumbent_rate(lane: str, case_ids, conn=None) -> float:
     return incumbent_measure(lane, case_ids, conn)[0]
 
 
+#: The lanes whose screen runs at a shrunk size, so no stored incumbent cell is theirs. #691, #2166.
+MEDIA_LANES = ("image", "video")
 #: The engines whose screen runs at a shrunk size, so a zero-pass waits on the screen size. #691.
-MEDIA_ENGINES = frozenset(spec.partition(":")[0] for lane in ("image", "video")
+MEDIA_ENGINES = frozenset(spec.partition(":")[0] for lane in MEDIA_LANES
                           for spec in LANE_CANDIDATES[lane])
 
 
@@ -857,6 +859,21 @@ def working(summary: dict, lane: str, candidate: str, key: str) -> str:
     return ""
 
 
+def _raced(summary: dict, candidate: str, key: str, rows: int) -> Verdict:
+    """A model that ran and passed a case: declined when its race against the incumbent's stored cells found it futile, else screened. #2166."""
+    from harness import knobs, screen_race
+    mine = [row_for(summary, candidate, key) or {}] if candidate else list(summary.values())
+    race = next((r[screen_race.KEY] for r in mine if r.get(screen_race.KEY)), None)
+    if race is None:
+        return Verdict("screened", f"{rows} case(s) passed a screen", reasons.CANDIDATE)
+    said = (f"{rows} case(s) passed a screen; raced {race['cases']} case(s) against the incumbent's stored cells: "
+            f"gained {race['gained']:g}, lost {race['lost']:g}, P(beats it by {race['effect']:g}) {race['posterior']:.3f}")
+    if race["decision"] == screen_race.DECLINE:
+        until = f"limit:{knobs.limit('screen_futility', race['futility'], 'share')}"
+        return Verdict("declined", f"{said}, under {race['futility']:g}", reasons.LIMIT, until, reasons.CONTENT_FAILED)
+    return Verdict("screened", said, reasons.CANDIDATE)
+
+
 def outcome(returncode: int, summary: dict | None, candidate: str = "",
             key: str = "", stderr_class: str = "",
             facts: dict | None = None, evidence: str = "", card=None, lane: str = "") -> Verdict:
@@ -886,8 +903,7 @@ def outcome(returncode: int, summary: dict | None, candidate: str = "",
     rows = sum(int(v.get("passed", 0)) for v in summary.values())
     silent = _no_better_than_silence(summary)
     if rows and not silent:
-        return Verdict("screened", f"{rows} case(s) passed a screen",
-                       reasons.CANDIDATE)
+        return _raced(summary, candidate, key, rows)
     shown = working(summary, lane, candidate, key)
     if shown:
         return Verdict("screened", shown, reasons.CANDIDATE)

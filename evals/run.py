@@ -27,7 +27,7 @@ import sys
 import time
 from pathlib import Path
 
-from harness import atomic_file, audio, completion, context, delegate, ds4, env, knobs, paths, reasons, router, run_state
+from harness import atomic_file, audio, completion, context, delegate, ds4, env, knobs, paths, reasons, router, run_state, screen_race
 from harness.engines import Engine, names as engine_names, parse_options, resolve
 from harness.checks import speech as speech_check
 
@@ -994,8 +994,37 @@ def screen_caveat(rates: dict) -> str:
             f"assumed {power.UNSEEN:g}")
 
 
-def _screen_each(cases: list[Case], counts: dict | None = None) -> list[Case]:
-    """screen_counts cases (at most SCREEN_CASES) for each (modality, language), dealt across case id families. #691."""
+def _shrunk(c: Case) -> Case:
+    """The case at screen settings: only its size is cut, never its steps. #691."""
+    import dataclasses
+    params = dict(c.params)
+    for k, v in SCREEN_PARAMS.items():
+        if k in params and v is not None:
+            params[k] = min(params[k], v) if isinstance(params[k], int) else v
+    return dataclasses.replace(c, params=params)
+
+
+def race_plan(args, pool: list[Case]):
+    """The screen race of this lane over the dev cases the incumbent has stored cells on and the screen does not shrink, or None. #2166."""
+    from harness import screen_race
+    if not args.screen:
+        return None
+    return screen_race.plan(args.modality, [c.id for c in pool if _shrunk(c).params == c.params], SCREEN_CASES)
+
+
+def _raced_each(cases: list[Case], plan) -> list[Case]:
+    """The race's cases in weed-out order, up to its cap: those of its lane the incumbent has a stored cell on. #2166."""
+    from harness import holdout
+    at = {c: i for i, c in enumerate(plan.order)}
+    mine = [c for c in cases if c.modality == plan.lane and holdout.base_id(c.id) in at and _shrunk(c).params == c.params]
+    return sorted(mine, key=lambda c: at[holdout.base_id(c.id)])[:plan.cap]
+
+
+def _screen_each(cases: list[Case], counts: dict | None = None, plan=None) -> list[Case]:
+    """screen_counts cases (at most SCREEN_CASES) for each (modality, language), dealt across case id families; a race's, in its order. #691, #2166."""
+    raced = _raced_each(cases, plan) if plan is not None else []
+    if raced:
+        return raced
     groups: dict[tuple[str, str], dict[str, list[Case]]] = {}
     for c in sorted(cases, key=lambda c: c.id):
         groups.setdefault((c.modality, c.language), {}).setdefault(c.id.split("-")[0], []).append(c)
@@ -1028,7 +1057,7 @@ def screen_until(pool: list[Case], picked: list[Case], counts: dict, chosen: lis
     return f"limit:{knobs.limit('screen_confidence', screen.SCREEN_CONFIDENCE, 'share')}"
 
 
-def screen_cases(cases: list[Case], candidates=(), counts: dict | None = None) -> list[Case]:
+def screen_cases(cases: list[Case], candidates=(), counts: dict | None = None, plan=None) -> list[Case]:
     """SCREEN_CASES cases per modality AND LANGUAGE, shrunk in size only. Cheap enough to be wrong about.
 
     Keyed on modality alone this took the alphabetically first id, so the tts
@@ -1043,20 +1072,13 @@ def screen_cases(cases: list[Case], candidates=(), counts: dict | None = None) -
     Given `candidates`, each one's pick comes from the cases its method can
     take, so omnisvg is not handed chart-bars and left with nothing. #555.
     """
-    import dataclasses
     counts = screen_counts(cases) if counts is None else counts
     groups = [cases_for(c, cases) for c in candidates] or [cases]
     picked: dict[str, Case] = {}
     for group in groups:
-        for c in _screen_each(group, counts):
+        for c in _screen_each(group, counts, plan):
             picked.setdefault(c.id, c)
-    out = []
-    for c in picked.values():
-        params = dict(c.params)
-        for k, v in SCREEN_PARAMS.items():
-            if k in params and v is not None:
-                params[k] = min(params[k], v) if isinstance(params[k], int) else v
-        out.append(dataclasses.replace(c, params=params))
+    out = [_shrunk(c) for c in picked.values()]
     return out
 
 
@@ -1588,12 +1610,13 @@ def _execute_at(args, overrides: dict, held: contextlib.ExitStack) -> int:
         from harness import reply_cap
         print(f"── reply budget {budget}: " + "; ".join(f"{s}: {reply_cap.said(c)}" for s, c in caps.items()),
               flush=True)
-    pool, counts, untils, caveat = cases, {}, {}, ""
+    pool, counts, untils, caveat, racing = cases, {}, {}, "", None
     if args.screen:
         candidates = greedy(candidates)
         rates = screen_rates(pool)
         counts, caveat = screen_counts(pool, rates), screen_caveat(rates)
-        cases = screen_cases(pool, candidates, counts)
+        racing = race_plan(args, pool)
+        cases = screen_cases(pool, candidates, counts, racing)
     outdir = resolve_outdir(args.out, args.modality)
     if outdir:
         outdir.mkdir(parents=True, exist_ok=True)
@@ -1654,7 +1677,7 @@ def _execute_at(args, overrides: dict, held: contextlib.ExitStack) -> int:
     for candidate in candidates:
         mine = cases_for(candidate, cases)
         if args.screen:
-            mine = _screen_each(mine, counts)
+            mine = _screen_each(mine, counts, racing)
         if taken and candidate == taken["spec"]:
             gone = set(taken["cells"])
             mine = [c for c in mine if c.id not in gone]
@@ -1684,13 +1707,18 @@ def _execute_at(args, overrides: dict, held: contextlib.ExitStack) -> int:
     eye = watch.Watch(planned=planned_seconds(args, planned, budget, ladder, total, candidates),
                       stop_at=getattr(args, "stop_at", None), ceiling_at=getattr(args, "ceiling_at", None),
                       outdir=outdir)
-    todo = []
+    todo, races = [], {}
     for candidate, runner, mine in planned:
         prior = restored.get(runner.candidate, [])
         done = {r.get("case_id") for r in prior}
         results.extend(restored_result(r) for r in prior)
         eye.walls[runner.candidate] = [float(r.get("wall_s") or 0.0) for r in prior]
         rest = [c for c in mine if c.id not in done]
+        if racing is not None and mine and mine[0].modality == racing.lane:
+            races[runner.candidate] = screen_race.Race(racing)
+            if any(races[runner.candidate].add(r.get("case_id"), bool(r.get("passed")))
+                   for r in prior if (r.get("failure_class") or "") not in reasons.NEVER_RAN):
+                rest = []
         eye.left[runner.candidate] = len(rest)
         todo.append((candidate, runner, rest))
     if restored:
@@ -1705,7 +1733,7 @@ def _execute_at(args, overrides: dict, held: contextlib.ExitStack) -> int:
     eye.stop_cases = look_cases(getattr(args, "stop_cells", None), block, len(todo))
     if block:
         print(f"── paired order: {block} case(s) per candidate in turn", flush=True)
-    kept = [{} for _ in todo]
+    kept = [{"race": races[runner.candidate]} if runner.candidate in races else {} for _, runner, _ in todo]
     stopped = None
     eye.yielder = yields_to_serving(outdir)
     fresh, control = len(results), (todo[0][1].candidate if len(todo) > 1 and not args.screen else "")
@@ -1832,6 +1860,7 @@ def _execute_at(args, overrides: dict, held: contextlib.ExitStack) -> int:
                    # runs. #337.
                    "specs": specs,
                    "summary": {k: {**v, **({"screen_until": untils[k]} if k in untils else {}),
+                                   **({screen_race.KEY: races[k].record()} if k in races and races[k].cases else {}),
                                    **({"screen_caveat": caveat} if caveat else {})}
                                for k, v in summarize(results).items()},
                    "rows": [export_row(r) for r in results]}
@@ -2208,6 +2237,16 @@ def _attempt(eye, key: str, case_id: str, run_case, *args, **kw):
     return row
 
 
+def _race_cut(race, key: str) -> None:
+    """Record the cases a stopped race did not ask: a decline is the futility limit binding, a pass the promise one. #2166."""
+    from harness import cuts
+    what = f"{key}: raced {race.cases} of {race.plan.cap} case(s), P {race.p:.3f}"
+    if race.decision == screen_race.PASS:
+        cuts.cut("screen_promise", what, kept=race.cases, dropped=race.plan.cap - race.cases)
+    elif race.decision == screen_race.DECLINE:
+        cuts.cut("screen_futility", what, kept=race.cases, dropped=race.plan.cap - race.cases)
+
+
 def _run_turn(args, candidate, runner, mine, results, outdir, evicted, ladder, eye, ckpt, progress,
               kept, reload) -> None:
     eye = eye or watch.Watch()
@@ -2260,6 +2299,11 @@ def _run_turn(args, candidate, runner, mine, results, outdir, evicted, ladder, e
                 ckpt.add(export_row(results[-1]), wall)
             if progress is not None:
                 progress.case_done()
+            race = kept.get("race")
+            if race is not None and (row.failure_class or "") not in reasons.NEVER_RAN and race.add(case.id, bool(row.passed)):
+                print(f"  {race.line()}: {race.decision}", flush=True)
+                _race_cut(race, runner.candidate)
+                break
     finally:
         new = [s for s in (held.swaps if held else []) if not any(s is x for x in kept["lost"])]
         kept["lost"].extend(new)
