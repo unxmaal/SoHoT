@@ -258,7 +258,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-21T08:10:21Z",
+ "generated_at": "2026-11-27T11:09:19Z",
  "knobs": [],
  "lane": {
   "cases": 594,
@@ -289,7 +289,7 @@
   "pass_rate": 0.783,
   "serves": "bm25",
   "serves_model": "bm25",
-  "stale": false
+  "stale": true
  },
  "since": 0
 }
