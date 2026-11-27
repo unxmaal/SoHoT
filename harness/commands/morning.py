@@ -80,9 +80,10 @@ def render(r: dict) -> list[str]:
     """The deterministic report, one line per fact."""
     s = r["sweep"]
     from harness import ledger
-    from harness import token_flow
+    from harness import pipeline_yield, token_flow
     out = [ledger.ratio_line(r["ratio"]) if r.get("ratio") else "local:cloud no ledger_days table",
-           *filter(None, [token_flow.terms_line(r.get("flow"))]), f"since {_hm(r['since'])}"]
+           *filter(None, [token_flow.terms_line(r.get("flow"))]), f"since {_hm(r['since'])}",
+           *filter(None, [pipeline_yield.trend_line(r.get("yield_trend"))])]
     h = r.get("lane") or {}
     from harness import morning
     from harness.availability import incident_line

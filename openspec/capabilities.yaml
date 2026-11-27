@@ -151,6 +151,8 @@ capabilities:
       - harness/commands/sweep_check.py
       - harness/funnel.py
       - harness/commands/funnel.py
+      - harness/pipeline_yield.py
+      - harness/commands/pipeline_yield.py
 
   - name: reverify
     summary: Re-running served models when their runtime moves, they age or real use regresses; each lane's own check.
