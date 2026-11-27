@@ -614,6 +614,21 @@
    "until": "cases:extract>2116"
   },
   {
+   "candidate": "HuggingFaceBio/Carbon-X",
+   "decided_at": "2026-11-27T00:25:41Z",
+   "detail": "the screen exited -30",
+   "exam": null,
+   "outcome": "broken",
+   "proposal": "HuggingFaceBio/Carbon-X",
+   "reason": "candidate",
+   "receipt_key": "HuggingFaceBio/Carbon-X",
+   "run_id": null,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": ""
+  },
+  {
    "candidate": "IFM/K2-Horizon-7B-GGUF",
    "decided_at": "2026-11-23T09:16:07Z",
    "detail": "extract: lane too small, needs 546 holdout cases: 152 cannot show +0.10 per cell at power 0.8 at any repeat up to 16, so about 1314 more extract cases are needed before a null says anything about IFM/",
@@ -3032,6 +3047,21 @@
    "status": "rejected",
    "tier": "fetch",
    "until": ""
+  },
+  {
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "decided_at": "2026-11-27T00:20:55Z",
+   "detail": "not served: this harness's llama-server plan refused it before any load: refused: 33.3 GiB of weights over the 27.1 GiB budget, 32.7 GiB of the machine held by the interactive server's pinned models || llamacpp:Qwen3.6-27B-MTP-UD-Q8_K_XL is not served: refused: 33.3 GiB of weights over the 27.1 GiB budget, 32.7 GiB of the machine held by the interactive server's pinned models",
+   "exam": null,
+   "outcome": "declined",
+   "proposal": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "reason": "limit",
+   "receipt_key": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "run_id": null,
+   "serves": false,
+   "status": "rejected",
+   "tier": "screen",
+   "until": "plan:Qwen3.6-27B-MTP-UD-Q8_K_XL"
   },
   {
    "candidate": "ibm-granite/granite-4.0-3b-vision",
@@ -8374,33 +8404,33 @@
   },
   {
    "candidate": "Qwen/Qwen-Image-Bench",
-   "decided_at": "2026-11-26T21:58:16Z",
-   "detail": "not screened: needs 51.0 GiB but at most 23.3 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "decided_at": "2026-11-27T01:55:38Z",
+   "detail": "not fetched 2026-11-27: the screen share of the sweep ceiling is spent",
    "exam": null,
    "outcome": "queued",
    "proposal": "Qwen/Qwen-Image-Bench",
-   "reason": "memory",
+   "reason": "limit",
    "receipt_key": "Qwen/Qwen-Image-Bench",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>51.0"
+   "tier": "fetch",
+   "until": ""
   },
   {
    "candidate": "Qwen/Qwen-Image-Bench,temperature=0",
-   "decided_at": "2026-11-26T21:58:16Z",
-   "detail": "not screened: needs 51.0 GiB but at most 23.3 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "decided_at": "2026-11-27T01:55:38Z",
+   "detail": "not fetched 2026-11-27: the screen share of the sweep ceiling is spent",
    "exam": null,
    "outcome": "queued",
    "proposal": "Qwen/Qwen-Image-Bench",
-   "reason": "memory",
+   "reason": "limit",
    "receipt_key": "Qwen/Qwen-Image-Bench",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>51.0"
+   "tier": "fetch",
+   "until": ""
   },
   {
    "candidate": "Qwen2.5-7B-Instruct-Q4_K_M",
@@ -8464,8 +8494,8 @@
   },
   {
    "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
-   "decided_at": "2026-11-26T21:58:57Z",
-   "detail": "not screened: needs 45.9 GiB but at most 23.3 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "decided_at": "2026-11-27T01:55:38Z",
+   "detail": "not fetched 2026-11-27: the screen share of the sweep ceiling is spent",
    "exam": {
     "about": "family CohereLabs/command-a-plus-05-2026-bf16, IQ1_S, by bartowski",
     "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
@@ -8493,18 +8523,18 @@
    },
    "outcome": "queued",
    "proposal": "bartowski/command-a-plus-05-2026-GGUF",
-   "reason": "memory",
+   "reason": "limit",
    "receipt_key": "llamacpp:command-a-plus-05-2026-IQ1_S",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>45.9"
+   "tier": "fetch",
+   "until": ""
   },
   {
    "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S,temperature=0",
-   "decided_at": "2026-11-26T21:58:57Z",
-   "detail": "not screened: needs 45.9 GiB but at most 23.3 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "decided_at": "2026-11-27T01:55:38Z",
+   "detail": "not fetched 2026-11-27: the screen share of the sweep ceiling is spent",
    "exam": {
     "about": "family CohereLabs/command-a-plus-05-2026-bf16, IQ1_S, by bartowski",
     "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
@@ -8532,13 +8562,13 @@
    },
    "outcome": "queued",
    "proposal": "bartowski/command-a-plus-05-2026-GGUF",
-   "reason": "memory",
+   "reason": "limit",
    "receipt_key": "llamacpp:command-a-plus-05-2026-IQ1_S",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>45.9"
+   "tier": "fetch",
+   "until": ""
   },
   {
    "candidate": "lolzinventor/Qwen3.5-4B-Base-ZitGen-V1",
@@ -8730,7 +8760,7 @@
    "until": ""
   }
  ],
- "cursor": 1795730355315605,
+ "cursor": 1795739141177513,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -17763,6 +17793,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-07T02:43:00Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GB but only 26.6 GB is safely available (44.6 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system)",
+   "how": "",
+   "id": 1794019380561024,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-07T02:43:41Z",
    "candidate": "mistralai/Shieldstral-1.0-3B",
    "chosen": null,
@@ -18168,6 +18213,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-09T01:55:38Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GB but only 26.8 GB is safely available (52.5 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 33.0 GB held by the interactive server's pinned models)",
+   "how": "",
+   "id": 1794189338556599,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-09T01:55:41Z",
    "candidate": "kishida/Q3-8B-KVA-Projector",
    "chosen": null,
@@ -18363,6 +18423,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-10T03:54:10Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GB but only 26.8 GB is safely available (48.7 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 33.0 GB held by the interactive server's pinned models)",
+   "how": "",
+   "id": 1794282850583129,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-10T03:56:16Z",
    "candidate": "google/gemma-4-E4B-it",
    "chosen": null,
@@ -18513,6 +18588,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-11T03:09:07Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GB but only 23.2 GB is safely available (57.2 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794366547424800,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-11T03:09:15Z",
    "candidate": "kishida/Q3-8B-KVA-Projector",
    "chosen": null,
@@ -18600,6 +18690,21 @@
    "outcome": "screened",
    "reason": "candidate",
    "run_id": 868,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-12T03:39:54Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GB but only 11.6 GB is safely available (29.5 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794454794623141,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
    "tier": "screen"
   },
   {
@@ -18738,6 +18843,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-13T02:30:08Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GB but only 6.1 GB is safely available (24.1 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794537008172238,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-13T02:30:12Z",
    "candidate": "kishida/Q3-8B-KVA-Projector",
    "chosen": null,
@@ -18774,6 +18894,21 @@
    "detail": "not screened: needs 51.1 GB but only 23.2 GB is safely available (44.0 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "how": "",
    "id": 1794538315928457,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-13T02:51:57Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GB but only 23.2 GB is safely available (44.1 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794538317913161,
    "incumbent": "",
    "kind": "screen",
    "knob": "",
@@ -18864,6 +18999,21 @@
    "detail": "not screened: needs 15.6 GB but only 15.5 GB is safely available (33.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "how": "",
    "id": 1794632001270568,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-14T04:53:21Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GB but only 15.4 GB is safely available (33.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
+   "how": "",
+   "id": 1794632001510851,
    "incumbent": "",
    "kind": "screen",
    "knob": "",
@@ -19188,6 +19338,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-15T02:27:37Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released",
+   "how": "",
+   "id": 1794709657570438,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-15T02:42:20Z",
    "candidate": "IFM/K2-Horizon-7B-GGUF",
    "chosen": null,
@@ -19464,6 +19629,21 @@
    "detail": "not screened: needs 18.9 GB but only 2.4 GB is safely available (20.4 GB free, 77.8 GB GPU ceiling, 18.0 GB reserved for the system, 32.8 GB held by the interactive server's pinned models, 3.8 GB given to the Docker VM)",
    "how": "",
    "id": 1794712525842366,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-15T03:15:26Z",
+   "candidate": "HuggingFaceBio/Carbon-X",
+   "chosen": null,
+   "detail": "not screened: needs 27.6 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released",
+   "how": "",
+   "id": 1794712526217576,
    "incumbent": "",
    "kind": "screen",
    "knob": "",
@@ -20088,6 +20268,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-22T04:22:27Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795321347264127,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-22T04:30:54Z",
    "candidate": "matthewhaynesonline/gemma-4-E2B-it-crap-1.1",
    "chosen": null,
@@ -20191,6 +20386,21 @@
    "reason": "limit",
    "run_id": 1151,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-22T17:24:31Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795368271701296,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   },
   {
    "at": "2026-11-22T17:31:10Z",
@@ -20313,6 +20523,21 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-22T18:28:12Z",
+   "candidate": "HuggingFaceBio/Carbon-X",
+   "chosen": null,
+   "detail": "not screened: needs 27.6 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795372092551819,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-22T18:33:22Z",
    "candidate": "FreedomIntelligence/HuatuoGPT-3-9B",
    "chosen": null,
@@ -20356,6 +20581,21 @@
    "reason": "limit",
    "run_id": 1171,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-22T23:28:12Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795390092871635,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   },
   {
    "at": "2026-11-22T23:40:42Z",
@@ -20493,6 +20733,21 @@
    "tier": "adopt"
   },
   {
+   "at": "2026-11-23T05:39:14Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795412354906688,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-23T05:43:50Z",
    "candidate": "liodon-ai/s1-mini-imatrix-GGUF",
    "chosen": null,
@@ -20566,6 +20821,21 @@
    "reason": "limit",
    "run_id": 1203,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-23T11:52:34Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795434754656818,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   },
   {
    "at": "2026-11-23T12:09:01Z",
@@ -20748,6 +21018,21 @@
    "tier": "adopt"
   },
   {
+   "at": "2026-11-23T16:17:10Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795450630769161,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-23T16:30:07Z",
    "candidate": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB-GGUF",
    "chosen": null,
@@ -20760,6 +21045,21 @@
    "outcome": "screened",
    "reason": "candidate",
    "run_id": 1227,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-23T16:59:00Z",
+   "candidate": "HuggingFaceBio/Carbon-X",
+   "chosen": null,
+   "detail": "not screened: needs 27.6 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795453140180599,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
    "tier": "screen"
   },
   {
@@ -20851,6 +21151,21 @@
    "reason": "limit",
    "run_id": 1234,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-23T22:45:44Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795473944449133,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   },
   {
    "at": "2026-11-23T23:03:02Z",
@@ -21063,6 +21378,36 @@
    "tier": "adopt"
   },
   {
+   "at": "2026-11-24T04:28:51Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795494531841892,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-24T04:32:41Z",
+   "candidate": "HuggingFaceBio/Carbon-X",
+   "chosen": null,
+   "detail": "not screened: needs 27.6 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795494761425871,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-24T04:54:38Z",
    "candidate": "mlx-community/Qwen3.8-27B-OBLITERATED-OptiQ-4bit",
    "chosen": null,
@@ -21228,6 +21573,21 @@
    "tier": "adopt"
   },
   {
+   "at": "2026-11-24T09:40:52Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795513252504069,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-24T11:25:16Z",
    "candidate": "KyleHessling1/Qwopus-GLM-18B-Merged-GGUF",
    "chosen": null,
@@ -21316,6 +21676,36 @@
    "reason": "limit",
    "run_id": 1283,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-24T15:48:10Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795535290262330,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-24T15:58:11Z",
+   "candidate": "HuggingFaceBio/Carbon-X",
+   "chosen": null,
+   "detail": "not screened: needs 27.6 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795535891565329,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   },
   {
    "at": "2026-11-24T16:32:24Z",
@@ -21543,6 +21933,36 @@
    "tier": "adopt"
   },
   {
+   "at": "2026-11-24T22:36:55Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795559815273166,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-24T23:03:47Z",
+   "candidate": "HuggingFaceBio/Carbon-X",
+   "chosen": null,
+   "detail": "not screened: needs 27.6 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795561427889442,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-24T23:08:15Z",
    "candidate": "peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF",
    "chosen": null,
@@ -21648,6 +22068,36 @@
    "tier": "adopt"
   },
   {
+   "at": "2026-11-25T04:31:10Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795581070337889,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-25T04:48:07Z",
+   "candidate": "HuggingFaceBio/Carbon-X",
+   "chosen": null,
+   "detail": "not screened: needs 27.6 GiB but at most 23.2 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795582087714734,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-25T05:07:15Z",
    "candidate": "bartowski/Ornith-1.5-35B-A3B-GGUF",
    "chosen": null,
@@ -21723,6 +22173,36 @@
    "tier": "screen"
   },
   {
+   "at": "2026-11-26T21:58:05Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not screened: needs 33.3 GiB but at most 23.3 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795730285652400,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-26T21:58:08Z",
+   "candidate": "HuggingFaceBio/Carbon-X",
+   "chosen": null,
+   "detail": "not screened: needs 27.6 GiB but at most 23.3 GiB is ever free for a load here beside the system reserve, the interactive server's pinned models and the Docker VM; it waits for those to be released; no screen window: no engine bounds the screen, so the window could not be given an end",
+   "how": "",
+   "id": 1795730288900279,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
    "at": "2026-11-26T21:58:16Z",
    "candidate": "Qwen/Qwen-Image-Bench",
    "chosen": null,
@@ -21780,6 +22260,36 @@
    "outcome": "broken",
    "reason": "candidate",
    "run_id": 1347,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-27T00:20:55Z",
+   "candidate": "havenoammo/Qwen3.6-27B-MTP-UD-GGUF",
+   "chosen": null,
+   "detail": "not served: this harness's llama-server plan refused it before any load: refused: 33.3 GiB of weights over the 27.1 GiB budget, 32.7 GiB of the machine held by the interactive server's pinned models || llamacpp:Qwen3.6-27B-MTP-UD-Q8_K_XL is not served: refused: 33.3 GiB of weights over the 27.1 GiB budget, 32.7 GiB of the machine held by the interactive server's pinned models",
+   "how": "",
+   "id": 1795738855928363,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": null,
+   "tier": "screen"
+  },
+  {
+   "at": "2026-11-27T00:25:41Z",
+   "candidate": "HuggingFaceBio/Carbon-X",
+   "chosen": null,
+   "detail": "the screen exited -30",
+   "how": "",
+   "id": 1795739141177513,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "broken",
+   "reason": "candidate",
+   "run_id": null,
    "tier": "screen"
   }
  ],
@@ -24071,7 +24581,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-26T22:19:37Z",
+ "generated_at": "2026-11-27T04:57:18Z",
  "knobs": [],
  "lane": {
   "cases": 451,
