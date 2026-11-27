@@ -133,6 +133,11 @@ def _opened_lanes(r: dict) -> list[tuple[str, str]]:
     return _gate(r, "opened")
 
 
+def _down_lanes(r: dict) -> list[tuple[str, str]]:
+    rows = (r.get("lane_gate") or {}).get("down") or []
+    return [(g["lane"], f"{g['lane']} ({g.get('runner') or 'incumbent'})") for g in rows if _NAME.match(str(g.get("lane") or ""))]
+
+
 @dataclass(frozen=True)
 class Action:
     name: str
@@ -189,6 +194,8 @@ ACTIONS = (
     Action("lane_close", "Close lane again", "ends the open-anyway of a gated lane now", ("lane-gate", "close", "{}"), _opened_lanes),
     Action("lane_reverify", "Reverify lane", "queues a re-run of the lane's served model when a reverify trigger has fired",
            ("reverify", "--lane", "{}"), _lanes),
+    Action("incumbent_retry", "Retry incumbent", "queues a re-run of the down incumbent's lane now; a pass clears the block on the lane",
+           ("reverify", "--lane", "{}", "--retry-incumbent"), _down_lanes),
 )
 BY_NAME = {a.name: a for a in ACTIONS}
 

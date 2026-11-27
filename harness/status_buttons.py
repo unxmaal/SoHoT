@@ -83,4 +83,4 @@ def feature(r: dict, tok: str):
 def closed_lanes(r: dict, tok: str):
     """A function lane -> the open-anyway or close-again button for that Closed lanes row. #2164."""
     got = offered(r)
-    return lambda lane: _forms(got, tok, [("lane_open", lane), ("lane_close", lane)])
+    return lambda lane: _forms(got, tok, [("lane_open", lane), ("lane_close", lane), ("incumbent_retry", lane)])

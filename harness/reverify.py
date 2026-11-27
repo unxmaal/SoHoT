@@ -25,6 +25,8 @@ REQUESTED_BY = "reverify"
 PRIORITY = -10
 
 VERSIONS, AGE, USAGE, CASES = "versions", "age", "usage", "cases"
+#: The lane's incumbent is marked down (incumbent_down); a pass here clears the mark. #2168.
+INCUMBENT = "incumbent"
 PASSED, FAILED, REGRESSED, CANCELLED = "passed", "failed", "regressed", "cancelled"
 #: The harness could not deliver the re-run: flagged, but never a verdict on the model. #408.
 UNRUN = "unrun"
@@ -301,6 +303,10 @@ def triggers(conn, item: dict, *, now: float, current: dict, machines) -> tuple[
         last = _latest(conn, lane, cid)
         if not last or last["queued_at"] < use[1]:
             out.append([USAGE, use[0]])
+    from harness import incumbent_down
+    down = incumbent_down.marked(lane)
+    if down:
+        out.append([INCUMBENT, incumbent_down.why(down)])
     return out, base
 
 
@@ -348,7 +354,7 @@ def _never_here(conn, last: dict | None) -> str:
     return admission.never(admission.need({"argv": argv}, resident=lambda: []))
 
 
-def _skip(conn, item: dict, found: list, now: float, base_id=None) -> str:
+def _skip(conn, item: dict, found: list, now: float, base_id=None, force: bool = False) -> str:
     last = _latest(conn, item["lane"], item["candidate_id"])
     if last and not last["outcome"]:
         return f"already queued as job {last['job_id'] or '(gone)'}"
@@ -358,7 +364,8 @@ def _skip(conn, item: dict, found: list, now: float, base_id=None) -> str:
     if never:
         return f"its last re-run never fit and still would not: {never}"
     due = (last["settled_at"] or 0) + days_for(conn, item["lane"]) * 86400.0 if last else 0.0
-    if last and last["outcome"] in FLAGGED and now < due and not _harness_moved(conn, last):
+    retry = force and any(k == INCUMBENT for k, _ in found)
+    if last and last["outcome"] in FLAGGED and now < due and not retry and not _harness_moved(conn, last):
         return f"flagged {last['outcome']}: {last['detail']}; re-run again in {(due - now) / 86400.0:.1f} days"
     if all(k == CASES for k, _ in found) and _reran_for_cases(last, base_id):
         from harness import workqueue as wq
@@ -386,7 +393,7 @@ def argv(item: dict, base: dict | None = None) -> list[str]:
     return out
 
 
-def plan(conn, *, now: float, facts: dict, lane: str = "") -> list[dict]:
+def plan(conn, *, now: float, facts: dict, lane: str = "", force: bool = False) -> list[dict]:
     """Every participating lane with its triggers and why it would not be queued."""
     from harness import runs
     want = L.canonical(lane)
@@ -397,7 +404,7 @@ def plan(conn, *, now: float, facts: dict, lane: str = "") -> list[dict]:
         if want and name != want:
             continue
         found, base = triggers(conn, item, now=now, current=current, machines=machines)
-        out.append({**item, "triggers": found, "skip": _skip(conn, item, found, now, base["id"] if base else None),
+        out.append({**item, "triggers": found, "skip": _skip(conn, item, found, now, base["id"] if base else None, force),
                     "baseline_run_id": base["id"] if base else None,
                     "last_pass_days": None if base is None
                     else round((now - base["generated_at"]) / 86400.0, 1),
@@ -633,6 +640,9 @@ def settle(conn, *, now: float, write: bool = True, add=None, resumed: list | No
         if write and not _settle(conn, rv["id"], outcome, reason=reason, failure_class=cls, detail=detail[:300],
                                  run_id=rid, settled_at=now):
             continue
+        if write and outcome in (PASSED, UNDERPOWERED):
+            from harness import incumbent_down
+            incumbent_down.clear(rv["lane"], ran_at=rv["queued_at"])
         out.append({"id": rv["id"], "lane": rv["lane"], "spec": rv["spec"],
                     "outcome": outcome, "reason": reason, "failure_class": cls,
                     "detail": detail, "run_id": rid})
@@ -653,8 +663,8 @@ def flags(conn) -> dict[str, dict]:
 
 
 def check(conn, *, now: float | None = None, facts: dict | None = None, lane: str = "",
-          dry_run: bool = False, add=None) -> dict:
-    """Settle finished re-runs, then queue one for each lane a trigger fired on."""
+          dry_run: bool = False, add=None, force: bool = False) -> dict:
+    """Settle finished re-runs, then queue one for each lane a trigger fired on; force re-runs a down incumbent before its spacing. #2168."""
     from harness import memory_store as ms
     from harness import workqueue as wq
     now = time.time() if now is None else now
@@ -663,7 +673,7 @@ def check(conn, *, now: float | None = None, facts: dict | None = None, lane: st
         ms.remember_machine(conn, facts)
     resumed: list[dict] = []
     settled = settle(conn, now=now, write=not dry_run, add=add, resumed=resumed)
-    planned = plan(conn, now=now, facts=facts, lane=lane)
+    planned = plan(conn, now=now, facts=facts, lane=lane, force=force)
     queued = []
     from harness import hold
     held = hold.active(conn, now)

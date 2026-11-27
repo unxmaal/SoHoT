@@ -57,7 +57,7 @@ def cmd_reverify(a) -> int:
             return 0
         # A dry run's readers take this connection rather than reopen the store. #1426.
         with ms.lend(conn) if a.dry_run else contextlib.nullcontext():
-            got = reverify.check(conn, lane=lane, dry_run=a.dry_run)
+            got = reverify.check(conn, lane=lane, dry_run=a.dry_run, force=getattr(a, "retry_incumbent", False))
             flags = reverify.flags(conn)
     finally:
         conn.close()

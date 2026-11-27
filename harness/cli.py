@@ -1182,6 +1182,8 @@ def build_parser() -> argparse.ArgumentParser:
     rev.add_argument("--days", type=float, default=None,
                      help="with --lane: days without a passing run before it is due "
                           "(default 7)")
+    rev.add_argument("--retry-incumbent", action="store_true",
+                     help="queue the re-run of a lane whose incumbent is marked down even before its flagged spacing is due")
     rev.set_defaults(func=reverify_cmd.cmd_reverify)
 
     sens = sub.add_parser(
