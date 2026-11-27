@@ -16,6 +16,8 @@ STEP_NODE = {"sweep": "sweep", "repair": "inspect", "runtimes": "inspect", "insp
 #: The sweep steps the panel draws no node for: they spend no candidate's way through the pipeline.
 UNDRAWN = ("retests", "reverify", "knob-sweeps", "disk")
 PASSED = ("queued", "screened", "measured")
+#: A removal verdict that settled the candidate; queued and screened are deferrals. #2170.
+DECIDED = ("declined", "broken", "measured", "adopted")
 
 
 def _loads(text, default):
@@ -121,28 +123,53 @@ def _failures(steps: list[dict]) -> list[dict]:
             for (cycle, step), ids in bad.items() if len(ids) > 1]
 
 
-def lost(conn, fetched: list[dict]) -> list[dict]:
-    """The fetched downloads removed again with no verdict on their candidate since they started."""
+def wasted(conn, fetched: list[dict]) -> list[dict]:
+    """The fetched downloads removed again that bought nothing, each marked undecided and again; removed with no decision, or fetched again later. #2170."""
     here, mine = _mine(conn, "verdicts.decided_here")
     last = {int(r[0]): float(r[1]) for r in conn.execute(
         "SELECT proposal_id, MAX(decided_at) FROM verdicts WHERE tier IN ('screen', 'measure', 'adopt') AND proposal_id IS NOT NULL "
         f"AND {here} GROUP BY proposal_id", mine)}
-    return [d for d in fetched if d["removed_at"] is not None and d["removal_verdict_id"] is None
-            and not (d["proposal_id"] is not None and last.get(d["proposal_id"], 0.0) >= float(d["started_at"] or 0))]
+    ids = sorted({d["removal_verdict_id"] for d in fetched if d["removal_verdict_id"] is not None})
+    outcome = {int(r[0]): r[1] for r in conn.execute(f"SELECT id, outcome FROM verdicts WHERE id IN ({','.join('?' * len(ids))})", ids)} if ids else {}
+    latest: dict = {}
+    for d in fetched:
+        latest[d["repo"]] = max(latest.get(d["repo"], 0.0), float(d["started_at"] or 0))
+    out = []
+    for d in fetched:
+        if d["removed_at"] is None:
+            continue
+        pid, started = d["proposal_id"], float(d["started_at"] or 0)
+        if d["removal_verdict_id"] is None:
+            undecided = not (pid is not None and last.get(pid, 0.0) >= started)
+        else:
+            undecided = outcome.get(d["removal_verdict_id"]) not in DECIDED
+        again = bool(d["repo"]) and latest.get(d["repo"], 0.0) > started
+        if undecided or again:
+            d["undecided"], d["again"] = undecided, again
+            out.append(d)
+    return out
+
+
+def waste_gib(rows: list[dict]) -> dict:
+    """GiB wasted in all, and each component: removed with no decision, fetched again later (the two may overlap)."""
+    gib = lambda xs: round(sum(d["bytes"] for d in xs) / GIB, 1)  # noqa: E731
+    return {"gib": gib(rows), "undecided_gib": gib([d for d in rows if d["undecided"]]), "again_gib": gib([d for d in rows if d["again"]]),
+            "n": len(rows)}
 
 
 def _downloads(conn, since: float, fetched: list[dict]) -> tuple[list[dict], dict, dict]:
-    """(candidates fetched more than once, the deleted-without-verdict leak, the evicted-while-queued leak)."""
+    """(candidates fetched more than once, the wasted-download leak, the evicted-while-queued leak)."""
     key = lambda d: d["proposal_id"] if d["proposal_id"] is not None else d["repo"]  # noqa: E731
     count = Counter(key(d) for d in fetched)
     names = {d["proposal_id"]: d["repo"] for d in fetched}
     twice = [{"name": names.get(k) or str(k), "n": n} for k, n in count.items() if n > 1]
     state = {int(r[0]): r[1] for r in conn.execute("SELECT id, state FROM proposals")}
-    gone_rows = lost(conn, fetched)
+    w = waste_gib(wasted(conn, fetched))
     evicted = {d["proposal_id"] for d in fetched if d["removed_at"] is not None and d["proposal_id"] is not None
                and state.get(d["proposal_id"]) == "screened"}
-    gone = {"key": "deleted", "n": round(sum(d["bytes"] for d in gone_rows) / GIB, 1),
-            "text": f"{sum(d['bytes'] for d in gone_rows) / GIB:.1f} GiB downloaded, then deleted with no verdict ({len(gone_rows)} download(s))"}
+    gone = {"key": "deleted", "n": w["gib"], "undecided_gib": w["undecided_gib"], "again_gib": w["again_gib"],
+            "text": f"{w['gib']:.1f} GiB downloaded, then removed for nothing ({w['n']} download(s)): {w['undecided_gib']:.1f} GiB removed "
+                    f"with no decision on the candidate, {w['again_gib']:.1f} GiB fetched again later"}
     out = {"key": "evicted", "n": len(evicted), "text": f"weights of {len(evicted)} candidate(s) evicted while their measure was still queued"}
     return twice, gone, out
 

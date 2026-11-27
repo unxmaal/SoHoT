@@ -71,10 +71,11 @@ def _verdicts(conn, since: float) -> list[dict]:
 
 def _downloads(conn, since: float) -> list[dict]:
     fetched = df._fetched(conn, since)
-    gone = {id(d) for d in df.lost(conn, fetched)}
+    gone = {id(d) for d in df.wasted(conn, fetched)}
     lanes = {int(r[0]): r[1] or NO_LANE for r in conn.execute("SELECT id, lane FROM proposals")}
     return [{"lane": lanes.get(d["proposal_id"], NO_LANE), "at": float(d["started_at"] or 0), "gib": d["bytes"] / GIB,
-             "wasted": id(d) in gone} for d in fetched]
+             "wasted": id(d) in gone, "undecided": id(d) in gone and d["undecided"],
+             "again": id(d) in gone and d["again"]} for d in fetched]
 
 
 def _row(lane: str, jobs: list[dict], verdicts: list[dict], downloads: list[dict]) -> dict:
@@ -90,6 +91,8 @@ def _row(lane: str, jobs: list[dict], verdicts: list[dict], downloads: list[dict
     share = undecided / spent if spent else None
     return {"lane": lane, "gpu_hours": round(hours, 2), "steps": {s: round(h, 2) for s, h in sorted(steps.items())},
             "gib": round(sum(d["gib"] for d in downloads), 1), "wasted_gib": round(sum(d["gib"] for d in downloads if d["wasted"]), 1),
+            "wasted_undecided_gib": round(sum(d["gib"] for d in downloads if d["undecided"]), 1),
+            "wasted_again_gib": round(sum(d["gib"] for d in downloads if d["again"]), 1),
             "verdicts": kinds, "decided": decided, "undecided": sum(kinds.values()) - decided, "adopted": adopted,
             "hours_per_decided": round(hours / decided, 2) if decided else None,
             "hours_per_adoption": round(hours / adopted, 2) if adopted else None,
@@ -146,10 +149,10 @@ def render(r: dict) -> list[str]:
     out = []
     for days, w in r["windows"].items():
         out.append(f"last {days} d")
-        out.append(f"{'lane':<10} {'gpu h':>7} {'GiB':>8} {'wasted':>8} {'decided':>7} {'undec':>6} {'h/dec':>7} {'h/adopt':>8} {'undec share':>12}")
+        out.append(f"{'lane':<10} {'gpu h':>7} {'GiB':>8} {'wasted':>8} {'w.undec':>7} {'w.again':>7} {'decided':>7} {'undec':>6} {'h/dec':>7} {'h/adopt':>8} {'undec share':>12}")
         for x in [*w["lanes"], w["total"]]:
             share = "-" if x["undecided_share"] is None else f"{x['undecided_share']:.0%}{' RED' if x['red'] else ''}"
-            out.append(f"{x['lane'] or '(none)':<10} {x['gpu_hours']:>7.1f} {x['gib']:>8.1f} {x['wasted_gib']:>8.1f} {x['decided']:>7} "
+            out.append(f"{x['lane'] or '(none)':<10} {x['gpu_hours']:>7.1f} {x['gib']:>8.1f} {x['wasted_gib']:>8.1f} {x['wasted_undecided_gib']:>7.1f} {x['wasted_again_gib']:>7.1f} {x['decided']:>7} "
                        f"{x['undecided']:>6} {_n(x['hours_per_decided']):>7} {_n(x['hours_per_adoption']):>8} {share:>12}")
         steps = w["total"]["steps"]
         out.append("steps     " + ", ".join(f"{s} {h:.1f} h" for s, h in steps.items()))
