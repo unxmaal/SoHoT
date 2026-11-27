@@ -1,0 +1,53 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0935
+modality: code
+prompt: 'Write a Python function `run_pipeline(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  2. Collapse every run of the same character into one character.
+
+  3. Cut the text to at most 5 characters, then pad it on the right with ''.'' up to 5 characters.
+
+  4. Swap the case of every letter.
+
+  5. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  6. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  7. Remove every vowel (a, e, i, o, u, either case).
+
+  8. Keep only the first occurrence of each character.
+
+  Then: Return how many characters it has.
+
+
+  Example: `run_pipeline(''1xy0y BxxaB '') returns 4`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline('mississippi river') == 2
+  - run_pipeline('abc123xyz') == 4
+  - run_pipeline('noon') == 3
+  - run_pipeline('Ünïcode ok') == 4
+  - run_pipeline('Quick brown fox') == 3
+  - run_pipeline('Programming in Python') == 3
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '935'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-8-steps

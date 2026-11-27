@@ -1,0 +1,53 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0931
+modality: code
+prompt: 'Write a Python function `reduce_data(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  2. Cut the text to at most 9 characters, then pad it on the right with ''.'' up to 9 characters.
+
+  3. Convert to lowercase.
+
+  4. Swap the case of every letter.
+
+  5. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  6. Replace every maximal run of digits with the number of digits in it.
+
+  7. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  8. Remove every vowel (a, e, i, o, u, either case).
+
+  Then: Return how many characters it has.
+
+
+  Example: `reduce_data(''y zx.ByzBzA1 .x'') returns 9`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data('12345') == 5
+  - reduce_data('noon') == 7
+  - reduce_data('Quick brown fox') == 6
+  - reduce_data('aabbbcccc') == 7
+  - reduce_data('Programming in Python') == 6
+  - reduce_data('  jumps   over the  lazy dog ') == 6
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '931'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-8-steps

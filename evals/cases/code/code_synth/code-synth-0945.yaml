@@ -1,0 +1,54 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0945
+modality: code
+prompt: 'Write a Python function `compute(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Convert to lowercase.
+
+  2. Cut the text to at most 7 characters, then pad it on the right with ''.'' up to 7 characters.
+
+  3. Convert to lowercase.
+
+  4. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  5. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  6. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  7. Swap the case of every letter.
+
+  8. Convert to lowercase.
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `compute(''zxy  c10C .y2'') returns ''1z1x1y2''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute('abc123xyz') == '1a1b1c1112131x'
+  - compute('Zebra 42 crossing 7') == '1z1e1b1r1a1'
+  - compute('Ünïcode ok') == '1ü1n1ï1c1o1d1e'
+  - compute('The 3 little pigs 33') == '1t1h1e1'
+  - compute('Hello, World') == '1h1e2l1o1,1'
+  - compute('x') == '1x6.'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '945'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-8-steps

@@ -1,0 +1,50 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1006
+modality: code
+prompt: 'Write a Python function `apply_rules(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Remove every vowel (a, e, i, o, u, either case).
+
+  2. Shift every letter forward by 2 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  3. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  4. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  5. Convert to uppercase.
+
+  6. Shift every letter forward by 3 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  Then: Return the resulting string.
+
+
+  Example: `apply_rules(''bacA.aAx z.bx'') returns ''CG.E C.HG''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules('tab\tseparated  words') == 'XIWB IYWUX GY'
+  - apply_rules('abc123xyz') == 'EDC321HG'
+  - apply_rules('Quick brown fox') == 'CK SBWG PHV'
+  - apply_rules('Level') == 'QAQ'
+  - apply_rules('mississippi river') == 'WAW UUXXXXR'
+  - apply_rules('  ') == ''
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1006'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-6-steps

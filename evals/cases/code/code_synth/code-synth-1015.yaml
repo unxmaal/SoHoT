@@ -1,0 +1,48 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1015
+modality: code
+prompt: 'Write a Python function `solve(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Swap the case of every letter.
+
+  2. Convert to lowercase.
+
+  3. Remove every digit.
+
+  4. Remove every vowel (a, e, i, o, u, either case).
+
+  5. Keep only the first occurrence of each character.
+
+  6. Remove every vowel (a, e, i, o, u, either case).
+
+  Then: Return how many characters it has.
+
+
+  Example: `solve(''bA0ybz1A'') returns 3`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve('A man a plan a canal Panama') == 6
+  - solve('Hello, World') == 7
+  - solve('Programming in Python') == 9
+  - solve('Zebra 42 crossing 7') == 8
+  - solve('  ') == 1
+  - solve('abc123xyz') == 5
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1015'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-6-steps

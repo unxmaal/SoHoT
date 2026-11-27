@@ -10,7 +10,7 @@ from evals.importers import Imported, provenance
 LANE = "code"
 VERSION = "1"
 SEED = 603
-COUNT = 880
+COUNT = 1030
 DATE = "2026-11-27"
 SOURCE = f"generated:evals.importers.code_synth v{VERSION} seed {SEED}"
 DATASET = "SoHoT generated code cases"
@@ -862,11 +862,15 @@ ALGOS = [_algo_ways, _algo_coins, _algo_chain, _algo_subsets, _algo_paths, _algo
          _algo_tour, _algo_waiting, _algo_rank]
 #: One round of 20 draws: the share of each family.
 FAMILIES = ["ints"] * 4 + ["strs"] * 6 + ["records"] * 2 + ["algo"] * 8
+#: The cases from MARGIN_FROM on add holdout in the families the incumbent does not always pass; the first ones are unchanged.
+MARGIN_FROM = 880
+MARGIN_FAMILIES = ["strs"] * 3 + ["algo"] * 2
+MARGIN_CAP = 20
 
 
-def _build(r: random.Random, family: str, used: dict) -> dict:
+def _build(r: random.Random, family: str, used: dict, cap: int = TEMPLATE_CAP) -> dict:
     if family == "algo":
-        template = r.choice([a for a in ALGOS if used.get(a.__name__, 0) < TEMPLATE_CAP])
+        template = r.choice([a for a in ALGOS if used.get(a.__name__, 0) < cap])
         return {**template(r), "template": template.__name__}
     return _records(r) if family == "records" else _pipeline(r, family)
 
@@ -911,7 +915,10 @@ def fetch(seed: int = SEED, count: int = COUNT) -> list[dict]:
     for i in range(count):
         r = random.Random(f"{_KEY}:{VERSION}:{seed}:{i}")
         for _ in range(ATTEMPTS):
-            p = _build(r, FAMILIES[i % len(FAMILIES)], used)
+            if i < MARGIN_FROM:
+                p = _build(r, FAMILIES[i % len(FAMILIES)], used)
+            else:
+                p = _build(r, MARGIN_FAMILIES[i % len(MARGIN_FAMILIES)], used, TEMPLATE_CAP + MARGIN_CAP)
             done = _finish(p)
             if done and p["text"] not in seen:
                 break

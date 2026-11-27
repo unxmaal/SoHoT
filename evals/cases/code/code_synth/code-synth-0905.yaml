@@ -1,0 +1,54 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0905
+modality: code
+prompt: 'Write a Python function `transform(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  2. Collapse every run of the same character into one character.
+
+  3. Replace every ''i'' with ''s'' (lowercase only).
+
+  4. Remove every digit.
+
+  5. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  6. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  7. Cut the text to at most 5 characters, then pad it on the right with ''.'' up to 5 characters.
+
+  8. Swap the case of every letter.
+
+  Then: Return the most frequent character, the smallest by code point if several tie, or '''' for an
+  empty string.
+
+
+  Example: `transform('' C B2 yA,2'') returns '' ''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform('') == '.'
+  - transform('A man a plan a canal Panama') == ' '
+  - transform('noon') == '.'
+  - transform('The 3 little pigs 33') == ' '
+  - transform('Level') == 'E'
+  - transform('hELLo WoRLD') == ' '
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '905'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-8-steps

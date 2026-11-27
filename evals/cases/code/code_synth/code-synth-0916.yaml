@@ -1,0 +1,50 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0916
+modality: code
+prompt: 'Write a Python function `run_pipeline(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Sort the characters in ascending code point order.
+
+  2. Remove every digit.
+
+  3. Swap the case of every letter.
+
+  4. Shift every letter forward by 6 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  5. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  6. Convert to lowercase.
+
+  Then: Return the most frequent character, the smallest by code point if several tie, or '''' for an
+  empty string.
+
+
+  Example: `run_pipeline(''B2,,cazcyyCzBx1'') returns ''i''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline('Ünïcode ok') == 'u'
+  - run_pipeline('12345') == ''
+  - run_pipeline('mississippi river') == 'o'
+  - run_pipeline('x') == 'd'
+  - run_pipeline('Hello, World') == 'r'
+  - run_pipeline('abc123xyz') == 'd'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '916'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-6-steps

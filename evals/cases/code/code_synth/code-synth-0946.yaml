@@ -1,0 +1,54 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-0946
+modality: code
+prompt: 'Write a Python function `transform(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Replace every ''a'' with ''n'' (lowercase only).
+
+  2. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  3. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  4. Convert to uppercase.
+
+  5. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  6. Convert to uppercase.
+
+  7. Replace every ''c'' with ''i'' (lowercase only).
+
+  8. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  Then: Return the resulting string.
+
+
+  Example: `transform(''0A110 1B1'') returns ''111B11 101A21101''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform('hELLo WoRLD') == '1W1O1R1L1D 1H1E2L1O1'
+  - transform('Quick brown fox') == '1F1O1X 1B1R1O1W1N1 1Q1U1I1C1K1'
+  - transform('Programming in Python') == '1P1Y1T1H1O1N 1I1N1 1P1R1O1G1R1N2M1I1N1G1'
+  - transform('queue QUEUE') == '1Q1U1E1U1E 1Q1U1E1U1E1'
+  - transform('zz yy xx') == '2X 2Y1 2Z1'
+  - transform('tab\tseparated  words') == '1W1O1R1D1S 1S1E1P1N1R1N1T1E1D2 1T1N1B1'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '946'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-8-steps

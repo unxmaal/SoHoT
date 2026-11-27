@@ -1,0 +1,49 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1007
+modality: code
+prompt: 'Write a Python function `transform(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Remove every vowel (a, e, i, o, u, either case).
+
+  2. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  3. Convert to lowercase.
+
+  4. Shift every letter forward by 4 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  5. Convert to uppercase.
+
+  6. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  Then: Return the resulting string.
+
+
+  Example: `transform(''.2aA1byC'') returns ''GCF12.''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform('Rotor 99') == '99 VXV'
+  - transform('hELLo WoRLD') == 'HPVA PPL'
+  - transform('Level') == 'PZP'
+  - transform('Hello, World') == 'HPVA ,PPL'
+  - transform('A man a plan a canal Panama') == 'QRT PRG RPT RQ'
+  - transform('Zebra 42 crossing 7') == '7 KRWWVG 24 VFD'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1007'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-6-steps
