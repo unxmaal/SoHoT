@@ -427,48 +427,48 @@
   },
   {
    "candidate": "tts:OpenMOSS-Team/MOSS-TTS-Nano-100M",
-   "decided_at": "2026-11-27T17:54:24Z",
-   "detail": "unknown: runners wanted: its weights are .bin, and no tts runner here loads that format",
+   "decided_at": "2026-11-27T20:47:13Z",
+   "detail": "tts lane closed to challengers: power 0.07 at +0.10 is under lane_gate_power 0.80, needs 1119 more holdout cases (1254 in all, 135 here); soh lane-gate open tts overrides for a while",
    "exam": null,
    "outcome": "queued",
    "proposal": "OpenMOSS-Team/MOSS-TTS-Nano-100M",
-   "reason": "harness",
+   "reason": "limit",
    "receipt_key": "MOSS-TTS-Nano-100M",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
-   "until": "format:.bin"
+   "tier": "fetch",
+   "until": ""
   },
   {
    "candidate": "tts:nvidia/magpie_tts_multilingual_357m",
-   "decided_at": "2026-11-27T17:54:39Z",
-   "detail": "unknown: runners wanted: its weights are .gguf, .nemo, and no tts runner here loads that format",
+   "decided_at": "2026-11-27T20:47:13Z",
+   "detail": "tts lane closed to challengers: power 0.07 at +0.10 is under lane_gate_power 0.80, needs 1119 more holdout cases (1254 in all, 135 here); soh lane-gate open tts overrides for a while",
    "exam": null,
    "outcome": "queued",
    "proposal": "nvidia/magpie_tts_multilingual_357m",
-   "reason": "harness",
+   "reason": "limit",
    "receipt_key": "magpie_tts_multilingual_357m",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
-   "until": "format:.gguf|.nemo"
+   "tier": "fetch",
+   "until": ""
   },
   {
    "candidate": "tts:owensong/Inflect-Nano-v1",
-   "decided_at": "2026-11-27T17:54:39Z",
-   "detail": "unknown: runners wanted: its weights are .pt, and no tts runner here loads that format",
+   "decided_at": "2026-11-27T20:47:13Z",
+   "detail": "tts lane closed to challengers: power 0.07 at +0.10 is under lane_gate_power 0.80, needs 1119 more holdout cases (1254 in all, 135 here); soh lane-gate open tts overrides for a while",
    "exam": null,
    "outcome": "queued",
    "proposal": "owensong/Inflect-Nano-v1",
-   "reason": "harness",
+   "reason": "limit",
    "receipt_key": "Inflect-Nano-v1",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
-   "until": "format:.pt"
+   "tier": "fetch",
+   "until": ""
   }
  ],
  "cursor": 1795729803926918,
@@ -1422,7 +1422,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-27T20:09:59Z",
+ "generated_at": "2026-11-27T21:02:50Z",
  "knobs": [],
  "lane": {
   "cases": 470,
