@@ -28,9 +28,9 @@ def refused(name: str, sweep) -> int | None:
 
 
 def release(name: str) -> None:
-    """The weights of `name` go once its test ends, unless it is adopted, served or pinned. #2015."""
+    """The weights of `name` go once its test ends, unless it is adopted, served, pinned or still screened to be measured again. #2015, #2157."""
     from harness import disk
-    disk.sweep(names=[name], say=lambda line: print(f"  {line.strip()}", flush=True))
+    disk.sweep(names=[name], keep_states=("screened",), say=lambda line: print(f"  {line.strip()}", flush=True))
 
 
 def release_verdict(vid: int) -> None:

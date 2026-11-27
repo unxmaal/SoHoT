@@ -8,6 +8,7 @@ from harness import memory_store as ms
 
 MOSS = "OpenMOSS-Team/MOSS-TTS-v1.5"
 TOKENIZER = "OpenMOSS-Team/MOSS-Audio-Tokenizer"
+VOICES = "prince-canuma/Kokoro-82M"
 REAL_ROOT = engines.audio_root
 
 
@@ -19,6 +20,7 @@ def fake_audio(site: Path) -> Path:
         "mlx_audio/tts/models/moss_tts/config.py": f'DEFAULT_AUDIO_TOKENIZER_REPO = "{TOKENIZER}"\n',
         "mlx_audio/tts/models/moss_tts/convert.py": 'SOURCE_REPO = "x/where-it-was-converted-from"\n',
         "mlx_audio/tts/models/kitten_tts/model.py": "def load():\n    pass\n",
+        "mlx_audio/tts/models/kokoro/kokoro.py": f'class Model:\n    REPO_ID = "{VOICES}"\n',
     }
     for rel, text in files.items():
         (site / rel).parent.mkdir(parents=True, exist_ok=True)
@@ -83,3 +85,7 @@ def test_a_new_mlx_audio_remap_is_read_again(site):
     st = utils.stat()
     os.utime(utils, ns=(st.st_atime_ns, st.st_mtime_ns + 10 ** 9))
     assert engines.audio_needs(MOSS, "moss_tts_delay", site) == ()
+
+
+def test_kokoro_keeps_the_voices_repo_its_model_class_names_so_the_disk_sweep_never_removes_it(site):
+    assert engines.audio_needs("mlx-community/Kokoro-82M-bf16", "kokoro", site) == (VOICES,)

@@ -296,10 +296,11 @@ def _repo_constants(path: Path) -> list[str]:
     except (OSError, SyntaxError, ValueError):
         return []
     out = []
-    for node in tree.body:
+    # A class body counts: Kokoro's voices come from `Model.REPO_ID`, a repo the served default needs. #2157.
+    for node in [*tree.body, *(n for c in tree.body if isinstance(c, ast.ClassDef) for n in c.body)]:
         targets = node.targets if isinstance(node, ast.Assign) else [node.target] if isinstance(node, ast.AnnAssign) else []
         value = getattr(node, "value", None)
-        if (any(isinstance(t, ast.Name) and t.id.endswith("_REPO") for t in targets)
+        if (any(isinstance(t, ast.Name) and (t.id.endswith("_REPO") or t.id == "REPO_ID") for t in targets)
                 and isinstance(value, ast.Constant) and isinstance(value.value, str)
                 and value.value.count("/") == 1):
             out.append(value.value)

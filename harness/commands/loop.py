@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from evals import watch
-from harness import lanes, methods, repo_gate
+from harness import incumbent_down, lanes, methods, repo_gate
 from harness.commands import discover as discover_cmd
 from harness.commands import measure as measure_cmd
 from harness.commands import screen as screen_cmd
@@ -822,7 +822,8 @@ def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=No
         if got == watch.PAUSED and paused is not None:
             paused.append(row.get("name", ""))
         # A paused pair resumes next sweep; it is not a failed step. #1374.
-        rc = _step(f"measure {row.get('name', '')}".strip(), 0 if got == watch.PAUSED else got, failed) or rc
+        tag = incumbent_down.LABEL if got == watch.SILENT else ""
+        rc = _step(f"measure {row.get('name', '')}{tag}".strip(), 0 if got == watch.PAUSED else (1 if tag else got), failed) or rc
         squeezed = sweep is not None and bool(sweep.squeezed)
         if squeezed:
             # Its model is released by now: re-sample memory before each start from here on.

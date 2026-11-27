@@ -486,6 +486,7 @@ capabilities:
       - harness/commands/unit_restart.py
       - harness/status_buttons.py
       - harness/discovery_flow.py
+      - harness/incumbent_down.py
 
   - name: canary
     summary: Planted candidates with known verdicts, run for real under an isolated home.

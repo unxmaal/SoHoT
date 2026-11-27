@@ -67,6 +67,11 @@ def read_jobs(conn, now: float) -> dict:
     return {"rows": out}
 
 
+def read_incumbent() -> dict:
+    from harness import incumbent_down
+    return {"rows": [{"lane": lane, **v} for lane, v in sorted(incumbent_down.read().items())]}
+
+
 def read_gateway() -> dict:
     from harness import gateway_degraded
     return {"mark": gateway_degraded.read()}
@@ -248,6 +253,16 @@ def _deploy(r: dict) -> list[dict]:
     return out
 
 
+def _incumbent(r: dict) -> list[dict]:
+    out = []
+    for x in ((r.get("stops") or {}).get("incumbent") or {}).get("rows") or []:
+        out.append(cond(f"incumbent-down-{x['lane']}", f"The {x['lane']} lane's incumbent fails on its own",
+                        f"{x['runner']} answered none of its first cases measuring {x['pair']}: {x['why']}", since=x.get("at"),
+                        source="measure", none="repair the runner; the next paired run that finishes in this lane clears it",
+                        line=f"{x['lane']} incumbent {x['runner']} failed measuring {x['pair']}"))
+    return out
+
+
 def _gateway(r: dict) -> list[dict]:
     mark = ((r.get("stops") or {}).get("gateway") or {}).get("mark")
     if mark is None:
@@ -334,7 +349,7 @@ def _machine(r: dict) -> list[dict]:
 def conditions(r: dict) -> list[dict]:
     """Every condition that stops work in the gathered status `r`, oldest first; each from the source its CLI reads."""
     held = bool(_holds_of(r, "benchmarks"))
-    out = (_machine(r) + _holds(r) + _queue(r) + _discovery(r, held) + _jobs(r) + _deploy(r) + _paused_deploys(r) + _router(r) + _gateway(r) + _gate(r) + _monit(r))
+    out = (_machine(r) + _holds(r) + _queue(r) + _discovery(r, held) + _jobs(r) + _deploy(r) + _paused_deploys(r) + _router(r) + _incumbent(r) + _gateway(r) + _gate(r) + _monit(r))
     out += [cond(f"unread-{k}", f"{k.capitalize()} was not read", r[k]["error"], source=k, alert=False,
                  line=f"{k} not read: {r[k]['error']}") for k in ("store", "queue", "deploy", "discovery", "services", "ratio",
                                                                   "timeline") if (r.get(k) or {}).get("error")]

@@ -350,6 +350,8 @@ def _end(cycle: str, rc: int | None, error: str = "") -> None:
 _RUNNING: contextvars.ContextVar[str] = contextvars.ContextVar("loop_step", default="")
 #: The heartbeat key the last step sets to its cycle: that sweep is closed and none of its steps runs again. #1646.
 CLOSED = "closed_cycle"
+#: Failed attempts of one pair a sweep's measure steps make before the sweep stops asking; a pair its incumbent stopped gets one. #2157.
+MEASURE_TRIES = 3
 
 
 def _inner(a):
@@ -437,11 +439,25 @@ def run_step(a) -> int:
     return _next(a, me, cycle, sweep, seen, rc)
 
 
+def _worn(seen: list) -> str:
+    """The pair this sweep's measure steps failed on past its tries, else "": one try for an incumbent stop, MEASURE_TRIES for the rest. #2157."""
+    from collections import Counter
+    from harness import incumbent_down
+    for label, n in Counter(str(x) for x in seen if str(x).startswith("measure ")).items():
+        if n >= (1 if label.endswith(incumbent_down.LABEL) else MEASURE_TRIES):
+            return label
+    return ""
+
+
 def _next(a, me: Step, cycle: str, sweep, seen: list, rc: int) -> int:
     """Queue the step after `me`, or this measure again when a run paused on request or it left a look to take; the last step ends the sweep."""
     from harness import heartbeat
-    after = me if me.name == "measure" and (sweep.halted or sweep.more) else (
-        None if me is STEPS[-1] else STEPS[STEPS.index(me) + 1])
+    worn = _worn(seen) if me.name == "measure" and (sweep.halted or sweep.more) else ""
+    if worn:
+        from harness import cuts
+        cuts.cut("measure_tries", f"{worn} failed again; the sweep does not queue its measure step for it again", kept=0, dropped=1)
+    again = me.name == "measure" and (sweep.halted or sweep.more) and not worn
+    after = me if again else (None if me is STEPS[-1] else STEPS[STEPS.index(me) + 1])
     if after is None:
         _settle(sweep)
         heartbeat.note(CLOSED, cycle)
