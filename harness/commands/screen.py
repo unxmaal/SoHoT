@@ -504,9 +504,9 @@ def _screen_one(a, store, r: dict) -> tuple[bool, str | None, int | None]:
             with (screen_window.opened(screen.deadline_s(r["candidate"], r["modality"]), f"a screen window for {r['name']}")
                   if windowed else contextlib.nullcontext()):
                 if windowed:
-                    room, why_not = memory.check_model(r["name"], spec=r["candidate"], parallel=1)
-                    if not room:
-                        raise screen_window.Refused(f"still short with the pinned set released: {why_not}")
+                    short = screen_window.still_short(memory.need_gb(r["name"], None, r["candidate"], 1, True))
+                    if short:
+                        raise screen_window.Refused(short)
                 proc = subprocess.run(screen.argv(r, outdir=outdir), capture_output=True, text=True)
     except screen_window.Refused as exc:
         if proc is None:

@@ -15,6 +15,10 @@ LANDED_EVENT = "downloaded"
 #: The event of the fetch verdict that says a dependency is not here yet: no answer about the weights either.
 WAITING_EVENT = "waiting"
 WAITING = "waiting on "
+#: The verdict outcomes that settle a candidate; discovery_flow.wasted reads the same set, a queued verdict is no decision. #2174.
+DECIDED = ("declined", "broken", "measured", "adopted")
+#: A screen that passed moves the candidate on: it lifts the refetch block, though a removal under it is still waste.
+LIFTS = ("screened",) + DECIDED
 _WHOLE = "(%s.complete = 1 OR %s.state IN ('complete', 'removed'))"
 
 
@@ -66,13 +70,13 @@ def _last(conn, repo: str, now: float) -> dict | None:
 def _verdict_since(conn, names: set, since: float) -> bool:
     marks = ",".join("?" * len(names))
     got = conn.execute(f"SELECT 1 FROM verdicts v JOIN proposals p ON p.id = v.proposal_id "
-                       f"WHERE (p.name IN ({marks}) OR p.resolved IN ({marks})) AND v.decided_at > ? AND v.event NOT IN (?, ?) LIMIT 1",
-                       (*sorted(names), *sorted(names), since, LANDED_EVENT, WAITING_EVENT)).fetchone()
+                       f"WHERE (p.name IN ({marks}) OR p.resolved IN ({marks})) AND v.decided_at > ? AND v.outcome IN ({','.join('?' * len(LIFTS))}) LIMIT 1",
+                       (*sorted(names), *sorted(names), since, *LIFTS)).fetchone()
     return got is not None
 
 
 def refusal(conn, repo: str, via: str, owner: str = "", now: float | None = None) -> str:
-    """Why `repo` may not be downloaded again now, "" when it may: it landed within the window and nothing was decided since, and a refusal is marked for a person. #2161."""
+    """Why `repo` may not be downloaded again now, "" when it may: it landed within the window and no verdict that decided it was written since, and a refusal is marked for a person. #2161."""
     now = time.time() if now is None else now
     last = _last(conn, repo, now)
     if last is None or _verdict_since(conn, {n for n in (repo, owner) if n}, last["started_at"]):

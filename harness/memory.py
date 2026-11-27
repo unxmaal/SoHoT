@@ -663,10 +663,27 @@ def held_back(need_gb: float | None) -> str:
             f"server's pinned models stay held (beside the system reserve and the Docker VM); a screen window can release them")
 
 
-def released_gb() -> float:
-    """What fits() would budget with the pinned set released: the memory free now plus what the pins hold, under the ceiling less the Docker VM. #2161."""
+def released_gb(free: float | None = None, pinned: float | None = None) -> float:
+    """What fits() would budget with the pinned set released: the memory free plus what the pins hold, under the ceiling less the Docker VM. #2161."""
     from harness import containers
-    return budget_gb(available_gb() + pinned_gb(), ceiling_gb() - containers.vm_gb(), 0.0, measured_reserve_gb())
+    free = available_gb() if free is None else free
+    pinned = pinned_gb() if pinned is None else pinned
+    return budget_gb(free + pinned, ceiling_gb() - containers.vm_gb(), 0.0, measured_reserve_gb())
+
+
+def released_fits(need_gb: float | None, free: float | None = None, pinned: float | None = None) -> tuple[bool, str]:
+    """The one answer to "would this load fit with the pins released", asked before the fetch and again once the window is open. #2174."""
+    if not isinstance(need_gb, (int, float)) or need_gb <= 0:
+        return True, ""
+    from harness import containers
+    free = available_gb() if free is None else free
+    pinned = pinned_gb() if pinned is None else pinned
+    budget = released_gb(free, pinned)
+    if need_gb <= budget + 1e-9:
+        return True, f"{need_gb:.1f} GB into {budget:.1f} GB"
+    return False, (f"needs {need_gb:.1f} GB but only {budget:.1f} GB is safely available with the pinned set released "
+                   f"({free:.1f} GB free, {pinned:.1f} GB pinned, {ceiling_gb():.1f} GB GPU ceiling, "
+                   f"{measured_reserve_gb():.1f} GB reserved, {containers.vm_gb():.1f} GB Docker VM)")
 
 
 def room_gb() -> float:
