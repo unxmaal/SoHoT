@@ -46,7 +46,7 @@ class Held(Exception):
 #: exact McNemar test on discordant cells; see harness/paired.py.
 ALPHA = 0.05
 #: Comparisons one holdout's level is shared across: every challenger faces ALPHA over this, however many came before. #2199.
-FAMILY = 4
+FAMILY = 2
 
 #: verdicts.event for an adopt stop the replays tell apart: a futility look, a significant loss. #1942.
 FUTILITY, WORSE = "futility", "worse"

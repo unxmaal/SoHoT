@@ -253,7 +253,7 @@ def test_a_level_changing_mid_run_is_recorded_beside_the_alpha_the_plan_used():
                        split=_split(150), plan=planned, tested=1)
     assert got.evidence["planned_alpha"] == pytest.approx(planned.alpha) != adopt.alpha_for()
     assert got.evidence["alpha"] == pytest.approx(adopt.ALPHA / adopt.FAMILY)
-    assert "planned at alpha 0.05, tested at 0.0125" in got.why, got.why
+    assert "planned at alpha 0.05, tested at 0.025" in got.why, got.why
     planned = power.plan([0.5] * 150, 0.2, stochastic=False, observed=150, rho=0.0, alpha=adopt.alpha_for())
     same = adopt.decide("code", _summary("inc", rows), _summary("ch", rows), rows,
                         split=_split(150), plan=planned)
@@ -279,8 +279,8 @@ def test_adopt_power_plans_at_the_holdouts_adjusted_alpha(store, capsys, monkeyp
                      "--receipt", str(receipt)]) == 0
     row = json.loads(capsys.readouterr().out)["lanes"][0]
     assert row["comparisons"] == 3
-    assert row["alpha"] == pytest.approx(adopt.ALPHA / 4)
+    assert row["alpha"] == pytest.approx(adopt.alpha_for())
     rates = [r for r in power.rates_from(
         power.draws_from(rows, "inc")[0], split.holdout)[0].values()]
     assert row["power"] == pytest.approx(
-        power.power(rates, row["effect"], row["repeat"], adopt.ALPHA / 4, row["rho"]), abs=1e-4)
+        power.power(rates, row["effect"], row["repeat"], adopt.alpha_for(), row["rho"]), abs=1e-4)

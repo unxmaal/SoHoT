@@ -166,12 +166,10 @@ def _remember(lane: str, closed: bool) -> None:
     if got.get(lane) == now:
         return
     got[lane] = now
-    try:
+    with contextlib.suppress(OSError):
         to = _state_path()
         to.parent.mkdir(parents=True, exist_ok=True)
         to.write_text(json.dumps(got, sort_keys=True), encoding="utf-8")
-    except OSError:
-        pass
 
 
 _memo = _Local()

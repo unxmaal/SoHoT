@@ -21,8 +21,8 @@ KNOBS = [
     _k("adopt_effect_min_cases", ["harness/effects.py:MIN_CASES"], [10, 30, 100],
        note="cases measured twice under one config before a lane's churn sets its effect; at 30 the churn's "
             "relative standard error is about a quarter (#725)"),
-    _k("adopt_family", ["harness/adopt.py:FAMILY"], [2, 4, 8],
-       note="comparisons a holdout's level is shared across: every challenger faces adopt_alpha over this, however many verdicts the lane holds; at 4 the expected false adopts a year with every challenger null are the lane's verdicts a year times 0.0125 (#2199)"),
+    _k("adopt_family", ["harness/adopt.py:FAMILY"], [1, 2, 4, 8],
+       note="comparisons a holdout's level is shared across: every challenger faces adopt_alpha over this, however many verdicts the lane holds; at 2 the expected false adopts a year with every challenger null are the lane's verdicts a year times 0.025 (#2199)"),
     _k("adopt_min_effect", ["harness/power.py:MIN_EFFECT"], [0.05, 0.1, 0.15, 0.2], unit="share",
        note="the smallest per-cell gain worth a model switch; the gate powers for max(lane noise effect, this). "
             "Holdout cases power 0.8 needs on each incumbent's measured rates and rho, store 2026-10-26, against "
