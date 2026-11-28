@@ -40,9 +40,11 @@ def confirm_path() -> Path:
 def _confirmed() -> dict:
     try:
         body = json.loads(confirm_path().read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+    except FileNotFoundError:
         return {}
-    return body if isinstance(body, dict) else {}
+    except (OSError, ValueError):
+        return {"?": 0}
+    return body if isinstance(body, dict) else {"?": 0}
 
 
 def _confirm_leave(conn, repo: str, via: str, owner: str) -> int | None:
@@ -50,7 +52,8 @@ def _confirm_leave(conn, repo: str, via: str, owner: str) -> int | None:
     if not via.startswith(CONFIRM_VIA) or not via[len(CONFIRM_VIA):].isdigit():
         return None
     vid = int(via[len(CONFIRM_VIA):])
-    if str(vid) in _confirmed():
+    ledger = _confirmed()
+    if str(vid) in ledger or "?" in ledger:
         return None
     names = sorted({n for n in (repo, owner) if n})
     marks = ",".join("?" * len(names))
