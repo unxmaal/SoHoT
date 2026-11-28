@@ -575,20 +575,61 @@ def confirm_argv(vid: int) -> list[str]:
     return [sys.executable, "-m", "harness.cli", "adopt", "--confirm", str(int(vid))]
 
 
+def confirm_jobs(conn, vid: int, states: tuple) -> list[dict]:
+    """The jobs of this machine that run `adopt --confirm VID` in `states`, whichever release's python their argv names. #2201."""
+    from harness import machine_scope
+    here, args = machine_scope.here(conn, "jobs.twin")
+    marks = ",".join("?" * len(states))
+    tail = ["adopt", "--confirm", str(int(vid))]
+    out = []
+    for r in conn.execute(f"SELECT id, argv, state FROM jobs WHERE state IN ({marks}) AND argv LIKE ? AND {here} ORDER BY id",
+                          (*states, f'%"--confirm", "{int(vid)}"]', *args)):
+        words = json.loads(r["argv"]) if isinstance(r["argv"], str) else list(r["argv"])
+        if [str(w) for w in words[-3:]] == tail:
+            out.append({"id": r["id"], "state": r["state"]})
+    return out
+
+
+def live_confirms(conn, vid: int, mine: int | None = None) -> list[dict]:
+    """Pending or running confirmations of `vid` other than job `mine`: at most one is ever live. #2201."""
+    from harness import workqueue
+    return [j for j in confirm_jobs(conn, vid, (workqueue.PENDING, workqueue.RUNNING)) if j["id"] != mine]
+
+
+def cleanup_confirms(conn, apply: bool = False, say=print) -> dict:
+    """Cancel the paused `adopt --confirm` jobs of every verdict, and queue one for a verdict still held with none live; says each. #2201."""
+    from harness import workqueue
+    rows = conn.execute("SELECT argv FROM jobs WHERE state = ? AND argv LIKE ?", (workqueue.PAUSED, '%"--confirm", "%')).fetchall()
+    vids = sorted({int(json.loads(r["argv"])[-1]) for r in rows if str(json.loads(r["argv"])[-1]).isdigit()})
+    out = {"cancelled": 0, "queued": 0, "verdicts": len(vids)}
+    for vid in vids:
+        paused = confirm_jobs(conn, vid, (workqueue.PAUSED,))
+        held = conn.execute("SELECT v.lane, p.name FROM verdicts v JOIN proposals p ON p.id = v.proposal_id "
+                            "WHERE v.id = ? AND v.failure_class = 'confirming' AND p.state_verdict_id = v.id", (vid,)).fetchone()
+        say(f"verdict {vid}: {len(paused)} paused confirm job(s) {'cancelled' if apply else 'to cancel'}"
+            f"{', still held' if held else ', no longer held'}")
+        if apply:
+            for j in paused:
+                workqueue.cancel(str(j["id"]), conn=conn)
+        out["cancelled"] += len(paused)
+        if held and not live_confirms(conn, vid):
+            say(f"verdict {vid}: no live confirmation, {'queued one' if apply else 'one to queue'}")
+            if apply and queue_confirmation(conn, vid, Verdict(held["lane"], "", held["name"], False, "")):
+                out["queued"] += 1
+    return out
+
+
 def queue_confirmation(conn, vid: int, verdict: Verdict, now: float | None = None,
                        start: float | None = None) -> dict | None:
     """Queue the dev run (at `start`, else when the contention gate opens) that confirms or refuses a held holdout win, once per verdict. #725, #1509."""
     import os
 
-    from harness import machine_scope, paths, workqueue
+    from harness import paths, workqueue
     argv = confirm_argv(vid)
     # The job this runs in is not the continuation it queues. #1357.
     mine = os.environ.get(workqueue.JOB_ENV, "").strip()
     mine = int(mine) if mine.isdigit() else None
-    here, args = machine_scope.here(conn, "jobs.twin")
-    have = conn.execute(f"SELECT id FROM jobs WHERE argv = ? AND state IN (?, ?) AND id IS NOT ? AND {here}",
-                        (json.dumps(argv), workqueue.PENDING, workqueue.RUNNING, mine, *args)).fetchone()
-    if have is not None:
+    if live_confirms(conn, vid, mine):
         return None
     return workqueue.add(argv, title=(f"confirm {verdict.lane}: {verdict.challenger} over {verdict.incumbent} "
                                       f"on dev (verdict {vid})"),

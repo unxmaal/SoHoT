@@ -674,7 +674,7 @@ def _no_real_hub_download(request, monkeypatch):
 def _no_real_test_fetch(monkeypatch):
     """No measurement or confirmation fetches its weights from the hub as it starts; a test names its own. #2015."""
     from harness import test_weights
-    monkeypatch.setattr(test_weights, "fetched", lambda name: "")
+    monkeypatch.setattr(test_weights, "fetched", lambda name, via="measure": "")
 
 
 @pytest.fixture(autouse=True)

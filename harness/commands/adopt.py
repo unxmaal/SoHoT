@@ -19,9 +19,24 @@ def _run_name(run: Path) -> str:
         return str(run)
 
 
+def _confirm_cleanup(apply: bool) -> int:
+    from harness import adopt
+    from harness import memory_store as ms
+    conn = ms.connect()
+    try:
+        got = adopt.cleanup_confirms(conn, apply)
+    finally:
+        conn.close()
+    print(f"confirm cleanup: {got['cancelled']} paused job(s) {'cancelled' if apply else 'would be cancelled (--apply)'} "
+          f"across {got['verdicts']} verdict(s), {got['queued']} queued", flush=True)
+    return 0
+
+
 def cmd_adopt(a) -> int:
     """The discovery loop's paired measure-and-adopt, for a named challenger."""
     dry = getattr(a, "dry_run", False)
+    if getattr(a, "confirm_cleanup", False):
+        return _confirm_cleanup(bool(getattr(a, "apply", False)) and not dry)
     if getattr(a, "confirm", None) is not None:
         if dry:
             return err("--dry-run: adopt --confirm runs the held confirmation and cannot dry-run (#1548)")
