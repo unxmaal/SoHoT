@@ -3,7 +3,7 @@ from harness.knobs.base import _k
 
 KNOBS = [
     _k("adopt_alpha", ["harness/adopt.py:ALPHA"], [0.01, 0.025, 0.05, 0.1],
-       note="level of the first paired test on a holdout; later ones face it over their comparison count (#698)"),
+       note="level of a paired adoption test over adopt_family comparisons (#698, #2199)"),
     _k("adopt_effect", ["harness/power.py:EFFECT", "harness/power.py:DEFAULT_EFFECT"], [0.05, 0.1, 0.2, 0.3],
        lane_values={"code": (0.03, 0.06, 0.12, 0.2), "repo": (0.08, 0.16, 0.2, 0.3), "svg": (0.06, 0.12, 0.2, 0.3),
                     "tts": (0.03, 0.06, 0.12, 0.2)}, unit="share",
@@ -21,6 +21,8 @@ KNOBS = [
     _k("adopt_effect_min_cases", ["harness/effects.py:MIN_CASES"], [10, 30, 100],
        note="cases measured twice under one config before a lane's churn sets its effect; at 30 the churn's "
             "relative standard error is about a quarter (#725)"),
+    _k("adopt_family", ["harness/adopt.py:FAMILY"], [2, 4, 8],
+       note="comparisons a holdout's level is shared across: every challenger faces adopt_alpha over this, however many verdicts the lane holds; at 4 the expected false adopts a year with every challenger null are the lane's verdicts a year times 0.0125 (#2199)"),
     _k("adopt_min_effect", ["harness/power.py:MIN_EFFECT"], [0.05, 0.1, 0.15, 0.2], unit="share",
        note="the smallest per-cell gain worth a model switch; the gate powers for max(lane noise effect, this). "
             "Holdout cases power 0.8 needs on each incumbent's measured rates and rho, store 2026-10-26, against "
@@ -58,6 +60,8 @@ KNOBS = [
        note="how long the owner's open-anyway on a closed lane lasts before it closes again (#2164)"),
     _k("lane_gate_power", ["harness/lane_gate.py:GATE_POWER"], [0.5, 0.7, 0.8, 0.9], unit="share",
        note="a lane whose power plan at its adopt effect is under this takes no challengers: no fetch, no screen, no measure; reverify and knob sweeps still run (#2164)"),
+    _k("lane_gate_stay_power", ["harness/lane_gate.py:STAY_POWER"], [0.7, 0.75, 0.8], unit="share",
+       note="an open lane closes only when its power falls under this, a closed lane opens at lane_gate_power, so one night's draws cannot flip it (#2199)"),
     _k("look_cells", ["harness/looks.py:LOOK_CELLS"], [0, 5, 10, 20, 40],
        note="holdout cells a paired run takes between interim looks; 0 sizes it so one look (LOOK_COST_S, a resume's model reloads) costs LOOK_SHARE of the cells' own time; looks spend alpha by information fraction, so more of them cost no power (#2167)"),
     _k("look_idle_slices", ["harness/commands/measure.py:IDLE_SLICES"], [1, 2, 3],
@@ -73,6 +77,8 @@ KNOBS = [
        note="failed attempts of one pair a sweep's measure steps make before the sweep stops requeueing it (#2157)"),
     _k("power_fallback_repeat", ["harness/power.py:FALLBACK_REPEAT"], [1, 2, 3, 5],
        note="repeat a paired run takes when the powered one does not fit its budget (#591)"),
+    _k("power_family_min", ["harness/power.py:FAMILY_MIN"], [3, 5, 10], unit="cases",
+       note="measured cases a case family needs before its unmeasured holdout cases are projected from its own rates, not the lane's mix (#2198)"),
     _k("power_measuring_repeat", ["harness/power.py:MEASURING_REPEAT"], [2, 3, 4],
        note="least repeat of a stochastic lane whose within-case correlation is unmeasured, so the run measures it (#591)"),
     _k("power_plateau", ["harness/power.py:PLATEAU", "harness/power.py:PLATEAU_ABS"], [0.9, 0.95, 0.99],
@@ -118,6 +124,9 @@ NOT_GATING = {
 }
 
 NEVER_CUTS = {
+    "harness/adopt.py:FAMILY": "sets the level every adoption test is held to; a challenger is tested, never dropped by it (#2199)",
+    "harness/lane_gate.py:STAY_POWER": "lowers the bar an open lane closes at; the lane_gate_power cut is recorded where it binds (#2199)",
+    "harness/power.py:FAMILY_MIN": "picks which measured rates fill an unmeasured holdout case's projection; no case is dropped (#2198)",
     "harness/lane_gate.py:OPEN_S": "sets when the owner's open-anyway of a closed lane ends; the lane_gate_power cut it "
                                    "lifts is recorded where it binds (#2164)",
     "harness/commands/measure.py:IDLE_SLICES": "pauses a paired run whose slices land no case; the pause is kept and "

@@ -123,11 +123,10 @@ def test_the_adopt_gate_still_rounds_against_the_challenger(monkeypatch):
     assert p == pytest.approx(0.125)
 
 
-def test_the_twentieth_challenger_on_one_holdout_faces_an_adjusted_alpha_and_says_so():
-    assert adopt.alpha_for(0) == adopt.ALPHA
-    assert adopt.alpha_for(19) == pytest.approx(adopt.ALPHA / 20)
+def test_the_twentieth_challenger_on_one_holdout_faces_the_same_alpha_as_the_first():
+    assert adopt.alpha_for(0) == adopt.alpha_for(19) == pytest.approx(adopt.ALPHA / adopt.FAMILY)
     cells = {c: [(True, True)] for c in _cases(20)}
-    for c in _cases(20)[:7]:
+    for c in _cases(20)[:8]:
         cells[c] = [(False, True)]
     rows = _rows(cells)
     first = adopt.decide("code", _summary("inc", rows), _summary("ch", rows), rows,
@@ -135,9 +134,9 @@ def test_the_twentieth_challenger_on_one_holdout_faces_an_adjusted_alpha_and_say
     assert first.adopt
     late = adopt.decide("code", _summary("inc", rows), _summary("ch", rows), rows,
                         split=_split(20), tested=19)
-    assert not late.adopt
+    assert late.adopt
     assert late.evidence["comparisons"] == 20
-    assert late.evidence["alpha"] == pytest.approx(adopt.ALPHA / 20)
+    assert late.evidence["alpha"] == pytest.approx(adopt.ALPHA / adopt.FAMILY)
     assert "comparison 20" in late.why
 
 
@@ -247,14 +246,15 @@ def test_an_underpowered_null_with_no_detectable_gain_says_so():
     assert "no gain up to +1.00 is detectable" in got.why, got.why
 
 
-def test_a_verdict_landing_mid_run_is_recorded_beside_the_alpha_the_plan_used():
+def test_a_level_changing_mid_run_is_recorded_beside_the_alpha_the_plan_used():
     rows = _small_gain(150)
     planned = _powered_plan()
     got = adopt.decide("code", _summary("inc", rows), _summary("ch", rows), rows,
                        split=_split(150), plan=planned, tested=1)
-    assert got.evidence["planned_alpha"] == pytest.approx(planned.alpha)
-    assert got.evidence["alpha"] == pytest.approx(adopt.ALPHA / 2)
-    assert f"planned at alpha {planned.alpha}" in got.why, got.why
+    assert got.evidence["planned_alpha"] == pytest.approx(planned.alpha) != adopt.alpha_for()
+    assert got.evidence["alpha"] == pytest.approx(adopt.ALPHA / adopt.FAMILY)
+    assert "planned at alpha 0.05, tested at 0.0125" in got.why, got.why
+    planned = power.plan([0.5] * 150, 0.2, stochastic=False, observed=150, rho=0.0, alpha=adopt.alpha_for())
     same = adopt.decide("code", _summary("inc", rows), _summary("ch", rows), rows,
                         split=_split(150), plan=planned)
     assert "planned_alpha" not in same.evidence and "planned at alpha" not in same.why

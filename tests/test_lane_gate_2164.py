@@ -166,9 +166,11 @@ def test_the_gate_decides_as_the_power_table_does_over_every_lane(conn, monkeypa
     assert table
     for threshold in (0.0, 0.2, 0.5, 0.8, 0.99):
         monkeypatch.setattr(lane_gate, "GATE_POWER", threshold)
+        monkeypatch.setattr(lane_gate, "STAY_POWER", threshold)
         for lane, row in table.items():
             assert (lane_gate.gate_for(conn, lane) is not None) == (not row["unmeasured_plan"] and row["power"] < threshold)
     monkeypatch.setattr(lane_gate, "GATE_POWER", power.TARGET)
+    monkeypatch.setattr(lane_gate, "STAY_POWER", power.TARGET)
     assert {lane for lane, r in table.items() if not r["enough"]} == {lane for lane in table if lane_gate.gate_for(conn, lane)}
 
 

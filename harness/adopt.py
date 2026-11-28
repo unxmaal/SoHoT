@@ -45,6 +45,8 @@ class Held(Exception):
 #: Below this the difference is not established and the incumbent stays. The
 #: exact McNemar test on discordant cells; see harness/paired.py.
 ALPHA = 0.05
+#: Comparisons one holdout's level is shared across: every challenger faces ALPHA over this, however many came before. #2199.
+FAMILY = 4
 
 #: verdicts.event for an adopt stop the replays tell apart: a futility look, a significant loss. #1942.
 FUTILITY, WORSE = "futility", "worse"
@@ -52,9 +54,9 @@ FUTILITY, WORSE = "futility", "worse"
 REDECIDED = "re-decided"
 
 
-def alpha_for(tested: int) -> float:
-    """The level the next challenger on a holdout faces after `tested` earlier ones: ALPHA over the comparison count. #698."""
-    return ALPHA / (max(0, int(tested)) + 1)
+def alpha_for(tested: int = 0) -> float:
+    """The level the next challenger faces: ALPHA over FAMILY, whatever `tested` earlier verdicts the lane holds. #698, #2199."""
+    return ALPHA / FAMILY
 
 
 def comparisons(conn, lane: str, version: str) -> int:
@@ -172,8 +174,7 @@ def decide(lane: str, incumbent: dict, challenger: dict,
         evidence["alpha"] = alpha
         notes.append(f"tested at alpha {alpha:.4f}: {alpha_for(tested) - alpha:.4f} was spent on interim looks")
     if tested:
-        notes.append(f"comparison {tested + 1} on this holdout, so alpha "
-                     f"{ALPHA}/{tested + 1} = {alpha_for(tested):.4f}")
+        notes.append(f"comparison {tested + 1} on this holdout, alpha {ALPHA}/{FAMILY} = {alpha_for(tested):.4f}")
     if split is not None:
         from harness import holdout
         evidence["split"] = split.as_dict()
@@ -194,8 +195,8 @@ def decide(lane: str, incumbent: dict, challenger: dict,
         planned = getattr(plan, "alpha", None)
         if planned is not None and abs(planned - alpha_for(tested)) > 1e-12:
             evidence["planned_alpha"] = planned
-            notes.append(f"planned at alpha {planned}, tested at {alpha:.4f}: another "
-                         f"verdict on this holdout landed during the run")
+            notes.append(f"planned at alpha {planned}, tested at {alpha:.4f}: the level "
+                         f"changed during the run")
         if getattr(plan, "dev_skipped", ""):
             evidence["dev"] = {"not_run": plan.dev_skipped}
             notes.append(plan.dev_skipped)
