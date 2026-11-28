@@ -276,3 +276,14 @@ def test_a_waiting_challengers_weights_are_a_disk_keeper(conn, tmp_path):
     assert name.lower() in disk.keepers(conn, gateway_files={}, typed={}, adopted={}).repos
     _pick_all(conn, _item(conn)["id"], ["inc"] * 6)
     assert name.lower() not in disk.keepers(conn, gateway_files={}, typed={}, adopted={}).repos
+
+
+def test_the_item_names_the_proposal_its_spec_maps_to(conn, tmp_path):
+    from harness import candidates
+    spec = "acestep:ACE-Step/acestep-v15-xl-turbo,steps=8"
+    _proposal(conn, "acme/chal-secret", "music")
+    candidates.ensure(conn, spec, proposal="acme/chal-secret", lane="music")
+    adopt.record(conn, _win("music"), spec=spec, run_id=_run(conn, tmp_path, "music", suffix=".wav"))
+    it = _item(conn)
+    assert (it["spec"], it["proposal"]) == (spec, "acme/chal-secret")
+    assert owner_picks.holds_weights(conn, "acme/chal-secret")
