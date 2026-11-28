@@ -515,9 +515,15 @@ def _confirm_plan(cells, name_i: str, lane: str):
     """The power plan the confirmation cells amount to: the incumbent's draws on them, at their repeat and ALPHA. #1375."""
     from dataclasses import replace
 
-    from harness import power
-    draws, _ = power.draws_from(cells, name_i, lane)
+    from harness import continuous, power
+    metric = continuous.metric_of(lane)
+    draws, _ = power.draws_from(cells, name_i, lane, bool(metric))
     rates = [sum(v) / len(v) for v in draws.values() if v]
+    if metric:
+        repeat = sum(map(len, draws.values())) / len(draws) if draws else 1.0
+        got = power.plan(rates, power.effect_in(lane), repeat=max(1, round(repeat)), rho=power.icc([list(draws.values())]),
+                         observed=len(rates), model=continuous.model_for(draws, draws, metric))
+        return replace(got, why="")
     rho, repeat = power.rows_icc([{**r, "passed": power.draw(r, lane)} for r in cells], (name_i,))
     got = power.plan(rates, power.effect_for(lane), repeat=max(1, round(repeat)), rho=rho, observed=len(rates))
     # Its advice counts holdout cases, which these are not.

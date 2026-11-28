@@ -17,7 +17,7 @@ def _rows(pairs, lane_metric="wer", inc="inc", ch="ch", repeats=1, passed_under=
         for name, v in ((inc, a), (ch, b)):
             for r in range(1, repeats + 1):
                 out.append({"candidate": name, "case_id": f"c{i}" + (f"#{r}" if repeats > 1 else ""), "passed": v <= passed_under,
-                            "failure_class": "", "metrics": {lane_metric: v}})
+                            "failure_class": "", "seconds": 1.0, "metrics": {lane_metric: v}})
     return out
 
 
@@ -302,3 +302,79 @@ def test_the_stored_rows_are_the_lanes_measure_rows_on_its_holdout_from_every_ma
         assert sorted((r["candidate"], r["case_id"]) for r in got) == [("m0", "c0#2"), ("m0", "c1"), ("m1", "c0#2"), ("m1", "c1")]
     finally:
         conn.close()
+
+
+def _verdict_of(rows, lane="stt"):
+    return adopt.decide(lane, {"candidate": "inc"}, {"candidate": "ch"}, rows)
+
+
+def test_a_challenger_with_no_drop_and_one_with_a_rise_are_declined_in_words_that_say_which():
+    tie = _verdict_of(_rows([(x, x) for x, _ in _planted(40)]))
+    assert not tie.adopt and tie.adopt is False and "does not fall by 0.0000 (0 cases lost, 0 gained)" in tie.why
+    assert (tie.lane, tie.incumbent, tie.challenger) == ("stt", "inc", "ch") and tie.why.startswith("does not beat the incumbent on wer")
+    rise = adopt._gates("stt", "inc", "ch", {}, {}, _rows([(b, a) for a, b in _planted(40)]))
+    assert rise.adopt is False and (rise.lane, rise.incumbent, rise.challenger) == ("stt", "inc", "ch")
+    assert "rises by" in rise.why
+    small = adopt._gates("stt", "inc", "ch", {}, {}, _rows([(0.5, 0.488), (0.5, 0.51)] * 2))
+    assert small.adopt is False and "not established" in small.why and "(mean wer down 0.0010)" in small.why
+    won = adopt._gates("stt", "inc", "ch", {}, {}, _rows(_planted()))
+    assert won.adopt is True and (won.lane, won.incumbent, won.challenger) == ("stt", "inc", "ch")
+
+
+def test_the_null_and_the_limit_name_the_metric_the_gain_is_measured_in():
+    plan = power.plan([0.0] * 134, 0.02, stochastic=False, alpha=0.05, rho=1.0, observed=134, model=continuous.Model("wer", 0.09))
+    null = adopt._null("stt", "inc", "ch", adopt.Verdict("stt", "inc", "ch", False, "not established"), plan)
+    assert null.failure_class == "underpowered" and "to detect +0.02 wer at alpha" in null.why and "could see: +0.03 wer at power" in null.why
+    more, why = adopt.lane_limit("stt", plan.as_dict(), "ch")
+    assert more > 0 and "+0.02 wer at power" in why
+    assert "per cell" in adopt._sees(power.plan([0.5] * 50, 0.1, stochastic=False, alpha=0.05, rho=1.0))
+
+
+def test_a_holdout_win_on_a_wer_lane_is_confirmed_by_the_paired_drop_on_the_dev_cases():
+    split = holdout.Split("tts", tuple(f"c{i}" for i in range(60)), ("h0",), False)
+    won = adopt.Verdict("tts", "inc", "ch", True, "won the holdout")
+    got = adopt.confirm(won, _rows(_planted()), split)
+    assert got.adopt and "confirmed on 60 dev case(s)" in got.why
+    behind = adopt.confirm(won, _rows([(b, a) for a, b in _planted()]), split)
+    assert not behind.adopt and "significantly worse" in behind.why
+    plan = adopt._confirm_plan(adopt.confirmation_cells(_rows(_planted(5)), split), "inc", "tts")
+    assert plan.continuous["metric"] == "wer" and plan.effect == continuous.EFFECT["tts"]
+
+
+def test_a_pass_fail_lane_with_a_primary_metric_still_counts_correlated_repeats_as_cases():
+    rows = []
+    for i in range(8):
+        for k in (1, 2):
+            rows.append({"candidate": "inc", "case_id": f"c{i}#{k}", "passed": k == 1, "seconds": 1.0,
+                         "metrics": {"decide_accuracy": 0.5 if i % 2 else 1.0}})
+            rows.append({"candidate": "ch", "case_id": f"c{i}#{k}", "passed": k == 2, "seconds": 1.0,
+                         "metrics": {"decide_accuracy": 1.0}})
+    cell, p, note = adopt.paired_p(rows, "inc", "ch", "decide")
+    assert cell.p_value is None and (cell.gained, cell.lost, p) == (8, 0, 0.125)
+    assert note == "4 gained against 0 lost once correlated repeats are counted as cases (rho 1.00, repeat 2.0)"
+
+
+def _outlier_rows():
+    """The challenger is lower on 59 cases and ruinous on one: ahead by the capped paired drop, worse by the summary mean."""
+    return _rows([*_planted(59), (0.3, 3.0)])
+
+
+def test_a_wer_lane_win_is_confirmed_on_the_paired_drop_though_the_summary_rows_rank_the_challenger_lower():
+    split = holdout.Split("tts", tuple(f"c{i}" for i in range(60)), ("h0",), False)
+    rows = _outlier_rows()
+    inc, ch = adopt._summary(rows, "inc"), adopt._summary(rows, "ch")
+    assert not adopt.better(inc, ch, "tts")
+    got = adopt.confirm(adopt.Verdict("tts", "inc", "ch", True, "won the holdout"), rows, split)
+    assert got.adopt and "confirmed on 60 dev case(s)" in got.why
+
+
+def test_the_confirmation_plan_of_a_wer_lane_is_the_continuous_plan_over_the_incumbents_cells():
+    split = holdout.Split("tts", tuple(f"c{i}" for i in range(40)), ("h0",), False)
+    cells = adopt.confirmation_cells(_rows(_planted(40), repeats=2), split)
+    got = adopt._confirm_plan(cells, "inc", "tts")
+    draws = {f"c{i}": [a, a] for i, (a, _) in enumerate(_planted(40))}
+    want = power.plan([a for a, _ in _planted(40)], continuous.EFFECT["tts"], repeat=2, rho=power.icc([list(draws.values())]),
+                      observed=40, model=continuous.Model("wer", statistics.pstdev([x for v in draws.values() for x in v])))
+    assert got.as_dict() == {**want.as_dict(), "why": ""}
+    none = adopt._confirm_plan([], "inc", "tts")
+    assert none.repeat == 1 and none.cases == 0
