@@ -169,7 +169,7 @@ def test_librispeech_download_skips_what_the_cache_already_holds(tmp_path):
 def test_librispeech_reads_the_rows_api_a_page_at_a_time_at_the_pinned_revision(monkeypatch):
     pages, served = [], librispeech.REVISION
 
-    def page(offset, length):
+    def page(offset, length, config="clean"):
         pages.append(offset)
         return [{"row_idx": i, "row": {"audio": [{"src": f"https://x/--/{served}"
                                                          f"/--/clean/test/{i}/a.flac"}]}}
@@ -200,7 +200,7 @@ def test_the_cache_env_var_is_where_fetch_reads_and_points_the_cases(tmp_path, m
     (tmp_path / "9999-1-0001.flac").write_bytes(blob)
     monkeypatch.setenv("LIBRISPEECH_CACHE", str(tmp_path))
     monkeypatch.setattr(librispeech, "manifest", lambda: [entry])
-    monkeypatch.setattr(librispeech, "audio_getter", lambda: lambda row: pytest.fail("cache was not read"))
+    monkeypatch.setattr(librispeech, "audio_getter", lambda *a: lambda row: pytest.fail("cache was not read"))
     got = librispeech.fetch()
     assert got[0]["audio"] == str((tmp_path / "9999-1-0001.flac").resolve())
 
@@ -227,10 +227,10 @@ def test_the_committed_manifest_is_pinned_and_large_enough_for_power(tmp_path):
     entries = librispeech.manifest()
     assert len({e["uid"] for e in entries}) == len(entries) >= librispeech.N
     assert all(len(e["sha256"]) == 64 for e in entries)
-    assert sum(e["bytes"] for e in entries) < 60 * 2 ** 20, "keep the download small"
+    assert sum(e["bytes"] for e in entries) < 140 * 2 ** 20, "keep the download small"
     cases = _stt_cases(tmp_path, entries)
     assert all(c.assertions == {"max_wer": librispeech.MAX_WER} for c in cases)
-    assert len(holdout.assign("stt", cases).holdout) >= 130
+    assert len(holdout.assign("stt", cases).holdout) >= 400
     got = importers.negative_control(cases, librispeech.RESPONDERS, librispeech.passes)
     assert got["reference"] == (len(cases), len(cases))
     assert got["the"][0] == 0 and got["shuffled"][0] <= CEILING * len(cases)

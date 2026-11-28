@@ -14,7 +14,7 @@ from evals.importers import Imported, provenance
 LANE = "tts"
 VERSION = "2"
 SEED = 603
-COUNT = 460
+COUNT = 800
 SOURCE = f"generated:evals.importers.tts_synth v{VERSION} seed {SEED}"
 DATASET = "SoHoT generated tts cases"
 URL = "https://github.com/unxmaal/SoHoT/blob/main/evals/importers/tts_synth.py"

@@ -16,7 +16,7 @@ from evals.importers import Imported, provenance
 LANE = "ocr"
 VERSION = "1"
 SEED = 603
-COUNT = 440
+COUNT = 1500
 SOURCE = f"generated:evals.importers.ocr_synth v{VERSION} seed {SEED}"
 DATASET = "SoHoT generated ocr cases"
 URL = "https://github.com/unxmaal/SoHoT/blob/main/evals/importers/ocr_synth.py"
