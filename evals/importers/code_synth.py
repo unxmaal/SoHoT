@@ -10,7 +10,7 @@ from evals.importers import Imported, provenance
 LANE = "code"
 VERSION = "1"
 SEED = 603
-COUNT = 1030
+COUNT = 1930
 DATE = "2026-11-27"
 SOURCE = f"generated:evals.importers.code_synth v{VERSION} seed {SEED}"
 DATASET = "SoHoT generated code cases"
@@ -259,9 +259,9 @@ def _source(fn: str, arg: str, steps, end: str) -> str:
     return f"def {fn}({arg}):\n{body}\n{tail}\n" if steps else f"def {fn}({arg}):\n{tail}\n"
 
 
-def _pipeline(r: random.Random, kind: str) -> dict:
+def _pipeline(r: random.Random, kind: str, lengths: list[int] | None = None) -> dict:
     steps_pool, ends, arg = (INT_STEPS, INT_ENDS, "xs") if kind == "ints" else (STR_STEPS, STR_ENDS, "s")
-    n = r.choice([6, 8, 8, 10, 12])
+    n = r.choice(lengths or [6, 8, 8, 10, 12])
     chosen, prev = [], None
     while len(chosen) < n:
         make = r.choice(steps_pool)
@@ -866,13 +866,17 @@ FAMILIES = ["ints"] * 4 + ["strs"] * 6 + ["records"] * 2 + ["algo"] * 8
 MARGIN_FROM = 880
 MARGIN_FAMILIES = ["strs"] * 3 + ["algo"] * 2
 MARGIN_CAP = 20
+#: The cases from LONG_FROM on are long step pipelines, where the incumbent's misses start; earlier ones are unchanged. #2195.
+LONG_FROM = 1030
+LONG_FAMILIES = ["strs", "ints"]
+LONG_STEPS = [14, 16, 18, 20]
 
 
-def _build(r: random.Random, family: str, used: dict, cap: int = TEMPLATE_CAP) -> dict:
+def _build(r: random.Random, family: str, used: dict, cap: int = TEMPLATE_CAP, lengths: list[int] | None = None) -> dict:
     if family == "algo":
         template = r.choice([a for a in ALGOS if used.get(a.__name__, 0) < cap])
         return {**template(r), "template": template.__name__}
-    return _records(r) if family == "records" else _pipeline(r, family)
+    return _records(r) if family == "records" else _pipeline(r, family, lengths)
 
 
 def _call(fn: str, args: tuple) -> str:
@@ -917,6 +921,8 @@ def fetch(seed: int = SEED, count: int = COUNT) -> list[dict]:
         for _ in range(ATTEMPTS):
             if i < MARGIN_FROM:
                 p = _build(r, FAMILIES[i % len(FAMILIES)], used)
+            elif i >= LONG_FROM:
+                p = _build(r, LONG_FAMILIES[i % len(LONG_FAMILIES)], used, lengths=LONG_STEPS)
             else:
                 p = _build(r, MARGIN_FAMILIES[i % len(MARGIN_FAMILIES)], used, TEMPLATE_CAP + MARGIN_CAP)
             done = _finish(p)

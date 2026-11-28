@@ -1,0 +1,70 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1819
+modality: code
+prompt: 'Write a Python function `apply_rules(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Collapse each run of equal adjacent values into one value.
+
+  2. Keep the values at indices 0, 2, 4, and so on.
+
+  3. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  4. Sort ascending.
+
+  5. Replace every value with its square.
+
+  6. Rotate the list left by 2 positions, wrapping around (an empty list stays empty).
+
+  7. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  8. Replace every value with its absolute value.
+
+  9. Reverse the list.
+
+  10. Replace every value with its remainder after division by 7, as Python''s % gives it (never negative).
+
+  11. Remove every negative value.
+
+  12. Clamp every value into the range -2 to 7, both inclusive.
+
+  13. Replace every value with its absolute value.
+
+  14. Divide every value by 3 with floor division (so -7 divided by 3 gives -3).
+
+  15. Replace every value with its remainder after division by 9, as Python''s % gives it (never negative).
+
+  16. Remove every negative value.
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `apply_rules([13, 13, 20, 10, -7, 12, 11, -1, -12]) returns [0, 0]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules([]) == []
+  - apply_rules([-2]) == [1]
+  - apply_rules([-11, 18, 25, 0, -6, 1, -1]) == [0, 0]
+  - apply_rules([6, 6, 23, -7, 8, 22]) == [0, 0]
+  - apply_rules([12, 21, 14, 11, -1]) == [0, 1]
+  - apply_rules([-10, 21, -8]) == [0, 1]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1819'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-16-steps

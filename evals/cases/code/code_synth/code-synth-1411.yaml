@@ -1,0 +1,66 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1411
+modality: code
+prompt: 'Write a Python function `compute(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Replace every value with its square.
+
+  2. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  3. Divide every value by 4 with integer division that rounds toward zero (so -7 divided by 4 gives -1).
+
+  4. Keep only the values greater than 5.
+
+  5. Keep only the first 4 values (all of them if there are fewer).
+
+  6. Sort descending.
+
+  7. Remove every negative value.
+
+  8. Collapse each run of equal adjacent values into one value.
+
+  9. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  10. Replace every value with its absolute value.
+
+  11. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  12. Replace every value with its absolute value.
+
+  13. Remove duplicates, keeping the first occurrence of each value.
+
+  14. Rotate the list left by 7 positions, wrapping around (an empty list stays empty).
+
+  Then: Return the resulting list.
+
+
+  Example: `compute([0, -7, 14]) returns [61, 12]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute([]) == []
+  - compute([-5]) == [6]
+  - compute([-11, 24, -6, -5]) == [174, 183, 189, 30]
+  - compute([19, -10, 13, -12, 15, -9, 19, 18, -4]) == [115, 157, 193, 90]
+  - compute([12, 14, 9, 12, 10]) == [85, 105, 141, 36]
+  - compute([6, 3, 1, 12, 20, 11, -9, 4]) == [47, 9, 11]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1411'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-14-steps

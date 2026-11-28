@@ -1,0 +1,71 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1423
+modality: code
+prompt: 'Write a Python function `compute(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  2. Drop the first 1 values (an empty list if there are fewer).
+
+  3. Sort descending.
+
+  4. Rotate the list left by 8 positions, wrapping around (an empty list stays empty).
+
+  5. Sort ascending.
+
+  6. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  7. Replace every value with the largest value seen so far.
+
+  8. Add 9 to every value.
+
+  9. Divide every value by 2 with integer division that rounds toward zero (so -7 divided by 2 gives -3).
+
+  10. Replace every value with its square.
+
+  11. Add -9 to every value.
+
+  12. Divide every value by 2 with floor division (so -7 divided by 2 gives -4).
+
+  13. Sort descending.
+
+  14. Divide every value by 3 with floor division (so -7 divided by 3 gives -3).
+
+  15. Sort descending.
+
+  16. Divide every value by 4 with integer division that rounds toward zero (so -7 divided by 4 gives
+  -1).
+
+  Then: Return the largest value, or -1 for an empty list.
+
+
+  Example: `compute([-7, -8, -12, 2]) returns 3`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute([]) == -1
+  - compute([6]) == -1
+  - compute([22, -3, 0, -2, 14, 23]) == 11
+  - compute([17, 22, 15, 14, -2, 9]) == 0
+  - compute([-9, 22, 17, -10, 5, 6]) == 3
+  - compute([6, 5, 15]) == 3
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1423'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-16-steps

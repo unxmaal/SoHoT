@@ -1,0 +1,72 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1638
+modality: code
+prompt: 'Write a Python function `run_pipeline(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Replace every ''b'' with ''r'' (lowercase only).
+
+  2. Sort the characters in ascending code point order.
+
+  3. Collapse every run of the same character into one character.
+
+  4. Keep only the first occurrence of each character.
+
+  5. Convert to lowercase.
+
+  6. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  7. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  8. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  9. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  10. Keep only the first occurrence of each character.
+
+  11. Sort the characters in ascending code point order.
+
+  12. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  13. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  14. Replace runs of whitespace with a single space and strip both ends.
+
+  15. Keep only the first occurrence of each character.
+
+  16. Replace every ''e'' with ''t'' (lowercase only).
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `run_pipeline('',2cBczxba'') returns '',12abcrxz''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline('banana bandana') == '1adnr'
+  - run_pipeline('x') == '1x'
+  - run_pipeline('abc123xyz') == '123acrxyz'
+  - run_pipeline('hELLo WoRLD') == '1dthlorw'
+  - run_pipeline('aabbbcccc') == '1acr'
+  - run_pipeline('  ') == '1'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1638'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-16-steps

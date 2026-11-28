@@ -1,0 +1,68 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1186
+modality: code
+prompt: 'Write a Python function `reduce_data(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Shift every letter forward by 3 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  2. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  3. Collapse every run of the same character into one character.
+
+  4. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  5. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  6. Collapse every run of the same character into one character.
+
+  7. Keep only the first occurrence of each character.
+
+  8. Remove every digit.
+
+  9. Keep only the first occurrence of each character.
+
+  10. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  11. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  12. Convert to uppercase.
+
+  13. Replace runs of whitespace with a single space and strip both ends.
+
+  14. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  Then: Return the resulting string.
+
+
+  Example: `reduce_data(''xyAA,1 z1y2BBC'') returns ''111F111E111B111C111 111,111D111A''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data('hELLo WoRLD') == '111G111O111U111R111Z111 111H111K'
+  - reduce_data('12345') == ''
+  - reduce_data('  jumps   over the  lazy dog ') == '111J111R111G111 111B111C111D111O111H111K111W111U111Y111V111S111P111X111M'
+  - reduce_data('zz yy xx') == '111A111 111B111C'
+  - reduce_data('eeeee fff') == '111I111 111H'
+  - reduce_data('') == ''
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1186'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-14-steps

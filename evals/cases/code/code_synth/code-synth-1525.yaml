@@ -1,0 +1,70 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1525
+modality: code
+prompt: 'Write a Python function `solve(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Keep only the last 3 values, in their order (all of them if there are fewer).
+
+  2. Keep only the even values.
+
+  3. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  4. Keep the values at indices 0, 2, 4, and so on.
+
+  5. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  6. Replace every value with its square.
+
+  7. Reverse the list.
+
+  8. Replace every value with the largest value seen so far.
+
+  9. Rotate the list left by 6 positions, wrapping around (an empty list stays empty).
+
+  10. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  11. Replace every value with its remainder after division by 8, as Python''s % gives it (never negative).
+
+  12. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  13. Replace every value with the largest of itself and the up to 2 values before it.
+
+  14. Keep only the values greater than -2.
+
+  15. Replace every value with its square.
+
+  16. Collapse each run of equal adjacent values into one value.
+
+  Then: Return the largest value, or -1 for an empty list.
+
+
+  Example: `solve([1, 16, 10, 9]) returns 0`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve([]) == -1
+  - solve([-5]) == -1
+  - solve([-11, -4, 2, -12, 3, -2, 15, 5, 3]) == -1
+  - solve([17, 16, 18, 8, 8, 7, -1, -10]) == 16
+  - solve([3, -5, 21, 5, 22]) == 16
+  - solve([21, 14, 1, 6, 24, -7, -11]) == 0
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1525'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-16-steps

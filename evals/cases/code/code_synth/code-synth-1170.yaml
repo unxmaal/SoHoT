@@ -1,0 +1,75 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1170
+modality: code
+prompt: 'Write a Python function `compute(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Remove every vowel (a, e, i, o, u, either case).
+
+  2. Convert to lowercase.
+
+  3. Collapse every run of the same character into one character.
+
+  4. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  5. Convert to uppercase.
+
+  6. Collapse every run of the same character into one character.
+
+  7. Convert to uppercase.
+
+  8. Replace every ''l'' with ''t'' (lowercase only).
+
+  9. Remove every digit.
+
+  10. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  11. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  12. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  13. Collapse every run of the same character into one character.
+
+  14. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  15. Collapse every run of the same character into one character.
+
+  16. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  17. Convert to lowercase.
+
+  18. Swap the case of every letter.
+
+  Then: Return the resulting string.
+
+
+  Example: `compute(''xycb02y .,BCzaxx'') returns ''X1Z1C1B1,1.1 1Y1B1C1Y1X1''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute('eeeee fff') == 'F1'
+  - compute('aabbbcccc') == 'C1B1'
+  - compute('Rotor 99') == 'R1T1R1'
+  - compute('  ') == ''
+  - compute('Hello, World') == 'D1L1R1W1 1,1L1H1'
+  - compute('Ünïcode ok') == 'K1 1D1C1Ï1N1Ü1'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1170'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-18-steps

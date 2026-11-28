@@ -1,0 +1,73 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1258
+modality: code
+prompt: 'Write a Python function `run_pipeline(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Replace every maximal run of digits with the number of digits in it.
+
+  2. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  3. Sort the characters in ascending code point order.
+
+  4. Cut the text to at most 9 characters, then pad it on the right with ''.'' up to 9 characters.
+
+  5. Swap the case of every letter.
+
+  6. Cut the text to at most 5 characters, then pad it on the right with ''.'' up to 5 characters.
+
+  7. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  8. Convert to uppercase.
+
+  9. Replace every maximal run of digits with the number of digits in it.
+
+  10. Shift every letter forward by 5 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  11. Remove every digit.
+
+  12. Convert to uppercase.
+
+  13. Sort the characters in ascending code point order.
+
+  14. Keep only the first occurrence of each character.
+
+  15. Collapse every run of the same character into one character.
+
+  16. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  17. Convert to lowercase.
+
+  18. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  Then: Return the resulting string.
+
+
+  Example: `run_pipeline('' BzAA,Bc c'') returns '',fg''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline('zz yy xx') == 'cd'
+  - run_pipeline('hELLo WoRLD') == 'ijq'
+  - run_pipeline('  jumps   over the  lazy dog ') == 'f'
+  - run_pipeline('Data-driven 2025') == '-fi'
+  - run_pipeline('Zebra 42 crossing 7') == ''
+  - run_pipeline('Ünïcode ok') == 'hijp'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1258'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-18-steps

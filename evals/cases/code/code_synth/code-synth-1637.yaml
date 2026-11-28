@@ -1,0 +1,66 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1637
+modality: code
+prompt: 'Write a Python function `transform(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Drop the first 3 values (an empty list if there are fewer).
+
+  2. Rotate the list left by 8 positions, wrapping around (an empty list stays empty).
+
+  3. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  4. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  5. Replace every value with its absolute value.
+
+  6. Reverse the list.
+
+  7. Rotate the list left by 6 positions, wrapping around (an empty list stays empty).
+
+  8. Remove duplicates, keeping the first occurrence of each value.
+
+  9. Sort descending.
+
+  10. Keep only the last 3 values, in their order (all of them if there are fewer).
+
+  11. Sort ascending.
+
+  12. Add -1 to every value.
+
+  13. Keep only the first 4 values (all of them if there are fewer).
+
+  14. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `transform([14, 20, 7]) returns []`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([]) == []
+  - transform([-6]) == []
+  - transform([9, 21, 12, 25, -5, -7]) == [2, 18]
+  - transform([4, -1, 0, 6, -6, 7]) == [1]
+  - transform([0, -12, 19, 16, -11]) == [5]
+  - transform([-8, 6, 13, -10]) == []
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1637'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-14-steps

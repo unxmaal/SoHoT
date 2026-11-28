@@ -1,0 +1,75 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1057
+modality: code
+prompt: 'Write a Python function `compute(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Add 2 to every value.
+
+  2. Rotate the list left by 2 positions, wrapping around (an empty list stays empty).
+
+  3. Keep only the last 3 values, in their order (all of them if there are fewer).
+
+  4. Replace every value with its square.
+
+  5. Collapse each run of equal adjacent values into one value.
+
+  6. Divide every value by 4 with integer division that rounds toward zero (so -7 divided by 4 gives -1).
+
+  7. Keep only the even values.
+
+  8. Divide every value by 2 with floor division (so -7 divided by 2 gives -4).
+
+  9. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  10. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  11. Sort descending.
+
+  12. Replace every value with its remainder after division by 3, as Python''s % gives it (never negative).
+
+  13. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  14. Rotate the list left by 5 positions, wrapping around (an empty list stays empty).
+
+  15. Multiply every value by 3.
+
+  16. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  17. Replace every value with its square.
+
+  18. Add 6 to every value.
+
+  Then: Return the lower median: the value at index (n - 1) // 2 of the sorted list, or 0 for an empty
+  list.
+
+
+  Example: `compute([-3, 21, 10, 18, 14, 19, -1, -10, 17]) returns 6`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute([]) == 0
+  - compute([4]) == 0
+  - compute([22, 7, -5, 19]) == 6
+  - compute([0, 16, 15, 16]) == 0
+  - compute([-12, 7, -2, 6, -10]) == 42
+  - compute([12, -7, 0, 13]) == 6
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1057'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-18-steps

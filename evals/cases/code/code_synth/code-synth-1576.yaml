@@ -1,0 +1,74 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1576
+modality: code
+prompt: 'Write a Python function `process(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Remove every digit.
+
+  2. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  3. Convert to uppercase.
+
+  4. Remove every vowel (a, e, i, o, u, either case).
+
+  5. Convert to lowercase.
+
+  6. Shift every letter forward by 6 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  7. Keep only the first occurrence of each character.
+
+  8. Cut the text to at most 6 characters, then pad it on the right with ''.'' up to 6 characters.
+
+  9. Shift every letter forward by 1 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  10. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  11. Remove every digit.
+
+  12. Shift every letter forward by 1 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  13. Replace every ''d'' with ''t'' (lowercase only).
+
+  14. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  15. Collapse every run of the same character into one character.
+
+  16. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `process('', a0CC 2BcCAa'') returns ''.jk''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process('Programming in Python') == 'Vuozx'
+  - process('banana bandana') == '.l'
+  - process('Zebra 42 crossing 7') == 'Zjh'
+  - process('zz yy xx') == '.fg'
+  - process('  jumps   over the  lazy dog ') == 'Axur'
+  - process('Quick brown fox') == 'Sky'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1576'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-16-steps

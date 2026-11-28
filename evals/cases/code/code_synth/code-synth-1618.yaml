@@ -1,0 +1,81 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1618
+modality: code
+prompt: 'Write a Python function `transform(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Keep only the first occurrence of each character.
+
+  2. Collapse every run of the same character into one character.
+
+  3. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  4. Convert to uppercase.
+
+  5. Shift every letter forward by 10 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  6. Convert to uppercase.
+
+  7. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  8. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  9. Remove every digit.
+
+  10. Shift every letter forward by 1 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  11. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  12. Replace every maximal run of digits with the number of digits in it.
+
+  13. Sort the characters in ascending code point order.
+
+  14. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  15. Convert to uppercase.
+
+  16. Replace runs of whitespace with a single space and strip both ends.
+
+  17. Replace every maximal run of digits with the number of digits in it.
+
+  18. Replace runs of whitespace with a single space and strip both ends.
+
+  19. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  20. Shift every letter forward by 6 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  Then: Return the resulting string.
+
+
+  Example: `transform(''zz0x 2zyAC1'') returns ''TRQPO''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform('  jumps   over the  lazy dog ') == 'FDCAYXVURQPMLKJIG'
+  - transform('abc123xyz') == 'TSRQPO'
+  - transform('Hello, World') == 'FCYVUNI,'
+  - transform('A man a plan a canal Panama') == 'EDCTRRGG'
+  - transform('Ünïcode ok') == 'ÜÏFEBVUT'
+  - transform('  ') == ''
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1618'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-20-steps

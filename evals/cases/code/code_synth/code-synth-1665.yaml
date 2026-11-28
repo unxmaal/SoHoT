@@ -1,0 +1,67 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1665
+modality: code
+prompt: 'Write a Python function `process(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Replace every value with the largest value seen so far.
+
+  2. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  3. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  4. Replace every value with its square.
+
+  5. Add 9 to every value.
+
+  6. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  7. Divide every value by 2 with integer division that rounds toward zero (so -7 divided by 2 gives -3).
+
+  8. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  9. Drop the first 1 values (an empty list if there are fewer).
+
+  10. Remove every negative value.
+
+  11. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  12. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  13. Keep only the values greater than -3.
+
+  14. Collapse each run of equal adjacent values into one value.
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `process([23, 7, 6, -12, 0, 16, 8, 24]) returns [23]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process([]) == []
+  - process([1]) == []
+  - process([3, -9, 20, 16, -12, 20, -2, 7, 8]) == [0]
+  - process([-2, 21, 2, 24, 22]) == [353]
+  - process([21, 20, 22, 9, 9, 4]) == [0]
+  - process([7, -10, 21, 25, 8, 16, -9, -1, 13]) == [92]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1665'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-14-steps

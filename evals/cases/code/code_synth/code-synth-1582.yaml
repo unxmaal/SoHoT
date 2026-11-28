@@ -1,0 +1,70 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1582
+modality: code
+prompt: 'Write a Python function `reduce_data(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Convert to uppercase.
+
+  2. Cut the text to at most 6 characters, then pad it on the right with ''.'' up to 6 characters.
+
+  3. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  4. Replace runs of whitespace with a single space and strip both ends.
+
+  5. Replace every ''c'' with ''a'' (lowercase only).
+
+  6. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  7. Replace runs of whitespace with a single space and strip both ends.
+
+  8. Convert to uppercase.
+
+  9. Replace runs of whitespace with a single space and strip both ends.
+
+  10. Cut the text to at most 9 characters, then pad it on the right with ''.'' up to 9 characters.
+
+  11. Remove every vowel (a, e, i, o, u, either case).
+
+  12. Remove every digit.
+
+  13. Replace every ''e'' with ''i'' (lowercase only).
+
+  14. Collapse every run of the same character into one character.
+
+  15. Keep only the first occurrence of each character.
+
+  16. Remove every vowel (a, e, i, o, u, either case).
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `reduce_data(''12bx,,C.CaB,2b.'') returns '',XB.''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data('Data-driven 2025') == 'D-T.'
+  - reduce_data('  jumps   over the  lazy dog ') == 'PMJ.'
+  - reduce_data('') == '.'
+  - reduce_data('Hello, World') == ',LH.'
+  - reduce_data('Quick brown fox') == 'KQ.'
+  - reduce_data('noon') == '.N'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1582'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-16-steps

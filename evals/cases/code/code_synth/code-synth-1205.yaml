@@ -1,0 +1,66 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1205
+modality: code
+prompt: 'Write a Python function `run_pipeline(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Remove every value that is a multiple of 3 (0 is a multiple of everything).
+
+  2. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  3. Add 4 to every value.
+
+  4. Collapse each run of equal adjacent values into one value.
+
+  5. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  6. Clamp every value into the range -2 to 5, both inclusive.
+
+  7. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  8. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  9. Add 6 to every value.
+
+  10. Replace every value with its square.
+
+  11. Keep only the first 5 values (all of them if there are fewer).
+
+  12. Replace every value with its remainder after division by 8, as Python''s % gives it (never negative).
+
+  13. Replace every value with its absolute value.
+
+  14. Keep only the last 5 values, in their order (all of them if there are fewer).
+
+  Then: Return the resulting list.
+
+
+  Example: `run_pipeline([13, -11, -8, -7, 2, 0]) returns [1, 0, 4, 0, 4]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline([]) == []
+  - run_pipeline([2]) == [1]
+  - run_pipeline([4, 19, -11]) == [1, 0, 1]
+  - run_pipeline([0, 2, -8, -5, -9, 23, 16]) == [1, 1, 1, 0, 1]
+  - run_pipeline([5, 19, -10, 11, 10]) == [1, 0, 1, 4, 1]
+  - run_pipeline([1, 6, 13, 12, -3, 13, -11, 21, -12]) == [1, 0, 1, 4]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1205'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-14-steps

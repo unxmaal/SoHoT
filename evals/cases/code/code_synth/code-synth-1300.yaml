@@ -1,0 +1,70 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1300
+modality: code
+prompt: 'Write a Python function `apply_rules(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Replace every ''o'' with ''b'' (lowercase only).
+
+  2. Shift every letter forward by 12 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  3. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  4. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  5. Remove every digit.
+
+  6. Convert to lowercase.
+
+  7. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  8. Keep only the first 2 whitespace-separated words, joined by single spaces.
+
+  9. Swap the case of every letter.
+
+  10. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  11. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  12. Collapse every run of the same character into one character.
+
+  13. Remove every vowel (a, e, i, o, u, either case).
+
+  14. Shift every letter forward by 6 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `apply_rules(''c,02C1b20  1'') returns ''11,11T''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules('Data-driven 2025') == '1V1S1L1S1-1V1J11N1W1F'
+  - apply_rules('x') == '1P'
+  - apply_rules('queue QUEUE') == '1I1M1W1M1W1'
+  - apply_rules('') == ''
+  - apply_rules('Hello, World') == '1Z1W1D1T1,'
+  - apply_rules('Level') == '1D1W1N1W1D'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1300'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-14-steps

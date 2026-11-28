@@ -1,0 +1,71 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1654
+modality: code
+prompt: 'Write a Python function `transform(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Replace runs of whitespace with a single space and strip both ends.
+
+  2. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  3. Keep only the first 2 whitespace-separated words, joined by single spaces.
+
+  4. Remove every digit.
+
+  5. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  6. Remove every vowel (a, e, i, o, u, either case).
+
+  7. Keep only the first 2 whitespace-separated words, joined by single spaces.
+
+  8. Remove every digit.
+
+  9. Shift every letter forward by 4 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  10. Sort the characters in ascending code point order.
+
+  11. Keep only the first occurrence of each character.
+
+  12. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  13. Cut the text to at most 5 characters, then pad it on the right with ''.'' up to 5 characters.
+
+  14. Replace runs of whitespace with a single space and strip both ends.
+
+  15. Convert to uppercase.
+
+  16. Cut the text to at most 7 characters, then pad it on the right with ''.'' up to 7 characters.
+
+  Then: Return the resulting string.
+
+
+  Example: `transform(''caAB,BbA0x'') returns ''1,1F1..''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform('  jumps   over the  lazy dog ') == '1 1N1..'
+  - transform('Level') == '1P1P1..'
+  - transform('tab\tseparated  words') == '1 1F1..'
+  - transform('Ünïcode ok') == '1 1G1..'
+  - transform('  ') == '.......'
+  - transform('x') == '1B.....'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1654'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-16-steps

@@ -1,0 +1,65 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1465
+modality: code
+prompt: 'Write a Python function `apply_rules(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  2. Remove every negative value.
+
+  3. Sort ascending.
+
+  4. Replace every value with its absolute value.
+
+  5. Keep the values at indices 0, 2, 4, and so on.
+
+  6. Sort descending.
+
+  7. Divide every value by 3 with integer division that rounds toward zero (so -7 divided by 3 gives -2).
+
+  8. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  9. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  10. Sort ascending.
+
+  11. Replace every value with its absolute value.
+
+  12. Reverse the list.
+
+  13. Add -3 to every value.
+
+  14. Sort descending.
+
+  Then: Return the sum of the values (0 for an empty list).
+
+
+  Example: `apply_rules([-12, -3, 22, -6]) returns 0`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules([]) == 0
+  - apply_rules([-4]) == 0
+  - apply_rules([-6, 20, 20, -3]) == 0
+  - apply_rules([18, 17, -3, 20, 6, -11, 22]) == -1
+  - apply_rules([-10, -3, 0, 21, -8, 11, 24, -11]) == 4
+  - apply_rules([25, 13, -6, -6, 21, 18, 22]) == -2
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1465'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-14-steps

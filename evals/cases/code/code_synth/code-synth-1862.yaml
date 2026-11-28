@@ -1,0 +1,68 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1862
+modality: code
+prompt: 'Write a Python function `solve(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Shift every letter forward by 8 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  2. Keep only the first occurrence of each character.
+
+  3. Shift every letter forward by 7 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  4. Convert to uppercase.
+
+  5. Remove every digit.
+
+  6. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  7. Convert to uppercase.
+
+  8. Collapse every run of the same character into one character.
+
+  9. Sort the characters in ascending code point order.
+
+  10. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  11. Shift every letter forward by 5 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  12. Collapse every run of the same character into one character.
+
+  13. Cut the text to at most 7 characters, then pad it on the right with ''.'' up to 7 characters.
+
+  14. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `solve(''xcyAAC.y,Cb'') returns ''WVUSR.,''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve('Data-driven 2025') == 'CYXUPNL'
+  - solve('  ') == '.......'
+  - solve('Quick brown fox') == 'ECZWVRQ'
+  - solve('A man a plan a canal Panama') == 'WUJHGF.'
+  - solve('Programming in Python') == 'CBAUSNL'
+  - solve('Rotor 99') == 'NLI....'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1862'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-14-steps

@@ -1,0 +1,69 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1857
+modality: code
+prompt: 'Write a Python function `solve(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  2. Replace every value with the largest value seen so far.
+
+  3. Divide every value by 3 with floor division (so -7 divided by 3 gives -3).
+
+  4. Reverse the list.
+
+  5. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  6. Remove duplicates, keeping the first occurrence of each value.
+
+  7. Sort ascending.
+
+  8. Keep the values at indices 0, 3, 6, and so on.
+
+  9. Clamp every value into the range 0 to 4, both inclusive.
+
+  10. Sort ascending.
+
+  11. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  12. Remove every negative value.
+
+  13. Keep only the even values.
+
+  14. Add 9 to every value.
+
+  15. Keep only the last 4 values, in their order (all of them if there are fewer).
+
+  16. Reverse the list.
+
+  Then: Return how many distinct values there are.
+
+
+  Example: `solve([0, 1, 13, 5, -4, 19]) returns 1`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve([]) == 0
+  - solve([-8]) == 1
+  - solve([4, -10, -3, 14]) == 1
+  - solve([8, -9, 21, -2, -9, 6]) == 0
+  - solve([-6, 7, 9]) == 1
+  - solve([4, 24, 8, 17, 11, 11, -3, 7]) == 2
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1857'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-16-steps

@@ -1,0 +1,80 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1893
+modality: code
+prompt: 'Write a Python function `apply_rules(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Keep only the last 3 values, in their order (all of them if there are fewer).
+
+  2. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  3. Replace every value with the largest of itself and the up to 1 values before it.
+
+  4. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  5. Replace every value with its absolute value.
+
+  6. Sort descending.
+
+  7. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  8. Replace every value with its absolute value.
+
+  9. Add 9 to every value.
+
+  10. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  11. Collapse each run of equal adjacent values into one value.
+
+  12. Keep the values at indices 0, 3, 6, and so on.
+
+  13. Divide every value by 2 with integer division that rounds toward zero (so -7 divided by 2 gives
+  -3).
+
+  14. Keep only the last 3 values, in their order (all of them if there are fewer).
+
+  15. Keep the values at indices 0, 2, 4, and so on.
+
+  16. Keep only the first 6 values (all of them if there are fewer).
+
+  17. Divide every value by 3 with integer division that rounds toward zero (so -7 divided by 3 gives
+  -2).
+
+  18. Rotate the list left by 9 positions, wrapping around (an empty list stays empty).
+
+  19. Keep the values at indices 0, 2, 4, and so on.
+
+  20. Remove every negative value.
+
+  Then: Return the resulting list.
+
+
+  Example: `apply_rules([5, 1, -12]) returns [0]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules([]) == []
+  - apply_rules([-5]) == []
+  - apply_rules([12, -11, -7]) == [0]
+  - apply_rules([9, -12, 10, 18]) == [0]
+  - apply_rules([13, 15, -2, -9, 14, -12]) == [0]
+  - apply_rules([24, 17, -2, 24, 4, -4]) == [3]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1893'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-20-steps

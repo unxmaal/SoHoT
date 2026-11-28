@@ -1,0 +1,75 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1680
+modality: code
+prompt: 'Write a Python function `apply_rules(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Sort the characters in ascending code point order.
+
+  2. Remove every digit.
+
+  3. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  4. Cut the text to at most 7 characters, then pad it on the right with ''.'' up to 7 characters.
+
+  5. Sort the characters in ascending code point order.
+
+  6. Replace every maximal run of digits with the number of digits in it.
+
+  7. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  8. Cut the text to at most 6 characters, then pad it on the right with ''.'' up to 6 characters.
+
+  9. Convert to uppercase.
+
+  10. Collapse every run of the same character into one character.
+
+  11. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  12. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  13. Keep only the first occurrence of each character.
+
+  14. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  15. Swap the case of every letter.
+
+  16. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  17. Collapse every run of the same character into one character.
+
+  18. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  Then: Return the resulting string.
+
+
+  Example: `apply_rules(''yx,cy1bAcAcByzBa'') returns ''B1A1,1''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules('Data-driven 2025') == 'E1A1D1-1'
+  - apply_rules('  ') == '.1'
+  - apply_rules('Ünïcode ok') == 'O1N1K1E1D1C1'
+  - apply_rules('noon') == 'O1N1.1'
+  - apply_rules('12345') == '.1'
+  - apply_rules('abc123xyz') == 'Y1X1C1B1A1.1'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1680'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-18-steps

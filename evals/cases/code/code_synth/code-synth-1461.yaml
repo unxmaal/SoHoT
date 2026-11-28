@@ -1,0 +1,65 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1461
+modality: code
+prompt: 'Write a Python function `transform(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  2. Rotate the list left by 4 positions, wrapping around (an empty list stays empty).
+
+  3. Replace every value with its square.
+
+  4. Keep only the values greater than 8.
+
+  5. Keep the values at indices 0, 2, 4, and so on.
+
+  6. Add 4 to every value.
+
+  7. Replace every value with its remainder after division by 7, as Python''s % gives it (never negative).
+
+  8. Keep only the first 3 values (all of them if there are fewer).
+
+  9. Rotate the list left by 6 positions, wrapping around (an empty list stays empty).
+
+  10. Sort descending.
+
+  11. Remove every value that is a multiple of 7 (0 is a multiple of everything).
+
+  12. Collapse each run of equal adjacent values into one value.
+
+  13. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  14. Keep only the even values.
+
+  Then: Return the largest value, or -1 for an empty list.
+
+
+  Example: `transform([-11, 14, 0, 19]) returns 4`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([]) == -1
+  - transform([-2]) == -1
+  - transform([2, 22, 6, -9, -7, 22, 20, 7, 5]) == 4
+  - transform([-6, 1, -9]) == -1
+  - transform([16, 11, -8, 23, 11]) == 6
+  - transform([10, 24, 5, -9, 8, -12, 1, 16, -10]) == 6
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1461'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-14-steps

@@ -1,0 +1,70 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1413
+modality: code
+prompt: 'Write a Python function `apply_rules(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Multiply every value by 5.
+
+  2. Replace every value with the largest value seen so far.
+
+  3. Drop the first 3 values (an empty list if there are fewer).
+
+  4. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  5. Divide every value by 2 with floor division (so -7 divided by 2 gives -4).
+
+  6. Replace every value with its absolute value.
+
+  7. Divide every value by 3 with floor division (so -7 divided by 3 gives -3).
+
+  8. Collapse each run of equal adjacent values into one value.
+
+  9. Replace every value with its square.
+
+  10. Keep only the first 6 values (all of them if there are fewer).
+
+  11. Replace every value with the largest value seen so far.
+
+  12. Multiply every value by 3.
+
+  13. Collapse each run of equal adjacent values into one value.
+
+  14. Keep only the values greater than 8.
+
+  15. Multiply every value by 5.
+
+  16. Add -1 to every value.
+
+  Then: Return the lower median: the value at index (n - 1) // 2 of the sorted list, or 0 for an empty
+  list.
+
+
+  Example: `apply_rules([10, -8, -2, -3, -12, -9]) returns 3839`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules([]) == 0
+  - apply_rules([6]) == 0
+  - apply_rules([7, -5, 25, -11, 1, 9, 7, -4]) == 57659
+  - apply_rules([-12, 6, -12, 11, -2]) == 1214
+  - apply_rules([20, 0, 16, 21]) == 4334
+  - apply_rules([21, 5, 3, -10]) == 4334
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1413'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-16-steps

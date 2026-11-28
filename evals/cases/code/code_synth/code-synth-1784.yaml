@@ -1,0 +1,81 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1784
+modality: code
+prompt: 'Write a Python function `solve(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Convert to lowercase.
+
+  2. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  3. Replace every ''b'' with ''i'' (lowercase only).
+
+  4. Shift every letter forward by 1 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  5. Remove every digit.
+
+  6. Collapse every run of the same character into one character.
+
+  7. Replace every maximal run of digits with the number of digits in it.
+
+  8. Shift every letter forward by 9 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  9. Cut the text to at most 5 characters, then pad it on the right with ''.'' up to 5 characters.
+
+  10. Replace runs of whitespace with a single space and strip both ends.
+
+  11. Replace every maximal run of digits with the number of digits in it.
+
+  12. Convert to lowercase.
+
+  13. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  14. Replace runs of whitespace with a single space and strip both ends.
+
+  15. Remove every digit.
+
+  16. Replace every ''i'' with ''t'' (lowercase only).
+
+  17. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  18. Replace every ''t'' with ''l'' (lowercase only).
+
+  19. Remove every digit.
+
+  20. Shift every letter forward by 12 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  Then: Return how many characters it has.
+
+
+  Example: `solve(''C.yc1yz02bby'') returns 5`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve('  ') == 1
+  - solve('A man a plan a canal Panama') == 5
+  - solve('noon') == 4
+  - solve('Level') == 5
+  - solve('zz yy xx') == 3
+  - solve('') == 1
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1784'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-20-steps

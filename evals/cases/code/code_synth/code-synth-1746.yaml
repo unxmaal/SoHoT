@@ -1,0 +1,81 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1746
+modality: code
+prompt: 'Write a Python function `process(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  2. Remove every digit.
+
+  3. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  4. Replace every ''l'' with ''d'' (lowercase only).
+
+  5. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  6. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  7. Remove every digit.
+
+  8. Replace runs of whitespace with a single space and strip both ends.
+
+  9. Sort the characters in ascending code point order.
+
+  10. Keep only the first 2 whitespace-separated words, joined by single spaces.
+
+  11. Convert to uppercase.
+
+  12. Cut the text to at most 9 characters, then pad it on the right with ''.'' up to 9 characters.
+
+  13. Remove every digit.
+
+  14. Replace runs of whitespace with a single space and strip both ends.
+
+  15. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  16. Shift every letter forward by 10 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  17. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  18. Collapse every run of the same character into one character.
+
+  19. Convert to uppercase.
+
+  20. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `process(''2AyBx.aB 1,'') returns '',.klhi.''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process('Rotor 99') == 'Bybd.'
+  - process('queue QUEUE') == 'Aaoe'
+  - process('Level') == 'Vnof.'
+  - process('Data-driven 2025') == '-nknosxb'
+  - process('hELLo WoRLD') == 'Rgnovy'
+  - process('12345') == '.'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1746'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-20-steps

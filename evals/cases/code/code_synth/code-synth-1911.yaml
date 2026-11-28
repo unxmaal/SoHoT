@@ -1,0 +1,70 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1911
+modality: code
+prompt: 'Write a Python function `compute(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  2. Keep only the values greater than -1.
+
+  3. Keep the values at indices 0, 2, 4, and so on.
+
+  4. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  5. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  6. Keep only the even values.
+
+  7. Clamp every value into the range -2 to 6, both inclusive.
+
+  8. Divide every value by 3 with floor division (so -7 divided by 3 gives -3).
+
+  9. Replace every value with its remainder after division by 3, as Python''s % gives it (never negative).
+
+  10. Remove duplicates, keeping the first occurrence of each value.
+
+  11. Replace every value with the largest value seen so far.
+
+  12. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  13. Keep the values at indices 0, 3, 6, and so on.
+
+  14. Replace every value with its square.
+
+  15. Replace every value with its remainder after division by 8, as Python''s % gives it (never negative).
+
+  16. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  Then: Return the largest value, or -1 for an empty list.
+
+
+  Example: `compute([16, 0, -7]) returns 0`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute([]) == -1
+  - compute([3]) == -1
+  - compute([0, -10, 20, -7, -12]) == 0
+  - compute([20, 9, 6, 22, 5, 7, 3, 21, -1]) == 4
+  - compute([10, 12, -3, 23, -4, 13, -11]) == -1
+  - compute([-9, 6, -10, -10, 2, 14]) == 4
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1911'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-16-steps

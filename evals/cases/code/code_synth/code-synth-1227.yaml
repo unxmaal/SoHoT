@@ -1,0 +1,74 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1227
+modality: code
+prompt: 'Write a Python function `process(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Rotate the list left by 1 positions, wrapping around (an empty list stays empty).
+
+  2. Divide every value by 3 with integer division that rounds toward zero (so -7 divided by 3 gives -2).
+
+  3. Drop the first 3 values (an empty list if there are fewer).
+
+  4. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  5. Reverse the list.
+
+  6. Replace every value with its absolute value.
+
+  7. Remove every value that is a multiple of 3 (0 is a multiple of everything).
+
+  8. Remove duplicates, keeping the first occurrence of each value.
+
+  9. Replace every value with its square.
+
+  10. Replace every value with the largest of itself and the up to 2 values before it.
+
+  11. Keep only the even values.
+
+  12. Divide every value by 2 with floor division (so -7 divided by 2 gives -4).
+
+  13. Keep only the last 4 values, in their order (all of them if there are fewer).
+
+  14. Replace every value with the largest of itself and the up to 2 values before it.
+
+  15. Divide every value by 4 with integer division that rounds toward zero (so -7 divided by 4 gives
+  -1).
+
+  16. Remove duplicates, keeping the first occurrence of each value.
+
+  17. Rotate the list left by 7 positions, wrapping around (an empty list stays empty).
+
+  18. Reverse the list.
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `process([7, 20, -10, 19]) returns []`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process([]) == []
+  - process([-6]) == []
+  - process([7, -9, 20, 7, 1, 23, 4]) == []
+  - process([-6, 0, 19, 12, 5, 10, 4, 0, -12]) == [0, 2]
+  - process([8, 10, 13, 23, -11, -11, -10, 20, -8]) == [2, 8]
+  - process([-11, -6, -2, 12, 4, 2, -9, 16]) == [8]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1227'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-18-steps

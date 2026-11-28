@@ -1,0 +1,80 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1847
+modality: code
+prompt: 'Write a Python function `apply_rules(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Reverse the list.
+
+  2. Replace every value with its square.
+
+  3. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  4. Divide every value by 4 with integer division that rounds toward zero (so -7 divided by 4 gives -1).
+
+  5. Replace every value with its absolute value.
+
+  6. Remove every value that is a multiple of 7 (0 is a multiple of everything).
+
+  7. Drop the first 2 values (an empty list if there are fewer).
+
+  8. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  9. Divide every value by 3 with integer division that rounds toward zero (so -7 divided by 3 gives -2).
+
+  10. Replace every value with its remainder after division by 8, as Python''s % gives it (never negative).
+
+  11. Keep only the even values.
+
+  12. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  13. Sort ascending.
+
+  14. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  15. Remove every negative value.
+
+  16. Replace every value with its square.
+
+  17. Add -5 to every value.
+
+  18. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  19. Sort ascending.
+
+  20. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  Then: Return the lower median: the value at index (n - 1) // 2 of the sorted list, or 0 for an empty
+  list.
+
+
+  Example: `apply_rules([9, -6, 5, -9, 17]) returns 0`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules([]) == 0
+  - apply_rules([2]) == 0
+  - apply_rules([13, 8, -10, 14, 20, 3, 16, -12]) == 11
+  - apply_rules([15, 8, 18, 3, -12, -8]) == 0
+  - apply_rules([-3, 17, 9]) == -5
+  - apply_rules([7, -5, 2, 15]) == -1
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1847'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-20-steps

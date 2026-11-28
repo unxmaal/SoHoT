@@ -1,0 +1,81 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1620
+modality: code
+prompt: 'Write a Python function `compute(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Shift every letter forward by 8 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  2. Replace every ''c'' with ''r'' (lowercase only).
+
+  3. Remove every digit.
+
+  4. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  5. Remove every digit.
+
+  6. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  7. Convert to lowercase.
+
+  8. Shift every letter forward by 7 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  9. Sort the characters in ascending code point order.
+
+  10. Convert to lowercase.
+
+  11. Swap the case of every letter.
+
+  12. Replace every ''c'' with ''d'' (lowercase only).
+
+  13. Convert to lowercase.
+
+  14. Remove every digit.
+
+  15. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  16. Collapse every run of the same character into one character.
+
+  17. Keep only the first 2 whitespace-separated words, joined by single spaces.
+
+  18. Replace every maximal run of digits with the number of digits in it.
+
+  19. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  20. Keep only the first occurrence of each character.
+
+  Then: Return how many characters it has.
+
+
+  Example: `compute(''bzbzyzxzbc'') returns 5`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute('noon') == 3
+  - compute('  ') == 0
+  - compute('12345') == 0
+  - compute('queue QUEUE') == 5
+  - compute('aabbbcccc') == 4
+  - compute('banana bandana') == 5
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1620'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-20-steps

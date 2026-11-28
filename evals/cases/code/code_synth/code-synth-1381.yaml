@@ -1,0 +1,65 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1381
+modality: code
+prompt: 'Write a Python function `run_pipeline(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Collapse each run of equal adjacent values into one value.
+
+  2. Divide every value by 2 with floor division (so -7 divided by 2 gives -4).
+
+  3. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  4. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  5. Reverse the list.
+
+  6. Replace every value with its square.
+
+  7. Remove every value that is a multiple of 5 (0 is a multiple of everything).
+
+  8. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  9. Add -1 to every value.
+
+  10. Replace every value with its absolute value.
+
+  11. Keep the values at indices 0, 2, 4, and so on.
+
+  12. Replace every value with its square.
+
+  13. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  14. Keep only the even values.
+
+  Then: Return the sum of the values (0 for an empty list).
+
+
+  Example: `run_pipeline([13, -6, 12, -5, 20, 2]) returns 64`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline([]) == 0
+  - run_pipeline([-6]) == 64
+  - run_pipeline([-5, 1, 4, 13, 12, 14, -3, 11]) == 1298
+  - run_pipeline([-11, 21, -6, 25, -11, -7, -11, 9, -12]) == 1578
+  - run_pipeline([19, 11, 23, 21]) == 6400
+  - run_pipeline([20, -9, 8, 9, 6, 22]) == 64
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1381'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-14-steps

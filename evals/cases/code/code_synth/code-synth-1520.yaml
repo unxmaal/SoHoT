@@ -1,0 +1,69 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1520
+modality: code
+prompt: 'Write a Python function `process(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Convert to uppercase.
+
+  2. Collapse every run of the same character into one character.
+
+  3. Shift every letter forward by 3 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  4. Replace runs of whitespace with a single space and strip both ends.
+
+  5. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  6. Remove every vowel (a, e, i, o, u, either case).
+
+  7. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  8. Swap the case of every letter.
+
+  9. Remove every vowel (a, e, i, o, u, either case).
+
+  10. Convert to lowercase.
+
+  11. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  12. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  13. Convert to lowercase.
+
+  14. Replace runs of whitespace with a single space and strip both ends.
+
+  15. Keep only the first occurrence of each character.
+
+  16. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  Then: Return how many characters it has.
+
+
+  Example: `process(''C0BACBy2,,cy'') returns 6`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process('The 3 little pigs 33') == 9
+  - process('zz yy xx') == 3
+  - process('tab\tseparated  words') == 9
+  - process('Zebra 42 crossing 7') == 13
+  - process('noon') == 2
+  - process('abc123xyz') == 7
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1520'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-16-steps

@@ -1,0 +1,72 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1460
+modality: code
+prompt: 'Write a Python function `reduce_data(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Keep only the first occurrence of each character.
+
+  2. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  3. Cut the text to at most 9 characters, then pad it on the right with ''.'' up to 9 characters.
+
+  4. Keep only the first 2 whitespace-separated words, joined by single spaces.
+
+  5. Sort the characters in ascending code point order.
+
+  6. Swap the case of every letter.
+
+  7. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  8. Convert to lowercase.
+
+  9. Replace every maximal run of digits with the number of digits in it.
+
+  10. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  11. Collapse every run of the same character into one character.
+
+  12. Convert to lowercase.
+
+  13. Keep only the first occurrence of each character.
+
+  14. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  15. Convert to uppercase.
+
+  16. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  Then: Return how many characters it has.
+
+
+  Example: `reduce_data(''.  2zxCxA Ay1,'') returns 6`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data('hELLo WoRLD') == 10
+  - reduce_data('queue QUEUE') == 8
+  - reduce_data('Zebra 42 crossing 7') == 10
+  - reduce_data('noon') == 8
+  - reduce_data('') == 2
+  - reduce_data('  jumps   over the  lazy dog ') == 8
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1460'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-16-steps

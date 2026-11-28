@@ -1,0 +1,83 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1232
+modality: code
+prompt: 'Write a Python function `process(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Replace runs of whitespace with a single space and strip both ends.
+
+  2. Shift every letter forward by 10 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  3. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  4. Shift every letter forward by 11 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  5. Convert to lowercase.
+
+  6. Collapse every run of the same character into one character.
+
+  7. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  8. Replace every ''r'' with ''b'' (lowercase only).
+
+  9. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  10. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  11. Shift every letter forward by 3 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  12. Replace every ''a'' with ''d'' (lowercase only).
+
+  13. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  14. Replace runs of whitespace with a single space and strip both ends.
+
+  15. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  16. Keep only the first occurrence of each character.
+
+  17. Swap the case of every letter.
+
+  18. Collapse every run of the same character into one character.
+
+  19. Convert to lowercase.
+
+  20. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  Then: Return how many characters it has.
+
+
+  Example: `process(''xaz2.0,2C.b2'') returns 10`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process('Zebra 42 crossing 7') == 15
+  - process('x') == 2
+  - process('') == 0
+  - process('hELLo WoRLD') == 10
+  - process('Rotor 99') == 7
+  - process('abc123xyz') == 9
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1232'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-20-steps

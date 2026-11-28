@@ -1,0 +1,75 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1436
+modality: code
+prompt: 'Write a Python function `reduce_data(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  2. Shift every letter forward by 8 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  3. Keep only the first occurrence of each character.
+
+  4. Convert to lowercase.
+
+  5. Collapse every run of the same character into one character.
+
+  6. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  7. Keep only the first occurrence of each character.
+
+  8. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  9. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  10. Keep only the first occurrence of each character.
+
+  11. Swap the case of every letter.
+
+  12. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  13. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  14. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  15. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  16. Convert to uppercase.
+
+  Then: Return the resulting string.
+
+
+  Example: `reduce_data(''xx0,Bz0a czCy'') returns ''311K111G111 1112111F1110111,111J111H111I''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data('Data-driven 2025') == '311211101115111 111L111I111B111-111Z111Q111D111M111V'
+  - reduce_data('') == ''
+  - reduce_data('Hello, World') == '311E111Z111L111 111P111M1112111T111W111,'
+  - reduce_data('zz yy xx') == '311G111F111 1112111H'
+  - reduce_data('Programming in Python') == '311G111B111P111 111X111Z111W111O111I1112111U111Q111V'
+  - reduce_data('A man a plan a canal Panama') == '311U111V111X111T111K111 111I'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1436'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-16-steps

@@ -1,0 +1,66 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1137
+modality: code
+prompt: 'Write a Python function `reduce_data(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Divide every value by 4 with integer division that rounds toward zero (so -7 divided by 4 gives -1).
+
+  2. Reverse the list.
+
+  3. Sort descending.
+
+  4. Drop the first 2 values (an empty list if there are fewer).
+
+  5. Rotate the list left by 6 positions, wrapping around (an empty list stays empty).
+
+  6. Remove duplicates, keeping the first occurrence of each value.
+
+  7. Replace every value with the largest value seen so far.
+
+  8. Replace every value with the largest of itself and the up to 3 values before it.
+
+  9. Keep only the values greater than -1.
+
+  10. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  11. Add 9 to every value.
+
+  12. Keep the values at indices 0, 2, 4, and so on.
+
+  13. Divide every value by 2 with integer division that rounds toward zero (so -7 divided by 2 gives
+  -3).
+
+  14. Replace every value with its remainder after division by 9, as Python''s % gives it (never negative).
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `reduce_data([16, 18, 6, 19, 20, 15, -4, -4, 13]) returns [8]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data([]) == []
+  - reduce_data([8]) == []
+  - reduce_data([-8, -10, 14, -5, 25, 10, 7, -4, -5]) == [6]
+  - reduce_data([21, 11, 5, -2, 2, 0]) == [5]
+  - reduce_data([21, -2, 6, -7, 8]) == [5]
+  - reduce_data([-9, -3, 11, 15, -2, 22, -2, -6, 7]) == [6]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1137'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-14-steps

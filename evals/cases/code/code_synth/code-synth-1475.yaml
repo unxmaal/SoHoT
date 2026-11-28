@@ -1,0 +1,68 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1475
+modality: code
+prompt: 'Write a Python function `transform(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Replace every value with its absolute value.
+
+  2. Keep only the first 2 values (all of them if there are fewer).
+
+  3. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  4. Divide every value by 3 with integer division that rounds toward zero (so -7 divided by 3 gives -2).
+
+  5. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  6. Multiply every value by 2.
+
+  7. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  8. Divide every value by 3 with integer division that rounds toward zero (so -7 divided by 3 gives -2).
+
+  9. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  10. Keep only the last 3 values, in their order (all of them if there are fewer).
+
+  11. Sort ascending.
+
+  12. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  13. Sort ascending.
+
+  14. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  Then: Return the lower median: the value at index (n - 1) // 2 of the sorted list, or 0 for an empty
+  list.
+
+
+  Example: `transform([14, 20, 25, 17]) returns 9`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([]) == 0
+  - transform([-6]) == 1
+  - transform([-11, 22, 10, -11, 5, -9, 8, 11, 11]) == 8
+  - transform([4, 23, 21, 13, 18]) == 6
+  - transform([7, -10, 17, -8, -5]) == 4
+  - transform([9, 25, -6, 18, -3]) == 9
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1475'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-14-steps

@@ -1,0 +1,67 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1246
+modality: code
+prompt: 'Write a Python function `apply_rules(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  2. Convert to uppercase.
+
+  3. Cut the text to at most 5 characters, then pad it on the right with ''.'' up to 5 characters.
+
+  4. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  5. Replace every maximal run of digits with the number of digits in it.
+
+  6. Swap the case of every letter.
+
+  7. Remove every digit.
+
+  8. Replace runs of whitespace with a single space and strip both ends.
+
+  9. Collapse every run of the same character into one character.
+
+  10. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  11. Convert to uppercase.
+
+  12. Convert to lowercase.
+
+  13. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  14. Convert to uppercase.
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `apply_rules(''B1cz.CAAz,aa1 '') returns ''.ZCB''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules('tab\tseparated  words') == 'SDROW'
+  - apply_rules('aabbbcccc') == 'BA'
+  - apply_rules('Ünïcode ok') == 'KO'
+  - apply_rules('eeeee fff') == 'F'
+  - apply_rules('abc123xyz') == 'CBA'
+  - apply_rules('mississippi river') == 'REVIR'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1246'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-14-steps

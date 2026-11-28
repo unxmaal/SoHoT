@@ -1,0 +1,22 @@
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603: a deliberately wrong answer, never graded.
+def process(xs):
+    xs = [int(x / 3) for x in xs]
+    xs = xs[:3]
+    xs = list(dict.fromkeys(reversed(xs)))[::-1]
+    xs = xs[::-1]
+    xs = [int(x / 3) for x in xs]
+    xs = [abs(x) for x in xs]
+    xs = xs[::2]
+    xs = [x % 3 for x in xs]
+    xs = sorted(xs, key=abs)
+    xs = [x for x in xs if x >= 0]
+    xs = [x * -2 for x in xs]
+    xs = [x // 3 for x in xs]
+    xs = sorted(xs, key=abs)
+    xs = [x for x in xs if x >= 0]
+    xs = [x % 4 for x in xs]
+    xs = [x + 4 for x in xs]
+    xs = [min(7, max(-2, x)) for x in xs]
+    xs = [x for x in xs if x % 2 == 0]
+    d = sorted(set(xs))
+    return d[-2] if len(d) > 1 else None

@@ -1,0 +1,72 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1162
+modality: code
+prompt: 'Write a Python function `transform(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Keep only the first occurrence of each character.
+
+  2. Sort the characters in ascending code point order.
+
+  3. Convert to uppercase.
+
+  4. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  5. Collapse every run of the same character into one character.
+
+  6. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  7. Shift every letter forward by 5 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  8. Swap the case of every letter.
+
+  9. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  10. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  11. Shift every letter forward by 2 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  12. Replace runs of whitespace with a single space and strip both ends.
+
+  13. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  14. Collapse every run of the same character into one character.
+
+  15. Replace every maximal run of digits with the number of digits in it.
+
+  16. Replace runs of whitespace with a single space and strip both ends.
+
+  Then: Return how many characters it has.
+
+
+  Example: `transform(''10 b2 b1,.aczz'') returns 12`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform('Quick brown fox') == 24
+  - transform('abc123xyz') == 12
+  - transform('  jumps   over the  lazy dog ') == 34
+  - transform('x') == 2
+  - transform('12345') == 1
+  - transform('aabbbcccc') == 6
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1162'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-16-steps

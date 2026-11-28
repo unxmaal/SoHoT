@@ -1,0 +1,79 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1150
+modality: code
+prompt: 'Write a Python function `run_pipeline(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Shift every letter forward by 10 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  2. Sort the characters in ascending code point order.
+
+  3. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  4. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  5. Cut the text to at most 5 characters, then pad it on the right with ''.'' up to 5 characters.
+
+  6. Replace runs of whitespace with a single space and strip both ends.
+
+  7. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  8. Sort the characters in ascending code point order.
+
+  9. Shift every letter forward by 5 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  10. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  11. Replace runs of whitespace with a single space and strip both ends.
+
+  12. Collapse every run of the same character into one character.
+
+  13. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  14. Replace runs of whitespace with a single space and strip both ends.
+
+  15. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  16. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  17. Replace every ''r'' with ''c'' (lowercase only).
+
+  18. Keep only the first occurrence of each character.
+
+  Then: Return the resulting string.
+
+
+  Example: `run_pipeline(''1A.0Ac.Ac'') returns ''1.02''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline('  jumps   over the  lazy dog ') == '102g '
+  - run_pipeline('x') == '13.m'
+  - run_pipeline('Quick brown fox') == '12f '
+  - run_pipeline('Level') == '12ka'
+  - run_pipeline('aabbbcccc') == '1234pq'
+  - run_pipeline('12345') == '142'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1150'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-18-steps

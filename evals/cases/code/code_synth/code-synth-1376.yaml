@@ -1,0 +1,69 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1376
+modality: code
+prompt: 'Write a Python function `process(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  2. Remove every digit.
+
+  3. Swap the case of every letter.
+
+  4. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  5. Convert to uppercase.
+
+  6. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  7. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  8. Cut the text to at most 7 characters, then pad it on the right with ''.'' up to 7 characters.
+
+  9. Remove every digit.
+
+  10. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  11. Replace runs of whitespace with a single space and strip both ends.
+
+  12. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  13. Shift every letter forward by 3 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  14. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  Then: Return the resulting string.
+
+
+  Example: `process(''x,0bb.by2x2.1Cx2'') returns ''311A311,311E311.311E311B311A''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process('tab\tseparated  words') == '311Z311R311U311G311V311 311V'
+  - process('Rotor 99') == '311U311R311W311R311U1112111.'
+  - process('zz yy xx') == '311A311 311B311 311C1112111.'
+  - process('queue QUEUE') == '311T311X311H311X311H311 311T'
+  - process('Quick brown fox') == '311I311R311A311 311E311U311R'
+  - process('A man a plan a canal Panama') == '311S311D311Q311D311P311D21'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1376'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-14-steps

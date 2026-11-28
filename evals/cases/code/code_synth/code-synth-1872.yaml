@@ -1,0 +1,77 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1872
+modality: code
+prompt: 'Write a Python function `solve(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Convert to lowercase.
+
+  2. Replace runs of whitespace with a single space and strip both ends.
+
+  3. Cut the text to at most 6 characters, then pad it on the right with ''.'' up to 6 characters.
+
+  4. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  5. Replace every maximal run of digits with the number of digits in it.
+
+  6. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  7. Collapse every run of the same character into one character.
+
+  8. Replace every ''t'' with ''c'' (lowercase only).
+
+  9. Collapse every run of the same character into one character.
+
+  10. Remove every digit.
+
+  11. Replace every ''r'' with ''s'' (lowercase only).
+
+  12. Keep only the first occurrence of each character.
+
+  13. Replace every ''i'' with ''c'' (lowercase only).
+
+  14. Cut the text to at most 5 characters, then pad it on the right with ''.'' up to 5 characters.
+
+  15. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  16. Replace every ''t'' with ''r'' (lowercase only).
+
+  17. Swap the case of every letter.
+
+  18. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  19. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  20. Replace every ''e'' with ''c'' (lowercase only).
+
+  Then: Return the resulting string.
+
+
+  Example: `solve(''.C1 C2,C02'') returns ''1.1C1 2.''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve('Ünïcode ok') == '1Ü1N1Ï1C1O'
+  - solve('') == '5.'
+  - solve('The 3 little pigs 33') == '1C1H1E1 1.'
+  - solve('tab\tseparated  words') == '1C1A1B1 1S'
+  - solve('zz yy xx') == '1Z1 1Y2.'
+  - solve('Zebra 42 crossing 7') == '1Z1E1B1S1A'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1872'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-20-steps

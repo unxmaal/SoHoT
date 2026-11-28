@@ -1,0 +1,73 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1869
+modality: code
+prompt: 'Write a Python function `process(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Keep only the first 5 values (all of them if there are fewer).
+
+  2. Reverse the list.
+
+  3. Replace every value with the largest of itself and the up to 2 values before it.
+
+  4. Keep only the first 4 values (all of them if there are fewer).
+
+  5. Remove duplicates, keeping the first occurrence of each value.
+
+  6. Replace every value with its remainder after division by 7, as Python''s % gives it (never negative).
+
+  7. Rotate the list left by 6 positions, wrapping around (an empty list stays empty).
+
+  8. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  9. Rotate the list left by 2 positions, wrapping around (an empty list stays empty).
+
+  10. Remove every negative value.
+
+  11. Sort ascending.
+
+  12. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  13. Sort ascending.
+
+  14. Collapse each run of equal adjacent values into one value.
+
+  15. Remove duplicates, keeping the first occurrence of each value.
+
+  16. Replace every value with its absolute value.
+
+  17. Replace every value with the largest value seen so far.
+
+  18. Replace every value with its remainder after division by 7, as Python''s % gives it (never negative).
+
+  Then: Return how many distinct values there are.
+
+
+  Example: `process([7, 20, 23, 16, -5, 20]) returns 3`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process([]) == 0
+  - process([-4]) == 1
+  - process([15, 0, -9, 21, -4, 5, 3, 10, -4]) == 2
+  - process([14, 20, 22, -3, 13, 20, 4]) == 2
+  - process([-12, -7, 17, 23, -10]) == 2
+  - process([-1, -9, 10, 9, 6, 10, -2]) == 3
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1869'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-18-steps

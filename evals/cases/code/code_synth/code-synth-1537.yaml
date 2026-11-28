@@ -1,0 +1,66 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1537
+modality: code
+prompt: 'Write a Python function `run_pipeline(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Sort ascending.
+
+  2. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  3. Rotate the list left by 1 positions, wrapping around (an empty list stays empty).
+
+  4. Replace every value with its absolute value.
+
+  5. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  6. Remove duplicates, keeping the first occurrence of each value.
+
+  7. Divide every value by 2 with floor division (so -7 divided by 2 gives -4).
+
+  8. Sort descending.
+
+  9. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  10. Sort ascending.
+
+  11. Remove duplicates, keeping the first occurrence of each value.
+
+  12. Sort descending.
+
+  13. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  14. Multiply every value by -1.
+
+  Then: Return the largest value, or -1 for an empty list.
+
+
+  Example: `run_pipeline([21, -10, 25, 12, 13, 22, 3]) returns 0`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline([]) == -1
+  - run_pipeline([-5]) == -1
+  - run_pipeline([21, 6, 15, 11]) == -2
+  - run_pipeline([-12, -5, 5]) == -3
+  - run_pipeline([8, 1, 1, 14, 22, -2, 0, 16, -8]) == 0
+  - run_pipeline([6, 22, -5]) == -5
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1537'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-14-steps

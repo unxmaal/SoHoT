@@ -1,0 +1,66 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1048
+modality: code
+prompt: 'Write a Python function `solve(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Cut the text to at most 8 characters, then pad it on the right with ''.'' up to 8 characters.
+
+  2. Replace every ''e'' with ''n'' (lowercase only).
+
+  3. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  4. Sort the characters in ascending code point order.
+
+  5. Keep only the first occurrence of each character.
+
+  6. Sort the characters in ascending code point order.
+
+  7. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  8. Collapse every run of the same character into one character.
+
+  9. Shift every letter forward by 12 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  10. Keep only the first 2 whitespace-separated words, joined by single spaces.
+
+  11. Collapse every run of the same character into one character.
+
+  12. Replace every ''i'' with ''t'' (lowercase only).
+
+  13. Cut the text to at most 8 characters, then pad it on the right with ''.'' up to 8 characters.
+
+  14. Remove every digit.
+
+  Then: Return the resulting string.
+
+
+  Example: `solve(''xAb0.x.b0B'') returns ''.mnj...''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve('Level') == '.xzh....'
+  - solve('Rotor 99') == 'dadf...'
+  - solve('Hello, World') == ',ttxza..'
+  - solve('abc123xyz') == 'mnojk'
+  - solve('eeeee fff') == 'Rz......'
+  - solve('A man a plan a canal Panama') == 'Mmyz....'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1048'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-14-steps
