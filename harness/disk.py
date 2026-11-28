@@ -644,6 +644,19 @@ def busy(conn) -> list[str]:
             got = conn.execute("SELECT p.name, p.resolved FROM verdicts v JOIN proposals p ON p.id = v.proposal_id "
                                "WHERE v.id = ?", (int(words[words.index("--confirm") + 1]),)).fetchone()
             out += [str(n).lower() for n in (got or ()) if n]
+    return out + _awaiting_confirm(conn)
+
+
+def _awaiting_confirm(conn) -> list[str]:
+    """The candidates of held holdout wins whose confirmation is queued: their weights stay until it ends, not a sweep between two slices. #2201."""
+    from harness import workqueue
+    out = []
+    for job in workqueue.pending(conn):
+        words = [str(w) for w in (json.loads(job["argv"]) if isinstance(job.get("argv"), str) else job.get("argv") or [])]
+        if "--confirm" in words[:-1] and words[-1].isdigit():
+            got = conn.execute("SELECT p.name, p.resolved FROM verdicts v JOIN proposals p ON p.id = v.proposal_id "
+                               "WHERE v.id = ?", (int(words[-1]),)).fetchone()
+            out += [str(n).lower() for n in (got or ()) if n]
     return out
 
 

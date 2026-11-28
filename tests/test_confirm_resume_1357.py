@@ -254,7 +254,7 @@ def test_a_confirmation_whose_weights_cannot_be_fetched_runs_nothing_and_waits_f
     vid = _held(conn, tmp_path, monkeypatch)
     conn.execute("DELETE FROM jobs")
     conn.commit()
-    monkeypatch.setattr(test_weights, "fetched", lambda name: "network down")
+    monkeypatch.setattr(test_weights, "fetched", lambda name, via="measure": "network down")
     monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: pytest.fail("ran without its weights"))
     assert measure_cmd.confirm_job(vid) == watch.PAUSED
     assert "not started: its weights could not be fetched: network down" in capsys.readouterr().out

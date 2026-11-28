@@ -2,13 +2,13 @@
 from __future__ import annotations
 
 
-def fetched(name: str) -> str:
+def fetched(name: str, via: str = "measure") -> str:
     """Fetch what measuring `name` loads and is not on disk, right before its run: why it could not, or "". #2015."""
     from harness import fetching
     from harness import memory_store as ms
     store = ms.connect()
     try:
-        return fetching.ensure(store, name)
+        return fetching.ensure(store, name, via=via)
     finally:
         store.close()
 

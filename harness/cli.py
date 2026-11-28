@@ -1135,6 +1135,10 @@ def build_parser() -> argparse.ArgumentParser:
     ado.add_argument("--confirm", type=int, default=None, metavar="VERDICT",
                      help="run a held holdout win's dev confirmation and adopt or decline it; the adopt step "
                           "queues this behind the contention gate (#725, #1509)")
+    ado.add_argument("--confirm-cleanup", action="store_true",
+                     help="list the paused confirm jobs that piled up (#2201); with --apply cancel them, logged, and queue one "
+                          "for each verdict still held with none live")
+    ado.add_argument("--apply", action="store_true", help="with --confirm-cleanup: do it")
     ado.add_argument("--receipt", action="append", default=[],
                      help="with --power, read the incumbent's draws from this "
                           "results.json instead of the store (repeatable)")

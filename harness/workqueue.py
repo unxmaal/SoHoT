@@ -1057,3 +1057,37 @@ if __name__ == "__main__":
         print(queue_pause.release_for_deploy(), flush=True)
         sys.exit(0)
     serve(poll=float(os.environ.get("LH_QUEUE_POLL", "30")))
+
+
+def confirm_jobs(conn, vid: int, states: tuple) -> list[dict]:
+    """The jobs of this machine that run `adopt --confirm VID` in `states`, whichever release's python their argv names. #2201."""
+    from harness import machine_scope
+    here, args = machine_scope.here(conn, "jobs.twin")
+    marks = ",".join("?" * len(states))
+    tail = ["adopt", "--confirm", str(int(vid))]
+    out = []
+    for r in conn.execute(f"SELECT id, argv, state FROM jobs WHERE state IN ({marks}) AND argv LIKE ? AND {here} ORDER BY id",
+                          (*states, f'%"--confirm", "{int(vid)}"]', *args)):
+        words = json.loads(r["argv"]) if isinstance(r["argv"], str) else list(r["argv"])
+        if [str(w) for w in words[-3:]] == tail:
+            out.append({"id": r["id"], "state": r["state"]})
+    return out
+
+
+def live_confirms(conn, vid: int, mine: int | None = None) -> list[dict]:
+    """Pending or running confirmations of `vid` other than job `mine`: at most one is ever live. #2201."""
+    return [j for j in confirm_jobs(conn, vid, (PENDING, RUNNING)) if j["id"] != mine]
+
+
+def confirm_counts(conn, states: tuple) -> dict:
+    """{verdict id: jobs} of this machine's `adopt --confirm` jobs in `states`. #2201."""
+    from harness import machine_scope
+    here, args = machine_scope.here(conn, "jobs.twin")
+    marks = ",".join("?" * len(states))
+    out: dict = {}
+    for r in conn.execute(f"SELECT argv FROM jobs WHERE state IN ({marks}) AND argv LIKE ? AND {here}",
+                          (*states, '%"--confirm", "%', *args)):
+        words = json.loads(r["argv"]) if isinstance(r["argv"], str) else list(r["argv"])
+        if len(words) > 2 and words[-2] == "--confirm" and str(words[-1]).isdigit():
+            out[int(words[-1])] = out.get(int(words[-1]), 0) + 1
+    return out

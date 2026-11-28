@@ -19,9 +19,46 @@ def _run_name(run: Path) -> str:
         return str(run)
 
 
+def cleanup_confirms(conn, apply: bool = False, say=print) -> dict:
+    """Cancel the paused `adopt --confirm` jobs of every verdict, and queue one for a verdict still held with none live; says each. #2201."""
+    from harness import adopt, workqueue
+    vids = sorted(workqueue.confirm_counts(conn, (workqueue.PAUSED,)))
+    out = {"cancelled": 0, "queued": 0, "verdicts": len(vids)}
+    for vid in vids:
+        paused = workqueue.confirm_jobs(conn, vid, (workqueue.PAUSED,))
+        held = conn.execute("SELECT v.lane, p.name FROM verdicts v JOIN proposals p ON p.id = v.proposal_id "
+                            "WHERE v.id = ? AND v.failure_class = 'confirming' AND p.state_verdict_id = v.id", (vid,)).fetchone()
+        say(f"verdict {vid}: {len(paused)} paused confirm job(s) {'cancelled' if apply else 'to cancel'}"
+            f"{', still held' if held else ', no longer held'}")
+        if apply:
+            for j in paused:
+                workqueue.cancel(str(j["id"]), conn=conn)
+        out["cancelled"] += len(paused)
+        if held and not workqueue.live_confirms(conn, vid):
+            say(f"verdict {vid}: no live confirmation, {'queued one' if apply else 'one to queue'}")
+            if apply and adopt.queue_confirmation(conn, vid, adopt.Verdict(held["lane"], "", held["name"], False, "")):
+                out["queued"] += 1
+    return out
+
+
+def _confirm_cleanup(apply: bool) -> int:
+    from harness import adopt
+    from harness import memory_store as ms
+    conn = ms.connect()
+    try:
+        got = cleanup_confirms(conn, apply)
+    finally:
+        conn.close()
+    print(f"confirm cleanup: {got['cancelled']} paused job(s) {'cancelled' if apply else 'would be cancelled (--apply)'} "
+          f"across {got['verdicts']} verdict(s), {got['queued']} queued", flush=True)
+    return 0
+
+
 def cmd_adopt(a) -> int:
     """The discovery loop's paired measure-and-adopt, for a named challenger."""
     dry = getattr(a, "dry_run", False)
+    if getattr(a, "confirm_cleanup", False):
+        return _confirm_cleanup(bool(getattr(a, "apply", False)) and not dry)
     if getattr(a, "confirm", None) is not None:
         if dry:
             return err("--dry-run: adopt --confirm runs the held confirmation and cannot dry-run (#1548)")

@@ -85,7 +85,7 @@ MODIFIERS = {
     "context --main-only", "reverify --retry-incumbent",
     "morning --no-model", "claude-news --no-record", "benchmarks --force", "benchmarks --passages",
     "cases --reextract", "jobs --night", "jobs --despite-hold","disk --yes", "adopt --unscreened",
-    "adopt --all-machines", "merge-gate --again", "merge-gate --queue",
+    "adopt --all-machines", "adopt --apply", "merge-gate --again", "merge-gate --queue",
     "judge --all-machines", "ask --live-home", "spans --live-home", "digest --live-home", "digest --no-model", "kb-filter --no-model", "kb-filter --rebuild",
     "kb-filter --strict", "residency-sim --no-jobs",
 }
@@ -102,6 +102,7 @@ NOT_RUN = {
     "quarantine --dedupe": "hashes files in the quarantine dirs, never the store (#1921)",
     "quarantine --apply": "deletes exact copies in the quarantine dirs, never the store (#1921)",
     "discover --sources": "probes each feed over the network",
+    "adopt --confirm-cleanup": "lists, and with --apply cancels paused confirm jobs and queues one; pinned in tests/test_confirm_held_2201.py",
     "adopt --from-measurement": "adopts the measured incumbent; its --dry-run is held in RUNS",
     "discover --external": "asks the registries", "discover --loop": "the discovery loop",
     "discover --jobs": "queues a sweep's first step",

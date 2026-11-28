@@ -187,6 +187,8 @@ ACTIONS = (
     Action("review_on", "Switch the review on", "the weekly review runs when due again", ("review", "on")),
     Action("router_relist", "Relist the router", "restarts the router once so it lists what has a file; refuses when an advertised "
            "id still has its file", ("router", "relist")),
+    Action("confirm_cleanup", "Clean up paused confirms", "cancels the paused confirm jobs of held holdout wins, logged, and queues one "
+           "for each still held with none live", ("adopt", "--confirm-cleanup", "--apply")),
     Action("pg_backup", "Back up the store", "writes today's checked Postgres dump unless one was made today",
            ("store", "pg-backup", "--due")),
     Action("lane_open", "Open lane anyway", "opens a lane the power gate closed to challengers for a while; recorded, and it closes "

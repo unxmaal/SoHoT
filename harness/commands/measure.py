@@ -9,7 +9,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from evals import watch
-from harness import incumbent_down, lane_gate, lanes, methods, overrun, paths, paused, reasons, runs, test_weights
+from harness import incumbent_down, lane_gate, lanes, methods, overrun, paths, paused, reasons, refetch, runs, test_weights
 from harness.commands.common import emit, err, note
 from harness.measure_slices import case_s as _case_s, short_slice as _short_slice, slice_of as _slice
 from harness.commands import jobs as jobs_cmd
@@ -1159,7 +1159,10 @@ def _confirm_job(vid: int) -> int:
     if data:
         print(f"    {out} finished without a verdict; recording it from its receipt (verdict {vid})", flush=True)
     else:
-        missing = test_weights.fetched(name)
+        missing = test_weights.fetched(name, via=f"{refetch.CONFIRM_VIA}{vid}")
+        if missing and refetch.NOT_AGAIN in missing:
+            # The refusal is the same when a successor would run again, so none is queued. #2201.
+            return err(f"verdict {vid}: its weights cannot be fetched again: {missing}")
         if missing:
             return _confirm_paused(vid, lane, inc_spec, spec, None, why=f"its weights could not be fetched: {missing}")
         plan = _confirm_order(lane, inc_spec, split, repeat, frozenset(held.get("screened") or ()))

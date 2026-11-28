@@ -145,7 +145,7 @@ class _Launched(Exception):
 def _measure_until_launch(monkeypatch, missing):
     """_measure up to its launch with the fetch saying `missing`: (rc, sweep lines), or _Launched."""
     from harness import adopt, candidates, winners
-    monkeypatch.setattr(test_weights, "fetched", lambda name: missing)
+    monkeypatch.setattr(test_weights, "fetched", lambda name, via="measure": missing)
     monkeypatch.setattr(candidates, "for_proposal", lambda *a, **k: "org/c")
     monkeypatch.setattr(winners, "typed", lambda: {"code": "org/inc"})
     monkeypatch.setattr(adopt, "default_for", lambda lane, typed: typed)
