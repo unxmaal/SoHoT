@@ -6,6 +6,7 @@ Imported | None. Lane checks for the negative control live beside them.
 """
 from __future__ import annotations
 
+import hashlib
 import importlib
 import shutil
 from dataclasses import dataclass
@@ -72,6 +73,15 @@ def provenance(mod, item, transform: str, date: str = "") -> dict:
     return {"dataset": mod.DATASET, "url": mod.URL, "license": mod.LICENSE,
             "source": mod.SOURCE, "revision": mod.REVISION, "item": str(item),
             "date": date, "transform": transform, "importer": mod.__name__}
+
+
+def fingerprint(name: str, folder: Path | None = None) -> str:
+    """A hash of an importer's module and every manifest or data file named for it, in `folder`."""
+    folder = Path(folder) if folder else Path(__file__).resolve().parent
+    h = hashlib.sha256()
+    for path in sorted(folder.glob(f"{name}.*")):
+        h.update(path.name.encode() + b"\0" + path.read_bytes() + b"\0")
+    return h.hexdigest()
 
 
 def _dump(mod, case: dict) -> str:

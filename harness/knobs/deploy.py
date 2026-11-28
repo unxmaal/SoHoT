@@ -50,6 +50,8 @@ KNOBS = [
        note="seconds a deploy due to migrate the store waits, queue paused, for every other job running here to "
             "end; past it the deploy fails not quiesced with the store unmigrated. A deploy starts only when "
             "nothing runs and nothing starts beside it, so the wait is normally 0 (#1795)"),
+    _k("deploy_reimport_timeout", ["harness/deploy.py:REIMPORT_TIMEOUT_S"], [900.0, 1800.0, 3600.0], unit="s",
+       note="how long one source's cases import may take in a release whose importer changed; past it the carried cases stay (#2194)"),
     _k("deploy_resumes", ["harness/deploy.py:RESUMES"], [1, 0, 2], unit="count",
        note="times settle starts a dead deploy switch again from the stage its record names before it calls the "
             "deploy interrupted (#1753)"),
