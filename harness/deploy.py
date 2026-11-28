@@ -1245,4 +1245,4 @@ def status(conn) -> dict:
             d["view"] = now
     return {"paused": paused(), "blocked": blocked(), "link": str(link) if link else "",
             "serving": str(link.resolve()) if link else "", "head": head_of(link) if link else "",
-            "deploy": now, "recent": recent_, "jobs": [j for j in wq.jobs(conn) if j["kind"] == KIND][-5:]}
+            "deploy": now, "recent": recent_, "jobs": wq.last_of_kind(conn, KIND, 5)}

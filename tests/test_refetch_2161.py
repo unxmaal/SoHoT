@@ -7,7 +7,7 @@ import pytest
 from test_screen_fetch_window_2127 import _row, screening  # noqa: F401 - the fetch is recorded, not run
 from test_screen_window_2045 import planted  # noqa: F401 - the Studio of #2045
 
-from harness import discovery_flow, fetching, memory, needs_you, reasons, refetch, serving
+from harness import discovery_flow, fetching, memory, reasons, refetch, serving
 from harness import memory_store as ms
 from harness import status_view as sv
 from harness.commands import screen as screen_cmd
@@ -144,7 +144,7 @@ def test_a_repo_downloaded_and_removed_with_no_verdict_is_refused_a_second_downl
         why = fetching.ensure(conn, EDGE, free=900 * GIB, floor=0, via="measure")
         assert fetched == [] and "no verdict was written since" in why and "measure" in why
         assert refetch.read()[EDGE]["via"] == "measure"
-        assert any(c["title"].startswith(EDGE) for c in needs_you._refetch({"stops": {"refetch": needs_you.read_refetch()}}))
+        assert [r["repo"] for r in refetch.refused(conn)["rows"]] == [EDGE]
     finally:
         conn.close()
 

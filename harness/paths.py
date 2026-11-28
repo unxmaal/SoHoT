@@ -97,6 +97,10 @@ def is_live(path: Path) -> bool:
 
 
 _asking = local()
+#: Seconds the deploy path lookup is remembered: a status build asks it hundreds of times, one bash start each. #2188.
+DEPLOY_LINK_TTL_S = 30.0
+LAUNCHD_ENV = "LH_"
+_deploy_seen: dict = {}
 
 
 def deploy_checkout() -> Path | None:
@@ -110,17 +114,26 @@ def deploy_link() -> Path | None:
     if sys.platform == "win32" or getattr(_asking, "now", False):
         return None  # the cut a timed-out lookup records asks again; it must not wait another timeout
     from harness import cuts
+    script = REPO / "scripts" / "launchd.sh"
+    try:
+        seen = script.stat()
+    except OSError:
+        seen = None
+    key = (str(script), seen and (seen.st_mtime_ns, seen.st_size), tuple(sorted((k, v) for k, v in os.environ.items() if k.startswith(LAUNCHD_ENV))), os.environ.get(ENV_VAR))
+    hit = _deploy_seen.get(key)
+    if hit is not None and time.monotonic() - hit[0] < DEPLOY_LINK_TTL_S:
+        return hit[1]
     _asking.now = True
     try:
         with cuts.timeout("harness/paths.py:deploy_link->subprocess.run(timeout)", "the deploy path lookup"):
-            out = subprocess.run(["bash", str(REPO / "scripts" / "launchd.sh"), "deploy-path"],
-                                 capture_output=True, text=True, timeout=30, check=True)
+            out = subprocess.run(["bash", str(script), "deploy-path"], capture_output=True, text=True, timeout=30, check=True)
     except (OSError, subprocess.SubprocessError):
         return None
     finally:
         _asking.now = False
     got = out.stdout.strip()
-    return Path(got) if got else None
+    _deploy_seen[key] = (time.monotonic(), Path(got) if got else None)
+    return _deploy_seen[key][1]
 
 
 def runs_elsewhere() -> Path | None:

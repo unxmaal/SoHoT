@@ -28,6 +28,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -592,6 +593,9 @@ def serve(host: str, port: int, allow=(), grace: float = SHUTDOWN_GRACE_S) -> No
     socks = listen_sockets(host, port)
     for line in stale_report(port, pid=os.getpid()):
         print(line, file=sys.stderr, flush=True)
+    from harness import paths, status_page
+    if paths.home() == paths.DEFAULT_HOME:
+        threading.Thread(target=status_page.warm, name="status-warm", daemon=True).start()
     uvicorn.Server(config).run(sockets=socks)
 
 

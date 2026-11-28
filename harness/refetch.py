@@ -75,11 +75,28 @@ def _verdict_since(conn, names: set, since: float) -> bool:
     return got is not None
 
 
+def _cut_short(conn, names: set, last: dict) -> bool:
+    """The job that ran this download ended cancelled or failed, and no verdict but the landing marks followed it: the screen never got to say anything. #2188."""
+    from harness import job_state, machine_scope
+    here, mine = machine_scope.here(conn, "jobs.claimed")
+    at = last["started_at"]
+    ended = conn.execute(f"SELECT 1 FROM jobs WHERE state IN (?, ?) AND started_at <= ? AND finished_at >= ? AND {here} LIMIT 1",
+                         (job_state.CANCELLED, job_state.FAILED, at, at, *mine)).fetchone()
+    if ended is None:
+        return False
+    marks = ",".join("?" * len(names))
+    spoke = conn.execute(f"SELECT 1 FROM verdicts v JOIN proposals p ON p.id = v.proposal_id WHERE (p.name IN ({marks}) OR p.resolved IN ({marks})) "
+                         f"AND v.decided_at > ? AND v.event NOT IN (?, ?) LIMIT 1",
+                         (*sorted(names), *sorted(names), at, LANDED_EVENT, WAITING_EVENT)).fetchone()
+    return spoke is None
+
+
 def holds(conn, repo: str, via: str, owner: str = "", now: float | None = None) -> str:
     """Why `repo` may not be downloaded again now, "" when it may: it landed within the window and no verdict that decided it was written since. #2161, #2165."""
     now = time.time() if now is None else now
     last = _last(conn, repo, now)
-    if last is None or _verdict_since(conn, {n for n in (repo, owner) if n}, last["started_at"]):
+    names = {n for n in (repo, owner) if n}
+    if last is None or _verdict_since(conn, names, last["started_at"]) or _cut_short(conn, names, last):
         return ""
     return (f"{repo} was downloaded {(now - last['started_at']) / 3600:.1f} h ago ({last['bytes'] / GIB:.1f} GiB) and no verdict "
             f"was written since, so it is not downloaded again within {REFETCH_WINDOW_S / 3600:g} h (asked for by {via})")
@@ -105,3 +122,14 @@ def redone(conn, now: float | None = None) -> dict:
         f"AND e.machine_id = d.machine_id AND {_WHOLE % ('e', 'e')})",
         (now - REFETCH_WINDOW_S, *mine)).fetchall()
     return {"gib": round(sum(int(r["bytes"]) for r in rows) / GIB, 1), "n": len(rows), "repos": len({r["repo"] for r in rows})}
+
+
+def refused(conn, now: float | None = None) -> dict:
+    """The repos refused a second download within the window, with what each landed: {"n", "gib", "rows"}. #2188."""
+    now = time.time() if now is None else now
+    rows = []
+    for repo, v in sorted(read(now).items()):
+        last = _last(conn, repo, now) if repo != "?" else None
+        rows.append({"repo": repo, "via": v.get("via") or "", "why": v.get("why") or "", "at": v.get("at"),
+                     "gib": round(last["bytes"] / GIB, 1) if last else 0.0})
+    return {"n": len(rows), "gib": round(sum(r["gib"] for r in rows), 1), "rows": rows}

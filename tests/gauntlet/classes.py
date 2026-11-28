@@ -302,7 +302,8 @@ INDEX = {
         "detector": "one_sided_schema_check", "waivers": {},
         "instances": _i(rules=(1415, 1417, 1478)), "scanners": []},
     "an-effect-reachable-from-a-run-that-is-not-the-live-deploy": {
-        "detector": "effect_reachable", "waivers": {},
+        "detector": "effect_reachable",
+        "waivers": {"harness/status_page.py:_memoed:gather": "it only passes memo=True to the gather the served page already ran; no effect is new (#2188)"},
         "instances": _i(rules=(1510, 1530)), "scanners": []},
     "an-order-the-code-needs-but-does-not-check": {
         "detector": "unchecked_order", "waivers": {},

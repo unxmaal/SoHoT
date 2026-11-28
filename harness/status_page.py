@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 import threading
 import time
 from datetime import date, datetime, timedelta
@@ -27,6 +28,10 @@ _MONIT_OK = re.compile(r"^(ok|running|accessible|online.*|status ok|initializing
 
 _lock = threading.Lock()
 _cache: dict = {}
+_slow_lock = threading.Lock()
+_slow_seen: dict = {}
+#: Seconds the lane gate, the flow and the yield are reused by the served page: their rows move in hours. #2188.
+SLOW_TTL_S = 600.0
 
 
 def _secret_values(environ=None, home: Path | None = None) -> list[str]:
@@ -64,6 +69,20 @@ def _section(fn, *args) -> dict:
     except Exception as exc:  # noqa: BLE001 - one section failing must not take the page down
         got = {"error": f"{type(exc).__name__}: {exc}"[:400]}
     return {**got, "as_of": time.time()}
+
+
+def _slow(memo: bool, key: str, fn, *args) -> dict:
+    """`fn` read through _section; with `memo`, remembered SLOW_TTL_S: these sections rebuild from every case file and run row, minutes under load. #2188."""
+    now = time.monotonic()
+    with _slow_lock:
+        hit = _slow_seen.get(key) if memo else None
+    if hit is not None and now - hit[0] < SLOW_TTL_S:
+        return hit[1]
+    got = _section(fn, *args)
+    if memo and not got.get("error"):
+        with _slow_lock:
+            _slow_seen[key] = (now, got)
+    return got
 
 
 def store(conn, why: str = "", home: Path | None = None) -> dict:
@@ -300,9 +319,9 @@ def _yield(conn, now: float) -> dict:
 
 
 def gather(now: float | None = None, *, connect=None, beat=None, where=None, git=None, mon=None, health=None,
-           reach=None, flow=None, home: Path | None = None, environ=None, features=None, light: bool = False) -> dict:
+           reach=None, flow=None, home: Path | None = None, environ=None, features=None, light: bool = False, memo: bool = False) -> dict:
     """Every section, each with its own as_of; with the store down the store-free sections still read. `light` skips the
-    ratio and the 24 h strip, which the Needs-you alert pass does not need."""
+    ratio and the 24 h strip, which the Needs-you alert pass does not need. `memo` reuses the slow sections SLOW_TTL_S."""
     from harness import lane_gate, morning, needs_you
     now = time.time() if now is None else now
     conn, why = None, ""
@@ -319,14 +338,14 @@ def gather(now: float | None = None, *, connect=None, beat=None, where=None, git
                            "queued": _section(queued_sweep, conn)},
              "monitor": _section(monitor_section, now, mon, home),
              "services": _section(services, now, health, reach),
-             "ratio": {} if light else _section(ratio, conn, now, flow)}
+             "ratio": {} if light else _slow(memo, "ratio", ratio, conn, now, flow)}
         r["timeline"] = {} if light else _section(timeline, conn, now, r["discovery"], r["queue"], home)
         r["features"] = _section(features or _features, conn, now, r["queue"])
-        r["lane_gate"] = {} if light else _section(lane_gate.status, conn, now)
-        r["discovery_flow"] = {} if light else _section(_discovery_flow, conn, now)
-        r["pipeline_yield"] = {} if light else _section(_yield, conn, now)
+        r["lane_gate"] = {} if light else _slow(memo, "lane_gate", lane_gate.status, conn, now)
+        r["discovery_flow"] = {} if light else _slow(memo, "discovery_flow", _discovery_flow, conn, now)
+        r["pipeline_yield"] = {} if light else _slow(memo, "pipeline_yield", _yield, conn, now)
         r["stops"] = {"holds": _section(needs_you.read_holds, conn, now), "jobs": _section(needs_you.read_jobs, conn, now),
-                      "gateway": _section(needs_you.read_gateway), "incumbent": _section(needs_you.read_incumbent), "refetch": _section(needs_you.read_refetch), "router": _section(needs_you.read_router), "deploying": _section(needs_you.read_deploying, now, r["queue"]), "gate": _section(needs_you.read_gate),
+                      "gateway": _section(needs_you.read_gateway), "incumbent": _section(needs_you.read_incumbent), "router": _section(needs_you.read_router), "deploying": _section(needs_you.read_deploying, now, r["queue"]), "gate": _section(needs_you.read_gate),
                       "monit": _section(needs_you.read_monit, now, home, r["monitor"])}
         if (r["queue"].get("deploy_hold") or {}).get("live"):
             r["deploy"]["in_progress"] = r["queue"]["deploy_hold"]
@@ -338,13 +357,17 @@ def gather(now: float | None = None, *, connect=None, beat=None, where=None, git
     return scrub(r, _secret_values(environ, home))
 
 
+def _memoed(now: float) -> dict:
+    return gather(now, memo=True)
+
+
 def cached(now: float | None = None, gather_=None) -> dict:
     """The last gather while it is younger than REFRESH_S, else a new one; one gather at a time."""
     now = time.time() if now is None else now
     with _lock:
         got = _cache.get("r")
         if got is None or now - got["generated"] >= REFRESH_S:
-            got = _cache["r"] = (gather_ or gather)(now)
+            got = _cache["r"] = (gather_ or _memoed)(now)
         return got
 
 
@@ -352,6 +375,16 @@ def forget() -> None:
     """Drop the cached gather: the next read shows what an owner action just changed. #2116."""
     with _lock:
         _cache.clear()
+    with _slow_lock:
+        _slow_seen.clear()
+
+
+def warm() -> None:
+    """Build the page once so the first visit after a start reads the cache. #2188."""
+    try:
+        cached()
+    except Exception as exc:  # noqa: BLE001 - a failed warm-up is the first visit's cold build, nothing more
+        print(f"status warm-up failed: {type(exc).__name__}: {exc}"[:300], file=sys.stderr, flush=True)
 
 
 def as_json(r: dict) -> str:
