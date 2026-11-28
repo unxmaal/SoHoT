@@ -31,7 +31,8 @@ def cmd_merge_gate(a) -> int:
         return err(f"merge gate: {exc}")
     for r in rows:
         who = f"#{r['pr']['number']}" if r["pr"] else "main"
-        note(f"{who} {r['head'][:12]} on {r['base'][:12]}: {r['state']} ({r['key'][:17]})" + (" (judged by an earlier pass)" if r.get("cached") else ""))
+        note(f"{who} {r['head'][:12]} on {r['base'][:12]}: {r['state']} ({r['key'][:17]})"
+             + (" (judged by an earlier pass)" if r.get("cached") else f", log {merge_gate.log_path(r['head'])}"))
     if not rows:
         note(f"no verdict for #{a.pr} yet" if a.pr is not None else "nothing to test: every tree has its verdict")
     emit(rows=rows)

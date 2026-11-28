@@ -9,6 +9,7 @@ import pytest
 from harness import memory_store as ms
 from harness import morning, pipeline_yield as py
 from harness import status_view as sv
+from tests import store_rows
 from tests.test_morning_867 import _report, _store, deploy_dir  # noqa: F401
 
 NOW = time.time()
@@ -202,10 +203,10 @@ def test_the_gather_writes_nothing_and_starts_no_process(monkeypatch):
     try:
         _both(conn)
         conn.commit()
-        before = conn.total_changes
+        before = store_rows.dump(conn)
         from harness import status_page as sp
         assert py.gather(conn, NOW)["windows"]["7"]["lanes"] and sp._yield(conn, NOW)["windows"]["30"]["lanes"]
-        assert conn.total_changes == before
+        assert store_rows.dump(conn) == before
     finally:
         conn.close()
 

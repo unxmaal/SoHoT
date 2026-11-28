@@ -9,6 +9,7 @@ import pytest
 from harness import discovery_flow as df
 from harness import memory_store as ms
 from harness import status_view as sv
+from tests import store_rows
 
 NOW = time.time()
 GIB = 1 << 30
@@ -232,8 +233,8 @@ def test_the_flow_gather_starts_no_process_and_writes_nothing(monkeypatch):
     try:
         _plant(conn)
         conn.commit()
-        before = conn.total_changes
+        before = store_rows.dump(conn)
         assert sp._discovery_flow(conn, NOW)["nodes"]
-        assert conn.total_changes == before
+        assert store_rows.dump(conn) == before
     finally:
         conn.close()

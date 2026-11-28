@@ -128,9 +128,13 @@ def test_the_store_dumps_once_a_day_and_the_button_goes_with_the_dump(tmp_path, 
     monkeypatch.setattr(svc, "dump", dump)
     monkeypatch.setattr(svc, "verify", lambda p, **kw: None)
     store_row = r"data-rows='store'>.*?</div></div>"
-    assert in_row(page(client), store_row) == []
     was = sp.store
-    monkeypatch.setattr(sp, "store", lambda conn, why="", home=None: {**was(conn, why, None), "backend": store.POSTGRES})
+
+    def on(backend):
+        monkeypatch.setattr(sp, "store", lambda conn, why="", home=None: {**was(conn, why, None), "backend": backend})
+    on(store.SQLITE)
+    assert in_row(page(client), store_row) == []
+    on(store.POSTGRES)
     assert in_row(page(client), store_row) == ["pg_backup"]
     tap(client, "pg_backup")
     assert len(made) == 1 and svc.backups() == made
