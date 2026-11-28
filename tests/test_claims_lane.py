@@ -251,10 +251,10 @@ def imported():
 def test_the_suite_adds_local_cases_as_private(imported):
     from evals import core
     suite = core.load_suite()
-    mine = [c for c in suite if c.modality == "claims"]
+    mine = [c for c in suite if c.modality == "claims" and c.private]
     assert sorted(c.id for c in mine) == ["claims-synthetic-1", "claims-synthetic-neg-1"]
-    assert all(c.private for c in mine)
     assert not any(c.private for c in suite if c.modality != "claims")
+    assert not any(c.private for c in suite if c.id.startswith("claims-synth-"))
 
 
 def test_the_suite_without_local_cases_is_the_shipped_tree():
@@ -272,15 +272,16 @@ def test_private_does_not_change_a_case_digest_or_its_side(imported):
     for c in local:
         assert core.case_digest(c) == core.case_digest(replace(c, private=False))
     split = holdout.for_lane("claims")
-    assert set(split.dev) | set(split.holdout) == {c.id for c in local}
-    assert split == holdout.assign("claims", local)
+    shipped = [c for c in core.load_cases(core.SHIPPED) if c.modality == "claims"]
+    assert set(split.dev) | set(split.holdout) == {c.id for c in local} | {c.id for c in shipped}
+    assert split == holdout.assign("claims", [*shipped, *local])
 
 
 def test_evals_run_reads_local_cases_by_default(imported, monkeypatch):
     from evals import run
     args = run.parse_args(["--modality", "claims", "--candidates", "eval-7b"])
     got = run.load_selected(args)
-    assert sorted(c.id for c in got) == ["claims-synthetic-1", "claims-synthetic-neg-1"]
+    assert sorted(c.id for c in got if c.private) == ["claims-synthetic-1", "claims-synthetic-neg-1"]
 
 
 # --- the leak guards -----------------------------------------------------------------------
