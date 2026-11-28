@@ -91,7 +91,7 @@ LEFT_OUT = {
                                             "test_revisit_tier_1060.py", "test_revisitable_after_deploy_1361.py",
                                             "test_revisitable_met_1749.py", "test_site.py", "test_futility_lane_too_small_1452.py", "test_verdict_lane_1777.py",
                                             "test_two_writes_1887.py", "test_verdict_event_1942.py", "test_detail_prefix_1998.py"),
-    "harness/reasons.py": ("test_needs_you_owner_2188.py", "test_screen_race_2166.py", "test_loop_circuit.py", "test_refetch_2161.py", "test_incumbent_down_2157.py", "test_adapter_measure_2086.py", "test_test_weights_2015.py", "test_harness_error_streak_2012.py", "test_screen_passed_over_2020.py", 
+    "harness/reasons.py": ("test_owner_picks_2183.py", "test_needs_you_owner_2188.py", "test_screen_race_2166.py", "test_loop_circuit.py", "test_refetch_2161.py", "test_incumbent_down_2157.py", "test_adapter_measure_2086.py", "test_test_weights_2015.py", "test_harness_error_streak_2012.py", "test_screen_passed_over_2020.py", 
         "test_passed_over_class_1779.py", "test_owner_decline_1564.py", "test_verdict_lane_1777.py", "test_runtime_trials_1474.py", "test_repo_repair_890.py", "test_agent_cut_call_1547.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_staging_torch_1358.py",
         "test_vision_engines_1282.py", "test_two_writes_1887.py",
         "test_shots_check_1208.py", "test_node_drain_1815.py",
