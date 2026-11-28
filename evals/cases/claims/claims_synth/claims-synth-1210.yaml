@@ -1,0 +1,93 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-1210
+modality: claims
+prompt: '[1] user-b4cc: where do people get parts for the Octane2?
+
+  [2] user-b4cc: i would trade my laptop for a Crimson any day
+
+  [3] user-77f3: anyone know about the Indigo2?
+
+  [4] user-1dd0: you can get those from a mirror at example.net
+
+  [5] user-b4cc: i named my Octane2 after my ex, it also refuses to boot sometimes
+
+  [6] user-b4cc: would the Crimson be loud in a bedroom?
+
+  [7] user-b1bd: the Crimson will happily run an R14000 processor
+
+  [8] user-77f3: thanks, that helps
+
+  [9] user-b4cc: nothing beats the sound of a Indigo2 booting
+
+  [10] user-b4cc: for the Indigo2 you want irix 6.5.30
+
+  [11] user-1dd0: i love this channel
+
+  [12] user-b1bd: my Octane2 weighs more than my cat and is less friendly haha'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-1dd0
+    claim: PROM updates for the Indigo2 can be found at a mirror at example.net.
+    verdict: good
+    refs:
+    - 4
+    interface: conversation
+  - user: user-b4cc
+    claim: The Indigo2 runs IRIX 6.5.30.
+    verdict: good
+    refs: &id001
+    - 10
+    interface: conversation
+  - user: user-b1bd
+    claim: The Crimson can take an R14000 CPU.
+    verdict: good
+    refs:
+    - 7
+    interface: conversation
+  - user: user-b4cc
+    claim: The Indigo2 can take an R5000 CPU.
+    verdict: made_up
+    refs: *id001
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '1210'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

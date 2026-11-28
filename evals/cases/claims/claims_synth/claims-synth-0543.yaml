@@ -1,0 +1,89 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0543
+modality: claims
+prompt: '[1] user-ac4c: thanks, that helps
+
+  [2] user-ac4c: i would trade my laptop for a Indigo any day
+
+  [3] user-ac4c: thanks, that helps
+
+  [4] user-ac4c: anyone know about the Origin 200?
+
+  [5] user-ab9c: it has 100 Mbit ethernet built in
+
+  [6] user-ab9c: nice, thanks for the link
+
+  [7] user-cd73: you can order the Indigo with Extreme graphics
+
+  [8] user-cd73: i swapped my Origin 200 disk for a 73 GB scsi drive
+
+  [9] user-cd73: haha that is great
+
+  [10] user-ac4c: does the Indigo even take an R10000 cpu?'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-ab9c
+    claim: The Origin 200 has a gigabit Ethernet port.
+    verdict: wrong
+    refs: &id001
+    - 5
+    interface: cited-only
+  - user: user-cd73
+    claim: The Indigo can be fitted with Extreme graphics.
+    verdict: good
+    refs:
+    - 7
+    interface: cited-only
+  - user: user-cd73
+    claim: Their Origin 200 boots from a 73 GB SCSI drive.
+    verdict: good
+    refs:
+    - 8
+    interface: cited-only
+  - user: user-ab9c
+    claim: The Origin 200 has a 100 Mbit Ethernet port.
+    verdict: good
+    refs: *id001
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '543'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

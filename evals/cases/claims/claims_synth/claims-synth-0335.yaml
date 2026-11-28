@@ -1,0 +1,79 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0335
+modality: claims
+prompt: '[1] user-5697: haha that is great
+
+  [2] user-d964: the Challenge S case design is gorgeous
+
+  [3] user-05c2: would the Onyx2 be loud in a bedroom?
+
+  [4] user-bb87: my Indigo links at gigabit ethernet
+
+  [5] user-bb87: anyone know about the Challenge S?
+
+  [6] user-05c2: it only does 10 Mbit on the wire
+
+  [7] user-5697: ok cool
+
+  [8] user-05c2: ok cool'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-bb87
+    claim: Their Indigo uses gigabit Ethernet.
+    verdict: good
+    refs:
+    - 4
+    interface: cited-only
+  - user: user-05c2
+    claim: The Challenge S has a 10 Mbit Ethernet port.
+    verdict: good
+    refs: &id001
+    - 6
+    interface: cited-only
+  - user: user-05c2
+    claim: The Challenge S has a 100 Mbit Ethernet port.
+    verdict: wrong
+    refs: *id001
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '335'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

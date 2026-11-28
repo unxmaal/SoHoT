@@ -1,0 +1,24 @@
+# SoHoT generated pii cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/pii_synth.py).
+# Imported by evals/importers from generated:evals.importers.pii_synth v1 seed 603@959cd8e8af9c99a028fe12e3671a33c92426fb67; re-import, do not edit.
+id: pii-synth-1257
+modality: pii
+prompt: 'ALERT 4410: token sk-test-3c97fa3887e786630fb9f6c0 appeared in the commit by Avery Ivanova.'
+assert:
+  pii:
+  - sk-test-3c97fa3887e786630fb9f6c0
+  - Avery Ivanova
+attribution:
+  dataset: SoHoT generated pii cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/pii_synth.py
+  license: generated
+  source: generated:evals.importers.pii_synth v1 seed 603
+  revision: 959cd8e8af9c99a028fe12e3671a33c92426fb67
+  item: '1257'
+  date: ''
+  transform: a template filled with fake values, each labelled
+  importer: evals.importers.pii_synth
+  version: '1'
+  seed: 603
+  kinds:
+  - key
+  - name

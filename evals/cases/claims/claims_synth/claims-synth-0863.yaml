@@ -1,0 +1,83 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0863
+modality: claims
+prompt: '[1] user-9ced: the Indy heats my room so well i cancelled the furnace lol
+
+  [2] user-c534: anyone else up this late?
+
+  [3] user-81e4: has anyone tried that yet?
+
+  [4] user-81e4: my Octane2 links at gigabit ethernet
+
+  [5] user-81e4: anyone know about the Indy?
+
+  [6] user-9ced: it runs the R10000 fine
+
+  [7] user-c534: the Nekochan forum has the power supply parts for the Octane2'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-c534
+    claim: Power supply parts for the Octane2 can be found at the Nekochan forum.
+    verdict: good
+    refs:
+    - 7
+    interface: cited-only
+  - user: user-81e4
+    claim: Their Octane2 uses gigabit Ethernet.
+    verdict: good
+    refs: &id001
+    - 4
+    interface: cited-only
+  - user: user-81e4
+    claim: The Octane2 accepts a 36 GB SCSI drive.
+    verdict: made_up
+    refs: *id001
+    interface: cited-only
+  - user: user-9ced
+    claim: The Indy can take an R10000 CPU.
+    verdict: good
+    refs:
+    - 6
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '863'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

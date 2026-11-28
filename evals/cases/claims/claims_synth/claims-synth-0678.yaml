@@ -1,0 +1,81 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0678
+modality: claims
+prompt: '[1] user-2d5d: that is the best thing i have heard all day
+
+  [2] user-4f2b: the Onyx2 case design is gorgeous
+
+  [3] user-2d5d: my Indigo2 weighs more than my cat and is less friendly haha
+
+  [4] user-0b3b: i filled my Personal IRIS with 256 MB of memory
+
+  [5] user-4f2b: how much memory can the Indigo2 hold?
+
+  [6] user-d9ff: how much memory can the Indigo2 hold?
+
+  [7] user-d9ff: the Indigo2 tops out at 8 GB of memory
+
+  [8] user-2d5d: that is the best thing i have heard all day
+
+  [9] user-d9ff: brb, coffee'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-0b3b
+    claim: Their Personal IRIS has 256 MB of RAM.
+    verdict: good
+    refs: &id001
+    - 4
+    interface: cited-only
+  - user: user-0b3b
+    claim: The Personal IRIS can take an R10000 CPU.
+    verdict: made_up
+    refs: *id001
+    interface: cited-only
+  - user: user-d9ff
+    claim: The Indigo2 supports up to 8 GB of RAM.
+    verdict: good
+    refs:
+    - 7
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '678'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

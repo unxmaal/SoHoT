@@ -1,0 +1,91 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-1123
+modality: claims
+prompt: '[1] user-08ce: haha that is great
+
+  [2] user-b811: grab the service manuals for the Personal IRIS from the Nekochan forum
+
+  [3] user-b811: does the Indigo2 even take an R5000 cpu?
+
+  [4] user-08ce: brb, coffee
+
+  [5] user-08ce: my Indigo is on gigabit ethernet here
+
+  [6] user-08ce: good luck with it
+
+  [7] user-b811: does the Indigo even take an R10000 cpu?
+
+  [8] user-08ce: anyone know about the Indigo2?
+
+  [9] user-b811: it is stable on irix 6.3
+
+  [10] user-b811: anyone know a good shop for the Indigo?
+
+  [11] user-b811: does the Indigo2 even take an R12000 cpu?'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-08ce
+    claim: Their Indigo uses gigabit Ethernet.
+    verdict: good
+    refs:
+    - 5
+    interface: conversation
+  - user: user-b811
+    claim: The Indigo2 runs IRIX 5.3.
+    verdict: wrong
+    refs: &id001
+    - 9
+    interface: conversation
+  - user: user-b811
+    claim: Service manuals for the Personal IRIS can be found at the Nekochan forum.
+    verdict: good
+    refs:
+    - 2
+    interface: conversation
+  - user: user-b811
+    claim: The Indigo2 runs IRIX 6.3.
+    verdict: good
+    refs: *id001
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '1123'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

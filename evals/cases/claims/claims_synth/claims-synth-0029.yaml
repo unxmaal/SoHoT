@@ -1,0 +1,85 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0029
+modality: claims
+prompt: '[1] user-ced8: see you tomorrow
+
+  [2] user-ced8: anyone else up this late?
+
+  [3] user-ffc4: the Onyx2 was sold with SE graphics
+
+  [4] user-ced8: Extreme graphics exist for the Origin 200
+
+  [5] user-ffc4: good luck with it
+
+  [6] user-ced8: nothing beats the sound of a Origin 200 booting
+
+  [7] user-ffc4: you can drop an R12000 into the Onyx2
+
+  [8] user-ffc4: how much memory can the Onyx2 hold?'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-ffc4
+    claim: The Onyx2 can be fitted with SE graphics.
+    verdict: good
+    refs:
+    - 3
+    interface: conversation
+  - user: user-ffc4
+    claim: The Onyx2 can take an R12000 CPU.
+    verdict: good
+    refs: &id001
+    - 7
+    interface: conversation
+  - user: user-ced8
+    claim: The Origin 200 can be fitted with Extreme graphics.
+    verdict: good
+    refs:
+    - 4
+    interface: conversation
+  - user: user-ffc4
+    claim: The Onyx2 can take an R4400 CPU.
+    verdict: wrong
+    refs: *id001
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '29'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

@@ -1,0 +1,83 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0022
+modality: claims
+prompt: '[1] user-fa7c: hey everyone
+
+  [2] user-726f: the Challenge S heats my room so well i cancelled the furnace lol
+
+  [3] user-67e7: anyone know about the Indy?
+
+  [4] user-726f: it only does gigabit on the wire
+
+  [5] user-726f: anyone else up this late?
+
+  [6] user-eb2e: that is the best thing i have heard all day
+
+  [7] user-726f: anyone know about the Indy?
+
+  [8] user-eb2e: it comes with SI graphics
+
+  [9] user-fa7c: good morning all
+
+  [10] user-726f: the Challenge S heats my room so well i cancelled the furnace lol'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-eb2e
+    claim: The Indy can be fitted with SI graphics.
+    verdict: good
+    refs: &id001
+    - 8
+    interface: conversation
+  - user: user-726f
+    claim: The Indy has a gigabit Ethernet port.
+    verdict: good
+    refs:
+    - 4
+    interface: conversation
+  - user: user-eb2e
+    claim: The Indy can be fitted with VPro V12 graphics.
+    verdict: wrong
+    refs: *id001
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '22'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

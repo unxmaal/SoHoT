@@ -1,0 +1,87 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-1305
+modality: claims
+prompt: '[1] user-e144: i love this channel
+
+  [2] user-7fcf: can the Challenge S run a modern browser?
+
+  [3] user-f8b1: nothing beats the sound of a Challenge S booting
+
+  [4] user-7fcf: anyone know about the Origin 200?
+
+  [5] user-f8b1: it will not go past 2 GB of memory
+
+  [6] user-7fcf: anyone know about the Challenge S?
+
+  [7] user-e144: it runs the R4600 fine
+
+  [8] user-e144: hey everyone
+
+  [9] user-f8b1: anyone with a Origin 200 is welcome to post in here'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-e144
+    claim: The Challenge S can take an R4600 CPU.
+    verdict: good
+    refs:
+    - 7
+    interface: cited-only
+  - user: user-f8b1
+    claim: Owners of the Origin 200 are welcome to post in the channel.
+    verdict: not_useful
+    refs:
+    - 9
+    interface: cited-only
+  - user: user-f8b1
+    claim: The Origin 200 supports up to 8 GB of RAM.
+    verdict: wrong
+    refs: &id001
+    - 5
+    interface: cited-only
+  - user: user-f8b1
+    claim: The Origin 200 supports up to 2 GB of RAM.
+    verdict: good
+    refs: *id001
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '1305'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

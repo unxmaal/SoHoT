@@ -1,0 +1,83 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-1401
+modality: claims
+prompt: '[1] user-e958: what a week
+
+  [2] user-e958: would the Origin 200 be loud in a bedroom?
+
+  [3] user-7280: my Origin 200 is the best machine ever
+
+  [4] user-e958: the Indigo has 10 Mbit ethernet on board
+
+  [5] user-1894: haha that is great
+
+  [6] user-94ec: the Indigo was sold with Elan graphics
+
+  [7] user-94ec: anyone with a Indigo is welcome to post in here'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-94ec
+    claim: The Indigo can be fitted with Elan graphics.
+    verdict: good
+    refs: &id001
+    - 6
+    interface: conversation
+  - user: user-94ec
+    claim: Owners of the Indigo are welcome to post in the channel.
+    verdict: not_useful
+    refs:
+    - 7
+    interface: conversation
+  - user: user-e958
+    claim: The Indigo has a 10 Mbit Ethernet port.
+    verdict: good
+    refs:
+    - 4
+    interface: conversation
+  - user: user-94ec
+    claim: The Indigo supports up to 4 GB of RAM.
+    verdict: made_up
+    refs: *id001
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '1401'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

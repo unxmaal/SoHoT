@@ -1,0 +1,20 @@
+# SoHoT generated pii cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/pii_synth.py).
+# Imported by evals/importers from generated:evals.importers.pii_synth v1 seed 603@959cd8e8af9c99a028fe12e3671a33c92426fb67; re-import, do not edit.
+id: pii-synth-1076
+modality: pii
+prompt: Table 13 reserves 2 seats from 54:79 until 10:74.
+assert:
+  pii: []
+attribution:
+  dataset: SoHoT generated pii cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/pii_synth.py
+  license: generated
+  source: generated:evals.importers.pii_synth v1 seed 603
+  revision: 959cd8e8af9c99a028fe12e3671a33c92426fb67
+  item: '1076'
+  date: ''
+  transform: a sentence with no personal data, its numbers redrawn
+  importer: evals.importers.pii_synth
+  version: '1'
+  seed: 603
+  kinds: []

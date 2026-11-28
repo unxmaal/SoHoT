@@ -1,0 +1,87 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0908
+modality: claims
+prompt: '[1] user-1cb9: anyone know a good shop for the Onyx2?
+
+  [2] user-a0bd: what is the best irix for the Indigo?
+
+  [3] user-1cb9: my Octane has 8 GB of ram installed
+
+  [4] user-1cb9: i named my Onyx2 after my ex, it also refuses to boot sometimes
+
+  [5] user-1cb9: good luck with it
+
+  [6] user-a0bd: anyone know about the Octane?
+
+  [7] user-1cb9: it boots irix 6.3 without trouble
+
+  [8] user-1cb9: anyone know about the Indigo?
+
+  [9] user-a0bd: it boots off a 73 GB drive'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-1cb9
+    claim: The Octane runs IRIX 6.3.
+    verdict: good
+    refs:
+    - 7
+    interface: cited-only
+  - user: user-a0bd
+    claim: The Indigo accepts a 73 GB SCSI drive.
+    verdict: good
+    refs:
+    - 9
+    interface: cited-only
+  - user: user-1cb9
+    claim: The Octane can be fitted with XZ graphics.
+    verdict: made_up
+    refs: &id001
+    - 3
+    interface: cited-only
+  - user: user-1cb9
+    claim: Their Octane has 8 GB of RAM.
+    verdict: good
+    refs: *id001
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '908'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

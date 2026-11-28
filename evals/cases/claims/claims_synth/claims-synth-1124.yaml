@@ -1,0 +1,75 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-1124
+modality: claims
+prompt: '[1] user-c862: where do people get parts for the Personal IRIS?
+
+  [2] user-d561: my Octane2 is the best machine ever
+
+  [3] user-d561: the Octane2 boots from a 36 GB scsi disk
+
+  [4] user-d561: my Personal IRIS has an R4400 in it
+
+  [5] user-c862: gotta run, dinner
+
+  [6] user-c862: nothing beats the sound of a Personal IRIS booting'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-d561
+    claim: The Octane2 accepts a 36 GB SCSI drive.
+    verdict: good
+    refs: &id001
+    - 3
+    interface: conversation
+  - user: user-d561
+    claim: They run an R4400 CPU in their Personal IRIS.
+    verdict: good
+    refs:
+    - 4
+    interface: conversation
+  - user: user-d561
+    claim: The Octane2 supports up to 128 MB of RAM.
+    verdict: made_up
+    refs: *id001
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '1124'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

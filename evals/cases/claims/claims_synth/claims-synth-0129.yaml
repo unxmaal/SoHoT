@@ -1,0 +1,89 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0129
+modality: claims
+prompt: '[1] user-8804: what is the best irix for the Fuel?
+
+  [2] user-320e: the Fuel has gigabit ethernet on board
+
+  [3] user-78ea: back now
+
+  [4] user-78ea: ha, true
+
+  [5] user-a51a: my O2 has an R10000 in it
+
+  [6] user-78ea: back now
+
+  [7] user-320e: hey everyone
+
+  [8] user-8804: the Indigo2 on my desk has SE graphics
+
+  [9] user-a51a: can the O2 run a modern browser?
+
+  [10] user-78ea: hey everyone'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-8804
+    claim: The Indigo2 supports up to 4 GB of RAM.
+    verdict: made_up
+    refs: &id001
+    - 8
+    interface: cited-only
+  - user: user-a51a
+    claim: They run an R10000 CPU in their O2.
+    verdict: good
+    refs:
+    - 5
+    interface: cited-only
+  - user: user-8804
+    claim: Their Indigo2 has SE graphics.
+    verdict: good
+    refs: *id001
+    interface: cited-only
+  - user: user-320e
+    claim: The Fuel has a gigabit Ethernet port.
+    verdict: good
+    refs:
+    - 2
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '129'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

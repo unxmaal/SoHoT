@@ -67,6 +67,13 @@ NOT_GATING = {
                                            "draws they always had, and no source row is dropped (#2182)",
     "evals/importers/retrieval_synth.py:ATTEMPTS": "redraws of one corpus before the generator refuses; it raises, it "
                                                    "never changes a case (#2182)",
+    "evals/importers/pii_synth.py:EXTENDED_FROM": "the item index where the added pools begin; it only orders the draws and "
+                                                  "drops no source row (#2182)",
+    "evals/importers/claims_synth.py:EMPTY_SHARE": "the mix of generated claims cases; every case drawn is written (#2182)",
+    "evals/importers/claims_synth.py:SCHEMA[properties][c][items][maxItems]": "the reply schema the lane serves, "
+                                                                            "written into each case (#2182)",
+    "evals/importers/claims_synth.py:SCHEMA[properties][c][items][minItems]": "the reply schema the lane serves, "
+                                                                            "written into each case (#2182)",
     "evals/importers/agent_synth.py:MAX_STEPS": "the step cap written into each generated case's params, as the hand "
                                                 "cases set theirs; the runner scales it by agent_steps_scale (#603)",
 }

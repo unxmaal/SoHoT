@@ -1,0 +1,89 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-1017
+modality: claims
+prompt: '[1] user-b21b: the Challenge S heats my room so well i cancelled the furnace lol
+
+  [2] user-dff9: back now
+
+  [3] user-b21b: you can order the Challenge S with Elan graphics
+
+  [4] user-dff9: the Origin 200 heats my room so well i cancelled the furnace lol
+
+  [5] user-b21b: is the Challenge S any good for audio work?
+
+  [6] user-b21b: i put an R4400 in my Challenge S last year
+
+  [7] user-de71: i would trade my laptop for a Crimson any day
+
+  [8] user-de71: i swapped my Crimson disk for a 73 GB scsi drive
+
+  [9] user-dff9: anyone else up this late?
+
+  [10] user-de71: ha, true'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-b21b
+    claim: They run an R4400 CPU in their Challenge S.
+    verdict: good
+    refs:
+    - 6
+    interface: cited-only
+  - user: user-b21b
+    claim: The Challenge S can be fitted with XZ graphics.
+    verdict: wrong
+    refs: &id001
+    - 3
+    interface: cited-only
+  - user: user-de71
+    claim: Their Crimson boots from a 73 GB SCSI drive.
+    verdict: good
+    refs:
+    - 8
+    interface: cited-only
+  - user: user-b21b
+    claim: The Challenge S can be fitted with Elan graphics.
+    verdict: good
+    refs: *id001
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '1017'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

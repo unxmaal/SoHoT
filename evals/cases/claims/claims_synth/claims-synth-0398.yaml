@@ -1,0 +1,97 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0398
+modality: claims
+prompt: '[1] user-d9b0: the Onyx2 looks so much better than any beige box
+
+  [2] user-e453: i think the Onyx2 is overrated honestly
+
+  [3] user-cdc4: my Challenge S boots from a 36 GB drive
+
+  [4] user-d000: ha, true
+
+  [5] user-d000: my Personal IRIS links at gigabit ethernet
+
+  [6] user-e453: if the Challenge S had a dollar for every fan it has, it would still be loud
+
+  [7] user-cdc4: nothing beats the sound of a Onyx2 booting
+
+  [8] user-e453: anyone know about the Onyx2?
+
+  [9] user-cdc4: it is stable on irix 5.3
+
+  [10] user-d000: the Personal IRIS case design is gorgeous
+
+  [11] user-e453: anyone with a Challenge S is welcome to post in here'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-cdc4
+    claim: Their Challenge S boots from a 36 GB SCSI drive.
+    verdict: good
+    refs:
+    - 3
+    interface: conversation
+  - user: user-cdc4
+    claim: The Onyx2 runs IRIX 5.3.
+    verdict: good
+    refs:
+    - 9
+    interface: conversation
+  - user: user-d000
+    claim: Their Personal IRIS uses gigabit Ethernet.
+    verdict: good
+    refs: &id001
+    - 5
+    interface: conversation
+  - user: user-d000
+    claim: The Personal IRIS supports up to 512 MB of RAM.
+    verdict: made_up
+    refs: *id001
+    interface: conversation
+  - user: user-e453
+    claim: Owners of the Challenge S are welcome to post in the channel.
+    verdict: not_useful
+    refs:
+    - 11
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '398'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

@@ -1,0 +1,26 @@
+# SoHoT generated pii cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/pii_synth.py).
+# Imported by evals/importers from generated:evals.importers.pii_synth v1 seed 603@959cd8e8af9c99a028fe12e3671a33c92426fb67; re-import, do not edit.
+id: pii-synth-1128
+modality: pii
+prompt: Dispatch to 65 Juniper Street, Riverton; the recipient is Nadia Castellan, reachable on 808-555-0155.
+assert:
+  pii:
+  - 65 Juniper Street, Riverton
+  - Nadia Castellan
+  - 808-555-0155
+attribution:
+  dataset: SoHoT generated pii cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/pii_synth.py
+  license: generated
+  source: generated:evals.importers.pii_synth v1 seed 603
+  revision: 959cd8e8af9c99a028fe12e3671a33c92426fb67
+  item: '1128'
+  date: ''
+  transform: a template filled with fake values, each labelled
+  importer: evals.importers.pii_synth
+  version: '1'
+  seed: 603
+  kinds:
+  - address
+  - name
+  - phone

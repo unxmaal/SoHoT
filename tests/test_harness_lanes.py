@@ -33,8 +33,6 @@ def video_parked(monkeypatch):
 GENERATED = {
     "stt": "uv run python -m evals.corpora  (LibriSpeech test-clean, "
            ".gitignore:10)",
-    "claims": "uv run python -m evals.claims_import  (private chat text, "
-              "$LOCALHARNESS_HOME/cases/claims, never in git; #654)",
 }
 
 

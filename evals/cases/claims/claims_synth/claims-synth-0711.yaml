@@ -1,0 +1,99 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0711
+modality: claims
+prompt: '[1] user-418c: good luck with it
+
+  [2] user-d93b: what is the best irix for the Onyx?
+
+  [3] user-d93b: the Origin 200 case design is gorgeous
+
+  [4] user-418c: max memory on the Indigo2 is 1 GB
+
+  [5] user-d93b: nothing beats the sound of a Origin 200 booting
+
+  [6] user-418c: the Onyx will happily run an R4400 processor
+
+  [7] user-418c: would the Origin 200 be loud in a bedroom?
+
+  [8] user-bb1b: i named my Onyx after my ex, it also refuses to boot sometimes
+
+  [9] user-bb1b: the Origin 200 boots from a 9 GB scsi disk
+
+  [10] user-d93b: gotta run, dinner
+
+  [11] user-418c: is the Onyx any good for audio work?
+
+  [12] user-d93b: anyone with a Indigo2 is welcome to post in here'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-418c
+    claim: The Onyx runs IRIX 6.2.
+    verdict: made_up
+    refs: &id001
+    - 6
+    interface: conversation
+  - user: user-418c
+    claim: The Onyx can take an R4400 CPU.
+    verdict: good
+    refs: *id001
+    interface: conversation
+  - user: user-418c
+    claim: The Indigo2 supports up to 1 GB of RAM.
+    verdict: good
+    refs:
+    - 4
+    interface: conversation
+  - user: user-bb1b
+    claim: The Origin 200 accepts a 9 GB SCSI drive.
+    verdict: good
+    refs:
+    - 9
+    interface: conversation
+  - user: user-d93b
+    claim: Owners of the Indigo2 are welcome to post in the channel.
+    verdict: not_useful
+    refs:
+    - 12
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '711'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

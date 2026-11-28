@@ -1,0 +1,97 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-1128
+modality: claims
+prompt: '[1] user-19f6: if the Octane had a dollar for every fan it has, it would still be loud
+
+  [2] user-19f6: anyone know about the Octane?
+
+  [3] user-ba8d: it runs the R5000 fine
+
+  [4] user-ba8d: good morning all
+
+  [5] user-63c1: anyone know about the Fuel?
+
+  [6] user-ba8d: it only does gigabit on the wire
+
+  [7] user-3913: is the Octane any good for audio work?
+
+  [8] user-ba8d: haha that is great
+
+  [9] user-3913: you can order the Indigo with Impact MXI graphics
+
+  [10] user-ba8d: good luck with it
+
+  [11] user-19f6: anyone with a Octane is welcome to post in here'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-ba8d
+    claim: The Fuel has a gigabit Ethernet port.
+    verdict: good
+    refs: &id001
+    - 6
+    interface: conversation
+  - user: user-ba8d
+    claim: The Fuel has a 100 Mbit Ethernet port.
+    verdict: wrong
+    refs: *id001
+    interface: conversation
+  - user: user-19f6
+    claim: Owners of the Octane are welcome to post in the channel.
+    verdict: not_useful
+    refs:
+    - 11
+    interface: conversation
+  - user: user-ba8d
+    claim: The Octane can take an R5000 CPU.
+    verdict: good
+    refs:
+    - 3
+    interface: conversation
+  - user: user-3913
+    claim: The Indigo can be fitted with Impact MXI graphics.
+    verdict: good
+    refs:
+    - 9
+    interface: conversation
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '1128'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182

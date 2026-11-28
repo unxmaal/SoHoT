@@ -1,0 +1,93 @@
+# SoHoT generated claims cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py).
+# Imported by evals/importers from generated:evals.importers.claims_synth v1 seed 2182@f48e055f8717aaf9086ed744afe9e714739e87ee; re-import, do not edit.
+id: claims-synth-0729
+modality: claims
+prompt: '[1] user-29c0: nice, thanks for the link
+
+  [2] user-2abe: how much memory can the Fuel hold?
+
+  [3] user-29c0: good luck with it
+
+  [4] user-2abe: for the Personal IRIS you want irix 6.3
+
+  [5] user-2abe: the Personal IRIS has gigabit ethernet on board
+
+  [6] user-29c0: anyone know about the Personal IRIS?
+
+  [7] user-61bb: you can get those from the Nekochan forum
+
+  [8] user-f407: nothing beats the sound of a Indigo booting
+
+  [9] user-2abe: anyone with a Personal IRIS is welcome to post in here'
+params:
+  system: 'Lines are ''[ref] user-id: text''. Extract standalone factual claims about technology, hardware,
+    software, SGI and IRIX, retrocomputing, first-hand experience, or where to find things. Rewrite each
+    in your own words as one short sentence, never copy a message. It must make sense alone: resolve pronouns
+    (''it'' becomes the thing meant). No questions, opinions, jokes, banter or greetings. First-hand experience
+    is stated as the speaker''s own (''they run ...''). Reply {"c":[[user-id, claim, [refs]], ...]}: the
+    exact user id of the line the claim rests on, the claim without any user id in it, the ref numbers
+    of its lines. Say only what the lines say. With zero claims, reply {"c":[]}.'
+  schema:
+    additionalProperties: false
+    properties:
+      c:
+        items:
+          maxItems: 3
+          minItems: 3
+          prefixItems:
+          - pattern: ^user-[0-9a-f]{4,}$
+            type: string
+          - maxLength: 220
+            type: string
+          - items:
+              type: integer
+            minItems: 1
+            type: array
+          type: array
+        type: array
+    required:
+    - c
+    type: object
+assert:
+  reviews:
+  - user: user-2abe
+    claim: The Personal IRIS runs IRIX 6.3.
+    verdict: good
+    refs:
+    - 4
+    interface: cited-only
+  - user: user-61bb
+    claim: PROM updates for the Personal IRIS can be found at the Nekochan forum.
+    verdict: good
+    refs:
+    - 7
+    interface: cited-only
+  - user: user-2abe
+    claim: Owners of the Personal IRIS are welcome to post in the channel.
+    verdict: not_useful
+    refs:
+    - 9
+    interface: cited-only
+  - user: user-2abe
+    claim: The Personal IRIS has a gigabit Ethernet port.
+    verdict: good
+    refs: &id001
+    - 5
+    interface: cited-only
+  - user: user-2abe
+    claim: The Personal IRIS has a 10 Mbit Ethernet port.
+    verdict: wrong
+    refs: *id001
+    interface: cited-only
+attribution:
+  dataset: SoHoT generated claims cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/claims_synth.py
+  license: generated
+  source: generated:evals.importers.claims_synth v1 seed 2182
+  revision: f48e055f8717aaf9086ed744afe9e714739e87ee
+  item: '729'
+  date: ''
+  transform: chat lines stating table facts, one rejected claim planted beside the good ones
+  importer: evals.importers.claims_synth
+  version: '1'
+  seed: 2182
